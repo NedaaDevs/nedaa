@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:feedback/feedback.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -149,11 +150,13 @@ void main() async {
       options.tracesSampleRate = 1.0;
     },
     appRunner: () => runApp(
-      DevicePreview(
-        enabled: !kReleaseMode,
-        builder: (context) => MyApp(
-            settingsRepository: settingsRepository,
-            prayerTimesRepository: prayerTimesRepository),
+      BetterFeedback(
+        child: DevicePreview(
+          enabled: !kReleaseMode,
+          builder: (context) => MyApp(
+              settingsRepository: settingsRepository,
+              prayerTimesRepository: prayerTimesRepository),
+        ),
       ),
     ),
   );

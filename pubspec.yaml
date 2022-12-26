@@ -66,6 +66,7 @@ dependencies:
   liquid_pull_to_refresh: ^3.0.1 
   hijri: ^3.0.0
   package_info_plus: ^3.0.2
+  feedback: ^2.5.0
 
 
 dev_dependencies:

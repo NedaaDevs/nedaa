@@ -1,3 +1,4 @@
+import 'package:feedback/feedback.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -262,36 +263,16 @@ class _SettingsState extends State<Settings> {
               ],
             ),
             SettingsSection(
-              title: const Text('Clear Data'),
+              title: Text(t.feedback),
               tiles: [
                 SettingsTile(
-                  title: const Text('Clear Data'),
-                  leading: const Icon(Icons.delete),
+                  title: Text(t.sendFeedback),
+                  leading: const Icon(Icons.feedback),
                   onPressed: (context) {
-                    //dialog to clear all data
-                    showDialog(
-                      context: context,
-                      builder: (_) {
-                        return AlertDialog(
-                          title: const Text('Clear shared preferences'),
-                          content: Text(
-                              'Long press on ${t.ok} to clear all data \n Note: this will  close the app'),
-                          actions: [
-                            TextButton(
-                              onPressed: () {},
-                              child: Text(t.ok),
-                              onLongPress: () {
-                                var userSettingsBloc =
-                                    context.read<UserSettingsBloc>();
-                                userSettingsBloc.add(
-                                  ClearDataEvent(),
-                                );
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    // TODO: send feedback
+                    BetterFeedback.of(context).show((UserFeedback feedback) {
+                      // Do something with the feedback
+                    });
                   },
                 ),
               ],
