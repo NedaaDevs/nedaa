@@ -63,6 +63,7 @@
   "error": "خطأ",
   "fajr": "الفجر",
   "friday": "الجمعة",
+  "feedback": "الملاحظات",
   "getCurrentLocation": "تحديد الموقع الحالي",
   "homePage": "الرئيسية",
   "instructionsToSetLocationManually": "إذا كنت لا تريد استخدام موقعك الحالي ، فيمكنك تعيينه يدويًا بالانتقال إلى 'الإعدادات' > 'الموقع' > 'الموقع' وتحديد موقعك.",
@@ -94,6 +95,7 @@
   "requestLocationPermissionTitle": "إذن تحديد الموقع",
   "saturday": "السبت",
   "selectMailApp": "يرجى تحديد تطبيق بريد إلكتروني",
+  "sendFeedback": "أرسل ملاحظات وإقتراحات",
   "settings": "الإعدادات",
   "since": "منذ",
   "state": "الولاية",
@@ -107,6 +109,5 @@
   "unableToLunchLink": "لا يمكن فتح الرابط",
   "until": "حتى",
   "vibrate": "إهتزاز",
-  "wednesday": "الأربعاء",
-  "feedback": ""
+  "wednesday": "الأربعاء"
 }
