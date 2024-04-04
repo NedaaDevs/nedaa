@@ -54,7 +54,7 @@ dependencies:
   url_launcher: ^6.2.5
   sentry_flutter: ^7.13.1
   timezone: ^0.9.2
-  slide_countdown: ^1.5.2
+  slide_countdown: ^1.6.0
   motion_toast: ^2.8.0
   google_fonts: ^6.2.1
   flutter_native_splash: ^2.4.0
