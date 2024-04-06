@@ -57,12 +57,14 @@ class NedaaWidget : GlanceAppWidget() {
 
 //        Run the db query in the background thread
         LaunchedEffect(key1 = Unit) {
+            prayerService.openDb()
             nexPrayer.value = withContext(Dispatchers.IO) {
                 prayerService.getNextPrayer()
 
-                println("Before con: $nexPrayer")
+                val next = prayerService.getNextPrayer()
+                prayerService.closeDb()
 
-                return@withContext prayerService.getNextPrayer()
+                return@withContext next
             }
         }
 

@@ -68,12 +68,12 @@ class PrayerTimeService(private val context: Context) {
 
     private lateinit var dbHelper: DatabaseHelper
 
-    private fun openDb() {
+     fun openDb() {
         dbHelper = DatabaseHelper(context)
         dbHelper.openDatabase()
     }
 
-    private fun closeDb() {
+     fun closeDb() {
         dbHelper.closeDatabase()
     }
 
@@ -101,7 +101,6 @@ class PrayerTimeService(private val context: Context) {
     }
 
     fun getTodayPrayers(): PrayerTimes? {
-        openDb()
         val timezone = getTimezone() ?: return null
         val today = getDateForTimezone(timezone)
         return getPrayersForDate(today)
@@ -120,7 +119,6 @@ class PrayerTimeService(private val context: Context) {
     }
 
     fun getNextPrayer(): Prayer? {
-        openDb()
         val timezone = dbHelper.getTimezone() ?: return null
         val currentTime = ZonedDateTime.now(ZoneId.of(timezone))
 
