@@ -68,12 +68,13 @@ dependencies:
   package_info_plus: ^4.2.0
   device_info_plus: ^10.0.1
   app_group_directory: ^2.0.0
-  home_widget: ^0.4.1
+  home_widget: ^0.5.0
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+ 
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
