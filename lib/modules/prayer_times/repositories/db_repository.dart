@@ -195,17 +195,13 @@ class DBRepository {
     }
   }
 
-// Updates the widget after fetch parayer times
+// Updates the widget after fetching prayer times
   Future _updateWidgets() async {
-    // FIXME: currently we only have a widget for iOS
-    // so this will throw an exception on Android
-    if (!Platform.isIOS) return;
-
     for (var name in iOSWidgetNames) {
       await HomeWidget.updateWidget(
         name: name,
         iOSName: name,
-        androidName: 'NedaaWidget',
+        androidName: androidWidgetName,
       );
     }
   }
