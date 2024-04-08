@@ -1,14 +1,17 @@
 package io.nedaa.nedaaApp
 
 import android.content.Context
-import java.time.LocalDate
-import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import org.json.JSONObject
 import java.time.temporal.ChronoUnit
 
-data class Prayer(val name: String, val dateTime: ZonedDateTime)
+data class Prayer(val name: String, val dateTime: ZonedDateTime) {
+    fun getFormattedTime(): String {
+        return dateTime.format(DateTimeFormatter.ofPattern("HH:mm a"))
+    }
+}
 
 // TODO: Better error 
 data class PrayerTimes(
@@ -20,18 +23,22 @@ data class PrayerTimes(
         fun parsePrayerTimes(json: String): PrayerTimes {
             val jsonObject = JSONObject(json)
             val prayerTimesObject = jsonObject.getJSONObject("prayerTimes")
-
+            val timezone =  jsonObject.getString("timezone")
             val prayers =
                 listOf(
                     Prayer(
                         name = "Fajr",
-                        dateTime = ZonedDateTime.parse(prayerTimesObject.getString("Fajr"))
+                        dateTime = parseDateTimeToZonedDateTime(
+                            prayerTimesObject.getString("Fajr"),
+                            timezone
+                        )
                     ),
                     Prayer(
                         name = "Sunrise",
                         dateTime =
-                        ZonedDateTime.parse(
-                            prayerTimesObject.getString("Sunrise")
+                        parseDateTimeToZonedDateTime(
+                            prayerTimesObject.getString("Sunrise"),
+                            timezone
                         )
                     ),
                     Prayer(
@@ -40,18 +47,25 @@ data class PrayerTimes(
                     ),
                     Prayer(
                         name = "Asr",
-                        dateTime = ZonedDateTime.parse(prayerTimesObject.getString("Asr"))
+                        dateTime = parseDateTimeToZonedDateTime(
+                            prayerTimesObject.getString("Asr"),
+                            timezone
+                        )
                     ),
                     Prayer(
                         name = "Maghrib",
                         dateTime =
-                        ZonedDateTime.parse(
-                            prayerTimesObject.getString("Maghrib")
+                        parseDateTimeToZonedDateTime(
+                            prayerTimesObject.getString("Maghrib"),
+                            timezone
                         )
                     ),
                     Prayer(
                         name = "Isha",
-                        dateTime = ZonedDateTime.parse(prayerTimesObject.getString("Isha"))
+                        dateTime = parseDateTimeToZonedDateTime(
+                            prayerTimesObject.getString("Isha"),
+                            timezone
+                        )
                     )
                 )
 
@@ -61,6 +75,13 @@ data class PrayerTimes(
                 timezone = jsonObject.getString("timezone"),
             )
         }
+
+        private fun parseDateTimeToZonedDateTime(
+            dateTime: String,
+            timezone: String = "UTC"
+        ): ZonedDateTime {
+            return ZonedDateTime.parse(dateTime).withZoneSameInstant(ZoneId.of(timezone))
+        }
     }
 }
 
@@ -68,20 +89,20 @@ class PrayerTimeService(private val context: Context) {
 
     private lateinit var dbHelper: DatabaseHelper
 
-     fun openDb() {
+    fun openDb() {
         dbHelper = DatabaseHelper(context)
         dbHelper.openDatabase()
     }
 
-     fun closeDb() {
+    fun closeDb() {
         dbHelper.closeDatabase()
     }
 
-    fun getTimezone(): String? {
+    private fun getTimezone(): String? {
         return dbHelper.getTimezone()
     }
 
-    private fun getPrayersForDate(date: LocalDate): PrayerTimes? {
+    private fun getPrayersForDate(date: ZonedDateTime): PrayerTimes? {
         val json =
             dbHelper.getPrayerTimesForDate(
                 date.format(DateTimeFormatter.ofPattern("yyyyMMdd")).toInt()
@@ -90,17 +111,13 @@ class PrayerTimeService(private val context: Context) {
         return PrayerTimes.parsePrayerTimes(json)
     }
 
-    private fun getTimeForTimezone(timezone: String): ZonedDateTime {
+    private fun getDateForTimezone(timezone: String): ZonedDateTime {
         val timezoneId = ZoneId.of(timezone)
         return ZonedDateTime.now(timezoneId)
     }
 
-    private fun getDateForTimezone(timezone: String): LocalDate {
-        val timezoneId = ZoneId.of(timezone)
-        return ZonedDateTime.now(timezoneId).toLocalDate()
-    }
 
-    fun getTodayPrayers(): PrayerTimes? {
+    private fun getTodayPrayers(): PrayerTimes? {
         val timezone = getTimezone() ?: return null
         val today = getDateForTimezone(timezone)
         return getPrayersForDate(today)
