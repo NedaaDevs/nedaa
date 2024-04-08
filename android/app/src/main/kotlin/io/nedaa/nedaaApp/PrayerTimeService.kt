@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 import org.json.JSONObject
 import java.time.temporal.ChronoUnit
 
-data class Prayer(val name: String, val dateTime: ZonedDateTime) {
+data class Prayer(val name: String, val dateTime: ZonedDateTime, val timezone: String) {
     fun getFormattedTime(): String {
         return dateTime.format(DateTimeFormatter.ofPattern("h:mm a"))
     }
@@ -31,7 +31,8 @@ data class PrayerTimes(
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Fajr"),
                             timezone
-                        )
+                        ),
+                        timezone= timezone
                     ),
                     Prayer(
                         name = "Sunrise",
@@ -39,18 +40,21 @@ data class PrayerTimes(
                         parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Sunrise"),
                             timezone
-                        )
+                        ),
+                        timezone= timezone
                     ),
                     Prayer(
                         name = "Dhuhr",
-                        dateTime = ZonedDateTime.parse(prayerTimesObject.getString("Dhuhr"))
+                        dateTime = ZonedDateTime.parse(prayerTimesObject.getString("Dhuhr")),
+                        timezone= timezone
                     ),
                     Prayer(
                         name = "Asr",
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Asr"),
                             timezone
-                        )
+                        ),
+                        timezone= timezone
                     ),
                     Prayer(
                         name = "Maghrib",
@@ -58,14 +62,16 @@ data class PrayerTimes(
                         parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Maghrib"),
                             timezone
-                        )
+                        ),
+                        timezone= timezone
                     ),
                     Prayer(
                         name = "Isha",
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Isha"),
                             timezone
-                        )
+                        ),
+                        timezone= timezone
                     )
                 )
 
@@ -76,7 +82,7 @@ data class PrayerTimes(
             )
         }
 
-        private fun parseDateTimeToZonedDateTime(
+        fun parseDateTimeToZonedDateTime(
             dateTime: String,
             timezone: String = "UTC"
         ): ZonedDateTime {
