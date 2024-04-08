@@ -103,25 +103,24 @@ class NedaaWidget : GlanceAppWidget() {
         }
 
         val nextPrayerName = nextPrayer.value?.name
-        val nextPrayerTime = nextPrayer.value?.dateTime
+        val nextPrayerTime = nextPrayer.value?.getFormattedTime()
 
         val prevPrayerName = prevPrayer.value?.name
-        val prevPrayerTime = prevPrayer.value?.dateTime
+        val prevPrayerTime = prevPrayer.value?.getFormattedTime()
 
         println(nextPrayerName)
         println(nextPrayerTime)
         println(prevPrayerName)
         println(prevPrayerTime)
 
-        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
 
 
         Content(
             context,
             prevPrayerName ?: "",
-            prevPrayerTime?.format(formatter) ?: "",
+            prevPrayerTime ?: "",
             nextPrayerName ?: "",
-            nextPrayerTime?.format(formatter) ?: ""
+            nextPrayerTime ?: ""
         )
     }
 
@@ -175,7 +174,11 @@ class NedaaWidget : GlanceAppWidget() {
             )
             Text(
                 text = nextPrayerTime,
-                style = TextStyle(fontSize = 18.sp, color = GlanceTheme.colors.secondary),
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.secondary
+                ),
                 modifier = GlanceModifier.padding(bottom = 4.dp)
             )
         }
