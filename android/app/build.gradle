@@ -94,7 +94,7 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21"
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21'
     // TODO: check why androidx crashes the app without the following dependencies:
     implementation 'androidx.window:window:1.0.0'
     implementation 'androidx.window:window-java:1.0.0'
@@ -103,4 +103,7 @@ dependencies {
     implementation 'androidx.work:work-runtime:2.8.1'
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
     implementation 'androidx.glance:glance-appwidget:1.0.0'
+    implementation 'androidx.glance:glance-material:1.0.0'
+    implementation 'androidx.glance:glance-material3:1.0.0'
+    implementation 'androidx.compose.material3:material3:1.2.1'
 }
