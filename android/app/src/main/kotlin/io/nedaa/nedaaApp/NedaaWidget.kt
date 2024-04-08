@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import HomeWidgetGlanceStateDefinition
 import HomeWidgetGlanceState
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -22,6 +24,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -34,11 +37,31 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.actionStartActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.format.DateTimeFormatter
+import java.time.Duration
+
+
+class NedaaWidgetWorker(
+    appContext: Context,
+    params: WorkerParameters
+) : CoroutineWorker(appContext, params) {
+    override suspend fun doWork(): Result {
+        NedaaWidget().apply {
+            applicationContext
+            // Call update/updateAll in case a Worker for the widget is not currently running.
+            updateAll(applicationContext)
+        }
+        return Result.success()
+    }
+}
 
 class NedaaWidget : GlanceAppWidget() {
     private lateinit var prayerService: PrayerTimeService
@@ -73,19 +96,36 @@ class NedaaWidget : GlanceAppWidget() {
      */
     override val stateDefinition = HomeWidgetGlanceStateDefinition()
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+
+        prayerService = PrayerTimeService(context)
+
+//        TODO: set the interval to the next prayer time.
+        // Create unique periodic work to keep this widget updated at a regular interval.
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "nedaaWidgetWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequest.Builder(
+                NedaaWidgetWorker::class.java,
+                Duration.ofMinutes(15)
+            ).setInitialDelay(Duration.ofMinutes(15)).build()
+        )
+
         provideContent {
             GlanceTheme(colors = ColorScheme.colors) {
-                GlanceContent(context, currentState())
+                GlanceContent(context, currentState(), prayerService)
             }
         }
     }
 
     @Composable
-    private fun GlanceContent(context: Context, currentState: HomeWidgetGlanceState) {
+    private fun GlanceContent(
+        context: Context,
+        currentState: HomeWidgetGlanceState,
+        prayerService: PrayerTimeService
+    ) {
         val data = currentState.preferences
-        prayerService = PrayerTimeService(context)
-
         val nextPrayer = remember { mutableStateOf<Prayer?>(null) }
         val prevPrayer = remember { mutableStateOf<Prayer?>(null) }
 
@@ -107,12 +147,6 @@ class NedaaWidget : GlanceAppWidget() {
 
         val prevPrayerName = prevPrayer.value?.name
         val prevPrayerTime = prevPrayer.value?.getFormattedTime()
-
-        println(nextPrayerName)
-        println(nextPrayerTime)
-        println(prevPrayerName)
-        println(prevPrayerTime)
-
 
 
         Content(
