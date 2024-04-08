@@ -902,10 +902,10 @@ packages:
     dependency: "direct main"
     description:
       name: slide_countdown
-      sha256: e093b7d65f2236df90ce4f1fd7e0428446983f826b2e6e851aafe9749bf542bf
+      sha256: "345cbe6d749bf8525df020cbc3763fa5005fed9a8fce59b32c61a5e1bac07b4e"
       url: "https://pub.dev"
     source: hosted
-    version: "1.6.0"
+    version: "1.6.1"
   source_span:
     dependency: transitive
     description:
