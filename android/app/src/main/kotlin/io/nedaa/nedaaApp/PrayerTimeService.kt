@@ -9,7 +9,7 @@ import java.time.temporal.ChronoUnit
 
 data class Prayer(val name: String, val dateTime: ZonedDateTime) {
     fun getFormattedTime(): String {
-        return dateTime.format(DateTimeFormatter.ofPattern("HH:mm a"))
+        return dateTime.format(DateTimeFormatter.ofPattern("h:mm a"))
     }
 }
 
