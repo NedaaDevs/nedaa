@@ -5,6 +5,7 @@ import java.time.ZonedDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import org.json.JSONObject
+import java.time.Duration
 import java.time.temporal.ChronoUnit
 
 data class Prayer(val name: String, val dateTime: ZonedDateTime, val timezone: String) {
@@ -23,7 +24,7 @@ data class PrayerTimes(
         fun parsePrayerTimes(json: String): PrayerTimes {
             val jsonObject = JSONObject(json)
             val prayerTimesObject = jsonObject.getJSONObject("prayerTimes")
-            val timezone =  jsonObject.getString("timezone")
+            val timezone = jsonObject.getString("timezone")
             val prayers =
                 listOf(
                     Prayer(
@@ -32,7 +33,7 @@ data class PrayerTimes(
                             prayerTimesObject.getString("Fajr"),
                             timezone
                         ),
-                        timezone= timezone
+                        timezone = timezone
                     ),
                     Prayer(
                         name = "Sunrise",
@@ -41,12 +42,15 @@ data class PrayerTimes(
                             prayerTimesObject.getString("Sunrise"),
                             timezone
                         ),
-                        timezone= timezone
+                        timezone = timezone
                     ),
                     Prayer(
                         name = "Dhuhr",
-                        dateTime = ZonedDateTime.parse(prayerTimesObject.getString("Dhuhr")),
-                        timezone= timezone
+                        dateTime = parseDateTimeToZonedDateTime(
+                            prayerTimesObject.getString("Dhuhr"),
+                            timezone
+                        ),
+                        timezone = timezone
                     ),
                     Prayer(
                         name = "Asr",
@@ -54,7 +58,7 @@ data class PrayerTimes(
                             prayerTimesObject.getString("Asr"),
                             timezone
                         ),
-                        timezone= timezone
+                        timezone = timezone
                     ),
                     Prayer(
                         name = "Maghrib",
@@ -63,7 +67,7 @@ data class PrayerTimes(
                             prayerTimesObject.getString("Maghrib"),
                             timezone
                         ),
-                        timezone= timezone
+                        timezone = timezone
                     ),
                     Prayer(
                         name = "Isha",
@@ -71,7 +75,7 @@ data class PrayerTimes(
                             prayerTimesObject.getString("Isha"),
                             timezone
                         ),
-                        timezone= timezone
+                        timezone = timezone
                     )
                 )
 
@@ -82,7 +86,7 @@ data class PrayerTimes(
             )
         }
 
-        fun parseDateTimeToZonedDateTime(
+        private fun parseDateTimeToZonedDateTime(
             dateTime: String,
             timezone: String = "UTC"
         ): ZonedDateTime {
@@ -202,5 +206,10 @@ class PrayerTimeService(private val context: Context) {
                 nextPrayerDate.plusMinutes(30)
             }
         }
+    }
+
+    fun durationUntilNextPrayer(nextPrayerTime: ZonedDateTime?): Duration {
+        val now = ZonedDateTime.now(nextPrayerTime?.zone)
+        return Duration.between(now, nextPrayerTime)
     }
 }
