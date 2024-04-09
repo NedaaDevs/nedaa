@@ -28,7 +28,7 @@ data class PrayerTimes(
             val prayers =
                 listOf(
                     Prayer(
-                        name = "Fajr",
+                        name = "fajr",
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Fajr"),
                             timezone
@@ -36,7 +36,7 @@ data class PrayerTimes(
                         timezone = timezone
                     ),
                     Prayer(
-                        name = "Sunrise",
+                        name = "sunrise",
                         dateTime =
                         parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Sunrise"),
@@ -45,7 +45,7 @@ data class PrayerTimes(
                         timezone = timezone
                     ),
                     Prayer(
-                        name = "Dhuhr",
+                        name = "dhuhr",
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Dhuhr"),
                             timezone
@@ -53,7 +53,7 @@ data class PrayerTimes(
                         timezone = timezone
                     ),
                     Prayer(
-                        name = "Asr",
+                        name = "asr",
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Asr"),
                             timezone
@@ -61,7 +61,7 @@ data class PrayerTimes(
                         timezone = timezone
                     ),
                     Prayer(
-                        name = "Maghrib",
+                        name = "maghrib",
                         dateTime =
                         parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Maghrib"),
@@ -70,7 +70,7 @@ data class PrayerTimes(
                         timezone = timezone
                     ),
                     Prayer(
-                        name = "Isha",
+                        name = "isha",
                         dateTime = parseDateTimeToZonedDateTime(
                             prayerTimesObject.getString("Isha"),
                             timezone
@@ -212,4 +212,5 @@ class PrayerTimeService(private val context: Context) {
         val now = ZonedDateTime.now(nextPrayerTime?.zone)
         return Duration.between(now, nextPrayerTime)
     }
+
 }
