@@ -97,17 +97,6 @@ class NedaaWidget : GlanceAppWidget() {
 
         prayerService = PrayerTimeService(context)
 
-//        TODO: set the interval to the next prayer time.
-        // Create unique periodic work to keep this widget updated at a regular interval.
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "nedaaWidgetWorker",
-            ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequest.Builder(
-                NedaaWidgetWorker::class.java,
-                Duration.ofMinutes(15)
-            ).setInitialDelay(Duration.ofMinutes(15)).build()
-        )
-
         provideContent {
             GlanceTheme(colors = ColorScheme.colors) {
                 GlanceContent(context, currentState(), prayerService)
@@ -115,6 +104,7 @@ class NedaaWidget : GlanceAppWidget() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     private fun GlanceContent(
         context: Context,
@@ -125,7 +115,7 @@ class NedaaWidget : GlanceAppWidget() {
         val nextPrayer = remember { mutableStateOf<Prayer?>(null) }
         val prevPrayer = remember { mutableStateOf<Prayer?>(null) }
 
-//        Run the db query in the background thread
+        // Run the db query in the background thread
         LaunchedEffect(key1 = Unit) {
             prayerService.openDb()
             val both = withContext(Dispatchers.IO) {
@@ -136,6 +126,17 @@ class NedaaWidget : GlanceAppWidget() {
             }
             nextPrayer.value = both.first
             prevPrayer.value = both.second
+            val durationTillNextPrayer = prayerService.durationUntilNextPrayer(nextPrayer.value?.dateTime) ?: Duration.ofMinutes(15)
+           
+            // Create unique periodic work to keep this widget updated at a regular interval.
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                "nedaaWidgetWorker",
+                ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicWorkRequest.Builder(
+                    NedaaWidgetWorker::class.java,
+                    durationTillNextPrayer
+                ).setInitialDelay(Duration.ofMinutes(15)).build()
+            )
         }
 
         val nextPrayerName = nextPrayer.value?.name
@@ -145,8 +146,6 @@ class NedaaWidget : GlanceAppWidget() {
         val prevPrayerTime = prevPrayer.value?.getFormattedTime()
 
         val isDark = isSystemInDarkTheme(context)
-
-        println("isDark $isDark")
 
         Content(
             context,
