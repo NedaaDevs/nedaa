@@ -52,6 +52,7 @@ import es.antonborri.home_widget.actionStartActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Duration
+import java.time.ZonedDateTime
 
 
 class NedaaWidgetWorker(
@@ -136,27 +137,28 @@ class NedaaWidget : GlanceAppWidget() {
             println("Current API Level is: $apiLevel")
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Create unique periodic work to keep this widget updated at a regular interval.
                 initWorkManager(context, durationTillNextPrayer)
             } else {
                 initAlarmManager(context, durationTillNextPrayer)
             }
-            // Create unique periodic work to keep this widget updated at a regular interval.
-
         }
 
-        val nextPrayerName = nextPrayer.value?.name
+        val nextPrayerName =
+            getPrayerName(context, nextPrayer.value?.name, nextPrayer.value?.dateTime)
         val nextPrayerTime = nextPrayer.value?.getFormattedTime()
 
-        val prevPrayerName = prevPrayer.value?.name
+        val prevPrayerName =
+            getPrayerName(context, prevPrayer.value?.name, prevPrayer.value?.dateTime)
         val prevPrayerTime = prevPrayer.value?.getFormattedTime()
 
         val isDark = isSystemInDarkTheme(context)
 
         Content(
             context,
-            prevPrayerName ?: "",
+            prevPrayerName,
             prevPrayerTime ?: "",
-            nextPrayerName ?: "",
+            nextPrayerName,
             nextPrayerTime ?: "",
             isDark
         )
@@ -164,6 +166,24 @@ class NedaaWidget : GlanceAppWidget() {
 
     private fun isSystemInDarkTheme(context: Context): Boolean {
         return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    }
+
+    private fun getPrayerName(context: Context, prayerName: String?, date: ZonedDateTime?): String {
+        val resourceId = when (prayerName) {
+            "fajr" -> R.string.fajr
+            "sunrise" -> R.string.sunrise
+            "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
+            "asr" -> R.string.asr
+            "maghrib" -> R.string.maghrib
+            "isha" -> R.string.isha
+            else -> R.string.fajr
+        }
+        return context.getString(resourceId)
+    }
+
+    private fun duhurOrJumah(datetime: ZonedDateTime?): Boolean {
+        // if the current day is 5 (Friday) return true
+        return ZonedDateTime.now(datetime?.zone).dayOfWeek.value == 5
     }
 
 
