@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import HomeWidgetGlanceStateDefinition
 import HomeWidgetGlanceState
+import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.darkColorScheme
@@ -70,20 +71,15 @@ class NedaaWidget : GlanceAppWidget() {
         private val DarkColors = darkColorScheme(
             primary = Color(0xFFCBB279),
             secondary = Color(0xFFEEEEEE),
-            tertiary = Color(0xFF537188),
-            onTertiary = Color(0xFFCBB279),
+            tertiary = Color(0xFFE1D4BB),
             background = Color(0xFF537188),
-            tertiaryContainer = Color(0xFFE1D4BB),
-
-            )
+        )
 
         private val LightColors = lightColorScheme(
-            primary = Color(0xFFCBB279),
-            secondary = Color(0xFFEEEEEE),
-            tertiary = Color(0xFFCBB279),
-            onTertiary = Color(0xFFEEEEEE),
-            background = Color(0xFFE1D4BB),
-            tertiaryContainer = Color(0xFF537188),
+            primary = Color(0xFF537188),
+            secondary = Color(0xFFCBB279),
+            tertiary = Color(0xFFE1D4BB),
+            background = Color(0xFFEEEEEE),
         )
 
         val colors = androidx.glance.material3.ColorProviders(
@@ -148,15 +144,24 @@ class NedaaWidget : GlanceAppWidget() {
         val prevPrayerName = prevPrayer.value?.name
         val prevPrayerTime = prevPrayer.value?.getFormattedTime()
 
+        val isDark = isSystemInDarkTheme(context)
+
+        println("isDark $isDark")
 
         Content(
             context,
             prevPrayerName ?: "",
             prevPrayerTime ?: "",
             nextPrayerName ?: "",
-            nextPrayerTime ?: ""
+            nextPrayerTime ?: "",
+            isDark
         )
     }
+
+    fun isSystemInDarkTheme(context: Context): Boolean {
+        return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    }
+
 
     @Composable
     fun Content(
@@ -164,8 +169,11 @@ class NedaaWidget : GlanceAppWidget() {
         prevPrayerName: String,
         prevPrayerTime: String,
         nextPrayerName: String,
-        nextPrayerTime: String
+        nextPrayerTime: String,
+        isDark: Boolean
     ) {
+
+        val prevColor = if (isDark) GlanceTheme.colors.background else GlanceTheme.colors.primary
         Column(
             modifier = GlanceModifier.background(GlanceTheme.colors.background).fillMaxSize()
                 .clickable(onClick = actionStartActivity<MainActivity>(context)),
@@ -173,7 +181,7 @@ class NedaaWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Box(
-                modifier = GlanceModifier.background(GlanceTheme.colors.tertiaryContainer)
+                modifier = GlanceModifier.background(GlanceTheme.colors.tertiary)
                     .cornerRadius(16.dp)
             ) {
 
@@ -185,12 +193,12 @@ class NedaaWidget : GlanceAppWidget() {
                     Text(
                         text = prevPrayerName,
                         modifier = GlanceModifier.padding(bottom = 4.dp),
-                        style = TextStyle(color = GlanceTheme.colors.tertiary)
+                        style = TextStyle(color = prevColor)
                     )
                     Text(
                         text = prevPrayerTime,
                         modifier = GlanceModifier.padding(bottom = 4.dp),
-                        style = TextStyle(color = GlanceTheme.colors.onTertiary)
+                        style = TextStyle(color = prevColor)
                     )
                 }
             }
@@ -203,7 +211,7 @@ class NedaaWidget : GlanceAppWidget() {
                 text = nextPrayerName, style = TextStyle(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GlanceTheme.colors.tertiaryContainer
+                    color = GlanceTheme.colors.primary
                 ), modifier = GlanceModifier.padding(bottom = 4.dp)
             )
             Text(
@@ -217,6 +225,8 @@ class NedaaWidget : GlanceAppWidget() {
             )
         }
     }
+
+
 }
 
 class InteractiveAction : ActionCallback {
