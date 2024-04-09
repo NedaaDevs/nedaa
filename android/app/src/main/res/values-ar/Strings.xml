@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">نداء</string>
+  <string name="fajr">الفجر</string>
+  <string name="dhuhr">الظهر</string>
+  <string name="asr">العصر</string>
+  <string name="maghrib">المغرب</string>
+  <string name="isha">العشاء</string>
+  <string name="jumaa">الجمعة</string>
+  <string nam="sunrise">الشروق</string>
 </resources>

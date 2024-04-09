@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">Nedaa</string>
+  <string name="fajr">Fajr</string>
+  <string name="dhuhr">Dhuhr</string>
+  <string name="asr">Asr</string>
+  <string name="maghrib">Maghrib</string>
+  <string name="isha">Isha</string>
+  <string name="jumaa">Jumu’ah</string>
+  <string name="sunrise">Sunrise</string>
 </resources>
