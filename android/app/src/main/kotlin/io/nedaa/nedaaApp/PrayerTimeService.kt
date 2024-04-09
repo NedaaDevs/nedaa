@@ -7,10 +7,14 @@ import java.time.format.DateTimeFormatter
 import org.json.JSONObject
 import java.time.Duration
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 data class Prayer(val name: String, val dateTime: ZonedDateTime, val timezone: String) {
     fun getFormattedTime(): String {
-        return dateTime.format(DateTimeFormatter.ofPattern("h:mm a"))
+        val locale = Locale.getDefault()
+        val formatter = DateTimeFormatter.ofPattern("h:mm a", locale)
+            .withLocale(locale)
+        return formatter.format(dateTime)
     }
 }
 
