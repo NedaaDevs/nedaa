@@ -4,6 +4,10 @@ import android.content.Context
 import android.net.Uri
 import HomeWidgetGlanceStateDefinition
 import HomeWidgetGlanceState
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -104,7 +108,6 @@ class NedaaWidget : GlanceAppWidget() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     private fun GlanceContent(
         context: Context,
@@ -126,17 +129,19 @@ class NedaaWidget : GlanceAppWidget() {
             }
             nextPrayer.value = both.first
             prevPrayer.value = both.second
-            val durationTillNextPrayer = prayerService.durationUntilNextPrayer(nextPrayer.value?.dateTime) ?: Duration.ofMinutes(15)
-           
+            val durationTillNextPrayer =
+                prayerService.durationUntilNextPrayer(nextPrayer.value?.dateTime)
+
+            val apiLevel = Build.VERSION.SDK_INT
+            println("Current API Level is: $apiLevel")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                initWorkManager(context, durationTillNextPrayer)
+            } else {
+                initAlarmManager(context, durationTillNextPrayer)
+            }
             // Create unique periodic work to keep this widget updated at a regular interval.
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                "nedaaWidgetWorker",
-                ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicWorkRequest.Builder(
-                    NedaaWidgetWorker::class.java,
-                    durationTillNextPrayer
-                ).setInitialDelay(Duration.ofMinutes(15)).build()
-            )
+
         }
 
         val nextPrayerName = nextPrayer.value?.name
@@ -157,7 +162,7 @@ class NedaaWidget : GlanceAppWidget() {
         )
     }
 
-    fun isSystemInDarkTheme(context: Context): Boolean {
+    private fun isSystemInDarkTheme(context: Context): Boolean {
         return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     }
 
@@ -192,12 +197,18 @@ class NedaaWidget : GlanceAppWidget() {
                     Text(
                         text = prevPrayerName,
                         modifier = GlanceModifier.padding(bottom = 4.dp),
-                        style = TextStyle(color = prevColor)
+                        style = TextStyle(
+                            color = prevColor,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     Text(
                         text = prevPrayerTime,
                         modifier = GlanceModifier.padding(bottom = 4.dp),
-                        style = TextStyle(color = prevColor)
+                        style = TextStyle(
+                            color = prevColor,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 }
             }
@@ -225,7 +236,36 @@ class NedaaWidget : GlanceAppWidget() {
         }
     }
 
+}
 
+class AlarmReceiver : BroadcastReceiver() {
+    override fun onReceive(p0: Context?, p1: Intent?) {
+        TODO("Not yet implemented")
+    }
+
+
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+suspend fun initWorkManager(context: Context, durationTillNextPrayer: Duration) {
+    println("init work manager")
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "nedaaWidgetWorker",
+        ExistingPeriodicWorkPolicy.KEEP,
+        PeriodicWorkRequest.Builder(
+            NedaaWidgetWorker::class.java,
+            durationTillNextPrayer
+        ).setInitialDelay(Duration.ofMinutes(15)).build()
+    )
+}
+
+suspend fun initAlarmManager(context: Context, durationTillNextPrayer: Duration) {
+    // Use AlarmManager for API less than 26
+    println("init alarm manager")
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val intent = Intent(context, AlarmReceiver::class.java)
+    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+    alarmManager.set(AlarmManager.RTC_WAKEUP, durationTillNextPrayer.toMillis(), pendingIntent)
 }
 
 class InteractiveAction : ActionCallback {
