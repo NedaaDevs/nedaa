@@ -32,7 +32,7 @@ dependencies:
 
   flutter_localizations: 
     sdk: flutter
-  intl: ^0.18.0
+  intl: ^0.19.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -45,7 +45,6 @@ dependencies:
   geocoding: ^3.0.0
   audioplayers: ^6.0.0
   flex_color_scheme: ^7.3.1
-  device_preview: ^1.0.0
   auto_size_text: ^3.0.0
   flutter_bloc: ^8.1.4
   shared_preferences: ^2.2.2
@@ -68,7 +67,7 @@ dependencies:
   package_info_plus: ^4.2.0
   device_info_plus: ^10.0.1
   app_group_directory: ^2.0.0
-  home_widget: ^0.5.0
+  home_widget: ^0.6.0
 
 
 dev_dependencies:

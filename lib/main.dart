@@ -18,7 +18,6 @@ import 'package:nedaa/modules/settings/models/calculation_method.dart';
 import 'package:nedaa/modules/settings/models/user_location.dart';
 import 'package:nedaa/modules/settings/repositories/settings_repository.dart';
 import 'package:nedaa/screens/main_screen.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -167,23 +166,17 @@ void main() async {
       options.enableAppLifecycleBreadcrumbs = true;
     }, appRunner: () async {
       runApp(
-        DevicePreview(
-          enabled: false,
-          builder: (context) => MyApp(
-            settingsRepository: settingsRepository,
-            prayerTimesRepository: prayerTimesRepository,
-          ),
+        MyApp(
+          settingsRepository: settingsRepository,
+          prayerTimesRepository: prayerTimesRepository,
         ),
       );
     });
   } else {
     runApp(
-      DevicePreview(
-        enabled: false,
-        builder: (context) => MyApp(
-          settingsRepository: settingsRepository,
-          prayerTimesRepository: prayerTimesRepository,
-        ),
+      MyApp(
+        settingsRepository: settingsRepository,
+        prayerTimesRepository: prayerTimesRepository,
       ),
     );
   }
@@ -267,7 +260,6 @@ class MyApp extends StatelessWidget {
                 return AppLocalizations.of(context)!.appTitle;
               },
               locale: settingsState.appLanguage,
-              builder: DevicePreview.appBuilder,
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
