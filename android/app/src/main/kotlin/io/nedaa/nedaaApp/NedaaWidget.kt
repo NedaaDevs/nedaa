@@ -1,16 +1,17 @@
 package io.nedaa.nedaaApp
 
-import android.content.Context
-import android.net.Uri
-import HomeWidgetGlanceStateDefinition
 import HomeWidgetGlanceState
+import HomeWidgetGlanceStateDefinition
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
-import androidx.annotation.RequiresApi
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -42,11 +43,6 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequest
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.actionStartActivity
 import kotlinx.coroutines.Dispatchers
@@ -54,20 +50,6 @@ import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.ZonedDateTime
 
-
-class NedaaWidgetWorker(
-    appContext: Context,
-    params: WorkerParameters
-) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result {
-        NedaaWidget().apply {
-            applicationContext
-            // Call update/updateAll in case a Worker for the widget is not currently running.
-            updateAll(applicationContext)
-        }
-        return Result.success()
-    }
-}
 
 class NedaaWidget : GlanceAppWidget() {
     private lateinit var prayerService: PrayerTimeService
@@ -97,7 +79,6 @@ class NedaaWidget : GlanceAppWidget() {
      */
     override val stateDefinition = HomeWidgetGlanceStateDefinition()
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun provideGlance(context: Context, id: GlanceId) {
 
         prayerService = PrayerTimeService(context)
@@ -133,15 +114,8 @@ class NedaaWidget : GlanceAppWidget() {
             val durationTillNextPrayer =
                 prayerService.durationUntilNextPrayer(nextPrayer.value?.dateTime)
 
-            val apiLevel = Build.VERSION.SDK_INT
-            println("Current API Level is: $apiLevel")
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Create unique periodic work to keep this widget updated at a regular interval.
-                initWorkManager(context, durationTillNextPrayer)
-            } else {
-                initAlarmManager(context, durationTillNextPrayer)
-            }
+//            initAlarmManager(context, Duration.ofMillis(10000))
+            initAlarmManager(context, durationTillNextPrayer)
         }
 
         val nextPrayerName =
@@ -215,6 +189,14 @@ class NedaaWidget : GlanceAppWidget() {
 
                     ) {
                     Text(
+                        text = "${System.currentTimeMillis()}",
+                        modifier = GlanceModifier.padding(bottom = 4.dp),
+                        style = TextStyle(
+                            color = prevColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Text(
                         text = prevPrayerName,
                         modifier = GlanceModifier.padding(bottom = 4.dp),
                         style = TextStyle(
@@ -259,33 +241,45 @@ class NedaaWidget : GlanceAppWidget() {
 }
 
 class AlarmReceiver : BroadcastReceiver() {
-    override fun onReceive(p0: Context?, p1: Intent?) {
-        TODO("Not yet implemented")
+    override fun onReceive(context: Context, intent: Intent?) {
+        Log.d("AlarmReceiver", "onReceive: updating widget")
+        suspend {
+            NedaaWidget().apply {
+                // Call update/updateAll in case a Worker for the widget is not currently running.
+                updateAll(context)
+            }
+        }
     }
-
-
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-suspend fun initWorkManager(context: Context, durationTillNextPrayer: Duration) {
-    println("init work manager")
-    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-        "nedaaWidgetWorker",
-        ExistingPeriodicWorkPolicy.KEEP,
-        PeriodicWorkRequest.Builder(
-            NedaaWidgetWorker::class.java,
-            durationTillNextPrayer
-        ).setInitialDelay(Duration.ofMinutes(15)).build()
-    )
-}
-
-suspend fun initAlarmManager(context: Context, durationTillNextPrayer: Duration) {
-    // Use AlarmManager for API less than 26
-    println("init alarm manager")
+fun initAlarmManager(context: Context, durationTillNextPrayer: Duration) {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     val intent = Intent(context, AlarmReceiver::class.java)
-    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-    alarmManager.set(AlarmManager.RTC_WAKEUP, durationTillNextPrayer.toMillis(), pendingIntent)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT + PendingIntent.FLAG_MUTABLE
+    )
+
+    val timeToWake = System.currentTimeMillis() + durationTillNextPrayer.toMillis();
+
+    Log.d("Alarm", "initAlarmManager: waking up at $timeToWake")
+    val sdkInt = Build.VERSION.SDK_INT
+
+    if (sdkInt < Build.VERSION_CODES.KITKAT) {
+        alarmManager.set(AlarmManager.RTC_WAKEUP, timeToWake, pendingIntent);
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeToWake, pendingIntent);
+    } else {
+        // show toast
+        Toast.makeText(
+            context,
+            "Can't setup widget update alarm, please report this",
+            Toast.LENGTH_SHORT
+        ).show()
+        throw Exception("Can't use exact alarm manager");
+    }
 }
 
 class InteractiveAction : ActionCallback {
