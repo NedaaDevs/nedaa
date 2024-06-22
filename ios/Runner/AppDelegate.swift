@@ -10,8 +10,13 @@ import workmanager
   ) -> Bool {
   GeneratedPluginRegistrant.register(with: self)
   
-    UIApplication.shared.setMinimumBackgroundFetchInterval(TimeInterval(60*15))
-    WorkmanagerPlugin.registerTask(withIdentifier: "io.nedaa.schedule")
+    // Just like we implemented for Android, we have set up registerPeriodicTask to run every 2 days on iOS as well.
+    WorkmanagerPlugin.setPluginRegistrantCallback { registry in
+            GeneratedPluginRegistrant.register(with: registry)
+        }
+        
+    WorkmanagerPlugin.registerPeriodicTask(withIdentifier: "io.nedaa.schedule",  frequency: NSNumber(value: 172800))    
+    
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
