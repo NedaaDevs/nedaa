@@ -19,6 +19,7 @@ import 'package:nedaa/utils/helper.dart';
 import 'package:nedaa/widgets/general_dialog.dart';
 import 'package:nedaa/widgets/options_dialog.dart';
 import 'package:open_mail_app/open_mail_app.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -332,6 +333,36 @@ class _SettingsState extends State<Settings> {
                       customAlert(
                           context, t.restart, t.restartAppToApplyChanges,
                           showOk: false, showCancel: false);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            CustomSettingsSection(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.alarm),
+                    onPressed: () async {
+                      var status = await Permission.scheduleExactAlarm.status;
+
+                      if (status == PermissionStatus.denied) {
+                        await Permission.scheduleExactAlarm
+                            .onDeniedCallback(() {
+                          debugPrint("onDeniedCallback");
+                        }).onGrantedCallback(() {
+                          debugPrint("onGrantedCallback");
+                        }).onPermanentlyDeniedCallback(() {
+                          debugPrint("onPermanentlyDeniedCallback");
+                        }).onRestrictedCallback(() {
+                          debugPrint("onRestrictedCallback");
+                        }).onLimitedCallback(() {
+                          debugPrint("onLimitedCallback");
+                        }).onProvisionalCallback(() {
+                          debugPrint("onProvisionalCallback");
+                        }).request();
+                      }
                     },
                   ),
                 ],
