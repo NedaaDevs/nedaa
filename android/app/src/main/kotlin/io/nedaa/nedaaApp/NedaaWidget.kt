@@ -248,7 +248,7 @@ class NedaaWidget : GlanceAppWidget() {
 
     private fun scheduleWidgetUpdate(context: Context, durationTillNextPrayer: Duration) {
         val currentTimeMillis = System.currentTimeMillis()
-        val widgetUpdateWork = OneTimeWorkRequest.Builder(PrayerUpdateWorker::class.java)
+        val widgetUpdateWork = OneTimeWorkRequest.Builder(NedaaWidgetWorker::class.java)
             .setInitialDelay(
                 durationTillNextPrayer.toMillis(),
                 java.util.concurrent.TimeUnit.MILLISECONDS
@@ -264,7 +264,7 @@ class NedaaWidget : GlanceAppWidget() {
 
 
         // DEBUG: Observe the work status
-        WorkManager.getInstance(context).getWorkInfosByTagLiveData("WidgetUpdateWork")
+        WorkManager.getInstance(context).getWorkInfosByTagLiveData("NedaaWidgetWorker")
             .observeForever { workInfos ->
                 if (workInfos != null && workInfos.isNotEmpty()) {
                     val workInfo = workInfos[0]
@@ -277,7 +277,7 @@ class NedaaWidget : GlanceAppWidget() {
     }
 }
 
-class PrayerUpdateWorker(
+class NedaaWidgetWorker(
     context: Context,
     workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
@@ -286,18 +286,18 @@ class PrayerUpdateWorker(
         try {
             NedaaWidget().apply {
                 updateAll(applicationContext)
-                Log.d("PrayerUpdateWorker", "Widget updated")
+                Log.d("NedaaWidgetWorker", "Widget updated")
             }
             return Result.success()
         } catch (e: Exception) {
-            Log.e("PrayerUpdateWorker", "Error updating widget", e)
+            Log.e("NedaaWidgetWorker", "Error updating widget", e)
             return Result.failure()
         }
     }
 }
 
 
-class InteractiveAction : ActionCallback {
+class NedaaInteractiveAction : ActionCallback {
     override suspend fun onAction(
         context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
