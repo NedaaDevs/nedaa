@@ -131,7 +131,7 @@ class PrayerTimeService(private val context: Context) {
     }
 
 
-    private fun getTodayPrayers(): PrayerTimes? {
+    public fun getTodayPrayers(): PrayerTimes? {
         val timezone = getTimezone() ?: return null
         val today = getDateForTimezone(timezone)
         return getPrayersForDate(today)
@@ -143,7 +143,7 @@ class PrayerTimeService(private val context: Context) {
         return getPrayersForDate(yesterday)
     }
 
-    private fun getTomorrowPrayers(): PrayerTimes? {
+    public fun getTomorrowPrayers(): PrayerTimes? {
         val timezone = dbHelper.getTimezone() ?: return null
         val tomorrow = getDateForTimezone(timezone).plusDays(1)
         return getPrayersForDate(tomorrow)
