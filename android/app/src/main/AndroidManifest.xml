@@ -35,6 +35,18 @@
         android:resource="@xml/nedaa_widget" />
     </receiver>
 
+     <receiver
+      android:name=".AllPrayersWidgetReceiver"
+      android:label="All Prayers"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/nedaa_all_prayers_widget" />
+    </receiver>
+
     <!-- Don't delete the meta-data below. This is used by the Flutter tool to generate
     GeneratedPluginRegistrant.java -->
     <meta-data android:name="flutterEmbedding" android:value="2" />
