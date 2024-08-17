@@ -1,17 +1,12 @@
 package io.nedaa.nedaaApp
 
 
+import HomeWidgetGlanceState
 import HomeWidgetGlanceStateDefinition
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -28,44 +23,33 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.ActionCallback
-import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.height
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
-import es.antonborri.home_widget.actionStartActivity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.time.Duration
-import java.time.ZonedDateTime
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import androidx.annotation.RequiresApi
-import HomeWidgetGlanceState
-import java.text.SimpleDateFormat
-import java.util.Date
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
+import es.antonborri.home_widget.actionStartActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.time.Duration
+import java.time.ZonedDateTime
 import java.util.Locale
-import android.provider.Settings
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import androidx.glance.layout.Row
 
 
 class AllPrayersWidget : GlanceAppWidget() {
@@ -146,6 +130,25 @@ class AllPrayersWidget : GlanceAppWidget() {
         return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     }
 
+
+    private fun getPrayerName(context: Context, prayerName: String?, date: ZonedDateTime?): String {
+        val resourceId = when (prayerName) {
+            "fajr" -> R.string.fajr
+            "sunrise" -> R.string.sunrise
+            "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
+            "asr" -> R.string.asr
+            "maghrib" -> R.string.maghrib
+            "isha" -> R.string.isha
+            else -> R.string.fajr
+        }
+        return context.getString(resourceId)
+    }
+    private fun duhurOrJumah(datetime: ZonedDateTime?): Boolean {
+        // if the current day is 5 (Friday) return true
+        return ZonedDateTime.now(datetime?.zone).dayOfWeek.value == 5
+    }
+
+
     @Composable
     fun AllPrayersContent(
         context: Context,
@@ -173,27 +176,36 @@ class AllPrayersWidget : GlanceAppWidget() {
                 val rowBackgroundColor = if (isNext) highlightedBackgroundColor else backgroundColor
 
                 Row(
-                    modifier = GlanceModifier.background(rowBackgroundColor)
-                        .padding(8.dp)
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .background(rowBackgroundColor)
+                        .padding(8.dp),
                 ) {
                     Text(
-                        text = prayer.name.capitalize(),
+                        text = getPrayerName(context, prayer.name, prayer.dateTime).replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+                        },
                         style = TextStyle(
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Normal,
                             color = nextColor
                         ),
                         modifier = GlanceModifier.padding(end = 8.dp)
                     )
+
+                    Spacer(modifier = GlanceModifier.defaultWeight()) // This Spacer will push the next Text to the end
+
                     Text(
                         text = prayer.getFormattedTime(),
                         style = TextStyle(
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Normal,
                             color = nextColor
                         )
                     )
                 }
+
+
             }
         }
     }
@@ -234,7 +246,7 @@ class AllPrayersWidgetWorker(
 
     override suspend fun doWork(): Result {
         try {
-            NedaaWidget().apply {
+            AllPrayersWidget().apply {
                 updateAll(applicationContext)
                 Log.d("AllPrayersWidgetWorker", "Widget updated")
             }
