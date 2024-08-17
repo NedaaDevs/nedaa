@@ -13,4 +13,7 @@ const List<String> iOSWidgetNames = [
   'PrayerCountdownLockScreenWidget',
 ];
 
-const String androidWidgetName = 'NedaaWidget';
+const List<String> androidWidgetNames = [
+  'NedaaWidget',
+  'AllPrayersWidget'
+];

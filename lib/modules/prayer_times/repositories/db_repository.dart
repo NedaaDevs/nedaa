@@ -217,8 +217,10 @@ class DBRepository {
   }
 
   Future _updateAndroidWidgets() async {
-    await HomeWidget.updateWidget(
-      name: androidWidgetName,
-    );
+    for (var name in androidWidgetNames) {
+      await HomeWidget.updateWidget(
+        name: name,
+      );
+    }
   }
 }
