@@ -68,7 +68,7 @@ dependencies:
   package_info_plus: ^4.2.0
   device_info_plus: ^10.0.1
   app_group_directory: ^2.0.0
-  home_widget: ^0.6.0
+  home_widget: ^0.7.0
   permission_handler: ^11.3.1
 
 
