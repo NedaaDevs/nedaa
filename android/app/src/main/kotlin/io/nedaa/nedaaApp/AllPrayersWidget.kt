@@ -18,6 +18,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
@@ -27,6 +28,7 @@ import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.text.FontWeight
@@ -42,7 +44,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.ZonedDateTime
-import java.util.Locale
 
 
 class AllPrayersWidget : GlanceAppWidget() {
@@ -158,59 +159,54 @@ class AllPrayersWidget : GlanceAppWidget() {
         nextPrayer: Prayer?,
         isDark: Boolean
     ) {
-        val primaryColor = if (isDark) GlanceTheme.colors.primary else GlanceTheme.colors.secondary
-        val secondaryColor =
-            if (isDark) GlanceTheme.colors.secondary else GlanceTheme.colors.primary
-        val backgroundColor =
-            if (isDark) GlanceTheme.colors.background else GlanceTheme.colors.background
-        val highlightedBackgroundColor =
-            if (isDark) GlanceTheme.colors.tertiary else GlanceTheme.colors.background
-
+        val colors = ColorScheme.colors
         Column(
-            modifier = GlanceModifier.background(backgroundColor).fillMaxSize(),
+            modifier = GlanceModifier
+                .background(colors.background)
+                .fillMaxSize()
+                .padding(16.dp),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-            verticalAlignment = Alignment.Vertical.CenterVertically
+            verticalAlignment = Alignment.Vertical.Top
         ) {
-            prayers.forEach { prayer ->
+            prayers.forEachIndexed { index, prayer ->
                 val isNext = prayer.name == nextPrayer?.name
-                val nextColor = if (isNext) secondaryColor else primaryColor
-                val rowBackgroundColor = if (isNext) highlightedBackgroundColor else backgroundColor
+                val rowBackgroundColor = if (isNext) colors.tertiary else colors.background
+                val textColor = if (isNext) colors.primary else colors.primary
+                val timeColor = if (index == 0) colors.primary else colors.secondary
+                val nextTextColor = if (isNext && isDark) colors.background else textColor
+                val nextTimeColor = if (isNext && isDark) colors.background else textColor
 
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .background(rowBackgroundColor)
-                        .padding(8.dp),
+                        .padding(vertical = 6.dp)
+                        .cornerRadius(if (isNext) 16.dp else 0.dp),
+                    verticalAlignment = Alignment.Vertical.CenterVertically
                 ) {
                     Text(
-                        text = getTranslation(
-                            context,
-                            prayer.name,
-                            prayer.dateTime
-                        ).replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
-                        },
+                        text = getTranslation(context, prayer.name, prayer.dateTime),
                         style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = nextColor
+                            fontSize = if (index == 0) 18.sp else 16.sp,
+                            fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
+                            color = nextTextColor
                         ),
-                        modifier = GlanceModifier.padding(end = 8.dp)
+                        modifier = GlanceModifier.defaultWeight()
                     )
-
-                    Spacer(modifier = GlanceModifier.defaultWeight())
 
                     Text(
                         text = prayer.getFormattedTime(),
                         style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = nextColor
+                            fontSize = if (index == 0) 18.sp else 16.sp,
+                            fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
+                            color = nextTimeColor
                         )
                     )
                 }
 
-
+                if (index == 0) {
+                    Spacer(modifier = GlanceModifier.height(8.dp))
+                }
             }
         }
     }
