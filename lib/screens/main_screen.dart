@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:nedaa/modules/prayer_times/bloc/prayer_times_bloc.dart';
+import 'package:nedaa/modules/prayer_times/screens/schedule_exact_permission.dart';
 import 'package:nedaa/modules/settings/bloc/settings_bloc.dart';
 import 'package:nedaa/modules/settings/bloc/user_settings_bloc.dart';
 import 'package:nedaa/modules/settings/repositories/settings_repository.dart';
@@ -18,6 +20,27 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkForWidgetLaunch();
+    HomeWidget.widgetClicked.listen(_launchedFromWidget);
+  }
+
+  void _checkForWidgetLaunch() {
+    HomeWidget.initiallyLaunchedFromHomeWidget().then(_launchedFromWidget);
+  }
+
+  void _launchedFromWidget(Uri? uri) {
+    if (uri != null && uri.host == "requestpermission") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => const ScheduleExactPermission()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var t = AppLocalizations.of(context);
@@ -91,3 +114,4 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
+// glance-action:/CALLBACK?appWidgetId=81&viewId=5&viewSize=89.90476.dp%20x%2089.90476.dp&extraData=
