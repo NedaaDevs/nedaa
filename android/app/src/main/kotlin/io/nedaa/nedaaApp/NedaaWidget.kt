@@ -18,7 +18,6 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.cornerRadius
@@ -32,22 +31,21 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
-import es.antonborri.home_widget.actionStartActivity
+import io.nedaa.nedaaApp.WidgetComposables.DisplayErrorMsg
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.ZonedDateTime
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
-import io.nedaa.nedaaApp.WidgetComposables.DisplayErrorMsg
 
 
 class NedaaWidget : GlanceAppWidget() {
@@ -76,7 +74,7 @@ class NedaaWidget : GlanceAppWidget() {
     /**
      * Needed for Updating
      */
-     override val stateDefinition: GlanceStateDefinition<*>?
+    override val stateDefinition: GlanceStateDefinition<*>
         get() = HomeWidgetGlanceStateDefinition()
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -176,8 +174,7 @@ class NedaaWidget : GlanceAppWidget() {
     ) {
         val prevColor = if (isDark) GlanceTheme.colors.background else GlanceTheme.colors.primary
         Column(
-            modifier = GlanceModifier.background(GlanceTheme.colors.background).fillMaxSize()
-                .clickable(onClick = actionStartActivity<MainActivity>(context)),
+            modifier = GlanceModifier.background(GlanceTheme.colors.background).fillMaxSize(),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
