@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:app_group_directory/app_group_directory.dart';
 import 'package:flutter/material.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:nedaa/constants/app_constans.dart';
 import 'package:nedaa/modules/prayer_times/models/prayer_times.dart';
+import 'package:nedaa/utils/helper.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:path/path.dart' as p;
@@ -199,28 +199,9 @@ class DBRepository {
 // Updates the widget after fetching prayer times
   Future _updateWidgets() async {
     try {
-      Platform.isIOS
-          ? await _updateiOSWidgets()
-          : await _updateAndroidWidgets();
+      Platform.isIOS ? await updateiOSWidgets() : await updateAndroidWidgets();
     } catch (e) {
       debugPrint(e.toString());
-    }
-  }
-
-  Future _updateiOSWidgets() async {
-    for (var name in iOSWidgetNames) {
-      await HomeWidget.updateWidget(
-        name: name,
-        iOSName: name,
-      );
-    }
-  }
-
-  Future _updateAndroidWidgets() async {
-    for (var name in androidWidgetNames) {
-      await HomeWidget.updateWidget(
-        name: name,
-      );
     }
   }
 }
