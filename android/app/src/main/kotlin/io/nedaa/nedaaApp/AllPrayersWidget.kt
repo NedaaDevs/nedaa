@@ -68,7 +68,7 @@ class AllPrayersWidget : GlanceAppWidget() {
         )
     }
 
-    override val stateDefinition: GlanceStateDefinition<*>?
+    override val stateDefinition: GlanceStateDefinition<*>
         get() = HomeWidgetGlanceStateDefinition()
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {

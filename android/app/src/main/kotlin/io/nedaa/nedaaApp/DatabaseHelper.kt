@@ -7,7 +7,8 @@ import android.database.sqlite.SQLiteOpenHelper
 import org.json.JSONObject
 
 // TODO: Better error handling(better?)
-class DatabaseHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class DatabaseHelper(context: Context) :
+    SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_VERSION = 1
