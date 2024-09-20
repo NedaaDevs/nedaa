@@ -14,6 +14,6 @@ const List<String> iOSWidgetNames = [
 ];
 
 const List<String> androidWidgetNames = [
-  'NedaaWidget',
-  'AllPrayersWidget'
+  'NedaaWidgetReceiver',
+  'AllPrayersWidgetReceiver'
 ];
