@@ -1,11 +1,9 @@
 package io.nedaa.nedaaApp
 
 
-import HomeWidgetGlanceState
 import HomeWidgetGlanceStateDefinition
 import android.content.Context
 import android.content.res.Configuration
-import android.net.Uri
 import android.util.Log
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -19,14 +17,10 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.action.ActionParameters
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -34,17 +28,16 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
+import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
-import es.antonborri.home_widget.actionStartActivity
+import io.nedaa.nedaaApp.WidgetComposables.DisplayErrorMsg
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Duration
@@ -75,14 +68,19 @@ class AllPrayersWidget : GlanceAppWidget() {
         )
     }
 
-    override val stateDefinition = HomeWidgetGlanceStateDefinition()
+    override val stateDefinition: GlanceStateDefinition<*>?
+        get() = HomeWidgetGlanceStateDefinition()
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         prayerService = PrayerTimeService(context)
 
         provideContent {
             GlanceTheme(colors = ColorScheme.colors) {
-                GlanceContent(context, currentState(), prayerService)
+                if (PermissionUtil.canScheduleExactAlarms(context)) {
+                    GlanceContent(context, prayerService)
+                } else {
+                    DisplayErrorMsg(context)
+                }
             }
         }
     }
@@ -90,7 +88,6 @@ class AllPrayersWidget : GlanceAppWidget() {
     @Composable
     private fun GlanceContent(
         context: Context,
-        currentState: HomeWidgetGlanceState,
         prayerService: PrayerTimeService
     ) {
         val prayers = remember { mutableStateOf<List<Prayer>>(emptyList()) }
@@ -131,18 +128,23 @@ class AllPrayersWidget : GlanceAppWidget() {
     }
 
 
-    private fun getPrayerName(context: Context, prayerName: String?, date: ZonedDateTime?): String {
-        val resourceId = when (prayerName) {
+    private fun getTranslation(context: Context, message: String, date: ZonedDateTime?): String {
+        val resourceId = when (message) {
             "fajr" -> R.string.fajr
             "sunrise" -> R.string.sunrise
             "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
             "asr" -> R.string.asr
             "maghrib" -> R.string.maghrib
             "isha" -> R.string.isha
-            else -> R.string.fajr
+            "enable_exact_alarm_permission_message" -> R.string.enable_exact_alarm_permission_message
+            "allow" -> R.string.allow
+            else -> {
+                R.string.empty
+            }
         }
         return context.getString(resourceId)
     }
+
     private fun duhurOrJumah(datetime: ZonedDateTime?): Boolean {
         // if the current day is 5 (Friday) return true
         return ZonedDateTime.now(datetime?.zone).dayOfWeek.value == 5
@@ -165,8 +167,7 @@ class AllPrayersWidget : GlanceAppWidget() {
             if (isDark) GlanceTheme.colors.tertiary else GlanceTheme.colors.background
 
         Column(
-            modifier = GlanceModifier.background(backgroundColor).fillMaxSize()
-                .clickable(onClick = actionStartActivity<MainActivity>(context)),
+            modifier = GlanceModifier.background(backgroundColor).fillMaxSize(),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
@@ -182,7 +183,11 @@ class AllPrayersWidget : GlanceAppWidget() {
                         .padding(8.dp),
                 ) {
                     Text(
-                        text = getPrayerName(context, prayer.name, prayer.dateTime).replaceFirstChar {
+                        text = getTranslation(
+                            context,
+                            prayer.name,
+                            prayer.dateTime
+                        ).replaceFirstChar {
                             if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
                         },
                         style = TextStyle(
@@ -193,7 +198,7 @@ class AllPrayersWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.padding(end = 8.dp)
                     )
 
-                    Spacer(modifier = GlanceModifier.defaultWeight()) // This Spacer will push the next Text to the end
+                    Spacer(modifier = GlanceModifier.defaultWeight())
 
                     Text(
                         text = prayer.getFormattedTime(),
@@ -225,19 +230,12 @@ class AllPrayersWidget : GlanceAppWidget() {
             widgetUpdateWork
         )
 
-        // DEBUG: Observe the work status
-        WorkManager.getInstance(context).getWorkInfosByTagLiveData("AllPrayersWidgetWorker")
-            .observeForever { workInfos ->
-                if (workInfos != null && workInfos.isNotEmpty()) {
-                    val workInfo = workInfos[0]
-                    Log.d("WorkManager", "Work status: ${workInfo.state}")
-                    if (workInfo.state == WorkInfo.State.FAILED || workInfo.state == WorkInfo.State.CANCELLED) {
-                        Log.e("WorkManager", "Work failed or was cancelled.")
-                    }
-                }
-            }
+
     }
+
+
 }
+
 
 class AllPrayersWidgetWorker(
     context: Context,
@@ -248,7 +246,6 @@ class AllPrayersWidgetWorker(
         try {
             AllPrayersWidget().apply {
                 updateAll(applicationContext)
-                Log.d("AllPrayersWidgetWorker", "Widget updated")
             }
             return Result.success()
         } catch (e: Exception) {
@@ -258,13 +255,3 @@ class AllPrayersWidgetWorker(
     }
 }
 
-class AllPrayersInteractiveAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context, glanceId: GlanceId, parameters: ActionParameters
-    ) {
-        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
-            context, Uri.parse("nedaaWidget://titleClicked")
-        )
-        backgroundIntent.send()
-    }
-}
