@@ -5,57 +5,82 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <application android:label="@string/app_name" android:name="${applicationName}"
-    android:icon="@mipmap/ic_launcher">
-    <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop"
-      android:theme="@style/LaunchTheme"
-      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-      android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
-      <!-- Specifies an Android theme to apply to this Activity as soon as the Android process has
-      started. This theme is visible to the user while the Flutter UI initializes. After that, this
-      theme continues to determine the Window background behind the Flutter UI. -->
-      <meta-data android:name="io.flutter.embedding.android.NormalTheme"
-        android:resource="@style/NormalTheme" />
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
-    </activity>
+    <application
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name">
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:exported="true"
+            android:hardwareAccelerated="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as the Android process has
+            started. This theme is visible to the user while the Flutter UI initializes. After that, this
+            theme continues to determine the Window background behind the Flutter UI. -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
 
-    <!-- Nedaa Widget -->
-    <receiver
-      android:name=".NedaaWidgetReceiver"
-      android:label="Nedaa"
-      android:exported="true">
-      <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-      </intent-filter>
-      <meta-data
-        android:name="android.appwidget.provider"
-        android:resource="@xml/nedaa_widget" />
-    </receiver>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.LAUNCH" />
+            </intent-filter>
+        </activity>
 
-     <receiver
-      android:name=".AllPrayersWidgetReceiver"
-      android:label="All Prayers"
-      android:exported="true">
-      <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-      </intent-filter>
-      <meta-data
-        android:name="android.appwidget.provider"
-        android:resource="@xml/nedaa_all_prayers_widget" />
-    </receiver>
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
+        <service
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
-    <!-- Don't delete the meta-data below. This is used by the Flutter tool to generate
-    GeneratedPluginRegistrant.java -->
-    <meta-data android:name="flutterEmbedding" android:value="2" />
-  </application>
-  <queries>
-    <!-- If your app opens https URLs -->
-    <intent>
-      <action android:name="android.intent.action.VIEW" />
-      <data android:scheme="https" />
-    </intent>
-  </queries>
+        <!-- Nedaa Widget -->
+        <receiver
+            android:name=".NedaaWidgetReceiver"
+            android:exported="true"
+            android:label="@string/next_previous_widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/nedaa_widget" />
+        </receiver>
+
+        <receiver
+            android:name=".AllPrayersWidgetReceiver"
+            android:exported="true"
+            android:label="@string/all_prayers_widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/nedaa_all_prayers_widget" />
+        </receiver>
+
+        <!-- Don't delete the meta-data below. This is used by the Flutter tool to generate
+        GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <queries>
+        <!-- If your app opens https URLs -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 </manifest>
