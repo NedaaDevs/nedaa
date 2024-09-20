@@ -1,16 +1,10 @@
 package io.nedaa.nedaaApp
 
 import HomeWidgetGlanceStateDefinition
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -31,7 +25,6 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -54,16 +47,7 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import androidx.annotation.RequiresApi
-import HomeWidgetGlanceState
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import android.provider.Settings
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import io.nedaa.nedaaApp.WidgetComposables.DisplayErrorMsg
 
 
 class NedaaWidget : GlanceAppWidget() {
@@ -92,7 +76,8 @@ class NedaaWidget : GlanceAppWidget() {
     /**
      * Needed for Updating
      */
-    override val stateDefinition = HomeWidgetGlanceStateDefinition()
+     override val stateDefinition: GlanceStateDefinition<*>?
+        get() = HomeWidgetGlanceStateDefinition()
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
 
@@ -100,7 +85,11 @@ class NedaaWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme(colors = ColorScheme.colors) {
-                GlanceContent(context, currentState(), prayerService)
+                if (PermissionUtil.canScheduleExactAlarms(context)) {
+                    GlanceContent(context, prayerService)
+                } else {
+                    DisplayErrorMsg(context)
+                }
             }
         }
     }
@@ -108,10 +97,8 @@ class NedaaWidget : GlanceAppWidget() {
     @Composable
     private fun GlanceContent(
         context: Context,
-        currentState: HomeWidgetGlanceState,
         prayerService: PrayerTimeService
     ) {
-        val data = currentState.preferences
         val nextPrayer = remember { mutableStateOf<Prayer?>(null) }
         val prevPrayer = remember { mutableStateOf<Prayer?>(null) }
 
@@ -247,7 +234,6 @@ class NedaaWidget : GlanceAppWidget() {
     }
 
     private fun scheduleWidgetUpdate(context: Context, durationTillNextPrayer: Duration) {
-        val currentTimeMillis = System.currentTimeMillis()
         val widgetUpdateWork = OneTimeWorkRequest.Builder(NedaaWidgetWorker::class.java)
             .setInitialDelay(
                 durationTillNextPrayer.toMillis(),
@@ -263,17 +249,6 @@ class NedaaWidget : GlanceAppWidget() {
         )
 
 
-        // DEBUG: Observe the work status
-        WorkManager.getInstance(context).getWorkInfosByTagLiveData("NedaaWidgetWorker")
-            .observeForever { workInfos ->
-                if (workInfos != null && workInfos.isNotEmpty()) {
-                    val workInfo = workInfos[0]
-                    Log.d("WorkManager", "Work status: ${workInfo.state}")
-                    if (workInfo.state == WorkInfo.State.FAILED || workInfo.state == WorkInfo.State.CANCELLED) {
-                        Log.e("WorkManager", "Work failed or was cancelled.")
-                    }
-                }
-            }
     }
 }
 
