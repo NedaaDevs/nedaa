@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:app_group_directory/app_group_directory.dart';
-import 'package:home_widget/home_widget.dart';
+import 'package:flutter/material.dart';
 import 'package:nedaa/constants/app_constans.dart';
 import 'package:nedaa/modules/prayer_times/models/prayer_times.dart';
+import 'package:nedaa/utils/helper.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:path/path.dart' as p;
@@ -195,18 +196,12 @@ class DBRepository {
     }
   }
 
-// Updates the widget after fetch parayer times
+// Updates the widget after fetching prayer times
   Future _updateWidgets() async {
-    // FIXME: currently we only have a widget for iOS
-    // so this will throw an exception on Android
-    if (!Platform.isIOS) return;
-
-    for (var name in iOSWidgetNames) {
-      await HomeWidget.updateWidget(
-        name: name,
-        iOSName: name,
-        androidName: 'NedaaWidget',
-      );
+    try {
+      Platform.isIOS ? await updateiOSWidgets() : await updateAndroidWidgets();
+    } catch (e) {
+      debugPrint(e.toString());
     }
   }
 }

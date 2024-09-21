@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="app_name">نداء</string>
+    <string name="app_name">نداء</string>
+    <string name="fajr">الفجر</string>
+    <string name="dhuhr">الظهر</string>
+    <string name="asr">العصر</string>
+    <string name="maghrib">المغرب</string>
+    <string name="isha">العشاء</string>
+    <string name="jumaa">الجمعة</string>
+    <string name="sunrise">الشروق</string>
+    <string name="enable_exact_alarm_permission_message">لتحديث الواجهة المصغرة في الوقت المناسب، يحتاج تطبيق نداء إلى السماح بإذن \n جدولة التنبيهات الدقيقة.\nيرجى النقر على الزر أدناه للسماح بذلك.</string>
+    <string name="allow">سماح</string>
+    <string name="empty"></string>
+    <string name="next_previous_widget">الصلاة القادمة/السابقة</string>
+    <string name="all_prayers_widget">جميع الصلوات لليوم</string>
 </resources>

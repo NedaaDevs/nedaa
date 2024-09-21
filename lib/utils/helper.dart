@@ -1,6 +1,8 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:nedaa/constants/app_constans.dart';
 import 'package:nedaa/constants/default_timezone_calculation_method.dart';
 import 'package:nedaa/modules/prayer_times/models/prayer_times.dart';
 import 'package:nedaa/modules/settings/models/calculation_method.dart';
@@ -146,4 +148,19 @@ String resolveDeviceLocale() {
     locale = locale.split('_')[0];
   }
   return locale;
+}
+
+Future updateiOSWidgets() async {
+  for (var name in iOSWidgetNames) {
+    await HomeWidget.updateWidget(
+      name: name,
+      iOSName: name,
+    );
+  }
+}
+
+Future updateAndroidWidgets() async {
+  for (var name in androidWidgetNames) {
+    await HomeWidget.updateWidget(name: name, androidName: name);
+  }
 }

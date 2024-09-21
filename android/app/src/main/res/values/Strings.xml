@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="app_name">Nedaa</string>
+    <string name="app_name">Nedaa</string>
+    <string name="fajr">Fajr</string>
+    <string name="dhuhr">Dhuhr</string>
+    <string name="asr">Asr</string>
+    <string name="maghrib">Maghrib</string>
+    <string name="isha">Isha</string>
+    <string name="jumaa">Jumu’ah</string>
+    <string name="sunrise">Sunrise</string>
+    <string name="enable_exact_alarm_permission_message">To ensure timely widget updates, Nedaa needs the Schedule Exact Alarms permission to be allowed.\nPlease click the button below to allow it.</string>
+    <string name="allow">Allow</string>
+    <string name="empty"></string>,
+    <string name="next_previous_widget">Next/Previous Prayer</string>
+    <string name="all_prayers_widget">All Prayers for today</string>
 </resources>

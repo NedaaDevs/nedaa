@@ -14,6 +14,7 @@ import 'package:nedaa/modules/settings/models/user_location.dart';
 import 'package:nedaa/modules/settings/repositories/settings_repository.dart';
 import 'package:nedaa/modules/settings/screens/location.dart';
 import 'package:nedaa/modules/settings/screens/notification.dart';
+import 'package:nedaa/modules/settings/screens/android_widget_pin_settings.dart';
 import 'package:nedaa/utils/arabic_digits.dart';
 import 'package:nedaa/utils/helper.dart';
 import 'package:nedaa/widgets/general_dialog.dart';
@@ -336,6 +337,9 @@ class _SettingsState extends State<Settings> {
                   ),
                 ],
               ),
+            ),
+            const CustomSettingsSection(
+              child: WidgetPinSection(),
             ),
           ],
         ),
