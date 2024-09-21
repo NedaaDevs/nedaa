@@ -43,8 +43,10 @@
       }
     }
   },
+  "addToHomeScreen": "إضافة إلى الشاشة الرئيسية",
   "alertOn": "تنبيه",
   "allowNotifications": "السماح بالإشعارات",
+  "allPrayersWidget": "جميع الصلوات",
   "appTitle": "نِداء",
   "appVersion": "نسخة رقم",
   "asr": "العصر",
@@ -61,6 +63,7 @@
   "duhur": "الظهر",
   "enableIqamaNotification": " تنبيه الاقامة",
   "error": "خطأ",
+  "failedToPinWidget": "فشل في تثبيت االتطبيق المصغر : {error}",
   "fajr": "الفجر",
   "friday": "الجمعة",
   "getCurrentLocation": "تحديد الموقع الحالي",
@@ -81,6 +84,7 @@
   "maghrib": "المغرب",
   "minuteShortForm": "{minute} د",
   "monday": "الإثنين",
+  "nedaaWidget": "الصلاة القادمة/السابقة",
   "noMailAppFound": "لم يتم العثور على تطبيق بريد إلكتروني",
   "noPrayersTimesFound": "لم يتم العثور على مواعيد الصلاة",
   "notification": "الإشعارات",
@@ -88,6 +92,7 @@
   "openAppReminderContent": "يرجى فتح التطبيق للاستمرار في تلقي إشعارات",
   "openAppReminderTitle": "يرجى فتح التطبيق",
   "permissionGranted": "تم منح الإذن",
+  "pinWidget": "تثبيت االتطبيق المصغر ",
   "prayersAlerts": "تنبيهات الصلوات",
   "prayerTimeNotificationContent": " حان وقت دخول صلاة {prayerName}",
   "prayerTimeNotificationTitle": "صلاة {prayerName}",
@@ -101,6 +106,7 @@
   "saturday": "السبت",
   "scheduleExactAlarmDescription": "هذا الإذن مطلوب لتحديث دقيق لأوقات الصلاة.",
   "selectMailApp": "يرجى تحديد تطبيق بريد إلكتروني",
+  "selectWidget": "اختر االتطبيق المصغر (الويدجت)",
   "sendCrashReports": "إرسال تحليلات",
   "sendCrashReportsDescription": "نستخدم سجلات الأعطال لجمع بيانات الاستخدام المجهولة لمساعدتنا في تحسين التطبيق. لا يتم جمع أي معلومات شخصية. يمكنك تعطيله في أي وقت. لمزيد من المعلومات، يرجى زيارة سياسة الخصوصية الخاصة بنا.",
   "settings": "الإعدادات",
@@ -114,7 +120,9 @@
   "thursday": "الخميس",
   "tuesday": "الثلاثاء",
   "unableToLunchLink": "لا يمكن فتح الرابط",
+  "unknownWidget": "ويدجت غير معروف",
   "until": "حتى",
   "vibrate": "إهتزاز",
-  "wednesday": "الأربعاء"
+  "wednesday": "الأربعاء",
+  "widgetPinnedSuccessfully": "تم تثبيت الويدجت بنجاح!"
 }
