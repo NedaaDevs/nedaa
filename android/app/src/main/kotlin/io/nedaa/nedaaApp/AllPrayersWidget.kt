@@ -180,7 +180,7 @@ class AllPrayersWidget : GlanceAppWidget() {
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .background(rowBackgroundColor)
-                        .padding(vertical = 6.dp)
+                        .padding(vertical = 4.dp)
                         .cornerRadius(if (isNext) 16.dp else 0.dp),
                     verticalAlignment = Alignment.Vertical.CenterVertically
                 ) {
