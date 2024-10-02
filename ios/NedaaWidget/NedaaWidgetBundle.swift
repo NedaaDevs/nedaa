@@ -3,16 +3,32 @@ import SwiftUI
 
 let appGroupId = "group.io.nedaa.nedaaApp"
 
+
+
 @main
-struct NedaaWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        if #available(iOS 16.0, *) {
-            PrayerCountdownLockScreenWidget()
+struct NedaaWidgetBundle {
+    static func main() {
+        if #available(iOSApplicationExtension 16.0, *) {
+            WidgetsBundle16.main()
+        } else {
+            CommonWidgetsBundle.main()
         }
-        //        NedaaWidget()
+    }
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct WidgetsBundle16: WidgetBundle {
+    var body: some Widget {
+        PrayerCountdownLockScreenWidget()
         PrayerCountdownWidget()
         AllPrayersWidget()
-        //        NedaaWidgetLiveActivity()
-        
+    }
+}
+
+
+struct CommonWidgetsBundle: WidgetBundle {
+    var body: some Widget {
+        PrayerCountdownWidget()
+        AllPrayersWidget()
     }
 }

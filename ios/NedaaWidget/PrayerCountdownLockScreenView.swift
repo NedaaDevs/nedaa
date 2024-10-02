@@ -70,6 +70,7 @@ struct PrayerCountdownLockScreenView: View {
     }
     
 }
+
 @available(iOSApplicationExtension 16.0, *)
 struct RectangularView: View {
     var entry: CountdownLockScreenViewProvider.Entry
@@ -79,7 +80,7 @@ struct RectangularView: View {
             ZStack {
                 dataToShow(entry: entry, geometry: geometry, widgetFamily:  .accessoryCircular)
             }
-        }
+        }.widgetBackground(Color.clear)
     }
 }
 
@@ -93,7 +94,7 @@ struct CircularView: View {
                 dataToShow(entry: entry, geometry: geometry, widgetFamily:  .accessoryCircular)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
+        }.widgetBackground(Color.clear)
     }
 }
 
@@ -152,6 +153,7 @@ struct PrayerCountdownLockScreenWidget: Widget {
         .configurationDisplayName(NSLocalizedString("nextPrayerLockScreenWidgetTitle", comment: "Lock screen widget title"))
         .description(NSLocalizedString("nextPrayerLockScreenWidgetDesc", comment: "Lock screen widget description"))
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        .contentMarginsDisabledIfAvailable()
         
     }
 }

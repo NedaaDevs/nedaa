@@ -165,7 +165,7 @@ class _CurrentLocationPickerState extends State<CurrentLocationPicker> {
             },
           ),
           const Divider(),
-          ButtonBar(
+          OverflowBar(
             alignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(

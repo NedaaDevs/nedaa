@@ -65,7 +65,7 @@ jobs:
       # Setup Xcode environment
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "15.0.1"
+          xcode-version: latest-stable
 
       # Setup the flutter environment.
       - uses: subosito/flutter-action@v2

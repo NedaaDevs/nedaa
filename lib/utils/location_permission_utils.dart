@@ -45,8 +45,11 @@ checkPermissionsUpdateCurrentLocation(
   var t = AppLocalizations.of(context);
   final key = GlobalKey();
   if (await checkLocationServiceEnabled() && await checkPermission(context)) {
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low);
+    LocationSettings locationSettings = const LocationSettings(
+      accuracy: LocationAccuracy.low,
+    );
+    Position position =
+        await Geolocator.getCurrentPosition(locationSettings: locationSettings);
     var mounted = isMounted();
     if (!mounted) return;
     await updateUserLocation(
