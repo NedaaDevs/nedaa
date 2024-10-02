@@ -104,7 +104,7 @@ struct AllPrayersView: View {
                 }
                 .padding([.top, .bottom], 5)
             }
-        }
+        }.widgetBackground(theme.backgroundColor)
     }
     
     func PrayerTimeText(prayer: PrayerData, fontHeight: CGFloat) -> some View {
@@ -140,6 +140,7 @@ struct AllPrayersWidget: Widget {
         .configurationDisplayName(NSLocalizedString("allPrayersWidgetTitle", comment: ""))
         .description(NSLocalizedString("allPrayersWidgetDesc", comment: ""))
         .supportedFamilies([.systemLarge , .systemMedium])
+        .contentMarginsDisabledIfAvailable()
         
     }
 }

@@ -126,7 +126,7 @@ struct PrayerCountdownView: View {
                     Spacer()
                 }
             }
-        }
+        }.widgetBackground(theme.backgroundColor)
     }
 }
 
@@ -156,7 +156,7 @@ struct PrayerCountdownWidget: Widget {
         .configurationDisplayName(NSLocalizedString("nextPreviousWidgetTitle", comment: "Next/Previous prayer title"))
         .description(NSLocalizedString("nextPreviousWidgetDesc", comment: "Next/Previous prayer description"))
         .supportedFamilies([.systemSmall])
-        
+        .contentMarginsDisabledIfAvailable()
     }
 }
 
