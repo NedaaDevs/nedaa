@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:nedaa/modules/notifications/notifications.dart';
-import 'package:nedaa/modules/settings/models/prayer_type.dart';
-import 'package:nedaa/modules/settings/screens/prayer_settings.dart';
+import 'package:nedaa/modules/settings/screens/notifications/athan/athan_settings.dart';
+import 'package:nedaa/modules/settings/screens/notifications/iqama/iqama_settings.dart';
 import 'package:nedaa/utils/location_permission_utils.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -18,19 +18,21 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   bool? permission;
 
-  AbstractSettingsTile _buildPrayerSettingsTile(
-      PrayerType prayerType, String prayerName) {
+  void _navigateToSettingsScreen(
+      BuildContext context, String title, Widget screen) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => screen,
+      ),
+    );
+  }
+
+  AbstractSettingsTile _buildSettingsTile(String title, Widget screen) {
     return SettingsTile(
-      title: Text(prayerName),
-      trailing: const Text(""),
-      onPressed: (context) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PrayerSettingsScreen(prayerType, prayerName),
-          ),
-        );
-      },
+      title: Text(title),
+      trailing: const Icon(Icons.chevron_right),
+      onPressed: (context) => _navigateToSettingsScreen(context, title, screen),
     );
   }
 
@@ -47,41 +49,41 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // loading
     if (permission == null) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
-    var t = AppLocalizations.of(context);
+    var t = AppLocalizations.of(context)!;
 
     SettingsSection settingsSection;
     if (Platform.isIOS && !permission!) {
-      settingsSection = SettingsSection(title: Text(t!.prayersAlerts), tiles: [
+      settingsSection = SettingsSection(title: Text(t.prayersAlerts), tiles: [
         SettingsTile.switchTile(
           initialValue: permission,
           onToggle: (value) {
-            // open settings
             openAppSettings().then((_) {
               Navigator.pop(context);
             });
           },
           title: Text(t.allowNotifications),
-          leading: const Icon(
-            Icons.notifications_off,
-          ),
+          leading: const Icon(Icons.notifications_off),
         )
       ]);
     } else {
       settingsSection = SettingsSection(
-        title: Text(t!.prayersAlerts),
+        title: Text(t.prayersAlerts),
         tiles: [
-          _buildPrayerSettingsTile(PrayerType.fajr, t.fajr),
-          _buildPrayerSettingsTile(PrayerType.duhur, t.duhur),
-          _buildPrayerSettingsTile(PrayerType.asr, t.asr),
-          _buildPrayerSettingsTile(PrayerType.maghrib, t.maghrib),
-          _buildPrayerSettingsTile(PrayerType.isha, t.isha),
+          _buildSettingsTile(
+            t.preAthanNotifications,
+            const PreAthanNotificationsScreen(),
+          ),
+          _buildSettingsTile(t.athanNotifications, const AthanSettings()),
+          _buildSettingsTile(
+            t.iqamaNotifications,
+            const IqamaSettings(),
+          ),
         ],
       );
     }
@@ -96,6 +98,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
           sections: [settingsSection],
         ),
       ),
+    );
+  }
+}
+
+//TODO: Implement
+class PreAthanNotificationsScreen extends StatelessWidget {
+  const PreAthanNotificationsScreen({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)!.preAthanNotifications)),
+      body: const Center(child: Text('Pre-Athan Settings')),
     );
   }
 }

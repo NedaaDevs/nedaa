@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nedaa/constants/ringtones.dart';
@@ -15,20 +14,21 @@ import 'package:nedaa/utils/arabic_digits.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../bloc/user_settings_bloc.dart';
+import 'package:nedaa/modules/settings/bloc/user_settings_bloc.dart';
 
-class PrayerSettingsScreen extends StatefulWidget {
-  const PrayerSettingsScreen(this.prayerType, this.prayerName, {Key? key})
+class IqamaPrayerSettingsScreen extends StatefulWidget {
+  const IqamaPrayerSettingsScreen(this.prayerType, this.prayerName, {Key? key})
       : super(key: key);
 
   final PrayerType prayerType;
   final String prayerName;
 
   @override
-  State<PrayerSettingsScreen> createState() => _PrayerSettingsScreenState();
+  State<IqamaPrayerSettingsScreen> createState() =>
+      _IqamaPrayerSettingsScreenState();
 }
 
-class _PrayerSettingsScreenState extends State<PrayerSettingsScreen> {
+class _IqamaPrayerSettingsScreenState extends State<IqamaPrayerSettingsScreen> {
   Timer? _debounce;
   // or as a local variable
   final player = AudioPlayer();
@@ -156,7 +156,7 @@ class _PrayerSettingsScreenState extends State<PrayerSettingsScreen> {
           trailing:
               Text(t.minuteShortForm(translateNumber(t, '${settings.delay}'))),
           onPressed: (context) async {
-            final delay = await showCupertinoDialog(
+            final delay = await showDialog(
               barrierDismissible: true,
               context: context,
               builder: (context) =>
@@ -193,12 +193,6 @@ class _PrayerSettingsScreenState extends State<PrayerSettingsScreen> {
       });
     }
 
-    var athanSections = _notificationSettingsSections(
-      t!,
-      prayerNotificationSettings.athanSettings,
-      athanRingtones,
-      onUpdate,
-    );
     var iqamaSections = <AbstractSettingsSection>[];
 
     var isIqamaEnabled = prayerNotificationSettings.iqamaSettings.enabled;
@@ -211,7 +205,7 @@ class _PrayerSettingsScreenState extends State<PrayerSettingsScreen> {
 
             onUpdate();
           },
-          title: Text(t.enableIqamaNotification),
+          title: Text(t!.enableIqamaNotification),
           leading: isIqamaEnabled
               ? const Icon(Icons.notifications_active)
               : const Icon(Icons.notifications_off),
@@ -231,28 +225,12 @@ class _PrayerSettingsScreenState extends State<PrayerSettingsScreen> {
       ));
     }
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.prayerName),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: t.athan),
-              Tab(text: t.iqama),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            SettingsList(
-              sections: athanSections,
-            ),
-            SettingsList(
-              sections: iqamaSections,
-            ),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.prayerName),
+      ),
+      body: SettingsList(
+        sections: iqamaSections,
       ),
     );
   }
