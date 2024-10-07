@@ -55,7 +55,7 @@ checkPermissionsUpdateCurrentLocation(
     await updateUserLocation(
         context, position.latitude, position.longitude, isMounted);
   } else {
-    var result = await customAlert(key.currentContext!,
+    var result = await customAlert(key.currentContext ?? context,
         t!.requestLocationPermissionTitle, t.requestLocationPermissionContent);
 
     var mounted = isMounted();
