@@ -105,7 +105,6 @@ struct PrayerCountdownView: View {
                                     .fontWeight(.semibold)
                                     .foregroundColor(theme.secondaryColor)
                                     .multilineTextAlignment(.center)
-                                    .minimumScaleFactor(0.5)
                             }
                             else {
                                 Text(nextPrayer.date, style: .time)

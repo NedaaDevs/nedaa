@@ -112,7 +112,6 @@ func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: Geometry
                     Text(previousPrayer.date, style: .timer)
                         .multilineTextAlignment(.center)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.4)
                         .font(.system(size: geometry.size.width * fontSize))
                 }
             }
@@ -128,7 +127,6 @@ func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: Geometry
                         Text(nextPrayer.date, style: .timer)
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.5)
                     }
                     else {
                         Text(nextPrayer.date, style: .time)
