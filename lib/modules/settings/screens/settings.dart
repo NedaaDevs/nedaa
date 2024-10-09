@@ -75,7 +75,10 @@ class _SettingsState extends State<Settings> {
     var methods =
         calculationMethods[locale.languageCode] ?? calculationMethods['en']!;
 
-    var currentCalculationMethodName = methods[currentCalculationMethod.index];
+    //FIXME: There is more methods than what we are already have in calculation_methods.
+    // So, an index with a value that does not exits will cause access on null value.
+    var currentCalculationMethodName =
+        methods[currentCalculationMethod.index] ?? methods[-1];
     var currentUserCity = currentUserState.location.cityAddress;
 
     var currentUserLocation = currentUserState.location.location;
