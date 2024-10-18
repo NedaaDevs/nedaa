@@ -17,7 +17,7 @@ class _PreAthanBeforeDialogState extends State<PreAthanBeforeDialog> {
   @override
   void initState() {
     super.initState();
-    _currentSliderValue = widget.before.clamp(1, 30);
+    _currentSliderValue = widget.before.clamp(1, 120);
   }
 
   @override
@@ -31,7 +31,7 @@ class _PreAthanBeforeDialogState extends State<PreAthanBeforeDialog> {
       Slider(
         value: _currentSliderValue.toDouble(),
         min: 5,
-        max: 120,
+        max: 130,
         label: _currentSliderValue.toInt().toString(),
         onChanged: (double value) {
           setState(() {
