@@ -1,11 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:nedaa/modules/notifications/notifications.dart';
 import 'package:nedaa/modules/settings/screens/notifications/athan/athan_settings.dart';
 import 'package:nedaa/modules/settings/screens/notifications/iqama/iqama_settings.dart';
 import 'package:nedaa/modules/settings/screens/notifications/pre_athan/pre_athan_settings.dart';
-import 'package:nedaa/utils/location_permission_utils.dart';
+import 'package:nedaa/utils/location_permission_utils.dart' as perm_util;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -17,7 +15,7 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  bool? permission;
+  bool permission = false;
 
   void _navigateToSettingsScreen(
       BuildContext context, String title, Widget screen) {
@@ -41,30 +39,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void initState() {
     super.initState();
 
-    requestIOSNotificationPermissionsAndGetCurrent().then((value) => {
+    _checkNotificationPermission().then((value) => {
           setState(() {
             permission = value;
           })
         });
   }
 
+  Future<bool> _checkNotificationPermission() async {
+    return await Permission.notification.isGranted;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (permission == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
     var t = AppLocalizations.of(context)!;
 
     SettingsSection settingsSection;
-    if (Platform.isIOS && !permission!) {
+    if (!permission) {
       settingsSection = SettingsSection(title: Text(t.prayersAlerts), tiles: [
         SettingsTile.switchTile(
           initialValue: permission,
           onToggle: (value) {
-            openAppSettings().then((_) {
+            perm_util.openAppSettings().then((_) {
               Navigator.pop(context);
             });
           },
