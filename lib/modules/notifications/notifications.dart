@@ -211,6 +211,33 @@ Future<void> scheduleNotificationsInner(
         prayerName = prayersTranslation[e.key] ?? "";
       }
 
+      // Schedule PreAthan notification
+      var preAthanSettings = prayerNotificationSettings.preAthanSettings;
+      if (preAthanSettings.enabled && counter < maxIOSNotification) {
+        var preAthanTime =
+            prayerTime.subtract(Duration(minutes: preAthanSettings.before));
+        // Avoid scheduling notifications in the past
+        if (preAthanTime.isAfter(now)) {
+          var preAthanPlatformChannelDetails =
+              _buildNotificationDetails(preAthanSettings.notificationSettings);
+
+          await _flutterLocalNotificationsPlugin.zonedSchedule(
+            id,
+            t.preAthanTimeNotificationTitle(prayerName),
+            t.preAthanTimeNotificationContent(
+                translateNumber(t, preAthanSettings.before.toString()),
+                prayerName),
+            preAthanTime,
+            preAthanPlatformChannelDetails,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+          );
+          counter++;
+          id++;
+        }
+      }
+
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         id,
         t.prayerTimeNotificationTitle(prayerName),
