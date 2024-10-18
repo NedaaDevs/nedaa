@@ -102,6 +102,3 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 }
-
-//TODO: Implement
-
