@@ -67,9 +67,9 @@ dependencies:
   hijri: ^3.0.0
   package_info_plus: ^8.0.2
   device_info_plus: ^10.0.1
-  app_group_directory: ^2.0.0
   home_widget: ^0.7.0
   permission_handler: ^11.3.1
+  path_provider: ^2.1.4
 
 
 dev_dependencies:
