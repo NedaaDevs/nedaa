@@ -127,7 +127,7 @@
   "prayerTimes": "أوقات الصلاة",
   "preAhtanBeforeTime": "تنبيه قبل الأذان",
   "preAthanNotifications": "قبل الاذان",
-  "preAthanTimeNotificationContent": "{before} دقائق حتى {prayerName}",
+  "preAthanTimeNotificationContent": "{before} د حتى {prayerName}",
   "preAthanTimeNotificationTitle": " سيحين موعد دخول صلاة {prayerName}",
   "reAddTheWidget": "الرجاء إعادة تثبيت التطبيق المصغر",
   "requestLocationPermissionContent": "يستخدم هذا التطبيق موقعك لتحديد مواقيت الصلاة الصحيحة تلقائيًا. هل ترغب في فتح إعدادات الموقع؟",
