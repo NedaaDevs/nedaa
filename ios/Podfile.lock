@@ -1,6 +1,4 @@
 PODS:
-  - app_group_directory (1.0.0):
-    - Flutter
   - audioplayers_darwin (0.0.1):
     - Flutter
   - device_info_plus (0.0.1):
@@ -42,7 +40,6 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
-  - app_group_directory (from `.symlinks/plugins/app_group_directory/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
@@ -66,8 +63,6 @@ SPEC REPOS:
     - Sentry
 
 EXTERNAL SOURCES:
-  app_group_directory:
-    :path: ".symlinks/plugins/app_group_directory/ios"
   audioplayers_darwin:
     :path: ".symlinks/plugins/audioplayers_darwin/ios"
   device_info_plus:
@@ -104,7 +99,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/workmanager/ios"
 
 SPEC CHECKSUMS:
-  app_group_directory: 7bf9f8f9819ead554de29da7c25fb7a680d6a9a0
   audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
   device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7

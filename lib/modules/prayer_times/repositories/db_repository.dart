@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:nedaa/constants/app_constans.dart';
 import 'package:nedaa/modules/prayer_times/models/prayer_times.dart';
 import 'package:nedaa/utils/helper.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider_foundation/path_provider_foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:path/path.dart' as p;
@@ -45,10 +45,13 @@ class DBDayPrayerTimes {
 class DBRepository {
   Database? db;
 
-  Future<String> getAppGroupDirectory() async {
+  Future<String?> getAppGroupDirectory() async {
     if (Platform.isIOS) {
-      final dir = await getApplicationSupportDirectory();
-      return p.join(dir.path, appGroupId);
+      final PathProviderFoundation provider = PathProviderFoundation();
+
+      return await provider.getContainerPath(
+        appGroupIdentifier: appGroupId,
+      );
     }
     throw UnsupportedError('This function is only supported on iOS');
   }
@@ -60,7 +63,10 @@ class DBRepository {
     // On iOS, we need to store the database in app group directory
     // so that it can be accessed by the app extension
     if (Platform.isIOS) {
-      databasesPath = await getAppGroupDirectory();
+      var directory = await getAppGroupDirectory();
+      if (directory != null) {
+        databasesPath = directory;
+      }
 
       String newPath = p.join(databasesPath, dbName);
 
