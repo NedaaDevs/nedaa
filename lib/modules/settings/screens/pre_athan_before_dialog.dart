@@ -31,7 +31,7 @@ class _PreAthanBeforeDialogState extends State<PreAthanBeforeDialog> {
       Slider(
         value: _currentSliderValue.toDouble(),
         min: 5,
-        max: 130,
+        max: 120,
         label: _currentSliderValue.toInt().toString(),
         onChanged: (double value) {
           setState(() {
