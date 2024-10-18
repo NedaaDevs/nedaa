@@ -15,6 +15,12 @@ const iqamaRingtones = [
   NotificationRingtone(displayId: 'iqama1', fileName: 'iqama1.mp3'),
 ];
 
+const preAthanRingtones = [
+  NotificationRingtone(displayId: 'tasbih', fileName: 'tasbih.mp3'),
+  NotificationRingtone(displayId: 'knock', fileName: 'knock.mp3'),
+  NotificationRingtone(displayId: 'beep', fileName: 'beep.mp3'),
+];
+
 class NotificationRingtone {
   final String displayId;
   final String fileName;
@@ -25,9 +31,48 @@ class NotificationRingtone {
   });
 }
 
+class PreAthanSettings {
+  PreAthanSettings({
+    required this.enabled,
+    required this.notificationSettings,
+    required this.before,
+  });
+
+  bool enabled;
+  NotificationSettings notificationSettings;
+  int before;
+
+  factory PreAthanSettings.defaultValue() => PreAthanSettings(
+        enabled: false,
+        notificationSettings: NotificationSettings(
+          sound: true,
+          vibration: false,
+          ringtone: preAthanRingtones[0],
+        ),
+        before: 15,
+      );
+
+  factory PreAthanSettings.fromJson(Map<String, dynamic> json) =>
+      PreAthanSettings(
+        enabled: json["enabled"],
+        notificationSettings:
+            NotificationSettings.fromJson(json["notificationSettings"]),
+        before: json["before"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "enabled": enabled,
+        "notificationSettings": notificationSettings.toJson(),
+        "before": before,
+      };
+}
+
 class PrayerNotificationSettings {
-  PrayerNotificationSettings(
-      {required this.athanSettings, required this.iqamaSettings});
+  PrayerNotificationSettings({
+    required this.athanSettings,
+    required this.iqamaSettings,
+    required this.preAthanSettings,
+  });
 
   PrayerNotificationSettings.defaultValue()
       : this(
@@ -45,20 +90,24 @@ class PrayerNotificationSettings {
               ringtone: iqamaRingtones[0],
             ),
           ),
+          preAthanSettings: PreAthanSettings.defaultValue(),
         );
 
   NotificationSettings athanSettings;
   IqamaSettings iqamaSettings;
+  PreAthanSettings preAthanSettings;
 
   factory PrayerNotificationSettings.fromJson(Map<String, dynamic> json) {
     return PrayerNotificationSettings(
       athanSettings: NotificationSettings.fromJson(json['athanSettings']),
       iqamaSettings: IqamaSettings.fromJson(json['iqamaSettings']),
+      preAthanSettings: PreAthanSettings.fromJson(json['preAthanSettings']),
     );
   }
   Map<String, dynamic> toJson() => {
         'athanSettings': athanSettings.toJson(),
         'iqamaSettings': iqamaSettings.toJson(),
+        'preAthanSettings': preAthanSettings.toJson()
       };
 }
 
