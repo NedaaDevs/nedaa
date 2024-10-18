@@ -1,4 +1,5 @@
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:home_widget/home_widget.dart';
@@ -8,6 +9,7 @@ import 'package:nedaa/modules/prayer_times/models/prayer_times.dart';
 import 'package:nedaa/modules/settings/models/calculation_method.dart';
 import 'package:nedaa/modules/settings/models/prayer_type.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/standalone.dart' as tz;
 import 'dart:async';
 import 'dart:io';
@@ -162,5 +164,45 @@ Future updateiOSWidgets() async {
 Future updateAndroidWidgets() async {
   for (var name in androidWidgetNames) {
     await HomeWidget.updateWidget(name: name, androidName: name);
+  }
+}
+
+Future<bool> requestLocationPermission() async {
+  // Request the location permission.
+  var status = await Permission.location.request();
+
+  // Check if permission was granted.
+  if (status == PermissionStatus.granted) {
+    return true;
+  }
+
+  return false;
+}
+
+Future<bool> requestNotificationsPermission() async {
+  // Request the location permission.
+  var status = await Permission.notification.request();
+
+  // Check if permission was granted.
+  if (status == PermissionStatus.granted) {
+    return true;
+  }
+
+  return false;
+}
+
+Future<void> requestAndroidPermissions() async {
+  if (Platform.isAndroid) {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.notification,
+      Permission.location,
+    ].request();
+
+    if (statuses[Permission.notification] != PermissionStatus.granted) {
+      debugPrint("Notification permission denied");
+    }
+    if (statuses[Permission.location] != PermissionStatus.granted) {
+      debugPrint("Location permission denied");
+    }
   }
 }
