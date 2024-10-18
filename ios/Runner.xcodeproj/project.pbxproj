@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		352493452A20816000986E3A /* AllPrayersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352493442A20816000986E3A /* AllPrayersView.swift */; };
+		354472312CC271FA002565FB /* yasser_aldosari.m4r in Resources */ = {isa = PBXBuildFile; fileRef = 354472302CC271FA002565FB /* yasser_aldosari.m4r */; };
 		35547EAA2CC252230013B45A /* tasbih.m4r in Resources */ = {isa = PBXBuildFile; fileRef = 35547EA92CC252230013B45A /* tasbih.m4r */; };
 		3558854728D0CDCA00A4AF43 /* iqama1.m4r in Resources */ = {isa = PBXBuildFile; fileRef = 3558854628D0CDCA00A4AF43 /* iqama1.m4r */; };
 		3558854928D0D21400A4AF43 /* athan1.m4r in Resources */ = {isa = PBXBuildFile; fileRef = 3558854828D0D21400A4AF43 /* athan1.m4r */; };
@@ -87,6 +88,7 @@
 		353254D62A1998BD009C7397 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		353254D82A1998BD009C7397 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3532550A2A199C3D009C7397 /* NedaaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NedaaWidgetExtension.entitlements; sourceTree = "<group>"; };
+		354472302CC271FA002565FB /* yasser_aldosari.m4r */ = {isa = PBXFileReference; lastKnownFileType = file; path = yasser_aldosari.m4r; sourceTree = "<group>"; };
 		35547EA92CC252230013B45A /* tasbih.m4r */ = {isa = PBXFileReference; lastKnownFileType = file; path = tasbih.m4r; sourceTree = "<group>"; };
 		3558854628D0CDCA00A4AF43 /* iqama1.m4r */ = {isa = PBXFileReference; lastKnownFileType = file; path = iqama1.m4r; sourceTree = "<group>"; };
 		3558854828D0D21400A4AF43 /* athan1.m4r */ = {isa = PBXFileReference; lastKnownFileType = file; path = athan1.m4r; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 		35AE72AE287725A900B5A1E9 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				354472302CC271FA002565FB /* yasser_aldosari.m4r */,
 				35D92DA22877328A00FEC8B3 /* athan6.m4r */,
 				3558854828D0D21400A4AF43 /* athan1.m4r */,
 				35C8AEA728D21DE900E14B6F /* beep.m4r */,
@@ -369,6 +372,7 @@
 				35D92DA32877328A00FEC8B3 /* athan6.m4r in Resources */,
 				35547EAA2CC252230013B45A /* tasbih.m4r in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
+				354472312CC271FA002565FB /* yasser_aldosari.m4r in Resources */,
 				3558854728D0CDCA00A4AF43 /* iqama1.m4r in Resources */,
 				35C8AEA828D21DE900E14B6F /* beep.m4r in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,

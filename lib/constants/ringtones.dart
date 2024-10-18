@@ -7,7 +7,8 @@ const _ringtoneTranslationsAr = {
   'medina_athan': 'اذان مدني',
   'iqama1': 'أقامة ١',
   'takbir': 'تكبير',
-  'tasbih': 'تسبيح'
+  'tasbih': 'تسبيح',
+  'yasser_aldosari': 'ياسر الدوسري'
 };
 
 const _ringtoneTranslationsEn = {
@@ -19,7 +20,8 @@ const _ringtoneTranslationsEn = {
   'medina_athan': 'Medina Athan',
   'iqama1': 'Iqama 1',
   'takbir': 'Takbir',
-  'tasbih': 'Tasbih'
+  'tasbih': 'Tasbih',
+  'yasser_aldosari': 'Yasser Al-Dosari'
 };
 
 const ringtoneTranslations = {

@@ -6,6 +6,8 @@ const athanRingtones = [
   NotificationRingtone(displayId: 'athan8', fileName: 'athan8.mp3'),
   NotificationRingtone(displayId: 'athan2', fileName: 'athan6.mp3'),
   NotificationRingtone(displayId: 'medina_athan', fileName: 'medina_athan.mp3'),
+  NotificationRingtone(
+      displayId: 'yasser_aldosari', fileName: 'yasser_aldosari.mp3'),
 ];
 
 const iqamaRingtones = [
