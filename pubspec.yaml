@@ -60,7 +60,7 @@ dependencies:
   flutter_native_splash: ^2.4.0
   sqflite: ^2.3.2
   path: ^1.9.0
-  flutter_local_notifications: ^17.0.0
+  flutter_local_notifications: ^17.2.3
   workmanager: ^0.5.2
   percent_indicator: ^4.2.3
   liquid_pull_to_refresh: ^3.0.1 
