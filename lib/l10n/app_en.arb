@@ -127,7 +127,7 @@
   "prayerTimes": "Prayer Times",
   "preAhtanBeforeTime": "Before Athan",
   "preAthanNotifications": "Before Athan",
-  "preAthanTimeNotificationContent": "{before} Remaining until {prayerName} Athan",
+  "preAthanTimeNotificationContent": "{before}m Remaining until {prayerName} Athan",
   "preAthanTimeNotificationTitle": "It is about time for {prayerName}",
   "reAddTheWidget": "Please Readd the widget",
   "requestLocationPermissionContent": "This app uses your location to automatically determine the correct prayer times. Would you like to open location settings?",
