@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:nedaa/modules/notifications/notifications.dart';
 import 'package:nedaa/modules/settings/screens/notifications/athan/athan_settings.dart';
 import 'package:nedaa/modules/settings/screens/notifications/iqama/iqama_settings.dart';
+import 'package:nedaa/modules/settings/screens/notifications/pre_athan/pre_athan_settings.dart';
 import 'package:nedaa/utils/location_permission_utils.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -77,7 +78,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         tiles: [
           _buildSettingsTile(
             t.preAthanNotifications,
-            const PreAthanNotificationsScreen(),
+            const PreAthanSettings(),
           ),
           _buildSettingsTile(t.athanNotifications, const AthanSettings()),
           _buildSettingsTile(
@@ -103,14 +104,4 @@ class _NotificationScreenState extends State<NotificationScreen> {
 }
 
 //TODO: Implement
-class PreAthanNotificationsScreen extends StatelessWidget {
-  const PreAthanNotificationsScreen({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.preAthanNotifications)),
-      body: const Center(child: Text('Pre-Athan Settings')),
-    );
-  }
-}
+
