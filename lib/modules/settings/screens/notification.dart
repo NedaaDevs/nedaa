@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:nedaa/modules/notifications/notifications.dart';
 import 'package:nedaa/modules/settings/screens/notifications/athan/athan_settings.dart';
 import 'package:nedaa/modules/settings/screens/notifications/iqama/iqama_settings.dart';
 import 'package:nedaa/modules/settings/screens/notifications/pre_athan/pre_athan_settings.dart';
@@ -39,15 +42,30 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void initState() {
     super.initState();
 
-    _checkNotificationPermission().then((value) => {
-          setState(() {
-            permission = value;
-          })
-        });
+    if (Platform.isAndroid) {
+      _checkAndroidNotificationPermission().then((value) => {
+            setState(() {
+              permission = value;
+            })
+          });
+    }
+
+    if (Platform.isIOS) {
+      _checkiOSNotificationPermission().then((value) => {
+            setState(() {
+              permission = value;
+            })
+          });
+    }
   }
 
-  Future<bool> _checkNotificationPermission() async {
-    return await Permission.notification.isGranted;
+  Future<bool> _checkAndroidNotificationPermission() async {
+    var status = await Permission.notification.status;
+    return status.isGranted;
+  }
+
+  Future<bool> _checkiOSNotificationPermission() async {
+    return await requestIOSNotificationPermissionsAndGetCurrent();
   }
 
   @override
