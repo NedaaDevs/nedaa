@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:nedaa/modules/prayer_times/bloc/prayer_times_bloc.dart';
 import 'package:nedaa/modules/prayer_times/models/prayer_times.dart';
 import 'package:nedaa/modules/settings/models/prayer_type.dart';
+import 'package:nedaa/modules/settings/models/timing_type.dart';
 import 'package:nedaa/utils/arabic_digits.dart';
 import 'package:nedaa/utils/helper.dart';
 import 'package:nedaa/widgets/prayer_times_card.dart';
@@ -42,7 +42,6 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
   String getPrayerTranslation(
       BuildContext context, PrayerType prayerType, tz.TZDateTime prayerTime) {
     var t = AppLocalizations.of(context);
-
     var prayersTranslation = {
       PrayerType.fajr: t!.fajr,
       PrayerType.sunrise: t.sunrise,
@@ -51,8 +50,19 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
       PrayerType.maghrib: t.maghrib,
       PrayerType.isha: t.isha,
     };
-
     return prayersTranslation[prayerType]!;
+  }
+
+  String getOtherTimingTranslation(
+      BuildContext context, TimingType timingType) {
+    var t = AppLocalizations.of(context);
+    var translations = {
+      TimingType.midnight: t!.midnight,
+      TimingType.firstThird: t.firstThird,
+      TimingType.lastThird: t.lastThird,
+      TimingType.imsak: t.imsak,
+    };
+    return translations[timingType]!;
   }
 
   Widget _buildPrayerRow(BuildContext context, PrayerType prayerType,
@@ -73,7 +83,6 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
     return GestureDetector(
       onTap: () {
         toggleReturnTimer?.cancel();
-
         toggleReturnTimer = Timer(timerDelay, () {
           setState(() {
             durationMessage = null;
@@ -87,25 +96,56 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
         var keyword = showPrevious ? t.since : t.inTime;
         setState(() {
           durationMessage = DurationMessage(
-            "$keyword ${_formatDuration(duration, t.localeName)}",
-            prayerType,
-          );
+              "$keyword ${_formatDuration(duration, t.localeName)}",
+              prayerType);
         });
       },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text(
+              getPrayerTranslation(context, prayerType, prayerTime),
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              displayMessage,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtherTimingRow(
+      BuildContext context, TimingType timingType, tz.TZDateTime timing) {
+    var t = AppLocalizations.of(context);
+    var formatted = DateFormat("hh:mm a", t!.localeName);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
+        children: [
           Text(
-            getPrayerTranslation(context, prayerType, prayerTime),
+            getOtherTimingTranslation(context, timingType),
             style: TextStyle(
-              fontSize: fontSize,
+              fontSize: MediaQuery.of(context).size.width > 600 ? 16.0 : 14.0,
               fontWeight: FontWeight.w700,
             ),
           ),
           Text(
-            displayMessage,
+            formatted.format(timing),
             style: TextStyle(
-              fontSize: fontSize,
+              fontSize: MediaQuery.of(context).size.width > 600 ? 16.0 : 14.0,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -126,20 +166,17 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
         prayerState.yesterdayPrayerTimes != null) {
       var todayPrayerTimes = prayerState.todayPrayerTimes!;
       var tomorrowPrayerTimes = prayerState.tomorrowPrayerTimes!;
-
       var previousPrayer = getPreviousPrayer(
           todayPrayerTimes, prayerState.yesterdayPrayerTimes!);
 
       tz.Location? location;
       for (var prayerType in PrayerType.values) {
         location ??= tz.getLocation(todayPrayerTimes.timeZoneName);
-
         var now = getCurrentTimeWithTimeZone(todayPrayerTimes.timeZoneName);
 
         var prayerTime = tz.TZDateTime.from(
-          todayPrayerTimes.prayerTimes[prayerType] ?? DateTime.now(),
-          location,
-        );
+            todayPrayerTimes.prayerTimes[prayerType] ?? DateTime.now(),
+            location);
 
         var showPrevious = prayerType == previousPrayer.prayerType;
 
@@ -148,9 +185,8 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
         } else {
           if (prayerTime.isBefore(now)) {
             prayerTime = tz.TZDateTime.from(
-              tomorrowPrayerTimes.prayerTimes[prayerType] ?? DateTime.now(),
-              location,
-            );
+                tomorrowPrayerTimes.prayerTimes[prayerType] ?? DateTime.now(),
+                location);
           }
         }
 
@@ -163,6 +199,21 @@ class _TodayPrayersCardState extends State<TodayPrayersCard> {
             showPrevious ? previousPrayer : null,
           ),
         );
+      }
+
+      // TODO: remove null checking
+      // This should not be null, but for old user how didn't fetch data after the update it will be
+      // ignore: unnecessary_null_comparison
+      if (todayPrayerTimes.otherTimings != null) {
+        todayPrayerTimes.otherTimings.forEach((type, time) {
+          var timeZoneName = todayPrayerTimes.timeZoneName;
+          location ??= tz.getLocation(timeZoneName);
+          var zonedTime = tz.TZDateTime.from(time, location!);
+
+          columnChildren.add(
+            _buildOtherTimingRow(context, type, zonedTime),
+          );
+        });
       }
     } else {
       columnChildren.add(Text(t!.noPrayersTimesFound));
