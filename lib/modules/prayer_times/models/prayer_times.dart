@@ -34,7 +34,10 @@ Map<String, String> _otherTimesMapToJson(
 Map<TimingType, DateTime> _otherTimesMapFromJson(Map<String, dynamic> json) {
   final Map<TimingType, DateTime> otherTimings = {};
   apiTimingNames.forEach((timingType, timingName) {
-    otherTimings[timingType] = DateTime.parse(json[timingName]!);
+    // Ensure the timingName exists in json and is not null before parsing
+    if (json[timingName] != null) {
+      otherTimings[timingType] = DateTime.parse(json[timingName]!);
+    }
   });
   return otherTimings;
 }
@@ -75,11 +78,18 @@ class DayPrayerTimes {
 
   factory DayPrayerTimes.fromJson(Map<String, dynamic> json) {
     var prayerTimes = _prayerTimesMapFromJson(json['prayerTimes']);
+    Map<TimingType, DateTime> otherTimings = {};
+
     var date = DateTime.parse(json['date']);
     var calculationMethodId = json['calculationMethod'];
     var calculationMethod = CalculationMethod(calculationMethodId);
     var timezone = json['timezone'];
-    var otherTimings = _otherTimesMapFromJson(json['otherTimings']);
+
+    // Safely handle potential null for otherTimings(For old user since we didn't save otherTimings before)
+    if (json['otherTimings'] != null) {
+      otherTimings = _otherTimesMapFromJson(json['otherTimings']);
+    }
+
     return DayPrayerTimes(
         prayerTimes, timezone, date, calculationMethod, otherTimings);
   }
