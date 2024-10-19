@@ -18,6 +18,7 @@ import 'package:nedaa/modules/settings/models/calculation_method.dart';
 import 'package:nedaa/modules/settings/models/user_location.dart';
 import 'package:nedaa/modules/settings/repositories/settings_repository.dart';
 import 'package:nedaa/screens/main_screen.dart';
+import 'package:nedaa/utils/helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -96,6 +97,10 @@ Future<void> _backgroundRescheduleNotification() async {
       settingsRepository.getNotificationSettings(), prayerTimesState.tenDays);
 }
 
+Future<void> initAppPermissions() async {
+  await requestAndroidPermissions();
+}
+
 void main() async {
   final startTime = DateTime.now().millisecondsSinceEpoch;
 
@@ -103,6 +108,8 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   initNotifications();
+
+  await initAppPermissions();
 
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
   appVersion = packageInfo.version;

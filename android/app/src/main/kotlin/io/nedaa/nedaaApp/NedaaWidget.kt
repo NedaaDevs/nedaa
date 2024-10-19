@@ -42,38 +42,39 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import io.nedaa.nedaaApp.WidgetComposables.DisplayErrorMsg
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.ZonedDateTime
-
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.action.actionStartActivity
+import es.antonborri.home_widget.actionStartActivity
 
 class NedaaWidget : GlanceAppWidget() {
     private lateinit var prayerService: PrayerTimeService
 
     object ColorScheme {
-        private val DarkColors = darkColorScheme(
-            primary = Color(0xFFCBB279),
-            secondary = Color(0xFFEEEEEE),
-            tertiary = Color(0xFFE1D4BB),
-            background = Color(0xFF537188),
-        )
+        private val DarkColors =
+            darkColorScheme(
+                primary = Color(0xFFCBB279),
+                secondary = Color(0xFFEEEEEE),
+                tertiary = Color(0xFFE1D4BB),
+                background = Color(0xFF537188),
+            )
 
-        private val LightColors = lightColorScheme(
-            primary = Color(0xFF537188),
-            secondary = Color(0xFFCBB279),
-            tertiary = Color(0xFFE1D4BB),
-            background = Color(0xFFEEEEEE),
-        )
+        private val LightColors =
+            lightColorScheme(
+                primary = Color(0xFF537188),
+                secondary = Color(0xFFCBB279),
+                tertiary = Color(0xFFE1D4BB),
+                background = Color(0xFFEEEEEE),
+            )
 
-        val colors = androidx.glance.material3.ColorProviders(
-            light = LightColors, dark = DarkColors
-        )
+        val colors =
+            androidx.glance.material3.ColorProviders(light = LightColors, dark = DarkColors)
     }
 
-    /**
-     * Needed for Updating
-     */
+    /** Needed for Updating */
     override val stateDefinition: GlanceStateDefinition<*>
         get() = HomeWidgetGlanceStateDefinition()
 
@@ -93,30 +94,27 @@ class NedaaWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun GlanceContent(
-        context: Context, prayerService: PrayerTimeService
-    ) {
+    private fun GlanceContent(context: Context, prayerService: PrayerTimeService) {
         val nextPrayer = remember { mutableStateOf<Prayer?>(null) }
         val prevPrayer = remember { mutableStateOf<Prayer?>(null) }
 
         // Run the db query in the background thread
         LaunchedEffect(key1 = Unit) {
             prayerService.openDb()
-            val both = withContext(Dispatchers.IO) {
-                val next = prayerService.getNextPrayer()
-                val prev = prayerService.getPreviousPrayer()
-                prayerService.closeDb()
-                return@withContext Pair(next, prev)
-            }
+            val both =
+                withContext(Dispatchers.IO) {
+                    val next = prayerService.getNextPrayer()
+                    val prev = prayerService.getPreviousPrayer()
+                    prayerService.closeDb()
+                    return@withContext Pair(next, prev)
+                }
             nextPrayer.value = both.first
             prevPrayer.value = both.second
             val durationTillNextPrayer =
                 prayerService.durationUntilNextPrayer(nextPrayer.value?.dateTime)
 
-
             // Schedule the WorkManager to handle the next prayer update
             scheduleWidgetUpdate(context, durationTillNextPrayer)
-
         }
 
         val nextPrayerName =
@@ -140,19 +138,21 @@ class NedaaWidget : GlanceAppWidget() {
     }
 
     private fun isSystemInDarkTheme(context: Context): Boolean {
-        return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
     }
 
     private fun getPrayerName(context: Context, prayerName: String?, date: ZonedDateTime?): String {
-        val resourceId = when (prayerName) {
-            "fajr" -> R.string.fajr
-            "sunrise" -> R.string.sunrise
-            "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
-            "asr" -> R.string.asr
-            "maghrib" -> R.string.maghrib
-            "isha" -> R.string.isha
-            else -> R.string.fajr
-        }
+        val resourceId =
+            when (prayerName) {
+                "fajr" -> R.string.fajr
+                "sunrise" -> R.string.sunrise
+                "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
+                "asr" -> R.string.asr
+                "maghrib" -> R.string.maghrib
+                "isha" -> R.string.isha
+                else -> R.string.fajr
+            }
         return context.getString(resourceId)
     }
 
@@ -160,7 +160,6 @@ class NedaaWidget : GlanceAppWidget() {
         // if the current day is 5 (Friday) return true
         return ZonedDateTime.now(datetime?.zone).dayOfWeek.value == 5
     }
-
 
     @Composable
     fun Content(
@@ -177,26 +176,31 @@ class NedaaWidget : GlanceAppWidget() {
         val secondaryTextColor = GlanceTheme.colors.secondary
         val prevPrayerTextColor = if (isDark) backgroundColor else GlanceTheme.colors.primary
         Column(
-            modifier = GlanceModifier.background(backgroundColor).fillMaxSize(),
+            modifier =
+            GlanceModifier.background(backgroundColor)
+                .fillMaxSize()
+                .clickable(onClick = actionStartActivity<MainActivity>(context)),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
-            Box(
-                modifier = GlanceModifier.background(topBoxColor).cornerRadius(16.dp)
-            ) {
+            Box(modifier = GlanceModifier.background(topBoxColor).cornerRadius(16.dp)) {
                 Column(
                     modifier = GlanceModifier.padding(32.dp, 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = prevPrayerName, style = TextStyle(
+                        text = prevPrayerName,
+                        style =
+                        TextStyle(
                             color = prevPrayerTextColor,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                     )
                     Text(
-                        text = prevPrayerTime, style = TextStyle(
+                        text = prevPrayerTime,
+                        style =
+                        TextStyle(
                             color = prevPrayerTextColor,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Normal
@@ -211,13 +215,21 @@ class NedaaWidget : GlanceAppWidget() {
             Spacer(modifier = GlanceModifier.height(8.dp))
 
             Text(
-                text = nextPrayerName, style = TextStyle(
-                    fontSize = 24.sp, fontWeight = FontWeight.Bold, color = primaryTextColor
+                text = nextPrayerName,
+                style =
+                TextStyle(
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = primaryTextColor
                 )
             )
             Text(
-                text = nextPrayerTime, style = TextStyle(
-                    fontSize = 28.sp, fontWeight = FontWeight.Normal, color = secondaryTextColor
+                text = nextPrayerTime,
+                style =
+                TextStyle(
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = secondaryTextColor
                 )
             )
         }
@@ -225,21 +237,21 @@ class NedaaWidget : GlanceAppWidget() {
 
     private fun scheduleWidgetUpdate(context: Context, durationTillNextPrayer: Duration) {
         val widgetUpdateWork =
-            OneTimeWorkRequest.Builder(NedaaWidgetWorker::class.java).setInitialDelay(
-                durationTillNextPrayer.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS
-            ).addTag("WidgetUpdateWork").build()
+            OneTimeWorkRequest.Builder(NedaaWidgetWorker::class.java)
+                .setInitialDelay(
+                    durationTillNextPrayer.toMillis(),
+                    java.util.concurrent.TimeUnit.MILLISECONDS
+                )
+                .addTag("WidgetUpdateWork")
+                .build()
 
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "WidgetUpdateWork", ExistingWorkPolicy.REPLACE, widgetUpdateWork
-        )
-
-
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork("WidgetUpdateWork", ExistingWorkPolicy.REPLACE, widgetUpdateWork)
     }
 }
 
-class NedaaWidgetWorker(
-    context: Context, workerParams: WorkerParameters
-) : CoroutineWorker(context, workerParams) {
+class NedaaWidgetWorker(context: Context, workerParams: WorkerParameters) :
+    CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         try {
@@ -255,14 +267,17 @@ class NedaaWidgetWorker(
     }
 }
 
-
 class NedaaInteractiveAction : ActionCallback {
     override suspend fun onAction(
-        context: Context, glanceId: GlanceId, parameters: ActionParameters
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
     ) {
-        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
-            context, Uri.parse("nedaaWidget://titleClicked")
-        )
+        val backgroundIntent =
+            HomeWidgetBackgroundIntent.getBroadcast(
+                context,
+                Uri.parse("nedaaWidget://titleClicked")
+            )
         backgroundIntent.send()
     }
 }

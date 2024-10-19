@@ -43,6 +43,26 @@
       }
     }
   },
+  "@preAthanTimeNotificationContent": {
+    "placeholders": {
+      "before": {
+        "example": "٥",
+        "type": "String"
+      },
+      "prayerName": {
+        "example": "الفجر",
+        "type": "String"
+      }
+    }
+  },
+  "@preAthanTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "الفجر",
+        "type": "String"
+      }
+    }
+  },
   "addToHomeScreen": "إضافة إلى الشاشة الرئيسية",
   "alertOn": "تنبيه",
   "allowNotifications": "السماح بالإشعارات",
@@ -62,7 +82,9 @@
   "dark": "داكن",
   "defaultString": "الافتراضي",
   "duhur": "الظهر",
+  "enable": "تفعيل",
   "enableIqamaNotification": " تنبيه الاقامة",
+  "enablePreAthanNotification": "تفعيل تنبيه قبل الأذان",
   "error": "خطأ",
   "failedToPinWidget": "فشل في تثبيت االتطبيق المصغر : {error}",
   "fajr": "الفجر",
@@ -103,7 +125,10 @@
   "prayerTimeNotificationContent": " حان وقت دخول صلاة {prayerName}",
   "prayerTimeNotificationTitle": "صلاة {prayerName}",
   "prayerTimes": "أوقات الصلاة",
+  "preAhtanBeforeTime": "تنبيه قبل الأذان",
   "preAthanNotifications": "قبل الاذان",
+  "preAthanTimeNotificationContent": "{before} د حتى {prayerName}",
+  "preAthanTimeNotificationTitle": " سيحين موعد دخول صلاة {prayerName}",
   "reAddTheWidget": "الرجاء إعادة تثبيت التطبيق المصغر",
   "requestLocationPermissionContent": "يستخدم هذا التطبيق موقعك لتحديد مواقيت الصلاة الصحيحة تلقائيًا. هل ترغب في فتح إعدادات الموقع؟",
   "requestLocationPermissionTitle": "إذن تحديد الموقع",

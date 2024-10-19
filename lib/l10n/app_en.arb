@@ -43,6 +43,26 @@
       }
     }
   },
+  "@preAthanTimeNotificationContent": {
+    "placeholders": {
+      "before": {
+        "example": "5",
+        "type": "String"
+      },
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@preAthanTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
   "addToHomeScreen": "Add to Home Screen",
   "alertOn": "Sound",
   "allowNotifications": "Allow Notifications",
@@ -62,7 +82,9 @@
   "dark": "Dark",
   "defaultString": "Default",
   "duhur": "Duhur",
+  "enable": "Enable",
   "enableIqamaNotification": "Iqama Notification after",
+  "enablePreAthanNotification": "Pre-Athan notifications before",
   "error": "Error",
   "failedToPinWidget": "Failed to pin widget: {error}",
   "fajr": "Fajr",
@@ -103,7 +125,10 @@
   "prayerTimeNotificationContent": "Time for {prayerName}",
   "prayerTimeNotificationTitle": "{prayerName} Prayer",
   "prayerTimes": "Prayer Times",
+  "preAhtanBeforeTime": "Before Athan",
   "preAthanNotifications": "Before Athan",
+  "preAthanTimeNotificationContent": "{before}m Remaining until {prayerName} Athan",
+  "preAthanTimeNotificationTitle": "It is about time for {prayerName}",
   "reAddTheWidget": "Please Readd the widget",
   "requestLocationPermissionContent": "This app uses your location to automatically determine the correct prayer times. Would you like to open location settings?",
   "requestLocationPermissionTitle": "Location Permission",

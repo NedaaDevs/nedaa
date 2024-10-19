@@ -1,6 +1,5 @@
 package io.nedaa.nedaaApp
 
-
 import HomeWidgetGlanceStateDefinition
 import android.content.Context
 import android.content.res.Configuration
@@ -40,33 +39,36 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import io.nedaa.nedaaApp.WidgetComposables.DisplayErrorMsg
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.ZonedDateTime
-
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.action.actionStartActivity
+import es.antonborri.home_widget.actionStartActivity
 
 class AllPrayersWidget : GlanceAppWidget() {
     private lateinit var prayerService: PrayerTimeService
 
     object ColorScheme {
-        private val DarkColors = darkColorScheme(
-            primary = Color(0xFFCBB279),
-            secondary = Color(0xFFEEEEEE),
-            tertiary = Color(0xFFE1D4BB),
-            background = Color(0xFF537188),
-        )
+        private val DarkColors =
+            darkColorScheme(
+                primary = Color(0xFFCBB279),
+                secondary = Color(0xFFEEEEEE),
+                tertiary = Color(0xFFE1D4BB),
+                background = Color(0xFF537188),
+            )
 
-        private val LightColors = lightColorScheme(
-            primary = Color(0xFF537188),
-            secondary = Color(0xFFCBB279),
-            tertiary = Color(0xFFE1D4BB),
-            background = Color(0xFFEEEEEE),
-        )
+        private val LightColors =
+            lightColorScheme(
+                primary = Color(0xFF537188),
+                secondary = Color(0xFFCBB279),
+                tertiary = Color(0xFFE1D4BB),
+                background = Color(0xFFEEEEEE),
+            )
 
-        val colors = androidx.glance.material3.ColorProviders(
-            light = LightColors, dark = DarkColors
-        )
+        val colors =
+            androidx.glance.material3.ColorProviders(light = LightColors, dark = DarkColors)
     }
 
     override val stateDefinition: GlanceStateDefinition<*>
@@ -87,28 +89,25 @@ class AllPrayersWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun GlanceContent(
-        context: Context,
-        prayerService: PrayerTimeService
-    ) {
+    private fun GlanceContent(context: Context, prayerService: PrayerTimeService) {
         val prayers = remember { mutableStateOf<List<Prayer>>(emptyList()) }
         val nextPrayer = remember { mutableStateOf<Prayer?>(null) }
 
         LaunchedEffect(key1 = Unit) {
             prayerService.openDb()
-            val todayPrayers = withContext(Dispatchers.IO) {
-                prayerService.getTodayPrayers()?.prayers ?: emptyList()
-            }
-            val next = withContext(Dispatchers.IO) {
-                prayerService.getNextPrayer()
-            }
-            val updatedPrayers = if (next?.name == "fajr") {
+            val todayPrayers =
                 withContext(Dispatchers.IO) {
-                    prayerService.getTomorrowPrayers()?.prayers ?: emptyList()
+                    prayerService.getTodayPrayers()?.prayers ?: emptyList()
                 }
-            } else {
-                todayPrayers
-            }
+            val next = withContext(Dispatchers.IO) { prayerService.getNextPrayer() }
+            val updatedPrayers =
+                if (next?.name == "fajr") {
+                    withContext(Dispatchers.IO) {
+                        prayerService.getTomorrowPrayers()?.prayers ?: emptyList()
+                    }
+                } else {
+                    todayPrayers
+                }
             prayerService.closeDb()
             prayers.value = updatedPrayers
             nextPrayer.value = next
@@ -125,24 +124,27 @@ class AllPrayersWidget : GlanceAppWidget() {
     }
 
     private fun isSystemInDarkTheme(context: Context): Boolean {
-        return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
     }
 
-
     private fun getTranslation(context: Context, message: String, date: ZonedDateTime?): String {
-        val resourceId = when (message) {
-            "fajr" -> R.string.fajr
-            "sunrise" -> R.string.sunrise
-            "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
-            "asr" -> R.string.asr
-            "maghrib" -> R.string.maghrib
-            "isha" -> R.string.isha
-            "enable_exact_alarm_permission_message" -> R.string.enable_exact_alarm_permission_message
-            "allow" -> R.string.allow
-            else -> {
-                R.string.empty
+        val resourceId =
+            when (message) {
+                "fajr" -> R.string.fajr
+                "sunrise" -> R.string.sunrise
+                "dhuhr" -> if (duhurOrJumah(date)) R.string.jumaa else R.string.dhuhr
+                "asr" -> R.string.asr
+                "maghrib" -> R.string.maghrib
+                "isha" -> R.string.isha
+                "enable_exact_alarm_permission_message" ->
+                    R.string.enable_exact_alarm_permission_message
+
+                "allow" -> R.string.allow
+                else -> {
+                    R.string.empty
+                }
             }
-        }
         return context.getString(resourceId)
     }
 
@@ -150,7 +152,6 @@ class AllPrayersWidget : GlanceAppWidget() {
         // if the current day is 5 (Friday) return true
         return ZonedDateTime.now(datetime?.zone).dayOfWeek.value == 5
     }
-
 
     @Composable
     fun AllPrayersContent(
@@ -161,10 +162,11 @@ class AllPrayersWidget : GlanceAppWidget() {
     ) {
         val colors = ColorScheme.colors
         Column(
-            modifier = GlanceModifier
-                .background(colors.background)
+            modifier =
+            GlanceModifier.background(colors.background)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .clickable(onClick = actionStartActivity<MainActivity>(context)),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
             verticalAlignment = Alignment.Vertical.Top
         ) {
@@ -177,8 +179,8 @@ class AllPrayersWidget : GlanceAppWidget() {
                 val nextTimeColor = if (isNext && isDark) colors.background else textColor
 
                 Row(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
+                    modifier =
+                    GlanceModifier.fillMaxWidth()
                         .background(rowBackgroundColor)
                         .padding(vertical = 4.dp)
                         .cornerRadius(if (isNext) 16.dp else 0.dp),
@@ -186,9 +188,12 @@ class AllPrayersWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = getTranslation(context, prayer.name, prayer.dateTime),
-                        style = TextStyle(
+                        style =
+                        TextStyle(
                             fontSize = if (index == 0) 18.sp else 16.sp,
-                            fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight =
+                            if (index == 0) FontWeight.Bold
+                            else FontWeight.Normal,
                             color = nextTextColor
                         ),
                         modifier = GlanceModifier.defaultWeight()
@@ -196,9 +201,12 @@ class AllPrayersWidget : GlanceAppWidget() {
 
                     Text(
                         text = prayer.getFormattedTime(),
-                        style = TextStyle(
+                        style =
+                        TextStyle(
                             fontSize = if (index == 0) 18.sp else 16.sp,
-                            fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight =
+                            if (index == 0) FontWeight.Bold
+                            else FontWeight.Normal,
                             color = nextTimeColor
                         )
                     )
@@ -212,37 +220,30 @@ class AllPrayersWidget : GlanceAppWidget() {
     }
 
     private fun scheduleWidgetUpdate(context: Context, durationTillNextPrayer: Duration) {
-        val widgetUpdateWork = OneTimeWorkRequest.Builder(AllPrayersWidgetWorker::class.java)
-            .setInitialDelay(
-                durationTillNextPrayer.toMillis(),
-                java.util.concurrent.TimeUnit.MILLISECONDS
+        val widgetUpdateWork =
+            OneTimeWorkRequest.Builder(AllPrayersWidgetWorker::class.java)
+                .setInitialDelay(
+                    durationTillNextPrayer.toMillis(),
+                    java.util.concurrent.TimeUnit.MILLISECONDS
+                )
+                .addTag("AllPrayersWidgetWorker")
+                .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(
+                "AllPrayersWidgetWorker",
+                ExistingWorkPolicy.REPLACE,
+                widgetUpdateWork
             )
-            .addTag("AllPrayersWidgetWorker")
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "AllPrayersWidgetWorker",
-            ExistingWorkPolicy.REPLACE,
-            widgetUpdateWork
-        )
-
-
     }
-
-
 }
 
-
-class AllPrayersWidgetWorker(
-    context: Context,
-    workerParams: WorkerParameters
-) : CoroutineWorker(context, workerParams) {
+class AllPrayersWidgetWorker(context: Context, workerParams: WorkerParameters) :
+    CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         try {
-            AllPrayersWidget().apply {
-                updateAll(applicationContext)
-            }
+            AllPrayersWidget().apply { updateAll(applicationContext) }
             return Result.success()
         } catch (e: Exception) {
             Log.e("AllPrayersWidgetWorker", "Error updating widget", e)
@@ -250,4 +251,3 @@ class AllPrayersWidgetWorker(
         }
     }
 }
-

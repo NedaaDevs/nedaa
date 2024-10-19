@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,24 +9,28 @@ import 'package:nedaa/modules/prayer_times/bloc/prayer_times_bloc.dart';
 import 'package:nedaa/modules/settings/models/notification_settings.dart';
 import 'package:nedaa/modules/settings/models/prayer_type.dart';
 import 'package:nedaa/modules/settings/repositories/settings_repository.dart';
+import 'package:nedaa/modules/settings/screens/pre_athan_before_dialog.dart';
+import 'package:nedaa/utils/arabic_digits.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'package:nedaa/modules/settings/bloc/user_settings_bloc.dart';
 
-class AthanPrayerSettingsScreen extends StatefulWidget {
-  const AthanPrayerSettingsScreen(this.prayerType, this.prayerName, {Key? key})
+class PreAthanNotificationsScreen extends StatefulWidget {
+  const PreAthanNotificationsScreen(this.prayerType, this.prayerName,
+      {Key? key})
       : super(key: key);
 
   final PrayerType prayerType;
   final String prayerName;
 
   @override
-  State<AthanPrayerSettingsScreen> createState() =>
-      _AthanPrayerSettingsScreenState();
+  State<PreAthanNotificationsScreen> createState() =>
+      _PreAthanPrayerSettingsScreenState();
 }
 
-class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
+class _PreAthanPrayerSettingsScreenState
+    extends State<PreAthanNotificationsScreen> {
   Timer? _debounce;
-  // or as a local variable
   final player = AudioPlayer();
 
   @override
@@ -50,7 +55,7 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
         .add(FetchPrayerTimesEvent(userLocation, calculationMethod, timezone));
   }
 
-  Widget _ringtoneTile(
+  Widget _buildRingtoneTile(
     BuildContext context,
     AppLocalizations t,
     NotificationSettings settings,
@@ -79,14 +84,15 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
             Navigator.pop(context);
           }
         });
+
         await showModalBottomSheet(
           context: context,
           builder: (context) {
             return TextButton(
               child: Text(t.stop),
-              onPressed: () {
+              onPressed: () async {
                 if (player.state == PlayerState.playing) {
-                  player.stop();
+                  await player.stop();
                   Navigator.pop(context);
                 }
               },
@@ -99,7 +105,7 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
     );
   }
 
-  Widget _notificationSettingsSections(
+  Widget _buildNotificationSettings(
       AppLocalizations t,
       NotificationSettings settings,
       List<NotificationRingtone> ringtoneList,
@@ -129,9 +135,29 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
         ),
         if (settings.sound)
           ...ringtoneList.map(
-            (e) => _ringtoneTile(context, t, settings, onUpdate, e),
+            (e) => _buildRingtoneTile(context, t, settings, onUpdate, e),
           ),
       ],
+    );
+  }
+
+  Widget _buildPreAthanBeforeSection(
+      AppLocalizations t, PreAthanSettings settings, void Function() onUpdate) {
+    return ListTile(
+      title: Text(t.preAhtanBeforeTime),
+      trailing:
+          Text(t.minuteShortForm(translateNumber(t, '${settings.before}'))),
+      onTap: () async {
+        final before = await showDialog(
+          barrierDismissible: true,
+          context: context,
+          builder: (context) => PreAthanBeforeDialog(before: settings.before),
+        );
+        if (before != null) {
+          settings.before = before;
+          onUpdate();
+        }
+      },
     );
   }
 
@@ -156,7 +182,7 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
       });
     }
 
-    var isEnabled = prayerNotificationSettings.athanSettings.enabled;
+    var isEnabled = prayerNotificationSettings.preAthanSettings.enabled;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +197,7 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
         SwitchListTile(
           value: isEnabled,
           onChanged: (value) {
-            prayerNotificationSettings.athanSettings.enabled = value;
+            prayerNotificationSettings.preAthanSettings.enabled = value;
             onUpdate();
           },
           title: Text(t.enable),
@@ -180,11 +206,14 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
               : const Icon(Icons.notifications_off),
         ),
         if (isEnabled) ...[
-          _notificationSettingsSections(
-              t,
-              prayerNotificationSettings.athanSettings.notificationSettings,
-              athanRingtones,
-              onUpdate),
+          _buildPreAthanBeforeSection(
+              t, prayerNotificationSettings.preAthanSettings, onUpdate),
+          _buildNotificationSettings(
+            t,
+            prayerNotificationSettings.preAthanSettings.notificationSettings,
+            preAthanRingtones,
+            onUpdate,
+          ),
         ],
         const Divider(height: 32, thickness: 1),
       ],
