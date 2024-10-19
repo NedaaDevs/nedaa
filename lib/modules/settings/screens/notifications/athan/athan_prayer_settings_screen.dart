@@ -8,7 +8,6 @@ import 'package:nedaa/modules/prayer_times/bloc/prayer_times_bloc.dart';
 import 'package:nedaa/modules/settings/models/notification_settings.dart';
 import 'package:nedaa/modules/settings/models/prayer_type.dart';
 import 'package:nedaa/modules/settings/repositories/settings_repository.dart';
-import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:nedaa/modules/settings/bloc/user_settings_bloc.dart';
 
@@ -51,7 +50,7 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
         .add(FetchPrayerTimesEvent(userLocation, calculationMethod, timezone));
   }
 
-  SettingsTile _ringtoneTile(
+  Widget _ringtoneTile(
     BuildContext context,
     AppLocalizations t,
     NotificationSettings settings,
@@ -62,21 +61,24 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
     var translations = ringtoneTranslations[locale.languageCode] ??
         ringtoneTranslations['en']!;
 
-    return SettingsTile(
+    return ListTile(
       title: Text(translations[ringtone.displayId] ?? '??'),
       trailing: ringtone.displayId == settings.ringtone.displayId
           ? const Icon(Icons.check)
           : null,
-      onPressed: (context) async {
+      onTap: () async {
         settings.ringtone = ringtone;
         onUpdate();
 
         player.play(AssetSource(ringtone.fileName));
 
-        player.onPlayerComplete.listen((event) {
-          Navigator.pop(context);
-        });
+        bool isModalOpen = true;
 
+        player.onPlayerComplete.listen((event) {
+          if (isModalOpen) {
+            Navigator.pop(context);
+          }
+        });
         await showModalBottomSheet(
           context: context,
           builder: (context) {
@@ -91,61 +93,51 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
             );
           },
         );
+        isModalOpen = false;
         await player.stop();
       },
     );
   }
 
-  List<AbstractSettingsSection> _notificationSettingsSections(
+  Widget _notificationSettingsSections(
       AppLocalizations t,
       NotificationSettings settings,
       List<NotificationRingtone> ringtoneList,
       void Function() onUpdate) {
-    return [
-      // hide vibration for iOS users because it's not supported
-      if (!Platform.isIOS)
-        SettingsSection(
-          tiles: [
-            SettingsTile.switchTile(
-              initialValue: settings.vibration,
-              onToggle: (value) {
-                settings.vibration = value;
-                onUpdate();
-              },
-              title: Text(t.vibrate),
-              leading: const Icon(Icons.vibration),
-            ),
-          ],
-        ),
-      SettingsSection(
-        tiles: [
-          SettingsTile.switchTile(
-            initialValue: settings.sound,
-            onToggle: (value) {
-              settings.sound = value;
-
+    return Column(
+      children: [
+        if (!Platform.isIOS)
+          SwitchListTile(
+            value: settings.vibration,
+            onChanged: (value) {
+              settings.vibration = value;
               onUpdate();
             },
-            title: Text(t.alertOn),
-            leading: settings.sound
-                ? const Icon(Icons.volume_up)
-                : const Icon(Icons.volume_off),
+            title: Text(t.vibrate),
+            secondary: const Icon(Icons.vibration),
           ),
-        ],
-      ),
-      if (settings.sound)
-        SettingsSection(
-            tiles: ringtoneList
-                .map(
-                  (e) => _ringtoneTile(context, t, settings, onUpdate, e),
-                )
-                .toList()),
-    ];
+        SwitchListTile(
+          value: settings.sound,
+          onChanged: (value) {
+            settings.sound = value;
+            onUpdate();
+          },
+          title: Text(t.alertOn),
+          secondary: settings.sound
+              ? const Icon(Icons.volume_up)
+              : const Icon(Icons.volume_off),
+        ),
+        if (settings.sound)
+          ...ringtoneList.map(
+            (e) => _ringtoneTile(context, t, settings, onUpdate, e),
+          ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    var t = AppLocalizations.of(context);
+    var t = AppLocalizations.of(context)!;
 
     var currentUserState = context.watch<UserSettingsBloc>().state;
     var prayerNotificationSettings =
@@ -156,48 +148,50 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
             PrayerNotificationEvent(
                 widget.prayerType, prayerNotificationSettings),
           );
-      // reschedule notifications with the new settings.
-      // debounce scheduling to avoid scheduling multiple times in a short period of time.
       if (_debounce?.isActive ?? false) _debounce!.cancel();
       _debounce = Timer(const Duration(milliseconds: 1000), () async {
         await _triggerRefetch();
       });
     }
 
-    var athanSections = _notificationSettingsSections(
-      t!,
-      prayerNotificationSettings.athanSettings,
-      athanRingtones,
-      onUpdate,
-    );
-    var iqamaSections = <AbstractSettingsSection>[];
+    var isEnabled = prayerNotificationSettings.athanSettings.enabled;
 
-    var isIqamaEnabled = prayerNotificationSettings.iqamaSettings.enabled;
-    var iqamaEnableSection = SettingsSection(
-      tiles: [
-        SettingsTile.switchTile(
-          initialValue: isIqamaEnabled,
-          onToggle: (value) {
-            prayerNotificationSettings.iqamaSettings.enabled = value;
-
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            widget.prayerName,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ),
+        SwitchListTile(
+          value: isEnabled,
+          onChanged: (value) {
+            prayerNotificationSettings.athanSettings.enabled = value;
             onUpdate();
           },
-          title: Text(t.enableIqamaNotification),
-          leading: isIqamaEnabled
+          title: Text(t.enable),
+          secondary: isEnabled
               ? const Icon(Icons.notifications_active)
               : const Icon(Icons.notifications_off),
         ),
+        if (isEnabled) ...[
+          _notificationSettingsSections(
+              t,
+              prayerNotificationSettings.athanSettings.notificationSettings,
+              athanRingtones,
+              onUpdate),
+          _notificationSettingsSections(
+            t,
+            prayerNotificationSettings.athanSettings.notificationSettings,
+            athanRingtones,
+            onUpdate,
+          ),
+        ],
+        const Divider(height: 32, thickness: 1),
       ],
-    );
-    iqamaSections.add(iqamaEnableSection);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.prayerName),
-      ),
-      body: SettingsList(
-        sections: athanSections,
-      ),
     );
   }
 }
