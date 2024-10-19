@@ -170,7 +170,7 @@ Future<void> scheduleNotificationsInner(
 
   if (days.isEmpty) return;
   var platformChannelDetails = _buildNotificationDetails(
-      notificationSettings[PrayerType.fajr]!.athanSettings);
+      notificationSettings[PrayerType.fajr]!.athanSettings.notificationSettings);
 
   var id = 0;
   var now = getCurrentTimeWithTimeZone(
@@ -195,7 +195,7 @@ Future<void> scheduleNotificationsInner(
       var prayerNotificationSettings = notificationSettings[e.key]!;
 
       var athanPlatformChannelDetails =
-          _buildNotificationDetails(prayerNotificationSettings.athanSettings);
+          _buildNotificationDetails(prayerNotificationSettings.athanSettings.notificationSettings);
       var prayerTime = tz.TZDateTime.from(
         e.value,
         tz.getLocation(day.timeZoneName),

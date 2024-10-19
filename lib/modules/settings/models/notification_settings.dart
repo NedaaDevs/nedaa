@@ -69,47 +69,33 @@ class PreAthanSettings {
       };
 }
 
-class PrayerNotificationSettings {
-  PrayerNotificationSettings({
-    required this.athanSettings,
-    required this.iqamaSettings,
-    required this.preAthanSettings,
+class AthanSettings {
+  AthanSettings({
+    required this.enabled,
+    required this.notificationSettings,
   });
 
-  PrayerNotificationSettings.defaultValue()
-      : this(
-          athanSettings: NotificationSettings(
-            sound: true,
-            vibration: false,
-            ringtone: athanRingtones[0],
-          ),
-          iqamaSettings: IqamaSettings(
-            enabled: true,
-            delay: 10,
-            notificationSettings: NotificationSettings(
-              sound: true,
-              vibration: false,
-              ringtone: iqamaRingtones[0],
-            ),
-          ),
-          preAthanSettings: PreAthanSettings.defaultValue(),
-        );
+  bool enabled;
+  NotificationSettings notificationSettings;
 
-  NotificationSettings athanSettings;
-  IqamaSettings iqamaSettings;
-  PreAthanSettings preAthanSettings;
+  factory AthanSettings.defaultValue() => AthanSettings(
+        enabled: false,
+        notificationSettings: NotificationSettings(
+          sound: true,
+          vibration: false,
+          ringtone: athanRingtones[0],
+        ),
+      );
 
-  factory PrayerNotificationSettings.fromJson(Map<String, dynamic> json) {
-    return PrayerNotificationSettings(
-      athanSettings: NotificationSettings.fromJson(json['athanSettings']),
-      iqamaSettings: IqamaSettings.fromJson(json['iqamaSettings']),
-      preAthanSettings: PreAthanSettings.fromJson(json['preAthanSettings']),
-    );
-  }
+  factory AthanSettings.fromJson(Map<String, dynamic> json) => AthanSettings(
+        enabled: json["enabled"],
+        notificationSettings:
+            NotificationSettings.fromJson(json["notificationSettings"]),
+      );
+
   Map<String, dynamic> toJson() => {
-        'athanSettings': athanSettings.toJson(),
-        'iqamaSettings': iqamaSettings.toJson(),
-        'preAthanSettings': preAthanSettings.toJson()
+        "enabled": enabled,
+        "notificationSettings": notificationSettings.toJson(),
       };
 }
 
@@ -134,6 +120,52 @@ class IqamaSettings {
         "enabled": enabled,
         "notificationSettings": notificationSettings.toJson(),
         "delay": delay,
+      };
+}
+
+class PrayerNotificationSettings {
+  PrayerNotificationSettings({
+    required this.athanSettings,
+    required this.iqamaSettings,
+    required this.preAthanSettings,
+  });
+
+  PrayerNotificationSettings.defaultValue()
+      : this(
+          athanSettings: AthanSettings(
+              enabled: true,
+              notificationSettings: NotificationSettings(
+                sound: true,
+                vibration: false,
+                ringtone: athanRingtones[0],
+              )),
+          iqamaSettings: IqamaSettings(
+            enabled: true,
+            delay: 10,
+            notificationSettings: NotificationSettings(
+              sound: true,
+              vibration: false,
+              ringtone: iqamaRingtones[0],
+            ),
+          ),
+          preAthanSettings: PreAthanSettings.defaultValue(),
+        );
+
+  AthanSettings athanSettings;
+  IqamaSettings iqamaSettings;
+  PreAthanSettings preAthanSettings;
+
+  factory PrayerNotificationSettings.fromJson(Map<String, dynamic> json) {
+    return PrayerNotificationSettings(
+      athanSettings: AthanSettings.fromJson(json['athanSettings']),
+      iqamaSettings: IqamaSettings.fromJson(json['iqamaSettings']),
+      preAthanSettings: PreAthanSettings.fromJson(json['preAthanSettings']),
+    );
+  }
+  Map<String, dynamic> toJson() => {
+        'athanSettings': athanSettings.toJson(),
+        'iqamaSettings': iqamaSettings.toJson(),
+        'preAthanSettings': preAthanSettings.toJson()
       };
 }
 
