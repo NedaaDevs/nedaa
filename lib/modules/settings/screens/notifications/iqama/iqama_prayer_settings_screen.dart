@@ -173,6 +173,8 @@ class _IqamaPrayerSettingsScreenState extends State<IqamaPrayerSettingsScreen> {
             PrayerNotificationEvent(
                 widget.prayerType, prayerNotificationSettings),
           );
+      // reschedule notifications with the new settings.
+      // debounce scheduling to avoid scheduling multiple times in a short period of time.
       if (_debounce?.isActive ?? false) _debounce!.cancel();
       _debounce = Timer(const Duration(milliseconds: 1000), () async {
         await _triggerRefetch();
