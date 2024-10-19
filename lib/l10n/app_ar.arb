@@ -46,7 +46,7 @@
   "@preAthanTimeNotificationContent": {
     "placeholders": {
       "before": {
-        "example": "5",
+        "example": "٥",
         "type": "String"
       },
       "prayerName": {
