@@ -170,7 +170,9 @@ Future<void> scheduleNotificationsInner(
 
   if (days.isEmpty) return;
   var platformChannelDetails = _buildNotificationDetails(
-      notificationSettings[PrayerType.fajr]!.athanSettings.notificationSettings);
+      notificationSettings[PrayerType.fajr]!
+          .athanSettings
+          .notificationSettings);
 
   var id = 0;
   var now = getCurrentTimeWithTimeZone(
@@ -194,8 +196,8 @@ Future<void> scheduleNotificationsInner(
 
       var prayerNotificationSettings = notificationSettings[e.key]!;
 
-      var athanPlatformChannelDetails =
-          _buildNotificationDetails(prayerNotificationSettings.athanSettings.notificationSettings);
+      var athanPlatformChannelDetails = _buildNotificationDetails(
+          prayerNotificationSettings.athanSettings.notificationSettings);
       var prayerTime = tz.TZDateTime.from(
         e.value,
         tz.getLocation(day.timeZoneName),
@@ -238,18 +240,21 @@ Future<void> scheduleNotificationsInner(
         }
       }
 
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        id,
-        t.prayerTimeNotificationTitle(prayerName),
-        t.prayerTimeNotificationContent(prayerName),
-        prayerTime,
-        athanPlatformChannelDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-      counter++;
-      id++;
+      var athanSettings = prayerNotificationSettings.athanSettings;
+      if (athanSettings.enabled && counter < maxIOSNotification) {
+        await _flutterLocalNotificationsPlugin.zonedSchedule(
+          id,
+          t.prayerTimeNotificationTitle(prayerName),
+          t.prayerTimeNotificationContent(prayerName),
+          prayerTime,
+          athanPlatformChannelDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+        counter++;
+        id++;
+      }
 
       var iqamaSettings = prayerNotificationSettings.iqamaSettings;
       if (iqamaSettings.enabled && counter < maxIOSNotification) {

@@ -183,12 +183,6 @@ class _AthanPrayerSettingsScreenState extends State<AthanPrayerSettingsScreen> {
               prayerNotificationSettings.athanSettings.notificationSettings,
               athanRingtones,
               onUpdate),
-          _notificationSettingsSections(
-            t,
-            prayerNotificationSettings.athanSettings.notificationSettings,
-            athanRingtones,
-            onUpdate,
-          ),
         ],
         const Divider(height: 32, thickness: 1),
       ],
