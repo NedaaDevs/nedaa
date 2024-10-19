@@ -52,6 +52,6 @@ Future<http.Response> getCoordinatesFromAddress(String address) async {
   if (response.statusCode == 200) {
     return response;
   } else {
-    return Future.error('An error occurd while get coordinates');
+    return Future.error('An error occurred while get coordinates');
   }
 }
