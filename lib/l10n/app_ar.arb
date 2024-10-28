@@ -2,11 +2,11 @@
   "@iqamaTimeNotificationContent": {
     "placeholders": {
       "delay": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       },
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -14,7 +14,7 @@
   "@iqamaTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -22,7 +22,7 @@
   "@minuteShortForm": {
     "placeholders": {
       "minute": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       }
     }
@@ -30,7 +30,7 @@
   "@prayerTimeNotificationContent": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -38,7 +38,7 @@
   "@prayerTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -46,11 +46,11 @@
   "@preAthanTimeNotificationContent": {
     "placeholders": {
       "before": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       },
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -58,7 +58,7 @@
   "@preAthanTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
