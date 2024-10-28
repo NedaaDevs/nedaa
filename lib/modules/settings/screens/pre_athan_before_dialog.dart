@@ -23,7 +23,7 @@ class _PreAthanBeforeDialogState extends State<PreAthanBeforeDialog> {
   @override
   Widget build(BuildContext context) {
     var t = AppLocalizations.of(context);
-    return SimpleDialog(title: Text(t!.preAhtanBeforeTime), children: [
+    return SimpleDialog(title: Text(t!.preAthanBeforeTime), children: [
       Center(
           child: Text(
         _currentSliderValue.toInt().toString(),

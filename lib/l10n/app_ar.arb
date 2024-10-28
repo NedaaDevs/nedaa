@@ -125,7 +125,7 @@
   "prayerTimeNotificationContent": "حان وقت دخول صلاة {prayerName}",
   "prayerTimeNotificationTitle": "صلاة {prayerName}",
   "prayerTimes": "أوقات الصلاة",
-  "preAhtanBeforeTime": "تنبيه قبل الأذان",
+  "preAthanBeforeTime": "تنبيه قبل الأذان",
   "preAthanNotifications": "قبل الأذان",
   "preAthanTimeNotificationContent": "{before} د حتى {prayerName}",
   "preAthanTimeNotificationTitle": "سيحين موعد دخول صلاة {prayerName}",
