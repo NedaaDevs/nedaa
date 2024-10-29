@@ -2,11 +2,11 @@
   "@iqamaTimeNotificationContent": {
     "placeholders": {
       "delay": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       },
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -14,7 +14,7 @@
   "@iqamaTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -22,7 +22,7 @@
   "@minuteShortForm": {
     "placeholders": {
       "minute": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       }
     }
@@ -30,7 +30,7 @@
   "@prayerTimeNotificationContent": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -38,7 +38,7 @@
   "@prayerTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -46,11 +46,11 @@
   "@preAthanTimeNotificationContent": {
     "placeholders": {
       "before": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       },
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -58,7 +58,7 @@
   "@preAthanTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -68,10 +68,10 @@
   "allowNotifications": "السماح بالإشعارات",
   "allPrayersWidget": "جميع الصلوات",
   "appTitle": "نِداء",
-  "appVersion": "نسخة رقم",
+  "appVersion": "نسخة رَقَم",
   "asr": "العصر",
   "athan": "الأذان",
-  "athanNotifications": "الاذان",
+  "athanNotifications": "الأذان",
   "calculationMethod": "طريقة الحساب",
   "cancel": "إلغاء",
   "city": "المدينة",
@@ -83,26 +83,26 @@
   "defaultString": "الافتراضي",
   "duhur": "الظهر",
   "enable": "تفعيل",
-  "enableIqamaNotification": " تنبيه الاقامة",
+  "enableIqamaNotification": "تنبيه الإقامة",
   "enablePreAthanNotification": "تفعيل تنبيه قبل الأذان",
   "error": "خطأ",
-  "failedToPinWidget": "فشل في تثبيت االتطبيق المصغر : {error}",
+  "failedToPinWidget": "فشل في تثبيت التطبيق المصغر: {error}",
   "fajr": "الفجر",
   "firstThird": "الثُلُث الأوَّل",
   "friday": "الجمعة",
   "getCurrentLocation": "تحديد الموقع الحالي",
   "homePage": "الرئيسية",
   "imsak": "إمساك",
-  "instructionsToSetLocationManually": "إذا كنت لا تريد استخدام موقعك الحالي ، فيمكنك تعيينه يدويًا بالانتقال إلى 'الإعدادات' > 'الموقع' > 'الموقع' وتحديد موقعك.",
+  "instructionsToSetLocationManually": "إذا كنت لا تريد استخدام موقعك الحالي، فيمكنك تعيينه يدويًا بالانتقال إلى 'الإعدادات' > 'الموقع' > 'الموقع' وتحديد موقعك.",
   "inTime": "خلال",
   "iqama": "الاقامة",
-  "iqamaDelayTime": " تنبيه الاقامة بعد",
-  "iqamaNotifications": "الأقامة",
-  "iqamaTimeNotificationContent": "مضت {delay} دقائق منذ اذان {prayerName}",
-  "iqamaTimeNotificationTitle": "حان وقت اقامة صلاة {prayerName}",
+  "iqamaDelayTime": "تنبيه الاقامة بعد",
+  "iqamaNotifications": "الإقامة",
+  "iqamaTimeNotificationContent": "مضت {delay} دقائق منذ أذان {prayerName}",
+  "iqamaTimeNotificationTitle": "حان وقت إقامة صلاة {prayerName}",
   "isha": "العشاء",
   "jumuah": "الجمعة",
-  "keepLocationUpdated": "إستمرار تحديث الموقع",
+  "keepLocationUpdated": "استمرار تحديث الموقع",
   "language": "اللغة",
   "lastThird": "الثُلُث الأخير",
   "light": "فاتح",
@@ -120,15 +120,15 @@
   "openAppReminderContent": "يرجى فتح التطبيق للاستمرار في تلقي إشعارات",
   "openAppReminderTitle": "يرجى فتح التطبيق",
   "permissionGranted": "تم منح الإذن",
-  "pinWidget": "تثبيت االتطبيق المصغر ",
+  "pinWidget": "تثبيت التطبيق المصغر ",
   "prayersAlerts": "تنبيهات الصلوات",
-  "prayerTimeNotificationContent": " حان وقت دخول صلاة {prayerName}",
+  "prayerTimeNotificationContent": "حان وقت دخول صلاة {prayerName}",
   "prayerTimeNotificationTitle": "صلاة {prayerName}",
   "prayerTimes": "أوقات الصلاة",
   "preAhtanBeforeTime": "تنبيه قبل الأذان",
-  "preAthanNotifications": "قبل الاذان",
+  "preAthanNotifications": "قبل الأذان",
   "preAthanTimeNotificationContent": "{before} د حتى {prayerName}",
-  "preAthanTimeNotificationTitle": " سيحين موعد دخول صلاة {prayerName}",
+  "preAthanTimeNotificationTitle": "سيحين موعد دخول صلاة {prayerName}",
   "reAddTheWidget": "الرجاء إعادة تثبيت التطبيق المصغر",
   "requestLocationPermissionContent": "يستخدم هذا التطبيق موقعك لتحديد مواقيت الصلاة الصحيحة تلقائيًا. هل ترغب في فتح إعدادات الموقع؟",
   "requestLocationPermissionTitle": "إذن تحديد الموقع",
@@ -138,7 +138,7 @@
   "saturday": "السبت",
   "scheduleExactAlarmDescription": "هذا الإذن مطلوب لتحديث دقيق لأوقات الصلاة.",
   "selectMailApp": "يرجى تحديد تطبيق بريد إلكتروني",
-  "selectWidget": "اختر االتطبيق المصغر (الويدجت)",
+  "selectWidget": "اختر التطبيق المصغر (الويدجت)",
   "sendCrashReports": "إرسال تحليلات",
   "sendCrashReportsDescription": "نستخدم سجلات الأعطال لجمع بيانات الاستخدام المجهولة لمساعدتنا في تحسين التطبيق. لا يتم جمع أي معلومات شخصية. يمكنك تعطيله في أي وقت. لمزيد من المعلومات، يرجى زيارة سياسة الخصوصية الخاصة بنا.",
   "settings": "الإعدادات",
