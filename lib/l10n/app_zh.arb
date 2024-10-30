@@ -1,0 +1,160 @@
+{
+  "@iqamaTimeNotificationContent": {
+    "placeholders": {
+      "delay": {
+        "example": "5",
+        "type": "String"
+      },
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@iqamaTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@minuteShortForm": {
+    "placeholders": {
+      "minute": {
+        "example": "5",
+        "type": "String"
+      }
+    }
+  },
+  "@prayerTimeNotificationContent": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@prayerTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@preAthanTimeNotificationContent": {
+    "placeholders": {
+      "before": {
+        "example": "5",
+        "type": "String"
+      },
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@preAthanTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "addToHomeScreen": "Add to Home Screen",
+  "alertOn": "Sound",
+  "allowNotifications": "Allow Notifications",
+  "allPrayersWidget": "Today's Prayers",
+  "appTitle": "Nedaa",
+  "appVersion": "Version",
+  "asr": "Asr",
+  "athan": "Athan",
+  "athanNotifications": "Athan",
+  "calculationMethod": "Calculation Method",
+  "cancel": "CANCEL",
+  "city": "City",
+  "contactUs": "Contact Us",
+  "couldNotLaunchUrl": "Could not launch ",
+  "country": "Country",
+  "currentLocation": "Current Location",
+  "dark": "Dark",
+  "defaultString": "Default",
+  "duhur": "Duhur",
+  "enable": "Enable",
+  "enableIqamaNotification": "Iqama Notification after",
+  "enablePreAthanNotification": "Pre-Athan notifications before",
+  "error": "Error",
+  "failedToPinWidget": "Failed to pin widget: {error}",
+  "fajr": "Fajr",
+  "firstThird": "First Third",
+  "friday": "Friday",
+  "getCurrentLocation": "Get Current Location",
+  "homePage": "Home",
+  "imsak": "Imsak",
+  "instructionsToSetLocationManually": "If you do not want to use your current location, you can set it manually by going to 'Settings' > 'Location' > 'Location' and select your location.",
+  "inTime": "in",
+  "iqama": "Iqama",
+  "iqamaDelayTime": "Iqama Time",
+  "iqamaNotifications": "Iqama",
+  "iqamaTimeNotificationContent": "{delay} mintues since {prayerName} Athan",
+  "iqamaTimeNotificationTitle": "Time for {prayerName} Iqama",
+  "isha": "Isha",
+  "jumuah": "Jumu’ah",
+  "keepLocationUpdated": "Keep Updated",
+  "language": "Language",
+  "lastThird": "Last Third",
+  "light": "Light",
+  "location": "Location",
+  "locationSettings": "Location Settings",
+  "maghrib": "Maghrib",
+  "midnight": "Midnight",
+  "minuteShortForm": "{minute} min",
+  "monday": "Monday",
+  "nedaaWidget": "Previous/Next Prayer",
+  "noMailAppFound": "No mail apps installed",
+  "noPrayersTimesFound": "No prayer times found",
+  "notification": "Notification",
+  "ok": "OK",
+  "openAppReminderContent": "Please Open the App to keep receiving notifications",
+  "openAppReminderTitle": "Open App",
+  "permissionGranted": "Permission Granted",
+  "pinWidget": "Pin Widget",
+  "prayersAlerts": "Prayers Alerts",
+  "prayerTimeNotificationContent": "Time for {prayerName}",
+  "prayerTimeNotificationTitle": "{prayerName} Prayer",
+  "prayerTimes": "Prayer Times",
+  "preAhtanBeforeTime": "Before Athan",
+  "preAthanNotifications": "Before Athan",
+  "preAthanTimeNotificationContent": "{before}m Remaining until {prayerName} Athan",
+  "preAthanTimeNotificationTitle": "It is about time for {prayerName}",
+  "reAddTheWidget": "Please Readd the widget",
+  "requestLocationPermissionContent": "This app uses your location to automatically determine the correct prayer times. Would you like to open location settings?",
+  "requestLocationPermissionTitle": "Location Permission",
+  "requestPermission": "Request Permission",
+  "restart": "Restart",
+  "restartAppToApplyChanges": "Please restart the app to apply changes",
+  "saturday": "Saturday",
+  "scheduleExactAlarmDescription": "This permission is required for accurate prayer time updates.",
+  "selectMailApp": "Select Mail App",
+  "selectWidget": "Select Widget",
+  "sendCrashReports": "Send Analytics",
+  "sendCrashReportsDescription": "We use crash logs to collect anonymous usage data to help us improve the app. No personal information is collected. You can disable it anytime. For more information, please visit our privacy policy.",
+  "settings": "Settings",
+  "since": "since",
+  "state": "State",
+  "stop": "Stop",
+  "sunday": "Sunday",
+  "sunrise": "Sunrise",
+  "system": "System",
+  "theme": "Theme",
+  "thursday": "Thursday",
+  "tuesday": "Tuesday",
+  "unableToLunchLink": "Unable to launch link",
+  "unknownWidget": "Unknown Widget",
+  "until": "Until",
+  "vibrate": "Vibrate",
+  "wednesday": "Wednesday",
+  "widgetPinnedSuccessfully": "Widget pinned successfully!"
+}
