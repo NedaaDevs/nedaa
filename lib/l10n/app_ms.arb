@@ -63,7 +63,7 @@
       }
     }
   },
-  "addToHomeScreen": "Add to Home Screen",
+  "addToHomeScreen": "",
   "alertOn": "Sound",
   "allowNotifications": "Allow Notifications",
   "allPrayersWidget": "Today's Prayers",
