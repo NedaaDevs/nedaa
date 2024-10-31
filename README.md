@@ -29,7 +29,7 @@
 - [Introduction](#introduction)
 - [Features](#features)
 - [Feedback](#feedback)
-- [Want to see the app in your language?](#want-to-see-the-app-in-your-language)
+- [Translation](#translation)
   - [Example](#example)
 - [Build Process](#build-process)
 - [README Template.](#readme-template)
@@ -88,19 +88,12 @@ Also pull request are welcome.
 If you find any issue please [file an issue](https://github.com/nedaaDevs/nedaa/issues/new).
 
 If you have any questions, feel free to reach us at <a target="_blank" href="mailto: support@nedaa.io">support@nedaa.io</a>
-## Want to see the app in your language?
-If you would like to see the app in your language please help us by submitting a pull request with the translation of the [strings](https://github.com/NedaaDevs/nedaa/blob/master/lib/l10n/app_en.arb).
-<br>
-If you are not familiar with the process of submitting a pull request, please send us an email at 
-<a target="_blank" href="mailto:support@nedaa.io">support@nedaa.io</a>
-<br/>
-Please note that you only need to translate this part of the file
-<br/>
-### Example
-```json
-                        Translate this part only.
-"allowNotifications": "Allow Notifications",
-```
+## Translation
+If you would like to see the app in your language, you can contribute very easily by joining our [crowdin project](https://crowdin.com/project/nedaa/invite?h=3134f636cfd99d1a7ca05ee3057975e22254935).
+
+Select the language you want, and submit translations to the strings in the app.
+
+If you don't see your language in the crowdin project, you can create a new ["discussion"](https://crowdin.com/project/nedaa/discussions) in the crowdin project, and we will add the language for you.
 
 ## Build Process
 
@@ -111,5 +104,5 @@ Please note that you only need to translate this part of the file
 
 
 <br/>
-## README Template.
-### this readme template is based on [GitPoint](https://github.com/gitpoint/git-point).
+<!-- ## README Template.
+### this readme template is based on [GitPoint](https://github.com/gitpoint/git-point). -->

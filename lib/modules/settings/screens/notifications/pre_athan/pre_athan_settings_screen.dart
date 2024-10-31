@@ -144,7 +144,7 @@ class _PreAthanPrayerSettingsScreenState
   Widget _buildPreAthanBeforeSection(
       AppLocalizations t, PreAthanSettings settings, void Function() onUpdate) {
     return ListTile(
-      title: Text(t.preAhtanBeforeTime),
+      title: Text(t.preAthanBeforeTime),
       trailing:
           Text(t.minuteShortForm(translateNumber(t, '${settings.before}'))),
       onTap: () async {
