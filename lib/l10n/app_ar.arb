@@ -76,7 +76,7 @@
   "cancel": "إلغاء",
   "city": "المدينة",
   "contactUs": "اتصل بنا",
-  "couldNotLaunchUrl": "لا يمكن فتح ",
+  "couldNotLaunchUrl": "لا يمكن فتح",
   "country": "الدولة",
   "currentLocation": "الموقع الحالي",
   "dark": "داكن",
@@ -120,7 +120,7 @@
   "openAppReminderContent": "يرجى فتح التطبيق للاستمرار في تلقي إشعارات",
   "openAppReminderTitle": "يرجى فتح التطبيق",
   "permissionGranted": "تم منح الإذن",
-  "pinWidget": "تثبيت التطبيق المصغر ",
+  "pinWidget": "تثبيت التطبيق المصغر",
   "prayersAlerts": "تنبيهات الصلوات",
   "prayerTimeNotificationContent": "حان وقت دخول صلاة {prayerName}",
   "prayerTimeNotificationTitle": "صلاة {prayerName}",
@@ -154,7 +154,7 @@
   "unableToLunchLink": "لا يمكن فتح الرابط",
   "unknownWidget": "ويدجت غير معروف",
   "until": "حتى",
-  "vibrate": "إهتزاز",
+  "vibrate": "اهتزاز",
   "wednesday": "الأربعاء",
   "widgetPinnedSuccessfully": "تم تثبيت الويدجت بنجاح!"
 }
