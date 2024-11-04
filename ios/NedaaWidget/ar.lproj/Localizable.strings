@@ -2,17 +2,21 @@
   ar.strings
 */
 
-"fajr" = "الفجر";
-"sunrise" = "الشروق";
-"dhuhr" = "الظهر";
-"maghrib" = "المغرب";
+"allPrayersWidgetDesc" = "أوقات الصلاة لليوم الحالي";
+"allPrayersWidgetTitle" = "صلوات اليوم";
 "asr" = "العصر";
+"dhuhr" = "الظهر";
+"eveningPrayersWidgetDesc" = "تتبع مواقيت صلاة العصر والمغرب والعشاء بلمحة";
+"eveningPrayersWidgetTitle" = "صلوات المساء";
+"fajr" = "الفجر";
 "isha" = "العشاء";
 "jumuah" = "الجمعة";
-"noData" = "لا يوجد بيانات الرجاء فتح التطبيق";
-"nextPreviousWidgetTitle" = "الصلاة السابقة و القادمة";
-"nextPreviousWidgetDesc" = "الصلاة القادمة والصلاة السابقة \n سيظهر العد التنازلي 60 دقيقة قبل الصلاة \n وسيعد لمدة 30 دقيقة بعد الصلاة \n يمكنك إيقافه من إعدادات الويدجت.";
-"nextPrayerLockScreenWidgetTitle" = "الصلاة القادمة";
+"maghrib" = "المغرب";
+"morningPrayersWidgetDesc" = "تتبع مواقيت صلاة الفجر والشروق والظهر بلمحة";
+"morningPrayersWidgetTitle" = "صلوات الصباح";
 "nextPrayerLockScreenWidgetDesc" = "يعرض وقت الصلاة القادمة. يظهر مؤقت العد التنازلي 60 دقيقة قبل الصلاة. ويبدأ العد 30 دقيقة بعد الصلاة";
-"allPrayersWidgetTitle" = "صلوات اليوم";
-"allPrayersWidgetDesc" = "أوقات الصلاة لليوم الحالي";
+"nextPrayerLockScreenWidgetTitle" = "الصلاة القادمة";
+"nextPreviousWidgetDesc" = "الصلاة القادمة والصلاة السابقة \n سيظهر العد التنازلي 60 دقيقة قبل الصلاة \n وسيعد لمدة 30 دقيقة بعد الصلاة \n يمكنك إيقافه من إعدادات الويدجت.";
+"nextPreviousWidgetTitle" = "الصلاة السابقة و القادمة";
+"noData" = "لا يوجد بيانات الرجاء فتح التطبيق";
+"sunrise" = "الشروق";

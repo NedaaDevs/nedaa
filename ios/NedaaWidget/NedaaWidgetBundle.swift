@@ -20,6 +20,8 @@ struct NedaaWidgetBundle {
 struct WidgetsBundle16: WidgetBundle {
     var body: some Widget {
         PrayerCountdownLockScreenWidget()
+        MorningPrayerWidget()
+        EveningPrayerWidget()
         PrayerCountdownWidget()
         AllPrayersWidget()
     }

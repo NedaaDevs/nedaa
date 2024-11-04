@@ -2,17 +2,21 @@
   en.strings
 */
 
-"fajr" = "Fajr";
-"sunrise" = "Sunrise";
-"dhuhr" = "Dhuhr";
-"maghrib" = "Maghrib";
+"allPrayersWidgetDesc" = "This widget will show the current day prayers";
+"allPrayersWidgetTitle" = "All Prayers";
 "asr" = "Asr";
+"dhuhr" = "Dhuhr";
+"eveningPrayersWidgetDesc" = "Track Asr, Maghrib, and Isha prayer times at a glance";
+"eveningPrayersWidgetTitle" = "Evening Prayers";
+"fajr" = "Fajr";
 "isha" = "Isha";
 "jumuah" = "Jumu'ah";
-"noData" = "No data please open the app";
-"nextPreviousWidgetTitle" = "Next/Previous Prayer";
-"nextPreviousWidgetDesc" = "This widget will show the next and the previous prayer \n it'll show a countdown 60 minutes before the prayer  \n and will counter for 30 min after the prayer \n you may turn it off from the widget settings";
-"nextPrayerLockScreenWidgetTitle" = "Next Prayer";
+"maghrib" = "Maghrib";
+"morningPrayersWidgetDesc" = "Track Fajr, Sunrise, and Dhuhr prayer times at a glance";
+"morningPrayersWidgetTitle" = "Morning Prayers";
 "nextPrayerLockScreenWidgetDesc" = "Displays the next prayer. it shows a countdown timer 60 minutes before the prayer. And count up 30 minutes after";
-"allPrayersWidgetTitle" = "All Prayers";
-"allPrayersWidgetDesc" = "This widget will show the current day prayers";
+"nextPrayerLockScreenWidgetTitle" = "Next Prayer";
+"nextPreviousWidgetDesc" = "This widget will show the next and the previous prayer \n it'll show a countdown 60 minutes before the prayer  \n and will counter for 30 min after the prayer \n you may turn it off from the widget settings";
+"nextPreviousWidgetTitle" = "Next/Previous Prayer";
+"noData" = "No data please open the app";
+"sunrise" = "Sunrise";
