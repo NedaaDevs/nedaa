@@ -2,11 +2,11 @@
   "@iqamaTimeNotificationContent": {
     "placeholders": {
       "delay": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       },
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -14,7 +14,7 @@
   "@iqamaTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -22,7 +22,7 @@
   "@minuteShortForm": {
     "placeholders": {
       "minute": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       }
     }
@@ -30,7 +30,7 @@
   "@prayerTimeNotificationContent": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -38,7 +38,7 @@
   "@prayerTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -46,11 +46,11 @@
   "@preAthanTimeNotificationContent": {
     "placeholders": {
       "before": {
-        "example": "٥",
+        "example": "5",
         "type": "String"
       },
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -58,7 +58,7 @@
   "@preAthanTimeNotificationTitle": {
     "placeholders": {
       "prayerName": {
-        "example": "الفجر",
+        "example": "Fajr",
         "type": "String"
       }
     }
@@ -76,7 +76,7 @@
   "cancel": "إلغاء",
   "city": "المدينة",
   "contactUs": "اتصل بنا",
-  "couldNotLaunchUrl": "لا يمكن فتح",
+  "couldNotLaunchUrl": "لا يمكن فتح ",
   "country": "الدولة",
   "currentLocation": "الموقع الحالي",
   "dark": "داكن",
@@ -86,7 +86,7 @@
   "enableIqamaNotification": "تنبيه الإقامة",
   "enablePreAthanNotification": "تفعيل تنبيه قبل الأذان",
   "error": "خطأ",
-  "failedToPinWidget": "فشل في تثبيتا التطبيق المصغر: {error}",
+  "failedToPinWidget": "فشل في تثبيت التطبيق المصغر: {error}",
   "fajr": "الفجر",
   "firstThird": "الثُلُث الأوَّل",
   "friday": "الجمعة",
@@ -98,7 +98,7 @@
   "iqama": "الاقامة",
   "iqamaDelayTime": "تنبيه الاقامة بعد",
   "iqamaNotifications": "الإقامة",
-  "iqamaTimeNotificationContent": "مضت {delay} دقائق منذ أذانَ {prayerName}",
+  "iqamaTimeNotificationContent": "مضت {delay} دقائق منذ أذان {prayerName}",
   "iqamaTimeNotificationTitle": "حان وقت إقامة صلاة {prayerName}",
   "isha": "العشاء",
   "jumuah": "الجمعة",
@@ -120,7 +120,7 @@
   "openAppReminderContent": "يرجى فتح التطبيق للاستمرار في تلقي إشعارات",
   "openAppReminderTitle": "يرجى فتح التطبيق",
   "permissionGranted": "تم منح الإذن",
-  "pinWidget": "تثبيت التطبيق المصغر",
+  "pinWidget": "تثبيت التطبيق المصغر ",
   "prayersAlerts": "تنبيهات الصلوات",
   "prayerTimeNotificationContent": "حان وقت دخول صلاة {prayerName}",
   "prayerTimeNotificationTitle": "صلاة {prayerName}",
@@ -154,7 +154,7 @@
   "unableToLunchLink": "لا يمكن فتح الرابط",
   "unknownWidget": "ويدجت غير معروف",
   "until": "حتى",
-  "vibrate": "اهتزاز",
+  "vibrate": "إهتزاز",
   "wednesday": "الأربعاء",
   "widgetPinnedSuccessfully": "تم تثبيت الويدجت بنجاح!"
 }

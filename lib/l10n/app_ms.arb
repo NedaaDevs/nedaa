@@ -1,0 +1,160 @@
+{
+  "@iqamaTimeNotificationContent": {
+    "placeholders": {
+      "delay": {
+        "example": "5",
+        "type": "String"
+      },
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@iqamaTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@minuteShortForm": {
+    "placeholders": {
+      "minute": {
+        "example": "5",
+        "type": "String"
+      }
+    }
+  },
+  "@prayerTimeNotificationContent": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@prayerTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@preAthanTimeNotificationContent": {
+    "placeholders": {
+      "before": {
+        "example": "5",
+        "type": "String"
+      },
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "@preAthanTimeNotificationTitle": {
+    "placeholders": {
+      "prayerName": {
+        "example": "Fajr",
+        "type": "String"
+      }
+    }
+  },
+  "addToHomeScreen": "Add to Home Screen",
+  "alertOn": "Sound",
+  "allowNotifications": "Membenarkan Pemberitahuan",
+  "allPrayersWidget": "Solat Hari Ini",
+  "appTitle": "Nedaa",
+  "appVersion": "Versi",
+  "asr": "Asar",
+  "athan": "Azan",
+  "athanNotifications": "Azan",
+  "calculationMethod": "Kaedah Pengiraan",
+  "cancel": "Batal",
+  "city": "Bandar",
+  "contactUs": "Hubungi Kami",
+  "couldNotLaunchUrl": "Tidak Dapat Dilancarkan ",
+  "country": "Negara",
+  "currentLocation": "Lokasi semasa",
+  "dark": "Gelap",
+  "defaultString": "Lalai",
+  "duhur": "Zuhur",
+  "enable": "Mengaktifkan",
+  "enableIqamaNotification": "Iqama Notification after",
+  "enablePreAthanNotification": "Pre-Athan notifications before",
+  "error": "Ralat",
+  "failedToPinWidget": "Pin Widget Gagal: {error}",
+  "fajr": "Subuh",
+  "firstThird": "First Third",
+  "friday": "Jumaat",
+  "getCurrentLocation": "Dapatkan Lokasi Semasa",
+  "homePage": "Laman Utama",
+  "imsak": "Imsak",
+  "instructionsToSetLocationManually": "If you do not want to use your current location, you can set it manually by going to 'Settings' > 'Location' > 'Location' and select your location.",
+  "inTime": "dalam",
+  "iqama": "Iqamat",
+  "iqamaDelayTime": "Waktu Iqamat",
+  "iqamaNotifications": "Iqamat",
+  "iqamaTimeNotificationContent": "{delay} minutes since {prayerName} Athan",
+  "iqamaTimeNotificationTitle": "Waktu untuk Iqamat {prayerName}",
+  "isha": "Isyak",
+  "jumuah": "Jemaah",
+  "keepLocationUpdated": "Kekalkan Kemas Kini",
+  "language": "Bahasa",
+  "lastThird": "Ketiga Akhir",
+  "light": "Cerah",
+  "location": "Lokasi",
+  "locationSettings": "Tetapan Lokasi",
+  "maghrib": "Maghrib",
+  "midnight": "Tengah Malam",
+  "minuteShortForm": "{minute} min",
+  "monday": "Isnin",
+  "nedaaWidget": "Solat Sebelumnya/Seterusnya",
+  "noMailAppFound": "No mail apps installed",
+  "noPrayersTimesFound": "Tiada Waktu Solat Dijumpai",
+  "notification": "Pemberitahuan",
+  "ok": "OK",
+  "openAppReminderContent": "Please Open the App to keep receiving notifications",
+  "openAppReminderTitle": "Open App",
+  "permissionGranted": "Permission Granted",
+  "pinWidget": "Pin Widget",
+  "prayersAlerts": "Makluman Solat",
+  "prayerTimeNotificationContent": "Time for {prayerName}",
+  "prayerTimeNotificationTitle": "{prayerName} Prayer",
+  "prayerTimes": "Waktu Solat",
+  "preAthanBeforeTime": "Sebelum Azan",
+  "preAthanNotifications": "Sebelum Azan",
+  "preAthanTimeNotificationContent": "{prayerName} akan masuk dalam masa {before}m lagi",
+  "preAthanTimeNotificationTitle": "Sudah hampir waktu untuk {prayerName}",
+  "reAddTheWidget": "Please Re-add the widget",
+  "requestLocationPermissionContent": "This app uses your location to automatically determine the correct prayer times. Would you like to open location settings?",
+  "requestLocationPermissionTitle": "Kebenaran Lokasi",
+  "requestPermission": "Memohon Kebenaran",
+  "restart": "Mulakan Semula",
+  "restartAppToApplyChanges": "Sila mulakan semula aplikasi ini untuk melakukan perubahan",
+  "saturday": "Sabtu",
+  "scheduleExactAlarmDescription": "Kebenaran ini diperlukan untuk kemas kini waktu solat yang tepat.",
+  "selectMailApp": "Select Mail App",
+  "selectWidget": "Select Widget",
+  "sendCrashReports": "Send Analytics",
+  "sendCrashReportsDescription": "We use crash logs to collect anonymous usage data to help us improve the app. No personal information is collected. You can disable it anytime. For more information, please visit our privacy policy.",
+  "settings": "Settings",
+  "since": "since",
+  "state": "State",
+  "stop": "Stop",
+  "sunday": "Sunday",
+  "sunrise": "Sunrise",
+  "system": "System",
+  "theme": "Theme",
+  "thursday": "Thursday",
+  "tuesday": "Tuesday",
+  "unableToLunchLink": "Unable to launch link",
+  "unknownWidget": "Unknown Widget",
+  "until": "Until",
+  "vibrate": "Vibrate",
+  "wednesday": "Wednesday",
+  "widgetPinnedSuccessfully": "Widget pinned successfully!"
+}
