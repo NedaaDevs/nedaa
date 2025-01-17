@@ -32,7 +32,7 @@
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
         <data android:scheme="myapp" />
-        <data android:scheme="io.nedaa.nedaaApp" />
+        <data android:scheme="dev.nedaa.app" />
       </intent-filter>
     </activity>
   </application>

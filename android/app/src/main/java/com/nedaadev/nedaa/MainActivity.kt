@@ -1,4 +1,4 @@
-package io.nedaa.nedaaApp
+package dev.nedaa.app
 
 import android.os.Build
 import android.os.Bundle
