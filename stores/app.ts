@@ -9,24 +9,24 @@ import { AppLocale } from "@/enums/app";
 
 type AppState = {
   isFirstRun: boolean;
-  language: AppLocale;
+  locale: AppLocale;
   setIsFirstRun: (status: boolean) => void;
-  setLanguage: (lang: AppLocale) => void;
+  setLocale: (lang: AppLocale) => void;
 };
 
 const getInitialLanguage = (): AppLocale => {
-  // Get device language (first two characters "en")
+  // Get device locale (first two characters "en")
   const deviceLanguage = getLocales()[0]
 
     ?.languageCode?.toLowerCase()
     .slice(0, 2);
 
-  // Check if device language is supported in our AppLocale enum
+  // Check if device locale is supported in our AppLocale enum
   const isSupported = Object.values(AppLocale).includes(
     deviceLanguage as AppLocale
   );
 
-  // Return device language if supported, otherwise default to EN
+  // Return device locale if supported, otherwise default to EN
   return isSupported ? (deviceLanguage as AppLocale) : AppLocale.EN;
 };
 
@@ -37,14 +37,14 @@ export const useAppStore = create<AppState>()(
     persist(
       (set) => ({
         isFirstRun: true,
-        language: initialLanguage,
+        locale: initialLanguage,
 
         setIsFirstRun(isFirstRun: boolean) {
           set({ isFirstRun });
         },
 
-        setLanguage: async (language: AppLocale) => {
-          set({ language });
+        setLocale: async (locale: AppLocale) => {
+          set({ locale });
         },
       }),
       {
