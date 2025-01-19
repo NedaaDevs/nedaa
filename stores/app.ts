@@ -33,7 +33,7 @@ const getInitialLanguage = (): AppLocale => {
 
   // Check if device locale is supported in our AppLocale enum
   const isSupported = Object.values(AppLocale).includes(
-    deviceLanguage as AppLocale
+    deviceLanguage as AppLocale,
   );
 
   // Return device locale if supported, otherwise default to EN
@@ -90,7 +90,7 @@ export const useAppStore = create<AppState>()(
       {
         name: "app-storage",
         storage: createJSONStorage(() => AsyncStorage),
-      }
-    )
-  )
+      },
+    ),
+  ),
 );
