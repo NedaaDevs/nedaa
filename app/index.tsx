@@ -6,10 +6,18 @@ import { Text, View } from "@/components/Themed";
 import { useAppStore } from "@/stores/app";
 
 // Enums
-import { AppLocale } from "@/enums/app";
+import { AppLocale, AppMode } from "@/enums/app";
+
+import { useTranslation } from "react-i18next";
 
 export default function TabOneScreen() {
-  const { locale, setLocale, setIsFirstRun } = useAppStore();
+  const { locale, mode, setLocale, setMode, setIsFirstRun } = useAppStore();
+
+  const { t, i18n } = useTranslation();
+
+  const toggleMode = () => {
+    setMode(mode === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK);
+  };
 
   const toggleLanguage = () => {
     // Simulate how is should be done
@@ -19,6 +27,7 @@ export default function TabOneScreen() {
     const currentIndex = languages.indexOf(locale);
     const nextIndex = (currentIndex + 1) % languages.length;
     setLocale(languages[nextIndex]);
+    i18n.changeLanguage(languages[nextIndex]);
   };
   return (
     <View style={styles.container}>
@@ -28,9 +37,18 @@ export default function TabOneScreen() {
         lightColor="#eee"
         darkColor="rgba(255,255,255,0.1)"
       />
-      <Text>Device Locale: {locale}</Text>
+      <Text>
+        {t("deviceLocale")}: {t(locale)}
+      </Text>
       <Pressable onPress={toggleLanguage}>
-        <Text>Toggle Language</Text>
+        <Text>{t("toggleLanguage")}</Text>
+      </Pressable>
+
+      <Text>
+        {t("mode")}: {mode}
+      </Text>
+      <Pressable onPress={toggleMode}>
+        <Text>{t("toggleMode")}</Text>
       </Pressable>
     </View>
   );
@@ -39,7 +57,6 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
   },
   title: {
