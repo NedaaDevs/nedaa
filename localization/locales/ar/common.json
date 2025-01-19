@@ -1,7 +1,10 @@
 {
-  "ar": "العربية",
-  "en": "الانجليزية",
   "deviceLocale": "لغة الجهاز",
+  "localeOptions": {
+    "ar": "العربية",
+    "en": "الانجليزية",
+    "ms": ""
+  },
   "mode": "المود",
   "toggleLanguage": "تغير اللغة",
   "toggleMode": "تغير المود"

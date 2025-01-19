@@ -1,5 +1,5 @@
 import "i18next";
-import en from "@/localization/locales/en/translations.json";
+import en from "@/localization/locales/en/common.json";
 
 declare module "i18next" {
   interface CustomTypeOptions {

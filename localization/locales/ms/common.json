@@ -1,1 +1,11 @@
-{}
+{
+  "deviceLocale": "",
+  "localeOptions": {
+    "ar": "العربية",
+    "en": "الانجليزية",
+    "ms": ""
+  },
+  "mode": "",
+  "toggleLanguage": "",
+  "toggleMode": ""
+}

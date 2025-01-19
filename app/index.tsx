@@ -38,7 +38,7 @@ export default function TabOneScreen() {
         darkColor="rgba(255,255,255,0.1)"
       />
       <Text>
-        {t("deviceLocale")}: {t(locale)}
+        {t("deviceLocale")}: {t(`localeOptions.${locale}`)}
       </Text>
       <Pressable onPress={toggleLanguage}>
         <Text>{t("toggleLanguage")}</Text>

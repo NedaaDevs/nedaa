@@ -1,7 +1,10 @@
 {
-  "ar": "Arabic",
-  "en": "English",
   "deviceLocale": "Device Locale",
+  "localeOptions": {
+    "ar": "العربية",
+    "en": "الانجليزية",
+    "ms": ""
+  },
   "mode": "Mode",
   "toggleLanguage": "Toggle Locale",
   "toggleMode": "Toggle Mode"
