@@ -1,11 +1,10 @@
 import "i18next";
-import en from "@/localization/locales/en/common.json";
+import en from "@/localization/locales/en/translation.json";
 
 declare module "i18next" {
   interface CustomTypeOptions {
-    defaultNS: "common";
     resources: {
-      common: typeof en;
+      translation: typeof en;
     };
   }
 }
