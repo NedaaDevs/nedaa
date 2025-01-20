@@ -1,7 +1,3 @@
-import { StyleSheet, Pressable } from "react-native";
-
-import { Text, View } from "@/components/Themed";
-
 // Stores
 import { useAppStore } from "@/stores/app";
 
@@ -9,6 +5,12 @@ import { useAppStore } from "@/stores/app";
 import { AppLocale, AppMode } from "@/enums/app";
 
 import { useTranslation } from "react-i18next";
+import { Box } from "@/components/ui/box";
+import { Button, ButtonText } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
+import React from "react";
+import { Divider } from "@/components/ui/divider";
+import { Center } from "@/components/ui/center";
 
 export default function TabOneScreen() {
   const { locale, mode, setLocale, setMode, setIsFirstRun } = useAppStore();
@@ -16,7 +18,11 @@ export default function TabOneScreen() {
   const { t, i18n } = useTranslation();
 
   const toggleMode = () => {
-    setMode(mode === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK);
+    const modes = Object.values(AppMode);
+
+    const currentIndex = modes.indexOf(mode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setMode(modes[nextIndex]);
   };
 
   const toggleLanguage = () => {
@@ -30,42 +36,26 @@ export default function TabOneScreen() {
     i18n.changeLanguage(languages[nextIndex]);
   };
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Nedaa | نداء</Text>
-      <View
-        style={styles.separator}
-        lightColor="#eee"
-        darkColor="rgba(255,255,255,0.1)"
-      />
-      <Text>
+    <>
+      <Text className="bg-primary">
         {t("deviceLocale")}: {t(`localeOptions.${locale}`)}
       </Text>
-      <Pressable onPress={toggleLanguage}>
-        <Text>{t("toggleLanguage")}</Text>
-      </Pressable>
-
-      <Text>
+      <Box>
+        <Button onPress={toggleLanguage}>
+          <ButtonText>{t("toggleLanguage")}</ButtonText>
+        </Button>
+      </Box>
+      <Divider />
+      <Text className="bg-background-new">
         {t("mode")}: {mode}
       </Text>
-      <Pressable onPress={toggleMode}>
-        <Text>{t("toggleMode")}</Text>
-      </Pressable>
-    </View>
+      <Center>
+        <Box className="bg-primary flex-1">
+          <Button action="primary" onPress={toggleMode}>
+            <ButtonText>{t("toggleMode")}</ButtonText>
+          </Button>
+        </Box>
+      </Center>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: "80%",
-  },
-});
