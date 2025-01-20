@@ -11,6 +11,7 @@ import { Text } from "@/components/ui/text";
 import React from "react";
 import { Divider } from "@/components/ui/divider";
 import { Center } from "@/components/ui/center";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabOneScreen() {
   const { locale, mode, setLocale, setMode, setIsFirstRun } = useAppStore();
@@ -36,7 +37,7 @@ export default function TabOneScreen() {
     i18n.changeLanguage(languages[nextIndex]);
   };
   return (
-    <>
+    <SafeAreaView>
       <Text className="bg-primary">
         {t("deviceLocale")}: {t(`localeOptions.${locale}`)}
       </Text>
@@ -56,6 +57,6 @@ export default function TabOneScreen() {
           </Button>
         </Box>
       </Center>
-    </>
+    </SafeAreaView>
   );
 }
