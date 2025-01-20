@@ -10,6 +10,7 @@ export enum PlatformType {
 }
 
 export enum AppMode {
+  SYSTEM = "system",
   LIGHT = "light",
   DARK = "dark",
 }
