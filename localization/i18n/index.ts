@@ -16,12 +16,12 @@ const resources = {
   ms: { translation: translationMS },
 };
 
-const initI18n = async () => {
+const initI18n = () => {
   const deviceLanguage = getLocales()[0]
     ?.languageCode?.toLowerCase()
     .slice(0, 2) as AppLocale;
 
-  await i18n.use(initReactI18next).init({
+  i18n.use(initReactI18next).init({
     resources,
     lng: deviceLanguage,
     fallbackLng: AppLocale.EN,
