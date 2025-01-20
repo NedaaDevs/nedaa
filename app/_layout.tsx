@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
-import * as Updates from "expo-updates";
 import { I18nManager, Platform } from "react-native";
+import RNRestart from "react-native-restart";
 
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
@@ -17,9 +17,7 @@ export default function RootLayout() {
     I18nManager.forceRTL(shouldBeRTL);
     I18nManager.swapLeftAndRightInRTL(shouldBeRTL);
 
-    (async function () {
-      await Updates.reloadAsync();
-    })();
+    RNRestart.restart();
   }
 
   return (
