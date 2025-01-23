@@ -1,12 +1,17 @@
 import { Stack } from "expo-router";
 import { I18nManager, Platform } from "react-native";
 import RNRestart from "react-native-restart";
+import * as Sentry from "@sentry/react-native";
 
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 
 import "@/global.css";
 import "@/localization/i18n";
+
+Sentry.init({
+  dsn: "",
+});
 
 export default function RootLayout() {
   const { mode, locale } = useAppStore();
