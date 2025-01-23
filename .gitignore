@@ -38,3 +38,10 @@ yarn-error.*
 
 # Yarn
 .yarn
+
+
+.env.local
+
+
+# Sentry
+sentry.properties

@@ -42,7 +42,18 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": ["expo-router", "expo-localization"],
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "nedaa",
+          "organization": "nedaa"
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     },
