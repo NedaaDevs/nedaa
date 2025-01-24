@@ -1,39 +1,32 @@
 import { create } from "zustand";
 
-type ToastOptions = {
-  variant?: "solid" | "outline";
-  action?: "error" | "warning" | "success" | "info" | "muted";
-  placement?:
-    | "top"
-    | "bottom"
-    | "top right"
-    | "top left"
-    | "bottom left"
-    | "bottom right";
-  duration?: number;
-  description?: string;
-};
+type ToastType = "success" | "error" | "warning" | "info" | "muted";
 
-type ToastState = {
+interface ToastState {
   message: string;
-  options: ToastOptions;
-  showToast: (message: string, options?: ToastOptions) => void;
+  title?: string;
+  type: ToastType;
+  isVisible: boolean;
+  showToast: (
+    message: string,
+    type: ToastType,
+    title?: string,
+    duration?: number
+  ) => void;
   hideToast: () => void;
-};
+}
 
 export const useToastStore = create<ToastState>((set) => ({
   message: "",
-  options: {},
-  showToast: (message, options = {}) =>
-    set({
-      message,
-      options: {
-        variant: "solid",
-        action: "muted",
-        placement: "top",
-        duration: 3000,
-        ...options,
-      },
-    }),
-  hideToast: () => set({ message: "", options: {} }),
+  title: "",
+  type: "muted",
+  duration: 3000,
+  isVisible: false,
+  showToast: (message, type, title, duration) => {
+    set({ message, type, title, isVisible: true });
+    setTimeout(() => {
+      set({ isVisible: false });
+    }, duration);
+  },
+  hideToast: () => set({ isVisible: false }),
 }));

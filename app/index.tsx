@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/react-native";
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
 import { useLocationStore } from "@/stores/location";
+import { useToastStore } from "@/stores/toast";
 
 import { AppLocale, AppMode } from "@/enums/app";
 import { LocalPermissionStatus } from "@/enums/notifications";
@@ -29,6 +30,7 @@ export default function MainScreen() {
     checkPermissions: checkLocationPermissions,
     requestPermissions: requestLocationPermission,
   } = useLocationStore();
+  const { showToast } = useToastStore();
   const { t } = useTranslation();
 
   const toggleMode = () => {
@@ -43,6 +45,11 @@ export default function MainScreen() {
     const currentIndex = languages.indexOf(locale);
     const nextIndex = (currentIndex + 1) % languages.length;
     setLocale(languages[nextIndex]);
+  };
+
+  const testSentry = () => {
+    Sentry.captureException(new Error("First error"));
+    showToast(`A an exceptions should have been captured`, "info", "", 10000);
   };
 
   return (
@@ -216,9 +223,7 @@ export default function MainScreen() {
         <Text className="text-center">{t("sentry")}</Text>
         <Button
           className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
-          onPress={() => {
-            Sentry.captureException(new Error("First error"));
-          }}
+          onPress={testSentry}
         >
           <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
             {t("try")}

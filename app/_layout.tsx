@@ -15,7 +15,7 @@ import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
 
 // Components
-import { ToastContainer } from "@/components/toast-container";
+import { ToastProvider } from "@/components/ToastContainer";
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
@@ -37,7 +37,7 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode={mode}>
-      <ToastContainer />
+      <ToastProvider />
       <Stack
         screenOptions={{
           headerShown: false,

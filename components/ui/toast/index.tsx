@@ -147,7 +147,7 @@ type IToastProps = React.ComponentProps<typeof Root> & {
   className?: string;
 } & VariantProps<typeof toastStyle>;
 
-const Toast = React.forwardRef<React.ElementRef<typeof Root>, IToastProps>(
+const Toast = React.forwardRef<React.ComponentRef<typeof Root>, IToastProps>(
   ({ className, variant = "solid", action = "muted", ...props }, ref) => {
     return (
       <Root
@@ -157,7 +157,7 @@ const Toast = React.forwardRef<React.ElementRef<typeof Root>, IToastProps>(
         {...props}
       />
     );
-  },
+  }
 );
 
 type IToastTitleProps = React.ComponentProps<typeof Text> & {
@@ -165,7 +165,7 @@ type IToastTitleProps = React.ComponentProps<typeof Text> & {
 } & VariantProps<typeof toastTitleStyle>;
 
 const ToastTitle = React.forwardRef<
-  React.ElementRef<typeof Text>,
+  React.ComponentRef<typeof Text>,
   IToastTitleProps
 >(({ className, size = "md", children, ...props }, ref) => {
   const { variant: parentVariant, action: parentAction } =
@@ -220,9 +220,5 @@ const ToastDescription = React.forwardRef<
     />
   );
 });
-
-ToastTitle.displayName = "ToastTitle";
-ToastDescription.displayName = "ToastDescription";
-Toast.displayName = "Toast";
 
 export { useToast, Toast, ToastTitle, ToastDescription };
