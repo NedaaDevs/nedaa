@@ -1,11 +1,10 @@
-import { PermissionStatus } from "expo-notifications";
-
-import { LocalPermissionStatus } from "@/enums/notifications";
+import { PermissionStatus } from "expo-location";
+import { LocalPermissionStatus } from "@/enums/location";
 
 export const mapToLocalStatus = (
-  expoStatus: PermissionStatus,
+  status: PermissionStatus,
 ): LocalPermissionStatus => {
-  switch (expoStatus) {
+  switch (status) {
     case PermissionStatus.GRANTED:
       return LocalPermissionStatus.GRANTED;
     case PermissionStatus.DENIED:

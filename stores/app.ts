@@ -11,17 +11,10 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 // Constants
 import { RTL_LOCALES } from "@/constants/Locales";
 
-import i18n from "@/localization/i18n";
+// Types
+import { AppState } from "@/types/app";
 
-export type AppState = {
-  isFirstRun: boolean;
-  locale: AppLocale;
-  direction: AppDirection;
-  mode: AppMode;
-  setIsFirstRun: (status: boolean) => void;
-  setLocale: (lang: AppLocale) => void;
-  setMode: (mode: AppMode) => void;
-};
+import i18n from "@/localization/i18n";
 
 const getInitialLanguage = (): AppLocale => {
   // Get device locale (first two characters "en")

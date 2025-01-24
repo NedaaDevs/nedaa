@@ -1,24 +1,30 @@
 {
-  "checkPermissions": "التحقق من الأذونات",
-  "deviceLocale": "لغة الجهاز ",
+  "canRequestAgain": "يمكن طلب الإذن",
+  "checkPermissions": "التحقق من حالة الإذن",
+  "deviceLocale": "لغة الجهاز",
   "localeOptions": {
     "ar": "العربية",
-    "en": "الانجليزية",
+    "en": "الإنجليزية",
     "ms": "الملايو"
   },
-  "mode": "المود ",
+  "location": "الموقع",
+  "mode": "الوضع",
   "modes": {
     "dark": "داكن",
     "light": "فاتح",
     "system": "النظام"
   },
+  "no": "لا",
   "notifications": "الإشعارات",
-  "openSettings": "فتح الإعدادات",
+  "openSettings": "فتح إعدادات النظام",
+  "permissions": "الأذونات",
+  "requestPermission": "طلب إذن",
   "status": {
     "denied": "مرفوض",
-    "granted": "مسموح",
+    "granted": "ممنوح",
     "undetermined": "غير محدد"
   },
-  "toggleLanguage": "تغير اللغة",
-  "toggleMode": "تغير المود"
+  "toggleLanguage": "تغيير اللغة",
+  "toggleMode": "تغيير الوضع",
+  "yes": "نعم"
 }
