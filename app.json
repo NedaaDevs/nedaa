@@ -52,6 +52,12 @@
           "project": "nedaa",
           "organization": "nedaa"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
       ]
     ],
     "experiments": {
