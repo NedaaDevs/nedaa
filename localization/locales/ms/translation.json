@@ -1,11 +1,23 @@
 {
-  "deviceLocale": "",
+  "deviceLocale": "Bahasa Peranti",
   "localeOptions": {
-    "ar": "العربية",
-    "en": "الانجليزية",
-    "ms": ""
+    "ar": "Bahasa Arab",
+    "en": "Bahasa Inggeris",
+    "ms": "Bahasa Melayu"
   },
-  "mode": "",
-  "toggleLanguage": "",
-  "toggleMode": ""
+  "mode": "Mod",
+  "modes": {
+    "dark": "Gelap",
+    "light": "Terang",
+    "system": "Sistem"
+  },
+  "notifications": "Pemberitahuan",
+  "openSettings": "Buka Tetapan",
+  "status": {
+    "denied": "Ditolak",
+    "granted": "Dibenarkan",
+    "undetermined": "Belum Ditentukan"
+  },
+  "toggleLanguage": "Tukar Bahasa",
+  "toggleMode": "Tukar Mod"
 }
