@@ -1,11 +1,24 @@
 {
+  "checkPermissions": "Check Permissions",
   "deviceLocale": "Device Locale",
   "localeOptions": {
-    "ar": "العربية",
+    "ar": "Arabic",
     "en": "English",
-    "ms": ""
+    "ms": "Malay"
   },
   "mode": "Mode",
+  "modes": {
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
+  "notifications": "Notifications",
+  "openSettings": "Open Settings",
+  "status": {
+    "denied": "Denied",
+    "granted": "Granted",
+    "undetermined": "Undetermined"
+  },
   "toggleLanguage": "Toggle Locale",
   "toggleMode": "Toggle Mode"
 }

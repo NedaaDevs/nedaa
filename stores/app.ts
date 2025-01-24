@@ -13,7 +13,7 @@ import { RTL_LOCALES } from "@/constants/Locales";
 
 import i18n from "@/localization/i18n";
 
-type AppState = {
+export type AppState = {
   isFirstRun: boolean;
   locale: AppLocale;
   direction: AppDirection;

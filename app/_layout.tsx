@@ -9,11 +9,10 @@ import "@/global.css";
 import "@/localization/i18n";
 
 // Services
-// import { useInitialSetup } from "@/hooks/useInitialSetup";
+import { useInitialSetup } from "@/hooks/useInitialSetup";
 
 // Stores
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
-// import { useNotificationStore } from "@/stores/notification";
 
 // Components
 import { ToastContainer } from "@/components/toast-container";
@@ -33,6 +32,8 @@ export default function RootLayout() {
 
     RNRestart.restart();
   }
+
+  useInitialSetup();
 
   return (
     <GluestackUIProvider mode={mode}>

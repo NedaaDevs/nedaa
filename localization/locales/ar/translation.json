@@ -1,11 +1,24 @@
 {
-  "deviceLocale": "لغة الجهاز",
+  "checkPermissions": "التحقق من الأذونات",
+  "deviceLocale": "لغة الجهاز ",
   "localeOptions": {
     "ar": "العربية",
     "en": "الانجليزية",
-    "ms": ""
+    "ms": "الملايو"
   },
-  "mode": "المود",
+  "mode": "المود ",
+  "modes": {
+    "dark": "داكن",
+    "light": "فاتح",
+    "system": "النظام"
+  },
+  "notifications": "الإشعارات",
+  "openSettings": "فتح الإعدادات",
+  "status": {
+    "denied": "مرفوض",
+    "granted": "مسموح",
+    "undetermined": "غير محدد"
+  },
   "toggleLanguage": "تغير اللغة",
   "toggleMode": "تغير المود"
 }
