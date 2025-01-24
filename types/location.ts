@@ -21,7 +21,6 @@ export type LocationStore = {
   checkPermissions: () => Promise<void>;
   requestPermissions: () => Promise<boolean>;
   getCurrentLocation: () => Promise<void>;
-  openSystemSettings: () => Promise<void>;
 };
 
 const MECCA_COORDS = {
