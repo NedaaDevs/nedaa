@@ -1,12 +1,11 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { I18nManager, View, Text as T, StyleSheet } from "react-native";
+import { I18nManager, Text as T, View, StyleSheet } from "react-native";
 
-// Stores
 import { useAppStore } from "@/stores/app";
-
-// Enums
+import { useNotificationStore } from "@/stores/notification";
 import { AppLocale, AppMode } from "@/enums/app";
+import { LocalPermissionStatus } from "@/types/notifications";
 
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
@@ -15,66 +14,99 @@ import { Divider } from "@/components/ui/divider";
 import { Center } from "@/components/ui/center";
 
 export default function MainScreen() {
-  const { locale, mode, setLocale, setMode, setIsFirstRun } = useAppStore();
-
+  const { locale, mode, setLocale, setMode } = useAppStore();
+  const { permissions, openSystemSettings } = useNotificationStore();
   const { t } = useTranslation();
 
   const toggleMode = () => {
     const modes = Object.values(AppMode);
-
     const currentIndex = modes.indexOf(mode);
     const nextIndex = (currentIndex + 1) % modes.length;
     setMode(modes[nextIndex]);
   };
 
   const toggleLanguage = () => {
-    // Simulate how is should be done
-    setIsFirstRun(false);
-    const languages = Object.values(AppLocale).splice(0, 2);
-
+    const languages = Object.values(AppLocale);
     const currentIndex = languages.indexOf(locale);
     const nextIndex = (currentIndex + 1) % languages.length;
     setLocale(languages[nextIndex]);
   };
+
   return (
-    <SafeAreaView className="flex-1 bg-white px-4">
-      <View className="mt-5 mb-4">
-        <Text className="text-lg font-semibold text-gray-800 mb-3 text-left">
-          {t("deviceLocale")}: {t(`localeOptions.${locale}`)}
-        </Text>
-
-        <Button
-          className="rounded-lg py-4 bg-primary shadow-md active:opacity-80 h-14 min-h-[56px]"
-          onPress={toggleLanguage}
-        >
-          <ButtonText className="text-base font-medium text-center w-full px-4">
-            {t("toggleLanguage")}
-          </ButtonText>
-        </Button>
-      </View>
-
-      <Divider className="h-px bg-gray-200 my-5" />
-
-      <View className="mt-2">
-        <Text className="text-base text-gray-600 mb-4 text-start">
-          {t("mode")}: {mode}
-        </Text>
-
-        <Center>
-          <Box className="w-full px-1 mt-2">
-            <Button
-              action="primary"
-              className="rounded-lg py-2 bg-blue-500 shadow-md active:opacity-80"
-              onPress={toggleMode}
-            >
-              <ButtonText className="text-base font-medium text-start text-white">
-                {t("toggleMode")}
-              </ButtonText>
-            </Button>
+    <SafeAreaView className="flex-1 bg-background-50">
+      <Box className="px-4 py-5 space-y-8">
+        <Box>
+          <Box className="flex-row items-center space-x-2 mb-4">
+            <Text className="text-xl font-bold text-typography-800">
+              {t("deviceLocale")}:
+            </Text>
+            <Text className="text-xl font-semibold text-info-500">
+              {t(`localeOptions.${locale}`)}
+            </Text>
           </Box>
-        </Center>
-      </View>
 
+          <Button
+            className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+            onPress={toggleLanguage}
+          >
+            <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+              {t("toggleLanguage")}
+            </ButtonText>
+          </Button>
+        </Box>
+
+        <Divider className="h-0.5 bg-outline-200" />
+
+        <Box>
+          <Box className="flex-row items-center space-x-2 mb-4">
+            <Text className="text-xl font-bold text-typography-800">
+              {t("mode")}
+            </Text>
+            <Text className="text-xl font-semibold text-info-500">
+              {t(`modes.${mode}`)}
+            </Text>
+          </Box>
+
+          <Button
+            className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+            onPress={toggleMode}
+          >
+            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+              {t("toggleMode")}
+            </ButtonText>
+          </Button>
+        </Box>
+
+        <Box>
+          <Box className="flex-row items-center space-x-2 mb-4">
+            <Text className="text-xl font-bold text-typography-800">
+              {t("notifications")}
+            </Text>
+            <Text
+              className={`text-xl font-semibold ${
+                permissions.status === LocalPermissionStatus.GRANTED
+                  ? "text-success-500"
+                  : permissions.status === LocalPermissionStatus.DENIED
+                    ? "text-error-500"
+                    : "text-warning-500"
+              }`}
+            >
+              {t(`status.${permissions.status}`)}
+            </Text>
+          </Box>
+
+          <Button
+            className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
+            onPress={openSystemSettings}
+          >
+            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+              {t("openSettings")}
+            </ButtonText>
+          </Button>
+        </Box>
+      </Box>
+
+      <Divider />
       <View style={styles.container}>
         <T style={styles.paragraph}> {I18nManager.isRTL ? " RTL" : " LTR"}</T>
       </View>
