@@ -1,24 +1,30 @@
 {
-  "checkPermissions": "Check Permissions",
+  "canRequestAgain": "Can Request Permission",
+  "checkPermissions": "Check Permission Status",
   "deviceLocale": "Device Locale",
   "localeOptions": {
     "ar": "Arabic",
     "en": "English",
     "ms": "Malay"
   },
+  "location": "Location",
   "mode": "Mode",
   "modes": {
     "dark": "Dark",
     "light": "Light",
     "system": "System"
   },
+  "no": "No",
   "notifications": "Notifications",
-  "openSettings": "Open Settings",
+  "openSettings": "Open System Settings",
+  "permissions": "Permissions",
+  "requestPermission": "Request Permission",
   "status": {
     "denied": "Denied",
     "granted": "Granted",
-    "undetermined": "Undetermined"
+    "undetermined": "Not Set"
   },
-  "toggleLanguage": "Toggle Locale",
-  "toggleMode": "Toggle Mode"
+  "toggleLanguage": "Change Language",
+  "toggleMode": "Change Mode",
+  "yes": "Yes"
 }

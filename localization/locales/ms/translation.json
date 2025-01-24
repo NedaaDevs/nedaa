@@ -1,24 +1,30 @@
 {
-  "checkPermissions": "Semak Kebenaran",
+  "canRequestAgain": "Boleh Meminta Kebenaran",
+  "checkPermissions": "Periksa Status Kebenaran",
   "deviceLocale": "Bahasa Peranti",
   "localeOptions": {
     "ar": "Bahasa Arab",
     "en": "Bahasa Inggeris",
     "ms": "Bahasa Melayu"
   },
+  "location": "Lokasi",
   "mode": "Mod",
   "modes": {
     "dark": "Gelap",
-    "light": "Terang",
+    "light": "Cerah",
     "system": "Sistem"
   },
+  "no": "Tidak",
   "notifications": "Pemberitahuan",
-  "openSettings": "Buka Tetapan",
+  "openSettings": "Buka Tetapan Sistem",
+  "permissions": "Kebenaran",
+  "requestPermission": "Minta Kebenaran",
   "status": {
     "denied": "Ditolak",
     "granted": "Dibenarkan",
-    "undetermined": "Belum Ditentukan"
+    "undetermined": "Belum Ditetapkan"
   },
   "toggleLanguage": "Tukar Bahasa",
-  "toggleMode": "Tukar Mod"
+  "toggleMode": "Tukar Mod",
+  "yes": "Ya"
 }
