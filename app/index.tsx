@@ -4,9 +4,11 @@ import { I18nManager, Text as T, View, StyleSheet } from "react-native";
 
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
+import { useLocationStore } from "@/stores/location";
 
 import { AppLocale, AppMode } from "@/enums/app";
-import { LocalPermissionStatus } from "@/types/notifications";
+import { LocalPermissionStatus } from "@/enums/notifications";
+import { LocalPermissionStatus as LocationPermissionStatus } from "@/enums/location";
 
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
@@ -15,8 +17,17 @@ import { Divider } from "@/components/ui/divider";
 
 export default function MainScreen() {
   const { locale, mode, setLocale, setMode } = useAppStore();
-  const { permissions, openSystemSettings, checkPermissions } =
-    useNotificationStore();
+  const {
+    permissions: notificationPermission,
+    openSystemSettings,
+    checkPermissions: checkNotificationPermission,
+    requestPermissions: requestNotificationPermission,
+  } = useNotificationStore();
+  const {
+    permissions: locationPermission,
+    checkPermissions: checkLocationPermissions,
+    requestPermissions: requestLocationPermission,
+  } = useLocationStore();
   const { t } = useTranslation();
 
   const toggleMode = () => {
@@ -56,8 +67,6 @@ export default function MainScreen() {
           </Button>
         </Box>
 
-        <Divider className="h-0.5 bg-outline-200" />
-
         <Box>
           <Box className="flex-row items-center space-x-2 mb-4">
             <Text className="text-xl font-bold text-typography-800">
@@ -78,49 +87,131 @@ export default function MainScreen() {
           </Button>
         </Box>
 
+        <Divider className="h-1 bg-outline-200" />
+
+        <Text className="text-2xl font-bold text-typography-800 mb-4 text-center">
+          {t("permissions")}
+        </Text>
+
         <Box>
-          <Box className="flex-row items-center space-x-2 mb-4">
-            <Text className="text-xl font-bold text-typography-800">
-              {t("notifications")}
-            </Text>
-            <Text
-              className={`text-xl font-semibold ${
-                permissions.status === LocalPermissionStatus.GRANTED
-                  ? "text-success-500"
-                  : permissions.status === LocalPermissionStatus.DENIED
-                    ? "text-error-500"
-                    : "text-warning-500"
-              }`}
-            >
-              {t(`status.${permissions.status}`)}
-            </Text>
+          <Box className="space-y-4">
+            <Box>
+              <Box className="flex-row items-center space-x-2 mb-2">
+                <Text className="text-xl font-bold text-typography-800">
+                  {t("notifications")}
+                </Text>
+                <Text
+                  className={`text-xl font-semibold ${
+                    notificationPermission.status ===
+                    LocalPermissionStatus.GRANTED
+                      ? "text-success-500"
+                      : notificationPermission.status ===
+                          LocalPermissionStatus.DENIED
+                        ? "text-error-500"
+                        : "text-warning-500"
+                  }`}
+                >
+                  {t(`status.${notificationPermission.status}`)}
+                </Text>
+              </Box>
+
+              <Text className="text-sm text-typography-600 mb-4 text-left ">
+                {t("canRequestAgain")}:{" "}
+                {notificationPermission.canRequestAgain ? t("yes") : t("no")}
+              </Text>
+
+              <Box className="space-y-4">
+                <Button
+                  className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
+                  onPress={async () => await checkNotificationPermission()}
+                >
+                  <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                    {t("checkPermissions")}
+                  </ButtonText>
+                </Button>
+
+                {notificationPermission.canRequestAgain &&
+                  notificationPermission.status !==
+                    LocalPermissionStatus.GRANTED && (
+                    <Button
+                      className="rounded-xl bg-primary-400 shadow-lg active:opacity-80 h-14"
+                      onPress={requestNotificationPermission}
+                    >
+                      <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                        {t("requestPermission")}
+                      </ButtonText>
+                    </Button>
+                  )}
+              </Box>
+            </Box>
+
+            <Divider className="h-0.5 bg-outline-200" />
+
+            <Box>
+              <Box className="flex-row items-center space-x-2 mb-2">
+                <Text className="text-xl font-bold text-typography-800">
+                  {t("location")}
+                </Text>
+                <Text
+                  className={`text-xl font-semibold ${
+                    locationPermission.status ===
+                    LocationPermissionStatus.GRANTED
+                      ? "text-success-500"
+                      : locationPermission.status ===
+                          LocationPermissionStatus.DENIED
+                        ? "text-error-500"
+                        : "text-warning-500"
+                  }`}
+                >
+                  {t(`status.${locationPermission.status}`)}
+                </Text>
+              </Box>
+
+              <Text className="text-sm text-left text-typography-600 mb-4">
+                {t("canRequestAgain")}:{" "}
+                {locationPermission.canRequestAgain ? t("yes") : t("no")}
+              </Text>
+
+              <Box className="space-y-4">
+                <Button
+                  className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
+                  onPress={async () => await checkLocationPermissions()}
+                >
+                  <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                    {t("checkPermissions")}
+                  </ButtonText>
+                </Button>
+
+                {locationPermission.canRequestAgain &&
+                  locationPermission.status !==
+                    LocationPermissionStatus.GRANTED && (
+                    <Button
+                      className="rounded-xl bg-primary-400 shadow-lg active:opacity-80 h-14"
+                      onPress={requestLocationPermission}
+                    >
+                      <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                        {t("requestPermission")}
+                      </ButtonText>
+                    </Button>
+                  )}
+              </Box>
+            </Box>
           </Box>
 
-          <Box className="space-y-10 mt-4">
-            <Button
-              className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
-              onPress={openSystemSettings}
-            >
-              <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
-                {t("openSettings")}
-              </ButtonText>
-            </Button>
-
-            <Button
-              className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-5"
-              onPress={async () => await checkPermissions()}
-            >
-              <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
-                {t("checkPermissions")}
-              </ButtonText>
-            </Button>
-          </Box>
+          <Button
+            className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
+            onPress={openSystemSettings}
+          >
+            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+              {t("openSettings")}
+            </ButtonText>
+          </Button>
         </Box>
       </Box>
 
       <Divider />
       <View style={styles.container}>
-        <T style={styles.paragraph}> {I18nManager.isRTL ? " RTL" : " LTR"}</T>
+        <T style={styles.paragraph}> {I18nManager.isRTL ? "RTL" : "LTR"}</T>
       </View>
     </SafeAreaView>
   );
