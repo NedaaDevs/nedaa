@@ -13,7 +13,6 @@ import { useInitialSetup } from "@/hooks/useInitialSetup";
 
 // Stores
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
-import { useNotificationStore } from "@/stores/notification";
 
 // Components
 import { ToastContainer } from "@/components/toast-container";
