@@ -7,20 +7,13 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 // Utils
 import { mapToLocalStatus } from "@/utils/notifications";
 
+// Enums
+import { LocalPermissionStatus } from "@/enums/notifications";
+
 // Types
-import {
-  LocalPermissionStatus,
-  NotificationPermissionsState,
-} from "@/types/notifications";
+import { NotificationState } from "@/types/notifications";
 
-export type NotificationStore = {
-  permissions: NotificationPermissionsState;
-  checkPermissions: () => Promise<void>;
-  requestPermissions: () => Promise<boolean>;
-  openSystemSettings: () => Promise<void>;
-};
-
-export const useNotificationStore = create<NotificationStore>()(
+export const useNotificationStore = create<NotificationState>()(
   devtools(
     persist(
       (set) => ({

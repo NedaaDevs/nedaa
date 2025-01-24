@@ -1,8 +1,11 @@
-export enum LocalPermissionStatus {
-  GRANTED = "granted",
-  DENIED = "denied",
-  UNDETERMINED = "undetermined",
-}
+import { LocalPermissionStatus } from "@/enums/notifications";
+
+export type NotificationState = {
+  permissions: NotificationPermissionsState;
+  checkPermissions: () => Promise<void>;
+  requestPermissions: () => Promise<boolean>;
+  openSystemSettings: () => Promise<void>;
+};
 
 export type NotificationPermissionsState = {
   status: LocalPermissionStatus;

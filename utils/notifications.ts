@@ -1,6 +1,6 @@
 import { PermissionStatus } from "expo-notifications";
 
-import { LocalPermissionStatus } from "@/types/notifications";
+import { LocalPermissionStatus } from "@/enums/notifications";
 
 export const mapToLocalStatus = (
   expoStatus: PermissionStatus,
