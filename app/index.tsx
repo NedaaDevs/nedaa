@@ -1,6 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { I18nManager, Text as T, View, StyleSheet } from "react-native";
+import * as Sentry from "@sentry/react-native";
 
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
@@ -207,6 +208,22 @@ export default function MainScreen() {
             </ButtonText>
           </Button>
         </Box>
+      </Box>
+
+      <Divider />
+
+      <Box>
+        <Text className="text-center">{t("sentry")}</Text>
+        <Button
+          className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+          onPress={() => {
+            Sentry.captureException(new Error("First error"));
+          }}
+        >
+          <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+            {t("try")}
+          </ButtonText>
+        </Button>
       </Box>
 
       <Divider />

@@ -19,6 +19,7 @@
   "openSettings": "فتح إعدادات النظام",
   "permissions": "الأذونات",
   "requestPermission": "طلب إذن",
+  "sentry": "سنتري",
   "status": {
     "denied": "مرفوض",
     "granted": "ممنوح",
@@ -26,5 +27,6 @@
   },
   "toggleLanguage": "تغيير اللغة",
   "toggleMode": "تغيير الوضع",
+  "try": "جرب",
   "yes": "نعم"
 }

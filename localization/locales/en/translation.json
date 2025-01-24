@@ -19,6 +19,7 @@
   "openSettings": "Open System Settings",
   "permissions": "Permissions",
   "requestPermission": "Request Permission",
+  "sentry": "Sentry",
   "status": {
     "denied": "Denied",
     "granted": "Granted",
@@ -26,5 +27,6 @@
   },
   "toggleLanguage": "Change Language",
   "toggleMode": "Change Mode",
+  "try": "Try",
   "yes": "Yes"
 }
