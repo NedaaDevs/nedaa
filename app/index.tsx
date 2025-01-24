@@ -4,6 +4,7 @@ import { I18nManager, Text as T, View, StyleSheet } from "react-native";
 
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
+
 import { AppLocale, AppMode } from "@/enums/app";
 import { LocalPermissionStatus } from "@/types/notifications";
 
@@ -11,11 +12,11 @@ import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Divider } from "@/components/ui/divider";
-import { Center } from "@/components/ui/center";
 
 export default function MainScreen() {
   const { locale, mode, setLocale, setMode } = useAppStore();
-  const { permissions, openSystemSettings } = useNotificationStore();
+  const { permissions, openSystemSettings, checkPermissions } =
+    useNotificationStore();
   const { t } = useTranslation();
 
   const toggleMode = () => {
@@ -95,14 +96,25 @@ export default function MainScreen() {
             </Text>
           </Box>
 
-          <Button
-            className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
-            onPress={openSystemSettings}
-          >
-            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
-              {t("openSettings")}
-            </ButtonText>
-          </Button>
+          <Box className="space-y-10 mt-4">
+            <Button
+              className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
+              onPress={openSystemSettings}
+            >
+              <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                {t("openSettings")}
+              </ButtonText>
+            </Button>
+
+            <Button
+              className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-5"
+              onPress={async () => await checkPermissions()}
+            >
+              <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                {t("checkPermissions")}
+              </ButtonText>
+            </Button>
+          </Box>
         </Box>
       </Box>
 

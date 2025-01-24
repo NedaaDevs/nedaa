@@ -1,4 +1,5 @@
 {
+  "checkPermissions": "التحقق من الأذونات",
   "deviceLocale": "لغة الجهاز ",
   "localeOptions": {
     "ar": "العربية",

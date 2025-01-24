@@ -1,4 +1,5 @@
 {
+  "checkPermissions": "Check Permissions",
   "deviceLocale": "Device Locale",
   "localeOptions": {
     "ar": "Arabic",
