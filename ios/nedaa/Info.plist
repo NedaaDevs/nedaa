@@ -49,8 +49,19 @@
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>This app uses your location to provide accurate prayer times and reminders based on your
+      current location. Your location data will be used while you are using the app and may also be
+      used in the background to send you notifications about upcoming prayers. Your location data
+      will not be shared with any third parties.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app uses your location to provide accurate prayer times and reminders based on your
+      current location. Your location data will be used only for this purpose and will not be shared
+      with any third parties.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>We need your location to show relevant content and provide location-based services</string>
+    <string>This app uses your location to provide accurate prayer times and reminders based on your
+      current location. Your location data will be used only while you are using the app and will
+      not be shared with any third parties.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
