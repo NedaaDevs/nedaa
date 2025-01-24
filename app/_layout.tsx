@@ -3,11 +3,20 @@ import { I18nManager, Platform } from "react-native";
 import RNRestart from "react-native-restart";
 import * as Sentry from "@sentry/react-native";
 
-import { getDirection, isRTL, useAppStore } from "@/stores/app";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 
 import "@/global.css";
 import "@/localization/i18n";
+
+// Services
+// import { useInitialSetup } from "@/hooks/useInitialSetup";
+
+// Stores
+import { getDirection, isRTL, useAppStore } from "@/stores/app";
+// import { useNotificationStore } from "@/stores/notification";
+
+// Components
+import { ToastContainer } from "@/components/toast-container";
 
 Sentry.init({
   dsn: "",
@@ -27,6 +36,7 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode={mode}>
+      <ToastContainer />
       <Stack
         screenOptions={{
           headerShown: false,
