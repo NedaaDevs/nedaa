@@ -43,7 +43,5 @@ yarn-error.*
 .env.local
 
 
-# Sentry
-sentry.properties
 
 .env

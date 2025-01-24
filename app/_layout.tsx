@@ -18,7 +18,7 @@ import { getDirection, isRTL, useAppStore } from "@/stores/app";
 import { ToastContainer } from "@/components/toast-container";
 
 Sentry.init({
-  dsn: "",
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
 });
 
 export default function RootLayout() {
