@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import * as Sentry from "@sentry/react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -8,12 +9,24 @@ import { useLocationStore } from "@/stores/location";
 // Services
 import { performFirstRunSetup } from "@/services/setup";
 
+const initSentry = (consent: boolean) => {
+  if (consent) {
+    Sentry.init({
+      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    });
+  }
+};
+
 export const useInitialSetup = () => {
   const appStore = useAppStore();
   const notificationStore = useNotificationStore();
   const locationStore = useLocationStore();
+
   useEffect(() => {
     const initializeApp = async () => {
+      // Initialize Sentry based on user choice
+      await initSentry(appStore.sendCrashLogs);
+
       await performFirstRunSetup(appStore, notificationStore, locationStore);
     };
 

@@ -5,6 +5,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { getLocales } from "expo-localization";
 
+import i18n from "@/localization/i18n";
+
 // Enums
 import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 
@@ -13,8 +15,6 @@ import { RTL_LOCALES } from "@/constants/Locales";
 
 // Types
 import { AppState } from "@/types/app";
-
-import i18n from "@/localization/i18n";
 
 const getInitialLanguage = (): AppLocale => {
   // Get device locale (first two characters "en")
@@ -51,6 +51,7 @@ export const useAppStore = create<AppState>()(
         locale: initialLanguage,
         mode: Appearance.getColorScheme() as AppMode,
         direction: initialDirection,
+        sendCrashLogs: true,
 
         setIsFirstRun(isFirstRun: boolean) {
           set({ isFirstRun });
@@ -63,6 +64,10 @@ export const useAppStore = create<AppState>()(
 
         setMode: (mode: AppMode) => {
           set({ mode });
+        },
+
+        setSendCrashLogs: (sendCrashLogs: boolean) => {
+          set({ sendCrashLogs });
         },
       }),
       {

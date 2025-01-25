@@ -1,7 +1,6 @@
 import { Stack } from "expo-router";
 import { I18nManager, Platform } from "react-native";
 import RNRestart from "react-native-restart";
-import * as Sentry from "@sentry/react-native";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 
@@ -16,10 +15,6 @@ import { getDirection, isRTL, useAppStore } from "@/stores/app";
 
 // Components
 import { ToastProvider } from "@/components/ToastContainer";
-
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-});
 
 export default function RootLayout() {
   const { mode, locale } = useAppStore();

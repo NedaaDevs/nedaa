@@ -19,6 +19,7 @@
   "openSettings": "Open System Settings",
   "permissions": "Permissions",
   "requestPermission": "Request Permission",
+  "restartAppToApplyChanges": "Please restart the app to apply changes",
   "sentry": "Sentry",
   "status": {
     "denied": "Denied",
@@ -28,5 +29,8 @@
   "toggleLanguage": "Change Language",
   "toggleMode": "Change Mode",
   "try": "Try",
-  "yes": "Yes"
+  "yes": "Yes",
+  "sendCrashLogs": "Crash Reporting",
+  "enable": "Enable",
+  "disable": "Disable"
 }
