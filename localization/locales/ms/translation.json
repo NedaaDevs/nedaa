@@ -2,6 +2,8 @@
   "canRequestAgain": "Boleh Meminta Kebenaran",
   "checkPermissions": "Periksa Status Kebenaran",
   "deviceLocale": "Bahasa Peranti",
+  "disable": "Lumpuhkan",
+  "enable": "Dayakan",
   "localeOptions": {
     "ar": "Bahasa Arab",
     "en": "Bahasa Inggeris",
@@ -19,6 +21,8 @@
   "openSettings": "Buka Tetapan Sistem",
   "permissions": "Kebenaran",
   "requestPermission": "Minta Kebenaran",
+  "restartAppToApplyChanges": "Sila mulakan semula aplikasi ini untuk melakukan perubahan",
+  "sendCrashLogs": "Hantar Laporan Kerosakan",
   "status": {
     "denied": "Ditolak",
     "granted": "Dibenarkan",

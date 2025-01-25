@@ -19,6 +19,7 @@
   "openSettings": "فتح إعدادات النظام",
   "permissions": "الأذونات",
   "requestPermission": "طلب إذن",
+  "restartAppToApplyChanges": "يرجى إعادة تشغيل التطبيق لتطبيق التغييرات",
   "sentry": "سنتري",
   "status": {
     "denied": "مرفوض",
@@ -28,5 +29,8 @@
   "toggleLanguage": "تغيير اللغة",
   "toggleMode": "تغيير الوضع",
   "try": "جرب",
-  "yes": "نعم"
+  "yes": "نعم",
+  "sendCrashLogs": "إرسال تقارير الأعطال",
+  "enable": "تمكين",
+  "disable": "تعطيل"
 }
