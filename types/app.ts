@@ -5,7 +5,9 @@ export type AppState = {
   locale: AppLocale;
   direction: AppDirection;
   mode: AppMode;
+  sendCrashLogs: boolean;
   setIsFirstRun: (status: boolean) => void;
   setLocale: (lang: AppLocale) => void;
   setMode: (mode: AppMode) => void;
+  setSendCrashLogs: (value: boolean) => void;
 };
