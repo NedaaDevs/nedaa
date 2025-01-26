@@ -4,18 +4,11 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import * as Location from "expo-location";
 
 // Types
-import { LocationDetails, LocationStore } from "@/types/location";
+import { LocationStore, initialLocationDetails } from "@/types/location";
 
 // Utils
 import { mapToLocalStatus } from "@/utils/location";
 import { LocalPermissionStatus } from "@/enums/location";
-
-const initialLocationDetails: LocationDetails = {
-  coords: null,
-  address: null,
-  error: null,
-  isLoading: false,
-};
 
 export const useLocationStore = create<LocationStore>()(
   devtools(
