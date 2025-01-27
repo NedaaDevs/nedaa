@@ -27,7 +27,13 @@ import { Switch } from "@/components/ui/switch";
 import React from "react";
 import colors from "tailwindcss/colors";
 
+// Good for debugging sqlite(shift + m)
+// import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+
+// const db = openDatabaseSync(DB_NAME);
+
 export default function MainScreen() {
+  // useDrizzleStudio(db);
   const { locale, mode, sendCrashLogs, setLocale, setMode, setSendCrashLogs } =
     useAppStore();
   const {
