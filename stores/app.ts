@@ -1,8 +1,13 @@
 import { Appearance } from "react-native";
 import { create } from "zustand";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Storage from "expo-sqlite/kv-store";
 
-import { createJSONStorage, devtools, persist } from "zustand/middleware";
+import {
+  createJSONStorage,
+  devtools,
+  persist,
+  subscribeWithSelector,
+} from "zustand/middleware";
 import { getLocales } from "expo-localization";
 
 import i18n from "@/localization/i18n";
@@ -45,40 +50,42 @@ const initialDirection = getDirection(initialLanguage);
 
 export const useAppStore = create<AppState>()(
   devtools(
-    persist(
-      (set) => ({
-        isFirstRun: true,
-        locale: initialLanguage,
-        mode: Appearance.getColorScheme() as AppMode,
-        direction: initialDirection,
-        sendCrashLogs: true,
+    subscribeWithSelector(
+      persist(
+        (set) => ({
+          isFirstRun: true,
+          locale: initialLanguage,
+          mode: Appearance.getColorScheme() as AppMode,
+          direction: initialDirection,
+          sendCrashLogs: true,
 
-        setIsFirstRun(isFirstRun: boolean) {
-          set({ isFirstRun });
-        },
+          setIsFirstRun(isFirstRun: boolean) {
+            set({ isFirstRun });
+          },
 
-        setLocale: (locale: AppLocale) => {
-          i18n.changeLanguage(locale);
-          set({ locale });
-        },
+          setLocale: (locale: AppLocale) => {
+            i18n.changeLanguage(locale);
+            set({ locale });
+          },
 
-        setMode: (mode: AppMode) => {
-          set({ mode });
-        },
+          setMode: (mode: AppMode) => {
+            set({ mode });
+          },
 
-        setSendCrashLogs: (sendCrashLogs: boolean) => {
-          set({ sendCrashLogs });
+          setSendCrashLogs: (sendCrashLogs: boolean) => {
+            set({ sendCrashLogs });
+          },
+        }),
+        {
+          name: "app-storage",
+          storage: createJSONStorage(() => Storage),
+          onRehydrateStorage: () => (state) => {
+            if (state?.locale) {
+              i18n.changeLanguage(state.locale);
+            }
+          },
         },
-      }),
-      {
-        name: "app-storage",
-        storage: createJSONStorage(() => AsyncStorage),
-        onRehydrateStorage: () => (state) => {
-          if (state?.locale) {
-            i18n.changeLanguage(state.locale);
-          }
-        },
-      },
+      ),
     ),
   ),
 );

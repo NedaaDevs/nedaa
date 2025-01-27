@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import * as Location from "expo-location";
 
@@ -8,7 +8,12 @@ import { LocationStore, initialLocationDetails } from "@/types/location";
 
 // Utils
 import { mapToLocalStatus } from "@/utils/location";
+
+// Enums
 import { LocalPermissionStatus } from "@/enums/location";
+
+// Stores
+import { useAppStore } from "@/stores/app";
 
 export const useLocationStore = create<LocationStore>()(
   devtools(
@@ -74,7 +79,7 @@ export const useLocationStore = create<LocationStore>()(
             // TODO: Use locale to get localized city name, and subscribe to locale state
             // to update geocoding results
             const location = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.High,
+              accuracy: Location.Accuracy.Low,
             });
 
             const [geocodedAddress] = await Location.reverseGeocodeAsync({
@@ -107,7 +112,7 @@ export const useLocationStore = create<LocationStore>()(
       }),
       {
         name: "location-storage",
-        storage: createJSONStorage(() => AsyncStorage),
+        storage: createJSONStorage(() => Storage),
         // Only persist the permissions/location details
         partialize: (state) => ({
           permissions: {
@@ -125,3 +130,11 @@ export const useLocationStore = create<LocationStore>()(
     { name: "LocationStore" },
   ),
 );
+
+// TODO: listen for locale changes to update reverse geocoding data
+// useAppStore.subscribe(
+//   (state) => state.locale,
+//   (newLocale) => {
+//     console.log("🚀 => newLocale:", newLocale);
+//   }
+// );

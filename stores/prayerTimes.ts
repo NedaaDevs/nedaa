@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 
 // Types
@@ -29,7 +29,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
       }),
       {
         name: "prayerTimes-storage",
-        storage: createJSONStorage(() => AsyncStorage),
+        storage: createJSONStorage(() => Storage),
       },
     ),
     { name: "PrayerTimesStores" },

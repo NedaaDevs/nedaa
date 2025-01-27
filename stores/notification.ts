@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { openSettings } from "expo-linking";
 import * as Notifications from "expo-notifications";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 
 // Utils
@@ -72,7 +72,7 @@ export const useNotificationStore = create<NotificationState>()(
       }),
       {
         name: "notification-storage",
-        storage: createJSONStorage(() => AsyncStorage),
+        storage: createJSONStorage(() => Storage),
         // Selective Persistence: permissions only
         partialize: (state) => ({
           permissions: {
