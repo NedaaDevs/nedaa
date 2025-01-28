@@ -1,68 +1,80 @@
 import { create } from "zustand";
-import { openSettings } from "expo-linking";
-import * as Notifications from "expo-notifications";
+import { devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
-import { createJSONStorage, devtools, persist } from "zustand/middleware";
+import { createJSONStorage } from "zustand/middleware";
+import { openSettings } from "expo-linking";
 
 // Utils
-import { mapToLocalStatus } from "@/utils/notifications";
+import {
+  checkPermissions,
+  requestPermissions,
+  scheduleNotification,
+  listScheduledNotifications,
+  mapToLocalStatus,
+  cancelAllScheduledNotifications,
+} from "@/utils/notifications";
 
-// Enums
-import { LocalPermissionStatus } from "@/enums/notifications";
-
-// Types
+// Types and enums
 import { NotificationState } from "@/types/notifications";
+import { LocalPermissionStatus } from "@/enums/notifications";
 
 export const useNotificationStore = create<NotificationState>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         permissions: {
           status: LocalPermissionStatus.UNDETERMINED,
           canRequestAgain: true,
         },
+        scheduledNotifications: [],
 
-        checkPermissions: async () => {
-          try {
-            const result = await Notifications.getPermissionsAsync();
-
-            set({
-              permissions: {
-                status: mapToLocalStatus(result.status),
-                canRequestAgain: result.canAskAgain,
-              },
-            });
-          } catch (error) {
-            console.error("Permission check failed:", error);
-            set({
-              permissions: {
-                status: LocalPermissionStatus.UNDETERMINED,
-                canRequestAgain: true,
-              },
-            });
-          }
-        },
-
-        requestPermissions: async () => {
-          try {
-            const result = await Notifications.requestPermissionsAsync({
-              ios: { allowAlert: true, allowBadge: true, allowSound: true },
-            });
-
-            const newState = {
+        refreshPermissions: async () => {
+          const result = await checkPermissions();
+          set({
+            permissions: {
               status: mapToLocalStatus(result.status),
               canRequestAgain: result.canAskAgain,
-            };
+            },
+          });
+        },
 
-            set({ permissions: newState });
-            return newState.status === LocalPermissionStatus.GRANTED;
-          } catch (error) {
-            console.error("Permission request failed:", error);
-            return false;
+        requestNotificationPermission: async () => {
+          const result = await requestPermissions();
+          const status = mapToLocalStatus(result.status);
+          set({
+            permissions: {
+              status,
+              canRequestAgain: result.canAskAgain,
+            },
+          });
+          return status === LocalPermissionStatus.GRANTED;
+        },
+
+        scheduleTestNotification: async () => {
+          const result = await scheduleNotification(
+            10,
+            "Test Notification",
+            "This is a test notification",
+          );
+
+          if (result.success) {
+            await get().refreshScheduledNotifications();
           }
         },
 
-        openSystemSettings: async () => {
+        refreshScheduledNotifications: async () => {
+          const notifications = await listScheduledNotifications();
+          set({ scheduledNotifications: notifications });
+        },
+
+        clearNotifications: async () => {
+          await cancelAllScheduledNotifications();
+          set({
+            scheduledNotifications: [],
+          });
+        },
+
+        openNotificationSettings: async () => {
           try {
             await openSettings();
           } catch (error) {
@@ -73,11 +85,8 @@ export const useNotificationStore = create<NotificationState>()(
       {
         name: "notification-storage",
         storage: createJSONStorage(() => Storage),
-        // Selective Persistence: permissions only
         partialize: (state) => ({
-          permissions: {
-            ...state.permissions,
-          },
+          permissions: state.permissions,
         }),
       },
     ),
