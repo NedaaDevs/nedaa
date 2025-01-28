@@ -7,7 +7,7 @@ export const configureNotifications = () => {
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
-      shouldSetBadge: false,
+      shouldSetBadge: true,
     }),
   });
 };
@@ -36,7 +36,7 @@ export const requestPermissions = async () => {
 };
 
 export const scheduleNotification = async (
-  timeInMinutes: number,
+  seconds: number,
   title: string,
   message: string,
 ) => {
@@ -48,8 +48,8 @@ export const scheduleNotification = async (
 
   try {
     const trigger = {
-      seconds: timeInMinutes,
-      channelId: "testing",
+      seconds: seconds,
+      channelId: "new_testing",
     };
 
     const id = await Notifications.scheduleNotificationAsync({
