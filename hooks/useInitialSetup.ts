@@ -14,6 +14,7 @@ const initSentry = (consent: boolean) => {
   if (consent) {
     Sentry.init({
       dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      enabled: !__DEV__,
     });
   }
 };
