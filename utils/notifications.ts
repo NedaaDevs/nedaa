@@ -48,7 +48,9 @@ export const scheduleNotification = async (
 
   try {
     const trigger = {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: seconds,
+      repeats: false,
       channelId: "new_testing",
     };
 

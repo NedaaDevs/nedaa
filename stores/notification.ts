@@ -3,6 +3,8 @@ import { devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage } from "zustand/middleware";
 import { openSettings } from "expo-linking";
+import { Platform } from "react-native";
+import { IosAuthorizationStatus } from "expo-notifications";
 
 // Utils
 import {
@@ -12,11 +14,13 @@ import {
   listScheduledNotifications,
   mapToLocalStatus,
   cancelAllScheduledNotifications,
+  configureNotifications,
 } from "@/utils/notifications";
 
 // Types and enums
 import { NotificationState } from "@/types/notifications";
 import { LocalPermissionStatus } from "@/enums/notifications";
+import { PlatformType } from "@/enums/app";
 
 export const useNotificationStore = create<NotificationState>()(
   devtools(
@@ -26,10 +30,23 @@ export const useNotificationStore = create<NotificationState>()(
           status: LocalPermissionStatus.UNDETERMINED,
           canRequestAgain: true,
         },
-        scheduledNotifications: [],
 
         refreshPermissions: async () => {
           const result = await checkPermissions();
+
+          if (Platform.OS === PlatformType.IOS) {
+            const status =
+              result.status ||
+              result.ios?.status === IosAuthorizationStatus.PROVISIONAL;
+
+            set({
+              permissions: {
+                status: mapToLocalStatus(status),
+                canRequestAgain: result.canAskAgain,
+              },
+            });
+          }
+
           set({
             permissions: {
               status: mapToLocalStatus(result.status),
@@ -39,6 +56,7 @@ export const useNotificationStore = create<NotificationState>()(
         },
 
         requestNotificationPermission: async () => {
+          configureNotifications();
           const result = await requestPermissions();
           const status = mapToLocalStatus(result.status);
           set({
@@ -51,27 +69,26 @@ export const useNotificationStore = create<NotificationState>()(
         },
 
         scheduleTestNotification: async () => {
-          const result = await scheduleNotification(
-            10,
+          await get().clearNotifications();
+          await scheduleNotification(
+            1 * 10,
             "Test Notification",
-            "This is a test notification",
+            `This is a test notification with 10 seconds`,
           );
 
-          if (result.success) {
-            await get().refreshScheduledNotifications();
-          }
+          await scheduleNotification(
+            60 * 1 * 10,
+            "Test Notification",
+            `This is a test notification with 10m`,
+          );
+
+          console.log(await get().getScheduledNotifications());
         },
 
-        refreshScheduledNotifications: async () => {
-          const notifications = await listScheduledNotifications();
-          set({ scheduledNotifications: notifications });
-        },
-
+        getScheduledNotifications: async () =>
+          await listScheduledNotifications(),
         clearNotifications: async () => {
           await cancelAllScheduledNotifications();
-          set({
-            scheduledNotifications: [],
-          });
         },
 
         openNotificationSettings: async () => {

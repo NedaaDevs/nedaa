@@ -4,11 +4,10 @@ import { NotificationRequest } from "expo-notifications";
 
 export type NotificationState = {
   permissions: NotificationPermissionsState;
-  scheduledNotifications: NotificationRequest[];
   refreshPermissions: () => Promise<void>;
   requestNotificationPermission: () => Promise<boolean>;
   scheduleTestNotification: () => Promise<void>;
-  refreshScheduledNotifications: () => Promise<void>;
+  getScheduledNotifications: () => Promise<NotificationRequest[]>;
   clearNotifications: () => Promise<void>;
   openNotificationSettings: () => Promise<void>;
 };

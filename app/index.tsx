@@ -43,9 +43,10 @@ export default function MainScreen() {
     useAppStore();
   const {
     permissions: notificationPermission,
-    openSystemSettings,
-    checkPermissions: checkNotificationPermission,
-    requestPermissions: requestNotificationPermission,
+    openNotificationSettings,
+    refreshPermissions,
+    requestNotificationPermission,
+    scheduleTestNotification,
   } = useNotificationStore();
   const {
     permissions: locationPermission,
@@ -180,7 +181,7 @@ export default function MainScreen() {
                 <Box className="space-y-4">
                   <Button
                     className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
-                    onPress={async () => await checkNotificationPermission()}
+                    onPress={async () => await refreshPermissions()}
                   >
                     <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                       {t("checkPermissions")}
@@ -257,7 +258,7 @@ export default function MainScreen() {
 
             <Button
               className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
-              onPress={openSystemSettings}
+              onPress={openNotificationSettings}
             >
               <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                 {t("openSettings")}
@@ -294,7 +295,6 @@ export default function MainScreen() {
         <Divider />
 
         <Box>
-          <Text className="text-center">{t("sentry")}</Text>
           <Button
             className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
             onPress={fetchPrayerTimes}
@@ -307,6 +307,22 @@ export default function MainScreen() {
           </Button>
         </Box>
         <Divider />
+
+        {notificationPermission.status === LocalPermissionStatus.GRANTED && (
+          <Box>
+            <Text>Schedules two notifications 10s and in 10m</Text>
+            <Button
+              className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+              onPress={() => scheduleTestNotification()}
+            >
+              <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+                {t("testNotification")}
+              </ButtonText>
+            </Button>
+          </Box>
+        )}
+        <Divider />
+
         <View style={styles.container}>
           <T style={styles.paragraph}> {I18nManager.isRTL ? "RTL" : "LTR"}</T>
         </View>

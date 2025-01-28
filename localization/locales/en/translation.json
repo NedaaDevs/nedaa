@@ -30,6 +30,7 @@
     "granted": "Granted",
     "undetermined": "Not Set"
   },
+  "testNotification": "Test Notification",
   "toggleLanguage": "Change Language",
   "toggleMode": "Change Mode",
   "try": "Try",

@@ -1,8 +1,5 @@
 import * as Sentry from "@sentry/react-native";
 
-// Utils
-import { configureNotifications } from "@/utils/notifications";
-
 // Types
 import { LocationStore } from "@/types/location";
 import { AppState } from "@/types/app";
@@ -20,7 +17,6 @@ export const performFirstRunSetup = async (
 
     // Only request if first run and permissions aren't determined
     if (appStore.isFirstRun) {
-      configureNotifications();
       const grantedNotificationsPermission =
         await notificationStore.requestNotificationPermission();
       const grantedLocationPermission =
