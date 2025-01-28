@@ -52,7 +52,13 @@ export const getDirectory = async (): Promise<string> => {
 
 // Open Database
 const openDatabase = async () =>
-  await SQLite.openDatabaseAsync(DB_NAME, undefined, await getDirectory());
+  await SQLite.openDatabaseAsync(
+    DB_NAME,
+    {
+      useNewConnection: true,
+    },
+    await getDirectory(),
+  );
 
 // Initialize Database Schema
 const initializeDB = async () => {
