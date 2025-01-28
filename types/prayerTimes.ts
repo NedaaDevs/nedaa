@@ -1,4 +1,6 @@
-export type PrayerTimesStoreState = {};
+export type PrayerTimesStoreState = {
+  isLoading: boolean;
+};
 
 export type PrayerTimesStoreActions = {
   getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;

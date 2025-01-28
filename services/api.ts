@@ -5,6 +5,10 @@ import type { TData, RequestMethod, Response } from "@/types/api";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+if (!API_URL) {
+  throw new Error("API URL Not set");
+}
+
 const apiInstance = axios.create({
   baseURL: API_URL,
   timeout: 10000,

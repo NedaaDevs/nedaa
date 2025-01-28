@@ -2,6 +2,9 @@
   "canRequestAgain": "Can Request Permission",
   "checkPermissions": "Check Permission Status",
   "deviceLocale": "Device Locale",
+  "disable": "Disable",
+  "enable": "Enable",
+  "fetchPrayerTimes": "Fetch Prayer Times",
   "localeOptions": {
     "ar": "Arabic",
     "en": "English",
@@ -20,17 +23,16 @@
   "permissions": "Permissions",
   "requestPermission": "Request Permission",
   "restartAppToApplyChanges": "Please restart the app to apply changes",
+  "sendCrashLogs": "Crash Reporting",
   "sentry": "Sentry",
   "status": {
     "denied": "Denied",
     "granted": "Granted",
     "undetermined": "Not Set"
   },
+  "testNotification": "Test Notification",
   "toggleLanguage": "Change Language",
   "toggleMode": "Change Mode",
   "try": "Try",
-  "yes": "Yes",
-  "sendCrashLogs": "Crash Reporting",
-  "enable": "Enable",
-  "disable": "Disable"
+  "yes": "Yes"
 }

@@ -9,7 +9,7 @@ export type LocationPermissionsState = {
 };
 
 export type LocationDetails = {
-  coords: LocationObjectCoords | null;
+  coords: LocationObjectCoords;
   address: LocationGeocodedAddress | null;
   error: string | null;
   isLoading: boolean;

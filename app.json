@@ -26,6 +26,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.nedaa.app",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.dev.nedaa.app"]
+      },
       "infoPlist": {
         "ExpoLocalization_supportsRTL": true
       }
@@ -59,7 +62,8 @@
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
           "isAndroidForegroundServiceEnabled": true
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

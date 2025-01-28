@@ -8,6 +8,7 @@ import { useLocationStore } from "@/stores/location";
 
 // Services
 import { performFirstRunSetup } from "@/services/setup";
+import { PrayerTimesDB } from "@/services/db";
 
 const initSentry = (consent: boolean) => {
   if (consent) {
@@ -15,6 +16,10 @@ const initSentry = (consent: boolean) => {
       dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
     });
   }
+};
+
+const initDB = async () => {
+  await PrayerTimesDB.initialize();
 };
 
 export const useInitialSetup = () => {
@@ -26,6 +31,8 @@ export const useInitialSetup = () => {
     const initializeApp = async () => {
       // Initialize Sentry based on user choice
       await initSentry(appStore.sendCrashLogs);
+
+      await initDB();
 
       await performFirstRunSetup(appStore, notificationStore, locationStore);
     };

@@ -1,68 +1,97 @@
 import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
+import Storage from "expo-sqlite/kv-store";
+import { createJSONStorage } from "zustand/middleware";
 import { openSettings } from "expo-linking";
-import * as Notifications from "expo-notifications";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createJSONStorage, devtools, persist } from "zustand/middleware";
+import { Platform } from "react-native";
+import { IosAuthorizationStatus } from "expo-notifications";
 
 // Utils
-import { mapToLocalStatus } from "@/utils/notifications";
+import {
+  checkPermissions,
+  requestPermissions,
+  scheduleNotification,
+  listScheduledNotifications,
+  mapToLocalStatus,
+  cancelAllScheduledNotifications,
+  configureNotifications,
+} from "@/utils/notifications";
 
-// Enums
-import { LocalPermissionStatus } from "@/enums/notifications";
-
-// Types
+// Types and enums
 import { NotificationState } from "@/types/notifications";
+import { LocalPermissionStatus } from "@/enums/notifications";
+import { PlatformType } from "@/enums/app";
 
 export const useNotificationStore = create<NotificationState>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         permissions: {
           status: LocalPermissionStatus.UNDETERMINED,
           canRequestAgain: true,
         },
 
-        checkPermissions: async () => {
-          try {
-            const result = await Notifications.getPermissionsAsync();
+        refreshPermissions: async () => {
+          const result = await checkPermissions();
+
+          if (Platform.OS === PlatformType.IOS) {
+            const status =
+              result.status ||
+              result.ios?.status === IosAuthorizationStatus.PROVISIONAL;
 
             set({
               permissions: {
-                status: mapToLocalStatus(result.status),
+                status: mapToLocalStatus(status),
                 canRequestAgain: result.canAskAgain,
               },
             });
-          } catch (error) {
-            console.error("Permission check failed:", error);
-            set({
-              permissions: {
-                status: LocalPermissionStatus.UNDETERMINED,
-                canRequestAgain: true,
-              },
-            });
           }
-        },
 
-        requestPermissions: async () => {
-          try {
-            const result = await Notifications.requestPermissionsAsync({
-              ios: { allowAlert: true, allowBadge: true, allowSound: true },
-            });
-
-            const newState = {
+          set({
+            permissions: {
               status: mapToLocalStatus(result.status),
               canRequestAgain: result.canAskAgain,
-            };
-
-            set({ permissions: newState });
-            return newState.status === LocalPermissionStatus.GRANTED;
-          } catch (error) {
-            console.error("Permission request failed:", error);
-            return false;
-          }
+            },
+          });
         },
 
-        openSystemSettings: async () => {
+        requestNotificationPermission: async () => {
+          configureNotifications();
+          const result = await requestPermissions();
+          const status = mapToLocalStatus(result.status);
+          set({
+            permissions: {
+              status,
+              canRequestAgain: result.canAskAgain,
+            },
+          });
+          return status === LocalPermissionStatus.GRANTED;
+        },
+
+        scheduleTestNotification: async () => {
+          await get().clearNotifications();
+          await scheduleNotification(
+            1 * 10,
+            "Test Notification",
+            `This is a test notification with 10 seconds`,
+          );
+
+          await scheduleNotification(
+            60 * 1 * 10,
+            "Test Notification",
+            `This is a test notification with 10m`,
+          );
+
+          console.log(await get().getScheduledNotifications());
+        },
+
+        getScheduledNotifications: async () =>
+          await listScheduledNotifications(),
+        clearNotifications: async () => {
+          await cancelAllScheduledNotifications();
+        },
+
+        openNotificationSettings: async () => {
           try {
             await openSettings();
           } catch (error) {
@@ -72,12 +101,9 @@ export const useNotificationStore = create<NotificationState>()(
       }),
       {
         name: "notification-storage",
-        storage: createJSONStorage(() => AsyncStorage),
-        // Selective Persistence: permissions only
+        storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
-          permissions: {
-            ...state.permissions,
-          },
+          permissions: state.permissions,
         }),
       },
     ),

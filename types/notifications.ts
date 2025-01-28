@@ -1,10 +1,15 @@
 import { LocalPermissionStatus } from "@/enums/notifications";
 
+import { NotificationRequest } from "expo-notifications";
+
 export type NotificationState = {
   permissions: NotificationPermissionsState;
-  checkPermissions: () => Promise<void>;
-  requestPermissions: () => Promise<boolean>;
-  openSystemSettings: () => Promise<void>;
+  refreshPermissions: () => Promise<void>;
+  requestNotificationPermission: () => Promise<boolean>;
+  scheduleTestNotification: () => Promise<void>;
+  getScheduledNotifications: () => Promise<NotificationRequest[]>;
+  clearNotifications: () => Promise<void>;
+  openNotificationSettings: () => Promise<void>;
 };
 
 export type NotificationPermissionsState = {

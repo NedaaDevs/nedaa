@@ -19,7 +19,7 @@ import { LocalPermissionStatus } from "@/enums/notifications";
 import { LocalPermissionStatus as LocationPermissionStatus } from "@/enums/location";
 
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Divider } from "@/components/ui/divider";
 import { Switch } from "@/components/ui/switch";
@@ -27,20 +27,34 @@ import { Switch } from "@/components/ui/switch";
 import React from "react";
 import colors from "tailwindcss/colors";
 
+// Good for debugging sqlite(shift + m)
+// import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+// import { openDatabaseSync } from "expo-sqlite";
+// import { DB_NAME } from "@/constants/DB";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+
+// const db = openDatabaseSync(DB_NAME);
+
+var tries = 0;
+
 export default function MainScreen() {
+  // useDrizzleStudio(db);
   const { locale, mode, sendCrashLogs, setLocale, setMode, setSendCrashLogs } =
     useAppStore();
   const {
     permissions: notificationPermission,
-    openSystemSettings,
-    checkPermissions: checkNotificationPermission,
-    requestPermissions: requestNotificationPermission,
+    openNotificationSettings,
+    refreshPermissions,
+    requestNotificationPermission,
+    scheduleTestNotification,
   } = useNotificationStore();
   const {
     permissions: locationPermission,
     checkPermissions: checkLocationPermissions,
     requestPermissions: requestLocationPermission,
+    locationDetails,
   } = useLocationStore();
+  const { isLoading, getPrayerTimes } = usePrayerTimesStore();
   const { showToast } = useToastStore();
   const { t } = useTranslation();
 
@@ -59,10 +73,27 @@ export default function MainScreen() {
   };
 
   const testSentry = async () => {
-    await Sentry.captureException(
-      new Error(`Optional error: Send crash log is => ${sendCrashLogs}`),
+    if (sendCrashLogs && tries < 2) {
+      await Sentry.captureException(
+        new Error(`Optional error: Send crash log is => ${sendCrashLogs}`),
+      );
+      showToast(`A an exceptions should have been captured`, "info", "", 10000);
+      tries += 1;
+    }
+  };
+
+  const fetchPrayerTimes = async () => {
+    const coords = {
+      lat: locationDetails.coords?.latitude,
+      long: locationDetails.coords?.longitude,
+    };
+    await getPrayerTimes(coords);
+    showToast(
+      "Prayer Times Fetched And Stored successfully!",
+      "success",
+      "",
+      3000,
     );
-    showToast(`A an exceptions should have been captured`, "info", "", 10000);
   };
 
   const handleSetCrashLog = () => {
@@ -150,7 +181,7 @@ export default function MainScreen() {
                 <Box className="space-y-4">
                   <Button
                     className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
-                    onPress={async () => await checkNotificationPermission()}
+                    onPress={async () => await refreshPermissions()}
                   >
                     <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                       {t("checkPermissions")}
@@ -227,7 +258,7 @@ export default function MainScreen() {
 
             <Button
               className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
-              onPress={openSystemSettings}
+              onPress={openNotificationSettings}
             >
               <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                 {t("openSettings")}
@@ -262,6 +293,36 @@ export default function MainScreen() {
           ios_backgroundColor={colors.gray[300]}
         />
         <Divider />
+
+        <Box>
+          <Button
+            className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+            onPress={fetchPrayerTimes}
+            isDisabled={isLoading}
+          >
+            {isLoading && <ButtonSpinner className="text-primary" />}
+            <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+              {t("fetchPrayerTimes")}
+            </ButtonText>
+          </Button>
+        </Box>
+        <Divider />
+
+        {notificationPermission.status === LocalPermissionStatus.GRANTED && (
+          <Box>
+            <Text>Schedules two notifications 10s and in 10m</Text>
+            <Button
+              className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+              onPress={() => scheduleTestNotification()}
+            >
+              <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+                {t("testNotification")}
+              </ButtonText>
+            </Button>
+          </Box>
+        )}
+        <Divider />
+
         <View style={styles.container}>
           <T style={styles.paragraph}> {I18nManager.isRTL ? "RTL" : "LTR"}</T>
         </View>
