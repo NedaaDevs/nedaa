@@ -4,6 +4,7 @@
   "deviceLocale": "Bahasa Peranti",
   "disable": "Lumpuhkan",
   "enable": "Dayakan",
+  "fetchPrayerTimes": "Dapatkan Waktu Solat",
   "localeOptions": {
     "ar": "Bahasa Arab",
     "en": "Bahasa Inggeris",

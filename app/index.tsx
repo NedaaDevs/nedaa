@@ -19,7 +19,7 @@ import { LocalPermissionStatus } from "@/enums/notifications";
 import { LocalPermissionStatus as LocationPermissionStatus } from "@/enums/location";
 
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Divider } from "@/components/ui/divider";
 import { Switch } from "@/components/ui/switch";
@@ -29,8 +29,13 @@ import colors from "tailwindcss/colors";
 
 // Good for debugging sqlite(shift + m)
 // import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+// import { openDatabaseSync } from "expo-sqlite";
+// import { DB_NAME } from "@/constants/DB";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // const db = openDatabaseSync(DB_NAME);
+
+var tries = 0;
 
 export default function MainScreen() {
   // useDrizzleStudio(db);
@@ -46,7 +51,9 @@ export default function MainScreen() {
     permissions: locationPermission,
     checkPermissions: checkLocationPermissions,
     requestPermissions: requestLocationPermission,
+    locationDetails,
   } = useLocationStore();
+  const { isLoading, getPrayerTimes } = usePrayerTimesStore();
   const { showToast } = useToastStore();
   const { t } = useTranslation();
 
@@ -65,10 +72,27 @@ export default function MainScreen() {
   };
 
   const testSentry = async () => {
-    await Sentry.captureException(
-      new Error(`Optional error: Send crash log is => ${sendCrashLogs}`),
+    if (sendCrashLogs && tries < 2) {
+      await Sentry.captureException(
+        new Error(`Optional error: Send crash log is => ${sendCrashLogs}`),
+      );
+      showToast(`A an exceptions should have been captured`, "info", "", 10000);
+      tries += 1;
+    }
+  };
+
+  const fetchPrayerTimes = async () => {
+    const coords = {
+      lat: locationDetails.coords?.latitude,
+      long: locationDetails.coords?.longitude,
+    };
+    await getPrayerTimes(coords);
+    showToast(
+      "Prayer Times Fetched And Stored successfully!",
+      "success",
+      "",
+      3000,
     );
-    showToast(`A an exceptions should have been captured`, "info", "", 10000);
   };
 
   const handleSetCrashLog = () => {
@@ -267,6 +291,21 @@ export default function MainScreen() {
           thumbColor={colors.gray[50]}
           ios_backgroundColor={colors.gray[300]}
         />
+        <Divider />
+
+        <Box>
+          <Text className="text-center">{t("sentry")}</Text>
+          <Button
+            className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+            onPress={fetchPrayerTimes}
+            isDisabled={isLoading}
+          >
+            {isLoading && <ButtonSpinner className="text-primary" />}
+            <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+              {t("fetchPrayerTimes")}
+            </ButtonText>
+          </Button>
+        </Box>
         <Divider />
         <View style={styles.container}>
           <T style={styles.paragraph}> {I18nManager.isRTL ? "RTL" : "LTR"}</T>

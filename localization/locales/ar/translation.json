@@ -2,6 +2,9 @@
   "canRequestAgain": "يمكن طلب الإذن",
   "checkPermissions": "التحقق من حالة الإذن",
   "deviceLocale": "لغة الجهاز",
+  "disable": "تعطيل",
+  "enable": "تمكين",
+  "fetchPrayerTimes": "جلب أوقات الصلاة",
   "localeOptions": {
     "ar": "العربية",
     "en": "الإنجليزية",
@@ -20,6 +23,7 @@
   "permissions": "الأذونات",
   "requestPermission": "طلب إذن",
   "restartAppToApplyChanges": "يرجى إعادة تشغيل التطبيق لتطبيق التغييرات",
+  "sendCrashLogs": "إرسال تقارير الأعطال",
   "sentry": "سنتري",
   "status": {
     "denied": "مرفوض",
@@ -29,8 +33,5 @@
   "toggleLanguage": "تغيير اللغة",
   "toggleMode": "تغيير الوضع",
   "try": "جرب",
-  "yes": "نعم",
-  "sendCrashLogs": "إرسال تقارير الأعطال",
-  "enable": "تمكين",
-  "disable": "تعطيل"
+  "yes": "نعم"
 }
