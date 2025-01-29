@@ -7,7 +7,7 @@ import { textStyle } from "./styles";
 type ITextProps = React.ComponentProps<typeof RNText> &
   VariantProps<typeof textStyle>;
 
-const Text = React.forwardRef<React.ElementRef<typeof RNText>, ITextProps>(
+const Text = React.forwardRef<React.ComponentRef<typeof RNText>, ITextProps>(
   (
     {
       className,
@@ -21,7 +21,7 @@ const Text = React.forwardRef<React.ElementRef<typeof RNText>, ITextProps>(
       highlight,
       ...props
     },
-    ref,
+    ref
   ) => {
     return (
       <RNText
@@ -40,7 +40,7 @@ const Text = React.forwardRef<React.ElementRef<typeof RNText>, ITextProps>(
         ref={ref}
       />
     );
-  },
+  }
 );
 
 Text.displayName = "Text";

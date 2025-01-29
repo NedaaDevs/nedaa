@@ -285,7 +285,7 @@ type IButtonProps = Omit<
   VariantProps<typeof buttonStyle> & { className?: string };
 
 const Button = React.forwardRef<
-  React.ElementRef<typeof UIButton>,
+  React.ComponentRef<typeof UIButton>,
   IButtonProps
 >(
   (
@@ -307,7 +307,7 @@ type IButtonTextProps = React.ComponentPropsWithoutRef<typeof UIButton.Text> &
   VariantProps<typeof buttonTextStyle> & { className?: string };
 
 const ButtonText = React.forwardRef<
-  React.ElementRef<typeof UIButton.Text>,
+  React.ComponentRef<typeof UIButton.Text>,
   IButtonTextProps
 >(({ className, variant, size, action, ...props }, ref) => {
   const {
@@ -346,7 +346,7 @@ type IButtonIcon = React.ComponentPropsWithoutRef<typeof UIButton.Icon> &
   };
 
 const ButtonIcon = React.forwardRef<
-  React.ElementRef<typeof UIButton.Icon>,
+  React.ComponentRef<typeof UIButton.Icon>,
   IButtonIcon
 >(({ className, size, ...props }, ref) => {
   const {
@@ -397,7 +397,7 @@ type IButtonGroupProps = React.ComponentPropsWithoutRef<typeof UIButton.Group> &
   VariantProps<typeof buttonGroupStyle>;
 
 const ButtonGroup = React.forwardRef<
-  React.ElementRef<typeof UIButton.Group>,
+  React.ComponentRef<typeof UIButton.Group>,
   IButtonGroupProps
 >(
   (

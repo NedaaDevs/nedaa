@@ -202,7 +202,7 @@ type IToastDescriptionProps = React.ComponentProps<typeof Text> & {
 } & VariantProps<typeof toastDescriptionStyle>;
 
 const ToastDescription = React.forwardRef<
-  React.ElementRef<typeof Text>,
+  React.ComponentRef<typeof Text>,
   IToastDescriptionProps
 >(({ className, size = "md", ...props }, ref) => {
   const { variant: parentVariant } = useStyleContext(SCOPE);
