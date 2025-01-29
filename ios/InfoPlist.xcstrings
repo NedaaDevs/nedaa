@@ -1,0 +1,91 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نداء"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نداء"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa"
+          }
+        }
+      }
+    },
+    "NSLocationAlwaysAndWhenInUseUsageDescription" : {
+      "comment" : "Privacy - Location Always and When In Use Usage Description",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقوم التطبيق بالوصول إلى موقعك لتوفير مواقيت صلاة دقيقة لمنطقتك. يتم استخدام موقعك فقط لحساب مواقيت الصلاة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app briefly accesses your location to provide accurate prayer times for your area. Your location is solely used for calculating prayer times."
+          }
+        }
+      }
+    },
+    "NSLocationAlwaysUsageDescription" : {
+      "comment" : "Privacy - Location Always Usage Description",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقوم التطبيق بالوصول إلى موقعك لتوفير مواقيت صلاة دقيقة لمنطقتك. يتم استخدام موقعك فقط لحساب مواقيت الصلاة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app briefly accesses your location to provide accurate prayer times for your area. Your location is solely used for calculating prayer times."
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription" : {
+      "comment" : "Privacy - Location When In Use Usage Description",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقوم التطبيق بالوصول إلى موقعك لتوفير مواقيت صلاة دقيقة لمنطقتك. يتم استخدام موقعك فقط لحساب مواقيت الصلاة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app briefly accesses your location to provide accurate prayer times for your area. Your location is solely used for calculating prayer times."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
