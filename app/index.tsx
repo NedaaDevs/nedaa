@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import * as Sentry from "@sentry/react-native";
 
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
@@ -33,9 +32,9 @@ import colors from "tailwindcss/colors";
 // import { DB_NAME } from "@/constants/DB";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
-// const db = openDatabaseSync(DB_NAME);
+import { useHaptic } from "@/hooks/useHaptic";
 
-var tries = 0;
+// const db = openDatabaseSync(DB_NAME);
 
 export default function MainScreen() {
   // useDrizzleStudio(db);
@@ -57,6 +56,8 @@ export default function MainScreen() {
   const { isLoading, getPrayerTimes } = usePrayerTimesStore();
   const { showToast } = useToastStore();
   const { t } = useTranslation();
+  const hapticMedium = useHaptic("medium");
+  const hapticSuccess = useHaptic("success");
 
   const toggleMode = () => {
     const modes = Object.values(AppMode);
@@ -72,22 +73,13 @@ export default function MainScreen() {
     setLocale(languages[nextIndex]);
   };
 
-  const testSentry = async () => {
-    if (sendCrashLogs && tries < 2) {
-      await Sentry.captureException(
-        new Error(`Optional error: Send crash log is => ${sendCrashLogs}`),
-      );
-      showToast(`A an exceptions should have been captured`, "info", "", 10000);
-      tries += 1;
-    }
-  };
-
   const fetchPrayerTimes = async () => {
     const coords = {
       lat: locationDetails.coords?.latitude,
       long: locationDetails.coords?.longitude,
     };
     await getPrayerTimes(coords);
+    await hapticSuccess();
     showToast(
       "Prayer Times Fetched And Stored successfully!",
       "success",
@@ -270,13 +262,13 @@ export default function MainScreen() {
         <Divider />
 
         <Box>
-          <Text className="text-center">{t("sentry")}</Text>
+          <Text className="text-center">{t("tryHaptic")}</Text>
           <Button
-            className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
-            onPress={testSentry}
+            className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
+            onPress={async () => await hapticMedium()}
           >
-            <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
-              {t("try")}
+            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+              {t("tapToFeel")}
             </ButtonText>
           </Button>
         </Box>
@@ -308,19 +300,6 @@ export default function MainScreen() {
         </Box>
         <Divider />
 
-        {notificationPermission.status === LocalPermissionStatus.GRANTED && (
-          <Box>
-            <Text>Schedules two notifications 10s and in 10m</Text>
-            <Button
-              className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
-              onPress={() => scheduleTestNotification()}
-            >
-              <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
-                {t("testNotification")}
-              </ButtonText>
-            </Button>
-          </Box>
-        )}
         <Divider />
 
         <View style={styles.container}>

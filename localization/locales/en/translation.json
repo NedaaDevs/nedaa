@@ -30,9 +30,11 @@
     "granted": "Granted",
     "undetermined": "Not Set"
   },
+  "tapToFeel": "Tap to feel",
   "testNotification": "Test Notification",
   "toggleLanguage": "Change Language",
   "toggleMode": "Change Mode",
   "try": "Try",
+  "tryHaptic": "Try haptic feedback",
   "yes": "Yes"
 }

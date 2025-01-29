@@ -29,8 +29,10 @@
     "granted": "Dibenarkan",
     "undetermined": "Belum Ditetapkan"
   },
+  "tapToFeel": "Ketuk untuk rasa",
   "testNotification": "Uji Notifikasi",
   "toggleLanguage": "Tukar Bahasa",
   "toggleMode": "Tukar Mod",
+  "tryHaptic": "Cuba getaran",
   "yes": "Ya"
 }

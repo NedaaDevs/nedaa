@@ -30,9 +30,11 @@
     "granted": "ممنوح",
     "undetermined": "غير محدد"
   },
+  "tapToFeel": "انقر للشعور",
   "testNotification": "اختبار الإشعارات",
   "toggleLanguage": "تغيير اللغة",
   "toggleMode": "تغيير الوضع",
   "try": "جرب",
+  "tryHaptic": "جرّب الاهتزاز",
   "yes": "نعم"
 }
