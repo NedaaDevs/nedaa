@@ -14,17 +14,21 @@ type FeedbackType =
 export const useHaptic = (feedbackType: FeedbackType = "selection") => {
   const createHapticHandler = useCallback(
     (type: Haptics.ImpactFeedbackStyle) => {
-      return Platform.OS === "web"
-        ? undefined
-        : () => Haptics.impactAsync(type);
+      // Return a no-op function for web instead of undefined
+      if (Platform.OS === "web") {
+        return () => Promise.resolve();
+      }
+      return () => Haptics.impactAsync(type);
     },
     [],
   );
+
   const createNotificationFeedback = useCallback(
     (type: Haptics.NotificationFeedbackType) => {
-      return Platform.OS === "web"
-        ? undefined
-        : () => Haptics.notificationAsync(type);
+      if (Platform.OS === "web") {
+        return () => Promise.resolve();
+      }
+      return () => Haptics.notificationAsync(type);
     },
     [],
   );
@@ -34,7 +38,11 @@ export const useHaptic = (feedbackType: FeedbackType = "selection") => {
       light: createHapticHandler(Haptics.ImpactFeedbackStyle.Light),
       medium: createHapticHandler(Haptics.ImpactFeedbackStyle.Medium),
       heavy: createHapticHandler(Haptics.ImpactFeedbackStyle.Heavy),
-      selection: Platform.OS === "web" ? undefined : Haptics.selectionAsync,
+      // Return a no-op function for selection on web
+      selection:
+        Platform.OS === "web"
+          ? () => Promise.resolve()
+          : Haptics.selectionAsync,
       success: createNotificationFeedback(
         Haptics.NotificationFeedbackType.Success,
       ),
