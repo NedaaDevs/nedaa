@@ -5,7 +5,7 @@ PODS:
     - ExpoModulesCore
   - EXConstants (17.0.4):
     - ExpoModulesCore
-  - EXNotifications (0.29.12):
+  - EXNotifications (0.29.13):
     - ExpoModulesCore
   - Expo (52.0.27):
     - ExpoModulesCore
@@ -21,7 +21,7 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (14.0.2):
     - ExpoModulesCore
-  - ExpoLinking (7.0.4):
+  - ExpoLinking (7.0.5):
     - ExpoModulesCore
   - ExpoLocalization (16.0.1):
     - ExpoModulesCore
@@ -53,7 +53,7 @@ PODS:
     - Yoga
   - ExpoSplashScreen (0.29.21):
     - ExpoModulesCore
-  - ExpoSQLite (15.0.6):
+  - ExpoSQLite (15.1.1):
     - ExpoModulesCore
   - ExpoSystemUI (4.0.7):
     - ExpoModulesCore
@@ -1270,7 +1270,7 @@ PODS:
     - ReactCommon/turbomodule/core
   - react-native-restart (0.0.27):
     - React-Core
-  - react-native-safe-area-context (4.14.1):
+  - react-native-safe-area-context (5.1.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1283,8 +1283,8 @@ PODS:
     - React-featureflags
     - React-graphics
     - React-ImageManager
-    - react-native-safe-area-context/common (= 4.14.1)
-    - react-native-safe-area-context/fabric (= 4.14.1)
+    - react-native-safe-area-context/common (= 5.1.0)
+    - react-native-safe-area-context/fabric (= 5.1.0)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-rendererdebug
@@ -1293,7 +1293,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/common (4.14.1):
+  - react-native-safe-area-context/common (5.1.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1314,7 +1314,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/fabric (4.14.1):
+  - react-native-safe-area-context/fabric (5.1.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2114,7 +2114,7 @@ SPEC CHECKSUMS:
   DoubleConversion: f16ae600a246532c4020132d54af21d0ddb2a385
   EXApplication: 4c72f6017a14a65e338c5e74fca418f35141e819
   EXConstants: 6b8c5653492349b3c3fe6b905c556bc45b360405
-  EXNotifications: d454fd3f5340d728f1cb652807bb9c9ef16a7bda
+  EXNotifications: a762c9647d87682e9822f5798ca6666b5a81e213
   Expo: 296cbea8d4469eb60d61f09dbd4925f86d2b85da
   ExpoAsset: d2d2cbc6a4efadf51a3da27d85d589935abd0b98
   ExpoFileSystem: 818e82dbb71175414d1ca310e926c48ff0d07348
@@ -2122,12 +2122,12 @@ SPEC CHECKSUMS:
   ExpoHaptics: 8d199b2f33245ea85289ff6c954c7ee7c00a5b5d
   ExpoHead: 5d1c5c20e3933db5d9ca349424cb3b9a4a84b706
   ExpoKeepAwake: 62ff49bbc3bff90d8ee28329190f9ba371bf88e7
-  ExpoLinking: 4a09f2f0dc1132607c20f5628ba30d94795ea73d
+  ExpoLinking: 8d12bee174ba0cdf31239706578e29e74a417402
   ExpoLocalization: 7776ea3bdb112125390745bbaf919b734b2ad1c7
   ExpoLocation: 5437fb925d0b0dbe728c20536335a964e9202f5a
   ExpoModulesCore: fce09cefd4977bec384d8c74e1102aa2f6962dd7
   ExpoSplashScreen: c64f3b577e1cb0b6a2f47d01c528ad7d80d9ae6a
-  ExpoSQLite: a2f485c918e16f4d77a1c208b36754d73663b43e
+  ExpoSQLite: f162969284a7299080be5066f330090cec9130cb
   ExpoSystemUI: 36f50ee42da3e814bffd01ee38edcf3c7cc0015d
   ExpoWebBrowser: a212e6b480d8857d3e441fba51e0c968333803b3
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
@@ -2165,7 +2165,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 99bd566147aaa78e872568be53ebca8a4449ddae
   React-microtasksnativemodule: 51e7813abf875408a0f367e473a65bbab6aa8481
   react-native-restart: 0bc732f4461709022a742bb29bcccf6bbc5b4863
-  react-native-safe-area-context: 72e08de89457917abe5bf01417fe2936988de502
+  react-native-safe-area-context: efd435f89b73d91f37438e5ac2d725f0e7adff95
   React-nativeconfig: cd0fbb40987a9658c24dab5812c14e5522a64929
   React-NativeModulesApple: 4a9c304aa4fb086af32e8758ba892386d895b4d3
   React-perflogger: 721172bda31a65ce7b7a0c3bf3de96f12ef6f45d

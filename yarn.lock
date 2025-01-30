@@ -5559,6 +5559,14 @@ expo-constants@*, expo-constants@~17.0.4:
     "@expo/config" "~10.0.8"
     "@expo/env" "~0.4.1"
 
+expo-constants@~17.0.5:
+  version "17.0.5"
+  resolved "https://registry.npmjs.org/expo-constants/-/expo-constants-17.0.5.tgz"
+  integrity sha512-6SHXh32jCB+vrp2TRDNkoGoM421eOBPZIXX9ixI0hKKz71tIjD+LMr/P+rGUd/ks312MP3WK3j5vcYYPkCD8tQ==
+  dependencies:
+    "@expo/config" "~10.0.8"
+    "@expo/env" "~0.4.1"
+
 expo-dev-client@~5.0.10:
   version "5.0.10"
   resolved "https://registry.npmjs.org/expo-dev-client/-/expo-dev-client-5.0.10.tgz"
@@ -5613,6 +5621,11 @@ expo-font@~13.0.3:
   dependencies:
     fontfaceobserver "^2.1.0"
 
+expo-haptics@~14.0.1:
+  version "14.0.1"
+  resolved "https://registry.npmjs.org/expo-haptics/-/expo-haptics-14.0.1.tgz"
+  integrity sha512-V81FZ7xRUfqM6uSI6FA1KnZ+QpEKnISqafob/xEfcx1ymwhm4V3snuLWWFjmAz+XaZQTqlYa8z3QbqEXz7G63w==
+
 expo-json-utils@~0.14.0:
   version "0.14.0"
   resolved "https://registry.npmjs.org/expo-json-utils/-/expo-json-utils-0.14.0.tgz"
@@ -5623,12 +5636,12 @@ expo-keep-awake@~14.0.2:
   resolved "https://registry.npmjs.org/expo-keep-awake/-/expo-keep-awake-14.0.2.tgz"
   integrity sha512-71XAMnoWjKZrN8J7Q3+u0l9Ytp4OfhNAYz8BCWF1/9aFUw09J3I7Z5DuI3MUsVMa/KWi+XhG+eDUFP8cVA19Uw==
 
-expo-linking@*, expo-linking@~7.0.4:
-  version "7.0.4"
-  resolved "https://registry.npmjs.org/expo-linking/-/expo-linking-7.0.4.tgz"
-  integrity sha512-i+QaFc2zwOoq/ajePVWC+op3cOKC6nd6Wj/BJtukU71byTAbxDhbi+3m0ZFbh2i1/v/iIXRqrl3PvQcKNklPkw==
+expo-linking@*, expo-linking@~7.0.5:
+  version "7.0.5"
+  resolved "https://registry.npmjs.org/expo-linking/-/expo-linking-7.0.5.tgz"
+  integrity sha512-3KptlJtcYDPWohk0MfJU75MJFh2ybavbtcSd84zEPfw9s1q3hjimw3sXnH03ZxP54kiEWldvKmmnGcVffBDB1g==
   dependencies:
-    expo-constants "~17.0.4"
+    expo-constants "~17.0.5"
     invariant "^2.2.4"
 
 expo-localization@~16.0.1:
@@ -5672,10 +5685,10 @@ expo-modules-core@2.1.4:
   dependencies:
     invariant "^2.2.4"
 
-expo-notifications@~0.29.12:
-  version "0.29.12"
-  resolved "https://registry.npmjs.org/expo-notifications/-/expo-notifications-0.29.12.tgz"
-  integrity sha512-E2QQ+PJR4jAg4XX1jsYobfHwjUMuR6YO/CtMLPKT1jEpzawGKLKEFowtIGu70wpOmcXWuyZst6qStJFu1gwxuQ==
+expo-notifications@~0.29.13:
+  version "0.29.13"
+  resolved "https://registry.npmjs.org/expo-notifications/-/expo-notifications-0.29.13.tgz"
+  integrity sha512-GHye6XeI1uEeVttJO/hGwUyA5cgQsxR3mi5q37yOE7cZN3cMj36pIfEEmjXEr0nWIWSzoJ0w8c2QxNj5xfP1pA==
   dependencies:
     "@expo/image-utils" "^0.6.4"
     "@ide/backoff" "^1.0.0"
@@ -5683,7 +5696,7 @@ expo-notifications@~0.29.12:
     assert "^2.0.0"
     badgin "^1.1.5"
     expo-application "~6.0.2"
-    expo-constants "~17.0.4"
+    expo-constants "~17.0.5"
 
 expo-router@~4.0.17:
   version "4.0.17"
@@ -5711,10 +5724,15 @@ expo-splash-screen@~0.29.21:
   dependencies:
     "@expo/prebuild-config" "^8.0.25"
 
-expo-sqlite@^15.0.3, expo-sqlite@~15.0.6:
+expo-sqlite@^15.0.3:
   version "15.0.6"
   resolved "https://registry.npmjs.org/expo-sqlite/-/expo-sqlite-15.0.6.tgz"
   integrity sha512-3cW8n6Lxj9P3JhbHQhLhPXBl/UAYZgKbbs19XbtaVM81LKiaUR6W1VLIaxGcv0vRVWfmEdGCbv12gF888szOig==
+
+expo-sqlite@~15.1.1:
+  version "15.1.1"
+  resolved "https://registry.npmjs.org/expo-sqlite/-/expo-sqlite-15.1.1.tgz"
+  integrity sha512-+muFuSbwxCtxs6ndk14acMFdiYt2pGjO5CicRqxNsqGrl3j5fcfP2qlqebcigwOCwZDaARNHIEwu6HbX8vxg+g==
 
 expo-status-bar@~2.0.1:
   version "2.0.1"
@@ -6401,7 +6419,7 @@ hyphenate-style-name@^1.0.3:
   resolved "https://registry.npmjs.org/hyphenate-style-name/-/hyphenate-style-name-1.1.0.tgz"
   integrity sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==
 
-"i18next@>= 23.2.3", i18next@^24.2.1:
+"i18next@>= 23.2.3", i18next@^24.2.2:
   version "24.2.2"
   resolved "https://registry.npmjs.org/i18next/-/i18next-24.2.2.tgz"
   integrity sha512-NE6i86lBCKRYZa5TaUDkU5S4HFgLIEJRLr3Whf2psgaxBleQ2LC1YW1Vc+SCgkAW7VEzndT6al6+CzegSUHcTQ==
@@ -7796,7 +7814,7 @@ lines-and-columns@^1.1.6:
   resolved "https://registry.npmjs.org/lines-and-columns/-/lines-and-columns-1.2.4.tgz"
   integrity sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==
 
-lint-staged@^15.4.2:
+lint-staged@^15.4.3:
   version "15.4.3"
   resolved "https://registry.npmjs.org/lint-staged/-/lint-staged-15.4.3.tgz"
   integrity sha512-FoH1vOeouNh1pw+90S+cnuoFwRfUD9ijY2GKy5h7HS3OR7JVir2N2xrsa0+Twc1B7cW72L+88geG5cW4wIhn7g==
@@ -9342,10 +9360,10 @@ react-native-restart@^0.0.27:
   resolved "https://registry.npmjs.org/react-native-restart/-/react-native-restart-0.0.27.tgz"
   integrity sha512-8KScVICrXwcTSJ1rjWkqVTHyEKQIttm5AIMGSK1QG1+RS5owYlE4z/1DykOTdWfVl9l16FIk0w9Xzk9ZO6jxlA==
 
-react-native-safe-area-context@*, react-native-safe-area-context@4.14.1, "react-native-safe-area-context@>= 4.0.0":
-  version "4.14.1"
-  resolved "https://registry.npmjs.org/react-native-safe-area-context/-/react-native-safe-area-context-4.14.1.tgz"
-  integrity sha512-+tUhT5WBl8nh5+P+chYhAjR470iCByf9z5EYdCEbPaAK3Yfzw+o8VRPnUgmPAKlSccOgQBxx3NOl/Wzckn9ujg==
+react-native-safe-area-context@*, react-native-safe-area-context@5.1.0, "react-native-safe-area-context@>= 4.0.0":
+  version "5.1.0"
+  resolved "https://registry.npmjs.org/react-native-safe-area-context/-/react-native-safe-area-context-5.1.0.tgz"
+  integrity sha512-Y4vyJX+0HPJUQNVeIJTj2/UOjbSJcB09OEwirAWDrOZ67Lz5p43AmjxSy8nnZft1rMzoh3rcPuonB6jJyHTfCw==
 
 react-native-screens@*, "react-native-screens@>= 4.0.0", react-native-screens@~4.5.0:
   version "4.5.0"
