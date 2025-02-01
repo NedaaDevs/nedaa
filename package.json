@@ -26,6 +26,8 @@
     "@react-navigation/native": "^7.0.14",
     "@sentry/react-native": "^6.5.0",
     "axios": "^1.7.9",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "expo": "~52.0.27",
     "expo-file-system": "~18.0.7",
     "expo-font": "~13.0.3",
