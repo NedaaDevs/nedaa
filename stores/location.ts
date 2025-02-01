@@ -84,12 +84,14 @@ export const useLocationStore = create<LocationStore>()(
               longitude: location.coords.longitude,
             });
 
+            const timezone = get().locationDetails.timezone;
             set({
               locationDetails: {
                 coords: location.coords,
                 address: geocodedAddress,
                 error: null,
                 isLoading: false,
+                timezone,
               },
             });
           } catch (error) {
@@ -103,6 +105,16 @@ export const useLocationStore = create<LocationStore>()(
             }));
           }
         },
+
+        setTimezone: async (timezone: string) => {
+          const locationDetails = get().locationDetails;
+          set({
+            locationDetails: {
+              ...locationDetails,
+              timezone,
+            },
+          });
+        },
       }),
       {
         name: "location-storage",
@@ -115,6 +127,7 @@ export const useLocationStore = create<LocationStore>()(
           locationDetails: {
             coords: state.locationDetails.coords,
             address: state.locationDetails.address,
+            timezone: state.locationDetails.timezone,
             error: null,
             isLoading: false,
           },
@@ -125,6 +138,7 @@ export const useLocationStore = create<LocationStore>()(
   )
 );
 
+export default useLocationStore;
 // TODO: listen for locale changes to update reverse geocoding data
 // useAppStore.subscribe(
 //   (state) => state.locale,

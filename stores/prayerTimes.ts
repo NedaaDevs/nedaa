@@ -12,6 +12,9 @@ import { prayerTimesApi } from "@/api/prayerTimes.api";
 // Services
 import { PrayerTimesDB } from "@/services/db";
 
+// Stores
+import locationStore from "@/stores/location";
+
 export const usePrayerTimesStore = create<PrayerTimesStore>()(
   devtools(
     persist(
@@ -29,14 +32,6 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               throw response as ErrorResponse;
             }
 
-            const insertionResult = await PrayerTimesDB.insertPrayerTimes(response.data);
-
-            if (!insertionResult.success) {
-              throw new Error("Failed to save prayer times", {
-                cause: insertionResult.error,
-              });
-            }
-
             return response.data;
           } catch (error: any) {
             throw error;
@@ -44,6 +39,27 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             set({
               isLoading: false,
             });
+          }
+        },
+
+        getAndStorePrayerTimes: async (params): Promise<boolean> => {
+          try {
+            const data = await get().getPrayerTimes(params);
+
+            locationStore.getState().setTimezone(data.timezone);
+
+            const insertionResult = await PrayerTimesDB.insertPrayerTimes(data);
+
+            if (!insertionResult.success) {
+              throw new Error("Failed to save prayer times", {
+                cause: insertionResult.error,
+              });
+            }
+
+            return true;
+          } catch (error: any) {
+            console.error("Failed getAndStorePrayerTimes: ", error);
+            return false;
           }
         },
       }),

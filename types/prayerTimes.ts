@@ -4,6 +4,7 @@ export type PrayerTimesStoreState = {
 
 export type PrayerTimesStoreActions = {
   getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
+  getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
 };
 
 export type PrayerTimesStore = PrayerTimesStoreState & PrayerTimesStoreActions;
