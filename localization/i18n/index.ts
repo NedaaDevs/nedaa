@@ -17,9 +17,7 @@ const resources = {
 };
 
 const initI18n = () => {
-  const deviceLanguage = getLocales()[0]
-    ?.languageCode?.toLowerCase()
-    .slice(0, 2) as AppLocale;
+  const deviceLanguage = getLocales()[0]?.languageCode?.toLowerCase().slice(0, 2) as AppLocale;
 
   i18n.use(initReactI18next).init({
     resources,

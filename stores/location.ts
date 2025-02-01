@@ -13,7 +13,6 @@ import { mapToLocalStatus } from "@/utils/location";
 import { LocalPermissionStatus } from "@/enums/location";
 
 // Stores
-import { useAppStore } from "@/stores/app";
 
 export const useLocationStore = create<LocationStore>()(
   devtools(
@@ -27,8 +26,7 @@ export const useLocationStore = create<LocationStore>()(
 
         checkPermissions: async () => {
           try {
-            const { status, canAskAgain } =
-              await Location.getForegroundPermissionsAsync();
+            const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
             set({
               permissions: {
                 status: mapToLocalStatus(status),
@@ -48,8 +46,7 @@ export const useLocationStore = create<LocationStore>()(
 
         requestPermissions: async () => {
           try {
-            const { status, canAskAgain } =
-              await Location.requestForegroundPermissionsAsync();
+            const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
             const newState = {
               status: mapToLocalStatus(status),
               canRequestAgain: canAskAgain,
@@ -100,10 +97,7 @@ export const useLocationStore = create<LocationStore>()(
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
-                error:
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to get location",
+                error: error instanceof Error ? error.message : "Failed to get location",
                 isLoading: false,
               },
             }));
@@ -125,10 +119,10 @@ export const useLocationStore = create<LocationStore>()(
             isLoading: false,
           },
         }),
-      },
+      }
     ),
-    { name: "LocationStore" },
-  ),
+    { name: "LocationStore" }
+  )
 );
 
 // TODO: listen for locale changes to update reverse geocoding data

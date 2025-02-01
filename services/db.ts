@@ -1,18 +1,18 @@
-import * as SQLite from 'expo-sqlite';
-import { Platform } from 'react-native';
-import { Paths } from 'expo-file-system/next';
-import { z } from 'zod';
+import * as SQLite from "expo-sqlite";
+import { Platform } from "react-native";
+import { Paths } from "expo-file-system/next";
+import { z } from "zod";
 
 // Constants
-import { DB_NAME, TABLE_NAME } from '@/constants/DB';
-import { appGroupId } from '@/constants/App';
+import { DB_NAME, TABLE_NAME } from "@/constants/DB";
+import { appGroupId } from "@/constants/App";
 
 // Enums
-import { PlatformType } from '@/enums/app';
-import { PrayerTimesResponse } from '@/types/prayerTimes';
+import { PlatformType } from "@/enums/app";
+import { PrayerTimesResponse } from "@/types/prayerTimes";
 
 // Utils
-import { timestampToDateInt } from '@/utils/date';
+import { timestampToDateInt } from "@/utils/date";
 
 export type PrayerTimesDBEntry = {
   date: number;
@@ -74,7 +74,7 @@ const initializeDB = async () => {
       );`
     );
   } catch (error: unknown) {
-    console.error('Error init db => ', error);
+    console.error("Error init db => ", error);
   }
 };
 
@@ -111,7 +111,7 @@ const batchInsertPrayerTimesEntries = async (
           );
           insertedCount++;
         } catch (entryError) {
-          console.error('[DB] Error processing entry:', {
+          console.error("[DB] Error processing entry:", {
             entry,
             error: entryError,
           });
@@ -122,7 +122,7 @@ const batchInsertPrayerTimesEntries = async (
 
     return { success: true, insertedCount };
   } catch (error) {
-    console.error('[DB] Critical error during batch insert:', error);
+    console.error("[DB] Critical error during batch insert:", error);
     return {
       success: false,
       error: error instanceof Error ? error : new Error(String(error)),
@@ -163,7 +163,7 @@ const processPrayerTimesData = (data: PrayerTimesResponse): PrayerTimesDBEntry[]
 
     return results;
   } catch (error) {
-    throw new Error('Invalid prayer times data structure', { cause: error });
+    throw new Error("Invalid prayer times data structure", { cause: error });
   }
 };
 
@@ -178,7 +178,7 @@ const insertPrayerTimes = async (data: PrayerTimesResponse) => {
 
     return result;
   } catch (error) {
-    console.error('[DB] Insertion process failed:', error);
+    console.error("[DB] Insertion process failed:", error);
     throw error;
   }
 };

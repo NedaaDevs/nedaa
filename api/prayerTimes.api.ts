@@ -4,10 +4,7 @@ import { apiGet } from "@/services/api";
 import { PRAYER_TIMES } from "@/constants/ApiRoutes";
 
 // Types
-import type {
-  PrayerTimesResponse,
-  PrayerTimesParams,
-} from "@/types/prayerTimes";
+import type { PrayerTimesResponse, PrayerTimesParams } from "@/types/prayerTimes";
 
 export const prayerTimesApi = {
   get: (params: PrayerTimesParams) =>

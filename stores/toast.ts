@@ -7,12 +7,7 @@ interface ToastState {
   title?: string;
   type: ToastType;
   isVisible: boolean;
-  showToast: (
-    message: string,
-    type: ToastType,
-    title?: string,
-    duration?: number
-  ) => void;
+  showToast: (message: string, type: ToastType, title?: string, duration?: number) => void;
   hideToast: () => void;
 }
 

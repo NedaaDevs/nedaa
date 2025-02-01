@@ -8,7 +8,7 @@ import { NotificationState } from "@/types/notifications";
 export const performFirstRunSetup = async (
   appStore: AppState,
   notificationStore: NotificationState,
-  locationStore: LocationStore,
+  locationStore: LocationStore
 ) => {
   try {
     // Check existing notification permissions(This will update the store state with the current permissions)
@@ -19,8 +19,7 @@ export const performFirstRunSetup = async (
     if (appStore.isFirstRun) {
       const grantedNotificationsPermission =
         await notificationStore.requestNotificationPermission();
-      const grantedLocationPermission =
-        await locationStore.requestPermissions();
+      const grantedLocationPermission = await locationStore.requestPermissions();
 
       if (!grantedNotificationsPermission) {
         console.log("User declined initial notifications permission request");

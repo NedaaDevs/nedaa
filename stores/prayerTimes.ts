@@ -29,9 +29,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               throw response as ErrorResponse;
             }
 
-            const insertionResult = await PrayerTimesDB.insertPrayerTimes(
-              response.data,
-            );
+            const insertionResult = await PrayerTimesDB.insertPrayerTimes(response.data);
 
             if (!insertionResult.success) {
               throw new Error("Failed to save prayer times", {
@@ -52,8 +50,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
       {
         name: "prayerTimes-storage",
         storage: createJSONStorage(() => Storage),
-      },
+      }
     ),
-    { name: "PrayerTimesStores" },
-  ),
+    { name: "PrayerTimesStores" }
+  )
 );

@@ -1,5 +1,5 @@
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 /**
  * Converts a Unix timestamp (in seconds) to YYYYMMDD format
@@ -8,5 +8,5 @@ import { toZonedTime } from 'date-fns-tz';
  */
 export const timestampToDateInt = (timestamp: number, timezone: string): number => {
   const date = toZonedTime(timestamp * 1000, timezone);
-  return parseInt(format(date, 'yyyyMMdd'), 10);
+  return parseInt(format(date, "yyyyMMdd"), 10);
 };

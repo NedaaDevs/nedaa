@@ -24,7 +24,7 @@ const makeApiRequest = (
   method: RequestMethod,
   url: string,
   data: TData,
-  contentType = "application/json",
+  contentType = "application/json"
 ): Promise<Response> => {
   const params = new URLSearchParams(data).toString();
 
@@ -65,9 +65,7 @@ const makeApiRequest = (
       if (error.isNetworkError) {
         message = "Network Error";
       } else if (error.response) {
-        message = error.response.data.message
-          ? error.response.data.message
-          : error.message;
+        message = error.response.data.message ? error.response.data.message : error.message;
         errors = error.response.data.errors ?? [];
       }
 
@@ -75,7 +73,5 @@ const makeApiRequest = (
     });
 };
 
-export const apiGet = <T = any>(
-  url: string,
-  params: TData = {},
-): Promise<Response<T>> => makeApiRequest("GET", url, params);
+export const apiGet = <T = any>(url: string, params: TData = {}): Promise<Response<T>> =>
+  makeApiRequest("GET", url, params);

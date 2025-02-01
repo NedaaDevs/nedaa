@@ -36,8 +36,7 @@ export const useNotificationStore = create<NotificationState>()(
 
           if (Platform.OS === PlatformType.IOS) {
             const status =
-              result.status ||
-              result.ios?.status === IosAuthorizationStatus.PROVISIONAL;
+              result.status || result.ios?.status === IosAuthorizationStatus.PROVISIONAL;
 
             set({
               permissions: {
@@ -73,20 +72,19 @@ export const useNotificationStore = create<NotificationState>()(
           await scheduleNotification(
             1 * 10,
             "Test Notification",
-            `This is a test notification with 10 seconds`,
+            `This is a test notification with 10 seconds`
           );
 
           await scheduleNotification(
             60 * 1 * 10,
             "Test Notification",
-            `This is a test notification with 10m`,
+            `This is a test notification with 10m`
           );
 
           console.log(await get().getScheduledNotifications());
         },
 
-        getScheduledNotifications: async () =>
-          await listScheduledNotifications(),
+        getScheduledNotifications: async () => await listScheduledNotifications(),
         clearNotifications: async () => {
           await cancelAllScheduledNotifications();
         },
@@ -105,8 +103,8 @@ export const useNotificationStore = create<NotificationState>()(
         partialize: (state) => ({
           permissions: state.permissions,
         }),
-      },
+      }
     ),
-    { name: "NotificationStore" },
-  ),
+    { name: "NotificationStore" }
+  )
 );
