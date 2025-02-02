@@ -9,10 +9,17 @@ import { appGroupId } from "@/constants/App";
 
 // Enums
 import { PlatformType } from "@/enums/app";
-import { PrayerTimesResponse } from "@/types/prayerTimes";
+// Types
+import {
+  DayPrayerTimes,
+  OtherTimings,
+  PrayerTimesResponse,
+  PrayerTimings,
+} from "@/types/prayerTimes";
 
 // Utils
 import { timestampToDateInt } from "@/utils/date";
+import { isPrayerTimings, isOtherTimings } from "@/utils/typeGuards";
 
 export type PrayerTimesDBEntry = {
   date: number;
@@ -183,10 +190,60 @@ const insertPrayerTimes = async (data: PrayerTimesResponse) => {
   }
 };
 
+const getPrayerTimesByDate = async (date: number): Promise<DayPrayerTimes | null> => {
+  try {
+    const db = await openDatabase();
+
+    const result = await db.getFirstAsync<PrayerTimesDBEntry>(
+      `SELECT * FROM ${TABLE_NAME} WHERE date = ?;`,
+      [date]
+    );
+
+    if (!result) {
+      return null;
+    }
+
+    const parsedTimings = JSON.parse(result.timings);
+    const parsedOtherTimings = JSON.parse(result.other_timings);
+
+    // Validate parsed data matches our types
+    if (!isPrayerTimings(parsedTimings)) {
+      console.error("[DB] Invalid prayer timings format:", parsedTimings);
+      return null;
+    }
+
+    if (!isOtherTimings(parsedOtherTimings)) {
+      console.error("[DB] Invalid other timings format:", parsedOtherTimings);
+      return null;
+    }
+
+    const timings: PrayerTimings = parsedTimings;
+    const otherTimings: OtherTimings = parsedOtherTimings;
+
+    // Transform firstthird and lastthird to camelCase
+    const formattedOtherTimings: OtherTimings = {
+      ...otherTimings,
+      firstThird: otherTimings.firstThird,
+      lastThird: otherTimings.lastThird,
+    };
+
+    return {
+      date: result.date,
+      timezone: result.timezone,
+      timings,
+      otherTimings: formattedOtherTimings,
+    };
+  } catch (dbError) {
+    console.error("[DB] Error accessing database:", dbError);
+    return null;
+  }
+};
+
 export const PrayerTimesDB = {
   open: openDatabase,
   initialize: initializeDB,
   batchInsertPrayerTimesEntries,
   processPrayerTimesData,
   insertPrayerTimes,
+  getPrayerTimesByDate,
 };
