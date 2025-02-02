@@ -9,7 +9,7 @@ export type PrayerTimesStoreActions = {
 
 export type PrayerTimesStore = PrayerTimesStoreState & PrayerTimesStoreActions;
 
-export type PrayerTimings = {
+export type AllTimings = {
   fajr: string;
   sunrise: string;
   dhuhr: string;
@@ -25,7 +25,7 @@ export type PrayerTimings = {
 
 export type PrayerMonthEntry = {
   date: string;
-  timings: PrayerTimings;
+  timings: AllTimings;
 };
 
 export type PrayerTimesResponse = {
@@ -38,4 +38,28 @@ export type PrayerTimesResponse = {
 export type PrayerTimesParams = {
   lat: number;
   long: number;
+};
+
+export type PrayerTimings = {
+  fajr: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+};
+
+export type OtherTimings = {
+  sunrise: string;
+  sunset: string;
+  imsak: string;
+  midnight: string;
+  firstThird: string;
+  lastThird: string;
+};
+
+export type DayPrayerTimes = {
+  date: number;
+  timezone: string;
+  timings: PrayerTimings;
+  otherTimings: OtherTimings;
 };
