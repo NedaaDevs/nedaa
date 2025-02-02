@@ -21,6 +21,21 @@
   "notifications": "Pemberitahuan",
   "openSettings": "Buka Tetapan Sistem",
   "permissions": "Kebenaran",
+  "prayerTimes": {
+    "prayers": {
+      "asr": "Asar",
+      "dhuhr": "Zohor",
+      "fajr": "Subuh",
+      "isha": "Isyak",
+      "maghrib": "Maghrib"
+    },
+    "time": {
+      "ago": "lalu",
+      "in": "dalam",
+      "now": "sekarang"
+    },
+    "title": "Waktu Solat"
+  },
   "requestPermission": "Minta Kebenaran",
   "restartAppToApplyChanges": "Sila mulakan semula aplikasi ini untuk melakukan perubahan",
   "sendCrashLogs": "Hantar Laporan Kerosakan",
@@ -34,5 +49,6 @@
   "toggleLanguage": "Tukar Bahasa",
   "toggleMode": "Tukar Mod",
   "tryHaptic": "Cuba getaran",
-  "yes": "Ya"
+  "yes": "Ya",
+  "index": "Index"
 }

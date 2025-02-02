@@ -23,6 +23,7 @@ export const useLocationStore = create<LocationStore>()(
           canRequestAgain: true,
         },
         locationDetails: initialLocationDetails,
+        isGettingLocation: false,
 
         checkPermissions: async () => {
           try {
@@ -70,6 +71,7 @@ export const useLocationStore = create<LocationStore>()(
               isLoading: true,
               error: null,
             },
+            isGettingLocation: true,
           }));
 
           try {
@@ -102,6 +104,11 @@ export const useLocationStore = create<LocationStore>()(
                 error: error instanceof Error ? error.message : "Failed to get location",
                 isLoading: false,
               },
+            }));
+          } finally {
+            set((state) => ({
+              ...state,
+              isGettingLocation: false,
             }));
           }
         },

@@ -1,12 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import {
-  I18nManager,
-  Text as T,
-  View,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { I18nManager, Text as T, View, StyleSheet, ScrollView } from "react-native";
 
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
@@ -27,37 +21,38 @@ import React from "react";
 import colors from "tailwindcss/colors";
 
 // Good for debugging sqlite(shift + m)
-// import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
-// import { openDatabaseSync } from "expo-sqlite";
-// import { DB_NAME } from "@/constants/DB";
+import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+import { openDatabaseSync } from "expo-sqlite";
+import { DB_NAME } from "@/constants/DB";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 import { useHaptic } from "@/hooks/useHaptic";
 
-// const db = openDatabaseSync(DB_NAME);
+const db = openDatabaseSync(DB_NAME);
 
 export default function MainScreen() {
-  // useDrizzleStudio(db);
-  const { locale, mode, sendCrashLogs, setLocale, setMode, setSendCrashLogs } =
-    useAppStore();
+  useDrizzleStudio(db);
+  const { locale, mode, sendCrashLogs, setLocale, setMode, setSendCrashLogs } = useAppStore();
   const {
     permissions: notificationPermission,
-    openNotificationSettings,
     refreshPermissions,
     requestNotificationPermission,
-    scheduleTestNotification,
+    openNotificationSettings,
   } = useNotificationStore();
   const {
     permissions: locationPermission,
     checkPermissions: checkLocationPermissions,
     requestPermissions: requestLocationPermission,
+    getCurrentLocation,
+    isGettingLocation,
     locationDetails,
   } = useLocationStore();
-  const { isLoading, getPrayerTimes } = usePrayerTimesStore();
+  const { isLoading, getAndStorePrayerTimes } = usePrayerTimesStore();
   const { showToast } = useToastStore();
   const { t } = useTranslation();
   const hapticMedium = useHaptic("medium");
   const hapticSuccess = useHaptic("success");
+  const hapticError = useHaptic("error");
 
   const toggleMode = () => {
     const modes = Object.values(AppMode);
@@ -78,19 +73,25 @@ export default function MainScreen() {
       lat: locationDetails.coords?.latitude,
       long: locationDetails.coords?.longitude,
     };
-    await getPrayerTimes(coords);
+    await getAndStorePrayerTimes(coords);
     await hapticSuccess();
-    showToast(
-      "Prayer Times Fetched And Stored successfully!",
-      "success",
-      "",
-      3000,
-    );
+    showToast("Prayer Times Fetched And Stored successfully!", "success", "", 3000);
   };
 
   const handleSetCrashLog = () => {
     setSendCrashLogs(!sendCrashLogs);
     showToast(t("restartAppToApplyChanges"), "info", "", 5000);
+  };
+
+  const handleGetLocation = async () => {
+    try {
+      await getCurrentLocation();
+
+      await hapticSuccess();
+    } catch (error) {
+      await hapticError();
+      console.error("Getting location failed => error:", error);
+    }
   };
 
   return (
@@ -99,9 +100,7 @@ export default function MainScreen() {
         <Box className="px-4 py-5 space-y-8">
           <Box>
             <Box className="flex-row items-center space-x-2 mb-4">
-              <Text className="text-xl font-bold text-typography-800">
-                {t("deviceLocale")}:
-              </Text>
+              <Text className="text-xl font-bold text-typography-800">{t("deviceLocale")}:</Text>
               <Text className="text-xl font-semibold text-info-500">
                 {t(`localeOptions.${locale}`)}
               </Text>
@@ -109,8 +108,7 @@ export default function MainScreen() {
 
             <Button
               className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
-              onPress={toggleLanguage}
-            >
+              onPress={toggleLanguage}>
               <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
                 {t("toggleLanguage")}
               </ButtonText>
@@ -119,18 +117,13 @@ export default function MainScreen() {
 
           <Box>
             <Box className="flex-row items-center space-x-2 mb-4">
-              <Text className="text-xl font-bold text-typography-800">
-                {t("mode")}
-              </Text>
-              <Text className="text-xl font-semibold text-info-500">
-                {t(`modes.${mode}`)}
-              </Text>
+              <Text className="text-xl font-bold text-typography-800">{t("mode")}</Text>
+              <Text className="text-xl font-semibold text-info-500">{t(`modes.${mode}`)}</Text>
             </Box>
 
             <Button
               className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
-              onPress={toggleMode}
-            >
+              onPress={toggleMode}>
               <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                 {t("toggleMode")}
               </ButtonText>
@@ -152,15 +145,12 @@ export default function MainScreen() {
                   </Text>
                   <Text
                     className={`text-xl font-semibold ${
-                      notificationPermission.status ===
-                      LocalPermissionStatus.GRANTED
+                      notificationPermission.status === LocalPermissionStatus.GRANTED
                         ? "text-success-500"
-                        : notificationPermission.status ===
-                            LocalPermissionStatus.DENIED
+                        : notificationPermission.status === LocalPermissionStatus.DENIED
                           ? "text-error-500"
                           : "text-warning-500"
-                    }`}
-                  >
+                    }`}>
                     {t(`status.${notificationPermission.status}`)}
                   </Text>
                 </Box>
@@ -173,25 +163,31 @@ export default function MainScreen() {
                 <Box className="space-y-4">
                   <Button
                     className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
-                    onPress={async () => await refreshPermissions()}
-                  >
+                    onPress={async () => await refreshPermissions()}>
                     <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                       {t("checkPermissions")}
                     </ButtonText>
                   </Button>
 
                   {notificationPermission.canRequestAgain &&
-                    notificationPermission.status !==
-                      LocalPermissionStatus.GRANTED && (
+                    notificationPermission.status !== LocalPermissionStatus.GRANTED && (
                       <Button
                         className="rounded-xl bg-primary-400 shadow-lg active:opacity-80 h-14"
-                        onPress={requestNotificationPermission}
-                      >
+                        onPress={requestNotificationPermission}>
                         <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                           {t("requestPermission")}
                         </ButtonText>
                       </Button>
                     )}
+                </Box>
+                <Box className="space-y-4">
+                  <Button
+                    className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
+                    onPress={openNotificationSettings}>
+                    <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                      {t("openSettings")}
+                    </ButtonText>
+                  </Button>
                 </Box>
               </Box>
 
@@ -199,106 +195,99 @@ export default function MainScreen() {
 
               <Box>
                 <Box className="flex-row items-center space-x-2 mb-2">
-                  <Text className="text-xl font-bold text-typography-800">
-                    {t("location")}
-                  </Text>
+                  <Text className="text-xl font-bold text-typography-800">{t("location")}</Text>
                   <Text
                     className={`text-xl font-semibold ${
-                      locationPermission.status ===
-                      LocationPermissionStatus.GRANTED
+                      locationPermission.status === LocationPermissionStatus.GRANTED
                         ? "text-success-500"
-                        : locationPermission.status ===
-                            LocationPermissionStatus.DENIED
+                        : locationPermission.status === LocationPermissionStatus.DENIED
                           ? "text-error-500"
                           : "text-warning-500"
-                    }`}
-                  >
+                    }`}>
                     {t(`status.${locationPermission.status}`)}
                   </Text>
                 </Box>
 
                 <Text className="text-sm text-left text-typography-600 mb-4">
-                  {t("canRequestAgain")}:{" "}
-                  {locationPermission.canRequestAgain ? t("yes") : t("no")}
+                  {t("canRequestAgain")}: {locationPermission.canRequestAgain ? t("yes") : t("no")}
                 </Text>
 
                 <Box className="space-y-4">
                   <Button
                     className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14"
-                    onPress={async () => await checkLocationPermissions()}
-                  >
+                    onPress={async () => await checkLocationPermissions()}>
                     <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                       {t("checkPermissions")}
                     </ButtonText>
                   </Button>
 
                   {locationPermission.canRequestAgain &&
-                    locationPermission.status !==
-                      LocationPermissionStatus.GRANTED && (
+                    locationPermission.status !== LocationPermissionStatus.GRANTED && (
                       <Button
                         className="rounded-xl bg-primary-400 shadow-lg active:opacity-80 h-14"
-                        onPress={requestLocationPermission}
-                      >
+                        onPress={requestLocationPermission}>
                         <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
                           {t("requestPermission")}
                         </ButtonText>
                       </Button>
                     )}
                 </Box>
+
+                {locationPermission.status === LocationPermissionStatus.GRANTED && (
+                  <Box>
+                    <Button
+                      className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+                      onPress={handleGetLocation}
+                      isDisabled={isGettingLocation}>
+                      {isGettingLocation && <ButtonSpinner className="text-primary" />}
+                      <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+                        Get Current Location
+                      </ButtonText>
+                    </Button>
+                  </Box>
+                )}
               </Box>
             </Box>
 
-            <Button
-              className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
-              onPress={openNotificationSettings}
-            >
-              <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
-                {t("openSettings")}
-              </ButtonText>
-            </Button>
+            <Divider />
+
+            <Box>
+              <Text className="text-center">{t("tryHaptic")}</Text>
+              <Button
+                className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
+                onPress={async () => await hapticMedium()}>
+                <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+                  {t("tapToFeel")}
+                </ButtonText>
+              </Button>
+            </Box>
+            <Divider />
+
+            <Text className="text-lg font-semibold text-typography-800">
+              {t("sendCrashLogs")} : {sendCrashLogs ? t("enable") : t("disable")}
+            </Text>
+            <Switch
+              value={sendCrashLogs}
+              onToggle={handleSetCrashLog}
+              trackColor={{ false: colors.gray[300], true: colors.gray[500] }}
+              thumbColor={colors.gray[50]}
+              ios_backgroundColor={colors.gray[300]}
+            />
+            <Divider />
+
+            <Box>
+              <Button
+                className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+                onPress={fetchPrayerTimes}
+                isDisabled={isLoading}>
+                {isLoading && <ButtonSpinner className="text-primary" />}
+                <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+                  {t("fetchPrayerTimes")}
+                </ButtonText>
+              </Button>
+            </Box>
           </Box>
         </Box>
-
-        <Divider />
-
-        <Box>
-          <Text className="text-center">{t("tryHaptic")}</Text>
-          <Button
-            className="rounded-xl bg-tertiary-400 shadow-lg active:opacity-80 h-14 mt-8"
-            onPress={async () => await hapticMedium()}
-          >
-            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
-              {t("tapToFeel")}
-            </ButtonText>
-          </Button>
-        </Box>
-        <Divider />
-
-        <Text className="text-lg font-semibold text-typography-800">
-          {t("sendCrashLogs")} : {sendCrashLogs ? t("enable") : t("disable")}
-        </Text>
-        <Switch
-          value={sendCrashLogs}
-          onToggle={handleSetCrashLog}
-          trackColor={{ false: colors.gray[300], true: colors.gray[500] }}
-          thumbColor={colors.gray[50]}
-          ios_backgroundColor={colors.gray[300]}
-        />
-        <Divider />
-
-        <Box>
-          <Button
-            className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
-            onPress={fetchPrayerTimes}
-            isDisabled={isLoading}
-          >
-            {isLoading && <ButtonSpinner className="text-primary" />}
-            <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
-              {t("fetchPrayerTimes")}
-            </ButtonText>
-          </Button>
-        </Box>
-        <Divider />
 
         <Divider />
 

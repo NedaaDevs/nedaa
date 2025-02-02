@@ -19,6 +19,7 @@ export type LocationDetails = {
 export type LocationStore = {
   permissions: LocationPermissionsState;
   locationDetails: LocationDetails;
+  isGettingLocation: boolean;
   checkPermissions: () => Promise<void>;
   requestPermissions: () => Promise<boolean>;
   getCurrentLocation: () => Promise<void>;
