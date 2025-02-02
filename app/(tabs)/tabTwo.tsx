@@ -97,12 +97,9 @@ export default function PrayerTimesScreen() {
         setPrayerTimes(formattedTimes);
 
         const formattedDate = formatNumberToLocale(
-          formatInTimeZone(
-            new Date(todayInt.toString().replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")),
-            locationDetails.timezone,
-            "MMMM d, yyyy",
-            { locale: dateLocale }
-          )
+          formatInTimeZone(time, locationDetails.timezone, "MMMM d, yyyy", {
+            locale: dateLocale,
+          })
         );
         setDate(formattedDate);
       } catch (error) {
