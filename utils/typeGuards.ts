@@ -1,27 +1,35 @@
-import type { PrayerTimings, OtherTimings } from "@/types/prayerTimes";
+import type { PrayerTimings, OtherTimings, OtherTimingName, PrayerName } from "@/types/prayerTimes";
 
 export const isPrayerTimings = (obj: unknown): obj is PrayerTimings => {
+  const parsedObj = obj as Record<PrayerName, string>;
+  const requiredKeys: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+
   return (
     typeof obj === "object" &&
     obj !== null &&
-    typeof (obj as PrayerTimings).fajr === "string" &&
-    typeof (obj as PrayerTimings).dhuhr === "string" &&
-    typeof (obj as PrayerTimings).asr === "string" &&
-    typeof (obj as PrayerTimings).maghrib === "string" &&
-    typeof (obj as PrayerTimings).isha === "string"
+    requiredKeys.every((key) => typeof parsedObj[key] === "string")
   );
 };
 
 export const isOtherTimings = (obj: unknown): obj is OtherTimings => {
-  const objAsAny = obj as any;
+  const parsedObj = obj as Record<string, string>;
+  const requiredKeys: OtherTimingName[] = [
+    "sunrise",
+    "sunset",
+    "imsak",
+    "midnight",
+    "firstThird",
+    "lastThird",
+  ];
+
   return (
     typeof obj === "object" &&
     obj !== null &&
-    typeof objAsAny.sunrise === "string" &&
-    typeof objAsAny.sunset === "string" &&
-    typeof objAsAny.imsak === "string" &&
-    typeof objAsAny.midnight === "string" &&
-    typeof (objAsAny.firstthird || objAsAny.firstThird) === "string" &&
-    typeof (objAsAny.lastthird || objAsAny.lastThird) === "string"
+    requiredKeys.every((key) => {
+      // Handle the camel case for firstThird/lastThird
+      if (key === "firstThird" && typeof parsedObj.firstthird === "string") return true;
+      if (key === "lastThird" && typeof parsedObj.lastthird === "string") return true;
+      return typeof parsedObj[key] === "string";
+    })
   );
 };

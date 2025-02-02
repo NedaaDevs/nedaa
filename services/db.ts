@@ -203,8 +203,8 @@ const getPrayerTimesByDate = async (date: number): Promise<DayPrayerTimes | null
       return null;
     }
 
-    const parsedTimings = JSON.parse(result.timings);
-    const parsedOtherTimings = JSON.parse(result.other_timings);
+    const parsedTimings = JSON.parse(result.timings) as PrayerTimings;
+    const parsedOtherTimings = JSON.parse(result.other_timings) as OtherTimings;
 
     // Validate parsed data matches our types
     if (!isPrayerTimings(parsedTimings)) {

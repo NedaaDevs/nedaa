@@ -40,22 +40,18 @@ export type PrayerTimesParams = {
   long: number;
 };
 
-export type PrayerTimings = {
-  fajr: string;
-  dhuhr: string;
-  asr: string;
-  maghrib: string;
-  isha: string;
-};
+export type PrayerName = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
 
-export type OtherTimings = {
-  sunrise: string;
-  sunset: string;
-  imsak: string;
-  midnight: string;
-  firstThird: string;
-  lastThird: string;
-};
+export type OtherTimingName =
+  | "sunrise"
+  | "sunset"
+  | "imsak"
+  | "midnight"
+  | "firstThird"
+  | "lastThird";
+
+export type PrayerTimings = Record<PrayerName, string>;
+export type OtherTimings = Record<OtherTimingName, string>;
 
 export type DayPrayerTimes = {
   date: number;
