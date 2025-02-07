@@ -1,4 +1,4 @@
-import { format, parse } from "date-fns";
+import { addDays, format, parse, subDays } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 
 /**
@@ -33,4 +33,23 @@ export const dateToInt = (date: string | Date): number => {
   // If it's a string, parse it with appropriate format
   const parsedDate = parse(date, "yyyy-MM-dd", new Date());
   return parseInt(format(parsedDate, "yyyyMMdd"), 10);
+};
+
+type DateRange = {
+  yesterday: number;
+  today: number;
+  tomorrow: number;
+};
+
+/**
+ * Get three consecutive days (yesterday, today, tomorrow) as integers in YYYYMMDD format
+ */
+export const getThreeDayDateRange = (timezone: string): DateRange => {
+  const now = toZonedTime(Date.now(), timezone);
+
+  return {
+    yesterday: dateToInt(subDays(now, 1)),
+    today: parseInt(format(now, "yyyyMMdd"), 10),
+    tomorrow: dateToInt(addDays(now, 1)),
+  };
 };
