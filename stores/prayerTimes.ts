@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
+import { compareAsc, parseISO } from "date-fns";
 
 // Types
-import { PrayerTimesResponse, PrayerTimesStore } from "@/types/prayerTimes";
+import { PrayerName, PrayerTimesResponse, PrayerTimesStore } from "@/types/prayerTimes";
 import { ErrorResponse } from "@/types/api";
 
 // Api
@@ -15,11 +16,17 @@ import { PrayerTimesDB } from "@/services/db";
 // Stores
 import locationStore from "@/stores/location";
 
+// Utils
+import { getThreeDayDateRange, timeZonedNow } from "@/utils/date";
+
 export const usePrayerTimesStore = create<PrayerTimesStore>()(
   devtools(
     persist(
       (set, get) => ({
         isLoading: false,
+        yesterdayTimings: null,
+        todayTimings: null,
+        tomorrowTimings: null,
 
         getPrayerTimes: async (params): Promise<PrayerTimesResponse> => {
           try {
@@ -61,6 +68,142 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             console.error("Failed getAndStorePrayerTimes: ", error);
             return false;
           }
+        },
+
+        loadPrayerTimes: async (dateInt: number, forceGetAndStore = false): Promise<void> => {
+          try {
+            set({ isLoading: true });
+
+            // Get location details from location store
+            const { locationDetails } = locationStore.getState();
+
+            // Calculate yesterday, today, and tomorrow based on provided dateInt
+            const { yesterday, today, tomorrow } = getThreeDayDateRange(locationDetails.timezone);
+
+            // Try to get stored prayer times
+            const [yesterdayTimings, todayTimings, tomorrowTimings] = await Promise.all([
+              PrayerTimesDB.getPrayerTimesByDate(yesterday),
+              PrayerTimesDB.getPrayerTimesByDate(today),
+              PrayerTimesDB.getPrayerTimesByDate(tomorrow),
+            ]);
+
+            // If we don't have complete data for all three days or forceGetAndStore is true, fetch and store new data
+            if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
+              const success = await get().getAndStorePrayerTimes({
+                lat: locationDetails.coords.latitude,
+                long: locationDetails.coords.longitude,
+              });
+
+              if (!success) {
+                throw new Error("Failed to fetch and store prayer times");
+              }
+
+              // After storing, get the updated prayer times
+              const [newYesterday, newToday, newTomorrow] = await Promise.all([
+                PrayerTimesDB.getPrayerTimesByDate(yesterday),
+                PrayerTimesDB.getPrayerTimesByDate(today),
+                PrayerTimesDB.getPrayerTimesByDate(tomorrow),
+              ]);
+
+              set({
+                yesterdayTimings: newYesterday,
+                todayTimings: newToday,
+                tomorrowTimings: newTomorrow,
+              });
+            } else {
+              // If we have all the data, just update the store
+              set({
+                yesterdayTimings,
+                todayTimings,
+                tomorrowTimings,
+              });
+            }
+
+            // TODO: Clean up old data (delete data older than 2 days)
+            // await get().cleanupOldData();
+          } catch (error: any) {
+            console.error("Failed to load prayer times:", error);
+            throw error;
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+        getNextPrayer: () => {
+          const state = get();
+          const timezone = locationStore.getState().locationDetails.timezone;
+          const now = timeZonedNow(timezone);
+
+          if (!state.todayTimings) return null;
+
+          // Check today's prayers first
+          const todayPrayers = Object.entries(state.todayTimings.timings)
+            .map(([name, time]) => ({
+              name: name as PrayerName,
+              time,
+              date: state.todayTimings!.date,
+            }))
+            .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
+
+          // Find the next prayer today
+          const nextPrayerToday = todayPrayers.find(
+            (prayer) => compareAsc(now, parseISO(prayer.time)) === -1
+          );
+
+          if (nextPrayerToday) return nextPrayerToday;
+
+          // If no prayer found today and we have tomorrow's prayers,
+          // return the first prayer of tomorrow
+          if (state.tomorrowTimings) {
+            const tomorrowPrayers = Object.entries(state.tomorrowTimings.timings)
+              .map(([name, time]) => ({
+                name: name as PrayerName,
+                time,
+                date: state.tomorrowTimings!.date,
+              }))
+              .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
+
+            return tomorrowPrayers[0];
+          }
+
+          return null;
+        },
+        getPreviousPrayer: () => {
+          const state = get();
+          const timezone = locationStore.getState().locationDetails.timezone;
+          const now = timeZonedNow(timezone);
+
+          if (!state.todayTimings) return null;
+
+          const todayPrayers = Object.entries(state.todayTimings.timings)
+            .map(([name, time]) => ({
+              name: name as PrayerName,
+              time,
+              date: state.todayTimings!.date,
+            }))
+            .sort((a, b) => compareAsc(parseISO(b.time), parseISO(a.time)));
+
+          // Find the previous prayer today
+          const previousPrayerToday = todayPrayers.find(
+            (prayer) => compareAsc(now, parseISO(prayer.time)) === -1
+          );
+
+          if (previousPrayerToday) return previousPrayerToday;
+
+          // If no prayer found today and we have yesterday's prayers,
+          // return the first prayer of yesterday
+          if (state.yesterdayTimings) {
+            const yesterdayPrayers = Object.entries(state.yesterdayTimings.timings)
+              .map(([name, time]) => ({
+                name: name as PrayerName,
+                time,
+                date: state.tomorrowTimings!.date,
+              }))
+              .sort((a, b) => compareAsc(parseISO(b.time), parseISO(a.time)));
+
+            return yesterdayPrayers[0];
+          }
+
+          return null;
         },
       }),
       {
