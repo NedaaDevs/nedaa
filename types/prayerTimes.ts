@@ -1,10 +1,16 @@
 export type PrayerTimesStoreState = {
   isLoading: boolean;
+  yesterdayTimings: DayPrayerTimes | null;
+  todayTimings: DayPrayerTimes | null;
+  tomorrowTimings: DayPrayerTimes | null;
 };
 
 export type PrayerTimesStoreActions = {
   getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
   getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
+  loadPrayerTimes: (dateInt: number, forceGetAndStore?: boolean) => Promise<void>;
+  getNextPrayer: () => Prayer | null;
+  getPreviousPrayer: () => Prayer | null;
 };
 
 export type PrayerTimesStore = PrayerTimesStoreState & PrayerTimesStoreActions;
@@ -58,4 +64,10 @@ export type DayPrayerTimes = {
   timezone: string;
   timings: PrayerTimings;
   otherTimings: OtherTimings;
+};
+
+export type Prayer = {
+  name: PrayerName;
+  time: string;
+  date: number;
 };
