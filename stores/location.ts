@@ -13,7 +13,6 @@ import { mapToLocalStatus } from "@/utils/location";
 import { LocalPermissionStatus } from "@/enums/location";
 
 // Stores
-import { useAppStore } from "@/stores/app";
 
 export const useLocationStore = create<LocationStore>()(
   devtools(
@@ -24,11 +23,11 @@ export const useLocationStore = create<LocationStore>()(
           canRequestAgain: true,
         },
         locationDetails: initialLocationDetails,
+        isGettingLocation: false,
 
         checkPermissions: async () => {
           try {
-            const { status, canAskAgain } =
-              await Location.getForegroundPermissionsAsync();
+            const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
             set({
               permissions: {
                 status: mapToLocalStatus(status),
@@ -48,8 +47,7 @@ export const useLocationStore = create<LocationStore>()(
 
         requestPermissions: async () => {
           try {
-            const { status, canAskAgain } =
-              await Location.requestForegroundPermissionsAsync();
+            const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
             const newState = {
               status: mapToLocalStatus(status),
               canRequestAgain: canAskAgain,
@@ -73,6 +71,7 @@ export const useLocationStore = create<LocationStore>()(
               isLoading: true,
               error: null,
             },
+            isGettingLocation: true,
           }));
 
           try {
@@ -87,12 +86,14 @@ export const useLocationStore = create<LocationStore>()(
               longitude: location.coords.longitude,
             });
 
+            const timezone = get().locationDetails.timezone;
             set({
               locationDetails: {
                 coords: location.coords,
                 address: geocodedAddress,
                 error: null,
                 isLoading: false,
+                timezone,
               },
             });
           } catch (error) {
@@ -100,14 +101,26 @@ export const useLocationStore = create<LocationStore>()(
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
-                error:
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to get location",
+                error: error instanceof Error ? error.message : "Failed to get location",
                 isLoading: false,
               },
             }));
+          } finally {
+            set((state) => ({
+              ...state,
+              isGettingLocation: false,
+            }));
           }
+        },
+
+        setTimezone: async (timezone: string) => {
+          const locationDetails = get().locationDetails;
+          set({
+            locationDetails: {
+              ...locationDetails,
+              timezone,
+            },
+          });
         },
       }),
       {
@@ -121,16 +134,18 @@ export const useLocationStore = create<LocationStore>()(
           locationDetails: {
             coords: state.locationDetails.coords,
             address: state.locationDetails.address,
+            timezone: state.locationDetails.timezone,
             error: null,
             isLoading: false,
           },
         }),
-      },
+      }
     ),
-    { name: "LocationStore" },
-  ),
+    { name: "LocationStore" }
+  )
 );
 
+export default useLocationStore;
 // TODO: listen for locale changes to update reverse geocoding data
 // useAppStore.subscribe(
 //   (state) => state.locale,

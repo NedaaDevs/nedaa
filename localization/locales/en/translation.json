@@ -5,6 +5,7 @@
   "disable": "Disable",
   "enable": "Enable",
   "fetchPrayerTimes": "Fetch Prayer Times",
+  "index": "Index",
   "localeOptions": {
     "ar": "Arabic",
     "en": "English",
@@ -21,6 +22,26 @@
   "notifications": "Notifications",
   "openSettings": "Open System Settings",
   "permissions": "Permissions",
+  "prayerTimes": {
+    "next": "Next Prayer",
+    "prayers": {
+      "asr": "Asr",
+      "dhuhr": "Dhuhr",
+      "fajr": "Fajr",
+      "isha": "Isha",
+      "maghrib": "Maghrib"
+    },
+    "previous": "Previous Prayer",
+    "time": {
+      "ago": "ago",
+      "in": "in",
+      "now": "now"
+    },
+    "title": "Prayer Times",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
+  },
   "requestPermission": "Request Permission",
   "restartAppToApplyChanges": "Please restart the app to apply changes",
   "sendCrashLogs": "Crash Reporting",

@@ -9,12 +9,20 @@ import { appGroupId } from "@/constants/App";
 
 // Enums
 import { PlatformType } from "@/enums/app";
-import { PrayerTimesResponse } from "@/types/prayerTimes";
+// Types
+import {
+  DayPrayerTimes,
+  OtherTimings,
+  PrayerTimesResponse,
+  PrayerTimings,
+} from "@/types/prayerTimes";
 
-// TODO: Remove logging
+// Utils
+import { timestampToDateInt } from "@/utils/date";
+import { isPrayerTimings, isOtherTimings } from "@/utils/typeGuards";
+
 export type PrayerTimesDBEntry = {
   date: number;
-  month: number;
   timezone: string;
   timings: string;
   other_timings: string;
@@ -22,7 +30,6 @@ export type PrayerTimesDBEntry = {
 
 const PrayerTimesDBSchema = z.object({
   date: z.number(),
-  month: z.number().min(1).max(12),
   timezone: z.string(),
   timings: z.string(),
   other_timings: z.string(),
@@ -57,7 +64,7 @@ const openDatabase = async () =>
     {
       useNewConnection: true,
     },
-    await getDirectory(),
+    await getDirectory()
   );
 
 // Initialize Database Schema
@@ -68,16 +75,10 @@ const initializeDB = async () => {
     await db.execAsync(
       `CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
         date INTEGER PRIMARY KEY,
-        month INTEGER NOT NULL,
         timezone TEXT NOT NULL,
         timings TEXT NOT NULL,
         other_timings TEXT NOT NULL
-      );`,
-    );
-
-    await db.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_month
-        ON ${TABLE_NAME}(month);`,
+      );`
     );
   } catch (error: unknown) {
     console.error("Error init db => ", error);
@@ -85,15 +86,13 @@ const initializeDB = async () => {
 };
 
 const batchInsertPrayerTimesEntries = async (
-  entries: PrayerTimesDBEntry[],
+  entries: PrayerTimesDBEntry[]
 ): Promise<InsertResult> => {
   if (entries.length === 0) {
-    console.log("[DB] No entries to insert");
     return { success: true, insertedCount: 0 };
   }
 
   const db = await openDatabase();
-  console.log(`[DB] Starting batch insert of ${entries.length} entries...`);
 
   try {
     let insertedCount = 0;
@@ -104,21 +103,18 @@ const batchInsertPrayerTimesEntries = async (
           // Validate against schema and prepare data
           const validatedEntry = PrayerTimesDBSchema.parse(entry);
 
-          console.debug(
-            `[DB] Inserting entry for date: ${validatedEntry.date}`,
-          );
+          console.debug(`[DB] Inserting entry for date: ${validatedEntry.date}`);
 
           await db.runAsync(
             `INSERT OR REPLACE INTO ${TABLE_NAME} 
-           (date, month, timezone, timings, other_timings) 
-           VALUES (?, ?, ?, ?, ?);`,
+           (date, timezone, timings, other_timings) 
+           VALUES (?, ?, ?, ?);`,
             [
               validatedEntry.date,
-              validatedEntry.month,
               validatedEntry.timezone,
               validatedEntry.timings,
               validatedEntry.other_timings,
-            ],
+            ]
           );
           insertedCount++;
         } catch (entryError) {
@@ -131,9 +127,6 @@ const batchInsertPrayerTimesEntries = async (
       }
     });
 
-    console.log(
-      `[DB] Batch insert completed. Inserted/updated ${insertedCount} records`,
-    );
     return { success: true, insertedCount };
   } catch (error) {
     console.error("[DB] Critical error during batch insert:", error);
@@ -145,42 +138,27 @@ const batchInsertPrayerTimesEntries = async (
   }
 };
 
-const processPrayerTimesData = (
-  data: PrayerTimesResponse,
-): PrayerTimesDBEntry[] => {
-  console.log("[DB] Processing prayer times data...");
+const processPrayerTimesData = (data: PrayerTimesResponse): PrayerTimesDBEntry[] => {
   const results: PrayerTimesDBEntry[] = [];
 
   try {
     const { timezone, months } = data;
 
-    // Validate months structure
-    if (!months || typeof months !== "object") {
-      throw new Error("Invalid months data structure");
-    }
-
-    for (const [monthNumber, monthEntries] of Object.entries(months)) {
-      // Validate month number
-      const month = parseInt(monthNumber, 10);
-      if (isNaN(month) || month < 1 || month > 12) {
-        throw new Error(`Invalid month number: ${monthNumber}`);
-      }
-
+    for (const [_, monthEntries] of Object.entries(months)) {
       for (const entry of monthEntries) {
         // Validate date format
-        const dateInt = parseInt(entry.date.replace(/-/g, ""), 10);
+        const dateInt = timestampToDateInt(parseInt(entry.date), timezone);
+
         if (isNaN(dateInt)) {
           throw new Error(`Invalid date format: ${entry.date}`);
         }
 
         // Destructure timings
-        const { fajr, dhuhr, asr, maghrib, isha, ...otherTimings } =
-          entry.timings;
+        const { fajr, dhuhr, asr, maghrib, isha, ...otherTimings } = entry.timings;
 
         // Create and validate entry
         const dbEntry = PrayerTimesDBSchema.parse({
           date: dateInt,
-          month,
           timezone,
           timings: JSON.stringify({ fajr, dhuhr, asr, maghrib, isha }),
           other_timings: JSON.stringify(otherTimings),
@@ -190,32 +168,74 @@ const processPrayerTimesData = (
       }
     }
 
-    console.log(`[DB] Successfully processed ${results.length} entries`);
     return results;
   } catch (error) {
-    console.error("[DB] Data processing failed:", error);
     throw new Error("Invalid prayer times data structure", { cause: error });
   }
 };
 
 const insertPrayerTimes = async (data: PrayerTimesResponse) => {
-  console.log("[DB] Starting prayer times insertion...");
   try {
     const processedEntries = PrayerTimesDB.processPrayerTimesData(data);
-    const result =
-      await PrayerTimesDB.batchInsertPrayerTimesEntries(processedEntries);
+    const result = await PrayerTimesDB.batchInsertPrayerTimesEntries(processedEntries);
 
     if (!result.success) {
       throw result.error;
     }
 
-    console.log(
-      `[DB] Successfully inserted ${result.insertedCount} prayer times`,
-    );
     return result;
   } catch (error) {
     console.error("[DB] Insertion process failed:", error);
     throw error;
+  }
+};
+
+const getPrayerTimesByDate = async (date: number): Promise<DayPrayerTimes | null> => {
+  try {
+    const db = await openDatabase();
+
+    const result = await db.getFirstAsync<PrayerTimesDBEntry>(
+      `SELECT * FROM ${TABLE_NAME} WHERE date = ?;`,
+      [date]
+    );
+
+    if (!result) {
+      return null;
+    }
+
+    const parsedTimings = JSON.parse(result.timings) as PrayerTimings;
+    const parsedOtherTimings = JSON.parse(result.other_timings) as OtherTimings;
+
+    // Validate parsed data matches our types
+    if (!isPrayerTimings(parsedTimings)) {
+      console.error("[DB] Invalid prayer timings format:", parsedTimings);
+      return null;
+    }
+
+    if (!isOtherTimings(parsedOtherTimings)) {
+      console.error("[DB] Invalid other timings format:", parsedOtherTimings);
+      return null;
+    }
+
+    const timings: PrayerTimings = parsedTimings;
+    const otherTimings: OtherTimings = parsedOtherTimings;
+
+    // Transform firstthird and lastthird to camelCase
+    const formattedOtherTimings: OtherTimings = {
+      ...otherTimings,
+      firstThird: otherTimings.firstThird,
+      lastThird: otherTimings.lastThird,
+    };
+
+    return {
+      date: result.date,
+      timezone: result.timezone,
+      timings,
+      otherTimings: formattedOtherTimings,
+    };
+  } catch (dbError) {
+    console.error("[DB] Error accessing database:", dbError);
+    return null;
   }
 };
 
@@ -225,4 +245,5 @@ export const PrayerTimesDB = {
   batchInsertPrayerTimesEntries,
   processPrayerTimesData,
   insertPrayerTimes,
+  getPrayerTimesByDate,
 };

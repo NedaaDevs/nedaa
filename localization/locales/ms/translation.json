@@ -5,6 +5,7 @@
   "disable": "Lumpuhkan",
   "enable": "Dayakan",
   "fetchPrayerTimes": "Dapatkan Waktu Solat",
+  "index": "Index",
   "localeOptions": {
     "ar": "Bahasa Arab",
     "en": "Bahasa Inggeris",
@@ -21,6 +22,26 @@
   "notifications": "Pemberitahuan",
   "openSettings": "Buka Tetapan Sistem",
   "permissions": "Kebenaran",
+  "prayerTimes": {
+    "next": "Solat Seterusnya",
+    "prayers": {
+      "asr": "Asar",
+      "dhuhr": "Zohor",
+      "fajr": "Subuh",
+      "isha": "Isyak",
+      "maghrib": "Maghrib"
+    },
+    "previous": "Solat Sebelumnya",
+    "time": {
+      "ago": "lalu",
+      "in": "dalam",
+      "now": "sekarang"
+    },
+    "title": "Waktu Solat",
+    "today": "Hari Ini",
+    "tomorrow": "Esok",
+    "yesterday": "Semalam"
+  },
   "requestPermission": "Minta Kebenaran",
   "restartAppToApplyChanges": "Sila mulakan semula aplikasi ini untuk melakukan perubahan",
   "sendCrashLogs": "Hantar Laporan Kerosakan",

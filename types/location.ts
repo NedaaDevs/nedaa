@@ -11,6 +11,7 @@ export type LocationPermissionsState = {
 export type LocationDetails = {
   coords: LocationObjectCoords;
   address: LocationGeocodedAddress | null;
+  timezone: string;
   error: string | null;
   isLoading: boolean;
 };
@@ -18,9 +19,11 @@ export type LocationDetails = {
 export type LocationStore = {
   permissions: LocationPermissionsState;
   locationDetails: LocationDetails;
+  isGettingLocation: boolean;
   checkPermissions: () => Promise<void>;
   requestPermissions: () => Promise<boolean>;
   getCurrentLocation: () => Promise<void>;
+  setTimezone: (timezone: string) => Promise<void>;
 };
 
 const MECCA_COORDS = {
@@ -36,6 +39,7 @@ const MECCA_COORDS = {
 export const initialLocationDetails: LocationDetails = {
   coords: MECCA_COORDS,
   address: null,
+  timezone: "Asia/Riyadh",
   error: null,
   isLoading: false,
 };

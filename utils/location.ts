@@ -1,9 +1,7 @@
 import { PermissionStatus } from "expo-location";
 import { LocalPermissionStatus } from "@/enums/location";
 
-export const mapToLocalStatus = (
-  status: PermissionStatus,
-): LocalPermissionStatus => {
+export const mapToLocalStatus = (status: PermissionStatus): LocalPermissionStatus => {
   switch (status) {
     case PermissionStatus.GRANTED:
       return LocalPermissionStatus.GRANTED;

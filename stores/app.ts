@@ -2,12 +2,7 @@ import { Appearance } from "react-native";
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 
-import {
-  createJSONStorage,
-  devtools,
-  persist,
-  subscribeWithSelector,
-} from "zustand/middleware";
+import { createJSONStorage, devtools, persist, subscribeWithSelector } from "zustand/middleware";
 import { getLocales } from "expo-localization";
 
 import i18n from "@/localization/i18n";
@@ -23,14 +18,10 @@ import { AppState } from "@/types/app";
 
 const getInitialLanguage = (): AppLocale => {
   // Get device locale (first two characters "en")
-  const deviceLanguage = getLocales()[0]
-    ?.languageCode?.toLowerCase()
-    .slice(0, 2);
+  const deviceLanguage = getLocales()[0]?.languageCode?.toLowerCase().slice(0, 2);
 
   // Check if device locale is supported in our AppLocale enum
-  const isSupported = Object.values(AppLocale).includes(
-    deviceLanguage as AppLocale,
-  );
+  const isSupported = Object.values(AppLocale).includes(deviceLanguage as AppLocale);
 
   // Return device locale if supported, otherwise default to EN
   return isSupported ? (deviceLanguage as AppLocale) : AppLocale.EN;
@@ -42,8 +33,7 @@ export const getDirection = (locale: AppLocale): AppDirection => {
     : AppDirection.LTR;
 };
 
-export const isRTL = (direction: AppDirection) =>
-  direction === AppDirection.RTL;
+export const isRTL = (direction: AppDirection) => direction === AppDirection.RTL;
 
 const initialLanguage = getInitialLanguage();
 const initialDirection = getDirection(initialLanguage);
@@ -84,8 +74,8 @@ export const useAppStore = create<AppState>()(
               i18n.changeLanguage(state.locale);
             }
           },
-        },
-      ),
-    ),
-  ),
+        }
+      )
+    )
+  )
 );

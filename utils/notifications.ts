@@ -12,9 +12,7 @@ export const configureNotifications = () => {
   });
 };
 
-export const mapToLocalStatus = (
-  expoStatus: PermissionStatus,
-): LocalPermissionStatus => {
+export const mapToLocalStatus = (expoStatus: PermissionStatus): LocalPermissionStatus => {
   switch (expoStatus) {
     case PermissionStatus.GRANTED:
       return LocalPermissionStatus.GRANTED;
@@ -35,11 +33,7 @@ export const requestPermissions = async () => {
   });
 };
 
-export const scheduleNotification = async (
-  seconds: number,
-  title: string,
-  message: string,
-) => {
+export const scheduleNotification = async (seconds: number, title: string, message: string) => {
   const { status } = await checkPermissions();
 
   if (status !== PermissionStatus.GRANTED) {
@@ -60,7 +54,7 @@ export const scheduleNotification = async (
     });
     return { success: true, id };
   } catch (error) {
-    return { success: false, message: "Failed to schedule notification" };
+    return { success: false, message: `Failed to schedule notification: ${error}` };
   }
 };
 
