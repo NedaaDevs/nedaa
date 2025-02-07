@@ -118,6 +118,9 @@ export default function PrayerTimesScreen() {
             {t("prayerTimes.title")}
           </Text>
           <Text className="text-lg text-center text-typography-600 mb-4">{date}</Text>
+          <Text className="text-lg text-center text-typography-600 mb-4">
+            {locationDetails.address?.city}
+          </Text>
           <Divider className="h-0.5 bg-outline-200 mb-6" />
           <Box className="space-y-4">
             {prayerTimes.map((prayer) => (
