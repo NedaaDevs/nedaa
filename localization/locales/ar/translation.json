@@ -23,6 +23,7 @@
   "openSettings": "فتح إعدادات النظام",
   "permissions": "الأذونات",
   "prayerTimes": {
+    "next": "الصلاة القادمة",
     "prayers": {
       "asr": "العصر",
       "dhuhr": "الظهر",
@@ -30,12 +31,16 @@
       "isha": "العشاء",
       "maghrib": "المغرب"
     },
+    "previous": "الصلاة السابقة",
     "time": {
       "ago": "منذ",
       "in": "في",
       "now": "الآن"
     },
-    "title": "أوقات الصلاة"
+    "title": "أوقات الصلاة",
+    "today": "اليوم",
+    "tomorrow": "غداً",
+    "yesterday": "أمس"
   },
   "requestPermission": "طلب إذن",
   "restartAppToApplyChanges": "يرجى إعادة تشغيل التطبيق لتطبيق التغييرات",

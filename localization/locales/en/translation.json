@@ -23,6 +23,7 @@
   "openSettings": "Open System Settings",
   "permissions": "Permissions",
   "prayerTimes": {
+    "next": "Next Prayer",
     "prayers": {
       "asr": "Asr",
       "dhuhr": "Dhuhr",
@@ -30,12 +31,16 @@
       "isha": "Isha",
       "maghrib": "Maghrib"
     },
+    "previous": "Previous Prayer",
     "time": {
       "ago": "ago",
       "in": "in",
       "now": "now"
     },
-    "title": "Prayer Times"
+    "title": "Prayer Times",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
   },
   "requestPermission": "Request Permission",
   "restartAppToApplyChanges": "Please restart the app to apply changes",
