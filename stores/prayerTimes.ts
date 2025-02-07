@@ -129,6 +129,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
         },
         getNextPrayer: () => {
+          // TODO: Recheck this and previous prayer and the way we sort, prase and compare dates if we can avoid any unnecessary steps
           const state = get();
           const timezone = locationStore.getState().locationDetails.timezone;
           const now = timeZonedNow(timezone);
@@ -145,11 +146,11 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
 
           // Find the next prayer today
-          const nextPrayerToday = todayPrayers.find(
+          const nextPrayer = todayPrayers.find(
             (prayer) => compareAsc(now, parseISO(prayer.time)) === -1
           );
 
-          if (nextPrayerToday) return nextPrayerToday;
+          if (nextPrayer) return nextPrayer;
 
           // If no prayer found today and we have tomorrow's prayers,
           // return the first prayer of tomorrow
@@ -180,27 +181,27 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               time,
               date: state.todayTimings!.date,
             }))
-            .sort((a, b) => compareAsc(parseISO(b.time), parseISO(a.time)));
+            .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
 
-          // Find the previous prayer today
-          const previousPrayerToday = todayPrayers.find(
-            (prayer) => compareAsc(now, parseISO(prayer.time)) === -1
-          );
+          // Find the last prayer that has already passed
+          const previousPrayer = [...todayPrayers]
+            .reverse()
+            .find((prayer) => compareAsc(parseISO(prayer.time), now) === -1);
 
-          if (previousPrayerToday) return previousPrayerToday;
+          if (previousPrayer) return previousPrayer;
 
-          // If no prayer found today and we have yesterday's prayers,
-          // return the first prayer of yesterday
+          // If no previous prayer found today (meaning we're before the first prayer of the day)
+          // and we have yesterday's prayers, return the last prayer from yesterday(Isha)
           if (state.yesterdayTimings) {
             const yesterdayPrayers = Object.entries(state.yesterdayTimings.timings)
               .map(([name, time]) => ({
                 name: name as PrayerName,
                 time,
-                date: state.tomorrowTimings!.date,
+                date: state.yesterdayTimings!.date,
               }))
-              .sort((a, b) => compareAsc(parseISO(b.time), parseISO(a.time)));
+              .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
 
-            return yesterdayPrayers[0];
+            return yesterdayPrayers[yesterdayPrayers.length - 1];
           }
 
           return null;
