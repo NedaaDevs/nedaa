@@ -9,8 +9,7 @@ import { PrayerTimesStore } from "@/types/prayerTimes";
 export const performFirstRunSetup = async (
   appStore: AppState,
   notificationStore: NotificationState,
-  locationStore: LocationStore,
-  prayerTimesStore: PrayerTimesStore
+  locationStore: LocationStore
 ) => {
   try {
     // Check existing notification permissions(This will update the store state with the current permissions)
@@ -32,17 +31,24 @@ export const performFirstRunSetup = async (
         await locationStore.getCurrentLocation();
       }
 
-      // TODO: Remove just for testing now
-      await prayerTimesStore.getAndStorePrayerTimes({
-        lat: locationStore.locationDetails.coords.latitude,
-        long: locationStore.locationDetails.coords.longitude,
-      });
-
       // Mark first run as complete
       appStore.setIsFirstRun(false);
     }
   } catch (error) {
     console.error("First run setup failed:", error);
+    Sentry.captureException(error);
+  }
+};
+
+export const appSetup = async (prayerStore: PrayerTimesStore) => {
+  try {
+    const { loadPrayerTimes } = prayerStore;
+
+    await loadPrayerTimes();
+
+    // TODO: Schedule notifications
+  } catch (error) {
+    console.error("App setup failed:", error);
     Sentry.captureException(error);
   }
 };

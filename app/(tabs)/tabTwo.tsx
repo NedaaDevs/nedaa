@@ -5,7 +5,7 @@ import { parseISO, addDays, subDays } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { useLocationStore } from "@/stores/location";
 import { useAppStore } from "@/stores/app";
-import { dateToInt, timeZonedNow } from "@/utils/date";
+import { timeZonedNow } from "@/utils/date";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Button, ButtonText } from "@/components/ui/button";
@@ -29,14 +29,8 @@ type ViewMode = "yesterday" | "today" | "tomorrow";
 export default function PrayerTimesScreen() {
   const { locationDetails } = useLocationStore();
   const { locale } = useAppStore();
-  const {
-    yesterdayTimings,
-    todayTimings,
-    tomorrowTimings,
-    loadPrayerTimes,
-    getNextPrayer,
-    getPreviousPrayer,
-  } = usePrayerTimesStore();
+  const { yesterdayTimings, todayTimings, tomorrowTimings, getNextPrayer, getPreviousPrayer } =
+    usePrayerTimesStore();
 
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>("today");
@@ -92,11 +86,7 @@ export default function PrayerTimesScreen() {
         if (!locationDetails.timezone) return;
 
         const time = timeZonedNow(locationDetails.timezone);
-        const todayInt = dateToInt(time);
         const dateLocale = getDateLocale();
-
-        // Load the prayer times into the store
-        await loadPrayerTimes(todayInt);
 
         // Get the current timings based on view mode
         const currentTimings = getCurrentTimings();

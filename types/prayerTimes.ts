@@ -8,7 +8,7 @@ export type PrayerTimesStoreState = {
 export type PrayerTimesStoreActions = {
   getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
   getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
-  loadPrayerTimes: (dateInt: number, forceGetAndStore?: boolean) => Promise<void>;
+  loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
   getNextPrayer: () => Prayer | null;
   getPreviousPrayer: () => Prayer | null;
 };
