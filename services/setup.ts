@@ -5,6 +5,9 @@ import { LocationStore } from "@/types/location";
 import { AppState } from "@/types/app";
 import { NotificationState } from "@/types/notifications";
 import { PrayerTimesStore } from "@/types/prayerTimes";
+import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
+import { differenceInSeconds, parseISO } from "date-fns";
+import { timeZonedNow } from "@/utils/date";
 
 export const performFirstRunSetup = async (
   appStore: AppState,
@@ -40,13 +43,37 @@ export const performFirstRunSetup = async (
   }
 };
 
-export const appSetup = async (prayerStore: PrayerTimesStore) => {
+export const appSetup = async (locationStore: LocationStore, prayerStore: PrayerTimesStore) => {
   try {
-    const { loadPrayerTimes } = prayerStore;
+    const { loadPrayerTimes, todayTimings } = prayerStore;
+    const { locationDetails } = locationStore;
 
     await loadPrayerTimes();
 
-    // TODO: Schedule notifications
+    if (!todayTimings) return;
+
+    const now = timeZonedNow(locationDetails.timezone);
+    const prayers = Object.entries(todayTimings.timings)
+      .map(([name, time]) => {
+        const prayerTime = parseISO(time as string);
+        return {
+          name,
+          seconds: differenceInSeconds(prayerTime, now),
+        };
+      })
+      // Filter out past prayer times
+      .filter((prayer) => prayer.seconds > 0);
+
+    await cancelAllScheduledNotifications();
+    await Promise.all(
+      prayers.map((prayer) =>
+        scheduleNotification(
+          prayer.seconds,
+          `Time for ${prayer.name}`,
+          `It's time to pray ${prayer.name}`
+        )
+      )
+    );
   } catch (error) {
     console.error("App setup failed:", error);
     Sentry.captureException(error);

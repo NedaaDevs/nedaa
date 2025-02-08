@@ -40,7 +40,7 @@ export const useInitialSetup = () => {
       await performFirstRunSetup(appStore, notificationStore, locationStore);
 
       // Every run setup(Fetching data, schedule notifications)
-      await appSetup(prayerTimesStore);
+      await appSetup(locationStore, prayerTimesStore);
     };
 
     initializeApp();
