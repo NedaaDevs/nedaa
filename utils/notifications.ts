@@ -1,15 +1,24 @@
 import * as Notifications from "expo-notifications";
 import { PermissionStatus } from "expo-notifications";
 import { LocalPermissionStatus } from "@/enums/notifications";
+import { Platform } from "react-native";
+import { PlatformType } from "@/enums/app";
 
-export const configureNotifications = () => {
+export const configureNotifications = async () => {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
-      shouldSetBadge: true,
+      shouldSetBadge: false,
     }),
   });
+
+  if (Platform.OS === PlatformType.ANDROID) {
+    await Notifications.setNotificationChannelAsync("prayer_times", {
+      name: "Prayer times channel",
+      importance: Notifications.AndroidImportance.MAX,
+    });
+  }
 };
 
 export const mapToLocalStatus = (expoStatus: PermissionStatus): LocalPermissionStatus => {
@@ -33,7 +42,7 @@ export const requestPermissions = async () => {
   });
 };
 
-export const scheduleNotification = async (seconds: number, title: string, message: string) => {
+export const scheduleNotification = async (date: Date, title: string, message: string) => {
   const { status } = await checkPermissions();
 
   if (status !== PermissionStatus.GRANTED) {
@@ -42,10 +51,10 @@ export const scheduleNotification = async (seconds: number, title: string, messa
 
   try {
     const trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: seconds,
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: date,
       repeats: false,
-      channelId: "new_testing",
+      channelId: "prayer_times",
     };
 
     const id = await Notifications.scheduleNotificationAsync({
