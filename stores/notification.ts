@@ -21,7 +21,6 @@ import {
 import { NotificationState } from "@/types/notifications";
 import { LocalPermissionStatus } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
-import { addMinutes, addSeconds } from "date-fns";
 
 export const useNotificationStore = create<NotificationState>()(
   devtools(
@@ -69,15 +68,14 @@ export const useNotificationStore = create<NotificationState>()(
         },
 
         scheduleTestNotification: async () => {
-          await get().clearNotifications();
           await scheduleNotification(
-            addSeconds(Date.now(), 10),
+            10,
             "Test Notification",
             `This is a test notification with 10 seconds`
           );
 
           await scheduleNotification(
-            addMinutes(Date.now(), 1),
+            60 * 10,
             "Test Notification",
             `This is a test notification with 10m`
           );

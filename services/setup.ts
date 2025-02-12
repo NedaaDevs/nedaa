@@ -6,7 +6,7 @@ import { AppState } from "@/types/app";
 import { NotificationState } from "@/types/notifications";
 import { PrayerTimesStore } from "@/types/prayerTimes";
 import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
-import { addSeconds, parseISO } from "date-fns";
+import { differenceInSeconds, parseISO } from "date-fns";
 import { timeZonedNow } from "@/utils/date";
 
 export const performFirstRunSetup = async (
@@ -55,19 +55,22 @@ export const appSetup = async (locationStore: LocationStore, prayerStore: Prayer
     const now = timeZonedNow(locationDetails.timezone);
     const prayers = Object.entries(todayTimings.timings)
       .map(([name, time]) => {
+        const prayerTime = parseISO(time as string);
+
         return {
           name,
-          date: parseISO(time),
+          seconds: differenceInSeconds(prayerTime, now),
         };
       })
       // Filter out past prayer times
-      .filter((prayer) => prayer.date > now);
+      .filter((prayer) => prayer.seconds > 0);
 
     await cancelAllScheduledNotifications();
+
     await Promise.all(
       prayers.map((prayer) =>
         scheduleNotification(
-          prayer.date,
+          prayer.seconds,
           `Time for ${prayer.name}`,
           `It's time to pray ${prayer.name}`
         )

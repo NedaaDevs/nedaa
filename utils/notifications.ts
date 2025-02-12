@@ -80,6 +80,7 @@ export const scheduleNotification = async (seconds: number, title: string, messa
 
   try {
     const trigger = {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds,
       repeats: false,
       channelId: ANDROID_CHANNEL_ID,
