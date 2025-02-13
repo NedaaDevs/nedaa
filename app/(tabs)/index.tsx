@@ -311,7 +311,7 @@ export default function MainScreen() {
                 onPress={handleListNotifications}>
                 {isLoading && <ButtonSpinner className="text-primary" />}
                 <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
-                  Scheduled Notifications (10s, 1min)
+                  Scheduled Notifications (10s, 10min)
                 </ButtonText>
               </Button>
             </Box>
