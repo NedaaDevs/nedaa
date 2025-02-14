@@ -1,6 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { I18nManager, Text as T, View, StyleSheet, ScrollView } from "react-native";
+import { nativeApplicationVersion, nativeBuildVersion } from "expo-application";
 
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
@@ -323,6 +324,11 @@ export default function MainScreen() {
         <View style={styles.container}>
           <T style={styles.paragraph}> {I18nManager.isRTL ? "RTL" : "LTR"}</T>
         </View>
+
+        <Box className="items-center space-x-2 mb-2">
+          <Text>{nativeApplicationVersion}</Text>
+          <Text>{nativeBuildVersion}</Text>
+        </Box>
       </ScrollView>
     </SafeAreaView>
   );
