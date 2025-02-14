@@ -59,18 +59,18 @@ export const appSetup = async (locationStore: LocationStore, prayerStore: Prayer
 
         return {
           name,
-          seconds: differenceInSeconds(prayerTime, now),
+          date: prayerTime,
         };
       })
       // Filter out past prayer times
-      .filter((prayer) => prayer.seconds > 0);
+      .filter((prayer) => prayer.date > now);
 
     await cancelAllScheduledNotifications();
 
     await Promise.all(
       prayers.map((prayer) =>
         scheduleNotification(
-          prayer.seconds,
+          prayer.date,
           `Time for ${prayer.name}`,
           `It's time to pray ${prayer.name}`
         )
