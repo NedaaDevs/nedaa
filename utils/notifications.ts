@@ -1,36 +1,74 @@
 import * as Notifications from "expo-notifications";
-import { PermissionStatus } from "expo-notifications";
+import { PermissionStatus, AndroidImportance } from "expo-notifications";
+import { Platform, AppState } from "react-native";
+
+// Enums
 import { LocalPermissionStatus } from "@/enums/notifications";
+import { PlatformType } from "@/enums/app";
+
+// Constants
+const ANDROID_CHANNEL_ID = "prayer_times";
+const ANDROID_CHANNEL_NAME = "Prayer Time Alerts";
 
 export const configureNotifications = () => {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
-      shouldSetBadge: true,
+      shouldSetBadge: false,
     }),
   });
+
+  // Check channel when app comes to foreground
+  AppState.addEventListener("change", handleAppStateChange);
 };
 
-export const mapToLocalStatus = (expoStatus: PermissionStatus): LocalPermissionStatus => {
-  switch (expoStatus) {
-    case PermissionStatus.GRANTED:
-      return LocalPermissionStatus.GRANTED;
-    case PermissionStatus.DENIED:
-      return LocalPermissionStatus.DENIED;
-    default:
-      return LocalPermissionStatus.UNDETERMINED;
+const handleAppStateChange = (state: string) => {
+  if (state === "active") checkAndroidChannel();
+};
+
+// Channel management for Android
+export const checkAndroidChannel = async () => {
+  if (Platform.OS !== PlatformType.ANDROID) return;
+
+  try {
+    const channels = await Notifications.getNotificationChannelsAsync();
+    const channelExists = channels.some((c) => c.id === ANDROID_CHANNEL_ID);
+
+    if (!channelExists) {
+      await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+        name: ANDROID_CHANNEL_NAME,
+        importance: AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 200, 500],
+      });
+      console.log("Android notification channel created");
+    }
+  } catch (error) {
+    console.error("Failed to check/create Android channel:", error);
   }
 };
 
+// Enhanced permission check with channel verification
 export const checkPermissions = async () => {
-  return Notifications.getPermissionsAsync();
+  const { status } = await Notifications.getPermissionsAsync();
+
+  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
+    await checkAndroidChannel();
+  }
+
+  return { status };
 };
 
 export const requestPermissions = async () => {
-  return Notifications.requestPermissionsAsync({
-    ios: { allowAlert: true, allowBadge: true, allowSound: true },
+  const { status } = await Notifications.requestPermissionsAsync({
+    ios: { allowAlert: true, allowBadge: false, allowSound: true },
   });
+
+  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
+    await checkAndroidChannel();
+  }
+
+  return { status };
 };
 
 export const scheduleNotification = async (seconds: number, title: string, message: string) => {
@@ -43,18 +81,38 @@ export const scheduleNotification = async (seconds: number, title: string, messa
   try {
     const trigger = {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: seconds,
+      seconds,
       repeats: false,
-      channelId: "new_testing",
+      channelId: ANDROID_CHANNEL_ID,
     };
 
     const id = await Notifications.scheduleNotificationAsync({
-      content: { title, body: message, sound: "default" },
+      content: {
+        title,
+        body: message,
+        ...(Platform.OS === PlatformType.ANDROID && {
+          android: { channelId: ANDROID_CHANNEL_ID },
+          priority: "high",
+        }),
+      },
       trigger,
     });
+
     return { success: true, id };
   } catch (error) {
+    console.error("Notification scheduling failed:", error);
     return { success: false, message: `Failed to schedule notification: ${error}` };
+  }
+};
+
+export const mapToLocalStatus = (expoStatus: PermissionStatus): LocalPermissionStatus => {
+  switch (expoStatus) {
+    case PermissionStatus.GRANTED:
+      return LocalPermissionStatus.GRANTED;
+    case PermissionStatus.DENIED:
+      return LocalPermissionStatus.DENIED;
+    default:
+      return LocalPermissionStatus.UNDETERMINED;
   }
 };
 

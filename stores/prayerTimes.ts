@@ -70,14 +70,14 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
         },
 
-        loadPrayerTimes: async (dateInt: number, forceGetAndStore = false): Promise<void> => {
+        loadPrayerTimes: async (forceGetAndStore = false): Promise<void> => {
           try {
             set({ isLoading: true });
 
             // Get location details from location store
             const { locationDetails } = locationStore.getState();
 
-            // Calculate yesterday, today, and tomorrow based on provided dateInt
+            // Calculate yesterday, today, and tomorrow based on the location timezone
             const { yesterday, today, tomorrow } = getThreeDayDateRange(locationDetails.timezone);
 
             // Try to get stored prayer times

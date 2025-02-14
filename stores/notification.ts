@@ -68,15 +68,14 @@ export const useNotificationStore = create<NotificationState>()(
         },
 
         scheduleTestNotification: async () => {
-          await get().clearNotifications();
           await scheduleNotification(
-            1 * 10,
+            10,
             "Test Notification",
             `This is a test notification with 10 seconds`
           );
 
           await scheduleNotification(
-            60 * 1 * 10,
+            60 * 10,
             "Test Notification",
             `This is a test notification with 10m`
           );

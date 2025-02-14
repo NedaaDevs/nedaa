@@ -38,6 +38,8 @@ export default function MainScreen() {
     refreshPermissions,
     requestNotificationPermission,
     openNotificationSettings,
+    getScheduledNotifications,
+    scheduleTestNotification,
   } = useNotificationStore();
   const {
     permissions: locationPermission,
@@ -86,6 +88,20 @@ export default function MainScreen() {
   const handleGetLocation = async () => {
     try {
       await getCurrentLocation();
+
+      await hapticSuccess();
+    } catch (error) {
+      await hapticError();
+      console.error("Getting location failed => error:", error);
+    }
+  };
+
+  const handleListNotifications = async () => {
+    try {
+      console.log(await getScheduledNotifications());
+
+      await scheduleTestNotification();
+      console.log(await getScheduledNotifications());
 
       await hapticSuccess();
     } catch (error) {
@@ -283,6 +299,19 @@ export default function MainScreen() {
                 {isLoading && <ButtonSpinner className="text-primary" />}
                 <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
                   {t("fetchPrayerTimes")}
+                </ButtonText>
+              </Button>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Button
+                className="rounded-xl bg-info-400 shadow-lg active:opacity-80 h-14"
+                onPress={handleListNotifications}>
+                {isLoading && <ButtonSpinner className="text-primary" />}
+                <ButtonText className="text-lg font-bold text-background-0 text-center w-full">
+                  Scheduled Notifications (10s, 10min)
                 </ButtonText>
               </Button>
             </Box>

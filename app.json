@@ -77,6 +77,13 @@
           },
           "imageWidth": 200
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-notification-icon.png",
+          "mode": "production"
+        }
       ]
     ],
     "experiments": {

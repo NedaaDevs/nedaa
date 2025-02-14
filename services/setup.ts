@@ -5,12 +5,14 @@ import { LocationStore } from "@/types/location";
 import { AppState } from "@/types/app";
 import { NotificationState } from "@/types/notifications";
 import { PrayerTimesStore } from "@/types/prayerTimes";
+import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
+import { differenceInSeconds, parseISO } from "date-fns";
+import { timeZonedNow } from "@/utils/date";
 
 export const performFirstRunSetup = async (
   appStore: AppState,
   notificationStore: NotificationState,
-  locationStore: LocationStore,
-  prayerTimesStore: PrayerTimesStore
+  locationStore: LocationStore
 ) => {
   try {
     // Check existing notification permissions(This will update the store state with the current permissions)
@@ -32,17 +34,50 @@ export const performFirstRunSetup = async (
         await locationStore.getCurrentLocation();
       }
 
-      // TODO: Remove just for testing now
-      await prayerTimesStore.getAndStorePrayerTimes({
-        lat: locationStore.locationDetails.coords.latitude,
-        long: locationStore.locationDetails.coords.longitude,
-      });
-
       // Mark first run as complete
       appStore.setIsFirstRun(false);
     }
   } catch (error) {
     console.error("First run setup failed:", error);
+    Sentry.captureException(error);
+  }
+};
+
+export const appSetup = async (locationStore: LocationStore, prayerStore: PrayerTimesStore) => {
+  try {
+    const { loadPrayerTimes, todayTimings } = prayerStore;
+    const { locationDetails } = locationStore;
+
+    await loadPrayerTimes();
+
+    if (!todayTimings) return;
+
+    const now = timeZonedNow(locationDetails.timezone);
+    const prayers = Object.entries(todayTimings.timings)
+      .map(([name, time]) => {
+        const prayerTime = parseISO(time as string);
+
+        return {
+          name,
+          seconds: differenceInSeconds(prayerTime, now),
+        };
+      })
+      // Filter out past prayer times
+      .filter((prayer) => prayer.seconds > 0);
+
+    await cancelAllScheduledNotifications();
+
+    await Promise.all(
+      prayers.map((prayer) =>
+        scheduleNotification(
+          prayer.seconds,
+          `Time for ${prayer.name}`,
+          `It's time to pray ${prayer.name}`
+        )
+      )
+    );
+  } catch (error) {
+    console.error("App setup failed:", error);
     Sentry.captureException(error);
   }
 };

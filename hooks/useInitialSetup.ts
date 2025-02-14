@@ -8,7 +8,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Services
-import { performFirstRunSetup } from "@/services/setup";
+import { performFirstRunSetup, appSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 
 const initSentry = (consent: boolean) => {
@@ -34,10 +34,13 @@ export const useInitialSetup = () => {
     const initializeApp = async () => {
       // Initialize Sentry based on user choice
       await initSentry(appStore.sendCrashLogs);
-
       await initDB();
 
-      await performFirstRunSetup(appStore, notificationStore, locationStore, prayerTimesStore);
+      // First run setup(Notification and location permission)
+      await performFirstRunSetup(appStore, notificationStore, locationStore);
+
+      // Every run setup(Fetching data, schedule notifications)
+      await appSetup(locationStore, prayerTimesStore);
     };
 
     initializeApp();

@@ -1,11 +1,11 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseISO, addDays, subDays } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { useLocationStore } from "@/stores/location";
 import { useAppStore } from "@/stores/app";
-import { dateToInt, timeZonedNow } from "@/utils/date";
+import { timeZonedNow } from "@/utils/date";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Button, ButtonText } from "@/components/ui/button";
@@ -33,10 +33,12 @@ export default function PrayerTimesScreen() {
     yesterdayTimings,
     todayTimings,
     tomorrowTimings,
-    loadPrayerTimes,
     getNextPrayer,
     getPreviousPrayer,
+    loadPrayerTimes,
   } = usePrayerTimesStore();
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>("today");
@@ -45,6 +47,12 @@ export default function PrayerTimesScreen() {
 
   const [nextPrayer, setNextPrayer] = useState<Prayer | null>(null);
   const [previousPrayer, setPreviousPrayer] = useState<Prayer | null>(null);
+
+  const updateUI = async () => {
+    setNextPrayer(getNextPrayer());
+    setPreviousPrayer(getPreviousPrayer());
+    await loadPrayerTimes();
+  };
 
   const getDateLocale = () => {
     switch (locale) {
@@ -87,16 +95,44 @@ export default function PrayerTimesScreen() {
   };
 
   useEffect(() => {
+    const setupTimer = () => {
+      if (!nextPrayer || !locationDetails.timezone) return;
+
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      // Calculate time until next prayer
+      const now = timeZonedNow(locationDetails.timezone);
+      const nextPrayerTime = parseISO(nextPrayer.time);
+      const timeUntilNextPrayer = nextPrayerTime.getTime() - now.getTime();
+
+      // Only set timer if it's in the future
+      if (timeUntilNextPrayer > 0) {
+        timerRef.current = setTimeout(() => {
+          updateUI();
+        }, timeUntilNextPrayer);
+      }
+    };
+
+    setupTimer();
+
+    // Cleanup timer on unmount or when nextPrayer changes
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [nextPrayer, locationDetails.timezone]);
+
+  useEffect(() => {
     const updatePrayerTimes = async () => {
       try {
         if (!locationDetails.timezone) return;
 
         const time = timeZonedNow(locationDetails.timezone);
-        const todayInt = dateToInt(time);
         const dateLocale = getDateLocale();
-
-        // Load the prayer times into the store
-        await loadPrayerTimes(todayInt);
 
         // Get the current timings based on view mode
         const currentTimings = getCurrentTimings();
