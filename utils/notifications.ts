@@ -71,7 +71,7 @@ export const requestPermissions = async () => {
   return { status };
 };
 
-export const scheduleNotification = async (seconds: number, title: string, message: string) => {
+export const scheduleNotification = async (date: Date | string, title: string, message: string) => {
   const { status } = await checkPermissions();
 
   if (status !== PermissionStatus.GRANTED) {
@@ -80,8 +80,8 @@ export const scheduleNotification = async (seconds: number, title: string, messa
 
   try {
     const trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds,
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date,
       repeats: false,
       channelId: ANDROID_CHANNEL_ID,
     };

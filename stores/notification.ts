@@ -5,6 +5,7 @@ import { createJSONStorage } from "zustand/middleware";
 import { openSettings } from "expo-linking";
 import { Platform } from "react-native";
 import { IosAuthorizationStatus } from "expo-notifications";
+import { addMinutes, addSeconds } from "date-fns";
 
 // Utils
 import {
@@ -16,11 +17,15 @@ import {
   cancelAllScheduledNotifications,
   configureNotifications,
 } from "@/utils/notifications";
+import { timeZonedNow } from "@/utils/date";
 
 // Types and enums
 import { NotificationState } from "@/types/notifications";
 import { LocalPermissionStatus } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
+
+// Stores
+import locationStore from "@/stores/location";
 
 export const useNotificationStore = create<NotificationState>()(
   devtools(
@@ -68,14 +73,15 @@ export const useNotificationStore = create<NotificationState>()(
         },
 
         scheduleTestNotification: async () => {
+          const now = timeZonedNow(locationStore.getState().locationDetails.timezone);
           await scheduleNotification(
-            10,
+            addSeconds(now, 10),
             "Test Notification",
             `This is a test notification with 10 seconds`
           );
 
           await scheduleNotification(
-            60 * 10,
+            addMinutes(now, 10),
             "Test Notification",
             `This is a test notification with 10m`
           );
