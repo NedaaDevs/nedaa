@@ -91,8 +91,7 @@ export const scheduleNotification = async (seconds: number, title: string, messa
         title,
         body: message,
         ...(Platform.OS === PlatformType.ANDROID && {
-          android: { channelId: ANDROID_CHANNEL_ID },
-          priority: "high",
+          priority: Notifications.AndroidNotificationPriority.MAX,
         }),
       },
       trigger,
