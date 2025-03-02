@@ -3,9 +3,9 @@ import { initReactI18next } from "react-i18next";
 import { getLocales } from "expo-localization";
 
 // Translations
-import translationAR from "@/localization/locales/ar/translation.json";
-import translationEN from "@/localization/locales/en/translation.json";
-import translationMS from "@/localization/locales/ms/translation.json";
+import translationAR from "@/localization/locales/ar.json";
+import translationEN from "@/localization/locales/en.json";
+import translationMS from "@/localization/locales/ms.json";
 
 // Enums
 import { AppLocale } from "@/enums/app";
