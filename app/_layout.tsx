@@ -1,10 +1,10 @@
+import "@/global.css";
+import "@/localization/i18n";
+
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
-
-import "@/global.css";
-import "@/localization/i18n";
 
 // Stores
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
