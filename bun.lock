@@ -32,6 +32,7 @@
         "expo-status-bar": "~2.0.1",
         "expo-system-ui": "~4.0.7",
         "expo-web-browser": "~14.0.2",
+        "hijri-date-converter": "^1.0.2",
         "i18next": "^24.2.2",
         "nativewind": "^4.1.23",
         "react": "18.3.1",
@@ -1472,6 +1473,8 @@
     "hermes-estree": ["hermes-estree@0.25.1", "", {}, "sha512-0wUoCcLp+5Ev5pDW2OriHC2MJCbwLwuRx+gAqMTOkGKJJiBCLjtrvy4PWUGn6MIVefecRpzoOZ/UV6iGdOr+Cw=="],
 
     "hermes-parser": ["hermes-parser@0.25.1", "", { "dependencies": { "hermes-estree": "0.25.1" } }, "sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA=="],
+
+    "hijri-date-converter": ["hijri-date-converter@1.0.2", "", { "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-ETUhnhHsWRlMI3oIxvHjUCCY3pvj9LtaYfXSXtmc8jj06e6IzrhNFB3axZ/r6yidiFK159xK9TKyYYIsJqYqjA=="],
 
     "hoist-non-react-statics": ["hoist-non-react-statics@3.3.2", "", { "dependencies": { "react-is": "^16.7.0" } }, "sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw=="],
 
