@@ -32,8 +32,8 @@ const Header = () => {
   // Format day name  "Friday"
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
-  // Get localized month name "Ramadan"
-  const hijriMonth = t(`hijriMonths.${hijriDate.month}`);
+  // Get localized month name "رمضان or Ramadan"
+  const hijriMonth = t(`hijriMonths.${hijriDate.month - 1}`);
 
   // Format numbers 1=١ for Arabic locale
   const formattedDay = formatNumberToLocale(hijriDate.day.toString());
