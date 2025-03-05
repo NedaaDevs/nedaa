@@ -1,3 +1,11 @@
 {
-  "nedaa": "Nedaa"
+  "dark": "Gelap",
+  "date": "Jumaat, 14 Ramadan 1443 Hijrah",
+  "light": "Cerah",
+  "locale": "Bahasa",
+  "mode": "Mod",
+  "nedaa": "Nedaa",
+  "prayerName": "Maghrib",
+  "prayerTime": "25:29",
+  "system": "Sistem"
 }
