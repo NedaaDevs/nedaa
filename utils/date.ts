@@ -1,6 +1,8 @@
 import { addDays, format, parse, subDays } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { ar, enUS, ms } from "date-fns/locale";
 
+import { AppLocale } from "@/enums/app";
 /**
  * Converts a Unix timestamp (in seconds) to YYYYMMDD format
  * @param {number} timestamp
@@ -52,4 +54,22 @@ export const getThreeDayDateRange = (timezone: string): DateRange => {
     today: parseInt(format(now, "yyyyMMdd"), 10),
     tomorrow: dateToInt(addDays(now, 1)),
   };
+};
+
+/**
+ * Get a date-fns locale
+ *
+ * @param string locale
+ *
+ * @return Locale
+ */
+export const getDateLocale = (locale: AppLocale) => {
+  switch (locale) {
+    case "ar":
+      return ar;
+    case "ms":
+      return ms;
+    default:
+      return enUS;
+  }
 };
