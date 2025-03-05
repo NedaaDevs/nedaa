@@ -1,11 +1,28 @@
 {
+  "asr": "Asar",
   "dark": "Gelap",
   "date": "Jumaat, 14 Ramadan 1443 Hijrah",
+  "dhuhr": "Zohor",
+  "fajr": "Subuh",
+  "hijriMonths": [
+    "Muharam",
+    "Safar",
+    "Rabiulawal",
+    "Rabiulakhir",
+    "Jamadilawal",
+    "Jamadilakhir",
+    "Rejab",
+    "Syaaban",
+    "Ramadan",
+    "Syawal",
+    "Zulkaedah",
+    "Zulhijah"
+  ],
+  "isha": "Isyak",
   "light": "Cerah",
   "locale": "Bahasa",
+  "maghrib": "Maghrib",
   "mode": "Mod",
   "nedaa": "Nedaa",
-  "prayerName": "Maghrib",
-  "prayerTime": "25:29",
   "system": "Sistem"
 }
