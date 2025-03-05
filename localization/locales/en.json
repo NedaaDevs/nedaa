@@ -1,11 +1,28 @@
 {
+  "asr": "Asr",
   "dark": "Dark",
   "date": "Friday, 14 Ramadan 1443 AH",
+  "dhuhr": "Dhuhr",
+  "fajr": "Fajr",
+  "hijriMonths": [
+    "Muharram",
+    "Safar",
+    "Rabi' al-Awwal",
+    "Rabi' al-Thani",
+    "Jumada al-Awwal",
+    "Jumada al-Thani",
+    "Rajab",
+    "Sha'ban",
+    "Ramadan",
+    "Shawwal",
+    "Dhu al-Qidah",
+    "Dhu al-Hijjah"
+  ],
+  "isha": "Isha",
   "light": "Light",
   "locale": "Language",
+  "maghrib": "Maghrib",
   "mode": "Mode",
   "nedaa": "Nedaa",
-  "prayerName": "Maghrib",
-  "prayerTime": "25:29",
   "system": "System"
 }
