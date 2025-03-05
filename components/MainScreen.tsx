@@ -1,28 +1,10 @@
-import React, { use } from "react";
-
-import { useTranslation } from "react-i18next";
+import React from "react";
 
 // Components
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { Center } from "@/components/ui/center";
+import Header from "@/components/Header";
 
 const MainScreen = () => {
-  const { t } = useTranslation();
-  return (
-    <>
-      <Box
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}>
-        <Center>
-          <Text>{t("nedaa")}</Text>
-        </Center>
-      </Box>
-    </>
-  );
+  return <Header />;
 };
 
 export default MainScreen;
