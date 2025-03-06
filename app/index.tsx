@@ -1,9 +1,9 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView } from "react-native";
-import MainScreen from "@/components/MainScreen";
 import { Divider } from "@/components/ui/divider";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
+import Header from "@/components/Header";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -14,7 +14,7 @@ import { AppLocale, AppMode } from "@/enums/app";
 // Plugins
 import { useTranslation } from "react-i18next";
 
-export default function Index() {
+export default function MainScreen() {
   const { mode, locale, setMode, setLocale } = useAppStore();
   const { t } = useTranslation();
 
@@ -33,9 +33,11 @@ export default function Index() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
-        <MainScreen />
+    <SafeAreaView className="flex-1 bg-white dark:bg-black">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <Box className="my-20">
+          <Header />
+        </Box>
 
         {/* Testing */}
         <Divider />

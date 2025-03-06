@@ -54,13 +54,13 @@ const Header = () => {
   return (
     <Box className="m-2 p-4 rounded-lg bg-background">
       <VStack className="items-start space-y-3">
-        <Text className="text-right text-white text-base dark:text-secondary">{formattedDate}</Text>
+        <Text className="text-2xl text-right text-white dark:text-secondary">{formattedDate}</Text>
         {nextPrayer && (
-          <HStack className="justify-start w-full space-x-2">
-            <Text className="text-4xl font-bold text-tertiary dark:text-typography mx-3">
+          <HStack className="justify-start w-full">
+            <Text className="text-4xl font-bold text-tertiary dark:text-typography pr-3">
               {t(nextPrayer.name)}
             </Text>
-            <Text className="text-4xl font-bold text-tertiary dark:text-typography">
+            <Text className="text-4xl font-bold text-tertiary dark:text-typography pl-3">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
           </HStack>
