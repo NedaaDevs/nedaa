@@ -53,8 +53,8 @@ export type OtherTimingName =
   | "sunset"
   | "imsak"
   | "midnight"
-  | "firstThird"
-  | "lastThird";
+  | "firstthird"
+  | "lastthird";
 
 export type PrayerTimings = Record<PrayerName, string>;
 export type OtherTimings = Record<OtherTimingName, string>;
