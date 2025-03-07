@@ -4,6 +4,8 @@ import { Divider } from "@/components/ui/divider";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import Header from "@/components/Header";
+import PrayerTimesList from "@/components/PrayerTimesList";
+import OtherTimingsList from "@/components/OtherTimingsList";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -14,9 +16,16 @@ import { AppLocale, AppMode } from "@/enums/app";
 // Plugins
 import { useTranslation } from "react-i18next";
 
+// Hooks
+import { useHaptic } from "@/hooks/useHaptic";
+import { useState } from "react";
+
 export default function MainScreen() {
   const { mode, locale, setMode, setLocale } = useAppStore();
   const { t } = useTranslation();
+  const hapticSuccess = useHaptic("success");
+
+  const [isMainView, setIsMainView] = useState(true);
 
   const toggleTheme = () => {
     const modes = Object.values(AppMode);
@@ -32,11 +41,18 @@ export default function MainScreen() {
     setLocale(locales[nextIndex]);
   };
 
+  const toggleTimings = async () => {
+    setIsMainView(!isMainView);
+    await hapticSuccess();
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
+    <SafeAreaView className="flex-1 bg-grey dark:bg-black">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <Box className="my-20">
           <Header />
+          <Divider />
+          {isMainView ? <PrayerTimesList /> : <OtherTimingsList />}
         </Box>
 
         {/* Testing */}
@@ -57,6 +73,16 @@ export default function MainScreen() {
             onPress={toggleLocale}>
             <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
               {t("locale")} ({locale})
+            </ButtonText>
+          </Button>
+        </Box>
+        <Divider className="my-2" />
+        <Box className="mx-2">
+          <Button
+            className="rounded-xl bg-info shadow-lg active:opacity-80 h-14 dark:bg-secondary"
+            onPress={toggleTimings}>
+            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
+              {t(isMainView ? "prayerTimings" : "otherTimings")}
             </ButtonText>
           </Button>
         </Box>

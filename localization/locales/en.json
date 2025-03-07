@@ -4,6 +4,7 @@
   "date": "Friday, 14 Ramadan 1443 AH",
   "dhuhr": "Dhuhr",
   "fajr": "Fajr",
+  "firstThird": "First Third",
   "hijriMonths": [
     "Muharram",
     "Safar",
@@ -18,13 +19,20 @@
     "Dhu al-Qidah",
     "Dhu al-Hijjah"
   ],
+  "imsak": "Imsak",
   "isha": "Isha",
   "jumuah": "Jumu’ah",
+  "lastThird": "Last Third",
   "light": "Light",
   "loadingPrayerTimes": "Loading prayer times...",
   "locale": "Language",
   "maghrib": "Maghrib",
+  "midnight": "Midnight",
   "mode": "Mode",
   "nedaa": "Nedaa",
+  "otherTimings": "Other Times",
+  "prayerTimings": "Prayer Times",
+  "sunrise": "Sunrise",
+  "sunset": "Sunset",
   "system": "System"
 }
