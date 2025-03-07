@@ -73,3 +73,14 @@ export const getDateLocale = (locale: AppLocale) => {
       return enUS;
   }
 };
+
+/**
+ * Checks if today is a Friday in the specified timezone
+ *
+ * @param {string} timezone - IANA timezone string
+ * @returns {boolean} - True if date is Friday in the given timezone
+ */
+export const isFriday = (timezone: string): boolean => {
+  const zonedDate = toZonedTime(Date.now(), timezone);
+  return zonedDate.getDay() === 5; // 5 represents Friday (0 is Sunday, 1 is Monday, etc.)
+};
