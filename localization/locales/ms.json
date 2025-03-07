@@ -4,6 +4,7 @@
   "date": "Jumaat, 14 Ramadan 1443 Hijrah",
   "dhuhr": "Zohor",
   "fajr": "Subuh",
+  "firstThird": "Sepertiga Pertama",
   "hijriMonths": [
     "Muharam",
     "Safar",
@@ -18,13 +19,20 @@
     "Zulkaedah",
     "Zulhijah"
   ],
+  "imsak": "Imsak",
   "isha": "Isyak",
   "jumuah": "Jumaat",
+  "lastThird": "Sepertiga Terakhir",
   "light": "Cerah",
   "loadingPrayerTimes": "Memuatkan waktu solat...",
   "locale": "Bahasa",
   "maghrib": "Maghrib",
+  "midnight": "Tengah Malam",
   "mode": "Mod",
   "nedaa": "Nedaa",
+  "otherTimings": "Waktu Lain",
+  "prayerTimings": "Waktu Solat",
+  "sunrise": "Matahari Terbit",
+  "sunset": "Matahari Terbenam",
   "system": "Sistem"
 }
