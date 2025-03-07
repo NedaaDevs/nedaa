@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale, timeZonedNow } from "@/utils/date";
+import { getDateLocale, isFriday, timeZonedNow } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -51,13 +51,18 @@ const Header = () => {
     );
   };
 
+  const prayerName =
+    nextPrayer!.name === "dhuhr" && isFriday(locationDetails.timezone)
+      ? "jumuah"
+      : nextPrayer!.name;
+
   return (
     <Box className="m-2 p-4 rounded-lg bg-background">
       <VStack className="items-start space-y-3">
         <Text className="text-2xl text-right text-white dark:text-secondary">{formattedDate}</Text>
         {nextPrayer && (
           <HStack className="justify-start w-full">
-            <Text className="text-4xl font-bold text-tertiary pr-3">{t(nextPrayer.name)}</Text>
+            <Text className="text-4xl font-bold text-tertiary pr-3">{t(prayerName)}</Text>
             <Text className="text-4xl font-bold text-tertiary  pl-3">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
