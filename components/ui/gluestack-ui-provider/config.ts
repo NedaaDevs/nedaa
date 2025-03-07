@@ -12,10 +12,10 @@ export const config = {
     "--color-info": "13 166 242", // #0da6f2
 
     /* Typography */
-    "--color-typography": "50 50 50", // #323232
+    "--color-typography": "21 39 54", // #152736
 
     /* Outline */
-    "--color-outline": "220 220 220", // #dcdcdc
+    "--color-outline": "241 245 249", // #f1f5f9
 
     /* Background */
     "--color-background": "6 60 97", // #063c61
@@ -35,7 +35,7 @@ export const config = {
   dark: vars({
     "--color-primary": "30 60 90", // #1e3c5a
     "--color-secondary": "229 203 135", // #e5cb87
-    "--color-tertiary": "75 85 99", // #4b5563
+    "--color-tertiary": "155 181 201", // #9bb5C9
     "--color-error": "239 68 68", // #ef4444
     "--color-success": "72 151 102", // #489766
     "--color-warning": "251 149 75", // #fb954b
