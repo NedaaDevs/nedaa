@@ -51,10 +51,16 @@ const Header = () => {
     );
   };
 
+  if (!nextPrayer) {
+    return (
+      <>
+        <Text>...</Text>
+      </>
+    );
+  }
+
   const prayerName =
-    nextPrayer!.name === "dhuhr" && isFriday(locationDetails.timezone)
-      ? "jumuah"
-      : nextPrayer!.name;
+    nextPrayer.name === "dhuhr" && isFriday(locationDetails.timezone) ? "jumuah" : nextPrayer.name;
 
   return (
     <Box className="m-2 p-4 rounded-lg bg-background">
