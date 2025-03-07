@@ -57,10 +57,8 @@ const Header = () => {
         <Text className="text-2xl text-right text-white dark:text-secondary">{formattedDate}</Text>
         {nextPrayer && (
           <HStack className="justify-start w-full">
-            <Text className="text-4xl font-bold text-tertiary dark:text-typography pr-3">
-              {t(nextPrayer.name)}
-            </Text>
-            <Text className="text-4xl font-bold text-tertiary dark:text-typography pl-3">
+            <Text className="text-4xl font-bold text-tertiary pr-3">{t(nextPrayer.name)}</Text>
+            <Text className="text-4xl font-bold text-tertiary  pl-3">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
           </HStack>
