@@ -18,17 +18,17 @@ export const isOtherTimings = (obj: unknown): obj is OtherTimings => {
     "sunset",
     "imsak",
     "midnight",
-    "firstThird",
-    "lastThird",
+    "firstthird",
+    "lastthird",
   ];
 
   return (
     typeof obj === "object" &&
     obj !== null &&
     requiredKeys.every((key) => {
-      // Handle the camel case for firstThird/lastThird
-      if (key === "firstThird" && typeof parsedObj.firstthird === "string") return true;
-      if (key === "lastThird" && typeof parsedObj.lastthird === "string") return true;
+      // Handle the camel case for firstthird/lastthird
+      if (key === "firstthird" && typeof parsedObj.firstthird === "string") return true;
+      if (key === "lastthird" && typeof parsedObj.lastthird === "string") return true;
       return typeof parsedObj[key] === "string";
     })
   );

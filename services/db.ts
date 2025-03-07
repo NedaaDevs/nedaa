@@ -220,18 +220,11 @@ const getPrayerTimesByDate = async (date: number): Promise<DayPrayerTimes | null
     const timings: PrayerTimings = parsedTimings;
     const otherTimings: OtherTimings = parsedOtherTimings;
 
-    // Transform firstthird and lastthird to camelCase
-    const formattedOtherTimings: OtherTimings = {
-      ...otherTimings,
-      firstThird: otherTimings.firstThird,
-      lastThird: otherTimings.lastThird,
-    };
-
     return {
       date: result.date,
       timezone: result.timezone,
       timings,
-      otherTimings: formattedOtherTimings,
+      otherTimings,
     };
   } catch (dbError) {
     console.error("[DB] Error accessing database:", dbError);
