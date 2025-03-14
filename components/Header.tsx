@@ -17,6 +17,10 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
+import { Icon } from "@/components/ui/icon";
+
+// Icon
+import { MapPin } from "lucide-react-native";
 
 const Header = () => {
   const { t } = useTranslation();
@@ -66,6 +70,14 @@ const Header = () => {
     <Box className="m-2 p-4 rounded-lg bg-background">
       <VStack className="items-start space-y-3">
         <Text className="text-2xl text-right text-white dark:text-secondary">{formattedDate}</Text>
+
+        <HStack className="justify-start my-2">
+          <Icon as={MapPin} size="xs" className="text-right text-white dark:text-secondary" />
+          <Text className="text-1xl font-bold text-right text-tertiary ms-2">
+            {locationDetails.address?.city}
+          </Text>
+        </HStack>
+
         {nextPrayer && (
           <HStack className="justify-start w-full">
             <Text className="text-4xl font-bold text-tertiary pr-3">{t(prayerName)}</Text>
