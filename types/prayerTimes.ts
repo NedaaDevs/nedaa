@@ -3,6 +3,7 @@ export type PrayerTimesStoreState = {
   yesterdayTimings: DayPrayerTimes | null;
   todayTimings: DayPrayerTimes | null;
   tomorrowTimings: DayPrayerTimes | null;
+  twoWeeksTimings: DayPrayerTimes[] | null;
 };
 
 export type PrayerTimesStoreActions = {
