@@ -288,6 +288,29 @@ const getPrayerTimesByDateRange = async (
   }
 };
 
+/**
+ * Delete prayer times data older than the specified cutoff date
+ * @param {number} cutoffDate - Delete data older than this date (in YYYYMMDD format)
+ * @returns {Promise<boolean>} - Success or failure of the cleanup operation
+ */
+const cleanData = async (cutoffDate: number): Promise<boolean> => {
+  try {
+    const db = await openDatabase();
+
+    console.log(`[DB] Cleaning up prayer times data older than ${cutoffDate}`);
+
+    // Delete records older than the cutoff date
+    const query = `DELETE FROM ${TABLE_NAME} WHERE date < ?`;
+    await db.runAsync(query, [cutoffDate]);
+
+    console.log(`[DB] Cleanup completed successfully`);
+    return true;
+  } catch (error) {
+    console.error("[DB] Error cleaning up old data:", error);
+    return false;
+  }
+};
+
 export const PrayerTimesDB = {
   open: openDatabase,
   initialize: initializeDB,
@@ -296,4 +319,5 @@ export const PrayerTimesDB = {
   insertPrayerTimes,
   getPrayerTimesByDate,
   getPrayerTimesByDateRange,
+  cleanData,
 };
