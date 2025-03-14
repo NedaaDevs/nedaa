@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { compareAsc, parseISO } from "date-fns";
+import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
 
 // Types
 import { PrayerName, PrayerTimesResponse, PrayerTimesStore } from "@/types/prayerTimes";
@@ -17,7 +17,19 @@ import { PrayerTimesDB } from "@/services/db";
 import locationStore from "@/stores/location";
 
 // Utils
-import { getThreeDayDateRange, timeZonedNow } from "@/utils/date";
+import { dateToInt, timeZonedNow } from "@/utils/date";
+
+const getTwoWeeksDateRange = (timezone: string) => {
+  const now = timeZonedNow(timezone);
+
+  // Today as integer (YYYYMMDD)
+  const today = parseInt(format(now, "yyyyMMdd"));
+
+  // End date (today + 13 days)
+  const endDate = parseInt(format(addDays(now, 13), "yyyyMMdd"));
+
+  return { startDate: today, endDate };
+};
 
 export const usePrayerTimesStore = create<PrayerTimesStore>()(
   devtools(
@@ -27,6 +39,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         yesterdayTimings: null,
         todayTimings: null,
         tomorrowTimings: null,
+        twoWeeksTimings: null,
 
         getPrayerTimes: async (params): Promise<PrayerTimesResponse> => {
           try {
@@ -77,17 +90,31 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             // Get location details from location store
             const { locationDetails } = locationStore.getState();
 
-            // Calculate yesterday, today, and tomorrow based on the location timezone
-            const { yesterday, today, tomorrow } = getThreeDayDateRange(locationDetails.timezone);
+            // Get yesterday, today, tomorrow dates
+            const now = timeZonedNow(locationDetails.timezone);
+            const yesterday = dateToInt(subDays(now, 1));
+            const today = dateToInt(now);
+            const tomorrow = dateToInt(addDays(now, 1));
 
-            // Try to get stored prayer times
-            const [yesterdayTimings, todayTimings, tomorrowTimings] = await Promise.all([
-              PrayerTimesDB.getPrayerTimesByDate(yesterday),
-              PrayerTimesDB.getPrayerTimesByDate(today),
-              PrayerTimesDB.getPrayerTimesByDate(tomorrow),
-            ]);
+            // Calculate two week date range (today to today+13 days)
+            const { startDate, endDate } = getTwoWeeksDateRange(locationDetails.timezone);
 
-            // If we don't have complete data for all three days or forceGetAndStore is true, fetch and store new data
+            // Fetch the two weeks data
+            const twoWeeksTimings = await PrayerTimesDB.getPrayerTimesByDateRange(
+              startDate,
+              endDate
+            );
+
+            // Get yesterday's data separately since it's not in the two weeks range
+            const yesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
+
+            // Find today and tomorrow in the returned array by date
+            const todayTimings = twoWeeksTimings.find((timing) => timing.date === today) ?? null;
+            const tomorrowTimings =
+              twoWeeksTimings.find((timing) => timing.date === tomorrow) ?? null;
+
+            // Check if we need to fetch fresh data
+            // Either we're forcing a refresh, missing data.
             if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
               const success = await get().getAndStorePrayerTimes({
                 lat: locationDetails.coords.latitude,
@@ -99,16 +126,26 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               }
 
               // After storing, get the updated prayer times
-              const [newYesterday, newToday, newTomorrow] = await Promise.all([
-                PrayerTimesDB.getPrayerTimesByDate(yesterday),
-                PrayerTimesDB.getPrayerTimesByDate(today),
-                PrayerTimesDB.getPrayerTimesByDate(tomorrow),
-              ]);
+              // First get yesterday
+              const newYesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
+
+              // Then get the two weeks data again
+              const newTwoWeeksTimings = await PrayerTimesDB.getPrayerTimesByDateRange(
+                startDate,
+                endDate
+              );
+
+              // Find today and tomorrow in the new data by date
+              const newTodayTimings =
+                newTwoWeeksTimings.find((timing) => timing.date === today) ?? null;
+              const newTomorrowTimings =
+                newTwoWeeksTimings.find((timing) => timing.date === tomorrow) ?? null;
 
               set({
-                yesterdayTimings: newYesterday,
-                todayTimings: newToday,
-                tomorrowTimings: newTomorrow,
+                yesterdayTimings: newYesterdayTimings,
+                todayTimings: newTodayTimings,
+                tomorrowTimings: newTomorrowTimings,
+                twoWeeksTimings: newTwoWeeksTimings.length > 0 ? newTwoWeeksTimings : null,
               });
             } else {
               // If we have all the data, just update the store
@@ -116,6 +153,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
                 yesterdayTimings,
                 todayTimings,
                 tomorrowTimings,
+                twoWeeksTimings: twoWeeksTimings.length > 0 ? twoWeeksTimings : null,
               });
             }
 
