@@ -12,6 +12,7 @@ export type PrayerTimesStoreActions = {
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
   getNextPrayer: () => Prayer | null;
   getPreviousPrayer: () => Prayer | null;
+  cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
 };
 
 export type PrayerTimesStore = PrayerTimesStoreState & PrayerTimesStoreActions;

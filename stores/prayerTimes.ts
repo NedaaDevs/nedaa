@@ -157,8 +157,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               });
             }
 
-            // TODO: Clean up old data (delete data older than 2 days)
-            // await get().cleanupOldData();
+            await get().cleanupOldData();
           } catch (error: any) {
             console.error("Failed to load prayer times:", error);
             throw error;
@@ -243,6 +242,18 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
 
           return null;
+        },
+        cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {
+          try {
+            const timezone = locationStore.getState().locationDetails.timezone;
+            const now = timeZonedNow(timezone);
+            const cutoffDate = dateToInt(subDays(now, olderThanDays));
+
+            return await PrayerTimesDB.cleanData(cutoffDate);
+          } catch (error) {
+            console.error("Failed to clean up old prayer times data:", error);
+            return false;
+          }
         },
       }),
       {
