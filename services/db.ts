@@ -232,6 +232,62 @@ const getPrayerTimesByDate = async (date: number): Promise<DayPrayerTimes | null
   }
 };
 
+/**
+ * Get prayer times for a range of dates
+ * @param {number} startDate - Start date in format YYYYMMDD
+ * @param {number} endDate - End date in format YYYYMMDD (inclusive)
+ * @returns {Promise<DayPrayerTimes[]>} - Array of prayer times sorted by date
+ */
+const getPrayerTimesByDateRange = async (
+  startDate: number,
+  endDate: number
+): Promise<DayPrayerTimes[]> => {
+  if (!startDate || !endDate || startDate > endDate) {
+    console.error("[DB] Invalid date range parameters:", startDate, endDate);
+    return [];
+  }
+
+  try {
+    const db = await openDatabase();
+
+    const query = `SELECT * FROM ${TABLE_NAME} WHERE date BETWEEN ? AND ? ORDER BY date ASC;`;
+    const results = await db.getAllAsync(query, [startDate, endDate]);
+
+    if (!results || results.length === 0) {
+      return [];
+    }
+
+    const prayerTimes: DayPrayerTimes[] = [];
+
+    for (const result of results as PrayerTimesDBEntry[]) {
+      try {
+        const parsedTimings = JSON.parse(result.timings) as PrayerTimings;
+        const parsedOtherTimings = JSON.parse(result.other_timings) as OtherTimings;
+
+        // Validate parsed data
+        if (!isPrayerTimings(parsedTimings) || !isOtherTimings(parsedOtherTimings)) {
+          console.error(`[DB] Invalid timings format for date ${result.date}`);
+          continue;
+        }
+
+        prayerTimes.push({
+          date: result.date,
+          timezone: result.timezone,
+          timings: parsedTimings,
+          otherTimings: parsedOtherTimings,
+        });
+      } catch (parseError) {
+        console.error(`[DB] Error parsing timings for date ${result.date}:`, parseError);
+      }
+    }
+
+    return prayerTimes;
+  } catch (dbError) {
+    console.error("[DB] Error accessing database for date range:", dbError);
+    return [];
+  }
+};
+
 export const PrayerTimesDB = {
   open: openDatabase,
   initialize: initializeDB,
@@ -239,4 +295,5 @@ export const PrayerTimesDB = {
   processPrayerTimesData,
   insertPrayerTimes,
   getPrayerTimesByDate,
+  getPrayerTimesByDateRange,
 };
