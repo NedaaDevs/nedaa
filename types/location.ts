@@ -16,16 +16,6 @@ export type LocationDetails = {
   isLoading: boolean;
 };
 
-export type LocationStore = {
-  permissions: LocationPermissionsState;
-  locationDetails: LocationDetails;
-  isGettingLocation: boolean;
-  checkPermissions: () => Promise<void>;
-  requestPermissions: () => Promise<boolean>;
-  getCurrentLocation: () => Promise<void>;
-  setTimezone: (timezone: string) => Promise<void>;
-};
-
 const MECCA_COORDS = {
   latitude: 21.422487,
   longitude: 39.826206,
