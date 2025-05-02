@@ -3,11 +3,11 @@ import * as Sentry from "@sentry/react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
-// import { useLocationStore } from "@/stores/location";
-// import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useLocationStore } from "@/stores/location";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Services
-import { firstRunSetup } from "@/services/setup";
+import { appSetup, firstRunSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 
 const initSentry = (consent: boolean) => {
@@ -25,8 +25,8 @@ const initDB = async () => {
 
 export const useInitialSetup = () => {
   const appStore = useAppStore();
-  // const locationStore = useLocationStore();
-  // const prayerTimesStore = usePrayerTimesStore();
+  const locationStore = useLocationStore();
+  const prayerTimesStore = usePrayerTimesStore();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -38,7 +38,7 @@ export const useInitialSetup = () => {
       await firstRunSetup(appStore);
 
       // Every run setup(Fetching data, schedule notifications)
-      // await appSetup(locationStore, prayerTimesStore);
+      await appSetup(locationStore, prayerTimesStore);
     };
 
     initializeApp();
