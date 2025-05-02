@@ -24,8 +24,10 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
+import { checkLocationPermission, getCurrentLocation } from "@/utils/location";
 
 export type PrayerTimesStore = {
+  didGetCurrentLocation: boolean;
   isLoading: boolean;
   yesterdayTimings: DayPrayerTimes | null;
   todayTimings: DayPrayerTimes | null;
@@ -55,6 +57,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
   devtools(
     persist(
       (set, get) => ({
+        didGetCurrentLocation: false,
         isLoading: false,
         yesterdayTimings: null,
         todayTimings: null,
@@ -107,6 +110,14 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           try {
             set({ isLoading: true });
 
+            // if we haven't already get the current location
+            if (!get().didGetCurrentLocation && (await checkLocationPermission()).granted) {
+              await locationStore.getState().updateLocation();
+
+              set({
+                didGetCurrentLocation: true,
+              });
+            }
             // Get location details from location store
             const { locationDetails } = locationStore.getState();
             // Get yesterday, today, tomorrow dates
