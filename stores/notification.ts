@@ -3,75 +3,31 @@ import { devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage } from "zustand/middleware";
 import { openSettings } from "expo-linking";
-import { Platform } from "react-native";
-import { IosAuthorizationStatus } from "expo-notifications";
+import { NotificationRequest } from "expo-notifications";
 import { addMinutes, addSeconds } from "date-fns";
 
 // Utils
 import {
-  checkPermissions,
-  requestPermissions,
   scheduleNotification,
   listScheduledNotifications,
-  mapToLocalStatus,
   cancelAllScheduledNotifications,
-  configureNotifications,
 } from "@/utils/notifications";
 import { timeZonedNow } from "@/utils/date";
-
-// Types and enums
-import { NotificationState } from "@/types/notifications";
-import { LocalPermissionStatus } from "@/enums/notifications";
-import { PlatformType } from "@/enums/app";
 
 // Stores
 import locationStore from "@/stores/location";
 
+export type NotificationState = {
+  scheduleTestNotification: () => Promise<void>;
+  getScheduledNotifications: () => Promise<NotificationRequest[]>;
+  clearNotifications: () => Promise<void>;
+  openNotificationSettings: () => Promise<void>;
+};
+
 export const useNotificationStore = create<NotificationState>()(
   devtools(
     persist(
-      (set, get) => ({
-        permissions: {
-          status: LocalPermissionStatus.UNDETERMINED,
-          canRequestAgain: true,
-        },
-
-        refreshPermissions: async () => {
-          const result = await checkPermissions();
-
-          if (Platform.OS === PlatformType.IOS) {
-            const status =
-              result.status || result.ios?.status === IosAuthorizationStatus.PROVISIONAL;
-
-            set({
-              permissions: {
-                status: mapToLocalStatus(status),
-                canRequestAgain: result.canAskAgain,
-              },
-            });
-          }
-
-          set({
-            permissions: {
-              status: mapToLocalStatus(result.status),
-              canRequestAgain: result.canAskAgain,
-            },
-          });
-        },
-
-        requestNotificationPermission: async () => {
-          configureNotifications();
-          const result = await requestPermissions();
-          const status = mapToLocalStatus(result.status);
-          set({
-            permissions: {
-              status,
-              canRequestAgain: result.canAskAgain,
-            },
-          });
-          return status === LocalPermissionStatus.GRANTED;
-        },
-
+      (_, get) => ({
         scheduleTestNotification: async () => {
           const now = timeZonedNow(locationStore.getState().locationDetails.timezone);
           await scheduleNotification(
@@ -105,9 +61,6 @@ export const useNotificationStore = create<NotificationState>()(
       {
         name: "notification-storage",
         storage: createJSONStorage(() => Storage),
-        partialize: (state) => ({
-          permissions: state.permissions,
-        }),
       }
     ),
     { name: "NotificationStore" }
