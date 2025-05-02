@@ -5,10 +5,6 @@ import type { TData, RequestMethod, Response } from "@/types/api";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-if (!API_URL) {
-  throw new Error("API URL Not set");
-}
-
 const apiInstance = axios.create({
   baseURL: API_URL,
   timeout: 10000,
@@ -20,12 +16,31 @@ const apiInstance = axios.create({
   validateStatus: (status) => status >= 200 && status < 300,
 });
 
+const validateApiUrl = (): boolean => {
+  if (!API_URL) {
+    console.error("API_URL is not defined in environment variables");
+    return false;
+  }
+  return true;
+};
+
 const makeApiRequest = (
   method: RequestMethod,
   url: string,
   data: TData,
   contentType = "application/json"
 ): Promise<Response> => {
+  // Check if API_URL is available before proceeding
+  if (!validateApiUrl()) {
+    return Promise.resolve({
+      data: null,
+      message: "API_URL is not configured",
+      status: 0,
+      success: false,
+      errors: ["API configuration missing"],
+    });
+  }
+
   const params = new URLSearchParams(data).toString();
 
   const config: AxiosRequestConfig = {
