@@ -1,5 +1,6 @@
 import {
   PermissionStatus,
+  getCurrentPositionAsync,
   getForegroundPermissionsAsync,
   requestForegroundPermissionsAsync,
 } from "expo-location";
@@ -42,5 +43,26 @@ export const requestLocationPermission = async () => {
   } catch (error) {
     console.error("Location permission request failed:", error);
     return { granted: false, error };
+  }
+};
+
+export const getCurrentLocation = async () => {
+  // First check permission
+  const { granted, canRequestAgain } = await checkLocationPermission();
+
+  if (!granted && canRequestAgain) {
+    // Try to request permission
+    const { granted: newPermission } = await requestLocationPermission();
+    if (!newPermission) {
+      return { error: "Location permission denied" };
+    }
+  }
+
+  // Now get location
+  try {
+    const location = await getCurrentPositionAsync({});
+    return { location };
+  } catch (error: any) {
+    return { error: error.message };
   }
 };
