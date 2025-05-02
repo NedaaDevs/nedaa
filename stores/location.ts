@@ -9,7 +9,7 @@ import { LocationDetails, initialLocationDetails } from "@/types/location";
 export type LocationStore = {
   locationDetails: LocationDetails;
   isGettingLocation: boolean;
-  setLocation: () => Promise<void>;
+  updateLocation: () => Promise<void>;
   setTimezone: (timezone: string) => Promise<void>;
 };
 
@@ -20,7 +20,7 @@ export const useLocationStore = create<LocationStore>()(
         locationDetails: initialLocationDetails,
         isGettingLocation: false,
 
-        setLocation: async () => {
+        updateLocation: async () => {
           try {
             // TODO: Use locale to get localized city name, and subscribe to locale state
             // to update geocoding results
@@ -45,18 +45,17 @@ export const useLocationStore = create<LocationStore>()(
             });
           } catch (error) {
             console.error("Error getting location:", error);
-            set((state) => ({
+            set({
               locationDetails: {
-                ...state.locationDetails,
+                ...get().locationDetails,
                 error: error instanceof Error ? error.message : "Failed to get location",
                 isLoading: false,
               },
-            }));
+            });
           } finally {
-            set((state) => ({
-              ...state,
+            set({
               isGettingLocation: false,
-            }));
+            });
           }
         },
 
