@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
 import TimingItem from "@/components/TimingItem";
 
 // Icons
@@ -30,7 +31,11 @@ const PrayerTimesList = () => {
   const nextPrayer = getNextPrayer();
 
   if (!todayTimings) {
-    return <Box className="p-4">{t("loadingPrayerTimes")}</Box>;
+    return (
+      <Box className="p-4">
+        <Text>{t("loadingPrayerTimes")}</Text>
+      </Box>
+    );
   }
 
   return (
