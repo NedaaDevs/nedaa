@@ -59,7 +59,7 @@ export const checkPermissions = async () => {
   return { status };
 };
 
-export const requestPermissions = async () => {
+export const requestNotificationPermission = async () => {
   const { status } = await Notifications.requestPermissionsAsync({
     ios: { allowAlert: true, allowBadge: false, allowSound: true },
   });
