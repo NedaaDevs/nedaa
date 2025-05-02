@@ -4,11 +4,11 @@ import * as Sentry from "@sentry/react-native";
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
-import { useLocationStore } from "@/stores/location";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
+// import { useLocationStore } from "@/stores/location";
+// import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Services
-import { performFirstRunSetup, appSetup } from "@/services/setup";
+import { firstRunSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 
 const initSentry = (consent: boolean) => {
@@ -27,8 +27,8 @@ const initDB = async () => {
 export const useInitialSetup = () => {
   const appStore = useAppStore();
   const notificationStore = useNotificationStore();
-  const locationStore = useLocationStore();
-  const prayerTimesStore = usePrayerTimesStore();
+  // const locationStore = useLocationStore();
+  // const prayerTimesStore = usePrayerTimesStore();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -36,11 +36,11 @@ export const useInitialSetup = () => {
       await initSentry(appStore.sendCrashLogs);
       await initDB();
 
-      // First run setup(Notification and location permission)
-      await performFirstRunSetup(appStore, notificationStore, locationStore);
+      // First run setup(Request notification and location permission)
+      await firstRunSetup(appStore, notificationStore);
 
       // Every run setup(Fetching data, schedule notifications)
-      await appSetup(locationStore, prayerTimesStore);
+      // await appSetup(locationStore, prayerTimesStore);
     };
 
     initializeApp();

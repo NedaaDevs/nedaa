@@ -1,38 +1,34 @@
 import * as Sentry from "@sentry/react-native";
 
-// Types
-import { LocationStore } from "@/types/location";
-import { AppState } from "@/types/app";
-import { NotificationState } from "@/types/notifications";
-import { PrayerTimesStore } from "@/types/prayerTimes";
-import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
 import { parseISO } from "date-fns";
 import { timeZonedNow } from "@/utils/date";
 
-export const performFirstRunSetup = async (
-  appStore: AppState,
-  notificationStore: NotificationState,
-  locationStore: LocationStore
-) => {
+// Types
+import { LocationStore } from "@/stores/location";
+import { AppState } from "@/types/app";
+import { NotificationState } from "@/types/notifications";
+import { PrayerTimesStore } from "@/types/prayerTimes";
+
+// Utils
+import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
+import { requestLocationPermission } from "@/utils/location";
+
+export const firstRunSetup = async (appStore: AppState, notificationStore: NotificationState) => {
   try {
     // Check existing notification permissions(This will update the store state with the current permissions)
     await notificationStore.refreshPermissions();
-    await locationStore.checkPermissions();
 
     // Only request if first run and permissions aren't determined
     if (appStore.isFirstRun) {
       const grantedNotificationsPermission =
         await notificationStore.requestNotificationPermission();
-      const grantedLocationPermission = await locationStore.requestPermissions();
 
       if (!grantedNotificationsPermission) {
         console.log("User declined initial notifications permission request");
       }
 
-      // if the user granted location permission get current location
-      if (grantedLocationPermission) {
-        await locationStore.getCurrentLocation();
-      }
+      // Request Location permission
+      await requestLocationPermission();
 
       // Mark first run as complete
       appStore.setIsFirstRun(false);
@@ -91,7 +87,7 @@ export const appSetup = async (locationStore: LocationStore, prayerStore: Prayer
               break;
             }
           }
-        } catch (error) {
+        } catch {
           // Silently ignore parsing errors
         }
       }
