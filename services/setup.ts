@@ -6,26 +6,22 @@ import { timeZonedNow } from "@/utils/date";
 // Types
 import { LocationStore } from "@/stores/location";
 import { AppState } from "@/types/app";
-import { NotificationState } from "@/types/notifications";
 import { PrayerTimesStore } from "@/types/prayerTimes";
 
 // Utils
-import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
+import {
+  cancelAllScheduledNotifications,
+  requestNotificationPermission,
+  scheduleNotification,
+} from "@/utils/notifications";
 import { requestLocationPermission } from "@/utils/location";
 
-export const firstRunSetup = async (appStore: AppState, notificationStore: NotificationState) => {
+export const firstRunSetup = async (appStore: AppState) => {
   try {
-    // Check existing notification permissions(This will update the store state with the current permissions)
-    await notificationStore.refreshPermissions();
-
     // Only request if first run and permissions aren't determined
     if (appStore.isFirstRun) {
-      const grantedNotificationsPermission =
-        await notificationStore.requestNotificationPermission();
-
-      if (!grantedNotificationsPermission) {
-        console.log("User declined initial notifications permission request");
-      }
+      // Request notification permission
+      await requestNotificationPermission();
 
       // Request Location permission
       await requestLocationPermission();

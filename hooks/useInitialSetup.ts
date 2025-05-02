@@ -3,7 +3,6 @@ import * as Sentry from "@sentry/react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
-import { useNotificationStore } from "@/stores/notification";
 // import { useLocationStore } from "@/stores/location";
 // import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
@@ -26,7 +25,6 @@ const initDB = async () => {
 
 export const useInitialSetup = () => {
   const appStore = useAppStore();
-  const notificationStore = useNotificationStore();
   // const locationStore = useLocationStore();
   // const prayerTimesStore = usePrayerTimesStore();
 
@@ -37,7 +35,7 @@ export const useInitialSetup = () => {
       await initDB();
 
       // First run setup(Request notification and location permission)
-      await firstRunSetup(appStore, notificationStore);
+      await firstRunSetup(appStore);
 
       // Every run setup(Fetching data, schedule notifications)
       // await appSetup(locationStore, prayerTimesStore);
