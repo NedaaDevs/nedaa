@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+
 import TimingItem from "@/components/TimingItem";
 
 // Icons
@@ -36,7 +38,11 @@ const OtherTimingsList = () => {
   const { t } = useTranslation();
 
   if (!todayTimings || !todayTimings.otherTimings) {
-    return <Box className="p-4">{t("loadingPrayerTimings")}</Box>;
+    return (
+      <Box className="p-4">
+        <Text>{t("loadingPrayerTimings")}</Text>
+      </Box>
+    );
   }
 
   return (
