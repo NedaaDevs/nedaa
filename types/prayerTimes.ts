@@ -1,22 +1,3 @@
-export type PrayerTimesStoreState = {
-  isLoading: boolean;
-  yesterdayTimings: DayPrayerTimes | null;
-  todayTimings: DayPrayerTimes | null;
-  tomorrowTimings: DayPrayerTimes | null;
-  twoWeeksTimings: DayPrayerTimes[] | null;
-};
-
-export type PrayerTimesStoreActions = {
-  getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
-  getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
-  loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
-  getNextPrayer: () => Prayer | null;
-  getPreviousPrayer: () => Prayer | null;
-  cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
-};
-
-export type PrayerTimesStore = PrayerTimesStoreState & PrayerTimesStoreActions;
-
 export type AllTimings = {
   fajr: string;
   sunrise: string;

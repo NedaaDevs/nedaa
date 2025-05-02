@@ -4,7 +4,13 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
 
 // Types
-import { PrayerName, PrayerTimesResponse, PrayerTimesStore } from "@/types/prayerTimes";
+import {
+  DayPrayerTimes,
+  Prayer,
+  PrayerName,
+  PrayerTimesParams,
+  PrayerTimesResponse,
+} from "@/types/prayerTimes";
 import { ErrorResponse } from "@/types/api";
 
 // Api
@@ -18,6 +24,20 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
+
+export type PrayerTimesStore = {
+  isLoading: boolean;
+  yesterdayTimings: DayPrayerTimes | null;
+  todayTimings: DayPrayerTimes | null;
+  tomorrowTimings: DayPrayerTimes | null;
+  twoWeeksTimings: DayPrayerTimes[] | null;
+  getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
+  getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
+  loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
+  getNextPrayer: () => Prayer | null;
+  getPreviousPrayer: () => Prayer | null;
+  cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
+};
 
 const getTwoWeeksDateRange = (timezone: string) => {
   const now = timeZonedNow(timezone);
@@ -89,7 +109,6 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             // Get location details from location store
             const { locationDetails } = locationStore.getState();
-
             // Get yesterday, today, tomorrow dates
             const now = timeZonedNow(locationDetails.timezone);
             const yesterday = dateToInt(subDays(now, 1));
