@@ -38,7 +38,7 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
 
   return (
     <Box
-      className={`relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 ${isNext ? "bg-outline" : " bg-white"}`}>
+      className={`relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 ${isNext ? "bg-white" : " bg-white"}`}>
       {/* Side indicator  */}
       {isNext && <Box className="absolute top-0 bottom-0 start-0 w-1 bg-secondary" />}
       <HStack className="justify-between items-center relative z-10">
