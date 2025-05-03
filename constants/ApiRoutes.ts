@@ -7,3 +7,7 @@ export const PRAYER_TIMES = {
     return `${this.BASE}/providers`;
   },
 };
+
+export const GEOCODE = {
+  REVERSE: `/reverse-geocode`,
+};
