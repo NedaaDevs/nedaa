@@ -4,8 +4,7 @@ import { Divider } from "@/components/ui/divider";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import Header from "@/components/Header";
-import PrayerTimesList from "@/components/PrayerTimesList";
-import OtherTimingsList from "@/components/OtherTimingsList";
+import TimingsCarousel from "@/components/TimingsCarousel";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -49,14 +48,13 @@ export default function MainScreen() {
   return (
     <SafeAreaView className="flex-1 bg-grey dark:bg-black">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <Box className="my-20">
+        <Box className="flex-1">
           <Header />
           <Divider />
-          {isMainView ? <PrayerTimesList /> : <OtherTimingsList />}
+          <TimingsCarousel mode={mode} />
         </Box>
 
         {/* Testing */}
-        <Divider />
         <Box className="mx-2">
           <Button
             className="rounded-xl bg-info shadow-lg active:opacity-80 h-14 dark:bg-secondary"
@@ -76,16 +74,7 @@ export default function MainScreen() {
             </ButtonText>
           </Button>
         </Box>
-        <Divider className="my-2" />
-        <Box className="mx-2">
-          <Button
-            className="rounded-xl bg-info shadow-lg active:opacity-80 h-14 dark:bg-secondary"
-            onPress={toggleTimings}>
-            <ButtonText className="text-lg font-bold text-center text-background-0 w-full">
-              {t(isMainView ? "prayerTimings" : "otherTimings")}
-            </ButtonText>
-          </Button>
-        </Box>
+
         {/* Testing */}
       </ScrollView>
     </SafeAreaView>
