@@ -1,4 +1,4 @@
-import { LocationObjectCoords, LocationGeocodedAddress } from "expo-location";
+import { LocationObjectCoords } from "expo-location";
 
 // Enum
 import { LocalPermissionStatus } from "@/enums/location";
@@ -8,9 +8,14 @@ export type LocationPermissionsState = {
   canRequestAgain: boolean;
 };
 
+export type Address = {
+  country: string;
+  city: string;
+};
+
 export type LocationDetails = {
   coords: LocationObjectCoords;
-  address: LocationGeocodedAddress | null;
+  address: Address | null;
   timezone: string;
   error: string | null;
   isLoading: boolean;
