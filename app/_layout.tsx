@@ -5,6 +5,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Stores
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
@@ -26,14 +27,16 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode={mode}>
-      <StatusBar />
-      <ToastProvider />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}>
-        <Stack.Screen name="index" />
-      </Stack>
+      <GestureHandlerRootView>
+        <StatusBar />
+        <ToastProvider />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}>
+          <Stack.Screen name="index" />
+        </Stack>
+      </GestureHandlerRootView>
     </GluestackUIProvider>
   );
 }
