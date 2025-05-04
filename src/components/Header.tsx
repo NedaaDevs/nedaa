@@ -74,7 +74,7 @@ const Header = () => {
         <HStack className="justify-start my-2">
           <Icon as={MapPin} size="xs" className="text-right text-white dark:text-secondary" />
           <Text className="text-1xl font-bold text-right text-tertiary ms-2">
-            {locationDetails.address?.city}
+            {locationDetails.address?.city} - {locationDetails.address?.country}
           </Text>
         </HStack>
 
