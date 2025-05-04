@@ -15,6 +15,10 @@ const initSentry = (consent: boolean) => {
     Sentry.init({
       dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       enabled: !__DEV__,
+      // Configure Session Replay
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1,
+      integrations: [Sentry.mobileReplayIntegration()],
     });
   }
 };
@@ -41,6 +45,10 @@ export const useInitialSetup = () => {
       await appSetup(locationStore, prayerTimesStore);
     };
 
-    initializeApp();
+    try {
+      initializeApp();
+    } catch (error) {
+      console.error("App initialization failed: ", error);
+    }
   }, []);
 };
