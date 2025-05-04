@@ -1813,6 +1813,15 @@
     "@react-native-aria/interactions" "0.2.16"
     "@react-native-aria/overlays" "^0.3.15"
 
+"@gluestack-ui/pressable@^0.1.23":
+  version "0.1.23"
+  resolved "https://registry.npmjs.org/@gluestack-ui/pressable/-/pressable-0.1.23.tgz"
+  integrity sha512-y7Sqwwe4+nIM5pECr3UT9qx7MMyuJHt1od6dfB/K+S2X91uZgTJEw7PUQgvOW6Jr8dBrStxFiTWfHmDqX/FVOQ==
+  dependencies:
+    "@gluestack-ui/utils" "^0.1.15"
+    "@react-native-aria/focus" "^0.2.9"
+    "@react-native-aria/interactions" "0.2.16"
+
 "@gluestack-ui/provider@^0.1.19":
   version "0.1.19"
   resolved "https://registry.npmjs.org/@gluestack-ui/provider/-/provider-0.1.19.tgz"
