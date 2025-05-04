@@ -12,7 +12,7 @@ export default function MainScreen() {
   const { mode } = useAppStore();
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView className="bg-grey dark:bg-black" contentContainerStyle={{ flexGrow: 1 }}>
       <TopBar />
       <Box className="flex-1">
         <Header />

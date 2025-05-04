@@ -28,7 +28,7 @@ export default function RootLayout() {
   return (
     <GluestackUIProvider mode={mode}>
       <GestureHandlerRootView>
-        <SafeAreaView className="flex-1 bg-grey dark:bg-black">
+        <SafeAreaView className="flex-1">
           <StatusBar />
           <ToastProvider />
           <Stack
