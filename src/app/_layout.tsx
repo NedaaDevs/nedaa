@@ -3,6 +3,7 @@ import "@/localization/i18n";
 
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -24,18 +25,19 @@ export default function RootLayout() {
   useRTLSetup(shouldBeRTL);
 
   useInitialSetup();
-
   return (
     <GluestackUIProvider mode={mode}>
       <GestureHandlerRootView>
-        <StatusBar />
-        <ToastProvider />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}>
-          <Stack.Screen name="index" />
-        </Stack>
+        <SafeAreaView className="flex-1 bg-grey dark:bg-black">
+          <StatusBar />
+          <ToastProvider />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}>
+            <Stack.Screen name="index" />
+          </Stack>
+        </SafeAreaView>
       </GestureHandlerRootView>
     </GluestackUIProvider>
   );
