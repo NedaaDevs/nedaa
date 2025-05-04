@@ -36,7 +36,7 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   };
 
   return (
-    <Box className="px-4 py-3 flex flex-row items-center bg-primary-900">
+    <Box className="px-4 py-3 flex flex-row items-center bg-primary">
       <Box className="w-10">
         {backOnClick && (
           <Pressable onPress={handlePress}>
