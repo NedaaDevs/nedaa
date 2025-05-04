@@ -18,7 +18,7 @@ type Props = {
 };
 
 const SettingsItem = ({ name, path, icon }: Props) => (
-  <Box className="relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 bg-white">
+  <Box className="relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 bg-white border border-gray-200 dark:border-gray-700">
     <Link href={path} asChild>
       <Pressable className="flex-row items-center space-x-2">
         <HStack className="justify-between items-center relative z-10">
