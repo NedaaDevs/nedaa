@@ -40,20 +40,24 @@ const LanguageList = () => {
   };
 
   return (
-    <Box className="bg-white dark:bg-gray-800 mt-2">
+    <Box className="bg-white dark:bg-gray-800 mt-2 rounded-lg">
       <ActionsheetFlatList
         data={localeData}
-        renderItem={({ item }: any) => (
+        renderItem={({ item, index }: any) => (
           <Pressable
             onPress={() => handleSelectLanguage(item)}
-            className="py-4 px-4 flex-row justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            className={`py-4 px-4 flex-row justify-between items-center ${
+              index < localeData.length - 1 ? "border-b border-gray-200 dark:border-gray-700" : ""
+            }`}>
             <Box>
               <Text className="text-lg font-semibold text-typography dark:text-tertiary">
                 {item.title}
               </Text>
               <Text className="text-base text-gray-500 dark:text-gray-400">{item.nativeTitle}</Text>
             </Box>
-            {locale === item.id && <Icon as={Check} size="md" color="#3478F6" />}
+            {locale === item.id && (
+              <Icon as={Check} className="color-primary dark:color-secondary" size="md" />
+            )}
           </Pressable>
         )}
         keyExtractor={(item: any) => item.id}
