@@ -22,6 +22,21 @@
   "imsak": "إمساك",
   "isha": "العشاء",
   "jumuah": "الجمعة",
+  "language": "اللغة",
+  "languages": {
+    "ar": {
+      "nativeTitle": "العربية",
+      "title": "العربية"
+    },
+    "en": {
+      "nativeTitle": "English",
+      "title": "الإنجليزية"
+    },
+    "ms": {
+      "nativeTitle": "Bahasa Melayu",
+      "title": "الملايو"
+    }
+  },
   "lastThird": "الثلث الأخير",
   "light": "فاتح",
   "loadingPrayerTimes": "جاري تحميل أوقات الصلاة...",
@@ -32,6 +47,7 @@
   "nedaa": "نِداء",
   "otherTimings": "أوقات أخرى",
   "prayerTimings": "أوقات الصلاة",
+  "settings": "الإعدادات",
   "sunrise": "شروق الشمس",
   "sunset": "غروب الشمس",
   "system": "النظام"

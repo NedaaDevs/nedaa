@@ -22,6 +22,21 @@
   "imsak": "Imsak",
   "isha": "Isha",
   "jumuah": "Jumu’ah",
+  "language": "Language",
+  "languages": {
+    "ar": {
+      "nativeTitle": "العربية",
+      "title": "Arabic"
+    },
+    "en": {
+      "nativeTitle": "English",
+      "title": "English"
+    },
+    "ms": {
+      "nativeTitle": "Bahasa Melayu",
+      "title": "Malay"
+    }
+  },
   "lastThird": "Last Third",
   "light": "Light",
   "loadingPrayerTimes": "Loading prayer times...",
@@ -32,6 +47,7 @@
   "nedaa": "Nedaa",
   "otherTimings": "Other Times",
   "prayerTimings": "Prayer Times",
+  "settings": "Settings",
   "sunrise": "Sunrise",
   "sunset": "Sunset",
   "system": "System"
