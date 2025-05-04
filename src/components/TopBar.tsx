@@ -24,6 +24,7 @@ type Props = {
 
 const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   const router = useRouter();
+  const { t } = useTranslation();
   const isRTL = I18nManager.isRTL;
 
   // Determine which arrow to show based on RTL/LTR
@@ -46,7 +47,7 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
       </Box>
 
       <Box className="flex-1 items-center">
-        <Text className="text-xl font-bold text-white">{title}</Text>
+        <Text className="text-xl font-bold text-white">{t(title)}</Text>
       </Box>
 
       <Box className="w-10 items-end">

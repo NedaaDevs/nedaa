@@ -22,7 +22,7 @@ export default function MainScreen() {
 
   return (
     <ScrollView className="bg-grey dark:bg-black" contentContainerStyle={{ flexGrow: 1 }}>
-      <TopBar title={t("nedaa")} href="/settings" icon={Settings} />
+      <TopBar title="nedaa" href="/settings" icon={Settings} />
       <Box className="flex-1">
         <Header />
         <Divider />
