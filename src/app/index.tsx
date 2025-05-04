@@ -2,6 +2,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView } from "react-native";
 import { Divider } from "@/components/ui/divider";
 import { Box } from "@/components/ui/box";
+import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
 
@@ -14,6 +15,7 @@ export default function MainScreen() {
   return (
     <SafeAreaView className="flex-1 bg-grey dark:bg-black">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <TopBar />
         <Box className="flex-1">
           <Header />
           <Divider />
