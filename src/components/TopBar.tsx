@@ -18,12 +18,11 @@ import type { Href } from "expo-router";
 type Props = {
   href: Href;
   title: string;
-  icon: any;
+  icon?: any;
   backOnClick?: boolean;
 };
 
 const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
-  const { t } = useTranslation();
   const router = useRouter();
   const isRTL = I18nManager.isRTL;
 
