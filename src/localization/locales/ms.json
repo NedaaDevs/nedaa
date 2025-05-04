@@ -1,4 +1,5 @@
 {
+  "appearance": "Penampilan",
   "asr": "Asar",
   "dark": "Gelap",
   "date": "Jumaat, 14 Ramadan 1443 Hijrah",
@@ -50,5 +51,19 @@
   "settings": "Tetapan",
   "sunrise": "Matahari Terbit",
   "sunset": "Matahari Terbenam",
-  "system": "Sistem"
+  "system": "Sistem",
+  "themes": {
+    "dark": {
+      "description": "Sentiasa gunakan penampilan gelap",
+      "title": "Gelap"
+    },
+    "light": {
+      "description": "Sentiasa gunakan penampilan cerah",
+      "title": "Cerah"
+    },
+    "system": {
+      "description": "Ikut tetapan sistem",
+      "title": "Sistem"
+    }
+  }
 }

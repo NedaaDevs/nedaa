@@ -1,4 +1,5 @@
 {
+  "appearance": "Appearance",
   "asr": "Asr",
   "dark": "Dark",
   "date": "Friday, 14 Ramadan 1443 AH",
@@ -50,5 +51,19 @@
   "settings": "Settings",
   "sunrise": "Sunrise",
   "sunset": "Sunset",
-  "system": "System"
+  "system": "System",
+  "themes": {
+    "dark": {
+      "description": "Always use dark appearance",
+      "title": "Dark"
+    },
+    "light": {
+      "description": "Always use light appearance",
+      "title": "Light"
+    },
+    "system": {
+      "description": "Follow system appearance",
+      "title": "System"
+    }
+  }
 }
