@@ -1,4 +1,5 @@
 import gluestackPlugin from "@gluestack-ui/nativewind-utils/tailwind-plugin";
+import fontPlugin from "./src/plugins/fontPlugin";
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -10,6 +11,11 @@ module.exports = {
       pattern:
         /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|typography|outline|background|indicator)/,
     },
+    // Add font-related classes to safelist
+    "font-regular",
+    "font-medium",
+    "font-semibold",
+    "font-bold",
   ],
   theme: {
     extend: {
@@ -45,10 +51,13 @@ module.exports = {
         },
       },
       fontFamily: {
-        heading: undefined,
-        body: undefined,
-        mono: undefined,
-        roboto: ["Roboto", "sans-serif"],
+        "robot-regular": "Roboto-Regular",
+        "robot-medium": "Roboto-Medium",
+        "robot-bold": "Roboto-Bold",
+        "robot-semibold": "Roboto-SemiBold",
+        "tajawal-regular": "Tajawal-Regular",
+        "tajawal-medium": "Tajawal-Medium",
+        "tajawal-bold": "Tajawal-Bold",
       },
       fontWeight: {
         extrablack: "950",
@@ -69,5 +78,5 @@ module.exports = {
       },
     },
   },
-  plugins: [gluestackPlugin],
+  plugins: [gluestackPlugin, fontPlugin],
 };
