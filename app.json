@@ -85,7 +85,8 @@
           "color": "#ffffff",
           "mode": "production"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
