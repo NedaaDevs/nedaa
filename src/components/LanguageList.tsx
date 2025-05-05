@@ -16,6 +16,7 @@ import { AppLocale } from "@/enums/app";
 
 // Stores
 import { useAppStore } from "@/stores/app";
+import { useLocationStore } from "@/stores/location";
 
 type ItemType = {
   id: AppLocale;
@@ -25,6 +26,7 @@ type ItemType = {
 
 const LanguageList = () => {
   const { locale, setLocale } = useAppStore();
+  const { updateAddressTranslation } = useLocationStore();
   const { t } = useTranslation();
 
   const localeData: ItemType[] = Object.values(AppLocale).map((localeCode) => {
@@ -35,8 +37,12 @@ const LanguageList = () => {
     };
   });
 
-  const handleSelectLanguage = (item: ItemType) => {
-    setLocale(item.id);
+  const handleSelectLanguage = async (item: ItemType) => {
+    await setLocale(item.id);
+
+    if (item.id !== locale) {
+      await updateAddressTranslation();
+    }
   };
 
   return (
@@ -45,7 +51,7 @@ const LanguageList = () => {
         data={localeData}
         renderItem={({ item, index }: any) => (
           <Pressable
-            onPress={() => handleSelectLanguage(item)}
+            onPress={async () => await handleSelectLanguage(item)}
             className={`py-4 px-4 flex-row justify-between items-center ${
               index < localeData.length - 1 ? "border-b border-gray-200 dark:border-gray-700" : ""
             }`}>
