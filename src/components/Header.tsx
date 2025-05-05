@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { format, parseISO, formatDistance } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { toHijri } from "hijri-date-converter";
 import { useTranslation } from "react-i18next";
@@ -17,10 +17,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Icon } from "@/components/ui/icon";
-
-// Icon
-import { MapPin } from "lucide-react-native";
+import { Divider } from "@/components/ui/divider";
 
 const Header = () => {
   const { t } = useTranslation();
@@ -29,25 +26,35 @@ const Header = () => {
   const { getNextPrayer } = usePrayerTimesStore();
 
   const nextPrayer = getNextPrayer();
-
   const now = timeZonedNow(locationDetails.timezone);
   const hijriDate = toHijri(now);
 
-  // Format day name  "Friday"
+  // Get human-readable time remaining
+  const getFormattedTimeRemaining = () => {
+    if (!nextPrayer) return "";
+    const prayerTime = parseISO(nextPrayer.time);
+    const timeRemaining = formatDistance(prayerTime, now, {
+      addSuffix: false,
+      locale: getDateLocale(locale),
+    });
+    return formatNumberToLocale(timeRemaining);
+  };
+
+  // Format day name "Friday"
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
   // Get localized month name "رمضان or Ramadan"
   const hijriMonth = t(`hijriMonths.${hijriDate.month - 1}`);
 
-  // Format numbers 1=١ for Arabic locale
+  // Format numbers for Arabic locale
   const formattedDay = formatNumberToLocale(hijriDate.day.toString());
   const formattedYear = formatNumberToLocale(hijriDate.year.toString());
 
-  const formattedDate = `${dayName}, ${formattedDay} ${hijriMonth} ${formattedYear}`;
+  // Format date components separately now
+  const formattedDateDetails = `${formattedDay} ${hijriMonth} ${formattedYear}`;
 
   const formattedPrayerTime = (date: string) => {
     const parsedDate = parseISO(date);
-
     return formatNumberToLocale(
       formatInTimeZone(parsedDate, locationDetails.timezone, "h:mm a", {
         locale: getDateLocale(locale),
@@ -67,25 +74,44 @@ const Header = () => {
     nextPrayer.name === "dhuhr" && isFriday(locationDetails.timezone) ? "jumuah" : nextPrayer.name;
 
   return (
-    <Box className="m-2 p-4 rounded-lg bg-background">
-      <VStack className="items-start space-y-3">
-        <Text className="text-2xl text-right text-white dark:text-secondary">{formattedDate}</Text>
+    <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md overflow-hidden">
+      <Box className="p-5 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2">
+        <HStack className="justify-between items-center w-full">
+          <Text className="text-4xl font-bold text-slate-700 dark:text-white">{t(prayerName)}</Text>
 
-        <HStack className="justify-start my-2">
-          <Icon as={MapPin} size="xs" className="text-right text-white dark:text-secondary" />
-          <Text className="text-1xl font-bold text-right text-tertiary ms-2">
-            {locationDetails.address?.city} - {locationDetails.address?.country}
-          </Text>
-        </HStack>
+          <Divider className="h-12 w-px bg-slate-300 dark:bg-slate-600 mx-2" />
 
-        {nextPrayer && (
-          <HStack className="justify-start w-full">
-            <Text className="text-4xl font-bold text-tertiary pr-3">{t(prayerName)}</Text>
-            <Text className="text-4xl font-bold text-tertiary  pl-3">
+          <VStack className="items-end">
+            <Text className="text-4xl font-bold text-blue-600 dark:text-amber-400">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
-          </HStack>
-        )}
+
+            <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-amber-500">
+              <Text className="text-sm text-blue-600 dark:text-amber-400">
+                {getFormattedTimeRemaining()}
+              </Text>
+            </Box>
+          </VStack>
+        </HStack>
+      </Box>
+
+      <VStack className="items-center my-3">
+        <Text className="text-xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
+        <Text className="text-base text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>
+      </VStack>
+
+      <VStack className="items-center mb-3">
+        <HStack className="items-center justify-center w-full px-8">
+          <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <Text className="mx-4 text-xl font-medium text-slate-600 dark:text-slate-300">
+            {locationDetails.address?.city}
+          </Text>
+          <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        </HStack>
+
+        <Text className="text-sm text-slate-400 dark:text-slate-500">
+          {locationDetails.address?.country}
+        </Text>
       </VStack>
     </Box>
   );
