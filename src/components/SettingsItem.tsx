@@ -1,5 +1,6 @@
 // Plugins
 import { Link } from "expo-router";
+import { I18nManager } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -8,6 +9,9 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 
+// Icons
+import { ChevronRight, ChevronLeft } from "lucide-react-native";
+
 // Types
 import type { Href } from "expo-router";
 
@@ -15,25 +19,34 @@ type Props = {
   name: string;
   path: Href;
   icon?: any;
+  rtl?: boolean;
 };
 
-const SettingsItem = ({ name, path, icon }: Props) => (
-  <Box className="relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 bg-white border border-gray-200 dark:border-gray-700">
-    <Link href={path} asChild>
-      <Pressable className="flex-row items-center space-x-2">
-        <HStack className="justify-between items-center relative z-10">
-          <HStack className="items-center space-x-3">
-            {icon && (
-              <Icon className="font-bold text-typography dark:text-tertiary mr-5" as={icon}></Icon>
-            )}
-            <Text className="mx-2 text-lg font-medium text-primary dark:text-secondary">
-              {name}
-            </Text>
+const SettingsItem = ({ name, path, icon, rtl = I18nManager.isRTL }: Props) => {
+  const ChevronIcon = rtl ? ChevronLeft : ChevronRight;
+
+  return (
+    <Box className="relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 bg-white border border-gray-200 dark:border-gray-700">
+      <Link href={path} asChild>
+        <Pressable className="flex-row items-center space-x-2">
+          <HStack className="justify-between items-center relative z-10 w-full">
+            <HStack className="items-center space-x-3">
+              {icon && (
+                <Icon
+                  className="font-bold text-typography dark:text-tertiary mr-5"
+                  as={icon}></Icon>
+              )}
+              <Text className="mx-2 text-lg font-medium text-primary dark:text-secondary">
+                {name}
+              </Text>
+            </HStack>
+
+            <Icon size="lg" className="text-gray-400" as={ChevronIcon} />
           </HStack>
-        </HStack>
-      </Pressable>
-    </Link>
-  </Box>
-);
+        </Pressable>
+      </Link>
+    </Box>
+  );
+};
 
 export default SettingsItem;
