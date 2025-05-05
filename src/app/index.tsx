@@ -7,9 +7,6 @@ import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
 
-// Plugins
-import { useTranslation } from "react-i18next";
-
 // Stores
 import { useAppStore } from "@/stores/app";
 
@@ -17,8 +14,6 @@ import { useAppStore } from "@/stores/app";
 import { Settings } from "lucide-react-native";
 export default function MainScreen() {
   const { mode } = useAppStore();
-
-  const { t } = useTranslation();
 
   return (
     <ScrollView className="bg-grey dark:bg-black" contentContainerStyle={{ flexGrow: 1 }}>
