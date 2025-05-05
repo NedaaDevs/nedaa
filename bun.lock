@@ -4,6 +4,8 @@
     "": {
       "name": "nedaa",
       "dependencies": {
+        "@expo-google-fonts/roboto": "^0.3.0",
+        "@expo-google-fonts/tajawal": "^0.3.1",
         "@expo/html-elements": "^0.4.2",
         "@expo/vector-icons": "^14.1.0",
         "@gluestack-ui/actionsheet": "^0.2.53",
@@ -349,6 +351,10 @@
     "@eslint/eslintrc": ["@eslint/eslintrc@2.1.4", "", { "dependencies": { "ajv": "^6.12.4", "debug": "^4.3.2", "espree": "^9.6.0", "globals": "^13.19.0", "ignore": "^5.2.0", "import-fresh": "^3.2.1", "js-yaml": "^4.1.0", "minimatch": "^3.1.2", "strip-json-comments": "^3.1.1" } }, "sha512-269Z39MS6wVJtsoUl10L60WdkhJVdPG24Q4eZTH3nnF6lpvSShEK3wQjDX9JRWAUPvPh7COouPpU9IrqaZFvtQ=="],
 
     "@eslint/js": ["@eslint/js@8.57.1", "", {}, "sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q=="],
+
+    "@expo-google-fonts/roboto": ["@expo-google-fonts/roboto@0.3.0", "", {}, "sha512-+/cmb6N/NDsFanV469ri52C/kz0QWYWnNBi9miKLSlTVpA3EJeLro3mmBxmZxH/N9PRRpoFZ6+dmwkOxh/jbZg=="],
+
+    "@expo-google-fonts/tajawal": ["@expo-google-fonts/tajawal@0.3.1", "", {}, "sha512-LGzl1KkldQ78ZXiWra6Zt2GJparX6akGmO0LmyKD4Xz2SOSDwfQq6CDMuY5dXCn3Ook3H3y8TPOHlhmu1VasWg=="],
 
     "@expo/bunyan": ["@expo/bunyan@4.0.1", "", { "dependencies": { "uuid": "^8.0.0" } }, "sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg=="],
 
