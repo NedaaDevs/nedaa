@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import FontProvider from "@/contexts/FontContext";
 
 // Stores
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
@@ -27,20 +28,23 @@ export default function RootLayout() {
 
   useLoadFonts();
   useInitialSetup();
+
   return (
     <GluestackUIProvider mode={mode}>
-      <GestureHandlerRootView>
-        <SafeAreaView className="flex-1">
-          <StatusBar />
-          <ToastProvider />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}>
-            <Stack.Screen name="index" />
-          </Stack>
-        </SafeAreaView>
-      </GestureHandlerRootView>
+      <FontProvider>
+        <GestureHandlerRootView>
+          <SafeAreaView className="flex-1">
+            <StatusBar />
+            <ToastProvider />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}>
+              <Stack.Screen name="index" />
+            </Stack>
+          </SafeAreaView>
+        </GestureHandlerRootView>
+      </FontProvider>
     </GluestackUIProvider>
   );
 }
