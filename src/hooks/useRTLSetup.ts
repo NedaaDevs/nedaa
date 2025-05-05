@@ -8,7 +8,7 @@ export const useRTLSetup = (shouldBeRTL: boolean) => {
       I18nManager.allowRTL(shouldBeRTL);
       I18nManager.forceRTL(shouldBeRTL);
       I18nManager.swapLeftAndRightInRTL(shouldBeRTL);
-      RNRestart.restart();
+      // RNRestart.restart();
     }
   }, [shouldBeRTL]);
 };
