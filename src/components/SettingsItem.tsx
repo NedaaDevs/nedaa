@@ -20,9 +20,10 @@ type Props = {
   path: Href;
   icon?: any;
   rtl?: boolean;
+  currentValue?: string;
 };
 
-const SettingsItem = ({ name, path, icon, rtl = I18nManager.isRTL }: Props) => {
+const SettingsItem = ({ name, path, icon, currentValue, rtl = I18nManager.isRTL }: Props) => {
   const ChevronIcon = rtl ? ChevronLeft : ChevronRight;
 
   return (
@@ -42,7 +43,14 @@ const SettingsItem = ({ name, path, icon, rtl = I18nManager.isRTL }: Props) => {
               <Text className="text-xl font-medium text-primary dark:text-secondary">{name}</Text>
             </HStack>
 
-            <Icon size="xl" className="text-gray-400" as={ChevronIcon} />
+            <HStack className="items-center">
+              {currentValue && (
+                <Text className="text-lg text-gray-500 dark:text-gray-400 mr-2">
+                  {currentValue}
+                </Text>
+              )}
+              <Icon size="xl" className="text-gray-400" as={ChevronIcon} />
+            </HStack>
           </HStack>
         </Pressable>
       </Link>
