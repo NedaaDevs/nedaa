@@ -1,9 +1,21 @@
 {
   "appearance": "Appearance",
   "asr": "Asr",
+  "crashReporting": {
+    "accessibilityHint": "Opens modal for crash reporting consent",
+    "accessibilityLabel": "Crash reporting settings",
+    "bullet1": "• Technical error information",
+    "bullet2": "• Device model and operating system",
+    "bullet3": "• App version and configuration",
+    "description": "We collect crash reports that help us improve the app by identifying issues. These reports include:",
+    "enableToggle": "Enable crash reporting",
+    "privacyNote": "No personal data or user content is collected. You can opt out at any time.",
+    "title": "Crash Reporting"
+  },
   "dark": "Dark",
   "date": "Friday, 14 Ramadan 1443 AH",
   "dhuhr": "Dhuhr",
+  "done": "Done",
   "fajr": "Fajr",
   "firstThird": "First Third",
   "hijriMonths": [
@@ -42,6 +54,7 @@
   "light": "Light",
   "loadingPrayerTimes": "Loading prayer times...",
   "locale": "Language",
+  "logo": "Logo",
   "maghrib": "Maghrib",
   "midnight": "Midnight",
   "mode": "Mode",

@@ -1,9 +1,21 @@
 {
   "appearance": "Penampilan",
   "asr": "Asar",
+  "crashReporting": {
+    "accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
+    "accessibilityLabel": "Tetapan laporan kerosakan",
+    "bullet1": "• Maklumat ralat teknikal",
+    "bullet2": "• Model peranti dan sistem operasi",
+    "bullet3": "• Versi aplikasi dan konfigurasi",
+    "description": "Kami mengumpul laporan kerosakan yang membantu kami meningkatkan aplikasi dengan mengenal pasti masalah. Laporan ini termasuk:",
+    "enableToggle": "Aktifkan laporan kerosakan",
+    "privacyNote": "Tiada data peribadi atau kandungan pengguna yang dikumpulkan. Anda boleh menarik diri pada bila-bila masa.",
+    "title": "Laporan Kerosakan"
+  },
   "dark": "Gelap",
   "date": "Jumaat, 14 Ramadan 1443 Hijrah",
   "dhuhr": "Zohor",
+  "done": "Selesai",
   "fajr": "Subuh",
   "firstThird": "Sepertiga Pertama",
   "hijriMonths": [
@@ -42,6 +54,7 @@
   "light": "Cerah",
   "loadingPrayerTimes": "Memuatkan waktu solat...",
   "locale": "Bahasa",
+  "logo": "Logo",
   "maghrib": "Maghrib",
   "midnight": "Tengah Malam",
   "mode": "Mod",
