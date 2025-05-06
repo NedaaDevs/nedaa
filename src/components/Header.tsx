@@ -75,26 +75,6 @@ const Header = () => {
 
   return (
     <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md overflow-hidden">
-      <Box className="p-5 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2">
-        <HStack className="justify-between items-center w-full">
-          <Text className="text-4xl font-bold text-slate-700 dark:text-white">{t(prayerName)}</Text>
-
-          <Divider className="h-12 w-px bg-slate-300 dark:bg-slate-600 mx-2" />
-
-          <VStack className="items-end">
-            <Text className="text-4xl font-bold text-blue-600 dark:text-amber-400">
-              {formattedPrayerTime(nextPrayer.time)}
-            </Text>
-
-            <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-amber-500">
-              <Text className="text-sm text-blue-600 dark:text-amber-400">
-                {getFormattedTimeRemaining()}
-              </Text>
-            </Box>
-          </VStack>
-        </HStack>
-      </Box>
-
       <VStack className="items-center my-3">
         <Text className="text-xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
         <Text className="text-base text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>
@@ -113,6 +93,26 @@ const Header = () => {
           {locationDetails.address?.country}
         </Text>
       </VStack>
+
+      <Box className="p-5 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2 border-s-hairline">
+        <HStack className="justify-between items-center w-full">
+          <Text className="text-4xl font-bold text-slate-700 dark:text-white">{t(prayerName)}</Text>
+
+          <Divider className="h-12 w-px bg-slate-300 dark:bg-slate-600 mx-2" />
+
+          <VStack className="items-end">
+            <Text className="text-4xl font-bold text-blue-600 dark:text-amber-400">
+              {formattedPrayerTime(nextPrayer.time)}
+            </Text>
+
+            <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-amber-500">
+              <Text className="text-sm text-blue-600 dark:text-amber-400">
+                {getFormattedTimeRemaining()}
+              </Text>
+            </Box>
+          </VStack>
+        </HStack>
+      </Box>
     </Box>
   );
 };
