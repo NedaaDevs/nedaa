@@ -56,13 +56,13 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
           </Box>
 
           <Text
-            className={`mx-2 text-lg font-medium ${isNext ? "text-secondary font-bold" : "text-typography dark:text-tertiary"}`}>
+            className={`mx-2 text-xl font-medium ${isNext ? "text-secondary font-bold" : "text-typography dark:text-tertiary"}`}>
             {t(name)}
           </Text>
         </HStack>
 
         <Text
-          className={`text-lg  ${isNext ? "text-secondary font-bold" : "font-medium text-typography dark:text-tertiary"}`}>
+          className={`text-xl ${isNext ? "text-secondary font-bold" : "font-medium text-typography dark:text-tertiary"}`}>
           {formattedPrayerTime(time)}
         </Text>
       </HStack>
