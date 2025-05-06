@@ -16,16 +16,16 @@ export const FONT_MAPPINGS = {
     bold: "Zain-Bold",
   },
   [AppLocale.EN]: {
-    regular: "Roboto-Regular",
-    medium: "Roboto-Medium",
-    semibold: "Roboto-SemiBold",
-    bold: "Roboto-Bold",
+    regular: "Fredoka-Regular",
+    medium: "Fredoka-Medium",
+    semibold: "Fredoka-SemiBold",
+    bold: "Fredoka-Bold",
   },
   [AppLocale.MS]: {
-    regular: "Roboto-Regular",
-    medium: "Roboto-Medium",
-    semibold: "Roboto-SemiBold",
-    bold: "Roboto-Bold",
+    regular: "Fredoka-Regular",
+    medium: "Fredoka-Medium",
+    semibold: "Fredoka-SemiBold",
+    bold: "Fredoka-Bold",
   },
 };
 
@@ -38,7 +38,7 @@ interface FontContextType {
 const FontContext = createContext<FontContextType>({
   fontFamily: FONT_MAPPINGS[AppLocale.EN],
   locale: AppLocale.EN,
-  getFontFamily: () => "Roboto-Regular",
+  getFontFamily: () => "Fredoka-Regular",
 });
 
 interface FontProviderProps {
