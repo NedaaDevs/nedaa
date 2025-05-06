@@ -1814,6 +1814,15 @@
     "@gluestack-ui/utils" "^0.1.14"
     "@react-native-aria/focus" "^0.2.9"
 
+"@gluestack-ui/image@^0.1.17":
+  version "0.1.17"
+  resolved "https://registry.npmjs.org/@gluestack-ui/image/-/image-0.1.17.tgz"
+  integrity sha512-hcyTVBUw55bSjEpyynIZJVm3Ff6lcjKXFT55f890oy2PNGyFdsKr6V+t/jy5n/2fwbv1eR2KU0uDDiI2vmBh+A==
+  dependencies:
+    "@gluestack-ui/utils" "^0.1.15"
+    "@react-native-aria/focus" "^0.2.9"
+    "@react-native-aria/interactions" "0.2.16"
+
 "@gluestack-ui/nativewind-utils@^1.0.26":
   version "1.0.26"
   resolved "https://registry.npmjs.org/@gluestack-ui/nativewind-utils/-/nativewind-utils-1.0.26.tgz"
