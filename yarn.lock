@@ -1296,10 +1296,10 @@
   resolved "https://registry.npmjs.org/@eslint/js/-/js-8.57.1.tgz"
   integrity sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==
 
-"@expo-google-fonts/roboto@^0.3.0":
+"@expo-google-fonts/fredoka@^0.3.0":
   version "0.3.0"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/roboto/-/roboto-0.3.0.tgz"
-  integrity sha512-+/cmb6N/NDsFanV469ri52C/kz0QWYWnNBi9miKLSlTVpA3EJeLro3mmBxmZxH/N9PRRpoFZ6+dmwkOxh/jbZg==
+  resolved "https://registry.npmjs.org/@expo-google-fonts/fredoka/-/fredoka-0.3.0.tgz"
+  integrity sha512-aRbilfwkCFmlBpLuByTUIB/iZLN5ysyQuvNvy8wEpld4Qf+iaweUxIGo6cRiA2NTCimDujSxXcW7+RY+hmIpPg==
 
 "@expo-google-fonts/zain@^0.3.0":
   version "0.3.0"
