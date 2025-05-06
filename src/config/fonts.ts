@@ -1,5 +1,5 @@
 import { useFonts } from "expo-font";
-import { Tajawal_400Regular, Tajawal_500Medium, Tajawal_700Bold } from "@expo-google-fonts/tajawal";
+import { Zain_400Regular, Zain_700Bold } from "@expo-google-fonts/zain";
 import {
   Roboto_400Regular,
   Roboto_500Medium,
@@ -9,15 +9,15 @@ import {
 
 // Font family constants
 export const FontFamily = {
-  TAJAWAL: "Tajawal",
+  ZAIN: "Zain",
   ROBOTO: "Roboto",
 };
 
-// Tajwal font weights
-export const TajwalFonts = {
-  400: "Tajawal-Regular",
-  500: "Tajawal-Medium",
-  700: "Tajawal-Bold",
+// Zain font weights
+export const ZainFonts = {
+  400: "Zain-Regular",
+  500: "Zain-Medium",
+  700: "Zain-Bold",
 };
 
 // Roboto font weights
@@ -30,10 +30,10 @@ export const RobotoFonts = {
 
 export const useLoadFonts = () => {
   return useFonts({
-    // Tajawal fonts
-    "Tajawal-Regular": Tajawal_400Regular,
-    "Tajawal-Medium": Tajawal_500Medium,
-    "Tajawal-Bold": Tajawal_700Bold,
+    // Zain fonts
+    "Zain-Regular": Zain_400Regular,
+    "Zain-Medium": Zain_400Regular, // Medium not available
+    "Zain-Bold": Zain_700Bold,
 
     // Roboto fonts
     "Roboto-Regular": Roboto_400Regular,

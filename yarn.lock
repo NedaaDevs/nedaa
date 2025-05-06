@@ -1301,10 +1301,10 @@
   resolved "https://registry.npmjs.org/@expo-google-fonts/roboto/-/roboto-0.3.0.tgz"
   integrity sha512-+/cmb6N/NDsFanV469ri52C/kz0QWYWnNBi9miKLSlTVpA3EJeLro3mmBxmZxH/N9PRRpoFZ6+dmwkOxh/jbZg==
 
-"@expo-google-fonts/tajawal@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/tajawal/-/tajawal-0.3.1.tgz"
-  integrity sha512-LGzl1KkldQ78ZXiWra6Zt2GJparX6akGmO0LmyKD4Xz2SOSDwfQq6CDMuY5dXCn3Ook3H3y8TPOHlhmu1VasWg==
+"@expo-google-fonts/zain@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.npmjs.org/@expo-google-fonts/zain/-/zain-0.3.0.tgz"
+  integrity sha512-Pu4ebSxJH9UIva+GbWiEy+s7IyQZe/m3Pis4N8hqGL6Yix/UGD2Aug8j9Sbhe55GcW/aD9X5pFZdhZ23pKEt9w==
 
 "@expo/bunyan@^4.0.0":
   version "4.0.1"

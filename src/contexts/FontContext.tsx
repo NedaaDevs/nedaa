@@ -10,10 +10,10 @@ export type FontWeight = "regular" | "medium" | "semibold" | "bold";
 
 export const FONT_MAPPINGS = {
   [AppLocale.AR]: {
-    regular: "Tajawal-Regular",
-    medium: "Tajawal-Medium",
-    semibold: "Tajawal-Medium", // Tajawal doesn't have semibold, use medium
-    bold: "Tajawal-Bold",
+    regular: "Zain-Regular",
+    medium: "Zain-Regular",
+    semibold: "Zain-Regular", // Zain doesn't have semibold or mediums
+    bold: "Zain-Bold",
   },
   [AppLocale.EN]: {
     regular: "Roboto-Regular",

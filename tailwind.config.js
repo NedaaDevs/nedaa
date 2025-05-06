@@ -55,9 +55,9 @@ module.exports = {
         "robot-medium": "Roboto-Medium",
         "robot-bold": "Roboto-Bold",
         "robot-semibold": "Roboto-SemiBold",
-        "tajawal-regular": "Tajawal-Regular",
-        "tajawal-medium": "Tajawal-Medium",
-        "tajawal-bold": "Tajawal-Bold",
+        "zain-regular": "Zain-Regular",
+        "zain-medium": "Zain-Regular",
+        "zain-bold": "Zain-Bold",
       },
       fontWeight: {
         extrablack: "950",

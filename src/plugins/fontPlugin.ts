@@ -2,7 +2,7 @@ import plugin from "tailwindcss/plugin";
 
 /**
  * Plugin that creates dynamic font utilities that respect the current locale
- * - Uses Tajawal for Arabic locale
+ * - Uses Zain for Arabic locale
  * - Uses Roboto for all other locales
  *
  * This allows using classes like font-regular, font-medium, font-semibold, font-bold
