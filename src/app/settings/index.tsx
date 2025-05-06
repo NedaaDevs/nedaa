@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Divider } from "@/components/ui/divider";
 import TopBar from "@/components/TopBar";
 import SettingsItem from "@/components/SettingsItem";
+import SettingsFooter from "@/components/SettingsFooter";
 
 // Icons
 import { Languages, Palette } from "lucide-react-native";
@@ -36,6 +37,9 @@ const SettingsScreen = () => {
         icon={Palette}
         currentValue={t(`themes.${mode}.title`)}
       />
+
+      {/* Footer */}
+      <SettingsFooter />
     </ScrollView>
   );
 };
