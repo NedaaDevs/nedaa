@@ -12,6 +12,7 @@
         "@gluestack-ui/button": "^1.0.14",
         "@gluestack-ui/icon": "^0.1.27",
         "@gluestack-ui/image": "^0.1.17",
+        "@gluestack-ui/modal": "^0.1.41",
         "@gluestack-ui/nativewind-utils": "^1.0.26",
         "@gluestack-ui/overlay": "^0.1.22",
         "@gluestack-ui/pressable": "^0.1.23",
@@ -428,6 +429,8 @@
     "@gluestack-ui/icon": ["@gluestack-ui/icon@0.1.27", "", { "dependencies": { "@gluestack-ui/provider": "^0.1.19", "@gluestack-ui/utils": "^0.1.14", "@react-native-aria/focus": "^0.2.9" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-mIsfgdVUihtRORoeDxn3kMFph5XOXK+Scnj1JXLufbt7h9kbfaZLGhYDc9cp2zpPc1Xki9SC1yXYfw8y4FAAdA=="],
 
     "@gluestack-ui/image": ["@gluestack-ui/image@0.1.17", "", { "dependencies": { "@gluestack-ui/utils": "^0.1.15", "@react-native-aria/focus": "^0.2.9", "@react-native-aria/interactions": "0.2.16" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-hcyTVBUw55bSjEpyynIZJVm3Ff6lcjKXFT55f890oy2PNGyFdsKr6V+t/jy5n/2fwbv1eR2KU0uDDiI2vmBh+A=="],
+
+    "@gluestack-ui/modal": ["@gluestack-ui/modal@0.1.41", "", { "dependencies": { "@gluestack-ui/hooks": "0.1.13", "@gluestack-ui/overlay": "^0.1.22", "@gluestack-ui/utils": "^0.1.15", "@react-native-aria/dialog": "^0.0.5", "@react-native-aria/focus": "^0.2.9", "@react-native-aria/interactions": "0.2.16", "@react-native-aria/overlays": "^0.3.15" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-pEO5h6TxEpYyU/CEhRD/pAkuBsDfqnFUe51AxK7w6FLjBuTKA5P0wsQ1pfcovJeykkpreG+MiUvNPIo3MW/Lfw=="],
 
     "@gluestack-ui/nativewind-utils": ["@gluestack-ui/nativewind-utils@1.0.26", "", { "dependencies": { "find-yarn-workspace-root": "^2.0.0", "patch-package": "8.0.0", "tailwind-variants": "0.1.20" }, "peerDependencies": { "nativewind": ">=4.0", "react": ">=16" } }, "sha512-Ul/nHkYOKMH5CTmDUndM826GKYqWI6jFaz7/v7AgOo9dFuokOYm6Sd3pcJHqzPghwODRXV9L4nQgxa7dJX96pg=="],
 

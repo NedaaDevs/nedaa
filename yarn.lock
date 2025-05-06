@@ -1823,6 +1823,19 @@
     "@react-native-aria/focus" "^0.2.9"
     "@react-native-aria/interactions" "0.2.16"
 
+"@gluestack-ui/modal@^0.1.41":
+  version "0.1.41"
+  resolved "https://registry.npmjs.org/@gluestack-ui/modal/-/modal-0.1.41.tgz"
+  integrity sha512-pEO5h6TxEpYyU/CEhRD/pAkuBsDfqnFUe51AxK7w6FLjBuTKA5P0wsQ1pfcovJeykkpreG+MiUvNPIo3MW/Lfw==
+  dependencies:
+    "@gluestack-ui/hooks" "0.1.13"
+    "@gluestack-ui/overlay" "^0.1.22"
+    "@gluestack-ui/utils" "^0.1.15"
+    "@react-native-aria/dialog" "^0.0.5"
+    "@react-native-aria/focus" "^0.2.9"
+    "@react-native-aria/interactions" "0.2.16"
+    "@react-native-aria/overlays" "^0.3.15"
+
 "@gluestack-ui/nativewind-utils@^1.0.26":
   version "1.0.26"
   resolved "https://registry.npmjs.org/@gluestack-ui/nativewind-utils/-/nativewind-utils-1.0.26.tgz"
