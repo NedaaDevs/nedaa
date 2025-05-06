@@ -46,17 +46,19 @@ const ThemeList = () => {
         renderItem={({ item, index }: any) => (
           <Pressable
             onPress={() => handleSelectTheme(item)}
-            className={`py-4 px-4 flex-row justify-between items-center ${
+            className={`py-5 px-5 flex-row justify-between items-center ${
               index < modeData.length - 1 ? "border-b border-gray-200 dark:border-gray-700" : ""
             }`}>
             <Box>
-              <Text className="text-lg font-semibold text-typography dark:text-tertiary">
+              <Text className="text-xl font-semibold text-typography dark:text-tertiary">
                 {item.title}
               </Text>
-              <Text className="text-base text-gray-500 dark:text-gray-400">{item.description}</Text>
+              <Text className="text-lg text-gray-500 dark:text-gray-400 mt-1">
+                {item.description}
+              </Text>
             </Box>
             {mode === item.id && (
-              <Icon as={Check} className="color-primary dark:color-secondary" size="md" />
+              <Icon as={Check} className="color-primary dark:color-secondary" size="lg" />
             )}
           </Pressable>
         )}
