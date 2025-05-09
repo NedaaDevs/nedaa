@@ -76,7 +76,7 @@ const Header = () => {
       : `prayerTimes.${nextPrayer.name}`;
 
   return (
-    <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md overflow-hidden">
+    <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md ">
       <VStack className="items-center my-3">
         <Text className="text-2xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
         <Text className="text-lg text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>

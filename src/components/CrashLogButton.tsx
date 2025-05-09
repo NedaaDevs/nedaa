@@ -31,8 +31,8 @@ const CrashLogButton = () => {
       <Pressable
         className="items-center justify-center p-2 rounded-md text-primary dark:text-secondary"
         onPress={() => setModalVisible(true)}
-        accessibilityLabel={t("crashReporting.accessibilityLabel")}
-        accessibilityHint={t("crashReporting.accessibilityHint")}>
+        accessibilityLabel={t("settings.crashReporting.accessibilityLabel")}
+        accessibilityHint={t("settings.crashReporting.accessibilityHint")}>
         <Icon className="text-primary dark:text-secondary" as={Bug} />
       </Pressable>
 
@@ -45,37 +45,37 @@ const CrashLogButton = () => {
           <Box className="m-5 bg-white dark:bg-gray-800 rounded-xl p-6 w-[85%] max-w-md">
             <Box className="flex flex-col items-start w-full">
               <Text className="text-xl font-bold mb-4 text-primary dark:text-secondary">
-                {t("crashReporting.title")}
+                {t("settings.crashReporting.title")}
               </Text>
             </Box>
 
             <Box className="flex flex-col items-start w-full">
               <Text className="text-left text-typography dark:text-tertiary mb-4">
-                {t("crashReporting.description")}
+                {t("settings.crashReporting.description")}
               </Text>
             </Box>
 
             <Box className="mb-4 flex flex-col items-start w-full">
               <Text className="text-base text-typography dark:text-tertiary">
-                {t("crashReporting.bullet1")}
+                {t("settings.crashReporting.bullet1")}
               </Text>
               <Text className="text-base text-typography dark:text-tertiary">
-                {t("crashReporting.bullet2")}
+                {t("settings.crashReporting.bullet2")}
               </Text>
               <Text className="text-base text-typography dark:text-tertiary">
-                {t("crashReporting.bullet3")}
+                {t("settings.crashReporting.bullet3")}
               </Text>
             </Box>
 
             <Box className="flex flex-col items-start w-full">
               <Text className="text-left text-typography dark:text-tertiary mb-6">
-                {t("crashReporting.privacyNote")}
+                {t("settings.crashReporting.privacyNote")}
               </Text>
             </Box>
 
             <Box className="flex-row justify-between items-center mb-4 w-full">
               <Text className="text-base font-medium text-typography dark:text-tertiary">
-                {t("crashReporting.enableToggle")}
+                {t("settings.crashReporting.enableToggle")}
               </Text>
               <Switch value={sendCrashLogs} onValueChange={handleToggle} />
             </Box>
@@ -84,7 +84,7 @@ const CrashLogButton = () => {
               <Pressable
                 className="py-2 px-4 rounded-md bg-blue-500"
                 onPress={() => setModalVisible(false)}>
-                <Text className="text-white">{t("done")}</Text>
+                <Text className="text-white">{t("common.done")}</Text>
               </Pressable>
             </Box>
           </Box>
