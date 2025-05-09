@@ -50,6 +50,21 @@
 			<key>NSAllowsLocalNetworking</key>
 			<true />
 		</dict>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>mailto</string>
+			<string>message</string>
+			<string>readdle-spark</string>
+			<string>airmail</string>
+			<string>ms-outlook</string>
+			<string>googlegmail</string>
+			<string>inbox-gmail</string>
+			<string>ymail</string>
+			<string>superhuman</string>
+			<string>yandexmail</string>
+			<string>fastmail</string>
+			<string>protonmail</string>
+		</array>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>This app uses your location to provide accurate prayer times and reminders based on
 			your current location. Your location data will be used while you are using the app and

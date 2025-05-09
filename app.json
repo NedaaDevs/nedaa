@@ -86,7 +86,8 @@
           "mode": "production"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "react-native-email-link"
     ],
     "experiments": {
       "typedRoutes": true
