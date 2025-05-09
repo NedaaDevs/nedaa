@@ -30,8 +30,8 @@ const ThemeList = () => {
   const modeData: ItemType[] = Object.values(AppMode).map((modeCode) => {
     return {
       id: modeCode as AppMode,
-      title: t(`themes.${modeCode}.title`),
-      description: t(`themes.${modeCode}.description`),
+      title: t(`settings.themes.${modeCode}.title`),
+      description: t(`settings.themes.${modeCode}.description`),
     };
   });
 

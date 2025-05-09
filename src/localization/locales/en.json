@@ -1,6 +1,4 @@
 {
-  "appearance": "Appearance",
-  "asr": "Asr",
   "crashReporting": {
     "accessibilityHint": "Opens modal for crash reporting consent",
     "accessibilityLabel": "Crash reporting settings",
@@ -12,12 +10,7 @@
     "privacyNote": "No personal data or user content is collected. You can opt out at any time.",
     "title": "Crash Reporting"
   },
-  "dark": "Dark",
-  "date": "Friday, 14 Ramadan 1443 AH",
-  "dhuhr": "Dhuhr",
   "done": "Done",
-  "fajr": "Fajr",
-  "firstThird": "First Third",
   "hijriMonths": [
     "Muharram",
     "Safar",
@@ -32,51 +25,65 @@
     "Dhu al-Qidah",
     "Dhu al-Hijjah"
   ],
-  "imsak": "Imsak",
-  "isha": "Isha",
-  "jumuah": "Jumu’ah",
-  "language": "Language",
-  "languages": {
-    "ar": {
-      "nativeTitle": "العربية",
-      "title": "Arabic"
-    },
-    "en": {
-      "nativeTitle": "English",
-      "title": "English"
-    },
-    "ms": {
-      "nativeTitle": "Bahasa Melayu",
-      "title": "Malay"
-    }
-  },
-  "lastThird": "Last Third",
-  "light": "Light",
   "loadingPrayerTimes": "Loading prayer times...",
-  "locale": "Language",
   "logo": "Logo",
-  "maghrib": "Maghrib",
-  "midnight": "Midnight",
-  "mode": "Mode",
   "nedaa": "Nedaa",
-  "otherTimings": "Other Times",
-  "prayerTimings": "Prayer Times",
-  "settings": "Settings",
-  "sunrise": "Sunrise",
-  "sunset": "Sunset",
-  "system": "System",
-  "themes": {
-    "dark": {
-      "description": "Always use dark appearance",
-      "title": "Dark"
+  "otherTimings": {
+    "firstThird": "First Third",
+    "imsak": "Imsak",
+    "lastThird": "Last Third",
+    "midnight": "Midnight",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "title": "Other Times"
+  },
+  "prayerTimes": {
+    "asr": "Asr",
+    "dhuhr": "Dhuhr",
+    "fajr": "Fajr",
+    "isha": "Isha",
+    "jumuah": "Jumu'ah",
+    "maghrib": "Maghrib",
+    "title": "Prayer Times"
+  },
+  "settings": {
+    "appearance": "Appearance",
+    "contactUs": "Contact Us",
+    "crashReporting": "Crash Reporting",
+    "help": "Help",
+    "language": "Language",
+    "languages": {
+      "ar": {
+        "nativeTitle": "العربية",
+        "title": "Arabic"
+      },
+      "en": {
+        "nativeTitle": "English",
+        "title": "English"
+      },
+      "ms": {
+        "nativeTitle": "Bahasa Melayu",
+        "title": "Malay"
+      },
+      "title": "Languages"
     },
-    "light": {
-      "description": "Always use light appearance",
-      "title": "Light"
+    "mode": "Mode",
+    "prayerTimes": "Prayer Times",
+    "themes": {
+      "dark": {
+        "description": "Always use dark appearance",
+        "title": "Dark"
+      },
+      "light": {
+        "description": "Always use light appearance",
+        "title": "Light"
+      },
+      "system": {
+        "description": "Follow system appearance",
+        "title": "System"
+      },
+      "title": "Themes"
     },
-    "system": {
-      "description": "Follow system appearance",
-      "title": "System"
-    }
+    "title": "Settings"
   }
 }

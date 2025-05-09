@@ -20,22 +20,22 @@ const SettingsScreen = () => {
   const { locale, mode } = useAppStore();
   return (
     <ScrollView className="bg-grey dark:bg-black" contentContainerStyle={{ flexGrow: 1 }}>
-      <TopBar title="settings" href="/" backOnClick />
+      <TopBar title="settings.title" href="/" backOnClick />
 
       {/* Language */}
       <SettingsItem
-        name={t("language")}
+        name={t("settings.language")}
         path="/settings/language"
         icon={Languages}
-        currentValue={t(`languages.${locale}.nativeTitle`)}
+        currentValue={t(`settings.languages.${locale}.nativeTitle`)}
       />
       <Divider className="bg-primary/30 dark:bg-secondary/30 mx-4 w-[calc(100%-32px)]" />
       {/* Theme */}
       <SettingsItem
-        name={t("appearance")}
+        name={t("settings.appearance")}
         path="/settings/theme"
         icon={Palette}
-        currentValue={t(`themes.${mode}.title`)}
+        currentValue={t(`settings.themes.${mode}.title`)}
       />
 
       {/* Footer */}

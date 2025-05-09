@@ -46,7 +46,9 @@ const PrayerTimesList = () => {
         const isNext = nextPrayer?.name === prayer;
 
         const name =
-          prayerName === "dhuhr" && isFriday(todayTimings.timezone) ? "jumuah" : prayerName;
+          prayerName === "dhuhr" && isFriday(todayTimings.timezone)
+            ? "prayerTimes.jumuah"
+            : `prayerTimes.${prayerName}`;
 
         return (
           <TimingItem

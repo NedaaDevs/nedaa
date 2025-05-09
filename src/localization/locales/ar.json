@@ -1,6 +1,4 @@
 {
-  "appearance": "المظهر",
-  "asr": "العصر",
   "crashReporting": {
     "accessibilityHint": "يفتح نافذة للموافقة على تقارير الأعطال",
     "accessibilityLabel": "إعدادات تقارير الأعطال",
@@ -12,12 +10,7 @@
     "privacyNote": "لا يتم جمع البيانات الشخصية أو محتوى المستخدم. يمكنك إلغاء الاشتراك في أي وقت.",
     "title": "تقارير الأعطال"
   },
-  "dark": "داكن",
-  "date": "الجمعة 14 رمضان 1443 هـ",
-  "dhuhr": "الظهر",
   "done": "تم",
-  "fajr": "الفجر",
-  "firstThird": "الثلث الأول",
   "hijriMonths": [
     "محرم",
     "صفر",
@@ -32,51 +25,65 @@
     "ذو القعدة",
     "ذو الحجة"
   ],
-  "imsak": "إمساك",
-  "isha": "العشاء",
-  "jumuah": "الجمعة",
-  "language": "اللغة",
-  "languages": {
-    "ar": {
-      "nativeTitle": "العربية",
-      "title": "العربية"
-    },
-    "en": {
-      "nativeTitle": "English",
-      "title": "الإنجليزية"
-    },
-    "ms": {
-      "nativeTitle": "Bahasa Melayu",
-      "title": "الملايو"
-    }
-  },
-  "lastThird": "الثلث الأخير",
-  "light": "فاتح",
   "loadingPrayerTimes": "جاري تحميل أوقات الصلاة...",
-  "locale": "اللغة",
   "logo": "شعار",
-  "maghrib": "المغرب",
-  "midnight": "منتصف الليل",
-  "mode": "النمط",
   "nedaa": "نِداء",
-  "otherTimings": "أوقات أخرى",
-  "prayerTimings": "أوقات الصلاة",
-  "settings": "الإعدادات",
-  "sunrise": "شروق الشمس",
-  "sunset": "غروب الشمس",
-  "system": "النظام",
-  "themes": {
-    "dark": {
-      "description": "استخدم المظهر الداكن دائمًا",
-      "title": "داكن"
+  "otherTimings": {
+    "firstThird": "الثلث الأول",
+    "imsak": "إمساك",
+    "lastThird": "الثلث الأخير",
+    "midnight": "منتصف الليل",
+    "sunrise": "شروق الشمس",
+    "sunset": "غروب الشمس",
+    "title": "أوقات أخرى"
+  },
+  "prayerTimes": {
+    "asr": "العصر",
+    "dhuhr": "الظهر",
+    "fajr": "الفجر",
+    "isha": "العشاء",
+    "jumuah": "الجمعة",
+    "maghrib": "المغرب",
+    "title": "أوقات الصلاة"
+  },
+  "settings": {
+    "appearance": "المظهر",
+    "contactUs": "تواصل معنا",
+    "crashReporting": "تقارير الأعطال",
+    "help": "المساعدة",
+    "language": "اللغة",
+    "languages": {
+      "ar": {
+        "nativeTitle": "العربية",
+        "title": "العربية"
+      },
+      "en": {
+        "nativeTitle": "English",
+        "title": "الإنجليزية"
+      },
+      "ms": {
+        "nativeTitle": "Bahasa Melayu",
+        "title": "الملايو"
+      },
+      "title": "اللغة"
     },
-    "light": {
-      "description": "استخدم المظهر الفاتح دائمًا",
-      "title": "فاتح"
+    "mode": "النمط",
+    "prayerTimes": "أوقات الصلاة",
+    "themes": {
+      "dark": {
+        "description": "استخدم المظهر الداكن دائمًا",
+        "title": "داكن"
+      },
+      "light": {
+        "description": "استخدم المظهر الفاتح دائمًا",
+        "title": "فاتح"
+      },
+      "system": {
+        "description": "اتبع إعدادات النظام",
+        "title": "النظام"
+      },
+      "title": "السمات"
     },
-    "system": {
-      "description": "اتبع إعدادات النظام",
-      "title": "النظام"
-    }
+    "title": "الإعدادات"
   }
 }

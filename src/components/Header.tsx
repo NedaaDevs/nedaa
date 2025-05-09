@@ -71,7 +71,9 @@ const Header = () => {
   }
 
   const prayerName =
-    nextPrayer.name === "dhuhr" && isFriday(locationDetails.timezone) ? "jumuah" : nextPrayer.name;
+    nextPrayer.name === "dhuhr" && isFriday(locationDetails.timezone)
+      ? "prayerTimes.jumuah"
+      : `prayerTimes.${nextPrayer.name}`;
 
   return (
     <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md overflow-hidden">

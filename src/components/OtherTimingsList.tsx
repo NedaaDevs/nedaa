@@ -53,7 +53,7 @@ const OtherTimingsList = () => {
         return (
           <TimingItem
             key={timingName}
-            name={t(translationKey[timingName])}
+            name={t(`otherTimings.${translationKey[timingName]}`)}
             time={time}
             icon={otherTimingIcons[timingName]}
           />

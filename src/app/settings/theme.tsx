@@ -6,7 +6,7 @@ import TopBar from "@/components/TopBar";
 const ThemeSettings = () => {
   return (
     <Box className="flex-1 bg-grey dark:bg-black">
-      <TopBar title="appearance" href="/" backOnClick />
+      <TopBar title="settings.appearance" href="/" backOnClick />
       <ThemeList />
     </Box>
   );

@@ -32,8 +32,8 @@ const LanguageList = () => {
   const localeData: ItemType[] = Object.values(AppLocale).map((localeCode) => {
     return {
       id: localeCode as AppLocale,
-      title: t(`languages.${localeCode}.title`),
-      nativeTitle: t(`languages.${localeCode}.nativeTitle`),
+      title: t(`settings.languages.${localeCode}.title`),
+      nativeTitle: t(`settings.languages.${localeCode}.nativeTitle`),
     };
   });
 
