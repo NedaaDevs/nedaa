@@ -43,38 +43,44 @@ const CrashLogButton = () => {
         onRequestClose={() => setModalVisible(false)}>
         <Box className="flex-1 justify-center items-center bg-black/50">
           <Box className="m-5 bg-white dark:bg-gray-800 rounded-xl p-6 w-[85%] max-w-md">
-            <Text className="text-xl font-bold mb-4 text-primary dark:text-secondary text-start">
-              {t("crashReporting.title")}
-            </Text>
+            <Box className="flex flex-col items-start w-full">
+              <Text className="text-xl font-bold mb-4 text-primary dark:text-secondary">
+                {t("crashReporting.title")}
+              </Text>
+            </Box>
 
-            <Text className="text-base text-typography dark:text-tertiary mb-4 text-start">
-              {t("crashReporting.description")}
-            </Text>
+            <Box className="flex flex-col items-start w-full">
+              <Text className="text-left text-typography dark:text-tertiary mb-4">
+                {t("crashReporting.description")}
+              </Text>
+            </Box>
 
-            <Box className="mb-4">
-              <Text className="text-base text-typography dark:text-tertiary text-start">
+            <Box className="mb-4 flex flex-col items-start w-full">
+              <Text className="text-base text-typography dark:text-tertiary">
                 {t("crashReporting.bullet1")}
               </Text>
-              <Text className="text-base text-typography dark:text-tertiary text-start">
+              <Text className="text-base text-typography dark:text-tertiary">
                 {t("crashReporting.bullet2")}
               </Text>
-              <Text className="text-base text-typography dark:text-tertiary text-start">
+              <Text className="text-base text-typography dark:text-tertiary">
                 {t("crashReporting.bullet3")}
               </Text>
             </Box>
 
-            <Text className="text-base text-typography dark:text-tertiary mb-6 text-start">
-              {t("crashReporting.privacyNote")}
-            </Text>
+            <Box className="flex flex-col items-start w-full">
+              <Text className="text-left text-typography dark:text-tertiary mb-6">
+                {t("crashReporting.privacyNote")}
+              </Text>
+            </Box>
 
-            <Box className="flex-row justify-between items-center mb-4">
-              <Text className="text-base font-medium text-typography dark:text-tertiary text-start">
+            <Box className="flex-row justify-between items-center mb-4 w-full">
+              <Text className="text-base font-medium text-typography dark:text-tertiary">
                 {t("crashReporting.enableToggle")}
               </Text>
               <Switch value={sendCrashLogs} onValueChange={handleToggle} />
             </Box>
 
-            <Box className="flex-row justify-end rtl:justify-start mt-2">
+            <Box className="flex-row justify-end rtl:justify-start mt-2 w-full">
               <Pressable
                 className="py-2 px-4 rounded-md bg-blue-500"
                 onPress={() => setModalVisible(false)}>
