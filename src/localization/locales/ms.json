@@ -1,16 +1,32 @@
 {
-  "crashReporting": {
-    "accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
-    "accessibilityLabel": "Tetapan laporan kerosakan",
-    "bullet1": "• Maklumat ralat teknikal",
-    "bullet2": "• Model peranti dan sistem operasi",
-    "bullet3": "• Versi aplikasi dan konfigurasi",
-    "description": "Kami mengumpul laporan kerosakan yang membantu kami meningkatkan aplikasi dengan mengenal pasti masalah. Laporan ini termasuk:",
-    "enableToggle": "Aktifkan laporan kerosakan",
-    "privacyNote": "Tiada data peribadi atau kandungan pengguna yang dikumpulkan. Anda boleh menarik diri pada bila-bila masa.",
-    "title": "Laporan Kerosakan"
+  "common": {
+    "cancel": "Batal",
+    "close": "Tutup",
+    "done": "Selesai",
+    "email": {
+      "clients": {
+        "error": {
+          "loadFailed": "Gagal memuatkan aplikasi e-mel. Sila cuba lagi.",
+          "openFailed": "Gagal membuka aplikasi e-mel. Sila cuba lagi."
+        },
+        "noClientsFound": "Tiada aplikasi e-mel dijumpai pada peranti ini",
+        "selectClient": "Pilih Aplikasi E-mel"
+      },
+      "template": {
+        "appInfo": "Maklumat Aplikasi:",
+        "appName": "Aplikasi",
+        "describeIssue": "Sila jelaskan masalah anda di bawah:",
+        "device": "Peranti",
+        "os": "OS",
+        "subject": "Permintaan Sokongan {appName}",
+        "version": "Versi"
+      }
+    },
+    "loading": "Memuatkan...",
+    "loadingPrayerTimes": "Memuatkan waktu solat...",
+    "logo": "Logo",
+    "nedaa": "Nedaa"
   },
-  "done": "Selesai",
   "hijriMonths": [
     "Muharam",
     "Safar",
@@ -25,9 +41,6 @@
     "Zulkaedah",
     "Zulhijah"
   ],
-  "loadingPrayerTimes": "Memuatkan waktu solat...",
-  "logo": "Logo",
-  "nedaa": "Nedaa",
   "otherTimings": {
     "firstThird": "Sepertiga Pertama",
     "imsak": "Imsak",
@@ -48,7 +61,17 @@
   },
   "settings": {
     "appearance": "Penampilan",
-    "crashReporting": "Laporan Kerosakan",
+    "crashReporting": {
+      "accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
+      "accessibilityLabel": "Tetapan laporan kerosakan",
+      "bullet1": "• Maklumat ralat teknikal",
+      "bullet2": "• Model peranti dan sistem operasi",
+      "bullet3": "• Versi aplikasi dan konfigurasi",
+      "description": "Kami mengumpul laporan kerosakan yang membantu kami meningkatkan aplikasi dengan mengenal pasti masalah. Laporan ini termasuk:",
+      "enableToggle": "Aktifkan laporan kerosakan",
+      "privacyNote": "Tiada data peribadi atau kandungan pengguna yang dikumpulkan. Anda boleh menarik diri pada bila-bila masa.",
+      "title": "Laporan Kerosakan"
+    },
     "help": {
       "contact": {
         "email": "Emel",

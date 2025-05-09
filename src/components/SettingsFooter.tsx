@@ -32,7 +32,7 @@ const SettingsFooter = () => {
 
   return (
     <Box className="items-center justify-center py-8 mt-auto">
-      <Image alt={t("logo")} source={logo} size="xs" className="mb-4" />
+      <Image alt={t("common.logo")} source={logo} size="xs" className="mb-4" />
 
       {/* Version and build number */}
       <Text className="text-center text-lg text-typography/70 dark:text-tertiary/70 mb-2">

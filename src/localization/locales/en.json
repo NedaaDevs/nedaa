@@ -1,16 +1,32 @@
 {
-  "crashReporting": {
-    "accessibilityHint": "Opens modal for crash reporting consent",
-    "accessibilityLabel": "Crash reporting settings",
-    "bullet1": "• Technical error information",
-    "bullet2": "• Device model and operating system",
-    "bullet3": "• App version and configuration",
-    "description": "We collect crash reports that help us improve the app by identifying issues. These reports include:",
-    "enableToggle": "Enable crash reporting",
-    "privacyNote": "No personal data or user content is collected. You can opt out at any time.",
-    "title": "Crash Reporting"
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "done": "Done",
+    "email": {
+      "clients": {
+        "error": {
+          "loadFailed": "Failed to load email clients. Please try again.",
+          "openFailed": "Failed to open email client. Please try again."
+        },
+        "noClientsFound": "No email clients found on this device",
+        "selectClient": "Select Email Client"
+      },
+      "template": {
+        "appInfo": "App Information:",
+        "appName": "App",
+        "describeIssue": "Please describe your issue below:",
+        "device": "Device",
+        "os": "OS",
+        "subject": "{appName} Support Request",
+        "version": "Version"
+      }
+    },
+    "loading": "Loading...",
+    "loadingPrayerTimes": "Loading prayer times...",
+    "logo": "Logo",
+    "nedaa": "Nedaa"
   },
-  "done": "Done",
   "hijriMonths": [
     "Muharram",
     "Safar",
@@ -25,9 +41,6 @@
     "Dhu al-Qidah",
     "Dhu al-Hijjah"
   ],
-  "loadingPrayerTimes": "Loading prayer times...",
-  "logo": "Logo",
-  "nedaa": "Nedaa",
   "otherTimings": {
     "firstThird": "First Third",
     "imsak": "Imsak",
@@ -48,7 +61,17 @@
   },
   "settings": {
     "appearance": "Appearance",
-    "crashReporting": "Crash Reporting",
+    "crashReporting": {
+      "accessibilityHint": "Opens modal for crash reporting consent",
+      "accessibilityLabel": "Crash reporting settings",
+      "bullet1": "• Technical error information",
+      "bullet2": "• Device model and operating system",
+      "bullet3": "• App version and configuration",
+      "description": "We collect crash reports that help us improve the app by identifying issues. These reports include:",
+      "enableToggle": "Enable crash reporting",
+      "privacyNote": "No personal data or user content is collected. You can opt out at any time.",
+      "title": "Crash Reporting"
+    },
     "help": {
       "contact": {
         "email": "Email",
