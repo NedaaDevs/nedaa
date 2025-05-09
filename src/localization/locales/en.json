@@ -48,9 +48,16 @@
   },
   "settings": {
     "appearance": "Appearance",
-    "contactUs": "Contact Us",
     "crashReporting": "Crash Reporting",
-    "help": "Help",
+    "help": {
+      "contact": {
+        "email": "Email",
+        "telegram": "Telegram",
+        "whatsapp": "WhatsApp"
+      },
+      "contactUs": "Contact Us",
+      "title": "Help"
+    },
     "language": "Language",
     "languages": {
       "ar": {

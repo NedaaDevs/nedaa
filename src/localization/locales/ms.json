@@ -48,9 +48,16 @@
   },
   "settings": {
     "appearance": "Penampilan",
-    "contactUs": "Hubungi Kami",
     "crashReporting": "Laporan Kerosakan",
-    "help": "Bantuan",
+    "help": {
+      "contact": {
+        "email": "Emel",
+        "telegram": "Telegram",
+        "whatsapp": "WhatsApp"
+      },
+      "contactUs": "Hubungi Kami",
+      "title": "Bantuan"
+    },
     "language": "Bahasa",
     "languages": {
       "ar": {

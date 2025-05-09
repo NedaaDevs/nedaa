@@ -48,9 +48,16 @@
   },
   "settings": {
     "appearance": "المظهر",
-    "contactUs": "تواصل معنا",
     "crashReporting": "تقارير الأعطال",
-    "help": "المساعدة",
+    "help": {
+      "contact": {
+        "email": "البريد الإلكتروني",
+        "telegram": "تيليجرام",
+        "whatsapp": "واتساب"
+      },
+      "contactUs": "تواصل معنا",
+      "title": "المساعدة"
+    },
     "language": "اللغة",
     "languages": {
       "ar": {
