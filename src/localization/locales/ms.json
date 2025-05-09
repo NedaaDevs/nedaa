@@ -14,11 +14,10 @@
       },
       "template": {
         "appInfo": "Maklumat Aplikasi:",
-        "appName": "Aplikasi",
-        "describeIssue": "Sila jelaskan masalah anda di bawah:",
+        "describeRequest": "Silakan terangkan permintaan/isu anda di bawah:",
         "device": "Peranti",
         "os": "OS",
-        "subject": "Permintaan Sokongan {appName}",
+        "subject": "Permintaan Sokongan",
         "version": "Versi"
       }
     },

@@ -70,8 +70,6 @@ const MailClientsList = ({ onClose }: Props) => {
 
   const handleMailClientSelect = async (client: MailClient) => {
     try {
-      const appName = await Application.applicationName;
-
       const appVersion = await Application.nativeApplicationVersion;
       const buildNumber = await Application.nativeBuildVersion;
 
@@ -85,22 +83,11 @@ const MailClientsList = ({ onClose }: Props) => {
 
       const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
 
-      const subject = t("common.email.template.subject", { appName });
+      const subject = t("common.email.template.subject");
 
       // Build the email body with translations
-      const body = `
-${t("common.email.template.appInfo")}
-- ${t("common.email.template.appName")}: ${appName}
-- ${t("common.email.template.version")}: ${appVersion} (${buildNumber})
-- ${t("common.email.template.device")}: ${deviceBrand} ${deviceModel}
-- ${t("common.email.template.os")}: ${systemVersion}
+      const body = `${t("common.email.template.describeRequest")}\n\n\n\n\n${t("common.email.template.appInfo")}\n- ${t("common.email.template.version")}: ${appVersion} (${buildNumber})\n- ${t("common.email.template.device")}: ${deviceBrand} ${deviceModel}\n- ${t("common.email.template.os")}: ${systemVersion}`;
 
-${t("common.email.template.describeIssue")}
-
-
-`;
-
-      // Open the selected email client with pre-filled template
       await openComposer({
         app: client.id,
         to: supportEmail,

@@ -14,11 +14,10 @@
       },
       "template": {
         "appInfo": "App Information:",
-        "appName": "App",
-        "describeIssue": "Please describe your issue below:",
+        "describeRequest": "Please describe your request/issue below:",
         "device": "Device",
         "os": "OS",
-        "subject": "{appName} Support Request",
+        "subject": "Support Request",
         "version": "Version"
       }
     },

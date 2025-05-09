@@ -14,11 +14,10 @@
       },
       "template": {
         "appInfo": "معلومات التطبيق:",
-        "appName": "التطبيق",
-        "describeIssue": "يرجى وصف المشكلة أدناه:",
+        "describeRequest": "يرجى وصف الطلب/المشكلة أدناه:",
         "device": "الجهاز",
         "os": "نظام التشغيل",
-        "subject": "طلب دعم {appName}",
+        "subject": "طلب دعم",
         "version": "الإصدار"
       }
     },
