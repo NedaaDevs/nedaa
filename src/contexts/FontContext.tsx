@@ -16,16 +16,16 @@ export const FONT_MAPPINGS = {
     bold: "IBMPlexSans-Bold",
   },
   [AppLocale.EN]: {
-    regular: "Fredoka-Regular",
-    medium: "Fredoka-Medium",
-    semibold: "Fredoka-SemiBold",
-    bold: "Fredoka-Bold",
+    regular: "Wittgenstein-Regular",
+    medium: "Wittgenstein-Medium",
+    semibold: "Wittgenstein-SemiBold",
+    bold: "Wittgenstein-Bold",
   },
   [AppLocale.MS]: {
-    regular: "Fredoka-Regular",
-    medium: "Fredoka-Medium",
-    semibold: "Fredoka-SemiBold",
-    bold: "Fredoka-Bold",
+    regular: "Wittgenstein-Regular",
+    medium: "Wittgenstein-Medium",
+    semibold: "Wittgenstein-SemiBold",
+    bold: "Wittgenstein-Bold",
   },
 };
 
@@ -38,7 +38,7 @@ interface FontContextType {
 const FontContext = createContext<FontContextType>({
   fontFamily: FONT_MAPPINGS[AppLocale.EN],
   locale: AppLocale.EN,
-  getFontFamily: () => "Fredoka-Regular",
+  getFontFamily: () => "Wittgenstein-Regular",
 });
 
 interface FontProviderProps {

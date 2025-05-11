@@ -1296,15 +1296,15 @@
   resolved "https://registry.npmjs.org/@eslint/js/-/js-8.57.1.tgz"
   integrity sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==
 
-"@expo-google-fonts/fredoka@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/fredoka/-/fredoka-0.3.0.tgz"
-  integrity sha512-aRbilfwkCFmlBpLuByTUIB/iZLN5ysyQuvNvy8wEpld4Qf+iaweUxIGo6cRiA2NTCimDujSxXcW7+RY+hmIpPg==
-
 "@expo-google-fonts/ibm-plex-sans-arabic@^0.3.0":
   version "0.3.0"
   resolved "https://registry.npmjs.org/@expo-google-fonts/ibm-plex-sans-arabic/-/ibm-plex-sans-arabic-0.3.0.tgz"
   integrity sha512-b2bPmsUnUEQQUsrZYCCW6snRoeu+Z82IcM232QTcXalOonSrLTknva4pWaTiZQ1Dq1Up0MPxV8kxlht5DHUvqQ==
+
+"@expo-google-fonts/wittgenstein@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.npmjs.org/@expo-google-fonts/wittgenstein/-/wittgenstein-0.3.0.tgz"
+  integrity sha512-p5pWMsqz+Ed06qQOrIjOBD38/wBAhYl7HkaE52zSRRRsT4cfSEgToso2w1TAeC9UrABB4WEb07F1dQhcBcop9w==
 
 "@expo/bunyan@^4.0.0":
   version "4.0.1"

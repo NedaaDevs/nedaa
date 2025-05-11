@@ -6,16 +6,16 @@ import {
   IBMPlexSansArabic_700Bold,
 } from "@expo-google-fonts/ibm-plex-sans-arabic";
 import {
-  Fredoka_400Regular,
-  Fredoka_500Medium,
-  Fredoka_600SemiBold,
-  Fredoka_700Bold,
-} from "@expo-google-fonts/fredoka";
+  Wittgenstein_400Regular,
+  Wittgenstein_500Medium,
+  Wittgenstein_600SemiBold,
+  Wittgenstein_700Bold,
+} from "@expo-google-fonts/wittgenstein";
 
 // Font family constants
 export const FontFamily = {
   IBM: "IBM",
-  FREDOKA: "Fredoka",
+  Wittgenstein: "Wittgenstein",
 };
 
 // IBMPlexSans font weights
@@ -26,12 +26,12 @@ export const IBMPlexSansFonts = {
   700: "IBMPlexSans-Bold",
 };
 
-// Fredoka font weights
-export const FredokaFonts = {
-  400: "Fredoka-Regular",
-  500: "Fredoka-Medium",
-  600: "Fredoka-SemiBold",
-  700: "Fredoka-Bold",
+// Wittgenstein font weights
+export const WittgensteinFonts = {
+  400: "Wittgenstein-Regular",
+  500: "Wittgenstein-Medium",
+  600: "Wittgenstein-SemiBold",
+  700: "Wittgenstein-Bold",
 };
 
 export const useLoadFonts = () => {
@@ -42,10 +42,10 @@ export const useLoadFonts = () => {
     "IBMPlexSans-SemiBold": IBMPlexSansArabic_600SemiBold,
     "IBMPlexSans-Bold": IBMPlexSansArabic_700Bold,
 
-    // Fredoka fonts
-    "Fredoka-Regular": Fredoka_400Regular,
-    "Fredoka-Medium": Fredoka_500Medium,
-    "Fredoka-SemiBold": Fredoka_600SemiBold,
-    "Fredoka-Bold": Fredoka_700Bold,
+    // Wittgenstein fonts
+    "Wittgenstein-Regular": Wittgenstein_400Regular,
+    "Wittgenstein-Medium": Wittgenstein_500Medium,
+    "Wittgenstein-SemiBold": Wittgenstein_600SemiBold,
+    "Wittgenstein-Bold": Wittgenstein_700Bold,
   });
 };
