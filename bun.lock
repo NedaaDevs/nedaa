@@ -5,7 +5,7 @@
       "name": "nedaa",
       "dependencies": {
         "@expo-google-fonts/fredoka": "^0.3.0",
-        "@expo-google-fonts/zain": "^0.3.0",
+        "@expo-google-fonts/ibm-plex-sans-arabic": "^0.3.0",
         "@expo/html-elements": "^0.4.2",
         "@expo/vector-icons": "^14.1.0",
         "@gluestack-ui/actionsheet": "^0.2.53",
@@ -358,7 +358,7 @@
 
     "@expo-google-fonts/fredoka": ["@expo-google-fonts/fredoka@0.3.0", "", {}, "sha512-aRbilfwkCFmlBpLuByTUIB/iZLN5ysyQuvNvy8wEpld4Qf+iaweUxIGo6cRiA2NTCimDujSxXcW7+RY+hmIpPg=="],
 
-    "@expo-google-fonts/zain": ["@expo-google-fonts/zain@0.3.0", "", {}, "sha512-Pu4ebSxJH9UIva+GbWiEy+s7IyQZe/m3Pis4N8hqGL6Yix/UGD2Aug8j9Sbhe55GcW/aD9X5pFZdhZ23pKEt9w=="],
+    "@expo-google-fonts/ibm-plex-sans-arabic": ["@expo-google-fonts/ibm-plex-sans-arabic@0.3.0", "", {}, "sha512-b2bPmsUnUEQQUsrZYCCW6snRoeu+Z82IcM232QTcXalOonSrLTknva4pWaTiZQ1Dq1Up0MPxV8kxlht5DHUvqQ=="],
 
     "@expo/bunyan": ["@expo/bunyan@4.0.1", "", { "dependencies": { "uuid": "^8.0.0" } }, "sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg=="],
 

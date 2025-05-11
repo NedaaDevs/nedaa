@@ -1,5 +1,10 @@
 import { useFonts } from "expo-font";
-import { Zain_400Regular, Zain_700Bold } from "@expo-google-fonts/zain";
+import {
+  IBMPlexSansArabic_400Regular,
+  IBMPlexSansArabic_500Medium,
+  IBMPlexSansArabic_600SemiBold,
+  IBMPlexSansArabic_700Bold,
+} from "@expo-google-fonts/ibm-plex-sans-arabic";
 import {
   Fredoka_400Regular,
   Fredoka_500Medium,
@@ -9,15 +14,16 @@ import {
 
 // Font family constants
 export const FontFamily = {
-  ZAIN: "Zain",
+  IBM: "IBM",
   FREDOKA: "Fredoka",
 };
 
-// Zain font weights
-export const ZainFonts = {
-  400: "Zain-Regular",
-  500: "Zain-Medium",
-  700: "Zain-Bold",
+// IBMPlexSans font weights
+export const IBMPlexSansFonts = {
+  400: "IBMPlexSans-Regular",
+  500: "IBMPlexSans-Medium",
+  600: "IBMPlexSans-SemiBold",
+  700: "IBMPlexSans-Bold",
 };
 
 // Fredoka font weights
@@ -30,10 +36,11 @@ export const FredokaFonts = {
 
 export const useLoadFonts = () => {
   return useFonts({
-    // Zain fonts
-    "Zain-Regular": Zain_400Regular,
-    "Zain-Medium": Zain_400Regular, // Medium not available
-    "Zain-Bold": Zain_700Bold,
+    // IBM Plex Sans Arabic fonts
+    "IBMPlexSans-Regular": IBMPlexSansArabic_400Regular,
+    "IBMPlexSans-Medium": IBMPlexSansArabic_500Medium,
+    "IBMPlexSans-SemiBold": IBMPlexSansArabic_600SemiBold,
+    "IBMPlexSans-Bold": IBMPlexSansArabic_700Bold,
 
     // Fredoka fonts
     "Fredoka-Regular": Fredoka_400Regular,

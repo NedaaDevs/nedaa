@@ -10,10 +10,10 @@ export type FontWeight = "regular" | "medium" | "semibold" | "bold";
 
 export const FONT_MAPPINGS = {
   [AppLocale.AR]: {
-    regular: "Zain-Regular",
-    medium: "Zain-Regular",
-    semibold: "Zain-Regular", // Zain doesn't have semibold or mediums
-    bold: "Zain-Bold",
+    regular: "IBMPlexSans-Regular",
+    medium: "IBMPlexSans-medium",
+    semibold: "IBMPlexSans-SemiBold",
+    bold: "IBMPlexSans-Bold",
   },
   [AppLocale.EN]: {
     regular: "Fredoka-Regular",

@@ -55,9 +55,10 @@ module.exports = {
         "robot-medium": "Fredoka-Medium",
         "robot-bold": "Fredoka-Bold",
         "robot-semibold": "Fredoka-SemiBold",
-        "zain-regular": "Zain-Regular",
-        "zain-medium": "Zain-Regular",
-        "zain-bold": "Zain-Bold",
+        "ibm-plex-sans-regular": "IBMPlexSans-Regular",
+        "ibm-plex-sans-semibold": "IBMPlexSans-SemiBold",
+        "ibm-plex-sans-medium": "IBMPlexSans-Regular",
+        "ibm-plex-sans-bold": "IBMPlexSans-Bold",
       },
       fontWeight: {
         extrablack: "950",
