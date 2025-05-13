@@ -1,5 +1,6 @@
 {
   "common": {
+    "ago": "{{time}} yang lalu",
     "cancel": "Batal",
     "close": "Tutup",
     "done": "Selesai",

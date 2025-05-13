@@ -1,5 +1,6 @@
 {
   "common": {
+    "ago": "{{time}} ago",
     "cancel": "Cancel",
     "close": "Close",
     "done": "Done",

@@ -18,6 +18,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Divider } from "@/components/ui/divider";
+import PreviousPrayer from "@/components/PreviousPrayer";
 
 const Header = () => {
   const { t } = useTranslation();
@@ -96,6 +97,8 @@ const Header = () => {
         </Text>
       </VStack>
 
+      <PreviousPrayer />
+
       <Box className="p-6 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
         <HStack className="justify-between items-center w-full space-x-4">
           <Text className="text-4xl font-bold text-slate-700 dark:text-white truncate max-w-[45%]">
@@ -110,7 +113,7 @@ const Header = () => {
             </Text>
 
             <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-amber-500">
-              <Text className="text-base text-blue-600 dark:text-amber-400">
+              <Text className="text-center text-blue-600 dark:text-amber-400">
                 {getFormattedTimeRemaining()}
               </Text>
             </Box>
