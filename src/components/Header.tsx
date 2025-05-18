@@ -115,12 +115,12 @@ const Header = () => {
           <Divider className="h-14 w-px flex-shrink-0 bg-slate-300 dark:bg-slate-600" />
 
           <VStack className="items-end max-w-[45%]">
-            <Text className="text-4xl font-bold text-blue-600 dark:text-amber-400 truncate">
+            <Text className="text-4xl font-bold text-blue-600 dark:text-secondary truncate">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
 
-            <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-amber-500">
-              <Text className="text-center text-blue-600 dark:text-amber-400">
+            <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-secondary">
+              <Text className="text-center text-blue-600 dark:text-secondary">
                 {getFormattedTimeRemaining()}
               </Text>
             </Box>

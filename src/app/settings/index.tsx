@@ -19,7 +19,7 @@ const SettingsScreen = () => {
   const { t } = useTranslation();
   const { locale, mode } = useAppStore();
   return (
-    <ScrollView className="bg-grey dark:bg-black" contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView className="bg-grey dark:bg-slate-900" contentContainerStyle={{ flexGrow: 1 }}>
       <TopBar title="settings.title" href="/" backOnClick />
 
       {/* Language */}

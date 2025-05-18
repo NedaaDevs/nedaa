@@ -16,7 +16,7 @@ export default function MainScreen() {
   const { mode } = useAppStore();
 
   return (
-    <ScrollView className="bg-grey dark:bg-black" contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView className="bg-white  dark:bg-slate-900" contentContainerStyle={{ flexGrow: 1 }}>
       <TopBar title="common.nedaa" href="/settings" icon={Settings} />
       <Box className="flex-1">
         <Header />

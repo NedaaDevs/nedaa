@@ -5,7 +5,7 @@ import TopBar from "@/components/TopBar";
 
 const LanguageSettings = () => {
   return (
-    <Box className="flex-1 bg-grey dark:bg-black">
+    <Box className="flex-1 bg-grey dark:bg-slate-900">
       <TopBar title="settings.language" href="/" backOnClick />
       <LanguageList />
     </Box>
