@@ -8,14 +8,16 @@ import CrashLogButton from "@/components/CrashLogButton";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Image } from "@/components/ui/image";
+import { Pressable } from "@/components/ui/pressable";
 
 // Hooks
 import { useColorScheme } from "nativewind";
 
 // Enums
 import { AppMode } from "@/enums/app";
+import { Linking } from "react-native";
 
-const logoLight = require("../../assets/images/ios-light.png");
+const logoLight = require("../../assets/images/icon.png");
 const logoDark = require("../../assets/images/ios-dark.png");
 
 const SettingsFooter = () => {
@@ -30,9 +32,30 @@ const SettingsFooter = () => {
 
   const logo = colorScheme.colorScheme === AppMode.DARK ? logoDark : logoLight;
 
+  const openWebsite = async () => {
+    const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE ?? "";
+
+    // Check if the URL can be opened
+    const canOpen = await Linking.canOpenURL(websiteUrl);
+
+    if (canOpen) {
+      await Linking.openURL(websiteUrl);
+    }
+  };
+
   return (
     <Box className="items-center justify-center py-8 mt-auto">
-      <Image alt={t("common.logo")} source={logo} size="xs" className="mb-4" />
+      <Pressable
+        onPress={openWebsite}
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.7 : 1,
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={t("common.visitWebsite")}>
+        <Image alt={t("common.logo")} source={logo} size="xs" className="mb-4" />
+      </Pressable>
 
       {/* Version and build number */}
       <Text className="text-center text-lg text-typography/70 dark:text-tertiary/70 mb-2">

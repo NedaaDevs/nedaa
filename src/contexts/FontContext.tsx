@@ -16,16 +16,16 @@ export const FONT_MAPPINGS = {
     bold: "IBMPlexSans-Bold",
   },
   [AppLocale.EN]: {
-    regular: "Wittgenstein-Regular",
-    medium: "Wittgenstein-Medium",
-    semibold: "Wittgenstein-SemiBold",
-    bold: "Wittgenstein-Bold",
+    regular: "Asap-Regular",
+    medium: "Asap-Medium",
+    semibold: "Asap-SemiBold",
+    bold: "Asap-Bold",
   },
   [AppLocale.MS]: {
-    regular: "Wittgenstein-Regular",
-    medium: "Wittgenstein-Medium",
-    semibold: "Wittgenstein-SemiBold",
-    bold: "Wittgenstein-Bold",
+    regular: "Asap-Regular",
+    medium: "Asap-Medium",
+    semibold: "Asap-SemiBold",
+    bold: "Asap-Bold",
   },
 };
 
@@ -38,7 +38,7 @@ interface FontContextType {
 const FontContext = createContext<FontContextType>({
   fontFamily: FONT_MAPPINGS[AppLocale.EN],
   locale: AppLocale.EN,
-  getFontFamily: () => "Wittgenstein-Regular",
+  getFontFamily: () => "Asap-Regular",
 });
 
 interface FontProviderProps {
