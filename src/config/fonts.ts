@@ -6,16 +6,16 @@ import {
   IBMPlexSansArabic_700Bold,
 } from "@expo-google-fonts/ibm-plex-sans-arabic";
 import {
-  Wittgenstein_400Regular,
-  Wittgenstein_500Medium,
-  Wittgenstein_600SemiBold,
-  Wittgenstein_700Bold,
-} from "@expo-google-fonts/wittgenstein";
+  Asap_400Regular,
+  Asap_500Medium,
+  Asap_600SemiBold,
+  Asap_700Bold,
+} from "@expo-google-fonts/asap";
 
 // Font family constants
 export const FontFamily = {
   IBM: "IBM",
-  Wittgenstein: "Wittgenstein",
+  Asap: "Asap",
 };
 
 // IBMPlexSans font weights
@@ -26,12 +26,12 @@ export const IBMPlexSansFonts = {
   700: "IBMPlexSans-Bold",
 };
 
-// Wittgenstein font weights
-export const WittgensteinFonts = {
-  400: "Wittgenstein-Regular",
-  500: "Wittgenstein-Medium",
-  600: "Wittgenstein-SemiBold",
-  700: "Wittgenstein-Bold",
+// Asap font weights
+export const AsapFonts = {
+  400: "Asap-Regular",
+  500: "Asap-Medium",
+  600: "Asap-SemiBold",
+  700: "Asap-Bold",
 };
 
 export const useLoadFonts = () => {
@@ -42,10 +42,10 @@ export const useLoadFonts = () => {
     "IBMPlexSans-SemiBold": IBMPlexSansArabic_600SemiBold,
     "IBMPlexSans-Bold": IBMPlexSansArabic_700Bold,
 
-    // Wittgenstein fonts
-    "Wittgenstein-Regular": Wittgenstein_400Regular,
-    "Wittgenstein-Medium": Wittgenstein_500Medium,
-    "Wittgenstein-SemiBold": Wittgenstein_600SemiBold,
-    "Wittgenstein-Bold": Wittgenstein_700Bold,
+    // Asap fonts
+    "Asap-Regular": Asap_400Regular,
+    "Asap-Medium": Asap_500Medium,
+    "Asap-SemiBold": Asap_600SemiBold,
+    "Asap-Bold": Asap_700Bold,
   });
 };

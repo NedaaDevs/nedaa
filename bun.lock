@@ -4,8 +4,8 @@
     "": {
       "name": "nedaa",
       "dependencies": {
+        "@expo-google-fonts/asap": "^0.3.0",
         "@expo-google-fonts/ibm-plex-sans-arabic": "^0.3.0",
-        "@expo-google-fonts/wittgenstein": "^0.3.0",
         "@expo/html-elements": "^0.4.2",
         "@expo/vector-icons": "^14.1.0",
         "@gluestack-ui/actionsheet": "^0.2.53",
@@ -356,9 +356,9 @@
 
     "@eslint/js": ["@eslint/js@8.57.1", "", {}, "sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q=="],
 
-    "@expo-google-fonts/ibm-plex-sans-arabic": ["@expo-google-fonts/ibm-plex-sans-arabic@0.3.0", "", {}, "sha512-b2bPmsUnUEQQUsrZYCCW6snRoeu+Z82IcM232QTcXalOonSrLTknva4pWaTiZQ1Dq1Up0MPxV8kxlht5DHUvqQ=="],
+    "@expo-google-fonts/asap": ["@expo-google-fonts/asap@0.3.0", "", {}, "sha512-+ynr0ajFEIVfDayRxSCU5NY3YC79DRUW6GJ2wqtRK4NaciLdpz7urS+jfLs2athoSvfY5Gbre8N5xOmFMPztkw=="],
 
-    "@expo-google-fonts/wittgenstein": ["@expo-google-fonts/wittgenstein@0.3.0", "", {}, "sha512-p5pWMsqz+Ed06qQOrIjOBD38/wBAhYl7HkaE52zSRRRsT4cfSEgToso2w1TAeC9UrABB4WEb07F1dQhcBcop9w=="],
+    "@expo-google-fonts/ibm-plex-sans-arabic": ["@expo-google-fonts/ibm-plex-sans-arabic@0.3.0", "", {}, "sha512-b2bPmsUnUEQQUsrZYCCW6snRoeu+Z82IcM232QTcXalOonSrLTknva4pWaTiZQ1Dq1Up0MPxV8kxlht5DHUvqQ=="],
 
     "@expo/bunyan": ["@expo/bunyan@4.0.1", "", { "dependencies": { "uuid": "^8.0.0" } }, "sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg=="],
 

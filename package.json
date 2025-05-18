@@ -16,8 +16,8 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@expo-google-fonts/asap": "^0.3.0",
     "@expo-google-fonts/ibm-plex-sans-arabic": "^0.3.0",
-    "@expo-google-fonts/wittgenstein": "^0.3.0",
     "@expo/html-elements": "^0.4.2",
     "@expo/vector-icons": "^14.1.0",
     "@gluestack-ui/actionsheet": "^0.2.53",
