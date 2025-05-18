@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
@@ -17,6 +18,9 @@ import { PrayerName } from "@/types/prayerTimes";
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
+// Hooks
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+
 const prayerIcons: Record<PrayerName, React.ElementType> = {
   fajr: Sunrise,
   dhuhr: Sun,
@@ -29,6 +33,12 @@ const PrayerTimesList = () => {
   const { t } = useTranslation();
   const { todayTimings, getNextPrayer } = usePrayerTimesStore();
   const nextPrayer = getNextPrayer();
+
+  const { becameActiveAt } = useAppVisibility();
+
+  useEffect(() => {
+    console.log("Became visable prayer  timings");
+  }, [becameActiveAt]);
 
   if (!todayTimings) {
     return (

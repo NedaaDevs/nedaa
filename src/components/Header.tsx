@@ -2,6 +2,7 @@ import { format, parseISO, formatDistance } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { toHijri } from "hijri-date-converter";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -20,11 +21,17 @@ import { HStack } from "@/components/ui/hstack";
 import { Divider } from "@/components/ui/divider";
 import PreviousPrayer from "@/components/PreviousPrayer";
 
+// Hooks
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+
 const Header = () => {
   const { t } = useTranslation();
   const { locale } = useAppStore();
   const { locationDetails } = useLocationStore();
   const { getNextPrayer } = usePrayerTimesStore();
+  const { becameActiveAt } = useAppVisibility();
+
+  useEffect(() => {}, [becameActiveAt]);
 
   const nextPrayer = getNextPrayer();
   const now = timeZonedNow(locationDetails.timezone);
