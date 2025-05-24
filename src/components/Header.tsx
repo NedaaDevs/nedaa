@@ -85,10 +85,12 @@ const Header = () => {
 
   return (
     <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md ">
-      <VStack className="items-center my-3">
-        <Text className="text-2xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
-        <Text className="text-lg text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>
-      </VStack>
+      <Box className="p-4 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
+        <VStack className="items-center my-3">
+          <Text className="text-2xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
+          <Text className="text-lg text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>
+        </VStack>
+      </Box>
 
       <VStack className="items-center mb-3">
         <HStack className="items-center justify-center w-full px-8">
