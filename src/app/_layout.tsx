@@ -34,7 +34,8 @@ export default function RootLayout() {
       <FontProvider>
         <GestureHandlerRootView>
           <SafeAreaView className="flex-1">
-            <StatusBar />
+            {/* TODO: Debug why status bar show a white background on dark mode with style = auto*/}
+            <StatusBar style="dark" translucent={true} />
             <ToastProvider />
             <Stack
               screenOptions={{
