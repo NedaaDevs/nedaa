@@ -27,7 +27,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 const Header = () => {
   const { t } = useTranslation();
   const { locale } = useAppStore();
-  const { locationDetails } = useLocationStore();
+  const { localizedLocation, locationDetails } = useLocationStore();
   const { getNextPrayer } = usePrayerTimesStore();
   const { becameActiveAt } = useAppVisibility();
 
@@ -94,13 +94,13 @@ const Header = () => {
         <HStack className="items-center justify-center w-full px-8">
           <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           <Text className="mx-4 text-2xl font-medium text-slate-600 dark:text-slate-300">
-            {locationDetails.address?.city}
+            {localizedLocation.city ?? locationDetails.address?.city}
           </Text>
           <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </HStack>
 
         <Text className="text-base text-slate-400 dark:text-slate-500">
-          {locationDetails.address?.country}
+          {localizedLocation.country ?? locationDetails.address?.country}
         </Text>
       </VStack>
 
