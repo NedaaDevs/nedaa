@@ -14,10 +14,12 @@ import { Languages, Palette, CircleHelp, MapPin } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
+import { useLocationStore } from "@/stores/location";
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const { locale, mode } = useAppStore();
+  const { localizedLocation } = useLocationStore();
   return (
     <ScrollView className="bg-grey dark:bg-slate-900" contentContainerStyle={{ flexGrow: 1 }}>
       <TopBar title="settings.title" href="/" backOnClick />
@@ -39,7 +41,12 @@ const SettingsScreen = () => {
       />
 
       {/* Location */}
-      <SettingsItem name={t("settings.location.title")} path="/settings/location" icon={MapPin} />
+      <SettingsItem
+        name={t("settings.location.title")}
+        path="/settings/location"
+        icon={MapPin}
+        currentValue={localizedLocation.city ?? ""}
+      />
 
       {/* Help */}
       <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
