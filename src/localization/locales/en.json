@@ -1,33 +1,23 @@
 {
-  "common": {
-    "ago": "{{time}} ago",
-    "cancel": "Cancel",
-    "close": "Close",
-    "done": "Done",
-    "email": {
-      "clients": {
-        "error": {
-          "loadFailed": "Failed to load email clients. Please try again.",
-          "openFailed": "Failed to open email client. Please try again."
-        },
-        "noClientsFound": "No email clients found on this device",
-        "selectClient": "Select Email Client"
-      },
-      "template": {
-        "appInfo": "App Information:",
-        "describeRequest": "Please describe your request/issue below:",
-        "device": "Device",
-        "os": "OS",
-        "subject": "Support Request",
-        "version": "Version"
-      }
-    },
-    "loading": "Loading...",
-    "loadingPrayerTimes": "Loading prayer times...",
-    "logo": "Logo",
-    "nedaa": "Nedaa",
-    "visitWebsite": "Visit Website"
-  },
+  "common.ago": "{{time}} ago",
+  "common.cancel": "Cancel",
+  "common.close": "Close",
+  "common.done": "Done",
+  "common.loading": "Loading...",
+  "common.loadingPrayerTimes": "Loading prayer times...",
+  "common.logo": "Logo",
+  "common.nedaa": "Nedaa",
+  "common.visitWebsite": "Visit Website",
+  "email.clients.error.loadFailed": "Failed to load email clients. Please try again.",
+  "email.clients.error.openFailed": "Failed to open email client. Please try again.",
+  "email.clients.noClientsFound": "No email clients found on this device",
+  "email.clients.selectClient": "Select Email Client",
+  "email.template.appInfo": "App Information:",
+  "email.template.describeRequest": "Please describe your request/issue below:",
+  "email.template.device": "Device",
+  "email.template.os": "OS",
+  "email.template.subject": "Support Request",
+  "email.template.version": "Version",
   "hijriMonths": [
     "Muharram",
     "Safar",
@@ -60,61 +50,37 @@
     "maghrib": "Maghrib",
     "title": "Prayer Times"
   },
-  "settings": {
-    "appearance": "Appearance",
-    "crashReporting": {
-      "accessibilityHint": "Opens modal for crash reporting consent",
-      "accessibilityLabel": "Crash reporting settings",
-      "bullet1": "• Technical error information",
-      "bullet2": "• Device model and operating system",
-      "bullet3": "• App version and configuration",
-      "description": "We collect crash reports that help us improve the app by identifying issues. These reports include:",
-      "enableToggle": "Enable crash reporting",
-      "privacyNote": "No personal data or user content is collected. You can opt out at any time.",
-      "title": "Crash Reporting"
-    },
-    "help": {
-      "contact": {
-        "email": "Email",
-        "telegram": "Telegram",
-        "whatsapp": "WhatsApp"
-      },
-      "contactUs": "Contact Us",
-      "title": "Help"
-    },
-    "language": "Language",
-    "languages": {
-      "ar": {
-        "nativeTitle": "العربية",
-        "title": "Arabic"
-      },
-      "en": {
-        "nativeTitle": "English",
-        "title": "English"
-      },
-      "ms": {
-        "nativeTitle": "Bahasa Melayu",
-        "title": "Malay"
-      },
-      "title": "Languages"
-    },
-    "mode": "Mode",
-    "prayerTimes": "Prayer Times",
-    "themes": {
-      "dark": {
-        "description": "Always use dark appearance",
-        "title": "Dark"
-      },
-      "light": {
-        "description": "Always use light appearance",
-        "title": "Light"
-      },
-      "system": {
-        "description": "Follow system appearance",
-        "title": "System"
-      },
-      "title": "Themes"
-    },
-    "title": "Settings"
-  }
+  "settings.appearance": "Appearance",
+  "settings.crashReporting.accessibilityHint": "Opens modal for crash reporting consent",
+  "settings.crashReporting.accessibilityLabel": "Crash reporting settings",
+  "settings.crashReporting.bullet1": "• Technical error information",
+  "settings.crashReporting.bullet2": "• Device model and operating system",
+  "settings.crashReporting.bullet3": "• App version and configuration",
+  "settings.crashReporting.description": "We collect crash reports that help us improve the app by identifying issues. These reports include:",
+  "settings.crashReporting.enableToggle": "Enable crash reporting",
+  "settings.crashReporting.privacyNote": "No personal data or user content is collected. You can opt out at any time.",
+  "settings.crashReporting.title": "Crash Reporting",
+  "settings.help.contact.email": "Email",
+  "settings.help.contact.telegram": "Telegram",
+  "settings.help.contact.whatsapp": "WhatsApp",
+  "settings.help.contactUs": "Contact Us",
+  "settings.help.title": "Help",
+  "settings.language": "Language",
+  "settings.languages.ar.nativeTitle": "العربية",
+  "settings.languages.ar.title": "Arabic",
+  "settings.languages.en.nativeTitle": "English",
+  "settings.languages.en.title": "English",
+  "settings.languages.ms.nativeTitle": "Bahasa Melayu",
+  "settings.languages.ms.title": "Malay",
+  "settings.languages.title": "Languages",
+  "settings.mode": "Mode",
+  "settings.prayerTimes": "Prayer Times",
+  "settings.themes.dark.description": "Always use dark appearance",
+  "settings.themes.dark.title": "Dark",
+  "settings.themes.light.description": "Always use light appearance",
+  "settings.themes.light.title": "Light",
+  "settings.themes.system.description": "Follow system appearance",
+  "settings.themes.system.title": "System",
+  "settings.themes.title": "Themes",
+  "settings.title": "Settings"
 }

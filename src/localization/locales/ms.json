@@ -1,33 +1,23 @@
 {
-  "common": {
-    "ago": "{{time}} yang lalu",
-    "cancel": "Batal",
-    "close": "Tutup",
-    "done": "Selesai",
-    "email": {
-      "clients": {
-        "error": {
-          "loadFailed": "Gagal memuatkan aplikasi e-mel. Sila cuba lagi.",
-          "openFailed": "Gagal membuka aplikasi e-mel. Sila cuba lagi."
-        },
-        "noClientsFound": "Tiada aplikasi e-mel dijumpai pada peranti ini",
-        "selectClient": "Pilih Aplikasi E-mel"
-      },
-      "template": {
-        "appInfo": "Maklumat Aplikasi:",
-        "describeRequest": "Silakan terangkan permintaan/isu anda di bawah:",
-        "device": "Peranti",
-        "os": "OS",
-        "subject": "Permintaan Sokongan",
-        "version": "Versi"
-      }
-    },
-    "loading": "Memuatkan...",
-    "loadingPrayerTimes": "Memuatkan waktu solat...",
-    "logo": "Logo",
-    "nedaa": "Nedaa",
-    "visitWebsite": "Laman Web"
-  },
+  "common.ago": "{{time}} yang lalu",
+  "common.cancel": "Batal",
+  "common.close": "Tutup",
+  "common.done": "Selesai",
+  "common.loading": "Memuatkan...",
+  "common.loadingPrayerTimes": "Memuatkan waktu solat...",
+  "common.logo": "Logo",
+  "common.nedaa": "Nedaa",
+  "common.visitWebsite": "Laman Web",
+  "email.clients.error.loadFailed": "Gagal memuatkan aplikasi e-mel. Sila cuba lagi.",
+  "email.clients.error.openFailed": "Gagal membuka aplikasi e-mel. Sila cuba lagi.",
+  "email.clients.noClientsFound": "Tiada aplikasi e-mel dijumpai pada peranti ini",
+  "email.clients.selectClient": "Pilih Aplikasi E-mel",
+  "email.template.appInfo": "Maklumat Aplikasi:",
+  "email.template.describeRequest": "Silakan terangkan permintaan/isu anda di bawah:",
+  "email.template.device": "Peranti",
+  "email.template.os": "OS",
+  "email.template.subject": "Permintaan Sokongan",
+  "email.template.version": "Versi",
   "hijriMonths": [
     "Muharam",
     "Safar",
@@ -60,61 +50,37 @@
     "maghrib": "Maghrib",
     "title": "Waktu Solat"
   },
-  "settings": {
-    "appearance": "Penampilan",
-    "crashReporting": {
-      "accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
-      "accessibilityLabel": "Tetapan laporan kerosakan",
-      "bullet1": "• Maklumat ralat teknikal",
-      "bullet2": "• Model peranti dan sistem operasi",
-      "bullet3": "• Versi aplikasi dan konfigurasi",
-      "description": "Kami mengumpul laporan kerosakan yang membantu kami meningkatkan aplikasi dengan mengenal pasti masalah. Laporan ini termasuk:",
-      "enableToggle": "Aktifkan laporan kerosakan",
-      "privacyNote": "Tiada data peribadi atau kandungan pengguna yang dikumpulkan. Anda boleh menarik diri pada bila-bila masa.",
-      "title": "Laporan Kerosakan"
-    },
-    "help": {
-      "contact": {
-        "email": "Emel",
-        "telegram": "Telegram",
-        "whatsapp": "WhatsApp"
-      },
-      "contactUs": "Hubungi Kami",
-      "title": "Bantuan"
-    },
-    "language": "Bahasa",
-    "languages": {
-      "ar": {
-        "nativeTitle": "العربية",
-        "title": "Bahasa Arab"
-      },
-      "en": {
-        "nativeTitle": "English",
-        "title": "Bahasa Inggeris"
-      },
-      "ms": {
-        "nativeTitle": "Bahasa Melayu",
-        "title": "Bahasa Melayu"
-      },
-      "title": "Bahasa"
-    },
-    "mode": "Mod",
-    "prayerTimes": "Waktu Solat",
-    "themes": {
-      "dark": {
-        "description": "Sentiasa gunakan penampilan gelap",
-        "title": "Gelap"
-      },
-      "light": {
-        "description": "Sentiasa gunakan penampilan cerah",
-        "title": "Cerah"
-      },
-      "system": {
-        "description": "Ikut tetapan sistem",
-        "title": "Sistem"
-      },
-      "title": "Tema"
-    },
-    "title": "Tetapan"
-  }
+  "settings.appearance": "Penampilan",
+  "settings.crashReporting.accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
+  "settings.crashReporting.accessibilityLabel": "Tetapan laporan kerosakan",
+  "settings.crashReporting.bullet1": "• Maklumat ralat teknikal",
+  "settings.crashReporting.bullet2": "• Model peranti dan sistem operasi",
+  "settings.crashReporting.bullet3": "• Versi aplikasi dan konfigurasi",
+  "settings.crashReporting.description": "Kami mengumpul laporan kerosakan yang membantu kami meningkatkan aplikasi dengan mengenal pasti masalah. Laporan ini termasuk:",
+  "settings.crashReporting.enableToggle": "Aktifkan laporan kerosakan",
+  "settings.crashReporting.privacyNote": "Tiada data peribadi atau kandungan pengguna yang dikumpulkan. Anda boleh menarik diri pada bila-bila masa.",
+  "settings.crashReporting.title": "Laporan Kerosakan",
+  "settings.help.contact.email": "Emel",
+  "settings.help.contact.telegram": "Telegram",
+  "settings.help.contact.whatsapp": "WhatsApp",
+  "settings.help.contactUs": "Hubungi Kami",
+  "settings.help.title": "Bantuan",
+  "settings.language": "Bahasa",
+  "settings.languages.ar.nativeTitle": "العربية",
+  "settings.languages.ar.title": "Bahasa Arab",
+  "settings.languages.en.nativeTitle": "English",
+  "settings.languages.en.title": "Bahasa Inggeris",
+  "settings.languages.ms.nativeTitle": "Bahasa Melayu",
+  "settings.languages.ms.title": "Bahasa Melayu",
+  "settings.languages.title": "Bahasa",
+  "settings.mode": "Mod",
+  "settings.prayerTimes": "Waktu Solat",
+  "settings.themes.dark.description": "Sentiasa gunakan penampilan gelap",
+  "settings.themes.dark.title": "Gelap",
+  "settings.themes.light.description": "Sentiasa gunakan penampilan cerah",
+  "settings.themes.light.title": "Cerah",
+  "settings.themes.system.description": "Ikut tetapan sistem",
+  "settings.themes.system.title": "Sistem",
+  "settings.themes.title": "Tema",
+  "settings.title": "Tetapan"
 }

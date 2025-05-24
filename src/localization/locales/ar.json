@@ -1,33 +1,23 @@
 {
-  "common": {
-    "ago": "منذ {{time}}",
-    "cancel": "إلغاء",
-    "close": "إغلاق",
-    "done": "تم",
-    "email": {
-      "clients": {
-        "error": {
-          "loadFailed": "فشل تحميل تطبيقات البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
-          "openFailed": "فشل فتح تطبيق البريد الإلكتروني. يرجى المحاولة مرة أخرى."
-        },
-        "noClientsFound": "لم يتم العثور على تطبيقات بريد إلكتروني على هذا الجهاز",
-        "selectClient": "اختر تطبيق البريد الإلكتروني"
-      },
-      "template": {
-        "appInfo": "معلومات التطبيق:",
-        "describeRequest": "يرجى وصف الطلب/المشكلة أدناه:",
-        "device": "الجهاز",
-        "os": "نظام التشغيل",
-        "subject": "طلب دعم",
-        "version": "الإصدار"
-      }
-    },
-    "loading": "جاري التحميل...",
-    "loadingPrayerTimes": "جاري تحميل أوقات الصلاة...",
-    "logo": "شعار",
-    "nedaa": "نِداء",
-    "visitWebsite": "زيارة الموقع الإلكتروني"
-  },
+  "common.ago": "منذ {{time}}",
+  "common.cancel": "إلغاء",
+  "common.close": "إغلاق",
+  "common.done": "تم",
+  "common.email.clients.error.loadFailed": "فشل تحميل تطبيقات البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
+  "common.email.clients.error.openFailed": "فشل فتح تطبيق البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
+  "common.email.clients.noClientsFound": "لم يتم العثور على تطبيقات بريد إلكتروني على هذا الجهاز",
+  "common.email.clients.selectClient": "اختر تطبيق البريد الإلكتروني",
+  "common.email.template.appInfo": "معلومات التطبيق:",
+  "common.email.template.describeRequest": "يرجى وصف الطلب/المشكلة أدناه:",
+  "common.email.template.device": "الجهاز",
+  "common.email.template.os": "نظام التشغيل",
+  "common.email.template.subject": "طلب دعم",
+  "common.email.template.version": "الإصدار",
+  "common.loading": "جاري التحميل...",
+  "common.loadingPrayerTimes": "جاري تحميل أوقات الصلاة...",
+  "common.logo": "شعار",
+  "common.nedaa": "نِداء",
+  "common.visitWebsite": "زيارة الموقع الإلكتروني",
   "hijriMonths": [
     "محرم",
     "صفر",
@@ -60,61 +50,37 @@
     "maghrib": "المغرب",
     "title": "أوقات الصلاة"
   },
-  "settings": {
-    "appearance": "المظهر",
-    "crashReporting": {
-      "accessibilityHint": "يفتح نافذة للموافقة على تقارير الأعطال",
-      "accessibilityLabel": "إعدادات تقارير الأعطال",
-      "bullet1": "• معلومات الخطأ التقنية",
-      "bullet2": "• طراز الجهاز ونظام التشغيل",
-      "bullet3": "• إصدار التطبيق والتكوين",
-      "description": "نقوم بجمع تقارير الأعطال التي تساعدنا على تحسين التطبيق من خلال تحديد المشكلات. تتضمن هذه التقارير:",
-      "enableToggle": "تمكين تقارير الأعطال",
-      "privacyNote": "لا يتم جمع البيانات الشخصية أو محتوى المستخدم. يمكنك إلغاء الاشتراك في أي وقت.",
-      "title": "تقارير الأعطال"
-    },
-    "help": {
-      "contact": {
-        "email": "البريد الإلكتروني",
-        "telegram": "تيليجرام",
-        "whatsapp": "واتساب"
-      },
-      "contactUs": "تواصل معنا",
-      "title": "المساعدة"
-    },
-    "language": "اللغة",
-    "languages": {
-      "ar": {
-        "nativeTitle": "العربية",
-        "title": "العربية"
-      },
-      "en": {
-        "nativeTitle": "English",
-        "title": "الإنجليزية"
-      },
-      "ms": {
-        "nativeTitle": "Bahasa Melayu",
-        "title": "الملايو"
-      },
-      "title": "اللغة"
-    },
-    "mode": "النمط",
-    "prayerTimes": "أوقات الصلاة",
-    "themes": {
-      "dark": {
-        "description": "استخدم المظهر الداكن دائمًا",
-        "title": "داكن"
-      },
-      "light": {
-        "description": "استخدم المظهر الفاتح دائمًا",
-        "title": "فاتح"
-      },
-      "system": {
-        "description": "اتبع إعدادات النظام",
-        "title": "النظام"
-      },
-      "title": "السمات"
-    },
-    "title": "الإعدادات"
-  }
+  "settings.appearance": "المظهر",
+  "settings.crashReporting.accessibilityHint": "يفتح نافذة للموافقة على تقارير الأعطال",
+  "settings.crashReporting.accessibilityLabel": "إعدادات تقارير الأعطال",
+  "settings.crashReporting.bullet1": "• معلومات الخطأ التقنية",
+  "settings.crashReporting.bullet2": "• طراز الجهاز ونظام التشغيل",
+  "settings.crashReporting.bullet3": "• إصدار التطبيق والتكوين",
+  "settings.crashReporting.description": "نقوم بجمع تقارير الأعطال التي تساعدنا على تحسين التطبيق من خلال تحديد المشكلات. تتضمن هذه التقارير:",
+  "settings.crashReporting.enableToggle": "تمكين تقارير الأعطال",
+  "settings.crashReporting.privacyNote": "لا يتم جمع البيانات الشخصية أو محتوى المستخدم. يمكنك إلغاء الاشتراك في أي وقت.",
+  "settings.crashReporting.title": "تقارير الأعطال",
+  "settings.help.contact.email": "البريد الإلكتروني",
+  "settings.help.contact.telegram": "تيليجرام",
+  "settings.help.contact.whatsapp": "واتساب",
+  "settings.help.contactUs": "تواصل معنا",
+  "settings.help.title": "المساعدة",
+  "settings.language": "اللغة",
+  "settings.languages.ar.nativeTitle": "العربية",
+  "settings.languages.ar.title": "العربية",
+  "settings.languages.en.nativeTitle": "English",
+  "settings.languages.en.title": "الإنجليزية",
+  "settings.languages.ms.nativeTitle": "Bahasa Melayu",
+  "settings.languages.ms.title": "الملايو",
+  "settings.languages.title": "اللغة",
+  "settings.mode": "النمط",
+  "settings.prayerTimes": "أوقات الصلاة",
+  "settings.themes.dark.description": "استخدم المظهر الداكن دائمًا",
+  "settings.themes.dark.title": "داكن",
+  "settings.themes.light.description": "استخدم المظهر الفاتح دائمًا",
+  "settings.themes.light.title": "فاتح",
+  "settings.themes.system.description": "اتبع إعدادات النظام",
+  "settings.themes.system.title": "النظام",
+  "settings.themes.title": "السمات",
+  "settings.title": "الإعدادات"
 }
