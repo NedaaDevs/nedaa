@@ -21,6 +21,7 @@
     "@expo/html-elements": "^0.4.2",
     "@expo/vector-icons": "^14.1.0",
     "@gluestack-ui/actionsheet": "^0.2.53",
+    "@gluestack-ui/alert": "^0.1.16",
     "@gluestack-ui/button": "^1.0.14",
     "@gluestack-ui/icon": "^0.1.27",
     "@gluestack-ui/image": "^0.1.17",
