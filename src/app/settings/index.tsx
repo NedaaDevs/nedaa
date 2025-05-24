@@ -10,7 +10,7 @@ import SettingsItem from "@/components/SettingsItem";
 import SettingsFooter from "@/components/SettingsFooter";
 
 // Icons
-import { Languages, Palette, CircleHelp } from "lucide-react-native";
+import { Languages, Palette, CircleHelp, MapPin } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -37,6 +37,9 @@ const SettingsScreen = () => {
         icon={Palette}
         currentValue={t(`settings.themes.${mode}.title`)}
       />
+
+      {/* Location */}
+      <SettingsItem name={t("settings.location.title")} path="/settings/location" icon={MapPin} />
 
       {/* Help */}
       <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
