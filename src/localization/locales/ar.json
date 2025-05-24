@@ -17,6 +17,7 @@
   "common.loadingPrayerTimes": "جاري تحميل أوقات الصلاة...",
   "common.logo": "شعار",
   "common.nedaa": "نِداء",
+  "common.ok": "حسناً",
   "common.visitWebsite": "زيارة الموقع الإلكتروني",
   "hijriMonths": [
     "محرم",
@@ -32,6 +33,15 @@
     "ذو القعدة",
     "ذو الحجة"
   ],
+  "location.current": "الموقع الحالي",
+  "location.permission.allow": "السماح بالوصول إلى الموقع",
+  "location.permission.deniedMessage": "تم رفض إذن الموقع. يرجى تمكينه في إعدادات جهازك.",
+  "location.permission.description": "يتطلب هذا التطبيق الوصول إلى الموقع لتوفير أوقات الصلاة الدقيقة بناءً على موقعك الحالي. يرجى تمكين خدمات الموقع في إعدادات جهازك.",
+  "location.permission.openSettings": "فتح إعدادات التطبيق",
+  "location.permission.title": "مطلوب إذن الموقع",
+  "location.settings.keepLocationUpdated.infoDescription": "تتحقق هذه الميزة من موقعك عند فتح التطبيق وتقترح تحديث أوقات الصلاة إذا تغيرت مدينتك. يساعد ذلك في ضمان حصولك دائمًا على أوقات صلاة دقيقة لموقعك الحالي.",
+  "location.settings.keepLocationUpdated.infoTitle": "تحديث الموقع تلقائيًا",
+  "location.settings.keepLocationUpdated.title": "تحديث الموقع تلقائيًا",
   "otherTimings": {
     "firstThird": "الثلث الأول",
     "imsak": "إمساك",
@@ -73,6 +83,7 @@
   "settings.languages.ms.nativeTitle": "Bahasa Melayu",
   "settings.languages.ms.title": "الملايو",
   "settings.languages.title": "اللغة",
+  "settings.location.title": "الموقع",
   "settings.mode": "النمط",
   "settings.prayerTimes": "أوقات الصلاة",
   "settings.themes.dark.description": "استخدم المظهر الداكن دائمًا",
