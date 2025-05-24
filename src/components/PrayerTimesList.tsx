@@ -36,9 +36,7 @@ const PrayerTimesList = () => {
 
   const { becameActiveAt } = useAppVisibility();
 
-  useEffect(() => {
-    console.log("Became visable prayer  timings");
-  }, [becameActiveAt]);
+  useEffect(() => {}, [becameActiveAt]);
 
   if (!todayTimings) {
     return (
