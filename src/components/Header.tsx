@@ -84,7 +84,7 @@ const Header = () => {
       : `prayerTimes.${nextPrayer.name}`;
 
   return (
-    <Box className="m-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md ">
+    <Box className="m-2 rounded-2xl bg-white dark:bg-slate-800 shadow-md ">
       <Box className="p-4 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
         <VStack className="items-center my-3">
           <Text className="text-2xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
@@ -110,7 +110,7 @@ const Header = () => {
 
       <Box className="p-6 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
         <HStack className="justify-between items-center w-full space-x-4">
-          <Text className="text-4xl font-bold text-slate-700 dark:text-white truncate max-w-[45%]">
+          <Text className="text-4xl font-bold text-slate-700 dark:text-secondary truncate max-w-[45%]">
             {t(prayerName)}
           </Text>
 
