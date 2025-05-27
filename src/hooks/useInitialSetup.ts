@@ -11,7 +11,7 @@ import { appSetup, firstRunSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 
 const initSentry = (consent: boolean) => {
-  if (consent) {
+  if (!__DEV__ && consent) {
     Sentry.init({
       dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       enabled: !__DEV__,
