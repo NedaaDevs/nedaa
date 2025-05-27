@@ -45,10 +45,39 @@ const OtherTimingsList = () => {
     );
   }
 
+  const findNext = () => {
+    const now = new Date();
+    const timings = Object.entries(todayTimings.otherTimings);
+
+    // Convert all timings to Date objects with their names
+    const timingsWithDates = timings.map(([name, time]) => ({
+      name: name as OtherTimingName,
+      time,
+      date: new Date(time),
+    }));
+
+    // Sort by time
+    timingsWithDates.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Find the next timing after current time
+    const nextTiming = timingsWithDates.find((timing) => timing.date > now);
+
+    // If no timing is found for today, the first timing of tomorrow would be next
+    // But this list should be updated with next day timings after Isha
+    return nextTiming?.name;
+  };
+
+  const nextTimingName = findNext();
+
+  const sortedEntries = Object.entries(todayTimings.otherTimings).sort(
+    ([, timeA], [, timeB]) => new Date(timeA).getTime() - new Date(timeB).getTime()
+  );
+
   return (
     <Box>
-      {Object.entries(todayTimings.otherTimings).map(([timing, time]) => {
+      {sortedEntries.map(([timing, time]) => {
         const timingName = timing as OtherTimingName;
+        const isNext = timingName === nextTimingName;
 
         return (
           <TimingItem
@@ -56,6 +85,7 @@ const OtherTimingsList = () => {
             name={t(`otherTimings.${translationKey[timingName]}`)}
             time={time}
             icon={otherTimingIcons[timingName]}
+            isNext={isNext}
           />
         );
       })}
