@@ -124,10 +124,9 @@ const KeepLocationUpdated = () => {
     localizedLocation,
     locationDetails,
     isGettingLocation,
-    keepLocationUpdated,
-    checkLocationIfNeeded,
-    forceLocationUpdate,
-    setKeepLocationUpdated,
+    autoUpdateLocation,
+    setAutoUpdateLocation,
+    updateCurrentLocation,
   } = useLocationStore();
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -146,10 +145,6 @@ const KeepLocationUpdated = () => {
       const { granted, canRequestAgain } = await checkLocationPermission();
       setHasPermission(granted);
       setCanAskPermission(canRequestAgain);
-
-      if (granted) {
-        await checkLocationIfNeeded();
-      }
     } catch (error) {
       console.error("Failed to check permission:", error);
     } finally {
@@ -162,12 +157,8 @@ const KeepLocationUpdated = () => {
       const { granted } = await requestLocationPermission();
       setHasPermission(granted);
 
-      if (granted) {
-        await checkLocationIfNeeded();
-      } else {
-        const { canRequestAgain } = await checkLocationPermission();
-        setCanAskPermission(canRequestAgain);
-      }
+      const { canRequestAgain } = await checkLocationPermission();
+      setCanAskPermission(canRequestAgain);
     } catch (error) {
       console.error("Failed to request permission:", error);
     }
@@ -183,14 +174,14 @@ const KeepLocationUpdated = () => {
 
   const handleManualRefresh = async () => {
     try {
-      await forceLocationUpdate();
+      await updateCurrentLocation();
     } catch (error) {
       console.error(error);
     }
   };
 
-  const toggleKeepLocationUpdated = (value: boolean) => {
-    setKeepLocationUpdated(value);
+  const toggleAutoLocationUpdated = (value: boolean) => {
+    setAutoUpdateLocation(value);
   };
 
   if (isCheckingPermission) {
@@ -254,8 +245,8 @@ const KeepLocationUpdated = () => {
             </Pressable>
           </HStack>
           <Switch
-            value={keepLocationUpdated}
-            onValueChange={toggleKeepLocationUpdated}
+            value={autoUpdateLocation}
+            onValueChange={toggleAutoLocationUpdated}
             trackColor={{ false: "#d1d5db", true: "#3b82f6" }}
             thumbColor="#ffffff"
           />
