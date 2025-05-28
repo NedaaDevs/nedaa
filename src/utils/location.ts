@@ -3,10 +3,17 @@ import {
   getCurrentPositionAsync,
   getForegroundPermissionsAsync,
   requestForegroundPermissionsAsync,
+  LocationObject,
+  Accuracy,
 } from "expo-location";
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/location";
+
+// Constants
+export const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+export const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
+export const LOCATION_REQUEST_TIMEOUT = 10000; // 10 seconds
 
 export const mapToLocalStatus = (status: PermissionStatus): LocalPermissionStatus => {
   switch (status) {
@@ -46,6 +53,44 @@ export const requestLocationPermission = async () => {
   }
 };
 
+// Get location with timeout protection(sometimes getting location get stuck)
+export const getLocationWithTimeout = async (): Promise<LocationObject> => {
+  try {
+    const locationPromise = getCurrentPositionAsync({
+      accuracy: Accuracy.Low,
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Location request timed out")), LOCATION_REQUEST_TIMEOUT);
+    });
+
+    return await Promise.race([locationPromise, timeoutPromise]);
+  } catch (error) {
+    console.error("Location request failed:", error);
+    throw error;
+  }
+};
+
+// Calculate distance between coordinates
+export const calculateDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 export const getCurrentLocation = async () => {
   // First check permission
   const { granted, canRequestAgain } = await checkLocationPermission();
@@ -58,9 +103,9 @@ export const getCurrentLocation = async () => {
     }
   }
 
-  // Now get location
+  // Now get location with timeout protection
   try {
-    const location = await getCurrentPositionAsync({});
+    const location = await getLocationWithTimeout();
     return { location };
   } catch (error: any) {
     return { error: error.message };

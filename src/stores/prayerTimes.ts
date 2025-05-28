@@ -24,7 +24,7 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
-import { checkLocationPermission, getCurrentLocation } from "@/utils/location";
+import { checkLocationPermission } from "@/utils/location";
 
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
@@ -112,7 +112,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             // if we haven't already get the current location
             if (!get().didGetCurrentLocation && (await checkLocationPermission()).granted) {
-              await locationStore.getState().updateLocation();
+              await locationStore.getState().initializeLocation();
 
               set({
                 didGetCurrentLocation: true,

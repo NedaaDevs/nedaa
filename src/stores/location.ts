@@ -5,33 +5,17 @@ import * as Location from "expo-location";
 
 // Types
 import { LocationDetails, initialLocationDetails } from "@/types/location";
+import { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
+import { ErrorResponse } from "@/types/api";
 
 // Stores
 import appStore from "@/stores/app";
 
 // Services
 import { geocodeApi } from "@/api/geocodeApi";
-import { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
-import { ErrorResponse } from "@/types/api";
 
-// Constants
-const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
-
-// Calculate distance between coordinates
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+// Utils
+import { getLocationWithTimeout, calculateDistance, CITY_CHANGE_THRESHOLD } from "@/utils/location";
 
 export type LocationStore = {
   locationDetails: LocationDetails;
@@ -39,20 +23,23 @@ export type LocationStore = {
     country: string;
     city: string;
   };
+  timezone: string;
+  isLocationPermissionGranted: boolean;
   isGettingLocation: boolean;
-  lastCheckTimestamp: number | null;
-  previousCity: string | null;
-  keepLocationUpdated: boolean;
-  hasLocationChanged: boolean;
+  lastKnownCoords: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  cityChangeDetected: boolean;
+  autoUpdateLocation: boolean;
 
-  updateLocation: () => Promise<void>;
-  updateAddressTranslation: () => Promise<boolean>;
+  initializeLocation: () => Promise<void>;
+  setAutoUpdateLocation: (value: boolean) => void;
+  updateCurrentLocation: () => Promise<void>;
+  checkCityChange: () => Promise<boolean>;
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
-  setTimezone: (timezone: string) => Promise<void>;
-  setKeepLocationUpdated: (keepUpdated: boolean) => void;
-  checkLocationIfNeeded: () => Promise<boolean>;
-  forceLocationUpdate: () => Promise<void>;
-  dismissLocationChangeNotification: () => void;
+  updateAddressTranslation: () => Promise<boolean>;
+  setTimezone: (tz: string) => Promise<void>;
 };
 
 export const useLocationStore = create<LocationStore>()(
@@ -61,124 +48,169 @@ export const useLocationStore = create<LocationStore>()(
       (set, get) => ({
         locationDetails: initialLocationDetails,
         localizedLocation: { country: "", city: "" },
+        timezone: "Asia/Riyadh",
+        isLocationPermissionGranted: false,
         isGettingLocation: false,
-        lastCheckTimestamp: null,
-        previousCity: null,
-        keepLocationUpdated: false,
-        hasLocationChanged: false,
+        lastKnownCoords: null,
+        cityChangeDetected: false,
+        autoUpdateLocation: true,
 
-        setKeepLocationUpdated: async (keepLocationUpdated) => {
-          set({
-            keepLocationUpdated,
-          });
-        },
-        // Check location only if 24 hours passed since last check
-        checkLocationIfNeeded: async () => {
-          const now = Date.now();
-          const lastCheck = get().lastCheckTimestamp;
-
-          // Skip if checked within last 24 hours
-          if (lastCheck && now - lastCheck < CITY_CHECK_INTERVAL) {
-            //TODO: remove log
-            console.log("[LocationStore] Skipping check - checked recently");
-            return false;
-          }
-
-          console.log("[LocationStore] Performing scheduled location check");
-          await get().updateLocation();
-          return true;
-        },
-
-        // Force update regardless of last check time
-        forceLocationUpdate: async () => {
-          await get().updateLocation();
-        },
-
-        dismissLocationChangeNotification: () => {
-          set({ hasLocationChanged: false });
-        },
-
-        updateLocation: async () => {
+        // Initialize location when permission is granted
+        initializeLocation: async () => {
           set({ isGettingLocation: true });
-
           try {
-            const location = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Low,
+            // Get initial location with timeout protection
+            const location = await getLocationWithTimeout();
+            console.log("Initial location retrieved", location.coords);
+
+            const [geocodedAddress] = await Location.reverseGeocodeAsync({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
             });
 
-            const currentCoords = location.coords;
-            const previousLocation = get().locationDetails;
-            const previousCity = get().previousCity;
-
-            // Check if location changed significantly
-            let cityChanged = false;
-            if (previousLocation.coords.latitude !== 0 && previousLocation.coords.longitude !== 0) {
-              const distance = calculateDistance(
-                previousLocation.coords.latitude,
-                previousLocation.coords.longitude,
-                currentCoords.latitude,
-                currentCoords.longitude
-              );
-
-              cityChanged = distance > CITY_CHANGE_THRESHOLD;
-              //TODO: remove log
-              console.log(`[LocationStore] Distance from last location: ${distance.toFixed(2)}km`);
-            }
-
-            // Always get both geocoding results
-            // 1. Get localized address for localizedLocation
-            await get()
-              .updateAddressTranslation()
-              .catch((e) => {
-                console.error(e);
+            // Get localized version
+            const localizedGeocode = await get()
+              .reverseGeocode({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                locale: appStore.getState().locale,
+              })
+              .catch((error) => {
+                console.error("Failed to get localized address:", error);
+                return null;
               });
 
-            // Get Expo's reverse geocoding for city change detection
-            const [geocodedAddress] = await Location.reverseGeocodeAsync({
-              latitude: currentCoords.latitude,
-              longitude: currentCoords.longitude,
-            });
-
-            const timezone = get().locationDetails.timezone;
-            const newCity = geocodedAddress.city ?? "N/A"; // This is the new city from Expo
-
-            // Check if city name changed using Expo's geocoding result
-            if (previousCity && previousCity !== newCity) {
-              cityChanged = true;
-            }
-            // Update location details
+            // Set initial state
             set({
               locationDetails: {
-                coords: currentCoords,
+                coords: location.coords,
                 address: {
                   country: geocodedAddress.country ?? "N/A",
-                  city: newCity,
+                  city: geocodedAddress.city ?? "N/A",
                 },
+                timezone: localizedGeocode?.timezone || "Asia/Riyadh",
                 error: null,
                 isLoading: false,
-                timezone,
               },
-              previousCity: previousCity || newCity,
-              hasLocationChanged: cityChanged && !!previousCity,
-              lastCheckTimestamp: Date.now(),
+              localizedLocation: {
+                country: localizedGeocode?.countryName || geocodedAddress.country || "N/A",
+                city: localizedGeocode?.city || geocodedAddress.city || "N/A",
+              },
+              lastKnownCoords: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              },
+              isLocationPermissionGranted: true,
             });
           } catch (error) {
-            console.error("Error getting location:", error);
+            console.error("Failed to initialize location:", error);
             set({
               locationDetails: {
-                ...get().locationDetails,
-                error: error instanceof Error ? error.message : "Failed to get location",
+                ...initialLocationDetails,
+                error: error instanceof Error ? error.message : "Failed to initialize location",
                 isLoading: false,
               },
             });
           } finally {
-            set({
-              isGettingLocation: false,
-            });
+            set({ isGettingLocation: false });
           }
         },
 
-        // Updated only to get localizedLocation (For display only)
+        updateCurrentLocation: async () => {
+          set({ isGettingLocation: true });
+          try {
+            const location = await getLocationWithTimeout();
+            console.log(
+              `Location updated to: ${location.coords.latitude}, ${location.coords.longitude}`
+            );
+
+            set((state) => ({
+              locationDetails: {
+                ...state.locationDetails,
+                coords: location.coords,
+                error: null,
+              },
+              lastKnownCoords: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              },
+            }));
+
+            // Update the localized address in the background
+            get()
+              .updateAddressTranslation()
+              .catch((error) => {
+                console.error("Failed to update address translation:", error);
+              });
+          } catch (error) {
+            console.error("Failed to update location:", error);
+            set((state) => ({
+              locationDetails: {
+                ...state.locationDetails,
+                error: error instanceof Error ? error.message : "Failed to update location",
+              },
+            }));
+          } finally {
+            set({ isGettingLocation: false });
+          }
+        },
+
+        setTimezone: async (tz) => {
+          set({
+            timezone: tz,
+          });
+        },
+
+        // Check if city has changed
+        checkCityChange: async () => {
+          const lastCoords = get().lastKnownCoords;
+          if (!lastCoords) {
+            console.log("No previous coordinates available, skipping city change check");
+            return false;
+          }
+
+          try {
+            const currentLocation = await getLocationWithTimeout();
+
+            // Calculate distance
+            const distance = calculateDistance(
+              lastCoords.latitude,
+              lastCoords.longitude,
+              currentLocation.coords.latitude,
+              currentLocation.coords.longitude
+            );
+
+            console.log(`Distance from last location: ${distance.toFixed(2)}km`);
+
+            if (distance > CITY_CHANGE_THRESHOLD) {
+              // Get new city name to confirm it's actually different
+              const [geocodedAddress] = await Location.reverseGeocodeAsync({
+                latitude: currentLocation.coords.latitude,
+                longitude: currentLocation.coords.longitude,
+              });
+
+              const currentCity = get().locationDetails.address?.city;
+              const newCity = geocodedAddress.city ?? "N/A";
+
+              if (currentCity !== newCity) {
+                console.log(`City changed from ${currentCity} to ${newCity}`);
+
+                return true;
+              }
+            }
+
+            return false;
+          } catch (error) {
+            console.error("Failed to check city change:", error);
+            return false;
+          }
+        },
+
+        setAutoUpdateLocation: (value: boolean) => {
+          set({ autoUpdateLocation: value });
+        },
+
+        //  get localizedLocation (For display only)
         updateAddressTranslation: async () => {
           const location = get().locationDetails;
 
@@ -188,7 +220,7 @@ export const useLocationStore = create<LocationStore>()(
               longitude: location.coords.longitude,
               locale: appStore.getState().locale,
             })
-            .catch((e) => console.error(e));
+            .catch((e) => console.error("Failed to update address translation:", e));
 
           if (geocodeAdd) {
             // Update localizedLocation with localized strings
@@ -222,19 +254,9 @@ export const useLocationStore = create<LocationStore>()(
 
             return response.data;
           } catch (error: any) {
-            console.error("Failed reverse geocode: ", error);
+            console.error("Failed reverse geocode:", error);
             throw error as ErrorResponse;
           }
-        },
-
-        setTimezone: async (timezone: string) => {
-          const locationDetails = get().locationDetails;
-          set({
-            locationDetails: {
-              ...locationDetails,
-              timezone,
-            },
-          });
         },
       }),
       {
@@ -243,8 +265,9 @@ export const useLocationStore = create<LocationStore>()(
         partialize: (state) => ({
           locationDetails: state.locationDetails,
           localizedLocation: state.localizedLocation,
-          lastCheckTimestamp: state.lastCheckTimestamp,
-          previousCity: state.previousCity,
+          lastKnownCoords: state.lastKnownCoords,
+          isLocationPermissionGranted: state.isLocationPermissionGranted,
+          autoUpdateLocation: state.autoUpdateLocation,
         }),
       }
     ),
