@@ -18,6 +18,7 @@ export const timestampToDateInt = (timestamp: number, timezone: string): number 
  * @param tz - IANA timezone string (e.g., 'America/Los_Angeles')
  * @returns Date object representing current time in specified timezone
  */
+// FIXME: It seems this will return date based on the device timezone.
 export const timeZonedNow = (tz: string): Date => {
   return fromZonedTime(Date.now(), tz);
 };
