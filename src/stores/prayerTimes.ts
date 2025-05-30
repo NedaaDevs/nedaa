@@ -31,7 +31,7 @@ export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
   isLoading: boolean;
   isGettingProviders: boolean;
-  selectedProviderId: number;
+  selectedProvider: Provider | null;
   yesterdayTimings: DayPrayerTimes | null;
   todayTimings: DayPrayerTimes | null;
   tomorrowTimings: DayPrayerTimes | null;
@@ -62,7 +62,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
   devtools(
     persist(
       (set, get) => ({
-        selectedProviderId: 0,
+        selectedProvider: null,
         didGetCurrentLocation: false,
         isLoading: false,
         isGettingProviders: false,
@@ -105,7 +105,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             set({
               providers: response.data,
-              selectedProviderId: response.data[0].id, // TODO: when we have more than one provider we should decide default provider based on accuracy for country
+              selectedProvider: response.data[0], // TODO: when we have more than one provider we should decide default provider based on accuracy for country
             });
 
             return response.data;
