@@ -1893,6 +1893,16 @@
   dependencies:
     "@react-native-aria/focus" "^0.2.9"
 
+"@gluestack-ui/select@^0.1.31":
+  version "0.1.31"
+  resolved "https://registry.npmjs.org/@gluestack-ui/select/-/select-0.1.31.tgz"
+  integrity sha512-d8vfdCK4VFBYEDYMCTRYcZCWvYaf7UWMJGg2uMnutHA8Y4sDXjKR5P821xKdh75QVkmZRZm1MdzSWFvXUzAlgg==
+  dependencies:
+    "@gluestack-ui/form-control" "^0.1.19"
+    "@gluestack-ui/hooks" "0.1.13"
+    "@gluestack-ui/utils" "^0.1.14"
+    "@react-native-aria/focus" "^0.2.9"
+
 "@gluestack-ui/switch@^0.1.29":
   version "0.1.29"
   resolved "https://registry.npmjs.org/@gluestack-ui/switch/-/switch-0.1.29.tgz"

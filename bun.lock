@@ -17,6 +17,7 @@
         "@gluestack-ui/nativewind-utils": "^1.0.26",
         "@gluestack-ui/overlay": "^0.1.22",
         "@gluestack-ui/pressable": "^0.1.23",
+        "@gluestack-ui/select": "^0.1.31",
         "@gluestack-ui/switch": "^0.1.29",
         "@gluestack-ui/toast": "^1.0.9",
         "@legendapp/motion": "^2.4.0",
@@ -447,6 +448,8 @@
     "@gluestack-ui/provider": ["@gluestack-ui/provider@0.1.19", "", { "dependencies": { "@react-native-aria/interactions": "0.2.16", "tsconfig": "7", "typescript": "^5.6.3" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-+MbL2VpGK7kkSNccgNeMay/nslDA4BzgjHFWwnys+dSvyCMgt7yfSxrfWziTvAyaQ4cRkq/lXCfJK0B1nuCZ4A=="],
 
     "@gluestack-ui/react-native-aria": ["@gluestack-ui/react-native-aria@0.1.6", "", { "dependencies": { "@react-native-aria/focus": "^0.2.9" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-uLsdiTacS6iBVvk/+6Vvh2AJN9u0OzTvT0FqTiM8vgtesZvSBpv1DN1o5cQR+C/7s56yujdjRXzmRarknm60Qg=="],
+
+    "@gluestack-ui/select": ["@gluestack-ui/select@0.1.31", "", { "dependencies": { "@gluestack-ui/form-control": "^0.1.19", "@gluestack-ui/hooks": "0.1.13", "@gluestack-ui/utils": "^0.1.14", "@react-native-aria/focus": "^0.2.9" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-d8vfdCK4VFBYEDYMCTRYcZCWvYaf7UWMJGg2uMnutHA8Y4sDXjKR5P821xKdh75QVkmZRZm1MdzSWFvXUzAlgg=="],
 
     "@gluestack-ui/switch": ["@gluestack-ui/switch@0.1.29", "", { "dependencies": { "@gluestack-ui/form-control": "^0.1.19", "@gluestack-ui/utils": "^0.1.15", "@react-native-aria/focus": "^0.2.9", "@react-native-aria/interactions": "0.2.16", "@react-stately/toggle": "^3.4.4" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-swx0J20ULpN+pkHg8KioWibZETWE/6XvCBckmApNZf9RO2MiHHkNMw4Txne4u1z0OyLKGzBW1dbmkhLIOObaXg=="],
 
