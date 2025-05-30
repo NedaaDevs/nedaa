@@ -54,3 +54,9 @@ export type Prayer = {
   time: string;
   date: number;
 };
+
+export type Provider = {
+  id: number;
+  name: string;
+  website: string;
+};
