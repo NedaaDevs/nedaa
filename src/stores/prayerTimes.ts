@@ -10,6 +10,7 @@ import {
   PrayerName,
   PrayerTimesParams,
   PrayerTimesResponse,
+  Provider,
 } from "@/types/prayerTimes";
 import { ErrorResponse } from "@/types/api";
 
@@ -29,11 +30,15 @@ import { checkLocationPermission } from "@/utils/location";
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
   isLoading: boolean;
+  isGettingProviders: boolean;
+  selectedProviderId: number;
   yesterdayTimings: DayPrayerTimes | null;
   todayTimings: DayPrayerTimes | null;
   tomorrowTimings: DayPrayerTimes | null;
   twoWeeksTimings: DayPrayerTimes[] | null;
+  providers: Provider[];
   getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
+  getProviders: () => Promise<Provider[]>;
   getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
   getNextPrayer: () => Prayer | null;
@@ -57,12 +62,15 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
   devtools(
     persist(
       (set, get) => ({
+        selectedProviderId: 0,
         didGetCurrentLocation: false,
         isLoading: false,
+        isGettingProviders: false,
         yesterdayTimings: null,
         todayTimings: null,
         tomorrowTimings: null,
         twoWeeksTimings: null,
+        providers: [],
 
         getPrayerTimes: async (params): Promise<PrayerTimesResponse> => {
           try {
@@ -74,6 +82,31 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             if (!response.success) {
               throw response as ErrorResponse;
             }
+
+            return response.data;
+          } catch (error: any) {
+            throw error;
+          } finally {
+            set({
+              isLoading: false,
+            });
+          }
+        },
+        getProviders: async (): Promise<Provider[]> => {
+          try {
+            set({
+              isLoading: true,
+            });
+            const response = await prayerTimesApi.getProviders();
+
+            if (!response.success) {
+              throw response as ErrorResponse;
+            }
+
+            set({
+              providers: response.data,
+              selectedProviderId: response.data[0].id, // TODO: when we have more than one provider we should decide default provider based on accuracy for country
+            });
 
             return response.data;
           } catch (error: any) {
