@@ -10,7 +10,7 @@ import SettingsItem from "@/components/SettingsItem";
 import SettingsFooter from "@/components/SettingsFooter";
 
 // Icons
-import { Languages, Palette, CircleHelp, MapPin } from "lucide-react-native";
+import { Languages, Palette, CircleHelp, MapPin, Settings2Icon } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -46,6 +46,13 @@ const SettingsScreen = () => {
         path="/settings/location"
         icon={MapPin}
         currentValue={localizedLocation.city ?? ""}
+      />
+
+      {/* Advance */}
+      <SettingsItem
+        name={t("settings.advance.title")}
+        path="/settings/advance"
+        icon={Settings2Icon}
       />
 
       {/* Help */}
