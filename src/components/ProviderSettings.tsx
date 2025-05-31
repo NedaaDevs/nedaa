@@ -1,10 +1,13 @@
 import { FC, useEffect, useState } from "react";
 import { TouchableOpacity } from "react-native";
-
 import { useTranslation } from "react-i18next";
 
 // Store
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useProviderSettingsStore } from "@/stores/providerSettings";
+
+// Constants
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -12,10 +15,12 @@ import { Text } from "@/components/ui/text";
 import { Spinner } from "@/components/ui/spinner";
 
 import ProvidersList from "@/components/ProvidersList";
+import AladhanSettings from "@/components/AladhanSettings";
 
 export const ProviderSettings: FC = () => {
   const { t } = useTranslation();
   const { isGettingProviders, providers, getProviders } = usePrayerTimesStore();
+  const { currentProviderId } = useProviderSettingsStore();
 
   const [error, setError] = useState<string | null>(null);
 
@@ -59,20 +64,20 @@ export const ProviderSettings: FC = () => {
     );
   }
 
+  // Render provider-specific settings based on currentProviderId
+  const renderProviderSettings = () => {
+    switch (currentProviderId) {
+      case PRAYER_TIME_PROVIDERS.ALADHAN.id:
+        return <AladhanSettings />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <Box>
-      {/* Show loading indicator if refreshing prayer times */}
-      {/* {isLoading && (
-        <View>
-          <ActivityIndicator size="small" color="#3498db" />
-          <Text>{t("common.loadingPrayerTimes")}</Text>
-        </View>
-      )} */}
-
       {providers.length > 0 && <ProvidersList />}
-
-      {/* Provider-specific Settings */}
-      {/* {selectedProviderId === PRAYER_TIME_PROVIDERS.ALADHAN.id && <AladhanSettings />} */}
+      {renderProviderSettings()}
     </Box>
   );
 };
