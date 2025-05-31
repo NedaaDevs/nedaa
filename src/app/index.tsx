@@ -20,7 +20,7 @@ export default function MainScreen() {
       <TopBar title="common.nedaa" href="/settings" icon={Settings} />
       <Box className="flex-1">
         <Header />
-        <Divider className="my-3" />
+        <Divider className="my-1" />
         <TimingsCarousel mode={mode} />
       </Box>
     </ScrollView>
