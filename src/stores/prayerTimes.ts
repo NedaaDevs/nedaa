@@ -22,10 +22,14 @@ import { PrayerTimesDB } from "@/services/db";
 
 // Stores
 import locationStore from "@/stores/location";
+import providerSettingsStore from "@/stores/providerSettings";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
 import { checkLocationPermission } from "@/utils/location";
+
+// Adapters
+import { getAdapterByProviderId } from "@/adapters/providers";
 
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
@@ -72,12 +76,20 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         twoWeeksTimings: null,
         providers: [],
 
-        getPrayerTimes: async (params): Promise<PrayerTimesResponse> => {
+        getPrayerTimes: async (): Promise<PrayerTimesResponse> => {
           try {
-            set({
-              isLoading: true,
-            });
-            const response = await prayerTimesApi.get(params);
+            set({ isLoading: true });
+
+            const { currentProviderId } = providerSettingsStore.getState();
+
+            console.log("🚀 => getPrayerTimes: => currentProviderId:", currentProviderId);
+            const adapter = getAdapterByProviderId(currentProviderId);
+            console.log("🚀 => getPrayerTimes: => adapter:", adapter);
+
+            const apiParams = adapter.toParams();
+
+            // Make API call(we also should include provider id as get param)
+            const response = await prayerTimesApi.get(apiParams);
 
             if (!response.success) {
               throw response as ErrorResponse;
@@ -87,9 +99,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           } catch (error: any) {
             throw error;
           } finally {
-            set({
-              isLoading: false,
-            });
+            set({ isLoading: false });
           }
         },
         getProviders: async (): Promise<Provider[]> => {
