@@ -205,6 +205,14 @@ export interface AladhanSettings {
   tune?: AladhanTuning;
 }
 
+export type AladhanApiParams = {
+  lat: number;
+  long: number;
+  year: number;
+  month: number;
+  method?: number;
+};
+
 /**
  * Provider defaults
  */
