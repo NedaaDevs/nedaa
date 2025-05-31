@@ -206,3 +206,5 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
     { name: "ProviderSettings" }
   )
 );
+
+export default useProviderSettingsStore;
