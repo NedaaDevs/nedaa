@@ -84,31 +84,29 @@ const Header = () => {
       : `prayerTimes.${nextPrayer.name}`;
 
   return (
-    <Box className="m-2 rounded-2xl">
-      <Box className="p-4 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
+    <Box className="m-1 rounded-2xl">
+      <Box className="p-3 rounded-xl mx-2 mt-1  border-s-hairline">
         <VStack className="items-center my-3">
-          <Text className="text-2xl font-medium text-slate-700 dark:text-slate-200">{dayName}</Text>
+          <Text className="text-2xl font-bold text-slate-700 dark:text-slate-200">{dayName}</Text>
           <Text className="text-lg text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>
         </VStack>
       </Box>
 
-      <VStack className="items-center mb-3">
-        <HStack className="items-center justify-center w-full px-8">
-          <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          <Text className="mx-4 text-2xl font-medium text-slate-600 dark:text-slate-300">
-            {localizedLocation.city ?? locationDetails.address?.city}
-          </Text>
-          <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-        </HStack>
+      <VStack className="items-center mb-2">
+        <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        <Text className="mx-4 text-2xl font-semibold text-slate-700 dark:text-slate-300">
+          {localizedLocation.city ?? locationDetails.address?.city}
+        </Text>
+        <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
 
-        <Text className="text-base text-slate-400 dark:text-slate-500">
+        <Text className="text-base text-slate-600 dark:text-slate-500">
           {localizedLocation.country ?? locationDetails.address?.country}
         </Text>
       </VStack>
 
       <PreviousPrayer />
 
-      <Box className="p-6 bg-white dark:bg-slate-800 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
+      <Box className="p-8 bg-white dark:bg-slate-800 rounded-xl mx-1 mt-2 mb-2 border-s-hairline">
         <HStack className="justify-between items-center w-full space-x-4">
           <Text className="text-4xl font-bold text-slate-700 dark:text-secondary truncate max-w-[45%]">
             {t(prayerName)}
@@ -117,7 +115,7 @@ const Header = () => {
           <Divider className="h-14 w-px flex-shrink-0 bg-slate-300 dark:bg-slate-600" />
 
           <VStack className="items-end max-w-[45%]">
-            <Text className="text-4xl font-bold text-primary dark:text-secondary truncate">
+            <Text className="text-4xl font-semibold text-primary dark:text-secondary truncate">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
 
