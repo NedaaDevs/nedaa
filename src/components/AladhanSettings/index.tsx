@@ -1,7 +1,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+
+// Hooks
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
+// Components
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import MethodSettings from "@/components/AladhanSettings/MethodSettings";
