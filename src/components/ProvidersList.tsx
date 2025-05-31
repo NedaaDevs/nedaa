@@ -14,6 +14,7 @@ import {
   SelectDragIndicatorWrapper,
   SelectDragIndicator,
   SelectItem,
+  SelectScrollView,
 } from "@/components/ui/select";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -25,7 +26,9 @@ const ProvidersList = () => {
   const { t } = useTranslation();
 
   return (
-    <Box className="px-4 py-2">
+    <Box className="mt-4 px-4">
+      <Text className="text-lg font-semibold mb-2">{t("providers.title")}</Text>
+
       <Select
         selectedValue={(selectedProvider && selectedProvider.id.toString()) ?? null}
         initialLabel={(selectedProvider && selectedProvider.name) ?? ""}
@@ -48,41 +51,28 @@ const ProvidersList = () => {
             <SelectDragIndicatorWrapper>
               <SelectDragIndicator />
             </SelectDragIndicatorWrapper>
-
-            {providers.map((provider) => {
-              const isSelected = (selectedProvider && selectedProvider.id === provider.id) ?? false;
-              return (
-                <SelectItem
-                  key={provider.id}
-                  value={provider.id.toString()}
-                  label={provider.name}
-                  className="px-4 border-b border-gray-100 bg-white active:bg-gray-50 transition-colors duration-200">
-                  <Box className="flex-row items-center justify-between">
-                    <Box className="flex-1">
-                      <Text
-                        className={`
-                            text-base font-semibold mb-1 
-                            ${isSelected ? "text-blue-500" : "text-gray-800"}
-                            transition-colors duration-200
-                          `}>
-                        {t(`providers.${provider.name.toLowerCase()}.title`)}
-                      </Text>
-                      <Text
-                        size="xs"
-                        className={`
-                            ${isSelected ? "text-blue-500" : "text-gray-600"}
-                            transition-colors duration-200
-                          `}>
-                        {provider.website}
-                      </Text>
+            <SelectScrollView className="px-2 pt-1 pb-4 max-h-[50vh]">
+              {providers.map((provider) => {
+                return (
+                  <SelectItem
+                    key={provider.id}
+                    value={provider.id.toString()}
+                    label={provider.name}
+                    className="px-4 border-b border-gray-100 bg-white active:bg-gray-50 transition-colors duration-200 rounded-lg">
+                    <Box className="flex-row items-center justify-between">
+                      <Box className="flex-1">
+                        <Text className="text-base font-semibold mb-1 text-gray-800">
+                          {t(`providers.${provider.name.toLowerCase()}.title`)}
+                        </Text>
+                        <Text size="xs" className="text-blue-500 transition-colors duration-200">
+                          {provider.website}
+                        </Text>
+                      </Box>
                     </Box>
-                    {isSelected && (
-                      <CheckIcon color="#1890ff" className="transition-opacity duration-200" />
-                    )}
-                  </Box>
-                </SelectItem>
-              );
-            })}
+                  </SelectItem>
+                );
+              })}
+            </SelectScrollView>
           </SelectContent>
         </SelectPortal>
       </Select>
