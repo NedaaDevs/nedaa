@@ -82,11 +82,10 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             const { currentProviderId } = providerSettingsStore.getState();
 
-            console.log("🚀 => getPrayerTimes: => currentProviderId:", currentProviderId);
             const adapter = getAdapterByProviderId(currentProviderId);
-            console.log("🚀 => getPrayerTimes: => adapter:", adapter);
 
             const apiParams = adapter.toParams();
+            console.log("🚀 => getPrayerTimes: => apiParams:", apiParams);
 
             // Make API call(we also should include provider id as get param)
             const response = await prayerTimesApi.get(apiParams);

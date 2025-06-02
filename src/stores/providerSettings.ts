@@ -120,25 +120,21 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
         },
 
         selectProviderById: (providerId) => {
-          set(
-            (state) => {
-              // Initialize provider settings if not exists
-              const newSettings =
-                state.allSettings[providerId] || getProviderDefaultsById(providerId);
+          set((state) => {
+            // Initialize provider settings if not exists
+            const newSettings =
+              state.allSettings[providerId] || getProviderDefaultsById(providerId);
 
-              return {
-                currentProviderId: providerId,
-                allSettings: {
-                  ...state.allSettings,
-                  [providerId]: newSettings,
-                },
-                isModified: false,
-                error: null,
-              };
-            },
-            false,
-            "providerSettings/selectProvider"
-          );
+            return {
+              currentProviderId: providerId,
+              allSettings: {
+                ...state.allSettings,
+                [providerId]: newSettings,
+              },
+              isModified: false,
+              error: null,
+            };
+          });
         },
 
         selectProviderByKey: (providerKey) => {
@@ -169,17 +165,16 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
             const state = get();
             const currentSettings = state.allSettings[state.currentProviderId];
 
-            console.log("🚀 => saveSettings: => currentSettings:", currentSettings);
-            // Simulate async save
-            await new Promise((resolve) => setTimeout(resolve, 500));
-
             set({ isModified: false, isLoading: false });
           } catch (error) {
             set({
               error: (error as Error).message || "Failed to save settings",
-              isLoading: false,
             });
             throw error;
+          } finally {
+            set({
+              isLoading: false,
+            });
           }
         },
 
