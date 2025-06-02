@@ -14,7 +14,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Spinner } from "@/components/ui/spinner";
 
-import ProvidersList from "@/components/ProvidersList";
+import ProviderList from "@/components/ProviderList";
 import AladhanSettings from "@/components/AladhanSettings";
 
 export const ProviderSettings: FC = () => {
@@ -76,7 +76,7 @@ export const ProviderSettings: FC = () => {
 
   return (
     <Box>
-      {providers.length > 0 && <ProvidersList />}
+      {providers.length > 0 && <ProviderList />}
       {renderProviderSettings()}
     </Box>
   );
