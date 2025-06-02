@@ -81,9 +81,9 @@ const getProviderDefaultsById = (providerId: number): ProviderSettings => {
   const config = PRAYER_TIME_PROVIDERS[providerKey];
 
   switch (providerId) {
-    case 1: // ALADHAN
+    case PRAYER_TIME_PROVIDERS.ALADHAN.id: // ALADHAN
       return {
-        method: config.defaults.method || 3, // Default to MWL
+        method: config.defaults.method,
         madhab: config.defaults.school,
         midnightMode: config.defaults.midnightMode,
         latitudeAdjustment: config.defaults.latitudeAdjustmentMethod,
