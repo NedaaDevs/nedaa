@@ -30,7 +30,7 @@ export const ProviderList: FC = () => {
 
   return (
     <Box className="mt-4 px-4">
-      <Text className="text-lg font-semibold mb-2">{t("providers.title")}</Text>
+      <Text className="text-lg font-semibold mb-2 dark:text-white">{t("providers.title")}</Text>
 
       <Select
         selectedValue={(selectedProvider && selectedProvider.id.toString()) ?? null}
