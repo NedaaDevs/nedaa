@@ -5,12 +5,14 @@ import useLocationStore from "@/stores/location";
 // Types
 import type {
   AladhanSettings,
-  // AladhanMethodId,
+  AladhanMethodId,
   AladhanPrayerTimeName,
   AladhanTuning,
   AladhanTuningString,
   AladhanApiParams,
 } from "@/types/providers/aladhan";
+
+import { getTimezoneYear, getTimezoneMonth } from "@/utils/date";
 
 /**
  * Return an api ready params
@@ -20,15 +22,16 @@ export const transformAladhanParams = (): AladhanApiParams => {
   const settings = useProviderSettingsStore.getState().getCurrentSettings<AladhanSettings>();
 
   // Get current date
-  const now = new Date();
+  const year = getTimezoneYear(location.timezone);
+  const month = getTimezoneMonth(location.timezone);
 
   // Build params
   const params: AladhanApiParams = {
     lat: location.coords.latitude,
     long: location.coords.longitude,
-    year: now.getFullYear(),
-    month: now.getMonth() + 1, // JS months are 0-based, API expects 1-based
-    // method: settings?.method || PRAYER_TIME_PROVIDERS.ALADHAN.defaults.method || 3,
+    year,
+    month,
+    method: (settings && settings.method) ?? null,
   };
 
   // TODO: Other settings
