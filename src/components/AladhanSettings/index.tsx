@@ -1,24 +1,45 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
+import { FC } from "react";
 
 // Hooks
-import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
+
 import MethodSettings from "@/components/AladhanSettings/MethodSettings";
 
-const AladhanSettings: React.FC = () => {
+// Stores
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useProviderSettingsStore } from "@/stores/providerSettings";
+
+const AladhanSettings: FC = () => {
   const { t } = useTranslation();
-  const { isModified, saveSettings } = useProviderSettingsStore();
+  const { isLoading: isFetchingPrayers, loadPrayerTimes } = usePrayerTimesStore();
+  const { isLoading, isModified, saveSettings } = useProviderSettingsStore();
+
+  const handleSaveSetting = async () => {
+    try {
+      await saveSettings();
+      // Refetch prayer times with new settings
+      await loadPrayerTimes(true);
+    } catch (error) {
+      console.error("Failed saving settings: ", error);
+    }
+  };
 
   return (
-    <Box className="relative">
-      {isModified && (
-        <Box className="sticky top-0 z-30  backdrop-blur-sm border-b border-gray-100 shadow-sm py-2 px-4">
-          <Button onPress={saveSettings} className="w-full">
-            {t("common.save")}
+    <Box className="relative mx-4 mt-2">
+      {(isModified || isLoading || isFetchingPrayers) && (
+        <Box className="sticky top-0 z-30 bg-primary dark:bg-primary backdrop-blur-sm border-b border-gray-100 py-2 mb-2 rounded-lg">
+          <Button
+            onPress={handleSaveSetting}
+            className="w-full"
+            isDisabled={isLoading || isFetchingPrayers}>
+            {!(isLoading || isFetchingPrayers) && (
+              <ButtonText className="text-secondary">{t("common.save")}</ButtonText>
+            )}
+            {(isLoading || isFetchingPrayers) && <ButtonSpinner />}
           </Button>
         </Box>
       )}

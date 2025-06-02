@@ -10,6 +10,7 @@
   "common.nedaa": "Nedaa",
   "common.ok": "OK",
   "common.retry": "Retry",
+  "common.save": "Save",
   "common.success": "Success",
   "common.visitWebsite": "Visit Website",
   "email.clients.error.loadFailed": "Failed to load email clients. Please try again.",
