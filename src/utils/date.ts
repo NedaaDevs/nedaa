@@ -1,8 +1,16 @@
 import { addDays, format, parse, subDays } from "date-fns";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { toZonedTime } from "date-fns-tz";
 import { ar, enUS, ms } from "date-fns/locale";
 
+// Enums
 import { AppLocale } from "@/enums/app";
+
+type DateRange = {
+  yesterday: number;
+  today: number;
+  tomorrow: number;
+};
+
 /**
  * Converts a Unix timestamp (in seconds) to YYYYMMDD format
  * @param {number} timestamp
@@ -14,13 +22,36 @@ export const timestampToDateInt = (timestamp: number, timezone: string): number 
 };
 
 /**
- * Gets current time in specified timezone
- * @param tz - IANA timezone string (e.g., 'America/Los_Angeles')
+ * Gets current time in specified timezone as Date object for comparisons.
+ * Warning: Date object methods (.getFullYear(), .toString(), etc.) will display
+ * in user's local timezone, not the target timezone. Use helper functions for display purposes.
+ * @param tz - IANA timezone string (e.g., 'Asia/Riyadh')
  * @returns Date object representing current time in specified timezone
+ * @see {@link https://date-fns.org/docs/format format} from date-fns
+ * @see getTimezoneYear, getTimezoneMonth for timezone-aware display values
  */
-// FIXME: It seems this will return date based on the device timezone.
 export const timeZonedNow = (tz: string): Date => {
-  return fromZonedTime(Date.now(), tz);
+  return toZonedTime(new Date(), tz);
+};
+
+/**
+ * Gets the current year in the specified timezone
+ * @param tz - IANA timezone string
+ * @returns Current year as number in the specified timezone
+ */
+export const getTimezoneYear = (tz: string): number => {
+  const zonedDate = toZonedTime(new Date(), tz);
+  return parseInt(format(zonedDate, "yyyy"));
+};
+
+/**
+ * Gets the current month in the specified timezone
+ * @param tz - IANA timezone string
+ * @returns Current month as number (1-12) in the specified timezone
+ */
+export const getTimezoneMonth = (tz: string): number => {
+  const zonedDate = toZonedTime(new Date(), tz);
+  return parseInt(format(zonedDate, "MM"));
 };
 
 /**
@@ -36,12 +67,6 @@ export const dateToInt = (date: string | Date): number => {
   // If it's a string, parse it with appropriate format
   const parsedDate = parse(date, "yyyy-MM-dd", new Date());
   return parseInt(format(parsedDate, "yyyyMMdd"), 10);
-};
-
-type DateRange = {
-  yesterday: number;
-  today: number;
-  tomorrow: number;
 };
 
 /**
