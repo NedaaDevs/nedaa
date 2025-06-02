@@ -38,7 +38,7 @@ type Methods = AlAdhan["methods"];
  * - 23: Jordan (jordan)
  * @see https://aladhan.com/calculation-methods
  */
-export type AladhanMethodId = Methods[number]["id"];
+export type AladhanMethodId = Methods[number]["id"] | null;
 
 /**
  * Full method object containing ID and name information
@@ -153,14 +153,6 @@ export type AladhanTuningString = string;
  */
 export type AladhanCustomMethodSettings =
   `${number | "null"},${number | "null"},${number | "null"}`;
-
-/**
- * Calculation method IDs mapped to their name keys
- * @example { 3: "mwl", 2: "isna", 5: "egyptian", ... }
- */
-export type AladhanMethodMap = {
-  [K in AladhanMethodId]: Methods[number]["nameKey"];
-};
 
 /**
  * Settings for Aladhan API requests
