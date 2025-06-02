@@ -38,7 +38,7 @@ export interface ProviderSettingsState {
   /** Current provider settings */
   settings: AladhanSettings; // For now, just Aladhan settings
   /** Whether there are unsaved changes(mainly to reduce UI renders and api calls with every change) */
-  isDirty: boolean;
+  isModified: boolean;
   isLoading: boolean;
   /** Error message if save failed */
   error: string | null;

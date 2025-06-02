@@ -23,7 +23,7 @@ interface ProviderSettingsState {
   // Settings for all providers by Id
   allSettings: AllProviderSettings;
 
-  isDirty: boolean;
+  isModified: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -98,7 +98,7 @@ const initialState: ProviderSettingsState = {
   allSettings: {
     [PRAYER_TIME_PROVIDERS.ALADHAN.id]: getProviderDefaultsById(PRAYER_TIME_PROVIDERS.ALADHAN.id),
   },
-  isDirty: false,
+  isModified: false,
   isLoading: false,
   error: null,
 };
@@ -132,7 +132,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
                   ...state.allSettings,
                   [providerId]: newSettings,
                 },
-                isDirty: false,
+                isModified: false,
                 error: null,
               };
             },
@@ -157,7 +157,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
                 ...updates,
               } as ProviderSettings,
             },
-            isDirty: true,
+            isModified: true,
             error: null,
           }));
         },
@@ -173,7 +173,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
             // Simulate async save
             await new Promise((resolve) => setTimeout(resolve, 500));
 
-            set({ isDirty: false, isLoading: false });
+            set({ isModified: false, isLoading: false });
           } catch (error) {
             set({
               error: (error as Error).message || "Failed to save settings",
@@ -189,7 +189,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
               ...state.allSettings,
               [state.currentProviderId]: getProviderDefaultsById(state.currentProviderId),
             },
-            isDirty: false,
+            isModified: false,
             error: null,
           }));
         },

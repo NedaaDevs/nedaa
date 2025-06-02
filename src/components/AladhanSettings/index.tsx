@@ -11,15 +11,13 @@ import MethodSettings from "@/components/AladhanSettings/MethodSettings";
 
 const AladhanSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { isDirty, saveSettings } = useProviderSettingsStore();
+  const { isModified, saveSettings } = useProviderSettingsStore();
 
   return (
     <Box className="relative">
-      {isDirty && (
-        <Box className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm py-2 px-4">
-          <Button
-            onPress={saveSettings}
-            className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700">
+      {isModified && (
+        <Box className="sticky top-0 z-30  backdrop-blur-sm border-b border-gray-100 shadow-sm py-2 px-4">
+          <Button onPress={saveSettings} className="w-full">
             {t("common.save")}
           </Button>
         </Box>
