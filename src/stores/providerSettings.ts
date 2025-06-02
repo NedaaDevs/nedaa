@@ -165,16 +165,24 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
             const state = get();
             const currentSettings = state.allSettings[state.currentProviderId];
 
-            set({ isModified: false, isLoading: false });
+            if (!currentSettings) {
+              throw new Error("No settings found for current provider");
+            }
+
+            set({
+              allSettings: {
+                ...state.allSettings,
+                [state.currentProviderId]: currentSettings,
+              },
+              isModified: false,
+              isLoading: false,
+            });
           } catch (error) {
             set({
               error: (error as Error).message || "Failed to save settings",
-            });
-            throw error;
-          } finally {
-            set({
               isLoading: false,
             });
+            throw error;
           }
         },
 
