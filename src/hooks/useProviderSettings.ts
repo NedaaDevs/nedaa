@@ -7,7 +7,7 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AladhanSettings } from "@/types/providers/aladhan";
 
 export const useAladhanSettings = () => {
-  const { isDirty, currentProviderId, updateCurrentSettings, getCurrentSettings } =
+  const { isModified, currentProviderId, updateCurrentSettings, getCurrentSettings } =
     useProviderSettingsStore();
 
   if (currentProviderId !== PRAYER_TIME_PROVIDERS.ALADHAN.id) {
@@ -19,6 +19,6 @@ export const useAladhanSettings = () => {
   return {
     settings,
     updateSettings: (updates: Partial<AladhanSettings>) => updateCurrentSettings(updates),
-    isDirty,
+    isModified,
   };
 };

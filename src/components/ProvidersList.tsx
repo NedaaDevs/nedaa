@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { ChevronDownIcon, CheckIcon } from "@/components/ui/icon";
+import { ChevronDownIcon } from "@/components/ui/icon";
 
 const ProvidersList = () => {
   const { selectedProvider, providers, isGettingProviders } = usePrayerTimesStore();
