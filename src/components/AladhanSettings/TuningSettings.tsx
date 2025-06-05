@@ -196,11 +196,12 @@ export const TuningSettings: FC = () => {
                         </Text>
 
                         <Select
+                          key={`${prayerTime}-${value}`}
                           selectedValue={value.toString()}
                           onValueChange={(selectedValue) =>
                             handlePrayerValueChange(prayerTime, selectedValue)
                           }
-                          initialLabel={`${value > 0 ? "+" : ""}${t("common.minute", { count: Math.abs(value) })}`}
+                          initialLabel={t("common.minute", { count: value })}
                           defaultValue={value.toString()}>
                           <SelectTrigger variant="outline" size="lg" className="w-full">
                             <SelectInput placeholder={t("providers.aladhan.tuning.selectValue")} />
