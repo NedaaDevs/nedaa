@@ -163,7 +163,7 @@ export interface AladhanSettings {
    * @see AladhanMethodId for available options
    * Use 99 for custom method settings
    */
-  method: AladhanMethodId; // TODO: 99 for custom method
+  method?: AladhanMethodId; // TODO: 99 for custom method
 
   /**
    * Custom method settings when method=99
@@ -203,6 +203,8 @@ export type AladhanApiParams = {
   year: number;
   month: number;
   method?: AladhanMethodId;
+  school?: AladhanMadhabId;
+  midnightMode?: AladhanMidnightModeId;
   tune?: AladhanTuningString;
 };
 
