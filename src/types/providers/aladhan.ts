@@ -137,7 +137,7 @@ export type AladhanPrayerTimeName =
  * Prayer time adjustments in minutes
  * @example { imsak: 5, fajr: 3, sunrise: 5, dhuhr: 7, asr: 9, maghrib: -1, sunset: 0, isha: 8, midnight: -6 }
  */
-export type AladhanTuning = Partial<Record<AladhanPrayerTimeName, number>>;
+export type AladhanTuning = AlAdhan["tuning"];
 
 /**
  * Tuning string format for API requests
@@ -202,7 +202,8 @@ export type AladhanApiParams = {
   long: number;
   year: number;
   month: number;
-  method: AladhanMethodId;
+  method?: AladhanMethodId;
+  tune?: AladhanTuningString;
 };
 
 /**

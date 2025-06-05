@@ -10,13 +10,10 @@ export const PRAYER_TIME_PROVIDERS = {
     website: "https://aladhan.com",
     docs: "https://aladhan.com/prayer-times-api",
     defaults: {
-      method: null,
       shafaq: "general", // Defaults to general
       school: 0, // Default to Shafi
       midnightMode: 0, // Default to Standard
-      timezonestring: "UTC",
-      latitudeAdjustmentMethod: 3, // Default to Angle Based
-      calendarMethod: "", // Default: HJCoSA
+      calendarMethod: "HJCoSA", // Default: HJCoSA
     },
     methods: [
       { id: 3, nameKey: "mwl" },
@@ -67,6 +64,18 @@ export const PRAYER_TIME_PROVIDERS = {
       { id: 2, nameKey: "oneSeventh" },
       { id: 3, nameKey: "angleBased" },
     ],
+    // Order is important for the api
+    tuning: {
+      imsak: 0,
+      fajr: 0,
+      sunrise: 0,
+      dhuhr: 0,
+      asr: 0,
+      maghrib: 0,
+      sunset: 0,
+      isha: 0,
+      midnight: 0,
+    } as const,
   },
 
   // Provider two
