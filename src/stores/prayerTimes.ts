@@ -104,7 +104,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         getProviders: async (): Promise<Provider[]> => {
           try {
             set({
-              isLoading: true,
+              isGettingProviders: true,
             });
             const response = await prayerTimesApi.getProviders();
 
@@ -122,7 +122,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             throw error;
           } finally {
             set({
-              isLoading: false,
+              isGettingProviders: false,
             });
           }
         },
