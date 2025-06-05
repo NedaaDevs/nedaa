@@ -19,7 +19,7 @@ import AladhanSettings from "@/components/AladhanSettings";
 
 export const ProviderSettings: FC = () => {
   const { t } = useTranslation();
-  const { isGettingProviders, providers, getProviders } = usePrayerTimesStore();
+  const { isGettingProviders, isLoading, providers, getProviders } = usePrayerTimesStore();
   const { currentProviderId } = useProviderSettingsStore();
 
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export const ProviderSettings: FC = () => {
     });
   };
 
-  if (isGettingProviders) {
+  if (isGettingProviders || isLoading) {
     return (
       <Box className="items-center justify-center my-auto">
         <Spinner color="#e5cb87" size="large" />
