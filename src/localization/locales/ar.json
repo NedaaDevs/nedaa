@@ -159,5 +159,6 @@
   "settings.themes.system.description": "اتبع إعدادات النظام",
   "settings.themes.system.title": "النظام",
   "settings.themes.title": "السمات",
-  "settings.title": "الإعدادات"
+  "settings.title": "الإعدادات",
+  "settings.notification.title": "الإشعارات"
 }
