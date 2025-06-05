@@ -200,7 +200,8 @@ export const TuningSettings: FC = () => {
                           onValueChange={(selectedValue) =>
                             handlePrayerValueChange(prayerTime, selectedValue)
                           }
-                          initialLabel={`${value > 0 ? "+" : ""}${t("common.minute", { count: Math.abs(value) })}`}>
+                          initialLabel={`${value > 0 ? "+" : ""}${t("common.minute", { count: Math.abs(value) })}`}
+                          defaultValue={value.toString()}>
                           <SelectTrigger variant="outline" size="lg" className="w-full">
                             <SelectInput placeholder={t("providers.aladhan.tuning.selectValue")} />
                             <SelectIcon className="mr-3" as={ChevronDownIcon} />
@@ -213,7 +214,9 @@ export const TuningSettings: FC = () => {
                                 <SelectDragIndicator />
                               </SelectDragIndicatorWrapper>
 
-                              <SelectScrollView className="px-2 pt-1 pb-4 max-h-[60vh]">
+                              <SelectScrollView
+                                className="px-2 pt-1 pb-4 max-h-[60vh]"
+                                contentOffset={{ y: Math.max(0, (value + 60) * 50 - 150), x: 0 }}>
                                 {adjustmentValues.map((adjustValue) => {
                                   const isSelected = value === adjustValue;
                                   const isZero = adjustValue === 0;
