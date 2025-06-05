@@ -5,7 +5,6 @@ import useLocationStore from "@/stores/location";
 // Types
 import type {
   AladhanSettings,
-  AladhanMethodId,
   AladhanPrayerTimeName,
   AladhanTuning,
   AladhanTuningString,
@@ -34,18 +33,22 @@ export const transformAladhanParams = (): AladhanApiParams => {
     method: (settings && settings.method) ?? null,
   };
 
-  // TODO: Other settings
-  // if (settings?.madhab !== undefined) {
-  //   params.school = settings.madhab;
-  // }
-  // if (settings?.tune) {
-  //   params.tune = tuningToString(settings.tune);
-  // }
+  // Add other settings if they exist
+  if (settings?.madhab !== undefined) {
+    params.school = settings.madhab;
+  }
+
+  if (settings?.midnightMode !== undefined) {
+    params.midnightMode = settings.midnightMode;
+  }
+
+  if (settings?.tune) {
+    params.tune = tuningToString(settings.tune);
+  }
 
   return params;
 };
 
-// Keep existing helper functions for later use
 export const PRAYER_TIME_ORDER: AladhanPrayerTimeName[] = [
   "imsak",
   "fajr",
@@ -61,15 +64,4 @@ export const PRAYER_TIME_ORDER: AladhanPrayerTimeName[] = [
 export const tuningToString = (tuning: AladhanTuning): AladhanTuningString => {
   const values = PRAYER_TIME_ORDER.map((time) => tuning[time] ?? 0);
   return values.join(",") as AladhanTuningString;
-};
-
-export const stringToTuning = (tuningString: AladhanTuningString): AladhanTuning => {
-  const values = tuningString.split(",").map(Number);
-  return PRAYER_TIME_ORDER.reduce((obj, time, index) => {
-    const value = values[index];
-    if (value !== 0) {
-      obj[time] = value;
-    }
-    return obj;
-  }, {} as AladhanTuning);
 };
