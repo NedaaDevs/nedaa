@@ -86,7 +86,7 @@ const getProviderDefaultsById = (providerId: number): ProviderSettings => {
         method: config.defaults.method,
         madhab: config.defaults.school,
         midnightMode: config.defaults.midnightMode,
-        latitudeAdjustment: config.defaults.latitudeAdjustmentMethod,
+        latitudeAdjustment: config.defaults.latitudeAdjustment,
       } as AladhanSettings;
     default:
       return {} as ProviderSettings;

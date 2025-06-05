@@ -10,10 +10,12 @@ export const PRAYER_TIME_PROVIDERS = {
     website: "https://aladhan.com",
     docs: "https://aladhan.com/prayer-times-api",
     defaults: {
+      method: undefined,
       shafaq: "general", // Defaults to general
       school: 0, // Default to Shafi
       midnightMode: 0, // Default to Standard
       calendarMethod: "HJCoSA", // Default: HJCoSA
+      latitudeAdjustment: undefined,
     },
     methods: [
       { id: 3, nameKey: "mwl" },
