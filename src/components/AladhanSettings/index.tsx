@@ -9,6 +9,7 @@ import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 
 import MethodSettings from "@/components/AladhanSettings/MethodSettings";
 import SchoolSettings from "@/components/AladhanSettings/SchoolSettings";
+import MidnightModeSettings from "@/components/AladhanSettings/MidnightModeSettings";
 
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -47,6 +48,7 @@ const AladhanSettings: FC = () => {
 
       <MethodSettings />
       <SchoolSettings />
+      <MidnightModeSettings />
     </Box>
   );
 };
