@@ -15,7 +15,7 @@ import { timeZonedNow } from "@/utils/date";
 
 // Stores
 import locationStore from "@/stores/location";
-import type { NotificationAction, NotificationState } from "@/types/notifications";
+import type { NotificationAction, NotificationState } from "@/types/notification";
 
 type NotificationStore = NotificationState & NotificationAction;
 
