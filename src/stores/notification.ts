@@ -3,7 +3,6 @@ import { devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage } from "zustand/middleware";
 import { openSettings } from "expo-linking";
-import { NotificationRequest } from "expo-notifications";
 import { addMinutes, addSeconds } from "date-fns";
 
 // Utils
@@ -16,18 +15,15 @@ import { timeZonedNow } from "@/utils/date";
 
 // Stores
 import locationStore from "@/stores/location";
+import type { NotificationAction, NotificationState } from "@/types/notifications";
 
-export type NotificationState = {
-  scheduleTestNotification: () => Promise<void>;
-  getScheduledNotifications: () => Promise<NotificationRequest[]>;
-  clearNotifications: () => Promise<void>;
-  openNotificationSettings: () => Promise<void>;
-};
+type NotificationStore = NotificationState & NotificationAction;
 
-export const useNotificationStore = create<NotificationState>()(
+export const useNotificationStore = create<NotificationStore>()(
   devtools(
     persist(
       (_, get) => ({
+        isScheduling: false,
         scheduleTestNotification: async () => {
           const now = timeZonedNow(locationStore.getState().locationDetails.timezone);
           await scheduleNotification(
