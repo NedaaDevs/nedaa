@@ -11,6 +11,8 @@ export type NotificationState = {
   isScheduling: boolean;
 };
 
+export type NotificationType = "prayer" | "iqama" | "preAthan";
+
 export type NotificationAction = {
   scheduleTestNotification: () => Promise<void>;
   getScheduledNotifications: () => Promise<NotificationRequest[]>;
