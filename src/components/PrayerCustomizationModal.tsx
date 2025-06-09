@@ -186,7 +186,9 @@ const PrayerCustomizationModal: FC<Props> = ({
                             {timingOptions.map((min) => (
                               <SelectItem
                                 key={min}
-                                label={`${min} ${t("common.minutes")}`}
+                                label={t("common.minute", {
+                                  count: min,
+                                })}
                                 value={min.toString()}
                               />
                             ))}
