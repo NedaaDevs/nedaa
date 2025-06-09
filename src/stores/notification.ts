@@ -55,13 +55,13 @@ const defaultSettings: NotificationSettings = {
     },
     iqama: {
       enabled: false,
-      sound: "gentle" as IqamaSoundKey,
+      sound: "silent" as IqamaSoundKey,
       vibration: true,
       timing: 10,
     },
     preAthan: {
       enabled: false,
-      sound: "bell" as PreAthanSoundKey,
+      sound: "silent" as PreAthanSoundKey,
       vibration: false,
       timing: 15,
     },
