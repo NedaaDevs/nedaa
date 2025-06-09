@@ -6001,6 +6001,11 @@ expo-asset@~11.0.5:
     invariant "^2.2.4"
     md5-file "^3.2.3"
 
+expo-audio@~0.3.5:
+  version "0.3.5"
+  resolved "https://registry.npmjs.org/expo-audio/-/expo-audio-0.3.5.tgz"
+  integrity sha512-gzpDH3vZI1FDL1Q8pXryACtNIW+idZ/zIZ8WqdTRzJuzxucazrG2gLXUS2ngcXQBn09Jyz4RUnU10Tu2N7/Hgg==
+
 expo-constants@~17.0.5:
   version "17.0.5"
   resolved "https://registry.npmjs.org/expo-constants/-/expo-constants-17.0.5.tgz"

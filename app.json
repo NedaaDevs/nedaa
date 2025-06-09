@@ -129,7 +129,8 @@
         }
       ],
       "expo-font",
-      "react-native-email-link"
+      "react-native-email-link",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true
