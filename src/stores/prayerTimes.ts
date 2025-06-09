@@ -336,3 +336,5 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
     { name: "PrayerTimesStores" }
   )
 );
+
+export default usePrayerTimesStore;
