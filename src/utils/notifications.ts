@@ -72,41 +72,6 @@ export const scheduleNotification = async (
   }
 };
 
-// Create notification channels for different types (Android)
-export const setupNotificationChannels = async () => {
-  if (Platform.OS !== PlatformType.ANDROID) return;
-
-  try {
-    // Main prayer channel
-    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: ANDROID_CHANNEL_NAME,
-      importance: AndroidImportance.MAX,
-      vibrationPattern: [0, 500, 200, 500],
-      sound: "default",
-    });
-
-    // Iqama reminder channel
-    await Notifications.setNotificationChannelAsync("iqama_reminders", {
-      name: "Iqama Reminders",
-      importance: AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      sound: "gentle_reminder.wav",
-    });
-
-    // Pre-Athan alert channel
-    await Notifications.setNotificationChannelAsync("preathan_alerts", {
-      name: "Pre-Athan Alerts",
-      importance: AndroidImportance.HIGH,
-      vibrationPattern: [0, 200],
-      sound: "bell_sound.wav",
-    });
-
-    console.log("Android notification channels created");
-  } catch (error) {
-    console.error("Failed to create Android channels:", error);
-  }
-};
-
 export const configureNotifications = () => {
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
@@ -164,4 +129,39 @@ export const listScheduledNotifications = async () => {
 
 export const cancelAllScheduledNotifications = async () => {
   await Notifications.cancelAllScheduledNotificationsAsync();
+};
+
+// Create notification channels for different types (Android)
+export const setupNotificationChannels = async () => {
+  if (Platform.OS !== PlatformType.ANDROID) return;
+
+  try {
+    // Main prayer channel
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+      name: ANDROID_CHANNEL_NAME,
+      importance: AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500],
+      sound: "default",
+    });
+
+    // Iqama reminder channel
+    await Notifications.setNotificationChannelAsync("iqama_reminders", {
+      name: "Iqama Reminders",
+      importance: AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      sound: "gentle_reminder.wav",
+    });
+
+    // Pre-Athan alert channel
+    await Notifications.setNotificationChannelAsync("preathan_alerts", {
+      name: "Pre-Athan Alerts",
+      importance: AndroidImportance.HIGH,
+      vibrationPattern: [0, 200],
+      sound: "bell_sound.wav",
+    });
+
+    console.log("Android notification channels created");
+  } catch (error) {
+    console.error("Failed to create Android channels:", error);
+  }
 };
