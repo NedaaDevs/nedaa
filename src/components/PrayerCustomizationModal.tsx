@@ -31,6 +31,8 @@ import {
   SelectScrollView,
 } from "@/components/ui/select";
 
+import SoundPreviewButton from "@/components/SoundPreviewButton";
+
 // Icons
 import { X, ChevronDown } from "lucide-react-native";
 
@@ -39,6 +41,9 @@ import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/
 
 // Utils
 import { getAvailableSounds, SOUND_LABELS } from "@/utils/sound";
+
+// Hooks
+import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 type Props = {
   isOpen: boolean;
@@ -69,6 +74,7 @@ const PrayerCustomizationModal: FC<Props> = ({
   supportsVibration = true,
 }) => {
   const { t } = useTranslation();
+  const { playPreview, stopPreview, isPlaying, currentSound: playingSound } = useSoundPreview();
 
   // Merge defaults with overrides
   const currentConfig = { ...defaults, ...currentOverride };
@@ -87,6 +93,14 @@ const PrayerCustomizationModal: FC<Props> = ({
   const getSoundOptions = getAvailableSounds(type);
 
   const timingOptions = [5, 10, 15, 20, 30];
+
+  const handleSoundPreview = async () => {
+    if (isPlaying && playingSound === `${type}.${sound}`) {
+      await stopPreview();
+    } else {
+      await playPreview(type, sound);
+    }
+  };
 
   const handleSave = () => {
     const config: any = {};
@@ -257,6 +271,13 @@ const PrayerCustomizationModal: FC<Props> = ({
                   </SelectContent>
                 </SelectPortal>
               </Select>
+
+              <SoundPreviewButton
+                isPlaying={isPlaying && playingSound === `${type}.${sound}`}
+                onPress={handleSoundPreview}
+                disabled={sound === "silent"}
+                color="text-blue-600 dark:text-blue-400"
+              />
             </HStack>
 
             {/* Vibration */}
