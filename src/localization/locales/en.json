@@ -71,6 +71,8 @@
   "notification.resetToDefault": "Reset to Default",
   "notification.schedulingNotifications": "Scheduling notifications",
   "notification.sound": "Sound",
+  "notification.sound.makkahAthan1": "Makkah 1",
+  "notification.sound.silent": "Silent",
   "notification.timeAfterAthan": "Time after Athan",
   "notification.timeBeforeAthan": "Time before Athan",
   "notification.usingDefault": "Using default",
