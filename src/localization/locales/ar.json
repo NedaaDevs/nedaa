@@ -13,6 +13,7 @@
   "common.email.template.os": "نظام التشغيل",
   "common.email.template.subject": "طلب دعم",
   "common.email.template.version": "الإصدار",
+  "common.enable": "تفعيل",
   "common.error": "خطأ",
   "common.loading": "جاري التحميل...",
   "common.loadingPrayerTimes": "جاري تحميل أوقات الصلاة...",
