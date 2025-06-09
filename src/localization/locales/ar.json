@@ -71,6 +71,8 @@
   "notification.resetToDefault": "إعادة تعيين إلى الافتراضي",
   "notification.schedulingNotifications": "جدولة الإشعارات",
   "notification.sound": "الصوت",
+  "notification.sound.makkahAthan1": "أذان مكة 1",
+  "notification.sound.silent": "صامت",
   "notification.timeAfterAthan": "الوقت بعد الأذان",
   "notification.timeBeforeAthan": "الوقت قبل الأذان",
   "notification.usingDefault": "الإعدادات الافتراضية",
