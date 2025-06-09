@@ -7,6 +7,12 @@ export type NotificationPermissionsState = {
   canRequestAgain: boolean;
 };
 
+export type NotificationOptions = {
+  sound?: string;
+  vibrate?: boolean;
+  categoryId?: string;
+};
+
 export type NotificationState = {
   isScheduling: boolean;
 };
