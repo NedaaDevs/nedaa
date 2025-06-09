@@ -20,13 +20,19 @@ import prayerTimesStore from "@/stores/prayerTimes";
 
 // Types
 import {
+  ConfigForType,
   getEffectiveConfig,
-  NotificationConfig,
-  NotificationWithTiming,
+  NotificationType,
   type NotificationAction,
   type NotificationSettings,
   type NotificationState,
 } from "@/types/notification";
+import type {
+  PrayerSoundKey,
+  IqamaSoundKey,
+  PreAthanSoundKey,
+  NotificationSoundKey,
+} from "@/types/sound";
 import { PrayerName } from "@/types/prayerTimes";
 
 // Constants
@@ -44,18 +50,18 @@ const defaultSettings: NotificationSettings = {
   defaults: {
     prayer: {
       enabled: true,
-      sound: "makkah",
+      sound: "makkah" as PrayerSoundKey,
       vibration: true,
     },
     iqama: {
       enabled: false,
-      sound: "gentle",
+      sound: "gentle" as IqamaSoundKey,
       vibration: true,
       timing: 10,
     },
     preAthan: {
       enabled: false,
-      sound: "bell",
+      sound: "bell" as PreAthanSoundKey,
       vibration: false,
       timing: 15,
     },
@@ -87,9 +93,12 @@ export const useNotificationStore = create<NotificationStore>()(
             settings: {
               ...state.settings,
               defaults: {
-                prayer: { ...state.settings.defaults.prayer, sound, vibration },
-                iqama: { ...state.settings.defaults.iqama, sound, vibration },
-                preAthan: { ...state.settings.defaults.preAthan, sound, vibration },
+                ...state.settings.defaults,
+                prayer: {
+                  ...state.settings.defaults.prayer,
+                  sound,
+                  vibration,
+                },
               },
             },
           }));
@@ -107,7 +116,11 @@ export const useNotificationStore = create<NotificationStore>()(
           }));
         },
 
-        updateOverride: (prayerId, type, config) => {
+        updateOverride: <T extends NotificationType>(
+          prayerId: string,
+          type: T,
+          config: Partial<ConfigForType<T>>
+        ) => {
           set((state) => {
             const newOverrides = { ...state.settings.overrides };
 
@@ -122,7 +135,10 @@ export const useNotificationStore = create<NotificationStore>()(
                 delete newOverrides[prayerId];
               }
             } else {
-              newOverrides[prayerId][type] = config;
+              newOverrides[prayerId] = {
+                ...newOverrides[prayerId],
+                [type]: config,
+              };
             }
 
             return {
@@ -180,15 +196,12 @@ export const useNotificationStore = create<NotificationStore>()(
           const now = timeZonedNow(timezone);
 
           // Get effective configs for all notification types
-          const prayerConfig = get().getEffectiveConfigForPrayer<NotificationConfig>(
+          const prayerConfig = get().getEffectiveConfigForPrayer(
             prayerId,
             NOTIFICATION_TYPE.PRAYER
           );
-          const iqamaConfig = get().getEffectiveConfigForPrayer<NotificationWithTiming>(
-            prayerId,
-            NOTIFICATION_TYPE.IQAMA
-          );
-          const preAthanConfig = get().getEffectiveConfigForPrayer<NotificationWithTiming>(
+          const iqamaConfig = get().getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.IQAMA);
+          const preAthanConfig = get().getEffectiveConfigForPrayer(
             prayerId,
             NOTIFICATION_TYPE.PRE_ATHAN
           );
@@ -199,7 +212,7 @@ export const useNotificationStore = create<NotificationStore>()(
             const body = `It's time for ${prayerId} prayer`;
 
             await scheduleNotification(prayerTime, title, body, {
-              sound: prayerConfig.sound,
+              sound: prayerConfig.sound as NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>,
               vibrate: Platform.OS === PlatformType.ANDROID ? prayerConfig.vibration : false,
               categoryId: `prayer_${prayerId}`,
             });
@@ -213,8 +226,8 @@ export const useNotificationStore = create<NotificationStore>()(
               const body = `Iqama for ${prayerId} is starting soon`;
 
               await scheduleNotification(iqamaTime, title, body, {
-                sound: iqamaConfig.sound,
-                vibrate: Platform.OS === "android" ? iqamaConfig.vibration : false,
+                sound: iqamaConfig.sound as NotificationSoundKey<typeof NOTIFICATION_TYPE.IQAMA>,
+                vibrate: Platform.OS === PlatformType.ANDROID ? iqamaConfig.vibration : false,
                 categoryId: `iqama_${prayerId}`,
               });
             }
@@ -228,8 +241,10 @@ export const useNotificationStore = create<NotificationStore>()(
               const body = `${prayerId} prayer will be in ${preAthanConfig.timing} minutes`;
 
               await scheduleNotification(preAthanTime, title, body, {
-                sound: preAthanConfig.sound,
-                vibrate: Platform.OS === "android" ? preAthanConfig.vibration : false,
+                sound: preAthanConfig.sound as NotificationSoundKey<
+                  typeof NOTIFICATION_TYPE.PRE_ATHAN
+                >,
+                vibrate: Platform.OS === PlatformType.ANDROID ? preAthanConfig.vibration : false,
                 categoryId: `preathan_${prayerId}`,
               });
             }
@@ -264,7 +279,10 @@ export const useNotificationStore = create<NotificationStore>()(
           console.log(await get().getScheduledNotifications());
         },
 
-        getEffectiveConfigForPrayer: (prayerId, type) => {
+        getEffectiveConfigForPrayer: <T extends NotificationType>(
+          prayerId: string,
+          type: T
+        ): ConfigForType<T> => {
           const { settings } = get();
           return getEffectiveConfig(prayerId, type, settings.defaults, settings.overrides);
         },
