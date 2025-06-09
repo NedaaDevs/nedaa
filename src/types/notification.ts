@@ -1,3 +1,4 @@
+import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { LocalPermissionStatus } from "@/enums/notifications";
 
 import type { NotificationRequest } from "expo-notifications";
@@ -19,7 +20,7 @@ export type NotificationState = {
   lastScheduledDate: string | null;
 };
 
-export type NotificationType = "prayer" | "iqama" | "preAthan";
+export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
 export type NotificationAction = {
   scheduleTestNotification: () => Promise<void>;
@@ -41,6 +42,9 @@ export type NotificationAction = {
     type: NotificationType
   ) => T;
   clearAllNotifications: () => Promise<void>;
+  scheduleAllNotifications: () => Promise<void>;
+  schedulePrayerNotifications: (prayerId: string, prayerTime: Date) => Promise<void>;
+  cancelPrayerNotifications: (prayerId: string) => Promise<void>;
 };
 
 export type NotificationConfig = {
