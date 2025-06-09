@@ -43,7 +43,7 @@ type Props = {
   iconColor: string;
   defaults: NotificationConfig | NotificationWithTiming;
   overrides: Record<string, any>;
-  onDefaultUpdate: (field: string, value: any) => void;
+  onDefaultUpdate: (field: keyof NotificationConfig, value: any) => void;
   onOverrideUpdate: (prayerId: string, config: any) => void;
   onResetOverride: (prayerId: string) => void;
   defaultExpanded?: boolean;
