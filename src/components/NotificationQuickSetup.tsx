@@ -66,7 +66,7 @@ const NotificationQuickSetup: FC<Props> = ({
           </Text>
         </HStack>
 
-        <Text className="text-sm text-blue-700 dark:text-blue-300">
+        <Text className="text-left text-sm text-blue-700 dark:text-blue-300">
           {t("notification.quickSetupDescription")}
         </Text>
 

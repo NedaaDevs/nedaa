@@ -91,7 +91,7 @@ const NotificationTypePanel: FC<Props> = ({
 
     let label = t("notification.customized");
     if (customTiming && hasOverride.timing) {
-      label = `${t("notification.custom")}: ${hasOverride.timing} ${t("common.min")}`;
+      label = `${t("notification.custom")}:  ${t("common.minute", { count: hasOverride.timing })}`;
     }
 
     return { isCustom: true, label };
@@ -130,7 +130,9 @@ const NotificationTypePanel: FC<Props> = ({
                   {hasTiming && (
                     <Badge size="sm" variant="outline">
                       <BadgeText>
-                        {(defaults as NotificationWithTiming).timing} {t("common.min")}
+                        {t("common.minute", {
+                          count: (defaults as NotificationWithTiming).timing,
+                        })}
                       </BadgeText>
                     </Badge>
                   )}
@@ -163,7 +165,7 @@ const NotificationTypePanel: FC<Props> = ({
             {!showIndividualPrayers ? (
               <>
                 <Box className="bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
-                  <Text className="text-sm text-gray-700 dark:text-gray-300">
+                  <Text className="text-left text-sm text-gray-700 dark:text-gray-300">
                     {t("notification.allPrayersUsingDefault")}
                   </Text>
                 </Box>

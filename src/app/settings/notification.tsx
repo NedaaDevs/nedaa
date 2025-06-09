@@ -12,11 +12,13 @@ import { Badge, BadgeText } from "@/components/ui/badge";
 
 import TopBar from "@/components/TopBar";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
-// import NotificationTypePanel from "@/components/NotificationTypePanel";
+import NotificationTypePanel from "@/components/NotificationTypePanel";
 
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
-// import { NOTIFICATION_TYPE } from "@/constants/Notification";
+
+// Constants
+import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 const NotificationSettingsV2 = () => {
   const { t } = useTranslation();
@@ -28,9 +30,9 @@ const NotificationSettingsV2 = () => {
     totalOverrideCount,
     updateAllNotificationToggle,
     updateQuickSetup,
-    // updateDefault,
-    // updateOverride,
-    // resetOverride,
+    updateDefault,
+    updateOverride,
+    resetOverride,
     scheduleAllNotifications,
   } = useNotificationSettings();
 
@@ -77,53 +79,63 @@ const NotificationSettingsV2 = () => {
               />
 
               {/* Prayer Notifications */}
-              {/* <NotificationTypePanel
+              <NotificationTypePanel
                 type={NOTIFICATION_TYPE.PRAYER}
                 title={t("notification.prayerNotifications")}
                 icon="Bell"
                 iconColor="text-primary-600 dark:text-primary-400"
                 defaults={settings.defaults.prayer}
                 overrides={settings.overrides}
-                onDefaultUpdate={(field, value) => updateDefault("prayer", field, value)}
-                onOverrideUpdate={(prayerId, config) => updateOverride(prayerId, "prayer", config)}
-                onResetOverride={(prayerId) => resetOverride(prayerId, "prayer")}
+                onDefaultUpdate={(field, value) =>
+                  updateDefault(NOTIFICATION_TYPE.PRAYER, field, value)
+                }
+                onOverrideUpdate={(prayerId, config) =>
+                  updateOverride(prayerId, NOTIFICATION_TYPE.PRAYER, config)
+                }
+                onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.PRAYER)}
                 defaultExpanded={true}
                 supportsVibration={features.supportsVibration}
-              /> */}
+              />
 
               {/* Iqama Reminders */}
-              {/* <NotificationTypePanel
-                type="iqama"
+              <NotificationTypePanel
+                type={NOTIFICATION_TYPE.IQAMA}
                 title={t("notification.iqamaReminders")}
                 icon="Clock"
                 iconColor="text-amber-600 dark:text-amber-400"
                 defaults={settings.defaults.iqama}
                 overrides={settings.overrides}
-                onDefaultUpdate={(field, value) => updateDefault("iqama", field, value)}
-                onOverrideUpdate={(prayerId, config) => updateOverride(prayerId, "iqama", config)}
-                onResetOverride={(prayerId) => resetOverride(prayerId, "iqama")}
+                onDefaultUpdate={(field, value) =>
+                  updateDefault(NOTIFICATION_TYPE.IQAMA, field, value)
+                }
+                onOverrideUpdate={(prayerId, config) =>
+                  updateOverride(prayerId, NOTIFICATION_TYPE.IQAMA, config)
+                }
+                onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.IQAMA)}
                 hasTiming={true}
                 timingLabel={t("notification.timeAfterAthan")}
                 supportsVibration={features.supportsVibration}
-              /> */}
+              />
 
               {/* Pre-Athan Alerts */}
-              {/* <NotificationTypePanel
-                type="preAthan"
+              <NotificationTypePanel
+                type={NOTIFICATION_TYPE.PRE_ATHAN}
                 title={t("notification.preAthanAlerts")}
                 icon="BellRing"
                 iconColor="text-purple-600 dark:text-purple-400"
                 defaults={settings.defaults.preAthan}
                 overrides={settings.overrides}
-                onDefaultUpdate={(field, value) => updateDefault("preAthan", field, value)}
-                onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, "preAthan", config)
+                onDefaultUpdate={(field, value) =>
+                  updateDefault(NOTIFICATION_TYPE.PRE_ATHAN, field, value)
                 }
-                onResetOverride={(prayerId) => resetOverride(prayerId, "preAthan")}
+                onOverrideUpdate={(prayerId, config) =>
+                  updateOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN, config)
+                }
+                onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN)}
                 hasTiming={true}
                 timingLabel={t("notification.timeBeforeAthan")}
                 supportsVibration={features.supportsVibration}
-              /> */}
+              />
 
               {/* Sync Status */}
               {isScheduling && (
