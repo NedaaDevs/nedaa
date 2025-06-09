@@ -30,10 +30,13 @@ export const transformAladhanParams = (): AladhanApiParams => {
     long: location.coords.longitude,
     year,
     month,
-    method: (settings && settings.method) ?? null,
   };
 
   // Add other settings if they exist
+  if (settings?.method !== undefined) {
+    params.method = settings.method;
+  }
+
   if (settings?.madhab !== undefined) {
     params.school = settings.madhab;
   }
