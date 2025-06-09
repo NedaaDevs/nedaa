@@ -85,7 +85,6 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             const adapter = getAdapterByProviderId(currentProviderId);
 
             const apiParams = adapter.toParams();
-            console.log("🚀 => getPrayerTimes: => apiParams:", apiParams);
 
             // Make API call(we also should include provider id as get param)
             const response = await prayerTimesApi.get(apiParams);
