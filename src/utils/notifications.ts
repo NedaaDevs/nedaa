@@ -154,3 +154,14 @@ export const requestNotificationPermission = async () => {
 
   return { status };
 };
+
+export const listScheduledNotifications = async () => {
+  const { status } = await checkPermissions();
+  return status === PermissionStatus.GRANTED
+    ? Notifications.getAllScheduledNotificationsAsync()
+    : [];
+};
+
+export const cancelAllScheduledNotifications = async () => {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+};
