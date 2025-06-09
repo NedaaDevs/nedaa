@@ -25,3 +25,46 @@ export type NotificationAction = {
   clearNotifications: () => Promise<void>;
   openNotificationSettings: () => Promise<void>;
 };
+
+export type NotificationConfig = {
+  enabled: boolean;
+  sound: string;
+  vibration: boolean;
+};
+
+export type NotificationWithTiming = NotificationConfig & {
+  timing: number; // minutes before/after
+};
+
+export type NotificationDefaults = {
+  prayer: NotificationConfig;
+  iqama: NotificationWithTiming;
+  preAthan: NotificationWithTiming;
+};
+
+export type NotificationOverride = {
+  prayer?: Partial<NotificationConfig>;
+  iqama?: Partial<NotificationWithTiming>;
+  preAthan?: Partial<NotificationWithTiming>;
+};
+
+export type NotificationSettings = {
+  enabled: boolean; // All notifications toggle
+  defaults: NotificationDefaults;
+  overrides: Record<string, NotificationOverride>; // keyed by prayer ID
+};
+
+export const getEffectiveConfig = <T extends NotificationConfig>(
+  prayerId: string,
+  type: NotificationType,
+  defaults: NotificationDefaults,
+  overrides: Record<string, NotificationOverride>
+): T => {
+  const defaultConfig = defaults[type];
+  const override = overrides[prayerId]?.[type];
+
+  return {
+    ...defaultConfig,
+    ...override,
+  } as T;
+};
