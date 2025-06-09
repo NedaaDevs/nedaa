@@ -3,75 +3,26 @@ import { PermissionStatus, AndroidImportance } from "expo-notifications";
 import { Platform, AppState } from "react-native";
 
 // Enums
-import { LocalPermissionStatus } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
+
+// Types
+import type { NotificationOptions } from "@/types/notification";
 
 // Constants
 const ANDROID_CHANNEL_ID = "prayer_times";
 const ANDROID_CHANNEL_NAME = "Prayer Time Alerts";
 
-export const configureNotifications = () => {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+// Sound file mapping
+// const SOUND_FILES = {
+//   silent: false, // No sound
+// };
 
-  // Check channel when app comes to foreground
-  AppState.addEventListener("change", handleAppStateChange);
-};
-
-const handleAppStateChange = (state: string) => {
-  if (state === "active") checkAndroidChannel();
-};
-
-// Channel management for Android
-export const checkAndroidChannel = async () => {
-  if (Platform.OS !== PlatformType.ANDROID) return;
-
-  try {
-    const channels = await Notifications.getNotificationChannelsAsync();
-    const channelExists = channels.some((c) => c.id === ANDROID_CHANNEL_ID);
-
-    if (!channelExists) {
-      await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-        name: ANDROID_CHANNEL_NAME,
-        importance: AndroidImportance.MAX,
-        vibrationPattern: [0, 500, 200, 500],
-      });
-      console.log("Android notification channel created");
-    }
-  } catch (error) {
-    console.error("Failed to check/create Android channel:", error);
-  }
-};
-
-// Enhanced permission check with channel verification
-export const checkPermissions = async () => {
-  const { status } = await Notifications.getPermissionsAsync();
-
-  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
-    await checkAndroidChannel();
-  }
-
-  return { status };
-};
-
-export const requestNotificationPermission = async () => {
-  const { status } = await Notifications.requestPermissionsAsync({
-    ios: { allowAlert: true, allowBadge: false, allowSound: true },
-  });
-
-  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
-    await checkAndroidChannel();
-  }
-
-  return { status };
-};
-
-export const scheduleNotification = async (date: Date | string, title: string, message: string) => {
+export const scheduleNotification = async (
+  date: Date | string,
+  title: string,
+  message: string,
+  options?: NotificationOptions
+) => {
   const { status } = await checkPermissions();
 
   if (status !== PermissionStatus.GRANTED) {
@@ -79,6 +30,29 @@ export const scheduleNotification = async (date: Date | string, title: string, m
   }
 
   try {
+    // Prepare notification content
+    const content: Notifications.NotificationContentInput = {
+      title,
+      body: message,
+      data: {
+        categoryId: options?.categoryId,
+      },
+    };
+
+    // Platform-specific settings
+    if (Platform.OS === PlatformType.ANDROID) {
+      content.priority = Notifications.AndroidNotificationPriority.MAX;
+
+      // Android vibration
+      if (options?.vibrate !== undefined) {
+        content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
+      }
+    } else if (Platform.OS === PlatformType.IOS) {
+      // iOS specific settings
+      content.interruptionLevel = "timeSensitive";
+    }
+
+    // Schedule the notification
     const trigger = {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date,
@@ -87,13 +61,7 @@ export const scheduleNotification = async (date: Date | string, title: string, m
     };
 
     const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body: message,
-        ...(Platform.OS === PlatformType.ANDROID && {
-          priority: Notifications.AndroidNotificationPriority.MAX,
-        }),
-      },
+      content,
       trigger,
     });
 
@@ -104,24 +72,85 @@ export const scheduleNotification = async (date: Date | string, title: string, m
   }
 };
 
-export const mapToLocalStatus = (expoStatus: PermissionStatus): LocalPermissionStatus => {
-  switch (expoStatus) {
-    case PermissionStatus.GRANTED:
-      return LocalPermissionStatus.GRANTED;
-    case PermissionStatus.DENIED:
-      return LocalPermissionStatus.DENIED;
-    default:
-      return LocalPermissionStatus.UNDETERMINED;
+// Create notification channels for different types (Android)
+export const setupNotificationChannels = async () => {
+  if (Platform.OS !== PlatformType.ANDROID) return;
+
+  try {
+    // Main prayer channel
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+      name: ANDROID_CHANNEL_NAME,
+      importance: AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500],
+      sound: "default",
+    });
+
+    // Iqama reminder channel
+    await Notifications.setNotificationChannelAsync("iqama_reminders", {
+      name: "Iqama Reminders",
+      importance: AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      sound: "gentle_reminder.wav",
+    });
+
+    // Pre-Athan alert channel
+    await Notifications.setNotificationChannelAsync("preathan_alerts", {
+      name: "Pre-Athan Alerts",
+      importance: AndroidImportance.HIGH,
+      vibrationPattern: [0, 200],
+      sound: "bell_sound.wav",
+    });
+
+    console.log("Android notification channels created");
+  } catch (error) {
+    console.error("Failed to create Android channels:", error);
   }
 };
 
-export const listScheduledNotifications = async () => {
-  const { status } = await checkPermissions();
-  return status === PermissionStatus.GRANTED
-    ? Notifications.getAllScheduledNotificationsAsync()
-    : [];
+export const configureNotifications = () => {
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: notification.request.content.sound !== null,
+        shouldSetBadge: false,
+      };
+    },
+  });
+
+  // Setup channels on app start
+  setupNotificationChannels();
+
+  // Check channels when app comes to foreground
+  AppState.addEventListener("change", handleAppStateChange);
 };
 
-export const cancelAllScheduledNotifications = async () => {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+const handleAppStateChange = (state: string) => {
+  if (state === "active") setupNotificationChannels();
+};
+
+export const checkPermissions = async () => {
+  const { status } = await Notifications.getPermissionsAsync();
+
+  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
+    await setupNotificationChannels();
+  }
+
+  return { status };
+};
+
+export const requestNotificationPermission = async () => {
+  const { status } = await Notifications.requestPermissionsAsync({
+    ios: {
+      allowAlert: true,
+      allowBadge: false,
+      allowSound: true,
+    },
+  });
+
+  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
+    await setupNotificationChannels();
+  }
+
+  return { status };
 };
