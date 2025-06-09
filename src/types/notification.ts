@@ -15,6 +15,8 @@ export type NotificationOptions = {
 
 export type NotificationState = {
   isScheduling: boolean;
+  settings: NotificationSettings;
+  lastScheduledDate: string | null;
 };
 
 export type NotificationType = "prayer" | "iqama" | "preAthan";
@@ -24,6 +26,21 @@ export type NotificationAction = {
   getScheduledNotifications: () => Promise<NotificationRequest[]>;
   clearNotifications: () => Promise<void>;
   openNotificationSettings: () => Promise<void>;
+  updateAllNotificationToggle: (enabled: boolean) => void;
+  updateQuickSetup: (sound: string, vibration: boolean) => void;
+  updateDefault: (type: NotificationType, field: string, value: any) => void;
+  updateOverride: (
+    prayerId: string,
+    type: NotificationType,
+    config: Partial<NotificationConfig | NotificationWithTiming>
+  ) => void;
+  resetOverride: (prayerId: string, type: NotificationType) => void;
+  resetAllOverrides: () => void;
+  getEffectiveConfigForPrayer: <T extends NotificationConfig>(
+    prayerId: string,
+    type: NotificationType
+  ) => T;
+  clearAllNotifications: () => Promise<void>;
 };
 
 export type NotificationConfig = {
