@@ -7,7 +7,6 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import { Button, ButtonText } from "@/components/ui/button";
 import { Badge, BadgeText } from "@/components/ui/badge";
 import { Pressable } from "@/components/ui/pressable";
 
@@ -69,7 +68,6 @@ const NotificationTypePanel: FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const [showIndividualPrayers, setShowIndividualPrayers] = useState(false);
   const [modalPrayer, setModalPrayer] = useState<string | null>(null);
 
   const iconMap: Record<string, LucideIcon> = {
@@ -84,13 +82,10 @@ const NotificationTypePanel: FC<Props> = ({
     const hasOverride = overrides[prayerId]?.[type];
     if (!hasOverride) return { isCustom: false, label: t("notification.usingDefault") };
 
-    // Check what's customized
     const customTiming = hasTiming && hasOverride.timing !== undefined;
-    // const customSound = hasOverride.sound !== undefined;
-    // const customVibration = hasOverride.vibration !== undefined;
 
     let label = t("notification.customized");
-    if (customTiming && hasOverride.timing) {
+    if (customTiming) {
       label = `${t("notification.custom")}:  ${t("common.minute", { count: hasOverride.timing })}`;
     }
 
@@ -162,18 +157,7 @@ const NotificationTypePanel: FC<Props> = ({
         {/* Expanded Content */}
         {isExpanded && defaults.enabled && (
           <VStack className="p-4" space="md">
-            {!showIndividualPrayers ? (
-              <>
-                <Box className="bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
-                  <Text className="text-left text-sm text-gray-700 dark:text-gray-300">
-                    {t("notification.allPrayersUsingDefault")}
-                  </Text>
-                </Box>
-                <Button variant="outline" size="sm" onPress={() => setShowIndividualPrayers(true)}>
-                  <ButtonText>{t("notification.customizeIndividualPrayers")}</ButtonText>
-                </Button>
-              </>
-            ) : (
+            {
               <VStack space="xs">
                 {PRAYERS.map((prayer) => {
                   const status = getPrayerStatus(prayer.id);
@@ -194,7 +178,7 @@ const NotificationTypePanel: FC<Props> = ({
                   );
                 })}
               </VStack>
-            )}
+            }
           </VStack>
         )}
       </Box>
