@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
@@ -36,6 +36,9 @@ import { X, ChevronDown } from "lucide-react-native";
 
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
+
+// Utils
+import { getAvailableSounds } from "@/utils/sound";
 
 type Props = {
   isOpen: boolean;
@@ -79,23 +82,7 @@ const PrayerCustomizationModal: FC<Props> = ({
   );
 
   // Sound options based on notification type
-  const getSoundOptions = () => {
-    if (type === "prayer") {
-      return [
-        { label: "notification.sound.makkahAthan", value: "makkah" },
-        { label: "notification.sound.madinahAthan", value: "madinah" },
-        { label: "notification.sound.default", value: "default" },
-        { label: "notification.sound.silent", value: "silent" },
-      ];
-    } else {
-      return [
-        { label: "notification.sound.gentle", value: "gentle" },
-        { label: "notification.sound.bell", value: "bell" },
-        { label: "notification.sound.shortBeep", value: "short" },
-        { label: "notification.sound.silent", value: "silent" },
-      ];
-    }
-  };
+  const getSoundOptions = getAvailableSounds(type);
 
   const timingOptions = [5, 10, 15, 20, 30];
 
@@ -205,7 +192,9 @@ const PrayerCustomizationModal: FC<Props> = ({
             {/* Sound Selection */}
             <HStack className="justify-between items-center">
               <Text className="text-base">{t("notification.sound")}</Text>
-              <Select selectedValue={sound} onValueChange={setSound}>
+              <Select
+                selectedValue={sound}
+                onValueChange={(value) => setSound(value as typeof sound)}>
                 <SelectTrigger variant="outline" size="sm" className="w-40">
                   <SelectInput />
                   <SelectIcon>
@@ -219,7 +208,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                       <SelectDragIndicator />
                     </SelectDragIndicatorWrapper>
                     <SelectScrollView>
-                      {getSoundOptions().map((option) => (
+                      {getSoundOptions.map((option) => (
                         <SelectItem
                           key={option.value}
                           label={t(option.label)}
