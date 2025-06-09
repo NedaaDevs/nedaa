@@ -5,11 +5,7 @@ import { Platform } from "react-native";
 import { useNotificationStore } from "@/stores/notification";
 
 // Types
-import type {
-  NotificationType,
-  NotificationConfig,
-  NotificationWithTiming,
-} from "@/types/notification";
+import type { NotificationType, ConfigForType } from "@/types/notification";
 import { PlatformType } from "@/enums/app";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
@@ -72,11 +68,11 @@ export const useNotificationSettings = () => {
 
   // Get formatted config for display
   const getFormattedConfig = useCallback(
-    <T extends NotificationConfig>(
+    <T extends NotificationType>(
       prayerId: string,
-      type: NotificationType
-    ): T & { hasOverride: boolean } => {
-      const config = getEffectiveConfigForPrayer<T>(prayerId, type);
+      type: T
+    ): ConfigForType<T> & { hasOverride: boolean } => {
+      const config = getEffectiveConfigForPrayer(prayerId, type);
       const override = hasOverride(prayerId, type);
 
       return {
@@ -125,12 +121,9 @@ export const usePrayerNotificationSettings = (prayerId: string) => {
 
   const prayerConfig = useMemo(
     () => ({
-      prayer: getEffectiveConfigForPrayer<NotificationConfig>(prayerId, NOTIFICATION_TYPE.PRAYER),
-      iqama: getEffectiveConfigForPrayer<NotificationWithTiming>(prayerId, NOTIFICATION_TYPE.IQAMA),
-      preAthan: getEffectiveConfigForPrayer<NotificationWithTiming>(
-        prayerId,
-        NOTIFICATION_TYPE.PRE_ATHAN
-      ),
+      prayer: getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.PRAYER),
+      iqama: getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.IQAMA),
+      preAthan: getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.PRE_ATHAN),
     }),
     [prayerId, getEffectiveConfigForPrayer]
   );
@@ -147,7 +140,8 @@ export const usePrayerNotificationSettings = (prayerId: string) => {
   return {
     config: prayerConfig,
     overrides,
-    updateOverride: (type: NotificationType, config: any) => updateOverride(prayerId, type, config),
+    updateOverride: <T extends NotificationType>(type: T, config: Partial<ConfigForType<T>>) =>
+      updateOverride(prayerId, type, config),
     resetOverride: (type: NotificationType) => resetOverride(prayerId, type),
   };
 };
