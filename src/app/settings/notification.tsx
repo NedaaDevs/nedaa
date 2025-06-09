@@ -20,7 +20,7 @@ import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
-const NotificationSettingsV2 = () => {
+const NotificationSettings = () => {
   const { t } = useTranslation();
 
   const {
@@ -164,4 +164,4 @@ const NotificationSettingsV2 = () => {
   );
 };
 
-export default NotificationSettingsV2;
+export default NotificationSettings;
