@@ -1,7 +1,25 @@
+// Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+
+// Enums
 import { LocalPermissionStatus } from "@/enums/notifications";
 
+// Types
+import type { NotificationSoundKey } from "@/types/sound";
+
 import type { NotificationRequest } from "expo-notifications";
+
+export type PrayerNotificationConfig = NotificationConfig & {
+  sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>;
+};
+
+export type IqamaNotificationConfig = NotificationWithTiming & {
+  sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.IQAMA>;
+};
+
+export type PreAthanNotificationConfig = NotificationWithTiming & {
+  sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRE_ATHAN>;
+};
 
 export type NotificationPermissionsState = {
   status: LocalPermissionStatus;
@@ -28,19 +46,26 @@ export type NotificationAction = {
   clearNotifications: () => Promise<void>;
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => void;
-  updateQuickSetup: (sound: string, vibration: boolean) => void;
-  updateDefault: (type: NotificationType, field: string, value: any) => void;
-  updateOverride: (
+  updateQuickSetup: (
+    sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>,
+    vibration: boolean
+  ) => void;
+  updateDefault: <T extends Partial<NotificationType>>(
+    type: T,
+    field: keyof ConfigForType<T>,
+    value: ConfigForType<T>[keyof ConfigForType<T>]
+  ) => void;
+  updateOverride: <T extends NotificationType>(
     prayerId: string,
-    type: NotificationType,
-    config: Partial<NotificationConfig | NotificationWithTiming>
+    type: T,
+    config: Partial<ConfigForType<T>>
   ) => void;
   resetOverride: (prayerId: string, type: NotificationType) => void;
   resetAllOverrides: () => void;
-  getEffectiveConfigForPrayer: <T extends NotificationConfig>(
+  getEffectiveConfigForPrayer: <T extends NotificationType>(
     prayerId: string,
-    type: NotificationType
-  ) => T;
+    type: T
+  ) => ConfigForType<T>;
   clearAllNotifications: () => Promise<void>;
   scheduleAllNotifications: () => Promise<void>;
   schedulePrayerNotifications: (prayerId: string, prayerTime: Date) => Promise<void>;
@@ -49,7 +74,7 @@ export type NotificationAction = {
 
 export type NotificationConfig = {
   enabled: boolean;
-  sound: string;
+  sound: NotificationSoundKey<NotificationType>;
   vibration: boolean;
 };
 
@@ -58,15 +83,13 @@ export type NotificationWithTiming = NotificationConfig & {
 };
 
 export type NotificationDefaults = {
-  prayer: NotificationConfig;
-  iqama: NotificationWithTiming;
-  preAthan: NotificationWithTiming;
+  prayer: PrayerNotificationConfig;
+  iqama: IqamaNotificationConfig;
+  preAthan: PreAthanNotificationConfig;
 };
 
 export type NotificationOverride = {
-  prayer?: Partial<NotificationConfig>;
-  iqama?: Partial<NotificationWithTiming>;
-  preAthan?: Partial<NotificationWithTiming>;
+  [T in NotificationType]?: Partial<ConfigForType<T>>;
 };
 
 export type NotificationSettings = {
@@ -75,17 +98,32 @@ export type NotificationSettings = {
   overrides: Record<string, NotificationOverride>; // keyed by prayer ID
 };
 
-export const getEffectiveConfig = <T extends NotificationConfig>(
+export function getEffectiveConfig<T extends NotificationType>(
   prayerId: string,
-  type: NotificationType,
+  type: T,
   defaults: NotificationDefaults,
   overrides: Record<string, NotificationOverride>
-): T => {
+): T extends "prayer"
+  ? PrayerNotificationConfig
+  : T extends "iqama"
+    ? IqamaNotificationConfig
+    : T extends "preAthan"
+      ? PreAthanNotificationConfig
+      : never {
   const defaultConfig = defaults[type];
   const override = overrides[prayerId]?.[type];
 
   return {
     ...defaultConfig,
     ...override,
-  } as T;
-};
+  } as any;
+}
+
+// Helper type to extract config type from notification type
+export type ConfigForType<T extends NotificationType> = T extends typeof NOTIFICATION_TYPE.PRAYER
+  ? PrayerNotificationConfig
+  : T extends typeof NOTIFICATION_TYPE.IQAMA
+    ? IqamaNotificationConfig
+    : T extends typeof NOTIFICATION_TYPE.PRE_ATHAN
+      ? PreAthanNotificationConfig
+      : never;
