@@ -1,6 +1,18 @@
 import { FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+// Constants
+import { NOTIFICATION_TYPE } from "@/constants/Notification";
+
+// Hooks
+import { useSoundPreview } from "@/hooks/useSoundPreview";
+
+// Utils
+import { getAvailableSounds, SOUND_LABELS } from "@/utils/sound";
+
+// Types
+import type { PrayerSoundKey, NotificationSoundKey } from "@/types/sound";
+
 // Components
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -22,13 +34,18 @@ import {
   SelectScrollView,
 } from "@/components/ui/select";
 
+import SoundPreviewButton from "@/components/SoundPreviewButton";
+
 // Icons
 import { Zap, ChevronDown } from "lucide-react-native";
 
 type Props = {
-  currentSound: string;
+  currentSound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>;
   vibrationEnabled: boolean;
-  onApply: (sound: string, vibration: boolean) => void;
+  onApply: (
+    sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>,
+    vibration: boolean
+  ) => void;
   supportsVibration?: boolean;
 };
 
@@ -40,22 +57,35 @@ const NotificationQuickSetup: FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
+  const { playPreview, stopPreview, isPlaying, currentSound: playingSound } = useSoundPreview();
+
   // Local state for quick setup
   const [localSound, setLocalSound] = useState(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
+  const [isOpen, setIsOpen] = useState(false);
 
-  //   TODO: add sounds
-  const soundOptions = [
-    { label: "notification.sound.makkahAthan", value: "makkah" },
-    { label: "notification.sound.madinahAthan", value: "madinah" },
-    { label: "notification.sound.default", value: "default" },
-    { label: "notification.sound.silent", value: "silent" },
-  ];
+  const soundOptions = getAvailableSounds(NOTIFICATION_TYPE.PRAYER);
 
   const handleApply = () => {
+    stopPreview(); // Stop any playing preview
     onApply(localSound, localVibration);
   };
 
+  const handleSoundPreview = async () => {
+    if (isPlaying && playingSound === `prayer.${localSound}`) {
+      await stopPreview();
+    } else {
+      await playPreview("prayer", localSound);
+    }
+  };
+
+  const handleValueChange = (value: string) => {
+    setLocalSound(value as PrayerSoundKey);
+  };
+
+  const getTranslatedLabel = () => {
+    return t(SOUND_LABELS.prayer[localSound]);
+  };
   return (
     <Box className="bg-blue-50 dark:bg-blue-900/20 mx-4 p-4 rounded-lg">
       <VStack space="md">
@@ -75,27 +105,56 @@ const NotificationQuickSetup: FC<Props> = ({
             <Text className="text-sm text-blue-700 dark:text-blue-300">
               {t("notification.sound")}
             </Text>
-            <Select selectedValue={localSound} onValueChange={setLocalSound}>
-              <SelectTrigger variant="outline" size="sm" className="w-40">
-                <SelectInput />
-                <SelectIcon>
-                  <ChevronDown size={16} />
-                </SelectIcon>
+            <Select
+              initialLabel={localSound ? getTranslatedLabel() : ""}
+              selectedValue={localSound}
+              onValueChange={handleValueChange}
+              onOpen={() => setIsOpen(true)}
+              onClose={() => setIsOpen(false)}
+              accessibilityLabel={t("notification.sound.selectPlaceholder")}>
+              <SelectTrigger
+                variant="outline"
+                size="sm"
+                className={`w-40 rounded-lg bg-white transition-all duration-200 ${
+                  isOpen ? "border-blue-500" : ""
+                } active:bg-gray-50`}>
+                <SelectInput placeholder={t("notification.sound.selectPlaceholder")} />
+                <SelectIcon className="mr-3" as={ChevronDown} />
               </SelectTrigger>
+
               <SelectPortal>
                 <SelectBackdrop />
                 <SelectContent>
                   <SelectDragIndicatorWrapper>
                     <SelectDragIndicator />
                   </SelectDragIndicatorWrapper>
-                  <SelectScrollView>
-                    {soundOptions.map((option) => (
-                      <SelectItem key={option.value} label={t(option.label)} value={option.value} />
-                    ))}
+
+                  <SelectScrollView className="px-2 pt-1 pb-4 max-h-[50vh]">
+                    {soundOptions.map((option) => {
+                      const isSelected = localSound === option.value;
+
+                      return (
+                        <SelectItem
+                          key={option.value}
+                          label={t(option.label)}
+                          value={option.value}
+                          className={`px-4 py-3 mb-2 rounded-md border border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-200 active:bg-gray-100 transition-all duration-200 ease-in-out ${
+                            isSelected ? "bg-blue-50 border-blue-500" : ""
+                          }`}
+                        />
+                      );
+                    })}
                   </SelectScrollView>
                 </SelectContent>
               </SelectPortal>
             </Select>
+
+            <SoundPreviewButton
+              isPlaying={isPlaying && playingSound === `prayer.${localSound}`}
+              onPress={handleSoundPreview}
+              disabled={localSound === "silent"}
+              color="text-blue-600 dark:text-blue-400"
+            />
           </HStack>
 
           {supportsVibration && (
