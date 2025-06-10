@@ -4,26 +4,9 @@ import { useAudioPlayer, AudioSource } from "expo-audio";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
-import type {
-  NotificationSoundKey,
-  NotificationSoundMappings,
-  SoundLabelMappings,
-  SoundOption,
-} from "@/types/sound";
+import type { NotificationSoundKey, SoundLabelMappings, SoundOption } from "@/types/sound";
 import { NotificationType } from "@/types/notification";
-
-export const NOTIFICATION_SOUNDS: NotificationSoundMappings = {
-  prayer: {
-    makkah1: require("@/assets/sounds/makkahAthan1.mp3"),
-    silent: null,
-  },
-  iqama: {
-    silent: null,
-  },
-  preAthan: {
-    silent: null,
-  },
-};
+import { NOTIFICATION_SOUNDS } from "@/constants/sounds";
 
 // Sound labels for UI
 export const SOUND_LABELS: SoundLabelMappings = {
@@ -53,7 +36,7 @@ export const getAvailableSounds = <T extends keyof typeof NOTIFICATION_TYPE>(
 export const getSoundSource = <T extends NotificationType>(
   type: T,
   soundKey: NotificationSoundKey<T>
-): number | null => {
+): string | AudioSource | null => {
   return NOTIFICATION_SOUNDS[type][soundKey];
 };
 

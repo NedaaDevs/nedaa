@@ -22,7 +22,7 @@ export type NotificationSoundKey<T extends NotificationType> =
 export type SoundSource = number | null;
 
 export type SoundMapping<T extends NotificationType> = {
-  [K in NotificationSoundKey<T>]: SoundSource;
+  [K in NotificationSoundKey<T>]: string | SoundSource;
 };
 
 // Complete sound mappings type
