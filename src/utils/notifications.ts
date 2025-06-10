@@ -12,11 +12,6 @@ import type { NotificationOptions } from "@/types/notification";
 const ANDROID_CHANNEL_ID = "prayer_times";
 const ANDROID_CHANNEL_NAME = "Prayer Time Alerts";
 
-// Sound file mapping
-// const SOUND_FILES = {
-//   silent: false, // No sound
-// };
-
 export const scheduleNotification = async (
   date: Date | string,
   title: string,
@@ -74,13 +69,12 @@ export const scheduleNotification = async (
 
 export const configureNotifications = () => {
   Notifications.setNotificationHandler({
-    handleNotification: async (notification) => {
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: notification.request.content.sound !== null,
-        shouldSetBadge: false,
-      };
-    },
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
   });
 
   // Setup channels on app start
@@ -128,6 +122,7 @@ export const listScheduledNotifications = async () => {
 };
 
 export const cancelAllScheduledNotifications = async () => {
+  console.log("Canceling all scheduled notification");
   await Notifications.cancelAllScheduledNotificationsAsync();
 };
 
