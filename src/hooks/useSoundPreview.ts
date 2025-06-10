@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAudioPlayer } from "expo-audio";
 
 // Utils
@@ -26,51 +26,61 @@ export const useSoundPreview = (): UseSoundPreviewReturn => {
   const player = useAudioPlayer();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSound, setCurrentSound] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+  const playerIdRef = useRef(`player-${Date.now()}-${Math.random()}`);
 
   useEffect(() => {
-    // Initialize the sound manager with the player
-    soundPreviewManager.setPlayer(player);
+    isMountedRef.current = true;
 
-    // Setup interval to sync state with manager
-    const interval = setInterval(() => {
-      setIsPlaying(soundPreviewManager.isCurrentlyPlaying());
-      setCurrentSound(soundPreviewManager.getCurrentSound());
-    }, 100);
+    // Sync initial state
+    const syncState = () => {
+      if (isMountedRef.current) {
+        setIsPlaying(soundPreviewManager.isCurrentlyPlaying());
+        setCurrentSound(soundPreviewManager.getCurrentSound());
+      }
+    };
+
+    // Initial sync
+    syncState();
+
+    // Subscribe to state changes
+    const unsubscribe = soundPreviewManager.addListener(syncState);
 
     // Cleanup on unmount
     return () => {
-      clearInterval(interval);
-      soundPreviewManager.stopPreview();
+      isMountedRef.current = false;
+      unsubscribe();
+      // Notify the manager that this player is unmounting
+      soundPreviewManager.notifyPlayerUnmount(playerIdRef.current);
     };
   }, [player]);
 
   const playPreview = useCallback(
     async <T extends NotificationType>(type: T, soundKey: NotificationSoundKey<T>) => {
-      setIsPlaying(true);
-      setCurrentSound(`${type}.${soundKey}`);
-
       try {
-        await soundPreviewManager.playPreview(type, soundKey);
+        await soundPreviewManager.playPreview(type, soundKey, player, playerIdRef.current);
       } catch (error) {
         console.error("Error in playPreview:", error);
-        setIsPlaying(false);
-        setCurrentSound(null);
       }
     },
-    []
+    [player]
   );
 
   const stopPreview = useCallback(async () => {
-    await soundPreviewManager.stopPreview();
-    setIsPlaying(false);
-    setCurrentSound(null);
-  }, []);
+    try {
+      await soundPreviewManager.stopPreview(player);
+    } catch (error) {
+      console.error("Error in stopPreview:", error);
+      // If we can't stop it properly, at least reset the state
+      soundPreviewManager.forceReset();
+    }
+  }, [player]);
 
   const isPlayingSound = useCallback(
     <T extends NotificationType>(type: T, soundKey: NotificationSoundKey<T>): boolean => {
-      return isPlaying && currentSound === `${type}.${soundKey}`;
+      return soundPreviewManager.isCurrentlyPlaying(`${type}.${soundKey}`);
     },
-    [isPlaying, currentSound]
+    []
   );
 
   return {

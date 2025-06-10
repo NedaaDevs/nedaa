@@ -12,6 +12,7 @@ import { getAvailableSounds, SOUND_LABELS } from "@/utils/sound";
 
 // Types
 import type { PrayerSoundKey, NotificationSoundKey } from "@/types/sound";
+import type { NotificationType } from "@/types/notification";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -57,7 +58,7 @@ const NotificationQuickSetup: FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
-  const { playPreview, stopPreview, isPlaying, currentSound: playingSound } = useSoundPreview();
+  const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   // Local state for quick setup
   const [localSound, setLocalSound] = useState(currentSound);
@@ -71,11 +72,11 @@ const NotificationQuickSetup: FC<Props> = ({
     onApply(localSound, localVibration);
   };
 
-  const handleSoundPreview = async () => {
-    if (isPlaying && playingSound === `prayer.${localSound}`) {
+  const handleSoundPreview = async (type: NotificationType) => {
+    if (isPlayingSound(type, localSound)) {
       await stopPreview();
     } else {
-      await playPreview("prayer", localSound);
+      await playPreview(type, localSound);
     }
   };
 
@@ -150,8 +151,8 @@ const NotificationQuickSetup: FC<Props> = ({
             </Select>
 
             <SoundPreviewButton
-              isPlaying={isPlaying && playingSound === `prayer.${localSound}`}
-              onPress={handleSoundPreview}
+              isPlaying={isPlayingSound("prayer", localSound)}
+              onPress={() => handleSoundPreview("prayer")}
               disabled={localSound === "silent"}
               color="text-blue-600 dark:text-blue-400"
             />

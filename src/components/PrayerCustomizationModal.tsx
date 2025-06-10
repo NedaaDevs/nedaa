@@ -74,7 +74,7 @@ const PrayerCustomizationModal: FC<Props> = ({
   supportsVibration = true,
 }) => {
   const { t } = useTranslation();
-  const { playPreview, stopPreview, isPlaying, currentSound: playingSound } = useSoundPreview();
+  const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   // Merge defaults with overrides
   const currentConfig = { ...defaults, ...currentOverride };
@@ -94,8 +94,8 @@ const PrayerCustomizationModal: FC<Props> = ({
 
   const timingOptions = [5, 10, 15, 20, 30];
 
-  const handleSoundPreview = async () => {
-    if (isPlaying && playingSound === `${type}.${sound}`) {
+  const handleSoundPreview = async (type: NotificationType) => {
+    if (isPlayingSound(type, sound)) {
       await stopPreview();
     } else {
       await playPreview(type, sound);
@@ -273,8 +273,8 @@ const PrayerCustomizationModal: FC<Props> = ({
               </Select>
 
               <SoundPreviewButton
-                isPlaying={isPlaying && playingSound === `${type}.${sound}`}
-                onPress={handleSoundPreview}
+                isPlaying={isPlayingSound(type, sound)}
+                onPress={() => handleSoundPreview(type)}
                 disabled={sound === "silent"}
                 color="text-blue-600 dark:text-blue-400"
               />

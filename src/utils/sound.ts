@@ -64,12 +64,17 @@ export const isSoundPreviewable = <T extends NotificationType>(
   return soundKey !== "silent";
 };
 
+// Event emitter for state synchronization
+type SoundPreviewListener = () => void;
+
 // Singleton class to manage sound preview
 class SoundPreviewManager {
   private static instance: SoundPreviewManager;
-  private currentPlayer: ReturnType<typeof useAudioPlayer> | null = null;
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
+  private listeners: Set<SoundPreviewListener> = new Set();
+  private currentSoundSource: AudioSource | null = null;
+  private currentPlayerId: string | null = null;
 
   private constructor() {}
 
@@ -80,22 +85,26 @@ class SoundPreviewManager {
     return SoundPreviewManager.instance;
   }
 
-  setPlayer(player: ReturnType<typeof useAudioPlayer>) {
-    this.currentPlayer = player;
+  // Add listener for state changes
+  addListener(listener: SoundPreviewListener): () => void {
+    this.listeners.add(listener);
+    // Return cleanup function
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  // Notify all listeners of state change
+  private notifyListeners(): void {
+    this.listeners.forEach((listener) => listener());
   }
 
   async playPreview<T extends NotificationType>(
     type: T,
-    soundKey: NotificationSoundKey<T>
+    soundKey: NotificationSoundKey<T>,
+    player: ReturnType<typeof useAudioPlayer>,
+    playerId: string
   ): Promise<void> {
-    if (!this.currentPlayer) {
-      console.error("Audio player not initialized");
-      return;
-    }
-
-    // Stop any currently playing sound
-    await this.stopPreview();
-
     // Don't play if not previewable
     if (!isSoundPreviewable(soundKey)) {
       return;
@@ -111,27 +120,51 @@ class SoundPreviewManager {
     const soundId = `${type}.${soundKey}`;
 
     try {
+      // Stop any currently playing sound first
+      if (this.isPlaying) {
+        // Just update state, don't try to stop old player
+        this.isPlaying = false;
+        this.currentSoundId = null;
+        this.currentPlayerId = null;
+        this.notifyListeners();
+      }
+
       this.isPlaying = true;
       this.currentSoundId = soundId;
-      await this.currentPlayer.replace(soundSource as AudioSource);
-      await this.currentPlayer.play();
+      this.currentSoundSource = soundSource as AudioSource;
+      this.currentPlayerId = playerId;
+      this.notifyListeners();
+
+      await player.replace(soundSource as AudioSource);
+      await player.play();
     } catch (error) {
       console.error("Error playing sound preview:", error);
       this.isPlaying = false;
       this.currentSoundId = null;
+      this.currentSoundSource = null;
+      this.currentPlayerId = null;
+      this.notifyListeners();
+      throw error;
     }
   }
 
-  async stopPreview(): Promise<void> {
-    if (!this.currentPlayer || !this.isPlaying) return;
-
+  async stopPreview(player: ReturnType<typeof useAudioPlayer>): Promise<void> {
     try {
-      await this.currentPlayer.pause();
-      await this.currentPlayer.seekTo(0);
+      await player.pause();
+      await player.seekTo(0);
       this.isPlaying = false;
       this.currentSoundId = null;
+      this.currentSoundSource = null;
+      this.currentPlayerId = null;
+      this.notifyListeners();
     } catch (error) {
       console.error("Error stopping sound preview:", error);
+      // Force reset state even if error occurs
+      this.isPlaying = false;
+      this.currentSoundId = null;
+      this.currentSoundSource = null;
+      this.currentPlayerId = null;
+      this.notifyListeners();
     }
   }
 
@@ -144,6 +177,31 @@ class SoundPreviewManager {
 
   getCurrentSound(): string | null {
     return this.currentSoundId;
+  }
+
+  getCurrentSoundSource(): AudioSource | null {
+    return this.currentSoundSource;
+  }
+
+  // Notify when a player is unmounting
+  notifyPlayerUnmount(playerId: string): void {
+    if (this.currentPlayerId === playerId) {
+      // The player that was playing is unmounting, so reset state
+      this.isPlaying = false;
+      this.currentSoundId = null;
+      this.currentSoundSource = null;
+      this.currentPlayerId = null;
+      this.notifyListeners();
+    }
+  }
+
+  // Force reset state (useful for cleanup)
+  forceReset(): void {
+    this.isPlaying = false;
+    this.currentSoundId = null;
+    this.currentSoundSource = null;
+    this.currentPlayerId = null;
+    this.notifyListeners();
   }
 }
 
