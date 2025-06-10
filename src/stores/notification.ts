@@ -148,21 +148,10 @@ export const useNotificationStore = create<NotificationStore>()(
           try {
             const timezone = locationStore.getState().locationDetails.timezone;
 
-            // Get prayer times for a date range using the store's method
-            const getPrayerTimesForDateRange = async (startDate: number, endDate: number) => {
-              // First ensure we have the latest prayer times
-              await prayerTimesStore.getState().loadPrayerTimes();
+            // Get two weeks worth of prayer data
+            const prayersData = prayerTimesStore.getState().twoWeeksTimings;
 
-              // TODO: Instead of query here we should move it the store.
-              const { PrayerTimesDB } = await import("@/services/db");
-              return await PrayerTimesDB.getPrayerTimesByDateRange(startDate, endDate);
-            };
-
-            const result = await scheduleAllNotifications(
-              settings,
-              getPrayerTimesForDateRange,
-              timezone
-            );
+            const result = await scheduleAllNotifications(settings, prayersData, timezone);
 
             if (result.success) {
               set({ lastScheduledDate: new Date().toISOString() });

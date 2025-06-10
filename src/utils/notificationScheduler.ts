@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import { addDays, isSameDay, isAfter, addMinutes, subMinutes, format, parseISO } from "date-fns";
+import { isSameDay, isAfter, addMinutes, subMinutes, parseISO } from "date-fns";
 import { PermissionStatus } from "expo-notifications";
 
 import i18next from "@/localization/i18n";
@@ -8,7 +8,6 @@ import i18next from "@/localization/i18n";
 import {
   scheduleNotification,
   cancelAllScheduledNotifications,
-  listScheduledNotifications,
   checkPermissions,
 } from "@/utils/notifications";
 import { timeZonedNow } from "@/utils/date";
@@ -69,12 +68,20 @@ const mapSoundKeyToFileName = <T extends NotificationType>(
  */
 export const scheduleAllNotifications = async (
   settings: NotificationSettings,
-  getPrayerTimesForDateRange: (startDate: number, endDate: number) => Promise<DayPrayerTimes[]>,
+  data: DayPrayerTimes[] | null,
   timezone: string,
   options: Partial<SchedulingOptions> = {}
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
     console.warn("[NotificationScheduler] Notification Permission not granted cancel scheduling");
+    return {
+      success: false,
+      scheduledCount: 0,
+    };
+  }
+
+  if (!data) {
+    console.log("No data to schedule");
     return {
       success: false,
       scheduledCount: 0,
@@ -97,12 +104,10 @@ export const scheduleAllNotifications = async (
     // Determine scheduling period
     const daysToSchedule = options.daysToSchedule || DEFAULT_DAYS_TO_SCHEDULE;
     const now = timeZonedNow(timezone);
-    const startDate = parseInt(format(now, "yyyyMMdd"));
-    const endDate = parseInt(format(addDays(now, daysToSchedule - 1), "yyyyMMdd"));
 
     // Get prayer times for the date range
     console.log(`[NotificationScheduler] Fetching prayer times for ${daysToSchedule} days...`);
-    const daysPrayerTimes = await getPrayerTimesForDateRange(startDate, endDate);
+    const daysPrayerTimes = data;
 
     if (!daysPrayerTimes || daysPrayerTimes.length === 0) {
       throw new Error("No prayer times available for scheduling");
