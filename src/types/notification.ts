@@ -41,9 +41,6 @@ export type NotificationState = {
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
 export type NotificationAction = {
-  scheduleTestNotification: () => Promise<void>;
-  getScheduledNotifications: () => Promise<NotificationRequest[]>;
-  clearNotifications: () => Promise<void>;
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => void;
   updateQuickSetup: (
@@ -66,10 +63,8 @@ export type NotificationAction = {
     prayerId: string,
     type: T
   ) => ConfigForType<T>;
-  clearAllNotifications: () => Promise<void>;
   scheduleAllNotifications: () => Promise<void>;
-  schedulePrayerNotifications: (prayerId: string, prayerTime: Date) => Promise<void>;
-  cancelPrayerNotifications: (prayerId: string) => Promise<void>;
+  rescheduleIfNeeded: (force: boolean) => Promise<void>;
 };
 
 export type NotificationConfig = {
