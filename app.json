@@ -71,7 +71,7 @@
         "com.apple.security.application-groups": ["group.dev.nedaa.app"]
       },
       "infoPlist": {
-        "ExpoLocalization_supportsRTL": true
+        "NSMicrophoneUsageDescription": "This app does not require microphone access."
       },
       "icon": {
         "light": "./assets/images/ios-light.png",

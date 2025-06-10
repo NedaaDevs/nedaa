@@ -84,6 +84,8 @@
     <string>This app uses your location to provide accurate prayer times and reminders based on your
       current location. Your location data will be used only while you are using the app and will
       not be shared with any third parties.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app does not require microphone access.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
