@@ -6,7 +6,10 @@ import { useNotificationStore } from "@/stores/notification";
 
 // Types
 import type { NotificationType, ConfigForType } from "@/types/notification";
+
+// Enums
 import { PlatformType } from "@/enums/app";
+// Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 export const useNotificationSettings = () => {
