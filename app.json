@@ -130,7 +130,12 @@
       ],
       "expo-font",
       "react-native-email-link",
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
