@@ -20,6 +20,9 @@ import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
+// Utils
+import { listScheduledNotifications } from "@/utils/notifications";
+
 const NotificationSettings = () => {
   const { t } = useTranslation();
 
@@ -35,6 +38,14 @@ const NotificationSettings = () => {
     resetOverride,
     scheduleAllNotifications,
   } = useNotificationSettings();
+
+  // For debugging
+  const handleNotificationList = async () => {
+    const list = await listScheduledNotifications();
+    for (let index = 0; index < list.length; index++) {
+      console.log(" notification:", JSON.stringify(list[index], null, 2));
+    }
+  };
 
   return (
     <Box className="flex-1 bg-grey dark:bg-slate-900">
@@ -152,11 +163,19 @@ const NotificationSettings = () => {
 
           {/* Debug/Test Section */}
           {__DEV__ && (
-            <Box className="mx-4 mt-4">
-              <Button variant="outline" size="sm" onPress={scheduleAllNotifications}>
-                <ButtonText>Reschedule All Notifications</ButtonText>
-              </Button>
-            </Box>
+            <>
+              <Box className="mx-4 mt-4">
+                <Button variant="outline" size="sm" onPress={scheduleAllNotifications}>
+                  <ButtonText>Reschedule All Notifications</ButtonText>
+                </Button>
+              </Box>
+
+              <Box className="mx-4 mt-4">
+                <Button variant="outline" size="sm" onPress={handleNotificationList}>
+                  <ButtonText>List All Notifications</ButtonText>
+                </Button>
+              </Box>
+            </>
           )}
         </VStack>
       </ScrollView>
