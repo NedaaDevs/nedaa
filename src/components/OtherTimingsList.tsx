@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { ScrollView, View } from "react-native";
 
 // Components
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 
 import TimingItem from "@/components/TimingItem";
@@ -39,9 +39,9 @@ const OtherTimingsList = () => {
 
   if (!todayTimings || !todayTimings.otherTimings) {
     return (
-      <Box className="p-4">
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text>{t("loadingPrayerTimings")}</Text>
-      </Box>
+      </View>
     );
   }
 
@@ -74,7 +74,15 @@ const OtherTimingsList = () => {
   );
 
   return (
-    <Box>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        paddingBottom: 40,
+        paddingTop: 10,
+      }}
+      scrollEventThrottle={16}
+      bounces={true}
+      alwaysBounceVertical={true}>
       {sortedEntries.map(([timing, time]) => {
         const timingName = timing as OtherTimingName;
         const isNext = timingName === nextTimingName;
@@ -89,7 +97,7 @@ const OtherTimingsList = () => {
           />
         );
       })}
-    </Box>
+    </ScrollView>
   );
 };
 
