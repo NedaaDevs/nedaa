@@ -19,6 +19,7 @@ import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { Background } from "@/components/ui/background";
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ const NotificationSettings = () => {
   } = useNotificationSettings();
 
   return (
-    <Box className="flex-1 bg-grey dark:bg-slate-900">
+    <Background>
       <TopBar title="settings.notification.title" href="/" backOnClick />
 
       <ScrollView
@@ -160,7 +161,7 @@ const NotificationSettings = () => {
           )}
         </VStack>
       </ScrollView>
-    </Box>
+    </Background>
   );
 };
 

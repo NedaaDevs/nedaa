@@ -4,6 +4,7 @@ import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 // Components
+import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
 import TopBar from "@/components/TopBar";
 import SettingsItem from "@/components/SettingsItem";
@@ -28,53 +29,55 @@ const SettingsScreen = () => {
   const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
   return (
-    <ScrollView className="bg-grey dark:bg-slate-900" contentContainerStyle={{ flexGrow: 1 }}>
-      <TopBar title="settings.title" href="/" backOnClick />
+    <Background>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <TopBar title="settings.title" href="/" backOnClick />
 
-      {/* Language */}
-      <SettingsItem
-        name={t("settings.language")}
-        path="/settings/language"
-        icon={Languages}
-        currentValue={t(`settings.languages.${locale}.nativeTitle`)}
-      />
-      <Divider className="bg-primary/30 dark:bg-secondary/30 mx-4 w-[calc(100%-32px)]" />
-      {/* Theme */}
-      <SettingsItem
-        name={t("settings.appearance")}
-        path="/settings/theme"
-        icon={Palette}
-        currentValue={t(`settings.themes.${mode}.title`)}
-      />
+        {/* Language */}
+        <SettingsItem
+          name={t("settings.language")}
+          path="/settings/language"
+          icon={Languages}
+          currentValue={t(`settings.languages.${locale}.nativeTitle`)}
+        />
+        <Divider className="bg-primary/30 dark:bg-secondary/30 mx-4 w-[calc(100%-32px)]" />
+        {/* Theme */}
+        <SettingsItem
+          name={t("settings.appearance")}
+          path="/settings/theme"
+          icon={Palette}
+          currentValue={t(`settings.themes.${mode}.title`)}
+        />
 
-      {/* Notification */}
-      <SettingsItem
-        name={t("settings.notification.title")}
-        path="/settings/notification"
-        icon={BellRing}
-      />
+        {/* Notification */}
+        <SettingsItem
+          name={t("settings.notification.title")}
+          path="/settings/notification"
+          icon={BellRing}
+        />
 
-      {/* Location */}
-      <SettingsItem
-        name={t("settings.location.title")}
-        path="/settings/location"
-        icon={MapPin}
-        currentValue={localizedLocation.city ?? ""}
-      />
+        {/* Location */}
+        <SettingsItem
+          name={t("settings.location.title")}
+          path="/settings/location"
+          icon={MapPin}
+          currentValue={localizedLocation.city ?? ""}
+        />
 
-      {/* Advance */}
-      <SettingsItem
-        name={t("settings.advance.title")}
-        path="/settings/advance"
-        icon={Settings2Icon}
-      />
+        {/* Advance */}
+        <SettingsItem
+          name={t("settings.advance.title")}
+          path="/settings/advance"
+          icon={Settings2Icon}
+        />
 
-      {/* Help */}
-      <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
+        {/* Help */}
+        <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
 
-      {/* Footer */}
-      <SettingsFooter />
-    </ScrollView>
+        {/* Footer */}
+        <SettingsFooter />
+      </ScrollView>
+    </Background>
   );
 };
 
