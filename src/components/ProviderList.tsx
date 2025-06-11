@@ -1,6 +1,6 @@
-import React, { FC, useState } from "react";
-
+import React, { FC, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+
 // Components
 import {
   Select,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
+import { Spinner } from "@/components/ui/spinner";
 
 import { ChevronDownIcon, CheckIcon } from "lucide-react-native";
 
@@ -26,75 +27,121 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 export const ProviderList: FC = () => {
   const { t } = useTranslation();
   const { isGettingProviders, providers, selectedProvider } = usePrayerTimesStore();
+
   const [isOpen, setIsOpen] = useState(false);
+  const [isChangingProvider, setIsChangingProvider] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Memoize provider list to prevent unnecessary re-renders
+  const providerItems = useMemo(
+    () =>
+      providers.map((provider) => {
+        const isSelected = selectedProvider?.id === provider.id;
+
+        return (
+          <SelectItem
+            key={provider.id}
+            value={provider.id.toString()}
+            label={provider.name}
+            className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${
+              isSelected ? "bg-background dark:bg-background-elevated" : "bg-background-secondary"
+            }`}>
+            {isSelected && (
+              <Box className="bg-primary rounded-full p-1.5">
+                <CheckIcon
+                  className="text-typography-contrast"
+                  size={14}
+                  accessibilityLabel={t("common.selected")}
+                />
+              </Box>
+            )}
+          </SelectItem>
+        );
+      }),
+    [providers, selectedProvider, t]
+  );
+
+  const handleProviderChange = async (providerId: string) => {
+    try {
+      setError(null);
+      setIsChangingProvider(true);
+    } catch (err) {
+      setError(t("errors.failedToChangeProvider"));
+      console.error("Error changing provider:", err);
+    } finally {
+      setIsChangingProvider(false);
+    }
+  };
+
+  if (isGettingProviders) {
+    return (
+      <Box className="mx-4 mt-6">
+        <Text className="text-lg font-semibold mb-4 text-typography">{t("providers.title")}</Text>
+        <Box className="bg-background-secondary rounded-xl p-6 items-center">
+          <Spinner size="small" />
+          <Text className="text-sm text-typography-secondary mt-3">{t("common.loading")}</Text>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (providers.length === 0) {
+    return (
+      <Box className="mx-4 mt-6">
+        <Text className="text-lg font-semibold mb-4 text-typography">{t("providers.title")}</Text>
+        <Box className="bg-background-secondary rounded-xl p-6">
+          <Text className="text-sm text-typography-secondary text-center">
+            {t("providers.noProvidersAvailable")}
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
-    <Box className="mt-4 px-4">
-      <Text className="text-lg font-semibold mb-2 dark:text-white">{t("providers.title")}</Text>
+    <Box className="mx-4 mt-6">
+      <Text className="text-lg font-semibold mb-4 text-typography">{t("providers.title")}</Text>
+
+      {error && (
+        <Box className="bg-background-error rounded-lg p-3 mb-4 border border-border-error">
+          <Text className="text-sm text-error">{error}</Text>
+        </Box>
+      )}
 
       <Select
         selectedValue={(selectedProvider && selectedProvider.id.toString()) ?? null}
         initialLabel={(selectedProvider && selectedProvider.name) ?? ""}
-        isDisabled={isGettingProviders}
+        isDisabled={isGettingProviders || isChangingProvider}
+        onValueChange={handleProviderChange}
         onOpen={() => setIsOpen(true)}
         onClose={() => setIsOpen(false)}
-        accessibilityLabel={t("settings.advance.provider.selectPlaceholder")}>
+        accessibilityLabel={t("providers.selectPlaceholder")}>
         <SelectTrigger
           variant="outline"
           size="lg"
-          className={`rounded-lg bg-white transition-all duration-200 ${
-            isOpen ? "border-blue-500" : ""
-          } active:bg-gray-50`}>
+          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-primary" : "border-outline"} ${isChangingProvider ? "opacity-70" : ""}`}>
           <SelectInput
-            className="flex-1 text-gray-800 text-base"
-            placeholder={t("settings.advance.provider.selectPlaceholder")}
+            className="flex-1 text-typography text-base font-medium px-2"
+            placeholder={t("providers.selectPlaceholder")}
           />
           <SelectIcon
-            className={`mr-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-            as={ChevronDownIcon}
+            className="mr-3 text-primary"
+            as={isChangingProvider ? Spinner : ChevronDownIcon}
           />
         </SelectTrigger>
 
         <SelectPortal>
           <SelectBackdrop />
-          <SelectContent>
-            <SelectDragIndicatorWrapper>
-              <SelectDragIndicator />
+          <SelectContent className="bg-background-secondary rounded-t-3xl">
+            <SelectDragIndicatorWrapper className="py-3">
+              <SelectDragIndicator className="bg-typography-secondary w-12 h-1 rounded-full" />
             </SelectDragIndicatorWrapper>
 
-            <SelectScrollView className="px-2 pt-1 pb-4 max-h-[50vh]">
-              {providers.map((provider) => {
-                const isSelected = selectedProvider?.id === provider.id;
-
-                return (
-                  <SelectItem
-                    key={provider.id}
-                    value={provider.id.toString()}
-                    label={provider.name}
-                    className={`px-4 border-b border-gray-100 bg-white active:bg-gray-50 transition-colors duration-200 rounded-lg ${
-                      isSelected ? "bg-blue-50" : ""
-                    }`}>
-                    <Box className="flex-row items-center justify-between">
-                      <Box className="flex-1">
-                        <Text
-                          className={`text-base font-semibold mb-1 ${
-                            isSelected ? "text-blue-700" : "text-gray-800"
-                          }`}>
-                          {t(`providers.${provider.name.toLowerCase()}.title`)}
-                        </Text>
-                        <Text
-                          size="xs"
-                          className={`${
-                            isSelected ? "text-blue-600" : "text-blue-500"
-                          } transition-colors duration-200`}>
-                          {provider.website}
-                        </Text>
-                      </Box>
-                      {isSelected && <CheckIcon className="text-blue-600" size={20} />}
-                    </Box>
-                  </SelectItem>
-                );
-              })}
+            <SelectScrollView className="px-2 pb-6 max-h-screen">
+              <Text className="text-lg font-semibold text-typography mx-2 mb-3">
+                {t("providers.selectProvider")}
+              </Text>
+              {providerItems}
             </SelectScrollView>
           </SelectContent>
         </SelectPortal>
@@ -102,4 +149,5 @@ export const ProviderList: FC = () => {
     </Box>
   );
 };
+
 export default ProviderList;
