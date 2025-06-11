@@ -1,5 +1,12 @@
 import { Platform } from "react-native";
-import { isSameDay, isAfter, addMinutes, subMinutes, parseISO } from "date-fns";
+import {
+  isSameDay,
+  isAfter,
+  addMinutes,
+  subMinutes,
+  parseISO,
+  differenceInSeconds,
+} from "date-fns";
 import { PermissionStatus } from "expo-notifications";
 
 import i18next from "@/localization/i18n";
@@ -14,12 +21,10 @@ import { timeZonedNow } from "@/utils/date";
 
 // Types
 import { NotificationSettings, NotificationType, getEffectiveConfig } from "@/types/notification";
-import { NotificationSoundKey } from "@/types/sound";
 import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
-import { NOTIFICATION_SOUNDS } from "@/constants/sounds";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -51,17 +56,7 @@ type NotificationScheduleItem = {
 const PRAYER_IDS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 const MAX_IOS_NOTIFICATIONS = 63;
 const DEFAULT_DAYS_TO_SCHEDULE = 10;
-
-const mapSoundKeyToFileName = <T extends NotificationType>(
-  type: T,
-  soundKey: NotificationSoundKey<T>
-): string => {
-  const mapping = NOTIFICATION_SOUNDS[type];
-  const mapped = mapping[soundKey as keyof typeof mapping];
-
-  // Fallback to "silent" if mapping is null or undefined
-  return (mapped ?? "silent") as string;
-};
+const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
 
 /**
  * Schedule all notifications based on settings and prayer times
@@ -154,7 +149,7 @@ export const scheduleAllNotifications = async (
 
       // Add reminder notification(Reserves the last notification as a reminder)
       const lastNotification = notificationsToProcess[notificationsToProcess.length - 1];
-      const reminderTime = addMinutes(lastNotification.time, 10);
+      const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
 
       notificationsToProcess.push({
         id: "reminder",
@@ -163,9 +158,9 @@ export const scheduleAllNotifications = async (
         body: t("notification.reminder.body"),
         type: NOTIFICATION_TYPE.PRAYER,
         prayerId: "fajr",
-        sound: "silent",
-        vibration: false,
         categoryId: "reminder",
+        vibration: true,
+        sound: "default",
       });
     }
 
@@ -240,71 +235,86 @@ const generatePrayerNotifications = (
   if (preAthanConfig.enabled) {
     const preAthanTime = subMinutes(prayerTime, preAthanConfig.timing);
     if (isAfter(preAthanTime, now)) {
-      notifications.push({
-        id: `preathan_${prayerId}_${prayerTime.getTime()}`,
-        time: preAthanTime,
-        title: t("notification.preAthan.title", {
-          minutes: preAthanConfig.timing,
-          prayerName,
-        }),
-        body: t("notification.preAthan.body", {
-          minutes: preAthanConfig.timing,
-          prayerName,
-        }),
-        type: NOTIFICATION_TYPE.PRE_ATHAN,
-        prayerId,
-        sound: mapSoundKeyToFileName(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
-        vibration: preAthanConfig.vibration,
-        categoryId: `preathan_${prayerId}`,
-      });
+      const secondsFromNow = differenceInSeconds(preAthanTime, now);
+
+      // Only schedule if interval is at least MIN_INTERVAL_SECONDS
+      if (secondsFromNow >= MIN_INTERVAL_SECONDS) {
+        notifications.push({
+          id: `preathan_${prayerId}_${prayerTime.getTime()}`,
+          time: preAthanTime,
+          title: t("notification.preAthan.title", {
+            minutes: preAthanConfig.timing,
+            prayerName,
+          }),
+          body: t("notification.preAthan.body", {
+            minutes: preAthanConfig.timing,
+            prayerName,
+          }),
+          type: NOTIFICATION_TYPE.PRE_ATHAN,
+          prayerId,
+          categoryId: `preathan_${prayerId}`,
+          vibration: preAthanConfig.vibration,
+          sound: preAthanConfig.sound,
+        });
+      }
     }
   }
 
   // Prayer notification
   if (prayerConfig.enabled) {
-    notifications.push({
-      id: `prayer_${prayerId}_${prayerTime.getTime()}`,
-      time: prayerTime,
-      title: t("notification.prayer.title", {
-        prayerName,
-      }),
-      body: t("notification.prayer.body", {
-        prayerName,
-      }),
-      type: NOTIFICATION_TYPE.PRAYER,
-      prayerId,
-      sound: mapSoundKeyToFileName(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
-      vibration: prayerConfig.vibration,
-      categoryId: `prayer_${prayerId}`,
-    });
+    const secondsFromNow = differenceInSeconds(prayerTime, now);
+
+    // Only schedule if interval is at least MIN_INTERVAL_SECONDS
+    if (secondsFromNow >= MIN_INTERVAL_SECONDS) {
+      notifications.push({
+        id: `prayer_${prayerId}_${prayerTime.getTime()}`,
+        time: prayerTime,
+        title: t("notification.prayer.title", {
+          prayerName,
+        }),
+        body: t("notification.prayer.body", {
+          prayerName,
+        }),
+        type: NOTIFICATION_TYPE.PRAYER,
+        prayerId,
+        categoryId: `prayer_${prayerId}`,
+        vibration: prayerConfig.vibration,
+        sound: prayerConfig.sound,
+      });
+    }
   }
 
   // Iqama notification
   if (iqamaConfig.enabled) {
     const iqamaTime = addMinutes(prayerTime, iqamaConfig.timing);
-    notifications.push({
-      id: `iqama_${prayerId}_${prayerTime.getTime()}`,
-      time: iqamaTime,
-      title: t("notification.iqama.title", {
-        prayerName,
-      }),
-      body: t("notification.iqama.body", {
-        minutes: iqamaConfig.timing,
-        prayerName,
-      }),
-      type: NOTIFICATION_TYPE.IQAMA,
-      prayerId,
-      sound: mapSoundKeyToFileName(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound),
-      vibration: iqamaConfig.vibration,
-      categoryId: `iqama_${prayerId}`,
-    });
+    const secondsFromNow = differenceInSeconds(iqamaTime, now);
+
+    // Only schedule if interval is at least MIN_INTERVAL_SECONDS and in the future
+    if (secondsFromNow >= MIN_INTERVAL_SECONDS) {
+      notifications.push({
+        id: `iqama_${prayerId}_${prayerTime.getTime()}`,
+        time: iqamaTime,
+        title: t("notification.iqama.title", {
+          prayerName,
+        }),
+        body: t("notification.iqama.body", {
+          minutes: iqamaConfig.timing,
+          prayerName,
+        }),
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId,
+        categoryId: `iqama_${prayerId}`,
+        vibration: iqamaConfig.vibration,
+        sound: iqamaConfig.sound,
+      });
+    }
   }
 
   return notifications;
 };
 
 /**
- * Translation key fro prayer name for display
+ * Translation key for prayer name for display
  */
 const formatPrayerName = (prayerId: PrayerName, date?: Date): string => {
   // Special case for Jumu'ah (Friday Dhuhr)
