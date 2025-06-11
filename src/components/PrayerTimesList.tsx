@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { ScrollView, View } from "react-native";
 
 // Components
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import TimingItem from "@/components/TimingItem";
 
@@ -40,14 +40,22 @@ const PrayerTimesList = () => {
 
   if (!todayTimings) {
     return (
-      <Box className="p-4">
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text>{t("loadingPrayerTimes")}</Text>
-      </Box>
+      </View>
     );
   }
 
   return (
-    <Box>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        paddingBottom: 40,
+        paddingTop: 10,
+      }}
+      scrollEventThrottle={16}
+      bounces={true}
+      alwaysBounceVertical={true}>
       {Object.entries(todayTimings.timings).map(([prayer, time]) => {
         const prayerName = prayer as PrayerName;
 
@@ -68,7 +76,7 @@ const PrayerTimesList = () => {
           />
         );
       })}
-    </Box>
+    </ScrollView>
   );
 };
 
