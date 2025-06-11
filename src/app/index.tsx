@@ -1,7 +1,6 @@
-import { ScrollView } from "react-native";
+import { View } from "react-native";
 
 // Components
-import { Divider } from "@/components/ui/divider";
 import { Box } from "@/components/ui/box";
 import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
@@ -13,19 +12,22 @@ import { useAppStore } from "@/stores/app";
 
 // Icons
 import { Settings } from "lucide-react-native";
+
 export default function MainScreen() {
   const { mode } = useAppStore();
 
   return (
     <Background>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <TopBar title="common.nedaa" href="/settings" icon={Settings} />
-        <Box className="flex-1">
+      <View style={{ flex: 1 }}>
+        <Box>
+          <TopBar title="common.nedaa" href="/settings" icon={Settings} />
           <Header />
-          <Divider className="my-1" />
+        </Box>
+
+        <Box className="flex-1">
           <TimingsCarousel mode={mode} />
         </Box>
-      </ScrollView>
+      </View>
     </Background>
   );
 }
