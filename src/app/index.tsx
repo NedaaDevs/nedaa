@@ -3,6 +3,7 @@ import { ScrollView } from "react-native";
 // Components
 import { Divider } from "@/components/ui/divider";
 import { Box } from "@/components/ui/box";
+import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
 import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
@@ -16,13 +17,15 @@ export default function MainScreen() {
   const { mode } = useAppStore();
 
   return (
-    <ScrollView className="bg-grey  dark:bg-slate-900" contentContainerStyle={{ flexGrow: 1 }}>
-      <TopBar title="common.nedaa" href="/settings" icon={Settings} />
-      <Box className="flex-1">
-        <Header />
-        <Divider className="my-1" />
-        <TimingsCarousel mode={mode} />
-      </Box>
-    </ScrollView>
+    <Background>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <TopBar title="common.nedaa" href="/settings" icon={Settings} />
+        <Box className="flex-1">
+          <Header />
+          <Divider className="my-1" />
+          <TimingsCarousel mode={mode} />
+        </Box>
+      </ScrollView>
+    </Background>
   );
 }
