@@ -11,7 +11,18 @@ module.exports = {
       pattern:
         /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|typography|outline|background|indicator)/,
     },
-    // Add font-related classes to safelist
+    {
+      pattern: /(text)-(typography)-(secondary|contrast|accent)/,
+    },
+    {
+      pattern: /(bg)-(background)-(secondary|elevated|interactive|loading)/,
+    },
+    {
+      pattern: /(border)-(outline-accent|error|success|warning|info|loading)/,
+    },
+    {
+      pattern: /(text)-(foreground-loading)/,
+    },
     "font-regular",
     "font-medium",
     "font-semibold",
@@ -29,20 +40,35 @@ module.exports = {
         info: "rgb(var(--color-info)/<alpha-value>)",
         typography: {
           DEFAULT: "rgb(var(--color-typography)/<alpha-value>)",
-          white: "#FFFFFF",
-          gray: "#D4D4D4",
-          black: "#181718",
+          secondary: "rgb(var(--color-typography-secondary)/<alpha-value>)",
+          contrast: "rgb(var(--color-typography-contrast)/<alpha-value>)",
+          accent: "rgb(var(--color-typography-accent)/<alpha-value>)",
         },
-        outline: "rgb(var(--color-outline)/<alpha-value>)",
+        outline: {
+          DEFAULT: "rgb(var(--color-outline)/<alpha-value>)",
+          accent: "rgb(var(--color-outline-accent)/<alpha-value>)",
+        },
         background: {
           DEFAULT: "rgb(var(--color-background)/<alpha-value>)",
-          light: "#FBFBFB",
-          dark: "#181719",
+          secondary: "rgb(var(--color-background-secondary)/<alpha-value>)",
+          elevated: "rgb(var(--color-background-elevated)/<alpha-value>)",
+          interactive: "rgb(var(--color-background-interactive)/<alpha-value>)",
           error: "rgb(var(--color-background-error)/<alpha-value>)",
           warning: "rgb(var(--color-background-warning)/<alpha-value>)",
           muted: "rgb(var(--color-background-muted)/<alpha-value>)",
           success: "rgb(var(--color-background-success)/<alpha-value>)",
           info: "rgb(var(--color-background-info)/<alpha-value>)",
+          loading: "rgb(var(--color-background-loading)/<alpha-value>)",
+        },
+        border: {
+          error: "rgb(var(--color-border-error)/<alpha-value>)",
+          success: "rgb(var(--color-border-success)/<alpha-value>)",
+          warning: "rgb(var(--color-border-warning)/<alpha-value>)",
+          info: "rgb(var(--color-border-info)/<alpha-value>)",
+          loading: "rgb(var(--color-border-loading)/<alpha-value>)",
+        },
+        foreground: {
+          loading: "rgb(var(--color-foreground-loading)/<alpha-value>)",
         },
         indicator: {
           primary: "rgb(var(--color-indicator-primary)/<alpha-value>)",
