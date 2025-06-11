@@ -1,14 +1,14 @@
 // Components
-import { Box } from "@/components/ui/box";
+import { Background } from "@/components/ui/background";
 import ConcatUs from "@/components/ContactUs";
 import TopBar from "@/components/TopBar";
 
 const HelpSettings = () => {
   return (
-    <Box className="flex-1 bg-grey dark:bg-slate-900">
+    <Background>
       <TopBar title="settings.help.title" href="/" backOnClick />
       <ConcatUs />
-    </Box>
+    </Background>
   );
 };
 

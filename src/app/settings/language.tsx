@@ -1,14 +1,14 @@
 // Components
-import { Box } from "@/components/ui/box";
+import { Background } from "@/components/ui/background";
 import LanguageList from "@/components/LanguageList";
 import TopBar from "@/components/TopBar";
 
 const LanguageSettings = () => {
   return (
-    <Box className="flex-1 bg-grey dark:bg-slate-900">
+    <Background>
       <TopBar title="settings.language" href="/" backOnClick />
       <LanguageList />
-    </Box>
+    </Background>
   );
 };
 
