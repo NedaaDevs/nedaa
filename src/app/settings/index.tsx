@@ -40,7 +40,7 @@ const SettingsScreen = () => {
           icon={Languages}
           currentValue={t(`settings.languages.${locale}.nativeTitle`)}
         />
-        <Divider className="bg-primary/30 dark:bg-secondary/30 mx-4 w-[calc(100%-32px)]" />
+        <Divider className="bg-outline mx-4 w-[calc(100%-32px)]" />
         {/* Theme */}
         <SettingsItem
           name={t("settings.appearance")}
