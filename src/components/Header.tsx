@@ -85,44 +85,42 @@ const Header = () => {
 
   return (
     <Box className="m-1 rounded-2xl">
-      <Box className="p-3 rounded-xl mx-2 mt-1  border-s-hairline">
+      <Box className="p-3 rounded-xl mx-2 mt-1 border-s-hairline">
         <VStack className="items-center my-3">
-          <Text className="text-2xl font-bold text-slate-700 dark:text-slate-200">{dayName}</Text>
-          <Text className="text-lg text-slate-600 dark:text-slate-300">{formattedDateDetails}</Text>
+          <Text className="text-2xl font-bold text-typography">{dayName}</Text>
+          <Text className="text-lg text-typography-secondary">{formattedDateDetails}</Text>
         </VStack>
       </Box>
 
       <VStack className="items-center mb-2">
-        <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-        <Text className="mx-4 text-2xl font-semibold text-slate-700 dark:text-slate-300">
+        <Box className="h-px flex-1 bg-outline" />
+        <Text className="mx-4 text-2xl font-semibold text-primary">
           {localizedLocation.city ?? locationDetails.address?.city}
         </Text>
-        <Box className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        <Box className="h-px flex-1 bg-outline" />
 
-        <Text className="text-base text-slate-600 dark:text-slate-500">
+        <Text className="text-base text-typography-secondary">
           {localizedLocation.country ?? locationDetails.address?.country}
         </Text>
       </VStack>
 
       <PreviousPrayer />
 
-      <Box className="p-8 bg-white dark:bg-slate-800 rounded-xl mx-1 mt-2 mb-2 border-s-hairline">
+      <Box className="p-8 bg-background-secondary dark:bg-background-elevated rounded-xl mx-1 mt-2 mb-2 border-s-hairline">
         <HStack className="justify-between items-center w-full space-x-4">
-          <Text className="text-4xl font-bold text-slate-700 dark:text-secondary truncate max-w-[45%]">
+          <Text className="text-4xl font-bold text-primary truncate max-w-[45%]">
             {t(prayerName)}
           </Text>
 
-          <Divider className="h-14 w-px flex-shrink-0 bg-slate-300 dark:bg-slate-600" />
+          <Divider className="h-14 w-px flex-shrink-0 bg-outline" />
 
           <VStack className="items-end max-w-[45%]">
-            <Text className="text-4xl font-semibold text-primary dark:text-secondary truncate">
+            <Text className="text-4xl font-semibold text-primary truncate">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
 
-            <Box className="mt-1 px-4 py-1 rounded-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-secondary">
-              <Text className="text-center text-primary dark:text-secondary">
-                {getFormattedTimeRemaining()}
-              </Text>
+            <Box className="mt-1 px-4 py-1 rounded-full bg-background-interactive border border-primary">
+              <Text className="text-center text-primary">{getFormattedTimeRemaining()}</Text>
             </Box>
           </VStack>
         </HStack>
