@@ -87,7 +87,7 @@ const Header = () => {
     <Box className="m-1 rounded-2xl">
       <Box className="p-3 rounded-xl mx-2 mt-1 border-s-hairline">
         <VStack className="items-center my-3">
-          <Text className="text-2xl font-bold text-typography">{dayName}</Text>
+          <Text className="text-2xl font-bol text-primary dark:text-typography">{dayName}</Text>
           <Text className="text-lg text-typography-secondary">{formattedDateDetails}</Text>
         </VStack>
       </Box>
@@ -106,7 +106,7 @@ const Header = () => {
 
       <PreviousPrayer />
 
-      <Box className="p-8 bg-background-secondary dark:bg-background-elevated rounded-xl mx-1 mt-2 mb-2 border-s-hairline">
+      <Box className="p-8 bg-background-secondary  rounded-xl mx-1 mt-2 mb-2 border-s-hairline">
         <HStack className="justify-between items-center w-full space-x-4">
           <Text className="text-4xl font-bold text-primary truncate max-w-[45%]">
             {t(prayerName)}
@@ -119,7 +119,7 @@ const Header = () => {
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
 
-            <Box className="mt-1 px-4 py-1 rounded-full bg-background-interactive border border-primary">
+            <Box className="mt-1 px-4 py-1 rounded-full bg-background-interactive ">
               <Text className="text-center text-primary">{getFormattedTimeRemaining()}</Text>
             </Box>
           </VStack>

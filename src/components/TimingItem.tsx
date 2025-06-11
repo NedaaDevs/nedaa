@@ -38,10 +38,10 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
 
   return (
     <Box
-      className={`relative inset-0 m-2 p-4 rounded-lg overflow-hidden dark:bg-gray-800 ${isNext ? "bg-white" : " bg-white"}`}>
+      className={`relative inset-0 m-2 p-4 rounded-lg overflow-hidden ${isNext ? "bg-primary dark:bg-primary" : "bg-background-secondary dark:bg-background-secondary"}`}>
       {/* Side indicator  */}
       {isNext && (
-        <Box className="absolute top-0 bottom-0 start-0 w-1 bg-primary dark:bg-secondary" />
+        <Box className="absolute top-0 bottom-0 start-0 w-1 bg-accent-primary dark:bg-accent-primary" />
       )}
       <HStack className="justify-between items-center relative z-10">
         <HStack className="items-center space-x-3">
@@ -50,21 +50,19 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
               as={icon || SunIcon}
               size="md"
               className={
-                isNext
-                  ? "font-bold text-primary dark:text-secondary"
-                  : "font-medium text-typography dark:text-tertiary"
+                isNext ? "font-bold text-white dark:text-tertiary" : "font-medium text-primary"
               }
             />
           </Box>
 
           <Text
-            className={`mx-2 text-xl font-medium ${isNext ? "text-primary dark:text-secondary font-bold" : "text-typography dark:text-tertiary"}`}>
+            className={`mx-2 text-xl font-medium ${isNext ? "font-bold text-white dark:text-tertiary" : "text-typography"}`}>
             {t(name)}
           </Text>
         </HStack>
 
         <Text
-          className={`text-xl ${isNext ? " text-primary dark:text-secondary font-bold" : "font-medium text-typography dark:text-tertiary"}`}>
+          className={`text-xl ${isNext ? "text-white dark:text-tertiary font-bold" : "font-medium text-primary"}`}>
           {formattedPrayerTime(time)}
         </Text>
       </HStack>
