@@ -37,25 +37,21 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   };
 
   return (
-    <Box className="px-5 py-4 flex flex-row items-center bg-background-secondary dark:bg-background-elevated">
+    <Box className="px-5 py-4 flex flex-row items-center bg-secondary dark:bg-background-elevated">
       <Box className="flex-1 flex-row items-center gap-3">
         {backOnClick && (
-          <Pressable
-            onPress={handlePress}
-            className="p-2 rounded-lg active:bg-background-interactive dark:active:bg-background-interactive">
-            <Icon as={BackArrow} size="lg" className="text-text-primary dark:text-text-primary" />
+          <Pressable onPress={handlePress} className="p-2 rounded-lg ">
+            <Icon as={BackArrow} size="lg" className="text-white dark:text-typography" />
           </Pressable>
         )}
-        <Text className="text-2xl font-bold text-text-primary dark:text-text-primary">
-          {t(title)}
-        </Text>
+        <Text className="text-2xl font-bold text-white dark:text-typography">{t(title)}</Text>
       </Box>
 
       <Box className="w-12 items-end">
         {!backOnClick && (
           <Link href={href} asChild>
-            <Pressable className="p-2 rounded-lg active:bg-background-interactive dark:active:bg-background-interactive">
-              <Icon as={icon} size="lg" className="text-text-primary dark:text-text-primary" />
+            <Pressable className="p-2 rounded-lg">
+              <Icon as={icon} size="lg" className="text-white dark:text-typography" />
             </Pressable>
           </Link>
         )}
