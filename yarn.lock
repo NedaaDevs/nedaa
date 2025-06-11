@@ -840,7 +840,7 @@
   dependencies:
     regenerator-runtime "^0.14.0"
 
-"@babel/runtime@^7.18.6", "@babel/runtime@^7.20.0", "@babel/runtime@^7.25.0", "@babel/runtime@^7.26.10":
+"@babel/runtime@^7.18.6", "@babel/runtime@^7.20.0", "@babel/runtime@^7.25.0", "@babel/runtime@^7.27.1":
   version "7.27.1"
   resolved "https://registry.npmjs.org/@babel/runtime/-/runtime-7.27.1.tgz"
   integrity sha512-1x3D2xEk2fRo3PAhwQwu5UubzgiVWSXTBfWpVd2Mx2AzRqJuDJCsgaDVZ7HB5iGzDW1Hl1sWN2mFyKjmR9uAog==
@@ -1010,15 +1010,15 @@
     "@eslint/core" "^0.14.0"
     levn "^0.4.1"
 
-"@expo-google-fonts/asap@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/asap/-/asap-0.3.0.tgz"
-  integrity sha512-+ynr0ajFEIVfDayRxSCU5NY3YC79DRUW6GJ2wqtRK4NaciLdpz7urS+jfLs2athoSvfY5Gbre8N5xOmFMPztkw==
+"@expo-google-fonts/asap@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.npmjs.org/@expo-google-fonts/asap/-/asap-0.4.1.tgz"
+  integrity sha512-W+gH8U9aovVJ5oJ3rZoPX2Hj8fh05MeEGGPuknAyDN3A6h/WKs5UVxX4EQj/G4+y6O2cpHIfe+LUaPg0M4Rqug==
 
-"@expo-google-fonts/ibm-plex-sans-arabic@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/ibm-plex-sans-arabic/-/ibm-plex-sans-arabic-0.3.0.tgz"
-  integrity sha512-b2bPmsUnUEQQUsrZYCCW6snRoeu+Z82IcM232QTcXalOonSrLTknva4pWaTiZQ1Dq1Up0MPxV8kxlht5DHUvqQ==
+"@expo-google-fonts/ibm-plex-sans-arabic@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.npmjs.org/@expo-google-fonts/ibm-plex-sans-arabic/-/ibm-plex-sans-arabic-0.4.0.tgz"
+  integrity sha512-ceqEwKjks5Ognkfy2IX4csjBYKPesYpTEi3B65R1BSaXkTRzMoV9tvjiO1AZZPd9/Qr5wgCR00tTJ6TQiFB7zg==
 
 "@expo/cli@0.24.14":
   version "0.24.14"
@@ -6285,12 +6285,12 @@ hyphenate-style-name@^1.0.3:
   resolved "https://registry.npmjs.org/hyphenate-style-name/-/hyphenate-style-name-1.1.0.tgz"
   integrity sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==
 
-"i18next@>= 23.2.3", i18next@^24.2.3:
-  version "24.2.3"
-  resolved "https://registry.npmjs.org/i18next/-/i18next-24.2.3.tgz"
-  integrity sha512-lfbf80OzkocvX7nmZtu7nSTNbrTYR52sLWxPtlXX1zAhVw8WEnFk4puUkCR4B1dNQwbSpEHHHemcZu//7EcB7A==
+"i18next@>= 23.2.3", i18next@^25.2.1:
+  version "25.2.1"
+  resolved "https://registry.npmjs.org/i18next/-/i18next-25.2.1.tgz"
+  integrity sha512-+UoXK5wh+VlE1Zy5p6MjcvctHXAhRwQKCxiJD8noKZzIXmnAX8gdHX5fLPA3MEVxEN4vbZkQFy8N0LyD9tUqPw==
   dependencies:
-    "@babel/runtime" "^7.26.10"
+    "@babel/runtime" "^7.27.1"
 
 iconv-lite@0.6.3:
   version "0.6.3"
@@ -7685,10 +7685,10 @@ lru-cache@^10.0.1, lru-cache@^10.2.0:
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-10.4.3.tgz"
   integrity sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==
 
-lucide-react-native@^0.477.0:
-  version "0.477.0"
-  resolved "https://registry.npmjs.org/lucide-react-native/-/lucide-react-native-0.477.0.tgz"
-  integrity sha512-x5rcac54DbHgSRJleWpY4S7E68zTbC8hF6CqGtRWVZhrq9+cpOIonRF8oWhRFAv/CohDUvrdUlP0ieJAyDvD4Q==
+lucide-react-native@^0.514.0:
+  version "0.514.0"
+  resolved "https://registry.npmjs.org/lucide-react-native/-/lucide-react-native-0.514.0.tgz"
+  integrity sha512-IaW5ItnJ9TDv9lZJOtjBRc2r217BRO4xNhd9g1hmW5GKvOtFzFYYfkogktUihiniXThwo1NBmNMa82mbWKMJVQ==
 
 make-dir@^4.0.0:
   version "4.0.0"
@@ -8802,7 +8802,7 @@ rc@~1.2.7:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-react@*, react@19.0.0, "react@>= 16.8.0", "react@>= 18.2.0", react@>=16, react@>=16.8, react@>=17.0.0, react@>=18, react@>=18.2.0, "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.14.0 || 17.x || 18.x || 19.x", "react@^16.5.1 || ^17.0.0 || ^18.0.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react@^18.0.0 || ^19.0.0", react@^18.3.1, react@^19.0.0:
+react@*, react@19.0.0, "react@>= 16.8.0", "react@>= 18.2.0", react@>=16, react@>=16.8, react@>=17.0.0, react@>=18, react@>=18.2.0, "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.14.0 || 17.x || 18.x || 19.x", "react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react@^18.0.0 || ^19.0.0", react@^18.3.1, react@^19.0.0:
   version "19.0.0"
   resolved "https://registry.npmjs.org/react/-/react-19.0.0.tgz"
   integrity sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ==
@@ -8832,10 +8832,10 @@ react-freeze@^1.0.0:
   resolved "https://registry.npmjs.org/react-freeze/-/react-freeze-1.0.4.tgz"
   integrity sha512-r4F0Sec0BLxWicc7HEyo2x3/2icUTrRmDjaaRyzzn+7aDyFZliszMDOgLVwSnQnYENOlL1o569Ze2HZefk8clA==
 
-react-i18next@^15.5.1:
-  version "15.5.1"
-  resolved "https://registry.npmjs.org/react-i18next/-/react-i18next-15.5.1.tgz"
-  integrity sha512-C8RZ7N7H0L+flitiX6ASjq9p5puVJU1Z8VyL3OgM/QOMRf40BMZX+5TkpxzZVcTmOLPX5zlti4InEX5pFyiVeA==
+react-i18next@^15.5.2:
+  version "15.5.2"
+  resolved "https://registry.npmjs.org/react-i18next/-/react-i18next-15.5.2.tgz"
+  integrity sha512-ePODyXgmZQAOYTbZXQn5rRsSBu3Gszo69jxW6aKmlSgxKAI1fOhDwSu6bT4EKHciWPKQ7v7lPrjeiadR6Gi+1A==
   dependencies:
     "@babel/runtime" "^7.25.0"
     html-parse-stringify "^3.0.1"
@@ -8943,7 +8943,7 @@ react-native-is-edge-to-edge@1.1.7, react-native-is-edge-to-edge@^1.1.6, react-n
   resolved "https://registry.npmjs.org/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.1.7.tgz"
   integrity sha512-EH6i7E8epJGIcu7KpfXYXiV2JFIYITtq+rVS8uEb+92naMRBdxhTuS8Wn2Q7j9sqyO0B+Xbaaf9VdipIAmGW4w==
 
-react-native-reanimated@*, react-native-reanimated@>=3.0.0, react-native-reanimated@>=3.6.2, react-native-reanimated@~3.17.4:
+react-native-reanimated@*, react-native-reanimated@>=3.0.0, react-native-reanimated@>=3.6.2:
   version "3.17.5"
   resolved "https://registry.npmjs.org/react-native-reanimated/-/react-native-reanimated-3.17.5.tgz"
   integrity sha512-SxBK7wQfJ4UoWoJqQnmIC7ZjuNgVb9rcY5Xc67upXAFKftWg0rnkknTw6vgwnjRcvYThrjzUVti66XoZdDJGtw==
@@ -8960,6 +8960,24 @@ react-native-reanimated@*, react-native-reanimated@>=3.0.0, react-native-reanima
     convert-source-map "^2.0.0"
     invariant "^2.2.4"
     react-native-is-edge-to-edge "1.1.7"
+
+react-native-reanimated@~3.18:
+  version "3.18.0"
+  resolved "https://registry.npmjs.org/react-native-reanimated/-/react-native-reanimated-3.18.0.tgz"
+  integrity sha512-eVcNcqeOkMW+BUWAHdtvN3FKgC8J8wiEJkX6bNGGQaLS7m7e4amTfjIcqf/Ta+lerZLurmDaQ0lICI1CKPrb1Q==
+  dependencies:
+    invariant "^2.2.4"
+    convert-source-map "^2.0.0"
+    "@babel/preset-typescript" "^7.16.7"
+    react-native-is-edge-to-edge "1.1.7"
+    "@babel/plugin-transform-classes" "^7.0.0-0"
+    "@babel/plugin-transform-unicode-regex" "^7.0.0-0"
+    "@babel/plugin-transform-arrow-functions" "^7.0.0-0"
+    "@babel/plugin-transform-class-properties" "^7.0.0-0"
+    "@babel/plugin-transform-optional-chaining" "^7.0.0-0"
+    "@babel/plugin-transform-template-literals" "^7.0.0-0"
+    "@babel/plugin-transform-shorthand-properties" "^7.0.0-0"
+    "@babel/plugin-transform-nullish-coalescing-operator" "^7.0.0-0"
 
 react-native-reanimated-carousel@^4.0.2:
   version "4.0.2"
@@ -10829,12 +10847,12 @@ yocto-queue@^0.1.0:
   resolved "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zod@^3.24.3:
-  version "3.24.3"
-  resolved "https://registry.npmjs.org/zod/-/zod-3.24.3.tgz"
-  integrity sha512-HhY1oqzWCQWuUqvBFnsyrtZRhyPeR7SUGv+C4+MsisMuVfSPx8HpwWqH8tRahSlt6M3PiFAcoeFhZAqIXTxoSg==
+zod@^3.25.61:
+  version "3.25.61"
+  resolved "https://registry.npmjs.org/zod/-/zod-3.25.61.tgz"
+  integrity sha512-fzfJgUw78LTNnHujj9re1Ov/JJQkRZZGDMcYqSx7Hp4rPOkKywaFHq0S6GoHeXs0wGNE/sIOutkXgnwzrVOGCQ==
 
-zustand@^5.0.4:
-  version "5.0.4"
-  resolved "https://registry.npmjs.org/zustand/-/zustand-5.0.4.tgz"
-  integrity sha512-39VFTN5InDtMd28ZhjLyuTnlytDr9HfwO512Ai4I8ZABCoyAj4F1+sr7sD1jP/+p7k77Iko0Pb5NhgBFDCX0kQ==
+zustand@^5.0.5:
+  version "5.0.5"
+  resolved "https://registry.npmjs.org/zustand/-/zustand-5.0.5.tgz"
+  integrity sha512-mILtRfKW9xM47hqxGIxCv12gXusoY/xTSHBYApXozR0HmQv299whhBeeAcRy+KrPPybzosvJBCOmVjq6x12fCg==
