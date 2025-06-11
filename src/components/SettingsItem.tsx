@@ -27,29 +27,24 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl = I18nManager.isRTL 
   const ChevronIcon = rtl ? ChevronLeft : ChevronRight;
 
   return (
-    <Box className="relative inset-0 m-2 p-5 rounded-lg overflow-hidden dark:bg-gray-800 bg-white border border-gray-200 dark:border-gray-700">
+    <Box className="relative inset-0 m-2 p-5 rounded-lg overflow-hidden bg-background-secondary">
       <Link href={path} asChild>
         <Pressable className="flex-row items-center">
           <HStack className="justify-between items-center relative z-10 w-full">
             <HStack className="items-center">
               {icon && (
                 <Box className="mr-6">
-                  <Icon
-                    className="font-bold text-typography dark:text-tertiary"
-                    size="lg"
-                    as={icon}></Icon>
+                  <Icon className="font-bold text-typography" size="lg" as={icon}></Icon>
                 </Box>
               )}
-              <Text className="text-xl font-medium text-primary dark:text-secondary">{name}</Text>
+              <Text className="text-xl font-medium text-typography">{name}</Text>
             </HStack>
 
             <HStack className="items-center">
               {currentValue && (
-                <Text className="text-lg text-gray-500 dark:text-gray-400 mr-2">
-                  {currentValue}
-                </Text>
+                <Text className="text-lg text-typography-secondary mr-2">{currentValue}</Text>
               )}
-              <Icon size="xl" className="text-gray-400" as={ChevronIcon} />
+              <Icon size="xl" className="text-typography-secondary" as={ChevronIcon} />
             </HStack>
           </HStack>
         </Pressable>
