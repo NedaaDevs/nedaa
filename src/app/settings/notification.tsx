@@ -170,14 +170,14 @@ const NotificationSettings = () => {
                   <ButtonText>Reschedule All Notifications</ButtonText>
                 </Button>
               </Box>
-
-              <Box className="mx-4 mt-4">
-                <Button variant="outline" size="sm" onPress={handleNotificationList}>
-                  <ButtonText>List All Notifications</ButtonText>
-                </Button>
-              </Box>
             </>
           )}
+          {/* Temporary for testing */}
+          <Box className="mx-4 mt-4">
+            <Button variant="outline" size="sm" onPress={handleNotificationList}>
+              <ButtonText>List All Notifications</ButtonText>
+            </Button>
+          </Box>
         </VStack>
       </ScrollView>
 
