@@ -13,10 +13,10 @@ const ANDROID_CHANNEL_ID = "prayer_times";
 const ANDROID_CHANNEL_NAME = "Prayer Time Alerts";
 
 export const scheduleNotification = async (
-  date: Date | string,
+  date: Date | string | null,
   title: string,
   message: string,
-  options?: NotificationOptions
+  options?: NotificationOptions & { timezone?: string }
 ) => {
   const { status } = await checkPermissions();
 
@@ -47,13 +47,32 @@ export const scheduleNotification = async (
       content.interruptionLevel = "timeSensitive";
     }
 
-    // Schedule the notification
-    const trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date,
-      repeats: false,
-      channelId: ANDROID_CHANNEL_ID,
-    };
+    // trigger type
+    let trigger: Notifications.NotificationTriggerInput;
+
+    if (date) {
+      // Calculate time interval from now
+      const targetDate = typeof date === "string" ? new Date(date) : date;
+      const now = new Date();
+      const secondsFromNow = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
+
+      // Use time interval trigger if the date is in the future
+      if (secondsFromNow > 0) {
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: secondsFromNow,
+          repeats: false,
+          channelId: ANDROID_CHANNEL_ID,
+        };
+      } else {
+        // If date is in the past, don't schedule
+        console.warn(`Notification date is in the past: ${date}`);
+        return { success: false, message: "Cannot schedule notification in the past" };
+      }
+    } else {
+      // Immediate notification
+      trigger = null;
+    }
 
     const id = await Notifications.scheduleNotificationAsync({
       content,
@@ -136,7 +155,7 @@ export const setupNotificationChannels = async () => {
       name: ANDROID_CHANNEL_NAME,
       importance: AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
-      sound: "default",
+      sound: null, // No sound for now
     });
 
     // Iqama reminder channel
@@ -144,7 +163,7 @@ export const setupNotificationChannels = async () => {
       name: "Iqama Reminders",
       importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      sound: "gentle_reminder.wav",
+      sound: null, // No sound for now
     });
 
     // Pre-Athan alert channel
@@ -152,7 +171,7 @@ export const setupNotificationChannels = async () => {
       name: "Pre-Athan Alerts",
       importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 200],
-      sound: "bell_sound.wav",
+      sound: null, // No sound for now
     });
 
     console.log("Android notification channels created");
