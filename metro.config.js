@@ -1,5 +1,6 @@
 const { withNativeWind } = require("nativewind/metro");
 const { getSentryExpoConfig } = require("@sentry/react-native/metro");
+const { wrapWithReanimatedMetroConfig } = require("react-native-reanimated/metro-config");
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getSentryExpoConfig(__dirname);
@@ -23,4 +24,6 @@ const configWithMinifier = {
   },
 };
 
-module.exports = withNativeWind(configWithMinifier, { input: "./assets/global.css" });
+module.exports = withNativeWind(wrapWithReanimatedMetroConfig(configWithMinifier), {
+  input: "./assets/global.css",
+});
