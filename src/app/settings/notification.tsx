@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
-
+import { useState } from "react";
 // Components
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -9,6 +9,7 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Badge, BadgeText } from "@/components/ui/badge";
+import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
 
 import TopBar from "@/components/TopBar";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
@@ -41,11 +42,10 @@ const NotificationSettings = () => {
   } = useNotificationSettings();
 
   // For debugging
-  const handleNotificationList = async () => {
-    const list = await listScheduledNotifications();
-    for (let index = 0; index < list.length; index++) {
-      console.log(" notification:", JSON.stringify(list[index], null, 2));
-    }
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+
+  const handleNotificationList = () => {
+    setShowNotificationsModal(true);
   };
 
   return (
@@ -180,6 +180,11 @@ const NotificationSettings = () => {
           )}
         </VStack>
       </ScrollView>
+
+      <ScheduledNotificationDebugModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
     </Background>
   );
 };
