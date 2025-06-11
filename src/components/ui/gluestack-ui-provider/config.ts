@@ -4,62 +4,62 @@ import { vars } from "nativewind";
 export const config = {
   light: vars({
     "--color-primary": "30 60 90", // #1e3c5a
-    "--color-secondary": "229 203 135", // #e5cb87
-    "--color-tertiary": "191 196 205", // #bfc4cd
-    "--color-error": "239 68 68", // #ef4444
-    "--color-success": "52 131 82", // #348352
-    "--color-warning": "231 120 40", // #e77828
-    "--color-info": "13 166 242", // #0da6f2
+    "--color-secondary": "42 77 109", // #2a4d6d
+    "--color-tertiary": "61 93 125", // #3d5d7d
+    "--color-error": "220 38 38", // #DC2626
+    "--color-success": "22 163 74", // #16A34A
+    "--color-warning": "217 119 6", // #D97706
+    "--color-info": "37 99 235", // #2563EB
 
     /* Typography */
-    "--color-typography": "21 39 54", // #152736
+    "--color-typography": "26 26 26", // #1A1A1A
 
     /* Outline */
-    "--color-outline": "241 245 249", // #f1f5f9
+    "--color-outline": "226 232 240", // #E2E8F0
 
     /* Background */
-    "--color-background": "6 60 97", // #063c61
+    "--color-background": "245 247 250", // #F5F7FA
 
     /* Background Special */
-    "--color-background-error": "254 241 241", // #fef1f1
-    "--color-background-warning": "255 243 234", // #fff3ea
-    "--color-background-success": "237 252 242", // #edfcf2
-    "--color-background-muted": "247 248 247", // #f7f8f7
-    "--color-background-info": "235 248 254", // #ebf8fe
+    "--color-background-error": "254 226 226", // #FEE2E2
+    "--color-background-warning": "254 243 199", // #FEF3C7
+    "--color-background-success": "220 252 231", // #DCFCE7
+    "--color-background-muted": "243 244 246", // #F3F4F6
+    "--color-background-info": "219 234 254", // #DBEAFE
 
     /* Focus Ring Indicator */
-    "--color-indicator-primary": "55 55 55", // #373737
-    "--color-indicator-info": "83 153 236", // #5399ec
-    "--color-indicator-error": "185 28 28", // #b91c1c
+    "--color-indicator-primary": "30 60 90", // #1e3c5a
+    "--color-indicator-info": "37 99 235", // #2563EB
+    "--color-indicator-error": "220 38 38", // #DC2626
   }),
   dark: vars({
     "--color-primary": "30 60 90", // #1e3c5a
-    "--color-secondary": "229 203 135", // #e5cb87
-    "--color-tertiary": "155 181 201", // #9bb5C9
-    "--color-error": "239 68 68", // #ef4444
-    "--color-success": "72 151 102", // #489766
-    "--color-warning": "251 149 75", // #fb954b
-    "--color-info": "50 180 244", // #32b4f4
+    "--color-secondary": "42 77 109", // #2a4d6d
+    "--color-tertiary": "61 93 125", // #3d5d7d
+    "--color-error": "127 29 29", // #7F1D1D
+    "--color-success": "20 83 45", // #14532D
+    "--color-warning": "120 53 15", // #78350F
+    "--color-info": "30 58 138", // #1E3A8A
 
     /* Typography */
-    "--color-typography": "240 240 240", // #f0f0f0
+    "--color-typography": "229 203 135", // #e5cb87
 
     /* Outline */
-    "--color-outline": "70 80 100", // #465064
+    "--color-outline": "255 255 255 0.1", // rgba(255,255,255,0.1)
 
     /* Background */
-    "--color-background": "6 60 97", // #063c61
+    "--color-background": "30 60 90", // #1e3c5a
 
     /* Background Special */
-    "--color-background-error": "66 43 43", // #422b2b
-    "--color-background-warning": "65 47 35", // #412f23
-    "--color-background-success": "28 43 33", // #1c2b21
-    "--color-background-muted": "20 35 55", // #142337
-    "--color-background-info": "26 40 46", // #1a282e
+    "--color-background-error": "127 29 29", // #7F1D1D
+    "--color-background-warning": "120 53 15", // #78350F
+    "--color-background-success": "20 83 45", // #14532D
+    "--color-background-muted": "31 41 55", // #1F2937
+    "--color-background-info": "30 58 138", // #1E3A8A
 
     /* Focus Ring Indicator */
-    "--color-indicator-primary": "247 247 247", // #f7f7f7
-    "--color-indicator-info": "161 199 245", // #a1c7f5
-    "--color-indicator-error": "232 70 69", // #e84645
+    "--color-indicator-primary": "229 203 135", // #e5cb87
+    "--color-indicator-info": "147 197 253", // #93C5FD
+    "--color-indicator-error": "252 165 165", // #FCA5A5
   }),
 };
