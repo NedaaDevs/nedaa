@@ -18,7 +18,10 @@ module.exports = {
       pattern: /(bg)-(background)-(secondary|elevated|interactive|loading)/,
     },
     {
-      pattern: /(border)-(outline-accent|error|success|warning|info|loading)/,
+      pattern: /(bg)-(outline|outline-accent)/,
+    },
+    {
+      pattern: /(border)-(outline|outline-accent|error|success|warning|info|loading)/,
     },
     {
       pattern: /(text)-(foreground-loading)/,
@@ -47,6 +50,8 @@ module.exports = {
         outline: {
           DEFAULT: "rgb(var(--color-outline)/<alpha-value>)",
           accent: "rgb(var(--color-outline-accent)/<alpha-value>)",
+          // For dark mode rgba outline with 0.1 opacity
+          muted: "rgba(255, 255, 255, 0.1)",
         },
         background: {
           DEFAULT: "rgb(var(--color-background)/<alpha-value>)",
