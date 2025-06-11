@@ -289,7 +289,7 @@ const generatePrayerNotifications = (
         prayerName,
       }),
       body: t("notification.iqama.body", {
-        mintues: iqamaConfig.timing,
+        minutes: iqamaConfig.timing,
         prayerName,
       }),
       type: NOTIFICATION_TYPE.IQAMA,
