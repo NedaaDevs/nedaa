@@ -33,14 +33,10 @@ export const appSetup = async (
   notificationStore: NotificationStore
 ) => {
   try {
-    const { loadPrayerTimes, twoWeeksTimings } = prayerStore;
+    const { loadPrayerTimes } = prayerStore;
 
     await loadPrayerTimes();
 
-    // Early return if no prayer timings
-    if (!twoWeeksTimings) {
-      return;
-    }
     // notification scheduling
     await notificationStore.scheduleAllNotifications();
   } catch (error) {
