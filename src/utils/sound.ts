@@ -1,56 +1,63 @@
 import { useAudioPlayer, AudioSource } from "expo-audio";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
 
 // Types
-import type { NotificationSoundKey, SoundLabelMappings, SoundOption } from "@/types/sound";
-import { NotificationType } from "@/types/notification";
-import { NOTIFICATION_SOUNDS } from "@/constants/sounds";
+import type { NotificationType } from "@/types/notification";
+import type { SoundOption, SoundAsset } from "@/types/sound";
 
-// Sound labels for UI
-export const SOUND_LABELS: SoundLabelMappings = {
-  prayer: {
-    makkah1: "notification.sound.makkahAthan1",
-    silent: "notification.sound.silent",
-  },
-  iqama: {
-    silent: "notification.sound.silent",
-  },
-  preAthan: {
-    silent: "notification.sound.silent",
-  },
+// Type-safe helper to get available sounds
+export const getAvailableSounds = <T extends NotificationType>(type: T): SoundOption[] => {
+  return Object.entries(SOUND_ASSETS)
+    .filter(([_, asset]) => (asset.availableFor as readonly NotificationType[]).includes(type))
+    .map(([key, asset]) => ({
+      value: key,
+      label: asset.label,
+      isPreviewable: asset.previewSource !== null,
+    }));
 };
 
-// Type-safe function to get available sounds
-export const getAvailableSounds = <T extends keyof typeof NOTIFICATION_TYPE>(
-  type: (typeof NOTIFICATION_TYPE)[T]
-): SoundOption[] => {
-  const labels = SOUND_LABELS[type];
-  return Object.entries(labels).map(([value, label]) => ({
-    value,
-    label: label as string,
-  }));
-};
-
-export const getSoundSource = <T extends NotificationType>(
+export const getSoundAsset = <T extends NotificationType>(
   type: T,
-  soundKey: NotificationSoundKey<T>
-): string | AudioSource | null => {
-  return NOTIFICATION_SOUNDS[type][soundKey];
+  soundKey: string
+): SoundAsset | null => {
+  if (!isSoundKeyValid(type, soundKey)) {
+    return null;
+  }
+  const asset = SOUND_ASSETS[soundKey as keyof typeof SOUND_ASSETS];
+  return asset || null;
 };
 
-// Type-safe function to check if sound is previewable
+export const getNotificationSound = <T extends NotificationType>(
+  type: T,
+  soundKey: string
+): string | null => {
+  const asset = getSoundAsset(type, soundKey);
+  return asset?.notificationSound ?? null;
+};
+
+export const getPreviewSource = <T extends NotificationType>(
+  type: T,
+  soundKey: string
+): AudioSource | null => {
+  const asset = getSoundAsset(type, soundKey);
+  return asset?.previewSource ?? null;
+};
+
+// Type-safe previewability check
 export const isSoundPreviewable = <T extends NotificationType>(
-  soundKey: NotificationSoundKey<T>
+  type: T,
+  soundKey: string
 ): boolean => {
-  return soundKey !== "silent";
+  const asset = getSoundAsset(type, soundKey);
+  return asset?.previewSource !== null;
 };
 
 // Event emitter for state synchronization
 type SoundPreviewListener = () => void;
 
-// Singleton class to manage sound preview
+// Singleton class to manage sound preview with enhanced type safety
 class SoundPreviewManager {
   private static instance: SoundPreviewManager;
   private isPlaying: boolean = false;
@@ -84,19 +91,25 @@ class SoundPreviewManager {
 
   async playPreview<T extends NotificationType>(
     type: T,
-    soundKey: NotificationSoundKey<T>,
+    soundKey: string,
     player: ReturnType<typeof useAudioPlayer>,
     playerId: string
   ): Promise<void> {
-    // Don't play if not previewable
-    if (!isSoundPreviewable(soundKey)) {
+    // Type-safe validation
+    if (!isSoundKeyValid(type, soundKey)) {
+      console.error(`Invalid sound key: ${soundKey} for type: ${type}`);
       return;
     }
 
-    const soundSource = getSoundSource(type, soundKey);
+    // Don't play if not previewable(silent)
+    if (!isSoundPreviewable(type, soundKey)) {
+      return;
+    }
+
+    const soundSource = getPreviewSource(type, soundKey);
 
     if (!soundSource) {
-      console.error(`Sound not found: ${type}.${soundKey}`);
+      console.error(`Sound preview source not found: ${type}.${soundKey}`);
       return;
     }
 
@@ -114,11 +127,11 @@ class SoundPreviewManager {
 
       this.isPlaying = true;
       this.currentSoundId = soundId;
-      this.currentSoundSource = soundSource as AudioSource;
+      this.currentSoundSource = soundSource;
       this.currentPlayerId = playerId;
       this.notifyListeners();
 
-      await player.replace(soundSource as AudioSource);
+      await player.replace(soundSource);
       await player.play();
     } catch (error) {
       console.error("Error playing sound preview:", error);
