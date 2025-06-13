@@ -6,7 +6,7 @@ import type { PrayerTimesStore } from "@/stores/prayerTimes";
 import type { NotificationStore } from "@/stores/notification";
 
 // Utils
-import { requestNotificationPermission } from "@/utils/notifications";
+import { requestNotificationPermission, configureNotifications } from "@/utils/notifications";
 import { requestLocationPermission } from "@/utils/location";
 
 export const firstRunSetup = async (appStore: AppState) => {
@@ -32,6 +32,8 @@ export const appSetup = async (
   prayerStore: PrayerTimesStore,
   notificationStore: NotificationStore
 ) => {
+  // Configure notifications (includes handler, listeners, and channels)
+  configureNotifications();
   try {
     const { loadPrayerTimes } = prayerStore;
 

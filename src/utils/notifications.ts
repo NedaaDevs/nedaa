@@ -89,25 +89,34 @@ export const scheduleNotification = async (
   }
 };
 
+// Configure base notification handler and setup listeners
 export const configureNotifications = () => {
+  // Set up notification handler
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: true,
-      shouldSetBadge: false,
+      shouldSetBadge: true,
       shouldShowBanner: true,
       shouldShowList: true,
     }),
   });
 
+  // Set up notification listeners
+  Notifications.addNotificationReceivedListener((notification) => {
+    console.log("Notification received:", notification);
+  });
+
+  Notifications.addNotificationResponseReceivedListener((response) => {
+    console.log("Notification response:", response);
+  });
+
+  // Add app state change listener for Android channels
+  AppState.addEventListener("change", (state) => {
+    if (state === "active") setupNotificationChannels();
+  });
+
   // Setup channels on app start
   setupNotificationChannels();
-
-  // Check channels when app comes to foreground
-  AppState.addEventListener("change", handleAppStateChange);
-};
-
-const handleAppStateChange = (state: string) => {
-  if (state === "active") setupNotificationChannels();
 };
 
 export const checkPermissions = async () => {
@@ -158,7 +167,6 @@ export const setupNotificationChannels = async () => {
       name: ANDROID_CHANNEL_NAME,
       importance: AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
-      sound: null, // No sound for now
     });
 
     // Iqama reminder channel
@@ -166,7 +174,6 @@ export const setupNotificationChannels = async () => {
       name: "Iqama Reminders",
       importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      sound: null, // No sound for now
     });
 
     // Pre-Athan alert channel
@@ -174,7 +181,6 @@ export const setupNotificationChannels = async () => {
       name: "Pre-Athan Alerts",
       importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 200],
-      sound: null, // No sound for now
     });
 
     console.log("Android notification channels created");
