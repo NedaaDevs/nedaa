@@ -7,7 +7,6 @@ import {
   parseISO,
   differenceInSeconds,
 } from "date-fns";
-import { PermissionStatus } from "expo-notifications";
 
 import i18next from "@/localization/i18n";
 
@@ -20,6 +19,7 @@ import {
 import { timeZonedNow } from "@/utils/date";
 
 // Types
+import type { NotificationContentInput } from "expo-notifications";
 import { NotificationSettings, NotificationType, getEffectiveConfig } from "@/types/notification";
 import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 
@@ -27,6 +27,7 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Enums
+import { PermissionStatus } from "expo-notifications";
 import { PlatformType } from "@/enums/app";
 
 type SchedulingOptions = {
@@ -145,24 +146,25 @@ export const scheduleAllNotifications = async (
       Platform.OS === PlatformType.IOS &&
       notificationsToSchedule.length > MAX_IOS_NOTIFICATIONS
     ) {
+      // Keep only first 63 notifications(64th as a reminder)
       notificationsToProcess = notificationsToSchedule.slice(0, MAX_IOS_NOTIFICATIONS);
-
-      // Add reminder notification(Reserves the last notification as a reminder)
-      const lastNotification = notificationsToProcess[notificationsToProcess.length - 1];
-      const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
-
-      notificationsToProcess.push({
-        id: "reminder",
-        time: reminderTime,
-        title: t("notification.reminder.title"),
-        body: t("notification.reminder.body"),
-        type: NOTIFICATION_TYPE.PRAYER,
-        prayerId: "fajr",
-        categoryId: "reminder",
-        vibration: true,
-        sound: "default",
-      });
     }
+
+    // Add reminder notification(Reserves the last notification as a reminder)
+    const lastNotification = notificationsToProcess[notificationsToProcess.length - 1];
+    const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
+
+    notificationsToProcess.push({
+      id: "reminder",
+      time: reminderTime,
+      title: t("notification.reminder.title"),
+      body: t("notification.reminder.body"),
+      type: NOTIFICATION_TYPE.PRAYER,
+      prayerId: "fajr",
+      categoryId: "reminder",
+      vibration: true,
+      sound: "default",
+    });
 
     // Schedule all notifications
     console.log(
@@ -170,16 +172,14 @@ export const scheduleAllNotifications = async (
     );
     let scheduledCount = 0;
     for (const notification of notificationsToProcess) {
-      const result = await scheduleNotification(
-        notification.time,
-        notification.title,
-        notification.body,
-        {
-          sound: notification.sound,
-          vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
-          categoryId: notification.categoryId,
-        }
-      );
+      const notificationInput: NotificationContentInput = {
+        ...notification,
+      };
+
+      const result = await scheduleNotification(notification.time, notificationInput, {
+        vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
+        categoryId: notification.categoryId,
+      });
 
       if (result.success) {
         scheduledCount++;

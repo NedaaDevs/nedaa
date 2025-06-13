@@ -26,7 +26,6 @@ export type NotificationPermissionsState = {
 };
 
 export type NotificationOptions = {
-  sound?: string;
   vibrate?: boolean;
   categoryId?: string;
 };

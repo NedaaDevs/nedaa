@@ -1,5 +1,10 @@
 import * as Notifications from "expo-notifications";
-import { PermissionStatus, AndroidImportance } from "expo-notifications";
+import {
+  PermissionStatus,
+  AndroidImportance,
+  NotificationContentInput,
+  AndroidNotificationPriority,
+} from "expo-notifications";
 import { Platform, AppState } from "react-native";
 
 // Enums
@@ -13,9 +18,8 @@ const ANDROID_CHANNEL_ID = "prayer_times";
 const ANDROID_CHANNEL_NAME = "Prayer Time Alerts";
 
 export const scheduleNotification = async (
-  date: Date | string | null,
-  title: string,
-  message: string,
+  date: Date,
+  notificationInput: NotificationContentInput,
   options?: NotificationOptions & { timezone?: string }
 ) => {
   const { status } = await checkPermissions();
@@ -26,9 +30,8 @@ export const scheduleNotification = async (
 
   try {
     // Prepare notification content
-    const content: Notifications.NotificationContentInput = {
-      title,
-      body: message,
+    const content: NotificationContentInput = {
+      ...notificationInput,
       data: {
         categoryId: options?.categoryId,
       },
@@ -36,7 +39,7 @@ export const scheduleNotification = async (
 
     // Platform-specific settings
     if (Platform.OS === PlatformType.ANDROID) {
-      content.priority = Notifications.AndroidNotificationPriority.MAX;
+      content.priority = AndroidNotificationPriority.HIGH;
 
       // Android vibration
       if (options?.vibrate !== undefined) {
