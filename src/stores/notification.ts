@@ -28,7 +28,7 @@ const defaultSettings: NotificationSettings = {
   defaults: {
     prayer: {
       enabled: true,
-      sound: "makkah1",
+      sound: "makkahAthan1",
       vibration: true,
     },
     iqama: {
