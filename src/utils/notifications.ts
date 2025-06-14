@@ -33,6 +33,7 @@ export const scheduleNotification = async (
     const content: NotificationContentInput = {
       ...notificationInput,
       data: {
+        ...notificationInput.data,
         categoryId: options?.categoryId,
       },
     };
@@ -41,6 +42,11 @@ export const scheduleNotification = async (
     if (Platform.OS === PlatformType.ANDROID) {
       content.priority = AndroidNotificationPriority.HIGH;
 
+      // For Android < 8.0, sound must be in the content
+      if (notificationInput.sound && notificationInput.sound !== "default") {
+        content.sound = notificationInput.sound;
+      }
+
       // Android vibration
       if (options?.vibrate !== undefined) {
         content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
@@ -48,6 +54,11 @@ export const scheduleNotification = async (
     } else if (Platform.OS === PlatformType.IOS) {
       // iOS specific settings
       content.interruptionLevel = "timeSensitive";
+
+      // iOS always needs sound in content
+      if (notificationInput.sound) {
+        content.sound = notificationInput.sound;
+      }
     }
 
     // trigger type
@@ -65,8 +76,12 @@ export const scheduleNotification = async (
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: secondsFromNow,
           repeats: false,
-          channelId: ANDROID_CHANNEL_ID,
         };
+
+        // IMPORTANT: For Android 8.0+, use the channelId passed in options
+        if (Platform.OS === PlatformType.ANDROID && options?.channelId) {
+          trigger.channelId = options.channelId;
+        }
       } else {
         // If date is in the past, don't schedule
         console.warn(`Notification date is in the past: ${date}`);
@@ -130,13 +145,7 @@ export const checkPermissions = async () => {
 };
 
 export const requestNotificationPermission = async () => {
-  const { status } = await Notifications.requestPermissionsAsync({
-    ios: {
-      allowAlert: true,
-      allowBadge: false,
-      allowSound: true,
-    },
-  });
+  const { status } = await Notifications.requestPermissionsAsync();
 
   if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
     await setupNotificationChannels();

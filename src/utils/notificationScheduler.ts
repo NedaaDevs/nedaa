@@ -30,6 +30,10 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PermissionStatus } from "expo-notifications";
 import { PlatformType } from "@/enums/app";
 
+// Utils
+import { createNotificationChannels, shouldUpdateChannels } from "@/utils/notificationChannels";
+import { getNotificationSound } from "@/utils/sound";
+
 type SchedulingOptions = {
   daysToSchedule?: number;
   force?: boolean;
@@ -52,6 +56,7 @@ type NotificationScheduleItem = {
   sound: string;
   vibration: boolean;
   categoryId: string;
+  channelId?: string;
 };
 
 const PRAYER_IDS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
@@ -93,6 +98,14 @@ export const scheduleAllNotifications = async (
   }
 
   try {
+    if (Platform.OS === PlatformType.ANDROID) {
+      // Create/update notification channels before scheduling
+      const needsUpdate = await shouldUpdateChannels(settings);
+      if (needsUpdate) {
+        console.log("[NotificationScheduler] Updating notification channels...");
+        await createNotificationChannels(settings);
+      }
+    }
     // Cancel all existing notifications
     console.log("[NotificationScheduler] Cancelling existing notifications...");
     await cancelAllScheduledNotifications();
@@ -173,12 +186,20 @@ export const scheduleAllNotifications = async (
     let scheduledCount = 0;
     for (const notification of notificationsToProcess) {
       const notificationInput: NotificationContentInput = {
-        ...notification,
+        title: notification.title,
+        body: notification.body,
+        data: {
+          type: notification.type,
+          prayerId: notification.prayerId,
+          categoryId: notification.categoryId,
+        },
+        sound: notification.sound,
       };
 
       const result = await scheduleNotification(notification.time, notificationInput, {
         vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
         categoryId: notification.categoryId,
+        channelId: notification.channelId,
       });
 
       if (result.success) {
@@ -253,8 +274,9 @@ const generatePrayerNotifications = (
           type: NOTIFICATION_TYPE.PRE_ATHAN,
           prayerId,
           categoryId: `preathan_${prayerId}`,
+          channelId: `preathan_${prayerId}`,
           vibration: preAthanConfig.vibration,
-          sound: preAthanConfig.sound,
+          sound: getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, prayerConfig.sound) || "default",
         });
       }
     }
@@ -269,17 +291,14 @@ const generatePrayerNotifications = (
       notifications.push({
         id: `prayer_${prayerId}_${prayerTime.getTime()}`,
         time: prayerTime,
-        title: t("notification.prayer.title", {
-          prayerName,
-        }),
-        body: t("notification.prayer.body", {
-          prayerName,
-        }),
+        title: t("notification.prayer.title", { prayerName }),
+        body: t("notification.prayer.body", { prayerName }),
         type: NOTIFICATION_TYPE.PRAYER,
         prayerId,
         categoryId: `prayer_${prayerId}`,
+        channelId: `prayer_${prayerId}`,
         vibration: prayerConfig.vibration,
-        sound: prayerConfig.sound,
+        sound: getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default",
       });
     }
   }
@@ -304,8 +323,9 @@ const generatePrayerNotifications = (
         type: NOTIFICATION_TYPE.IQAMA,
         prayerId,
         categoryId: `iqama_${prayerId}`,
+        channelId: `iqama_${prayerId}`,
         vibration: iqamaConfig.vibration,
-        sound: iqamaConfig.sound,
+        sound: getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default",
       });
     }
   }
