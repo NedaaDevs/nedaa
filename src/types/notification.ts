@@ -28,6 +28,7 @@ export type NotificationPermissionsState = {
 export type NotificationOptions = {
   vibrate?: boolean;
   categoryId?: string;
+  channelId?: string;
 };
 
 export type NotificationState = {
