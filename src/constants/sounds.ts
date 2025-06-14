@@ -3,12 +3,17 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
 import type { NotificationType } from "@/types/notification";
-import type { SoundAssetsConfig, NotificationSoundMappings, ExtractSoundKeys } from "@/types/sound";
+import type { SoundAssetsConfig, ExtractSoundKeys } from "@/types/sound";
+
+// Hooks
+import { getPlatformSoundName } from "@/hooks/useSoundResolver";
 
 // Define all sound assets with proper typing
 export const SOUND_ASSETS = {
   makkahAthan1: {
-    notificationSound: "makkah1",
+    get notificationSound() {
+      return getPlatformSoundName("makkah_athan1");
+    },
     previewSource: require("@/assets/sounds/makkah_athan1.wav"),
     label: "notification.sound.makkahAthan1",
     availableFor: [NOTIFICATION_TYPE.PRAYER] as const,

@@ -36,3 +36,9 @@ export type SoundMapping = Record<string, string>;
 export type NotificationSoundMappings = {
   [K in NotificationType]: SoundMapping;
 };
+
+export type SoundResolver = {
+  getNotificationSoundName(soundKey: string): string | null;
+  getPlatformExtension(): string;
+  isValidSoundFile(filename: string): boolean;
+};
