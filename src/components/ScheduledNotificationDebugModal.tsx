@@ -113,6 +113,9 @@ export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
                             ? `Seconds: ${notification.trigger.seconds}`
                             : `Value: ${notification.trigger.value}`}
                         </Text>
+                        <Text className="text-typography-secondary">
+                          Sound: {notification.content.sound}
+                        </Text>
                       </VStack>
                     </Box>
                   ))}
