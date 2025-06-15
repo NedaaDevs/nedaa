@@ -104,34 +104,106 @@ export const scheduleNotification = async (
   }
 };
 
+// Store subscriptions for cleanup
+let notificationReceivedSubscription: Notifications.EventSubscription | null = null;
+let notificationResponseSubscription: Notifications.EventSubscription | null = null;
+let appStateSubscription: { remove: () => void } | null = null;
+
 // Configure base notification handler and setup listeners
 export const configureNotifications = () => {
-  // Set up notification handler
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+  try {
+    // Clean up existing listeners first
+    cleanupNotificationListeners();
 
-  // Set up notification listeners
-  Notifications.addNotificationReceivedListener((notification) => {
-    console.log("Notification received:", notification);
-  });
+    // Set up notification handler
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
 
-  Notifications.addNotificationResponseReceivedListener((response) => {
-    console.log("Notification response:", response);
-  });
+    // Set up notification listeners with proper subscription management
+    notificationReceivedSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        try {
+          console.log("[Notifications] Notification received:", notification.request.identifier);
+          console.log("[Notifications] Content:", notification.request.content);
+          // Add any custom handling for received notifications here
+        } catch (error) {
+          console.error("[Notifications] Error handling received notification:", error);
+        }
+      }
+    );
 
-  // Add app state change listener for Android channels
-  AppState.addEventListener("change", (state) => {
-    if (state === "active") setupNotificationChannels();
-  });
+    notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        try {
+          console.log(
+            "[Notifications] Notification response:",
+            response.notification.request.identifier
+          );
+          console.log("[Notifications] Action:", response.actionIdentifier);
+          // Handle notification tap/action here if needed
+        } catch (error) {
+          console.error("[Notifications] Error handling notification response:", error);
+        }
+      }
+    );
 
-  // Setup channels on app start
-  setupNotificationChannels();
+    // Add app state change listener for Android channels
+    appStateSubscription = AppState.addEventListener("change", (state) => {
+      try {
+        if (state === "active") {
+          setupNotificationChannels();
+        }
+      } catch (error) {
+        console.error("[Notifications] Error handling app state change:", error);
+      }
+    });
+
+    // Setup channels on app start
+    setupNotificationChannels();
+
+    console.log("[Notifications] Notification listeners configured successfully");
+  } catch (error) {
+    console.error("[Notifications] Error configuring notifications:", error);
+  }
+};
+
+// Clean up notification listeners to prevent memory leaks
+export const cleanupNotificationListeners = () => {
+  try {
+    if (notificationReceivedSubscription) {
+      notificationReceivedSubscription.remove();
+      notificationReceivedSubscription = null;
+    }
+
+    if (notificationResponseSubscription) {
+      notificationResponseSubscription.remove();
+      notificationResponseSubscription = null;
+    }
+
+    if (appStateSubscription) {
+      appStateSubscription.remove();
+      appStateSubscription = null;
+    }
+
+    console.log("[Notifications] Cleaned up notification listeners successfully");
+  } catch (error) {
+    console.error("[Notifications] Error cleaning up notification listeners:", error);
+    // Force reset subscriptions even if cleanup fails
+    notificationReceivedSubscription = null;
+    notificationResponseSubscription = null;
+    appStateSubscription = null;
+  }
+};
+
+// Check if listeners are currently active (useful for debugging)
+export const areListenersActive = (): boolean => {
+  return !!(notificationReceivedSubscription && notificationResponseSubscription);
 };
 
 export const checkPermissions = async () => {

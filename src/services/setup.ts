@@ -32,8 +32,6 @@ export const appSetup = async (
   prayerStore: PrayerTimesStore,
   notificationStore: NotificationStore
 ) => {
-  // Configure notifications (includes handler, listeners, and channels)
-  configureNotifications();
   try {
     const { loadPrayerTimes } = prayerStore;
 
@@ -43,6 +41,21 @@ export const appSetup = async (
     await notificationStore.scheduleAllNotifications();
   } catch (error) {
     console.error("App setup failed:", error);
+    Sentry.captureException(error);
+  }
+};
+
+/**
+ * Cleanup function to be called when app is terminating
+ * Should be called from app lifecycle handlers
+ */
+export const appCleanup = async () => {
+  try {
+    const { cleanupNotificationListeners } = await import("@/utils/notifications");
+    cleanupNotificationListeners();
+    console.log("[Setup] App cleanup completed");
+  } catch (error) {
+    console.error("[Setup] App cleanup failed:", error);
     Sentry.captureException(error);
   }
 };
