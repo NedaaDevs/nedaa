@@ -7,6 +7,9 @@ import {
 } from "expo-notifications";
 import { Platform, AppState } from "react-native";
 
+// Services
+import { cleanupManager } from "@/services/cleanup";
+
 // Enums
 import { PlatformType } from "@/enums/app";
 
@@ -166,6 +169,13 @@ export const configureNotifications = () => {
 
     // Setup channels on app start
     setupNotificationChannels();
+
+    // Register cleanup with the cleanup manager
+    cleanupManager.register(
+      "notification-listeners",
+      cleanupNotificationListeners,
+      10 // High priority - cleanup notifications before other resources
+    );
 
     console.log("[Notifications] Notification listeners configured successfully");
   } catch (error) {

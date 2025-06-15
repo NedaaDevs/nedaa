@@ -6,7 +6,7 @@ import type { PrayerTimesStore } from "@/stores/prayerTimes";
 import type { NotificationStore } from "@/stores/notification";
 
 // Utils
-import { requestNotificationPermission, configureNotifications } from "@/utils/notifications";
+import { requestNotificationPermission } from "@/utils/notifications";
 import { requestLocationPermission } from "@/utils/location";
 
 export const firstRunSetup = async (appStore: AppState) => {
@@ -49,10 +49,10 @@ export const appSetup = async (
  * Cleanup function to be called when app is terminating
  * Should be called from app lifecycle handlers
  */
-export const appCleanup = async () => {
+export const appCleanup = async (reason: string = "app-termination") => {
   try {
-    const { cleanupNotificationListeners } = await import("@/utils/notifications");
-    cleanupNotificationListeners();
+    const { cleanupManager } = await import("@/services/cleanup");
+    await cleanupManager.executeAll(reason);
     console.log("[Setup] App cleanup completed");
   } catch (error) {
     console.error("[Setup] App cleanup failed:", error);
