@@ -1,44 +1,44 @@
-// Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
-import { PRAYER_SOUNDS, IQAMA_SOUNDS, PRE_ATHAN_SOUNDS } from "@/constants/sounds";
-
 // Types
 import { NotificationType } from "@/types/notification";
 
-export type PrayerSoundKey = keyof typeof PRAYER_SOUNDS;
-export type IqamaSoundKey = keyof typeof IQAMA_SOUNDS;
-export type PreAthanSoundKey = keyof typeof PRE_ATHAN_SOUNDS;
-
-// Map notification type to its sound keys
-export type NotificationSoundKey<T extends NotificationType> =
-  T extends (typeof NOTIFICATION_TYPE)["PRAYER"]
-    ? PrayerSoundKey
-    : T extends (typeof NOTIFICATION_TYPE)["IQAMA"]
-      ? IqamaSoundKey
-      : T extends (typeof NOTIFICATION_TYPE)["PRE_ATHAN"]
-        ? PreAthanSoundKey
-        : never;
-
-export type SoundSource = number | null;
-
-export type SoundMapping<T extends NotificationType> = {
-  [K in NotificationSoundKey<T>]: SoundSource;
+// Base sound asset type
+export type SoundAsset = {
+  notificationSound: string | null;
+  previewSource: any | null;
+  label: string;
+  availableFor: readonly NotificationType[];
 };
 
-// Complete sound mappings type
-export type NotificationSoundMappings = {
-  [T in NotificationType]: SoundMapping<T>;
-};
-
-// Sound option for UI
+// Sound option type for UI
 export type SoundOption = {
   value: string;
   label: string;
+  isPreviewable: boolean;
 };
 
-// Sound label mappings
-export type SoundLabelMappings = {
-  [T in NotificationType]: {
-    [S in NotificationSoundKey<T>]: string;
-  };
+// Type-safe sound assets configuration
+export type SoundAssetsConfig = {
+  readonly [K: string]: SoundAsset;
+};
+
+// Extract sound keys available for a specific notification type
+export type ExtractSoundKeys<
+  TAssets extends SoundAssetsConfig,
+  TNotificationType extends NotificationType,
+> = {
+  [K in keyof TAssets]: TNotificationType extends TAssets[K]["availableFor"][number] ? K : never;
+}[keyof TAssets];
+
+export type NotificationSoundKey<T extends NotificationType> = string;
+
+export type SoundMapping = Record<string, string>;
+
+export type NotificationSoundMappings = {
+  [K in NotificationType]: SoundMapping;
+};
+
+export type SoundResolver = {
+  getNotificationSoundName(soundKey: string): string | null;
+  getPlatformExtension(): string;
+  isValidSoundFile(filename: string): boolean;
 };

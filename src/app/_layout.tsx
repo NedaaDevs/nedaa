@@ -19,6 +19,7 @@ import { ToastProvider } from "@/components/ToastContainer";
 import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useRTLSetup } from "@/hooks/useRTLSetup";
 import { useLoadFonts } from "@/config/fonts";
+import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 
 export default function RootLayout() {
   const { mode, locale } = useAppStore();
@@ -28,6 +29,7 @@ export default function RootLayout() {
 
   useLoadFonts();
   useInitialSetup();
+  useNotificationListeners();
 
   return (
     <GluestackUIProvider mode={mode}>

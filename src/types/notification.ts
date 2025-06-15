@@ -1,5 +1,6 @@
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey } from "@/constants/sounds";
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/notifications";
@@ -7,18 +8,16 @@ import { LocalPermissionStatus } from "@/enums/notifications";
 // Types
 import type { NotificationSoundKey } from "@/types/sound";
 
-import type { NotificationRequest } from "expo-notifications";
-
 export type PrayerNotificationConfig = NotificationConfig & {
-  sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>;
+  sound: PrayerSoundKey;
 };
 
 export type IqamaNotificationConfig = NotificationWithTiming & {
-  sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.IQAMA>;
+  sound: IqamaSoundKey;
 };
 
 export type PreAthanNotificationConfig = NotificationWithTiming & {
-  sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRE_ATHAN>;
+  sound: PreAthanSoundKey;
 };
 
 export type NotificationPermissionsState = {
@@ -27,9 +26,9 @@ export type NotificationPermissionsState = {
 };
 
 export type NotificationOptions = {
-  sound?: string;
   vibrate?: boolean;
   categoryId?: string;
+  channelId?: string;
 };
 
 export type NotificationState = {
@@ -41,15 +40,9 @@ export type NotificationState = {
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
 export type NotificationAction = {
-  scheduleTestNotification: () => Promise<void>;
-  getScheduledNotifications: () => Promise<NotificationRequest[]>;
-  clearNotifications: () => Promise<void>;
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => void;
-  updateQuickSetup: (
-    sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>,
-    vibration: boolean
-  ) => void;
+  updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => void;
   updateDefault: <T extends Partial<NotificationType>>(
     type: T,
     field: keyof ConfigForType<T>,
@@ -66,10 +59,8 @@ export type NotificationAction = {
     prayerId: string,
     type: T
   ) => ConfigForType<T>;
-  clearAllNotifications: () => Promise<void>;
   scheduleAllNotifications: () => Promise<void>;
-  schedulePrayerNotifications: (prayerId: string, prayerTime: Date) => Promise<void>;
-  cancelPrayerNotifications: (prayerId: string) => Promise<void>;
+  rescheduleIfNeeded: (force: boolean) => Promise<void>;
 };
 
 export type NotificationConfig = {

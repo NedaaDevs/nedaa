@@ -38,9 +38,12 @@ import { X, ChevronDown } from "lucide-react-native";
 
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
+import { NotificationSoundKey } from "@/types/sound";
 
+// Constants
+import { SOUND_ASSETS } from "@/constants/sounds";
 // Utils
-import { getAvailableSounds, SOUND_LABELS } from "@/utils/sound";
+import { getAvailableSounds } from "@/utils/sound";
 
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
@@ -80,8 +83,10 @@ const PrayerCustomizationModal: FC<Props> = ({
   const currentConfig = { ...defaults, ...currentOverride };
 
   // Local state
+  const [sound, setSound] = useState<NotificationSoundKey<typeof type>>(
+    currentConfig.sound || "silent"
+  );
   const [enabled, setEnabled] = useState(currentConfig.enabled || false);
-  const [sound, setSound] = useState(currentConfig.sound || "default");
   const [vibration, setVibration] = useState(currentConfig.vibration || false);
   const [timing, setTiming] = useState(
     hasTiming ? (currentConfig as NotificationWithTiming).timing || 10 : 10
@@ -90,7 +95,7 @@ const PrayerCustomizationModal: FC<Props> = ({
   const [isSoundOpen, setIsSoundOpen] = useState(false);
 
   // Sound options based on notification type
-  const getSoundOptions = getAvailableSounds(type);
+  const soundOptions = getAvailableSounds(type);
 
   const timingOptions = [5, 10, 15, 20, 30];
 
@@ -129,7 +134,9 @@ const PrayerCustomizationModal: FC<Props> = ({
   };
 
   const getTranslatedLabel = () => {
-    return t((SOUND_LABELS[type] as Record<string, string>)[sound]);
+    const soundAsset = SOUND_ASSETS[sound as keyof typeof SOUND_ASSETS];
+    if (!soundAsset) return t("notification.sound.unknown");
+    return t(soundAsset.label);
   };
 
   return (
@@ -229,7 +236,7 @@ const PrayerCustomizationModal: FC<Props> = ({
               <Select
                 selectedValue={sound}
                 initialLabel={sound ? getTranslatedLabel() : ""}
-                onValueChange={(value) => setSound(value as typeof sound)}
+                onValueChange={(value) => setSound(value as NotificationSoundKey<typeof type>)}
                 onOpen={() => setIsSoundOpen(true)}
                 onClose={() => setIsSoundOpen(false)}
                 accessibilityLabel={t("notification.sound.selectPlaceholder")}>
@@ -252,7 +259,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                       <SelectDragIndicator className="w-12 h-1 bg-gray-300 rounded-full" />
                     </SelectDragIndicatorWrapper>
                     <SelectScrollView className="px-4 pt-2 pb-6 max-h-80">
-                      {getSoundOptions.map((option) => {
+                      {soundOptions.map((option) => {
                         const isSelected = sound === option.value;
                         return (
                           <SelectItem

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
-
+import { useState } from "react";
 // Components
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -9,6 +9,7 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Badge, BadgeText } from "@/components/ui/badge";
+import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
 
 import TopBar from "@/components/TopBar";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
@@ -20,6 +21,10 @@ import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { Background } from "@/components/ui/background";
+
+// Utils
+
+import { debugChannelInfo } from "@/utils/notificationChannels";
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
@@ -36,6 +41,13 @@ const NotificationSettings = () => {
     resetOverride,
     scheduleAllNotifications,
   } = useNotificationSettings();
+
+  // For debugging
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+
+  const handleNotificationList = () => {
+    setShowNotificationsModal(true);
+  };
 
   return (
     <Background>
@@ -153,14 +165,33 @@ const NotificationSettings = () => {
 
           {/* Debug/Test Section */}
           {__DEV__ && (
-            <Box className="mx-4 mt-4">
-              <Button variant="outline" size="sm" onPress={scheduleAllNotifications}>
-                <ButtonText>Reschedule All Notifications</ButtonText>
-              </Button>
-            </Box>
+            <>
+              <Box className="mx-4 mt-4">
+                <Button variant="outline" size="sm" onPress={scheduleAllNotifications}>
+                  <ButtonText>Reschedule All Notifications</ButtonText>
+                </Button>
+              </Box>
+              <Box className="mx-4 mt-4">
+                <Button variant="outline" size="sm" onPress={handleNotificationList}>
+                  <ButtonText>List All Notifications</ButtonText>
+                </Button>
+              </Box>
+
+              {/* Debug channel info */}
+              <Box className="mx-4 mt-2">
+                <Button variant="outline" size="sm" onPress={debugChannelInfo}>
+                  <ButtonText>Debug Channel Info</ButtonText>
+                </Button>
+              </Box>
+            </>
           )}
         </VStack>
       </ScrollView>
+
+      <ScheduledNotificationDebugModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
     </Background>
   );
 };

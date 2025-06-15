@@ -3,16 +3,17 @@ import { useTranslation } from "react-i18next";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { SOUND_ASSETS } from "@/constants/sounds";
 
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Utils
-import { getAvailableSounds, SOUND_LABELS } from "@/utils/sound";
+import { getAvailableSounds } from "@/utils/sound";
 
 // Types
-import type { PrayerSoundKey, NotificationSoundKey } from "@/types/sound";
 import type { NotificationType } from "@/types/notification";
+import type { PrayerSoundKey } from "@/constants/sounds";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -41,12 +42,9 @@ import SoundPreviewButton from "@/components/SoundPreviewButton";
 import { Zap, ChevronDown } from "lucide-react-native";
 
 type Props = {
-  currentSound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>;
+  currentSound: PrayerSoundKey;
   vibrationEnabled: boolean;
-  onApply: (
-    sound: NotificationSoundKey<typeof NOTIFICATION_TYPE.PRAYER>,
-    vibration: boolean
-  ) => void;
+  onApply: (sound: PrayerSoundKey, vibration: boolean) => void;
   supportsVibration?: boolean;
 };
 
@@ -61,7 +59,7 @@ const NotificationQuickSetup: FC<Props> = ({
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   // Local state for quick setup
-  const [localSound, setLocalSound] = useState(currentSound);
+  const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -81,12 +79,16 @@ const NotificationQuickSetup: FC<Props> = ({
   };
 
   const handleValueChange = (value: string) => {
+    // Type assertion is safe here because Select only shows valid prayer sounds
     setLocalSound(value as PrayerSoundKey);
   };
 
   const getTranslatedLabel = () => {
-    return t(SOUND_LABELS.prayer[localSound]);
+    const soundAsset = SOUND_ASSETS[localSound as keyof typeof SOUND_ASSETS];
+    if (!soundAsset) return t("notification.sound.unknown");
+    return t(soundAsset.label);
   };
+
   return (
     <Box className="bg-blue-50 dark:bg-blue-900/20 mx-4 p-4 rounded-lg">
       <VStack space="md">
@@ -151,8 +153,8 @@ const NotificationQuickSetup: FC<Props> = ({
             </Select>
 
             <SoundPreviewButton
-              isPlaying={isPlayingSound("prayer", localSound)}
-              onPress={() => handleSoundPreview("prayer")}
+              isPlaying={isPlayingSound(NOTIFICATION_TYPE.PRAYER, localSound)}
+              onPress={() => handleSoundPreview(NOTIFICATION_TYPE.PRAYER)}
               disabled={localSound === "silent"}
               color="text-blue-600 dark:text-blue-400"
             />
