@@ -11,6 +11,8 @@
 		2F0B49C6D3EE8885F9559984 /* libPods-nedaa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 395E89B8D23B35426704FAA8 /* libPods-nedaa.a */; };
 		353E4C9C2DFCDB1F003E7634 /* makkah_athan1.caf in Resources */ = {isa = PBXBuildFile; fileRef = 353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */; };
 		357DB6DB2DF7FE290040763A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 357DB6DA2DF7FE290040763A /* Localizable.xcstrings */; };
+		35A2022C2DFE495800E8FCE5 /* yasser_aldosari.caf in Resources */ = {isa = PBXBuildFile; fileRef = 35A2022A2DFE495800E8FCE5 /* yasser_aldosari.caf */; };
+		35A202302DFE49A500E8FCE5 /* tasbih.caf in Resources */ = {isa = PBXBuildFile; fileRef = 35A2022F2DFE49A500E8FCE5 /* tasbih.caf */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		DEAE4D9EFC16322A17A3F48F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E535398133B6C0CA3A79FCE0 /* ExpoModulesProvider.swift */; };
@@ -25,6 +27,8 @@
 		27F7C1C7F7A666F19C7D0FC5 /* Pods-nedaa.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.release.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.release.xcconfig"; sourceTree = "<group>"; };
 		353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = makkah_athan1.caf; sourceTree = "<group>"; };
 		357DB6DA2DF7FE290040763A /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		35A2022A2DFE495800E8FCE5 /* yasser_aldosari.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = yasser_aldosari.caf; sourceTree = "<group>"; };
+		35A2022F2DFE49A500E8FCE5 /* tasbih.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = tasbih.caf; sourceTree = "<group>"; };
 		395E89B8D23B35426704FAA8 /* libPods-nedaa.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-nedaa.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = nedaa/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -66,6 +70,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				DA08ED9376A040CA976C4F84 /* PrivacyInfo.xcprivacy */,
+				35A2022A2DFE495800E8FCE5 /* yasser_aldosari.caf */,
+				35A2022F2DFE49A500E8FCE5 /* tasbih.caf */,
 				357DB6DA2DF7FE290040763A /* Localizable.xcstrings */,
 				353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */,
 			);
@@ -199,8 +205,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				35A2022C2DFE495800E8FCE5 /* yasser_aldosari.caf in Resources */,
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				357DB6DB2DF7FE290040763A /* Localizable.xcstrings in Resources */,
+				35A202302DFE49A500E8FCE5 /* tasbih.caf in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				353E4C9C2DFCDB1F003E7634 /* makkah_athan1.caf in Resources */,

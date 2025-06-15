@@ -86,6 +86,8 @@
   "notification.sound": "Sound",
   "notification.sound.makkahAthan1": "Makkah 1",
   "notification.sound.silent": "Silent",
+  "notification.sound.tasbih": "Tasbih",
+  "notification.sound.yasserAldosari": "Yasser Al-Dosari",
   "notification.timeAfterAthan": "Time after Athan",
   "notification.timeBeforeAthan": "Time before Athan",
   "notification.usingDefault": "Using default",

@@ -86,6 +86,8 @@
   "notification.sound": "الصوت",
   "notification.sound.makkahAthan1": "أذان مكة 1",
   "notification.sound.silent": "صامت",
+  "notification.sound.tasbih": "تسبيح",
+  "notification.sound.yasserAldosari": "أذان ياسر الدوسري",
   "notification.timeAfterAthan": "الوقت بعد الأذان",
   "notification.timeBeforeAthan": "الوقت قبل الأذان",
   "notification.usingDefault": "الإعدادات الافتراضية",

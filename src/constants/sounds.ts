@@ -14,9 +14,25 @@ export const SOUND_ASSETS = {
     get notificationSound() {
       return getPlatformSoundName("makkah_athan1");
     },
-    previewSource: require("@/assets/sounds/makkah_athan1.wav"),
+    previewSource: require("@/assets/sounds/makkah_athan1.mp3"),
     label: "notification.sound.makkahAthan1",
     availableFor: [NOTIFICATION_TYPE.PRAYER] as const,
+  },
+  yasserAldosari: {
+    get notificationSound() {
+      return getPlatformSoundName("yasser_aldosari");
+    },
+    previewSource: require("@/assets/sounds/yasser_aldosari.mp3"),
+    label: "notification.sound.yasserAldosari",
+    availableFor: [NOTIFICATION_TYPE.PRAYER] as const,
+  },
+  tasbih: {
+    get notificationSound() {
+      return getPlatformSoundName("tasbih");
+    },
+    previewSource: require("@/assets/sounds/tasbih.mp3"),
+    label: "notification.sound.tasbih",
+    availableFor: Object.values(NOTIFICATION_TYPE) as NotificationType[],
   },
   silent: {
     notificationSound: null,
