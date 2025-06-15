@@ -6,7 +6,6 @@ import {
   subMinutes,
   parseISO,
   differenceInSeconds,
-  addSeconds,
 } from "date-fns";
 
 import i18next from "@/localization/i18n";
@@ -32,14 +31,17 @@ import { PermissionStatus } from "expo-notifications";
 import { PlatformType } from "@/enums/app";
 
 // Utils
-import { createNotificationChannels, shouldUpdateChannels } from "@/utils/notificationChannels";
+import {
+  createNotificationChannels,
+  shouldUpdateChannels,
+  getNotificationChannelId,
+} from "@/utils/notificationChannels";
 import { getNotificationSound } from "@/utils/sound";
 
 type SchedulingOptions = {
   daysToSchedule?: number;
   force?: boolean;
   timezone: string;
-  testMode?: boolean; // For testing: makes first notification happen in 5 seconds
 };
 
 type SchedulingResult = {
@@ -145,8 +147,7 @@ export const scheduleAllNotifications = async (
           prayerDate,
           settings,
           now,
-          t,
-          options.testMode || false
+          t
         );
 
         notificationsToSchedule.push(...prayerNotifications);
@@ -155,17 +156,6 @@ export const scheduleAllNotifications = async (
 
     // Sort notifications by time
     notificationsToSchedule.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-    // MANUAL OVERRIDE: Make first notification happen in 5 seconds
-    if (notificationsToSchedule.length > 0) {
-      const firstNotification = notificationsToSchedule[0];
-      const testTime = new Date(now.getTime() + 5000); // 5 seconds from now
-      firstNotification.time = testTime;
-      firstNotification.title = `[TEST] ${firstNotification.title}`;
-      console.log(
-        `[NotificationScheduler] MANUAL OVERRIDE: First notification will fire at ${testTime.toISOString()}`
-      );
-    }
 
     // Apply iOS limit(64 scheduled notifications max)
     let notificationsToProcess = notificationsToSchedule;
@@ -209,10 +199,6 @@ export const scheduleAllNotifications = async (
         },
         sound: notification.sound,
       };
-
-      if (scheduledCount < 1) {
-        notification.time = addSeconds(Date.now(), 5);
-      }
 
       const result = await scheduleNotification(notification.time, notificationInput, {
         vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
@@ -279,6 +265,13 @@ const generatePrayerNotifications = (
 
       // Only schedule if interval is at least MIN_INTERVAL_SECONDS (skip in test mode)
       if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
+        // Generate dynamic channel ID based on sound
+        const preAthanChannelId = getNotificationChannelId(
+          prayerId,
+          NOTIFICATION_TYPE.PRE_ATHAN,
+          preAthanConfig.sound
+        );
+
         notifications.push({
           id: `preathan_${prayerId}_${prayerTime.getTime()}`,
           time: preAthanTime,
@@ -293,7 +286,7 @@ const generatePrayerNotifications = (
           type: NOTIFICATION_TYPE.PRE_ATHAN,
           prayerId,
           categoryId: `preathan_${prayerId}`,
-          channelId: `preathan_${prayerId}`,
+          channelId: preAthanChannelId,
           vibration: preAthanConfig.vibration,
           sound:
             getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound) || "default",
@@ -308,6 +301,13 @@ const generatePrayerNotifications = (
 
     // Only schedule if interval is at least MIN_INTERVAL_SECONDS (skip in test mode)
     if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
+      // Generate dynamic channel ID based on sound
+      const prayerChannelId = getNotificationChannelId(
+        prayerId,
+        NOTIFICATION_TYPE.PRAYER,
+        prayerConfig.sound
+      );
+
       notifications.push({
         id: `prayer_${prayerId}_${prayerTime.getTime()}`,
         time: prayerTime,
@@ -316,14 +316,10 @@ const generatePrayerNotifications = (
         type: NOTIFICATION_TYPE.PRAYER,
         prayerId,
         categoryId: `prayer_${prayerId}`,
-        channelId: `prayer_${prayerId}`,
+        channelId: prayerChannelId,
         vibration: prayerConfig.vibration,
         sound: getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default",
       });
-      console.log(
-        "🚀 => getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, prayerConfig.sound):",
-        getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound)
-      );
     }
   }
 
@@ -334,6 +330,13 @@ const generatePrayerNotifications = (
 
     // Only schedule if interval is at least MIN_INTERVAL_SECONDS and in the future (skip in test mode)
     if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
+      // Generate dynamic channel ID based on sound
+      const iqamaChannelId = getNotificationChannelId(
+        prayerId,
+        NOTIFICATION_TYPE.IQAMA,
+        iqamaConfig.sound
+      );
+
       notifications.push({
         id: `iqama_${prayerId}_${prayerTime.getTime()}`,
         time: iqamaTime,
@@ -347,7 +350,7 @@ const generatePrayerNotifications = (
         type: NOTIFICATION_TYPE.IQAMA,
         prayerId,
         categoryId: `iqama_${prayerId}`,
-        channelId: `iqama_${prayerId}`,
+        channelId: iqamaChannelId,
         vibration: iqamaConfig.vibration,
         sound: getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default",
       });

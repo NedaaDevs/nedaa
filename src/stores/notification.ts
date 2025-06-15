@@ -81,7 +81,10 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
 
-          // TODO:Reschedule
+          // Reschedule notifications to update channels with new sound
+          setTimeout(() => {
+            get().scheduleAllNotifications();
+          }, 100);
         },
 
         updateDefault: (type, field, value) => {
@@ -95,7 +98,12 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
 
-          // TODO:Reschedule
+          // If sound changed, reschedule to update channels
+          if (field === "sound") {
+            setTimeout(() => {
+              get().scheduleAllNotifications();
+            }, 100);
+          }
         },
 
         updateOverride: <T extends NotificationType>(
@@ -127,6 +135,13 @@ export const useNotificationStore = create<NotificationStore>()(
               settings: { ...state.settings, overrides: newOverrides },
             };
           });
+
+          // If sound changed in config, reschedule to update channels
+          if (config.sound !== undefined) {
+            setTimeout(() => {
+              get().scheduleAllNotifications();
+            }, 100);
+          }
         },
 
         resetOverride: (prayerId, type) => {

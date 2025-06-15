@@ -2,7 +2,11 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 // Types
-import { getEffectiveConfig, type NotificationSettings } from "@/types/notification";
+import {
+  getEffectiveConfig,
+  type NotificationSettings,
+  NotificationType,
+} from "@/types/notification";
 import { PrayerName } from "@/types/prayerTimes";
 
 // Constants
@@ -21,6 +25,123 @@ type ChannelConfig = {
   sound: string | null;
   vibrationPattern?: number[];
   showBadge?: boolean;
+  prayerName?: PrayerName;
+  notificationType?: NotificationType;
+  soundKey?: string;
+};
+
+type ChannelMapping = {
+  channelId: string;
+  prayerName: PrayerName;
+  notificationType: NotificationType;
+  soundKey: string;
+};
+
+/**
+ * Generate a unique channel ID based on prayer, notification type, and sound
+ */
+const generateChannelId = (
+  prayer: PrayerName,
+  type: NotificationType,
+  soundKey: string
+): string => {
+  // Use sound key to make channel unique per sound
+  const sanitizedSoundKey = soundKey.replace(/[^a-zA-Z0-9]/g, "_");
+  return `${type}_${prayer}_${sanitizedSoundKey}`;
+};
+
+/**
+ * Get the display name for a channel
+ */
+const getChannelDisplayName = (
+  prayer: PrayerName,
+  type: NotificationType,
+  soundKey: string
+): string => {
+  const prayerName = prayer.charAt(0).toUpperCase() + prayer.slice(1);
+  const typeName = {
+    [NOTIFICATION_TYPE.PRAYER]: "Prayer",
+    [NOTIFICATION_TYPE.IQAMA]: "Iqama",
+    [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
+  }[type];
+
+  return `${prayerName} ${typeName} (${soundKey})`;
+};
+
+/**
+ * Clean up old notification channels that are no longer needed
+ */
+export const cleanupOldChannels = async (currentSettings: NotificationSettings): Promise<void> => {
+  if (Platform.OS !== "android") return;
+
+  try {
+    const existingChannels = await Notifications.getNotificationChannelsAsync();
+    const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    const currentChannelIds = new Set<string>();
+
+    // Build set of current channel IDs that should exist
+    for (const prayer of prayers) {
+      const configs = [
+        {
+          type: NOTIFICATION_TYPE.PRAYER,
+          config: getEffectiveConfig(
+            prayer,
+            NOTIFICATION_TYPE.PRAYER,
+            currentSettings.defaults,
+            currentSettings.overrides
+          ),
+        },
+        {
+          type: NOTIFICATION_TYPE.IQAMA,
+          config: getEffectiveConfig(
+            prayer,
+            NOTIFICATION_TYPE.IQAMA,
+            currentSettings.defaults,
+            currentSettings.overrides
+          ),
+        },
+        {
+          type: NOTIFICATION_TYPE.PRE_ATHAN,
+          config: getEffectiveConfig(
+            prayer,
+            NOTIFICATION_TYPE.PRE_ATHAN,
+            currentSettings.defaults,
+            currentSettings.overrides
+          ),
+        },
+      ];
+
+      for (const { type, config } of configs) {
+        if (config.enabled) {
+          const channelId = generateChannelId(prayer, type, config.sound);
+          currentChannelIds.add(channelId);
+        }
+      }
+    }
+
+    // Add reminder channel
+    currentChannelIds.add("reminder");
+
+    // Delete channels that are no longer needed
+    for (const channel of existingChannels) {
+      // Only delete channels we manage (prayer-related channels)
+      if (
+        (channel.id.startsWith("prayer_") ||
+          channel.id.startsWith("iqama_") ||
+          channel.id.startsWith("preathan_")) &&
+        !currentChannelIds.has(channel.id)
+      ) {
+        try {
+          await Notifications.deleteNotificationChannelAsync(channel.id);
+          console.log(`[NotificationChannels] Deleted old channel: ${channel.id}`);
+        } catch (error) {
+          console.error(`[NotificationChannels] Failed to delete channel ${channel.id}:`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[NotificationChannels] Failed to cleanup old channels:", error);
+  }
 };
 
 /**
@@ -30,6 +151,9 @@ export const createNotificationChannels = async (settings: NotificationSettings)
   if (Platform.OS !== "android") return;
 
   console.log("[NotificationChannels] Creating notification channels with custom sounds...");
+
+  // First, cleanup old channels that are no longer needed
+  await cleanupOldChannels(settings);
 
   const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
   const channels: ChannelConfig[] = [];
@@ -59,36 +183,45 @@ export const createNotificationChannels = async (settings: NotificationSettings)
     // Prayer notification channel
     if (prayerConfig.enabled) {
       channels.push({
-        id: `prayer_${prayer}`,
-        name: `${prayer.charAt(0).toUpperCase() + prayer.slice(1)} Prayer`,
+        id: generateChannelId(prayer, NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
+        name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
         sound: getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
         vibrationPattern: prayerConfig.vibration ? [0, 250, 250, 250] : undefined,
         showBadge: true,
+        prayerName: prayer,
+        notificationType: NOTIFICATION_TYPE.PRAYER,
+        soundKey: prayerConfig.sound,
       });
     }
 
     // Iqama notification channel
     if (iqamaConfig.enabled) {
       channels.push({
-        id: `iqama_${prayer}`,
-        name: `${prayer.charAt(0).toUpperCase() + prayer.slice(1)} Iqama`,
+        id: generateChannelId(prayer, NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound),
+        name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
         sound: getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound),
         vibrationPattern: iqamaConfig.vibration ? [0, 250, 250, 250] : undefined,
         showBadge: true,
+        prayerName: prayer,
+        notificationType: NOTIFICATION_TYPE.IQAMA,
+        soundKey: iqamaConfig.sound,
       });
     }
 
     // Pre-Athan notification channel
     if (preAthanConfig.enabled) {
       channels.push({
-        id: `preathan_${prayer}`,
-        name: `${prayer.charAt(0).toUpperCase() + prayer.slice(1)} Pre-Athan`,
+        id: generateChannelId(prayer, NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
+        name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
         sound: getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
         vibrationPattern: preAthanConfig.vibration ? [0, 100, 100, 100] : undefined,
         showBadge: true,
+        prayerName: prayer,
+        notificationType: NOTIFICATION_TYPE.PRE_ATHAN,
+        soundKey: preAthanConfig.sound,
       });
     }
   }
@@ -106,6 +239,17 @@ export const createNotificationChannels = async (settings: NotificationSettings)
   // Create all channels
   for (const channel of channels) {
     try {
+      // Check if channel already exists with same configuration
+      const existingChannels = await Notifications.getNotificationChannelsAsync();
+      const existingChannel = existingChannels.find((ch) => ch.id === channel.id);
+
+      if (existingChannel && existingChannel.sound === channel.sound) {
+        console.log(
+          `[NotificationChannels] Channel ${channel.id} already exists with correct sound`
+        );
+        continue;
+      }
+
       await Notifications.setNotificationChannelAsync(channel.id, {
         name: channel.name,
         importance: channel.importance,
@@ -115,7 +259,7 @@ export const createNotificationChannels = async (settings: NotificationSettings)
       });
 
       console.log(
-        `[NotificationChannels] Created channel: ${channel.id} with sound: ${channel.sound}`
+        `[NotificationChannels] Created/Updated channel: ${channel.id} with sound: ${channel.sound}`
       );
     } catch (error) {
       console.error(`[NotificationChannels] Failed to create channel ${channel.id}:`, error);
@@ -124,33 +268,157 @@ export const createNotificationChannels = async (settings: NotificationSettings)
 };
 
 /**
+ * Get the correct channel ID for a notification
+ */
+export const getNotificationChannelId = (
+  prayer: PrayerName,
+  type: NotificationType,
+  soundKey: string
+): string => {
+  return generateChannelId(prayer, type, soundKey);
+};
+
+/**
  * Check if channels need to be updated based on sound settings
  */
 export const shouldUpdateChannels = async (settings: NotificationSettings): Promise<boolean> => {
   if (Platform.OS !== PlatformType.ANDROID) return false;
 
-  const existingChannels = await Notifications.getNotificationChannelsAsync();
-  const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+  try {
+    const existingChannels = await Notifications.getNotificationChannelsAsync();
+    const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    const requiredChannels = new Set<string>();
 
-  // Check if all required channels exist with correct sounds
-  for (const prayer of prayers) {
-    const prayerConfig = getEffectiveConfig(
-      prayer,
-      NOTIFICATION_TYPE.PRAYER,
-      settings.defaults,
-      settings.overrides
-    );
+    // Build set of required channel IDs
+    for (const prayer of prayers) {
+      const configs = [
+        {
+          type: NOTIFICATION_TYPE.PRAYER,
+          config: getEffectiveConfig(
+            prayer,
+            NOTIFICATION_TYPE.PRAYER,
+            settings.defaults,
+            settings.overrides
+          ),
+        },
+        {
+          type: NOTIFICATION_TYPE.IQAMA,
+          config: getEffectiveConfig(
+            prayer,
+            NOTIFICATION_TYPE.IQAMA,
+            settings.defaults,
+            settings.overrides
+          ),
+        },
+        {
+          type: NOTIFICATION_TYPE.PRE_ATHAN,
+          config: getEffectiveConfig(
+            prayer,
+            NOTIFICATION_TYPE.PRE_ATHAN,
+            settings.defaults,
+            settings.overrides
+          ),
+        },
+      ];
 
-    if (prayerConfig.enabled) {
-      const channelId = `prayer_${prayer}`;
-      const existingChannel = existingChannels.find((ch) => ch.id === channelId);
-      const expectedSound = getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound);
+      for (const { type, config } of configs) {
+        if (config.enabled) {
+          const channelId = generateChannelId(prayer, type, config.sound);
+          requiredChannels.add(channelId);
 
-      if (!existingChannel || existingChannel.sound !== expectedSound) {
-        return true;
+          // Check if channel exists with correct sound
+          const existingChannel = existingChannels.find((ch) => ch.id === channelId);
+          const expectedSound = getNotificationSound(type, config.sound);
+
+          if (!existingChannel || existingChannel.sound !== expectedSound) {
+            return true;
+          }
+        }
       }
     }
+
+    // Check if there are old channels that need cleanup
+    const managedChannels = existingChannels.filter(
+      (ch) =>
+        ch.id.startsWith("prayer_") || ch.id.startsWith("iqama_") || ch.id.startsWith("preathan_")
+    );
+
+    for (const channel of managedChannels) {
+      if (!requiredChannels.has(channel.id)) {
+        return true; // Need to cleanup old channels
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error("[NotificationChannels] Error checking if channels need update:", error);
+    return true; // Assume update needed on error
+  }
+};
+
+/**
+ * Get all active channel mappings for debugging/monitoring
+ */
+export const getActiveChannelMappings = async (): Promise<ChannelMapping[]> => {
+  if (Platform.OS !== "android") return [];
+
+  try {
+    const channels = await Notifications.getNotificationChannelsAsync();
+    const mappings: ChannelMapping[] = [];
+
+    for (const channel of channels) {
+      // Parse our managed channels
+      const match = channel.id.match(/^(prayer|iqama|preathan)_([^_]+)_(.+)$/);
+      if (match) {
+        const [, type, prayer, soundKey] = match;
+        mappings.push({
+          channelId: channel.id,
+          prayerName: prayer as PrayerName,
+          notificationType: type as NotificationType,
+          soundKey: soundKey.replace(/_/g, " "), // Convert back from sanitized form
+        });
+      }
+    }
+
+    return mappings;
+  } catch (error) {
+    console.error("[NotificationChannels] Error getting active channel mappings:", error);
+    return [];
+  }
+};
+
+/**
+ * Debug function to log all channel information
+ */
+export const debugChannelInfo = async (): Promise<void> => {
+  if (Platform.OS !== "android") {
+    console.log("[NotificationChannels] Debug: Not on Android platform");
+    return;
   }
 
-  return false;
+  try {
+    const channels = await Notifications.getNotificationChannelsAsync();
+    console.log(`[NotificationChannels] Debug: Found ${channels.length} total channels`);
+
+    const managedChannels = channels.filter(
+      (ch) =>
+        ch.id.startsWith("prayer_") ||
+        ch.id.startsWith("iqama_") ||
+        ch.id.startsWith("preathan_") ||
+        ch.id === "reminder"
+    );
+
+    console.log(`[NotificationChannels] Debug: Found ${managedChannels.length} managed channels`);
+
+    for (const channel of managedChannels) {
+      console.log(
+        `[NotificationChannels] Debug: Channel '${channel.id}' - Sound: '${channel.sound}' - Name: '${channel.name}'`
+      );
+    }
+
+    const mappings = await getActiveChannelMappings();
+    console.log(`[NotificationChannels] Debug: Active mappings:`, mappings);
+  } catch (error) {
+    console.error("[NotificationChannels] Debug: Error getting channel info:", error);
+  }
 };

@@ -191,8 +191,6 @@ export const setupNotificationChannels = async () => {
       importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 200],
     });
-
-    console.log("Android notification channels created");
   } catch (error) {
     console.error("Failed to create Android channels:", error);
   }

@@ -23,7 +23,8 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { Background } from "@/components/ui/background";
 
 // Utils
-import { listScheduledNotifications } from "@/utils/notifications";
+
+import { debugChannelInfo } from "@/utils/notificationChannels";
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
@@ -170,14 +171,20 @@ const NotificationSettings = () => {
                   <ButtonText>Reschedule All Notifications</ButtonText>
                 </Button>
               </Box>
+              <Box className="mx-4 mt-4">
+                <Button variant="outline" size="sm" onPress={handleNotificationList}>
+                  <ButtonText>List All Notifications</ButtonText>
+                </Button>
+              </Box>
+
+              {/* Debug channel info */}
+              <Box className="mx-4 mt-2">
+                <Button variant="outline" size="sm" onPress={debugChannelInfo}>
+                  <ButtonText>Debug Channel Info</ButtonText>
+                </Button>
+              </Box>
             </>
           )}
-          {/* Temporary for testing */}
-          <Box className="mx-4 mt-4">
-            <Button variant="outline" size="sm" onPress={handleNotificationList}>
-              <ButtonText>List All Notifications</ButtonText>
-            </Button>
-          </Box>
         </VStack>
       </ScrollView>
 
