@@ -106,7 +106,7 @@ const MailClientsList = ({ onClose }: Props) => {
   const renderClientIcon = (icon: string) => {
     switch (icon) {
       case "mail":
-        return <Icon as={MailIcon} size="xl" className="text-blue-600" />;
+        return <Icon as={MailIcon} size="xl" className="text-accent-primary" />;
       case "gmail":
         return <FontAwesome5 name="google" size={24} color="#DB4437" />;
       case "outlook":
@@ -114,22 +114,22 @@ const MailClientsList = ({ onClose }: Props) => {
       case "yahoo":
         return <FontAwesome5 name="yahoo" size={24} color="#6001D2" />;
       default:
-        return <Icon as={MailIcon} size="xl" className="text-blue-600" />;
+        return <Icon as={MailIcon} size="xl" className="text-accent-primary" />;
     }
   };
 
   if (loading) {
     return (
-      <Box className="w-full h-60 flex items-center justify-center bg-white dark:bg-gray-800">
-        <Text className="text-typography dark:text-tertiary">{t("common.loading")}</Text>
+      <Box className="w-full h-60 flex items-center justify-center bg-background-secondary">
+        <Text className="text-typography">{t("common.loading")}</Text>
       </Box>
     );
   }
 
   return (
-    <Box className="w-full px-4 py-5 bg-white dark:bg-gray-800 rounded-t-2xl">
+    <Box className="w-full px-4 py-5 bg-background-secondary rounded-t-2xl">
       <Box className="w-full flex flex-col items-center mb-4">
-        <Text className="text-xl font-semibold text-typography dark:text-tertiary">
+        <Text className="text-xl font-semibold text-typography">
           {t("common.email.clients.selectClient")}
         </Text>
       </Box>
@@ -140,18 +140,14 @@ const MailClientsList = ({ onClose }: Props) => {
           renderItem={({ item, index }: any) => (
             <Box
               className={`w-full ${
-                index < mailClients.length - 1
-                  ? "border-b border-gray-200 dark:border-gray-700"
-                  : ""
+                index < mailClients.length - 1 ? "border-b border-outline" : ""
               }`}>
               <Pressable
                 onPress={() => handleMailClientSelect(item)}
                 className="py-4 px-3 flex-row justify-between items-center">
                 <Box className="flex-row items-center">
                   {renderClientIcon(item.icon)}
-                  <Text className="text-lg font-medium text-typography dark:text-tertiary ml-4">
-                    {item.title}
-                  </Text>
+                  <Text className="text-lg font-medium text-typography ml-4">{item.title}</Text>
                 </Box>
               </Pressable>
             </Box>
@@ -160,19 +156,15 @@ const MailClientsList = ({ onClose }: Props) => {
         />
       ) : (
         <Box className="w-full py-5 flex items-center justify-center">
-          <Text className="text-typography dark:text-tertiary">
-            {t("common.email.clients.noClientsFound")}
-          </Text>
+          <Text className="text-typography">{t("common.email.clients.noClientsFound")}</Text>
         </Box>
       )}
 
       <Box className="mt-4">
         <Pressable
           onPress={onClose}
-          className="w-full py-3 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-lg">
-          <Text className="text-typography dark:text-tertiary font-medium">
-            {t("common.cancel")}
-          </Text>
+          className="w-full py-3 flex items-center justify-center bg-background-muted rounded-lg">
+          <Text className="text-typography font-medium">{t("common.cancel")}</Text>
         </Pressable>
       </Box>
     </Box>

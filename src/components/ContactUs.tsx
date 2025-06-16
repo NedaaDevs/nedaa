@@ -81,9 +81,9 @@ const ContactUs = () => {
   const renderIcon = (icon: string) => {
     switch (icon) {
       case "mail":
-        return <Icon as={MailIcon} size="xl" className="text-blue-600" />;
+        return <Icon as={MailIcon} size="xl" className="text-accent-primary" />;
       case "whatsapp":
-        return <FontAwesome5 name="whatsapp" size={24} color="green" />;
+        return <FontAwesome5 name="whatsapp" size={24} color="#25D366" />;
       case "telegram":
         return (
           <FontAwesome5
@@ -99,9 +99,9 @@ const ContactUs = () => {
 
   return (
     <>
-      <Box className="w-full px-4 pt-6 pb-4 flex flex-col bg-white dark:bg-gray-800">
+      <Box className="w-full px-4 pt-6 pb-4 flex flex-col bg-background">
         <Box className="w-full flex flex-col items-start mb-4">
-          <Text className="text-2xl text-gray-400 font-medium">
+          <Text className="text-2xl text-typography-secondary font-medium">
             {t("settings.help.contactUs").toUpperCase()}
           </Text>
         </Box>
@@ -112,18 +112,14 @@ const ContactUs = () => {
             renderItem={({ item, index }: any) => (
               <Box
                 className={`w-full ${
-                  index < contactOptions.length - 1
-                    ? "border-b border-gray-200 dark:border-gray-700"
-                    : ""
+                  index < contactOptions.length - 1 ? "border-b border-outline" : ""
                 }`}>
                 <Pressable
                   onPress={item.action}
                   className="py-5 px-5 flex-row justify-between items-center">
                   <Box className="flex-row items-center">
                     {renderIcon(item.icon)}
-                    <Text className="text-xl font-semibold text-typography dark:text-tertiary ml-4">
-                      {item.title}
-                    </Text>
+                    <Text className="text-xl font-semibold text-typography ml-4">{item.title}</Text>
                   </Box>
                 </Pressable>
               </Box>
