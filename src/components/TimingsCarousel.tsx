@@ -1,7 +1,5 @@
 import * as React from "react";
-import { Dimensions, useColorScheme, I18nManager } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
-import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
+import PagerView from "react-native-pager-view";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -15,93 +13,58 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { AppMode } from "@/enums/app";
 
 const data = [PrayerTimes, OtherTimes];
-const { width } = Dimensions.get("window");
 
 type Props = {
   mode: AppMode;
 };
 
 const TimingsCarousel = (props: Props) => {
-  const ref = React.useRef<ICarouselInstance>(null);
-  const progress = useSharedValue<number>(0);
   const [currentIndex, setCurrentIndex] = React.useState(0);
-
+  const pagerRef = React.useRef<PagerView>(null);
   const selectionHaptic = useHaptic("selection");
-  const colorScheme = useColorScheme();
-  const isRTL = I18nManager.isRTL;
 
-  const onPressPagination = async (index: number) => {
-    ref.current?.scrollTo({
-      count: index - progress.value,
-      animated: true,
-    });
-  };
-
-  const handleSnap = async (index: number) => {
+  const handleTabPress = async (index: number) => {
     await selectionHaptic();
+    pagerRef.current?.setPage(index);
     setCurrentIndex(index);
   };
 
-  const getMode = (mode: AppMode) => {
-    if (mode === "system") {
-      return colorScheme ?? "light";
+  const handlePageSelected = async (event: any) => {
+    const newIndex = event.nativeEvent.position;
+    if (newIndex !== currentIndex) {
+      await selectionHaptic();
+      setCurrentIndex(newIndex);
     }
-    return mode;
   };
-
-  const isDarkMode = getMode(props.mode) === AppMode.DARK;
 
   return (
     <Box style={{ flex: 1, flexDirection: "column" }}>
       <Divider className="mb-2" />
-      <Box style={{ flex: 1, marginBottom: 80 }}>
-        <Carousel
-          ref={ref}
-          width={width}
-          data={data}
-          loop={false} // Disable circular navigation
-          onProgressChange={progress}
-          onSnapToItem={handleSnap}
-          renderItem={({ item: Component }) => (
-            <Box style={{ flex: 1, width: width }}>
-              <Component />
-            </Box>
-          )}
-          enabled={true}
-          // Prevent swiping past boundaries based on locale
-          onScrollEnd={() => {
-            if (isRTL) {
-              // RTL: Can only go from 0 -> 1 (right swipe) and 1 -> 0 (left swipe)
-              if (currentIndex === 0 && progress.value < 0) {
-                ref.current?.scrollTo({ index: 0, animated: true });
-              } else if (currentIndex === 1 && progress.value > 1) {
-                ref.current?.scrollTo({ index: 1, animated: true });
-              }
-            } else {
-              // LTR: Can only go from 0 -> 1 (left swipe) and 1 -> 0 (right swipe)
-              if (currentIndex === 0 && progress.value < 0) {
-                ref.current?.scrollTo({ index: 0, animated: true });
-              } else if (currentIndex === 1 && progress.value > 1) {
-                ref.current?.scrollTo({ index: 1, animated: true });
-              }
-            }
-          }}
-        />
-      </Box>
 
-      <Box
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: isDarkMode ? "#1e3c5a" : "#ffffff",
-        }}>
+      {/* Swipeable Content */}
+      <PagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={0}
+        onPageSelected={handlePageSelected}
+        scrollEnabled={true}
+        overdrag={true}>
+        {/* Page 1: Prayer Times */}
+        <Box key="prayer-times" style={{ flex: 1 }}>
+          <PrayerTimes />
+        </Box>
+
+        {/* Page 2: Other Timings */}
+        <Box key="other-timings" style={{ flex: 1 }}>
+          <OtherTimes />
+        </Box>
+      </PagerView>
+
+      {/* Bottom Navigation */}
+      <Box className="absolute bottom-0 left-0 right-0 bg-background-secondary">
         <CustomPagination
-          progress={progress}
           data={data}
-          onPress={onPressPagination}
-          isDarkMode={isDarkMode}
+          onPress={handleTabPress}
           currentIndex={currentIndex}
           variant="lines"
         />

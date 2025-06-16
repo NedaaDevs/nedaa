@@ -50,12 +50,15 @@ const PrayerTimesList = () => {
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{
-        paddingBottom: 40,
+        paddingBottom: 100,
         paddingTop: 10,
       }}
       scrollEventThrottle={16}
       bounces={true}
-      alwaysBounceVertical={true}>
+      alwaysBounceVertical={true}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      scrollEnabled={true}>
       {Object.entries(todayTimings.timings).map(([prayer, time]) => {
         const prayerName = prayer as PrayerName;
 

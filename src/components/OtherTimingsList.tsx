@@ -77,12 +77,15 @@ const OtherTimingsList = () => {
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{
-        paddingBottom: 40,
+        paddingBottom: 100,
         paddingTop: 10,
       }}
       scrollEventThrottle={16}
       bounces={true}
-      alwaysBounceVertical={true}>
+      alwaysBounceVertical={true}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      scrollEnabled={true}>
       {sortedEntries.map(([timing, time]) => {
         const timingName = timing as OtherTimingName;
         const isNext = timingName === nextTimingName;
