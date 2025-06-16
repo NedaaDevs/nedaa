@@ -44,7 +44,7 @@ export const ProviderList: FC = () => {
             value={provider.id.toString()}
             label={provider.name}
             className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${
-              isSelected ? "bg-background dark:bg-background-elevated" : "bg-background-secondary"
+              isSelected ? "bg-surface-active" : "bg-background-secondary"
             }`}>
             {isSelected && (
               <Box className="bg-primary rounded-full p-1.5">
