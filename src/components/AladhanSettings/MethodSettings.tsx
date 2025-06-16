@@ -55,7 +55,7 @@ export const MethodSettings: FC = () => {
             value={method.id.toString()}
             label={t(`providers.aladhan.methods.${method.nameKey}`)}
             className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${
-              isSelected ? "bg-background dark:bg-background-elevated" : "bg-background-secondary"
+              isSelected ? "bg-surface-active" : "bg-background-secondary"
             }`}
           />
         );
@@ -124,13 +124,13 @@ export const MethodSettings: FC = () => {
         <SelectTrigger
           variant="outline"
           size="lg"
-          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-primary" : "border-outline"} ${isChangingMethod ? "opacity-70" : ""}`}>
+          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-accent-primary" : "border-outline"} ${isChangingMethod ? "opacity-70" : ""}`}>
           <SelectInput
             className="flex-1 text-typography text-base font-medium px-2"
             placeholder={t("providers.aladhan.method.selectPlaceholder")}
           />
           <SelectIcon
-            className="mr-3 text-primary"
+            className="mr-3 text-accent-primary"
             as={isChangingMethod ? Spinner : ChevronDownIcon}
           />
         </SelectTrigger>

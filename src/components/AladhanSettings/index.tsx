@@ -34,13 +34,13 @@ const AladhanSettings: FC = () => {
   return (
     <Box className="relative mx-4 mt-2">
       {(isModified || isLoading || isFetchingPrayers) && (
-        <Box className="w-full bg-primary rounded-lg">
+        <Box className="w-full bg-accent-primary rounded-lg">
           <Button
             onPress={handleSaveSetting}
-            className="w-full"
+            className="w-full bg-accent-primary"
             isDisabled={isLoading || isFetchingPrayers}>
             {!(isLoading || isFetchingPrayers) && (
-              <ButtonText className="text-typography-contrast">{t("common.save")}</ButtonText>
+              <ButtonText className="text-background">{t("common.save")}</ButtonText>
             )}
             {(isLoading || isFetchingPrayers) && <ButtonSpinner />}
           </Button>
