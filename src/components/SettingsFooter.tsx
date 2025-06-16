@@ -58,7 +58,7 @@ const SettingsFooter = () => {
       </Pressable>
 
       {/* Version and build number */}
-      <Text className="text-center text-lg text-typography/70 dark:text-tertiary/70 mb-2">
+      <Text className="text-center text-lg text-typography-secondary mb-2">
         {appVersion} ({buildNumber})
       </Text>
 
