@@ -58,10 +58,10 @@ const NotificationSettings = () => {
         contentContainerStyle={{ paddingBottom: 20 }}>
         <VStack className="flex-1" space="md">
           {/* Master Toggle */}
-          <Box className="bg-white dark:bg-slate-800 mx-4 mt-4 rounded-lg">
+          <Box className="bg-background-secondary mx-4 mt-4 rounded-lg">
             <HStack className="p-4 justify-between items-center">
               <VStack className="flex-1">
-                <Text className="text-left text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <Text className="text-left text-lg font-semibold text-typography">
                   {t("notification.enableAll")}
                 </Text>
                 {totalOverrideCount > 0 && (
@@ -76,7 +76,6 @@ const NotificationSettings = () => {
                 value={settings.enabled}
                 onValueChange={updateAllNotificationToggle}
                 size="lg"
-                className="data-[state=checked]:bg-primary-500"
               />
             </HStack>
           </Box>
@@ -96,7 +95,6 @@ const NotificationSettings = () => {
                 type={NOTIFICATION_TYPE.PRAYER}
                 title={t("notification.prayerNotifications")}
                 icon="Bell"
-                iconColor="text-primary-600 dark:text-primary-400"
                 defaults={settings.defaults.prayer}
                 overrides={settings.overrides}
                 onDefaultUpdate={(field, value) =>
@@ -115,7 +113,6 @@ const NotificationSettings = () => {
                 type={NOTIFICATION_TYPE.IQAMA}
                 title={t("notification.iqamaReminders")}
                 icon="Clock"
-                iconColor="text-amber-600 dark:text-amber-400"
                 defaults={settings.defaults.iqama}
                 overrides={settings.overrides}
                 onDefaultUpdate={(field, value) =>
@@ -135,7 +132,6 @@ const NotificationSettings = () => {
                 type={NOTIFICATION_TYPE.PRE_ATHAN}
                 title={t("notification.preAthanAlerts")}
                 icon="BellRing"
-                iconColor="text-purple-600 dark:text-purple-400"
                 defaults={settings.defaults.preAthan}
                 overrides={settings.overrides}
                 onDefaultUpdate={(field, value) =>
@@ -152,9 +148,9 @@ const NotificationSettings = () => {
 
               {/* Sync Status */}
               {isScheduling && (
-                <Box className="bg-blue-50 dark:bg-blue-900/20 mx-4 p-3 rounded-lg">
+                <Box className="bg-background-muted mx-4 p-3 rounded-lg">
                   <HStack space="sm" className="items-center">
-                    <Text className="text-sm text-blue-700 dark:text-blue-300">
+                    <Text className="text-sm text-typography">
                       {t("notification.schedulingNotifications")}...
                     </Text>
                   </HStack>
