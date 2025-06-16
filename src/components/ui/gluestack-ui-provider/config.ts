@@ -13,6 +13,8 @@ export const config = {
     "--color-typography-secondary": "100 116 139", // Secondary/muted text
     "--color-typography-contrast": "255 255 255", // Text on dark backgrounds
     "--color-typography-accent": "28 93 133", // Accent text color
+    "--color-typography-info": "30 64 175", // Info text color (blue-700)
+    "--color-typography-info-emphasis": "29 78 216", // Info emphasis text (blue-800)
 
     /* Surface colors for different elevation levels */
     "--color-background": "245 247 250", // Main app background
@@ -23,10 +25,17 @@ export const config = {
     /* Border and outline colors */
     "--color-outline": "226 232 240", // Default borders, dividers
     "--color-outline-accent": "28 93 133", // Focused/active borders
+    "--color-border-subtle": "229 231 235", // Subtle borders (gray-200)
+    "--color-border-primary": "156 163 175", // Primary borders (gray-400)
+
+    /* Surface interaction colors */
+    "--color-surface-hover": "249 250 251", // Hover state background (gray-50)
+    "--color-surface-active": "243 244 246", // Active/pressed state background (gray-100)
 
     /* Accent colors for highlights and CTAs */
     "--color-accent-primary": "28 93 125", // Primary accent color
     "--color-accent-secondary": "42 77 109", // Secondary accent color
+    "--color-accent-info": "29 78 216", // Info accent color (blue-600)
 
     /* Status colors for user feedback */
     "--color-error": "220 38 38", // Error text and icons
@@ -39,6 +48,7 @@ export const config = {
     "--color-background-success": "220 252 231", // Light green background for success states
     "--color-background-warning": "254 243 199", // Light yellow background for warnings
     "--color-background-info": "219 234 254", // Light blue background for info states
+    "--color-background-info-emphasis": "147 197 253", // Emphasized blue background (blue-300)
     "--color-background-loading": "243 244 246", // Neutral background for loading states
     "--color-background-muted": "243 244 246", // Subtle background for muted content
 
@@ -76,6 +86,8 @@ export const config = {
     "--color-typography-secondary": "227 226 206", // Muted text (off-white)
     "--color-typography-contrast": "255 255 255", // High contrast text
     "--color-typography-accent": "230 196 105", // Accent text (golden)
+    "--color-typography-info": "147 197 253", // Info text color (blue-300)
+    "--color-typography-info-emphasis": "191 219 254", // Info emphasis text (blue-200)
 
     /* Dark theme surface colors */
     "--color-background": "34 40 49", // Main dark background
@@ -86,10 +98,17 @@ export const config = {
     /* Dark theme borders */
     "--color-outline": "255 255 255 10", // Subtle white borders (10% opacity)
     "--color-outline-accent": "230 196 105", // Golden accent borders
+    "--color-border-subtle": "55 65 81", // Subtle borders (gray-700)
+    "--color-border-primary": "75 85 99", // Primary borders (gray-600)
+
+    /* Dark theme surface interaction colors */
+    "--color-surface-hover": "55 65 81", // Hover state background (gray-700)
+    "--color-surface-active": "75 85 99", // Active/pressed state background (gray-600)
 
     /* Dark theme accent colors */
     "--color-accent-primary": "230 196 105", // Primary golden accent
     "--color-accent-secondary": "212 186 118", // Secondary golden accent
+    "--color-accent-info": "147 197 253", // Info accent color (blue-300)
 
     /* Dark theme status colors */
     "--color-error": "252 165 165", // Light red for dark backgrounds
@@ -102,6 +121,7 @@ export const config = {
     "--color-background-success": "20 83 45", // Dark green background for success states
     "--color-background-warning": "120 53 15", // Dark orange background for warnings
     "--color-background-info": "30 58 138", // Dark blue background for info states
+    "--color-background-info-emphasis": "37 99 235", // Emphasized dark blue background (blue-600)
     "--color-background-loading": "31 41 55", // Dark neutral background for loading
     "--color-background-muted": "31 41 55", // Dark muted background
 

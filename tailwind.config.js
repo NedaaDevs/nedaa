@@ -9,7 +9,7 @@ module.exports = {
   safelist: [
     {
       pattern:
-        /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|typography|outline|background|indicator|accent)/,
+        /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|info-emphasis|typography|outline|background|indicator|accent)/,
     },
     {
       pattern: /(text)-(typography)-(secondary|contrast|accent)/,
@@ -47,12 +47,16 @@ module.exports = {
         error: "rgb(var(--color-error)/<alpha-value>)",
         success: "rgb(var(--color-success)/<alpha-value>)",
         warning: "rgb(var(--color-warning)/<alpha-value>)",
-        info: "rgb(var(--color-info)/<alpha-value>)",
+        info: "rgb(var(--color-typography-info)/\u003calpha-value\u003e)",
+        "info-emphasis": "rgb(var(--color-typography-info-emphasis)/\u003calpha-value\u003e)",
+        "info-status": "rgb(var(--color-info)/\u003calpha-value\u003e)",
         typography: {
           DEFAULT: "rgb(var(--color-typography)/<alpha-value>)",
           secondary: "rgb(var(--color-typography-secondary)/<alpha-value>)",
           contrast: "rgb(var(--color-typography-contrast)/<alpha-value>)",
           accent: "rgb(var(--color-typography-accent)/<alpha-value>)",
+          info: "rgb(var(--color-typography-info)/<alpha-value>)",
+          "info-emphasis": "rgb(var(--color-typography-info-emphasis)/<alpha-value>)",
         },
         outline: {
           DEFAULT: "rgb(var(--color-outline)/<alpha-value>)",
@@ -70,6 +74,7 @@ module.exports = {
           muted: "rgb(var(--color-background-muted)/<alpha-value>)",
           success: "rgb(var(--color-background-success)/<alpha-value>)",
           info: "rgb(var(--color-background-info)/<alpha-value>)",
+          "info-emphasis": "rgb(var(--color-background-info-emphasis)/<alpha-value>)",
           loading: "rgb(var(--color-background-loading)/<alpha-value>)",
         },
         border: {
@@ -78,6 +83,8 @@ module.exports = {
           warning: "rgb(var(--color-border-warning)/<alpha-value>)",
           info: "rgb(var(--color-border-info)/<alpha-value>)",
           loading: "rgb(var(--color-border-loading)/<alpha-value>)",
+          subtle: "rgb(var(--color-border-subtle)/<alpha-value>)",
+          primary: "rgb(var(--color-border-primary)/<alpha-value>)",
         },
         foreground: {
           loading: "rgb(var(--color-foreground-loading)/<alpha-value>)",
@@ -91,6 +98,11 @@ module.exports = {
         accent: {
           primary: "rgb(var(--color-accent-primary)/\u003calpha-value\u003e)",
           secondary: "rgb(var(--color-accent-secondary)/\u003calpha-value\u003e)",
+          info: "rgb(var(--color-accent-info)/\u003calpha-value\u003e)",
+        },
+        surface: {
+          hover: "rgb(var(--color-surface-hover)/\u003calpha-value\u003e)",
+          active: "rgb(var(--color-surface-active)/\u003calpha-value\u003e)",
         },
         // Gradient colors for linear gradient utilities
         "gradient-primary": {
