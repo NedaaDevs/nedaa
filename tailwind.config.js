@@ -9,22 +9,29 @@ module.exports = {
   safelist: [
     {
       pattern:
-        /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|typography|outline|background|indicator)/,
+        /(bg|border|text|stroke|fill)-(primary|secondary|tertiary|error|success|warning|info|typography|outline|background|indicator|accent)/,
     },
     {
       pattern: /(text)-(typography)-(secondary|contrast|accent)/,
     },
     {
-      pattern: /(bg)-(background)-(secondary|elevated|interactive|loading)/,
+      pattern:
+        /(bg)-(background)-(secondary|elevated|interactive|loading|error|success|warning|info)/,
     },
     {
-      pattern: /(bg)-(outline|outline-accent)/,
+      pattern: /(bg)-(outline|outline-accent|accent)-(primary|secondary)?/,
     },
     {
       pattern: /(border)-(outline|outline-accent|error|success|warning|info|loading)/,
     },
     {
       pattern: /(text)-(foreground-loading)/,
+    },
+    {
+      pattern: /(bg)-(gradient)-(primary|accent|background)/,
+    },
+    {
+      pattern: /(from|to)-(gradient)-(primary|accent|background)-(start|end)/,
     },
     "font-regular",
     "font-medium",
@@ -80,6 +87,24 @@ module.exports = {
           info: "rgb(var(--color-indicator-info)/<alpha-value>)",
           error: "rgb(var(--color-indicator-error)/<alpha-value>)",
         },
+        // Accent colors for highlights and calls-to-action
+        accent: {
+          primary: "rgb(var(--color-accent-primary)/\u003calpha-value\u003e)",
+          secondary: "rgb(var(--color-accent-secondary)/\u003calpha-value\u003e)",
+        },
+        // Gradient colors for linear gradient utilities
+        "gradient-primary": {
+          start: "rgb(var(--gradient-primary-start))",
+          end: "rgb(var(--gradient-primary-end))",
+        },
+        "gradient-accent": {
+          start: "rgb(var(--gradient-accent-start))",
+          end: "rgb(var(--gradient-accent-end))",
+        },
+        "gradient-background": {
+          start: "rgb(var(--gradient-background-start))",
+          end: "rgb(var(--gradient-background-end))",
+        },
       },
       fontFamily: {
         "asap-regular": "Asap-Regular",
@@ -96,6 +121,21 @@ module.exports = {
       },
       fontSize: {
         "2xs": "10px",
+      },
+      backgroundImage: {
+        // Predefined gradient backgrounds using theme color variables
+        "gradient-primary":
+          "linear-gradient(to right, rgb(var(--gradient-primary-start)), rgb(var(--gradient-primary-end)))",
+        "gradient-accent":
+          "linear-gradient(to right, rgb(var(--gradient-accent-start)), rgb(var(--gradient-accent-end)))",
+        "gradient-background":
+          "linear-gradient(to bottom, rgb(var(--gradient-background-start)), rgb(var(--gradient-background-end)))",
+        "radial-primary":
+          "radial-gradient(circle at center, rgb(var(--gradient-primary-start)), rgb(var(--gradient-primary-end)))",
+        "radial-accent":
+          "radial-gradient(circle at center, rgb(var(--gradient-accent-start)), rgb(var(--gradient-accent-end)))",
+        "radial-background":
+          "radial-gradient(circle at center, rgb(var(--gradient-background-start)), rgb(var(--gradient-background-end)))",
       },
       boxShadow: {
         "hard-1": "-2px 2px 8px 0px rgba(38, 38, 38, 0.20)",
