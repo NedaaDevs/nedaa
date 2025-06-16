@@ -37,11 +37,11 @@ const badgeTextStyle = tva({
 
   parentVariants: {
     action: {
-      error: "text-error-600",
-      warning: "text-warning-600",
-      success: "text-success-600",
-      info: "text-info-600",
-      muted: "text-background-800",
+      error: "text-error",
+      warning: "text-warning",
+      success: "text-success",
+      info: "text-info",
+      muted: "text-typography",
     },
     size: {
       sm: "text-2xs",
@@ -69,7 +69,7 @@ const badgeTextStyle = tva({
       true: "italic",
     },
     highlight: {
-      true: "bg-yellow-500",
+      true: "bg-background-warning",
     },
   },
 });
@@ -78,11 +78,11 @@ const badgeIconStyle = tva({
   base: "fill-none",
   parentVariants: {
     action: {
-      error: "text-error-600",
-      warning: "text-warning-600",
-      success: "text-success-600",
-      info: "text-info-600",
-      muted: "text-background-800",
+      error: "text-error",
+      warning: "text-warning",
+      success: "text-success",
+      info: "text-info",
+      muted: "text-typography",
     },
     size: {
       sm: "h-3 w-3",
