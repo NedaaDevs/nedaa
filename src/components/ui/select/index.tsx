@@ -69,7 +69,7 @@ const selectTriggerStyle = tva({
 });
 
 const selectInputStyle = tva({
-  base: "py-auto px-3 placeholder:text-typography-500 web:w-full h-full text-typography-900 pointer-events-none web:outline-none ios:leading-[0px]",
+  base: "py-auto px-3 placeholder:text-typography-500 web:w-full h-full pointer-events-none web:outline-none ios:leading-[0px]",
   parentVariants: {
     size: {
       xl: "text-xl",
@@ -170,7 +170,7 @@ type ISelectInputProps = VariantProps<typeof selectInputStyle> &
   React.ComponentProps<typeof UISelect.Input> & { className?: string };
 
 const SelectInput = React.forwardRef<React.ComponentRef<typeof UISelect.Input>, ISelectInputProps>(
-  function SelectInput({ className, ...props }, ref) {
+  function SelectInput({ className, style, ...props }, ref) {
     const { size: parentSize, variant: parentVariant } = useStyleContext();
     return (
       <UISelect.Input
@@ -181,6 +181,12 @@ const SelectInput = React.forwardRef<React.ComponentRef<typeof UISelect.Input>, 
             variant: parentVariant,
           },
         })}
+        style={[
+          style,
+          {
+            color: "rgb(var(--color-typography))",
+          },
+        ]}
         ref={ref}
         {...props}
       />
