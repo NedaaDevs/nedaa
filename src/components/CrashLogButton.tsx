@@ -1,15 +1,26 @@
 import { useState } from "react";
 
 // Components
-import { Modal } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Switch } from "@/components/ui/switch";
 import { Icon } from "@/components/ui/icon";
+import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
+import { Button, ButtonText } from "@/components/ui/button";
+import {
+  Modal,
+  ModalBackdrop,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 
 // Icons
-import { Bug } from "lucide-react-native";
+import { Bug, X } from "lucide-react-native";
 
 // Hooks
 import { useTranslation } from "react-i18next";
@@ -29,66 +40,63 @@ const CrashLogButton = () => {
   return (
     <>
       <Pressable
-        className="items-center justify-center p-2 rounded-md text-primary dark:text-secondary"
+        className="items-center justify-center p-2 rounded-md"
         onPress={() => setModalVisible(true)}
         accessibilityLabel={t("settings.crashReporting.accessibilityLabel")}
         accessibilityHint={t("settings.crashReporting.accessibilityHint")}>
-        <Icon className="text-primary dark:text-secondary" as={Bug} />
+        <Icon className="text-typography" as={Bug} />
       </Pressable>
 
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <Box className="flex-1 justify-center items-center bg-black/50">
-          <Box className="m-5 bg-white dark:bg-gray-800 rounded-xl p-6 w-[85%] max-w-md">
-            <Box className="flex flex-col items-start w-full">
-              <Text className="text-xl font-bold mb-4 text-primary dark:text-secondary">
-                {t("settings.crashReporting.title")}
-              </Text>
-            </Box>
+      <Modal isOpen={modalVisible} onClose={() => setModalVisible(false)} size="md">
+        <ModalBackdrop />
+        <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
+          <ModalCloseButton className="absolute top-4 right-4 z-10">
+            <Icon as={X} className="text-typography-secondary" size="lg" />
+          </ModalCloseButton>
 
-            <Box className="flex flex-col items-start w-full">
-              <Text className="text-left text-typography dark:text-tertiary mb-4">
+          <ModalHeader className="px-6 pt-6 pb-4 pr-12">
+            <Text className="text-xl font-bold text-typography text-left">
+              {t("settings.crashReporting.title")}
+            </Text>
+          </ModalHeader>
+
+          <ModalBody className="px-6">
+            <VStack space="md">
+              <Text className="text-left text-typography-secondary">
                 {t("settings.crashReporting.description")}
               </Text>
-            </Box>
 
-            <Box className="mb-4 flex flex-col items-start w-full">
-              <Text className="text-base text-typography dark:text-tertiary">
-                {t("settings.crashReporting.bullet1")}
-              </Text>
-              <Text className="text-base text-typography dark:text-tertiary">
-                {t("settings.crashReporting.bullet2")}
-              </Text>
-              <Text className="text-base text-typography dark:text-tertiary">
-                {t("settings.crashReporting.bullet3")}
-              </Text>
-            </Box>
+              <VStack space="xs">
+                <Text className="text-base text-typography">
+                  {t("settings.crashReporting.bullet1")}
+                </Text>
+                <Text className="text-base text-typography">
+                  {t("settings.crashReporting.bullet2")}
+                </Text>
+                <Text className="text-base text-typography">
+                  {t("settings.crashReporting.bullet3")}
+                </Text>
+              </VStack>
 
-            <Box className="flex flex-col items-start w-full">
-              <Text className="text-left text-typography dark:text-tertiary mb-6">
+              <Text className="text-left text-typography-secondary">
                 {t("settings.crashReporting.privacyNote")}
               </Text>
-            </Box>
 
-            <Box className="flex-row justify-between items-center mb-4 w-full">
-              <Text className="text-base font-medium text-typography dark:text-tertiary">
-                {t("settings.crashReporting.enableToggle")}
-              </Text>
-              <Switch value={sendCrashLogs} onValueChange={handleToggle} />
-            </Box>
+              <HStack className="justify-between items-center">
+                <Text className="text-base font-medium text-typography flex-1">
+                  {t("settings.crashReporting.enableToggle")}
+                </Text>
+                <Switch value={sendCrashLogs} onValueChange={handleToggle} />
+              </HStack>
+            </VStack>
+          </ModalBody>
 
-            <Box className="flex-row justify-end rtl:justify-start mt-2 w-full">
-              <Pressable
-                className="py-2 px-4 rounded-md bg-blue-500"
-                onPress={() => setModalVisible(false)}>
-                <Text className="text-white">{t("common.done")}</Text>
-              </Pressable>
-            </Box>
-          </Box>
-        </Box>
+          <ModalFooter className="px-6 py-6">
+            <Button onPress={() => setModalVisible(false)} className="w-full bg-accent-primary">
+              <ButtonText className="text-background">{t("common.done")}</ButtonText>
+            </Button>
+          </ModalFooter>
+        </ModalContent>
       </Modal>
     </>
   );
