@@ -1,127 +1,86 @@
 import { FC } from "react";
 import { useTranslation } from "react-i18next";
-
-import { Pagination } from "react-native-reanimated-carousel";
-import { TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
 import Animated from "react-native-reanimated";
+
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
+import { Pressable } from "@/components/ui/pressable";
 
 type PaginationProps = {
-  progress: any;
   data: any[];
   onPress: (index: number) => void;
-  isDarkMode: boolean;
   currentIndex: number;
   variant?: "dots" | "pills" | "slider" | "icons" | "lines";
 };
 
 const CustomPagination: FC<PaginationProps> = ({
-  progress,
   data,
   onPress,
-  isDarkMode,
   currentIndex,
   variant = "dots",
 }) => {
   const { t } = useTranslation();
 
-  const activeColor = isDarkMode ? "#e5cb87" : "#1e3c5a";
-  const inactiveColor = isDarkMode ? "#4a4a4a" : "#d0d0d0";
-  const bgColor = isDarkMode ? "#2a2a2a" : "#f5f5f5";
-
   const renderDots = () => (
-    <Box style={{ paddingBottom: 20, paddingTop: 10 }}>
-      <Pagination.Basic
-        progress={progress}
-        data={data}
-        dotStyle={{
-          backgroundColor: inactiveColor,
-          borderRadius: 50,
-          width: 8,
-          height: 8,
-        }}
-        activeDotStyle={{
-          backgroundColor: activeColor,
-          width: 24,
-          height: 8,
-          borderRadius: 4,
-        }}
-        containerStyle={{ gap: 8 }}
-        onPress={onPress}
-      />
+    <Box className="pb-5 pt-2.5">
+      <View className="flex-row gap-2">
+        {data.map((_, index) => (
+          <Pressable
+            key={index}
+            onPress={() => onPress(index)}
+            className={`h-2 rounded-full ${
+              currentIndex === index ? "w-6 bg-accent-primary" : "w-2 bg-outline"
+            }`}
+          />
+        ))}
+      </View>
     </Box>
   );
 
   const renderPills = () => (
-    <Box
-      style={{
-        alignItems: "center",
-        backgroundColor: isDarkMode ? "#1e3c5a" : "#ffffff",
-      }}>
-      <View
-        style={{
-          flexDirection: "row",
-          backgroundColor: bgColor,
-          borderRadius: 25,
-          gap: 4,
-          padding: 4,
-        }}>
-        <TouchableOpacity
+    <Box className="items-center bg-background-secondary">
+      <View className="flex-row bg-background-muted rounded-3xl gap-1 p-1">
+        <Pressable
           onPress={() => onPress(0)}
-          style={{
-            paddingHorizontal: 20,
-            paddingVertical: 8,
-            borderRadius: 20,
-            backgroundColor: currentIndex === 0 ? activeColor : "transparent",
-          }}>
+          className={`px-5 py-2 rounded-2xl ${
+            currentIndex === 0 ? "bg-accent-primary" : "bg-transparent"
+          }`}>
           <Text
-            style={{
-              color: currentIndex === 0 ? "#fff" : activeColor,
-              fontWeight: currentIndex === 0 ? "600" : "400",
-              fontSize: 14,
-            }}>
+            className={`text-sm ${
+              currentIndex === 0
+                ? "text-typography-contrast font-semibold"
+                : "text-accent-primary font-normal"
+            }`}>
             {t("common.prayers")}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => onPress(1)}
-          style={{
-            paddingHorizontal: 20,
-            paddingVertical: 8,
-            borderRadius: 20,
-            backgroundColor: currentIndex === 1 ? activeColor : "transparent",
-          }}>
+          className={`px-5 py-2 rounded-2xl ${
+            currentIndex === 1 ? "bg-accent-primary" : "bg-transparent"
+          }`}>
           <Text
-            style={{
-              color: currentIndex === 1 ? "#fff" : activeColor,
-              fontWeight: currentIndex === 1 ? "600" : "400",
-              fontSize: 14,
-            }}>
+            className={`text-sm ${
+              currentIndex === 1
+                ? "text-typography-contrast font-semibold"
+                : "text-accent-primary font-normal"
+            }`}>
             {t("common.otherTimings")}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </Box>
   );
 
   const renderSlider = () => (
-    <Box style={{ paddingBottom: 20, paddingTop: 10, alignItems: "center" }}>
-      <View
-        style={{
-          flexDirection: "row",
-          height: 4,
-          width: 120,
-          backgroundColor: inactiveColor,
-          borderRadius: 2,
-          overflow: "hidden",
-        }}>
+    <Box className="pb-5 pt-2.5 items-center">
+      <View className="flex-row h-1 w-30 bg-outline rounded-sm overflow-hidden">
         <Animated.View
           style={{
             width: "50%",
             height: "100%",
-            backgroundColor: activeColor,
             borderRadius: 2,
             transform: [
               {
@@ -129,46 +88,44 @@ const CustomPagination: FC<PaginationProps> = ({
               },
             ],
           }}
+          className="bg-accent-primary"
         />
       </View>
-      <View style={{ flexDirection: "row", marginTop: 8, gap: 60 }}>
-        <TouchableOpacity onPress={() => onPress(0)}>
+      <View className="flex-row mt-2 gap-15">
+        <Pressable onPress={() => onPress(0)}>
           <Text
-            style={{
-              color: currentIndex === 0 ? activeColor : inactiveColor,
-              fontSize: 12,
-              fontWeight: currentIndex === 0 ? "600" : "400",
-            }}>
+            className={`text-xs ${
+              currentIndex === 0
+                ? "text-accent-primary font-semibold"
+                : "text-typography-secondary font-normal"
+            }`}>
             {t("prayerTimes.title")}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onPress(1)}>
+        </Pressable>
+        <Pressable onPress={() => onPress(1)}>
           <Text
-            style={{
-              color: currentIndex === 1 ? activeColor : inactiveColor,
-              fontSize: 12,
-              fontWeight: currentIndex === 1 ? "600" : "400",
-            }}>
+            className={`text-xs ${
+              currentIndex === 1
+                ? "text-accent-primary font-semibold"
+                : "text-typography-secondary font-normal"
+            }`}>
             {t("otherTimings.title")}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </Box>
   );
 
   const renderIcons = () => (
-    <Box style={{ paddingBottom: 20, paddingTop: 10, alignItems: "center" }}>
-      <View style={{ flexDirection: "row", gap: 16 }}>
+    <Box className="pb-5 pt-2.5 items-center">
+      <View className="flex-row gap-4">
         {data.map((_, index) => (
-          <TouchableOpacity
+          <Pressable
             key={index}
             onPress={() => onPress(index)}
-            style={{
-              width: currentIndex === index ? 32 : 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: currentIndex === index ? activeColor : inactiveColor,
-            }}
+            className={`h-3 rounded-md ${
+              currentIndex === index ? "w-8 bg-accent-primary" : "w-3 bg-outline"
+            }`}
           />
         ))}
       </View>
@@ -176,18 +133,15 @@ const CustomPagination: FC<PaginationProps> = ({
   );
 
   const renderLines = () => (
-    <Box style={{ paddingBottom: 20, paddingTop: 10, alignItems: "center" }}>
-      <View style={{ flexDirection: "row", gap: 12 }}>
+    <Box className="pb-5 pt-2.5 items-center">
+      <View className="flex-row gap-3">
         {data.map((_, index) => (
-          <TouchableOpacity
+          <Pressable
             key={index}
             onPress={() => onPress(index)}
-            style={{
-              width: 24,
-              height: 3,
-              backgroundColor: currentIndex === index ? activeColor : inactiveColor,
-              borderRadius: currentIndex === index ? 1.5 : 0,
-            }}
+            className={`w-6 h-0.5 ${
+              currentIndex === index ? "bg-accent-primary rounded-sm" : "bg-outline"
+            }`}
           />
         ))}
       </View>

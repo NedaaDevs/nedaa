@@ -80,20 +80,20 @@ const PreviousPrayer = () => {
       : previousPrayer.name;
 
   return (
-    <Box className="p-6 bg-blue-50 dark:bg-slate-800 rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
+    <Box className="p-6 bg-background-info rounded-xl mx-2 mt-2 mb-2 border-s-hairline">
       <HStack className="justify-between items-center w-full">
         <HStack className="items-center space-x-4">
-          <Text className="text-md font-medium text-slate-700 dark:text-tertiary">
+          <Text className="text-md font-medium text-typography-secondary">
             {t(`prayerTimes.${prayerName}`)}
           </Text>
           <Divider className="mx-1" orientation="vertical" />
-          <Text className="text-md font-medium text-slate-700 dark:text-tertiary">
+          <Text className="text-md font-medium text-typography-secondary">
             {formattedPrayerTime(previousPrayer.time)}
           </Text>
         </HStack>
 
-        <Box className="px-3 py-0.5 rounded-full bg-white dark:bg-background/50 border border-outline/80 dark:border-outline/30">
-          <Text className="text-md font-medium  text-blue-600 dark:text-secondary/80">
+        <Box className="px-3 py-0.5 rounded-full bg-background-secondary border border-outline">
+          <Text className="text-md font-medium text-info">
             {t("common.ago", {
               time: timeElapsed,
             })}

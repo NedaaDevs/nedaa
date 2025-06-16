@@ -49,20 +49,18 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
             <Icon
               as={icon || SunIcon}
               size="md"
-              className={
-                isNext ? "font-bold text-white dark:text-tertiary" : "font-medium text-primary"
-              }
+              className={isNext ? "font-bold text-typography-contrast" : "font-medium text-primary"}
             />
           </Box>
 
           <Text
-            className={`mx-2 text-xl font-medium ${isNext ? "font-bold text-white dark:text-tertiary" : "text-typography"}`}>
+            className={`mx-2 text-xl font-medium ${isNext ? "font-bold text-typography-contrast" : "text-typography"}`}>
             {t(name)}
           </Text>
         </HStack>
 
         <Text
-          className={`text-xl ${isNext ? "text-white dark:text-tertiary font-bold" : "font-medium text-primary"}`}>
+          className={`text-xl ${isNext ? "text-typography-contrast font-bold" : "font-medium text-primary"}`}>
           {formattedPrayerTime(time)}
         </Text>
       </HStack>
