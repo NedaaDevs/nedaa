@@ -56,7 +56,7 @@ export const SchoolSettings: FC = () => {
             value={school.id.toString()}
             label={t(`providers.aladhan.schools.${school.nameKey}`)}
             className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${
-              isSelected ? "bg-background dark:bg-background-elevated" : "bg-background-secondary"
+              isSelected ? "bg-surface-active" : "bg-background-secondary"
             }`}>
             {isSelected && (
               <Box className="bg-primary rounded-full p-1.5">
@@ -134,13 +134,13 @@ export const SchoolSettings: FC = () => {
         <SelectTrigger
           variant="outline"
           size="lg"
-          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-primary" : "border-outline"} ${isChangingSchool ? "opacity-70" : ""}`}>
+          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-accent-primary" : "border-outline"} ${isChangingSchool ? "opacity-70" : ""}`}>
           <SelectInput
             className="flex-1 text-typography text-base font-medium px-2"
             placeholder={t("providers.aladhan.school.selectPlaceholder")}
           />
           <SelectIcon
-            className="mr-3 text-primary"
+            className="mr-3 text-accent-primary"
             as={isChangingSchool ? Spinner : ChevronDownIcon}
           />
         </SelectTrigger>

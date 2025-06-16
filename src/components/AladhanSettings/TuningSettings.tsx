@@ -63,25 +63,21 @@ export const TuningSettings: FC = () => {
     "midnight",
   ];
 
-  const createAdjustmentItem = (
-    adjustValue: number,
-    isSelected: boolean,
-    t: (key: string, options?: any) => string
-  ) => (
-    <Box key={adjustValue} className="mx-2 mb-2">
-      <SelectItem
-        value={adjustValue.toString()}
-        label={`${adjustValue > 0 ? "+" : adjustValue < 0 ? "-" : ""}${t("common.minute", { count: Math.abs(adjustValue) })}`}
-        className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${isSelected ? "bg-background dark:bg-background-elevated" : "bg-background-secondary"}`}
-      />
-    </Box>
-  );
-
-  const getAdjustmentItems = (value: number, t: (key: string, options?: any) => string) => {
-    return adjustmentValues.map((adjustValue) =>
-      createAdjustmentItem(adjustValue, value === adjustValue, t)
-    );
-  };
+  const getAdjustmentItems = useMemo(() => {
+    return (value: number, t: (key: string, options?: any) => string) => {
+      return adjustmentValues.map((adjustValue) => {
+        const isSelected = value === adjustValue;
+        return (
+          <SelectItem
+            key={adjustValue}
+            value={adjustValue.toString()}
+            label={`${adjustValue > 0 ? "+" : adjustValue < 0 ? "-" : ""}${t("common.minute", { count: Math.abs(adjustValue) })}`}
+            className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${isSelected ? "bg-surface-active" : "bg-background-secondary"}`}
+          />
+        );
+      });
+    };
+  }, [t]); // Only recreate if translation function changes
 
   const getCurrentTuning = (): AladhanTuning => {
     return settings?.tune || PRAYER_TIME_PROVIDERS.ALADHAN.tuning;
@@ -176,7 +172,7 @@ export const TuningSettings: FC = () => {
 
             {/* Edit indicator */}
             <Box className="w-6 h-6 rounded-full items-center justify-center">
-              <ChevronDownIcon size={16} className="text-primary" />
+              <ChevronDownIcon size={16} className="text-accent-primary" />
             </Box>
           </Pressable>
         </Box>
@@ -232,13 +228,13 @@ export const TuningSettings: FC = () => {
                             <SelectTrigger
                               variant="outline"
                               size="lg"
-                              className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${openSelects[prayerTime] ? "border-primary" : "border-outline"} ${isLoading ? "opacity-70" : ""}`}>
+                              className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${openSelects[prayerTime] ? "border-accent-primary" : "border-outline"} ${isLoading ? "opacity-70" : ""}`}>
                               <SelectInput
                                 className="flex-1 text-typography text-base font-medium px-2"
                                 placeholder={t("providers.aladhan.tuning.selectValue")}
                               />
                               <SelectIcon
-                                className="mr-3 text-primary"
+                                className="mr-3 text-accent-primary"
                                 as={isLoading ? Spinner : ChevronDownIcon}
                               />
                             </SelectTrigger>
@@ -284,8 +280,8 @@ export const TuningSettings: FC = () => {
 
             {/* Footer */}
             <Box className="p-6 border-t border-outline">
-              <Button onPress={closeModal} className="w-full bg-primary">
-                <ButtonText className="text-typography-contrast">{t("common.done")}</ButtonText>
+              <Button onPress={closeModal} className="w-full bg-accent-primary">
+                <ButtonText className="text-background">{t("common.done")}</ButtonText>
               </Button>
             </Box>
           </Box>
