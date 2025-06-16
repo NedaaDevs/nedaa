@@ -9,6 +9,7 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Badge, BadgeText } from "@/components/ui/badge";
 import { Pressable } from "@/components/ui/pressable";
+import { Icon } from "@/components/ui/icon";
 
 // Icons
 import {
@@ -39,7 +40,6 @@ type Props = {
   type: NotificationType;
   title: string;
   icon: "Bell" | "Clock" | "BellRing";
-  iconColor: string;
   defaults: NotificationConfig | NotificationWithTiming;
   overrides: Record<string, any>;
   onDefaultUpdate: (field: keyof NotificationConfig, value: any) => void;
@@ -55,7 +55,6 @@ const NotificationTypePanel: FC<Props> = ({
   type,
   title,
   icon,
-  iconColor,
   defaults,
   overrides,
   onDefaultUpdate,
@@ -111,17 +110,15 @@ const NotificationTypePanel: FC<Props> = ({
 
   return (
     <>
-      <Box className="bg-white dark:bg-slate-800 mx-4 rounded-lg overflow-hidden shadow-sm">
+      <Box className="bg-background-secondary mx-4 rounded-lg overflow-hidden shadow-sm">
         {/* Header */}
         <Pressable onPress={handleToggle} disabled={!defaults.enabled}>
-          <HStack className="p-4 justify-between items-center bg-gray-50 dark:bg-slate-700">
+          <HStack className="p-4 justify-between items-center bg-background-muted">
             <HStack space="sm" className="items-center flex-1">
-              <IconComponent className={iconColor} size={24} />
+              <Icon className="text-typography" size="xl" as={IconComponent} />
               <VStack className="flex-1">
                 <HStack space="sm" className="items-center">
-                  <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {title}
-                  </Text>
+                  <Text className="text-lg font-semibold text-typography">{title}</Text>
                   {hasTiming && (
                     <Badge size="sm" variant="outline">
                       <BadgeText>
@@ -135,18 +132,13 @@ const NotificationTypePanel: FC<Props> = ({
               </VStack>
             </HStack>
             <HStack space="sm" className="items-center">
-              <Switch
-                value={defaults.enabled}
-                onValueChange={handleMainToggle}
-                size="md"
-                className="data-[state=checked]:bg-primary-500"
-              />
+              <Switch value={defaults.enabled} onValueChange={handleMainToggle} size="md" />
               {defaults.enabled && (
                 <Box className="ml-2">
                   {isExpanded ? (
-                    <ChevronUp className="text-gray-500 dark:text-gray-400" size={20} />
+                    <Icon className="text-typography-secondary" size="lg" as={ChevronUp} />
                   ) : (
-                    <ChevronDown className="text-gray-500 dark:text-gray-400" size={20} />
+                    <Icon className="text-typography-secondary" size="lg" as={ChevronDown} />
                   )}
                 </Box>
               )}
@@ -164,15 +156,13 @@ const NotificationTypePanel: FC<Props> = ({
                   return (
                     <HStack key={prayer.id} className="justify-between items-center py-3 px-2">
                       <HStack space="sm" className="items-center flex-1">
-                        <Text className="text-base text-gray-900 dark:text-gray-100">
-                          {t(prayer.name)}
-                        </Text>
+                        <Text className="text-base text-typography">{t(prayer.name)}</Text>
                         <Badge size="sm">
                           <BadgeText>{status.label}</BadgeText>
                         </Badge>
                       </HStack>
                       <Pressable onPress={() => openCustomization(prayer.id)} className="p-2">
-                        <Settings className="text-gray-500 dark:text-gray-400" size={18} />
+                        <Icon className="text-typography-secondary" size="md" as={Settings} />
                       </Pressable>
                     </HStack>
                   );
