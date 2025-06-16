@@ -27,7 +27,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 const LoadingView = () => (
   <Box className="flex-1 items-center justify-center p-4">
-    <ActivityIndicator size="large" className="color-primary dark:color-secondary" />
+    <ActivityIndicator size="large" className="text-accent-primary" />
   </Box>
 );
 
@@ -46,15 +46,15 @@ const PermissionRequestView = ({
     <VStack className="flex-1 p-4 items-center justify-center" space="lg">
       <Card className="p-6 w-full" style={{ maxWidth: 320 }}>
         <VStack space="lg" className="items-center">
-          <Box className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center">
-            <Icon className="color-primary dark:color-secondary" as={MapPin} size="xl" />
+          <Box className="w-20 h-20 rounded-full bg-background-info items-center justify-center">
+            <Icon className="text-info" as={MapPin} size="xl" />
           </Box>
 
           <VStack space="sm" className="items-center">
-            <Text className="text-xl font-semibold text-gray-900 dark:text-white text-center">
+            <Text className="text-xl font-semibold text-typography text-center">
               {t("location.permission.title")}
             </Text>
-            <Text className="text-sm text-gray-600 dark:text-gray-400 text-center px-2">
+            <Text className="text-sm text-typography-secondary text-center px-2">
               {t("location.permission.description")}
             </Text>
           </VStack>
@@ -62,18 +62,16 @@ const PermissionRequestView = ({
           {canAskPermission ? (
             <Box className="w-full items-center">
               <Button onPress={onRequestPermission} className="px-12" size="lg">
-                <ButtonText className="font-medium text-primary dark:text-secondary">
-                  {t("location.permission.allow")}
-                </ButtonText>
+                <ButtonText className="font-medium">{t("location.permission.allow")}</ButtonText>
               </Button>
             </Box>
           ) : (
             <VStack space="sm" className="w-full items-center">
-              <Text className="text-md text-primary dark:text-secondary text-center px-2">
+              <Text className="text-md text-typography text-center px-2">
                 {t("location.permission.deniedMessage")}
               </Text>
               <Button onPress={onOpenSettings} className="px-12" size="lg">
-                <ButtonText className="font-medium text-md text-primary dark:text-secondary">
+                <ButtonText className="font-medium text-md">
                   {t("location.permission.openSettings")}
                 </ButtonText>
               </Button>
@@ -91,23 +89,23 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
   return (
     <Modal isOpen={isVisible} onClose={onClose}>
       <Box className="flex-1 bg-transparent items-center justify-center p-4">
-        <Card className="w-full max-w-sm p-6 bg-white dark:bg-gray-800">
+        <Card className="w-full max-w-sm p-6 bg-background-secondary">
           <VStack space="lg">
             <HStack className="items-center justify-between">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+              <Text className="text-lg font-semibold text-typography">
                 {t("location.settings.keepLocationUpdated.infoTitle")}
               </Text>
               <Pressable onPress={onClose} className="p-1">
-                <Icon as={X} className="color-gray-500 dark:color-gray-400" size="sm" />
+                <Icon as={X} className="text-typography-secondary" size="sm" />
               </Pressable>
             </HStack>
 
-            <Text className="text-left text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <Text className="text-left text-sm text-typography-secondary leading-relaxed">
               {t("location.settings.keepLocationUpdated.infoDescription")}
             </Text>
 
             <Button onPress={onClose} className="mt-2">
-              <ButtonText className="text-primary dark:text-secondary">{t("common.ok")}</ButtonText>
+              <ButtonText>{t("common.ok")}</ButtonText>
             </Button>
           </VStack>
         </Card>
@@ -201,18 +199,18 @@ const KeepLocationUpdated = () => {
   return (
     <VStack className="flex-1" space="md">
       {/* Current Location Section */}
-      <Box className="bg-white dark:bg-gray-800 mt-2 rounded-lg">
+      <Box className="bg-background-secondary mt-2 rounded-lg">
         <Pressable
           onPress={handleManualRefresh}
           disabled={isGettingLocation}
           className="py-5 px-5 flex-row justify-between items-center">
           <HStack className="items-center flex-1" space="md">
-            <Icon as={MapPin} className="color-primary dark:color-secondary" size="md" />
+            <Icon as={MapPin} className="text-accent-primary" size="md" />
             <VStack className="flex-1">
-              <Text className="text-left text-sm text-gray-500 dark:text-gray-400">
+              <Text className="text-left text-sm text-typography-secondary">
                 {t("location.current")}
               </Text>
-              <Text className="text-left text-xl font-semibold text-typography dark:text-tertiary">
+              <Text className="text-left text-xl font-semibold text-typography">
                 {localizedLocation.city ?? locationDetails.address?.city},{" "}
                 {localizedLocation.country ?? locationDetails.address?.country}
               </Text>
@@ -220,36 +218,31 @@ const KeepLocationUpdated = () => {
           </HStack>
 
           {isGettingLocation ? (
-            <ActivityIndicator size="small" color="#3b82f6" />
+            <ActivityIndicator size="small" className="text-accent-primary" />
           ) : (
-            <Icon as={RefreshCw} className="color-primary dark:color-secondary" size="md" />
+            <Icon as={RefreshCw} className="text-accent-primary" size="md" />
           )}
         </Pressable>
 
         {locationDetails.error && (
           <Box className="px-5 pb-3">
-            <Text className="text-sm text-red-500">{locationDetails.error}</Text>
+            <Text className="text-sm text-error">{locationDetails.error}</Text>
           </Box>
         )}
       </Box>
 
       {/* Keep Location Updated Setting */}
-      <Box className="bg-white dark:bg-gray-800 rounded-lg">
+      <Box className="bg-background-secondary rounded-lg">
         <Box className="py-4 px-5 flex-row justify-between items-center">
           <HStack className="items-center flex-1" space="sm">
-            <Text className="text-base text-typography dark:text-tertiary">
+            <Text className="text-base text-typography">
               {t("location.settings.keepLocationUpdated.title")}
             </Text>
             <Pressable onPress={() => setShowInfoModal(true)} className="p-1">
-              <Icon as={Info} className="color-gray-400 dark:color-gray-500" size="sm" />
+              <Icon as={Info} className="text-typography-secondary" size="sm" />
             </Pressable>
           </HStack>
-          <Switch
-            value={autoUpdateLocation}
-            onValueChange={toggleAutoLocationUpdated}
-            trackColor={{ false: "#d1d5db", true: "#3b82f6" }}
-            thumbColor="#ffffff"
-          />
+          <Switch value={autoUpdateLocation} onValueChange={toggleAutoLocationUpdated} />
         </Box>
       </Box>
 
