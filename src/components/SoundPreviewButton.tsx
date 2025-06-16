@@ -2,6 +2,7 @@ import { FC } from "react";
 
 // Components
 import { Pressable } from "@/components/ui/pressable";
+import { Icon } from "@/components/ui/icon";
 
 // Icons
 import { Play, Square } from "lucide-react-native";
@@ -9,7 +10,7 @@ import { Play, Square } from "lucide-react-native";
 type Props = {
   isPlaying: boolean;
   onPress: () => void;
-  size?: number;
+  size?: "sm" | "md" | "lg" | "xl";
   color?: string;
   disabled?: boolean;
 };
@@ -17,8 +18,8 @@ type Props = {
 const SoundPreviewButton: FC<Props> = ({
   isPlaying,
   onPress,
-  size = 20,
-  color = "text-gray-600 dark:text-gray-400",
+  size = "lg",
+  color = "text-typography-secondary",
   disabled = false,
 }) => {
   if (disabled) return null;
@@ -26,9 +27,9 @@ const SoundPreviewButton: FC<Props> = ({
   return (
     <Pressable onPress={onPress} className="p-2" disabled={disabled}>
       {isPlaying ? (
-        <Square size={size} className={color} fill="currentColor" />
+        <Icon size={size} className={color} as={Square} />
       ) : (
-        <Play size={size} className={color} fill="currentColor" />
+        <Icon size={size} className={color} as={Play} />
       )}
     </Pressable>
   );

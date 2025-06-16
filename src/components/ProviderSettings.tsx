@@ -48,8 +48,8 @@ export const ProviderSettings: FC = () => {
   if (isGettingProviders) {
     return (
       <Box className="items-center justify-center my-auto">
-        <Spinner color="#e5cb87" size="large" />
-        <Text>{t("common.loading")}</Text>
+        <Spinner className="text-accent-primary" size="large" />
+        <Text className="text-typography">{t("common.loading")}</Text>
       </Box>
     );
   }
@@ -58,7 +58,7 @@ export const ProviderSettings: FC = () => {
     return (
       <Box className="items-center justify-center my-auto">
         <TouchableOpacity onPress={handleRetry}>
-          <Text>{t("common.retry")}</Text>
+          <Text className="text-typography">{t("common.retry")}</Text>
         </TouchableOpacity>
       </Box>
     );
