@@ -65,16 +65,16 @@ const alertTextStyle = tva({
       true: "italic",
     },
     highlight: {
-      true: "bg-yellow-500",
+      true: "bg-background-warning",
     },
   },
   parentVariants: {
     action: {
-      error: "text-error-800",
-      warning: "text-warning-800",
-      success: "text-success-800",
-      info: "text-info-800",
-      muted: "text-background-800",
+      error: "text-error",
+      warning: "text-warning",
+      success: "text-success",
+      info: "text-info",
+      muted: "text-typography",
     },
   },
 });
@@ -93,11 +93,11 @@ const alertIconStyle = tva({
   },
   parentVariants: {
     action: {
-      error: "text-error-800",
-      warning: "text-warning-800",
-      success: "text-success-800",
-      info: "text-info-800",
-      muted: "text-background-800",
+      error: "text-error",
+      warning: "text-warning",
+      success: "text-success",
+      info: "text-info",
+      muted: "text-typography",
     },
   },
 });

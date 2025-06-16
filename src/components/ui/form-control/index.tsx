@@ -74,7 +74,7 @@ const formControlErrorTextStyle = tva({
       true: "italic",
     },
     highlight: {
-      true: "bg-yellow-500",
+      true: "bg-background-warning",
     },
   },
 });
@@ -118,7 +118,7 @@ const formControlHelperTextStyle = tva({
       true: "italic",
     },
     highlight: {
-      true: "bg-yellow-500",
+      true: "bg-background-warning",
     },
   },
 });
@@ -162,7 +162,7 @@ const formControlLabelTextStyle = tva({
       true: "italic",
     },
     highlight: {
-      true: "bg-yellow-500",
+      true: "bg-background-warning",
     },
   },
 });
@@ -202,7 +202,7 @@ const formControlLabelAstrickStyle = tva({
       true: "italic",
     },
     highlight: {
-      true: "bg-yellow-500",
+      true: "bg-background-warning",
     },
   },
 });
