@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Switch, ActivityIndicator, Linking, Platform } from "react-native";
+import { ActivityIndicator, Linking, Platform } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -11,7 +11,16 @@ import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Button, ButtonText } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { Switch } from "@/components/ui/switch";
+import {
+  Modal,
+  ModalBackdrop,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 
 // Icons
 import { MapPin, RefreshCw, Info, X } from "lucide-react-native";
@@ -87,29 +96,31 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isVisible} onClose={onClose}>
-      <Box className="flex-1 bg-transparent items-center justify-center p-4">
-        <Card className="w-full max-w-sm p-6 bg-background-secondary">
-          <VStack space="lg">
-            <HStack className="items-center justify-between">
-              <Text className="text-lg font-semibold text-typography">
-                {t("location.settings.keepLocationUpdated.infoTitle")}
-              </Text>
-              <Pressable onPress={onClose} className="p-1">
-                <Icon as={X} className="text-typography-secondary" size="sm" />
-              </Pressable>
-            </HStack>
+    <Modal isOpen={isVisible} onClose={onClose} size="md">
+      <ModalBackdrop />
+      <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
+        <ModalCloseButton className="absolute top-4 right-4 z-10">
+          <Icon as={X} className="text-typography-secondary" size="lg" />
+        </ModalCloseButton>
 
-            <Text className="text-left text-sm text-typography-secondary leading-relaxed">
-              {t("location.settings.keepLocationUpdated.infoDescription")}
-            </Text>
+        <ModalHeader className="px-6 pt-6 pb-4 pr-12">
+          <Text className="text-lg font-semibold text-typography text-left">
+            {t("location.settings.keepLocationUpdated.infoTitle")}
+          </Text>
+        </ModalHeader>
 
-            <Button onPress={onClose} className="mt-2">
-              <ButtonText>{t("common.ok")}</ButtonText>
-            </Button>
-          </VStack>
-        </Card>
-      </Box>
+        <ModalBody className="px-6">
+          <Text className="text-left text-sm text-typography-secondary leading-relaxed">
+            {t("location.settings.keepLocationUpdated.infoDescription")}
+          </Text>
+        </ModalBody>
+
+        <ModalFooter className="px-6 py-6">
+          <Button onPress={onClose} className="w-full bg-accent-primary">
+            <ButtonText className="text-background">{t("common.ok")}</ButtonText>
+          </Button>
+        </ModalFooter>
+      </ModalContent>
     </Modal>
   );
 };
