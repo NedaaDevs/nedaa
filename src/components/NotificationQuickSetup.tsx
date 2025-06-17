@@ -7,6 +7,7 @@ import { SOUND_ASSETS } from "@/constants/sounds";
 
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
 import { getAvailableSounds } from "@/utils/sound";
@@ -56,6 +57,9 @@ const NotificationQuickSetup: FC<Props> = ({
   supportsVibration = true,
 }) => {
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
+  const hapticMedium = useHaptic("medium");
+  const hapticLight = useHaptic("light");
 
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
@@ -67,11 +71,13 @@ const NotificationQuickSetup: FC<Props> = ({
   const soundOptions = getAvailableSounds(NOTIFICATION_TYPE.PRAYER);
 
   const handleApply = () => {
-    stopPreview(); // Stop any playing preview
+    hapticMedium();
+    stopPreview();
     onApply(localSound, localVibration);
   };
 
   const handleSoundPreview = async (type: NotificationType) => {
+    hapticLight();
     if (isPlayingSound(type, localSound)) {
       await stopPreview();
     } else {
@@ -80,7 +86,7 @@ const NotificationQuickSetup: FC<Props> = ({
   };
 
   const handleValueChange = (value: string) => {
-    // Type assertion is safe here because Select only shows valid prayer sounds
+    hapticSelection();
     setLocalSound(value as PrayerSoundKey);
   };
 
@@ -165,7 +171,14 @@ const NotificationQuickSetup: FC<Props> = ({
           {supportsVibration && (
             <HStack className="justify-between items-center">
               <Text className="text-sm text-typography">{t("notification.vibration")}</Text>
-              <Switch value={localVibration} onValueChange={setLocalVibration} size="sm" />
+              <Switch
+                value={localVibration}
+                onValueChange={(value) => {
+                  hapticSelection();
+                  setLocalVibration(value);
+                }}
+                size="sm"
+              />
             </HStack>
           )}
         </VStack>

@@ -24,6 +24,7 @@ import {
 
 // Components
 import PrayerCustomizationModal from "@/components/PrayerCustomizationModal";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
@@ -91,13 +92,19 @@ const NotificationTypePanel: FC<Props> = ({
     return { isCustom: true, label };
   };
 
+  const hapticSelection = useHaptic("selection");
+  const hapticMedium = useHaptic("medium");
+  const hapticLight = useHaptic("light");
+
   const handleToggle = () => {
+    hapticSelection();
     if (defaults.enabled) {
       setIsExpanded(!isExpanded);
     }
   };
 
   const handleMainToggle = (value: boolean) => {
+    hapticMedium();
     onDefaultUpdate("enabled", value);
     if (value && !isExpanded) {
       setIsExpanded(true);
@@ -105,6 +112,7 @@ const NotificationTypePanel: FC<Props> = ({
   };
 
   const openCustomization = (prayerId: string) => {
+    hapticLight();
     setModalPrayer(prayerId);
   };
 

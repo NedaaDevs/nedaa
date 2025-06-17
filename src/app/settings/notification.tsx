@@ -17,6 +17,7 @@ import NotificationTypePanel from "@/components/NotificationTypePanel";
 
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
@@ -28,6 +29,7 @@ import { debugChannelInfo } from "@/utils/notificationChannels";
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
 
   const {
     settings,
@@ -74,7 +76,10 @@ const NotificationSettings = () => {
               </VStack>
               <Switch
                 value={settings.enabled}
-                onValueChange={updateAllNotificationToggle}
+                onValueChange={(value) => {
+                  hapticSelection();
+                  updateAllNotificationToggle(value);
+                }}
                 size="lg"
               />
             </HStack>
