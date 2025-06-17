@@ -5,6 +5,7 @@
   "common.done": "Done",
   "common.enable": "Enable",
   "common.error": "Error",
+  "common.estimatedTime": "Estimated time",
   "common.loading": "Loading...",
   "common.loadingPrayerTimes": "Loading prayer times...",
   "common.logo": "Logo",
@@ -22,6 +23,7 @@
   "common.selected": "Selected",
   "common.success": "Success",
   "common.visitWebsite": "Visit Website",
+  "common.warning": "Warning",
   "email.clients.error.loadFailed": "Failed to load email clients. Please try again.",
   "email.clients.error.openFailed": "Failed to open email client. Please try again.",
   "email.clients.noClientsFound": "No email clients found on this device",
@@ -37,6 +39,8 @@
   "errors.failedToChangeSchool": "Failed to change Asr calculation school. Please try again.",
   "errors.failedToLoadProviders": "Failed to load providers. Please try again.",
   "errors.failedToUpdateSettings": "Failed to update settings. Please try again later.",
+  "errors.prayerTimes.fetchDescription": "We couldn't load prayer times for your location. Please check your connection and try again.",
+  "errors.prayerTimes.fetchFailed": "Prayer Times Unavailable",
   "hijriMonths": [
     "Muharram",
     "Safar",
@@ -119,6 +123,8 @@
     "isha": "Isha",
     "jumuah": "Jumu'ah",
     "maghrib": "Maghrib",
+    "noData": "No Prayer Times Available",
+    "noDataDescription": "Prayer times data is not available. Please try refreshing.",
     "title": "Prayer Times"
   },
   "providers.aladhan.latitudeAdjustment.title": "High Latitude Adjustment Method",
