@@ -3,6 +3,11 @@ import axios, { AxiosRequestConfig } from "axios";
 // Types
 import type { TData, RequestMethod, Response } from "@/types/api";
 
+// Feedback
+import NetworkStatusBanner from "@/components/feedback/NetworkStatusBanner";
+
+import i18n from "@/localization/i18n";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const apiInstance = axios.create({
@@ -77,11 +82,23 @@ const makeApiRequest = (
       const statusNumber = error?.response?.status;
       let errors = [];
 
-      if (error.isNetworkError) {
+      if (error.code === "NETWORK_ERROR" || error.code === "ERR_NETWORK") {
         message = "Network Error";
+        NetworkStatusBanner.showOffline(i18n.t("network.messages.serverUnavailable"));
+      } else if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
+        message = "Request timeout";
+        NetworkStatusBanner.showSlow(i18n.t("network.messages.timeout"));
       } else if (error.response) {
         message = error.response.data.message ? error.response.data.message : error.message;
         errors = error.response.data.errors ?? [];
+
+        if (statusNumber >= 500) {
+          NetworkStatusBanner.showError(i18n.t("network.messages.serverError"));
+        } else if (statusNumber === 0) {
+          NetworkStatusBanner.showOffline(i18n.t("network.messages.offline"));
+        }
+      } else {
+        NetworkStatusBanner.showError(i18n.t("network.messages.error"));
       }
 
       return { message, status: statusNumber, success: false, errors };
