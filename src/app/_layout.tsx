@@ -14,6 +14,7 @@ import { getDirection, isRTL, useAppStore } from "@/stores/app";
 
 // Components
 import { ToastProvider } from "@/components/ToastContainer";
+import { LoadingOverlay } from "@/components/feedback";
 
 // Hooks
 import { useInitialSetup } from "@/hooks/useInitialSetup";
@@ -22,7 +23,7 @@ import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 
 export default function RootLayout() {
-  const { mode, locale } = useAppStore();
+  const { mode, locale, showLoadingOverlay, loadingMessage } = useAppStore();
 
   const shouldBeRTL = isRTL(getDirection(locale));
   useRTLSetup(shouldBeRTL);
@@ -38,6 +39,7 @@ export default function RootLayout() {
           <SafeAreaView className="flex-1">
             <StatusBar />
             <ToastProvider />
+            <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
             <Stack
               screenOptions={{
                 headerShown: false,
