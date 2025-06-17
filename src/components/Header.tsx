@@ -20,6 +20,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Divider } from "@/components/ui/divider";
 import PreviousPrayer from "@/components/PreviousPrayer";
+import { SkeletonText } from "@/components/ui/skeleton";
 
 // Hooks
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -72,9 +73,14 @@ const Header = () => {
 
   if (!nextPrayer) {
     return (
-      <>
-        <Text>...</Text>
-      </>
+      <Box className="m-1 rounded-2xl">
+        <Box className="p-3 rounded-xl mx-2 mt-1 bg-background-secondary">
+          <VStack className="items-center my-3 gap-2">
+            <SkeletonText className="h-7 w-32" />
+            <SkeletonText className="h-5 w-40" />
+          </VStack>
+        </Box>
+      </Box>
     );
   }
 
