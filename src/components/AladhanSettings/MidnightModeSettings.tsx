@@ -29,12 +29,14 @@ import { AladhanMidnightModeId } from "@/types/providers/aladhan";
 
 // Hooks
 import { useAladhanSettings } from "@/hooks/useProviderSettings";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Stores
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 export const MidnightModeSettings: FC = () => {
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
   const { settings, updateSettings } = useAladhanSettings();
   const { isLoading } = useProviderSettingsStore();
 
@@ -73,6 +75,7 @@ export const MidnightModeSettings: FC = () => {
   );
 
   const handleMidnightModeChange = async (modeId: string) => {
+    hapticSelection();
     try {
       setError(null);
       setIsChangingMode(true);

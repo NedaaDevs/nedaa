@@ -29,12 +29,14 @@ import { AladhanMadhabId } from "@/types/providers/aladhan";
 
 // Hooks
 import { useAladhanSettings } from "@/hooks/useProviderSettings";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Stores
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 export const SchoolSettings: FC = () => {
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
   const { settings, updateSettings } = useAladhanSettings();
   const { isLoading } = useProviderSettingsStore();
 
@@ -74,6 +76,7 @@ export const SchoolSettings: FC = () => {
   );
 
   const handleSchoolChange = async (schoolId: string) => {
+    hapticSelection();
     try {
       setError(null);
       setIsChangingSchool(true);

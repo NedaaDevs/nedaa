@@ -29,12 +29,14 @@ import { AladhanMethodId } from "@/types/providers/aladhan";
 
 // Hooks
 import { useAladhanSettings } from "@/hooks/useProviderSettings";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Stores
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 export const MethodSettings: FC = () => {
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
   const { settings, updateSettings } = useAladhanSettings();
   const { isLoading } = useProviderSettingsStore();
 
@@ -64,6 +66,7 @@ export const MethodSettings: FC = () => {
   );
 
   const handleMethodChange = async (methodId: string) => {
+    hapticSelection();
     try {
       setError(null);
       setIsChangingMethod(true);
