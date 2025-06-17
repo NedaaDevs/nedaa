@@ -208,6 +208,7 @@
   "settings.languages.en.title": "English",
   "settings.languages.ms.nativeTitle": "Bahasa Melayu",
   "settings.languages.ms.title": "Malay",
+  "settings.languages.restartRequired": "Please restart the app for the language change to take effect.",
   "settings.languages.title": "Languages",
   "settings.location.title": "Location",
   "settings.mode": "Mode",

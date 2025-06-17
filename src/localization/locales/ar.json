@@ -212,6 +212,7 @@
   "settings.languages.en.title": "الإنجليزية",
   "settings.languages.ms.nativeTitle": "Bahasa Melayu",
   "settings.languages.ms.title": "الملايو",
+  "settings.languages.restartRequired": "الرجاء إعادة تشغيل التطبيق لتطبيق التغييرات",
   "settings.languages.title": "اللغة",
   "settings.location.title": "الموقع",
   "settings.mode": "النمط",
