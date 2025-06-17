@@ -58,7 +58,7 @@ const NotificationQuickSetup: FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
+  const hapticSuccess = useHaptic("success");
   const hapticLight = useHaptic("light");
 
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
@@ -71,7 +71,7 @@ const NotificationQuickSetup: FC<Props> = ({
   const soundOptions = getAvailableSounds(NOTIFICATION_TYPE.PRAYER);
 
   const handleApply = () => {
-    hapticMedium();
+    hapticSuccess();
     stopPreview();
     onApply(localSound, localVibration);
   };

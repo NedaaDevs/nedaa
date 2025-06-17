@@ -24,9 +24,13 @@ import { ChevronDownIcon, CheckIcon } from "lucide-react-native";
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
+// Hooks
+import { useHaptic } from "@/hooks/useHaptic";
+
 export const ProviderList: FC = () => {
   const { t } = useTranslation();
   const { isGettingProviders, providers, selectedProvider } = usePrayerTimesStore();
+  const hapticSelection = useHaptic("selection");
 
   const [isOpen, setIsOpen] = useState(false);
   const [isChangingProvider, setIsChangingProvider] = useState(false);
@@ -62,6 +66,7 @@ export const ProviderList: FC = () => {
   );
 
   const handleProviderChange = async (providerId: string) => {
+    hapticSelection();
     try {
       setError(null);
       setIsChangingProvider(true);
