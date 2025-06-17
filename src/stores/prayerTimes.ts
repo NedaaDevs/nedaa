@@ -3,6 +3,8 @@ import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
 
+import i18n from "@/localization/i18n";
+
 // Types
 import {
   DayPrayerTimes,
@@ -161,7 +163,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           try {
             // Clear any previous errors
             set({ hasError: false, errorMessage: "" });
-            useAppStore.getState().setLoadingState(true, "Loading prayer times...");
+            useAppStore.getState().setLoadingState(true, i18n.t("common.loadingPrayerTimes"));
 
             // if we haven't already get the current location
             if (!get().didGetCurrentLocation && (await checkLocationPermission()).granted) {

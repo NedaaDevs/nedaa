@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { ScrollView } from "react-native";
-import { useState } from "react";
+import { ScrollView, Linking, Platform } from "react-native";
+import { useState, useEffect } from "react";
 // Components
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -9,15 +9,27 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Badge, BadgeText } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
+import { Card } from "@/components/ui/card";
 import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
 
 import TopBar from "@/components/TopBar";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
 import NotificationTypePanel from "@/components/NotificationTypePanel";
 
+// Icons
+import { Bell } from "lucide-react-native";
+
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+
+// Utils
+import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
+
+// Types
+import { PermissionStatus } from "expo-notifications";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
@@ -29,7 +41,9 @@ import { debugChannelInfo } from "@/utils/notificationChannels";
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
+  const { becameActiveAt } = useAppVisibility();
   const hapticSelection = useHaptic("selection");
+  const hapticMedium = useHaptic("medium");
 
   const {
     settings,
@@ -44,12 +58,117 @@ const NotificationSettings = () => {
     scheduleAllNotifications,
   } = useNotificationSettings();
 
+  // Permission state
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [canAskPermission, setCanAskPermission] = useState(true);
+  const [isCheckingPermission, setIsCheckingPermission] = useState(true);
+
   // For debugging
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+
+  // Check permission when app becomes active (user returns from settings)
+  useEffect(() => {
+    checkPermissionStatus();
+  }, [becameActiveAt]);
+
+  const checkPermissionStatus = async () => {
+    setIsCheckingPermission(true);
+    try {
+      const { status } = await checkPermissions();
+      setHasPermission(status === PermissionStatus.GRANTED);
+      // On iOS, if permission is denied, we can only redirect to settings
+      // On Android, we might be able to ask again depending on the situation
+      setCanAskPermission(status === PermissionStatus.UNDETERMINED);
+    } catch (error) {
+      console.error("Failed to check notification permission:", error);
+      setHasPermission(false);
+      setCanAskPermission(false);
+    } finally {
+      setIsCheckingPermission(false);
+    }
+  };
+
+  const handleRequestPermission = async () => {
+    hapticMedium();
+    try {
+      const { status } = await requestNotificationPermission();
+      setHasPermission(status === PermissionStatus.GRANTED);
+    } catch (error) {
+      console.error("Failed to request notification permission:", error);
+    }
+  };
+
+  const openAppSettings = () => {
+    hapticMedium();
+    if (Platform.OS === "ios") {
+      Linking.openURL("app-settings:");
+    } else {
+      Linking.openSettings();
+    }
+  };
 
   const handleNotificationList = () => {
     setShowNotificationsModal(true);
   };
+
+  // Show permission request UI if no permission
+  if (isCheckingPermission) {
+    return (
+      <Background>
+        <TopBar title="settings.notification.title" href="/" backOnClick />
+        <Box className="flex-1 items-center justify-center p-4">
+          <Text className="text-typography">{t("common.loading")}</Text>
+        </Box>
+      </Background>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <Background>
+        <TopBar title="settings.notification.title" href="/" backOnClick />
+        <VStack className="flex-1 p-4 items-center justify-center" space="lg">
+          <Card className="p-6 w-full" style={{ maxWidth: 320 }}>
+            <VStack space="lg" className="items-center">
+              <Box className="w-20 h-20 rounded-full bg-background-info items-center justify-center">
+                <Icon className="text-info" as={Bell} size="xl" />
+              </Box>
+
+              <VStack space="sm" className="items-center">
+                <Text className="text-xl font-semibold text-typography text-center">
+                  {t("notification.permission.title")}
+                </Text>
+                <Text className="text-sm text-typography-secondary text-center px-2">
+                  {t("notification.permission.description")}
+                </Text>
+              </VStack>
+
+              {canAskPermission ? (
+                <Box className="w-full items-center">
+                  <Button onPress={handleRequestPermission} className="px-12" size="lg">
+                    <ButtonText className="font-medium">
+                      {t("notification.permission.allow")}
+                    </ButtonText>
+                  </Button>
+                </Box>
+              ) : (
+                <VStack space="sm" className="w-full items-center">
+                  <Text className="text-md text-typography text-center px-2">
+                    {t("notification.permission.deniedMessage")}
+                  </Text>
+                  <Button onPress={openAppSettings} className="px-12" size="lg">
+                    <ButtonText className="font-medium text-md">
+                      {t("notification.permission.openSettings")}
+                    </ButtonText>
+                  </Button>
+                </VStack>
+              )}
+            </VStack>
+          </Card>
+        </VStack>
+      </Background>
+    );
+  }
 
   return (
     <Background>
