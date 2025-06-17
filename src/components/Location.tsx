@@ -33,6 +33,7 @@ import { checkLocationPermission, requestLocationPermission } from "@/utils/loca
 
 // Hooks
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useHaptic } from "@/hooks/useHaptic";
 
 const LoadingView = () => (
   <Box className="flex-1 items-center justify-center p-4">
@@ -94,6 +95,7 @@ const PermissionRequestView = ({
 
 const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) => {
   const { t } = useTranslation();
+  const hapticLight = useHaptic("light");
 
   return (
     <Modal isOpen={isVisible} onClose={onClose} size="md">
@@ -116,7 +118,12 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
         </ModalBody>
 
         <ModalFooter className="px-6 py-6">
-          <Button onPress={onClose} className="w-full bg-accent-primary">
+          <Button
+            onPress={() => {
+              hapticLight();
+              onClose();
+            }}
+            className="w-full bg-accent-primary">
             <ButtonText className="text-background">{t("common.ok")}</ButtonText>
           </Button>
         </ModalFooter>
@@ -128,6 +135,9 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
 const KeepLocationUpdated = () => {
   const { becameActiveAt } = useAppVisibility();
   const { t } = useTranslation();
+  const hapticMedium = useHaptic("medium");
+  const hapticSelection = useHaptic("selection");
+  const hapticLight = useHaptic("light");
 
   const {
     localizedLocation,
@@ -162,6 +172,7 @@ const KeepLocationUpdated = () => {
   };
 
   const handleRequestPermission = async () => {
+    hapticMedium();
     try {
       const { granted } = await requestLocationPermission();
       setHasPermission(granted);
@@ -174,6 +185,7 @@ const KeepLocationUpdated = () => {
   };
 
   const openAppSettings = () => {
+    hapticMedium();
     if (Platform.OS === "ios") {
       Linking.openURL("app-settings:");
     } else {
@@ -182,6 +194,7 @@ const KeepLocationUpdated = () => {
   };
 
   const handleManualRefresh = async () => {
+    hapticMedium();
     try {
       await updateCurrentLocation();
     } catch (error) {
@@ -190,6 +203,7 @@ const KeepLocationUpdated = () => {
   };
 
   const toggleAutoLocationUpdated = (value: boolean) => {
+    hapticSelection();
     setAutoUpdateLocation(value);
   };
 
@@ -249,7 +263,12 @@ const KeepLocationUpdated = () => {
             <Text className="text-base text-typography">
               {t("location.settings.keepLocationUpdated.title")}
             </Text>
-            <Pressable onPress={() => setShowInfoModal(true)} className="p-1">
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                setShowInfoModal(true);
+              }}
+              className="p-1">
               <Icon as={Info} className="text-typography-secondary" size="sm" />
             </Pressable>
           </HStack>
