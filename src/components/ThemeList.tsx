@@ -17,6 +17,9 @@ import { AppMode } from "@/enums/app";
 // Stores
 import { useAppStore } from "@/stores/app";
 
+// Hooks
+import { useHaptic } from "@/hooks/useHaptic";
+
 type ItemType = {
   id: AppMode;
   title: string;
@@ -26,6 +29,7 @@ type ItemType = {
 const ThemeList = () => {
   const { mode, setMode } = useAppStore();
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
 
   const modeData: ItemType[] = Object.values(AppMode).map((modeCode) => {
     return {
@@ -36,6 +40,7 @@ const ThemeList = () => {
   });
 
   const handleSelectTheme = (item: ItemType) => {
+    hapticSelection();
     setMode(item.id);
   };
 
