@@ -61,6 +61,7 @@
     "title": "Waktu Solat"
   },
   "settings.appearance": "Penampilan",
+  "settings.crashLog.restartRequired": "Aplikasi perlu dimulakan semula untuk mengaktifkan perubahan ini.",
   "settings.crashReporting.accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
   "settings.crashReporting.accessibilityLabel": "Tetapan laporan kerosakan",
   "settings.crashReporting.bullet1": "• Maklumat ralat teknikal",

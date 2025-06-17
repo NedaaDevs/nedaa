@@ -192,6 +192,7 @@
   "settings.advance.provider.title": "Prayer Times Provider",
   "settings.advance.title": "Advanced Settings",
   "settings.appearance": "Appearance",
+  "settings.crashLog.restartRequired": "Please restart the app to apply the crash reporting settings.",
   "settings.crashReporting.accessibilityHint": "Opens modal for crash reporting consent",
   "settings.crashReporting.accessibilityLabel": "Crash reporting settings",
   "settings.crashReporting.bullet1": "• Technical error information",
