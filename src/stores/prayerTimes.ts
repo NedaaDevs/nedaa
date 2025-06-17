@@ -23,6 +23,7 @@ import { PrayerTimesDB } from "@/services/db";
 // Stores
 import locationStore from "@/stores/location";
 import providerSettingsStore from "@/stores/providerSettings";
+import { useAppStore } from "@/stores/app";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
@@ -35,6 +36,8 @@ export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
   isLoading: boolean;
   isGettingProviders: boolean;
+  hasError: boolean;
+  errorMessage: string;
   selectedProvider: Provider | null;
   yesterdayTimings: DayPrayerTimes | null;
   todayTimings: DayPrayerTimes | null;
@@ -48,6 +51,7 @@ export type PrayerTimesStore = {
   getNextPrayer: () => Prayer | null;
   getPreviousPrayer: () => Prayer | null;
   cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
+  clearError: () => void;
 };
 
 const getTwoWeeksDateRange = (timezone: string) => {
@@ -70,6 +74,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         didGetCurrentLocation: false,
         isLoading: false,
         isGettingProviders: false,
+        hasError: false,
+        errorMessage: "",
         yesterdayTimings: null,
         todayTimings: null,
         tomorrowTimings: null,
@@ -147,9 +153,15 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
         },
 
+        clearError: () => {
+          set({ hasError: false, errorMessage: "" });
+        },
+
         loadPrayerTimes: async (forceGetAndStore = false): Promise<void> => {
           try {
-            set({ isLoading: true });
+            // Clear any previous errors
+            set({ hasError: false, errorMessage: "" });
+            useAppStore.getState().setLoadingState(true, "Loading prayer times...");
 
             // if we haven't already get the current location
             if (!get().didGetCurrentLocation && (await checkLocationPermission()).granted) {
@@ -231,9 +243,13 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             await get().cleanupOldData();
           } catch (error: any) {
             console.error("Failed to load prayer times:", error);
+            set({
+              hasError: true,
+              errorMessage: error.message || "Failed to load prayer times",
+            });
             throw error;
           } finally {
-            set({ isLoading: false });
+            useAppStore.getState().setLoadingState(false);
           }
         },
         getNextPrayer: () => {

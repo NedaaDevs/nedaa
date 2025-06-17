@@ -48,6 +48,8 @@ export const useAppStore = create<AppState>()(
           mode: Appearance.getColorScheme() as AppMode,
           direction: initialDirection,
           sendCrashLogs: true,
+          loadingMessage: "",
+          showLoadingOverlay: false,
 
           setIsFirstRun(isFirstRun: boolean) {
             set({ isFirstRun });
@@ -65,10 +67,25 @@ export const useAppStore = create<AppState>()(
           setSendCrashLogs: (sendCrashLogs: boolean) => {
             set({ sendCrashLogs });
           },
+
+          setLoadingState: (loading: boolean, message?: string) => {
+            set({
+              showLoadingOverlay: loading,
+              loadingMessage: message || "",
+            });
+          },
         }),
         {
           name: "app-storage",
           storage: createJSONStorage(() => Storage),
+          partialize: (state) => ({
+            isFirstRun: state.isFirstRun,
+            locale: state.locale,
+            mode: state.mode,
+            direction: state.direction,
+            sendCrashLogs: state.sendCrashLogs,
+            // Exclude loading state from persistence
+          }),
           onRehydrateStorage: () => (state) => {
             if (state?.locale) {
               i18n.changeLanguage(state.locale);
