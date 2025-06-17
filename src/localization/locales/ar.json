@@ -196,6 +196,7 @@
   "settings.advance.provider.title": "مزود أوقات الصلاة",
   "settings.advance.title": "إعدادات متقدمة",
   "settings.appearance": "المظهر",
+  "settings.crashLog.restartRequired": "الرجاء إعادة تشغيل التطبيق لتطبيق التغييرات",
   "settings.crashReporting.accessibilityHint": "يفتح نافذة للموافقة على تقارير الأعطال",
   "settings.crashReporting.accessibilityLabel": "إعدادات تقارير الأعطال",
   "settings.crashReporting.bullet1": "• معلومات الخطأ التقنية",

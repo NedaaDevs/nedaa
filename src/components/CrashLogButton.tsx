@@ -18,6 +18,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
+import { MessageToast } from "@/components/feedback";
 
 // Icons
 import { Bug, X } from "lucide-react-native";
@@ -35,6 +36,7 @@ const CrashLogButton = () => {
 
   const handleToggle = (value: boolean) => {
     setSendCrashLogs(value);
+    MessageToast.showInfo(t("settings.crashLog.restartRequired"));
   };
 
   return (
