@@ -5,6 +5,7 @@ import { Platform, Alert } from "react-native";
 import { getEmailClients, openComposer } from "react-native-email-link";
 import * as Application from "expo-application";
 import * as Device from "expo-device";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -31,6 +32,8 @@ type Props = {
 // Mail Clients List Component
 const MailClientsList = ({ onClose }: Props) => {
   const { t } = useTranslation();
+  const hapticSelection = useHaptic("selection");
+  const hapticLight = useHaptic("light");
   const [mailClients, setMailClients] = useState<MailClient[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +72,7 @@ const MailClientsList = ({ onClose }: Props) => {
   };
 
   const handleMailClientSelect = async (client: MailClient) => {
+    hapticSelection();
     try {
       const appVersion = await Application.nativeApplicationVersion;
       const buildNumber = await Application.nativeBuildVersion;
@@ -162,7 +166,10 @@ const MailClientsList = ({ onClose }: Props) => {
 
       <Box className="mt-4">
         <Pressable
-          onPress={onClose}
+          onPress={() => {
+            hapticLight();
+            onClose();
+          }}
           className="w-full py-3 flex items-center justify-center bg-background-muted rounded-lg">
           <Text className="text-typography font-medium">{t("common.cancel")}</Text>
         </Pressable>
