@@ -16,6 +16,7 @@ import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 // Hooks
 import { useColorScheme } from "nativewind";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Enums
 import { AppMode } from "@/enums/app";
@@ -23,6 +24,7 @@ import { AppMode } from "@/enums/app";
 const ContactUs = () => {
   const { t } = useTranslation();
   const { colorScheme } = useColorScheme();
+  const hapticMedium = useHaptic("medium");
 
   const [mailModalVisible, setMailModalVisible] = useState(false);
 
@@ -30,18 +32,21 @@ const ContactUs = () => {
   const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
 
   const handleOpenWhatsApp = () => {
+    hapticMedium();
     if (whatsappNumber) {
       Linking.openURL(`https://wa.me/${whatsappNumber}`);
     }
   };
 
   const handleOpenTelegram = () => {
+    hapticMedium();
     if (telegramUsername) {
       Linking.openURL(`https://t.me/${telegramUsername}`);
     }
   };
 
   const handleEmailContact = () => {
+    hapticMedium();
     setMailModalVisible(true);
   };
 
