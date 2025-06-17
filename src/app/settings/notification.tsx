@@ -75,10 +75,17 @@ const NotificationSettings = () => {
     setIsCheckingPermission(true);
     try {
       const { status } = await checkPermissions();
-      setHasPermission(status === PermissionStatus.GRANTED);
+      const granted = status === PermissionStatus.GRANTED;
+
+      setHasPermission(granted);
       // On iOS, if permission is denied, we can only redirect to settings
       // On Android, we might be able to ask again depending on the situation
       setCanAskPermission(status === PermissionStatus.UNDETERMINED);
+
+      // If permission is granted, ensure notifications are scheduled
+      if (granted) {
+        await scheduleAllNotifications();
+      }
     } catch (error) {
       console.error("Failed to check notification permission:", error);
       setHasPermission(false);
@@ -92,7 +99,13 @@ const NotificationSettings = () => {
     hapticMedium();
     try {
       const { status } = await requestNotificationPermission();
-      setHasPermission(status === PermissionStatus.GRANTED);
+      const granted = status === PermissionStatus.GRANTED;
+      setHasPermission(granted);
+
+      // Schedule notifications immediately after permission is granted
+      if (granted) {
+        await scheduleAllNotifications();
+      }
     } catch (error) {
       console.error("Failed to request notification permission:", error);
     }
