@@ -1,6 +1,6 @@
 import { useToastStore } from "@/stores/toast";
 import i18n from "@/localization/i18n";
-import { Props } from "./types";
+
 type Status = "online" | "offline" | "slow" | "error";
 
 const getToastConfig = (status: Status, customMessage?: string, retryCountdown?: number) => {

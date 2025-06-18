@@ -2,14 +2,14 @@ import { create } from "zustand";
 
 type ToastType = "success" | "error" | "warning" | "info" | "muted";
 
-interface ToastState {
+type ToastState = {
   message: string;
   title?: string;
   type: ToastType;
   isVisible: boolean;
   showToast: (message: string, type: ToastType, title?: string, duration?: number) => void;
   hideToast: () => void;
-}
+};
 
 export const useToastStore = create<ToastState>((set) => ({
   message: "",

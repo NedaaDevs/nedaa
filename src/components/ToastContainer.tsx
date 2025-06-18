@@ -11,23 +11,25 @@ export function ToastProvider() {
   if (!isVisible) return null;
 
   return (
-    <Motion.View
-      style={[
-        {
-          position: Platform.OS === "web" ? "fixed" : "absolute",
-          top: insets.top + 10,
-          left: 10,
-          right: 10,
-          zIndex: 50,
-        },
-      ]}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}>
-      <Toast action={type}>
-        {title && <ToastTitle>{title}</ToastTitle>}
-        <ToastDescription>{message}</ToastDescription>
-      </Toast>
-    </Motion.View>
+    <>
+      <Motion.View
+        style={[
+          {
+            position: Platform.OS === "web" ? "fixed" : "absolute",
+            top: insets.top + 10,
+            left: 10,
+            right: 10,
+            zIndex: 50,
+          },
+        ]}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}>
+        <Toast action={type}>
+          {title && <ToastTitle className="text-left">{title}</ToastTitle>}
+          <ToastDescription className="text-left">{message}</ToastDescription>
+        </Toast>
+      </Motion.View>
+    </>
   );
 }

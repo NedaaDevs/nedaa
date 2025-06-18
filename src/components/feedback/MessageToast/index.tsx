@@ -3,14 +3,14 @@ import i18n from "@/localization/i18n";
 
 type ToastType = "success" | "error" | "warning" | "info" | "muted";
 
-interface GeneralToastOptions {
+type Options = {
   message: string;
   type?: ToastType;
   title?: string;
   duration?: number;
-}
+};
 
-const show = ({ message, type = "info", title, duration = 3000 }: GeneralToastOptions) => {
+const show = ({ message, type = "info", title, duration = 3000 }: Options) => {
   const { showToast } = useToastStore.getState();
   showToast(message, type, title, duration);
 };
