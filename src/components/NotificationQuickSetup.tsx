@@ -133,7 +133,7 @@ const NotificationQuickSetup: FC<Props> = ({
 
               <SelectPortal>
                 <SelectBackdrop />
-                <SelectContent>
+                <SelectContent className="bg-background-secondary rounded-xl shadow-xl mx-4">
                   <SelectDragIndicatorWrapper>
                     <SelectDragIndicator />
                   </SelectDragIndicatorWrapper>
