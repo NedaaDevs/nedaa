@@ -15,15 +15,25 @@ import { getDirection, isRTL, useAppStore } from "@/stores/app";
 // Components
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
+import CityChangeModal from "@/components/CityChangeModal";
 
 // Hooks
 import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useRTLSetup } from "@/hooks/useRTLSetup";
 import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
+import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 
 export default function RootLayout() {
   const { mode, locale, showLoadingOverlay, loadingMessage } = useAppStore();
+
+  const {
+    showCityChangeModal,
+    pendingCityChange,
+    isUpdatingLocation,
+    handleCityChangeUpdate,
+    dismissCityChangeModal,
+  } = useCityChangeHandler();
 
   const shouldBeRTL = isRTL(getDirection(locale));
   useRTLSetup(shouldBeRTL);
@@ -40,6 +50,18 @@ export default function RootLayout() {
             <StatusBar />
             <ToastProvider />
             <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
+
+            {pendingCityChange && (
+              <CityChangeModal
+                isOpen={showCityChangeModal}
+                onClose={dismissCityChangeModal}
+                onUpdate={handleCityChangeUpdate}
+                currentCity={pendingCityChange.currentCity}
+                newCity={pendingCityChange.newCity}
+                isUpdating={isUpdatingLocation}
+              />
+            )}
+
             <Stack
               screenOptions={{
                 headerShown: false,
