@@ -12,8 +12,8 @@ import { ModalFooter } from "@/components/ui/modal";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
+import { Box } from "@/components/ui/box";
 
 // Icons
 import { MapPin, X } from "lucide-react-native";
@@ -38,53 +38,62 @@ const CityChangeModal: FC<Props> = ({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} avoidKeyboard>
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalBackdrop />
-      <ModalContent className="max-w-sm">
-        <ModalHeader>
-          <VStack className="items-center gap-2">
-            <Icon as={MapPin} className="text-accent-primary" size="xl" />
-            <Text className="text-lg font-semibold text-typography">
+      <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
+        <ModalCloseButton className="absolute top-4 right-4 z-10">
+          <Icon as={X} className="text-typography-secondary" size="lg" />
+        </ModalCloseButton>
+
+        <ModalHeader className="justify-items-center px-6 pt-6 pb-2 pr-12">
+          <VStack className=" items-center" space="sm">
+            <Box className="w-16 h-16 rounded-full bg-background-info items-center justify-center">
+              <Icon as={MapPin} className="text-info" size="xl" />
+            </Box>
+            <Text className="text-xl font-bold text-typography text-center">
               {t("location.cityChanged.title")}
             </Text>
           </VStack>
-          <ModalCloseButton>
-            <Icon as={X} className="text-typography-secondary" />
-          </ModalCloseButton>
         </ModalHeader>
 
-        <ModalBody>
-          <VStack className="gap-4">
-            <Text className="text-center text-typography-secondary">
+        <ModalBody className="px-6 pt-2">
+          <VStack space="md">
+            <Text className="text-center text-typography-secondary leading-relaxed">
               {t("location.cityChanged.message")}
             </Text>
 
-            <VStack className="gap-2">
-              <HStack className="justify-between items-center p-3 bg-background-secondary rounded-lg">
-                <Text className="text-sm text-typography-secondary">
+            <VStack space="sm">
+              <VStack className="p-4 bg-background rounded-lg border border-outline" space="xs">
+                <Text className="text-sm font-medium text-typography-secondary text-center">
                   {t("location.cityChanged.currentCity")}
                 </Text>
-                <Text className="font-medium text-typography">{currentCity}</Text>
-              </HStack>
+                <Text className="text-lg font-bold text-typography text-center">{currentCity}</Text>
+              </VStack>
 
-              <HStack className="justify-between items-center p-3 bg-accent-primary/10 rounded-lg">
-                <Text className="text-sm text-typography-secondary">
+              <VStack
+                className="p-4 bg-background-success/10 rounded-lg border border-success/20"
+                space="xs">
+                <Text className="text-sm font-medium text-typography-secondary text-center">
                   {t("location.cityChanged.newCity")}
                 </Text>
-                <Text className="font-medium text-accent-primary">{newCity}</Text>
-              </HStack>
+                <Text className="text-lg font-bold text-success text-center">{newCity}</Text>
+              </VStack>
             </VStack>
 
-            <Text className="text-sm text-center text-typography-tertiary">
+            <Text className="text-sm text-center text-typography-secondary leading-relaxed">
               {t("location.cityChanged.description")}
             </Text>
           </VStack>
         </ModalBody>
 
-        <ModalFooter>
-          <VStack className="w-full gap-2">
-            <Button size="lg" className="w-full" onPress={onUpdate} isDisabled={isUpdating}>
-              <ButtonText>
+        <ModalFooter className="px-6 py-6">
+          <VStack space="sm" className="w-full">
+            <Button
+              size="lg"
+              className="w-full bg-accent-primary"
+              onPress={onUpdate}
+              isDisabled={isUpdating}>
+              <ButtonText className="text-background font-medium">
                 {isUpdating
                   ? t("location.cityChanged.updating")
                   : t("location.cityChanged.updateLocation")}
@@ -97,7 +106,7 @@ const CityChangeModal: FC<Props> = ({
               className="w-full"
               onPress={onClose}
               isDisabled={isUpdating}>
-              <ButtonText>{t("common.keepCurrent")}</ButtonText>
+              <ButtonText className="text-typography">{t("common.keepCurrent")}</ButtonText>
             </Button>
           </VStack>
         </ModalFooter>
