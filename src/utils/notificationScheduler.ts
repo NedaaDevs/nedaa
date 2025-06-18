@@ -167,21 +167,23 @@ export const scheduleAllNotifications = async (
       notificationsToProcess = notificationsToSchedule.slice(0, MAX_IOS_NOTIFICATIONS);
     }
 
-    // Add reminder notification(Reserves the last notification as a reminder)
-    const lastNotification = notificationsToProcess[notificationsToProcess.length - 1];
-    const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
+    // Add reminder notification only if we have notifications to schedule
+    if (notificationsToProcess.length > 0) {
+      const lastNotification = notificationsToProcess[notificationsToProcess.length - 1];
+      const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
 
-    notificationsToProcess.push({
-      id: "reminder",
-      time: reminderTime,
-      title: t("notification.reminder.title"),
-      body: t("notification.reminder.body"),
-      type: NOTIFICATION_TYPE.PRAYER,
-      prayerId: "fajr",
-      categoryId: "reminder",
-      vibration: true,
-      sound: "default",
-    });
+      notificationsToProcess.push({
+        id: "reminder",
+        time: reminderTime,
+        title: t("notification.reminder.title"),
+        body: t("notification.reminder.body"),
+        type: NOTIFICATION_TYPE.PRAYER,
+        prayerId: "fajr",
+        categoryId: "reminder",
+        vibration: true,
+        sound: "default",
+      });
+    }
 
     // Schedule all notifications
     console.log(
