@@ -16,17 +16,23 @@ import TuningSettings from "@/components/AladhanSettings/TuningSettings";
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { useNotificationStore } from "@/stores/notification";
 
 const AladhanSettings: FC = () => {
   const { t } = useTranslation();
   const hapticSuccess = useHaptic("success");
   const { isLoading: isFetchingPrayers, loadPrayerTimes } = usePrayerTimesStore();
   const { isLoading, isModified, saveSettings } = useProviderSettingsStore();
+  const { scheduleAllNotifications } = useNotificationStore();
 
   const handleSaveSetting = async () => {
     try {
       await saveSettings();
+
       await loadPrayerTimes(true);
+
+      await scheduleAllNotifications();
+
       hapticSuccess();
     } catch (error) {
       console.error("Failed saving settings: ", error);
