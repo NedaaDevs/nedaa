@@ -37,8 +37,8 @@ export type LocationStore = {
     currentCity: string;
     newCity: string;
   } | null;
-
   isUpdatingLocation: boolean;
+  lastCityChangeCheck: string | null;
 
   initializeLocation: () => Promise<void>;
   setAutoUpdateLocation: (value: boolean) => void;
@@ -67,6 +67,7 @@ export const useLocationStore = create<LocationStore>()(
         showCityChangeModal: false,
         pendingCityChange: null,
         isUpdatingLocation: false,
+        lastCityChangeCheck: null,
 
         // Initialize location when permission is granted
         initializeLocation: async () => {
@@ -273,12 +274,31 @@ export const useLocationStore = create<LocationStore>()(
         },
 
         checkAndPromptCityChange: async () => {
-          const lastCoords = get().lastKnownCoords;
-          if (!lastCoords || get().showCityChangeModal) {
+          const state = get();
+          const lastCoords = state.lastKnownCoords;
+
+          if (!lastCoords || state.showCityChangeModal) {
             return; // Skip if no previous coords or modal already showing
           }
 
+          // Check if 12 hours have passed since last check (throttling)
+          if (state.lastCityChangeCheck) {
+            const lastCheck = new Date(state.lastCityChangeCheck);
+            const now = new Date();
+            const hoursSinceLastCheck = (now.getTime() - lastCheck.getTime()) / (1000 * 60 * 60);
+
+            if (hoursSinceLastCheck < 12) {
+              console.log(
+                `[Location] City change check throttled. Last check: ${hoursSinceLastCheck.toFixed(1)}h ago`
+              );
+              return;
+            }
+          }
+
           try {
+            // Update timestamp for this check
+            set({ lastCityChangeCheck: new Date().toISOString() });
+
             const currentLocation = await getLocationWithTimeout();
 
             // Calculate distance
@@ -289,7 +309,7 @@ export const useLocationStore = create<LocationStore>()(
               currentLocation.coords.longitude
             );
 
-            console.log(`Distance from last location: ${distance.toFixed(2)}km`);
+            console.log(`[Location] Distance from last location: ${distance.toFixed(2)}km`);
 
             if (distance > CITY_CHANGE_THRESHOLD) {
               // Get city names for comparison and display
@@ -302,7 +322,7 @@ export const useLocationStore = create<LocationStore>()(
               const newCity = newGeocodedAddress.city ?? "Unknown";
 
               if (currentCity !== newCity) {
-                console.log(`City changed from ${currentCity} to ${newCity}`);
+                console.log(`[Location] City changed from ${currentCity} to ${newCity}`);
 
                 // Set pending change and show modal
                 set({
@@ -313,10 +333,14 @@ export const useLocationStore = create<LocationStore>()(
                   showCityChangeModal: true,
                   cityChangeDetected: true,
                 });
+              } else {
+                console.log(`[Location] Distance threshold exceeded but same city: ${currentCity}`);
               }
+            } else {
+              console.log(`[Location] City change check completed - no significant change`);
             }
           } catch (error) {
-            console.error("Failed to check city change:", error);
+            console.error("[Location] Failed to check city change:", error);
           }
         },
 
@@ -351,6 +375,7 @@ export const useLocationStore = create<LocationStore>()(
           lastKnownCoords: state.lastKnownCoords,
           isLocationPermissionGranted: state.isLocationPermissionGranted,
           autoUpdateLocation: state.autoUpdateLocation,
+          lastCityChangeCheck: state.lastCityChangeCheck,
         }),
       }
     ),
