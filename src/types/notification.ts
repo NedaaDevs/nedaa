@@ -41,20 +41,20 @@ export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICAT
 
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
-  updateAllNotificationToggle: (enabled: boolean) => void;
-  updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => void;
+  updateAllNotificationToggle: (enabled: boolean) => Promise<void>;
+  updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
   updateDefault: <T extends Partial<NotificationType>>(
     type: T,
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
-  ) => void;
+  ) => Promise<void>;
   updateOverride: <T extends NotificationType>(
     prayerId: string,
     type: T,
     config: Partial<ConfigForType<T>>
-  ) => void;
-  resetOverride: (prayerId: string, type: NotificationType) => void;
-  resetAllOverrides: () => void;
+  ) => Promise<void>;
+  resetOverride: (prayerId: string, type: NotificationType) => Promise<void>;
+  resetAllOverrides: () => Promise<void>;
   getEffectiveConfigForPrayer: <T extends NotificationType>(
     prayerId: string,
     type: T

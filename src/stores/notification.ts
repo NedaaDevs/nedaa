@@ -55,18 +55,20 @@ export const useNotificationStore = create<NotificationStore>()(
         isScheduling: false,
         lastScheduledDate: null,
 
-        updateAllNotificationToggle: (enabled) => {
+        updateAllNotificationToggle: async (enabled) => {
           set((state) => ({
             settings: { ...state.settings, enabled },
           }));
 
           // If disabling, cancel all notifications
           if (!enabled) {
-            cancelAllScheduledNotifications();
+            await cancelAllScheduledNotifications();
+          } else {
+            await get().scheduleAllNotifications();
           }
         },
 
-        updateQuickSetup: (sound, vibration) => {
+        updateQuickSetup: async (sound, vibration) => {
           set((state) => ({
             settings: {
               ...state.settings,
@@ -81,13 +83,10 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
 
-          // Reschedule notifications to update channels with new sound
-          setTimeout(() => {
-            get().scheduleAllNotifications();
-          }, 100);
+          await get().scheduleAllNotifications();
         },
 
-        updateDefault: (type, field, value) => {
+        updateDefault: async (type, field, value) => {
           set((state) => ({
             settings: {
               ...state.settings,
@@ -98,15 +97,10 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
 
-          // If sound changed, reschedule to update channels
-          if (field === "sound") {
-            setTimeout(() => {
-              get().scheduleAllNotifications();
-            }, 100);
-          }
+          await get().scheduleAllNotifications();
         },
 
-        updateOverride: <T extends NotificationType>(
+        updateOverride: async <T extends NotificationType>(
           prayerId: string,
           type: T,
           config: Partial<ConfigForType<T>>
@@ -136,22 +130,18 @@ export const useNotificationStore = create<NotificationStore>()(
             };
           });
 
-          // If sound changed in config, reschedule to update channels
-          if (config.sound !== undefined) {
-            setTimeout(() => {
-              get().scheduleAllNotifications();
-            }, 100);
-          }
+          await get().scheduleAllNotifications();
         },
 
-        resetOverride: (prayerId, type) => {
-          get().updateOverride(prayerId, type, {});
+        resetOverride: async (prayerId, type) => {
+          await get().updateOverride(prayerId, type, {});
         },
 
-        resetAllOverrides: () => {
+        resetAllOverrides: async () => {
           set((state) => ({
             settings: { ...state.settings, overrides: {} },
           }));
+          await get().scheduleAllNotifications();
         },
 
         scheduleAllNotifications: async () => {
