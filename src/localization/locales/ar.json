@@ -91,24 +91,29 @@
   "notification.customizeIndividualPrayers": "تخصيص الصلوات",
   "notification.customSettings": "إعدادات مخصصة",
   "notification.enableAll": "تفعيل جميع الإشعارات",
-  "notification.iqama.body": "مضت {{minutes}} دقائق منذ أذانَ {{prayerName}}",
-  "notification.iqama.title": "حان وقت إقامة صلاة {{prayerName}}",
+  "notification.iqama.body": "مضت {{minutes}} دقائق منذ أذان {{prayerName}} 🕌",
+  "notification.iqama.body_few": "مضت {{minutes}} دقائق منذ أذان {{prayerName}} 🕌",
+  "notification.iqama.body_many": "مضت {{minutes}} دقيقة منذ أذان {{prayerName}} 🕌",
+  "notification.iqama.body_one": "مضت دقيقة واحدة منذ أذان {{prayerName}} 🕌",
+  "notification.iqama.body_other": "مضت {{minutes}} دقيقة منذ أذان {{prayerName}} 🕌",
+  "notification.iqama.body_two": "مضت دقيقتان منذ أذان {{prayerName}} 🕌",
+  "notification.iqama.title": "إقامة صلاة {{prayerName}}",
   "notification.iqamaReminders": "تذكيرات الإقامة",
   "notification.permission.allow": "السماح بالإشعارات",
   "notification.permission.deniedMessage": "تم رفض الوصول إلى الإشعارات. يرجى تمكينه في إعدادات الجهاز لتلقي تنبيهات أوقات الصلاة.",
   "notification.permission.description": "يتطلب هذا التطبيق الوصول إلى الإشعارات لتوفير تنبيهات وتذكيرات أوقات الصلاة. يرجى تمكين الإشعارات في إعدادات الجهاز.",
   "notification.permission.openSettings": "فتح الإعدادات",
   "notification.permission.title": "مطلوب إذن الإشعارات",
-  "notification.prayer.body": "حان وقت دخول صلاة {{prayerName}}",
+  "notification.prayer.body": "حان وقت دخول صلاة {{prayerName}} 🕌",
   "notification.prayer.title": "صلاة {{prayerName}}",
   "notification.prayerNotifications": "إشعارات الصلاة",
-  "notification.preAthan.body": "سيحين موعد دخول وقت {{prayerName}} في {{minutes}} دقيقة",
-  "notification.preAthan.body_few": "سيحين موعد دخول وقت {{prayerName}} في {{minutes}} دقائق",
-  "notification.preAthan.body_many": "سيحين موعد دخول وقت {{prayerName}} في {{minutes}} دقيقة",
-  "notification.preAthan.body_one": "سيحين موعد دخول وقت {{prayerName}} في دقيقة واحدة",
-  "notification.preAthan.body_other": "سيحين موعد دخول وقت {{prayerName}} في {{minutes}} دقيقة",
-  "notification.preAthan.body_two": "سيحين موعد دخول وقت {{prayerName}} في دقيقتين",
-  "notification.preAthan.title": "{{minutes}} حتى أذان {{prayerName}}",
+  "notification.preAthan.body": "باقي {{minutes}} دقيقة على دخول وقت صلاة {{prayerName}} ⏰",
+  "notification.preAthan.body_few": "باقي {{minutes}} دقائق على دخول وقت صلاة {{prayerName}} ⏰",
+  "notification.preAthan.body_many": "باقي {{minutes}} دقيقة على دخول وقت صلاة {{prayerName}} ⏰",
+  "notification.preAthan.body_one": "باقي دقيقة واحدة على دخول وقت صلاة {{prayerName}} ⏰",
+  "notification.preAthan.body_other": "باقي {{minutes}} دقيقة على دخول وقت صلاة {{prayerName}} ⏰",
+  "notification.preAthan.body_two": "باقي دقيقتين على دخول وقت صلاة {{prayerName}} ⏰",
+  "notification.preAthan.title": "تذكير قبل الأذان",
   "notification.preAthanAlerts": "تنبيهات ما قبل الأذان",
   "notification.quickSetup": "الإعداد السريع",
   "notification.quickSetupDescription": "تطبيق هذه الإعدادات على جميع الصلوات مرة واحدة",

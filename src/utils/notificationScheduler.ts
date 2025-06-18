@@ -37,6 +37,7 @@ import {
   getNotificationChannelId,
 } from "@/utils/notificationChannels";
 import { getNotificationSound } from "@/utils/sound";
+import { formatNumberToLocale } from "@/utils/number";
 
 type SchedulingOptions = {
   daysToSchedule?: number;
@@ -278,7 +279,7 @@ const generatePrayerNotifications = (
           id: `preathan_${prayerId}_${prayerTime.getTime()}`,
           time: preAthanTime,
           title: t("notification.preAthan.title", {
-            minutes: preAthanConfig.timing,
+            minutes: formatNumberToLocale(preAthanConfig.timing.toString()),
             prayerName,
           }),
           body: t("notification.preAthan.body", {
@@ -346,7 +347,7 @@ const generatePrayerNotifications = (
           prayerName,
         }),
         body: t("notification.iqama.body", {
-          minutes: iqamaConfig.timing,
+          minutes: formatNumberToLocale(iqamaConfig.timing.toString()),
           prayerName,
         }),
         type: NOTIFICATION_TYPE.IQAMA,
