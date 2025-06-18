@@ -11,6 +11,7 @@ import {
   FlatList,
   SectionList,
   ViewStyle,
+  useColorScheme,
 } from "react-native";
 import { PrimitiveIcon, UIIcon } from "@gluestack-ui/icon";
 import { tva } from "@gluestack-ui/nativewind-utils/tva";
@@ -25,6 +26,7 @@ import {
 } from "@legendapp/motion";
 
 import React from "react";
+import { useAppStore } from "@/stores/app";
 
 type IAnimatedPressableProps = React.ComponentProps<typeof Pressable> &
   MotionComponentProps<typeof Pressable, ViewStyle, unknown, unknown, unknown>;
@@ -108,7 +110,7 @@ const actionsheetItemStyle = tva({
 });
 
 const actionsheetItemTextStyle = tva({
-  base: "text-typography-700 font-normal font-body tracking-md text-left mx-2",
+  base: "text-typography font-normal font-body tracking-md text-left mx-2",
   variants: {
     isTruncated: {
       true: "",
@@ -333,9 +335,16 @@ const ActionsheetItemText = React.forwardRef<
   React.ComponentRef<typeof UIActionsheet.ItemText>,
   IActionsheetItemTextProps
 >(function ActionsheetItemText(
-  { className, isTruncated, bold, underline, strikeThrough, size, ...props },
+  { className, isTruncated, bold, underline, strikeThrough, size, style, ...props },
   ref
 ) {
+  const systemColorScheme = useColorScheme();
+  const { mode } = useAppStore();
+
+  // TEMP FIX:
+  // Determine the actual color scheme
+  const isDark = mode === "dark" || (mode === "system" && systemColorScheme === "dark");
+
   return (
     <UIActionsheet.ItemText
       className={actionsheetItemTextStyle({
@@ -346,6 +355,12 @@ const ActionsheetItemText = React.forwardRef<
         strikeThrough,
         size,
       })}
+      style={[
+        style,
+        {
+          color: isDark ? "rgb(230, 196, 105)" : "rgb(28, 93, 133)",
+        },
+      ]}
       ref={ref}
       {...props}
     />
