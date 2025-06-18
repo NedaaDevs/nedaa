@@ -34,6 +34,62 @@ export const SOUND_ASSETS = {
     label: "notification.sound.tasbih",
     availableFor: Object.values(NOTIFICATION_TYPE) as NotificationType[],
   },
+  athan2: {
+    get notificationSound() {
+      return getPlatformSoundName("athan2");
+    },
+    previewSource: require("@/assets/sounds/athan2.mp3"),
+    label: "notification.sound.athan2",
+    availableFor: [NOTIFICATION_TYPE.PRAYER] as const,
+  },
+  athan3: {
+    get notificationSound() {
+      return getPlatformSoundName("athan3");
+    },
+    previewSource: require("@/assets/sounds/athan3.mp3"),
+    label: "notification.sound.athan3",
+    availableFor: [NOTIFICATION_TYPE.PRAYER] as const,
+  },
+  medinaAthan: {
+    get notificationSound() {
+      return getPlatformSoundName("medina_athan");
+    },
+    previewSource: require("@/assets/sounds/medina_athan.mp3"),
+    label: "notification.sound.medinaAthan",
+    availableFor: [NOTIFICATION_TYPE.PRAYER] as const,
+  },
+  iqama1: {
+    get notificationSound() {
+      return getPlatformSoundName("iqama1");
+    },
+    previewSource: require("@/assets/sounds/iqama1.mp3"),
+    label: "notification.sound.iqama1",
+    availableFor: [NOTIFICATION_TYPE.IQAMA] as const,
+  },
+  takbir: {
+    get notificationSound() {
+      return getPlatformSoundName("takbir");
+    },
+    previewSource: require("@/assets/sounds/takbir.mp3"),
+    label: "notification.sound.takbir",
+    availableFor: Object.values(NOTIFICATION_TYPE) as NotificationType[],
+  },
+  beep: {
+    get notificationSound() {
+      return getPlatformSoundName("beep");
+    },
+    previewSource: require("@/assets/sounds/beep.mp3"),
+    label: "notification.sound.beep",
+    availableFor: Object.values(NOTIFICATION_TYPE) as NotificationType[],
+  },
+  knock: {
+    get notificationSound() {
+      return getPlatformSoundName("knock");
+    },
+    previewSource: require("@/assets/sounds/knock.mp3"),
+    label: "notification.sound.knock",
+    availableFor: Object.values(NOTIFICATION_TYPE) as NotificationType[],
+  },
   silent: {
     notificationSound: null,
     previewSource: null,

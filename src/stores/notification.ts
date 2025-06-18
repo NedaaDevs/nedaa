@@ -33,18 +33,25 @@ const defaultSettings: NotificationSettings = {
     },
     iqama: {
       enabled: false,
-      sound: "silent",
+      sound: "iqama1",
       vibration: true,
       timing: 10,
     },
     preAthan: {
       enabled: false,
-      sound: "silent",
+      sound: "tasbih",
       vibration: false,
       timing: 15,
     },
   },
-  overrides: {},
+  overrides: {
+    // Set Maghrib iqama to 5 minutes by default
+    maghrib: {
+      iqama: {
+        timing: 5,
+      },
+    },
+  },
 };
 
 export const useNotificationStore = create<NotificationStore>()(
