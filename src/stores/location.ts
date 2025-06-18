@@ -32,6 +32,13 @@ export type LocationStore = {
   } | null;
   cityChangeDetected: boolean;
   autoUpdateLocation: boolean;
+  showCityChangeModal: boolean;
+  pendingCityChange: {
+    currentCity: string;
+    newCity: string;
+  } | null;
+
+  isUpdatingLocation: boolean;
 
   initializeLocation: () => Promise<void>;
   setAutoUpdateLocation: (value: boolean) => void;
@@ -40,6 +47,9 @@ export type LocationStore = {
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
   updateAddressTranslation: () => Promise<boolean>;
   setTimezone: (tz: string) => Promise<void>;
+  checkAndPromptCityChange: () => Promise<void>;
+  handleCityChangeUpdate: () => Promise<boolean>;
+  dismissCityChangeModal: () => void;
 };
 
 export const useLocationStore = create<LocationStore>()(
@@ -54,6 +64,9 @@ export const useLocationStore = create<LocationStore>()(
         lastKnownCoords: null,
         cityChangeDetected: false,
         autoUpdateLocation: true,
+        showCityChangeModal: false,
+        pendingCityChange: null,
+        isUpdatingLocation: false,
 
         // Initialize location when permission is granted
         initializeLocation: async () => {
@@ -257,6 +270,76 @@ export const useLocationStore = create<LocationStore>()(
             console.error("Failed reverse geocode:", error);
             throw error as ErrorResponse;
           }
+        },
+
+        checkAndPromptCityChange: async () => {
+          const lastCoords = get().lastKnownCoords;
+          if (!lastCoords || get().showCityChangeModal) {
+            return; // Skip if no previous coords or modal already showing
+          }
+
+          try {
+            const currentLocation = await getLocationWithTimeout();
+
+            // Calculate distance
+            const distance = calculateDistance(
+              lastCoords.latitude,
+              lastCoords.longitude,
+              currentLocation.coords.latitude,
+              currentLocation.coords.longitude
+            );
+
+            console.log(`Distance from last location: ${distance.toFixed(2)}km`);
+
+            if (distance > CITY_CHANGE_THRESHOLD) {
+              // Get city names for comparison and display
+              const [newGeocodedAddress] = await Location.reverseGeocodeAsync({
+                latitude: currentLocation.coords.latitude,
+                longitude: currentLocation.coords.longitude,
+              });
+
+              const currentCity = get().locationDetails.address?.city || "Unknown";
+              const newCity = newGeocodedAddress.city ?? "Unknown";
+
+              if (currentCity !== newCity) {
+                console.log(`City changed from ${currentCity} to ${newCity}`);
+
+                // Set pending change and show modal
+                set({
+                  pendingCityChange: {
+                    currentCity,
+                    newCity,
+                  },
+                  showCityChangeModal: true,
+                  cityChangeDetected: true,
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Failed to check city change:", error);
+          }
+        },
+
+        handleCityChangeUpdate: async () => {
+          set({ isUpdatingLocation: true });
+
+          try {
+            await get().updateCurrentLocation();
+            return true;
+          } catch (error) {
+            console.error("Failed to update location:", error);
+            return false;
+          } finally {
+            set({ isUpdatingLocation: false });
+          }
+        },
+
+        dismissCityChangeModal: () => {
+          set({
+            showCityChangeModal: false,
+            pendingCityChange: null,
+            cityChangeDetected: false,
+          });
         },
       }),
       {
