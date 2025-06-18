@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useRef } from "react";
 
 // Hooks
 import { useTranslation } from "react-i18next";
@@ -25,11 +25,32 @@ const AladhanSettings: FC = () => {
   const { isLoading, isModified, saveSettings } = useProviderSettingsStore();
   const { scheduleAllNotifications } = useNotificationStore();
 
+  // Throttling refs to prevent excessive API calls
+  const lastPrayerTimesUpdateRef = useRef<number>(0);
+
+  // Throttle periods in milliseconds
+  const PRAYER_TIMES_THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
+
   const handleSaveSetting = async () => {
     try {
       await saveSettings();
 
-      await loadPrayerTimes(true);
+      const now = Date.now();
+
+      // Throttle prayer times updates
+      const shouldUpdatePrayerTimes =
+        now - lastPrayerTimesUpdateRef.current > PRAYER_TIMES_THROTTLE_MS;
+      if (shouldUpdatePrayerTimes) {
+        lastPrayerTimesUpdateRef.current = now;
+        await loadPrayerTimes(true);
+      } else {
+        const remainingTime = Math.ceil(
+          (PRAYER_TIMES_THROTTLE_MS - (now - lastPrayerTimesUpdateRef.current)) / 1000
+        );
+        console.log(
+          `[AladhanSettings] Prayer times update throttled. Next update in ${remainingTime}s`
+        );
+      }
 
       await scheduleAllNotifications();
 
