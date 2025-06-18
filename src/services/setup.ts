@@ -5,6 +5,9 @@ import type { AppState } from "@/types/app";
 import type { PrayerTimesStore } from "@/stores/prayerTimes";
 import type { NotificationStore } from "@/stores/notification";
 
+// Stores
+import { useLocationStore } from "@/stores/location";
+
 // Utils
 import { requestNotificationPermission } from "@/utils/notifications";
 import { requestLocationPermission } from "@/utils/location";
@@ -36,6 +39,12 @@ export const appSetup = async (
     const { loadPrayerTimes } = prayerStore;
 
     await loadPrayerTimes();
+
+    // Check for city changes (if auto-update is enabled)
+    const locationStore = useLocationStore.getState();
+    if (locationStore.autoUpdateLocation) {
+      await locationStore.checkAndPromptCityChange();
+    }
 
     // notification scheduling
     await notificationStore.scheduleAllNotifications();
