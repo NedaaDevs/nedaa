@@ -73,11 +73,11 @@ If you have any questions, feel free to reach us at <a target="_blank" href="mai
 
 ## Translation
 
-If you would like to see the app in your language, you can contribute very easily by joining our [crowdin project](https://crowdin.com/project/nedaa/invite?h=3134f636cfd99d1a7ca05ee3057975e22254935).
+If you would like to see the app in your language, you can contribute very easily by joining our [crowdin project](https://crowdin.com/project/nedaa-v2/invite?h=ab811dde9acfea7c0086a694e94f75ca2468850).
 
 Select the language you want, and submit translations to the strings in the app.
 
-If you don't see your language in the crowdin project, you can create a new ["discussion"](https://crowdin.com/project/nedaa/discussions) in the crowdin project, and we will add the language for you.
+If you don't see your language in the crowdin project, you can create a new ["discussion"](https://crowdin.com/project/nedaa-v2/discussions) in the crowdin project, and we will add the language for you.
 
 ### Developer Guide
 
