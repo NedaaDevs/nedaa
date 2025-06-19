@@ -1,137 +1,84 @@
-# Nedaa-v2
+<h1 align="center"> Nedaa | نداء </h1> <br>
 
-## Prerequisites
+<p align="center">
+  <a href="https://nedaa.dev" target="_blank">
+   <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./assets/images/ios-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="./assets/images/ios-light.png">
+      <img alt="Nedaa" title="Nedaa" src="./assets/images/ios-dark.png" width="200">
+   </picture>
+  </a>
+</p>
 
-Before running the project, make sure you have the following installed:
+## Table of Contents
 
-- [Bun](https://bun.sh/) (version 1.1.45)
-- [Node.js](https://nodejs.org/)
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)
-- [Xcode](https://developer.apple.com/xcode/) (for iOS development)
-- [Android Studio](https://developer.android.com/studio) (for Android development)
+- [Table of Contents](#table-of-contents)
+- [Introduction](#introduction)
+- [Features](#features)
+- [Feedback](#feedback)
+- [Translation](#translation)
+- [Developer Guide](#developer-guide)
 
-## Code Quality Tools
+## Introduction
 
-This project uses several tools to maintain code quality:
+<!-- ![CI Status](https://github.com/nedaaDevs/nedaa/actions/workflows/flutter-ci.yml/badge.svg) -->
 
-- **Husky**: Manages git hooks to run checks before commits(.husky/pre-commit)
-- **lint-staged**: Runs linters on staged git files
-- **ESLint**: Checks code for potential errors and enforces coding standards
-- **Prettier**: Automatically formats code for consistency
+View Prayer Times, Hijri Date, get notifications for prayer times, and more to come.
 
-The pre-commit hook will automatically:
+**Available for both iOS and Android.**
 
-1. Run ESLint to check code quality
-2. Run Prettier to format staged files
-3. Prevent commits if there are any linting errors
+<!-- <p align="center">
+  <img alt="iphone-preview" src="https://i.imgur.com/r2lgNUo.png"  width=350>
+  <img alt="oneplus-preview" src="https://i.imgur.com/WGWpycM.png" width=350>
+</p> -->
 
-## Installation
+## Features
 
-1. Clone the repository:
+Nedaa Features:
 
-```bash
-git clone https://github.com/NedaaDevs/nedaa-v2
-cd nedaa-v2
-```
+- Simple and intuitive design.
+- Notifications for each prayer, iqama and pre-prayer.
+- Deep customization for the notifications settings, with the ability to enable/disable, and change the sound, and timing of the iqama, and pre-prayer, along with other settings.
+- Multi-language support Arabic and English. [Want to see the app in your language? ](#translation)
+- Finding the location automatically using the phone’s GPS. Or manually.
+- Count down to the next prayer.
+- Count up since the last prayer.
+- Prayer times for the current day.
+- and more to come.
 
-2. Install dependencies using Bun:
+<!-- <p align="center">
+  <img src="https://i.imgur.com/VoCxMoo.png" height=350>
+  <img src="https://i.imgur.com/YtOMaFQ.png" height=350>
+  <img src="https://i.imgur.com/bA3FdZd.png" height=350>
+  <img src="https://i.imgur.com/XMvcdJr.png" height=350>
+  <img src="https://i.imgur.com/QlyrIHk.png" height=350>
+</p>
 
-```bash
-bun install
+<p align="center">
+ <img src="https://i.imgur.com/C3iLTaw.png" width=400 >
+ <img src="https://i.imgur.com/mdC2OX8.png"  width=400>
+ <img src="https://i.imgur.com/dycQy7M.png" width=400>
+ <img src="https://i.imgur.com/njUoebp.png"  width=400>
+ <img src="https://i.imgur.com/Pt36AGI.png"  width=400>
+</p> -->
 
+## Feedback
 
-# Alternative: Install using Bun with Yarn compatibility
-bun install --yarn
-```
+If there is a feature you would like to see in the app, please let us know <a target="_blank" href="mailto: support@nedaa.dev">support@nedaa.dev</a>. We are always looking for ways to improve the app.
+Also pull request are welcome.
+<br/>
+If you find any issue please [file an issue](https://github.com/nedaaDevs/nedaa/issues/new).
 
-## Running the App
+If you have any questions, feel free to reach us at <a target="_blank" href="mailto: support@nedaa.dev">support@nedaa.dev</a>
 
-### For iOS (Mac is required)
+## Translation
 
-1. Make sure you have Xcode installed and set up properly
-2. Install iOS Simulator (through Xcode)
-3. Run the following command:
+If you would like to see the app in your language, you can contribute very easily by joining our [crowdin project](https://crowdin.com/project/nedaa/invite?h=3134f636cfd99d1a7ca05ee3057975e22254935).
 
-```bash
-bun run ios
-```
+Select the language you want, and submit translations to the strings in the app.
 
-Alternatively, you can use:
+If you don't see your language in the crowdin project, you can create a new ["discussion"](https://crowdin.com/project/nedaa/discussions) in the crowdin project, and we will add the language for you.
 
-```bash
-npx expo run:ios
-```
+### Developer Guide
 
-### For Android
-
-1. Make sure you have Android Studio installed
-2. Set up an Android Virtual Device (AVD) through Android Studio
-3. Run the following command:
-
-```bash
-bun run android
-```
-
-Alternatively, you can use:
-
-```bash
-npx expo run:android
-```
-
-### Development Mode
-
-To start the metro server:
-
-```bash
-bun start
-```
-
-This will start the Expo development server, and you can choose to run on either iOS or Android from the Expo Developer Tools.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Pod installation fails (iOS)**
-
-   ```bash
-   cd ios
-   pod install
-   ```
-
-2. **Android build fails**
-
-   - Clean the Android build:
-
-   ```bash
-   cd android
-   ./gradlew clean
-   ```
-
-3. **Metro bundler issues**
-   - Clear Metro bundler cache:
-   ```bash
-   bun start --clear
-   ```
-
-## Scripts
-
-Available scripts in package.json:
-
-- `bun start`: Start the Expo development server
-- `bun run android`: Run on Android
-- `bun run ios`: Run on iOS
-
-Note: You can add `--no-build-cache` flag to any run command to execute without using the build cache, e.g.:
-
-```bash
-bun run ios --no-build-cache
-```
-
-## Additional Resources
-
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Documentation](https://reactnative.dev/docs/getting-started)
-- [Bun Documentation](https://bun.sh/docs)
-- [Zustand Documentation](https://github.com/pmndrs/zustand)
-- [react-i18next Documentation](https://react.i18next.com/)
+Please refer to the [Developer Guide](./DEV-README.md).
