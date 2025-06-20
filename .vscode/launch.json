@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:nedaa}/ios",
+      "name": "Debug fam (ios)",
+      "program": "${workspaceFolder:nedaa}/ios/.build/debug/fam",
+      "preLaunchTask": "swift: Build Debug fam (ios)"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:nedaa}/ios",
+      "name": "Release fam (ios)",
+      "program": "${workspaceFolder:nedaa}/ios/.build/release/fam",
+      "preLaunchTask": "swift: Build Release fam (ios)"
+    }
+  ]
+}
