@@ -17,6 +17,12 @@
           }
         }
       }
+    },
+    "My Widget" : {
+
+    },
+    "This is an example widget." : {
+
     }
   },
   "version" : "1.0"
