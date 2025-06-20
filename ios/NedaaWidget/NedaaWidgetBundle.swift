@@ -20,10 +20,9 @@ struct NedaaWidgetBundle {
 @available(iOSApplicationExtension 16.0, *)
 struct WidgetsBundle16: WidgetBundle {
     var body: some Widget {
-//        PrayerCountdownLockScreenWidget()
-//        MorningPrayerWidget()
-//        EveningPrayerWidget()
-      NedaaWidget()
+        PrayerCountdownLockScreenWidget()
+        MorningPrayerWidget()
+        EveningPrayerWidget()
     }
 }
 
