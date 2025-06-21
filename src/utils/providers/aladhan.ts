@@ -1,6 +1,6 @@
 // Stores
-import useProviderSettingsStore from "@/stores/providerSettings";
-import useLocationStore from "@/stores/location";
+import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { useLocationStore } from "@/stores/location";
 
 // Types
 import type {

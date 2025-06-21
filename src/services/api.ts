@@ -4,7 +4,7 @@ import axios, { AxiosRequestConfig } from "axios";
 import type { TData, RequestMethod, Response } from "@/types/api";
 
 // Feedback
-import NetworkStatusBanner from "@/components/feedback/NetworkStatusBanner";
+import { NetworkStatusBanner } from "@/components/feedback/NetworkStatusBanner";
 
 import i18n from "@/localization/i18n";
 

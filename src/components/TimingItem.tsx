@@ -9,8 +9,8 @@ import { Icon, SunIcon } from "@/components/ui/icon";
 import { parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { getDateLocale } from "@/utils/date";
-import useAppStore from "@/stores/app";
-import useLocationStore from "@/stores/location";
+import { useAppStore } from "@/stores/app";
+import { useLocationStore } from "@/stores/location";
 import { formatNumberToLocale } from "@/utils/number";
 
 interface Props {

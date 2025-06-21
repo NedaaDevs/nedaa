@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { I18nManager, Platform } from "react-native";
-import RNRestart from "react-native-restart";
+// import RNRestart from "react-native-restart";
 
 export const useRTLSetup = (shouldBeRTL: boolean) => {
   useEffect(() => {

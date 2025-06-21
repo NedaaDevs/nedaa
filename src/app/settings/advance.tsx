@@ -2,7 +2,7 @@
 import { Background } from "@/components/ui/background";
 
 import TopBar from "@/components/TopBar";
-import ProviderSettings from "@/components/ProviderSettings";
+import { ProviderSettings } from "@/components/ProviderSettings";
 
 const AdvanceSettings = () => {
   return (

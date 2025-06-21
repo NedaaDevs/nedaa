@@ -14,7 +14,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Spinner } from "@/components/ui/spinner";
 
-import ProviderList from "@/components/ProviderList";
+import { ProviderList } from "@/components/ProviderList";
 import AladhanSettings from "@/components/AladhanSettings";
 
 export const ProviderSettings: FC = () => {
@@ -35,6 +35,7 @@ export const ProviderSettings: FC = () => {
       }
     };
     fetchProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle retry on error

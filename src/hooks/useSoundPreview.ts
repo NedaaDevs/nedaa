@@ -51,6 +51,7 @@ export const useSoundPreview = (): UseSoundPreviewReturn => {
       isMountedRef.current = false;
       unsubscribe();
       // Notify the manager that this player is unmounting
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       soundPreviewManager.notifyPlayerUnmount(playerIdRef.current);
     };
   }, [player]);

@@ -46,5 +46,6 @@ export const useInitialSetup = () => {
     } catch (error) {
       console.error("App initialization failed: ", error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 };
