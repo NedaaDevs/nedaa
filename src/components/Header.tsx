@@ -1,12 +1,12 @@
 import { format, parseISO, formatDistance } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
-import { toHijri } from "hijri-date-converter";
+
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale, isFriday, timeZonedNow } from "@/utils/date";
+import { getDateLocale, isFriday, timeZonedNow, HijriConverter } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -36,7 +36,7 @@ const Header = () => {
 
   const nextPrayer = getNextPrayer();
   const now = timeZonedNow(locationDetails.timezone);
-  const hijriDate = toHijri(now);
+  const hijriDate = HijriConverter.toHijri(now);
 
   // Get human-readable time remaining
   const getFormattedTimeRemaining = () => {
