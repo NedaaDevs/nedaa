@@ -17,7 +17,7 @@
 - [Features](#features)
 - [Feedback](#feedback)
 - [Translation](#translation)
-- [Developer Guide](#developer-guide)
+  - [Developer Guide](#developer-guide)
 
 ## Introduction
 
@@ -81,4 +81,4 @@ If you don't see your language in the crowdin project, you can create a new ["di
 
 ### Developer Guide
 
-Please refer to the [Developer Guide](./DEV-README.md).
+Please refer to the [Developer Guide](./docs/DEV-README.md).
