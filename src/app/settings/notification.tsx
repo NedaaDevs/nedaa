@@ -69,6 +69,7 @@ const NotificationSettings = () => {
   // Check permission when app becomes active (user returns from settings)
   useEffect(() => {
     checkPermissionStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [becameActiveAt]);
 
   const checkPermissionStatus = async () => {

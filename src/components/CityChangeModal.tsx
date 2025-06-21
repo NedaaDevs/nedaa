@@ -2,13 +2,15 @@ import { FC } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
-import { Modal } from "@/components/ui/modal";
-import { ModalBackdrop } from "@/components/ui/modal";
-import { ModalContent } from "@/components/ui/modal";
-import { ModalHeader } from "@/components/ui/modal";
-import { ModalCloseButton } from "@/components/ui/modal";
-import { ModalBody } from "@/components/ui/modal";
-import { ModalFooter } from "@/components/ui/modal";
+import {
+  Modal,
+  ModalBackdrop,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";

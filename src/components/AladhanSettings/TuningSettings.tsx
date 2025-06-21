@@ -77,6 +77,7 @@ export const TuningSettings: FC = () => {
         );
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]); // Only recreate if translation function changes
 
   const getCurrentTuning = (): AladhanTuning => {

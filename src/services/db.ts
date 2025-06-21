@@ -144,7 +144,7 @@ const processPrayerTimesData = (data: PrayerTimesResponse): PrayerTimesDBEntry[]
   try {
     const { timezone, months } = data;
 
-    for (const [_, monthEntries] of Object.entries(months)) {
+    for (const monthEntries of Object.values(months)) {
       for (const entry of monthEntries) {
         // Validate date format
         const dateInt = timestampToDateInt(parseInt(entry.date), timezone);
