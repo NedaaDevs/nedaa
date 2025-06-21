@@ -65,7 +65,7 @@
           }
         ]
       },
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "dev.nedaa.app",
       "entitlements": {
         "com.apple.security.application-groups": ["group.dev.nedaa.app"]
