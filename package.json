@@ -56,7 +56,6 @@
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.9",
     "expo-web-browser": "~14.2.0",
-    "hijri-date-converter": "^1.0.2",
     "i18next": "^25.2.1",
     "lucide-react-native": "^0.514.0",
     "nativewind": "^4.1.23",
