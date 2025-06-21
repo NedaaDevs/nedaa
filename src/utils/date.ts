@@ -120,11 +120,20 @@ export const isFriday = (timezone: string): boolean => {
 export const HijriConverter = {
   /**
    * Convert Gregorian date to Hijri using Umm al-Qura algorithm
+   * @param {Date} date - Gregorian date (default: current date)
+   * @param {number} daysOffset - Optional days to add/subtract (default: 0)
+   * @returns {HijriDate} - {year, month, day}
    */
-  toHijri(date = new Date()): HijriDate {
-    const gYear = date.getFullYear();
-    const gMonth = date.getMonth() + 1;
-    const gDay = date.getDate();
+  toHijri(date = new Date(), daysOffset = 0): HijriDate {
+    // Apply days offset if provided
+    const workingDate = new Date(date);
+    if (daysOffset !== 0) {
+      workingDate.setDate(workingDate.getDate() + daysOffset);
+    }
+
+    const gYear = workingDate.getFullYear();
+    const gMonth = workingDate.getMonth() + 1;
+    const gDay = workingDate.getDate();
 
     // Calculate Julian Day Number
     let a = Math.floor((14 - gMonth) / 12);
@@ -185,8 +194,13 @@ export const HijriConverter = {
 
   /**
    * Convert Hijri date to Gregorian
+   * @param {number} hYear - Hijri year
+   * @param {number} hMonth - Hijri month (1-12)
+   * @param {number} hDay - Hijri day
+   * @param {number} daysOffset - Optional days to add/subtract (default: 0)
+   * @returns {Date} - Gregorian date
    */
-  toGregorian(hYear: number, hMonth: number, hDay: number) {
+  toGregorian(hYear: number, hMonth: number, hDay: number, daysOffset = 0): Date {
     // Approximate conversion - calculate total days from Hijri epoch
     let totalDays = Math.floor((hYear - 1) * 354.367);
 
@@ -195,6 +209,9 @@ export const HijriConverter = {
       totalDays += hijriMonthDays[m - 1];
     }
     totalDays += hDay - 1;
+
+    // Apply days offset if provided
+    totalDays += daysOffset;
 
     // Add to Gregorian epoch (July 16, 622 CE)
     const epochDate = new Date(622, 6, 16); // Month is 0-indexed
@@ -205,11 +222,12 @@ export const HijriConverter = {
 
   /**
    * Add days to Hijri date
+   * @param {HijriDate} hijriDate - {year, month, day}
+   * @param {number} days - Number of days to add (can be negative)
+   * @returns {HijriDate} - New Hijri date
    */
   addDays(hijriDate: HijriDate, days: number): HijriDate {
     const gregorian = this.toGregorian(hijriDate.year, hijriDate.month, hijriDate.day);
-    if (!gregorian) return hijriDate;
-
     const newGregorian = new Date(gregorian);
     newGregorian.setDate(gregorian.getDate() + days);
 
@@ -217,9 +235,83 @@ export const HijriConverter = {
   },
 
   /**
-   * Check if Hijri year is leap year
+   * Get number of days in a Hijri month
+   * @param {number} month - Month (1-12)
+   * @param {number} year - Hijri year
+   * @returns {number} - Number of days
    */
-  isLeapYear(hYear: number) {
+  getDaysInMonth(month: number, year: number): number {
+    const monthLengths = [30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29];
+    let days = monthLengths[month - 1];
+
+    // Leap year adjustment for the 12th month (Dhu al-Hijjah)
+    if (month === 12 && this.isLeapYear(year)) {
+      days = 30;
+    }
+
+    return days;
+  },
+
+  /**
+   * Check if Hijri year is leap year
+   * @param {number} hYear - Hijri year
+   * @returns {boolean} - True if leap year
+   */
+  isLeapYear(hYear: number): boolean {
     return (11 * hYear + 14) % 30 < 11;
+  },
+
+  /**
+   * Difference between two Hijri dates in days
+   * @param {HijriDate} hijriDate1 - First Hijri date
+   * @param {HijriDate} hijriDate2 - Second Hijri date
+   * @returns {number} - Difference in days
+   */
+  differenceInDays(hijriDate1: HijriDate, hijriDate2: HijriDate): number {
+    const greg1 = this.toGregorian(hijriDate1.year, hijriDate1.month, hijriDate1.day);
+    const greg2 = this.toGregorian(hijriDate2.year, hijriDate2.month, hijriDate2.day);
+
+    const timeDiff = greg2.getTime() - greg1.getTime();
+    return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+  },
+
+  /**
+   * Check if two Hijri dates are equal
+   * @param {HijriDate} hijriDate1 - First Hijri date
+   * @param {HijriDate} hijriDate2 - Second Hijri date
+   * @returns {boolean} - True if dates are equal
+   */
+  isEqual(hijriDate1: HijriDate, hijriDate2: HijriDate): boolean {
+    return (
+      hijriDate1.year === hijriDate2.year &&
+      hijriDate1.month === hijriDate2.month &&
+      hijriDate1.day === hijriDate2.day
+    );
+  },
+
+  /**
+   * Check if first Hijri date is before second
+   * @param {HijriDate} hijriDate1 - First Hijri date
+   * @param {HijriDate} hijriDate2 - Second Hijri date
+   * @returns {boolean} - True if first date is before second
+   */
+  isBefore(hijriDate1: HijriDate, hijriDate2: HijriDate): boolean {
+    if (hijriDate1.year !== hijriDate2.year) {
+      return hijriDate1.year < hijriDate2.year;
+    }
+    if (hijriDate1.month !== hijriDate2.month) {
+      return hijriDate1.month < hijriDate2.month;
+    }
+    return hijriDate1.day < hijriDate2.day;
+  },
+
+  /**
+   * Check if first Hijri date is after second
+   * @param {HijriDate} hijriDate1 - First Hijri date
+   * @param {HijriDate} hijriDate2 - Second Hijri date
+   * @returns {boolean} - True if first date is after second
+   */
+  isAfter(hijriDate1: HijriDate, hijriDate2: HijriDate): boolean {
+    return !this.isBefore(hijriDate1, hijriDate2) && !this.isEqual(hijriDate1, hijriDate2);
   },
 };
