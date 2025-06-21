@@ -5,6 +5,12 @@ import { ar, enUS, ms } from "date-fns/locale";
 // Enums
 import { AppLocale } from "@/enums/app";
 
+export type HijriDate = {
+  year: number;
+  month: number;
+  day: number;
+};
+
 type DateRange = {
   yesterday: number;
   today: number;
@@ -109,4 +115,111 @@ export const getDateLocale = (locale: AppLocale) => {
 export const isFriday = (timezone: string): boolean => {
   const zonedDate = toZonedTime(Date.now(), timezone);
   return zonedDate.getDay() === 5; // 5 represents Friday (0 is Sunday, 1 is Monday, etc.)
+};
+
+export const HijriConverter = {
+  /**
+   * Convert Gregorian date to Hijri using Umm al-Qura algorithm
+   */
+  toHijri(date = new Date()): HijriDate {
+    const gYear = date.getFullYear();
+    const gMonth = date.getMonth() + 1;
+    const gDay = date.getDate();
+
+    // Calculate Julian Day Number
+    let a = Math.floor((14 - gMonth) / 12);
+    let y = gYear - a;
+    let m = gMonth + 12 * a - 3;
+
+    let jd =
+      gDay +
+      Math.floor((153 * m + 2) / 5) +
+      365 * y +
+      Math.floor(y / 4) -
+      Math.floor(y / 100) +
+      Math.floor(y / 400) +
+      1721119;
+
+    // Accurate Umm al-Qura conversion constants
+    const EPOCH = 1948084;
+    const CYCLE_DAYS = 10631;
+    const LUNAR_YEAR = 354.367;
+
+    // Calculate days since Hijri epoch
+    const daysSinceEpoch = jd - EPOCH;
+
+    if (daysSinceEpoch < 0) {
+      return { year: 1, month: 1, day: 1 };
+    }
+
+    // Calculate complete 30-year cycles
+    const completeCycles = Math.floor(daysSinceEpoch / CYCLE_DAYS);
+    const daysInCurrentCycle = daysSinceEpoch % CYCLE_DAYS;
+
+    // Calculate year within current cycle with leap year correction
+    let yearInCycle = Math.floor(daysInCurrentCycle / LUNAR_YEAR);
+    const leapYears = Math.floor((11 * yearInCycle + 3) / 30);
+    const adjustedDays = daysInCurrentCycle - leapYears;
+    yearInCycle = Math.floor(adjustedDays / 354);
+
+    // Final Hijri year
+    const hYear = completeCycles * 30 + yearInCycle;
+
+    // Calculate month and day
+    const daysInYear =
+      daysInCurrentCycle - yearInCycle * 354 - Math.floor((11 * yearInCycle + 3) / 30);
+    const monthLengths = [30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29];
+
+    let hMonth = 1;
+    let remainingDays = Math.floor(daysInYear);
+
+    while (hMonth <= 12 && remainingDays >= monthLengths[hMonth - 1]) {
+      remainingDays -= monthLengths[hMonth - 1];
+      hMonth++;
+    }
+
+    const hDay = Math.max(1, remainingDays);
+
+    return { year: hYear, month: hMonth, day: hDay };
+  },
+
+  /**
+   * Convert Hijri date to Gregorian
+   */
+  toGregorian(hYear: number, hMonth: number, hDay: number) {
+    // Approximate conversion - calculate total days from Hijri epoch
+    let totalDays = Math.floor((hYear - 1) * 354.367);
+
+    const hijriMonthDays = [30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29];
+    for (let m = 1; m < hMonth; m++) {
+      totalDays += hijriMonthDays[m - 1];
+    }
+    totalDays += hDay - 1;
+
+    // Add to Gregorian epoch (July 16, 622 CE)
+    const epochDate = new Date(622, 6, 16); // Month is 0-indexed
+    const resultDate = new Date(epochDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+
+    return resultDate;
+  },
+
+  /**
+   * Add days to Hijri date
+   */
+  addDays(hijriDate: HijriDate, days: number): HijriDate {
+    const gregorian = this.toGregorian(hijriDate.year, hijriDate.month, hijriDate.day);
+    if (!gregorian) return hijriDate;
+
+    const newGregorian = new Date(gregorian);
+    newGregorian.setDate(gregorian.getDate() + days);
+
+    return this.toHijri(newGregorian);
+  },
+
+  /**
+   * Check if Hijri year is leap year
+   */
+  isLeapYear(hYear: number) {
+    return (11 * hYear + 14) % 30 < 11;
+  },
 };
