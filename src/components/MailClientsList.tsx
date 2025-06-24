@@ -65,7 +65,7 @@ const MailClientsList = ({ onClose }: Props) => {
       setMailClients(formattedClients);
     } catch (error) {
       console.error("Error fetching mail clients:", error);
-      Alert.alert(t("common.email.clients.error.loadFailed"));
+      Alert.alert(t("email.clients.error.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -87,10 +87,10 @@ const MailClientsList = ({ onClose }: Props) => {
 
       const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
 
-      const subject = t("common.email.template.subject");
+      const subject = t("email.template.subject");
 
       // Build the email body with translations
-      const body = `${t("common.email.template.describeRequest")}\n\n\n\n\n${t("common.email.template.appInfo")}\n- ${t("common.email.template.version")}: ${appVersion} (${buildNumber})\n- ${t("common.email.template.device")}: ${deviceBrand} ${deviceModel}\n- ${t("common.email.template.os")}: ${systemVersion}`;
+      const body = `${t("email.template.describeRequest")}\n\n\n\n\n${t("email.template.appInfo")}\n- ${t("email.template.version")}: ${appVersion} (${buildNumber})\n- ${t("email.template.device")}: ${deviceBrand} ${deviceModel}\n- ${t("email.template.os")}: ${systemVersion}`;
 
       await openComposer({
         app: client.id,
@@ -103,7 +103,7 @@ const MailClientsList = ({ onClose }: Props) => {
       onClose();
     } catch (error) {
       console.error("Error opening mail client:", error);
-      Alert.alert(t("common.email.clients.error.openFailed"));
+      Alert.alert(t("email.clients.error.openFailed"));
     }
   };
 
@@ -125,7 +125,7 @@ const MailClientsList = ({ onClose }: Props) => {
   if (loading) {
     return (
       <Box className="w-full h-60 flex items-center justify-center bg-background-secondary">
-        <Text className="text-typography">{t("common.loading")}</Text>
+        <Text className="text-typography">{t("loading")}</Text>
       </Box>
     );
   }
@@ -134,7 +134,7 @@ const MailClientsList = ({ onClose }: Props) => {
     <Box className="w-full px-4 py-5 bg-background-secondary rounded-t-2xl">
       <Box className="w-full flex flex-col items-center mb-4">
         <Text className="text-xl font-semibold text-typography">
-          {t("common.email.clients.selectClient")}
+          {t("email.clients.selectClient")}
         </Text>
       </Box>
 
@@ -160,7 +160,7 @@ const MailClientsList = ({ onClose }: Props) => {
         />
       ) : (
         <Box className="w-full py-5 flex items-center justify-center">
-          <Text className="text-typography">{t("common.email.clients.noClientsFound")}</Text>
+          <Text className="text-typography">{t("email.clients.noClientsFound")}</Text>
         </Box>
       )}
 
@@ -171,7 +171,7 @@ const MailClientsList = ({ onClose }: Props) => {
             onClose();
           }}
           className="w-full py-3 flex items-center justify-center bg-background-muted rounded-lg">
-          <Text className="text-typography font-medium">{t("common.cancel")}</Text>
+          <Text className="text-typography font-medium">{t("cancel")}</Text>
         </Pressable>
       </Box>
     </Box>
