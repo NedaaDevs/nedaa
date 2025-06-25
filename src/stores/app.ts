@@ -50,6 +50,7 @@ export const useAppStore = create<AppState>()(
           sendCrashLogs: true,
           loadingMessage: "",
           showLoadingOverlay: false,
+          hijriDaysOffset: 0,
 
           setIsFirstRun(isFirstRun: boolean) {
             set({ isFirstRun });
@@ -73,6 +74,10 @@ export const useAppStore = create<AppState>()(
               showLoadingOverlay: loading,
               loadingMessage: message || "",
             });
+          },
+
+          setHijirOffset: (daysOffset) => {
+            set({ hijriDaysOffset: daysOffset });
           },
         }),
         {
