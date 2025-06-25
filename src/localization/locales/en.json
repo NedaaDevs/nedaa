@@ -214,6 +214,7 @@
   "providers.selectPlaceholder": "Select a provider",
   "providers.selectProvider": "Select Prayer Times Provider",
   "providers.title": "Prayer Times Providers",
+  "settings.advance.hijri.title": "Hijri Date Correction",
   "settings.advance.provider.selectPlaceholder": "Select prayer times provider",
   "settings.advance.provider.title": "Prayer Times Provider",
   "settings.advance.title": "Advanced Settings",
@@ -253,5 +254,14 @@
   "settings.themes.system.description": "Follow system appearance",
   "settings.themes.system.title": "System",
   "settings.themes.title": "Themes",
-  "settings.title": "Settings"
+  "settings.title": "Settings",
+  "settings.hijri.date.title": "Hijri Date Adjustment",
+  "settings.hijri.date.adjustmentTitle": "Adjust Hijri Date",
+  "settings.hijri.date.currentAdjustment": "Current adjustment",
+  "settings.hijri.date.selectAdjustment": "Select adjustment",
+  "settings.hijri.date.adjustments.noAdjustment": "No adjustment",
+  "settings.hijri.date.adjustments.minus": "Minus",
+  "settings.hijri.date.adjustments.plus": "Plus",
+  "settings.hijri.date.adjustments.days_one": "{{count}} day",
+  "settings.hijri.date.adjustments.days_other": "{{count}} days"
 }

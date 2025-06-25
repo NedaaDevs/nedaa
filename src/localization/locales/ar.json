@@ -214,6 +214,7 @@
   "providers.selectPlaceholder": "اختر مزودًا",
   "providers.selectProvider": "اختر مزودًا",
   "providers.title": "مزودو أوقات الصلاة",
+  "settings.advance.hijri.title": "تصحيح التاريخ الهجري",
   "settings.advance.provider.selectPlaceholder": "اختر مزود أوقات الصلاة",
   "settings.advance.provider.title": "مزود أوقات الصلاة",
   "settings.advance.title": "إعدادات متقدمة",
@@ -233,6 +234,7 @@
   "settings.help.contact.whatsapp": "واتساب",
   "settings.help.contactUs": "تواصل معنا",
   "settings.help.title": "المساعدة",
+
   "settings.language": "اللغة",
   "settings.languages.ar.nativeTitle": "العربية",
   "settings.languages.ar.title": "العربية",
@@ -253,5 +255,18 @@
   "settings.themes.system.description": "اتبع إعدادات النظام",
   "settings.themes.system.title": "النظام",
   "settings.themes.title": "السمات",
-  "settings.title": "الإعدادات"
+  "settings.title": "الإعدادات",
+  "settings.hijri.date.title": "تعديل التاريخ الهجري",
+  "settings.hijri.date.adjustmentTitle": "تعديل التاريخ الهجري",
+  "settings.hijri.date.currentAdjustment": "التعديل الحالي",
+  "settings.hijri.date.selectAdjustment": "اختر التعديل",
+  "settings.hijri.date.adjustments.noAdjustment": "بدون تعديل",
+  "settings.hijri.date.adjustments.minus": "ناقص",
+  "settings.hijri.date.adjustments.plus": "زائد",
+  "settings.hijri.date.adjustments.days_zero": "{{count}} يوم",
+  "settings.hijri.date.adjustments.days_one": "يوم واحد",
+  "settings.hijri.date.adjustments.days_two": "يومان",
+  "settings.hijri.date.adjustments.days_few": "{{count}} أيام",
+  "settings.hijri.date.adjustments.days_many": "{{count}} يوماً",
+  "settings.hijri.date.adjustments.days_other": "{{count}} يوم"
 }
