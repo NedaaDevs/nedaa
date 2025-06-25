@@ -43,6 +43,9 @@ jobs:
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: 🔐 Setup Sentry properties
+        run: |
+          echo "auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}" >> android/sentry.properties
       - name: 🚀 Build Android
         id: build
         run: |
