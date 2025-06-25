@@ -8,7 +8,7 @@ on:
       profile:
         description: "Build profile"
         required: true
-        default: "preview"
+        default: "production"
         type: choice
         options:
           - preview
