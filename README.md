@@ -1,3 +1,5 @@
+[![Build Android](https://github.com/NedaaDevs/nedaa/actions/workflows/build-android.yml/badge.svg?branch=master)](https://github.com/NedaaDevs/nedaa/actions/workflows/build-android.yml)
+
 <h1 align="center"> Nedaa | نداء </h1> <br>
 
 <p align="center">
