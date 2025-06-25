@@ -212,6 +212,7 @@
   "providers.aladhan.tuning.selectValue": "Select minutes",
   "providers.aladhan.tuning.title": "Prayer Time Adjustments",
   "providers.selectPlaceholder": "Select a provider",
+  "providers.selectProvider": "Select Prayer Times Provider",
   "providers.title": "Prayer Times Providers",
   "settings.advance.provider.selectPlaceholder": "Select prayer times provider",
   "settings.advance.provider.title": "Prayer Times Provider",
