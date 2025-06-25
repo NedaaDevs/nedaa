@@ -27,7 +27,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 const Header = () => {
   const { t } = useTranslation();
-  const { locale } = useAppStore();
+  const { locale, hijriDaysOffset } = useAppStore();
   const { localizedLocation, locationDetails } = useLocationStore();
   const { getNextPrayer } = usePrayerTimesStore();
   const { becameActiveAt } = useAppVisibility();
@@ -36,7 +36,7 @@ const Header = () => {
 
   const nextPrayer = getNextPrayer();
   const now = timeZonedNow(locationDetails.timezone);
-  const hijriDate = HijriConverter.toHijri(now);
+  const hijriDate = HijriConverter.toHijri(now, hijriDaysOffset);
 
   // Get human-readable time remaining
   const getFormattedTimeRemaining = () => {
