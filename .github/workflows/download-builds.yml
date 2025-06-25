@@ -29,6 +29,7 @@ jobs:
           fi
 
       - name: 📱 Upload artifact
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ github.event.inputs.build_id }}
