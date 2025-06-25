@@ -278,14 +278,13 @@ const generatePrayerNotifications = (
         notifications.push({
           id: `preathan_${prayerId}_${prayerTime.getTime()}`,
           time: preAthanTime,
-          title: t("notification.preAthan.title", {
-            minutes: formatNumberToLocale(preAthanConfig.timing.toString()),
-            prayerName,
-          }),
-          body: t("notification.preAthan.body", {
-            minutes: preAthanConfig.timing,
-            prayerName,
-          }),
+          title: t("notification.preAthan.title"),
+          body: formatNumberToLocale(
+            t("notification.preAthan.body", {
+              count: preAthanConfig.timing,
+              prayerName,
+            })
+          ),
           type: NOTIFICATION_TYPE.PRE_ATHAN,
           prayerId,
           categoryId: `preathan_${prayerId}`,
@@ -346,10 +345,12 @@ const generatePrayerNotifications = (
         title: t("notification.iqama.title", {
           prayerName,
         }),
-        body: t("notification.iqama.body", {
-          minutes: formatNumberToLocale(iqamaConfig.timing.toString()),
-          prayerName,
-        }),
+        body: formatNumberToLocale(
+          t("notification.iqama.body", {
+            count: iqamaConfig.timing,
+            prayerName,
+          })
+        ),
         type: NOTIFICATION_TYPE.IQAMA,
         prayerId,
         categoryId: `iqama_${prayerId}`,
