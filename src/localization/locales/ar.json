@@ -212,6 +212,7 @@
   "providers.aladhan.tuning.selectValue": "اختر الدقائق",
   "providers.aladhan.tuning.title": "تعديل أوقات الصلاة",
   "providers.selectPlaceholder": "اختر مزودًا",
+  "providers.selectProvider": "اختر مزودًا",
   "providers.title": "مزودو أوقات الصلاة",
   "settings.advance.provider.selectPlaceholder": "اختر مزود أوقات الصلاة",
   "settings.advance.provider.title": "مزود أوقات الصلاة",
