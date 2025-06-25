@@ -91,37 +91,38 @@ const Header = () => {
 
   return (
     <Box className="m-1 rounded-2xl">
-      <Box className="p-3 rounded-xl mx-2 mt-1 border-s-hairline">
-        <VStack className="items-center my-3">
-          <Text className="text-2xl font-bold text-typography">{dayName}</Text>
-          <Text className="text-lg text-typography-secondary">{formattedDateDetails}</Text>
+      <Box className="p-4 rounded-xl mx-2 mt-1 ">
+        <VStack className="items-center gap-1">
+          <Text className="text-2xl font-bold text-typography text-center">{dayName}</Text>
+          <Text className="text-lg text-typography-secondary text-center">
+            {formattedDateDetails}
+          </Text>
         </VStack>
       </Box>
 
-      <VStack className="items-center mb-2">
-        <Box className="h-px flex-1 bg-outline" />
-        <Text className="mx-4 text-2xl font-semibold text-typography">
-          {localizedLocation.city ?? locationDetails.address?.city}
-        </Text>
-        <Box className="h-px flex-1 bg-outline" />
-
-        <Text className="text-base text-typography-secondary">
-          {localizedLocation.country ?? locationDetails.address?.country}
-        </Text>
+      <VStack className="items-center my-4 gap-2">
+        <VStack className="items-center gap-1">
+          <Text className="text-2xl font-semibold text-typography text-center px-4">
+            {localizedLocation.city ?? locationDetails.address?.city}
+          </Text>
+          <Text className="text-base text-typography-secondary text-center px-4">
+            {localizedLocation.country ?? locationDetails.address?.country}
+          </Text>
+        </VStack>
       </VStack>
 
       <PreviousPrayer />
 
-      <Box className="p-8 bg-background-secondary  rounded-xl mx-1 mt-2 mb-2 border-s-hairline">
-        <HStack className="justify-between items-center w-full space-x-4">
-          <Text className="text-4xl font-bold text-accent-primary truncate max-w-[45%]">
+      <Box className="p-8 bg-background-secondary rounded-xl mx-1 mt-2 mb-2">
+        <HStack className="justify-between items-center w-full gap-4">
+          <Text className="text-4xl font-bold text-accent-primary flex-1 text-left">
             {t(prayerName)}
           </Text>
 
           <Divider className="h-14 w-px flex-shrink-0 bg-outline" />
 
-          <VStack className="items-end max-w-[45%]">
-            <Text className="text-4xl font-semibold text-accent-primary truncate">
+          <VStack className="items-end flex-1">
+            <Text className="text-4xl font-semibold text-accent-primary text-right">
               {formattedPrayerTime(nextPrayer.time)}
             </Text>
 
