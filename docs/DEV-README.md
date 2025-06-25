@@ -32,8 +32,8 @@ The pre-commit hook will automatically:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/NedaaDevs/nedaa-v2
-cd nedaa-v2
+git clone https://github.com/NedaaDevs/nedaa
+cd nedaa
 ```
 
 2. Install dependencies using Bun:
