@@ -2,7 +2,7 @@ name: Build iOS
 
 on:
   push:
-    branches: [master]
+    branches: [disabled-temporarily] # For now disable iOS builds as it needs interactivity for signing the app
   workflow_dispatch:
     inputs:
       profile:
@@ -36,6 +36,10 @@ jobs:
 
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: 🔐 Setup Sentry properties
+        run: |
+          echo "auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}" >> ios/sentry.properties
 
       - name: 🍎 Build iOS
         id: build
