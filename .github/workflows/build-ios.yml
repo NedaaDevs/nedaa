@@ -1,0 +1,62 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Build profile"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - production
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: ubuntu-latest # EAS handles the macOS building
+
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: ">= 13.1.0"
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🍎 Build iOS
+        id: build
+        run: |
+          PROFILE=${{ github.event.inputs.profile || 'preview' }}
+          echo "Building with profile: $PROFILE"
+          eas build --platform ios --profile $PROFILE --non-interactive --json > build_result.json
+          echo "build_id=$(cat build_result.json | jq -r '.[] | select(.platform=="ios") | .id')" >> $GITHUB_OUTPUT
+
+      - name: 📋 Comment Build Status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildId = '${{ steps.build.outputs.build_id }}';
+            const profile = '${{ github.event.inputs.profile || 'preview' }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🍎 iOS build started!\n\n**Build ID:** ${buildId}\n**Profile:** ${profile}\n**Trigger:** ${{ github.event_name }}\n\nCheck progress: https://expo.dev/accounts/nedaadev/projects/nedaa/builds/${buildId}`
+            })
