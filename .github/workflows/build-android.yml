@@ -1,8 +1,6 @@
 name: Build Android
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
     inputs:
       profile:
@@ -13,10 +11,12 @@ on:
         options:
           - preview
           - production
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   build-android:
-    name: Build Android APK/AAB
+    name: Build Android
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +34,9 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
+      - name: 🏗 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: 🏗 Setup EAS
         uses: expo/expo-github-action@v8
         with:
@@ -46,23 +49,68 @@ jobs:
       - name: 🔐 Setup Sentry properties
         run: |
           echo "auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}" >> android/sentry.properties
+
       - name: 🚀 Build Android
         id: build
         run: |
           PROFILE=${{ github.event.inputs.profile || 'preview' }}
-          echo "Building with profile: $PROFILE"
-          eas build --platform android --profile $PROFILE --non-interactive --json > build_result.json
-          echo "build_id=$(cat build_result.json | jq -r '.[] | select(.platform=="android") | .id')" >> $GITHUB_OUTPUT
+          echo "Building Android with profile: $PROFILE"
 
-      - name: 📋 Comment Build Status
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+          # Build locally
+          eas build --platform android --profile $PROFILE --local --non-interactive
+
+          # Find generated files
+          APK_PATH=$(find . -name "*.apk" -type f | head -1)
+          AAB_PATH=$(find . -name "*.aab" -type f | head -1)
+
+          if [ -n "$APK_PATH" ]; then
+            echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+            echo "✅ APK: $APK_PATH"
+          fi
+
+          if [ -n "$AAB_PATH" ]; then
+            echo "aab_path=$AAB_PATH" >> $GITHUB_OUTPUT
+            echo "✅ AAB: $AAB_PATH"
+          fi
+
+          echo "timestamp=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
+
+      - name: 📱 Upload APK
+        if: steps.build.outputs.apk_path
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const buildId = '${{ steps.build.outputs.build_id }}';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🤖 Android build started!\n\n**Build ID:** ${buildId}\n**Profile:** ${{ github.event.inputs.profile || 'preview' }}\n\nCheck progress: https://expo.dev/accounts/nedaadev/projects/nedaa/builds/${buildId}`
-            })
+          name: android-apk-${{ steps.build.outputs.profile }}-${{ steps.build.outputs.timestamp }}
+          path: ${{ steps.build.outputs.apk_path }}
+          retention-days: 30
+
+      - name: 📱 Upload AAB
+        if: steps.build.outputs.aab_path
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab-${{ steps.build.outputs.profile }}-${{ steps.build.outputs.timestamp }}
+          path: ${{ steps.build.outputs.aab_path }}
+          retention-days: 30
+
+      - name: 🏷️ Create Release
+        if: steps.build.outputs.apk_path || steps.build.outputs.aab_path
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: android-${{ steps.build.outputs.profile }}-${{ steps.build.outputs.timestamp }}
+          name: Android ${{ steps.build.outputs.profile }} - ${{ steps.build.outputs.timestamp }}
+          body: |
+            🤖 **Android Build**
+
+            **Profile:** ${{ steps.build.outputs.profile }}
+            **Built:** ${{ steps.build.outputs.timestamp }}
+
+            Downloads:
+            ${{ steps.build.outputs.apk_path && '- APK for direct install' || '' }}
+            ${{ steps.build.outputs.aab_path && '- AAB for Play Store' || '' }}
+          files: |
+            ${{ steps.build.outputs.apk_path }}
+            ${{ steps.build.outputs.aab_path }}
+          draft: false
+          prerelease: ${{ steps.build.outputs.profile != 'production' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

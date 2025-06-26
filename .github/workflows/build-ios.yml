@@ -1,23 +1,23 @@
 name: Build iOS
 
 on:
-  push:
-    branches: [disabled-temporarily] # For now disable iOS builds as it needs interactivity for signing the app
   workflow_dispatch:
     inputs:
       profile:
         description: "Build profile"
         required: true
-        default: "preview"
+        default: "production"
         type: choice
         options:
           - preview
           - production
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   build-ios:
-    name: Build iOS IPA
-    runs-on: ubuntu-latest # EAS handles the macOS building
+    name: Build iOS
+    runs-on: macos-latest
 
     steps:
       - name: 🏗 Setup repo
@@ -27,6 +27,11 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: ".bun-version"
+
+      - name: 🏗 Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: 🏗 Setup EAS
         uses: expo/expo-github-action@v8
@@ -45,20 +50,48 @@ jobs:
         id: build
         run: |
           PROFILE=${{ github.event.inputs.profile || 'preview' }}
-          echo "Building with profile: $PROFILE"
-          eas build --platform ios --profile $PROFILE --non-interactive --json > build_result.json
-          echo "build_id=$(cat build_result.json | jq -r '.[] | select(.platform=="ios") | .id')" >> $GITHUB_OUTPUT
+          echo "Building iOS with profile: $PROFILE"
 
-      - name: 📋 Comment Build Status
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+          # Build locally
+          eas build --platform ios --profile $PROFILE --local --non-interactive
+
+          # Find generated IPA
+          IPA_PATH=$(find . -name "*.ipa" -type f | head -1)
+
+          if [ -n "$IPA_PATH" ]; then
+            echo "ipa_path=$IPA_PATH" >> $GITHUB_OUTPUT
+            echo "✅ IPA: $IPA_PATH"
+          else
+            echo "❌ No IPA found"
+            exit 1
+          fi
+
+          echo "timestamp=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
+
+      - name: 📱 Upload IPA
+        if: steps.build.outputs.ipa_path
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const buildId = '${{ steps.build.outputs.build_id }}';
-            const profile = '${{ github.event.inputs.profile || 'preview' }}';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🍎 iOS build started!\n\n**Build ID:** ${buildId}\n**Profile:** ${profile}\n**Trigger:** ${{ github.event_name }}\n\nCheck progress: https://expo.dev/accounts/nedaadev/projects/nedaa/builds/${buildId}`
-            })
+          name: ios-ipa-${{ steps.build.outputs.profile }}-${{ steps.build.outputs.timestamp }}
+          path: ${{ steps.build.outputs.ipa_path }}
+          retention-days: 30
+
+      - name: 🏷️ Create Release
+        if: steps.build.outputs.ipa_path
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ios-${{ steps.build.outputs.profile }}-${{ steps.build.outputs.timestamp }}
+          name: iOS ${{ steps.build.outputs.profile }} - ${{ steps.build.outputs.timestamp }}
+          body: |
+            🍎 **iOS Build**
+
+            **Profile:** ${{ steps.build.outputs.profile }}
+            **Built:** ${{ steps.build.outputs.timestamp }}
+
+            Download IPA for TestFlight or enterprise distribution.
+          files: ${{ steps.build.outputs.ipa_path }}
+          draft: false
+          prerelease: ${{ steps.build.outputs.profile != 'production' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
