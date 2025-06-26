@@ -1,11 +1,10 @@
 "use client";
 import React from "react";
-import { createIcon } from "@gluestack-ui/icon";
+import { createIcon, PrimitiveIcon, IPrimitiveIcon, Svg } from "@gluestack-ui/icon";
 import { Path } from "react-native-svg";
 import { tva } from "@gluestack-ui/nativewind-utils/tva";
 import { cssInterop } from "nativewind";
 import { VariantProps } from "@gluestack-ui/nativewind-utils";
-import { PrimitiveIcon, IPrimitiveIcon, Svg } from "@gluestack-ui/icon";
 
 export const UIIcon = createIcon({
   Root: PrimitiveIcon,
@@ -72,6 +71,7 @@ const createIconUI = ({ ...props }: ParameterTypes) => {
       React.RefAttributes<React.ComponentRef<typeof Svg>>
   >;
 
+  // eslint-disable-next-line
   return React.forwardRef<React.ComponentRef<typeof Svg>>(
     (
       {

@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 // Components
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Switch } from "@/components/ui/switch";

@@ -1,3 +1,4 @@
+import "intl-pluralrules";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { getLocales } from "expo-localization";
@@ -19,6 +20,8 @@ const resources = {
 const initI18n = () => {
   const deviceLanguage = getLocales()[0]?.languageCode?.toLowerCase().slice(0, 2) as AppLocale;
 
+  // Initialize i18n with React integration
+  // eslint-disable-next-line import/no-named-as-default-member
   i18n.use(initReactI18next).init({
     resources,
     lng: deviceLanguage,

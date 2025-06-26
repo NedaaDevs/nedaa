@@ -60,6 +60,7 @@ export const useCityChangeHandler = () => {
       // Keep modal open so user can retry
       locationStore.dismissCityChangeModal();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationStore, prayerTimesStore, notificationStore]);
 
   // Check for city change periodically or on app foreground

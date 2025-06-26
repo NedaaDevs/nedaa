@@ -29,6 +29,7 @@ export type ExtractSoundKeys<
   [K in keyof TAssets]: TNotificationType extends TAssets[K]["availableFor"][number] ? K : never;
 }[keyof TAssets];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type NotificationSoundKey<T extends NotificationType> = string;
 
 export type SoundMapping = Record<string, string>;

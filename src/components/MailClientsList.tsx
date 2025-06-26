@@ -39,6 +39,7 @@ const MailClientsList = ({ onClose }: Props) => {
 
   useEffect(() => {
     fetchMailClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchMailClients = async () => {

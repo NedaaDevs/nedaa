@@ -1,0 +1,37 @@
+name: Download EAS Builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: "EAS Build ID"
+        required: true
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: ">= 13.1.0"
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📥 Download build
+        run: |
+          BUILD_ID=${{ github.event.inputs.build_id }}
+          BUILD_INFO=$(eas build:view $BUILD_ID --json)
+          BUILD_URL=$(echo $BUILD_INFO | jq -r '.artifacts.buildUrl')
+          PLATFORM=$(echo $BUILD_INFO | jq -r '.platform')
+
+          if [ "$BUILD_URL" != "null" ]; then
+            curl -L "$BUILD_URL" -o "build-$BUILD_ID.$([[ $PLATFORM == "android" ]] && echo "apk" || echo "ipa")"
+          fi
+
+      - name: 📱 Upload artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.event.inputs.build_id }}
+          path: build-*
+          retention-days: 30

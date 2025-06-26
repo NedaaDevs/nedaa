@@ -66,7 +66,6 @@ const NotificationQuickSetup: FC<Props> = ({
   // Local state for quick setup
   const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
-  const [isOpen, setIsOpen] = useState(false);
 
   const soundOptions = getAvailableSounds(NOTIFICATION_TYPE.PRAYER);
 
@@ -117,8 +116,6 @@ const NotificationQuickSetup: FC<Props> = ({
               initialLabel={localSound ? getTranslatedLabel() : ""}
               selectedValue={localSound}
               onValueChange={handleValueChange}
-              onOpen={() => setIsOpen(true)}
-              onClose={() => setIsOpen(false)}
               accessibilityLabel={t("notification.sound.selectPlaceholder")}>
               <SelectTrigger
                 variant="outline"

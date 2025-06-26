@@ -126,7 +126,7 @@ export const ProviderList: FC = () => {
           size="lg"
           className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-primary" : "border-outline"} ${isChangingProvider ? "opacity-70" : ""}`}>
           <SelectInput
-            className="flex-1 text-typography text-base font-medium px-2"
+            className="text-left !text-typography font-medium"
             placeholder={t("providers.selectPlaceholder")}
           />
           <SelectIcon

@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import FontProvider from "@/contexts/FontContext";
+import { FontProvider } from "@/contexts/FontContext";
 
 // Stores
 import { getDirection, isRTL, useAppStore } from "@/stores/app";
