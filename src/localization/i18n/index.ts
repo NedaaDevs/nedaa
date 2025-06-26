@@ -7,7 +7,7 @@ import { getLocales } from "expo-localization";
 import translationAR from "@/localization/locales/ar.json";
 import translationEN from "@/localization/locales/en.json";
 import translationMS from "@/localization/locales/ms.json";
-
+import translationUR from "@/localization/locales/ur.json";
 // Enums
 import { AppLocale } from "@/enums/app";
 
@@ -15,6 +15,7 @@ const resources = {
   ar: { translation: translationAR },
   en: { translation: translationEN },
   ms: { translation: translationMS },
+  ur: { translation: translationUR },
 };
 
 const initI18n = () => {
