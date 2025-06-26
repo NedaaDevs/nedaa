@@ -243,6 +243,8 @@
   "settings.languages.ms.title": "Malay",
   "settings.languages.restartRequired": "Please restart the app for the language change to take effect.",
   "settings.languages.title": "Languages",
+  "settings.languages.ur.nativeTitle": "اردو",
+  "settings.languages.ur.title": "Urdu",
   "settings.location.title": "Location",
   "settings.mode": "Mode",
   "settings.notification.title": "Notifications",
