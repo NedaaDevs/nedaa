@@ -11,7 +11,7 @@
     },
     "name": "nedaa",
     "slug": "nedaa",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -79,13 +79,12 @@
       }
     },
     "android": {
-      "blockedPermissions": ["FOREGROUND_SERVICE_LOCATION"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "dev.nedaa.app"
+      "package": "dev.nedaa.android"
     },
     "web": {
       "bundler": "metro",

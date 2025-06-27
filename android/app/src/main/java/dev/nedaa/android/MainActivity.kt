@@ -1,4 +1,4 @@
-package dev.nedaa.app
+package dev.nedaa.android
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
