@@ -89,13 +89,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'dev.nedaa.app'
+    namespace 'dev.nedaa.android'
     defaultConfig {
-        applicationId 'dev.nedaa.app'
+        applicationId 'dev.nedaa.android'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "2.0.0"
+        versionName "2.0.1"
     }
     signingConfigs {
         debug {
