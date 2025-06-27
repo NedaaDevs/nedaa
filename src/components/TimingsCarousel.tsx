@@ -1,5 +1,6 @@
 import * as React from "react";
 import PagerView from "react-native-pager-view";
+import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -22,6 +23,7 @@ const TimingsCarousel = (props: Props) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const pagerRef = React.useRef<PagerView>(null);
   const selectionHaptic = useHaptic("selection");
+  const { t } = useTranslation();
 
   const handleTabPress = async (index: number) => {
     await selectionHaptic();
@@ -48,7 +50,9 @@ const TimingsCarousel = (props: Props) => {
         initialPage={0}
         onPageSelected={handlePageSelected}
         scrollEnabled={true}
-        overdrag={true}>
+        overdrag={true}
+        accessibilityLabel={t("accessibility.swipeToNavigatePrayers")}
+        accessibilityRole="tablist">
         {/* Page 1: Prayer Times */}
         <Box key="prayer-times" style={{ flex: 1 }}>
           <PrayerTimes />

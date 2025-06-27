@@ -24,7 +24,10 @@ const CustomPagination: FC<PaginationProps> = ({
 
   const renderDots = () => (
     <Box className="pb-5 pt-2.5">
-      <View className="flex-row gap-2">
+      <View
+        className="flex-row gap-2"
+        accessibilityRole="tabbar"
+        accessibilityLabel={t("accessibility.navigationTabs")}>
         {data.map((_, index) => (
           <Pressable
             key={index}
@@ -32,6 +35,13 @@ const CustomPagination: FC<PaginationProps> = ({
             className={`h-2 rounded-full ${
               currentIndex === index ? "w-6 bg-accent-primary" : "w-2 bg-outline"
             }`}
+            accessibilityRole="tab"
+            accessibilityLabel={t("accessibility.tabButton", {
+              tabName: index === 0 ? t("prayerTimes.title") : t("otherTimings.title"),
+              index: index + 1,
+            })}
+            accessibilityState={{ selected: currentIndex === index }}
+            accessibilityHint={t("accessibility.switchToTab")}
           />
         ))}
       </View>
@@ -40,12 +50,22 @@ const CustomPagination: FC<PaginationProps> = ({
 
   const renderPills = () => (
     <Box className="items-center bg-background-secondary">
-      <View className="flex-row bg-background-muted rounded-3xl gap-1 p-1">
+      <View
+        className="flex-row bg-background-muted rounded-3xl gap-1 p-1"
+        accessibilityRole="tabbar"
+        accessibilityLabel={t("accessibility.navigationTabs")}>
         <Pressable
           onPress={() => onPress(0)}
           className={`px-5 py-2 rounded-2xl ${
             currentIndex === 0 ? "bg-accent-primary" : "bg-transparent"
-          }`}>
+          }`}
+          accessibilityRole="tab"
+          accessibilityLabel={t("accessibility.tabButton", {
+            tabName: t("prayerTimes.title"),
+            index: 1,
+          })}
+          accessibilityState={{ selected: currentIndex === 0 }}
+          accessibilityHint={t("accessibility.switchToTab")}>
           <Text
             className={`text-sm ${
               currentIndex === 0
@@ -60,7 +80,14 @@ const CustomPagination: FC<PaginationProps> = ({
           onPress={() => onPress(1)}
           className={`px-5 py-2 rounded-2xl ${
             currentIndex === 1 ? "bg-accent-primary" : "bg-transparent"
-          }`}>
+          }`}
+          accessibilityRole="tab"
+          accessibilityLabel={t("accessibility.tabButton", {
+            tabName: t("otherTimings.title"),
+            index: 2,
+          })}
+          accessibilityState={{ selected: currentIndex === 1 }}
+          accessibilityHint={t("accessibility.switchToTab")}>
           <Text
             className={`text-sm ${
               currentIndex === 1
@@ -91,8 +118,19 @@ const CustomPagination: FC<PaginationProps> = ({
           className="bg-accent-primary"
         />
       </View>
-      <View className="flex-row mt-2 gap-15">
-        <Pressable onPress={() => onPress(0)}>
+      <View
+        className="flex-row mt-2 gap-15"
+        accessibilityRole="tabbar"
+        accessibilityLabel={t("accessibility.navigationTabs")}>
+        <Pressable
+          onPress={() => onPress(0)}
+          accessibilityRole="tab"
+          accessibilityLabel={t("accessibility.tabButton", {
+            tabName: t("prayerTimes.title"),
+            index: 1,
+          })}
+          accessibilityState={{ selected: currentIndex === 0 }}
+          accessibilityHint={t("accessibility.switchToTab")}>
           <Text
             className={`text-xs ${
               currentIndex === 0
@@ -102,7 +140,15 @@ const CustomPagination: FC<PaginationProps> = ({
             {t("prayerTimes.title")}
           </Text>
         </Pressable>
-        <Pressable onPress={() => onPress(1)}>
+        <Pressable
+          onPress={() => onPress(1)}
+          accessibilityRole="tab"
+          accessibilityLabel={t("accessibility.tabButton", {
+            tabName: t("otherTimings.title"),
+            index: 2,
+          })}
+          accessibilityState={{ selected: currentIndex === 1 }}
+          accessibilityHint={t("accessibility.switchToTab")}>
           <Text
             className={`text-xs ${
               currentIndex === 1
@@ -118,7 +164,10 @@ const CustomPagination: FC<PaginationProps> = ({
 
   const renderIcons = () => (
     <Box className="pb-5 pt-2.5 items-center">
-      <View className="flex-row gap-4">
+      <View
+        className="flex-row gap-4"
+        accessibilityRole="tabbar"
+        accessibilityLabel={t("accessibility.navigationTabs")}>
         {data.map((_, index) => (
           <Pressable
             key={index}
@@ -126,6 +175,13 @@ const CustomPagination: FC<PaginationProps> = ({
             className={`h-3 rounded-md ${
               currentIndex === index ? "w-8 bg-accent-primary" : "w-3 bg-outline"
             }`}
+            accessibilityRole="tab"
+            accessibilityLabel={t("accessibility.tabButton", {
+              tabName: index === 0 ? t("prayerTimes.title") : t("otherTimings.title"),
+              index: index + 1,
+            })}
+            accessibilityState={{ selected: currentIndex === index }}
+            accessibilityHint={t("accessibility.switchToTab")}
           />
         ))}
       </View>
@@ -134,7 +190,10 @@ const CustomPagination: FC<PaginationProps> = ({
 
   const renderLines = () => (
     <Box className="pb-5 pt-2.5 items-center">
-      <View className="flex-row gap-3">
+      <View
+        className="flex-row gap-3"
+        accessibilityRole="tabbar"
+        accessibilityLabel={t("accessibility.navigationTabs")}>
         {data.map((_, index) => (
           <Pressable
             key={index}
@@ -142,6 +201,13 @@ const CustomPagination: FC<PaginationProps> = ({
             className={`w-6 h-0.5 ${
               currentIndex === index ? "bg-accent-primary rounded-sm" : "bg-outline"
             }`}
+            accessibilityRole="tab"
+            accessibilityLabel={t("accessibility.tabButton", {
+              tabName: index === 0 ? t("prayerTimes.title") : t("otherTimings.title"),
+              index: index + 1,
+            })}
+            accessibilityState={{ selected: currentIndex === index }}
+            accessibilityHint={t("accessibility.switchToTab")}
           />
         ))}
       </View>

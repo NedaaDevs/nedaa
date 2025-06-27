@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -15,10 +16,11 @@ import { Settings } from "lucide-react-native";
 
 export default function MainScreen() {
   const { mode } = useAppStore();
+  const { t } = useTranslation();
 
   return (
     <Background>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} accessibilityLabel={t("accessibility.prayerTimesApp")}>
         <Box>
           <TopBar title="common.nedaa" href="/settings" icon={Settings} />
           <Header />

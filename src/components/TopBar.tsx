@@ -40,17 +40,28 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
     <Box className="px-5 py-4 flex flex-row items-center bg-background-elevated">
       <Box className="flex-1 flex-row items-center gap-3">
         {backOnClick && (
-          <Pressable onPress={handlePress} className="p-2 rounded-lg">
+          <Pressable
+            onPress={handlePress}
+            className="p-2 rounded-lg"
+            accessibilityRole="button"
+            accessibilityLabel={t("accessibility.backButton")}
+            accessibilityHint={t("accessibility.goBack")}>
             <Icon as={BackArrow} size="lg" className="text-typography-contrast" />
           </Pressable>
         )}
-        <Text className="text-2xl font-bold text-typography-contrast">{t(title)}</Text>
+        <Text className="text-2xl font-bold text-typography-contrast" accessibilityRole="header">
+          {t(title)}
+        </Text>
       </Box>
 
       <Box className="w-12 items-end">
         {!backOnClick && (
           <Link href={href} asChild>
-            <Pressable className="p-2 rounded-lg">
+            <Pressable
+              className="p-2 rounded-lg"
+              accessibilityRole="button"
+              accessibilityLabel={t("accessibility.openSettingsPage")}
+              accessibilityHint={t("accessibility.opensSettingsMenu")}>
               <Icon as={icon} size="lg" className="text-typography-contrast" />
             </Pressable>
           </Link>

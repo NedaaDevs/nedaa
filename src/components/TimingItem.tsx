@@ -36,8 +36,22 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
     );
   };
 
+  const accessibilityLabel = isNext
+    ? t("accessibility.nextPrayer", {
+        prayer: t(name),
+        time: formattedPrayerTime(time),
+      })
+    : t("accessibility.prayerTime", {
+        prayer: t(name),
+        time: formattedPrayerTime(time),
+      });
+
   return (
     <Box
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: isNext }}
+      accessibilityHint={isNext ? t("accessibility.currentPrayerHint") : undefined}
       className={`relative inset-0 m-2 p-4 rounded-lg overflow-hidden ${isNext ? "bg-primary dark:bg-primary" : "bg-background-secondary dark:bg-background-secondary"}`}>
       {/* Side indicator  */}
       {isNext && (

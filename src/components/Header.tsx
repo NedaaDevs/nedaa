@@ -73,7 +73,7 @@ const Header = () => {
 
   if (!nextPrayer) {
     return (
-      <Box className="m-1 rounded-2xl">
+      <Box className="m-1 rounded-2xl" accessibilityLabel={t("accessibility.loading")}>
         <Box className="p-3 rounded-xl mx-2 mt-1 bg-background-secondary">
           <VStack className="items-center my-3 gap-2">
             <SkeletonText className="h-7 w-32" />
