@@ -159,7 +159,12 @@ const NotificationSettings = () => {
 
               {canAskPermission ? (
                 <Box className="w-full items-center">
-                  <Button onPress={handleRequestPermission} className="px-12" size="lg">
+                  <Button
+                    onPress={handleRequestPermission}
+                    className="px-12"
+                    size="lg"
+                    accessibilityLabel={t("accessibility.allowNotificationPermission")}
+                    accessibilityHint={t("accessibility.grantPermissionForNotifications")}>
                     <ButtonText className="font-medium">
                       {t("notification.permission.allow")}
                     </ButtonText>
@@ -170,7 +175,12 @@ const NotificationSettings = () => {
                   <Text className="text-md text-typography text-center px-2">
                     {t("notification.permission.deniedMessage")}
                   </Text>
-                  <Button onPress={openAppSettings} className="px-12" size="lg">
+                  <Button
+                    onPress={openAppSettings}
+                    className="px-12"
+                    size="lg"
+                    accessibilityLabel={t("accessibility.openDeviceSettings")}
+                    accessibilityHint={t("accessibility.openSettingsToEnableNotifications")}>
                     <ButtonText className="font-medium text-md">
                       {t("notification.permission.openSettings")}
                     </ButtonText>
@@ -190,7 +200,9 @@ const NotificationSettings = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}>
+        contentContainerStyle={{ paddingBottom: 20 }}
+        accessibilityLabel={t("accessibility.notificationSettingsScreen")}
+        accessibilityHint={t("accessibility.configureNotifications")}>
         <VStack className="flex-1" space="md">
           {/* Master Toggle */}
           <Box className="bg-background-secondary mx-4 mt-4 rounded-lg">
@@ -214,6 +226,9 @@ const NotificationSettings = () => {
                   updateAllNotificationToggle(value);
                 }}
                 size="lg"
+                accessibilityLabel={t("accessibility.toggleAllNotifications")}
+                accessibilityHint={t("accessibility.enableDisableAllPrayerNotifications")}
+                accessibilityState={{ checked: settings.enabled }}
               />
             </HStack>
           </Box>

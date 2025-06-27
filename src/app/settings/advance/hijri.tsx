@@ -102,7 +102,12 @@ const HijriSettings = () => {
       <TopBar title={t("settings.hijri.date.title")} href="/" backOnClick />
 
       <Box className="flex-1 p-4">
-        <Box className="bg-background-secondary p-6 rounded-xl mb-6">
+        <Box
+          className="bg-background-secondary p-6 rounded-xl mb-6"
+          accessibilityRole="text"
+          accessibilityLabel={t("accessibility.currentHijriDate", {
+            date: `${dayName}, ${formattedDateDetails}`,
+          })}>
           <Box className="flex-row items-center justify-center mb-2">
             <Icon as={Calendar} className="text-accent-primary mr-2" size="md" />
             <VStack className="items-center my-3">
@@ -120,7 +125,11 @@ const HijriSettings = () => {
 
         <Pressable
           onPress={() => setShowActionSheet(true)}
-          className="bg-background-secondary p-4 rounded-lg flex-row items-center justify-between">
+          className="bg-background-secondary p-4 rounded-lg flex-row items-center justify-between"
+          accessibilityRole="button"
+          accessibilityLabel={t("accessibility.hijriAdjustmentSelector")}
+          accessibilityHint={t("accessibility.selectHijriDateAdjustment")}
+          accessibilityValue={{ text: currentAdjustmentLabel }}>
           <VStack>
             <Text className="text-sm text-typography-secondary mb-1">
               {t("settings.hijri.date.currentAdjustment")}
@@ -138,7 +147,9 @@ const HijriSettings = () => {
             <ActionsheetDragIndicator />
           </ActionsheetDragIndicatorWrapper>
 
-          <Text className="text-lg font-semibold text-typography px-4 py-3">
+          <Text
+            className="text-lg font-semibold text-typography px-4 py-3"
+            accessibilityRole="header">
             {t("settings.hijri.date.selectAdjustment")}
           </Text>
 
@@ -149,7 +160,17 @@ const HijriSettings = () => {
                 <ActionsheetItem
                   className={`rounded-xl ${isSelected ? "bg-surface-active" : ""}`}
                   key={option.value}
-                  onPress={() => handleSelectAdjustment(option.value)}>
+                  onPress={() => handleSelectAdjustment(option.value)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={t("accessibility.hijriAdjustmentOption", {
+                    adjustment: option.label,
+                  })}
+                  accessibilityHint={
+                    isSelected
+                      ? t("accessibility.currentAdjustment")
+                      : t("accessibility.selectThisAdjustment")
+                  }>
                   <ActionsheetItemText className="text-left text-typography font-medium">
                     {option.label}
                   </ActionsheetItemText>

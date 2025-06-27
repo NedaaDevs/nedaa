@@ -1,6 +1,7 @@
 // Plugins
 import { Link } from "expo-router";
 import { I18nManager } from "react-native";
+import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -24,17 +25,32 @@ type Props = {
 };
 
 const SettingsItem = ({ name, path, icon, currentValue, rtl = I18nManager.isRTL }: Props) => {
+  const { t } = useTranslation();
   const ChevronIcon = rtl ? ChevronLeft : ChevronRight;
 
+  const accessibilityLabel = currentValue
+    ? t("accessibility.settingsItemWithValue", { itemName: name, currentValue })
+    : t("accessibility.settingsItem", { itemName: name });
+
+  const accessibilityHint = t("accessibility.navigateToSettings", { settingName: name });
+
   return (
-    <Box className="relative inset-0 m-2 p-5 rounded-lg overflow-hidden bg-background-secondary">
+    <Box
+      className="relative inset-0 m-2 p-5 rounded-lg overflow-hidden bg-background-secondary"
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}>
       <Link href={path} asChild>
-        <Pressable className="flex-row items-center">
+        <Pressable
+          className="flex-row items-center"
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint={accessibilityHint}>
           <HStack className="justify-between items-center relative z-10 w-full">
             <HStack className="items-center">
               {icon && (
                 <Box className="mr-6">
-                  <Icon className="font-bold text-typography" size="lg" as={icon}></Icon>
+                  <Icon className="font-bold text-typography" size="lg" as={icon} />
                 </Box>
               )}
               <Text className="text-xl font-medium text-typography">{name}</Text>

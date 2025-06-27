@@ -51,12 +51,11 @@ export const ProviderList: FC = () => {
               isSelected ? "bg-surface-active" : "bg-background-secondary"
             }`}>
             {isSelected && (
-              <Box className="bg-primary rounded-full p-1.5">
-                <CheckIcon
-                  className="text-typography-contrast"
-                  size={14}
-                  accessibilityLabel={t("common.selected")}
-                />
+              <Box
+                className="bg-primary rounded-full p-1.5"
+                accessibilityRole="image"
+                accessibilityLabel={t("accessibility.selectedProvider")}>
+                <CheckIcon className="text-typography-contrast" size={14} />
               </Box>
             )}
           </SelectItem>
@@ -108,7 +107,10 @@ export const ProviderList: FC = () => {
       <Text className="text-lg font-semibold mb-4 text-typography">{t("providers.title")}</Text>
 
       {error && (
-        <Box className="bg-background-error rounded-lg p-3 mb-4 border border-border-error">
+        <Box
+          className="bg-background-error rounded-lg p-3 mb-4 border border-border-error"
+          accessibilityRole="alert"
+          accessibilityLabel={t("accessibility.providerError")}>
           <Text className="text-sm text-error">{error}</Text>
         </Box>
       )}
@@ -120,11 +122,17 @@ export const ProviderList: FC = () => {
         onValueChange={handleProviderChange}
         onOpen={() => setIsOpen(true)}
         onClose={() => setIsOpen(false)}
-        accessibilityLabel={t("providers.selectPlaceholder")}>
+        accessibilityLabel={t("accessibility.selectPrayerTimeProvider")}
+        accessibilityHint={t("accessibility.chooseHowPrayerTimesAreCalculated")}>
         <SelectTrigger
           variant="outline"
           size="lg"
-          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-primary" : "border-outline"} ${isChangingProvider ? "opacity-70" : ""}`}>
+          className={`rounded-xl bg-background-secondary transition-all duration-200 border-0 ${isOpen ? "border-primary" : "border-outline"} ${isChangingProvider ? "opacity-70" : ""}`}
+          accessibilityRole="button"
+          accessibilityState={{
+            disabled: isGettingProviders || isChangingProvider,
+            expanded: isOpen,
+          }}>
           <SelectInput
             className="text-left !text-typography font-medium"
             placeholder={t("providers.selectPlaceholder")}

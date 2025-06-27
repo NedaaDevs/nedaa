@@ -111,7 +111,10 @@ const ContactUs = () => {
           </Text>
         </Box>
 
-        <Box className="w-full rounded-lg overflow-hidden">
+        <Box
+          className="w-full rounded-lg overflow-hidden"
+          accessibilityRole="menu"
+          accessibilityLabel={t("accessibility.contactOptionsMenu")}>
           <ActionsheetFlatList
             data={contactOptions}
             renderItem={({ item, index }: any) => (
@@ -121,7 +124,10 @@ const ContactUs = () => {
                 }`}>
                 <Pressable
                   onPress={item.action}
-                  className="py-5 px-5 flex-row justify-between items-center">
+                  className="py-5 px-5 flex-row justify-between items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={t("accessibility.contactOption", { method: item.title })}
+                  accessibilityHint={t("accessibility.opensContactMethod", { method: item.title })}>
                   <Box className="flex-row items-center">
                     {renderIcon(item.icon)}
                     <Text className="text-xl font-semibold text-typography ml-4">{item.title}</Text>

@@ -67,7 +67,13 @@ const AladhanSettings: FC = () => {
           <Button
             onPress={handleSaveSetting}
             className="w-full bg-accent-primary"
-            isDisabled={isLoading || isFetchingPrayers}>
+            isDisabled={isLoading || isFetchingPrayers}
+            accessibilityLabel={t("accessibility.saveProviderSettings")}
+            accessibilityHint={t("accessibility.saveAndUpdatePrayerTimes")}
+            accessibilityState={{
+              disabled: isLoading || isFetchingPrayers,
+              busy: isLoading || isFetchingPrayers,
+            }}>
             {!(isLoading || isFetchingPrayers) && (
               <ButtonText className="text-background">{t("common.save")}</ButtonText>
             )}

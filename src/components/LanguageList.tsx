@@ -53,23 +53,53 @@ const LanguageList = () => {
     }
   };
 
+  const getAccessibilityLabel = (item: ItemType) => {
+    const isSelected = locale === item.id;
+    return isSelected
+      ? t("accessibility.languageOptionSelected", {
+          language: item.title,
+          nativeLanguage: item.nativeTitle,
+        })
+      : t("accessibility.languageOption", {
+          language: item.title,
+          nativeLanguage: item.nativeTitle,
+        });
+  };
+
+  const getAccessibilityHint = (item: ItemType) => {
+    const isSelected = locale === item.id;
+    return isSelected
+      ? t("accessibility.currentLanguage")
+      : t("accessibility.selectLanguage", { language: item.title });
+  };
+
   return (
-    <Box className="bg-background-secondary mt-2 rounded-lg">
+    <Box
+      className="bg-background-secondary mt-2 rounded-lg"
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t("accessibility.languageOptions")}>
       <ActionsheetFlatList
         data={localeData}
-        renderItem={({ item, index }: any) => (
-          <Pressable
-            onPress={async () => await handleSelectLanguage(item)}
-            className={`py-5 px-5 flex-row justify-between items-center ${
-              index < localeData.length - 1 ? "border-b border-outline" : ""
-            }`}>
-            <Box>
-              <Text className="text-xl font-semibold text-typography">{item.title}</Text>
-              <Text className="text-lg text-typography-secondary mt-1">{item.nativeTitle}</Text>
-            </Box>
-            {locale === item.id && <Icon as={Check} className="text-accent-primary" size="lg" />}
-          </Pressable>
-        )}
+        renderItem={({ item, index }: any) => {
+          const isSelected = locale === item.id;
+          return (
+            <Pressable
+              onPress={async () => await handleSelectLanguage(item)}
+              className={`py-5 px-5 flex-row justify-between items-center ${
+                index < localeData.length - 1 ? "border-b border-outline" : ""
+              }`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={getAccessibilityLabel(item)}
+              accessibilityHint={getAccessibilityHint(item)}>
+              <Box>
+                <Text className="text-xl font-semibold text-typography">{item.title}</Text>
+                <Text className="text-lg text-typography-secondary mt-1">{item.nativeTitle}</Text>
+              </Box>
+              {isSelected && <Icon as={Check} className="text-accent-primary" size="lg" />}
+            </Pressable>
+          );
+        }}
         keyExtractor={(item: any) => item.id}
       />
     </Box>

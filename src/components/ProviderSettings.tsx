@@ -48,7 +48,10 @@ export const ProviderSettings: FC = () => {
 
   if (isGettingProviders) {
     return (
-      <Box className="items-center justify-center my-auto">
+      <Box
+        className="items-center justify-center my-auto"
+        accessibilityRole="progressbar"
+        accessibilityLabel={t("accessibility.loadingProviders")}>
         <Spinner className="text-accent-primary" size="large" />
         <Text className="text-typography">{t("common.loading")}</Text>
       </Box>
@@ -57,8 +60,15 @@ export const ProviderSettings: FC = () => {
 
   if (error) {
     return (
-      <Box className="items-center justify-center my-auto">
-        <TouchableOpacity onPress={handleRetry}>
+      <Box
+        className="items-center justify-center my-auto"
+        accessibilityRole="alert"
+        accessibilityLabel={t("accessibility.providerLoadError")}>
+        <TouchableOpacity
+          onPress={handleRetry}
+          accessibilityRole="button"
+          accessibilityLabel={t("accessibility.retryProviderLoad")}
+          accessibilityHint={t("accessibility.tryLoadingProvidersAgain")}>
           <Text className="text-typography">{t("common.retry")}</Text>
         </TouchableOpacity>
       </Box>

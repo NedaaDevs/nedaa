@@ -44,23 +44,47 @@ const ThemeList = () => {
     setMode(item.id);
   };
 
+  const getAccessibilityLabel = (item: ItemType) => {
+    const isSelected = mode === item.id;
+    return isSelected
+      ? t("accessibility.themeOptionSelected", { theme: item.title, description: item.description })
+      : t("accessibility.themeOption", { theme: item.title, description: item.description });
+  };
+
+  const getAccessibilityHint = (item: ItemType) => {
+    const isSelected = mode === item.id;
+    return isSelected
+      ? t("accessibility.currentTheme")
+      : t("accessibility.selectTheme", { theme: item.title });
+  };
+
   return (
-    <Box className="bg-background-secondary mt-2 rounded-lg">
+    <Box
+      className="bg-background-secondary mt-2 rounded-lg"
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t("accessibility.themeOptions")}>
       <ActionsheetFlatList
         data={modeData}
-        renderItem={({ item, index }: any) => (
-          <Pressable
-            onPress={() => handleSelectTheme(item)}
-            className={`py-5 px-5 flex-row justify-between items-center ${
-              index < modeData.length - 1 ? "border-b border-outline" : ""
-            }`}>
-            <Box>
-              <Text className="text-xl font-semibold text-typography">{item.title}</Text>
-              <Text className="text-lg text-typography-secondary mt-1">{item.description}</Text>
-            </Box>
-            {mode === item.id && <Icon as={Check} className="text-accent-primary" size="lg" />}
-          </Pressable>
-        )}
+        renderItem={({ item, index }: any) => {
+          const isSelected = mode === item.id;
+          return (
+            <Pressable
+              onPress={() => handleSelectTheme(item)}
+              className={`py-5 px-5 flex-row justify-between items-center ${
+                index < modeData.length - 1 ? "border-b border-outline" : ""
+              }`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={getAccessibilityLabel(item)}
+              accessibilityHint={getAccessibilityHint(item)}>
+              <Box>
+                <Text className="text-xl font-semibold text-typography">{item.title}</Text>
+                <Text className="text-lg text-typography-secondary mt-1">{item.description}</Text>
+              </Box>
+              {isSelected && <Icon as={Check} className="text-accent-primary" size="lg" />}
+            </Pressable>
+          );
+        }}
         keyExtractor={(item: any) => item.id}
       />
     </Box>

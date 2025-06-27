@@ -71,7 +71,12 @@ const PermissionRequestView = ({
 
           {canAskPermission ? (
             <Box className="w-full items-center">
-              <Button onPress={onRequestPermission} className="px-12" size="lg">
+              <Button
+                onPress={onRequestPermission}
+                className="px-12"
+                size="lg"
+                accessibilityLabel={t("accessibility.allowLocationPermission")}
+                accessibilityHint={t("accessibility.grantPermissionForLocation")}>
                 <ButtonText className="font-medium">{t("location.permission.allow")}</ButtonText>
               </Button>
             </Box>
@@ -80,7 +85,12 @@ const PermissionRequestView = ({
               <Text className="text-md text-typography text-center px-2">
                 {t("location.permission.deniedMessage")}
               </Text>
-              <Button onPress={onOpenSettings} className="px-12" size="lg">
+              <Button
+                onPress={onOpenSettings}
+                className="px-12"
+                size="lg"
+                accessibilityLabel={t("accessibility.openDeviceSettings")}
+                accessibilityHint={t("accessibility.openSettingsToEnableLocation")}>
                 <ButtonText className="font-medium text-md">
                   {t("location.permission.openSettings")}
                 </ButtonText>
@@ -101,7 +111,10 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
     <Modal isOpen={isVisible} onClose={onClose} size="md">
       <ModalBackdrop />
       <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
-        <ModalCloseButton className="absolute top-4 right-4 z-10">
+        <ModalCloseButton
+          className="absolute top-4 right-4 z-10"
+          accessibilityLabel={t("accessibility.closeModal")}
+          accessibilityHint={t("accessibility.closesCurrentDialog")}>
           <Icon as={X} className="text-typography-secondary" size="lg" />
         </ModalCloseButton>
 
@@ -123,7 +136,9 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
               hapticLight();
               onClose();
             }}
-            className="w-full bg-accent-primary">
+            className="w-full bg-accent-primary"
+            accessibilityLabel={t("common.ok")}
+            accessibilityHint={t("accessibility.closesCurrentDialog")}>
             <ButtonText className="text-background">{t("common.ok")}</ButtonText>
           </Button>
         </ModalFooter>
@@ -228,7 +243,11 @@ const KeepLocationUpdated = () => {
         <Pressable
           onPress={handleManualRefresh}
           disabled={isGettingLocation}
-          className="py-5 px-5 flex-row justify-between items-center">
+          className="py-5 px-5 flex-row justify-between items-center"
+          accessibilityRole="button"
+          accessibilityLabel={t("accessibility.refreshCurrentLocation")}
+          accessibilityHint={t("accessibility.updatesLocationAndPrayerTimes")}
+          accessibilityState={{ disabled: isGettingLocation }}>
           <HStack className="items-center flex-1" space="md">
             <Icon as={MapPin} className="text-accent-primary" size="md" />
             <VStack className="flex-1">
@@ -268,11 +287,20 @@ const KeepLocationUpdated = () => {
                 hapticLight();
                 setShowInfoModal(true);
               }}
-              className="p-1">
+              className="p-1"
+              accessibilityRole="button"
+              accessibilityLabel={t("accessibility.moreInfo")}
+              accessibilityHint={t("accessibility.showsLocationUpdateInfo")}>
               <Icon as={Info} className="text-typography-secondary" size="sm" />
             </Pressable>
           </HStack>
-          <Switch value={autoUpdateLocation} onValueChange={toggleAutoLocationUpdated} />
+          <Switch
+            value={autoUpdateLocation}
+            onValueChange={toggleAutoLocationUpdated}
+            accessibilityLabel={t("accessibility.autoUpdateLocation")}
+            accessibilityHint={t("accessibility.automaticallyUpdateLocationWhenChanged")}
+            accessibilityState={{ checked: autoUpdateLocation }}
+          />
         </Box>
       </Box>
 

@@ -37,7 +37,9 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   };
 
   return (
-    <Box className="px-5 py-4 flex flex-row items-center bg-background-elevated">
+    <Box
+      accessibilityRole="toolbar"
+      className="px-5 py-4 flex flex-row items-center bg-background-elevated">
       <Box className="flex-1 flex-row items-center gap-3">
         {backOnClick && (
           <Pressable

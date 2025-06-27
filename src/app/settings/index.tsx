@@ -30,7 +30,10 @@ const SettingsScreen = () => {
   const { localizedLocation } = useLocationStore();
   return (
     <Background>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        accessibilityLabel={t("settings.title")}
+        accessibilityHint={t("accessibility.opensSettingsMenu")}>
         <TopBar title="settings.title" href="/" backOnClick />
 
         {/* Language */}
