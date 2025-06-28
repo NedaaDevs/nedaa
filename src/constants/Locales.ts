@@ -1,1 +1,1 @@
-export const RTL_LOCALES = ["ar"] as const;
+export const RTL_LOCALES = ["ar", "ur"] as const;
