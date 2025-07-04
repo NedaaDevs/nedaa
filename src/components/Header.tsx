@@ -2,7 +2,7 @@ import { format, parseISO, formatDistance } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -19,8 +19,12 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Divider } from "@/components/ui/divider";
+import { Pressable } from "@/components/ui/pressable";
 import PreviousPrayer from "@/components/PreviousPrayer";
 import { SkeletonText } from "@/components/ui/skeleton";
+
+// Types
+import { OtherTimingName } from "@/types/prayerTimes";
 
 // Hooks
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -29,20 +33,38 @@ const Header = () => {
   const { t } = useTranslation();
   const { locale, hijriDaysOffset } = useAppStore();
   const { localizedLocation, locationDetails } = useLocationStore();
-  const { getNextPrayer } = usePrayerTimesStore();
+  const { getNextPrayer, getNextOtherTiming } = usePrayerTimesStore();
   const { becameActiveAt } = useAppVisibility();
 
-  useEffect(() => {}, [becameActiveAt]);
+  const [showOtherTiming, setShowOtherTiming] = useState(false);
+
+  // Reset the timing display after 10 seconds
+  useEffect(() => {
+    if (showOtherTiming) {
+      const timer = setTimeout(() => {
+        setShowOtherTiming(false);
+      }, 10000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showOtherTiming]);
+
+  const handleBoxClick = useCallback(() => {
+    setShowOtherTiming((current) => !current);
+  }, []);
 
   const nextPrayer = getNextPrayer();
+  const nextOtherTiming = getNextOtherTiming();
   const now = timeZonedNow(locationDetails.timezone);
   const hijriDate = HijriConverter.toHijri(now, hijriDaysOffset);
 
+  const timing = showOtherTiming ? nextOtherTiming : nextPrayer;
+
   // Get human-readable time remaining
   const getFormattedTimeRemaining = () => {
-    if (!nextPrayer) return "";
-    const prayerTime = parseISO(nextPrayer.time);
-    const timeRemaining = formatDistance(prayerTime, now, {
+    if (!timing) return "";
+    const timingDate = parseISO(timing.time);
+    const timeRemaining = formatDistance(timingDate, now, {
       addSuffix: false,
       locale: getDateLocale(locale),
     });
@@ -71,7 +93,7 @@ const Header = () => {
     );
   };
 
-  if (!nextPrayer) {
+  if (!timing) {
     return (
       <Box className="m-1 rounded-2xl">
         <Box className="p-3 rounded-xl mx-2 mt-1 bg-background-secondary">
@@ -84,10 +106,20 @@ const Header = () => {
     );
   }
 
-  const prayerName =
-    nextPrayer.name === "dhuhr" && isFriday(locationDetails.timezone)
+  const translationKey: Record<OtherTimingName, string> = {
+    sunrise: "sunrise",
+    sunset: "sunset",
+    imsak: "imsak",
+    midnight: "midnight",
+    firstthird: "firstThird",
+    lastthird: "lastThird",
+  };
+
+  const timingName = showOtherTiming
+    ? `otherTimings.${translationKey[timing.name as OtherTimingName]}`
+    : timing.name === "dhuhr" && isFriday(locationDetails.timezone)
       ? "prayerTimes.jumuah"
-      : `prayerTimes.${nextPrayer.name}`;
+      : `prayerTimes.${timing.name}`;
 
   return (
     <Box className="m-1 rounded-2xl">
@@ -113,17 +145,19 @@ const Header = () => {
 
       <PreviousPrayer />
 
-      <Box className="p-8 bg-background-secondary rounded-xl mx-1 mt-2 mb-2">
+      <Pressable
+        className="p-8 bg-background-secondary rounded-xl mx-1 mt-2 mb-2"
+        onPress={handleBoxClick}>
         <HStack className="justify-between items-center w-full gap-4">
           <Text className="text-4xl font-bold text-accent-primary flex-1 text-left">
-            {t(prayerName)}
+            {t(timingName)}
           </Text>
 
           <Divider className="h-14 w-px flex-shrink-0 bg-outline" />
 
           <VStack className="items-end flex-1">
             <Text className="text-4xl font-semibold text-accent-primary text-right">
-              {formattedPrayerTime(nextPrayer.time)}
+              {formattedPrayerTime(timing.time)}
             </Text>
 
             <Box className="mt-1 px-4 py-1 rounded-full bg-background-interactive">
@@ -131,7 +165,7 @@ const Header = () => {
             </Box>
           </VStack>
         </HStack>
-      </Box>
+      </Pressable>
     </Box>
   );
 };
