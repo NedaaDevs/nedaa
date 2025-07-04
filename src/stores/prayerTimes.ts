@@ -8,6 +8,8 @@ import i18n from "@/localization/i18n";
 // Types
 import {
   DayPrayerTimes,
+  OtherTiming,
+  OtherTimingName,
   Prayer,
   PrayerName,
   PrayerTimesParams,
@@ -51,6 +53,7 @@ export type PrayerTimesStore = {
   getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
   getNextPrayer: () => Prayer | null;
+  getNextOtherTiming: () => OtherTiming | null;
   getPreviousPrayer: () => Prayer | null;
   cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
   clearError: () => void;
@@ -331,6 +334,35 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
 
           return null;
+        },
+        getNextOtherTiming: () => {
+          const state = get();
+          if (!state.todayTimings?.otherTimings) return null;
+
+          const now = new Date();
+          const timings = Object.entries(state.todayTimings.otherTimings);
+
+          // Convert all timings to Date objects with their names
+          const timingsWithDates = timings.map(([name, time]) => ({
+            name: name as OtherTimingName,
+            time,
+            date: new Date(time),
+          }));
+
+          // Sort by time
+          timingsWithDates.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+          // Find the next timing after current time
+          const nextTiming = timingsWithDates.find((timing) => timing.date > now);
+
+          // If no timing is found for today, the first timing of tomorrow would be next
+          return nextTiming
+            ? {
+                name: nextTiming.name,
+                time: nextTiming.time,
+                date: state.todayTimings.date,
+              }
+            : null;
         },
         cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {
           try {
