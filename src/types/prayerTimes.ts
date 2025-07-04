@@ -60,3 +60,9 @@ export type Provider = {
   name: string;
   website: string;
 };
+
+export type OtherTiming = {
+  name: OtherTimingName;
+  time: string;
+  date: number;
+};
