@@ -78,7 +78,7 @@ struct RectangularView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                dataToShow(entry: entry, geometry: geometry, widgetFamily:  .accessoryCircular)
+                dataToShow(entry: entry, geometry: geometry, widgetFamily: .accessoryRectangular)
             }
         }.widgetBackground(Color.clear)
     }
@@ -100,7 +100,7 @@ struct CircularView: View {
 
 @available(iOSApplicationExtension 16.0, *)
 func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: GeometryProxy, widgetFamily: WidgetFamily  ) -> some View {
-    let fontSize: Double = widgetFamily == WidgetFamily.accessoryCircular ? 0.22 : 0.6
+    let fontSize: Double = widgetFamily == WidgetFamily.accessoryCircular ? 0.22 : 0.4
     return Group {
         if let nextPrayer = entry.nextPrayer, let previousPrayer = entry.previousPrayer {
             // Check if the previous prayer was within the last 30 minutes
