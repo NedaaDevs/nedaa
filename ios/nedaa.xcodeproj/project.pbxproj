@@ -21,6 +21,8 @@
 		35C11B3D2E03326600EC4249 /* athan2.caf in Resources */ = {isa = PBXBuildFile; fileRef = 35C11B322E03326600EC4249 /* athan2.caf */; };
 		35C11B3E2E03326600EC4249 /* knock.caf in Resources */ = {isa = PBXBuildFile; fileRef = 35C11B362E03326600EC4249 /* knock.caf */; };
 		35C11B3F2E03326600EC4249 /* beep.caf in Resources */ = {isa = PBXBuildFile; fileRef = 35C11B342E03326600EC4249 /* beep.caf */; };
+		35DE52842E2591EB00FAF71E /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */; };
+		35DE52852E2591EB00FAF71E /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */; };
 		35F778B62E05B032009C55CF /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35F778B52E05B032009C55CF /* WidgetKit.framework */; };
 		35F778B82E05B032009C55CF /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35F778B72E05B032009C55CF /* SwiftUI.framework */; };
 		35F778C52E05B033009C55CF /* NedaaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35F778B42E05B032009C55CF /* NedaaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -71,6 +73,7 @@
 		35C11B362E03326600EC4249 /* knock.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = knock.caf; sourceTree = "<group>"; };
 		35C11B372E03326600EC4249 /* medina_athan.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = medina_athan.caf; sourceTree = "<group>"; };
 		35C11B382E03326600EC4249 /* takbir.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = takbir.caf; sourceTree = "<group>"; };
+		35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		35F778B42E05B032009C55CF /* NedaaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NedaaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		35F778B52E05B032009C55CF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		35F778B72E05B032009C55CF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -156,6 +159,7 @@
 				35C11B382E03326600EC4249 /* takbir.caf */,
 				35A2022F2DFE49A500E8FCE5 /* tasbih.caf */,
 				357DB6DA2DF7FE290040763A /* Localizable.xcstrings */,
+				35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */,
 				353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */,
 			);
 			name = nedaa;
@@ -303,6 +307,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ur,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
 			preferredProjectObjectVersion = 77;
@@ -335,6 +340,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				353E4C9C2DFCDB1F003E7634 /* makkah_athan1.caf in Resources */,
+				35DE52842E2591EB00FAF71E /* InfoPlist.xcstrings in Resources */,
 				E520209B8F5242DABE076868 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -344,6 +350,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				35895CE32E05BCD800C9C941 /* Localizable.xcstrings in Resources */,
+				35DE52852E2591EB00FAF71E /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

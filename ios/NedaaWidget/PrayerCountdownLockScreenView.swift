@@ -100,7 +100,7 @@ struct CircularView: View {
 
 @available(iOSApplicationExtension 16.0, *)
 func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: GeometryProxy, widgetFamily: WidgetFamily  ) -> some View {
-    let fontSize: Double = widgetFamily == WidgetFamily.accessoryCircular ? 0.22 : 0.4
+    let fontSize: Double = widgetFamily == WidgetFamily.accessoryCircular ? 0.25 : 0.18
     return Group {
         if let nextPrayer = entry.nextPrayer, let previousPrayer = entry.previousPrayer {
             // Check if the previous prayer was within the last 30 minutes

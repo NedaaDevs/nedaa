@@ -14,22 +14,11 @@
             "state" : "translated",
             "value" : "Asr"
           }
-        }
-      }
-    },
-    "CFBundleDisplayName" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نداء"
-          }
         },
-        "en" : {
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nedaa"
+            "value" : "عصر"
           }
         }
       }
@@ -47,6 +36,12 @@
             "state" : "translated",
             "value" : "Duhur"
           }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ظہر"
+          }
         }
       }
     },
@@ -62,6 +57,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Track Asr, Maghrib, and Isha prayer times at a glance"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ایک نظر میں عصر، مغرب اور عشاء کے اوقات دیکھیں"
           }
         }
       }
@@ -79,6 +80,12 @@
             "state" : "translated",
             "value" : "Evening Prayers"
           }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شام کی نمازیں"
+          }
         }
       }
     },
@@ -94,6 +101,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fajr"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فجر"
           }
         }
       }
@@ -112,6 +125,35 @@
             "state" : "translated",
             "value" : "Isha"
           }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عشاء"
+          }
+        }
+      }
+    },
+    "jumuah" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجمعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jumu'ah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جمعہ"
+          }
         }
       }
     },
@@ -127,6 +169,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Maghrib"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غروب"
           }
         }
       }
@@ -144,6 +192,12 @@
             "state" : "translated",
             "value" : "Track Fajr, Sunrise, and Dhuhr prayer times at a glance"
           }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ایک نظر میں فجر، سورج طلوع ہونے کا وقت، اور ظہر کے اوقات دیکھیں"
+          }
         }
       }
     },
@@ -159,6 +213,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Morning Prayers"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صبح کی نمازیں"
           }
         }
       }
@@ -180,6 +240,12 @@
             "state" : "translated",
             "value" : "Displays the next prayer. it shows a countdown timer 60 minutes before the prayer. And count up 30 minutes after"
           }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اگلی نماز ظاہر ہوتی ہے۔ نماز سے 60 منٹ پہلے الٹی گنتی اور نماز کے 30 منٹ بعد سیدھی گنتی دکھائی جاتی ہے۔"
+          }
         }
       }
     },
@@ -196,6 +262,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Next Prayer"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اگلی نماز"
           }
         }
       }
@@ -215,6 +287,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sunrise"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طلوع آفتاب"
           }
         }
       }
