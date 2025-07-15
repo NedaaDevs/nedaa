@@ -31,7 +31,7 @@ const SettingsScreen = () => {
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <TopBar title="settings.title" href="/" backOnClick />
+        <TopBar title="settings.title" backOnClick />
 
         {/* Language */}
         <SettingsItem

@@ -16,7 +16,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react-native";
 import type { Href } from "expo-router";
 
 type Props = {
-  href: Href;
+  href?: Href;
   title: string;
   icon?: any;
   backOnClick?: boolean;
@@ -48,7 +48,7 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
       </Box>
 
       <Box className="w-12 items-end">
-        {!backOnClick && (
+        {href && !backOnClick && (
           <Link href={href} asChild>
             <Pressable className="p-2 rounded-lg">
               <Icon as={icon} size="lg" className="text-typography-contrast" />
