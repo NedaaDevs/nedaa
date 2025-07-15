@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/app";
 
 // Icons
-import { Home, Settings } from "lucide-react-native";
+import { Home, Settings, BookOpenText } from "lucide-react-native";
 
 const TabsLayout = () => {
   const { t } = useTranslation();
@@ -26,6 +26,13 @@ const TabsLayout = () => {
         options={{
           title: "",
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="athkar"
+        options={{
+          title: t("athkar.title"),
+          tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
         }}
       />
       <Tabs.Screen
