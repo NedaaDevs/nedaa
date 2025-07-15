@@ -27,6 +27,7 @@ import { MapPin, RefreshCw, Info, X } from "lucide-react-native";
 
 // Stores
 import { useLocationStore } from "@/stores/location";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Utils
 import { checkLocationPermission, requestLocationPermission } from "@/utils/location";
@@ -148,6 +149,8 @@ const KeepLocationUpdated = () => {
     updateCurrentLocation,
   } = useLocationStore();
 
+  const { isLoading: isFetchingPrayers, loadPrayerTimes } = usePrayerTimesStore();
+
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [canAskPermission, setCanAskPermission] = useState(true);
   const [isCheckingPermission, setIsCheckingPermission] = useState(true);
@@ -197,6 +200,7 @@ const KeepLocationUpdated = () => {
     hapticMedium();
     try {
       await updateCurrentLocation();
+      await loadPrayerTimes(true);
     } catch (error) {
       console.error(error);
     }
@@ -227,7 +231,7 @@ const KeepLocationUpdated = () => {
       <Box className="bg-background-secondary mt-2 rounded-lg">
         <Pressable
           onPress={handleManualRefresh}
-          disabled={isGettingLocation}
+          disabled={isGettingLocation || isFetchingPrayers}
           className="py-5 px-5 flex-row justify-between items-center">
           <HStack className="items-center flex-1" space="md">
             <Icon as={MapPin} className="text-accent-primary" size="md" />
@@ -242,7 +246,7 @@ const KeepLocationUpdated = () => {
             </VStack>
           </HStack>
 
-          {isGettingLocation ? (
+          {isGettingLocation || isFetchingPrayers ? (
             <ActivityIndicator size="small" className="text-accent-primary" />
           ) : (
             <Icon as={RefreshCw} className="text-accent-primary" size="md" />
