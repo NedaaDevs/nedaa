@@ -1,4 +1,6 @@
 {
+  "athkar.evening": "Evening Athkar",
+  "athkar.morning": "Morning Athkar",
   "athkar.title": "Athkar",
   "common.ago": "{{time}} ago",
   "common.cancel": "Cancel",

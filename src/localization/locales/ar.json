@@ -1,4 +1,6 @@
 {
+  "athkar.evening": "أذكار المساء",
+  "athkar.morning": "أذكار الصباح",
   "athkar.title": "الأذكار",
   "common.ago": "منذ {{time}}",
   "common.cancel": "إلغاء",
