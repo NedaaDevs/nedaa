@@ -46,7 +46,7 @@ export default function RootLayout() {
     <GluestackUIProvider mode={mode}>
       <FontProvider>
         <GestureHandlerRootView>
-          <SafeAreaView className="flex-1">
+          <SafeAreaView edges={["top", "right", "left"]} className="flex-1">
             <StatusBar />
             <ToastProvider />
             <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
