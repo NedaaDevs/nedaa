@@ -44,10 +44,12 @@ export type AthkarActions = {
   toggleFocusMode: () => void;
   moveToNext: () => void;
   moveToPrevious: () => void;
+  setCurrentAthkarIndex: (index: number) => void;
   initializeSession: (type: Exclude<AthkarType, "all">) => void;
   completeSession: () => void;
   updateStreak: () => void;
   pauseStreak: () => void;
   resumeStreak: () => void;
+  updateToleranceDays: (days: number) => void;
   resetProgress: () => void;
 };
