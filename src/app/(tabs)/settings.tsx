@@ -18,11 +18,15 @@ import {
   MapPin,
   Settings2Icon,
   BellRing,
+  BookOpen,
 } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
+
+// Utils
+import { isAthkarSupported } from "@/utils/athkarLocale";
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
@@ -63,6 +67,11 @@ const SettingsScreen = () => {
           icon={MapPin}
           currentValue={localizedLocation.city ?? ""}
         />
+
+        {/* Athkar Settings - Only show for supported locales */}
+        {isAthkarSupported(locale) && (
+          <SettingsItem name={t("settings.athkar.title")} path="/settings/athkar" icon={BookOpen} />
+        )}
 
         {/* Advance */}
         <SettingsItem
