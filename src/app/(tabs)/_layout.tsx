@@ -6,9 +6,12 @@ import { useAppStore } from "@/stores/app";
 // Icons
 import { Home, Settings, BookOpenText } from "lucide-react-native";
 
+// Utils
+import { isAthkarSupported } from "@/utils/athkarLocale";
+
 const TabsLayout = () => {
   const { t } = useTranslation();
-  const { mode } = useAppStore();
+  const { mode, locale } = useAppStore();
 
   return (
     <Tabs
@@ -28,13 +31,16 @@ const TabsLayout = () => {
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
+
       <Tabs.Screen
         name="athkar"
         options={{
           title: t("athkar.title"),
+          href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
           tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
         }}
       />
+
       <Tabs.Screen
         name="settings"
         options={{
