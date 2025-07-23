@@ -26,7 +26,7 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 
 // Utils
-import { isAthkarSupported } from "@/utils/athkarLocale";
+import { isAthkarSupported } from "@/utils/athkar";
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
