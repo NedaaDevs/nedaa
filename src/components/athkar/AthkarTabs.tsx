@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
 
@@ -7,6 +7,14 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
+
+import AthkarList from "@/components/athkar/AthkarList";
+
+// Stores
+import { useAthkarStore } from "@/stores/athkar";
+
+// Hooks
+import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -17,10 +25,25 @@ import { Sun, Moon } from "lucide-react-native";
 // Types
 import { AthkarType } from "@/types/athkar";
 
+// Utils
+import { getCurrentAthkarPeriod } from "@/utils/athkar";
+
 const AthkarTabs = () => {
   const { t } = useTranslation();
+  const { setCurrentType, checkAndResetDailyProgress } = useAthkarStore();
 
-  const [activeTab, setActiveTab] = useState<AthkarType>(ATHKAR_TYPE.MORNING);
+  const [activeTab, setActiveTab] = useState<AthkarType>(() => {
+    // will set tab based on the time of the day
+    return getCurrentAthkarPeriod();
+  });
+
+  // Initialize athkar data
+  useInitializeAthkar();
+
+  // Check for daily reset on mount
+  useEffect(() => {
+    checkAndResetDailyProgress();
+  }, []);
 
   return (
     <Box className="flex-1">
@@ -29,7 +52,10 @@ const AthkarTabs = () => {
         <HStack className="justify-center items-center py-2">
           {/* Morning Tab */}
           <Pressable
-            onPress={() => setActiveTab(ATHKAR_TYPE.MORNING)}
+            onPress={() => {
+              setActiveTab(ATHKAR_TYPE.MORNING);
+              setCurrentType(ATHKAR_TYPE.MORNING);
+            }}
             className={`flex-1 py-3 px-4 mx-2 rounded-full items-center ${
               activeTab === ATHKAR_TYPE.MORNING
                 ? "bg-accent-primary"
@@ -52,7 +78,10 @@ const AthkarTabs = () => {
 
           {/* Evening Tab */}
           <Pressable
-            onPress={() => setActiveTab(ATHKAR_TYPE.EVENING)}
+            onPress={() => {
+              setActiveTab(ATHKAR_TYPE.EVENING);
+              setCurrentType(ATHKAR_TYPE.EVENING);
+            }}
             className={`flex-1 py-3 px-4 mx-2 rounded-full items-center ${
               activeTab === ATHKAR_TYPE.EVENING
                 ? "bg-accent-primary"
@@ -78,20 +107,7 @@ const AthkarTabs = () => {
       {/* Content Area */}
       <ScrollView className="flex-1 bg-background">
         <Box className="p-4">
-          <Text className="text-center text-typography-secondary">Streak & Day Progress</Text>
-        </Box>
-        <Box className="p-4">
-          {activeTab === ATHKAR_TYPE.MORNING ? (
-            <Box>
-              {/* Morning athkar list */}
-              <Text className="text-center text-typography-secondary">Morning Athkar Content</Text>
-            </Box>
-          ) : (
-            <Box>
-              {/* Evening athkar list  */}
-              <Text className="text-center text-typography-secondary">Evening Athkar Content</Text>
-            </Box>
-          )}
+          <AthkarList type={activeTab} />
         </Box>
       </ScrollView>
     </Box>
