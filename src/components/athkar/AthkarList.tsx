@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 
@@ -46,11 +47,12 @@ const AthkarList = ({ type }: Props) => {
     .sort((a, b) => a.order - b.order);
 
   // Initialize session if not already initialized for this type
-  const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
-  if (!hasSessionForType && filteredAthkar.length > 0) {
-    initializeSession(type as Exclude<AthkarType, "all">);
-    return null;
-  }
+  useEffect(() => {
+    const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
+    if (!hasSessionForType && filteredAthkar.length > 0) {
+      initializeSession(type as Exclude<AthkarType, "all">);
+    }
+  }, [type, currentProgress, filteredAthkar.length, initializeSession]);
 
   const handleFocusMode = (index: number) => {
     setCurrentAthkarIndex(index);
