@@ -1509,6 +1509,13 @@
     "@react-native-aria/focus" "^0.2.9"
     "@react-native-aria/interactions" "0.2.16"
 
+"@gluestack-ui/progress@^0.1.18":
+  version "0.1.18"
+  resolved "https://registry.npmjs.org/@gluestack-ui/progress/-/progress-0.1.18.tgz"
+  integrity sha512-WQCLdvqoiIIQnLBXG7+HDTREMbUfEy9rV7FuBMcBBqEFILuVT1W4hyuXLz/CPrUoCWZJ8OUKvLZvaWWzW8pA9Q==
+  dependencies:
+    "@gluestack-ui/utils" "^0.1.14"
+
 "@gluestack-ui/provider@^0.1.19":
   version "0.1.19"
   resolved "https://registry.npmjs.org/@gluestack-ui/provider/-/provider-0.1.19.tgz"
