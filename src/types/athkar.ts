@@ -4,6 +4,7 @@ export type AthkarType = (typeof ATHKAR_TYPE)[keyof typeof ATHKAR_TYPE];
 
 export type Athkar = {
   id: string;
+  title: string;
   text: string;
   count: number;
   type: AthkarType;
@@ -34,6 +35,14 @@ export type AthkarState = {
   focusMode: boolean;
   currentAthkarIndex: number;
   currentType: Exclude<AthkarType, "all">;
+  todayCompleted: {
+    morning: boolean;
+    evening: boolean;
+  };
+  settings: {
+    autoMoveToNext: boolean;
+    showStreak: boolean;
+  };
 };
 
 // Actions
@@ -52,4 +61,9 @@ export type AthkarActions = {
   resumeStreak: () => void;
   updateToleranceDays: (days: number) => void;
   resetProgress: () => void;
+  checkAndUpdateDailyProgress: () => void;
+  setCurrentType: (type: Exclude<AthkarType, "all">) => void;
+  checkAndResetDailyProgress: () => void;
+  toggleAutoMove: () => void;
+  toggleShowStreak: () => void;
 };
