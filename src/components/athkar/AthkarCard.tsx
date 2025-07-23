@@ -33,8 +33,11 @@ type Props = {
 };
 
 const AthkarCard: FC<Props> = ({ athkar, progress, onFocusMode }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { incrementCount, decrementCount } = useAthkarStore();
+
+  const isRTL = i18n.dir() === "rtl";
+
   const { current: currentCount, total, completed: isCompleted } = progress;
   const progressPercentage = (currentCount / total) * 100;
 
@@ -101,8 +104,14 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onFocusMode }) => {
               <Text
                 className={`text-base font-medium ${
                   isCompleted ? "text-white" : "text-typography-secondary"
-                }`}>
-                {formatNumberToLocale(`${currentCount}`)} / {formatNumberToLocale(`${total}`)}
+                }`}
+                style={{
+                  writingDirection: isRTL ? "rtl" : "ltr",
+                  textAlign: isRTL ? "right" : "left",
+                }}>
+                {isRTL
+                  ? `${formatNumberToLocale(`${total}`)} / ${formatNumberToLocale(`${currentCount}`)}`
+                  : `${formatNumberToLocale(`${currentCount}`)} / ${formatNumberToLocale(`${total}`)}`}
               </Text>
             </HStack>
 
