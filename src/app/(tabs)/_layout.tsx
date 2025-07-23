@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/app";
 import { Home, Settings, BookOpenText } from "lucide-react-native";
 
 // Utils
-import { isAthkarSupported } from "@/utils/athkarLocale";
+import { isAthkarSupported } from "@/utils/athkar";
 
 const TabsLayout = () => {
   const { t } = useTranslation();
