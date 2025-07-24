@@ -8,10 +8,10 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 // Icons
-import { Plus, Minus, Focus } from "lucide-react-native";
+import { Minus } from "lucide-react-native";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
@@ -29,10 +29,9 @@ type Props = {
     total: number;
     completed: boolean;
   };
-  onFocusMode: () => void;
 };
 
-const AthkarCard: FC<Props> = ({ athkar, progress, onFocusMode }) => {
+const AthkarCard: FC<Props> = ({ athkar, progress }) => {
   const { t, i18n } = useTranslation();
   const { incrementCount, decrementCount } = useAthkarStore();
 
@@ -83,23 +82,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onFocusMode }) => {
                     />
                   </Button>
                 )}
-
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    incrementCount(athkar.id);
-                  }}
-                  className={`w-10 h-10 p-0 rounded-full ${isCompleted ? "bg-black/20 border border-black/30" : "bg-background-tertiary dark:bg-background"}`}
-                  disabled={isCompleted}>
-                  <Plus
-                    size={20}
-                    className={isCompleted ? "text-white/70" : "text-typography-secondary"}
-                  />
-                </Button>
               </HStack>
-
               {/* Count Display */}
               <Text
                 className={`text-base font-medium ${
@@ -122,18 +105,6 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onFocusMode }) => {
               <ProgressFilledTrack className={isCompleted ? "bg-white" : "bg-accent-primary"} />
             </Progress>
           </VStack>
-
-          {/* Focus Mode Button for each card */}
-          {!isCompleted && (
-            <Button
-              size="sm"
-              variant="solid"
-              onPress={onFocusMode}
-              className="mt-3 bg-accent-primary">
-              <Focus size={16} className="mr-2" />
-              <ButtonText className="text-sm">{t("athkar.enterFocusMode")}</ButtonText>
-            </Button>
-          )}
 
           {isCompleted && (
             <Box className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-white items-center justify-center shadow-md">
