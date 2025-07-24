@@ -35,7 +35,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="athkar"
         options={{
-          title: t("athkar.title"),
+          title: "",
           href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
           tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
         }}
@@ -44,7 +44,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="settings"
         options={{
-          title: t("settings.title"),
+          title: "",
           tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
         }}
       />
