@@ -32,7 +32,9 @@ const AthkarTabs = () => {
   const { t } = useTranslation();
   const { setCurrentType, checkAndResetDailyProgress } = useAthkarStore();
 
-  const [activeTab, setActiveTab] = useState<AthkarType>(() => {
+  type activeTabType = Exclude<AthkarType, "all">;
+
+  const [activeTab, setActiveTab] = useState<activeTabType>(() => {
     // will set tab based on the time of the day
     return getCurrentAthkarPeriod();
   });
@@ -42,6 +44,7 @@ const AthkarTabs = () => {
 
   // Check for daily reset on mount
   useEffect(() => {
+    setCurrentType(activeTab);
     checkAndResetDailyProgress();
   }, []);
 
