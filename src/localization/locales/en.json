@@ -33,7 +33,7 @@
   "common.minute_zero": "{{count}} minutes",
   "common.nedaa": "Nedaa",
   "common.ok": "OK",
-  "common.reset": "Reset",
+  "common.resetDailyProgress": "Reset Daily Progress",
   "common.retry": "Retry",
   "common.save": "Save",
   "common.saveChanges": "Save Changes",
