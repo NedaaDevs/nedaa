@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "expo-router";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Button, ButtonText } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 import AthkarCard from "@/components/athkar/AthkarCard";
 
@@ -30,7 +30,6 @@ type Props = {
 
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
-  const router = useRouter();
   const {
     athkarList,
     currentProgress,
@@ -53,11 +52,6 @@ const AthkarList = ({ type }: Props) => {
       initializeSession(type as Exclude<AthkarType, "all">);
     }
   }, [type, currentProgress, filteredAthkar.length, initializeSession]);
-
-  const handleFocusMode = (index: number) => {
-    setCurrentAthkarIndex(index);
-    router.push("/athkar-focus");
-  };
 
   // Calculate overall progress for streak
   const totalAthkar = filteredAthkar.length;
@@ -113,22 +107,21 @@ const AthkarList = ({ type }: Props) => {
             key={athkar.id}
             athkar={athkar}
             progress={{ current: currentCount, total: athkar.count, completed: isCompleted }}
-            onFocusMode={() => handleFocusMode(index)}
           />
         );
       })}
 
-      {/* Reset Button for Testing */}
-      {__DEV__ && (
-        <Button
-          size="md"
-          variant="outline"
-          onPress={() => resetProgress()}
-          className="mt-6 border-accent-danger">
-          <RotateCcw size={20} className="mr-2 text-accent-danger" />
-          <ButtonText className="text-accent-danger">{t("common.reset")}</ButtonText>
-        </Button>
-      )}
+      <Button
+        size="md"
+        variant="outline"
+        onPress={() => resetProgress()}
+        className="w-full bg-accent-primary">
+        <Icon size="md" className="bg-primary" as={RotateCcw} />
+
+        <ButtonText className="text-background font-medium">
+          {t("common.resetDailyProgress")}
+        </ButtonText>
+      </Button>
     </VStack>
   );
 };
