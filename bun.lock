@@ -11,6 +11,7 @@
         "@gluestack-ui/actionsheet": "^0.2.53",
         "@gluestack-ui/alert": "^0.1.16",
         "@gluestack-ui/button": "^1.0.14",
+        "@gluestack-ui/fab": "^0.1.28",
         "@gluestack-ui/form-control": "^0.1.19",
         "@gluestack-ui/icon": "^0.1.27",
         "@gluestack-ui/image": "^0.1.17",
@@ -365,6 +366,8 @@
     "@gluestack-ui/alert": ["@gluestack-ui/alert@0.1.16", "", { "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-vE0litmicuKFJFp9TY3mRuZmyH/E24IdHlC0f3FZjfa+AzeOS+bZdKMRix2EYkvBGrA6uNffWUuHeXWQGMRVJQ=="],
 
     "@gluestack-ui/button": ["@gluestack-ui/button@1.0.14", "", { "dependencies": { "@gluestack-ui/utils": "0.1.15", "@react-native-aria/focus": "^0.2.9", "@react-native-aria/interactions": "0.2.16" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-Rqv5PY18jzeVACBwsVxXlyDbHjBiSXGVqY29VO6KHZGMMokCPW6MXYXT8ZpriLxMc1DRkgTtpTVYZCJBFaYTbg=="],
+
+    "@gluestack-ui/fab": ["@gluestack-ui/fab@0.1.28", "", { "dependencies": { "@gluestack-ui/utils": "^0.1.15", "@react-native-aria/focus": "^0.2.9", "@react-native-aria/interactions": "0.2.16" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-NTzTN08KyX3iqcC5LiRqymrO+TlCzfcjDS5GeO0Y+1AiH7loKwWwDm0PFn3TbflfycRTG0jw8RkUqs2Ckov/mg=="],
 
     "@gluestack-ui/form-control": ["@gluestack-ui/form-control@0.1.19", "", { "dependencies": { "@gluestack-ui/utils": "^0.1.14", "@react-native-aria/focus": "^0.2.9" }, "peerDependencies": { "react": ">=16", "react-dom": ">=16" } }, "sha512-6YbPbi/RZrXc5DyVPbxPV17FYaBoEl1yAdSwut8iE6n+yQekjluINrh2q5ZPWF2SGmyo7VSNcL85yeU5I97xHg=="],
 
