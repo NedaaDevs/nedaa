@@ -33,6 +33,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+import { athkarIndexToStartFrom } from "@/utils/athkar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -56,25 +57,17 @@ const AthkarFocusScreen = () => {
     toggleFocusMode,
   } = useAthkarStore();
 
-  // Filter athkar by current type
-  const filteredAthkar = athkarList.filter(
-    (a) => a.type === currentType || a.type === ATHKAR_TYPE.ALL
-  );
-
-  const currentAthkar = filteredAthkar[currentAthkarIndex];
-  const progressItem = currentProgress.find(
-    (p) => p.athkarId === `${currentAthkar?.id}-${currentType}`
-  );
-  const currentCount = progressItem?.currentCount || 0;
-  const totalCount = currentAthkar?.count || 1;
-  const progressPercentage = (currentCount / totalCount) * 100;
-  const isCompleted = progressItem?.completed || false;
-
   // State for showing instructions
   const [showInstructions, setShowInstructions] = useState(true);
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   const swipeIndicatorOpacity = useSharedValue(0);
   const swipeIndicatorTranslateX = useSharedValue(0);
+  const [startFromIndex, setStartFromIndex] = useState(0);
+
+  useEffect(() => {
+    const index = athkarIndexToStartFrom(currentProgress, currentType);
+    setStartFromIndex(index);
+  }, [currentProgress, currentType]);
 
   // Enable focus mode on mount
   useEffect(() => {
@@ -91,6 +84,19 @@ const AthkarFocusScreen = () => {
     }, 10000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Filter athkar by current type
+  const filteredAthkar = athkarList.filter(
+    (a) => a.type === currentType || a.type === ATHKAR_TYPE.ALL
+  );
+  const currentAthkar = filteredAthkar[startFromIndex];
+  const progressItem = currentProgress.find(
+    (p) => p.athkarId === `${currentAthkar?.id}-${currentType}`
+  );
+  const currentCount = progressItem?.currentCount || 0;
+  const totalCount = currentAthkar?.count || 1;
+  const progressPercentage = (currentCount / totalCount) * 100;
+  const isCompleted = progressItem?.completed || false;
 
   // Handle tap to increment
   const handleTap = () => {
