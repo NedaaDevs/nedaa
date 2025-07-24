@@ -8,7 +8,7 @@ import { timeZonedNow, timestampToDateInt, dateToInt } from "@/utils/date";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 // Types
-import type { AthkarType } from "@/types/athkar";
+import type { AthkarProgress, AthkarType } from "@/types/athkar";
 
 // List of locales that support athkar feature
 export const ATHKAR_SUPPORTED_LOCALES = ["ar"];
@@ -112,7 +112,7 @@ export const filterTodayProgress = (progress: any[], timezone?: string) => {
   }
 };
 
-export const filterProgressByType = (progress: any[], type: AthkarType) => {
+export const filterProgressByType = (progress: any[], type: AthkarType): AthkarProgress[] => {
   return progress.filter((p) => p.athkarId.includes(`-${type}`));
 };
 
@@ -234,7 +234,7 @@ export const clampIndex = (index: number, maxLength: number): number => {
   return Math.max(0, Math.min(index, maxLength - 1));
 };
 
-export const getCurrentAthkarPeriod = (timezone?: string): AthkarType => {
+export const getCurrentAthkarPeriod = (timezone?: string): Exclude<AthkarType, "all"> => {
   try {
     let currentTime: Date;
 
@@ -275,4 +275,34 @@ export const isAthkarMorningPeriod = (timezone?: string): boolean => {
 // Helper to check if it's currently evening athkar time
 export const isAthkarEveningPeriod = (timezone?: string): boolean => {
   return getCurrentAthkarPeriod(timezone) === ATHKAR_TYPE.EVENING;
+};
+
+// Find the index of the first not completed Thikir to start from(If all done default to 0)
+export const athkarIndexToStartFrom = (
+  progressList: AthkarProgress[],
+  type: AthkarType
+): number => {
+  // Early return for empty progress
+  if (!progressList || progressList.length === 0) {
+    return 0;
+  }
+
+  const typeProgress = filterProgressByType(progressList, type);
+
+  // Early return if no progress for this type
+  if (!typeProgress || typeProgress.length === 0) {
+    return 0;
+  }
+
+  const incompleteThikir = typeProgress.find((p) => !p.completed);
+
+  if (!incompleteThikir) {
+    return 0; // All completed, start from beginning
+  }
+
+  const strId = extractBaseId(incompleteThikir.athkarId);
+  const thikirIndex = Number(strId) - 1;
+
+  // Ensure valid index
+  return Math.max(0, thikirIndex);
 };
