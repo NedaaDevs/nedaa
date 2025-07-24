@@ -34,6 +34,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
 import { athkarIndexToStartFrom } from "@/utils/athkar";
+import { Icon } from "@/components/ui/icon";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -167,7 +168,7 @@ const AthkarFocusScreen = () => {
             variant="outline"
             onPress={() => router.back()}
             className="w-12 h-12 p-0 rounded-full bg-background-secondary/80">
-            <X size={24} className="text-typography" />
+            <Icon size="md" className="text-typography" as={X} />
           </Button>
         </Box>
 
