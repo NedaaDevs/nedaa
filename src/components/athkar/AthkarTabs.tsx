@@ -9,6 +9,7 @@ import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Fab, FabIcon } from "@/components/ui/fab";
+import { Icon } from "@/components/ui/icon";
 
 import AthkarList from "@/components/athkar/AthkarList";
 
@@ -50,6 +51,7 @@ const AthkarTabs = () => {
   useEffect(() => {
     setCurrentType(activeTab);
     checkAndResetDailyProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -69,10 +71,10 @@ const AthkarTabs = () => {
                 : "bg-background-secondary dark:bg-background-tertiary"
             }`}>
             <HStack space="sm" className="items-center">
-              <Sun
-                size={20}
-                color={activeTab === ATHKAR_TYPE.MORNING ? "white" : "currentColor"}
+              <Icon
+                as={Sun}
                 className={activeTab !== ATHKAR_TYPE.MORNING ? "text-typography-secondary" : ""}
+                size="md"
               />
               <Text
                 className={`font-medium ${
@@ -95,10 +97,10 @@ const AthkarTabs = () => {
                 : "bg-background-secondary dark:bg-background-tertiary"
             }`}>
             <HStack space="sm" className="items-center">
-              <Moon
-                size={20}
-                color={activeTab === ATHKAR_TYPE.EVENING ? "white" : "currentColor"}
+              <Icon
+                as={Moon}
                 className={activeTab !== ATHKAR_TYPE.EVENING ? "text-typography-secondary" : ""}
+                size="md"
               />
               <Text
                 className={`font-medium ${

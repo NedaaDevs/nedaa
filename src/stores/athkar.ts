@@ -51,7 +51,7 @@ export const useAthkarStore = create<AthkarStore>()(
         },
         settings: {
           autoMoveToNext: true,
-          showStreak: false,
+          showStreak: true,
         },
 
         setAthkarList: (list) => set({ athkarList: list }),

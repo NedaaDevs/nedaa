@@ -24,21 +24,17 @@ import { RotateCcw, Flame } from "lucide-react-native";
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
+// Utils
+import { formatNumberToLocale } from "@/utils/number";
+
 type Props = {
   type: AthkarType;
 };
 
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
-  const {
-    athkarList,
-    currentProgress,
-    streak,
-    settings,
-    initializeSession,
-    setCurrentAthkarIndex,
-    resetProgress,
-  } = useAthkarStore();
+  const { athkarList, currentProgress, streak, settings, initializeSession, resetProgress } =
+    useAthkarStore();
 
   // Filter athkar by type(Morning/Evening ALL for both)
   const filteredAthkar = athkarList
@@ -71,22 +67,24 @@ const AthkarList = ({ type }: Props) => {
           <HStack className="justify-between items-center">
             <VStack space="sm" className="flex-1">
               <HStack space="sm" className="items-center">
-                <Flame size={20} className="text-accent-warning" />
-                <Text className="text-lg font-semibold text-typography">
+                <Icon as={Flame} size="md" className="text-secondary" />
+                <Text className="text-lg text-left font-semibold text-typography">
                   {t("athkar.dailyStreak")}
                 </Text>
               </HStack>
-              <Text className="text-sm text-typography-secondary">
-                {t("athkar.todayCompletion")}
+              <Text className="text-left text-sm text-typography-secondary">
+                {t("athkar.todayProgress")}
               </Text>
               <Progress
                 value={overallProgress}
                 className="h-3 bg-background-tertiary dark:bg-background mt-2">
-                <ProgressFilledTrack className="bg-accent-warning" />
+                <ProgressFilledTrack className="bg-accent-info" />
               </Progress>
             </VStack>
             <VStack className="items-center justify-center">
-              <Text className="text-3xl font-bold text-accent-warning">{streakDays}</Text>
+              <Text className="text-3xl font-bold text-accent-info">
+                {formatNumberToLocale(`${streakDays}`)}
+              </Text>
               <Text className="text-sm text-typography-secondary">{t("athkar.days")}</Text>
             </VStack>
           </HStack>
