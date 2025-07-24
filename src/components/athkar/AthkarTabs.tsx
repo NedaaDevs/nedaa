@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
+import { Fab, FabIcon } from "@/components/ui/fab";
 
 import AthkarList from "@/components/athkar/AthkarList";
 
@@ -20,7 +22,7 @@ import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 // Icons
-import { Sun, Moon } from "lucide-react-native";
+import { Sun, Moon, Focus } from "lucide-react-native";
 
 // Types
 import { AthkarType } from "@/types/athkar";
@@ -30,6 +32,8 @@ import { getCurrentAthkarPeriod } from "@/utils/athkar";
 
 const AthkarTabs = () => {
   const { t } = useTranslation();
+  const router = useRouter();
+
   const { setCurrentType, checkAndResetDailyProgress } = useAthkarStore();
 
   type activeTabType = Exclude<AthkarType, "all">;
@@ -113,6 +117,10 @@ const AthkarTabs = () => {
           <AthkarList type={activeTab} />
         </Box>
       </ScrollView>
+
+      <Fab onPress={() => router.push("/athkar-focus")} size="lg" className="bg-primary ">
+        <FabIcon as={Focus} color="white" />
+      </Fab>
     </Box>
   );
 };
