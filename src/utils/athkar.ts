@@ -8,7 +8,7 @@ import { timeZonedNow, timestampToDateInt, dateToInt } from "@/utils/date";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 // Types
-import type { AthkarProgress, AthkarType } from "@/types/athkar";
+import type { Athkar, AthkarProgress, AthkarType } from "@/types/athkar";
 
 // List of locales that support athkar feature
 export const ATHKAR_SUPPORTED_LOCALES = ["ar"];
@@ -280,6 +280,7 @@ export const isAthkarEveningPeriod = (timezone?: string): boolean => {
 // Find the index of the first not completed Thikir to start from(If all done default to 0)
 export const athkarIndexToStartFrom = (
   progressList: AthkarProgress[],
+  athkarList: Athkar[],
   type: AthkarType
 ): number => {
   // Early return for empty progress
@@ -300,9 +301,10 @@ export const athkarIndexToStartFrom = (
     return 0; // All completed, start from beginning
   }
 
-  const strId = extractBaseId(incompleteThikir.athkarId);
-  const thikirIndex = Number(strId) - 1;
+  const baseId = extractBaseId(incompleteThikir.athkarId);
 
-  // Ensure valid index
-  return Math.max(0, thikirIndex);
+  // Find the actual index in the filtered athkar list
+  const index = athkarList.findIndex((athkar) => athkar.id === baseId);
+
+  return Math.max(0, index);
 };
