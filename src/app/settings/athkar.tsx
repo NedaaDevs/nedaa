@@ -45,7 +45,7 @@ const AthkarSettings = () => {
       </VStack>
 
       <VStack className="p-4" space="md">
-        {/* Auto Move Setting */}
+        {/* Show streak Setting */}
         <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
           <HStack className="justify-between items-center">
             <VStack className="flex-1 mr-4">
@@ -53,7 +53,7 @@ const AthkarSettings = () => {
                 {t("settings.athkar.showStreak.title")}
               </Text>
               <Text className="text-sm text-typography-secondary mt-1">
-                {t("settings.athkar.autoMove.description")}
+                {t("settings.athkar.showStreak.description")}
               </Text>
             </VStack>
             <Switch

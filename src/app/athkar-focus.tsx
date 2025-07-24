@@ -33,8 +33,9 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { athkarIndexToStartFrom } from "@/utils/athkar";
+import { athkarIndexToStartFrom, filterTodayProgress, isSessionComplete } from "@/utils/athkar";
 import { Icon } from "@/components/ui/icon";
+import { AthkarType } from "@/types/athkar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -46,6 +47,7 @@ const AthkarFocusScreen = () => {
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
+  const hapticWarning = useHaptic("warning");
 
   const {
     athkarList,
@@ -54,7 +56,6 @@ const AthkarFocusScreen = () => {
     currentType,
     incrementCount,
     decrementCount,
-    moveToNext,
     toggleFocusMode,
   } = useAthkarStore();
 
@@ -65,9 +66,15 @@ const AthkarFocusScreen = () => {
   const swipeIndicatorTranslateX = useSharedValue(0);
   const [startFromIndex, setStartFromIndex] = useState(0);
 
+  const filteredAthkar = athkarList.filter(
+    (a) => a.type === currentType || a.type === ATHKAR_TYPE.ALL
+  );
+
   useEffect(() => {
-    const index = athkarIndexToStartFrom(currentProgress, currentType);
+    const index = athkarIndexToStartFrom(currentProgress, filteredAthkar, currentType);
+
     setStartFromIndex(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProgress, currentType]);
 
   // Enable focus mode on mount
@@ -76,21 +83,19 @@ const AthkarFocusScreen = () => {
     return () => {
       toggleFocusMode();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Hide instructions after 10 seconds
+  // Hide instructions after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowInstructions(false);
-    }, 10000);
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter athkar by current type
-  const filteredAthkar = athkarList.filter(
-    (a) => a.type === currentType || a.type === ATHKAR_TYPE.ALL
-  );
   const currentAthkar = filteredAthkar[startFromIndex];
+
   const progressItem = currentProgress.find(
     (p) => p.athkarId === `${currentAthkar?.id}-${currentType}`
   );
@@ -113,12 +118,8 @@ const AthkarFocusScreen = () => {
   };
 
   const handleNext = () => {
-    if (currentAthkarIndex < filteredAthkar.length - 1) {
-      moveToNext();
-    } else {
-      // Last athkar, show completion or exit
-      router.back();
-    }
+    // Last athkar, show completion or exit
+    router.back();
   };
 
   // Handle swipe gestures
@@ -137,7 +138,7 @@ const AthkarFocusScreen = () => {
         : event.translationX < -SWIPE_THRESHOLD;
 
       if (shouldDecrease && currentCount > 0 && currentAthkar) {
-        runOnJS(hapticSelection)();
+        runOnJS(hapticWarning)();
         runOnJS(decrementCount)(currentAthkar.id);
       }
 
@@ -153,6 +154,10 @@ const AthkarFocusScreen = () => {
       transform: [{ translateX: swipeIndicatorTranslateX.value }],
     };
   });
+
+  const getIsCompletedByType = (type: AthkarType) => {
+    return isSessionComplete(filterTodayProgress(currentProgress), type);
+  };
 
   if (!currentAthkar) {
     return null;
@@ -175,7 +180,8 @@ const AthkarFocusScreen = () => {
         {/* Progress Indicator */}
         <Box className="absolute top-12 left-4 right-20 z-10">
           <Text className="text-sm text-typography-secondary mb-2">
-            {currentAthkarIndex + 1} / {filteredAthkar.length}
+            {formatNumberToLocale(`${currentAthkarIndex + 1}`)} /{" "}
+            {formatNumberToLocale(`${filteredAthkar.length}`)}
           </Text>
           <Progress
             value={(currentAthkarIndex / (filteredAthkar.length - 1)) * 100}
@@ -192,9 +198,9 @@ const AthkarFocusScreen = () => {
                 <Box className="relative w-64 h-64">
                   {/* Background Circle */}
                   <Box className="absolute inset-0 items-center justify-center">
-                    <Box
+                    {/* <Box
                       className={`w-full h-full rounded-full border-8 ${isCompleted ? "border-accent-success/30" : "border-background-secondary"}`}
-                    />
+                    /> */}
                   </Box>
 
                   {/* Progress Circle using SVG */}
@@ -204,7 +210,7 @@ const AthkarFocusScreen = () => {
                         cx={128}
                         cy={128}
                         r={120}
-                        stroke={isCompleted ? "#10b981" : "#6366f1"}
+                        stroke={isCompleted ? "#10b981" : "#1E40AF"}
                         strokeWidth={8}
                         fill="none"
                         strokeDasharray={2 * Math.PI * 120}
@@ -219,13 +225,8 @@ const AthkarFocusScreen = () => {
                     <VStack className="items-center justify-center" space="xs">
                       <Text
                         className={`text-5xl font-bold ${
-                          isCompleted ? "text-accent-success" : "text-typography"
-                        }`}
-                        style={{
-                          lineHeight: 60,
-                          textAlignVertical: "center",
-                          includeFontPadding: false,
-                        }}>
+                          isCompleted ? "text-typography-secondary" : "text-accent-info"
+                        }`}>
                         {formatNumberToLocale(`${currentCount}`)}
                       </Text>
                       <Text
@@ -240,30 +241,25 @@ const AthkarFocusScreen = () => {
                   </View>
                 </Box>
 
-                {/* Next Button when completed */}
-                {isCompleted && (
-                  <Button size="lg" onPress={handleNext} className="bg-accent-success mt-4">
+                {/* Finish Button when all completed */}
+                {getIsCompletedByType(currentType) && (
+                  <Button size="lg" onPress={handleNext} className="bg-success mt-4">
                     <ButtonText className="text-white font-semibold">
-                      {currentAthkarIndex === filteredAthkar.length - 1
-                        ? t("athkar.focus.finish")
-                        : t("athkar.focus.next")}
+                      {t("athkar.focus.allCompleted", {
+                        type: t(`athkar.${currentType}`),
+                      })}
                     </ButtonText>
                   </Button>
                 )}
 
                 {/* Athkar Text */}
                 <VStack space="lg" className="items-center max-w-full">
-                  <Text className="text-xl font-semibold text-center text-typography">
-                    {t(currentAthkar.title)}
-                  </Text>
-                  <Text
-                    className="text-lg text-center text-typography leading-relaxed"
-                    style={{ textAlign: "center", writingDirection: isRTL ? "rtl" : "ltr" }}>
+                  <Text className="text-lg text-center text-typography leading-relaxed ">
                     {t(currentAthkar.text)}
                   </Text>
                 </VStack>
 
-                {/* Instructions - auto hide after 10s */}
+                {/* Instructions - auto hide after 3s */}
                 {!isCompleted && showInstructions && (
                   <Animated.View
                     entering={FadeIn}
@@ -286,11 +282,9 @@ const AthkarFocusScreen = () => {
                     style={[swipeIndicatorStyle]}
                     className="absolute left-0 right-0 top-1/2 items-center">
                     <HStack className="items-center" space="lg">
-                      <ChevronLeft size={40} className="text-accent-primary/50" />
-                      <Text className="text-lg font-semibold text-accent-primary/50">
-                        {currentCount - 1}
-                      </Text>
-                      <ChevronRight size={40} className="text-accent-primary/50" />
+                      <Icon as={ChevronLeft} size="xl" className="text-warning" />
+                      <Text className="text-lg font-semibold text-warning">{currentCount - 1}</Text>
+                      <Icon as={ChevronRight} size="xl" className="text-warning" />
                     </HStack>
                   </Animated.View>
                 )}

@@ -9,9 +9,10 @@ import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Minus } from "lucide-react-native";
+import { Check, Minus } from "lucide-react-native";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
@@ -21,6 +22,9 @@ import { Athkar } from "@/types/athkar";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+
+// Hooks
+import { useHaptic } from "@/hooks/useHaptic";
 
 type Props = {
   athkar: Athkar;
@@ -35,13 +39,30 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
   const { t, i18n } = useTranslation();
   const { incrementCount, decrementCount } = useAthkarStore();
 
+  const hapticSelection = useHaptic("selection");
+  const hapticSuccess = useHaptic("success");
+  const hapticWarning = useHaptic("warning");
+
   const isRTL = i18n.dir() === "rtl";
 
   const { current: currentCount, total, completed: isCompleted } = progress;
   const progressPercentage = (currentCount / total) * 100;
 
+  const handleIncrement = () => {
+    hapticSelection();
+    incrementCount(athkar.id);
+    if (isCompleted) {
+      hapticSuccess();
+      return;
+    }
+
+    if (currentCount + 1 === total) {
+      hapticSuccess();
+    }
+  };
+
   return (
-    <Pressable onPress={() => incrementCount(athkar.id)} disabled={isCompleted}>
+    <Pressable onPress={handleIncrement} disabled={isCompleted}>
       <Box
         className={`p-4 rounded-xl relative ${
           isCompleted
@@ -49,16 +70,9 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
             : "bg-background-secondary dark:bg-background-tertiary"
         }`}>
         <VStack space="md">
-          {/* Title */}
-          <Text
-            className={`text-lg font-semibold ${isCompleted ? "text-white" : "text-typography"}`}>
-            {t(athkar.title)}
-          </Text>
-
           {/* Athkar Text */}
           <Text
-            className={`text-base leading-relaxed ${isCompleted ? "text-white/90" : "text-typography"}`}
-            style={{ textAlign: "right", writingDirection: "rtl" }}>
+            className={`text-base text-left leading-relaxed ${isCompleted ? " text-typography-secondary" : "text-typography"}`}>
             {t(athkar.text)}
           </Text>
 
@@ -74,24 +88,18 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
                     onPress={(e) => {
                       e.stopPropagation();
                       decrementCount(athkar.id);
+                      hapticWarning();
                     }}
-                    className={`w-10 h-10 p-0 rounded-full ${isCompleted ? "bg-black/20 border border-black/30" : "bg-background-tertiary dark:bg-background"}`}>
-                    <Minus
-                      size={20}
-                      className={isCompleted ? "text-white/70" : "text-typography-secondary"}
-                    />
+                    className={`w-10 h-10 p-0 rounded-full ${isCompleted ? "bg-black/20 border border-primary/50" : "text-typography-info"}`}>
+                    <Icon as={Minus} className="text-typography-info" />
                   </Button>
                 )}
               </HStack>
               {/* Count Display */}
               <Text
-                className={`text-base font-medium ${
+                className={`text-base text-left font-medium ${
                   isCompleted ? "text-white" : "text-typography-secondary"
-                }`}
-                style={{
-                  writingDirection: isRTL ? "rtl" : "ltr",
-                  textAlign: isRTL ? "right" : "left",
-                }}>
+                }`}>
                 {isRTL
                   ? `${formatNumberToLocale(`${total}`)} / ${formatNumberToLocale(`${currentCount}`)}`
                   : `${formatNumberToLocale(`${currentCount}`)} / ${formatNumberToLocale(`${total}`)}`}
@@ -107,8 +115,8 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
           </VStack>
 
           {isCompleted && (
-            <Box className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-white items-center justify-center shadow-md">
-              <Text className="text-accent-success text-2xl font-bold">✓</Text>
+            <Box className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-success items-center justify-center shadow-md">
+              <Icon as={Check} className="" />
             </Box>
           )}
         </VStack>
