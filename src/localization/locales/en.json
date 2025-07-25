@@ -21,6 +21,7 @@
   "common.enable": "Enable",
   "common.error": "Error",
   "common.estimatedTime": "Estimated time",
+  "common.holdToReset": "Hold to Reset ({{progress}}%)",
   "common.keepCurrent": "Keep Current",
   "common.loading": "Loading...",
   "common.loadingPrayerTimes": "Loading prayer times...",
