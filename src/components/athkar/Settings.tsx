@@ -83,7 +83,7 @@ const Settings = () => {
             <VStack space="md">
               <HStack className="justify-between items-center">
                 <VStack className="flex-1 mr-4">
-                  <Text className="text-base font-medium text-typography">
+                  <Text className="text-left text-base font-medium text-typography">
                     {t("settings.athkar.notifications.morning.title")}
                   </Text>
                 </VStack>
@@ -119,7 +119,7 @@ const Settings = () => {
             <VStack space="md">
               <HStack className="justify-between items-center">
                 <VStack className="flex-1 mr-4">
-                  <Text className="text-base font-medium text-typography">
+                  <Text className="text-left text-base font-medium text-typography">
                     {t("settings.athkar.notifications.evening.title")}
                   </Text>
                 </VStack>
@@ -177,10 +177,10 @@ const Settings = () => {
           <Box className="bg-background-secondary  rounded-xl p-4">
             <HStack className="justify-between items-center">
               <VStack className="flex-1 mr-4">
-                <Text className="text-base font-medium text-typography">
+                <Text className="text-left text-base font-medium text-typography">
                   {t("settings.athkar.showStreak.title")}
                 </Text>
-                <Text className="text-sm text-typography-secondary mt-1">
+                <Text className="text-left text-sm text-typography-secondary mt-1">
                   {t("settings.athkar.showStreak.description")}
                 </Text>
               </VStack>
