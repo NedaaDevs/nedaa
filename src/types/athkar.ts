@@ -70,4 +70,5 @@ export type AthkarActions = {
   updateStreakForCompletedDay: () => Promise<void>;
   reloadStreakFromDB: () => Promise<void>;
   forceRecalculateStreak: () => Promise<void>;
+  cleanUpOldData: () => Promise<void>;
 };
