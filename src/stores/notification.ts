@@ -13,6 +13,7 @@ import prayerTimesStore from "@/stores/prayerTimes";
 
 // Types
 import {
+  AthkarNotificationSettings,
   ConfigForType,
   getEffectiveConfig,
   NotificationType,
@@ -20,6 +21,9 @@ import {
   type NotificationSettings,
   type NotificationState,
 } from "@/types/notification";
+
+// Constants
+import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 export type NotificationStore = NotificationState & NotificationAction;
 
@@ -61,6 +65,18 @@ export const useNotificationStore = create<NotificationStore>()(
         settings: defaultSettings,
         isScheduling: false,
         lastScheduledDate: null,
+        morningNotification: {
+          type: ATHKAR_TYPE.MORNING,
+          enabled: false,
+          hour: 6, // AM
+          minute: 0,
+        },
+        eveningNotification: {
+          type: ATHKAR_TYPE.EVENING,
+          enabled: false,
+          hour: 12, // PM
+          minute: 0,
+        },
 
         updateAllNotificationToggle: async (enabled) => {
           set((state) => ({
@@ -152,7 +168,7 @@ export const useNotificationStore = create<NotificationStore>()(
         },
 
         scheduleAllNotifications: async () => {
-          const { settings } = get();
+          const { settings, morningNotification, eveningNotification } = get();
           if (!settings.enabled) return;
 
           set({ isScheduling: true });
@@ -163,7 +179,15 @@ export const useNotificationStore = create<NotificationStore>()(
             // Get two weeks worth of prayer data
             const prayersData = prayerTimesStore.getState().twoWeeksTimings;
 
-            const result = await scheduleAllNotifications(settings, prayersData, timezone);
+            const result = await scheduleAllNotifications(
+              settings,
+              {
+                morningNotification,
+                eveningNotification,
+              },
+              prayersData,
+              timezone
+            );
 
             if (result.success) {
               set({ lastScheduledDate: new Date().toISOString() });
@@ -185,7 +209,19 @@ export const useNotificationStore = create<NotificationStore>()(
             await get().scheduleAllNotifications();
           }
         },
-        getEffectiveConfigForPrayer: <T extends NotificationType>(
+
+        updateAthkarNotificationSetting: async (option: AthkarNotificationSettings) => {
+          const key =
+            option.type === ATHKAR_TYPE.MORNING ? "morningNotification" : "eveningNotification";
+          set({
+            [key]: {
+              ...get()[key],
+              ...option,
+            },
+          });
+        },
+
+        getEffectiveConfigForPrayer: <T extends Exclude<NotificationType, "athkar">>(
           prayerId: string,
           type: T
         ): ConfigForType<T> => {
