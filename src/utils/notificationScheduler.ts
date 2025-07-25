@@ -15,12 +15,18 @@ import {
   scheduleNotification,
   cancelAllScheduledNotifications,
   checkPermissions,
+  scheduleRecurringNotification,
 } from "@/utils/notifications";
 import { timeZonedNow } from "@/utils/date";
 
 // Types
 import type { NotificationContentInput } from "expo-notifications";
-import { NotificationSettings, NotificationType, getEffectiveConfig } from "@/types/notification";
+import {
+  AthkarNotificationSettings,
+  NotificationSettings,
+  NotificationType,
+  getEffectiveConfig,
+} from "@/types/notification";
 import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 
 // Constants
@@ -38,6 +44,7 @@ import {
 } from "@/utils/notificationChannels";
 import { getNotificationSound } from "@/utils/sound";
 import { formatNumberToLocale } from "@/utils/number";
+import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 type SchedulingOptions = {
   daysToSchedule?: number;
@@ -69,11 +76,101 @@ const MAX_IOS_NOTIFICATIONS = 63;
 const DEFAULT_DAYS_TO_SCHEDULE = 10;
 const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
 
+const scheduleAthkarNotifications = async (
+  athkarSettings: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  },
+  timezone: string,
+  t: typeof i18next.t
+): Promise<{ success: boolean; scheduledCount: number }> => {
+  let scheduledCount = 0;
+
+  try {
+    // Schedule Morning Athkar if enabled
+    if (athkarSettings.morningNotification.enabled) {
+      const morningResult = await scheduleRecurringNotification(
+        athkarSettings.morningNotification.hour,
+        athkarSettings.morningNotification.minute || 0,
+        {
+          title: t("notification.athkar.morning.title"),
+          body: t("notification.athkar.morning.body"),
+          sound: "default",
+          data: {
+            type: "ATHKAR",
+            athkarType: ATHKAR_TYPE.MORNING,
+          },
+        },
+        {
+          vibrate: true,
+          categoryId: "athkar_morning",
+          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_morning" : undefined,
+          timezone,
+        }
+      );
+
+      if (morningResult.success) {
+        scheduledCount++;
+        console.log(
+          `[AthkarScheduler] Scheduled morning Athkar at ${athkarSettings.morningNotification.hour}:${athkarSettings.morningNotification.minute || 0}`
+        );
+      } else {
+        console.error(
+          `[AthkarScheduler] Failed to schedule morning Athkar: ${morningResult.message}`
+        );
+      }
+    }
+
+    // Schedule Evening Athkar if enabled
+    if (athkarSettings.eveningNotification.enabled) {
+      const eveningResult = await scheduleRecurringNotification(
+        athkarSettings.eveningNotification.hour,
+        athkarSettings.eveningNotification.minute || 0,
+        {
+          title: t("notification.athkar.evening.title"),
+          body: t("notification.athkar.evening.body"),
+          sound: "default",
+          data: {
+            type: "ATHKAR",
+            athkarType: ATHKAR_TYPE.EVENING,
+          },
+        },
+        {
+          vibrate: true,
+          categoryId: "athkar_evening",
+          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_evening" : undefined,
+          timezone,
+        }
+      );
+
+      if (eveningResult.success) {
+        scheduledCount++;
+        console.log(
+          `[AthkarScheduler] Scheduled evening Athkar at ${athkarSettings.eveningNotification.hour}:${athkarSettings.eveningNotification.minute || 0}`
+        );
+      } else {
+        console.error(
+          `[AthkarScheduler] Failed to schedule evening Athkar: ${eveningResult.message}`
+        );
+      }
+    }
+
+    return { success: true, scheduledCount };
+  } catch (error) {
+    console.error("[AthkarScheduler] Failed to schedule Athkar notifications:", error);
+    return { success: false, scheduledCount: 0 };
+  }
+};
+
 /**
  * Schedule all notifications based on settings and prayer times
  */
 export const scheduleAllNotifications = async (
   settings: NotificationSettings,
+  athkarSettings: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  },
   data: DayPrayerTimes[] | null,
   timezone: string,
   options: Partial<SchedulingOptions> = {}
@@ -105,12 +202,13 @@ export const scheduleAllNotifications = async (
   try {
     if (Platform.OS === PlatformType.ANDROID) {
       // Create/update notification channels before scheduling
-      const needsUpdate = await shouldUpdateChannels(settings);
+      const needsUpdate = await shouldUpdateChannels(settings, athkarSettings);
       if (needsUpdate) {
         console.log("[NotificationScheduler] Updating notification channels...");
-        await createNotificationChannels(settings);
+        await createNotificationChannels(settings, athkarSettings);
       }
     }
+
     // Cancel all existing notifications
     console.log("[NotificationScheduler] Cancelling existing notifications...");
     await cancelAllScheduledNotifications();
@@ -155,19 +253,25 @@ export const scheduleAllNotifications = async (
       }
     }
 
+    console.log("[NotificationScheduler] Scheduling Athkar notifications...");
+    await scheduleAthkarNotifications(athkarSettings, timezone, t);
+
     // Sort notifications by time
     notificationsToSchedule.sort((a, b) => a.time.getTime() - b.time.getTime());
 
+    // Calculate how many Athkar notifications are taking up slots
+    const athkarNotificationCount =
+      (athkarSettings.morningNotification.enabled ? 1 : 0) +
+      (athkarSettings.eveningNotification.enabled ? 1 : 0);
     // Apply iOS limit(64 scheduled notifications max)
     let notificationsToProcess = notificationsToSchedule;
-    if (
-      Platform.OS === PlatformType.IOS &&
-      notificationsToSchedule.length > MAX_IOS_NOTIFICATIONS
-    ) {
-      // Keep only first 63 notifications(64th as a reminder)
-      notificationsToProcess = notificationsToSchedule.slice(0, MAX_IOS_NOTIFICATIONS);
-    }
+    if (Platform.OS === PlatformType.IOS) {
+      const maxAllowed = MAX_IOS_NOTIFICATIONS - athkarNotificationCount;
 
+      if (notificationsToSchedule.length > maxAllowed) {
+        notificationsToProcess = notificationsToSchedule.slice(0, maxAllowed);
+      }
+    }
     // Add reminder notification only if we have notifications to schedule
     if (notificationsToProcess.length > 0) {
       const lastNotification = notificationsToProcess[notificationsToProcess.length - 1];
@@ -190,6 +294,7 @@ export const scheduleAllNotifications = async (
     console.log(
       `[NotificationScheduler] Scheduling ${notificationsToProcess.length} notifications...`
     );
+
     let scheduledCount = 0;
     for (const notification of notificationsToProcess) {
       const notificationInput: NotificationContentInput = {
@@ -213,7 +318,7 @@ export const scheduleAllNotifications = async (
         scheduledCount++;
       }
     }
-
+    scheduledCount = scheduledCount + athkarNotificationCount;
     console.log(`[NotificationScheduler] Successfully scheduled ${scheduledCount} notifications`);
     return { success: true, scheduledCount };
   } catch (error) {
@@ -400,6 +505,10 @@ export const shouldReschedule = (
  */
 export const calculateNotificationCount = (
   settings: NotificationSettings,
+  athkarSettings: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  },
   days: number,
   prayersPerDay: number = 5
 ): number => {
@@ -412,8 +521,13 @@ export const calculateNotificationCount = (
       if (settings.defaults.preAthan.enabled) count++;
     }
   }
+  let athkarCount = 0;
+  for (let day = 0; day < days; day++) {
+    if (athkarSettings.morningNotification.enabled) athkarCount++;
+    if (athkarSettings.eveningNotification.enabled) athkarCount++;
+  }
 
-  return count;
+  return count + athkarCount;
 };
 
 /**
@@ -423,9 +537,18 @@ export const calculateNotificationCount = (
  */
 export const getMaxSchedulableDays = (
   settings: NotificationSettings,
+  athkarSettings: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  },
   prayersPerDay: number = 5
 ): number => {
-  const notificationsPerDay = calculateNotificationCount(settings, 1, prayersPerDay);
+  const notificationsPerDay = calculateNotificationCount(
+    settings,
+    athkarSettings,
+    1,
+    prayersPerDay
+  );
 
   if (notificationsPerDay === 0) return Infinity;
 
