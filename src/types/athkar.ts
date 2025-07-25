@@ -66,4 +66,8 @@ export type AthkarActions = {
   checkAndResetDailyProgress: () => void;
   toggleAutoMove: () => void;
   toggleShowStreak: () => void;
+  initializeStore: () => void;
+  updateStreakForCompletedDay: () => Promise<void>;
+  reloadStreakFromDB: () => Promise<void>;
+  forceRecalculateStreak: () => Promise<void>;
 };
