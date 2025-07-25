@@ -1,5 +1,4 @@
 import { Tabs } from "expo-router";
-import { useTranslation } from "react-i18next";
 
 import { useAppStore } from "@/stores/app";
 
@@ -10,7 +9,6 @@ import { Home, Settings, BookOpenText } from "lucide-react-native";
 import { isAthkarSupported } from "@/utils/athkar";
 
 const TabsLayout = () => {
-  const { t } = useTranslation();
   const { mode, locale } = useAppStore();
 
   return (
