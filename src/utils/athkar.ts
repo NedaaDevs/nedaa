@@ -11,7 +11,7 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import type { Athkar, AthkarProgress, AthkarType } from "@/types/athkar";
 
 // List of locales that support athkar feature
-export const ATHKAR_SUPPORTED_LOCALES = ["ar", "en"];
+export const ATHKAR_SUPPORTED_LOCALES = ["ar", "en", "ur"];
 
 /**
  * Check if the current locale supports athkar feature
