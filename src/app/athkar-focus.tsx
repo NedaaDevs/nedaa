@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { I18nManager, Pressable, Dimensions, View } from "react-native";
+import { I18nManager, Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
@@ -10,6 +10,9 @@ import Animated, {
   runOnJS,
   FadeIn,
   FadeOut,
+  useAnimatedProps,
+  withSpring,
+  interpolateColor,
 } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
@@ -18,6 +21,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
+import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { X, ChevronLeft, ChevronRight } from "lucide-react-native";
@@ -39,6 +43,9 @@ import { AthkarType } from "@/types/athkar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+
+// Create animated Circle component
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const AthkarFocusScreen = () => {
   const { t } = useTranslation();
@@ -66,13 +73,17 @@ const AthkarFocusScreen = () => {
   const swipeIndicatorTranslateX = useSharedValue(0);
   const [startFromIndex, setStartFromIndex] = useState(0);
 
+  // Animated values for circle progress
+  const animatedProgress = useSharedValue(0);
+  const circleScale = useSharedValue(1);
+  const countOpacity = useSharedValue(1);
+
   const filteredAthkar = athkarList.filter(
     (a) => a.type === currentType || a.type === ATHKAR_TYPE.ALL
   );
 
   useEffect(() => {
     const index = athkarIndexToStartFrom(currentProgress, filteredAthkar, currentType);
-
     setStartFromIndex(index);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProgress, currentType]);
@@ -95,7 +106,6 @@ const AthkarFocusScreen = () => {
   }, []);
 
   const currentAthkar = filteredAthkar[startFromIndex];
-
   const progressItem = currentProgress.find(
     (p) => p.athkarId === `${currentAthkar?.id}-${currentType}`
   );
@@ -104,21 +114,77 @@ const AthkarFocusScreen = () => {
   const progressPercentage = (currentCount / totalCount) * 100;
   const isCompleted = progressItem?.completed || false;
 
+  // Animate progress when count changes
+  useEffect(() => {
+    animatedProgress.value = withSpring(progressPercentage / 100, {
+      damping: 15,
+      stiffness: 150,
+      mass: 1,
+    });
+  }, [progressPercentage]);
+
+  // Circle constants
+  const CIRCLE_RADIUS = 120;
+  const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
+  // Animated props for the progress circle
+  const animatedCircleProps = useAnimatedProps(() => {
+    const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - animatedProgress.value);
+
+    return {
+      strokeDashoffset,
+      stroke: interpolateColor(
+        animatedProgress.value,
+        [0, 1],
+        ["#1E40AF", "#10b981"] // Blue to green
+      ),
+    };
+  });
+
+  // Animated style for circle scale effect
+  const circleAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: circleScale.value }],
+    };
+  });
+
+  // Animated style for count text
+  const countAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: countOpacity.value,
+      transform: [{ scale: countOpacity.value }],
+    };
+  });
+
   // Handle tap to increment
   const handleTap = () => {
     if (!isCompleted && currentAthkar) {
       hapticSelection();
+
+      // Animate circle scale for feedback
+      circleScale.value = withSpring(1.05, { damping: 20, stiffness: 300 }, () => {
+        circleScale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      });
+
+      // Animate count text
+      countOpacity.value = withTiming(0.7, { duration: 100 }, () => {
+        countOpacity.value = withTiming(1, { duration: 100 });
+      });
+
       incrementCount(currentAthkar.id);
 
       // Check if this tap completes the athkar
       if (currentCount + 1 === totalCount) {
         hapticSuccess();
+        // Add completion animation
+        circleScale.value = withSpring(1.1, { damping: 15, stiffness: 200 }, () => {
+          circleScale.value = withSpring(1, { damping: 15, stiffness: 200 });
+        });
       }
     }
   };
 
   const handleNext = () => {
-    // Last athkar, show completion or exit
     router.back();
   };
 
@@ -139,6 +205,17 @@ const AthkarFocusScreen = () => {
 
       if (shouldDecrease && currentCount > 0 && currentAthkar) {
         runOnJS(hapticWarning)();
+
+        // Animate circle scale for decrement feedback
+        circleScale.value = withSpring(0.95, { damping: 20, stiffness: 300 }, () => {
+          circleScale.value = withSpring(1, { damping: 20, stiffness: 300 });
+        });
+
+        // Animate count text
+        countOpacity.value = withTiming(0.7, { duration: 100 }, () => {
+          countOpacity.value = withTiming(1, { duration: 100 });
+        });
+
         runOnJS(decrementCount)(currentAthkar.id);
       }
 
@@ -194,34 +271,46 @@ const AthkarFocusScreen = () => {
           <Pressable onPress={handleTap} className="flex-1">
             <View style={{ flex: 1 }}>
               <VStack className="flex-1 justify-center items-center px-8" space="2xl">
-                {/* Circular Progress */}
-                <Box className="relative w-64 h-64">
+                {/* Animated Circular Progress */}
+                <Animated.View
+                  style={[{ position: "relative", width: 256, height: 256 }, circleAnimatedStyle]}>
                   {/* Background Circle */}
-                  <Box className="absolute inset-0 items-center justify-center">
-                    {/* <Box
-                      className={`w-full h-full rounded-full border-8 ${isCompleted ? "border-accent-success/30" : "border-background-secondary"}`}
-                    /> */}
-                  </Box>
-
-                  {/* Progress Circle using SVG */}
                   <View className="absolute inset-0 items-center justify-center">
                     <Svg width={256} height={256} style={{ transform: [{ rotate: "-90deg" }] }}>
+                      {/* Background circle */}
                       <Circle
                         cx={128}
                         cy={128}
-                        r={120}
-                        stroke={isCompleted ? "#10b981" : "#1E40AF"}
+                        r={CIRCLE_RADIUS}
+                        stroke="rgba(30, 64, 175, 0.1)"
                         strokeWidth={8}
                         fill="none"
-                        strokeDasharray={2 * Math.PI * 120}
-                        strokeDashoffset={2 * Math.PI * 120 * (1 - progressPercentage / 100)}
+                      />
+                      {/* Animated progress circle */}
+                      <AnimatedCircle
+                        cx={128}
+                        cy={128}
+                        r={CIRCLE_RADIUS}
+                        strokeWidth={8}
+                        fill="none"
+                        strokeDasharray={CIRCLE_CIRCUMFERENCE}
                         strokeLinecap="round"
+                        animatedProps={animatedCircleProps}
                       />
                     </Svg>
                   </View>
 
-                  {/* Counter  */}
-                  <View className="absolute inset-0 items-center justify-center">
+                  {/* Animated Counter */}
+                  <Animated.View
+                    style={[
+                      {
+                        position: "absolute",
+                        inset: 0,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      },
+                      countAnimatedStyle,
+                    ]}>
                     <VStack className="items-center justify-center" space="xs">
                       <Text
                         className={`text-5xl font-bold ${
@@ -238,8 +327,8 @@ const AthkarFocusScreen = () => {
                         / {formatNumberToLocale(`${totalCount}`)}
                       </Text>
                     </VStack>
-                  </View>
-                </Box>
+                  </Animated.View>
+                </Animated.View>
 
                 {/* Finish Button when all completed */}
                 {getIsCompletedByType(currentType) && (
