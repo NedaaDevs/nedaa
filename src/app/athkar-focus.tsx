@@ -59,7 +59,6 @@ const AthkarFocusScreen = () => {
   const {
     athkarList,
     currentProgress,
-    currentAthkarIndex,
     currentType,
     incrementCount,
     decrementCount,
@@ -72,6 +71,7 @@ const AthkarFocusScreen = () => {
   const swipeIndicatorOpacity = useSharedValue(0);
   const swipeIndicatorTranslateX = useSharedValue(0);
   const [startFromIndex, setStartFromIndex] = useState(0);
+  const [currentAthkarIndex, setCurrentAthkarIndex] = useState(0);
 
   // Animated values for circle progress
   const animatedProgress = useSharedValue(0);
@@ -84,6 +84,7 @@ const AthkarFocusScreen = () => {
 
   useEffect(() => {
     const index = athkarIndexToStartFrom(currentProgress, filteredAthkar, currentType);
+    setCurrentAthkarIndex(index);
     setStartFromIndex(index);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProgress, currentType]);
