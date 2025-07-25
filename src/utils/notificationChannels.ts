@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 // Types
 import {
+  AthkarNotificationSettings,
   getEffectiveConfig,
   type NotificationSettings,
   NotificationType,
@@ -63,6 +64,7 @@ const getChannelDisplayName = (
     [NOTIFICATION_TYPE.PRAYER]: "Prayer",
     [NOTIFICATION_TYPE.IQAMA]: "Iqama",
     [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
+    [NOTIFICATION_TYPE.ATHKAR]: "Athkar",
   }[type];
 
   return `${prayerName} ${typeName} (${soundKey})`;
@@ -71,7 +73,13 @@ const getChannelDisplayName = (
 /**
  * Clean up old notification channels that are no longer needed
  */
-export const cleanupOldChannels = async (currentSettings: NotificationSettings): Promise<void> => {
+export const cleanupOldChannels = async (
+  currentSettings: NotificationSettings,
+  athkarSettings?: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  }
+): Promise<void> => {
   if (Platform.OS !== "android") return;
 
   try {
@@ -121,14 +129,24 @@ export const cleanupOldChannels = async (currentSettings: NotificationSettings):
 
     // Add reminder channel
     currentChannelIds.add("reminder");
+    // Add Athkar channel IDs if enabled
+    if (athkarSettings) {
+      if (athkarSettings.morningNotification.enabled) {
+        currentChannelIds.add("athkar_morning");
+      }
+      if (athkarSettings.eveningNotification.enabled) {
+        currentChannelIds.add("athkar_evening");
+      }
+    }
 
     // Delete channels that are no longer needed
     for (const channel of existingChannels) {
-      // Only delete channels we manage (prayer-related channels)
+      // Only delete channels we manage (prayer-related and athkar channels)
       if (
         (channel.id.startsWith("prayer_") ||
           channel.id.startsWith("iqama_") ||
-          channel.id.startsWith("preathan_")) &&
+          channel.id.startsWith("preathan_") ||
+          channel.id.startsWith("athkar_")) &&
         !currentChannelIds.has(channel.id)
       ) {
         try {
@@ -147,13 +165,19 @@ export const cleanupOldChannels = async (currentSettings: NotificationSettings):
 /**
  * IMPORTANT: Create notification channels with custom sounds for Android 8.0+
  */
-export const createNotificationChannels = async (settings: NotificationSettings): Promise<void> => {
+export const createNotificationChannels = async (
+  settings: NotificationSettings,
+  athkarSettings?: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  }
+): Promise<void> => {
   if (Platform.OS !== "android") return;
 
   console.log("[NotificationChannels] Creating notification channels with custom sounds...");
 
   // First, cleanup old channels that are no longer needed
-  await cleanupOldChannels(settings);
+  await cleanupOldChannels(settings, athkarSettings);
 
   const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
   const channels: ChannelConfig[] = [];
@@ -236,6 +260,31 @@ export const createNotificationChannels = async (settings: NotificationSettings)
     showBadge: true,
   });
 
+  // Add Athkar channels if settings provided
+  if (athkarSettings) {
+    if (athkarSettings.morningNotification.enabled) {
+      channels.push({
+        id: "athkar_morning",
+        name: "Morning Athkar",
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: "default",
+        vibrationPattern: [0, 250, 250, 250],
+        showBadge: true,
+      });
+    }
+
+    if (athkarSettings.eveningNotification.enabled) {
+      channels.push({
+        id: "athkar_evening",
+        name: "Evening Athkar",
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: "default",
+        vibrationPattern: [0, 250, 250, 250],
+        showBadge: true,
+      });
+    }
+  }
+
   // Create all channels
   for (const channel of channels) {
     try {
@@ -281,7 +330,13 @@ export const getNotificationChannelId = (
 /**
  * Check if channels need to be updated based on sound settings
  */
-export const shouldUpdateChannels = async (settings: NotificationSettings): Promise<boolean> => {
+export const shouldUpdateChannels = async (
+  settings: NotificationSettings,
+  athkarSettings?: {
+    morningNotification: AthkarNotificationSettings;
+    eveningNotification: AthkarNotificationSettings;
+  }
+): Promise<boolean> => {
   if (Platform.OS !== PlatformType.ANDROID) return false;
 
   try {
@@ -337,10 +392,32 @@ export const shouldUpdateChannels = async (settings: NotificationSettings): Prom
       }
     }
 
+    // Check Athkar channels if settings provided
+    if (athkarSettings) {
+      if (athkarSettings.morningNotification.enabled) {
+        requiredChannels.add("athkar_morning");
+        const existingChannel = existingChannels.find((ch) => ch.id === "athkar_morning");
+        if (!existingChannel || existingChannel.sound !== "default") {
+          return true;
+        }
+      }
+
+      if (athkarSettings.eveningNotification.enabled) {
+        requiredChannels.add("athkar_evening");
+        const existingChannel = existingChannels.find((ch) => ch.id === "athkar_evening");
+        if (!existingChannel || existingChannel.sound !== "default") {
+          return true;
+        }
+      }
+    }
+
     // Check if there are old channels that need cleanup
     const managedChannels = existingChannels.filter(
       (ch) =>
-        ch.id.startsWith("prayer_") || ch.id.startsWith("iqama_") || ch.id.startsWith("preathan_")
+        ch.id.startsWith("prayer_") ||
+        ch.id.startsWith("iqama_") ||
+        ch.id.startsWith("preathan_") ||
+        ch.id.startsWith("athkar_")
     );
 
     for (const channel of managedChannels) {
