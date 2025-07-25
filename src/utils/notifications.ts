@@ -107,6 +107,88 @@ export const scheduleNotification = async (
   }
 };
 
+/**
+ * Schedule a recurring daily notification
+ */
+export const scheduleRecurringNotification = async (
+  hour: number, // 0-23 hour format
+  minute: number = 0, // 0-59 minute format, defaults to 0
+  notificationInput: NotificationContentInput,
+  options?: NotificationOptions & { timezone?: string }
+) => {
+  const { status } = await checkPermissions();
+
+  if (status !== PermissionStatus.GRANTED) {
+    return { success: false, message: "Notifications permission not granted" };
+  }
+
+  try {
+    // Prepare notification content
+    const content: NotificationContentInput = {
+      ...notificationInput,
+      data: {
+        ...notificationInput.data,
+        categoryId: options?.categoryId,
+      },
+    };
+
+    // Platform-specific settings
+    if (Platform.OS === PlatformType.ANDROID) {
+      content.priority = AndroidNotificationPriority.HIGH;
+
+      // For Android < 8.0, sound must be in the content
+      if (notificationInput.sound && notificationInput.sound !== "default") {
+        content.sound = notificationInput.sound;
+      }
+
+      // Android vibration
+      if (options?.vibrate !== undefined) {
+        content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
+      }
+    } else if (Platform.OS === PlatformType.IOS) {
+      // iOS specific settings
+      content.interruptionLevel = "timeSensitive";
+
+      // iOS always needs sound in content
+      if (notificationInput.sound) {
+        content.sound = notificationInput.sound;
+      }
+    }
+
+    let trigger: Notifications.NotificationTriggerInput;
+
+    trigger = {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      hour,
+      minute,
+      repeats: true,
+      timezone: options?.timezone,
+    };
+
+    // Use simple daily trigger for device timezone when no timezone specified
+    trigger = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    };
+
+    // IMPORTANT: For Android 8.0+, use the channelId passed in options
+    if (Platform.OS === PlatformType.ANDROID && options?.channelId) {
+      (trigger as any).channelId = options.channelId;
+    }
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content,
+      trigger,
+    });
+
+    return { success: true, id };
+  } catch (error) {
+    console.error("Recurring notification scheduling failed:", error);
+    return { success: false, message: `Failed to schedule recurring notification: ${error}` };
+  }
+};
+
 // Store subscriptions for cleanup
 let notificationReceivedSubscription: Notifications.EventSubscription | null = null;
 let notificationResponseSubscription: Notifications.EventSubscription | null = null;
