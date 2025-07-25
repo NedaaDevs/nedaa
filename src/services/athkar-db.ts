@@ -1,6 +1,10 @@
 import * as SQLite from "expo-sqlite";
 import { z } from "zod";
+
+// Services
 import { getDirectory } from "@/services/db";
+
+// Utils
 import { dateToInt } from "@/utils/date";
 
 // Constants
@@ -107,23 +111,31 @@ const incrementStreak = async (dateInt: number): Promise<boolean> => {
   const db = await openDatabase();
 
   try {
-    const currentData = await getStreakData();
-    if (!currentData) return false;
+    let success = false;
 
-    const newCurrentStreak = currentData.current_streak + 1;
-    const newLongestStreak = Math.max(newCurrentStreak, currentData.longest_streak);
+    await db.withTransactionAsync(async () => {
+      const result = await db.getFirstAsync(`SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`);
 
-    await db.runAsync(
-      `UPDATE ${ATHKAR_STREAK_TABLE} 
-       SET current_streak = ?, 
-           longest_streak = ?, 
-           last_streak_date = ?,
-           updated_at = ?
-       WHERE id = 1;`,
-      [newCurrentStreak, newLongestStreak, dateInt, new Date().toISOString()]
-    );
+      if (!result) throw new Error("No streak data found");
 
-    return true;
+      const currentData = AthkarStreakSchema.parse(result);
+      const newCurrentStreak = currentData.current_streak + 1;
+      const newLongestStreak = Math.max(newCurrentStreak, currentData.longest_streak);
+
+      await db.runAsync(
+        `UPDATE ${ATHKAR_STREAK_TABLE} 
+         SET current_streak = ?, 
+             longest_streak = ?, 
+             last_streak_date = ?,
+             updated_at = ?
+         WHERE id = 1;`,
+        [newCurrentStreak, newLongestStreak, dateInt, new Date().toISOString()]
+      );
+
+      success = true;
+    });
+
+    return success;
   } catch (error) {
     console.error("Error incrementing streak:", error);
     return false;
@@ -191,23 +203,123 @@ const updateStreakSettings = async (settings: {
   }
 };
 
-const addCompletedDay = async (dateInt: number): Promise<boolean> => {
+const updateStreakForDay = async (
+  dateInt: number
+): Promise<{
+  success: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  alreadyCompleted?: boolean;
+} | null> => {
   const db = await openDatabase();
 
   try {
-    const now = new Date().toISOString();
+    let result = null;
 
-    await db.runAsync(
-      `INSERT OR IGNORE INTO ${ATHKAR_COMPLETED_DAYS_TABLE} 
-       (date, created_at) 
-       VALUES (?, ?);`,
-      [dateInt, now]
-    );
+    await db.withTransactionAsync(async () => {
+      const existingDay = await db.getFirstAsync(
+        `SELECT date FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
+        [dateInt]
+      );
 
-    return true;
+      if (existingDay) {
+        // Already completed - return current values
+        const streakResult = await db.getFirstAsync(
+          `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
+        );
+
+        if (streakResult) {
+          const streakData = AthkarStreakSchema.parse(streakResult);
+          result = {
+            success: true,
+            currentStreak: streakData.current_streak,
+            longestStreak: streakData.longest_streak,
+            alreadyCompleted: true,
+          };
+        }
+        return;
+      }
+
+      // Add the completed day
+      await db.runAsync(
+        `INSERT INTO ${ATHKAR_COMPLETED_DAYS_TABLE} 
+         (date, created_at) 
+         VALUES (?, ?);`,
+        [dateInt, new Date().toISOString()]
+      );
+
+      // Get current streak data
+      const streakResult = await db.getFirstAsync(
+        `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
+      );
+
+      if (!streakResult) throw new Error("No streak data found");
+
+      const streakData = AthkarStreakSchema.parse(streakResult);
+
+      // Determine new streak values
+      let newCurrentStreak = 1;
+      let shouldIncrement = false;
+
+      if (!streakData.last_streak_date) {
+        // First ever completion
+        shouldIncrement = true;
+      } else {
+        const daysSinceLastStreak = dateInt - streakData.last_streak_date;
+
+        if (daysSinceLastStreak === 1) {
+          // Consecutive day
+          newCurrentStreak = streakData.current_streak + 1;
+          shouldIncrement = true;
+        } else if (daysSinceLastStreak === 0) {
+          // Same day - no change needed
+          result = {
+            success: true,
+            currentStreak: streakData.current_streak,
+            longestStreak: streakData.longest_streak,
+          };
+          return;
+        } else if (
+          streakData.tolerance_days > 0 &&
+          daysSinceLastStreak <= streakData.tolerance_days + 1 &&
+          !streakData.is_paused
+        ) {
+          // Within tolerance
+          newCurrentStreak = streakData.current_streak + 1;
+          shouldIncrement = true;
+        } else {
+          // Streak broken - reset to 1
+          newCurrentStreak = 1;
+          shouldIncrement = true;
+        }
+      }
+
+      if (shouldIncrement) {
+        const newLongestStreak = Math.max(newCurrentStreak, streakData.longest_streak);
+
+        await db.runAsync(
+          `UPDATE ${ATHKAR_STREAK_TABLE} 
+           SET current_streak = ?, 
+               longest_streak = ?, 
+               last_streak_date = ?,
+               updated_at = ?
+           WHERE id = 1;`,
+          [newCurrentStreak, newLongestStreak, dateInt, new Date().toISOString()]
+        );
+
+        result = {
+          success: true,
+          currentStreak: newCurrentStreak,
+          longestStreak: newLongestStreak,
+          alreadyCompleted: false,
+        };
+      }
+    });
+
+    return result;
   } catch (error) {
-    console.error("Error adding completed day:", error);
-    return false;
+    console.error("Error updating streak for day:", error);
+    return null;
   }
 };
 
@@ -372,9 +484,9 @@ export const AthkarStreakDB = {
   incrementStreak,
   resetCurrentStreak,
   updateStreakSettings,
+  updateStreakForDay,
 
   // Completed days operations
-  addCompletedDay,
   isDayCompleted,
   getRecentCompletedDays,
 

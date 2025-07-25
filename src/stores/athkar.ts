@@ -8,7 +8,7 @@ import { Athkar, AthkarActions, AthkarState } from "@/types/athkar";
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
-// Database
+// Services
 import { AthkarStreakDB } from "@/services/athkar-db";
 
 // Stores
@@ -102,45 +102,22 @@ export const useAthkarStore = create<AthkarStore>()(
           const alreadyCompleted = await AthkarStreakDB.isDayCompleted(todayInt);
           if (alreadyCompleted) return;
 
-          // Add to completed days
-          await AthkarStreakDB.addCompletedDay(todayInt);
+          // Use the combined operation to avoid database locks
+          const result = await AthkarStreakDB.updateStreakForDay(todayInt);
 
-          // Get current streak data
-          const streakData = await AthkarStreakDB.getStreakData();
-          if (!streakData) return;
-
-          // Determine if we should increment or reset streak
-          if (!streakData.last_streak_date) {
-            // First ever completion
-            await AthkarStreakDB.incrementStreak(todayInt);
-          } else {
-            const daysSinceLastStreak = todayInt - streakData.last_streak_date;
-
-            if (daysSinceLastStreak === 1) {
-              // Consecutive day
-              await AthkarStreakDB.incrementStreak(todayInt);
-            } else if (daysSinceLastStreak === 0) {
-              // Same day, already handled above
-              return;
-            } else if (
-              streakData.tolerance_days > 0 &&
-              daysSinceLastStreak <= streakData.tolerance_days + 1 &&
-              !streakData.is_paused
-            ) {
-              // Within tolerance
-              await AthkarStreakDB.incrementStreak(todayInt);
-            } else {
-              // Streak broken - reset to 1
-              await AthkarStreakDB.resetCurrentStreak();
-              await AthkarStreakDB.incrementStreak(todayInt);
-            }
+          if (result?.success) {
+            // Update local state with the new values
+            set((state) => ({
+              streak: {
+                ...state.streak,
+                currentStreak: result.currentStreak,
+                longestStreak: result.longestStreak,
+                lastCompletedDate: dateIntToString(todayInt),
+              },
+            }));
           }
-
-          // Reload streak data to UI
-          await get().reloadStreakFromDB();
         },
 
-        // Reload streak from DB
         reloadStreakFromDB: async () => {
           const streakData = await AthkarStreakDB.getStreakData();
           if (streakData) {
