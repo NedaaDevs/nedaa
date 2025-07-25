@@ -7,6 +7,7 @@ import { LocalPermissionStatus } from "@/enums/notifications";
 
 // Types
 import type { NotificationSoundKey } from "@/types/sound";
+import type { AthkarType } from "@/types/athkar";
 
 export type PrayerNotificationConfig = NotificationConfig & {
   sound: PrayerSoundKey;
@@ -25,6 +26,13 @@ export type NotificationPermissionsState = {
   canRequestAgain: boolean;
 };
 
+export type AthkarNotificationSettings = {
+  type: Exclude<AthkarType, "all">;
+  enabled: boolean;
+  hour: number;
+  minute: number;
+};
+
 export type NotificationOptions = {
   vibrate?: boolean;
   categoryId?: string;
@@ -35,32 +43,37 @@ export type NotificationState = {
   isScheduling: boolean;
   settings: NotificationSettings;
   lastScheduledDate: string | null;
+  morningNotification: AthkarNotificationSettings;
+  eveningNotification: AthkarNotificationSettings;
 };
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
+
+export type PrayerNotificationType = Exclude<NotificationType, "athkar">;
 
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
-  updateDefault: <T extends Partial<NotificationType>>(
+  updateDefault: <T extends Partial<PrayerNotificationType>>(
     type: T,
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
   ) => Promise<void>;
-  updateOverride: <T extends NotificationType>(
+  updateOverride: <T extends PrayerNotificationType>(
     prayerId: string,
     type: T,
     config: Partial<ConfigForType<T>>
   ) => Promise<void>;
-  resetOverride: (prayerId: string, type: NotificationType) => Promise<void>;
+  resetOverride: (prayerId: string, type: PrayerNotificationType) => Promise<void>;
   resetAllOverrides: () => Promise<void>;
-  getEffectiveConfigForPrayer: <T extends NotificationType>(
+  getEffectiveConfigForPrayer: <T extends PrayerNotificationType>(
     prayerId: string,
     type: T
   ) => ConfigForType<T>;
   scheduleAllNotifications: () => Promise<void>;
   rescheduleIfNeeded: (force: boolean) => Promise<void>;
+  updateAthkarNotificationSetting: (option: AthkarNotificationSettings) => Promise<void>;
 };
 
 export type NotificationConfig = {
@@ -89,7 +102,7 @@ export type NotificationSettings = {
   overrides: Record<string, NotificationOverride>; // keyed by prayer ID
 };
 
-export function getEffectiveConfig<T extends NotificationType>(
+export function getEffectiveConfig<T extends Exclude<NotificationType, "athkar">>(
   prayerId: string,
   type: T,
   defaults: NotificationDefaults,
@@ -118,3 +131,16 @@ export type ConfigForType<T extends NotificationType> = T extends typeof NOTIFIC
     : T extends typeof NOTIFICATION_TYPE.PRE_ATHAN
       ? PreAthanNotificationConfig
       : never;
+
+export type AthkarNotificationItem = {
+  id: string;
+  time: Date;
+  title: string;
+  body: string;
+  type: "ATHKAR";
+  athkarType: Exclude<AthkarType, "all">;
+  sound: string;
+  vibration: boolean;
+  categoryId: string;
+  channelId?: string;
+};
