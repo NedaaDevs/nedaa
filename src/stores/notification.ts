@@ -219,6 +219,8 @@ export const useNotificationStore = create<NotificationStore>()(
               ...option,
             },
           });
+
+          await get().scheduleAllNotifications();
         },
 
         getEffectiveConfigForPrayer: <T extends Exclude<NotificationType, "athkar">>(
