@@ -286,7 +286,7 @@ const AthkarList = ({ type }: Props) => {
       )}
 
       {/* Athkar Cards */}
-      {filteredAthkar.map((athkar, index) => {
+      {filteredAthkar.map((athkar) => {
         const progress = currentProgress.find((p) => p.athkarId === `${athkar.id}-${type}`);
         const currentCount = progress?.currentCount || 0;
         const isCompleted = progress?.completed || false;
