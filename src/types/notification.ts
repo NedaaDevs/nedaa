@@ -131,16 +131,3 @@ export type ConfigForType<T extends NotificationType> = T extends typeof NOTIFIC
     : T extends typeof NOTIFICATION_TYPE.PRE_ATHAN
       ? PreAthanNotificationConfig
       : never;
-
-export type AthkarNotificationItem = {
-  id: string;
-  time: Date;
-  title: string;
-  body: string;
-  type: "ATHKAR";
-  athkarType: Exclude<AthkarType, "all">;
-  sound: string;
-  vibration: boolean;
-  categoryId: string;
-  channelId?: string;
-};
