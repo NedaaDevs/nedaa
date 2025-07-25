@@ -20,8 +20,8 @@ const AthkarSettings = () => {
     <Background>
       <TopBar title="settings.athkar.title" backOnClick />
 
-      <VStack className="p-4" space="md">
-        {/* Auto Move Setting */}
+      {/* Auto Move Setting */}
+      {/* <VStack className="p-4" space="md">
         <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
           <HStack className="justify-between items-center">
             <VStack className="flex-1 mr-4">
@@ -42,7 +42,7 @@ const AthkarSettings = () => {
             />
           </HStack>
         </Box>
-      </VStack>
+      </VStack> */}
 
       <VStack className="p-4" space="md">
         {/* Show streak Setting */}
