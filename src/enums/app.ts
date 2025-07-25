@@ -1,7 +1,7 @@
 export enum AppLocale {
   EN = "en",
   AR = "ar",
-  MS = "ms",
+  // MS = "ms",
   UR = "ur",
 }
 
