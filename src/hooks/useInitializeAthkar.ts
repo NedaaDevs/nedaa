@@ -14,5 +14,6 @@ export const useInitializeAthkar = () => {
     if (athkarList.length === 0) {
       setAthkarList(DEFAULT_ATHKAR_DATA);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 };

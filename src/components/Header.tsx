@@ -26,15 +26,11 @@ import { SkeletonText } from "@/components/ui/skeleton";
 // Types
 import { OtherTimingName } from "@/types/prayerTimes";
 
-// Hooks
-import { useAppVisibility } from "@/hooks/useAppVisibility";
-
 const Header = () => {
   const { t } = useTranslation();
   const { locale, hijriDaysOffset } = useAppStore();
   const { localizedLocation, locationDetails } = useLocationStore();
   const { getNextPrayer, getNextOtherTiming } = usePrayerTimesStore();
-  const { becameActiveAt } = useAppVisibility();
 
   const [showOtherTiming, setShowOtherTiming] = useState(false);
 
