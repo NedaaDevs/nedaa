@@ -8,25 +8,38 @@ import { Athkar, AthkarActions, AthkarState } from "@/types/athkar";
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
+// Database
+import { AthkarStreakDB } from "@/services/athkar-db";
+
+// Stores
+import locationStore from "@/stores/location";
+
 // Utils
 import {
-  getToday,
   filterAthkarByType,
   clampIndex,
   generateReferenceId,
   extractBaseId,
   isAthkarCompleted,
-  areBothSessionsComplete,
-  calculateDaysDifference,
   createProgressItem,
   filterProgressByType,
   filterTodayProgress,
   isSessionComplete,
-  shouldIncrementStreak,
   getTimestampForTimezone,
 } from "@/utils/athkar";
+import { dateToInt, timeZonedNow } from "@/utils/date";
 
 type AthkarStore = AthkarState & AthkarActions;
+
+const getTodayInt = (timezone: string): number => {
+  const zonedDate = timeZonedNow(timezone);
+  return dateToInt(zonedDate);
+};
+
+const dateIntToString = (dateInt: number): string => {
+  const dateStr = dateInt.toString();
+  return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+};
 
 export const useAthkarStore = create<AthkarStore>()(
   devtools(
@@ -52,6 +65,97 @@ export const useAthkarStore = create<AthkarStore>()(
         settings: {
           autoMoveToNext: true,
           showStreak: true,
+        },
+
+        // Initialize DB and load streak data
+        initializeStore: async () => {
+          try {
+            await AthkarStreakDB.initialize();
+
+            // Load streak data from DB
+            const streakData = await AthkarStreakDB.getStreakData();
+            if (streakData) {
+              set({
+                streak: {
+                  currentStreak: streakData.current_streak,
+                  longestStreak: streakData.longest_streak,
+                  lastCompletedDate: streakData.last_streak_date
+                    ? dateIntToString(streakData.last_streak_date)
+                    : null,
+                  isPaused: streakData.is_paused === 1,
+                  toleranceDays: streakData.tolerance_days,
+                },
+              });
+
+              await get().cleanUpOldData();
+            }
+          } catch (error) {
+            console.error("Error initializing store:", error);
+          }
+        },
+
+        updateStreakForCompletedDay: async () => {
+          const timezone = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(timezone);
+
+          // Check if already marked as completed
+          const alreadyCompleted = await AthkarStreakDB.isDayCompleted(todayInt);
+          if (alreadyCompleted) return;
+
+          // Add to completed days
+          await AthkarStreakDB.addCompletedDay(todayInt);
+
+          // Get current streak data
+          const streakData = await AthkarStreakDB.getStreakData();
+          if (!streakData) return;
+
+          // Determine if we should increment or reset streak
+          if (!streakData.last_streak_date) {
+            // First ever completion
+            await AthkarStreakDB.incrementStreak(todayInt);
+          } else {
+            const daysSinceLastStreak = todayInt - streakData.last_streak_date;
+
+            if (daysSinceLastStreak === 1) {
+              // Consecutive day
+              await AthkarStreakDB.incrementStreak(todayInt);
+            } else if (daysSinceLastStreak === 0) {
+              // Same day, already handled above
+              return;
+            } else if (
+              streakData.tolerance_days > 0 &&
+              daysSinceLastStreak <= streakData.tolerance_days + 1 &&
+              !streakData.is_paused
+            ) {
+              // Within tolerance
+              await AthkarStreakDB.incrementStreak(todayInt);
+            } else {
+              // Streak broken - reset to 1
+              await AthkarStreakDB.resetCurrentStreak();
+              await AthkarStreakDB.incrementStreak(todayInt);
+            }
+          }
+
+          // Reload streak data to UI
+          await get().reloadStreakFromDB();
+        },
+
+        // Reload streak from DB
+        reloadStreakFromDB: async () => {
+          const streakData = await AthkarStreakDB.getStreakData();
+          if (streakData) {
+            set({
+              streak: {
+                currentStreak: streakData.current_streak,
+                longestStreak: streakData.longest_streak,
+                lastCompletedDate: streakData.last_streak_date
+                  ? dateIntToString(streakData.last_streak_date)
+                  : null,
+                isPaused: streakData.is_paused === 1,
+                toleranceDays: streakData.tolerance_days,
+              },
+            });
+          }
         },
 
         setAthkarList: (list) => set({ athkarList: list }),
@@ -160,29 +264,25 @@ export const useAthkarStore = create<AthkarStore>()(
             };
           }),
 
-        checkAndUpdateDailyProgress: () =>
-          set((state) => {
-            const todayProgress = filterTodayProgress(state.currentProgress);
+        checkAndUpdateDailyProgress: async () => {
+          const state = get();
+          const todayProgress = filterTodayProgress(state.currentProgress);
 
-            const morningCompleted = isSessionComplete(todayProgress, ATHKAR_TYPE.MORNING);
-            const eveningCompleted = isSessionComplete(todayProgress, ATHKAR_TYPE.EVENING);
+          const morningCompleted = isSessionComplete(todayProgress, ATHKAR_TYPE.MORNING);
+          const eveningCompleted = isSessionComplete(todayProgress, ATHKAR_TYPE.EVENING);
 
-            const newTodayCompleted = {
-              morning: morningCompleted,
-              evening: eveningCompleted,
-            };
+          const newTodayCompleted = {
+            morning: morningCompleted,
+            evening: eveningCompleted,
+          };
 
-            // Update streak if both sessions completed and it's a new completion
-            if (
-              morningCompleted &&
-              eveningCompleted &&
-              (!state.todayCompleted.morning || !state.todayCompleted.evening)
-            ) {
-              requestAnimationFrame(() => get().updateStreak());
-            }
+          set({ todayCompleted: newTodayCompleted });
 
-            return { todayCompleted: newTodayCompleted };
-          }),
+          // If both sessions completed, update streak
+          if (morningCompleted && eveningCompleted) {
+            await get().updateStreakForCompletedDay();
+          }
+        },
 
         checkAndResetDailyProgress: () =>
           set((state) => {
@@ -203,56 +303,24 @@ export const useAthkarStore = create<AthkarStore>()(
           }),
 
         // Streak Management
-        updateStreak: () =>
-          set((state) => {
-            const today = getToday();
-            const lastDateStr = state.streak.lastCompletedDate;
+        updateStreak: async () => {
+          await get().updateStreakForCompletedDay();
+        },
 
-            // Don't update if already completed today
-            if (lastDateStr === today) return state;
+        pauseStreak: async () => {
+          await AthkarStreakDB.updateStreakSettings({ isPaused: true });
+          await get().reloadStreakFromDB();
+        },
 
-            // Only update if both sessions are complete
-            if (!areBothSessionsComplete(state.currentProgress)) {
-              return state;
-            }
+        resumeStreak: async () => {
+          await AthkarStreakDB.updateStreakSettings({ isPaused: false });
+          await get().reloadStreakFromDB();
+        },
 
-            let newCurrentStreak = 1; // Start with 1 for today
-
-            if (lastDateStr && !state.streak.isPaused) {
-              const daysDiff = calculateDaysDifference(lastDateStr, today);
-
-              if (
-                shouldIncrementStreak(daysDiff, state.streak.toleranceDays, state.streak.isPaused)
-              ) {
-                newCurrentStreak = state.streak.currentStreak + 1;
-              }
-            }
-
-            return {
-              streak: {
-                ...state.streak,
-                currentStreak: newCurrentStreak,
-                longestStreak: Math.max(newCurrentStreak, state.streak.longestStreak),
-                lastCompletedDate: today,
-              },
-            };
-          }),
-
-        // NOTE: Added for future use if we allow streak pause/resume.
-        pauseStreak: () =>
-          set((state) => ({
-            streak: { ...state.streak, isPaused: true },
-          })),
-
-        resumeStreak: () =>
-          set((state) => ({
-            streak: { ...state.streak, isPaused: false },
-          })),
-
-        updateToleranceDays: (days: number) =>
-          set((state) => ({
-            streak: { ...state.streak, toleranceDays: days },
-          })),
+        updateToleranceDays: async (days: number) => {
+          await AthkarStreakDB.updateStreakSettings({ toleranceDays: days });
+          await get().reloadStreakFromDB();
+        },
 
         // Utility Actions
         resetProgress: () =>
@@ -265,8 +333,8 @@ export const useAthkarStore = create<AthkarStore>()(
             })),
           })),
 
-        completeSession: () => {
-          get().updateStreak();
+        completeSession: async () => {
+          await get().checkAndUpdateDailyProgress();
         },
 
         // Settings
@@ -285,6 +353,16 @@ export const useAthkarStore = create<AthkarStore>()(
               showStreak: !state.settings.showStreak,
             },
           })),
+
+        // Force recalculation from history (for recovery/debugging)
+        forceRecalculateStreak: async () => {
+          await AthkarStreakDB.forceUpdateStreakFromHistory();
+          await get().reloadStreakFromDB();
+        },
+
+        cleanUpOldData: async () => {
+          await AthkarStreakDB.cleanOldCompletedDays();
+        },
       }),
       {
         name: "athkar-storage",
@@ -292,10 +370,14 @@ export const useAthkarStore = create<AthkarStore>()(
         partialize: (state) => ({
           athkarList: state.athkarList,
           currentProgress: state.currentProgress,
-          streak: state.streak,
           todayCompleted: state.todayCompleted,
           settings: state.settings,
+          // NOTE: streak is NOT persisted here, it's in DB
         }),
+        onRehydrateStorage: () => (state) => {
+          // Initialize DB and load streak after rehydration
+          state?.initializeStore();
+        },
       }
     )
   )
