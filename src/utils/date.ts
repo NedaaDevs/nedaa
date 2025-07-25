@@ -315,3 +315,24 @@ export const HijriConverter = {
     return !this.isBefore(hijriDate1, hijriDate2) && !this.isEqual(hijriDate1, hijriDate2);
   },
 };
+
+/**
+ * Format a number hour-minute to 24 style
+ * @param {number} hour - Hour number
+ * @param {number} minute - Minute number
+ * @returns {string} - Formatted string
+ */
+export const formatTime24Hour = (hour: number, minute: number) => {
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+};
+
+/**
+ * Format a number hour-minute to 12 style
+ * @param {number} hour - Hour number
+ * @param {number} minute - Minute number
+ * @returns {string} - Formatted string
+ */
+export const formatTime12Hour = (hour: number, minute: number) => {
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+};
