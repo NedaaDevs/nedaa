@@ -122,6 +122,7 @@ const AthkarFocusScreen = () => {
       stiffness: 150,
       mass: 1,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressPercentage]);
 
   // Circle constants

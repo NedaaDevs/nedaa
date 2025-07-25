@@ -86,6 +86,7 @@ const HijriSettings = () => {
     }
 
     return options;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, t]);
 
   const handleSelectAdjustment = (value: number) => {
