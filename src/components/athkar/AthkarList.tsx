@@ -29,7 +29,7 @@ import { useAthkarStore } from "@/stores/athkar";
 import type { AthkarType } from "@/types/athkar";
 
 // Icons
-import { RotateCcw, Flame } from "lucide-react-native";
+import { RotateCcw, Flame, Trophy } from "lucide-react-native";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -90,6 +90,7 @@ const AthkarList = ({ type }: Props) => {
 
   // Get actual streak data from store
   const streakDays = streak.currentStreak;
+  const longestStreak = streak.longestStreak || 0;
 
   // Clean up timers
   const clearTimers = () => {
@@ -239,34 +240,45 @@ const AthkarList = ({ type }: Props) => {
       {/* Streak Card */}
       {settings.showStreak && (
         <Card className="p-4 bg-background-secondary dark:bg-background-tertiary">
-          <HStack className="justify-between items-center">
-            <VStack space="sm" className="flex-1">
-              <HStack space="sm" className="items-center">
-                <Icon as={Flame} size="md" className="text-secondary" />
-                <Text className="text-lg text-left font-semibold text-typography">
-                  {t("athkar.dailyStreak")}
-                </Text>
+          <HStack className="justify-between items-center mb-4">
+            <VStack space="md" className="flex-1">
+              <HStack className="justify-between items-center">
+                <HStack space="sm" className="items-center">
+                  <Icon as={Flame} size="sm" className="text-accent-info" />
+                  <Text className="text-sm text-typography-secondary">
+                    {t("athkar.dailyStreak")}
+                  </Text>
+                  <Text className="text-sm font-medium text-typography">
+                    {t("athkar.day", {
+                      count: streakDays,
+                      value: formatNumberToLocale(`${streakDays}`),
+                    })}
+                  </Text>
+                </HStack>
+
+                <HStack space="sm" className="items-center">
+                  <Icon as={Trophy} size="sm" className="text-orange-500" />
+                  <Text className="text-sm text-orange-500">{t("athkar.streak.best")}</Text>
+
+                  <Text className="text-sm font-medium text-typography">
+                    {t("athkar.day", {
+                      count: longestStreak,
+                      value: formatNumberToLocale(`${longestStreak}`),
+                    })}
+                  </Text>
+                </HStack>
               </HStack>
-              <Text className="text-left text-sm text-typography-secondary">
-                {t("athkar.todayProgress")}
-              </Text>
-              <Progress
-                value={overallProgress}
-                className="h-3 bg-background-tertiary dark:bg-background mt-2">
-                <ProgressFilledTrack className="bg-accent-info" />
-              </Progress>
-            </VStack>
-            <VStack className="items-center justify-center">
-              <Text className="text-3xl font-bold text-accent-info">
-                {formatNumberToLocale(`${streakDays}`)}
-              </Text>
-              <Text className="text-sm text-typography-secondary">
-                {t("athkar.day", {
-                  count: streakDays,
-                })}
-              </Text>
             </VStack>
           </HStack>
+
+          <Text className="text-left text-sm text-typography-secondary">
+            {t("athkar.todayProgress")}
+          </Text>
+          <Progress
+            value={overallProgress}
+            className="h-3 bg-background-tertiary dark:bg-background mt-2">
+            <ProgressFilledTrack className="bg-accent-info" />
+          </Progress>
           <Text className="text-xs text-typography-secondary mt-2 text-right">
             {formatNumberToLocale(`${Math.round(overallProgress)}`)}%
           </Text>
