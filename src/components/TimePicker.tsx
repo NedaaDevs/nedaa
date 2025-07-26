@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { t } from "i18next";
 import { ScrollView, TouchableOpacity } from "react-native";
 
@@ -44,6 +44,14 @@ const TimePicker = ({
   const [selectedHour, setSelectedHour] = useState(currentHour);
   const [selectedMinute, setSelectedMinute] = useState(currentMinute);
 
+  // Update state when props change
+  useEffect(() => {
+    if (isVisible) {
+      setSelectedHour(currentHour);
+      setSelectedMinute(currentMinute);
+    }
+  }, [currentHour, currentMinute, isVisible]);
+
   const hours = use12HourFormat
     ? Array.from({ length: 12 }, (_, i) => i + 1) // 1-12 for 12-hour format
     : Array.from({ length: 24 }, (_, i) => i); // 0-23 for 24-hour format
@@ -55,9 +63,9 @@ const TimePicker = ({
 
   return (
     <Box className="absolute inset-0 bg-black/60 z-50 justify-center items-center">
-      <Box className="bg-background-secondary rounded-3xl p-6 mx-4 w-80 shadow-2xl border border-border-subtle">
+      <Box className="bg-background-secondary rounded-3xl p-6 mx-4 w-80 border border-border-subtle">
         {/* Current Time Display */}
-        <Box className="bg-background-elevated rounded-2xl p-5 mb-6 shadow-lg">
+        <Box className="bg-background-elevated rounded-2xl p-5 mb-6">
           <Text className="text-typography-contrast text-center text-3xl font-bold tracking-wider">
             {use12HourFormat
               ? formatTime12Hour(selectedHour, selectedMinute)
@@ -88,9 +96,9 @@ const TimePicker = ({
                         setSelectedHour(hour);
                       }
                     }}
-                    className={`p-3 rounded-xl mb-2 mx-1 shadow-sm transition-all duration-200  ${
+                    className={`p-3 rounded-xl mb-2 mx-1 transition-all duration-200  ${
                       displayHour === hour
-                        ? "bg-primary shadow-md"
+                        ? "bg-primary"
                         : "bg-background-secondary border border-border-subtle hover:bg-surface-hover"
                     }`}>
                     <Text
@@ -119,9 +127,9 @@ const TimePicker = ({
                   <TouchableOpacity
                     key={minute}
                     onPress={() => setSelectedMinute(minute)}
-                    className={`p-3 rounded-xl mb-2 mx-1 shadow-sm transition-all duration-200 ${
+                    className={`p-3 rounded-xl mb-2 mx-1 transition-all duration-200 ${
                       selectedMinute === minute
-                        ? "bg-primary shadow-md"
+                        ? "bg-primary"
                         : "bg-background-secondary border border-border-subtle hover:bg-surface-hover"
                     }`}>
                     <Text
@@ -152,7 +160,7 @@ const TimePicker = ({
 
           <Button
             onPress={onClose}
-            className="w-full bg-background border border-border-primary rounded-xl shadow-sm">
+            className="w-full bg-background border border-border-primary rounded-xl">
             <ButtonText className="text-center text-typography font-semibold text-base">
               {t("common.cancel")}
             </ButtonText>
