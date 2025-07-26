@@ -98,16 +98,21 @@ const Settings = () => {
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
-                    <TouchableOpacity
-                      onPress={() => openTimePicker("morning")}
-                      className="bg-primary-500 rounded-lg px-4 py-2">
-                      <Text className=" font-medium text-primary rounded-lg">
-                        {formatTime12Hour(
-                          morningNotification.hour,
-                          morningNotification.minute || 0
-                        )}
+                    <VStack>
+                      <TouchableOpacity
+                        onPress={() => openTimePicker("morning")}
+                        className="bg-primary-500 rounded-lg px-4 py-2">
+                        <Text className="font-medium text-primary rounded-lg">
+                          {formatTime12Hour(
+                            morningNotification.hour,
+                            morningNotification.minute || 0
+                          )}
+                        </Text>
+                      </TouchableOpacity>
+                      <Text className="text-xs text-center text-primary rounded-lg">
+                        {t("settings.athkar.notifications.morning.time.note")}
                       </Text>
-                    </TouchableOpacity>
+                    </VStack>
                   </HStack>
                 </VStack>
               )}
@@ -134,16 +139,21 @@ const Settings = () => {
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
-                    <TouchableOpacity
-                      onPress={() => openTimePicker("evening")}
-                      className="bg-primary-500 rounded-lg px-4 py-2">
-                      <Text className="text-primary font-medium">
-                        {formatTime12Hour(
-                          eveningNotification.hour,
-                          eveningNotification.minute || 0
-                        )}
-                      </Text>
-                    </TouchableOpacity>
+                    <VStack>
+                      <TouchableOpacity
+                        onPress={() => openTimePicker("evening")}
+                        className="bg-primary-500 rounded-lg px-4 py-2">
+                        <Text className="text-primary font-medium">
+                          {formatTime12Hour(
+                            eveningNotification.hour,
+                            eveningNotification.minute || 0
+                          )}
+                        </Text>
+                        <Text className="text-xs text-center text-primary rounded-lg">
+                          {t("settings.athkar.notifications.evening.time.note")}
+                        </Text>
+                      </TouchableOpacity>
+                    </VStack>
                   </HStack>
                 </VStack>
               )}
