@@ -8,8 +8,7 @@ import { getDirectory } from "@/services/db";
 import { dateToInt } from "@/utils/date";
 
 // Constants
-const ATHKAR_STREAK_TABLE = "athkar_streak";
-const ATHKAR_COMPLETED_DAYS_TABLE = "athkar_completed_days";
+import { ATHKAR_STREAK_TABLE, ATHKAR_COMPLETED_DAYS_TABLE } from "@/constants/DB";
 
 // Schemas
 const AthkarStreakSchema = z.object({
