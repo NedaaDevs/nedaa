@@ -58,7 +58,7 @@
   "common.error": "Error",
   "common.estimatedTime": "Estimated time",
   "common.holdToReset": "Hold to Reset ({{progress}}%)",
-  "common.hour_few": "Hour",
+  "common.hour": "Hour",
   "common.keepCurrent": "Keep Current",
   "common.loading": "Loading...",
   "common.loadingPrayerTimes": "Loading prayer times...",
