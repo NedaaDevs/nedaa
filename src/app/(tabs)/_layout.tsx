@@ -13,11 +13,16 @@ const TabsLayout = () => {
 
   return (
     <Tabs
+      key={`tabs-${mode}`}
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: mode === "dark" ? "#E6C469" : "#1C5D85",
         tabBarInactiveTintColor: mode === "dark" ? "#E3E2CE" : "#64748B",
         tabBarStyle: {
+          height: 70,
+          paddingBottom: 5,
+          paddingTop: 5,
           backgroundColor: mode === "dark" ? "#393E46" : "#FFFFFF",
           borderTopColor: mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#E2E8F0",
         },
@@ -25,7 +30,6 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="index"
         options={{
-          title: "",
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
