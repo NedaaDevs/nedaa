@@ -24,7 +24,7 @@ import { formatTime12Hour } from "@/utils/date";
 
 const Settings = () => {
   const { t } = useTranslation();
-  const { settings, toggleShowStreak } = useAthkarStore();
+  const { settings, shortVersion, toggleShowStreak, toggleShortVersion } = useAthkarStore();
 
   const { morningNotification, eveningNotification, updateAthkarNotificationSetting } =
     useNotificationStore();
@@ -195,6 +195,25 @@ const Settings = () => {
                 </Text>
               </VStack>
               <Switch value={settings.showStreak} onValueChange={toggleShowStreak} />
+            </HStack>
+          </Box>
+
+          {/* Enable short version Setting */}
+          <Box className="bg-background-secondary  rounded-xl p-4">
+            <HStack className="justify-between items-center">
+              <VStack className="flex-1 mr-4">
+                <Text className="text-left text-base font-medium text-typography">
+                  {t("settings.athkar.shortVersion.title")}
+                </Text>
+                <Text className="text-left text-sm text-typography-secondary mt-1">
+                  {t("settings.athkar.shortVersion.description", {
+                    thikir: t("athkar.items.laIlahaIllaAllahFull"),
+                    count: 100,
+                    shortCount: 10,
+                  })}
+                </Text>
+              </VStack>
+              <Switch value={shortVersion} onValueChange={toggleShortVersion} />
             </HStack>
           </Box>
         </VStack>
