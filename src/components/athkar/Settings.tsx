@@ -212,6 +212,7 @@ const Settings = () => {
         }
         use12HourFormat
         hideTimeOption
+        isPM={activeTimeType === "evening"}
         onTimeChange={handleTimeChange}
         onClose={() => {
           setShowTimePicker(false);
