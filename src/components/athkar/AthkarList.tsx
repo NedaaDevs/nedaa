@@ -47,8 +47,15 @@ type Props = {
 
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
-  const { athkarList, currentProgress, streak, settings, initializeSession, resetProgress } =
-    useAthkarStore();
+  const {
+    athkarList,
+    currentProgress,
+    streak,
+    settings,
+    initializeSession,
+    resetProgress,
+    checkAndResetIfNewDay,
+  } = useAthkarStore();
 
   // Haptic feedback hooks
   const hapticLight = useHaptic("light");
@@ -68,18 +75,20 @@ const AthkarList = ({ type }: Props) => {
   const backgroundProgress = useSharedValue(0);
   const scaleValue = useSharedValue(1);
 
+  useEffect(() => {
+    checkAndResetIfNewDay();
+  }, [checkAndResetIfNewDay]);
+
   // Filter athkar by type(Morning/Evening ALL for both)
   const filteredAthkar = athkarList
     .filter((athkar) => athkar.type === type || athkar.type === ATHKAR_TYPE.ALL)
     .sort((a, b) => a.order - b.order);
 
   // Initialize session if not already initialized for this type
-  useEffect(() => {
-    const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
-    if (!hasSessionForType && filteredAthkar.length > 0) {
-      initializeSession(type as Exclude<AthkarType, "all">);
-    }
-  }, [type, currentProgress, filteredAthkar.length, initializeSession]);
+  const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
+  if (!hasSessionForType && filteredAthkar.length > 0) {
+    initializeSession(type as Exclude<AthkarType, "all">);
+  }
 
   // Calculate overall progress for streak
   const totalAthkar = filteredAthkar.length;

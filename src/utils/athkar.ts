@@ -24,61 +24,88 @@ export const isAthkarSupported = (locale: string): boolean => {
   return ATHKAR_SUPPORTED_LOCALES.includes(baseLocale);
 };
 
-export const getToday = (timezone?: string): string => {
+const getValidTimezone = (timezone?: string): string => {
   try {
     if (timezone) {
-      const now = timeZonedNow(timezone);
-      return now.toDateString();
+      // Test if timezone is valid
+      new Date().toLocaleString("en-US", { timeZone: timezone });
+      return timezone;
     }
+  } catch (error) {
+    console.warn("[Athkar] Invalid timezone:", timezone, error);
+  }
 
-    // Fallback: try to get timezone from location store
+  // Try to get from location store
+  try {
     const locationStore = useLocationStore.getState();
     if (locationStore?.locationDetails?.timezone) {
-      const now = timeZonedNow(locationStore.locationDetails.timezone);
-      return now.toDateString();
+      const tz = locationStore.locationDetails.timezone;
+      new Date().toLocaleString("en-US", { timeZone: tz });
+      return tz;
     }
-
-    // Final fallback to local time
-    return new Date().toDateString();
   } catch (error) {
-    console.error("error:", error);
-    // Fallback to local time if timezone is invalid
+    console.warn("[Athkar] Location timezone invalid:", error);
+  }
+
+  // Fallback to system timezone
+  try {
+    const systemTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return systemTz || "UTC";
+  } catch (error) {
+    console.warn("[Athkar] System timezone failed:", error);
+    return "UTC";
+  }
+};
+
+export const getToday = (timezone?: string): string => {
+  try {
+    const validTz = getValidTimezone(timezone);
+    const now = timeZonedNow(validTz);
+    return now.toDateString();
+  } catch (error) {
+    console.error("[Athkar] getToday error:", error);
+    // Ultimate fallback
     return new Date().toDateString();
   }
 };
 
 export const getTodayAsInt = (timezone?: string): number => {
   try {
-    if (timezone) {
-      return timestampToDateInt(Date.now() / 1000, timezone);
-    }
-
-    // Fallback: try to get timezone from location store
-    const locationStore = useLocationStore.getState();
-    if (locationStore?.locationDetails?.timezone) {
-      return timestampToDateInt(Date.now() / 1000, locationStore.locationDetails.timezone);
-    }
-
-    // Final fallback
-    return dateToInt(new Date());
+    const validTz = getValidTimezone(timezone);
+    return timestampToDateInt(Date.now() / 1000, validTz);
   } catch (error) {
-    console.error("error:", error);
+    console.error("[Athkar] getTodayAsInt error:", error);
     return dateToInt(new Date());
   }
 };
 
 export const isFromToday = (dateString: string, timezone?: string): boolean => {
   try {
-    // Compare as date integers
-    const todayInt = getTodayAsInt(timezone);
-    const itemDateInt = dateToInt(new Date(dateString));
-    return todayInt === itemDateInt;
+    // Parse the date string to ensure it's valid
+    const itemDate = new Date(dateString);
+    if (isNaN(itemDate.getTime())) {
+      console.warn("[Athkar] Invalid date string:", dateString);
+      return false;
+    }
+
+    const validTz = getValidTimezone(timezone);
+    const todayInt = getTodayAsInt(validTz);
+    const itemDateInt = dateToInt(itemDate);
+
+    const isToday = todayInt === itemDateInt;
+
+    return isToday;
   } catch (error) {
-    console.error("error:", error);
+    console.error("[Athkar] isFromToday error:", error);
     // Fallback to string comparison
-    const today = getToday(timezone);
-    const itemDate = new Date(dateString).toDateString();
-    return today === itemDate;
+    try {
+      const today = new Date().toDateString();
+      const itemDate = new Date(dateString).toDateString();
+      return today === itemDate;
+    } catch (fallbackError) {
+      console.error("[Athkar] Fallback date comparison failed:", fallbackError);
+      return false;
+    }
   }
 };
 
@@ -94,24 +121,26 @@ export const generateReferenceId = (athkarId: string, type: AthkarType): string 
 export const extractBaseId = (athkarId: string): string => {
   return athkarId.split("-")[0];
 };
-
 // Progress filtering
 export const filterTodayProgress = (progress: any[], timezone?: string) => {
   try {
-    // Get timezone from location store if not provided
-    if (!timezone) {
-      const locationStore = useLocationStore.getState();
-      timezone = locationStore?.locationDetails?.timezone;
-    }
+    const validTz = getValidTimezone(timezone);
 
-    return progress.filter((p) => isFromToday(p.date, timezone));
+    const filtered = progress.filter((p) => {
+      if (!p.date) {
+        console.warn("[Athkar] Progress item missing date:", p);
+        return false;
+      }
+      return isFromToday(p.date, validTz);
+    });
+
+    return filtered;
   } catch (error) {
-    console.error("error:", error);
-    // Fallback to simple date comparison
-    return progress.filter((p) => isFromToday(p.date));
+    console.error("[Athkar] filterTodayProgress error:", error);
+    // Fallback: return empty array to trigger reset
+    return [];
   }
 };
-
 export const filterProgressByType = (progress: any[], type: AthkarType): AthkarProgress[] => {
   return progress.filter((p) => p.athkarId.includes(`-${type}`));
 };

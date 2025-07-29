@@ -35,6 +35,7 @@ export type AthkarState = {
   focusMode: boolean;
   currentAthkarIndex: number;
   currentType: Exclude<AthkarType, "all">;
+  shortVersion: boolean;
   todayCompleted: {
     morning: boolean;
     evening: boolean;
@@ -43,6 +44,7 @@ export type AthkarState = {
     autoMoveToNext: boolean;
     showStreak: boolean;
   };
+  lastCheckedDate: string | null;
 };
 
 // Actions
@@ -71,4 +73,6 @@ export type AthkarActions = {
   reloadStreakFromDB: () => Promise<void>;
   forceRecalculateStreak: () => Promise<void>;
   cleanUpOldData: () => Promise<void>;
+  checkAndResetIfNewDay: () => Promise<void>;
+  toggleShortVersion: () => void;
 };
