@@ -31,6 +31,7 @@ const TimePicker = ({
   currentMinute,
   onTimeChange,
   onClose,
+  isPM = false,
   use12HourFormat = false,
 }: {
   isVisible: boolean;
@@ -40,6 +41,7 @@ const TimePicker = ({
   onClose: () => void;
   use12HourFormat?: boolean;
   hideTimeOption?: boolean;
+  isPM?: boolean;
 }) => {
   const [selectedHour, setSelectedHour] = useState(currentHour);
   const [selectedMinute, setSelectedMinute] = useState(currentMinute);
@@ -90,7 +92,7 @@ const TimePicker = ({
                     key={hour}
                     onPress={() => {
                       if (use12HourFormat) {
-                        const hour24 = convert12HourTo24Hour(hour, false);
+                        const hour24 = convert12HourTo24Hour(hour, isPM);
                         setSelectedHour(hour24);
                       } else {
                         setSelectedHour(hour);
