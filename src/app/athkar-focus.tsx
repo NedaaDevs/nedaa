@@ -63,6 +63,7 @@ const AthkarFocusScreen = () => {
     incrementCount,
     decrementCount,
     toggleFocusMode,
+    checkAndResetIfNewDay,
   } = useAthkarStore();
 
   // State for showing instructions
@@ -81,6 +82,10 @@ const AthkarFocusScreen = () => {
   const filteredAthkar = athkarList.filter(
     (a) => a.type === currentType || a.type === ATHKAR_TYPE.ALL
   );
+
+  useEffect(() => {
+    checkAndResetIfNewDay();
+  }, [checkAndResetIfNewDay]);
 
   useEffect(() => {
     const index = athkarIndexToStartFrom(currentProgress, filteredAthkar, currentType);

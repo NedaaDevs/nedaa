@@ -26,6 +26,7 @@ import {
   filterTodayProgress,
   isSessionComplete,
   getTimestampForTimezone,
+  getToday,
 } from "@/utils/athkar";
 import { dateToInt, timeZonedNow } from "@/utils/date";
 
@@ -66,6 +67,8 @@ export const useAthkarStore = create<AthkarStore>()(
           autoMoveToNext: true,
           showStreak: true,
         },
+        lastCheckedDate: null as string | null,
+        shortVersion: false,
 
         // Initialize DB and load streak data
         initializeStore: async () => {
@@ -86,11 +89,49 @@ export const useAthkarStore = create<AthkarStore>()(
                   toleranceDays: streakData.tolerance_days,
                 },
               });
-
-              await get().cleanUpOldData();
             }
+
+            // Check if it's a new day and reset progress if needed
+            await get().checkAndResetIfNewDay();
+            await get().cleanUpOldData();
           } catch (error) {
             console.error("Error initializing store:", error);
+          }
+        },
+
+        checkAndResetIfNewDay: async () => {
+          const state = get();
+          const timezone =
+            locationStore.getState().locationDetails?.timezone ||
+            Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+          try {
+            const todayDateString = getToday(timezone);
+            const lastChecked = state.lastCheckedDate;
+
+            // If it's a new day, reset progress
+            if (!lastChecked || lastChecked !== todayDateString) {
+              // Filter out yesterday's progress
+              const todayProgress = filterTodayProgress(state.currentProgress, timezone);
+
+              // If we have progress but none from today, it means it's all from yesterday
+              if (state.currentProgress.length > 0 && todayProgress.length === 0) {
+                set({
+                  currentProgress: [],
+                  todayCompleted: { morning: false, evening: false },
+                  currentAthkarIndex: 0,
+                  lastCheckedDate: todayDateString,
+                });
+              } else {
+                // Just update the last checked date
+                set({ lastCheckedDate: todayDateString });
+              }
+            }
+          } catch (error) {
+            console.error("[Athkar] Error checking for new day:", error);
+            // Fallback: still update last checked date to prevent infinite loops
+            const fallbackDate = new Date().toDateString();
+            set({ lastCheckedDate: fallbackDate });
           }
         },
 
@@ -263,20 +304,28 @@ export const useAthkarStore = create<AthkarStore>()(
 
         checkAndResetDailyProgress: () =>
           set((state) => {
-            const todayProgress = filterTodayProgress(state.currentProgress);
+            try {
+              const timezone =
+                locationStore.getState().locationDetails?.timezone ||
+                Intl.DateTimeFormat().resolvedOptions().timeZone;
+              const todayProgress = filterTodayProgress(state.currentProgress, timezone);
 
-            // If no progress from today, reset everything
-            if (todayProgress.length === 0) {
-              return {
-                ...state,
-                currentProgress: [],
-                todayCompleted: { morning: false, evening: false },
-                currentAthkarIndex: 0,
-              };
+              // If no progress from today, reset everything
+              if (todayProgress.length === 0 && state.currentProgress.length > 0) {
+                return {
+                  ...state,
+                  currentProgress: [],
+                  todayCompleted: { morning: false, evening: false },
+                  currentAthkarIndex: 0,
+                };
+              }
+
+              // Keep only today's progress
+              return { ...state, currentProgress: todayProgress };
+            } catch (error) {
+              console.error("[Athkar] Error in checkAndResetDailyProgress:", error);
+              return state;
             }
-
-            // Keep today's progress
-            return { ...state, currentProgress: todayProgress };
           }),
 
         // Streak Management
@@ -331,6 +380,8 @@ export const useAthkarStore = create<AthkarStore>()(
             },
           })),
 
+        toggleShortVersion: () => set((state) => ({ shortVersion: !state.shortVersion })),
+
         // Force recalculation from history (for recovery/debugging)
         forceRecalculateStreak: async () => {
           await AthkarStreakDB.forceUpdateStreakFromHistory();
@@ -349,7 +400,7 @@ export const useAthkarStore = create<AthkarStore>()(
           currentProgress: state.currentProgress,
           todayCompleted: state.todayCompleted,
           settings: state.settings,
-          // NOTE: streak is NOT persisted here, it's in DB
+          lastCheckedDate: state.lastCheckedDate,
         }),
         onRehydrateStorage: () => (state) => {
           // Initialize DB and load streak after rehydration
