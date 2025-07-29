@@ -401,6 +401,7 @@ export const useAthkarStore = create<AthkarStore>()(
           todayCompleted: state.todayCompleted,
           settings: state.settings,
           lastCheckedDate: state.lastCheckedDate,
+          shortVersion: state.shortVersion,
         }),
         onRehydrateStorage: () => (state) => {
           // Initialize DB and load streak after rehydration
