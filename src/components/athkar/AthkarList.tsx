@@ -57,6 +57,17 @@ const AthkarList = ({ type }: Props) => {
     checkAndResetIfNewDay,
   } = useAthkarStore();
 
+  const filteredAthkar = athkarList
+    .filter((athkar) => athkar.type === type || athkar.type === ATHKAR_TYPE.ALL)
+    .sort((a, b) => a.order - b.order);
+
+  useEffect(() => {
+    const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
+    if (!hasSessionForType && filteredAthkar.length > 0) {
+      initializeSession(type as Exclude<AthkarType, "all">);
+    }
+  }, [type, filteredAthkar.length, currentProgress, initializeSession]);
+
   // Haptic feedback hooks
   const hapticLight = useHaptic("light");
   const hapticSuccess = useHaptic("success");
@@ -79,22 +90,12 @@ const AthkarList = ({ type }: Props) => {
     checkAndResetIfNewDay();
   }, [checkAndResetIfNewDay]);
 
-  // Filter athkar by type(Morning/Evening ALL for both)
-  const filteredAthkar = athkarList
-    .filter((athkar) => athkar.type === type || athkar.type === ATHKAR_TYPE.ALL)
-    .sort((a, b) => a.order - b.order);
-
-  // Initialize session if not already initialized for this type
-  const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
-  if (!hasSessionForType && filteredAthkar.length > 0) {
-    initializeSession(type as Exclude<AthkarType, "all">);
-  }
-
   // Calculate overall progress for streak
   const totalAthkar = filteredAthkar.length;
   const completedAthkar = currentProgress.filter(
     (p) => p.completed && p.athkarId.includes(`-${type}`)
   ).length;
+
   const overallProgress = totalAthkar > 0 ? (completedAthkar / totalAthkar) * 100 : 0;
 
   // Get actual streak data from store
@@ -297,6 +298,7 @@ const AthkarList = ({ type }: Props) => {
       {/* Athkar Cards */}
       {filteredAthkar.map((athkar) => {
         const progress = currentProgress.find((p) => p.athkarId === `${athkar.id}-${type}`);
+
         const currentCount = progress?.currentCount || 0;
         const isCompleted = progress?.completed || false;
 

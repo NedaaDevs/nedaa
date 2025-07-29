@@ -7,13 +7,21 @@ import { useAthkarStore } from "@/stores/athkar";
 import { DEFAULT_ATHKAR_DATA } from "@/constants/AthkarData";
 
 export const useInitializeAthkar = () => {
-  const { athkarList, setAthkarList } = useAthkarStore();
+  const { athkarList, setAthkarList, shortVersion } = useAthkarStore();
 
   useEffect(() => {
-    // Initialize with default data if empty
-    if (athkarList.length === 0) {
-      setAthkarList(DEFAULT_ATHKAR_DATA);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const filteredAthkar = DEFAULT_ATHKAR_DATA.filter((athkar) => {
+      // Show short version (26) when shortVersion is true, long version (28) when false
+      if (athkar.id === "26") return shortVersion;
+      if (athkar.id === "28") return !shortVersion;
+
+      return true;
+    });
+
+    setAthkarList(filteredAthkar);
+  }, [shortVersion]);
+
+  return {
+    isInitialized: athkarList.length > 0,
+  };
 };
