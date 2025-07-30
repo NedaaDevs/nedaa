@@ -31,11 +31,9 @@ import type { AthkarType } from "@/types/athkar";
 // Icons
 import { RotateCcw, Flame, Trophy } from "lucide-react-native";
 
-// Constants
-import { ATHKAR_TYPE } from "@/constants/Athkar";
-
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+import { filterAthkarByType } from "@/utils/athkar";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
@@ -47,26 +45,14 @@ type Props = {
 
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
-  const {
-    athkarList,
-    currentProgress,
-    streak,
-    settings,
-    initializeSession,
-    resetProgress,
-    checkAndResetIfNewDay,
-  } = useAthkarStore();
+  const { athkarList, currentProgress, streak, settings, initializeSession, resetProgress } =
+    useAthkarStore();
 
-  const filteredAthkar = athkarList
-    .filter((athkar) => athkar.type === type || athkar.type === ATHKAR_TYPE.ALL)
-    .sort((a, b) => a.order - b.order);
+  const filteredAthkar = filterAthkarByType(athkarList, type);
 
   useEffect(() => {
-    const hasSessionForType = currentProgress.some((p) => p.athkarId.includes(`-${type}`));
-    if (!hasSessionForType && filteredAthkar.length > 0) {
-      initializeSession(type as Exclude<AthkarType, "all">);
-    }
-  }, [type, filteredAthkar.length, currentProgress, initializeSession]);
+    initializeSession(type as Exclude<AthkarType, "all">);
+  }, [type]);
 
   // Haptic feedback hooks
   const hapticLight = useHaptic("light");
@@ -85,10 +71,6 @@ const AthkarList = ({ type }: Props) => {
   const progress = useSharedValue(0);
   const backgroundProgress = useSharedValue(0);
   const scaleValue = useSharedValue(1);
-
-  useEffect(() => {
-    checkAndResetIfNewDay();
-  }, [checkAndResetIfNewDay]);
 
   // Calculate overall progress for streak
   const totalAthkar = filteredAthkar.length;
@@ -297,7 +279,7 @@ const AthkarList = ({ type }: Props) => {
 
       {/* Athkar Cards */}
       {filteredAthkar.map((athkar) => {
-        const progress = currentProgress.find((p) => p.athkarId === `${athkar.id}-${type}`);
+        const progress = currentProgress.find((p) => p.athkarId === `${athkar.order}-${type}`);
 
         const currentCount = progress?.currentCount || 0;
         const isCompleted = progress?.completed || false;
