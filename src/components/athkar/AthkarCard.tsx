@@ -37,7 +37,7 @@ type Props = {
 
 const AthkarCard: FC<Props> = ({ athkar, progress }) => {
   const { t, i18n } = useTranslation();
-  const { incrementCount, decrementCount } = useAthkarStore();
+  const { incrementCount, decrementCount, currentType } = useAthkarStore();
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -50,7 +50,8 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
 
   const handleIncrement = () => {
     hapticSelection();
-    incrementCount(athkar.id);
+    incrementCount(`${athkar.order}-${currentType}`);
+
     if (isCompleted) {
       hapticSuccess();
       return;
@@ -87,7 +88,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
                     variant="outline"
                     onPress={(e) => {
                       e.stopPropagation();
-                      decrementCount(athkar.id);
+                      decrementCount(`${athkar.order}-${currentType}`);
                       hapticWarning();
                     }}
                     className={`w-10 h-10 p-0 rounded-full ${isCompleted ? "bg-black/20 border border-primary/50" : "text-typography-info"}`}>
