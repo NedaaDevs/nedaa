@@ -12,8 +12,11 @@ export const useInitializeAthkar = () => {
   useEffect(() => {
     const filteredAthkar = DEFAULT_ATHKAR_DATA.filter((athkar) => {
       // Show short version (26) when shortVersion is true, long version (28) when false
-      if (athkar.id === "26") return shortVersion;
-      if (athkar.id === "28") return !shortVersion;
+      if (athkar.id === "26" && shortVersion) {
+        return athkar.count === 10;
+      } else if (athkar.id === "26" && !shortVersion) {
+        return athkar.count === 100;
+      }
 
       return true;
     });
