@@ -231,12 +231,12 @@ export const useAthkarStore = create<AthkarStore>()(
 
         decrementCount: (athkarId) => {
           const state = get();
-          const referenceId = generateReferenceId(athkarId, state.currentType);
+
           const timezone = locationStore.getState().locationDetails.timezone;
 
           set((state) => {
             const updatedProgress = state.currentProgress.map((p) => {
-              if (p.athkarId === referenceId) {
+              if (p.athkarId === athkarId) {
                 return {
                   ...p,
                   currentCount: Math.max(p.currentCount - 1, 0),
@@ -252,15 +252,15 @@ export const useAthkarStore = create<AthkarStore>()(
 
           // Get the updated progress item
           const updatedState = get();
-          const progressItem = updatedState.currentProgress.find((p) => p.athkarId === referenceId);
+          const progressItem = updatedState.currentProgress.find((p) => p.athkarId === athkarId);
 
           if (progressItem) {
             // Queue DB update
             const todayInt = getTodayInt(timezone);
             debouncedDBUpdate.add(
-              referenceId,
+              athkarId,
               todayInt,
-              referenceId,
+              athkarId,
               progressItem.currentCount,
               progressItem.completed
             );
