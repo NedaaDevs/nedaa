@@ -276,6 +276,8 @@
   "settings.athkar.notifications.morning.time.note": "صباحًا",
   "settings.athkar.notifications.morning.title": "إشعارات أذكار الصباح",
   "settings.athkar.notifications.time": "وقت تنبيهات الأذكار",
+  "settings.athkar.shortVersion.description": "سيؤدي هذا إلى تغيير عدد أذكار الصباح \"{{thikir}}\" من {{count}} إلى {{shortCount}}. \nبناءً على حصن المسلم العدد المختصر يقرأ عند الكسل",
+  "settings.athkar.shortVersion.title": "النسخة المختصرة",
   "settings.athkar.showStreak.description": "إظهار التتابع اليومي يساعدك في تتبع تقدمك ويشجعك على الحفاظ على روتين الأذكار اليومي.",
   "settings.athkar.showStreak.title": "إظهار التتابع اليومي",
   "settings.athkar.title": "الأذكار",
