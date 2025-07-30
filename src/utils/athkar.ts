@@ -1,5 +1,5 @@
 // Stores
-import { useLocationStore } from "@/stores/location";
+import locationStore from "@/stores/location";
 
 // Utils
 import { timeZonedNow, timestampToDateInt, dateToInt } from "@/utils/date";
@@ -24,62 +24,25 @@ export const isAthkarSupported = (locale: string): boolean => {
   return ATHKAR_SUPPORTED_LOCALES.includes(baseLocale);
 };
 
-const getValidTimezone = (timezone?: string): string => {
-  try {
-    if (timezone) {
-      // Test if timezone is valid
-      new Date().toLocaleString("en-US", { timeZone: timezone });
-      return timezone;
-    }
-  } catch (error) {
-    console.warn("[Athkar] Invalid timezone:", timezone, error);
-  }
-
-  // Try to get from location store
-  try {
-    const locationStore = useLocationStore.getState();
-    if (locationStore?.locationDetails?.timezone) {
-      const tz = locationStore.locationDetails.timezone;
-      new Date().toLocaleString("en-US", { timeZone: tz });
-      return tz;
-    }
-  } catch (error) {
-    console.warn("[Athkar] Location timezone invalid:", error);
-  }
-
-  // Fallback to system timezone
-  try {
-    const systemTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return systemTz || "UTC";
-  } catch (error) {
-    console.warn("[Athkar] System timezone failed:", error);
-    return "UTC";
-  }
+/**
+ * Get today's date as an integer (YYYYMMDD format)
+ */
+export const getTodayInt = (timezone: string): number => {
+  return timestampToDateInt(Date.now() / 1000, timezone);
 };
 
-export const getToday = (timezone?: string): string => {
-  try {
-    const validTz = getValidTimezone(timezone);
-    const now = timeZonedNow(validTz);
-    return now.toDateString();
-  } catch (error) {
-    console.error("[Athkar] getToday error:", error);
-    // Ultimate fallback
-    return new Date().toDateString();
-  }
+/**
+ * Convert date integer to ISO date string
+ */
+export const dateIntToString = (dateInt: number): string => {
+  const dateStr = dateInt.toString();
+  return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 };
 
-export const getTodayAsInt = (timezone?: string): number => {
-  try {
-    const validTz = getValidTimezone(timezone);
-    return timestampToDateInt(Date.now() / 1000, validTz);
-  } catch (error) {
-    console.error("[Athkar] getTodayAsInt error:", error);
-    return dateToInt(new Date());
-  }
-};
-
-export const isFromToday = (dateString: string, timezone?: string): boolean => {
+/**
+ * Check if a date string is from today
+ */
+export const isFromToday = (dateString: string, timezone: string): boolean => {
   try {
     // Parse the date string to ensure it's valid
     const itemDate = new Date(dateString);
@@ -88,30 +51,14 @@ export const isFromToday = (dateString: string, timezone?: string): boolean => {
       return false;
     }
 
-    const validTz = getValidTimezone(timezone);
-    const todayInt = getTodayAsInt(validTz);
+    const todayInt = getTodayInt(timezone);
     const itemDateInt = dateToInt(itemDate);
 
-    const isToday = todayInt === itemDateInt;
-
-    return isToday;
+    return todayInt === itemDateInt;
   } catch (error) {
     console.error("[Athkar] isFromToday error:", error);
-    // Fallback to string comparison
-    try {
-      const today = new Date().toDateString();
-      const itemDate = new Date(dateString).toDateString();
-      return today === itemDate;
-    } catch (fallbackError) {
-      console.error("[Athkar] Fallback date comparison failed:", fallbackError);
-      return false;
-    }
+    return false;
   }
-};
-
-// ID generation helpers
-export const generateProgressId = (athkarId: string, type: AthkarType): string => {
-  return `${athkarId}-${type}-${Date.now()}`;
 };
 
 export const generateReferenceId = (athkarId: string, type: AthkarType): string => {
@@ -121,39 +68,18 @@ export const generateReferenceId = (athkarId: string, type: AthkarType): string 
 export const extractBaseId = (athkarId: string): string => {
   return athkarId.split("-")[0];
 };
-// Progress filtering
-export const filterTodayProgress = (progress: any[], timezone?: string) => {
-  try {
-    const validTz = getValidTimezone(timezone);
 
-    const filtered = progress.filter((p) => {
-      if (!p.date) {
-        console.warn("[Athkar] Progress item missing date:", p);
-        return false;
-      }
-      return isFromToday(p.date, validTz);
-    });
-
-    return filtered;
-  } catch (error) {
-    console.error("[Athkar] filterTodayProgress error:", error);
-    // Fallback: return empty array to trigger reset
-    return [];
-  }
-};
-export const filterProgressByType = (progress: any[], type: AthkarType): AthkarProgress[] => {
+export const filterProgressByType = (
+  progress: AthkarProgress[],
+  type: AthkarType
+): AthkarProgress[] => {
   return progress.filter((p) => p.athkarId.includes(`-${type}`));
 };
 
-export const filterAthkarByType = (athkarList: any[], type: AthkarType) => {
+export const filterAthkarByType = (athkarList: Athkar[], type: AthkarType): Athkar[] => {
   return athkarList
     .filter((a) => a.type === type || a.type === ATHKAR_TYPE.ALL)
     .sort((a, b) => a.order - b.order);
-};
-
-// Progress calculation
-export const calculateProgress = (current: number, total: number): number => {
-  return total > 0 ? (current / total) * 100 : 0;
 };
 
 export const isAthkarCompleted = (current: number, total: number): boolean => {
@@ -161,179 +87,133 @@ export const isAthkarCompleted = (current: number, total: number): boolean => {
 };
 
 // Session completion
-export const isSessionComplete = (progress: any[], type: AthkarType): boolean => {
+export const isSessionComplete = (progress: AthkarProgress[], type: AthkarType): boolean => {
   const sessionProgress = filterProgressByType(progress, type);
   return sessionProgress.length > 0 && sessionProgress.every((p) => p.completed);
 };
 
-export const areBothSessionsComplete = (progress: any[]): boolean => {
-  return (
-    isSessionComplete(progress, ATHKAR_TYPE.MORNING) &&
-    isSessionComplete(progress, ATHKAR_TYPE.EVENING)
-  );
-};
-
-// Streak calculation
-export const calculateDaysDifference = (
-  date1: string,
-  date2: string,
-  timezone?: string
-): number => {
-  try {
-    // Use timezone-aware comparison if available
-    if (timezone) {
-      const d1 = new Date(date1);
-      const d2 = timeZonedNow(timezone);
-      return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-    }
-
-    // Fallback to simple date comparison
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-  } catch (error) {
-    console.error("error:", error);
-    // Fallback calculation
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-  }
-};
-
-export const shouldIncrementStreak = (
-  daysDiff: number,
-  toleranceDays: number,
-  isPaused: boolean
-): boolean => {
-  if (isPaused) return false;
-  return daysDiff === 1 || daysDiff <= toleranceDays + 1;
-};
-
 // Progress creation
-export const createProgressItem = (athkar: any, type: AthkarType, timezone?: string) => {
+export const createProgressItem = (
+  athkar: Athkar,
+  type: AthkarType,
+  timezone?: string
+): AthkarProgress => {
   try {
-    // Use timezone-aware timestamp
-    const now = timezone ? timeZonedNow(timezone) : new Date();
-
-    return {
-      id: generateProgressId(athkar.id, type),
-      athkarId: generateReferenceId(athkar.id, type),
+    const p = {
+      athkarId: generateReferenceId(`${athkar.order}`, type),
       currentCount: 0,
       completed: false,
-      date: now.toISOString(),
-      lastUpdated: now.toISOString(),
     };
+
+    return p;
   } catch (error) {
     console.error("error:", error);
-    // Fallback to local time
-    const now = new Date();
     return {
-      id: generateProgressId(athkar.id, type),
-      athkarId: generateReferenceId(athkar.id, type),
+      athkarId: generateReferenceId(`${athkar.order}`, type),
       currentCount: 0,
       completed: false,
-      date: now.toISOString(),
-      lastUpdated: now.toISOString(),
     };
   }
 };
 
-export const getTimestampForTimezone = (timezone?: string): string => {
-  try {
-    if (timezone) {
-      const now = timeZonedNow(timezone);
-      return now.toISOString();
-    }
+/**
+ * Convert DB progress format to store format
+ */
+export const convertDBProgressToStoreFormat = (
+  morningProgress: Record<string, { count: number; completed: boolean }>,
+  eveningProgress: Record<string, { count: number; completed: boolean }>,
+  timezone: string
+): AthkarProgress[] => {
+  const now = getTimestampForTimezone(timezone);
+  const progress: AthkarProgress[] = [];
 
-    // Try to get timezone from location store
-    const locationStore = useLocationStore.getState();
-    if (locationStore?.locationDetails?.timezone) {
-      const now = timeZonedNow(locationStore.locationDetails.timezone);
-      return now.toISOString();
-    }
+  // Convert morning progress
+  Object.entries(morningProgress).forEach(([athkarId, data]) => {
+    progress.push({
+      athkarId,
+      currentCount: data.count,
+      completed: data.completed,
+    });
+  });
 
-    return new Date().toISOString();
-  } catch (error) {
-    console.error("error:", error);
-    return new Date().toISOString();
-  }
+  // Convert evening progress
+  Object.entries(eveningProgress).forEach(([athkarId, data]) => {
+    progress.push({
+      athkarId,
+      currentCount: data.count,
+      completed: data.completed,
+    });
+  });
+
+  return progress;
+};
+
+export const getTimestampForTimezone = (timezone: string): string => {
+  const now = timeZonedNow(timezone);
+  return now.toISOString();
 };
 
 export const clampIndex = (index: number, maxLength: number): number => {
   return Math.max(0, Math.min(index, maxLength - 1));
 };
 
-export const getCurrentAthkarPeriod = (timezone?: string): Exclude<AthkarType, "all"> => {
-  try {
-    let currentTime: Date;
+export const getCurrentAthkarPeriod = (): Exclude<AthkarType, "all"> => {
+  const tz = locationStore.getState().locationDetails.timezone;
+  const currentTime = timeZonedNow(tz);
+  const hour = currentTime.getHours();
 
-    if (timezone) {
-      currentTime = timeZonedNow(timezone);
-    } else {
-      // Try to get timezone from location store
-      const locationStore = useLocationStore.getState();
-      if (locationStore?.locationDetails?.timezone) {
-        currentTime = timeZonedNow(locationStore.locationDetails.timezone);
-      } else {
-        currentTime = new Date();
-      }
-    }
-
-    const hour = currentTime.getHours();
-
-    // Morning athkar: 00:00 - 11:59 (AM hours)
-    // Evening athkar: 12:00 - 23:59 (PM hours)
-    if (hour >= 0 && hour < 12) {
-      return ATHKAR_TYPE.MORNING;
-    } else {
-      return ATHKAR_TYPE.EVENING;
-    }
-  } catch (error) {
-    console.error("error:", error);
-    // Fallback to local time
-    const hour = new Date().getHours();
-    return hour >= 0 && hour < 12 ? ATHKAR_TYPE.MORNING : ATHKAR_TYPE.EVENING;
+  // Morning athkar: 00:00 - 11:59 (AM hours)
+  // Evening athkar: 12:00 - 23:59 (PM hours)
+  if (hour >= 0 && hour < 12) {
+    return ATHKAR_TYPE.MORNING;
+  } else {
+    return ATHKAR_TYPE.EVENING;
   }
 };
 
 // Helper to check if it's currently morning athkar time
-export const isAthkarMorningPeriod = (timezone?: string): boolean => {
-  return getCurrentAthkarPeriod(timezone) === ATHKAR_TYPE.MORNING;
+export const isAthkarMorningPeriod = (): boolean => {
+  return getCurrentAthkarPeriod() === ATHKAR_TYPE.MORNING;
 };
 
 // Helper to check if it's currently evening athkar time
-export const isAthkarEveningPeriod = (timezone?: string): boolean => {
-  return getCurrentAthkarPeriod(timezone) === ATHKAR_TYPE.EVENING;
+export const isAthkarEveningPeriod = (): boolean => {
+  return getCurrentAthkarPeriod() === ATHKAR_TYPE.EVENING;
 };
 
 // Find the index of the first not completed Thikir to start from(If all done default to 0)
-export const athkarIndexToStartFrom = (
+export const getNextAthkarIndex = (
   progressList: AthkarProgress[],
   athkarList: Athkar[],
   type: AthkarType
-): number => {
+): string => {
+  const firstThikir = `1-${type}`;
   // Early return for empty progress
   if (!progressList || progressList.length === 0) {
-    return 0;
+    return firstThikir;
   }
 
   const typeProgress = filterProgressByType(progressList, type);
+  const filteredList = filterAthkarByType(athkarList, type);
 
   // Early return if no progress for this type
   if (!typeProgress || typeProgress.length === 0) {
-    return 0;
+    return firstThikir;
   }
 
-  const incompleteThikir = typeProgress.find((p) => !p.completed);
+  const nextIncompleteThikir = typeProgress.find((p) => !p.completed);
 
-  if (!incompleteThikir) {
-    return 0; // All completed, start from beginning
+  if (!nextIncompleteThikir) {
+    return firstThikir; // All completed, start from beginning
   }
 
-  const baseId = extractBaseId(incompleteThikir.athkarId);
+  const thikir = filteredList.find(
+    (thikir) => `${thikir.order}-${type}` === nextIncompleteThikir.athkarId
+  );
 
-  // Find the actual index in the filtered athkar list
-  const index = athkarList.findIndex((athkar) => athkar.id === baseId);
+  if (thikir) {
+    return `${thikir.order}-${type}`;
+  }
 
-  return Math.max(0, index);
+  return firstThikir;
 };
