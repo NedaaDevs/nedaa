@@ -37,9 +37,8 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { athkarIndexToStartFrom, filterTodayProgress, isSessionComplete } from "@/utils/athkar";
+import { filterProgressByType, getNextAthkarIndex } from "@/utils/athkar";
 import { Icon } from "@/components/ui/icon";
-import { AthkarType } from "@/types/athkar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -63,7 +62,6 @@ const AthkarFocusScreen = () => {
     incrementCount,
     decrementCount,
     toggleFocusMode,
-    checkAndResetIfNewDay,
   } = useAthkarStore();
 
   // State for showing instructions
@@ -71,7 +69,7 @@ const AthkarFocusScreen = () => {
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   const swipeIndicatorOpacity = useSharedValue(0);
   const swipeIndicatorTranslateX = useSharedValue(0);
-  const [startFromIndex, setStartFromIndex] = useState(0);
+  const [isDone, setIsDone] = useState(false);
   const [currentAthkarIndex, setCurrentAthkarIndex] = useState(0);
 
   // Animated values for circle progress
@@ -84,13 +82,20 @@ const AthkarFocusScreen = () => {
   );
 
   useEffect(() => {
-    checkAndResetIfNewDay();
-  }, [checkAndResetIfNewDay]);
+    const athkarId = getNextAthkarIndex(currentProgress, filteredAthkar, currentType);
 
-  useEffect(() => {
-    const index = athkarIndexToStartFrom(currentProgress, filteredAthkar, currentType);
+    const index = filteredAthkar.findIndex((t) => {
+      const p = `${t.order}-${currentType}` === athkarId;
+
+      return p;
+    });
     setCurrentAthkarIndex(index);
-    setStartFromIndex(index);
+
+    const isAllDone = filterProgressByType(currentProgress, currentType).every(
+      (fp) => fp.completed
+    );
+
+    setIsDone(isAllDone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProgress, currentType]);
 
@@ -111,9 +116,10 @@ const AthkarFocusScreen = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const currentAthkar = filteredAthkar[startFromIndex];
+  const currentAthkar = filteredAthkar[currentAthkarIndex];
+
   const progressItem = currentProgress.find(
-    (p) => p.athkarId === `${currentAthkar?.id}-${currentType}`
+    (p) => p.athkarId === `${currentAthkar.order}-${currentType}`
   );
   const currentCount = progressItem?.currentCount || 0;
   const totalCount = currentAthkar?.count || 1;
@@ -178,7 +184,7 @@ const AthkarFocusScreen = () => {
         countOpacity.value = withTiming(1, { duration: 100 });
       });
 
-      incrementCount(currentAthkar.id);
+      incrementCount(`${currentAthkar.order}-${currentType}`);
 
       // Check if this tap completes the athkar
       if (currentCount + 1 === totalCount) {
@@ -191,7 +197,7 @@ const AthkarFocusScreen = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleFinish = () => {
     router.back();
   };
 
@@ -223,7 +229,7 @@ const AthkarFocusScreen = () => {
           countOpacity.value = withTiming(1, { duration: 100 });
         });
 
-        runOnJS(decrementCount)(currentAthkar.id);
+        runOnJS(decrementCount)(`${currentAthkar.order}-${currentType}`);
       }
 
       // Hide swipe indicator
@@ -238,10 +244,6 @@ const AthkarFocusScreen = () => {
       transform: [{ translateX: swipeIndicatorTranslateX.value }],
     };
   });
-
-  const getIsCompletedByType = (type: AthkarType) => {
-    return isSessionComplete(filterTodayProgress(currentProgress), type);
-  };
 
   if (!currentAthkar) {
     return null;
@@ -264,7 +266,7 @@ const AthkarFocusScreen = () => {
         {/* Progress Indicator */}
         <Box className="absolute top-12 left-4 right-20 z-10">
           <Text className="text-sm text-typography-secondary mb-2">
-            {formatNumberToLocale(`${currentAthkarIndex + 1}`)} /{" "}
+            {formatNumberToLocale(`${currentAthkarIndex + 1}`)} /
             {formatNumberToLocale(`${filteredAthkar.length}`)}
           </Text>
           <Progress
@@ -338,8 +340,8 @@ const AthkarFocusScreen = () => {
                 </Animated.View>
 
                 {/* Finish Button when all completed */}
-                {getIsCompletedByType(currentType) && (
-                  <Button size="lg" onPress={handleNext} className="bg-success mt-4">
+                {isDone && (
+                  <Button size="lg" onPress={handleFinish} className="bg-success mt-4">
                     <ButtonText className="text-white font-semibold">
                       {t("athkar.focus.allCompleted", {
                         type: t(`athkar.${currentType}`),
