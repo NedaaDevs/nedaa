@@ -225,8 +225,21 @@ export const useAthkarStore = create<AthkarStore>()(
             requestAnimationFrame(() => get().moveToNext());
           }
 
-          // Check daily completion status
-          requestAnimationFrame(() => get().checkAndUpdateDailyProgress());
+          // Check if this completes the current session
+          const currentSessionProgress = filterProgressByType(
+            get().currentProgress,
+            state.currentType
+          );
+          const sessionJustCompleted =
+            progressItem?.completed && currentSessionProgress.every((p) => p.completed);
+
+          if (sessionJustCompleted) {
+            console.log(`[Athkar Store] ${state.currentType} session just completed!`);
+            // Give time for debounced updates to process, then check streak
+            setTimeout(async () => {
+              await get().checkAndUpdateDailyProgress();
+            }, 400); // Slightly longer than debounce delay
+          }
         },
 
         decrementCount: (athkarId) => {
@@ -352,13 +365,27 @@ export const useAthkarStore = create<AthkarStore>()(
 
           // If both sessions completed, update streak
           if (morningCompleted && eveningCompleted) {
+            // First, ensure all pending DB updates are written
+            await debouncedDBUpdate.flush();
+
             const timezone =
               locationStore.getState().locationDetails?.timezone ||
               Intl.DateTimeFormat().resolvedOptions().timeZone;
             const todayInt = getTodayInt(timezone);
 
-            await AthkarDB.checkAndUpdateStreakForDate(todayInt);
-            await get().reloadStreakFromDB();
+            console.log(
+              `[Athkar Store] Both sessions complete for day ${todayInt}, updating streak...`
+            );
+
+            // This should check the DB for both morning_completed and evening_completed flags
+            const streakUpdated = await AthkarDB.checkAndUpdateStreakForDate(todayInt);
+
+            if (streakUpdated) {
+              console.log(`[Athkar Store] Streak update successful`);
+              await get().reloadStreakFromDB();
+            } else {
+              console.log(`[Athkar Store] Streak update failed or already completed`);
+            }
           }
         },
 
