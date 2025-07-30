@@ -35,7 +35,7 @@ const AthkarTabs = () => {
   const { t } = useTranslation();
   const router = useRouter();
 
-  const { setCurrentType, checkAndResetDailyProgress } = useAthkarStore();
+  const { setCurrentType } = useAthkarStore();
 
   type activeTabType = Exclude<AthkarType, "all">;
 
@@ -50,7 +50,6 @@ const AthkarTabs = () => {
   // Check for daily reset on mount
   useEffect(() => {
     setCurrentType(activeTab);
-    checkAndResetDailyProgress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
