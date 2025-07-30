@@ -240,6 +240,15 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
   },
 
   {
+    id: "26",
+    title: "athkar.titles.laIlahaIllaAllahLong",
+    text: "athkar.items.laIlahaIllaAllahFull",
+    count: 100,
+    type: ATHKAR_TYPE.MORNING,
+    order: 20,
+  },
+
+  {
     id: "27",
     title: "athkar.titles.laIlahaIllaAllahShort",
     text: "athkar.items.laIlahaIllaAllahFull",
@@ -250,15 +259,6 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
 
   {
     id: "28",
-    title: "athkar.titles.laIlahaIllaAllahLong",
-    text: "athkar.items.laIlahaIllaAllahFull",
-    count: 100,
-    type: ATHKAR_TYPE.MORNING,
-    order: 20,
-  },
-
-  {
-    id: "29",
     title: "athkar.titles.subhanAllahExtended",
     text: "athkar.items.subhanAllahExtended",
     count: 3,
@@ -267,7 +267,7 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
   },
 
   {
-    id: "30",
+    id: "29",
     title: "athkar.titles.subhanAllahExtended",
     text: "athkar.items.subhanAllahExtended",
     count: 3,
@@ -276,20 +276,27 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
   },
 
   {
-    id: "31",
+    id: "30",
     title: "athkar.titles.seekingBeneficialKnowledge",
     text: "athkar.items.seekingBeneficialKnowledge",
     count: 1,
     type: ATHKAR_TYPE.MORNING,
     order: 22,
   },
-
+  {
+    id: "31",
+    title: "athkar.titles.seekingForgivenessRepentance",
+    text: "athkar.items.astaghfirullah",
+    count: 100,
+    type: ATHKAR_TYPE.EVENING,
+    order: 22,
+  },
   {
     id: "32",
     title: "athkar.titles.seekingForgivenessRepentance",
     text: "athkar.items.astaghfirullah",
     count: 100,
-    type: ATHKAR_TYPE.ALL,
+    type: ATHKAR_TYPE.MORNING,
     order: 23,
   },
 
@@ -299,7 +306,7 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
     text: "athkar.items.perfectWordsOfAllah",
     count: 3,
     type: ATHKAR_TYPE.EVENING,
-    order: 24,
+    order: 23,
   },
 
   {
@@ -308,6 +315,6 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
     text: "athkar.items.salawatOnProphet",
     count: 10,
     type: ATHKAR_TYPE.ALL,
-    order: 25,
+    order: 24,
   },
 ];
