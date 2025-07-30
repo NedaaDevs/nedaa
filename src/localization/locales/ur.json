@@ -276,6 +276,8 @@
   "settings.athkar.notifications.morning.time.note": "صبح",
   "settings.athkar.notifications.morning.title": "صبح کے اذکار کی اطلاعات",
   "settings.athkar.notifications.time": "یاددہانی کا وقت",
+  "settings.athkar.shortVersion.description": "This will change the count of the morning athkar \"{{thikir}}\" from {{count}} to {{shortCount}}. \nBased on  Hisn al-Muslim, the short version is read when feeling lazy.",
+  "settings.athkar.shortVersion.title": "Short Version",
   "settings.athkar.showStreak.description": "روزانہ کی تسلسل دکھانا آپ کو اپنی پیش رفت کا پتہ رکھنے میں مدد دیتا ہے اور آپ کو روزانہ کے ذکر کے معمول کو برقرار رکھنے کی ترغیب دیتا ہے.",
   "settings.athkar.showStreak.title": "روزانہ سلسلہ دکھائیں",
   "settings.athkar.title": "اذکار",
