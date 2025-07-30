@@ -276,6 +276,8 @@
   "settings.athkar.notifications.morning.time.note": "AM",
   "settings.athkar.notifications.morning.title": "Morning Athkar Notifications",
   "settings.athkar.notifications.time": "Reminder Time",
+  "settings.athkar.shortVersion.description": "This will change the count of the morning athkar \"{{thikir}}\" from {{count}} to {{shortCount}}. \nBased on  Hisn al-Muslim, the short version is read when feeling lazy.",
+  "settings.athkar.shortVersion.title": "Short Version",
   "settings.athkar.showStreak.description": "Showing the daily streak helps you keep track of your progress and encourages you to maintain your daily athkar routine.",
   "settings.athkar.showStreak.title": "Show Daily Streak",
   "settings.athkar.title": "Athkar",
