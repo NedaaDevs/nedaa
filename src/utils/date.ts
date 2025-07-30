@@ -99,8 +99,8 @@ export const getDateLocale = (locale: AppLocale) => {
   switch (locale) {
     case "ar":
       return ar;
-    case "ms":
-      return ms;
+    // case "ms":
+    //   return ms;
     default:
       return enUS;
   }
