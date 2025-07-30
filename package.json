@@ -88,7 +88,7 @@
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
     "expo-dev-client": "~5.2.1",
-    "expo-drizzle-studio-plugin": "^0.1.2",
+    "expo-drizzle-studio-plugin": "^0.2.0",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-expo": "~53.0.7",
