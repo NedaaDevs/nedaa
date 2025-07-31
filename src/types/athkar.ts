@@ -3,7 +3,7 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 export type AthkarType = (typeof ATHKAR_TYPE)[keyof typeof ATHKAR_TYPE];
 
 export type Athkar = {
-  id: string;
+  id: string; //  "1-morning", "1-evening"
   title: string;
   text: string;
   count: number;
@@ -14,6 +14,7 @@ export type Athkar = {
 export type AthkarProgress = {
   athkarId: string;
   currentCount: number;
+  totalCount: number;
   completed: boolean;
 };
 
@@ -27,7 +28,8 @@ export type Streak = {
 
 // State
 export type AthkarState = {
-  athkarList: Athkar[];
+  morningAthkarList: Athkar[];
+  eveningAthkarList: Athkar[];
   currentProgress: AthkarProgress[];
   streak: Streak;
   focusMode: boolean;
@@ -47,7 +49,8 @@ export type AthkarState = {
 // Actions
 export type AthkarActions = {
   // Synchronous
-  setAthkarList: (list: Athkar[]) => void;
+  setMorningAthkarList: (list: Athkar[]) => void;
+  setEveningAthkarList: (list: Athkar[]) => void;
   incrementCount: (athkarId: string) => void;
   decrementCount: (athkarId: string) => void;
   toggleFocusMode: () => void;
@@ -61,14 +64,15 @@ export type AthkarActions = {
 
   // Asynchronous
   initializeStore: () => Promise<void>;
+  initializeTodayData: () => Promise<void>;
+  updateAthkarLists: (morningList: Athkar[], eveningList: Athkar[]) => Promise<void>;
   initializeSession: (type: Exclude<AthkarType, "all">) => Promise<void>;
+  loadTodayProgress: () => Promise<void>;
+  checkAndUpdateSessionCompletion: (athkarId: string) => Promise<void>;
   pauseStreak: () => Promise<void>;
   resumeStreak: () => Promise<void>;
   updateToleranceDays: (days: number) => Promise<void>;
   resetProgress: () => Promise<void>;
-  checkAndUpdateDailyProgress: () => Promise<void>;
   reloadStreakFromDB: () => Promise<void>;
-  forceRecalculateStreak: () => Promise<void>;
   cleanUpOldData: () => Promise<void>;
-  loadTodayProgress: () => Promise<void>;
 };
