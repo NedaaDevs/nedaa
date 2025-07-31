@@ -99,6 +99,7 @@ const scheduleAthkarNotifications = async (
           data: {
             type: "ATHKAR",
             athkarType: ATHKAR_TYPE.MORNING,
+            screen: "/(tabs)/athkar",
           },
         },
         {
@@ -133,6 +134,7 @@ const scheduleAthkarNotifications = async (
           data: {
             type: "ATHKAR",
             athkarType: ATHKAR_TYPE.EVENING,
+            screen: "/(tabs)/athkar",
           },
         },
         {
