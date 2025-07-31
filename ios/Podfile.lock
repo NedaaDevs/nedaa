@@ -81,6 +81,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - ExpoSensors (14.1.4):
+    - ExpoModulesCore
   - ExpoSplashScreen (0.30.9):
     - ExpoModulesCore
   - ExpoSQLite (15.2.12):
@@ -2139,6 +2141,7 @@ DEPENDENCIES:
   - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
+  - ExpoSensors (from `../node_modules/expo-sensors/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
@@ -2264,6 +2267,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-location/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
+  ExpoSensors:
+    :path: "../node_modules/expo-sensors/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSQLite:
@@ -2445,6 +2450,7 @@ SPEC CHECKSUMS:
   ExpoLocalization: f6c6aaa3bfff77b666bb958bdfeb5c55df21d990
   ExpoLocation: a319a1b2c00b82c29e8a24227e0f00d1e19662c5
   ExpoModulesCore: d431ffe83c8673d02cb38425594a5f5480fd3061
+  ExpoSensors: 38ae3a55b484410a7976fa3ff78ea80339252e75
   ExpoSplashScreen: 03ef991c0f9575a10269e08083cb4bd10e0989bc
   ExpoSQLite: 9b4feb8264559916a9bc37d157fc2e076b00afbe
   ExpoSystemUI: 8f2979df9afed5bfaa7d69465a07a9f602c1f3a7
