@@ -95,6 +95,8 @@ export const useAthkarStore = create<AthkarStore>()(
           showStreak: true,
         },
         shortVersion: false,
+        lastMorningIndex: 0,
+        lastEveningIndex: 0,
 
         // Initialize DB and load data
         initializeStore: async () => {
@@ -260,35 +262,91 @@ export const useAthkarStore = create<AthkarStore>()(
 
           if (currentList.length === 0) return 0;
 
-          // Find the first incomplete athkar for this session type
-          const firstIncompleteIndex = currentList.findIndex((athkar) => {
-            const progressItem = state.currentProgress.find((p) => p.athkarId === athkar.id);
-            return !progressItem?.completed;
-          });
+          // Get the last known index for this session type
+          const lastKnownIndex =
+            type === ATHKAR_TYPE.MORNING ? state.lastMorningIndex : state.lastEveningIndex;
 
-          // If found an incomplete athkar, return its index
-          if (firstIncompleteIndex !== -1) {
-            console.log(
-              `[Athkar Store] Starting at incomplete athkar index: ${firstIncompleteIndex}`
+          // Ensure the last known index is within bounds
+          const safeLastIndex = Math.min(Math.max(lastKnownIndex, 0), currentList.length - 1);
+
+          // Check if the athkar at the last known position is incomplete
+          if (safeLastIndex < currentList.length) {
+            const athkarAtLastIndex = currentList[safeLastIndex];
+            const progressItem = state.currentProgress.find(
+              (p) => p.athkarId === athkarAtLastIndex.id
             );
-            return firstIncompleteIndex;
+
+            // If the last position is incomplete, continue from there
+            if (!progressItem?.completed) {
+              console.log(`[Athkar Store] Continuing from last position: ${safeLastIndex}`);
+              return safeLastIndex;
+            }
           }
 
-          // If all athkar are completed, start from the beginning
-          console.log(`[Athkar Store] All athkar completed, starting from index: 0`);
-          return 0;
+          // If last position is complete, find the first incomplete athkar after the last position
+          for (let i = safeLastIndex + 1; i < currentList.length; i++) {
+            const athkar = currentList[i];
+            const progressItem = state.currentProgress.find((p) => p.athkarId === athkar.id);
+            if (!progressItem?.completed) {
+              console.log(`[Athkar Store] Found incomplete athkar after last position: ${i}`);
+              return i;
+            }
+          }
+
+          // If no incomplete found after last position, search from the beginning
+          for (let i = 0; i < safeLastIndex; i++) {
+            const athkar = currentList[i];
+            const progressItem = state.currentProgress.find((p) => p.athkarId === athkar.id);
+            if (!progressItem?.completed) {
+              console.log(`[Athkar Store] Found incomplete athkar from beginning: ${i}`);
+              return i;
+            }
+          }
+
+          // If all athkar are completed, stay at the last known position
+          console.log(
+            `[Athkar Store] All athkar completed, staying at last position: ${safeLastIndex}`
+          );
+          return safeLastIndex;
         },
+
+        // Update last index for the current session type
+        updateLastIndex: (type: Exclude<AthkarType, "all">, index: number) => {
+          if (type === ATHKAR_TYPE.MORNING) {
+            set({ lastMorningIndex: index });
+          } else {
+            set({ lastEveningIndex: index });
+          }
+        },
+
+        // Get last index for a specific session type
+        getLastIndex: (type: Exclude<AthkarType, "all">) => {
+          const state = get();
+          return type === ATHKAR_TYPE.MORNING ? state.lastMorningIndex : state.lastEveningIndex;
+        },
+
         moveToNext: () =>
           set((state) => {
             const currentList =
               state.currentType === ATHKAR_TYPE.MORNING
                 ? state.morningAthkarList
                 : state.eveningAthkarList;
+
             const newIndex =
               state.currentAthkarIndex + 1 >= currentList.length
                 ? 0 // Here we go again
                 : state.currentAthkarIndex + 1;
-            return { currentAthkarIndex: newIndex };
+
+            // Update both current index and session-specific last index
+            const updates: Partial<AthkarState> = { currentAthkarIndex: newIndex };
+
+            if (state.currentType === ATHKAR_TYPE.MORNING) {
+              updates.lastMorningIndex = newIndex;
+            } else {
+              updates.lastEveningIndex = newIndex;
+            }
+
+            return updates;
           }),
 
         moveToPrevious: () =>
@@ -297,11 +355,22 @@ export const useAthkarStore = create<AthkarStore>()(
               state.currentType === ATHKAR_TYPE.MORNING
                 ? state.morningAthkarList
                 : state.eveningAthkarList;
+
             const newIndex =
               state.currentAthkarIndex - 1 < 0
-                ? currentList.length - 1 // Here we go again
+                ? currentList.length - 1 // Wrap around to end
                 : state.currentAthkarIndex - 1;
-            return { currentAthkarIndex: newIndex };
+
+            // Update both current index and session-specific last index
+            const updates: Partial<AthkarState> = { currentAthkarIndex: newIndex };
+
+            if (state.currentType === ATHKAR_TYPE.MORNING) {
+              updates.lastMorningIndex = newIndex;
+            } else {
+              updates.lastEveningIndex = newIndex;
+            }
+
+            return updates;
           }),
 
         incrementCount: (athkarId) => {
@@ -391,12 +460,14 @@ export const useAthkarStore = create<AthkarStore>()(
         // Initialize session - switch between morning/evening
         initializeSession: async (type) => {
           await get().initializeTodayData(); // Ensure today is initialized
-
+          const optimalIndex = get().findOptimalAthkarIndex(type);
           set({
             currentType: type,
             currentAthkarIndex: 0,
             focusMode: false,
           });
+
+          get().updateLastIndex(type, optimalIndex);
         },
 
         // Check and update session completion after item completion
