@@ -3,7 +3,7 @@ import { persist, createJSONStorage, devtools } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 
 // Types
-import { Athkar, AthkarActions, AthkarState } from "@/types/athkar";
+import { Athkar, AthkarActions, AthkarState, AthkarType } from "@/types/athkar";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -252,6 +252,32 @@ export const useAthkarStore = create<AthkarStore>()(
         setCurrentAthkarIndex: (index: number) => set({ currentAthkarIndex: index }),
         toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
 
+        // Find the optimal starting index for focus mode
+        findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => {
+          const state = get();
+          const currentList =
+            type === ATHKAR_TYPE.MORNING ? state.morningAthkarList : state.eveningAthkarList;
+
+          if (currentList.length === 0) return 0;
+
+          // Find the first incomplete athkar for this session type
+          const firstIncompleteIndex = currentList.findIndex((athkar) => {
+            const progressItem = state.currentProgress.find((p) => p.athkarId === athkar.id);
+            return !progressItem?.completed;
+          });
+
+          // If found an incomplete athkar, return its index
+          if (firstIncompleteIndex !== -1) {
+            console.log(
+              `[Athkar Store] Starting at incomplete athkar index: ${firstIncompleteIndex}`
+            );
+            return firstIncompleteIndex;
+          }
+
+          // If all athkar are completed, start from the beginning
+          console.log(`[Athkar Store] All athkar completed, starting from index: 0`);
+          return 0;
+        },
         moveToNext: () =>
           set((state) => {
             const currentList =

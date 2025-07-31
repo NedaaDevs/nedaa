@@ -54,6 +54,7 @@ export type AthkarActions = {
   incrementCount: (athkarId: string) => void;
   decrementCount: (athkarId: string) => void;
   toggleFocusMode: () => void;
+  findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => number;
   moveToNext: () => void;
   moveToPrevious: () => void;
   setCurrentAthkarIndex: (index: number) => void;
