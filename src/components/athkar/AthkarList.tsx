@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
+import { Spinner } from "@/components/ui/spinner";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -33,11 +34,13 @@ import { RotateCcw, Flame, Trophy } from "lucide-react-native";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { filterAthkarByType } from "@/utils/athkar";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
 import { I18nManager } from "react-native";
+
+// Constants
+import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 type Props = {
   type: AthkarType;
@@ -45,14 +48,35 @@ type Props = {
 
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
-  const { athkarList, currentProgress, streak, settings, initializeSession, resetProgress } =
-    useAthkarStore();
+  const {
+    morningAthkarList,
+    eveningAthkarList,
+    currentProgress,
+    streak,
+    settings,
+    initializeSession,
+    resetProgress,
+  } = useAthkarStore();
 
-  const filteredAthkar = filterAthkarByType(athkarList, type);
+  // Loading states
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Get the correct athkar list based on type
+  const currentAthkarList = type === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
 
   useEffect(() => {
-    initializeSession(type as Exclude<AthkarType, "all">);
-  }, [type]);
+    const initialize = async () => {
+      setIsInitializing(true);
+      try {
+        await initializeSession(type as Exclude<AthkarType, "all">);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initialize();
+  }, [type, initializeSession]);
 
   // Haptic feedback hooks
   const hapticLight = useHaptic("light");
@@ -72,15 +96,15 @@ const AthkarList = ({ type }: Props) => {
   const backgroundProgress = useSharedValue(0);
   const scaleValue = useSharedValue(1);
 
-  // Calculate overall progress for streak
-  const totalAthkar = filteredAthkar.length;
+  // Calculate overall progress
+  const totalAthkar = currentAthkarList.length;
   const completedAthkar = currentProgress.filter(
     (p) => p.completed && p.athkarId.includes(`-${type}`)
   ).length;
 
   const overallProgress = totalAthkar > 0 ? (completedAthkar / totalAthkar) * 100 : 0;
 
-  // Get actual streak data from store
+  // Get streak data from store
   const streakDays = streak.currentStreak;
   const longestStreak = streak.longestStreak || 0;
 
@@ -117,11 +141,18 @@ const AthkarList = ({ type }: Props) => {
     scaleValue.value = withTiming(1, { duration: 100 });
   };
 
-  // Handle completion
-  const handleCompletion = () => {
+  // Handle completion - trigger reset
+  const handleCompletion = async () => {
     hapticSuccess();
-    resetProgress();
     handlePressEnd();
+
+    // Reset the current session with loading state
+    setIsResetting(true);
+    try {
+      await resetProgress();
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   useAnimatedReaction(
@@ -227,8 +258,34 @@ const AthkarList = ({ type }: Props) => {
     };
   });
 
+  // Show loading indicator while initializing
+  if (isInitializing) {
+    return (
+      <VStack className="flex-1 justify-center items-center" space="md">
+        <Spinner size="large" />
+        <Text className="text-typography-secondary">{t("athkar.loading.initializing")}</Text>
+      </VStack>
+    );
+  }
+
+  // Show loading overlay while resetting
+  const LoadingOverlay = () => {
+    if (!isResetting) return null;
+
+    return (
+      <VStack
+        className="absolute inset-0 bg-background/80 justify-center items-center z-50"
+        space="md">
+        <Spinner size="large" />
+        <Text className="text-typography-secondary">{t("athkar.loading.resetting")}</Text>
+      </VStack>
+    );
+  };
+
   return (
-    <VStack space="md">
+    <VStack space="md" className="relative">
+      <LoadingOverlay />
+
       {/* Streak Card */}
       {settings.showStreak && (
         <Card className="p-4 bg-background-secondary dark:bg-background-tertiary">
@@ -278,17 +335,23 @@ const AthkarList = ({ type }: Props) => {
       )}
 
       {/* Athkar Cards */}
-      {filteredAthkar.map((athkar) => {
-        const progress = currentProgress.find((p) => p.athkarId === `${athkar.order}-${type}`);
+      {currentAthkarList.map((athkar) => {
+        // Find progress using the athkar ID
+        const progressItem = currentProgress.find((p) => p.athkarId === athkar.id);
 
-        const currentCount = progress?.currentCount || 0;
-        const isCompleted = progress?.completed || false;
+        const currentCount = progressItem?.currentCount || 0;
+        const totalCount = progressItem?.totalCount || athkar.count;
+        const isCompleted = progressItem?.completed || false;
 
         return (
           <AthkarCard
             key={athkar.id}
             athkar={athkar}
-            progress={{ current: currentCount, total: athkar.count, completed: isCompleted }}
+            progress={{
+              current: currentCount,
+              total: totalCount,
+              completed: isCompleted,
+            }}
           />
         );
       })}
@@ -308,19 +371,28 @@ const AthkarList = ({ type }: Props) => {
             size="md"
             variant="outline"
             className="w-full border-0"
-            style={{ backgroundColor: "transparent" }}>
-            <Icon size="md" className="text-white" as={RotateCcw} />
+            style={{ backgroundColor: "transparent" }}
+            disabled={isResetting}>
+            {isResetting ? (
+              <Spinner size="small" />
+            ) : (
+              <Icon size="md" className="text-white" as={RotateCcw} />
+            )}
             <ButtonText className="text-white font-medium">
-              {isPressing
-                ? t("common.holdToReset", {
-                    progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
-                  })
-                : t("common.resetDailyProgress")}
+              {isResetting
+                ? t("athkar.loading.resetting")
+                : isPressing
+                  ? t("common.holdToReset", {
+                      progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
+                    })
+                  : t("common.resetDailyProgress")}
             </ButtonText>
           </Button>
 
           {/* Progress overlay */}
-          {isPressing && <Animated.View style={progressOverlayStyle} pointerEvents="none" />}
+          {isPressing && !isResetting && (
+            <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+          )}
         </Animated.View>
       </GestureDetector>
     </VStack>
