@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+
+// Components
 import { Background } from "@/components/ui/background";
 import { Center } from "@/components/ui/center";
 import { Box } from "@/components/ui/box";
@@ -5,12 +8,19 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import TopBar from "@/components/TopBar";
+
+// Icons
 import { Svg, Circle, Line, Text as SvgText, G } from "react-native-svg";
-import { useCompass } from "@/hooks/useCompass";
+
+// Stores
 import { useLocationStore } from "@/stores/location";
 import { useAppStore } from "@/stores/app";
+
+// Hooks
+import { useCompass } from "@/hooks/useCompass";
+
+// Utils
 import { calculateQiblaDirection, getCompassDirection } from "@/utils/compass";
-import { useTranslation } from "react-i18next";
 
 const Compass = () => {
   const { heading, accuracy, isAvailable, isActive } = useCompass();
