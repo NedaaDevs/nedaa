@@ -5,26 +5,54 @@ import { useAthkarStore } from "@/stores/athkar";
 
 // Constants
 import { DEFAULT_ATHKAR_DATA } from "@/constants/AthkarData";
+import { ATHKAR_TYPE } from "@/constants/Athkar";
+
+// Types
+import type { Athkar } from "@/types/athkar";
 
 export const useInitializeAthkar = () => {
-  const { athkarList, setAthkarList, shortVersion } = useAthkarStore();
+  const { shortVersion, morningAthkarList, eveningAthkarList, updateAthkarLists } =
+    useAthkarStore();
 
   useEffect(() => {
-    const filteredAthkar = DEFAULT_ATHKAR_DATA.filter((athkar) => {
-      // Show short version (26) when shortVersion is true, long version (28) when false
-      if (athkar.id === "26" && shortVersion) {
-        return athkar.count === 10;
-      } else if (athkar.id === "26" && !shortVersion) {
-        return athkar.count === 100;
-      }
+    const { morningList, eveningList } = DEFAULT_ATHKAR_DATA.reduce(
+      (acc, athkar) => {
+        // Skip the version of id "26" that doesn't match shortVersion preference
+        if (athkar.id === "26") {
+          const isShortVersion = athkar.count === 10;
+          if (isShortVersion !== shortVersion) {
+            return acc; // Skip this item
+          }
+        }
 
-      return true;
-    });
+        const createAthkarItem = (suffix: string): Athkar => ({
+          ...athkar,
+          id: `${athkar.order}-${suffix}`, // 1-morning,1-evening
+        });
 
-    setAthkarList(filteredAthkar);
-  }, [shortVersion]);
+        switch (athkar.type) {
+          case ATHKAR_TYPE.MORNING:
+            acc.morningList.push(createAthkarItem("morning"));
+            break;
+          case ATHKAR_TYPE.EVENING:
+            acc.eveningList.push(createAthkarItem("evening"));
+            break;
+          case ATHKAR_TYPE.ALL:
+            acc.morningList.push(createAthkarItem("morning"));
+            acc.eveningList.push(createAthkarItem("evening"));
+            break;
+        }
+
+        return acc;
+      },
+      { morningList: [] as Athkar[], eveningList: [] as Athkar[] }
+    );
+
+    // Once short version enabled/disabled we update the count value in the db
+    updateAthkarLists(morningList, eveningList);
+  }, [shortVersion, updateAthkarLists]);
 
   return {
-    isInitialized: athkarList.length > 0,
+    isInitialized: morningAthkarList.length > 0 && eveningAthkarList.length > 0,
   };
 };
