@@ -18,14 +18,14 @@ import { useAppStore } from "@/stores/app";
 
 // Hooks
 import { useCompass } from "@/hooks/useCompass";
-
+import { useColorScheme } from "nativewind";
 // Utils
 import { calculateQiblaDirection, getCompassDirection } from "@/utils/compass";
 
 const Compass = () => {
   const { heading, accuracy, isAvailable, isActive } = useCompass();
   const { locationDetails } = useLocationStore();
-  const { mode } = useAppStore();
+  const { colorScheme } = useColorScheme();
   const { t } = useTranslation();
 
   const compassSize = 300;
@@ -36,12 +36,11 @@ const Compass = () => {
 
   // Theme-aware colors
   const colors = {
-    primary: mode === "dark" ? "#5b7da7" : "#315287",
-    secondary: mode === "dark" ? "#94a3b8" : "#64748b",
-    accent: mode === "dark" ? "#34d399" : "#10b981",
-    text: mode === "dark" ? "#f1f5f9" : "#1e293b",
-    background: mode === "dark" ? "#374151" : "#e4e5e6d6",
-    north: mode === "dark" ? "#ef4444" : "#dc2626",
+    primary: colorScheme === "dark" ? "#5b7da7" : "#315287",
+    secondary: colorScheme === "dark" ? "#94a3b8" : "#64748b",
+    text: colorScheme === "dark" ? "#f1f5f9" : "#1e293b",
+    background: colorScheme === "dark" ? "#374151" : "#e4e5e6d6",
+    north: colorScheme === "dark" ? "#ef4444" : "#dc2626",
   };
 
   // Calculate Qibla direction if location is available
@@ -77,7 +76,7 @@ const Compass = () => {
                   cx={centerX}
                   cy={centerY}
                   r={radius}
-                  // stroke={colors.primary}
+                  stroke={colors.primary}
                   strokeWidth="3"
                   fill={colors.background}
                 />
@@ -254,7 +253,7 @@ const Compass = () => {
           <Box className="mt-6 w-full max-w-sm">
             <Box className="p-4 rounded-xl bg-background-secondary dark:bg-background-tertiary">
               {!isAvailable ? (
-                <Text className="text-typography-error text-center font-medium">
+                <Text className="text-error text-center font-medium">
                   {t("compass.notAvailable")}
                 </Text>
               ) : !isActive ? (
@@ -269,7 +268,7 @@ const Compass = () => {
                       {t("compass.currentDirection")}
                     </Text>
                     <HStack className="items-center" space="sm">
-                      <Text className="text-typography-primary text-xl font-bold">
+                      <Text className="text-typography-secondary text-xl font-bold">
                         {Math.round(heading)}°
                       </Text>
                       <Box className="w-8">
@@ -309,7 +308,7 @@ const Compass = () => {
 
                   {/* Calibration Note */}
                   <Box className="mt-2 p-3 rounded-lg bg-background-tertiary dark:bg-background">
-                    <Text className="text-typography-secondary text-xs text-center">
+                    <Text className="text-typography-info text-xs text-center">
                       {t("compass.calibrationNote")}
                     </Text>
                   </Box>
