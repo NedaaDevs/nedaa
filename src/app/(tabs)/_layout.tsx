@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { useAppStore } from "@/stores/app";
 
 // Icons
-import { Home, Settings, BookOpenText } from "lucide-react-native";
+import { Home, Settings, BookOpenText, Compass } from "lucide-react-native";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
@@ -31,6 +31,14 @@ const TabsLayout = () => {
         name="index"
         options={{
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="compass"
+        options={{
+          title: "",
+          tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
         }}
       />
 
