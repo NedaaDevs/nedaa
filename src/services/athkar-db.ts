@@ -11,7 +11,7 @@ import { dateToInt, timeZonedNow } from "@/utils/date";
 import {
   ATHKAR_STREAK_TABLE,
   ATHKAR_COMPLETED_DAYS_TABLE,
-  ATHKAR_DAILY_PROGRESS_TABLE,
+  ATHKAR_DAILY_ITEMS_TABLE,
   ATHKAR_DB_NAME,
 } from "@/constants/DB";
 
@@ -30,34 +30,17 @@ const AthkarStreakSchema = z.object({
   updated_at: z.string(),
 });
 
-const AthkarProgressItemSchema = z.object({
-  count: z.number().min(0),
-  completed: z.boolean(),
-});
-
-const AthkarSessionProgressSchema = z.record(
-  z.string(), // key: "athkarId-type" e.g., "1-morning"
-  AthkarProgressItemSchema
-);
-
-const AthkarDailyProgressSchema = z.object({
-  date: z.number(), // YYYYMMDD format
-  morning_progress: z.string(), // JSON string
-  evening_progress: z.string(), // JSON string
-  morning_completed: z.number().min(0).max(1),
-  evening_completed: z.number().min(0).max(1),
-  last_updated: z.string(),
+const AthkarDailyItemSchema = z.object({
+  date: z.number(),
+  thikr_id: z.string(),
+  current_count: z.number().min(0),
+  total_count: z.number().min(1),
   created_at: z.string(),
-});
-
-const AthkarCompletedDaySchema = z.object({
-  date: z.number(), // YYYYMMDD format
-  created_at: z.string(),
+  updated_at: z.string(),
 });
 
 type AthkarStreak = z.infer<typeof AthkarStreakSchema>;
-type AthkarDailyProgress = z.infer<typeof AthkarDailyProgressSchema>;
-type AthkarSessionProgress = z.infer<typeof AthkarSessionProgressSchema>;
+type AthkarDailyItem = z.infer<typeof AthkarDailyItemSchema>;
 
 // Open Database
 const openDatabase = async () =>
@@ -65,10 +48,106 @@ const openDatabase = async () =>
     ATHKAR_DB_NAME,
     {
       useNewConnection: true,
-      enableChangeListener: false, // Disable since we are not using listeners
+      enableChangeListener: false,
     },
     await getDirectory()
   );
+
+// Migration helper for completed days table
+const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
+  try {
+    // Get table structure
+    const columns = await db.getAllAsync(`PRAGMA table_info(${ATHKAR_COMPLETED_DAYS_TABLE});`);
+
+    if (!columns || columns.length === 0) {
+      // Table doesn't exist yet, nothing to migrate
+      return;
+    }
+
+    const columnNames = (columns || []).map((col: any) => col.name);
+    console.log("[Athkar-DB] Existing columns:", columnNames);
+
+    // Check if we need to add missing columns
+    const missingColumns = [];
+
+    if (!columnNames.includes("morning_completed_at")) {
+      missingColumns.push("morning_completed_at TEXT NULL");
+    }
+
+    if (!columnNames.includes("evening_completed_at")) {
+      missingColumns.push("evening_completed_at TEXT NULL");
+    }
+
+    if (!columnNames.includes("created_at")) {
+      missingColumns.push('created_at TEXT NOT NULL DEFAULT ""');
+    }
+
+    if (!columnNames.includes("updated_at")) {
+      missingColumns.push('updated_at TEXT NOT NULL DEFAULT ""');
+    }
+
+    // Add missing columns
+    for (const column of missingColumns) {
+      try {
+        console.log("[Athkar-DB] Adding column:", column);
+        await db.execAsync(`ALTER TABLE ${ATHKAR_COMPLETED_DAYS_TABLE} ADD COLUMN ${column};`);
+      } catch (error) {
+        console.log("[Athkar-DB] Column already exists or error adding:", column, error);
+      }
+    }
+
+    // Update empty created_at and updated_at fields if they were just added
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    try {
+      await db.runAsync(
+        `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+         SET created_at = ?, updated_at = ?
+         WHERE created_at = '' OR created_at IS NULL OR updated_at = '' OR updated_at IS NULL;`,
+        [now, now]
+      );
+    } catch (error) {
+      console.log("[Athkar-DB] Error updating timestamps (non-fatal):", error);
+    }
+
+    // Migrate existing completion data if there are old columns
+    if (columnNames.includes("completed_at") && !columnNames.includes("morning_completed_at")) {
+      console.log("[Athkar-DB] Migrating from completed_at to new schema...");
+      try {
+        await db.runAsync(
+          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+           SET morning_completed_at = completed_at,
+               evening_completed_at = completed_at
+           WHERE completed_at IS NOT NULL AND morning_completed_at IS NULL;`
+        );
+      } catch (error) {
+        console.log("[Athkar-DB] Error migrating completed_at (non-fatal):", error);
+      }
+    } else if (
+      columnNames.includes("is_completed") &&
+      !columnNames.includes("morning_completed_at")
+    ) {
+      console.log("[Athkar-DB] Migrating from is_completed to new schema...");
+      try {
+        await db.runAsync(
+          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+           SET morning_completed_at = ?,
+               evening_completed_at = ?
+           WHERE is_completed = 1 AND morning_completed_at IS NULL;`,
+          [now, now]
+        );
+      } catch (error) {
+        console.log("[Athkar-DB] Error migrating is_completed (non-fatal):", error);
+      }
+    }
+
+    console.log("[Athkar-DB] Migration completed successfully");
+  } catch (error) {
+    console.error("[Athkar-DB] Migration error (non-fatal):", error);
+    // Don't throw - let the app continue even if migration fails
+  }
+};
 
 const initializeDB = async () => {
   const db = await openDatabase();
@@ -88,31 +167,43 @@ const initializeDB = async () => {
       );`
     );
 
-    // Create completed days table - only stores days where BOTH sessions completed
+    // Create daily items table - individual athkar progress
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${ATHKAR_DAILY_ITEMS_TABLE} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date INTEGER NOT NULL,
+        thikr_id TEXT NOT NULL,
+        current_count INTEGER NOT NULL DEFAULT 0,
+        total_count INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(date, thikr_id)
+      );`
+    );
+
+    // Create completed days table - session completion tracking
     await db.execAsync(
       `CREATE TABLE IF NOT EXISTS ${ATHKAR_COMPLETED_DAYS_TABLE} (
         date INTEGER PRIMARY KEY,
-        created_at TEXT NOT NULL
+        morning_completed_at TEXT NULL,
+        evening_completed_at TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       );`
     );
 
-    // Create daily progress table
+    // Handle migration from old schema if needed
+    await migrateCompletedDaysTable(db);
+
+    // Create indexes for faster queries
     await db.execAsync(
-      `CREATE TABLE IF NOT EXISTS ${ATHKAR_DAILY_PROGRESS_TABLE} (
-        date INTEGER PRIMARY KEY,
-        morning_progress TEXT NOT NULL DEFAULT '{}',
-        evening_progress TEXT NOT NULL DEFAULT '{}',
-        morning_completed INTEGER NOT NULL DEFAULT 0,
-        evening_completed INTEGER NOT NULL DEFAULT 0,
-        last_updated TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );`
+      `CREATE INDEX IF NOT EXISTS idx_daily_items_date 
+       ON ${ATHKAR_DAILY_ITEMS_TABLE}(date DESC);`
     );
 
-    // Create index for faster queries
     await db.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_daily_progress_date 
-       ON ${ATHKAR_DAILY_PROGRESS_TABLE}(date DESC);`
+      `CREATE INDEX IF NOT EXISTS idx_daily_items_type 
+       ON ${ATHKAR_DAILY_ITEMS_TABLE}(date, thikr_id);`
     );
 
     await db.execAsync(
@@ -140,203 +231,88 @@ const initializeDB = async () => {
   }
 };
 
-/** DAILY PROGRESS */
+/** DAILY ITEMS OPERATIONS */
 
-// Get progress for a specific date
-const getDailyProgress = async (dateInt: number): Promise<AthkarDailyProgress | null> => {
+// Initialize all athkar items for a specific date (batch insert)
+const initializeDailyItems = async (
+  dateInt: number,
+  athkarList: { order: number; count: number }[]
+): Promise<boolean> => {
   const db = await openDatabase();
 
   try {
-    const result = await db.getFirstAsync(
-      `SELECT * FROM ${ATHKAR_DAILY_PROGRESS_TABLE} WHERE date = ?;`,
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    // Check if already initialized by checking if ANY items exist for this date
+    const existingItems = await db.getFirstAsync(
+      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
       [dateInt]
     );
 
-    if (!result) return null;
-
-    return AthkarDailyProgressSchema.parse(result);
-  } catch (error) {
-    console.error("Error getting daily progress:", error);
-    return null;
-  }
-};
-
-// Save or update progress for a specific date
-const saveDailyProgress = async (
-  dateInt: number,
-  morningProgress: AthkarSessionProgress,
-  eveningProgress: AthkarSessionProgress,
-  morningCompleted: boolean,
-  eveningCompleted: boolean
-): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString() || new Date().toISOString();
-    const morningJson = JSON.stringify(morningProgress);
-    const eveningJson = JSON.stringify(eveningProgress);
-
-    await db.runAsync(
-      `INSERT OR REPLACE INTO ${ATHKAR_DAILY_PROGRESS_TABLE} 
-       (date, morning_progress, evening_progress, morning_completed, evening_completed, last_updated, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, 
-         COALESCE((SELECT created_at FROM ${ATHKAR_DAILY_PROGRESS_TABLE} WHERE date = ?), ?));`,
-      [
-        dateInt,
-        morningJson,
-        eveningJson,
-        morningCompleted ? 1 : 0,
-        eveningCompleted ? 1 : 0,
-        now,
-        dateInt,
-        now,
-      ]
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Error saving daily progress:", error);
-    return false;
-  }
-};
-
-// Update only morning progress
-const updateMorningProgress = async (
-  dateInt: number,
-  progress: AthkarSessionProgress,
-  isCompleted: boolean
-): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString() || new Date().toISOString();
-    const progressJson = JSON.stringify(progress);
-
-    // First, try to update existing row
-    const result = await db.runAsync(
-      `UPDATE ${ATHKAR_DAILY_PROGRESS_TABLE} 
-       SET morning_progress = ?, 
-           morning_completed = ?,
-           last_updated = ?
-       WHERE date = ?;`,
-      [progressJson, isCompleted ? 1 : 0, now, dateInt]
-    );
-
-    // If no rows were updated, insert new row
-    if (result.changes === 0) {
-      await db.runAsync(
-        `INSERT INTO ${ATHKAR_DAILY_PROGRESS_TABLE} 
-         (date, morning_progress, evening_progress, morning_completed, evening_completed, last_updated, created_at)
-         VALUES (?, ?, '{}', ?, 0, ?, ?);`,
-        [dateInt, progressJson, isCompleted ? 1 : 0, now, now]
-      );
+    if (existingItems && (existingItems as any).count > 0) {
+      console.log(`[Athkar-DB] Daily items already initialized for date ${dateInt} skipping...`);
+      return true; // Already initialized
     }
 
-    return true;
-  } catch (error) {
-    console.error("Error updating morning progress:", error);
-    return false;
-  }
-};
-
-// Update only evening progress
-const updateEveningProgress = async (
-  dateInt: number,
-  progress: AthkarSessionProgress,
-  isCompleted: boolean
-): Promise<boolean> => {
-  const db = await openDatabase();
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString() || new Date().toISOString();
-    const progressJson = JSON.stringify(progress);
-
-    // First, try to update existing row
-    const result = await db.runAsync(
-      `UPDATE ${ATHKAR_DAILY_PROGRESS_TABLE} 
-       SET evening_progress = ?, 
-           evening_completed = ?,
-           last_updated = ?
-       WHERE date = ?;`,
-      [progressJson, isCompleted ? 1 : 0, now, dateInt]
+    console.log(
+      `[Athkar-DB] Initializing daily items for date ${dateInt} with ${athkarList.length} athkar types`
     );
 
-    // If no rows were updated, insert new row
-    if (result.changes === 0) {
-      await db.runAsync(
-        `INSERT INTO ${ATHKAR_DAILY_PROGRESS_TABLE} 
-         (date, morning_progress, evening_progress, morning_completed, evening_completed, last_updated, created_at)
-         VALUES (?, '{}', ?, 0, ?, ?, ?);`,
-        [dateInt, progressJson, isCompleted ? 1 : 0, now, now]
-      );
-    }
+    await db.withTransactionAsync(async () => {
+      // Insert all items for both morning and evening
+      for (const athkar of athkarList) {
+        const morningThikrId = `${athkar.order}-morning`;
+        const eveningThikrId = `${athkar.order}-evening`;
 
-    return true;
-  } catch (error) {
-    console.error("Error updating evening progress:", error);
-    return false;
-  }
-};
+        // Use INSERT OR IGNORE to prevent duplicate key errors
+        await db.runAsync(
+          `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE} 
+           (date, thikr_id, current_count, total_count, created_at, updated_at)
+           VALUES (?, ?, 0, ?, ?, ?);`,
+          [dateInt, morningThikrId, athkar.count, now, now]
+        );
 
-// Update a single athkar item progress
-const updateSingleAthkarProgress = async (
-  dateInt: number,
-  athkarId: string, // e.g., "1-morning"
-  count: number,
-  completed: boolean
-): Promise<boolean> => {
-  await openDatabase();
-
-  try {
-    // Determine if it's morning or evening from the athkarId
-    const isMorning = athkarId.includes("-morning");
-
-    // Get current progress
-    const currentData = await getDailyProgress(dateInt);
-
-    let progress: AthkarSessionProgress = {};
-
-    if (currentData) {
-      const currentProgressJson = isMorning
-        ? currentData.morning_progress
-        : currentData.evening_progress;
-      try {
-        progress = JSON.parse(currentProgressJson) as AthkarSessionProgress;
-      } catch {
-        progress = {};
+        await db.runAsync(
+          `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE} 
+           (date, thikr_id, current_count, total_count, created_at, updated_at)
+           VALUES (?, ?, 0, ?, ?, ?);`,
+          [dateInt, eveningThikrId, athkar.count, now, now]
+        );
       }
-    }
 
-    // Update the specific athkar
-    progress[athkarId] = { count, completed };
+      // Initialize completed_days entry (also use INSERT OR IGNORE)
+      await db.runAsync(
+        `INSERT OR IGNORE INTO ${ATHKAR_COMPLETED_DAYS_TABLE} 
+         (date, morning_completed_at, evening_completed_at, created_at, updated_at)
+         VALUES (?, NULL, NULL, ?, ?);`,
+        [dateInt, now, now]
+      );
+    });
 
-    // Check if all items in this session are completed
-    const allCompleted = Object.values(progress).every((item) => item.completed);
-
-    // Update the appropriate session
-    if (isMorning) {
-      return await updateMorningProgress(dateInt, progress, allCompleted);
-    } else {
-      return await updateEveningProgress(dateInt, progress, allCompleted);
-    }
+    console.log(
+      `[Athkar-DB] Successfully initialized ${athkarList.length * 2} daily items for date ${dateInt}`
+    );
+    return true;
   } catch (error) {
-    console.error("Error updating single athkar progress:", error);
+    console.error("Error initializing daily items:", error);
     return false;
   }
 };
 
-// Get recent progress (for debugging/analytics)
-const getRecentProgress = async (days: number = 7): Promise<AthkarDailyProgress[]> => {
+// Get all morning or evening items for a specific date
+const getSessionItems = async (
+  dateInt: number,
+  session: "morning" | "evening"
+): Promise<AthkarDailyItem[]> => {
   const db = await openDatabase();
 
   try {
     const results = await db.getAllAsync(
-      `SELECT * FROM ${ATHKAR_DAILY_PROGRESS_TABLE} 
-       ORDER BY date DESC 
-       LIMIT ?;`,
-      [days]
+      `SELECT * FROM ${ATHKAR_DAILY_ITEMS_TABLE} 
+       WHERE date = ? AND thikr_id LIKE ?
+       ORDER BY thikr_id;`,
+      [dateInt, `%-${session}`]
     );
 
     if (!results) return [];
@@ -344,67 +320,239 @@ const getRecentProgress = async (days: number = 7): Promise<AthkarDailyProgress[
     return results
       .map((r) => {
         try {
-          return AthkarDailyProgressSchema.parse(r);
+          return AthkarDailyItemSchema.parse(r);
         } catch {
           return null;
         }
       })
-      .filter((progress): progress is AthkarDailyProgress => progress !== null);
+      .filter((item): item is AthkarDailyItem => item !== null);
   } catch (error) {
-    console.error("Error getting recent progress:", error);
+    console.error("Error getting session items:", error);
     return [];
   }
 };
 
-// Clean old progress data (keep only last 7 days)
-const cleanOldProgress = async (daysToKeep: number = 7): Promise<boolean> => {
+// Update a single athkar item count
+const updateAthkarCount = async (
+  dateInt: number,
+  thikrId: string,
+  currentCount: number
+): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    const result = await db.runAsync(
+      `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
+       SET current_count = ?, updated_at = ?
+       WHERE date = ? AND thikr_id = ?;`,
+      [currentCount, now, dateInt, thikrId]
+    );
+
+    return result.changes > 0;
+  } catch (error) {
+    console.error("Error updating athkar count:", error);
+    return false;
+  }
+};
+
+// Reset all counts for a specific session (morning/evening)
+const resetSessionCounts = async (
+  dateInt: number,
+  session: "morning" | "evening"
+): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    await db.runAsync(
+      `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
+       SET current_count = 0, updated_at = ?
+       WHERE date = ? AND thikr_id LIKE ?;`,
+      [now, dateInt, `%-${session}`]
+    );
+
+    // Also reset completion status
+    const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
+    await db.runAsync(
+      `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+       SET ${columnName} = NULL, updated_at = ?
+       WHERE date = ?;`,
+      [now, dateInt]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error resetting session counts:", error);
+    return false;
+  }
+};
+
+// Check if a session is completed and mark it
+const checkAndMarkSessionComplete = async (
+  dateInt: number,
+  session: "morning" | "evening"
+): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    // Get all items for this session
+    const items = await getSessionItems(dateInt, session);
+
+    // Check if all items are completed (current_count >= total_count)
+    const allCompleted =
+      items.length > 0 && items.every((item) => item.current_count >= item.total_count);
+
+    if (allCompleted) {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
+      const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
+
+      // Check if already marked as completed
+      const completedDay = await db.getFirstAsync(
+        `SELECT ${columnName} FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
+        [dateInt]
+      );
+
+      if (completedDay && (completedDay as any)[columnName] === null) {
+        // Mark as completed
+        await db.runAsync(
+          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+           SET ${columnName} = ?, updated_at = ?
+           WHERE date = ?;`,
+          [now, now, dateInt]
+        );
+      }
+    }
+
+    return allCompleted;
+  } catch (error) {
+    console.error("Error checking session completion:", error);
+    return false;
+  }
+};
+
+// Check if morning/evening is completed for a day
+const isSessionCompleted = async (
+  dateInt: number,
+  session: "morning" | "evening"
+): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
+    const result: any = await db.getFirstAsync(
+      `SELECT ${columnName} FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
+      [dateInt]
+    );
+
+    return result && result[columnName] !== null;
+  } catch (error) {
+    console.error("Error checking session completion:", error);
+    return false;
+  }
+};
+
+// Check if both sessions are completed for streak calculation
+const areBothSessionsCompleted = async (dateInt: number): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const result = await db.getFirstAsync(
+      `SELECT morning_completed_at, evening_completed_at 
+       FROM ${ATHKAR_COMPLETED_DAYS_TABLE} 
+       WHERE date = ?;`,
+      [dateInt]
+    );
+
+    if (!result) return false;
+
+    const completedDay = result as any;
+    return completedDay.morning_completed_at !== null && completedDay.evening_completed_at !== null;
+  } catch (error) {
+    console.error("Error checking both sessions completion:", error);
+    return false;
+  }
+};
+
+// Update total counts for existing items (used when shortVersion changes)
+const updateTotalCounts = async (
+  dateInt: number,
+  athkarList: { order: number; count: number }[]
+): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    console.log(`[Athkar-DB] Updating total counts for date ${dateInt}`);
+
+    await db.withTransactionAsync(async () => {
+      for (const athkar of athkarList) {
+        const morningThikrId = `${athkar.order}-morning`;
+        const eveningThikrId = `${athkar.order}-evening`;
+
+        // Update morning item - if current_count >= new total_count, mark as completed
+        await db.runAsync(
+          `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
+           SET total_count = ?, updated_at = ?
+           WHERE date = ? AND thikr_id = ?;`,
+          [athkar.count, now, dateInt, morningThikrId]
+        );
+
+        // Update evening item - if current_count >= new total_count, mark as completed
+        await db.runAsync(
+          `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
+           SET total_count = ?, updated_at = ?
+           WHERE date = ? AND thikr_id = ?;`,
+          [athkar.count, now, dateInt, eveningThikrId]
+        );
+      }
+    });
+
+    console.log(
+      `[Athkar-DB] Successfully updated total counts for ${athkarList.length} athkar types`
+    );
+    return true;
+  } catch (error) {
+    console.error("Error updating total counts:", error);
+    return false;
+  }
+};
+
+const cleanOldData = async (daysToKeep: number = 5): Promise<boolean> => {
   const db = await openDatabase();
 
   try {
     const tz = locationStore.getState().locationDetails.timezone;
     const cutoffDate = timeZonedNow(tz);
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
     const cutoffDateInt = dateToInt(cutoffDate);
 
-    console.log(`[Athkar-DB] Cleaning progress data older than ${cutoffDate}`);
+    await db.withTransactionAsync(async () => {
+      // Clean daily items
+      await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date < ?;`, [cutoffDateInt]);
 
-    await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_PROGRESS_TABLE} WHERE date < ?;`, [
-      cutoffDateInt,
-    ]);
+      // Clean completed days
+      await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date < ?;`, [
+        cutoffDateInt,
+      ]);
+    });
 
-    console.log(`[Athkar-DB] Progress cleanup completed successfully`);
+    console.log(`[Athkar-DB] Cleaned data older than ${cutoffDate.toDateString()}`);
     return true;
   } catch (error) {
-    console.error("Error cleaning old progress:", error);
+    console.error("Error cleaning old data:", error);
     return false;
   }
 };
 
-// Check if both sessions are completed for streak update
-const checkAndUpdateStreakForDate = async (dateInt: number): Promise<boolean> => {
-  await openDatabase();
-
-  try {
-    const progress = await getDailyProgress(dateInt);
-
-    if (!progress) return false;
-
-    // If both sessions are completed, update the streak
-    if (progress.morning_completed && progress.evening_completed) {
-      // This will handle the streak update logic
-      await updateStreakForDay(dateInt);
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error("Error checking and updating streak:", error);
-    return false;
-  }
-};
-
-/** STREAK */
+/** STREAK OPERATIONS */
 
 const getStreakData = async (): Promise<AthkarStreak | null> => {
   const db = await openDatabase();
@@ -421,43 +569,102 @@ const getStreakData = async (): Promise<AthkarStreak | null> => {
   }
 };
 
-// Increment streak by one day
-const incrementStreak = async (dateInt: number): Promise<boolean> => {
+// Update streak when both sessions are completed
+const updateStreakForDay = async (
+  dateInt: number
+): Promise<{
+  success: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  alreadyCompleted?: boolean;
+} | null> => {
   const db = await openDatabase();
 
   try {
-    let success = false;
+    let result = null;
 
     await db.withTransactionAsync(async () => {
-      const result = await db.getFirstAsync(`SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`);
+      // Check if both sessions are completed
+      const bothCompleted = await areBothSessionsCompleted(dateInt);
 
-      if (!result) throw new Error("No streak data found");
+      if (!bothCompleted) {
+        result = { success: false, currentStreak: 0, longestStreak: 0 };
+        return;
+      }
 
-      const currentData = AthkarStreakSchema.parse(result);
-      const newCurrentStreak = currentData.current_streak + 1;
-      const newLongestStreak = Math.max(newCurrentStreak, currentData.longest_streak);
+      // Get current streak data
+      const streakData = await getStreakData();
+      if (!streakData) throw new Error("No streak data found");
 
-      await db.runAsync(
-        `UPDATE ${ATHKAR_STREAK_TABLE} 
-         SET current_streak = ?, 
-             longest_streak = ?, 
-             last_streak_date = ?,
-             updated_at = ?
-         WHERE id = 1;`,
-        [newCurrentStreak, newLongestStreak, dateInt, new Date().toISOString()]
-      );
+      // Determine new streak values
+      let newCurrentStreak = 1;
+      let shouldUpdate = false;
 
-      success = true;
+      if (!streakData.last_streak_date) {
+        // First ever completion
+        shouldUpdate = true;
+      } else {
+        const daysSinceLastStreak = dateInt - streakData.last_streak_date;
+
+        if (daysSinceLastStreak === 1) {
+          // Consecutive day
+          newCurrentStreak = streakData.current_streak + 1;
+          shouldUpdate = true;
+        } else if (daysSinceLastStreak === 0) {
+          // Same day - already completed
+          result = {
+            success: true,
+            currentStreak: streakData.current_streak,
+            longestStreak: streakData.longest_streak,
+            alreadyCompleted: true,
+          };
+          return;
+        } else if (
+          streakData.tolerance_days > 0 &&
+          daysSinceLastStreak <= streakData.tolerance_days + 1 &&
+          !streakData.is_paused
+        ) {
+          // Within tolerance
+          newCurrentStreak = streakData.current_streak + 1;
+          shouldUpdate = true;
+        } else {
+          // Streak broken - reset to 1
+          newCurrentStreak = 1;
+          shouldUpdate = true;
+        }
+      }
+
+      if (shouldUpdate) {
+        const newLongestStreak = Math.max(newCurrentStreak, streakData.longest_streak);
+        const now = new Date().toISOString();
+
+        await db.runAsync(
+          `UPDATE ${ATHKAR_STREAK_TABLE} 
+           SET current_streak = ?, 
+               longest_streak = ?, 
+               last_streak_date = ?,
+               updated_at = ?
+           WHERE id = 1;`,
+          [newCurrentStreak, newLongestStreak, dateInt, now]
+        );
+
+        result = {
+          success: true,
+          currentStreak: newCurrentStreak,
+          longestStreak: newLongestStreak,
+          alreadyCompleted: false,
+        };
+      }
     });
 
-    return success;
+    return result;
   } catch (error) {
-    console.error("Error incrementing streak:", error);
-    return false;
+    console.error("Error updating streak for day:", error);
+    return null;
   }
 };
 
-// Reset current streak (but preserve longest)
+// Reset current streak
 const resetCurrentStreak = async (): Promise<boolean> => {
   const db = await openDatabase();
 
@@ -518,307 +725,26 @@ const updateStreakSettings = async (settings: {
   }
 };
 
-const updateStreakForDay = async (
-  dateInt: number
-): Promise<{
-  success: boolean;
-  currentStreak: number;
-  longestStreak: number;
-  alreadyCompleted?: boolean;
-} | null> => {
-  const db = await openDatabase();
-
-  try {
-    let result = null;
-
-    await db.withTransactionAsync(async () => {
-      const existingDay = await db.getFirstAsync(
-        `SELECT date FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
-        [dateInt]
-      );
-
-      if (existingDay) {
-        // Already completed - return current values
-        const streakResult = await db.getFirstAsync(
-          `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
-        );
-
-        if (streakResult) {
-          const streakData = AthkarStreakSchema.parse(streakResult);
-          result = {
-            success: true,
-            currentStreak: streakData.current_streak,
-            longestStreak: streakData.longest_streak,
-            alreadyCompleted: true,
-          };
-        }
-        return;
-      }
-
-      // Add the completed day
-      await db.runAsync(
-        `INSERT INTO ${ATHKAR_COMPLETED_DAYS_TABLE} 
-         (date, created_at) 
-         VALUES (?, ?);`,
-        [dateInt, new Date().toISOString()]
-      );
-
-      // Get current streak data
-      const streakResult = await db.getFirstAsync(
-        `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
-      );
-
-      if (!streakResult) throw new Error("No streak data found");
-
-      const streakData = AthkarStreakSchema.parse(streakResult);
-
-      // Determine new streak values
-      let newCurrentStreak = 1;
-      let shouldIncrement = false;
-
-      if (!streakData.last_streak_date) {
-        // First ever completion
-        shouldIncrement = true;
-      } else {
-        const daysSinceLastStreak = dateInt - streakData.last_streak_date;
-
-        if (daysSinceLastStreak === 1) {
-          // Consecutive day
-          newCurrentStreak = streakData.current_streak + 1;
-          shouldIncrement = true;
-        } else if (daysSinceLastStreak === 0) {
-          // Same day - no change needed
-          result = {
-            success: true,
-            currentStreak: streakData.current_streak,
-            longestStreak: streakData.longest_streak,
-          };
-          return;
-        } else if (
-          streakData.tolerance_days > 0 &&
-          daysSinceLastStreak <= streakData.tolerance_days + 1 &&
-          !streakData.is_paused
-        ) {
-          // Within tolerance
-          newCurrentStreak = streakData.current_streak + 1;
-          shouldIncrement = true;
-        } else {
-          // Streak broken - reset to 1
-          newCurrentStreak = 1;
-          shouldIncrement = true;
-        }
-      }
-
-      if (shouldIncrement) {
-        const newLongestStreak = Math.max(newCurrentStreak, streakData.longest_streak);
-
-        await db.runAsync(
-          `UPDATE ${ATHKAR_STREAK_TABLE} 
-           SET current_streak = ?, 
-               longest_streak = ?, 
-               last_streak_date = ?,
-               updated_at = ?
-           WHERE id = 1;`,
-          [newCurrentStreak, newLongestStreak, dateInt, new Date().toISOString()]
-        );
-
-        result = {
-          success: true,
-          currentStreak: newCurrentStreak,
-          longestStreak: newLongestStreak,
-          alreadyCompleted: false,
-        };
-      }
-    });
-
-    return result;
-  } catch (error) {
-    console.error("Error updating streak for day:", error);
-    return null;
-  }
-};
-
-const isDayCompleted = async (dateInt: number): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const result = await db.getFirstAsync(
-      `SELECT date FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
-      [dateInt]
-    );
-
-    return !!result;
-  } catch (error) {
-    console.error("Error checking completed day:", error);
-    return false;
-  }
-};
-
-const getRecentCompletedDays = async (limit: number = 30): Promise<number[]> => {
-  const db = await openDatabase();
-
-  try {
-    const results = await db.getAllAsync(
-      `SELECT date FROM ${ATHKAR_COMPLETED_DAYS_TABLE} 
-       ORDER BY date DESC 
-       LIMIT ?;`,
-      [limit]
-    );
-
-    if (!results) return [];
-
-    // Validate each result
-    return results
-      .map((r) => {
-        try {
-          const validated = AthkarCompletedDaySchema.parse(r);
-          return validated.date;
-        } catch {
-          return null;
-        }
-      })
-      .filter((date): date is number => date !== null);
-  } catch (error) {
-    console.error("Error getting recent completed days:", error);
-    return [];
-  }
-};
-
-// Recalculate streak from history (backup method)
-const recalculateStreakFromHistory = async (): Promise<{
-  currentStreak: number;
-  lastStreakDate: number | null;
-} | null> => {
-  const db = await openDatabase();
-
-  try {
-    // Get all completed days ordered by date DESC
-    const results = await db.getAllAsync(
-      `SELECT date FROM ${ATHKAR_COMPLETED_DAYS_TABLE} 
-       ORDER BY date DESC;`
-    );
-
-    if (!results || results.length === 0) {
-      return { currentStreak: 0, lastStreakDate: null };
-    }
-
-    // Validate and extract dates
-    const dates = results
-      .map((r) => {
-        try {
-          const validated = AthkarCompletedDaySchema.parse(r);
-          return validated.date;
-        } catch {
-          return null;
-        }
-      })
-      .filter((date): date is number => date !== null);
-
-    if (dates.length === 0) {
-      return { currentStreak: 0, lastStreakDate: null };
-    }
-
-    // Calculate consecutive days
-    let streak = 1;
-    let currentDate = dates[0];
-
-    for (let i = 1; i < dates.length; i++) {
-      if (dates[i] === currentDate - 1) {
-        streak++;
-        currentDate = dates[i];
-      } else {
-        break;
-      }
-    }
-
-    return { currentStreak: streak, lastStreakDate: dates[0] };
-  } catch (error) {
-    console.error("Error recalculating streak from history:", error);
-    return null;
-  }
-};
-
-// Force update streak from history (for data recovery)
-const forceUpdateStreakFromHistory = async (): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const calculated = await recalculateStreakFromHistory();
-    if (!calculated) return false;
-
-    const currentData = await getStreakData();
-    if (!currentData) return false;
-
-    // Only update if calculated is different or longest needs updating
-    const newLongest = Math.max(calculated.currentStreak, currentData.longest_streak);
-
-    await db.runAsync(
-      `UPDATE ${ATHKAR_STREAK_TABLE} 
-       SET current_streak = ?, 
-           longest_streak = ?, 
-           last_streak_date = ?,
-           updated_at = ?
-       WHERE id = 1;`,
-      [calculated.currentStreak, newLongest, calculated.lastStreakDate, new Date().toISOString()]
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Error forcing streak update:", error);
-    return false;
-  }
-};
-
-// Clean old history while preserving streak data
-const cleanOldCompletedDays = async (daysToKeep: number = 365): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    const cutoffDateInt = dateToInt(cutoffDate);
-    console.log(`[Athkar-DB] Cleaning up prayer times data older than ${cutoffDate}`);
-
-    await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date < ?;`, [
-      cutoffDateInt,
-    ]);
-    console.log(`[Athkar-DB] Cleanup completed successfully`);
-    return true;
-  } catch (error) {
-    console.error("Error cleaning old completed days:", error);
-    return false;
-  }
-};
-
 export const AthkarDB = {
   open: openDatabase,
   initialize: initializeDB,
 
-  // Primary streak operations
+  // Daily items operations
+  initializeDailyItems,
+  updateTotalCounts,
+  getSessionItems,
+  updateAthkarCount,
+  resetSessionCounts,
+  checkAndMarkSessionComplete,
+  isSessionCompleted,
+  areBothSessionsCompleted,
+
+  // Streak operations
   getStreakData,
-  incrementStreak,
+  updateStreakForDay,
   resetCurrentStreak,
   updateStreakSettings,
-  updateStreakForDay,
-
-  // Completed days operations
-  isDayCompleted,
-  getRecentCompletedDays,
-
-  // Backup/Recovery
-  recalculateStreakFromHistory,
-  forceUpdateStreakFromHistory,
-
-  // Progress operations
-  getDailyProgress,
-  saveDailyProgress,
-  updateMorningProgress,
-  updateEveningProgress,
-  updateSingleAthkarProgress,
-  checkAndUpdateStreakForDate,
 
   // Utility
-  cleanOldCompletedDays,
-  cleanOldProgress,
-  getRecentProgress,
+  cleanOldData,
 };
