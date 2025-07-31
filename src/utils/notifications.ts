@@ -6,6 +6,7 @@ import {
   AndroidNotificationPriority,
 } from "expo-notifications";
 import { Platform, AppState } from "react-native";
+import { useRouter } from "expo-router";
 
 // Services
 import { cleanupManager } from "@/services/cleanup";
@@ -225,13 +226,18 @@ export const configureNotifications = () => {
 
     notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
+        const { data } = response.notification.request.content;
         try {
           console.log(
             "[Notifications] Notification response:",
             response.notification.request.identifier
           );
           console.log("[Notifications] Action:", response.actionIdentifier);
-          // Handle notification tap/action here if needed
+          // TODO: enhance this to handle dynamic screen instead of manually checking
+          if (data.screen && data.screen === "/(tabs)/athkar") {
+            const router = useRouter();
+            router.navigate("/(tabs)/athkar");
+          }
         } catch (error) {
           console.error("[Notifications] Error handling notification response:", error);
         }
