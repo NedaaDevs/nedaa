@@ -15,27 +15,55 @@ import { AthkarDB } from "@/services/athkar-db";
 import locationStore from "@/stores/location";
 
 // Utils
-import {
-  filterAthkarByType,
-  clampIndex,
-  generateReferenceId,
-  extractBaseId,
-  isAthkarCompleted,
-  createProgressItem,
-  filterProgressByType,
-  isSessionComplete,
-  getTimestampForTimezone,
-  getTodayInt,
-  dateIntToString,
-  convertDBProgressToStoreFormat,
-} from "@/utils/athkar";
+import { dateIntToString, getTodayInt } from "@/utils/athkar";
 import { createDebouncedQueue } from "@/utils/debounce";
 
 type AthkarStore = AthkarState & AthkarActions;
 
+// Debounced DB update queue - keeps existing pattern for DB lock prevention
 const debouncedDBUpdate = createDebouncedQueue(
-  async (dateInt: number, referenceId: string, count: number, completed: boolean) => {
-    await AthkarDB.updateSingleAthkarProgress(dateInt, referenceId, count, completed);
+  async (dateInt: number, thikrId: string, count: number) => {
+    await AthkarDB.updateAthkarCount(dateInt, thikrId, count);
+  },
+  300 // 300ms delay
+);
+
+// Debounced session completion check
+const debouncedSessionCheck = createDebouncedQueue(
+  async (dateInt: number, session: "morning" | "evening") => {
+    await AthkarDB.checkAndMarkSessionComplete(dateInt, session);
+  },
+  500 // 500ms delay
+);
+
+// Debounced streak update
+const debouncedStreakUpdate = createDebouncedQueue(
+  async (dateInt: number) => {
+    await AthkarDB.updateStreakForDay(dateInt);
+  },
+  1000 // 1s delay
+);
+
+// Debounced cleanup operations
+const debouncedCleanup = createDebouncedQueue(
+  async (daysToKeep: number) => {
+    await AthkarDB.cleanOldData(daysToKeep);
+  },
+  2000 // 2s delay
+);
+
+// Debounced total count updates (for shortVersion changes)
+const debouncedTotalCountUpdate = createDebouncedQueue(
+  async (dateInt: number, combinedList: { order: number; count: number }[]) => {
+    await AthkarDB.updateTotalCounts(dateInt, combinedList);
+  },
+  800 // 800ms delay
+);
+
+// Debounced session reset
+const debouncedSessionReset = createDebouncedQueue(
+  async (dateInt: number, session: "morning" | "evening") => {
+    await AthkarDB.resetSessionCounts(dateInt, session);
   },
   300 // 300ms delay
 );
@@ -45,14 +73,15 @@ export const useAthkarStore = create<AthkarStore>()(
     persist(
       (set, get) => ({
         // Initial State
-        athkarList: [],
+        morningAthkarList: [],
+        eveningAthkarList: [],
         currentProgress: [],
         streak: {
           currentStreak: 0,
           longestStreak: 0,
           lastCompletedDate: null,
           isPaused: false,
-          toleranceDays: 0, // TODO: see if we should allow this
+          toleranceDays: 0,
         },
         focusMode: false,
         currentAthkarIndex: 0,
@@ -88,8 +117,8 @@ export const useAthkarStore = create<AthkarStore>()(
               });
             }
 
-            // Load today's progress from DB
-            await get().loadTodayProgress();
+            // Auto-initialize today's data and load progress
+            await get().initializeTodayData();
 
             // Clean up old data
             await get().cleanUpOldData();
@@ -98,40 +127,101 @@ export const useAthkarStore = create<AthkarStore>()(
           }
         },
 
+        // Auto-initialize today's data if needed
+        initializeTodayData: async () => {
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
+          const state = get();
+
+          // Create combined athkar list for initialization
+          const combinedList = [
+            ...state.morningAthkarList.map((a) => ({ order: a.order, count: a.count })),
+            ...state.eveningAthkarList.map((a) => ({ order: a.order, count: a.count })),
+          ];
+
+          if (combinedList.length > 0) {
+            // Initialize daily items in DB (will only run once per day)
+            await AthkarDB.initializeDailyItems(todayInt, combinedList);
+          }
+
+          // Load today's progress
+          await get().loadTodayProgress();
+        },
+
+        // Update athkar lists and sync DB total counts
+        updateAthkarLists: async (morningList: Athkar[], eveningList: Athkar[]) => {
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
+
+          // Update store state immediately
+          set({
+            morningAthkarList: morningList,
+            eveningAthkarList: eveningList,
+          });
+
+          // Create combined list for DB update
+          const combinedList = [
+            ...morningList.map((a) => ({ order: a.order, count: a.count })),
+            ...eveningList.map((a) => ({ order: a.order, count: a.count })),
+          ];
+
+          if (combinedList.length > 0) {
+            // Debounce the DB update to prevent excessive calls
+            debouncedTotalCountUpdate.add(`${todayInt}`, todayInt, combinedList);
+
+            // After total counts are updated, check both sessions for completion
+            setTimeout(() => {
+              debouncedSessionCheck.add(`${todayInt}-morning-update`, todayInt, "morning");
+              debouncedSessionCheck.add(`${todayInt}-evening-update`, todayInt, "evening");
+            }, 1000); // Wait for total count update to complete
+
+            // Reload progress after all updates
+            setTimeout(async () => {
+              await get().loadTodayProgress();
+            }, 1500); // Wait for all DB operations to complete
+          }
+        },
+
         // Load today's progress from DB
         loadTodayProgress: async () => {
-          const timezone = locationStore.getState().locationDetails.timezone;
-          const todayInt = getTodayInt(timezone);
-          const dailyProgress = await AthkarDB.getDailyProgress(todayInt);
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
 
-          if (dailyProgress) {
-            try {
-              const morningProgress = JSON.parse(dailyProgress.morning_progress);
-              const eveningProgress = JSON.parse(dailyProgress.evening_progress);
+          try {
+            // Get morning and evening items from DB
+            const morningItems = await AthkarDB.getSessionItems(todayInt, "morning");
+            const eveningItems = await AthkarDB.getSessionItems(todayInt, "evening");
 
-              const convertedProgress = convertDBProgressToStoreFormat(
-                morningProgress,
-                eveningProgress,
-                timezone
-              );
+            // Convert DB items to store format
+            const currentProgress = [
+              ...morningItems.map((item) => ({
+                athkarId: item.thikr_id,
+                currentCount: item.current_count,
+                totalCount: item.total_count,
+                completed: item.current_count >= item.total_count,
+              })),
+              ...eveningItems.map((item) => ({
+                athkarId: item.thikr_id,
+                currentCount: item.current_count,
+                totalCount: item.total_count,
+                completed: item.current_count >= item.total_count,
+              })),
+            ];
 
-              set({
-                currentProgress: convertedProgress,
-                todayCompleted: {
-                  morning: dailyProgress.morning_completed === 1,
-                  evening: dailyProgress.evening_completed === 1,
-                },
-              });
-            } catch (error) {
-              console.error("Error parsing progress from DB:", error);
-              // Start with empty progress if parsing fails
-              set({
-                currentProgress: [],
-                todayCompleted: { morning: false, evening: false },
-              });
-            }
-          } else {
-            // No progress for today, start fresh
+            // Check completion status
+            const morningCompleted = await AthkarDB.isSessionCompleted(todayInt, "morning");
+            const eveningCompleted = await AthkarDB.isSessionCompleted(todayInt, "evening");
+
+            set({
+              currentProgress,
+              todayCompleted: {
+                morning: morningCompleted,
+                evening: eveningCompleted,
+              },
+            });
+          } catch (error) {
+            console.error("Error loading today's progress:", error);
+            // Start with empty progress if loading fails
             set({
               currentProgress: [],
               todayCompleted: { morning: false, evening: false },
@@ -156,46 +246,56 @@ export const useAthkarStore = create<AthkarStore>()(
           }
         },
 
-        setAthkarList: (list) => set({ athkarList: list }),
+        setMorningAthkarList: (list) => set({ morningAthkarList: list }),
+        setEveningAthkarList: (list) => set({ eveningAthkarList: list }),
         setCurrentType: (type) => set({ currentType: type }),
         setCurrentAthkarIndex: (index: number) => set({ currentAthkarIndex: index }),
         toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
 
         moveToNext: () =>
           set((state) => {
-            const filteredAthkar = filterAthkarByType(state.athkarList, state.currentType);
-            const newIndex = clampIndex(state.currentAthkarIndex + 1, filteredAthkar.length);
+            const currentList =
+              state.currentType === ATHKAR_TYPE.MORNING
+                ? state.morningAthkarList
+                : state.eveningAthkarList;
+            const newIndex =
+              state.currentAthkarIndex + 1 >= currentList.length
+                ? 0 // Here we go again
+                : state.currentAthkarIndex + 1;
             return { currentAthkarIndex: newIndex };
           }),
 
         moveToPrevious: () =>
-          set((state) => ({
-            currentAthkarIndex: clampIndex(state.currentAthkarIndex - 1, Infinity),
-          })),
+          set((state) => {
+            const currentList =
+              state.currentType === ATHKAR_TYPE.MORNING
+                ? state.morningAthkarList
+                : state.eveningAthkarList;
+            const newIndex =
+              state.currentAthkarIndex - 1 < 0
+                ? currentList.length - 1 // Here we go again
+                : state.currentAthkarIndex - 1;
+            return { currentAthkarIndex: newIndex };
+          }),
 
         incrementCount: (athkarId) => {
           const state = get();
-          const baseId = extractBaseId(athkarId);
-          const referenceId = generateReferenceId(baseId, state.currentType);
-          const filteredList = filterAthkarByType(state.athkarList, state.currentType);
+          const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
-          const athkar = filteredList.find(
-            (a) => `${a.order}-${state.currentType}` === referenceId
-          );
+          if (!progressItem) return;
 
-          if (!athkar) return;
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
 
-          const timezone = locationStore.getState().locationDetails.timezone;
-
+          // Update in memory
           set((state) => {
             const updatedProgress = state.currentProgress.map((p) => {
-              if (p.athkarId === referenceId) {
-                const newCount = Math.min(p.currentCount + 1, athkar.count);
+              if (p.athkarId === athkarId) {
+                const newCount = Math.min(p.currentCount + 1, p.totalCount);
                 return {
                   ...p,
                   currentCount: newCount,
-                  completed: isAthkarCompleted(newCount, athkar.count),
-                  lastUpdated: getTimestampForTimezone(timezone),
+                  completed: newCount >= p.totalCount,
                 };
               }
               return p;
@@ -206,55 +306,44 @@ export const useAthkarStore = create<AthkarStore>()(
 
           // Get the updated progress item
           const updatedState = get();
-          const progressItem = updatedState.currentProgress.find((p) => p.athkarId === referenceId);
+          const updatedItem = updatedState.currentProgress.find((p) => p.athkarId === athkarId);
 
-          if (progressItem) {
-            // Queue DB update
-            const todayInt = getTodayInt(timezone);
-            debouncedDBUpdate.add(
-              referenceId,
-              todayInt,
-              referenceId,
-              progressItem.currentCount,
-              progressItem.completed
-            );
-          }
+          if (updatedItem) {
+            // Queue DB update (debounced)
+            debouncedDBUpdate.add(athkarId, todayInt, athkarId, updatedItem.currentCount);
 
-          // Handle auto-move in focus mode
-          if (state.focusMode && progressItem?.completed && state.settings.autoMoveToNext) {
-            requestAnimationFrame(() => get().moveToNext());
-          }
+            // Handle auto-move in focus mode
+            if (state.focusMode && updatedItem.completed && state.settings.autoMoveToNext) {
+              requestAnimationFrame(() => get().moveToNext());
+            }
 
-          // Check if this completes the current session
-          const currentSessionProgress = filterProgressByType(
-            get().currentProgress,
-            state.currentType
-          );
-          const sessionJustCompleted =
-            progressItem?.completed && currentSessionProgress.every((p) => p.completed);
-
-          if (sessionJustCompleted) {
-            console.log(`[Athkar Store] ${state.currentType} session just completed!`);
-            // Give time for debounced updates to process, then check streak
-            setTimeout(async () => {
-              await get().checkAndUpdateDailyProgress();
-            }, 400); // Slightly longer than debounce delay
+            // Check if session just completed
+            if (updatedItem.completed) {
+              setTimeout(async () => {
+                await get().checkAndUpdateSessionCompletion(athkarId);
+              }, 400); // Wait for debounced update
+            }
           }
         },
 
         decrementCount: (athkarId) => {
           const state = get();
+          const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
-          const timezone = locationStore.getState().locationDetails.timezone;
+          if (!progressItem) return;
 
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
+
+          // Update in memory
           set((state) => {
             const updatedProgress = state.currentProgress.map((p) => {
               if (p.athkarId === athkarId) {
+                const newCount = Math.max(p.currentCount - 1, 0);
                 return {
                   ...p,
-                  currentCount: Math.max(p.currentCount - 1, 0),
-                  completed: false,
-                  lastUpdated: getTimestampForTimezone(timezone),
+                  currentCount: newCount,
+                  completed: newCount >= p.totalCount,
                 };
               }
               return p;
@@ -265,141 +354,85 @@ export const useAthkarStore = create<AthkarStore>()(
 
           // Get the updated progress item
           const updatedState = get();
-          const progressItem = updatedState.currentProgress.find((p) => p.athkarId === athkarId);
+          const updatedItem = updatedState.currentProgress.find((p) => p.athkarId === athkarId);
 
-          if (progressItem) {
-            // Queue DB update
-            const todayInt = getTodayInt(timezone);
-            debouncedDBUpdate.add(
-              athkarId,
-              todayInt,
-              athkarId,
-              progressItem.currentCount,
-              progressItem.completed
-            );
+          if (updatedItem) {
+            // Queue DB update (debounced)
+            debouncedDBUpdate.add(athkarId, todayInt, athkarId, updatedItem.currentCount);
           }
         },
 
-        // Initialize session - load from DB or create new
+        // Initialize session - switch between morning/evening
         initializeSession: async (type) => {
-          const timezone =
-            locationStore.getState().locationDetails?.timezone ||
-            Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-          const todayInt = getTodayInt(timezone);
-          const dailyProgress = await AthkarDB.getDailyProgress(todayInt);
-
-          const filteredAthkar = filterAthkarByType(get().athkarList, type);
-          let finalProgress = get().currentProgress;
-
-          if (dailyProgress) {
-            // We already have progress loaded
-            const existingTypeProgress = filterProgressByType(finalProgress, type);
-
-            if (existingTypeProgress.length === 0) {
-              // No progress for this type yet, create it
-              const newSessionProgress = filteredAthkar.map((athkar: Athkar) =>
-                createProgressItem(athkar, type)
-              );
-
-              // Initialize in DB for this session
-              const sessionProgress: Record<string, { count: number; completed: boolean }> = {};
-              newSessionProgress.forEach((item) => {
-                sessionProgress[item.athkarId] = {
-                  count: 0,
-                  completed: false,
-                };
-              });
-
-              if (type === ATHKAR_TYPE.MORNING) {
-                await AthkarDB.updateMorningProgress(todayInt, sessionProgress, false);
-              } else {
-                await AthkarDB.updateEveningProgress(todayInt, sessionProgress, false);
-              }
-
-              finalProgress = [...finalProgress, ...newSessionProgress];
-            }
-          } else {
-            // No daily progress at all, create new
-            const newSessionProgress = filteredAthkar.map((athkar: Athkar) =>
-              createProgressItem(athkar, type)
-            );
-
-            const sessionProgress: Record<string, { count: number; completed: boolean }> = {};
-            newSessionProgress.forEach((item) => {
-              sessionProgress[item.athkarId] = {
-                count: 0,
-                completed: false,
-              };
-            });
-
-            if (type === ATHKAR_TYPE.MORNING) {
-              await AthkarDB.updateMorningProgress(todayInt, sessionProgress, false);
-            } else {
-              await AthkarDB.updateEveningProgress(todayInt, sessionProgress, false);
-            }
-
-            finalProgress = newSessionProgress;
-          }
+          await get().initializeTodayData(); // Ensure today is initialized
 
           set({
             currentType: type,
-            currentProgress: finalProgress,
             currentAthkarIndex: 0,
             focusMode: false,
           });
         },
 
-        checkAndUpdateDailyProgress: async () => {
-          const state = get();
+        // Check and update session completion after item completion
+        checkAndUpdateSessionCompletion: async (athkarId: string) => {
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
 
-          const morningCompleted = isSessionComplete(state.currentProgress, ATHKAR_TYPE.MORNING);
-          const eveningCompleted = isSessionComplete(state.currentProgress, ATHKAR_TYPE.EVENING);
+          // Determine session from athkar ID
+          const session = athkarId.includes("-morning") ? "morning" : "evening";
 
-          const newTodayCompleted = {
-            morning: morningCompleted,
-            evening: eveningCompleted,
-          };
+          // Debounce session completion check
+          debouncedSessionCheck.add(`${todayInt}-${session}`, todayInt, session);
 
-          set({ todayCompleted: newTodayCompleted });
+          // Set up a callback to check for streak updates after session completion
+          setTimeout(async () => {
+            const bothCompleted = await AthkarDB.areBothSessionsCompleted(todayInt);
+            if (bothCompleted) {
+              console.log(
+                `[Athkar Store] Both sessions complete for day ${todayInt}, updating streak...`
+              );
 
-          // If both sessions completed, update streak
-          if (morningCompleted && eveningCompleted) {
-            // First, ensure all pending DB updates are written
-            await debouncedDBUpdate.flush();
+              // Debounce streak update
+              debouncedStreakUpdate.add(`${todayInt}`, todayInt);
 
-            const timezone =
-              locationStore.getState().locationDetails?.timezone ||
-              Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const todayInt = getTodayInt(timezone);
-
-            console.log(
-              `[Athkar Store] Both sessions complete for day ${todayInt}, updating streak...`
-            );
-
-            // This should check the DB for both morning_completed and evening_completed flags
-            const streakUpdated = await AthkarDB.checkAndUpdateStreakForDate(todayInt);
-
-            if (streakUpdated) {
-              console.log(`[Athkar Store] Streak update successful`);
-              await get().reloadStreakFromDB();
-            } else {
-              console.log(`[Athkar Store] Streak update failed or already completed`);
+              // Reload streak data after a delay
+              setTimeout(async () => {
+                await get().reloadStreakFromDB();
+              }, 1500); // Wait for debounced operations to complete
             }
-          }
+          }, 1000); // Wait for session completion to process
+        },
+
+        // Reset progress for current session
+        resetProgress: async () => {
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
+          const type = get().currentType;
+          const session = type === ATHKAR_TYPE.MORNING ? ATHKAR_TYPE.MORNING : ATHKAR_TYPE.EVENING;
+
+          // Reset in memory immediately for better UX
+          set((state) => ({
+            currentProgress: state.currentProgress.map((p) => {
+              if (p.athkarId.includes(`-${type}`)) {
+                return {
+                  ...p,
+                  currentCount: 0,
+                  completed: false,
+                };
+              }
+              return p;
+            }),
+            todayCompleted: {
+              ...state.todayCompleted,
+              [session]: false,
+            },
+          }));
+
+          // Debounce the DB reset operation
+          debouncedSessionReset.add(`${todayInt}-${session}`, todayInt, session);
         },
 
         // Streak Management
-        updateStreak: async () => {
-          const timezone =
-            locationStore.getState().locationDetails?.timezone ||
-            Intl.DateTimeFormat().resolvedOptions().timeZone;
-          const todayInt = getTodayInt(timezone);
-
-          await AthkarDB.checkAndUpdateStreakForDate(todayInt);
-          await get().reloadStreakFromDB();
-        },
-
         pauseStreak: async () => {
           await AthkarDB.updateStreakSettings({ isPaused: true });
           await get().reloadStreakFromDB();
@@ -413,49 +446,6 @@ export const useAthkarStore = create<AthkarStore>()(
         updateToleranceDays: async (days: number) => {
           await AthkarDB.updateStreakSettings({ toleranceDays: days });
           await get().reloadStreakFromDB();
-        },
-
-        // Reset progress for current session
-        resetProgress: async () => {
-          const timezone = locationStore.getState().locationDetails.timezone;
-          const todayInt = getTodayInt(timezone);
-          const type = get().currentType;
-
-          // Reset in memory
-          set((state) => ({
-            currentProgress: state.currentProgress.map((p) => ({
-              ...p,
-              currentCount: 0,
-              completed: false,
-              lastUpdated: getTimestampForTimezone(timezone),
-            })),
-          }));
-
-          // Reset in DB
-          const emptyProgress: Record<string, { count: number; completed: boolean }> = {};
-          get()
-            .currentProgress.filter((p) => p.athkarId.includes(`-${type}`))
-            .forEach((p) => {
-              emptyProgress[p.athkarId] = { count: 0, completed: false };
-            });
-
-          if (type === ATHKAR_TYPE.MORNING) {
-            await AthkarDB.updateMorningProgress(todayInt, emptyProgress, false);
-          } else {
-            await AthkarDB.updateEveningProgress(todayInt, emptyProgress, false);
-          }
-
-          // Update completion status
-          set((state) => ({
-            todayCompleted: {
-              ...state.todayCompleted,
-              [type === ATHKAR_TYPE.MORNING ? "morning" : "evening"]: false,
-            },
-          }));
-        },
-
-        completeSession: async () => {
-          await get().checkAndUpdateDailyProgress();
         },
 
         // Settings
@@ -477,23 +467,24 @@ export const useAthkarStore = create<AthkarStore>()(
 
         toggleShortVersion: () => set((state) => ({ shortVersion: !state.shortVersion })),
 
-        // Force recalculation from history (for recovery/debugging)
-        forceRecalculateStreak: async () => {
-          await AthkarDB.forceUpdateStreakFromHistory();
-          await get().reloadStreakFromDB();
-        },
-
         cleanUpOldData: async () => {
+          // Flush all pending DB operations before cleanup
           await debouncedDBUpdate.flush();
-          await AthkarDB.cleanOldCompletedDays();
-          await AthkarDB.cleanOldProgress(7); // Keep only last 7 days of progress
+          await debouncedSessionCheck.flush();
+          await debouncedStreakUpdate.flush();
+          await debouncedTotalCountUpdate.flush();
+          await debouncedSessionReset.flush();
+
+          // Debounce the cleanup operation
+          debouncedCleanup.add("cleanup", 5); // Keep only last 5 days
         },
       }),
       {
         name: "athkar-storage",
         storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
-          athkarList: state.athkarList,
+          morningAthkarList: state.morningAthkarList,
+          eveningAthkarList: state.eveningAthkarList,
           todayCompleted: state.todayCompleted,
           settings: state.settings,
           shortVersion: state.shortVersion,
