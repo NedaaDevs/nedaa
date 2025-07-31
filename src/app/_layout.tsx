@@ -24,9 +24,16 @@ import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 
+/** For Viewing db in dev */
+// import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+// import * as SQLite from "expo-sqlite";
+// import { ATHKAR_DB_NAME, DB_NAME } from "@/constants/DB";
+
+// const db = SQLite.openDatabaseSync(DB_NAME);
+
 export default function RootLayout() {
   const { mode, locale, showLoadingOverlay, loadingMessage } = useAppStore();
-
+  // useDrizzleStudio(db);
   const {
     showCityChangeModal,
     pendingCityChange,
