@@ -73,7 +73,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
         <VStack space="md">
           {/* Athkar Text */}
           <Text
-            className={`text-base text-left leading-relaxed ${isCompleted ? " text-typography-secondary" : "text-typography"}`}>
+            className={`text-xl text-left leading-relaxed ${isCompleted ? " text-typography-secondary" : "text-typography"}`}>
             {t(athkar.text)}
           </Text>
 
