@@ -59,10 +59,13 @@ const AthkarFocusScreen = () => {
     eveningAthkarList,
     currentProgress,
     currentType,
+    currentAthkarIndex,
     incrementCount,
     decrementCount,
     toggleFocusMode,
-    currentAthkarIndex,
+    findOptimalAthkarIndex,
+    setCurrentAthkarIndex,
+    updateLastIndex,
   } = useAthkarStore();
 
   // State for showing instructions
@@ -80,14 +83,20 @@ const AthkarFocusScreen = () => {
   const currentAthkarList =
     currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
 
-  // Enable focus mode on mount
+  // Initialize focus mode and optimal index on mount
   useEffect(() => {
     toggleFocusMode();
+
+    // Set optimal starting index
+    const optimalIndex = findOptimalAthkarIndex(currentType);
+    setCurrentAthkarIndex(optimalIndex);
+    updateLastIndex(currentType, optimalIndex);
+
     return () => {
       toggleFocusMode();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentType]);
 
   // Hide instructions after 3 seconds
   useEffect(() => {
@@ -97,7 +106,7 @@ const AthkarFocusScreen = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Get current athkar and progress
+  // Get current athkar and progress using store's currentAthkarIndex
   const currentAthkar = currentAthkarList[currentAthkarIndex];
 
   const progressItem = currentProgress.find((p) => p.athkarId === currentAthkar?.id);

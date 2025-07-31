@@ -34,6 +34,8 @@ export type AthkarState = {
   streak: Streak;
   focusMode: boolean;
   currentAthkarIndex: number;
+  lastMorningIndex: number;
+  lastEveningIndex: number;
   currentType: Exclude<AthkarType, "all">;
   shortVersion: boolean;
   todayCompleted: {
@@ -62,6 +64,8 @@ export type AthkarActions = {
   toggleAutoMove: () => void;
   toggleShowStreak: () => void;
   toggleShortVersion: () => void;
+  updateLastIndex: (type: Exclude<AthkarType, "all">, index: number) => void;
+  getLastIndex: (type: Exclude<AthkarType, "all">) => number;
 
   // Asynchronous
   initializeStore: () => Promise<void>;
