@@ -25,6 +25,9 @@ const TabsLayout = () => {
         tabBarActiveTintColor: colorScheme.colorScheme === "dark" ? "#E6C469" : "#1C5D85",
         tabBarInactiveTintColor: colorScheme.colorScheme === "dark" ? "#E3E2CE" : "#64748B",
         tabBarStyle: {
+          height: 70,
+          paddingBottom: 5,
+          paddingTop: 5,
           backgroundColor: colorScheme.colorScheme === "dark" ? "#393E46" : "#FFFFFF",
           borderTopColor:
             colorScheme.colorScheme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#E2E8F0",
