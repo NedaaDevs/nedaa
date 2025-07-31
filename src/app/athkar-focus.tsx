@@ -338,7 +338,7 @@ const AthkarFocusScreen = () => {
 
                 {/* Athkar Text */}
                 <VStack space="lg" className="items-center max-w-full">
-                  <Text className="text-lg text-center text-typography leading-relaxed ">
+                  <Text className="text-xl text-center text-typography leading-relaxed ">
                     {t(currentAthkar.text)}
                   </Text>
                 </VStack>
