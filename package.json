@@ -101,7 +101,8 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "prettier --write",
-      "eslint --max-warnings 1"
+      "eslint --max-warnings 1",
+      "bun run lint"
     ],
     "*.{json,md,yml}": [
       "prettier --write"
