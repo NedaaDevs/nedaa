@@ -268,24 +268,17 @@ const AthkarList = ({ type }: Props) => {
     );
   }
 
-  // Show loading overlay while resetting
-  const LoadingOverlay = () => {
-    if (!isResetting) return null;
-
-    return (
-      <VStack
-        className="absolute inset-0 bg-background/80 justify-center items-center z-50"
-        space="md">
-        <Spinner size="large" />
-        <Text className="text-typography-secondary">{t("athkar.loading.resetting")}</Text>
-      </VStack>
-    );
-  };
-
   return (
     <VStack space="md" className="relative">
-      <LoadingOverlay />
-
+      {/* Show loading overlay while resetting */}
+      {isResetting && (
+        <VStack
+          className="absolute inset-0 bg-background/80 justify-center items-center z-50"
+          space="md">
+          <Spinner size="large" />
+          <Text className="text-typography-secondary">{t("athkar.loading.resetting")}</Text>
+        </VStack>
+      )}
       {/* Streak Card */}
       {settings.showStreak && (
         <Card className="p-4 bg-background-secondary dark:bg-background-tertiary">
@@ -333,7 +326,6 @@ const AthkarList = ({ type }: Props) => {
           </Text>
         </Card>
       )}
-
       {/* Athkar Cards */}
       {currentAthkarList.map((athkar) => {
         // Find progress using the athkar ID
@@ -355,7 +347,6 @@ const AthkarList = ({ type }: Props) => {
           />
         );
       })}
-
       {/* Press and Hold Reset Button */}
       <GestureDetector gesture={longPressGesture}>
         <Animated.View

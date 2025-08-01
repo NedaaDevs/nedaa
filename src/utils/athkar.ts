@@ -2,7 +2,7 @@
 import locationStore from "@/stores/location";
 
 // Utils
-import { timeZonedNow, timestampToDateInt, dateToInt } from "@/utils/date";
+import { timeZonedNow, timestampToDateInt } from "@/utils/date";
 
 // Constant
 import { ATHKAR_TYPE } from "@/constants/Athkar";
