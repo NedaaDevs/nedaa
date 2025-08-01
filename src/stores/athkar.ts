@@ -135,21 +135,29 @@ export const useAthkarStore = create<AthkarStore>()(
           const todayInt = getTodayInt(tz);
           const state = get();
 
-          // Create combined athkar list for initialization
-          const combinedList = [
-            ...state.morningAthkarList.map((a) => ({ order: a.order, count: a.count })),
-            ...state.eveningAthkarList.map((a) => ({ order: a.order, count: a.count })),
-          ];
+          // Process morning and evening lists separately
+          const morningList = state.morningAthkarList.map((a) => ({
+            id: a.id,
+            order: a.order,
+            count: a.count,
+            type: a.type,
+          }));
 
-          if (combinedList.length > 0) {
+          const eveningList = state.eveningAthkarList.map((a) => ({
+            id: a.id,
+            order: a.order,
+            count: a.count,
+            type: a.type,
+          }));
+
+          if (morningList.length > 0 || eveningList.length > 0) {
             // Initialize daily items in DB (will only run once per day)
-            await AthkarDB.initializeDailyItems(todayInt, combinedList);
+            await AthkarDB.initializeDailyItems(todayInt, morningList, eveningList);
           }
 
           // Load today's progress
           await get().loadTodayProgress();
         },
-
         // Update athkar lists and sync DB total counts
         updateAthkarLists: async (morningList: Athkar[], eveningList: Athkar[]) => {
           const tz = locationStore.getState().locationDetails.timezone;

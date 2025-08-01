@@ -236,7 +236,8 @@ const initializeDB = async () => {
 // Initialize all athkar items for a specific date (batch insert)
 const initializeDailyItems = async (
   dateInt: number,
-  athkarList: { order: number; count: number }[]
+  morningList: { id: string; order: number; count: number; type: string }[],
+  eveningList: { id: string; order: number; count: number; type: string }[]
 ): Promise<boolean> => {
   const db = await openDatabase();
 
@@ -251,33 +252,33 @@ const initializeDailyItems = async (
     );
 
     if (existingItems && (existingItems as any).count > 0) {
-      console.log(`[Athkar-DB] Daily items already initialized for date ${dateInt} skipping...`);
+      console.log(`[Athkar-DB] Daily items already initialized for date ${dateInt}, skipping...`);
       return true; // Already initialized
     }
 
+    const totalItems = morningList.length + eveningList.length;
     console.log(
-      `[Athkar-DB] Initializing daily items for date ${dateInt} with ${athkarList.length} athkar types`
+      `[Athkar-DB] Initializing daily items for date ${dateInt} with ${morningList.length} morning and ${eveningList.length} evening athkar (${totalItems} total)`
     );
 
     await db.withTransactionAsync(async () => {
-      // Insert all items for both morning and evening
-      for (const athkar of athkarList) {
-        const morningThikrId = `${athkar.order}-morning`;
-        const eveningThikrId = `${athkar.order}-evening`;
-
-        // Use INSERT OR IGNORE to prevent duplicate key errors
+      // Insert morning items
+      for (const athkar of morningList) {
         await db.runAsync(
           `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE} 
            (date, thikr_id, current_count, total_count, created_at, updated_at)
            VALUES (?, ?, 0, ?, ?, ?);`,
-          [dateInt, morningThikrId, athkar.count, now, now]
+          [dateInt, athkar.id, athkar.count, now, now]
         );
+      }
 
+      // Insert evening items
+      for (const athkar of eveningList) {
         await db.runAsync(
           `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE} 
            (date, thikr_id, current_count, total_count, created_at, updated_at)
            VALUES (?, ?, 0, ?, ?, ?);`,
-          [dateInt, eveningThikrId, athkar.count, now, now]
+          [dateInt, athkar.id, athkar.count, now, now]
         );
       }
 
@@ -291,11 +292,11 @@ const initializeDailyItems = async (
     });
 
     console.log(
-      `[Athkar-DB] Successfully initialized ${athkarList.length * 2} daily items for date ${dateInt}`
+      `[Athkar-DB] Successfully initialized ${totalItems} daily items for date ${dateInt} (${morningList.length} morning, ${eveningList.length} evening)`
     );
     return true;
   } catch (error) {
-    console.error("Error initializing daily items:", error);
+    console.error(`[Athkar-DB] Error initializing daily items for date ${dateInt}:`, error);
     return false;
   }
 };
