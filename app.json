@@ -84,7 +84,8 @@
         "monochromeImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "dev.nedaa.android"
+      "package": "dev.nedaa.android",
+      "blockedPermissions": ["ACTIVITY_RECOGNITION"]
     },
     "web": {
       "bundler": "metro",
