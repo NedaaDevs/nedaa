@@ -270,17 +270,16 @@ export const useAthkarStore = create<AthkarStore>()(
           const safeLastIndex = Math.min(Math.max(lastKnownIndex, 0), currentList.length - 1);
 
           // Check if the athkar at the last known position is incomplete
-          if (safeLastIndex < currentList.length) {
-            const athkarAtLastIndex = currentList[safeLastIndex];
-            const progressItem = state.currentProgress.find(
-              (p) => p.athkarId === athkarAtLastIndex.id
-            );
 
-            // If the last position is incomplete, continue from there
-            if (!progressItem?.completed) {
-              console.log(`[Athkar Store] Continuing from last position: ${safeLastIndex}`);
-              return safeLastIndex;
-            }
+          const athkarAtLastIndex = currentList[safeLastIndex];
+          const progressItem = state.currentProgress.find(
+            (p) => p.athkarId === athkarAtLastIndex.id
+          );
+
+          // If the last position is incomplete, continue from there
+          if (!progressItem?.completed) {
+            console.log(`[Athkar Store] Continuing from last position: ${safeLastIndex}`);
+            return safeLastIndex;
           }
 
           // If last position is complete, find the first incomplete athkar after the last position
@@ -506,9 +505,12 @@ export const useAthkarStore = create<AthkarStore>()(
           const todayInt = getTodayInt(tz);
           const type = get().currentType;
           const session = type === ATHKAR_TYPE.MORNING ? ATHKAR_TYPE.MORNING : ATHKAR_TYPE.EVENING;
-
+          const eIndex = get().lastEveningIndex;
+          const mIndex = get().lastMorningIndex;
           // Reset in memory immediately for better UX
           set((state) => ({
+            lastEveningIndex: type === ATHKAR_TYPE.EVENING ? 0 : eIndex,
+            lastMorningIndex: type === ATHKAR_TYPE.EVENING ? 0 : mIndex,
             currentProgress: state.currentProgress.map((p) => {
               if (p.athkarId.includes(`-${type}`)) {
                 return {
