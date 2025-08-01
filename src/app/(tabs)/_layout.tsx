@@ -42,19 +42,19 @@ const TabsLayout = () => {
       />
 
       <Tabs.Screen
-        name="compass"
-        options={{
-          title: "",
-          tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
         name="athkar"
         options={{
           title: "",
           href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
           tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="compass"
+        options={{
+          title: "",
+          tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
         }}
       />
 
