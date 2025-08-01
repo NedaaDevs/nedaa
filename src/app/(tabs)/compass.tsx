@@ -14,13 +14,13 @@ import { Svg, Circle, Line, Text as SvgText, G } from "react-native-svg";
 
 // Stores
 import { useLocationStore } from "@/stores/location";
-import { useAppStore } from "@/stores/app";
 
 // Hooks
 import { useCompass } from "@/hooks/useCompass";
 import { useColorScheme } from "nativewind";
 // Utils
-import { calculateQiblaDirection, getCompassDirection } from "@/utils/compass";
+import { calculateQiblaDirection, getTranslatedCompassDirection } from "@/utils/compass";
+import { reshapeArabic } from "@/utils/reshaper";
 
 const Compass = () => {
   const { heading, accuracy, isAvailable, isActive } = useCompass();
@@ -91,8 +91,9 @@ const Compass = () => {
                     alignmentBaseline="middle"
                     fontSize="18"
                     fontWeight="bolder"
+                    fontFamily="IBMPlexSans-Regular"
                     fill={colors.north}>
-                    N
+                    {reshapeArabic(t("compass.directions.N"))}
                   </SvgText>
 
                   {/* South */}
@@ -104,31 +105,31 @@ const Compass = () => {
                     alignmentBaseline="middle"
                     fontSize="16"
                     fill={colors.secondary}>
-                    S
+                    {reshapeArabic(t("compass.directions.S"))}
                   </SvgText>
 
                   {/* East */}
                   <SvgText
-                    x={centerX + letterDistance}
+                    x={centerX + letterDistance + 5}
                     y={centerY + 5}
                     fontWeight="bolder"
-                    textAnchor="middle"
+                    textAnchor="end"
                     alignmentBaseline="middle"
                     fontSize="16"
                     fill={colors.secondary}>
-                    E
+                    {reshapeArabic(t("compass.directions.E"))}
                   </SvgText>
 
                   {/* West */}
                   <SvgText
-                    x={centerX - letterDistance}
+                    x={centerX - letterDistance - 5}
                     y={centerY + 5}
                     fontWeight="bolder"
                     alignmentBaseline="middle"
-                    textAnchor="middle"
+                    textAnchor="start"
                     fontSize="16"
                     fill={colors.secondary}>
-                    W
+                    {reshapeArabic(t("compass.directions.W"))}
                   </SvgText>
                 </G>
 
@@ -273,7 +274,7 @@ const Compass = () => {
                       </Text>
                       <Box className="w-8">
                         <Text className="text-typography-secondary text-sm text-center">
-                          {getCompassDirection(heading)}
+                          {getTranslatedCompassDirection(heading, t)}
                         </Text>
                       </Box>
                     </HStack>
@@ -291,7 +292,7 @@ const Compass = () => {
                         </Text>
                         <Box className="w-8">
                           <Text className="text-typography-secondary text-sm text-center">
-                            {getCompassDirection(qiblaDirection)}
+                            {getTranslatedCompassDirection(qiblaDirection, t)}
                           </Text>
                         </Box>
                       </HStack>
