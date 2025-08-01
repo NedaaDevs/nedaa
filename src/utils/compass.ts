@@ -50,14 +50,19 @@ export const calculateDistanceToMecca = (fromLatitude: number, fromLongitude: nu
 };
 
 /**
- * Get compass direction name from degrees
+ * Get translated compass direction name from degrees
  * @param degrees - Heading in degrees (0-360)
- * @returns Direction name (N, NE, E, SE, S, SW, W, NW)
+ * @param t - Translation function
+ * @returns Translated direction name
  */
-export const getCompassDirection = (degrees: number): string => {
+export const getTranslatedCompassDirection = (
+  degrees: number,
+  t: (key: string) => string
+): string => {
   const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const index = Math.round(degrees / 45) % 8;
-  return directions[index];
+  const direction = directions[index];
+  return t(`compass.directions.${direction}`);
 };
 
 /**
