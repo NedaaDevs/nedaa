@@ -37,7 +37,7 @@ type Props = {
 
 const AthkarCard: FC<Props> = ({ athkar, progress }) => {
   const { t, i18n } = useTranslation();
-  const { incrementCount, decrementCount, currentType } = useAthkarStore();
+  const { incrementCount, decrementCount } = useAthkarStore();
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
