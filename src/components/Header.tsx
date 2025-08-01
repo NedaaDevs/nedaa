@@ -130,10 +130,10 @@ const Header = () => {
 
       <VStack className="items-center my-4 gap-2">
         <VStack className="items-center gap-1">
-          <Text className="text-2xl font-semibold text-typography text-center px-4">
+          <Text className="text-2xl font-semibold text-typography text-center px-2">
             {localizedLocation.city ?? locationDetails.address?.city}
           </Text>
-          <Text className="text-base text-typography-secondary text-center px-4">
+          <Text className="text-base text-typography-secondary text-center px-2">
             {localizedLocation.country ?? locationDetails.address?.country}
           </Text>
         </VStack>

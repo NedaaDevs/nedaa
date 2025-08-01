@@ -10,7 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontProvider } from "@/contexts/FontContext";
 
 // Stores
-import { getDirection, isRTL, useAppStore } from "@/stores/app";
+import appStore, { useAppStore } from "@/stores/app";
 
 // Components
 import { ToastProvider } from "@/components/ToastContainer";
@@ -23,6 +23,7 @@ import { useRTLSetup } from "@/hooks/useRTLSetup";
 import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
+import { isRTLLocale } from "@/utils/locale";
 
 /** For Viewing db in dev */
 // import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
@@ -32,7 +33,7 @@ import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 // const db = SQLite.openDatabaseSync(DB_NAME);
 
 export default function RootLayout() {
-  const { mode, locale, showLoadingOverlay, loadingMessage } = useAppStore();
+  const { mode, showLoadingOverlay, loadingMessage } = useAppStore();
   // useDrizzleStudio(db);
   const {
     showCityChangeModal,
@@ -42,7 +43,8 @@ export default function RootLayout() {
     dismissCityChangeModal,
   } = useCityChangeHandler();
 
-  const shouldBeRTL = isRTL(getDirection(locale));
+  const shouldBeRTL = isRTLLocale(appStore.getState().locale);
+
   useRTLSetup(shouldBeRTL);
 
   useLoadFonts();
