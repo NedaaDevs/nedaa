@@ -1,6 +1,6 @@
 import { addDays, format, parse, subDays } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { ar, enUS, ms } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 // Enums
 import { AppLocale } from "@/enums/app";
