@@ -2,7 +2,7 @@ name: Build Android
 
 on:
   push:
-    branches: [master]
+    branches: [master, ci]
   workflow_dispatch:
     inputs:
       profile:
@@ -43,9 +43,14 @@ jobs:
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🔐 Setup Sentry properties
+      - name: 🔐 Replace Sentry token
+
         run: |
-          echo "auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}" >> android/sentry.properties
+          # Replace the dummy auth token with the real one in android/sentry.properties
+          if [ -f "android/sentry.properties" ]; then
+            sed -i "s/^auth\.token=.*/auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}/" android/sentry.properties
+          fi
+
       - name: 🚀 Build Android
         id: build
         run: |
