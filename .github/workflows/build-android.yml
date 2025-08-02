@@ -14,14 +14,23 @@ on:
           - preview
           - production
 
+env:
+  JAVA_VERSION: "17"
+
 jobs:
   build-android:
     name: Build Android APK/AAB
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: 🏗 Setup repo
         uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
 
       - name: 🏗 Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -31,8 +40,12 @@ jobs:
       - name: 🏗 Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: "17"
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: "temurin"
+          cache: "gradle"
+
+      - name: 🏗 Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: 🏗 Setup EAS
         uses: expo/expo-github-action@v8
@@ -40,34 +53,136 @@ jobs:
           eas-version: ">= 13.1.0"
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: 📦 Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.bun/install/cache
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/build-cache
+          key: ${{ runner.os }}-deps-${{ hashFiles('bun.lockb', 'package.json', 'android/**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🔐 Replace Sentry token
-
+      - name: 🔐 Setup Sentry properties
         run: |
-          # Replace the dummy auth token with the real one in android/sentry.properties
-          if [ -f "android/sentry.properties" ]; then
-            sed -i "s/^auth\.token=.*/auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}/" android/sentry.properties
-          fi
+          # Replace the dummy auth token with the real one
+          sed -i "s/^auth\.token=.*/auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}/" android/sentry.properties
 
-      - name: 🚀 Build Android
-        id: build
+      - name: 🔧 Set Build Profile and Environment
+        id: config
         run: |
           PROFILE=${{ github.event.inputs.profile || 'preview' }}
-          echo "Building with profile: $PROFILE"
-          eas build --platform android --profile $PROFILE --non-interactive --json > build_result.json
-          echo "build_id=$(cat build_result.json | jq -r '.[] | select(.platform=="android") | .id')" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
 
-      - name: 📋 Comment Build Status
+          # Set Android environment variables
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+
+          # Determine build type from profile
+          if [ "$PROFILE" == "production" ]; then
+            echo "build_type=aab" >> $GITHUB_OUTPUT
+            echo "artifact_pattern=*.aab" >> $GITHUB_OUTPUT
+          else
+            echo "build_type=apk" >> $GITHUB_OUTPUT
+            echo "artifact_pattern=*.apk" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Build Android Locally
+        id: build
+        run: |
+          PROFILE=${{ steps.config.outputs.profile }}
+          BUILD_TYPE=${{ steps.config.outputs.build_type }}
+
+          echo "Building locally with profile: $PROFILE"
+          echo "Build type: $BUILD_TYPE"
+
+          # Run EAS build locally
+          eas build \
+            --local \
+            --platform android \
+            --profile $PROFILE \
+            --non-interactive \
+            --output ./build-output.$BUILD_TYPE
+
+          # Get build details
+          echo "build_output=./build-output.$BUILD_TYPE" >> $GITHUB_OUTPUT
+          echo "build_size=$(du -h ./build-output.$BUILD_TYPE | cut -f1)" >> $GITHUB_OUTPUT
+
+          # Generate build ID for tracking
+          BUILD_ID="local-$(date +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)"
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: 📊 Verify Build Output
+        run: |
+          BUILD_OUTPUT="${{ steps.build.outputs.build_output }}"
+
+          if [ -f "$BUILD_OUTPUT" ]; then
+            echo "✅ Build successful!"
+            echo "📦 File: $BUILD_OUTPUT"
+            echo "📏 Size: ${{ steps.build.outputs.build_size }}"
+            echo "🔍 Type: $(file -b "$BUILD_OUTPUT")"
+            
+            # Additional verification for APK/AAB
+            if [[ "$BUILD_OUTPUT" == *.apk ]]; then
+              # Basic APK verification
+              unzip -l "$BUILD_OUTPUT" | head -10
+            elif [[ "$BUILD_OUTPUT" == *.aab ]]; then
+              # Basic AAB verification
+              unzip -l "$BUILD_OUTPUT" | head -10
+            fi
+          else
+            echo "❌ Build failed - no output file found"
+            exit 1
+          fi
+
+      - name: 📤 Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ steps.config.outputs.build_type }}-${{ steps.config.outputs.profile }}-${{ github.sha }}
+          path: ${{ steps.build.outputs.build_output }}
+          retention-days: 7
+          compression-level: 6
+
+      - name: 📋 Comment Build Status (PR)
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const buildId = '${{ steps.build.outputs.build_id }}';
+            const profile = '${{ steps.config.outputs.profile }}';
+            const buildType = '${{ steps.config.outputs.build_type }}';
+            const buildSize = '${{ steps.build.outputs.build_size }}';
+            const sha = context.sha.substring(0, 7);
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🤖 Android build started!\n\n**Build ID:** ${buildId}\n**Profile:** ${{ github.event.inputs.profile || 'preview' }}\n\nCheck progress: https://expo.dev/accounts/nedaadev/projects/nedaa/builds/${buildId}`
+              body: `🤖 Android build completed successfully!\n\n**Profile:** ${profile}\n**Type:** ${buildType.toUpperCase()}\n**Size:** ${buildSize}\n**Commit:** ${sha}\n\n📦 Build artifact has been uploaded and is available in the workflow run artifacts.`
             })
+
+      - name: 🧹 Cleanup sensitive files
+        if: always()
+        run: |
+          # Restore dummy token in sentry.properties
+          if [ -f "android/sentry.properties" ]; then
+            sed -i "s/^auth\.token=.*/auth.token=sntrys_eyJpYXQiOjE2ODkxMjM0NTYuNzg5MDEyLCJ1cmwiOiJodHRwczovL3NlbnRyeS5pbyIsInJlZ2lvbl91cmwiOiJodHRwczovL3VzLnNlbnRyeS5pbyIsIm9yZyI6ImV4YW1wbGUifQ==_DummyTokenForBuildingPurposesOnly123456789/" android/sentry.properties
+          fi
+
+      - name: 📤 Upload build logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ github.sha }}
+          path: |
+            ~/.expo/eas-build-local-nodejs/**/*.log
+            android/app/build/outputs/logs
+          retention-days: 3
