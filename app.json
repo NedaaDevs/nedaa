@@ -136,7 +136,13 @@
           "microphonePermission": false
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
