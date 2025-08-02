@@ -54,8 +54,12 @@ const debouncedCleanup = createDebouncedQueue(
 
 // Debounced total count updates (for shortVersion changes)
 const debouncedTotalCountUpdate = createDebouncedQueue(
-  async (dateInt: number, combinedList: { order: number; count: number }[]) => {
-    await AthkarDB.updateTotalCounts(dateInt, combinedList);
+  async (
+    dateInt: number,
+    morningList: { order: number; count: number }[],
+    eveningList: { order: number; count: number }[]
+  ) => {
+    await AthkarDB.updateTotalCounts(dateInt, morningList, eveningList);
   },
   800 // 800ms delay
 );
@@ -169,15 +173,13 @@ export const useAthkarStore = create<AthkarStore>()(
             eveningAthkarList: eveningList,
           });
 
-          // Create combined list for DB update
-          const combinedList = [
-            ...morningList.map((a) => ({ order: a.order, count: a.count })),
-            ...eveningList.map((a) => ({ order: a.order, count: a.count })),
-          ];
+          // Create separate lists for DB update
+          const morningDbList = morningList.map((a) => ({ order: a.order, count: a.count }));
+          const eveningDbList = eveningList.map((a) => ({ order: a.order, count: a.count }));
 
-          if (combinedList.length > 0) {
-            // Debounce the DB update to prevent excessive calls
-            debouncedTotalCountUpdate.add(`${todayInt}`, todayInt, combinedList);
+          if (morningDbList.length > 0 || eveningDbList.length > 0) {
+            // Debounce the DB update
+            debouncedTotalCountUpdate.add(`${todayInt}`, todayInt, morningDbList, eveningDbList);
 
             // After total counts are updated, check both sessions for completion
             setTimeout(() => {

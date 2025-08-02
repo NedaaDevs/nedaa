@@ -483,7 +483,8 @@ const areBothSessionsCompleted = async (dateInt: number): Promise<boolean> => {
 // Update total counts for existing items (used when shortVersion changes)
 const updateTotalCounts = async (
   dateInt: number,
-  athkarList: { order: number; count: number }[]
+  morningList: { order: number; count: number }[],
+  eveningList: { order: number; count: number }[]
 ): Promise<boolean> => {
   const db = await openDatabase();
 
@@ -491,33 +492,36 @@ const updateTotalCounts = async (
     const tz = locationStore.getState().locationDetails.timezone;
     const now = timeZonedNow(tz).toISOString();
 
-    console.log(`[Athkar-DB] Updating total counts for date ${dateInt}`);
+    console.log(
+      `[Athkar-DB] Updating total counts for date ${dateInt} - Morning: ${morningList.length}, Evening: ${eveningList.length}`
+    );
 
     await db.withTransactionAsync(async () => {
-      for (const athkar of athkarList) {
-        const morningThikrId = `${athkar.order}-morning`;
-        const eveningThikrId = `${athkar.order}-evening`;
-
-        // Update morning item - if current_count >= new total_count, mark as completed
+      // Update morning items
+      for (const athkar of morningList) {
+        const thikrId = `${athkar.order}-morning`;
         await db.runAsync(
           `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
            SET total_count = ?, updated_at = ?
            WHERE date = ? AND thikr_id = ?;`,
-          [athkar.count, now, dateInt, morningThikrId]
+          [athkar.count, now, dateInt, thikrId]
         );
+      }
 
-        // Update evening item - if current_count >= new total_count, mark as completed
+      // Update evening items
+      for (const athkar of eveningList) {
+        const thikrId = `${athkar.order}-evening`;
         await db.runAsync(
           `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
            SET total_count = ?, updated_at = ?
            WHERE date = ? AND thikr_id = ?;`,
-          [athkar.count, now, dateInt, eveningThikrId]
+          [athkar.count, now, dateInt, thikrId]
         );
       }
     });
 
     console.log(
-      `[Athkar-DB] Successfully updated total counts for ${athkarList.length} athkar types`
+      `[Athkar-DB] Successfully updated total counts for ${morningList.length} morning and ${eveningList.length} evening athkar`
     );
     return true;
   } catch (error) {
