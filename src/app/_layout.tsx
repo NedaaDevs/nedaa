@@ -38,6 +38,7 @@ SplashScreen.setOptions({
 });
 
 export default function RootLayout() {
+  SplashScreen.preventAutoHideAsync();
   const { mode, locale, showLoadingOverlay, loadingMessage } = useAppStore();
   // useDrizzleStudio(db);
   const {
@@ -54,7 +55,7 @@ export default function RootLayout() {
   useLoadFonts();
   useInitialSetup();
   useNotificationListeners();
-  SplashScreen.preventAutoHideAsync();
+  SplashScreen.hideAsync();
   return (
     <GluestackUIProvider mode={mode}>
       <FontProvider>
