@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 import { I18nManager, Platform } from "react-native";
 import * as Updates from "expo-updates";
 
+// Enums
+import { PlatformType } from "@/enums/app";
+
 export const useRTLSetup = (shouldBeRTL: boolean) => {
   const mountedRef = useRef(false);
 
@@ -12,7 +15,7 @@ export const useRTLSetup = (shouldBeRTL: boolean) => {
       return;
     }
 
-    if (shouldBeRTL !== I18nManager.isRTL && Platform.OS !== "web") {
+    if (shouldBeRTL !== I18nManager.isRTL && Platform.OS === PlatformType.ANDROID) {
       I18nManager.allowRTL(shouldBeRTL);
       I18nManager.forceRTL(shouldBeRTL);
       I18nManager.swapLeftAndRightInRTL(shouldBeRTL);
