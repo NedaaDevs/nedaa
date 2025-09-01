@@ -79,5 +79,6 @@ export type AthkarActions = {
   updateToleranceDays: (days: number) => Promise<void>;
   resetProgress: () => Promise<void>;
   reloadStreakFromDB: () => Promise<void>;
+  validateDailyStreak: () => Promise<void>;
   cleanUpOldData: () => Promise<void>;
 };
