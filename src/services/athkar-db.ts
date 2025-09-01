@@ -730,6 +730,90 @@ const updateStreakSettings = async (settings: {
   }
 };
 
+// Validate streak by checking for missed days between last completed and today
+const validateStreakForToday = async (
+  todayInt: number
+): Promise<{
+  success: boolean;
+  streakBroken: boolean;
+  currentStreak: number;
+  longestStreak: number;
+} | null> => {
+  const db = await openDatabase();
+
+  try {
+    let result = null;
+
+    await db.withTransactionAsync(async () => {
+      // Get current streak data
+      const streakData = await getStreakData();
+      if (!streakData) throw new Error("No streak data found");
+
+      // If no previous streak or paused, nothing to validate
+      if (!streakData.last_streak_date || streakData.is_paused) {
+        result = {
+          success: true,
+          streakBroken: false,
+          currentStreak: streakData.current_streak,
+          longestStreak: streakData.longest_streak,
+        };
+        return;
+      }
+
+      const daysSinceLastStreak = todayInt - streakData.last_streak_date;
+
+      // If it's the same day or consecutive day, no action needed
+      if (daysSinceLastStreak <= 1) {
+        result = {
+          success: true,
+          streakBroken: false,
+          currentStreak: streakData.current_streak,
+          longestStreak: streakData.longest_streak,
+        };
+        return;
+      }
+
+      // Check if gap is within tolerance
+      const withinTolerance =
+        streakData.tolerance_days > 0 && daysSinceLastStreak <= streakData.tolerance_days + 1;
+
+      if (!withinTolerance) {
+        // Streak is broken - reset to 0
+        const tz = locationStore.getState().locationDetails.timezone;
+        const now = timeZonedNow(tz).toISOString();
+
+        await db.runAsync(
+          `UPDATE ${ATHKAR_STREAK_TABLE} 
+           SET current_streak = 0,
+               updated_at = ?
+           WHERE id = 1;`,
+          [now]
+        );
+
+        result = {
+          success: true,
+          streakBroken: true,
+          currentStreak: 0,
+          longestStreak: streakData.longest_streak,
+        };
+      } else {
+        // Within tolerance, keep current streak
+        result = {
+          success: true,
+          streakBroken: false,
+          currentStreak: streakData.current_streak,
+          longestStreak: streakData.longest_streak,
+        };
+      }
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error validating streak for today:", error);
+    return null;
+  }
+};
+
 export const AthkarDB = {
   open: openDatabase,
   initialize: initializeDB,
@@ -749,6 +833,7 @@ export const AthkarDB = {
   updateStreakForDay,
   resetCurrentStreak,
   updateStreakSettings,
+  validateStreakForToday,
 
   // Utility
   cleanOldData,

@@ -107,7 +107,12 @@ export const useAthkarStore = create<AthkarStore>()(
           try {
             await AthkarDB.initialize();
 
-            // Load streak data from DB
+            // Validate streak for missed days (real-time check)
+            const tz = locationStore.getState().locationDetails.timezone;
+            const todayInt = getTodayInt(tz);
+            await AthkarDB.validateStreakForToday(todayInt);
+
+            // Load streak data from DB (now up-to-date after validation)
             const streakData = await AthkarDB.getStreakData();
             if (streakData) {
               set({
@@ -255,6 +260,35 @@ export const useAthkarStore = create<AthkarStore>()(
                 toleranceDays: streakData.tolerance_days,
               },
             });
+          }
+        },
+
+        // Check and validate streak daily (called when app becomes active)
+        validateDailyStreak: async () => {
+          try {
+            const tz = locationStore.getState().locationDetails.timezone;
+            const todayInt = getTodayInt(tz);
+
+            const validationResult = await AthkarDB.validateStreakForToday(todayInt);
+
+            if (validationResult?.success) {
+              // Update streak state immediately if it was changed
+              set((state) => ({
+                streak: {
+                  ...state.streak,
+                  currentStreak: validationResult.currentStreak,
+                  longestStreak: validationResult.longestStreak,
+                },
+              }));
+
+              // If streak was broken, also reload today's progress
+              if (validationResult.streakBroken) {
+                console.log("[Athkar Store] Streak was broken due to missed days");
+                await get().initializeTodayData();
+              }
+            }
+          } catch (error) {
+            console.error("Error validating daily streak:", error);
           }
         },
 
