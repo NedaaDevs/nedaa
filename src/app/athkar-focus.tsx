@@ -22,9 +22,9 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
-import { X, ChevronLeft, ChevronRight } from "lucide-react-native";
+import { X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react-native";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
@@ -38,6 +38,9 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
 import { Icon } from "@/components/ui/icon";
+
+// Components
+import { AthkarFocusCompletion } from "@/components/athkar/AthkarFocusCompletion";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -66,18 +69,24 @@ const AthkarFocusScreen = () => {
     findOptimalAthkarIndex,
     setCurrentAthkarIndex,
     updateLastIndex,
+    moveToNext,
+    moveToPrevious,
   } = useAthkarStore();
 
   // State for showing instructions
   const [showInstructions, setShowInstructions] = useState(true);
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
+  const [showNavigationIndicator, setShowNavigationIndicator] = useState(false);
   const swipeIndicatorOpacity = useSharedValue(0);
   const swipeIndicatorTranslateX = useSharedValue(0);
+  const navigationIndicatorOpacity = useSharedValue(0);
+  const navigationIndicatorTranslateY = useSharedValue(0);
 
   // Animated values for circle progress
   const animatedProgress = useSharedValue(0);
   const circleScale = useSharedValue(1);
   const countOpacity = useSharedValue(1);
+  const completionScale = useSharedValue(0);
 
   // Get current athkar list based on type
   const currentAthkarList =
@@ -114,12 +123,42 @@ const AthkarFocusScreen = () => {
   const currentCount = progressItem?.currentCount || 0;
   const totalCount = progressItem?.totalCount || currentAthkar?.count || 1;
   const progressPercentage = (currentCount / totalCount) * 100;
+
+  // Sync with store's currentAthkarIndex changes (auto-move functionality)
+  useEffect(() => {
+    // Re-animate progress when index changes due to auto-move
+    if (currentAthkar) {
+      animatedProgress.value = withSpring(progressPercentage / 100, {
+        damping: 15,
+        stiffness: 150,
+        mass: 1,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAthkarIndex, currentAthkar, progressPercentage]);
+
   const isCompleted = progressItem?.completed || false;
 
   // Check if all athkars in current session are completed
   const allCompleted = currentProgress
     .filter((p) => p.athkarId.includes(`-${currentType}`))
     .every((p) => p.completed);
+
+  // Animate completion celebration when all athkar are done
+  useEffect(() => {
+    if (allCompleted) {
+      // Celebration animation
+      completionScale.value = withSpring(1, { damping: 15, stiffness: 200 });
+
+      // Add extra haptic feedback for completion
+      setTimeout(() => hapticSuccess(), 100);
+      setTimeout(() => hapticSuccess(), 300);
+      setTimeout(() => hapticSuccess(), 500);
+    } else {
+      completionScale.value = withTiming(0, { duration: 200 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCompleted]);
 
   // Animate progress when count changes
   useEffect(() => {
@@ -192,19 +231,17 @@ const AthkarFocusScreen = () => {
     }
   };
 
-  const handleFinish = () => {
-    router.back();
-  };
-
-  // Handle swipe gestures
-  const swipeGesture = Gesture.Pan()
+  // Handle horizontal swipe for decrement
+  const horizontalSwipe = Gesture.Pan()
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-30, 30])
     .onStart(() => {
       runOnJS(setShowSwipeIndicator)(true);
       swipeIndicatorOpacity.value = withTiming(1, { duration: 200 });
     })
     .onUpdate((event) => {
       // Show swipe indicator movement
-      swipeIndicatorTranslateX.value = event.translationX * 0.3; // Move indicator less than actual swipe
+      swipeIndicatorTranslateX.value = event.translationX * 0.3;
     })
     .onEnd((event) => {
       const shouldDecrease = isRTL
@@ -233,12 +270,71 @@ const AthkarFocusScreen = () => {
       runOnJS(setShowSwipeIndicator)(false);
     });
 
+  // Handle vertical swipe for navigation
+  const verticalSwipe = Gesture.Pan()
+    .activeOffsetY([-20, 20])
+    .failOffsetX([-30, 30])
+    .onStart(() => {
+      runOnJS(setShowNavigationIndicator)(true);
+      navigationIndicatorOpacity.value = withTiming(1, { duration: 200 });
+    })
+    .onUpdate((event) => {
+      // Show navigation indicator movement
+      navigationIndicatorTranslateY.value = event.translationY * 0.3;
+    })
+    .onEnd((event) => {
+      const NAVIGATION_THRESHOLD = 50;
+
+      if (event.translationY < -NAVIGATION_THRESHOLD) {
+        // Swipe up - Previous athkar
+        runOnJS(hapticSelection)();
+        runOnJS(moveToPrevious)();
+      } else if (event.translationY > NAVIGATION_THRESHOLD) {
+        // Swipe down - Next athkar
+        runOnJS(hapticSelection)();
+        runOnJS(moveToNext)();
+      }
+
+      // Hide navigation indicator
+      navigationIndicatorOpacity.value = withTiming(0, { duration: 200 });
+      navigationIndicatorTranslateY.value = withTiming(0, { duration: 200 });
+      runOnJS(setShowNavigationIndicator)(false);
+    });
+
+  // Combine gestures
+  const combinedGestures = Gesture.Simultaneous(horizontalSwipe, verticalSwipe);
+
   const swipeIndicatorStyle = useAnimatedStyle(() => {
     return {
       opacity: swipeIndicatorOpacity.value,
       transform: [{ translateX: swipeIndicatorTranslateX.value }],
     };
   });
+
+  const navigationIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      opacity: navigationIndicatorOpacity.value,
+      transform: [{ translateY: navigationIndicatorTranslateY.value }],
+    };
+  });
+
+  const completionStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: completionScale.value }],
+      opacity: completionScale.value,
+    };
+  });
+
+  // Show completion screen when all athkar are finished
+  if (allCompleted) {
+    return (
+      <AthkarFocusCompletion
+        currentType={currentType}
+        athkarCount={currentAthkarList.length}
+        completionStyle={completionStyle}
+      />
+    );
+  }
 
   if (!currentAthkar) {
     return null;
@@ -271,7 +367,7 @@ const AthkarFocusScreen = () => {
           </Progress>
         </Box>
 
-        <GestureDetector gesture={swipeGesture}>
+        <GestureDetector gesture={combinedGestures}>
           <Pressable onPress={handleTap} className="flex-1">
             <View style={{ flex: 1 }}>
               <VStack className="flex-1 justify-center items-center px-8" space="2xl">
@@ -334,17 +430,6 @@ const AthkarFocusScreen = () => {
                   </Animated.View>
                 </Animated.View>
 
-                {/* Finish Button when all completed */}
-                {allCompleted && (
-                  <Button size="lg" onPress={handleFinish} className="bg-success mt-4">
-                    <ButtonText className="text-white font-semibold">
-                      {t("athkar.focus.allCompleted", {
-                        type: t(`athkar.${currentType}`),
-                      })}
-                    </ButtonText>
-                  </Button>
-                )}
-
                 {/* Athkar Text */}
                 <VStack space="lg" className="items-center max-w-full">
                   <Text className="text-xl text-center text-typography leading-relaxed ">
@@ -358,14 +443,19 @@ const AthkarFocusScreen = () => {
                     entering={FadeIn}
                     exiting={FadeOut}
                     className="absolute bottom-20 left-4 right-4">
-                    <Text className="text-sm text-typography-secondary text-center">
-                      {t("athkar.focus.tapToIncrement")} •{" "}
-                      {t(
-                        isRTL
-                          ? "athkar.focus.swipeRightToDecrease"
-                          : "athkar.focus.swipeLeftToDecrease"
-                      )}
-                    </Text>
+                    <VStack space="xs">
+                      <Text className="text-sm text-typography-secondary text-center">
+                        {t("athkar.focus.tapToIncrement")} •{" "}
+                        {t(
+                          isRTL
+                            ? "athkar.focus.swipeRightToDecrease"
+                            : "athkar.focus.swipeLeftToDecrease"
+                        )}
+                      </Text>
+                      <Text className="text-xs text-typography-secondary text-center">
+                        {t("athkar.focus.swipeUpDownToNavigate")}
+                      </Text>
+                    </VStack>
                   </Animated.View>
                 )}
 
@@ -379,6 +469,18 @@ const AthkarFocusScreen = () => {
                       <Text className="text-lg font-semibold text-warning">{currentCount - 1}</Text>
                       <Icon as={ChevronRight} size="xl" className="text-warning" />
                     </HStack>
+                  </Animated.View>
+                )}
+
+                {/* Navigation Indicator */}
+                {showNavigationIndicator && (
+                  <Animated.View
+                    style={[navigationIndicatorStyle]}
+                    className="absolute left-0 right-0 top-1/2 items-center">
+                    <VStack className="items-center" space="sm">
+                      <Icon as={ChevronUp} size="lg" className="text-accent-info" />
+                      <Icon as={ChevronDown} size="lg" className="text-accent-info" />
+                    </VStack>
                   </Animated.View>
                 )}
               </VStack>
