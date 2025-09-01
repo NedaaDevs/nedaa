@@ -111,7 +111,7 @@ export const AthkarFocusCompletion = ({
                 size="lg"
                 onPress={handleFinish}
                 className="bg-success w-full justify-center items-center">
-                <ButtonText className="text-white font-semibold text-lg text-center">
+                <ButtonText className="text-white font-semibold text-lg text-center w-full">
                   {t("athkar.focus.finish")}
                 </ButtonText>
               </Button>
