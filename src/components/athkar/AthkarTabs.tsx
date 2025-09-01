@@ -35,7 +35,7 @@ const AthkarTabs = () => {
   const { t } = useTranslation();
   const router = useRouter();
 
-  const { setCurrentType } = useAthkarStore();
+  const { setCurrentType, validateDailyStreak } = useAthkarStore();
 
   type activeTabType = Exclude<AthkarType, "all">;
 
@@ -47,9 +47,10 @@ const AthkarTabs = () => {
   // Initialize athkar data
   useInitializeAthkar();
 
-  // Check for daily reset on mount
+  // Check for daily reset and validate streak on mount
   useEffect(() => {
     setCurrentType(activeTab);
+    validateDailyStreak(); // Only check when athkar page opens
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
