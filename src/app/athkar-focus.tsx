@@ -137,12 +137,12 @@ const AthkarFocusScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAthkarIndex, currentAthkar, progressPercentage]);
 
-  const isCompleted = progressItem?.completed || false;
+  const isCompleted = progressItem?.completed ?? false;
 
   // Check if all athkars in current session are completed
-  const allCompleted = currentProgress
-    .filter((p) => p.athkarId.includes(`-${currentType}`))
-    .every((p) => p.completed);
+  const allCompleted =
+    currentProgress.length > 0 &&
+    currentProgress.filter((p) => p.athkarId.includes(`-${currentType}`)).every((p) => p.completed);
 
   // Animate completion celebration when all athkar are done
   useEffect(() => {
