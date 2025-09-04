@@ -286,13 +286,13 @@ const AthkarFocusScreen = () => {
       const NAVIGATION_THRESHOLD = 50;
 
       if (event.translationY < -NAVIGATION_THRESHOLD) {
-        // Swipe up - Previous athkar
-        runOnJS(hapticSelection)();
-        runOnJS(moveToPrevious)();
-      } else if (event.translationY > NAVIGATION_THRESHOLD) {
-        // Swipe down - Next athkar
+        // Swipe up - Next athkar
         runOnJS(hapticSelection)();
         runOnJS(moveToNext)();
+      } else if (event.translationY > NAVIGATION_THRESHOLD) {
+        // Swipe down - Previous athkar
+        runOnJS(hapticSelection)();
+        runOnJS(moveToPrevious)();
       }
 
       // Hide navigation indicator
