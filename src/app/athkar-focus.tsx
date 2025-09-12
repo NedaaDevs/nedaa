@@ -82,6 +82,11 @@ const AthkarFocusScreen = () => {
   const navigationIndicatorOpacity = useSharedValue(0);
   const navigationIndicatorTranslateY = useSharedValue(0);
 
+  const slideTranslateY = useSharedValue(0);
+  const slideOpacity = useSharedValue(1);
+  const slideScale = useSharedValue(1);
+  const navigationBlur = useSharedValue(0);
+
   // Animated values for circle progress
   const animatedProgress = useSharedValue(0);
   const circleScale = useSharedValue(1);
@@ -137,6 +142,51 @@ const AthkarFocusScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAthkarIndex, currentAthkar, progressPercentage]);
 
+  // Track previous index for slide direction
+  const [previousIndex, setPreviousIndex] = useState(currentAthkarIndex);
+
+  useEffect(() => {
+    if (previousIndex !== currentAthkarIndex) {
+      const isNext = currentAthkarIndex > previousIndex;
+      const slideDirection = isNext ? -1 : 1; // Up = next (-1), Down = previous (+1)
+      const SLIDE_DISTANCE = 80;
+
+      // Slide out animation with scale and opacity
+      slideOpacity.value = withTiming(0.4, { duration: 250 });
+      slideScale.value = withTiming(0.92, { duration: 250 });
+      slideTranslateY.value = withTiming(slideDirection * SLIDE_DISTANCE, { duration: 250 });
+      navigationBlur.value = withTiming(0.5, { duration: 200 }, () => {
+        // Reset position for slide in from opposite direction
+        slideTranslateY.value = -slideDirection * SLIDE_DISTANCE;
+
+        // Slide in animation with spring effects
+        slideOpacity.value = withSpring(1, {
+          damping: 18,
+          stiffness: 280,
+          mass: 0.9,
+        });
+        slideScale.value = withSpring(1, {
+          damping: 16,
+          stiffness: 220,
+          mass: 0.8,
+        });
+        slideTranslateY.value = withSpring(0, {
+          damping: 20,
+          stiffness: 320,
+          mass: 0.8,
+        });
+        navigationBlur.value = withSpring(0, {
+          damping: 22,
+          stiffness: 380,
+          mass: 0.7,
+        });
+      });
+
+      setPreviousIndex(currentAthkarIndex);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAthkarIndex]);
+
   const isCompleted = progressItem?.completed ?? false;
 
   // Check if all athkars in current session are completed
@@ -185,13 +235,6 @@ const AthkarFocusScreen = () => {
         [0, 1],
         ["#1E40AF", "#10b981"] // Blue to green
       ),
-    };
-  });
-
-  // Animated style for circle scale effect
-  const circleAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: circleScale.value }],
     };
   });
 
@@ -277,27 +320,48 @@ const AthkarFocusScreen = () => {
     .onStart(() => {
       runOnJS(setShowNavigationIndicator)(true);
       navigationIndicatorOpacity.value = withTiming(1, { duration: 200 });
+      // Scale feedback during gesture start
+      slideScale.value = withTiming(0.98, { duration: 150 });
     })
     .onUpdate((event) => {
-      // Show navigation indicator movement
-      navigationIndicatorTranslateY.value = event.translationY * 0.3;
+      // Navigation indicator movement
+      navigationIndicatorTranslateY.value = event.translationY * 0.4;
+
+      // Content movement during swipe
+      const dampenedTranslation = event.translationY * 0.15;
+      slideTranslateY.value = dampenedTranslation;
+
+      // Dynamic opacity based on swipe distance
+      const swipeProgress = Math.min(Math.abs(event.translationY) / 100, 1);
+      navigationBlur.value = swipeProgress * 0.3;
     })
     .onEnd((event) => {
-      const NAVIGATION_THRESHOLD = 50;
+      const NAVIGATION_THRESHOLD = 60;
 
       if (event.translationY < -NAVIGATION_THRESHOLD) {
         // Swipe up - Next athkar
         runOnJS(hapticSelection)();
+        slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
+          slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+        });
         runOnJS(moveToNext)();
       } else if (event.translationY > NAVIGATION_THRESHOLD) {
         // Swipe down - Previous athkar
         runOnJS(hapticSelection)();
+        slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
+          slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+        });
         runOnJS(moveToPrevious)();
+      } else {
+        // Return to original state if swipe wasn't strong enough
+        slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
       }
 
-      // Hide navigation indicator
-      navigationIndicatorOpacity.value = withTiming(0, { duration: 200 });
-      navigationIndicatorTranslateY.value = withTiming(0, { duration: 200 });
+      // Return animations
+      navigationIndicatorOpacity.value = withTiming(0, { duration: 250 });
+      navigationIndicatorTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
+      slideTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
+      navigationBlur.value = withTiming(0, { duration: 200 });
       runOnJS(setShowNavigationIndicator)(false);
     });
 
@@ -322,6 +386,13 @@ const AthkarFocusScreen = () => {
     return {
       transform: [{ scale: completionScale.value }],
       opacity: completionScale.value,
+    };
+  });
+
+  const slideStyle = useAnimatedStyle(() => {
+    return {
+      opacity: slideOpacity.value,
+      transform: [{ translateY: slideTranslateY.value }, { scale: slideScale.value }],
     };
   });
 
@@ -369,122 +440,138 @@ const AthkarFocusScreen = () => {
 
         <GestureDetector gesture={combinedGestures}>
           <Pressable onPress={handleTap} className="flex-1">
-            <View style={{ flex: 1 }}>
-              <VStack className="flex-1 justify-center items-center px-8" space="2xl">
-                {/* Animated Circular Progress */}
+            <Box style={{ flex: 1, overflow: "visible" }}>
+              <Box
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingHorizontal: 32,
+                  paddingVertical: 100,
+                  overflow: "visible",
+                }}>
+                <Box style={{ width: "100%", alignItems: "center", overflow: "visible" }}>
+                  <Animated.View style={slideStyle} className="items-center max-w-full">
+                    <VStack space="2xl" className="items-center max-w-full">
+                      {/* Circular Progress */}
+                      <View style={{ position: "relative", width: 256, height: 256 }}>
+                        {/* Background Circle */}
+                        <View className="absolute inset-0 items-center justify-center">
+                          <Svg
+                            width={256}
+                            height={256}
+                            style={{ transform: [{ rotate: "-90deg" }] }}>
+                            {/* Background circle */}
+                            <Circle
+                              cx={128}
+                              cy={128}
+                              r={CIRCLE_RADIUS}
+                              stroke="rgba(30, 64, 175, 0.1)"
+                              strokeWidth={8}
+                              fill="none"
+                            />
+                            {/* Progress circle */}
+                            <AnimatedCircle
+                              cx={128}
+                              cy={128}
+                              r={CIRCLE_RADIUS}
+                              strokeWidth={8}
+                              fill="none"
+                              strokeDasharray={CIRCLE_CIRCUMFERENCE}
+                              strokeLinecap="round"
+                              animatedProps={animatedCircleProps}
+                            />
+                          </Svg>
+                        </View>
+
+                        {/* Counter */}
+                        <Animated.View
+                          style={[
+                            {
+                              position: "absolute",
+                              inset: 0,
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
+                            countAnimatedStyle,
+                          ]}>
+                          <VStack className="items-center justify-center" space="xs">
+                            <Text
+                              className={`text-5xl font-bold ${
+                                isCompleted ? "text-typography-secondary" : "text-accent-info"
+                              }`}>
+                              {formatNumberToLocale(`${currentCount}`)}
+                            </Text>
+                            <Text
+                              className="text-typography-secondary"
+                              style={{
+                                lineHeight: 20,
+                                includeFontPadding: false,
+                              }}>
+                              / {formatNumberToLocale(`${totalCount}`)}
+                            </Text>
+                          </VStack>
+                        </Animated.View>
+                      </View>
+
+                      {/* Athkar Text */}
+                      <VStack space="lg" className="items-center max-w-full">
+                        <Text className="text-xl text-center text-typography leading-relaxed ">
+                          {t(currentAthkar.text)}
+                        </Text>
+                      </VStack>
+                    </VStack>
+                  </Animated.View>
+                </Box>
+              </Box>
+
+              {/* Instructions - auto hide after 3s */}
+              {!isCompleted && showInstructions && (
                 <Animated.View
-                  style={[{ position: "relative", width: 256, height: 256 }, circleAnimatedStyle]}>
-                  {/* Background Circle */}
-                  <View className="absolute inset-0 items-center justify-center">
-                    <Svg width={256} height={256} style={{ transform: [{ rotate: "-90deg" }] }}>
-                      {/* Background circle */}
-                      <Circle
-                        cx={128}
-                        cy={128}
-                        r={CIRCLE_RADIUS}
-                        stroke="rgba(30, 64, 175, 0.1)"
-                        strokeWidth={8}
-                        fill="none"
-                      />
-                      {/* Animated progress circle */}
-                      <AnimatedCircle
-                        cx={128}
-                        cy={128}
-                        r={CIRCLE_RADIUS}
-                        strokeWidth={8}
-                        fill="none"
-                        strokeDasharray={CIRCLE_CIRCUMFERENCE}
-                        strokeLinecap="round"
-                        animatedProps={animatedCircleProps}
-                      />
-                    </Svg>
-                  </View>
-
-                  {/* Animated Counter */}
-                  <Animated.View
-                    style={[
-                      {
-                        position: "absolute",
-                        inset: 0,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      },
-                      countAnimatedStyle,
-                    ]}>
-                    <VStack className="items-center justify-center" space="xs">
-                      <Text
-                        className={`text-5xl font-bold ${
-                          isCompleted ? "text-typography-secondary" : "text-accent-info"
-                        }`}>
-                        {formatNumberToLocale(`${currentCount}`)}
-                      </Text>
-                      <Text
-                        className="text-typography-secondary"
-                        style={{
-                          lineHeight: 20,
-                          includeFontPadding: false,
-                        }}>
-                        / {formatNumberToLocale(`${totalCount}`)}
-                      </Text>
-                    </VStack>
-                  </Animated.View>
+                  entering={FadeIn}
+                  exiting={FadeOut}
+                  className="absolute bottom-20 left-4 right-4">
+                  <VStack space="xs">
+                    <Text className="text-sm text-typography-secondary text-center">
+                      {t("athkar.focus.tapToIncrement")} •{" "}
+                      {t(
+                        isRTL
+                          ? "athkar.focus.swipeRightToDecrease"
+                          : "athkar.focus.swipeLeftToDecrease"
+                      )}
+                    </Text>
+                    <Text className="text-xs text-typography-secondary text-center">
+                      {t("athkar.focus.swipeUpDownToNavigate")}
+                    </Text>
+                  </VStack>
                 </Animated.View>
+              )}
 
-                {/* Athkar Text */}
-                <VStack space="lg" className="items-center max-w-full">
-                  <Text className="text-xl text-center text-typography leading-relaxed ">
-                    {t(currentAthkar.text)}
-                  </Text>
-                </VStack>
+              {/* Swipe Indicator */}
+              {showSwipeIndicator && currentCount > 0 && (
+                <Animated.View
+                  style={[swipeIndicatorStyle]}
+                  className="absolute left-0 right-0 top-1/2 items-center">
+                  <HStack className="items-center" space="lg">
+                    <Icon as={ChevronLeft} size="xl" className="text-warning" />
+                    <Text className="text-lg font-semibold text-warning">{currentCount - 1}</Text>
+                    <Icon as={ChevronRight} size="xl" className="text-warning" />
+                  </HStack>
+                </Animated.View>
+              )}
 
-                {/* Instructions - auto hide after 3s */}
-                {!isCompleted && showInstructions && (
-                  <Animated.View
-                    entering={FadeIn}
-                    exiting={FadeOut}
-                    className="absolute bottom-20 left-4 right-4">
-                    <VStack space="xs">
-                      <Text className="text-sm text-typography-secondary text-center">
-                        {t("athkar.focus.tapToIncrement")} •{" "}
-                        {t(
-                          isRTL
-                            ? "athkar.focus.swipeRightToDecrease"
-                            : "athkar.focus.swipeLeftToDecrease"
-                        )}
-                      </Text>
-                      <Text className="text-xs text-typography-secondary text-center">
-                        {t("athkar.focus.swipeUpDownToNavigate")}
-                      </Text>
-                    </VStack>
-                  </Animated.View>
-                )}
-
-                {/* Swipe Indicator */}
-                {showSwipeIndicator && currentCount > 0 && (
-                  <Animated.View
-                    style={[swipeIndicatorStyle]}
-                    className="absolute left-0 right-0 top-1/2 items-center">
-                    <HStack className="items-center" space="lg">
-                      <Icon as={ChevronLeft} size="xl" className="text-warning" />
-                      <Text className="text-lg font-semibold text-warning">{currentCount - 1}</Text>
-                      <Icon as={ChevronRight} size="xl" className="text-warning" />
-                    </HStack>
-                  </Animated.View>
-                )}
-
-                {/* Navigation Indicator */}
-                {showNavigationIndicator && (
-                  <Animated.View
-                    style={[navigationIndicatorStyle]}
-                    className="absolute left-0 right-0 top-1/2 items-center">
-                    <VStack className="items-center" space="sm">
-                      <Icon as={ChevronUp} size="lg" className="text-accent-info" />
-                      <Icon as={ChevronDown} size="lg" className="text-accent-info" />
-                    </VStack>
-                  </Animated.View>
-                )}
-              </VStack>
-            </View>
+              {/* Navigation Indicator */}
+              {showNavigationIndicator && (
+                <Animated.View
+                  style={[navigationIndicatorStyle]}
+                  className="absolute left-0 right-0 top-1/2 items-center">
+                  <VStack className="items-center" space="sm">
+                    <Icon as={ChevronUp} size="lg" className="text-accent-info" />
+                    <Icon as={ChevronDown} size="lg" className="text-accent-info" />
+                  </VStack>
+                </Animated.View>
+              )}
+            </Box>
           </Pressable>
         </GestureDetector>
       </Box>
