@@ -1,6 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
-import { Paths } from "expo-file-system/next";
+import { Paths } from "expo-file-system";
 import { z } from "zod";
 
 // Constants
