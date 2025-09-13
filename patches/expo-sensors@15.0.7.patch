@@ -1,14 +1,8 @@
-diff --git a/node_modules/expo-sensors/.bun-tag-3935d4fc1dd7f00e b/.bun-tag-3935d4fc1dd7f00e
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/expo-sensors/.bun-tag-74f00b12043799d6 b/.bun-tag-74f00b12043799d6
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/ios/DeviceMotionModule.swift b/ios/DeviceMotionModule.swift
-index 729d782ace5738000101b325b69362d4dee12def..ecd77379fc1a233377a024b51224cc21a5ad1d40 100644
+index a21dc0fde9303e7ff178809ef0131b4bcf1af53b..da6416ef37a237650e6d41778d654fb6e004b7f8 100644
 --- a/ios/DeviceMotionModule.swift
 +++ b/ios/DeviceMotionModule.swift
-@@ -32,25 +32,17 @@ public final class DeviceMotionModule: Module {
+@@ -30,25 +30,17 @@ public final class DeviceMotionModule: Module {
      }
  
      AsyncFunction("getPermissionsAsync") { (promise: Promise) in
@@ -42,7 +36,7 @@ index 729d782ace5738000101b325b69362d4dee12def..ecd77379fc1a233377a024b51224cc21
      }
  
      OnStartObserving {
-@@ -66,10 +58,7 @@ public final class DeviceMotionModule: Module {
+@@ -64,10 +56,7 @@ public final class DeviceMotionModule: Module {
      }
  
      OnCreate {
@@ -54,21 +48,3 @@ index 729d782ace5738000101b325b69362d4dee12def..ecd77379fc1a233377a024b51224cc21
      }
    }
  
-diff --git a/ios/ExpoSensors.podspec b/ios/ExpoSensors.podspec
-index b15e656f81091c95ad5b3db38ee791be13ff339f..ebd2483c714a4d4f6bcf07798f899eab6fc7fc98 100644
---- a/ios/ExpoSensors.podspec
-+++ b/ios/ExpoSensors.podspec
-@@ -22,10 +22,7 @@ Pod::Spec.new do |s|
- 
-   s.source_files = "**/*.{h,m,swift}"
- 
--  if podfile_properties['MOTION_PERMISSION'] == 'false'
--    s.ios.exclude_files  = "**/EXMotionPermissionRequester.m",
--                           "**/PedometerModule.swift"
--  else
--    s.ios.exclude_files  = "**/PedometerModuleDisabled.swift"
--  end
-+  # Force exclude motion permission files since motionPermission: false
-+  s.ios.exclude_files = "**/EXMotionPermissionRequester.{h,m}",
-+                        "**/PedometerModule.swift"
- end
