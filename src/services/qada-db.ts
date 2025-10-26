@@ -13,6 +13,7 @@ export const QADA_HISTORY_TABLE = "qada_history" as const;
 export const QADA_SETTINGS_TABLE = "qada_settings" as const;
 
 // Schemas
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const QadaFastSchema = z.object({
   id: z.number(),
   total_missed: z.number(),
@@ -21,6 +22,7 @@ const QadaFastSchema = z.object({
   updated_at: z.string(),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const QadaHistorySchema = z.object({
   id: z.number(),
   date: z.string(),
@@ -30,6 +32,7 @@ const QadaHistorySchema = z.object({
   created_at: z.string(),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const QadaSettingsSchema = z.object({
   id: z.number(),
   reminder_type: z.enum(["none", "ramadan", "custom"]),
