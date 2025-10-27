@@ -13,6 +13,7 @@ export type QadaState = {
   totalMissed: number;
   totalCompleted: number;
   history: QadaHistory[];
+  pendingEntries: QadaHistory[];
   isLoading: boolean;
   hasError: boolean;
   errorMessage: string;
@@ -31,6 +32,10 @@ export type QadaState = {
     settings: Partial<Omit<QadaSettings, "id" | "created_at" | "updated_at">>
   ) => Promise<boolean>;
   loadHistory: (limit?: number) => Promise<void>;
+  loadPendingEntries: () => Promise<void>;
+  completeEntry: (id: number) => Promise<boolean>;
+  completeAllEntries: () => Promise<boolean>;
+  deleteEntry: (id: number) => Promise<boolean>;
   deleteHistory: (id: number) => Promise<boolean>;
   resetAll: () => Promise<boolean>;
   clearError: () => void;
@@ -48,6 +53,7 @@ export const useQadaStore = create<QadaState>()(
         totalMissed: 0,
         totalCompleted: 0,
         history: [],
+        pendingEntries: [],
         isLoading: false,
         hasError: false,
         errorMessage: "",
@@ -92,6 +98,10 @@ export const useQadaStore = create<QadaState>()(
             const history = await QadaDB.getHistory(50); // Last 50 entries
             set({ history });
 
+            // Load pending entries
+            const pendingEntries = await QadaDB.getPendingEntries();
+            set({ pendingEntries });
+
             set({ isLoading: false });
           } catch (error) {
             console.error("[Qada Store] Error loading data:", error);
@@ -117,8 +127,9 @@ export const useQadaStore = create<QadaState>()(
                 totalMissed: state.totalMissed + count,
               });
 
-              // Reload history
+              // Reload history and pending entries
               await get().loadHistory();
+              await get().loadPendingEntries();
             }
 
             set({ isLoading: false });
@@ -148,8 +159,9 @@ export const useQadaStore = create<QadaState>()(
                 totalCompleted: state.totalCompleted + count,
               });
 
-              // Reload history
+              // Reload history and pending entries
               await get().loadHistory();
+              await get().loadPendingEntries();
             }
 
             set({ isLoading: false });
@@ -209,6 +221,74 @@ export const useQadaStore = create<QadaState>()(
             set({ history });
           } catch (error) {
             console.error("[Qada Store] Error loading history:", error);
+          }
+        },
+
+        /**
+         * Load pending entries
+         */
+        loadPendingEntries: async () => {
+          try {
+            const pendingEntries = await QadaDB.getPendingEntries();
+            set({ pendingEntries });
+          } catch (error) {
+            console.error("[Qada Store] Error loading pending entries:", error);
+          }
+        },
+
+        /**
+         * Complete an entry (swipe left action)
+         */
+        completeEntry: async (id: number) => {
+          try {
+            const success = await QadaDB.updateEntryStatus(id, "completed");
+            if (success) {
+              // Reload data to update totals and entries
+              await get().loadData();
+            }
+            return success;
+          } catch (error) {
+            console.error("[Qada Store] Error completing entry:", error);
+            return false;
+          }
+        },
+
+        /**
+         * Complete all pending entries (full swipe action)
+         */
+        completeAllEntries: async () => {
+          try {
+            const state = get();
+            const pendingEntries = state.pendingEntries;
+
+            // Complete all pending entries
+            for (const entry of pendingEntries) {
+              await QadaDB.updateEntryStatus(entry.id, "completed");
+            }
+
+            // Reload data to update totals and entries
+            await get().loadData();
+            return true;
+          } catch (error) {
+            console.error("[Qada Store] Error completing all entries:", error);
+            return false;
+          }
+        },
+
+        /**
+         * Delete an entry (swipe right action)
+         */
+        deleteEntry: async (id: number) => {
+          try {
+            const success = await QadaDB.updateEntryStatus(id, "deleted");
+            if (success) {
+              // Reload data to update totals and entries
+              await get().loadData();
+            }
+            return success;
+          } catch (error) {
+            console.error("[Qada Store] Error deleting entry:", error);
+            return false;
           }
         },
 
