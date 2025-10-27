@@ -28,8 +28,10 @@ const QadaHistorySchema = z.object({
   date: z.string(),
   count: z.number(),
   type: z.enum(["completed", "added", "removed"]),
+  status: z.enum(["pending", "completed", "deleted"]),
   notes: z.string().optional().nullable(),
   created_at: z.string(),
+  updated_at: z.string(),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -83,8 +85,10 @@ const initializeDB = async () => {
         date TEXT NOT NULL,
         count INTEGER NOT NULL,
         type TEXT NOT NULL CHECK(type IN ('completed', 'added', 'removed')),
+        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'deleted')),
         notes TEXT,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       );`
     );
 
@@ -186,8 +190,8 @@ const addMissedFasts = async (count: number, notes?: string): Promise<boolean> =
     // Add to history
     const now = new Date().toISOString();
     await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, type, notes, created_at) VALUES (?, ?, ?, ?, ?);`,
-      [now, count, "added", notes || null, now]
+      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      [now, count, "added", "pending", notes || null, now, now]
     );
 
     return true;
@@ -223,8 +227,8 @@ const markCompleted = async (count: number, date?: string, notes?: string): Prom
     // Add to history
     const now = new Date().toISOString();
     await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, type, notes, created_at) VALUES (?, ?, ?, ?, ?);`,
-      [date || now, count, "completed", notes || null, now]
+      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      [date || now, count, "completed", "completed", notes || null, now, now]
     );
 
     return true;
@@ -325,6 +329,77 @@ const updateSettings = async (
 };
 
 /**
+ * Update entry status (for swipe actions)
+ */
+const updateEntryStatus = async (
+  id: number,
+  status: "pending" | "completed" | "deleted"
+): Promise<boolean> => {
+  try {
+    const db = await openDatabase();
+    const now = new Date().toISOString();
+
+    // Get the entry to check current status and update totals if needed
+    const entry = await db.getFirstAsync<QadaHistory>(
+      `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE id = ?;`,
+      [id]
+    );
+
+    if (!entry) {
+      console.error("[Qada DB] Entry not found");
+      return false;
+    }
+
+    // Update entry status
+    await db.runAsync(`UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`, [
+      status,
+      now,
+      id,
+    ]);
+
+    // Update totals based on status change
+    const currentData = await getQadaFast();
+    if (!currentData) {
+      console.error("[Qada DB] No Qada data found");
+      return false;
+    }
+
+    // If marking a pending entry as completed
+    if (entry.status === "pending" && status === "completed" && entry.type === "added") {
+      const newTotalCompleted = currentData.total_completed + entry.count;
+      await updateQadaFast(currentData.total_missed, newTotalCompleted);
+    }
+
+    // If marking a pending entry as deleted
+    if (entry.status === "pending" && status === "deleted" && entry.type === "added") {
+      const newTotalMissed = currentData.total_missed - entry.count;
+      await updateQadaFast(newTotalMissed, currentData.total_completed);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[Qada DB] Error updating entry status:", error);
+    return false;
+  }
+};
+
+/**
+ * Get pending entries only
+ */
+const getPendingEntries = async (): Promise<QadaHistory[]> => {
+  try {
+    const db = await openDatabase();
+    const results = await db.getAllAsync<QadaHistory>(
+      `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE status = 'pending' AND type = 'added' ORDER BY created_at DESC;`
+    );
+    return results || [];
+  } catch (error) {
+    console.error("[Qada DB] Error getting pending entries:", error);
+    return [];
+  }
+};
+
+/**
  * Delete a history entry
  */
 const deleteHistoryEntry = async (id: number): Promise<boolean> => {
@@ -369,6 +444,8 @@ export const QadaDB = {
   addMissedFasts,
   markCompleted,
   getHistory,
+  getPendingEntries,
+  updateEntryStatus,
   getSettings,
   updateSettings,
   deleteHistoryEntry,
