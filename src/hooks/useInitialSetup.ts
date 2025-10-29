@@ -9,6 +9,7 @@ import { useNotificationStore } from "@/stores/notification";
 // Services
 import { appSetup, firstRunSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
+import { QadaDB } from "@/services/qada-db";
 
 const initSentry = (consent: boolean) => {
   if (!__DEV__ && consent) {
@@ -21,6 +22,7 @@ const initSentry = (consent: boolean) => {
 
 const initDB = async () => {
   await PrayerTimesDB.initialize();
+  await QadaDB.initialize();
 };
 
 export const useInitialSetup = () => {
