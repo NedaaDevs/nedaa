@@ -12,6 +12,7 @@ export type QadaState = {
   // Data
   totalMissed: number;
   totalCompleted: number;
+  totalOriginal: number;
   history: QadaHistory[];
   pendingEntries: QadaHistory[];
   isLoading: boolean;
@@ -52,6 +53,7 @@ export const useQadaStore = create<QadaState>()(
         // Initial state
         totalMissed: 0,
         totalCompleted: 0,
+        totalOriginal: 0,
         history: [],
         pendingEntries: [],
         isLoading: false,
@@ -77,9 +79,11 @@ export const useQadaStore = create<QadaState>()(
             // Load fast data
             const fastData = await QadaDB.getQadaFast();
             if (fastData) {
+              const totalOriginal = fastData.total_missed + fastData.total_completed;
               set({
                 totalMissed: fastData.total_missed,
                 totalCompleted: fastData.total_completed,
+                totalOriginal: totalOriginal,
               });
             }
 
@@ -241,7 +245,7 @@ export const useQadaStore = create<QadaState>()(
          */
         completeEntry: async (id: number) => {
           try {
-            const success = await QadaDB.updateEntryStatus(id, "completed");
+            const success = await QadaDB.completeOneDayFromEntry(id);
             if (success) {
               // Reload data to update totals and entries
               await get().loadData();
@@ -280,8 +284,18 @@ export const useQadaStore = create<QadaState>()(
          */
         deleteEntry: async (id: number) => {
           try {
+            // Get current state before deletion
+            const state = get();
+            const entryToDelete = state.pendingEntries.find((entry) => entry.id === id);
+
             const success = await QadaDB.updateEntryStatus(id, "deleted");
             if (success) {
+              // Update totalOriginal to reflect the deletion
+              if (entryToDelete && entryToDelete.type === "added") {
+                set({
+                  totalOriginal: Math.max(0, state.totalOriginal - entryToDelete.count),
+                });
+              }
               // Reload data to update totals and entries
               await get().loadData();
             }
@@ -320,6 +334,7 @@ export const useQadaStore = create<QadaState>()(
               set({
                 totalMissed: 0,
                 totalCompleted: 0,
+                totalOriginal: 0,
                 history: [],
               });
             }
@@ -349,7 +364,7 @@ export const useQadaStore = create<QadaState>()(
          */
         getRemaining: () => {
           const state = get();
-          return Math.max(0, state.totalMissed - state.totalCompleted);
+          return Math.max(0, state.totalMissed);
         },
 
         /**
@@ -357,8 +372,8 @@ export const useQadaStore = create<QadaState>()(
          */
         getCompletionPercentage: () => {
           const state = get();
-          if (state.totalMissed === 0) return 0;
-          return Math.round((state.totalCompleted / state.totalMissed) * 100);
+          if (state.totalOriginal === 0) return 0;
+          return Math.round((state.totalCompleted / state.totalOriginal) * 100);
         },
       }),
       {
@@ -367,6 +382,7 @@ export const useQadaStore = create<QadaState>()(
         partialize: (state) => ({
           totalMissed: state.totalMissed,
           totalCompleted: state.totalCompleted,
+          totalOriginal: state.totalOriginal,
           reminderType: state.reminderType,
           reminderDays: state.reminderDays,
           customDate: state.customDate,

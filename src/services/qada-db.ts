@@ -329,6 +329,68 @@ const updateSettings = async (
 };
 
 /**
+ * Complete one day from an entry
+ */
+const completeOneDayFromEntry = async (id: number): Promise<boolean> => {
+  try {
+    const db = await openDatabase();
+    const now = new Date().toISOString();
+
+    // Get the entry to check current status and count
+    const entry = await db.getFirstAsync<QadaHistory>(
+      `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE id = ?;`,
+      [id]
+    );
+
+    if (!entry) {
+      console.error("[Qada DB] Entry not found for ID:", id);
+      return false;
+    }
+
+    console.log("[Qada DB] Completing one day from entry ID:", id, "current count:", entry.count);
+
+    if (entry.count > 1) {
+      // Reduce count by 1 and keep entry pending
+      const newCount = entry.count - 1;
+      await db.runAsync(
+        `UPDATE ${QADA_HISTORY_TABLE} SET count = ?, updated_at = ? WHERE id = ?;`,
+        [newCount, now, id]
+      );
+      console.log("[Qada DB] Reduced entry count to:", newCount);
+    } else {
+      // Mark single-count entry as completed
+      await db.runAsync(
+        `UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`,
+        ["completed", now, id]
+      );
+      console.log("[Qada DB] Marked single-count entry as completed");
+    }
+
+    // Update totals: increment completed, decrement missed
+    const currentData = await getQadaFast();
+    if (!currentData) {
+      console.error("[Qada DB] No Qada data found");
+      return false;
+    }
+
+    const newTotalCompleted = currentData.total_completed + 1;
+    const newTotalMissed = currentData.total_missed - 1;
+    await updateQadaFast(newTotalMissed, newTotalCompleted);
+    console.log(
+      "[Qada DB] Updated totals - completed:",
+      newTotalCompleted,
+      "missed:",
+      newTotalMissed
+    );
+
+    return true;
+  } catch (error) {
+    console.error("[Qada DB] Error completing one day from entry:", error);
+    return false;
+  }
+};
+
+/**
  * Update entry status (for swipe actions)
  */
 const updateEntryStatus = async (
@@ -346,9 +408,18 @@ const updateEntryStatus = async (
     );
 
     if (!entry) {
-      console.error("[Qada DB] Entry not found");
+      console.error("[Qada DB] Entry not found for ID:", id);
       return false;
     }
+
+    console.log(
+      "[Qada DB] Updating entry ID:",
+      id,
+      "from status:",
+      entry.status,
+      "to status:",
+      status
+    );
 
     // Update entry status
     await db.runAsync(`UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`, [
@@ -446,6 +517,7 @@ export const QadaDB = {
   getHistory,
   getPendingEntries,
   updateEntryStatus,
+  completeOneDayFromEntry,
   getSettings,
   updateSettings,
   deleteHistoryEntry,
