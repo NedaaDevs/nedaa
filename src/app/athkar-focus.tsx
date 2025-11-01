@@ -7,13 +7,13 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  runOnJS,
   FadeIn,
   FadeOut,
   useAnimatedProps,
   withSpring,
   interpolateColor,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import Svg, { Circle } from "react-native-svg";
 
 // Components
@@ -279,7 +279,7 @@ const AthkarFocusScreen = () => {
     .activeOffsetX([-20, 20])
     .failOffsetY([-30, 30])
     .onStart(() => {
-      runOnJS(setShowSwipeIndicator)(true);
+      scheduleOnRN(setShowSwipeIndicator, true);
       swipeIndicatorOpacity.value = withTiming(1, { duration: 200 });
     })
     .onUpdate((event) => {
@@ -292,7 +292,7 @@ const AthkarFocusScreen = () => {
         : event.translationX < -SWIPE_THRESHOLD;
 
       if (shouldDecrease && currentCount > 0 && currentAthkar) {
-        runOnJS(hapticWarning)();
+        scheduleOnRN(hapticWarning);
 
         // Animate circle scale for decrement feedback
         circleScale.value = withSpring(0.95, { damping: 20, stiffness: 300 }, () => {
@@ -304,13 +304,13 @@ const AthkarFocusScreen = () => {
           countOpacity.value = withTiming(1, { duration: 100 });
         });
 
-        runOnJS(decrementCount)(currentAthkar.id);
+        scheduleOnRN(decrementCount, currentAthkar.id);
       }
 
       // Hide swipe indicator
       swipeIndicatorOpacity.value = withTiming(0, { duration: 200 });
       swipeIndicatorTranslateX.value = withTiming(0, { duration: 200 });
-      runOnJS(setShowSwipeIndicator)(false);
+      scheduleOnRN(setShowSwipeIndicator, false);
     });
 
   // Handle vertical swipe for navigation
@@ -318,7 +318,7 @@ const AthkarFocusScreen = () => {
     .activeOffsetY([-20, 20])
     .failOffsetX([-30, 30])
     .onStart(() => {
-      runOnJS(setShowNavigationIndicator)(true);
+      scheduleOnRN(setShowNavigationIndicator, true);
       navigationIndicatorOpacity.value = withTiming(1, { duration: 200 });
       // Scale feedback during gesture start
       slideScale.value = withTiming(0.98, { duration: 150 });
@@ -340,18 +340,18 @@ const AthkarFocusScreen = () => {
 
       if (event.translationY < -NAVIGATION_THRESHOLD) {
         // Swipe up - Next athkar
-        runOnJS(hapticSelection)();
+        scheduleOnRN(hapticSelection);
         slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
           slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
         });
-        runOnJS(moveToNext)();
+        scheduleOnRN(moveToNext);
       } else if (event.translationY > NAVIGATION_THRESHOLD) {
         // Swipe down - Previous athkar
-        runOnJS(hapticSelection)();
+        scheduleOnRN(hapticSelection);
         slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
           slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
         });
-        runOnJS(moveToPrevious)();
+        scheduleOnRN(moveToPrevious);
       } else {
         // Return to original state if swipe wasn't strong enough
         slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
@@ -362,7 +362,7 @@ const AthkarFocusScreen = () => {
       navigationIndicatorTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
       slideTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
       navigationBlur.value = withTiming(0, { duration: 200 });
-      runOnJS(setShowNavigationIndicator)(false);
+      scheduleOnRN(setShowNavigationIndicator, false);
     });
 
   // Combine gestures
