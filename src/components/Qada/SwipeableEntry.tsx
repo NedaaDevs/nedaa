@@ -34,7 +34,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
   const { t } = useTranslation();
   const swipeableRef = useRef<React.ComponentRef<typeof Swipeable>>(null);
 
-  const renderRightActions = (_progress: SharedValue<number>, drag: SharedValue<number>) => {
+  const renderRightActions = (_progress: SharedValue<number>, _drag: SharedValue<number>) => {
     return (
       <View style={{ flexDirection: "row", height: 60 }}>
         <Pressable
@@ -59,17 +59,19 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
     );
   };
 
-  const renderLeftActions = () => {
+  const renderLeftActions = (_progress: SharedValue<number>, _drag: SharedValue<number>) => {
     return (
-      <Pressable
-        onPress={() => {
-          onDelete(entry.id);
-          swipeableRef.current?.close();
-        }}
-        className="justify-center items-center bg-error rounded-xl mr-2 px-6">
-        <Icon as={Trash2} className="text-background" size="xl" />
-        <Text className="text-background text-xs mt-1">{t("qada.delete")}</Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", height: 60 }}>
+        <Pressable
+          onPress={() => {
+            onDelete(entry.id);
+            swipeableRef.current?.close();
+          }}
+          className="w-[75px] h-[60px] justify-center items-center bg-error rounded-xl ml-2">
+          <Icon as={Trash2} className="text-background" size="lg" />
+          <Text className="text-background text-xs font-medium mt-1">{t("qada.delete")}</Text>
+        </Pressable>
+      </View>
     );
   };
 
