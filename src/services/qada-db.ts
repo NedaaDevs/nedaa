@@ -27,6 +27,7 @@ const QadaHistorySchema = z.object({
   id: z.number(),
   date: z.string(),
   count: z.number(),
+  original_count: z.number().optional(),
   type: z.enum(["completed", "added", "removed"]),
   status: z.enum(["pending", "completed", "deleted"]),
   notes: z.string().optional().nullable(),
@@ -84,6 +85,7 @@ const initializeDB = async () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT NOT NULL,
         count INTEGER NOT NULL,
+        original_count INTEGER,
         type TEXT NOT NULL CHECK(type IN ('completed', 'added', 'removed')),
         status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'deleted')),
         notes TEXT,
@@ -91,6 +93,14 @@ const initializeDB = async () => {
         updated_at TEXT NOT NULL
       );`
     );
+
+    // Add original_count column if it doesn't exist (for existing databases)
+    try {
+      await db.execAsync(`ALTER TABLE ${QADA_HISTORY_TABLE} ADD COLUMN original_count INTEGER;`);
+    } catch (error) {
+      // Column already exists, ignore error
+      console.log("[Qada DB] original_count column already exists");
+    }
 
     // Create qada_settings table
     await db.execAsync(
@@ -190,8 +200,8 @@ const addMissedFasts = async (count: number, notes?: string): Promise<boolean> =
     // Add to history
     const now = new Date().toISOString();
     await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-      [now, count, "added", "pending", notes || null, now, now]
+      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, original_count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+      [now, count, count, "added", "pending", notes || null, now, now]
     );
 
     return true;
@@ -443,8 +453,23 @@ const updateEntryStatus = async (
 
     // If marking a pending entry as deleted
     if (entry.status === "pending" && status === "deleted" && entry.type === "added") {
+      // Calculate how many days were completed from this entry
+      const originalCount = entry.original_count || entry.count;
+      const completedDays = originalCount - entry.count;
+
+      // Subtract remaining days from missed and completed days from completed
       const newTotalMissed = currentData.total_missed - entry.count;
-      await updateQadaFast(newTotalMissed, currentData.total_completed);
+      const newTotalCompleted = currentData.total_completed - completedDays;
+
+      await updateQadaFast(newTotalMissed, Math.max(0, newTotalCompleted));
+
+      console.log(
+        "[Qada DB] Deleted entry - removed",
+        entry.count,
+        "remaining days and",
+        completedDays,
+        "completed days"
+      );
     }
 
     return true;

@@ -284,18 +284,8 @@ export const useQadaStore = create<QadaState>()(
          */
         deleteEntry: async (id: number) => {
           try {
-            // Get current state before deletion
-            const state = get();
-            const entryToDelete = state.pendingEntries.find((entry) => entry.id === id);
-
             const success = await QadaDB.updateEntryStatus(id, "deleted");
             if (success) {
-              // Update totalOriginal to reflect the deletion
-              if (entryToDelete && entryToDelete.type === "added") {
-                set({
-                  totalOriginal: Math.max(0, state.totalOriginal - entryToDelete.count),
-                });
-              }
               // Reload data to update totals and entries
               await get().loadData();
             }
