@@ -44,10 +44,13 @@ import { NotificationSoundKey } from "@/types/sound";
 // Constants
 import { SOUND_ASSETS } from "@/constants/sounds";
 // Utils
-import { getAvailableSounds } from "@/utils/sound";
+import { getAvailableSoundsWithCustom } from "@/utils/sound";
 
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
+
+// Stores
+import { useCustomSoundsStore } from "@/stores/customSounds";
 
 type Props = {
   isOpen: boolean;
@@ -79,6 +82,7 @@ const PrayerCustomizationModal: FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
+  const { customSounds } = useCustomSoundsStore();
 
   // Merge defaults with overrides
   const currentConfig = { ...defaults, ...currentOverride };
@@ -95,8 +99,8 @@ const PrayerCustomizationModal: FC<Props> = ({
   const [, setIsTimingOpen] = useState(false);
   const [, setIsSoundOpen] = useState(false);
 
-  // Sound options based on notification type
-  const soundOptions = getAvailableSounds(type);
+  // Sound options based on notification type (including custom sounds)
+  const soundOptions = getAvailableSoundsWithCustom(type, customSounds);
 
   const timingOptions = [5, 10, 15, 20, 30];
 
@@ -135,6 +139,11 @@ const PrayerCustomizationModal: FC<Props> = ({
   };
 
   const getTranslatedLabel = () => {
+    // Check if this is a custom sound
+    const customSound = customSounds.find((s) => s.id === sound);
+    if (customSound) return customSound.name;
+
+    // Otherwise, it's a bundled sound
     const soundAsset = SOUND_ASSETS[sound as keyof typeof SOUND_ASSETS];
     if (!soundAsset) return t("notification.sound.unknown");
     return t(soundAsset.label);

@@ -8,6 +8,9 @@ import { soundPreviewManager } from "@/utils/sound";
 import type { NotificationType } from "@/types/notification";
 import type { NotificationSoundKey } from "@/types/sound";
 
+// Stores
+import { useCustomSoundsStore } from "@/stores/customSounds";
+
 type UseSoundPreviewReturn = {
   playPreview: <T extends NotificationType>(
     type: T,
@@ -24,6 +27,7 @@ type UseSoundPreviewReturn = {
 
 export const useSoundPreview = (): UseSoundPreviewReturn => {
   const player = useAudioPlayer();
+  const { customSounds } = useCustomSoundsStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSound, setCurrentSound] = useState<string | null>(null);
   const isMountedRef = useRef(true);
@@ -59,12 +63,18 @@ export const useSoundPreview = (): UseSoundPreviewReturn => {
   const playPreview = useCallback(
     async <T extends NotificationType>(type: T, soundKey: NotificationSoundKey<T>) => {
       try {
-        await soundPreviewManager.playPreview(type, soundKey, player, playerIdRef.current);
+        await soundPreviewManager.playPreview(
+          type,
+          soundKey,
+          player,
+          playerIdRef.current,
+          customSounds
+        );
       } catch (error) {
         console.error("Error in playPreview:", error);
       }
     },
-    [player]
+    [player, customSounds]
   );
 
   const stopPreview = useCallback(async () => {

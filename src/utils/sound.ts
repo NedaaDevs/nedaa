@@ -6,6 +6,10 @@ import { SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
 // Types
 import type { NotificationType } from "@/types/notification";
 import type { SoundOption, SoundAsset } from "@/types/sound";
+import type { CustomSound } from "@/types/customSound";
+
+// Utils
+import { isCustomSoundKey } from "@/utils/customSoundManager";
 
 // Type-safe helper to get available sounds
 export const getAvailableSounds = <T extends NotificationType>(type: T): SoundOption[] => {
@@ -93,8 +97,59 @@ class SoundPreviewManager {
     type: T,
     soundKey: string,
     player: ReturnType<typeof useAudioPlayer>,
-    playerId: string
+    playerId: string,
+    customSounds?: import("@/types/customSound").CustomSound[]
   ): Promise<void> {
+    // Check if it's a custom sound
+    const isCustom = isCustomSoundKey(soundKey);
+
+    if (isCustom) {
+      // Handle custom sound
+      const customSound = customSounds?.find((s) => s.id === soundKey);
+      if (!customSound) {
+        console.error(`Custom sound not found: ${soundKey}`);
+        return;
+      }
+
+      // Validate the custom sound is available for this type
+      if (!customSound.availableFor.includes(type)) {
+        console.error(`Custom sound ${soundKey} not available for type: ${type}`);
+        return;
+      }
+
+      const soundId = `${type}.${soundKey}`;
+
+      try {
+        // Stop any currently playing sound first
+        if (this.isPlaying) {
+          this.isPlaying = false;
+          this.currentSoundId = null;
+          this.currentPlayerId = null;
+          this.notifyListeners();
+        }
+
+        this.isPlaying = true;
+        this.currentSoundId = soundId;
+        this.currentSoundSource = customSound.contentUri;
+        this.currentPlayerId = playerId;
+        this.notifyListeners();
+
+        // Play custom sound from content URI
+        await player.replace(customSound.contentUri);
+        await player.play();
+      } catch (error) {
+        console.error("Error playing custom sound preview:", error);
+        this.isPlaying = false;
+        this.currentSoundId = null;
+        this.currentSoundSource = null;
+        this.currentPlayerId = null;
+        this.notifyListeners();
+        throw error;
+      }
+      return;
+    }
+
+    // Handle bundled sounds
     // Type-safe validation
     if (!isSoundKeyValid(type, soundKey)) {
       console.error(`Invalid sound key: ${soundKey} for type: ${type}`);
@@ -202,3 +257,84 @@ class SoundPreviewManager {
 }
 
 export const soundPreviewManager = SoundPreviewManager.getInstance();
+
+// ============================================================================
+// Custom Sounds Integration
+// ============================================================================
+
+/**
+ * Get available sounds including custom sounds for a notification type
+ */
+export const getAvailableSoundsWithCustom = <T extends NotificationType>(
+  type: T,
+  customSounds: CustomSound[]
+): SoundOption[] => {
+  // Get bundled sounds
+  const bundledSounds = getAvailableSounds(type);
+
+  // Get custom sounds for this type
+  const customSoundOptions: SoundOption[] = customSounds
+    .filter((sound) => sound.availableFor.includes(type))
+    .map((sound) => ({
+      value: sound.id,
+      label: sound.name,
+      isPreviewable: true, // Custom sounds are always previewable
+      isCustom: true,
+    }));
+
+  return [...bundledSounds, ...customSoundOptions];
+};
+
+/**
+ * Get notification sound including custom sounds
+ * Returns the sound identifier for notification channels
+ */
+export const getNotificationSoundWithCustom = <T extends NotificationType>(
+  type: T,
+  soundKey: string,
+  customSounds: CustomSound[]
+): string | null => {
+  // Check if it's a custom sound
+  if (isCustomSoundKey(soundKey)) {
+    const customSound = customSounds.find((s) => s.id === soundKey);
+    return customSound?.contentUri ?? null;
+  }
+
+  // Otherwise, get bundled sound
+  return getNotificationSound(type, soundKey);
+};
+
+/**
+ * Get custom sound by key
+ */
+export const getCustomSound = (
+  soundKey: string,
+  customSounds: CustomSound[]
+): CustomSound | null => {
+  if (!isCustomSoundKey(soundKey)) {
+    return null;
+  }
+  return customSounds.find((s) => s.id === soundKey) ?? null;
+};
+
+/**
+ * Check if a sound key is valid (bundled or custom)
+ */
+export const isSoundKeyValidWithCustom = <T extends NotificationType>(
+  type: T,
+  soundKey: string,
+  customSounds: CustomSound[]
+): boolean => {
+  // Check bundled sounds
+  if (isSoundKeyValid(type, soundKey)) {
+    return true;
+  }
+
+  // Check custom sounds
+  if (isCustomSoundKey(soundKey)) {
+    const customSound = customSounds.find((s) => s.id === soundKey);
+    return customSound ? customSound.availableFor.includes(type) : false;
+  }
+
+  return false;
+};

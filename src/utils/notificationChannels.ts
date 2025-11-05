@@ -9,12 +9,14 @@ import {
   NotificationType,
 } from "@/types/notification";
 import { PrayerName } from "@/types/prayerTimes";
+import type { CustomSound } from "@/types/customSound";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Utils
 import { getNotificationSound } from "@/utils/sound";
+import { isCustomSoundKey } from "@/utils/customSoundManager";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -80,7 +82,7 @@ export const cleanupOldChannels = async (
     eveningNotification: AthkarNotificationSettings;
   }
 ): Promise<void> => {
-  if (Platform.OS !== "android") return;
+  if (Platform.OS !== PlatformType.ANDROID) return;
 
   try {
     const existingChannels = await Notifications.getNotificationChannelsAsync();
@@ -167,14 +169,19 @@ export const cleanupOldChannels = async (
  */
 export const createNotificationChannels = async (
   settings: NotificationSettings,
+  customSounds: CustomSound[] = [],
   athkarSettings?: {
     morningNotification: AthkarNotificationSettings;
     eveningNotification: AthkarNotificationSettings;
   }
 ): Promise<void> => {
-  if (Platform.OS !== "android") return;
+  if (Platform.OS !== PlatformType.ANDROID) return;
 
   console.log("[NotificationChannels] Creating notification channels with custom sounds...");
+  console.log(
+    `[NotificationChannels] Available custom sounds: ${customSounds.length}`,
+    customSounds.map((s) => ({ id: s.id, name: s.name }))
+  );
 
   // First, cleanup old channels that are no longer needed
   await cleanupOldChannels(settings, athkarSettings);
@@ -292,24 +299,67 @@ export const createNotificationChannels = async (
       const existingChannels = await Notifications.getNotificationChannelsAsync();
       const existingChannel = existingChannels.find((ch) => ch.id === channel.id);
 
-      if (existingChannel && existingChannel.sound === channel.sound) {
+      // Check if this channel uses a custom sound
+      const isCustom = channel.soundKey && isCustomSoundKey(channel.soundKey);
+
+      if (isCustom) {
+        // Handle custom sound channels using native module
+        console.log(`[NotificationChannels] Looking for custom sound: ${channel.soundKey}`);
+        const customSound = customSounds.find((s) => s.id === channel.soundKey);
+
+        if (customSound) {
+          // Check if channel already exists - custom sounds need to be recreated if changed
+          if (existingChannel) {
+            // For custom sounds, we can't easily compare URIs, so recreate if needed
+            console.log(
+              `[NotificationChannels] Channel ${channel.id} exists, will update if needed`
+            );
+          }
+
+          // Use native module to create channel with custom sound
+          const { default: CustomNotificationSound } = await import(
+            "expo-custom-notification-sound"
+          );
+          // Our custom native module expects Android's native importance level (0-5), not expo's enum (0-7)
+          // Expo: HIGH=6 → Android: IMPORTANCE_HIGH=4
+          const nativeImportance = 4; // HIGH importance
+          await CustomNotificationSound.createChannelWithCustomSound(
+            channel.id,
+            channel.name,
+            customSound.contentUri,
+            nativeImportance,
+            !!channel.vibrationPattern
+          );
+
+          console.log(
+            `[NotificationChannels] Created/Updated channel: ${channel.id} with custom sound: ${customSound.name}`
+          );
+        } else {
+          console.error(
+            `[NotificationChannels] Custom sound not found for ${channel.soundKey}, skipping channel ${channel.id}`
+          );
+        }
+      } else {
+        // Handle bundled sound channels
+        if (existingChannel && existingChannel.sound === channel.sound) {
+          console.log(
+            `[NotificationChannels] Channel ${channel.id} already exists with correct sound`
+          );
+          continue;
+        }
+
+        await Notifications.setNotificationChannelAsync(channel.id, {
+          name: channel.name,
+          importance: channel.importance,
+          sound: channel.sound || undefined, // Convert null to undefined for expo-notifications
+          vibrationPattern: channel.vibrationPattern,
+          showBadge: channel.showBadge,
+        });
+
         console.log(
-          `[NotificationChannels] Channel ${channel.id} already exists with correct sound`
+          `[NotificationChannels] Created/Updated channel: ${channel.id} with sound: ${channel.sound}`
         );
-        continue;
       }
-
-      await Notifications.setNotificationChannelAsync(channel.id, {
-        name: channel.name,
-        importance: channel.importance,
-        sound: channel.sound || undefined, // Convert null to undefined for expo-notifications
-        vibrationPattern: channel.vibrationPattern,
-        showBadge: channel.showBadge,
-      });
-
-      console.log(
-        `[NotificationChannels] Created/Updated channel: ${channel.id} with sound: ${channel.sound}`
-      );
     } catch (error) {
       console.error(`[NotificationChannels] Failed to create channel ${channel.id}:`, error);
     }
@@ -332,6 +382,7 @@ export const getNotificationChannelId = (
  */
 export const shouldUpdateChannels = async (
   settings: NotificationSettings,
+  customSounds: CustomSound[] = [],
   athkarSettings?: {
     morningNotification: AthkarNotificationSettings;
     eveningNotification: AthkarNotificationSettings;
@@ -383,8 +434,28 @@ export const shouldUpdateChannels = async (
 
           // Check if channel exists with correct sound
           const existingChannel = existingChannels.find((ch) => ch.id === channelId);
-          const expectedSound = getNotificationSound(type, config.sound);
 
+          // For custom sounds, always update to ensure correct URI is used
+          if (isCustomSoundKey(config.sound)) {
+            // Verify custom sound still exists
+            const customSound = customSounds.find((s) => s.id === config.sound);
+            if (!customSound) {
+              console.warn(
+                `[NotificationChannels] Custom sound ${config.sound} not found, will skip channel`
+              );
+              continue;
+            }
+            // Always recreate custom sound channels to ensure correct URI
+            if (!existingChannel) {
+              return true;
+            }
+            // For custom sounds, we can't easily verify the URI matches, so recreate if needed
+            // The native module will handle updating the channel
+            continue;
+          }
+
+          // For bundled sounds, check if the sound matches
+          const expectedSound = getNotificationSound(type, config.sound);
           if (!existingChannel || existingChannel.sound !== expectedSound) {
             return true;
           }
@@ -437,7 +508,7 @@ export const shouldUpdateChannels = async (
  * Get all active channel mappings for debugging/monitoring
  */
 export const getActiveChannelMappings = async (): Promise<ChannelMapping[]> => {
-  if (Platform.OS !== "android") return [];
+  if (Platform.OS !== PlatformType.ANDROID) return [];
 
   try {
     const channels = await Notifications.getNotificationChannelsAsync();
@@ -468,7 +539,7 @@ export const getActiveChannelMappings = async (): Promise<ChannelMapping[]> => {
  * Debug function to log all channel information
  */
 export const debugChannelInfo = async (): Promise<void> => {
-  if (Platform.OS !== "android") {
+  if (Platform.OS !== PlatformType.ANDROID) {
     console.log("[NotificationChannels] Debug: Not on Android platform");
     return;
   }
@@ -497,5 +568,57 @@ export const debugChannelInfo = async (): Promise<void> => {
     console.log(`[NotificationChannels] Debug: Active mappings:`, mappings);
   } catch (error) {
     console.error("[NotificationChannels] Debug: Error getting channel info:", error);
+  }
+};
+
+/**
+ * Create a notification channel with support for custom sounds
+ * Uses the native module for custom sounds (content:// URIs)
+ */
+export const createChannelWithCustomSound = async (
+  channelId: string,
+  channelName: string,
+  soundKey: string,
+  customSounds: CustomSound[],
+  importance: Notifications.AndroidImportance = Notifications.AndroidImportance.HIGH,
+  vibration: boolean = true
+): Promise<void> => {
+  if (Platform.OS !== PlatformType.ANDROID) return;
+
+  try {
+    // Check if this is a custom sound
+    if (isCustomSoundKey(soundKey)) {
+      const customSound = customSounds.find((s) => s.id === soundKey);
+      if (customSound) {
+        // Use native module for custom sounds (conditionally imported on Android only)
+        const { default: CustomNotificationSound } = await import("expo-custom-notification-sound");
+        // Our custom native module expects Android's native importance level (0-5), not expo's enum (0-7)
+        // Expo: HIGH=6 → Android: IMPORTANCE_HIGH=4
+        const nativeImportance = 4; // HIGH importance (hardcoded for now)
+        await CustomNotificationSound.createChannelWithCustomSound(
+          channelId,
+          channelName,
+          customSound.contentUri,
+          nativeImportance,
+          vibration
+        );
+        console.log(`[NotificationChannels] Created custom sound channel: ${channelId}`);
+        return;
+      }
+    }
+
+    // For bundled sounds, use expo-notifications
+    const sound = getNotificationSound(soundKey as any, soundKey);
+    await Notifications.setNotificationChannelAsync(channelId, {
+      name: channelName,
+      importance: importance,
+      sound: sound || undefined,
+      vibrationPattern: vibration ? [0, 250, 250, 250] : undefined,
+      showBadge: true,
+    });
+    console.log(`[NotificationChannels] Created bundled sound channel: ${channelId}`);
+  } catch (error) {
+    console.error(`[NotificationChannels] Failed to create channel ${channelId}:`, error);
+    throw error;
   }
 };
