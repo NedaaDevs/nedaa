@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { ScrollView, Linking, Platform } from "react-native";
 import { useState, useEffect } from "react";
+import { router } from "expo-router";
+
 // Components
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -18,7 +20,10 @@ import NotificationQuickSetup from "@/components/NotificationQuickSetup";
 import NotificationTypePanel from "@/components/NotificationTypePanel";
 
 // Icons
-import { Bell } from "lucide-react-native";
+import { Bell, Volume1 } from "lucide-react-native";
+
+// Enums
+import { PlatformType } from "@/enums/app";
 
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
@@ -114,7 +119,7 @@ const NotificationSettings = () => {
 
   const openAppSettings = () => {
     hapticMedium();
-    if (Platform.OS === "ios") {
+    if (Platform.OS === PlatformType.IOS) {
       Linking.openURL("app-settings:");
     } else {
       Linking.openSettings();
@@ -227,6 +232,24 @@ const NotificationSettings = () => {
                 onApply={updateQuickSetup}
                 supportsVibration={features.supportsVibration}
               />
+
+              {/* Custom Sounds Button (Android Only) */}
+              {Platform.OS === PlatformType.ANDROID && (
+                <Box className="mx-4">
+                  <Button
+                    size="lg"
+                    className="bg-accent-primary rounded-xl"
+                    onPress={() => {
+                      hapticMedium();
+                      router.push("/settings/customSounds");
+                    }}>
+                    <Icon as={Volume1} size="md" className="text-background mr-2" />
+                    <ButtonText className="text-background font-semibold">
+                      {t("notification.customSound.manage")}
+                    </ButtonText>
+                  </Button>
+                </Box>
+              )}
 
               {/* Prayer Notifications */}
               <NotificationTypePanel
