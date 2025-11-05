@@ -1,0 +1,9 @@
+# Build artifacts
+android/build/
+android/.cxx/
+*.iml
+.gradle/
+.idea/
+
+# Node modules (if any)
+node_modules/
