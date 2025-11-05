@@ -10,11 +10,14 @@ import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
-import { getAvailableSounds } from "@/utils/sound";
+import { getAvailableSoundsWithCustom } from "@/utils/sound";
 
 // Types
 import type { NotificationType } from "@/types/notification";
 import type { PrayerSoundKey } from "@/constants/sounds";
+
+// Stores
+import { useCustomSoundsStore } from "@/stores/customSounds";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -62,12 +65,13 @@ const NotificationQuickSetup: FC<Props> = ({
   const hapticLight = useHaptic("light");
 
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
+  const { customSounds } = useCustomSoundsStore();
 
   // Local state for quick setup
   const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
 
-  const soundOptions = getAvailableSounds(NOTIFICATION_TYPE.PRAYER);
+  const soundOptions = getAvailableSoundsWithCustom(NOTIFICATION_TYPE.PRAYER, customSounds);
 
   const handleApply = () => {
     hapticSuccess();
@@ -90,6 +94,11 @@ const NotificationQuickSetup: FC<Props> = ({
   };
 
   const getTranslatedLabel = () => {
+    // Check if this is a custom sound
+    const customSound = customSounds.find((s) => s.id === localSound);
+    if (customSound) return customSound.name;
+
+    // Otherwise, it's a bundled sound
     const soundAsset = SOUND_ASSETS[localSound as keyof typeof SOUND_ASSETS];
     if (!soundAsset) return t("notification.sound.unknown");
     return t(soundAsset.label);
@@ -138,11 +147,13 @@ const NotificationQuickSetup: FC<Props> = ({
                   <SelectScrollView className="px-2 pt-1 pb-4 max-h-[50vh]">
                     {soundOptions.map((option) => {
                       const isSelected = localSound === option.value;
+                      // Custom sounds have their label already translated
+                      const displayLabel = option.isCustom ? option.label : t(option.label);
 
                       return (
                         <SelectItem
                           key={option.value}
-                          label={t(option.label)}
+                          label={displayLabel}
                           value={option.value}
                           className={`px-4 py-4 mb-2 rounded-lg transition-all duration-200 ease-in-out ${
                             isSelected
