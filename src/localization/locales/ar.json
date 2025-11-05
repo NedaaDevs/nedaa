@@ -60,10 +60,12 @@
   "athkar.streak.days": "يوم",
   "athkar.title": "الأذكار",
   "athkar.todayProgress": "تقدم اليوم",
+  "common.add": "إضافة",
   "common.ago": "منذ {{time}}",
   "common.cancel": "إلغاء",
   "common.close": "إغلاق",
   "common.confirm": "تأكيد",
+  "common.delete": "حذف",
   "common.done": "تم",
   "common.enable": "تفعيل",
   "common.error": "خطأ",
@@ -175,6 +177,25 @@
   "notification.customized": "مخصص",
   "notification.customizeIndividualPrayers": "تخصيص الصلوات",
   "notification.customSettings": "إعدادات مخصصة",
+  "notification.customSound.add": "إضافة صوت مخصص",
+  "notification.customSound.addError": "فشل في إضافة الصوت المخصص",
+  "notification.customSound.addNew": "إضافة صوت جديد",
+  "notification.customSound.androidOnly": "الأصوات المخصصة للإشعارات متاحة فقط على أجهزة أندرويد",
+  "notification.customSound.availableFor": "متاح لـ",
+  "notification.customSound.chooseFile": "اختيار ملف",
+  "notification.customSound.deleteMessage": "هل أنت متأكد من حذف \"{{name}}\"؟",
+  "notification.customSound.deleteTitle": "حذف الصوت",
+  "notification.customSound.empty": "لا توجد أصوات مخصصة بعد",
+  "notification.customSound.emptyHint": "اضغط على الزر أعلاه لإضافة أول صوت مخصص",
+  "notification.customSound.info": "أضف ملفات الصوت الخاصة بك لاستخدامها كأصوات إشعارات. بعد إضافتها، ستكون متاحة في خيارات أصوات الإشعارات للصلوات والإقامة وتنبيهات ما قبل الأذان. الحد الأقصى 5 ميجابايت للملف الواحد.",
+  "notification.customSound.manage": "إدارة الأصوات المخصصة",
+  "notification.customSound.name": "اسم الصوت",
+  "notification.customSound.namePlaceholder": "أدخل اسم الصوت",
+  "notification.customSound.selectFile": "اختر ملف صوتي",
+  "notification.customSound.sounds": "أصوات",
+  "notification.customSound.storage": "التخزين",
+  "notification.customSound.title": "الأصوات المخصصة",
+  "notification.customSound.validationError": "يرجى ملء جميع الحقول واختيار نوع إشعار واحد على الأقل",
   "notification.enableAll": "تفعيل جميع الإشعارات",
   "notification.iqama.body_few": "مضت {{count}} دقائق منذ أذان {{prayerName}} 🕌",
   "notification.iqama.body_many": "مضت {{count}} دقيقة منذ أذان {{prayerName}} 🕌",
@@ -215,6 +236,9 @@
   "notification.sound.yasserAldosari": "أذان ياسر الدوسري",
   "notification.timeAfterAthan": "الوقت بعد الأذان",
   "notification.timeBeforeAthan": "الوقت قبل الأذان",
+  "notification.type.iqama": "الإقامة",
+  "notification.type.prayer": "الصلاة",
+  "notification.type.preAthan": "قبل الأذان",
   "notification.usingDefault": "الإعدادات الافتراضية",
   "notification.vibration": "إهتزاز",
   "otherTimings": {

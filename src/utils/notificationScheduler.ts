@@ -36,6 +36,9 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PermissionStatus } from "expo-notifications";
 import { PlatformType } from "@/enums/app";
 
+// Stores
+import { useCustomSoundsStore } from "@/stores/customSounds";
+
 // Utils
 import {
   createNotificationChannels,
@@ -203,11 +206,20 @@ export const scheduleAllNotifications = async (
 
   try {
     if (Platform.OS === PlatformType.ANDROID) {
+      // Get custom sounds from store
+      const storeState = useCustomSoundsStore.getState();
+      console.log("[NotificationScheduler] Store state:", {
+        isInitialized: storeState.isInitialized,
+        customSoundsCount: storeState.customSounds.length,
+        customSounds: storeState.customSounds.map((s) => ({ id: s.id, name: s.name })),
+      });
+      const customSounds = storeState.customSounds;
+
       // Create/update notification channels before scheduling
-      const needsUpdate = await shouldUpdateChannels(settings, athkarSettings);
+      const needsUpdate = await shouldUpdateChannels(settings, customSounds, athkarSettings);
       if (needsUpdate) {
         console.log("[NotificationScheduler] Updating notification channels...");
-        await createNotificationChannels(settings, athkarSettings);
+        await createNotificationChannels(settings, customSounds, athkarSettings);
       }
     }
 
