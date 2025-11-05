@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/react-native";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useNotificationStore } from "@/stores/notification";
+import { useCustomSoundsStore } from "@/stores/customSounds";
 
 // Services
 import { appSetup, firstRunSetup } from "@/services/setup";
@@ -27,12 +28,16 @@ export const useInitialSetup = () => {
   const appStore = useAppStore();
   const notificationStore = useNotificationStore();
   const prayerTimesStore = usePrayerTimesStore();
+  const customSoundsStore = useCustomSoundsStore();
 
   useEffect(() => {
     const initializeApp = async () => {
       // Initialize Sentry based on user choice
       await initSentry(appStore.sendCrashLogs);
       await initDB();
+
+      // Initialize custom sounds store (Android only)
+      await customSoundsStore.initialize();
 
       // First run setup(Request notification and location permission)
       await firstRunSetup(appStore);
