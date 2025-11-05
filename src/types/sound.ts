@@ -14,6 +14,7 @@ export type SoundOption = {
   value: string;
   label: string;
   isPreviewable: boolean;
+  isCustom?: boolean;
 };
 
 // Type-safe sound assets configuration
