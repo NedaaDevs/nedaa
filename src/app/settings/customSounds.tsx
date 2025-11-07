@@ -11,12 +11,13 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Badge, BadgeText } from "@/components/ui/badge";
+import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
 import AddCustomSoundModal from "@/components/AddCustomSoundModal";
 
 // Icons
-import { Plus, Trash2, Info, Volume2 } from "lucide-react-native";
+import { Plus, Trash2, Info, Volume2, Play, Square } from "lucide-react-native";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -33,17 +34,20 @@ import {
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
-import type { AddCustomSoundResult } from "@/types/customSound";
+import type { AddCustomSoundResult, CustomSound } from "@/types/customSound";
 
 export default function CustomSoundsScreen() {
   const { t } = useTranslation();
   const hapticMedium = useHaptic("medium");
   const hapticSuccess = useHaptic("success");
+  const hapticLight = useHaptic("light");
+  const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   const { customSounds, isInitialized, initialize, addCustomSound, deleteCustomSound } =
     useCustomSoundsStore();
@@ -81,6 +85,19 @@ export default function CustomSoundsScreen() {
     if (result.success) {
       await addCustomSound(result.sound);
       hapticSuccess();
+    }
+  };
+
+  const handleSoundPreview = async (sound: CustomSound) => {
+    hapticLight();
+    // Use the first available notification type for preview
+    // Custom sounds can be used for any type they're available for
+    const previewType = sound.availableFor[0] || NOTIFICATION_TYPE.PRAYER;
+
+    if (isPlayingSound(previewType, sound.id)) {
+      await stopPreview();
+    } else {
+      await playPreview(previewType, sound.id);
     }
   };
 
@@ -196,9 +213,18 @@ export default function CustomSoundsScreen() {
                   key={sound.id}
                   className="p-4 bg-background-secondary rounded-xl border border-outline shadow-sm">
                   <HStack space="md" className="items-start">
-                    <Box className="w-12 h-12 rounded-xl bg-primary/10 items-center justify-center">
-                      <Icon as={Volume2} size="lg" className="text-primary" />
-                    </Box>
+                    <Pressable
+                      onPress={() => handleSoundPreview(sound)}
+                      className="w-12 h-12 rounded-xl bg-primary/10 items-center justify-center">
+                      {isPlayingSound(
+                        sound.availableFor[0] || NOTIFICATION_TYPE.PRAYER,
+                        sound.id
+                      ) ? (
+                        <Icon as={Square} size="lg" className="text-primary" />
+                      ) : (
+                        <Icon as={Play} size="lg" className="text-primary" />
+                      )}
+                    </Pressable>
 
                     <VStack space="sm" className="flex-1">
                       <Text className="text-base font-bold text-typography">{sound.name}</Text>
