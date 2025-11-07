@@ -138,7 +138,7 @@ export default function AddCustomSoundModal({
           </ModalCloseButton>
         </ModalHeader>
 
-        <ModalBody className="p-6">
+        <ModalBody className="px-6">
           <VStack space="xl">
             {/* File Picker Section */}
             <VStack space="sm">
