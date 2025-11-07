@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform, ActivityIndicator, TextInput } from "react-native";
+import { Platform, ActivityIndicator, TextInput, Alert } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 
 // Components
@@ -21,7 +21,7 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 
 // Icons
-import { X, Check, Upload, Square, CheckSquare, Speaker } from "lucide-react-native";
+import { X, Check, Upload, Square, CheckSquare, Speaker, AlertTriangle } from "lucide-react-native";
 
 // Types
 import type { NotificationType } from "@/types/notification";
@@ -34,7 +34,15 @@ import { PlatformType } from "@/enums/app";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Utils
-import { pickAudioFile, addCustomSound, formatFileSize } from "@/utils/customSoundManager";
+import {
+  pickAudioFile,
+  addCustomSound,
+  formatFileSize,
+  findDuplicateSound,
+} from "@/utils/customSoundManager";
+
+// Stores
+import { useCustomSoundsStore } from "@/stores/customSounds";
 
 type AddCustomSoundModalProps = {
   isOpen: boolean;
@@ -48,12 +56,15 @@ export default function AddCustomSoundModal({
   onSuccess,
 }: AddCustomSoundModalProps) {
   const { t } = useTranslation();
+  const { customSounds } = useCustomSoundsStore();
 
   const [soundName, setSoundName] = useState("");
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<NotificationType[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [forceAdd, setForceAdd] = useState(false);
 
   if (Platform.OS !== PlatformType.ANDROID) {
     return null;
@@ -62,16 +73,60 @@ export default function AddCustomSoundModal({
   const handlePickFile = async () => {
     try {
       setError(null);
+      setDuplicateWarning(null);
+      setForceAdd(false);
       const file = await pickAudioFile();
 
       if (file) {
-        // Store the full file asset with all metadata and URI
-        setSelectedFile(file);
+        // Check for duplicates
+        const duplicate = findDuplicateSound(file, customSounds);
 
-        // Auto-fill name from filename if empty
-        if (!soundName) {
-          const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-          setSoundName(name);
+        if (duplicate && !forceAdd) {
+          // Show duplicate warning
+          Alert.alert(
+            t("notification.customSound.duplicateTitle"),
+            t("notification.customSound.duplicateMessage", {
+              existingName: duplicate.name,
+            }),
+            [
+              {
+                text: t("common.cancel"),
+                style: "cancel",
+                onPress: () => {
+                  // Don't select the file
+                  setSelectedFile(null);
+                },
+              },
+              {
+                text: t("notification.customSound.addAnyway"),
+                onPress: () => {
+                  // Proceed with the file
+                  setSelectedFile(file);
+                  setForceAdd(true);
+                  setDuplicateWarning(
+                    t("notification.customSound.duplicateMessage", {
+                      existingName: duplicate.name,
+                    })
+                  );
+
+                  // Auto-fill name from filename if empty
+                  if (!soundName) {
+                    const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                    setSoundName(name);
+                  }
+                },
+              },
+            ]
+          );
+        } else {
+          // No duplicate or user has chosen to proceed
+          setSelectedFile(file);
+
+          // Auto-fill name from filename if empty
+          if (!soundName) {
+            const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+            setSoundName(name);
+          }
         }
       }
     } catch (err) {
@@ -95,8 +150,14 @@ export default function AddCustomSoundModal({
     setError(null);
 
     try {
-      // Use the already stored file
-      const result = await addCustomSound(selectedFile, soundName.trim(), selectedTypes);
+      // Use the already stored file, passing existing sounds and force flag
+      const result = await addCustomSound(
+        selectedFile,
+        soundName.trim(),
+        selectedTypes,
+        customSounds,
+        forceAdd
+      );
 
       if (result.success) {
         onSuccess(result);
@@ -116,6 +177,8 @@ export default function AddCustomSoundModal({
     setSelectedFile(null);
     setSelectedTypes([]);
     setError(null);
+    setDuplicateWarning(null);
+    setForceAdd(false);
     onClose();
   };
 
@@ -262,6 +325,18 @@ export default function AddCustomSoundModal({
                 </Pressable>
               </VStack>
             </VStack>
+
+            {/* Duplicate Warning Message */}
+            {duplicateWarning && (
+              <HStack
+                space="sm"
+                className="bg-background-warning border border-border-warning rounded-xl p-4">
+                <Icon as={AlertTriangle} size="sm" className="text-warning" />
+                <Text size="sm" className="text-warning flex-1 font-medium">
+                  {duplicateWarning}
+                </Text>
+              </HStack>
+            )}
 
             {/* Error Message */}
             {error && (

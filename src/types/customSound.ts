@@ -19,6 +19,9 @@ export type CustomSound = {
   /** File size in bytes */
   fileSize: number;
 
+  /** File identifier for duplicate detection (URI + size) */
+  fileIdentifier: string;
+
   /** Which notification types this sound is available for */
   availableFor: NotificationType[];
 
@@ -37,6 +40,7 @@ export type AddCustomSoundResult =
   | {
       success: false;
       error: string;
+      duplicateSound?: CustomSound;
     };
 
 /**

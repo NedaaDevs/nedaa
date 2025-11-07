@@ -59,18 +59,49 @@ export function validateAudioFile(file: DocumentPicker.DocumentPickerAsset): {
 }
 
 /**
+ * Get unique file identifier for duplicate detection
+ */
+export function getUniqueFileIdentifier(file: DocumentPicker.DocumentPickerAsset): string {
+  return `${file.uri}_${file.size}`;
+}
+
+/**
+ * Check if a file is a duplicate of an existing custom sound
+ */
+export function findDuplicateSound(
+  file: DocumentPicker.DocumentPickerAsset,
+  existingSounds: CustomSound[]
+): CustomSound | null {
+  return existingSounds.find((sound) => sound.fileName === file.name) || null;
+}
+
+/**
  * Add a custom notification sound
  */
 export async function addCustomSound(
   file: DocumentPicker.DocumentPickerAsset,
   name: string,
-  availableFor: NotificationType[]
+  availableFor: NotificationType[],
+  existingSounds: CustomSound[] = [],
+  forceAdd: boolean = false
 ): Promise<AddCustomSoundResult> {
   if (Platform.OS !== PlatformType.ANDROID) {
     return {
       success: false,
       error: "Custom sounds are only supported on Android",
     };
+  }
+
+  // Check for duplicates unless force adding
+  if (!forceAdd) {
+    const duplicate = findDuplicateSound(file, existingSounds);
+    if (duplicate) {
+      return {
+        success: false,
+        error: "duplicate",
+        duplicateSound: duplicate,
+      };
+    }
   }
 
   try {
@@ -111,6 +142,7 @@ export async function addCustomSound(
       contentUri,
       fileName: file.name,
       fileSize: file.size || 0,
+      fileIdentifier: getUniqueFileIdentifier(file),
       availableFor,
       dateAdded: new Date().toISOString(),
     };
