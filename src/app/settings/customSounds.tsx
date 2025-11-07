@@ -24,12 +24,15 @@ import { PlatformType } from "@/enums/app";
 
 // Stores
 import { useCustomSoundsStore } from "@/stores/customSounds";
+import { useNotificationStore } from "@/stores/notification";
 
 // Utils
 import {
   deleteCustomSoundFromMediaStore,
   formatFileSize,
   calculateTotalStorage,
+  getCustomSoundUsages,
+  replaceCustomSoundInSettings,
 } from "@/utils/customSoundManager";
 
 // Hooks
@@ -51,6 +54,7 @@ export default function CustomSoundsScreen() {
 
   const { customSounds, isInitialized, initialize, addCustomSound, deleteCustomSound } =
     useCustomSoundsStore();
+  const { settings, updateSettings, getUsedCustomSounds } = useNotificationStore();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -105,27 +109,80 @@ export default function CustomSoundsScreen() {
     const sound = customSounds.find((s) => s.id === id);
     if (!sound) return;
 
-    Alert.alert(
-      t("notification.customSound.deleteTitle"),
-      t("notification.customSound.deleteMessage", { name: sound.name }),
-      [
-        {
-          text: t("common.cancel"),
-          style: "cancel",
-        },
-        {
-          text: t("common.delete"),
-          style: "destructive",
-          onPress: async () => {
-            hapticMedium();
-            // Delete from MediaStore
-            await deleteCustomSoundFromMediaStore(sound.contentUri);
-            // Delete from store
-            await deleteCustomSound(id);
+    // Check if the custom sound is being used in any notification settings
+    const usedSounds = getUsedCustomSounds();
+    const isInUse = usedSounds.has(id);
+    const usages = getCustomSoundUsages(id, settings);
+
+    if (isInUse && usages.length > 0) {
+      // Format usages
+      const usageLabels = usages.map((usage) => {
+        if (usage.prayerId) {
+          // Prayer-specific usage
+          return t(`notification.customSound.usage.${usage.type}`, { prayer: usage.prayerId });
+        } else {
+          // Default usage
+          return t(`notification.customSound.usage.default.${usage.type}`);
+        }
+      });
+
+      // Show alert with auto-replacement option
+      Alert.alert(
+        t("notification.customSound.deleteInUseTitle"),
+        t("notification.customSound.deleteInUseMessage", {
+          name: sound.name,
+          usages: usageLabels.join(", "),
+          replacement: t("notification.sound.makkahAthan1"),
+        }),
+        [
+          {
+            text: t("common.cancel"),
+            style: "cancel",
           },
-        },
-      ]
-    );
+          {
+            text: t("notification.customSound.replaceAndDelete"),
+            style: "destructive",
+            onPress: async () => {
+              hapticMedium();
+
+              // Replace the custom sound with default sound in settings
+              const newSettings = replaceCustomSoundInSettings(id, "makkahAthan1", settings);
+              await updateSettings(newSettings);
+
+              // Delete from MediaStore
+              await deleteCustomSoundFromMediaStore(sound.contentUri);
+              // Delete from store
+              await deleteCustomSound(id);
+
+              console.log(`[CustomSounds] Replaced and deleted custom sound: ${sound.name}`);
+            },
+          },
+        ]
+      );
+    } else {
+      // Show regular delete confirmation
+      Alert.alert(
+        t("notification.customSound.deleteTitle"),
+        t("notification.customSound.deleteMessage", { name: sound.name }),
+        [
+          {
+            text: t("common.cancel"),
+            style: "cancel",
+          },
+          {
+            text: t("common.delete"),
+            style: "destructive",
+            onPress: async () => {
+              hapticMedium();
+              // Delete from MediaStore
+              await deleteCustomSoundFromMediaStore(sound.contentUri);
+              // Delete from store
+              await deleteCustomSound(id);
+            },
+          },
+        ]
+      );
+    }
   };
 
   const getTypeLabel = (type: string) => {

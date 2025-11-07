@@ -74,6 +74,8 @@ export type NotificationAction = {
   scheduleAllNotifications: () => Promise<void>;
   rescheduleIfNeeded: (force: boolean) => Promise<void>;
   updateAthkarNotificationSetting: (option: AthkarNotificationSettings) => Promise<void>;
+  updateSettings: (newSettings: NotificationSettings) => Promise<void>;
+  getUsedCustomSounds: () => Set<string>;
 };
 
 export type NotificationConfig = {
