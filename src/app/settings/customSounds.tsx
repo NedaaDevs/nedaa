@@ -39,7 +39,6 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
 import type { AddCustomSoundResult } from "@/types/customSound";
-import { MAX_CUSTOM_SOUND_SIZE } from "@/types/customSound";
 
 export default function CustomSoundsScreen() {
   const { t } = useTranslation();
@@ -77,7 +76,6 @@ export default function CustomSoundsScreen() {
   }
 
   const totalStorage = calculateTotalStorage(customSounds);
-  const masmtorage = MAX_CUSTOM_SOUND_SIZE * 20; // 100MB total (assuming max 20 sounds)
 
   const handleAddSuccess = async (result: AddCustomSoundResult) => {
     if (result.success) {
@@ -147,8 +145,7 @@ export default function CustomSoundsScreen() {
                     size="sm"
                     className="bg-background-muted border-outline rounded-lg px-3 py-1.5">
                     <BadgeText size="sm" className="text-typography-secondary font-medium">
-                      {t("notification.customSound.storage")}: {formatFileSize(totalStorage)} /{" "}
-                      {formatFileSize(masmtorage)}
+                      {t("notification.customSound.storage")}: {formatFileSize(totalStorage)}
                     </BadgeText>
                   </Badge>
                   <Badge

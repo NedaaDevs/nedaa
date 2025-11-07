@@ -8,11 +8,7 @@ import { PlatformType } from "@/enums/app";
 // Types
 import type { CustomSound, AddCustomSoundResult } from "@/types/customSound";
 import type { NotificationType } from "@/types/notification";
-import {
-  MAX_CUSTOM_SOUND_SIZE,
-  SUPPORTED_AUDIO_EXTENSIONS,
-  CUSTOM_SOUND_KEY_PREFIX,
-} from "@/types/customSound";
+import { SUPPORTED_AUDIO_EXTENSIONS, CUSTOM_SOUND_KEY_PREFIX } from "@/types/customSound";
 
 /**
  * Pick an audio file from the device
@@ -46,16 +42,6 @@ export function validateAudioFile(file: DocumentPicker.DocumentPickerAsset): {
   valid: boolean;
   error?: string;
 } {
-  // Check file size
-  if (file.size && file.size > MAX_CUSTOM_SOUND_SIZE) {
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    const maxMB = (MAX_CUSTOM_SOUND_SIZE / (1024 * 1024)).toFixed(0);
-    return {
-      valid: false,
-      error: `File is too large (${sizeMB}MB). Maximum size is ${maxMB}MB.`,
-    };
-  }
-
   // Check file extension
   const extension = getFileExtension(file.name);
   if (!SUPPORTED_AUDIO_EXTENSIONS.includes(extension as any)) {
@@ -195,7 +181,7 @@ function getFileExtension(filename: string): string {
  * Generate a unique ID for a custom sound
  */
 function generateCustomSoundId(): string {
-  return `${CUSTOM_SOUND_KEY_PREFIX}${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `${CUSTOM_SOUND_KEY_PREFIX}${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**
