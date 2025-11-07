@@ -45,11 +45,6 @@ export type AddCustomSoundResult =
 export const CUSTOM_SOUNDS_STORAGE_KEY = "custom_sounds";
 
 /**
- * Maximum file size for custom sounds (5MB)
- */
-export const MAX_CUSTOM_SOUND_SIZE = 5 * 1024 * 1024;
-
-/**
  * Supported audio file extensions
  */
 export const SUPPORTED_AUDIO_EXTENSIONS = [".mp3", ".ogg", ".wav", ".m4a", ".aac"] as const;
