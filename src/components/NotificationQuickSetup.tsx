@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 // Constants
@@ -70,6 +70,15 @@ const NotificationQuickSetup: FC<Props> = ({
   // Local state for quick setup
   const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
+
+  // Sync local state with props when they change
+  useEffect(() => {
+    setLocalSound(currentSound);
+  }, [currentSound]);
+
+  useEffect(() => {
+    setLocalVibration(vibrationEnabled);
+  }, [vibrationEnabled]);
 
   const soundOptions = getAvailableSoundsWithCustom(NOTIFICATION_TYPE.PRAYER, customSounds);
 

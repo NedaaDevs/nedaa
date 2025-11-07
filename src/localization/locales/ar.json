@@ -183,6 +183,8 @@
   "notification.customSound.androidOnly": "الأصوات المخصصة للإشعارات متاحة فقط على أجهزة أندرويد",
   "notification.customSound.availableFor": "متاح لـ",
   "notification.customSound.chooseFile": "اختيار ملف",
+  "notification.customSound.deleteInUseMessage": "\"{{name}}\" مستخدم حالياً لـ: {{usages}}. سيتم استبداله بـ \"{{replacement}}\" قبل الحذف. هل تريد المتابعة؟",
+  "notification.customSound.deleteInUseTitle": "الصوت قيد الاستخدام",
   "notification.customSound.deleteMessage": "هل أنت متأكد من حذف \"{{name}}\"؟",
   "notification.customSound.deleteTitle": "حذف الصوت",
   "notification.customSound.empty": "لا توجد أصوات مخصصة بعد",
@@ -191,10 +193,17 @@
   "notification.customSound.manage": "إدارة الأصوات المخصصة",
   "notification.customSound.name": "اسم الصوت",
   "notification.customSound.namePlaceholder": "أدخل اسم الصوت",
+  "notification.customSound.replaceAndDelete": "استبدال وحذف",
   "notification.customSound.selectFile": "اختر ملف صوتي",
   "notification.customSound.sounds": "أصوات",
   "notification.customSound.storage": "التخزين",
   "notification.customSound.title": "الأصوات المخصصة",
+  "notification.customSound.usage.default.iqama": "إشعارات الإقامة الافتراضية",
+  "notification.customSound.usage.default.prayer": "إشعارات الصلاة الافتراضية",
+  "notification.customSound.usage.default.preAthan": "إشعارات قبل الأذان الافتراضية",
+  "notification.customSound.usage.iqama": "إشعارات إقامة {{prayer}}",
+  "notification.customSound.usage.prayer": "إشعارات صلاة {{prayer}}",
+  "notification.customSound.usage.preAthan": "إشعارات قبل أذان {{prayer}}",
   "notification.customSound.validationError": "يرجى ملء جميع الحقول واختيار نوع إشعار واحد على الأقل",
   "notification.enableAll": "تفعيل جميع الإشعارات",
   "notification.iqama.body_few": "مضت {{count}} دقائق منذ أذان {{prayerName}} 🕌",

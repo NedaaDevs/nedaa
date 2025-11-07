@@ -8,7 +8,7 @@ import { PlatformType } from "@/enums/app";
 
 // Types
 import type { CustomSound, AddCustomSoundResult } from "@/types/customSound";
-import type { NotificationType } from "@/types/notification";
+import type { NotificationType, NotificationSettings } from "@/types/notification";
 import { SUPPORTED_AUDIO_EXTENSIONS, CUSTOM_SOUND_KEY_PREFIX } from "@/types/customSound";
 
 // Utils
@@ -273,4 +273,117 @@ export const createChannelWithCustomSound = async (
     console.error(`[CustomSoundManager] Failed to create channel ${channelId}:`, error);
     throw error;
   }
+};
+
+/**
+ * Build a Set of all used custom sound IDs
+ */
+export const buildUsedSoundsSet = (notificationSettings: NotificationSettings): Set<string> => {
+  const usedSounds = new Set<string>();
+
+  // Check default settings
+  const defaults = [
+    notificationSettings.defaults.prayer.sound,
+    notificationSettings.defaults.iqama.sound,
+    notificationSettings.defaults.preAthan.sound,
+  ];
+  defaults.forEach((sound) => isCustomSoundKey(sound) && usedSounds.add(sound));
+
+  // Check prayer-specific overrides
+  Object.values(notificationSettings.overrides).forEach((prayerOverrides) => {
+    const overrideSounds = [
+      prayerOverrides.prayer?.sound,
+      prayerOverrides.iqama?.sound,
+      prayerOverrides.preAthan?.sound,
+    ];
+    overrideSounds.forEach((sound) => sound && isCustomSoundKey(sound) && usedSounds.add(sound));
+  });
+
+  return usedSounds;
+};
+
+/**
+ * Check if a custom sound is being used in any notification settings
+ */
+export const isCustomSoundInUse = (
+  soundId: string,
+  notificationSettings: NotificationSettings
+): boolean => {
+  const usedSounds = buildUsedSoundsSet(notificationSettings);
+  return usedSounds.has(soundId);
+};
+
+/**
+ * Get all usage instances of a custom sound in notification settings
+ */
+export const getCustomSoundUsages = (
+  soundId: string,
+  notificationSettings: NotificationSettings
+): { prayerId?: string; type: "prayer" | "iqama" | "preAthan" }[] => {
+  const usages: { prayerId?: string; type: "prayer" | "iqama" | "preAthan" }[] = [];
+
+  // Check default settings
+  if (notificationSettings.defaults.prayer.sound === soundId) {
+    usages.push({ type: "prayer" });
+  }
+  if (notificationSettings.defaults.iqama.sound === soundId) {
+    usages.push({ type: "iqama" });
+  }
+  if (notificationSettings.defaults.preAthan.sound === soundId) {
+    usages.push({ type: "preAthan" });
+  }
+
+  // Check prayer-specific overrides
+  for (const prayerId in notificationSettings.overrides) {
+    const prayerOverrides = notificationSettings.overrides[prayerId];
+    if (prayerOverrides.prayer?.sound === soundId) {
+      usages.push({ prayerId, type: "prayer" });
+    }
+    if (prayerOverrides.iqama?.sound === soundId) {
+      usages.push({ prayerId, type: "iqama" });
+    }
+    if (prayerOverrides.preAthan?.sound === soundId) {
+      usages.push({ prayerId, type: "preAthan" });
+    }
+  }
+
+  return usages;
+};
+
+/**
+ * Replace a custom sound with a default sound in all notification settings
+ */
+export const replaceCustomSoundInSettings = (
+  oldSoundId: string,
+  newSoundId: string = "makkahAthan1",
+  notificationSettings: NotificationSettings
+): NotificationSettings => {
+  const newSettings = JSON.parse(JSON.stringify(notificationSettings)); // Deep clone
+
+  // Replace in default settings
+  if (newSettings.defaults.prayer.sound === oldSoundId) {
+    newSettings.defaults.prayer.sound = newSoundId;
+  }
+  if (newSettings.defaults.iqama.sound === oldSoundId) {
+    newSettings.defaults.iqama.sound = newSoundId;
+  }
+  if (newSettings.defaults.preAthan.sound === oldSoundId) {
+    newSettings.defaults.preAthan.sound = newSoundId;
+  }
+
+  // Replace in prayer-specific overrides
+  for (const prayerId in newSettings.overrides) {
+    const prayerOverrides = newSettings.overrides[prayerId];
+    if (prayerOverrides.prayer?.sound === oldSoundId) {
+      prayerOverrides.prayer.sound = newSoundId;
+    }
+    if (prayerOverrides.iqama?.sound === oldSoundId) {
+      prayerOverrides.iqama.sound = newSoundId;
+    }
+    if (prayerOverrides.preAthan?.sound === oldSoundId) {
+      prayerOverrides.preAthan.sound = newSoundId;
+    }
+  }
+
+  return newSettings;
 };

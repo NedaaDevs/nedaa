@@ -6,6 +6,7 @@ import { openSettings } from "expo-linking";
 // Utils
 import { cancelAllScheduledNotifications } from "@/utils/notifications";
 import { scheduleAllNotifications, shouldReschedule } from "@/utils/notificationScheduler";
+import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 
 // Stores
 import locationStore from "@/stores/location";
@@ -230,6 +231,16 @@ export const useNotificationStore = create<NotificationStore>()(
           const { settings } = get();
           return getEffectiveConfig(prayerId, type, settings.defaults, settings.overrides);
         },
+        updateSettings: async (newSettings: NotificationSettings) => {
+          set({ settings: newSettings });
+          await get().scheduleAllNotifications();
+        },
+
+        getUsedCustomSounds: () => {
+          const { settings } = get();
+          return buildUsedSoundsSet(settings);
+        },
+
         openNotificationSettings: async () => {
           try {
             await openSettings();
