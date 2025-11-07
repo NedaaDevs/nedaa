@@ -1,5 +1,6 @@
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 // Enums
@@ -9,6 +10,9 @@ import { PlatformType } from "@/enums/app";
 import type { CustomSound, AddCustomSoundResult } from "@/types/customSound";
 import type { NotificationType } from "@/types/notification";
 import { SUPPORTED_AUDIO_EXTENSIONS, CUSTOM_SOUND_KEY_PREFIX } from "@/types/customSound";
+
+// Utils
+import { getNotificationSound } from "@/utils/sound";
 
 /**
  * Pick an audio file from the device
@@ -218,3 +222,55 @@ export function formatFileSize(bytes: number): string {
 
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
+
+/**
+ * Create a notification channel with support for custom sounds
+ * Uses the native module for custom sounds (content:// URIs)
+ */
+export const createChannelWithCustomSound = async (
+  channelId: string,
+  channelName: string,
+  soundKey: string,
+  customSounds: CustomSound[],
+  importance: Notifications.AndroidImportance = Notifications.AndroidImportance.HIGH,
+  vibration: boolean = true
+): Promise<void> => {
+  if (Platform.OS !== PlatformType.ANDROID) return;
+
+  try {
+    // Check if this is a custom sound
+    if (isCustomSoundKey(soundKey)) {
+      const customSound = customSounds.find((s) => s.id === soundKey);
+      if (customSound) {
+        // Use native module for custom sounds (conditionally imported on Android only)
+        const { default: CustomNotificationSound } = await import("expo-custom-notification-sound");
+        // Our custom native module expects Android's native importance level (0-5), not expo's enum (0-7)
+        // Expo: HIGH=6 → Android: IMPORTANCE_HIGH=4
+        const nativeImportance = 4; // HIGH importance (hardcoded for now)
+        await CustomNotificationSound.createChannelWithCustomSound(
+          channelId,
+          channelName,
+          customSound.contentUri,
+          nativeImportance,
+          vibration
+        );
+        console.log(`[CustomSoundManager] Created custom sound channel: ${channelId}`);
+        return;
+      }
+    }
+
+    // For bundled sounds, use expo-notifications
+    const sound = getNotificationSound(soundKey as any, soundKey);
+    await Notifications.setNotificationChannelAsync(channelId, {
+      name: channelName,
+      importance: importance,
+      sound: sound || undefined,
+      vibrationPattern: vibration ? [0, 250, 250, 250] : undefined,
+      showBadge: true,
+    });
+    console.log(`[CustomSoundManager] Created bundled sound channel: ${channelId}`);
+  } catch (error) {
+    console.error(`[CustomSoundManager] Failed to create channel ${channelId}:`, error);
+    throw error;
+  }
+};
