@@ -1,6 +1,6 @@
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
-import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey } from "@/constants/sounds";
+import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey, QadaSoundKey } from "@/constants/sounds";
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/notifications";
@@ -21,7 +21,11 @@ export type PreAthanNotificationConfig = NotificationWithTiming & {
   sound: PreAthanSoundKey;
 };
 
-export type QadaNotificationConfig = NotificationConfig;
+export type QadaNotificationConfig = {
+  enabled: boolean;
+  sound: QadaSoundKey | "default";
+  vibration: boolean;
+};
 
 export type NotificationPermissionsState = {
   status: LocalPermissionStatus;
@@ -57,7 +61,7 @@ export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
-  updateDefault: <T extends Partial<PrayerNotificationType>>(
+  updateDefault: <T extends Exclude<NotificationType, "athkar">>(
     type: T,
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
