@@ -42,19 +42,23 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
             onComplete(entry.id);
             swipeableRef.current?.close();
           }}
-          className="w-[75px] h-[60px] bg-success justify-center items-center rounded-tl-xl rounded-bl-xl">
+          className={`w-[75px] h-[60px] bg-success justify-center items-center ${entry.count > 1 ? "rounded-tl-xl rounded-bl-xl" : "rounded-xl"}`}>
           <Icon as={Check} className="text-background" size="lg" />
           <Text className="text-background text-xs font-medium mt-1">{t("qada.complete")}</Text>
         </Pressable>
-        <Pressable
-          onPress={() => {
-            onCompleteAll();
-            swipeableRef.current?.close();
-          }}
-          className="w-[75px] h-[60px] bg-primary justify-center items-center rounded-tr-xl rounded-br-xl">
-          <Icon as={CheckCheck} className="text-background" size="lg" />
-          <Text className="text-background text-xs font-medium mt-1">{t("qada.completeAll")}</Text>
-        </Pressable>
+        {entry.count > 1 && (
+          <Pressable
+            onPress={() => {
+              onCompleteAll();
+              swipeableRef.current?.close();
+            }}
+            className="w-[75px] h-[60px] bg-primary justify-center items-center rounded-tr-xl rounded-br-xl">
+            <Icon as={CheckCheck} className="text-background" size="lg" />
+            <Text className="text-background text-xs font-medium mt-1">
+              {t("qada.completeAll")}
+            </Text>
+          </Pressable>
+        )}
       </View>
     );
   };

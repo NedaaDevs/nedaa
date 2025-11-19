@@ -75,6 +75,10 @@ const QadaScreen = () => {
   const hapticTimer = useRef<number | null>(null);
   const resetTimer = useRef<number | null>(null);
 
+  // Stepper long press state
+  const incrementTimer = useRef<number | null>(null);
+  const decrementTimer = useRef<number | null>(null);
+
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
   const hapticWarning = useHaptic("warning");
@@ -103,13 +107,71 @@ const QadaScreen = () => {
   };
 
   const incrementAmount = () => {
-    hapticLight();
     setAmount((prev) => Math.min(prev + 1, 999));
   };
 
   const decrementAmount = () => {
-    hapticLight();
     setAmount((prev) => Math.max(prev - 1, 1));
+  };
+
+  const startIncrement = () => {
+    hapticLight();
+    incrementAmount();
+    // Start with slower interval, then speed up
+    let interval = 200;
+    let count = 0;
+    incrementTimer.current = window.setInterval(() => {
+      count++;
+      // Speed up after 5 increments
+      if (count === 5) {
+        if (incrementTimer.current) clearInterval(incrementTimer.current);
+        interval = 100;
+        incrementTimer.current = window.setInterval(() => {
+          incrementAmount();
+        }, interval);
+      }
+      incrementAmount();
+    }, interval);
+  };
+
+  const stopIncrement = () => {
+    if (incrementTimer.current) {
+      clearInterval(incrementTimer.current);
+      incrementTimer.current = null;
+    }
+  };
+
+  const startDecrement = () => {
+    hapticLight();
+    decrementAmount();
+    // Start with slower interval, then speed up
+    let interval = 200;
+    let count = 0;
+    decrementTimer.current = window.setInterval(() => {
+      count++;
+      // Speed up after 5 decrements
+      if (count === 5) {
+        if (decrementTimer.current) clearInterval(decrementTimer.current);
+        interval = 100;
+        decrementTimer.current = window.setInterval(() => {
+          decrementAmount();
+        }, interval);
+      }
+      decrementAmount();
+    }, interval);
+  };
+
+  const stopDecrement = () => {
+    if (decrementTimer.current) {
+      clearInterval(decrementTimer.current);
+      decrementTimer.current = null;
+    }
+  };
+
+  const handleModalClose = () => {
+    stopIncrement();
+    stopDecrement();
+    setShowAddModal(false);
   };
 
   const handleCompleteEntry = async (id: number) => {
@@ -414,7 +476,7 @@ const QadaScreen = () => {
           </VStack>
 
           {/* Add Missed Days Modal: Quick add buttons + stepper control for intuitive UX */}
-          <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} size="md">
+          <Modal isOpen={showAddModal} onClose={handleModalClose} size="md">
             <ModalBackdrop />
             <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl">
               <ModalCloseButton className="absolute top-4 right-4 z-10">
@@ -440,6 +502,7 @@ const QadaScreen = () => {
                           key={days}
                           onPress={() => handleQuickAdd(days)}
                           variant="outline"
+                          isDisabled={isLoading}
                           className="flex-1 border-accent-primary px-2">
                           <ButtonText className="text-accent-primary font-semibold text-center">
                             +{days}
@@ -463,7 +526,9 @@ const QadaScreen = () => {
                     </Text>
                     <HStack space="md" className="items-center justify-center">
                       <Pressable
-                        onPress={decrementAmount}
+                        onPressIn={startDecrement}
+                        onPressOut={stopDecrement}
+                        disabled={isLoading}
                         className="w-14 h-14 bg-background border-2 border-outline rounded-full items-center justify-center active:bg-background-tertiary">
                         <Text className="text-2xl text-typography font-bold">−</Text>
                       </Pressable>
@@ -476,7 +541,9 @@ const QadaScreen = () => {
                       </Box>
 
                       <Pressable
-                        onPress={incrementAmount}
+                        onPressIn={startIncrement}
+                        onPressOut={stopIncrement}
+                        disabled={isLoading}
                         className="w-14 h-14 bg-accent-primary rounded-full items-center justify-center active:opacity-80">
                         <Text className="text-2xl text-background font-bold">+</Text>
                       </Pressable>
@@ -486,7 +553,11 @@ const QadaScreen = () => {
               </ModalBody>
 
               <ModalFooter className="px-6 py-6">
-                <Button onPress={handleAddMissed} className="w-full bg-accent-primary" size="lg">
+                <Button
+                  onPress={handleAddMissed}
+                  isDisabled={isLoading || amount <= 0}
+                  className="w-full bg-accent-primary"
+                  size="lg">
                   <ButtonText className="text-background text-base font-semibold">
                     {t("qada.addDays", { count: amount, defaultValue: `Add ${amount} Days` })}
                   </ButtonText>
