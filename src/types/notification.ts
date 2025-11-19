@@ -21,6 +21,8 @@ export type PreAthanNotificationConfig = NotificationWithTiming & {
   sound: PreAthanSoundKey;
 };
 
+export type QadaNotificationConfig = NotificationConfig;
+
 export type NotificationPermissionsState = {
   status: LocalPermissionStatus;
   canRequestAgain: boolean;
@@ -49,7 +51,7 @@ export type NotificationState = {
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
-export type PrayerNotificationType = Exclude<NotificationType, "athkar">;
+export type PrayerNotificationType = Exclude<NotificationType, "athkar" | "qada">;
 
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
@@ -92,6 +94,7 @@ export type NotificationDefaults = {
   prayer: PrayerNotificationConfig;
   iqama: IqamaNotificationConfig;
   preAthan: PreAthanNotificationConfig;
+  qada: QadaNotificationConfig;
 };
 
 export type NotificationOverride = {
@@ -115,7 +118,9 @@ export function getEffectiveConfig<T extends Exclude<NotificationType, "athkar">
     ? IqamaNotificationConfig
     : T extends "preAthan"
       ? PreAthanNotificationConfig
-      : never {
+      : T extends "qada"
+        ? QadaNotificationConfig
+        : never {
   const defaultConfig = defaults[type];
   const override = overrides[prayerId]?.[type];
 
@@ -132,4 +137,6 @@ export type ConfigForType<T extends NotificationType> = T extends typeof NOTIFIC
     ? IqamaNotificationConfig
     : T extends typeof NOTIFICATION_TYPE.PRE_ATHAN
       ? PreAthanNotificationConfig
-      : never;
+      : T extends typeof NOTIFICATION_TYPE.QADA
+        ? QadaNotificationConfig
+        : never;

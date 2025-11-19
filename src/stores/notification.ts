@@ -48,6 +48,11 @@ const defaultSettings: NotificationSettings = {
       vibration: false,
       timing: 15,
     },
+    qada: {
+      enabled: false,
+      sound: "tasbih",
+      vibration: true,
+    },
   },
   overrides: {
     // Set Maghrib iqama to 5 minutes by default
