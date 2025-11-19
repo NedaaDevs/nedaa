@@ -11,6 +11,10 @@ import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 // Stores
 import locationStore from "@/stores/location";
 import prayerTimesStore from "@/stores/prayerTimes";
+import { useQadaStore } from "@/stores/qada";
+
+// Services
+import { QadaDB } from "@/services/qada-db";
 
 // Types
 import {
@@ -185,6 +189,21 @@ export const useNotificationStore = create<NotificationStore>()(
             // Get two weeks worth of prayer data
             const prayersData = prayerTimesStore.getState().twoWeeksTimings;
 
+            // Get qada settings and remaining count
+            let qadaData = null;
+            try {
+              const qadaSettings = await QadaDB.getSettings();
+              const qadaRemainingCount = useQadaStore.getState().getRemaining();
+              if (qadaSettings) {
+                qadaData = {
+                  settings: qadaSettings,
+                  remainingCount: qadaRemainingCount,
+                };
+              }
+            } catch (error) {
+              console.warn("[Notification Store] Failed to load qada data:", error);
+            }
+
             const result = await scheduleAllNotifications(
               settings,
               {
@@ -192,7 +211,8 @@ export const useNotificationStore = create<NotificationStore>()(
                 eveningNotification,
               },
               prayersData,
-              timezone
+              timezone,
+              qadaData
             );
 
             if (result.success) {

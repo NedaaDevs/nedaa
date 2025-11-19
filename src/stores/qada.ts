@@ -5,8 +5,50 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 // Services
 import { QadaDB } from "@/services/qada-db";
 
+// Utils
+import { scheduleQadaNotifications } from "@/utils/qadaNotificationScheduler";
+import i18next from "@/localization/i18n";
+
+// Stores
+import { useNotificationStore } from "@/stores/notification";
+import { useCustomSoundsStore } from "@/stores/customSounds";
+
 // Types
 import type { QadaHistory, QadaSettings } from "@/services/qada-db";
+
+/**
+ * Sync qada notifications with current settings
+ * Handles both scheduling new notifications and cancelling when disabled
+ */
+const syncQadaNotifications = async () => {
+  try {
+    const qadaStore = useQadaStore.getState();
+    const notificationStore = useNotificationStore.getState();
+    const customSoundsStore = useCustomSoundsStore.getState();
+
+    // Get current settings from database
+    const settings = await QadaDB.getSettings();
+
+    // Validate settings exist before proceeding
+    if (!settings) {
+      console.warn("[Qada Store] No settings found, skipping notification sync");
+      return;
+    }
+
+    const remainingCount = qadaStore.getRemaining();
+
+    // Call the scheduler - it handles cancellation when disabled/none
+    await scheduleQadaNotifications(
+      settings,
+      remainingCount,
+      i18next.t,
+      notificationStore.settings,
+      customSoundsStore.customSounds
+    );
+  } catch (error) {
+    console.error("[Qada Store] Error syncing notifications:", error);
+  }
+};
 
 export type QadaState = {
   // Data
@@ -106,6 +148,9 @@ export const useQadaStore = create<QadaState>()(
             const pendingEntries = await QadaDB.getPendingEntries();
             set({ pendingEntries });
 
+            // Sync notifications after loading data
+            await syncQadaNotifications();
+
             set({ isLoading: false });
           } catch (error) {
             console.error("[Qada Store] Error loading data:", error);
@@ -134,6 +179,9 @@ export const useQadaStore = create<QadaState>()(
               // Reload history and pending entries
               await get().loadHistory();
               await get().loadPendingEntries();
+
+              // Sync notifications with new count
+              await syncQadaNotifications();
             }
 
             set({ isLoading: false });
@@ -166,6 +214,9 @@ export const useQadaStore = create<QadaState>()(
               // Reload history and pending entries
               await get().loadHistory();
               await get().loadPendingEntries();
+
+              // Sync notifications with new count
+              await syncQadaNotifications();
             }
 
             set({ isLoading: false });
@@ -201,6 +252,9 @@ export const useQadaStore = create<QadaState>()(
                     ? settings.privacy_mode === 1
                     : state.privacyMode,
               }));
+
+              // Sync notifications after settings update
+              await syncQadaNotifications();
             }
 
             set({ isLoading: false });
@@ -249,6 +303,9 @@ export const useQadaStore = create<QadaState>()(
             if (success) {
               // Reload data to update totals and entries
               await get().loadData();
+
+              // Sync notifications with new count
+              await syncQadaNotifications();
             }
             return success;
           } catch (error) {
@@ -272,6 +329,9 @@ export const useQadaStore = create<QadaState>()(
 
             // Reload data to update totals and entries
             await get().loadData();
+
+            // Sync notifications with new count
+            await syncQadaNotifications();
             return true;
           } catch (error) {
             console.error("[Qada Store] Error completing all entries:", error);
@@ -288,6 +348,9 @@ export const useQadaStore = create<QadaState>()(
             if (success) {
               // Reload data to update totals and entries
               await get().loadData();
+
+              // Sync notifications with new count
+              await syncQadaNotifications();
             }
             return success;
           } catch (error) {
@@ -327,6 +390,12 @@ export const useQadaStore = create<QadaState>()(
                 totalOriginal: 0,
                 history: [],
               });
+
+              // Cancel notifications since all data is reset
+              const { cancelAllQadaNotifications } = await import(
+                "@/utils/qadaNotificationScheduler"
+              );
+              await cancelAllQadaNotifications();
             }
 
             set({ isLoading: false });
