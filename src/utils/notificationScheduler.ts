@@ -277,10 +277,14 @@ export const scheduleAllNotifications = async (
     const athkarNotificationCount =
       (athkarSettings.morningNotification.enabled ? 1 : 0) +
       (athkarSettings.eveningNotification.enabled ? 1 : 0);
+
+    // Calculate qada notification count (1 if enabled, 0 if disabled)
+    const qadaNotificationCount = settings.defaults.qada.enabled ? 1 : 0;
+
     // Apply iOS limit(64 scheduled notifications max)
     let notificationsToProcess = notificationsToSchedule;
     if (Platform.OS === PlatformType.IOS) {
-      const maxAllowed = MAX_IOS_NOTIFICATIONS - athkarNotificationCount;
+      const maxAllowed = MAX_IOS_NOTIFICATIONS - athkarNotificationCount - qadaNotificationCount;
 
       if (notificationsToSchedule.length > maxAllowed) {
         notificationsToProcess = notificationsToSchedule.slice(0, maxAllowed);
@@ -332,7 +336,7 @@ export const scheduleAllNotifications = async (
         scheduledCount++;
       }
     }
-    scheduledCount = scheduledCount + athkarNotificationCount;
+    scheduledCount = scheduledCount + athkarNotificationCount + qadaNotificationCount;
     console.log(`[NotificationScheduler] Successfully scheduled ${scheduledCount} notifications`);
     return { success: true, scheduledCount };
   } catch (error) {

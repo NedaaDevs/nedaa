@@ -318,6 +318,7 @@ export const buildUsedSoundsSet = (notificationSettings: NotificationSettings): 
     notificationSettings.defaults.prayer.sound,
     notificationSettings.defaults.iqama.sound,
     notificationSettings.defaults.preAthan.sound,
+    notificationSettings.defaults.qada.sound,
   ];
   defaults.forEach((sound) => isCustomSoundKey(sound) && usedSounds.add(sound));
 
