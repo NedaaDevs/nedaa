@@ -28,7 +28,7 @@ export type QadaState = {
   // Actions
   loadData: () => Promise<void>;
   addMissed: (count: number, notes?: string) => Promise<boolean>;
-  markCompleted: (count: number, date?: string, notes?: string) => Promise<boolean>;
+  markCompleted: (count: number, notes?: string) => Promise<boolean>;
   updateSettings: (
     settings: Partial<Omit<QadaSettings, "id" | "created_at" | "updated_at">>
   ) => Promise<boolean>;
@@ -152,11 +152,11 @@ export const useQadaStore = create<QadaState>()(
         /**
          * Mark fasts as completed
          */
-        markCompleted: async (count: number, date?: string, notes?: string) => {
+        markCompleted: async (count: number, notes?: string) => {
           try {
             set({ isLoading: true, hasError: false, errorMessage: "" });
 
-            const success = await QadaDB.markCompleted(count, date, notes);
+            const success = await QadaDB.markCompleted(count, notes);
             if (success) {
               const state = get();
               set({

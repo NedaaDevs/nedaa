@@ -25,7 +25,6 @@ const QadaFastSchema = z.object({
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const QadaHistorySchema = z.object({
   id: z.number(),
-  date: z.string(),
   count: z.number(),
   original_count: z.number().optional(),
   type: z.enum(["completed", "added", "removed"]),
@@ -83,7 +82,6 @@ const initializeDB = async () => {
     await db.execAsync(
       `CREATE TABLE IF NOT EXISTS ${QADA_HISTORY_TABLE} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
         count INTEGER NOT NULL,
         original_count INTEGER,
         type TEXT NOT NULL CHECK(type IN ('completed', 'added', 'removed')),
@@ -99,7 +97,7 @@ const initializeDB = async () => {
       await db.execAsync(`ALTER TABLE ${QADA_HISTORY_TABLE} ADD COLUMN original_count INTEGER;`);
     } catch (error) {
       // Column already exists, ignore error
-      console.log("[Qada DB] original_count column already exists");
+      console.log("[Qada DB] original_count column already exists", error);
     }
 
     // Create qada_settings table
@@ -200,8 +198,8 @@ const addMissedFasts = async (count: number, notes?: string): Promise<boolean> =
     // Add to history
     const now = new Date().toISOString();
     await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, original_count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-      [now, count, count, "added", "pending", notes || null, now, now]
+      `INSERT INTO ${QADA_HISTORY_TABLE} (count, original_count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      [count, count, "added", "pending", notes || null, now, now]
     );
 
     return true;
@@ -214,7 +212,7 @@ const addMissedFasts = async (count: number, notes?: string): Promise<boolean> =
 /**
  * Mark fasts as completed
  */
-const markCompleted = async (count: number, date?: string, notes?: string): Promise<boolean> => {
+const markCompleted = async (count: number, notes?: string): Promise<boolean> => {
   try {
     const db = await openDatabase();
     const currentData = await getQadaFast();
@@ -237,8 +235,8 @@ const markCompleted = async (count: number, date?: string, notes?: string): Prom
     // Add to history
     const now = new Date().toISOString();
     await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (date, count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-      [date || now, count, "completed", "completed", notes || null, now, now]
+      `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
+      [count, "completed", "completed", notes || null, now, now]
     );
 
     return true;
