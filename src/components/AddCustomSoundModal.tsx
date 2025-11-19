@@ -323,6 +323,28 @@ export default function AddCustomSoundModal({
                     {t("notification.type.preAthan")}
                   </Text>
                 </Pressable>
+
+                <Pressable
+                  onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.QADA)}
+                  disabled={isProcessing}
+                  className={`flex-row items-center p-3 rounded-lg ${
+                    selectedTypes.includes(NOTIFICATION_TYPE.QADA)
+                      ? "bg-background-info/20"
+                      : "bg-transparent active:bg-surface-hover"
+                  }`}>
+                  <Icon
+                    as={selectedTypes.includes(NOTIFICATION_TYPE.QADA) ? CheckSquare : Square}
+                    size="lg"
+                    className={
+                      selectedTypes.includes(NOTIFICATION_TYPE.QADA)
+                        ? "text-primary mr-3"
+                        : "text-typography-secondary mr-3"
+                    }
+                  />
+                  <Text className="text-typography font-medium flex-1">
+                    {t("notification.type.qada")}
+                  </Text>
+                </Pressable>
               </VStack>
             </VStack>
 
