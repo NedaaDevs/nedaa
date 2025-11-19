@@ -1,9 +1,15 @@
 import { useEffect, useState, useRef } from "react";
-import { ScrollView, TextInput, Platform } from "react-native";
+import { ScrollView, I18nManager } from "react-native";
 import { useTranslation } from "react-i18next";
 import { GestureHandlerRootView, GestureDetector, Gesture } from "react-native-gesture-handler";
-import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { useSharedValue, withTiming, cancelAnimation } from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  withTiming,
+  cancelAnimation,
+  useAnimatedStyle,
+  interpolate,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 // Components
 import { Background } from "@/components/ui/background";
@@ -17,6 +23,7 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Modal,
   ModalBackdrop,
@@ -31,16 +38,10 @@ import {
 import { useQadaStore } from "@/stores/qada";
 
 // Icons
-import { Plus, Check, X, CalendarDays, Calendar, RotateCcw } from "lucide-react-native";
+import { Plus, Check, X, CalendarDays, RotateCcw } from "lucide-react-native";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
-
-// Utils
-import { format } from "date-fns";
-
-// Enums
-import { PlatformType } from "@/enums/app";
 
 const QadaScreen = () => {
   const { t } = useTranslation();
@@ -61,12 +62,7 @@ const QadaScreen = () => {
   } = useQadaStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [customAmount, setCustomAmount] = useState("");
-  const [inputMode, setInputMode] = useState<"simple" | "dateRange">("simple");
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [amount, setAmount] = useState(1);
 
   // Reset press and hold state
   const [isResetting, setIsResetting] = useState(false);
@@ -91,40 +87,29 @@ const QadaScreen = () => {
     loadData();
   }, [loadData]);
 
-  const calculateDaysBetween = (start: Date, end: Date): number => {
-    // Normalize dates to midnight to avoid timezone issues
-    const startNormalized = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    const endNormalized = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-
-    const diffTime = endNormalized.getTime() - startNormalized.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    // Add 1 to include both start and end dates (Nov 1 to Nov 2 = 2 days)
-    return diffDays + 1;
+  const handleQuickAdd = async (days: number) => {
+    await hapticSelection();
+    await addMissed(days);
+    setShowAddModal(false);
+    await hapticSuccess();
   };
 
   const handleAddMissed = async () => {
-    let amount: number;
-    let notes: string | undefined;
-
-    if (inputMode === "simple") {
-      amount = parseInt(customAmount);
-      if (!amount || amount <= 0) return;
-    } else {
-      // Date range mode - auto-calculate count
-      amount = calculateDaysBetween(startDate, endDate);
-      notes = `${format(startDate, "MMM dd, yyyy")} - ${format(endDate, "MMM dd, yyyy")}`;
-    }
-
-    await addMissed(amount, notes);
-
-    // Reset form
-    setCustomAmount("");
-    setInputMode("simple");
-    setStartDate(new Date());
-    setEndDate(new Date());
+    if (amount <= 0) return;
+    await addMissed(amount);
+    setAmount(1);
     setShowAddModal(false);
     await hapticSuccess();
+  };
+
+  const incrementAmount = () => {
+    hapticLight();
+    setAmount((prev) => Math.min(prev + 1, 999));
+  };
+
+  const decrementAmount = () => {
+    hapticLight();
+    setAmount((prev) => Math.max(prev - 1, 1));
   };
 
   const handleCompleteEntry = async (id: number) => {
@@ -143,65 +128,6 @@ const QadaScreen = () => {
   const handleDeleteEntry = async (id: number) => {
     await hapticWarning();
     await deleteEntry(id);
-  };
-
-  const showStartDatePickerModal = () => {
-    if (Platform.OS === PlatformType.ANDROID) {
-      DateTimePickerAndroid.open({
-        value: startDate,
-        onChange: (_event: any, date?: Date) => {
-          if (date) {
-            setStartDate(date);
-            // Auto-adjust end date if it's before start date
-            if (endDate < date) {
-              setEndDate(date);
-            }
-          }
-        },
-        mode: "date",
-        maximumDate: new Date(),
-      });
-    } else {
-      setShowStartDatePicker(true);
-    }
-  };
-
-  const showEndDatePickerModal = () => {
-    if (Platform.OS === PlatformType.ANDROID) {
-      DateTimePickerAndroid.open({
-        value: endDate,
-        onChange: (_event: any, date?: Date) => {
-          if (date) {
-            setEndDate(date);
-          }
-        },
-        mode: "date",
-        minimumDate: startDate,
-        maximumDate: new Date(),
-      });
-    } else {
-      setShowEndDatePicker(true);
-    }
-  };
-
-  const onStartDateChange = (_event: any, date?: Date) => {
-    if (date) {
-      setStartDate(date);
-      // Auto-adjust end date if it's before start date
-      if (endDate < date) {
-        setEndDate(date);
-      }
-    }
-    // On iOS, the picker stays open for continuous selection
-    // User can close modal when done
-  };
-
-  const onEndDateChange = (_event: any, date?: Date) => {
-    if (date) {
-      setEndDate(date);
-    }
-    // On iOS, the picker stays open for continuous selection
-    // User can close modal when done
   };
 
   // Press and hold reset functionality
@@ -285,13 +211,62 @@ const QadaScreen = () => {
 
   const handleResetComplete = async () => {
     setIsResetting(true);
+
+    // Clear timers and reset state
+    clearTimers();
+    setIsPressing(false);
+    setResetProgress(0);
+
+    if (animationControl.current) {
+      animationControl.current.value = false;
+    }
+
+    // Reset animation values
+    progress.value = 0;
+    backgroundProgress.value = 0;
+    scaleValue.value = 1;
+
     try {
       await resetAll();
-      hapticSuccess();
+      await loadData(); // Reload data to refresh UI
+      await hapticSuccess();
+    } catch (error) {
+      console.error("Error resetting qada data:", error);
+      await hapticWarning();
     } finally {
       setIsResetting(false);
     }
   };
+
+  // Animated styles for reset button (matching athkar style)
+  const buttonAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolate(backgroundProgress.value, [0, 1], [0x3b82f6, 0x3b82f6]);
+
+    // Convert hex to rgba
+    const r = (backgroundColor >> 16) & 255;
+    const g = (backgroundColor >> 8) & 255;
+    const b = backgroundColor & 255;
+
+    return {
+      backgroundColor: `rgb(${r}, ${g}, ${b})`,
+      transform: [{ scale: scaleValue.value }],
+    };
+  });
+
+  const progressOverlayStyle = useAnimatedStyle(() => {
+    const width = interpolate(progress.value, [0, 100], [0, 1]);
+
+    return {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      transform: [{ scaleX: width }],
+      transformOrigin: I18nManager.isRTL ? "right" : "left",
+    };
+  });
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -299,7 +274,7 @@ const QadaScreen = () => {
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: 100,
+            paddingBottom: totalMissed > 0 || totalCompleted > 0 ? 160 : 100,
           }}
           showsVerticalScrollIndicator={false}>
           <TopBar title="qada.title" />
@@ -411,68 +386,6 @@ const QadaScreen = () => {
               </VStack>
             )}
 
-            {/* Reset Button */}
-            {(totalMissed > 0 || totalCompleted > 0) && (
-              <VStack space="sm" className="mt-4">
-                <Text className="text-xs text-typography-secondary text-center">
-                  ⚠️{" "}
-                  {t("qada.resetWarning", {
-                    action: "Press and hold for 3 seconds to reset all data",
-                  })}
-                </Text>
-                {(() => {
-                  const longPressGesture = Gesture.Pan()
-                    .onBegin(() => {
-                      handleResetPressStart();
-                    })
-                    .onFinalize(() => {
-                      handleResetPressEnd();
-                    });
-
-                  return (
-                    <GestureDetector gesture={longPressGesture}>
-                      <Box className="relative overflow-hidden rounded-lg">
-                        {/* Progress overlay */}
-                        <Box
-                          style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            height: "100%",
-                            backgroundColor: isPressing ? "rgb(220, 38, 38)" : "transparent",
-                            width: `${resetProgress}%`,
-                          }}
-                        />
-
-                        {/* Button */}
-                        <Pressable
-                          className={`w-full py-3 px-4 rounded-lg flex-row items-center justify-center space-x-2 ${
-                            isPressing
-                              ? "bg-error"
-                              : "bg-background-secondary border border-outline"
-                          }`}
-                          disabled={isResetting}>
-                          <Icon
-                            as={RotateCcw}
-                            className={`${isPressing ? "text-background" : "text-error"}`}
-                            size="sm"
-                          />
-                          <Text
-                            className={`text-sm font-medium ${
-                              isPressing ? "text-background" : "text-error"
-                            }`}>
-                            {isPressing
-                              ? `${Math.ceil(resetProgress)}% - ${t("qada.reset")}`
-                              : t("qada.resetAll")}
-                          </Text>
-                        </Pressable>
-                      </Box>
-                    </GestureDetector>
-                  );
-                })()}
-              </VStack>
-            )}
-
             {/* Empty State */}
             {pendingEntries.length === 0 && remaining === 0 && totalMissed > 0 && (
               <Box className="py-8 items-center">
@@ -500,7 +413,7 @@ const QadaScreen = () => {
             )}
           </VStack>
 
-          {/* Add Modal */}
+          {/* Add Missed Days Modal: Quick add buttons + stepper control for intuitive UX */}
           <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} size="md">
             <ModalBackdrop />
             <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl">
@@ -508,173 +421,139 @@ const QadaScreen = () => {
                 <Icon as={X} className="text-typography-secondary" size="lg" />
               </ModalCloseButton>
 
-              <ModalHeader className="px-6 pt-6 pb-2">
+              <ModalHeader className="px-6 pt-6 pb-4">
                 <Text className="text-xl font-bold text-typography text-left">
                   {t("qada.addMissedDays")}
                 </Text>
               </ModalHeader>
 
-              <ModalBody className="px-6 pt-2">
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  <VStack space="md">
-                    {/* Mode Selection */}
-                    <VStack space="sm">
-                      <Text className="text-sm text-typography-secondary text-left">
-                        {t("qada.inputModeLabel")}
-                      </Text>
-                      <VStack space="xs">
-                        {/* Simple Mode */}
-                        <Pressable
-                          onPress={() => setInputMode("simple")}
-                          className="flex-row items-center py-2">
-                          <Box
-                            className={`w-5 h-5 rounded-full border-2 ${
-                              inputMode === "simple" ? "border-accent-primary" : "border-outline"
-                            } items-center justify-center mr-3`}>
-                            {inputMode === "simple" && (
-                              <Box className="w-3 h-3 rounded-full bg-accent-primary" />
-                            )}
-                          </Box>
-                          <Text className="text-sm text-typography text-left">
-                            {t("qada.modeSimple")}
-                          </Text>
-                        </Pressable>
-
-                        {/* Date Range Mode */}
-                        <Pressable
-                          onPress={() => setInputMode("dateRange")}
-                          className="flex-row items-center py-2">
-                          <Box
-                            className={`w-5 h-5 rounded-full border-2 ${
-                              inputMode === "dateRange" ? "border-accent-primary" : "border-outline"
-                            } items-center justify-center mr-3`}>
-                            {inputMode === "dateRange" && (
-                              <Box className="w-3 h-3 rounded-full bg-accent-primary" />
-                            )}
-                          </Box>
-                          <Text className="text-sm text-typography text-left">
-                            {t("qada.modeDateRange")}
-                          </Text>
-                        </Pressable>
-                      </VStack>
-                    </VStack>
-
-                    {/* Simple Mode Input */}
-                    {inputMode === "simple" && (
-                      <VStack space="sm">
-                        <Text className="text-sm text-typography-secondary text-left">
-                          {t("qada.enterNumberOfDays")}
-                        </Text>
-                        <TextInput
-                          placeholder={t("qada.enterAmount")}
-                          keyboardType="number-pad"
-                          value={customAmount}
-                          onChangeText={setCustomAmount}
-                          className="bg-background border border-outline rounded-lg px-4 py-3 text-typography text-base"
-                          placeholderTextColor="#9CA3AF"
-                        />
-                      </VStack>
-                    )}
-
-                    {/* Date Range Mode Input */}
-                    {inputMode === "dateRange" && (
-                      <VStack space="md">
-                        {/* Start Date */}
-                        <VStack space="sm">
-                          <Text className="text-xs text-typography-secondary text-left">
-                            {t("qada.startDate")}
-                          </Text>
-                          <Pressable
-                            onPress={showStartDatePickerModal}
-                            className="bg-background border border-outline rounded-lg px-4 py-3 flex-row items-center justify-between">
-                            <HStack space="sm" className="items-center">
-                              <Icon as={Calendar} className="text-accent-primary" size="sm" />
-                              <Text className="text-typography">
-                                {format(startDate, "MMMM dd, yyyy")}
-                              </Text>
-                            </HStack>
-                          </Pressable>
-
-                          {Platform.OS === PlatformType.IOS && showStartDatePicker && (
-                            <DateTimePicker
-                              testID="startDatePicker"
-                              value={startDate}
-                              mode="date"
-                              display="spinner"
-                              onChange={onStartDateChange}
-                              maximumDate={new Date()}
-                            />
-                          )}
-                        </VStack>
-
-                        {/* End Date */}
-                        <VStack space="sm">
-                          <Text className="text-xs text-typography-secondary text-left">
-                            {t("qada.endDate")}
-                          </Text>
-                          <Pressable
-                            onPress={showEndDatePickerModal}
-                            className="bg-background border border-outline rounded-lg px-4 py-3 flex-row items-center justify-between">
-                            <HStack space="sm" className="items-center">
-                              <Icon as={Calendar} className="text-accent-primary" size="sm" />
-                              <Text className="text-typography">
-                                {format(endDate, "MMMM dd, yyyy")}
-                              </Text>
-                            </HStack>
-                          </Pressable>
-
-                          {Platform.OS === PlatformType.IOS && showEndDatePicker && (
-                            <DateTimePicker
-                              testID="endDatePicker"
-                              value={endDate}
-                              mode="date"
-                              display="spinner"
-                              onChange={onEndDateChange}
-                              minimumDate={startDate}
-                              maximumDate={new Date()}
-                            />
-                          )}
-                        </VStack>
-
-                        {/*  Count Display */}
-                        <Box className="bg-accent-primary/10 border border-accent-primary/30 rounded-lg p-3">
-                          <Text className="text-sm text-typography-secondary text-center">
-                            {t("qada.totalDays")}:{" "}
-                            <Text className="text-lg font-semibold text-accent-primary">
-                              {calculateDaysBetween(startDate, endDate)}
-                            </Text>
-                          </Text>
-                        </Box>
-                      </VStack>
-                    )}
+              <ModalBody className="px-6 py-2">
+                <VStack space="xl">
+                  {/* Quick Add: One-tap shortcuts for common values (1, 3, 7, 30 days) */}
+                  <VStack space="sm">
+                    <Text className="text-sm text-typography-secondary text-left">
+                      {t("qada.quickAdd")}
+                    </Text>
+                    <HStack space="xs" className="w-full">
+                      {[1, 3, 7, 30].map((days) => (
+                        <Button
+                          key={days}
+                          onPress={() => handleQuickAdd(days)}
+                          variant="outline"
+                          className="flex-1 border-accent-primary px-2">
+                          <ButtonText className="text-accent-primary font-semibold text-center">
+                            +{days}
+                          </ButtonText>
+                        </Button>
+                      ))}
+                    </HStack>
                   </VStack>
-                </ScrollView>
+
+                  {/* Divider with "or" text */}
+                  <HStack space="sm" className="items-center">
+                    <Box className="flex-1 h-px bg-outline" />
+                    <Text className="text-xs text-typography-secondary">{t("common.or")}</Text>
+                    <Box className="flex-1 h-px bg-outline" />
+                  </HStack>
+
+                  {/* Stepper Control: Fine-tune any amount with -/+ buttons */}
+                  <VStack space="sm">
+                    <Text className="text-sm text-typography-secondary text-left">
+                      {t("qada.customAmount")}
+                    </Text>
+                    <HStack space="md" className="items-center justify-center">
+                      <Pressable
+                        onPress={decrementAmount}
+                        className="w-14 h-14 bg-background border-2 border-outline rounded-full items-center justify-center active:bg-background-tertiary">
+                        <Text className="text-2xl text-typography font-bold">−</Text>
+                      </Pressable>
+
+                      <Box className="flex-1 items-center">
+                        <Text className="text-5xl font-bold text-accent-primary">{amount}</Text>
+                        <Text className="text-sm text-typography-secondary mt-1">
+                          {t("qada.days", { count: amount })}
+                        </Text>
+                      </Box>
+
+                      <Pressable
+                        onPress={incrementAmount}
+                        className="w-14 h-14 bg-accent-primary rounded-full items-center justify-center active:opacity-80">
+                        <Text className="text-2xl text-background font-bold">+</Text>
+                      </Pressable>
+                    </HStack>
+                  </VStack>
+                </VStack>
               </ModalBody>
 
               <ModalFooter className="px-6 py-6">
-                <HStack space="sm" className="w-full">
-                  <Button
-                    onPress={() => {
-                      setShowAddModal(false);
-                      setInputMode("simple");
-                    }}
-                    variant="outline"
-                    className="flex-1">
-                    <ButtonText>{t("common.cancel")}</ButtonText>
-                  </Button>
-                  <Button
-                    onPress={handleAddMissed}
-                    className="flex-1 bg-accent-primary"
-                    isDisabled={
-                      inputMode === "simple" && (!customAmount || parseInt(customAmount) <= 0)
-                    }>
-                    <ButtonText className="text-background">{t("qada.add")}</ButtonText>
-                  </Button>
-                </HStack>
+                <Button onPress={handleAddMissed} className="w-full bg-accent-primary" size="lg">
+                  <ButtonText className="text-background text-base font-semibold">
+                    {t("qada.addDays", { count: amount, defaultValue: `Add ${amount} Days` })}
+                  </ButtonText>
+                </Button>
               </ModalFooter>
             </ModalContent>
           </Modal>
         </ScrollView>
+
+        {/* Reset Button - Fixed at bottom */}
+        {(totalMissed > 0 || totalCompleted > 0) && (
+          <Box className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-8 bg-gradient-to-t from-background via-background to-transparent">
+            <VStack space="sm">
+              <Text className="text-xs text-typography-secondary text-center">
+                ⚠️ {t("qada.resetWarning")}
+              </Text>
+              {(() => {
+                const longPressGesture = Gesture.Pan()
+                  .onBegin(() => {
+                    scheduleOnRN(handleResetPressStart);
+                  })
+                  .onFinalize(() => {
+                    scheduleOnRN(handleResetPressEnd);
+                  });
+
+                return (
+                  <GestureDetector gesture={longPressGesture}>
+                    <Animated.View
+                      style={[
+                        {
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          position: "relative",
+                        },
+                        buttonAnimatedStyle,
+                      ]}>
+                      <Button
+                        size="md"
+                        variant="outline"
+                        className="w-full border-0"
+                        style={{ backgroundColor: "transparent" }}
+                        disabled={isResetting}>
+                        {isResetting ? (
+                          <Spinner size="small" />
+                        ) : (
+                          <Icon size="md" className="text-white" as={RotateCcw} />
+                        )}
+                        <ButtonText className="text-white font-medium">
+                          {isResetting
+                            ? t("qada.reset")
+                            : isPressing
+                              ? `${Math.ceil(resetProgress)}% - ${t("qada.reset")}`
+                              : t("qada.resetAll")}
+                        </ButtonText>
+                      </Button>
+
+                      {/* Progress overlay */}
+                      {isPressing && !isResetting && (
+                        <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+                      )}
+                    </Animated.View>
+                  </GestureDetector>
+                );
+              })()}
+            </VStack>
+          </Box>
+        )}
       </Background>
     </GestureHandlerRootView>
   );
