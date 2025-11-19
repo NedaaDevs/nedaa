@@ -7,6 +7,7 @@ import type { NotificationStore } from "@/stores/notification";
 
 // Stores
 import { useLocationStore } from "@/stores/location";
+import { useQadaStore } from "@/stores/qada";
 
 // Utils
 import { requestNotificationPermission } from "@/utils/notifications";
@@ -46,7 +47,10 @@ export const appSetup = async (
       await locationStore.checkAndPromptCityChange();
     }
 
-    // notification scheduling
+    // Load qada data (needed for notification scheduling)
+    const qadaStore = useQadaStore.getState();
+    await qadaStore.loadData();
+
     await notificationStore.scheduleAllNotifications();
   } catch (error) {
     console.error("App setup failed:", error);
