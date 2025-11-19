@@ -114,6 +114,7 @@ const createSoundMapping = <T extends NotificationType>(type: T): Record<string,
 export const PRAYER_SOUNDS = createSoundMapping(NOTIFICATION_TYPE.PRAYER);
 export const IQAMA_SOUNDS = createSoundMapping(NOTIFICATION_TYPE.IQAMA);
 export const PRE_ATHAN_SOUNDS = createSoundMapping(NOTIFICATION_TYPE.PRE_ATHAN);
+export const QADA_SOUNDS = createSoundMapping(NOTIFICATION_TYPE.QADA);
 
 // Export properly typed sound keys
 export type PrayerSoundKey = ExtractSoundKeys<typeof SOUND_ASSETS, typeof NOTIFICATION_TYPE.PRAYER>;
@@ -122,6 +123,7 @@ export type PreAthanSoundKey = ExtractSoundKeys<
   typeof SOUND_ASSETS,
   typeof NOTIFICATION_TYPE.PRE_ATHAN
 >;
+export type QadaSoundKey = ExtractSoundKeys<typeof SOUND_ASSETS, typeof NOTIFICATION_TYPE.QADA>;
 
 // Type guard to check if a key is valid for a notification type
 export function isSoundKeyValid<T extends NotificationType>(
