@@ -1,9 +1,10 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 // Utils
-import { scheduleNotification } from "@/utils/notifications";
+import { scheduleNotification, scheduleRecurringNotification } from "@/utils/notifications";
 import { createChannelWithCustomSound } from "@/utils/customSoundManager";
 import { timeZonedNow, HijriConverter } from "@/utils/date";
 import locationStore from "@/stores/location";
@@ -68,14 +69,15 @@ export const buildNotificationContent = (
   daysUntilRamadan?: number
 ): { title: string; body: string } => {
   if (privacyMode) {
+    // Use generic app name for privacy
     if (type === "ramadan") {
       return {
-        title: t("notification.qada.titleRamadan"),
+        title: t("common.nedaa"),
         body: t("notification.qada.bodyPrivacyRamadan"),
       };
     }
     return {
-      title: t("notification.qada.title"),
+      title: t("common.nedaa"),
       body: t("notification.qada.bodyPrivacy"),
     };
   }
@@ -215,48 +217,70 @@ export const scheduleQadaNotifications = async (
     let notificationType: "ramadan" | "custom" = "custom";
     let daysUntilRamadan: number | undefined;
 
-    // Calculate notification date based on type
+    // Determine the start date for daily reminders
+    let startDate: Date | null = null;
+    let useRecurring = false;
+
     if (settings.reminder_type === "ramadan" && settings.reminder_days) {
       const nextRamadan = calculateNextRamadan();
-      const scheduledDate = new Date(nextRamadan);
-      scheduledDate.setDate(scheduledDate.getDate() - settings.reminder_days);
 
-      // Smart Ramadan tracking: if scheduled date passed but Ramadan is still coming
-      if (scheduledDate <= now && nextRamadan > now) {
-        // Schedule notification for tomorrow morning (9 AM) if past scheduled date but Ramadan is coming
-        notificationDate = new Date(now);
-        notificationDate.setDate(notificationDate.getDate() + 1);
-        notificationDate.setHours(9, 0, 0, 0);
+      // Convert to timezone-aware date and calculate start date
+      // Start reminding X days before Ramadan at 10 AM
+      startDate = toZonedTime(nextRamadan, timezone);
+      startDate.setDate(startDate.getDate() - settings.reminder_days);
+      startDate.setHours(10, 0, 0, 0);
 
-        // Calculate actual days until Ramadan
-        daysUntilRamadan = calculateDaysUntilRamadan(now, nextRamadan);
+      // Convert nextRamadan to timezone-aware for comparison
+      const nextRamadanZoned = toZonedTime(nextRamadan, timezone);
+
+      // Check if we should use recurring notifications
+      if (startDate <= now && nextRamadanZoned > now) {
+        // Start date has passed, use daily recurring reminders
+        useRecurring = true;
+        notificationType = "ramadan";
+
+        // Calculate actual days until Ramadan for notification content
+        daysUntilRamadan = calculateDaysUntilRamadan(now, nextRamadanZoned);
         console.log(
-          `[Qada Notification] Scheduled date passed, Ramadan in ${daysUntilRamadan} days`
+          `[Qada Notification] Start date passed, scheduling daily reminders (Ramadan in ${daysUntilRamadan} days)`
         );
-      } else if (scheduledDate > now) {
-        // Normal case: scheduled date is in the future
-        notificationDate = scheduledDate;
+      } else if (startDate > now) {
+        // Start date is in the future, schedule one-time for that date
+        notificationDate = startDate;
         daysUntilRamadan = settings.reminder_days;
+        notificationType = "ramadan";
+        console.log(
+          `[Qada Notification] Scheduling one-time reminder for start date: ${format(startDate, "PPP")}`
+        );
       } else {
         // Ramadan has passed, will schedule for next year
         console.log("[Qada Notification] Ramadan has passed for this year");
         return;
       }
-
-      notificationType = "ramadan";
     } else if (settings.reminder_type === "custom" && settings.custom_date) {
-      notificationDate = new Date(settings.custom_date);
+      // Parse custom date in user's timezone and set to 10 AM
+      const customDate = new Date(settings.custom_date);
+      startDate = toZonedTime(customDate, timezone);
+      startDate.setHours(10, 0, 0, 0);
       notificationType = "custom";
 
-      // If custom date has passed, skip
-      if (notificationDate <= now) {
-        console.log("[Qada Notification] Custom date has passed");
-        return;
+      // Check if we should use recurring notifications
+      if (startDate <= now) {
+        // Start date has passed, use daily recurring reminders
+        useRecurring = true;
+        console.log(`[Qada Notification] Custom start date passed, scheduling daily reminders`);
+      } else {
+        // Start date is in the future, schedule one-time for that date
+        notificationDate = startDate;
+        console.log(
+          `[Qada Notification] Scheduling one-time reminder for custom start date: ${format(startDate, "PPP")}`
+        );
       }
     }
 
-    if (!notificationDate) {
-      console.log("[Qada Notification] Invalid notification date");
+    // Validate: must have either a notification date (one-time) or useRecurring flag
+    if (!notificationDate && !useRecurring) {
+      console.log("[Qada Notification] Invalid notification configuration");
       return;
     }
 
@@ -297,31 +321,65 @@ export const scheduleQadaNotifications = async (
     // For iOS, custom sounds aren't supported, always use system default
     const finalSoundKey = Platform.OS === PlatformType.IOS ? "default" : soundKey;
 
-    // Schedule notification
-    const result = await scheduleNotification(
-      notificationDate,
-      {
-        title: content.title,
-        body: content.body,
-        sound: finalSoundKey,
-        data: {
-          type: "QADA_REMINDER",
-          screen: "/(tabs)/qada",
-          notificationType: notificationType,
-        },
-      },
-      {
-        vibrate: qadaSoundSettings.vibration,
-        channelId,
-      }
-    );
+    // Schedule notification (either one-time or recurring daily)
+    let result: { success: boolean; id?: string; message?: string };
 
-    if (result.success) {
-      console.log(
-        `[Qada Notification] Scheduled ${notificationType} reminder for ${format(notificationDate, "PPP")}`
+    if (useRecurring) {
+      // Schedule daily recurring notification at 10 AM
+      result = await scheduleRecurringNotification(
+        10, // hour
+        0, // minute
+        {
+          title: content.title,
+          body: content.body,
+          sound: finalSoundKey,
+          data: {
+            type: "QADA_REMINDER",
+            screen: "/(tabs)/qada",
+            notificationType: notificationType,
+          },
+        },
+        {
+          vibrate: qadaSoundSettings.vibration,
+          channelId,
+          timezone,
+        }
       );
-    } else {
-      console.error(`[Qada Notification] Failed to schedule: ${result.message}`);
+
+      if (result.success) {
+        console.log(
+          `[Qada Notification] Scheduled daily recurring ${notificationType} reminders at 10:00 AM`
+        );
+      } else {
+        console.error(`[Qada Notification] Failed to schedule recurring: ${result.message}`);
+      }
+    } else if (notificationDate) {
+      // Schedule one-time notification for the start date
+      result = await scheduleNotification(
+        notificationDate,
+        {
+          title: content.title,
+          body: content.body,
+          sound: finalSoundKey,
+          data: {
+            type: "QADA_REMINDER",
+            screen: "/(tabs)/qada",
+            notificationType: notificationType,
+          },
+        },
+        {
+          vibrate: qadaSoundSettings.vibration,
+          channelId,
+        }
+      );
+
+      if (result.success) {
+        console.log(
+          `[Qada Notification] Scheduled one-time ${notificationType} reminder for ${format(notificationDate, "PPP")}`
+        );
+      } else {
+        console.error(`[Qada Notification] Failed to schedule: ${result.message}`);
+      }
     }
   } catch (error) {
     console.error("[Qada Notification] Error scheduling notifications:", error);
