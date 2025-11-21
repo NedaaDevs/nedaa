@@ -26,7 +26,6 @@ const QadaFastSchema = z.object({
 const QadaHistorySchema = z.object({
   id: z.number(),
   count: z.number(),
-  original_count: z.number().optional(),
   type: z.enum(["completed", "added", "removed"]),
   status: z.enum(["pending", "completed", "deleted"]),
   notes: z.string().optional().nullable(),
@@ -61,6 +60,21 @@ const openDatabase = async () =>
   );
 
 /**
+ * Temporary migration to drop unused columns
+ * Safe to delete after testing devices run this
+ */
+const runSchemaCleanup = async (db: SQLite.SQLiteDatabase) => {
+  try {
+    // Drop original_count column (never read, only written)
+    await db.execAsync(`ALTER TABLE ${QADA_HISTORY_TABLE} DROP COLUMN original_count;`);
+    console.log("[Qada DB] Dropped unused original_count column");
+  } catch (error) {
+    // Column might already be dropped or syntax not supported
+    console.log("[Qada DB] Column drop skipped:", error);
+  }
+};
+
+/**
  * Initialize Qada database tables
  */
 const initializeDB = async () => {
@@ -83,7 +97,6 @@ const initializeDB = async () => {
       `CREATE TABLE IF NOT EXISTS ${QADA_HISTORY_TABLE} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         count INTEGER NOT NULL,
-        original_count INTEGER,
         type TEXT NOT NULL CHECK(type IN ('completed', 'added', 'removed')),
         status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'deleted')),
         notes TEXT,
@@ -91,14 +104,6 @@ const initializeDB = async () => {
         updated_at TEXT NOT NULL
       );`
     );
-
-    // Add original_count column if it doesn't exist (for existing databases)
-    try {
-      await db.execAsync(`ALTER TABLE ${QADA_HISTORY_TABLE} ADD COLUMN original_count INTEGER;`);
-    } catch (error) {
-      // Column already exists, ignore error
-      console.log("[Qada DB] original_count column already exists", error);
-    }
 
     // Create qada_settings table
     await db.execAsync(
@@ -137,6 +142,9 @@ const initializeDB = async () => {
         ["none", null, null, 0, now, now]
       );
     }
+
+    // Temporary: Drop unused columns (delete this call after testing)
+    await runSchemaCleanup(db);
 
     console.log("[Qada DB] Database initialized successfully");
   } catch (error: unknown) {
@@ -198,50 +206,13 @@ const addMissedFasts = async (count: number, notes?: string): Promise<boolean> =
     // Add to history
     const now = new Date().toISOString();
     await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (count, original_count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-      [count, count, "added", "pending", notes || null, now, now]
+      `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
+      [count, "added", "pending", notes || null, now, now]
     );
 
     return true;
   } catch (error) {
     console.error("[Qada DB] Error adding missed fasts:", error);
-    return false;
-  }
-};
-
-/**
- * Mark fasts as completed
- */
-const markCompleted = async (count: number, notes?: string): Promise<boolean> => {
-  try {
-    const db = await openDatabase();
-    const currentData = await getQadaFast();
-
-    if (!currentData) {
-      console.error("[Qada DB] No Qada data found");
-      return false;
-    }
-
-    // Don't allow completing more than remaining
-    const remaining = currentData.total_missed - currentData.total_completed;
-    if (count > remaining) {
-      console.error("[Qada DB] Cannot complete more fasts than remaining");
-      return false;
-    }
-
-    const newTotalCompleted = currentData.total_completed + count;
-    await updateQadaFast(currentData.total_missed, newTotalCompleted);
-
-    // Add to history
-    const now = new Date().toISOString();
-    await db.runAsync(
-      `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
-      [count, "completed", "completed", notes || null, now, now]
-    );
-
-    return true;
-  } catch (error) {
-    console.error("[Qada DB] Error marking fasts as completed:", error);
     return false;
   }
 };
@@ -446,27 +417,39 @@ const updateEntryStatus = async (
     // If marking a pending entry as completed
     if (entry.status === "pending" && status === "completed" && entry.type === "added") {
       const newTotalCompleted = currentData.total_completed + entry.count;
-      await updateQadaFast(currentData.total_missed, newTotalCompleted);
+      const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
+      await updateQadaFast(newTotalMissed, newTotalCompleted);
+
+      console.log(
+        "[Qada DB] Completed entry ID:",
+        entry.id,
+        "- completed",
+        entry.count,
+        "days.",
+        "New total_missed:",
+        newTotalMissed,
+        "total_completed:",
+        newTotalCompleted
+      );
     }
 
     // If marking a pending entry as deleted
     if (entry.status === "pending" && status === "deleted" && entry.type === "added") {
-      // Calculate how many days were completed from this entry
-      const originalCount = entry.original_count || entry.count;
-      const completedDays = originalCount - entry.count;
+      // Only subtract remaining days from missed - keep completed days as historical record
+      const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
 
-      // Subtract remaining days from missed and completed days from completed
-      const newTotalMissed = currentData.total_missed - entry.count;
-      const newTotalCompleted = currentData.total_completed - completedDays;
-
-      await updateQadaFast(newTotalMissed, Math.max(0, newTotalCompleted));
+      await updateQadaFast(newTotalMissed, currentData.total_completed);
 
       console.log(
-        "[Qada DB] Deleted entry - removed",
+        "[Qada DB] Deleted entry ID:",
+        entry.id,
+        "- removed",
         entry.count,
-        "remaining days and",
-        completedDays,
-        "completed days"
+        "remaining days.",
+        "New total_missed:",
+        newTotalMissed,
+        "total_completed:",
+        currentData.total_completed
       );
     }
 
@@ -484,26 +467,12 @@ const getPendingEntries = async (): Promise<QadaHistory[]> => {
   try {
     const db = await openDatabase();
     const results = await db.getAllAsync<QadaHistory>(
-      `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE status = 'pending' AND type = 'added' ORDER BY created_at DESC;`
+      `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE status = 'pending' ORDER BY created_at DESC;`
     );
     return results || [];
   } catch (error) {
     console.error("[Qada DB] Error getting pending entries:", error);
     return [];
-  }
-};
-
-/**
- * Delete a history entry
- */
-const deleteHistoryEntry = async (id: number): Promise<boolean> => {
-  try {
-    const db = await openDatabase();
-    await db.runAsync(`DELETE FROM ${QADA_HISTORY_TABLE} WHERE id = ?;`, [id]);
-    return true;
-  } catch (error) {
-    console.error("[Qada DB] Error deleting history entry:", error);
-    return false;
   }
 };
 
@@ -536,13 +505,11 @@ export const QadaDB = {
   getQadaFast,
   updateQadaFast,
   addMissedFasts,
-  markCompleted,
   getHistory,
   getPendingEntries,
   updateEntryStatus,
   completeOneDayFromEntry,
   getSettings,
   updateSettings,
-  deleteHistoryEntry,
   resetAll,
 };
