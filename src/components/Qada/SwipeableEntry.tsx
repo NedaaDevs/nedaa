@@ -6,10 +6,8 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
-  useSharedValue,
-  interpolateColor,
 } from "react-native-reanimated";
-import { I18nManager, Dimensions } from "react-native";
+import { I18nManager } from "react-native";
 
 // Components
 import { Text } from "@/components/ui/text";
@@ -17,9 +15,10 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
 import { Icon } from "@/components/ui/icon";
+import { Pressable } from "@/components/ui/pressable";
 
 // Icons
-import { CalendarDays } from "lucide-react-native";
+import { CalendarDays, Check, Trash2, CheckCheck, MessageSquare } from "lucide-react-native";
 
 // Types
 import type { QadaHistory } from "@/services/qada-db";
@@ -27,10 +26,7 @@ import type { QadaHistory } from "@/services/qada-db";
 // Utils
 import { format } from "date-fns";
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // Swipe 25% of screen width to trigger delete/complete one
-const COMPLETE_ALL_THRESHOLD = SCREEN_WIDTH * 0.45; // Swipe 45% of screen width to trigger complete all
-const TEXT_TRANSITION_POINT = SCREEN_WIDTH * 0.35; // Switch text at 35% of screen width
+const SWIPE_THRESHOLD = 40; // Swipe 40px to show buttons
 
 type Props = {
   entry: QadaHistory;
@@ -39,141 +35,101 @@ type Props = {
   onDelete: (id: number) => void;
 };
 
-type RightActionsProps = {
+type ActionButtonsProps = {
   drag: SharedValue<number>;
   entry: QadaHistory;
-  lastDragValue: SharedValue<number>;
   t: (key: string, options?: any) => string;
-  physicalSide: "left" | "right";
+  onComplete: () => void;
+  onCompleteAll: () => void;
+  onDelete: () => void;
+  swipeableRef: React.RefObject<React.ComponentRef<typeof Swipeable> | null>;
 };
 
-type LeftActionsProps = {
-  drag: SharedValue<number>;
-  lastDragValue: SharedValue<number>;
-  t: (key: string, options?: any) => string;
-  physicalSide: "left" | "right";
-};
-
-const RightActions = ({ drag, entry, lastDragValue, t, physicalSide }: RightActionsProps) => {
+const ActionButtons = ({
+  drag,
+  entry,
+  t,
+  onComplete,
+  onCompleteAll,
+  onDelete,
+  swipeableRef,
+}: ActionButtonsProps) => {
   const containerStyle = useAnimatedStyle(() => {
     const dragDistance = Math.abs(drag.value);
-
-    // Track the maximum drag distance
-    if (dragDistance > Math.abs(lastDragValue.value)) {
-      lastDragValue.value = drag.value;
-    }
-
-    const backgroundColor =
-      entry.count > 1
-        ? interpolateColor(dragDistance, [0, COMPLETE_ALL_THRESHOLD], ["#22c55e", "#3b82f6"])
-        : "#22c55e";
-
-    return { backgroundColor };
-  });
-
-  const textStyle = useAnimatedStyle(() => {
-    const dragDistance = Math.abs(drag.value);
-
     const opacity = interpolate(dragDistance, [20, 80], [0, 1], Extrapolation.CLAMP);
 
     return { opacity };
   });
 
-  const completeOneOpacity = useAnimatedStyle(() => {
-    const dragDistance = Math.abs(drag.value);
+  const handleCompletePress = () => {
+    onComplete();
+    swipeableRef.current?.close();
+  };
 
-    if (entry.count <= 1) {
-      return { opacity: 1, display: "flex" };
-    }
+  const handleCompleteAllPress = () => {
+    onCompleteAll();
+    swipeableRef.current?.close();
+  };
 
-    if (dragDistance >= TEXT_TRANSITION_POINT) {
-      return { opacity: 0, display: "none" };
-    }
-
-    return { opacity: 1, display: "flex" };
-  });
-
-  const completeAllOpacity = useAnimatedStyle(() => {
-    const dragDistance = Math.abs(drag.value);
-
-    if (entry.count <= 1 || dragDistance < TEXT_TRANSITION_POINT) {
-      return { opacity: 0, display: "none" };
-    }
-
-    return { opacity: 1, display: "flex" };
-  });
+  const handleDeletePress = () => {
+    onDelete();
+    swipeableRef.current?.close();
+  };
 
   return (
     <Animated.View
       style={[
         containerStyle,
         {
-          height: 60,
-          marginLeft: 8,
-          width: SCREEN_WIDTH,
-          borderRadius: 12,
-          justifyContent: "center",
-          alignItems: physicalSide === "right" ? "flex-end" : "flex-start",
-          paddingHorizontal: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          paddingRight: 8,
+          gap: 8,
         },
       ]}>
-      <Animated.View style={textStyle}>
-        <Animated.View style={completeOneOpacity}>
-          <Text className="text-background text-base font-semibold">
-            {t("qada.swipeCompleteOne")}
-          </Text>
-        </Animated.View>
-        {entry.count > 1 && (
-          <Animated.View style={completeAllOpacity}>
-            <Text className="text-background text-base font-semibold">
-              {t("qada.swipeCompleteAll", { count: entry.count })}
-            </Text>
-          </Animated.View>
-        )}
-      </Animated.View>
-    </Animated.View>
-  );
-};
+      {/* Complete Button(s) */}
+      {entry.count > 1 ? (
+        <VStack space="xs" className="gap-1">
+          <Pressable
+            onPress={handleCompletePress}
+            className="bg-success rounded-lg px-3 py-2.5 items-center justify-center">
+            <HStack space="xs" className="items-center gap-1">
+              <Icon as={Check} size="sm" className="text-background" />
+              <Text className="text-background text-xs font-semibold">{t("common.complete")}</Text>
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={handleCompleteAllPress}
+            className="bg-info rounded-lg px-3 py-2.5 items-center justify-center">
+            <HStack space="xs" className="items-center gap-1">
+              <Icon as={CheckCheck} size="sm" className="text-background" />
+              <Text className="text-background text-xs font-semibold">
+                {t("common.all")} ({entry.count})
+              </Text>
+            </HStack>
+          </Pressable>
+        </VStack>
+      ) : (
+        <Pressable
+          onPress={handleCompletePress}
+          className="bg-success rounded-lg px-4 h-[56px] items-center justify-center">
+          <HStack space="xs" className="items-center gap-1">
+            <Icon as={Check} size="sm" className="text-background" />
+            <Text className="text-background text-sm font-semibold">{t("common.complete")}</Text>
+          </HStack>
+        </Pressable>
+      )}
 
-const LeftActions = ({ drag, lastDragValue, t, physicalSide }: LeftActionsProps) => {
-  const containerStyle = useAnimatedStyle(() => {
-    const dragDistance = Math.abs(drag.value);
-
-    // Track the maximum drag distance
-    if (dragDistance > Math.abs(lastDragValue.value)) {
-      lastDragValue.value = drag.value;
-    }
-
-    return {
-      backgroundColor: "#ef4444",
-    };
-  });
-
-  const textStyle = useAnimatedStyle(() => {
-    const dragDistance = Math.abs(drag.value);
-
-    const opacity = interpolate(dragDistance, [20, 80], [0, 1], Extrapolation.CLAMP);
-
-    return { opacity };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        containerStyle,
-        {
-          height: 60,
-          marginRight: 8,
-          width: SCREEN_WIDTH,
-          justifyContent: "center",
-          alignItems: physicalSide === "left" ? "flex-start" : "flex-end",
-          paddingHorizontal: 20,
-          borderRadius: 12,
-        },
-      ]}>
-      <Animated.View style={textStyle}>
-        <Text className="text-background text-base font-semibold">{t("qada.swipeDelete")}</Text>
-      </Animated.View>
+      {/* Delete Button */}
+      <Pressable
+        onPress={handleDeletePress}
+        className="bg-error rounded-lg px-4 h-[56px] items-center justify-center">
+        <HStack space="xs" className="items-center gap-1">
+          <Icon as={Trash2} size="sm" className="text-background" />
+          <Text className="text-background text-sm font-semibold">{t("common.delete")}</Text>
+        </HStack>
+      </Pressable>
     </Animated.View>
   );
 };
@@ -181,11 +137,7 @@ const LeftActions = ({ drag, lastDragValue, t, physicalSide }: LeftActionsProps)
 export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: Props) => {
   const { t } = useTranslation();
   const swipeableRef = useRef<React.ComponentRef<typeof Swipeable>>(null);
-  const lastDragValue = useSharedValue(0);
-
-  const handleDelete = () => {
-    onDelete(entry.id);
-  };
+  const isRTL = I18nManager.isRTL;
 
   const handleComplete = () => {
     onComplete(entry.id);
@@ -195,47 +147,20 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
     onCompleteAll();
   };
 
-  const handleSwipeableWillOpen = (direction: "left" | "right") => {
-    const isRTL = I18nManager.isRTL;
-    const effectiveDirection = isRTL ? (direction === "left" ? "right" : "left") : direction;
-
-    const dragDistance = Math.abs(lastDragValue.value);
-
-    if (effectiveDirection === "right") {
-      handleDelete();
-    } else if (effectiveDirection === "left") {
-      if (entry.count > 1 && dragDistance >= COMPLETE_ALL_THRESHOLD) {
-        handleCompleteAll();
-      } else {
-        handleComplete();
-      }
-    }
-
-    lastDragValue.value = 0;
-    swipeableRef.current?.close();
+  const handleDelete = () => {
+    onDelete(entry.id);
   };
 
-  const isRTL = I18nManager.isRTL;
-
-  const renderRightActions = (_progress: SharedValue<number>, drag: SharedValue<number>) => {
+  const renderActions = (_progress: SharedValue<number>, drag: SharedValue<number>) => {
     return (
-      <RightActions
+      <ActionButtons
         drag={drag}
         entry={entry}
-        lastDragValue={lastDragValue}
         t={t}
-        physicalSide={isRTL ? "left" : "right"}
-      />
-    );
-  };
-
-  const renderLeftActions = (_progress: SharedValue<number>, drag: SharedValue<number>) => {
-    return (
-      <LeftActions
-        drag={drag}
-        lastDragValue={lastDragValue}
-        t={t}
-        physicalSide={isRTL ? "right" : "left"}
+        onComplete={handleComplete}
+        onCompleteAll={handleCompleteAll}
+        onDelete={handleDelete}
+        swipeableRef={swipeableRef}
       />
     );
   };
@@ -243,14 +168,13 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
   return (
     <Swipeable
       ref={swipeableRef}
-      renderRightActions={renderRightActions}
-      renderLeftActions={renderLeftActions}
-      overshootRight={false}
-      overshootLeft={false}
+      renderRightActions={isRTL ? undefined : renderActions}
+      renderLeftActions={isRTL ? renderActions : undefined}
+      overshootRight={!isRTL}
+      overshootLeft={isRTL}
       friction={2}
-      rightThreshold={SWIPE_THRESHOLD}
-      leftThreshold={SWIPE_THRESHOLD}
-      onSwipeableWillOpen={handleSwipeableWillOpen}
+      rightThreshold={isRTL ? undefined : SWIPE_THRESHOLD}
+      leftThreshold={isRTL ? SWIPE_THRESHOLD : undefined}
       enableTrackpadTwoFingerGesture={false}>
       <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
         <HStack className="justify-between items-center">
@@ -266,9 +190,12 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
                 {format(new Date(entry.created_at), "MMM dd, yyyy")}
               </Text>
               {entry.notes && (
-                <Text className="text-xs text-typography-secondary mt-1 text-left">
-                  {entry.notes}
-                </Text>
+                <HStack space="xs" className="items-start mt-2">
+                  <Icon as={MessageSquare} size="xs" className="text-accent-primary mt-0.5" />
+                  <Text className="text-xs text-typography italic flex-1 text-left">
+                    {entry.notes}
+                  </Text>
+                </HStack>
               )}
             </VStack>
           </HStack>
