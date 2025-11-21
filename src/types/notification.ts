@@ -49,6 +49,7 @@ export type NotificationState = {
   isScheduling: boolean;
   settings: NotificationSettings;
   lastScheduledDate: string | null;
+  migrationVersion: number;
   morningNotification: AthkarNotificationSettings;
   eveningNotification: AthkarNotificationSettings;
 };

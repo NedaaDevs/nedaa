@@ -75,6 +75,7 @@ export const useNotificationStore = create<NotificationStore>()(
         settings: defaultSettings,
         isScheduling: false,
         lastScheduledDate: null,
+        migrationVersion: 0,
         morningNotification: {
           type: ATHKAR_TYPE.MORNING,
           enabled: false,
@@ -277,6 +278,24 @@ export const useNotificationStore = create<NotificationStore>()(
       {
         name: "notification-storage",
         storage: createJSONStorage(() => Storage),
+        onRehydrateStorage: () => (state) => {
+          if (!state) return;
+
+          // Migration v1: Add qada defaults for old users
+          if (state.migrationVersion < 1) {
+            if (!state.settings?.defaults?.qada) {
+              state.settings = state.settings || { ...defaultSettings };
+              state.settings.defaults = state.settings.defaults || {};
+              state.settings.defaults.qada = {
+                enabled: false,
+                sound: "tasbih",
+                vibration: true,
+              };
+              console.log("[Notification Store] Migration v1: Added qada defaults");
+            }
+            state.migrationVersion = 1;
+          }
+        },
       }
     ),
     { name: "NotificationStore" }
