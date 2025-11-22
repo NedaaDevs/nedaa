@@ -1,16 +1,8 @@
 import { useState, useRef } from "react";
-import { ScrollView, I18nManager, TextInput } from "react-native";
+import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
-import { GestureHandlerRootView, GestureDetector, Gesture } from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  withTiming,
-  cancelAnimation,
-  useAnimatedStyle,
-  interpolate,
-} from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Components
 import TopBar from "@/components/TopBar";
@@ -23,7 +15,6 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { Spinner } from "@/components/ui/spinner";
 
 import {
   Modal,
@@ -39,7 +30,7 @@ import {
 import { useQadaStore } from "@/stores/qada";
 
 // Icons
-import { Plus, Check, X, CalendarDays, RotateCcw, Settings } from "lucide-react-native";
+import { Plus, Check, X, CalendarDays, Settings } from "lucide-react-native";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
@@ -52,12 +43,10 @@ const QadaScreen = () => {
     totalOriginal,
     pendingEntries,
     isLoading,
-    loadData,
     addMissed,
     completeEntry,
     completeAllEntries,
     deleteEntry,
-    resetAll,
     getRemaining,
     getCompletionPercentage,
   } = useQadaStore();
@@ -66,24 +55,12 @@ const QadaScreen = () => {
   const [amount, setAmount] = useState(1);
   const [notes, setNotes] = useState("");
 
-  // Reset press and hold state
-  const [isResetting, setIsResetting] = useState(false);
-  const [resetProgress, setResetProgress] = useState(0);
-  const [isPressing, setIsPressing] = useState(false);
-  const progress = useSharedValue(0);
-  const backgroundProgress = useSharedValue(0);
-  const scaleValue = useSharedValue(1);
-  const animationControl = useRef<{ value: boolean } | null>(null);
-  const hapticTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Stepper long press state
   const incrementTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const decrementTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
   const hapticLight = useHaptic("light");
 
   const remaining = getRemaining();
@@ -189,147 +166,9 @@ const QadaScreen = () => {
   };
 
   const handleDeleteEntry = async (id: number) => {
-    await hapticWarning();
+    await hapticSuccess();
     await deleteEntry(id);
   };
-
-  // Press and hold reset functionality
-  const clearTimers = () => {
-    if (hapticTimer.current) {
-      clearInterval(hapticTimer.current);
-      hapticTimer.current = null;
-    }
-    if (resetTimer.current) {
-      clearTimeout(resetTimer.current);
-      resetTimer.current = null;
-    }
-  };
-
-  const handleResetPressStart = () => {
-    setIsPressing(true);
-    setResetProgress(0);
-
-    // Initial haptic feedback
-    hapticWarning();
-
-    // Start animations
-    progress.value = withTiming(100, { duration: 3000 });
-    backgroundProgress.value = withTiming(1, { duration: 3000 });
-    scaleValue.value = withTiming(0.95, { duration: 100 });
-
-    // Use a ref to track if we should continue the animation
-    const shouldContinue = { value: true };
-
-    // Set up progress tracking for display
-    const startTime = Date.now();
-    const updateProgress = () => {
-      const elapsed = Date.now() - startTime;
-      const progressPercent = Math.min((elapsed / 3000) * 100, 100);
-
-      setResetProgress(progressPercent);
-
-      // Check if we should continue based on the ref, not state
-      if (progressPercent < 100 && shouldContinue.value) {
-        requestAnimationFrame(updateProgress);
-      }
-    };
-    updateProgress();
-
-    animationControl.current = shouldContinue;
-
-    // Haptic feedback every 500ms
-    hapticTimer.current = setInterval(() => {
-      hapticLight();
-    }, 500);
-
-    resetTimer.current = setTimeout(() => {
-      if (shouldContinue.value) {
-        handleResetComplete();
-      }
-    }, 3100);
-  };
-
-  const handleResetPressEnd = () => {
-    setIsPressing(false);
-    setResetProgress(0);
-
-    // Clear timers
-    clearTimers();
-
-    // Cancel animations
-    cancelAnimation(progress);
-    cancelAnimation(backgroundProgress);
-    cancelAnimation(scaleValue);
-
-    // Reset animation control
-    if (animationControl.current) {
-      animationControl.current.value = false;
-    }
-
-    // Reset values
-    progress.value = 0;
-    backgroundProgress.value = 0;
-    scaleValue.value = 1;
-  };
-
-  const handleResetComplete = async () => {
-    setIsResetting(true);
-
-    // Clear timers and reset state
-    clearTimers();
-    setIsPressing(false);
-    setResetProgress(0);
-
-    if (animationControl.current) {
-      animationControl.current.value = false;
-    }
-
-    // Reset animation values
-    progress.value = 0;
-    backgroundProgress.value = 0;
-    scaleValue.value = 1;
-
-    try {
-      await resetAll();
-      await loadData(); // Reload data to refresh UI
-      await hapticSuccess();
-    } catch (error) {
-      console.error("Error resetting qada data:", error);
-      await hapticWarning();
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  // Animated styles for reset button
-  const buttonAnimatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolate(backgroundProgress.value, [0, 1], [0x3b82f6, 0x3b82f6]);
-
-    // Convert hex to rgba
-    const r = (backgroundColor >> 16) & 255;
-    const g = (backgroundColor >> 8) & 255;
-    const b = backgroundColor & 255;
-
-    return {
-      backgroundColor: `rgb(${r}, ${g}, ${b})`,
-      transform: [{ scale: scaleValue.value }],
-    };
-  });
-
-  const progressOverlayStyle = useAnimatedStyle(() => {
-    const width = interpolate(progress.value, [0, 100], [0, 1]);
-
-    return {
-      position: "absolute" as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(255, 255, 255, 0.2)",
-      transform: [{ scaleX: width }],
-      transformOrigin: I18nManager.isRTL ? "right" : "left",
-    };
-  });
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -598,65 +437,6 @@ const QadaScreen = () => {
           </ModalContent>
         </Modal>
       </ScrollView>
-
-      {/* Reset Button */}
-      {(totalMissed > 0 || totalCompleted > 0) && (
-        <Box className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-8 bg-gradient-to-t from-background via-background to-transparent">
-          <VStack space="sm">
-            <Text className="text-xs text-typography-secondary text-center">
-              ⚠️ {t("qada.resetWarning")}
-            </Text>
-            {(() => {
-              const longPressGesture = Gesture.Pan()
-                .onBegin(() => {
-                  scheduleOnRN(handleResetPressStart);
-                })
-                .onFinalize(() => {
-                  scheduleOnRN(handleResetPressEnd);
-                });
-
-              return (
-                <GestureDetector gesture={longPressGesture}>
-                  <Animated.View
-                    style={[
-                      {
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        position: "relative",
-                      },
-                      buttonAnimatedStyle,
-                    ]}>
-                    <Button
-                      size="md"
-                      variant="outline"
-                      className="w-full border-0"
-                      style={{ backgroundColor: "transparent" }}
-                      disabled={isResetting}>
-                      {isResetting ? (
-                        <Spinner size="small" />
-                      ) : (
-                        <Icon size="md" className="text-white" as={RotateCcw} />
-                      )}
-                      <ButtonText className="text-white font-medium">
-                        {isResetting
-                          ? t("qada.reset")
-                          : isPressing
-                            ? `${Math.ceil(resetProgress)}% - ${t("qada.reset")}`
-                            : t("qada.resetAll")}
-                      </ButtonText>
-                    </Button>
-
-                    {/* Progress overlay */}
-                    {isPressing && !isResetting && (
-                      <Animated.View style={progressOverlayStyle} pointerEvents="none" />
-                    )}
-                  </Animated.View>
-                </GestureDetector>
-              );
-            })()}
-          </VStack>
-        </Box>
-      )}
     </GestureHandlerRootView>
   );
 };

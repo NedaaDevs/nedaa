@@ -1,8 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  cancelAnimation,
+  runOnJS,
+} from "react-native-reanimated";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
 
 // Components
 import { Background } from "@/components/ui/background";
@@ -36,9 +45,6 @@ import { useQadaStore } from "@/stores/qada";
 import { useNotificationStore } from "@/stores/notification";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 
-// Constants
-import { SOUND_ASSETS } from "@/constants/sounds";
-
 // Utils
 import { getAvailableSoundsWithCustom } from "@/utils/sound";
 
@@ -57,16 +63,30 @@ import {
   Volume2,
   Vibrate,
   ChevronDown,
+  AlertTriangle,
+  RotateCcw,
 } from "lucide-react-native";
 
 const QadaSettings = () => {
   const { t } = useTranslation();
   const hapticSuccess = useHaptic("success");
+  const hapticWarning = useHaptic("warning");
+  const hapticLight = useHaptic("light");
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   // Stores
-  const { reminderType, reminderDays, customDate, privacyMode, updateSettings, getRemaining } =
-    useQadaStore();
+  const {
+    reminderType,
+    reminderDays,
+    customDate,
+    privacyMode,
+    updateSettings,
+    getRemaining,
+    resetAll,
+    loadData,
+    totalMissed,
+    totalCompleted,
+  } = useQadaStore();
   const remaining = getRemaining();
   const { settings } = useNotificationStore();
   const { customSounds } = useCustomSoundsStore();
@@ -82,6 +102,18 @@ const QadaSettings = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [daysError, setDaysError] = useState<string | null>(null);
+
+  // Danger Zone state
+  const [dangerZoneExpanded, setDangerZoneExpanded] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetProgress, setResetProgress] = useState(0);
+  const [isPressing, setIsPressing] = useState(false);
+  const progress = useSharedValue(0);
+  const backgroundProgress = useSharedValue(0);
+  const scaleValue = useSharedValue(1);
+  const animationControl = useRef<{ value: boolean } | null>(null);
+  const hapticTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync with store values on mount
   useEffect(() => {
@@ -151,6 +183,135 @@ const QadaSettings = () => {
       setIsSavingSettings(false);
     }
   };
+
+  // Press and hold reset functionality
+  const clearTimers = () => {
+    if (hapticTimer.current) {
+      clearInterval(hapticTimer.current);
+      hapticTimer.current = null;
+    }
+    if (resetTimer.current) {
+      clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+    }
+  };
+
+  const handleResetPressStart = () => {
+    setIsPressing(true);
+    setResetProgress(0);
+
+    // Initial haptic feedback
+    hapticWarning();
+
+    // Start animations
+    progress.value = withTiming(100, { duration: 3000 });
+    backgroundProgress.value = withTiming(1, { duration: 3000 });
+    scaleValue.value = withTiming(0.95, { duration: 100 });
+
+    // Use a ref to track if we should continue the animation
+    const shouldContinue = { value: true };
+
+    // Set up progress tracking for display
+    const startTime = Date.now();
+    const updateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const progressPercent = Math.min((elapsed / 3000) * 100, 100);
+
+      setResetProgress(progressPercent);
+
+      if (progressPercent < 100 && shouldContinue.value) {
+        requestAnimationFrame(updateProgress);
+      }
+    };
+    updateProgress();
+
+    animationControl.current = shouldContinue;
+
+    // Haptic feedback every 500ms
+    hapticTimer.current = setInterval(() => {
+      hapticLight();
+    }, 500);
+
+    resetTimer.current = setTimeout(() => {
+      if (shouldContinue.value) {
+        handleResetComplete();
+      }
+    }, 3100);
+  };
+
+  const handleResetPressEnd = () => {
+    setIsPressing(false);
+    setResetProgress(0);
+
+    // Clear timers
+    clearTimers();
+
+    // Cancel animations
+    cancelAnimation(progress);
+    cancelAnimation(backgroundProgress);
+    cancelAnimation(scaleValue);
+
+    // Reset animation control
+    if (animationControl.current) {
+      animationControl.current.value = false;
+    }
+
+    // Reset values
+    progress.value = 0;
+    backgroundProgress.value = 0;
+    scaleValue.value = 1;
+  };
+
+  const handleResetComplete = async () => {
+    setIsResetting(true);
+
+    // Clear timers and reset state
+    clearTimers();
+    setIsPressing(false);
+    setResetProgress(0);
+
+    if (animationControl.current) {
+      animationControl.current.value = false;
+    }
+
+    // Reset animation values
+    progress.value = 0;
+    backgroundProgress.value = 0;
+    scaleValue.value = 1;
+
+    try {
+      await resetAll();
+      await loadData();
+      await hapticSuccess();
+    } catch (error) {
+      console.error("Error resetting qada data:", error);
+      await hapticWarning();
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Animated styles for reset button
+  const buttonAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: "rgb(220, 38, 38)", // red-600
+      transform: [{ scale: scaleValue.value }],
+    };
+  });
+
+  const progressOverlayStyle = useAnimatedStyle(() => {
+    const width = interpolate(progress.value, [0, 100], [0, 1]);
+
+    return {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      transform: [{ scaleX: width }],
+    };
+  });
 
   return (
     <Background>
@@ -440,6 +601,110 @@ const QadaSettings = () => {
                   <Switch value={tempQadaVibration} onValueChange={setTempQadaVibration} />
                 </HStack>
               </Pressable>
+            </VStack>
+          )}
+
+          {/* Danger Zone */}
+          {(totalMissed > 0 || totalCompleted > 0) && (
+            <VStack space="md" className="mt-6">
+              <Pressable
+                onPress={() => setDangerZoneExpanded(!dangerZoneExpanded)}
+                className="p-4 rounded-xl border border-red-600 bg-background">
+                <HStack className="items-center justify-between">
+                  <HStack className="items-center flex-1" space="md">
+                    <Icon as={AlertTriangle} size="md" className="text-red-600" />
+                    <Text className="font-semibold text-red-600">{t("qada.dangerZone.title")}</Text>
+                  </HStack>
+                  <Icon
+                    as={ChevronDown}
+                    size="md"
+                    className={`text-red-600 transition-transform ${dangerZoneExpanded ? "rotate-180" : ""}`}
+                  />
+                </HStack>
+              </Pressable>
+
+              {dangerZoneExpanded && (
+                <VStack space="md" className="px-2">
+                  <VStack space="xs">
+                    <Text className="text-sm font-medium text-typography">
+                      {t("qada.dangerZone.resetTitle")}
+                    </Text>
+                    <Text className="text-xs text-typography-secondary">
+                      {t("qada.dangerZone.resetDescription")}
+                    </Text>
+                    {(totalMissed > 0 || totalCompleted > 0) && (
+                      <VStack space="xs" className="mt-2">
+                        <Text className="text-xs text-typography-secondary">
+                          {t("qada.dangerZone.willDelete")}
+                        </Text>
+                        {totalMissed > 0 && (
+                          <Text className="text-xs text-red-600">
+                            • {t("qada.dangerZone.missedCount", { count: totalMissed })}
+                          </Text>
+                        )}
+                        {totalCompleted > 0 && (
+                          <Text className="text-xs text-red-600">
+                            • {t("qada.dangerZone.completedCount", { count: totalCompleted })}
+                          </Text>
+                        )}
+                      </VStack>
+                    )}
+                  </VStack>
+
+                  <Text className="text-xs text-typography-secondary text-center">
+                    ⚠️ {t("qada.resetWarning")}
+                  </Text>
+
+                  {(() => {
+                    const longPressGesture = Gesture.Pan()
+                      .onBegin(() => {
+                        runOnJS(handleResetPressStart)();
+                      })
+                      .onFinalize(() => {
+                        runOnJS(handleResetPressEnd)();
+                      });
+
+                    return (
+                      <GestureDetector gesture={longPressGesture}>
+                        <Animated.View
+                          style={[
+                            {
+                              borderRadius: 8,
+                              overflow: "hidden",
+                              position: "relative",
+                            },
+                            buttonAnimatedStyle,
+                          ]}>
+                          <Button
+                            size="md"
+                            variant="outline"
+                            className="w-full border-0"
+                            style={{ backgroundColor: "transparent" }}
+                            disabled={isResetting}>
+                            {isResetting ? (
+                              <Spinner size="small" />
+                            ) : (
+                              <Icon size="md" className="text-white" as={RotateCcw} />
+                            )}
+                            <ButtonText className="text-white font-medium">
+                              {isResetting
+                                ? t("qada.reset")
+                                : isPressing
+                                  ? `${Math.ceil(resetProgress)}% - ${t("qada.reset")}`
+                                  : t("qada.resetAll")}
+                            </ButtonText>
+                          </Button>
+
+                          {/* Progress overlay */}
+                          {isPressing && !isResetting && (
+                            <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+                          )}
+                        </Animated.View>
+                      </GestureDetector>
+                    );
+                  })()}
+                </VStack>
+              )}
             </VStack>
           )}
 
