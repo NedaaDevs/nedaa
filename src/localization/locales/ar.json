@@ -240,6 +240,7 @@
   "notification.qada.bodyRamadan_one": "يتبقى يوم واحد على بدء رمضان. لديك يوم واحد من صيام القضاء لم تؤده بعد.",
   "notification.qada.bodyRamadan_other": "يتبقى {{days}} يوم على بدء رمضان. لديك {{count}} يوم من صيام القضاء لم تؤده بعد.",
   "notification.qada.bodyRamadan_two": "يتبقى يومان على بدء رمضان. لديك يومان من صيام القضاء لم تؤدهما بعد.",
+  "notification.qada.bodyWithCount": "لديك {{count}} يوم من صيام القضاء متبقٍ. خطط لإكماله!",
   "notification.qada.bodyWithCount_few": "لديك {{count}} أيام من صيام القضاء متبقية. خطط لإكمالها!",
   "notification.qada.bodyWithCount_many": "لديك {{count}} يوماً من صيام القضاء متبقياً. خطط لإكمالها!",
   "notification.qada.bodyWithCount_one": "لديك يوم واحد من صيام القضاء متبق. خطط لإكماله!",
