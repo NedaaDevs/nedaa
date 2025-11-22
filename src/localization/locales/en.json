@@ -86,6 +86,7 @@
   "common.minute_zero": "{{count}} minutes",
   "common.nedaa": "Nedaa",
   "common.ok": "OK",
+  "common.optional": "Optional",
   "common.or": "or",
   "common.resetDailyProgress": "Reset Daily Progress",
   "common.retry": "Retry",

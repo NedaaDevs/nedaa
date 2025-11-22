@@ -89,6 +89,7 @@
   "common.minute_zero": "{{count}} دقيقة",
   "common.nedaa": "نِداء",
   "common.ok": "حسناً",
+  "common.optional": "اختياري",
   "common.or": "أو",
   "common.resetDailyProgress": "إعادة تعيين التقدم اليومي",
   "common.retry": "إعادة المحاولة",
