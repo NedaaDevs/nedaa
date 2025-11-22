@@ -6,6 +6,9 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { QadaDB } from "@/services/qada-db";
 
 // Utils
+import { mapSnakeToCamel } from "@/utils/caseConversion";
+
+// Utils
 import { scheduleQadaNotifications } from "@/utils/qadaNotificationScheduler";
 import i18next from "@/localization/i18n";
 
@@ -70,7 +73,6 @@ export type QadaState = {
   // Actions
   loadData: () => Promise<void>;
   addMissed: (count: number, notes?: string) => Promise<boolean>;
-  markCompleted: (count: number, notes?: string) => Promise<boolean>;
   updateSettings: (
     settings: Partial<Omit<QadaSettings, "id" | "created_at" | "updated_at">>
   ) => Promise<boolean>;
@@ -79,7 +81,6 @@ export type QadaState = {
   completeEntry: (id: number) => Promise<boolean>;
   completeAllEntries: () => Promise<boolean>;
   deleteEntry: (id: number) => Promise<boolean>;
-  deleteHistory: (id: number) => Promise<boolean>;
   resetAll: () => Promise<boolean>;
   clearError: () => void;
 
@@ -122,6 +123,14 @@ export const useQadaStore = create<QadaState>()(
             const fastData = await QadaDB.getQadaFast();
             if (fastData) {
               const totalOriginal = fastData.total_missed + fastData.total_completed;
+              console.log(
+                "[Qada Store] Loaded from DB - totalMissed:",
+                fastData.total_missed,
+                "totalCompleted:",
+                fastData.total_completed,
+                "totalOriginal:",
+                totalOriginal
+              );
               set({
                 totalMissed: fastData.total_missed,
                 totalCompleted: fastData.total_completed,
@@ -198,42 +207,6 @@ export const useQadaStore = create<QadaState>()(
         },
 
         /**
-         * Mark fasts as completed
-         */
-        markCompleted: async (count: number, notes?: string) => {
-          try {
-            set({ isLoading: true, hasError: false, errorMessage: "" });
-
-            const success = await QadaDB.markCompleted(count, notes);
-            if (success) {
-              const state = get();
-              set({
-                totalCompleted: state.totalCompleted + count,
-              });
-
-              // Reload history and pending entries
-              await get().loadHistory();
-              await get().loadPendingEntries();
-
-              // Sync notifications with new count
-              await syncQadaNotifications();
-            }
-
-            set({ isLoading: false });
-            return success;
-          } catch (error) {
-            console.error("[Qada Store] Error marking fasts as completed:", error);
-            set({
-              hasError: true,
-              errorMessage:
-                error instanceof Error ? error.message : "Failed to mark fasts as completed",
-              isLoading: false,
-            });
-            return false;
-          }
-        },
-
-        /**
          * Update settings
          */
         updateSettings: async (
@@ -244,13 +217,22 @@ export const useQadaStore = create<QadaState>()(
 
             const success = await QadaDB.updateSettings(settings);
             if (success) {
+              // Map snake_case DB fields to camelCase state properties using utility
+              const mappedSettings = mapSnakeToCamel(settings, {
+                reminder_type: "reminderType",
+                reminder_days: "reminderDays",
+                custom_date: "customDate",
+                privacy_mode: (val: number) => val === 1, // Convert to boolean for privacyMode
+              });
+
               set((state) => ({
                 ...state,
-                ...settings,
-                privacyMode:
-                  settings.privacy_mode !== undefined
-                    ? settings.privacy_mode === 1
-                    : state.privacyMode,
+                ...Object.fromEntries(
+                  Object.entries(mappedSettings).map(([key, value]) => [
+                    key,
+                    value !== undefined ? value : state[key as keyof typeof state],
+                  ])
+                ),
               }));
 
               // Sync notifications after settings update
@@ -299,10 +281,32 @@ export const useQadaStore = create<QadaState>()(
          */
         completeEntry: async (id: number) => {
           try {
+            const state = get();
+            console.log(
+              "[Qada Store] Before complete - totalMissed:",
+              state.totalMissed,
+              "totalCompleted:",
+              state.totalCompleted,
+              "remaining:",
+              state.getRemaining()
+            );
+
             const success = await QadaDB.completeOneDayFromEntry(id);
             if (success) {
               // Reload data to update totals and entries
               await get().loadData();
+
+              const newState = get();
+              console.log(
+                "[Qada Store] After complete - totalMissed:",
+                newState.totalMissed,
+                "totalCompleted:",
+                newState.totalCompleted,
+                "remaining:",
+                newState.getRemaining(),
+                "pending entries:",
+                newState.pendingEntries.length
+              );
 
               // Sync notifications with new count
               await syncQadaNotifications();
@@ -344,10 +348,32 @@ export const useQadaStore = create<QadaState>()(
          */
         deleteEntry: async (id: number) => {
           try {
+            const state = get();
+            console.log(
+              "[Qada Store] Before delete - totalMissed:",
+              state.totalMissed,
+              "totalCompleted:",
+              state.totalCompleted,
+              "remaining:",
+              state.getRemaining()
+            );
+
             const success = await QadaDB.updateEntryStatus(id, "deleted");
             if (success) {
               // Reload data to update totals and entries
               await get().loadData();
+
+              const newState = get();
+              console.log(
+                "[Qada Store] After delete - totalMissed:",
+                newState.totalMissed,
+                "totalCompleted:",
+                newState.totalCompleted,
+                "remaining:",
+                newState.getRemaining(),
+                "pending entries:",
+                newState.pendingEntries.length
+              );
 
               // Sync notifications with new count
               await syncQadaNotifications();
@@ -355,22 +381,6 @@ export const useQadaStore = create<QadaState>()(
             return success;
           } catch (error) {
             console.error("[Qada Store] Error deleting entry:", error);
-            return false;
-          }
-        },
-
-        /**
-         * Delete a history entry
-         */
-        deleteHistory: async (id: number) => {
-          try {
-            const success = await QadaDB.deleteHistoryEntry(id);
-            if (success) {
-              await get().loadHistory();
-            }
-            return success;
-          } catch (error) {
-            console.error("[Qada Store] Error deleting history entry:", error);
             return false;
           }
         },
