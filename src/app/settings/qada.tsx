@@ -44,6 +44,7 @@ import {
 import { useQadaStore } from "@/stores/qada";
 import { useNotificationStore } from "@/stores/notification";
 import { useCustomSoundsStore } from "@/stores/customSounds";
+import appStore from "@/stores/app";
 
 // Utils
 import { getAvailableSoundsWithCustom } from "@/utils/sound";
@@ -454,11 +455,13 @@ const QadaSettings = () => {
                   <Text
                     className={`font-medium text-base ${tempCustomDate ? "text-typography" : "text-typography-secondary"}`}>
                     {tempCustomDate
-                      ? new Date(tempCustomDate).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
+                      ? formatNumberToLocale(
+                          new Date(tempCustomDate).toLocaleDateString(appStore.getState().locale, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        )
                       : t("qada.selectDate")}
                   </Text>
                   <Icon as={CalendarDays} size="sm" className="text-typography-secondary" />
@@ -476,7 +479,8 @@ const QadaSettings = () => {
                 <DateTimePicker
                   value={tempCustomDate ? new Date(tempCustomDate) : new Date()}
                   mode="date"
-                  display="default"
+                  display="spinner"
+                  locale={appStore.getState().locale}
                   onChange={(event, selectedDate) => {
                     setShowDatePicker(false);
                     if (selectedDate) {
