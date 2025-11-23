@@ -321,14 +321,13 @@ const QadaSettings = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        className="flex-1"
         contentContainerStyle={{
-          paddingBottom: totalMissed > 0 || totalCompleted > 0 ? 180 : 100,
+          paddingBottom: totalMissed > 0 || totalCompleted > 0 ? 200 : 120,
         }}>
-        <VStack space="lg" className="px-4 py-6">
+        <VStack space="lg" className="px-4 pt-6 pb-4">
           {/* Reminder Type */}
           <VStack space="sm">
-            <Text className="text-sm font-semibold text-typography mb-1">
+            <Text className="text-base font-semibold text-typography text-left mb-2">
               {t("qada.reminderType")}
             </Text>
             <VStack space="xs">
@@ -361,7 +360,7 @@ const QadaSettings = () => {
                         }
                       />
                       <Text
-                        className={`font-medium ${
+                        className={`font-medium text-left ${
                           tempReminderType === option.value ? "text-primary" : "text-typography"
                         }`}>
                         {option.label}
@@ -387,10 +386,10 @@ const QadaSettings = () => {
           {tempReminderType === "ramadan" && (
             <VStack space="sm" className="p-4 bg-background rounded-xl border border-outline">
               <HStack className="items-center justify-between">
-                <Text className="text-sm font-medium text-typography">
+                <Text className="text-sm font-medium text-typography text-left">
                   {t("qada.daysBeforeRamadan")}
                 </Text>
-                <Text className="text-xs text-typography-secondary">
+                <Text className="text-xs text-typography-secondary text-left">
                   {formatNumberToLocale("1")}-
                   {formatNumberToLocale(t("qada.days_other", { count: 365 }))}
                 </Text>
@@ -441,7 +440,7 @@ const QadaSettings = () => {
               {daysError && (
                 <HStack className="items-center mt-2" space="xs">
                   <Icon as={Info} size="xs" className="text-error" />
-                  <Text className="text-xs text-error">{daysError}</Text>
+                  <Text className="text-xs text-error text-left">{daysError}</Text>
                 </HStack>
               )}
             </VStack>
@@ -450,7 +449,7 @@ const QadaSettings = () => {
           {/* Custom Date Configuration */}
           {tempReminderType === "custom" && (
             <VStack space="sm" className="p-4 bg-background rounded-xl border border-outline">
-              <Text className="text-sm font-medium text-typography mb-1">
+              <Text className="text-sm font-medium text-typography text-left mb-1">
                 {t("qada.customDate")}
               </Text>
               <Pressable
@@ -458,7 +457,7 @@ const QadaSettings = () => {
                 className="bg-background-secondary border border-outline rounded-lg px-4 py-3 min-h-[48px] justify-center">
                 <HStack className="items-center justify-between">
                   <Text
-                    className={`font-medium text-base ${tempCustomDate ? "text-typography" : "text-typography-secondary"}`}>
+                    className={`font-medium text-base text-left ${tempCustomDate ? "text-typography" : "text-typography-secondary"}`}>
                     {tempCustomDate
                       ? formatNumberToLocale(
                           new Date(tempCustomDate).toLocaleDateString(appStore.getState().locale, {
@@ -475,7 +474,7 @@ const QadaSettings = () => {
               {tempCustomDate && new Date(tempCustomDate) < new Date() && (
                 <HStack className="items-center mt-1" space="xs">
                   <Icon as={Info} size="xs" className="text-warning" />
-                  <Text className="text-xs text-warning">{t("qada.dateInPast")}</Text>
+                  <Text className="text-xs text-warning text-left">{t("qada.dateInPast")}</Text>
                 </HStack>
               )}
 
@@ -511,8 +510,10 @@ const QadaSettings = () => {
                       className="text-typography-secondary"
                     />
                     <VStack className="flex-1">
-                      <Text className="font-medium text-typography">{t("qada.privacyMode")}</Text>
-                      <Text className="text-xs text-typography-secondary mt-0.5">
+                      <Text className="font-medium text-typography text-left">
+                        {t("qada.privacyMode")}
+                      </Text>
+                      <Text className="text-xs text-typography-secondary text-left mt-0.5">
                         {tempPrivacyMode ? t("qada.privacyEnabled") : t("qada.privacyDisabled")}
                       </Text>
                     </VStack>
@@ -524,11 +525,11 @@ const QadaSettings = () => {
               {/* Privacy Example */}
               <Box className="p-3 bg-background-secondary rounded-xl border border-outline">
                 <VStack space="xs">
-                  <Text className="text-xs font-medium text-typography-secondary">
+                  <Text className="text-xs font-medium text-typography-secondary text-left">
                     {tempPrivacyMode ? t("qada.privacyEnabled") : t("qada.privacyDisabled")} -{" "}
                     {t("qada.notificationPreview")}
                   </Text>
-                  <Text className="text-sm text-typography">
+                  <Text className="text-sm text-typography text-left">
                     {tempPrivacyMode
                       ? t("notification.qada.bodyPrivacy")
                       : formatNumberToLocale(
@@ -543,7 +544,7 @@ const QadaSettings = () => {
           {/* Sound & Vibration */}
           {tempReminderType !== "none" && (
             <VStack space="sm">
-              <Text className="text-sm font-semibold text-typography">
+              <Text className="text-base font-semibold text-typography text-left mb-2">
                 {t("notification.soundAndVibration")}
               </Text>
 
@@ -552,7 +553,7 @@ const QadaSettings = () => {
                 <HStack className="items-center justify-between mb-2">
                   <HStack className="items-center flex-1" space="sm">
                     <Icon as={Volume2} size="sm" className="text-typography-secondary" />
-                    <Text className="text-sm font-medium text-typography">
+                    <Text className="text-sm font-medium text-typography text-left">
                       {t("notification.sound")}
                     </Text>
                   </HStack>
@@ -609,7 +610,7 @@ const QadaSettings = () => {
                 <HStack className="items-center justify-between">
                   <HStack className="items-center flex-1" space="md">
                     <Icon as={Vibrate} size="md" className="text-typography-secondary" />
-                    <Text className="font-medium text-typography">
+                    <Text className="font-medium text-typography text-left">
                       {t("notification.vibration")}
                     </Text>
                   </HStack>
@@ -646,7 +647,9 @@ const QadaSettings = () => {
               <HStack className="items-center justify-between">
                 <HStack className="items-center flex-1" space="md">
                   <Icon as={AlertTriangle} size="md" className="text-red-600" />
-                  <Text className="font-semibold text-red-600">{t("qada.dangerZone.title")}</Text>
+                  <Text className="font-semibold text-red-600 text-left">
+                    {t("qada.dangerZone.title")}
+                  </Text>
                 </HStack>
                 <Icon
                   as={ChevronDown}
@@ -659,19 +662,19 @@ const QadaSettings = () => {
             {dangerZoneExpanded && (
               <VStack space="md" className="px-2">
                 <VStack space="xs">
-                  <Text className="text-sm font-medium text-typography">
+                  <Text className="text-sm font-medium text-typography text-left">
                     {t("qada.dangerZone.resetTitle")}
                   </Text>
-                  <Text className="text-xs text-typography-secondary">
+                  <Text className="text-xs text-typography-secondary text-left">
                     {t("qada.dangerZone.resetDescription")}
                   </Text>
                   {(totalMissed > 0 || totalCompleted > 0) && (
                     <VStack space="xs" className="mt-2">
-                      <Text className="text-xs text-typography-secondary">
+                      <Text className="text-xs text-typography-secondary text-left">
                         {t("qada.dangerZone.willDelete")}
                       </Text>
                       {totalMissed > 0 && (
-                        <Text className="text-xs text-red-600">
+                        <Text className="text-xs text-red-600 text-left">
                           •{" "}
                           {formatNumberToLocale(
                             t("qada.dangerZone.missedCount", { count: totalMissed })
@@ -679,7 +682,7 @@ const QadaSettings = () => {
                         </Text>
                       )}
                       {totalCompleted > 0 && (
-                        <Text className="text-xs text-red-600">
+                        <Text className="text-xs text-red-600 text-left">
                           •{" "}
                           {formatNumberToLocale(
                             t("qada.dangerZone.completedCount", { count: totalCompleted })

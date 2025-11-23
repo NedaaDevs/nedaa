@@ -175,30 +175,29 @@ const QadaScreen = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <Box className="relative">
+        <TopBar title="qada.title" />
+        {/* Settings Icon Overlay */}
+        <Pressable
+          onPress={() => {
+            hapticLight();
+            router.push("/settings/qada");
+          }}
+          className="absolute right-6 top-2 justify-center p-2 rounded-lg"
+          style={{ zIndex: 50, elevation: 4 }}>
+          <Icon as={Settings} size="lg" className="text-typography-contrast" />
+        </Pressable>
+      </Box>
+
       <ScrollView
         contentContainerStyle={{
-          flexGrow: 1,
           paddingBottom: totalMissed > 0 || totalCompleted > 0 ? 160 : 100,
         }}
         showsVerticalScrollIndicator={false}>
-        <Box className="relative">
-          <TopBar title="qada.title" />
-          {/* Settings Icon Overlay */}
-          <Pressable
-            onPress={() => {
-              hapticLight();
-              router.push("/settings/qada");
-            }}
-            className="absolute right-6 top-2 justify-center p-2 rounded-lg"
-            style={{ zIndex: 50, elevation: 4 }}>
-            <Icon as={Settings} size="lg" className="text-typography-contrast" />
-          </Pressable>
-        </Box>
-
         {/* Progress Dashboard */}
-        <VStack className="px-4 py-6" space="xl">
+        <VStack className="px-4 pt-6 pb-4" space="xl">
           {/* Progress Card */}
-          <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
+          <Box className="bg-background-secondary rounded-xl p-6">
             <VStack space="lg" className="items-center">
               {/* Main Stats */}
               <VStack space="sm" className="items-center w-full">
@@ -299,7 +298,7 @@ const QadaScreen = () => {
                 ))}
               </VStack>
 
-              <Box className="bg-background-tertiary/50 rounded-lg p-3">
+              <Box className="bg-background-secondary/80 rounded-lg p-3">
                 <Text className="text-xs text-typography-secondary text-center">
                   💡 {t("qada.swipeHintFull")}
                 </Text>
@@ -309,28 +308,28 @@ const QadaScreen = () => {
 
           {/* Empty State */}
           {pendingEntries.length === 0 && remaining === 0 && totalMissed > 0 && (
-            <Box className="py-8 items-center">
-              <Box className="w-20 h-20 items-center justify-center">
+            <VStack className="py-12 items-center" space="md">
+              <Box className="w-20 h-20 bg-success/10 rounded-full items-center justify-center">
                 <Icon as={Check} className="text-success" size="xl" />
               </Box>
-              <Text className="text-lg font-semibold text-success mt-4">
-                {t("qada.allComplete")}
-              </Text>
-              <Text className="text-sm text-typography-secondary text-center mt-2">
-                {t("qada.allCompleteMessage")}
-              </Text>
-            </Box>
+              <VStack className="items-center" space="xs">
+                <Text className="text-lg font-semibold text-success">{t("qada.allComplete")}</Text>
+                <Text className="text-sm text-typography-secondary text-center px-4">
+                  {t("qada.allCompleteMessage")}
+                </Text>
+              </VStack>
+            </VStack>
           )}
 
           {pendingEntries.length === 0 && totalMissed === 0 && (
-            <Box className="py-8 items-center">
-              <Box className="w-20 h-20 items-center justify-center">
+            <VStack className="py-12 items-center" space="md">
+              <Box className="w-20 h-20 bg-background-secondary rounded-full items-center justify-center">
                 <Icon as={CalendarDays} className="text-typography-secondary" size="xl" />
               </Box>
-              <Text className="text-base text-typography-secondary text-center mt-4">
+              <Text className="text-base text-typography-secondary text-center px-4">
                 {t("qada.noEntriesYet")}
               </Text>
-            </Box>
+            </VStack>
           )}
         </VStack>
 
