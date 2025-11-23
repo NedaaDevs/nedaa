@@ -319,8 +319,13 @@ const QadaSettings = () => {
     <Background>
       <TopBar title="qada.notificationSettings" backOnClick={true} />
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        <VStack space="lg" className="px-4 py-6 pb-24">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        className="flex-1"
+        contentContainerStyle={{
+          paddingBottom: totalMissed > 0 || totalCompleted > 0 ? 180 : 100,
+        }}>
+        <VStack space="lg" className="px-4 py-6">
           {/* Reminder Type */}
           <VStack space="sm">
             <Text className="text-sm font-semibold text-typography mb-1">
@@ -614,116 +619,6 @@ const QadaSettings = () => {
             </VStack>
           )}
 
-          {/* Danger Zone */}
-          {(totalMissed > 0 || totalCompleted > 0) && (
-            <VStack space="md" className="mt-6">
-              <Pressable
-                onPress={() => setDangerZoneExpanded(!dangerZoneExpanded)}
-                className="p-4 rounded-xl border border-red-600 bg-background">
-                <HStack className="items-center justify-between">
-                  <HStack className="items-center flex-1" space="md">
-                    <Icon as={AlertTriangle} size="md" className="text-red-600" />
-                    <Text className="font-semibold text-red-600">{t("qada.dangerZone.title")}</Text>
-                  </HStack>
-                  <Icon
-                    as={ChevronDown}
-                    size="md"
-                    className={`text-red-600 transition-transform ${dangerZoneExpanded ? "rotate-180" : ""}`}
-                  />
-                </HStack>
-              </Pressable>
-
-              {dangerZoneExpanded && (
-                <VStack space="md" className="px-2">
-                  <VStack space="xs">
-                    <Text className="text-sm font-medium text-typography">
-                      {t("qada.dangerZone.resetTitle")}
-                    </Text>
-                    <Text className="text-xs text-typography-secondary">
-                      {t("qada.dangerZone.resetDescription")}
-                    </Text>
-                    {(totalMissed > 0 || totalCompleted > 0) && (
-                      <VStack space="xs" className="mt-2">
-                        <Text className="text-xs text-typography-secondary">
-                          {t("qada.dangerZone.willDelete")}
-                        </Text>
-                        {totalMissed > 0 && (
-                          <Text className="text-xs text-red-600">
-                            •{" "}
-                            {formatNumberToLocale(
-                              t("qada.dangerZone.missedCount", { count: totalMissed })
-                            )}
-                          </Text>
-                        )}
-                        {totalCompleted > 0 && (
-                          <Text className="text-xs text-red-600">
-                            •{" "}
-                            {formatNumberToLocale(
-                              t("qada.dangerZone.completedCount", { count: totalCompleted })
-                            )}
-                          </Text>
-                        )}
-                      </VStack>
-                    )}
-                  </VStack>
-
-                  <Text className="text-xs text-typography-secondary text-center">
-                    ⚠️ {t("qada.resetWarning")}
-                  </Text>
-
-                  {(() => {
-                    const longPressGesture = Gesture.Pan()
-                      .onBegin(() => {
-                        runOnJS(handleResetPressStart)();
-                      })
-                      .onFinalize(() => {
-                        runOnJS(handleResetPressEnd)();
-                      });
-
-                    return (
-                      <GestureDetector gesture={longPressGesture}>
-                        <Animated.View
-                          style={[
-                            {
-                              borderRadius: 8,
-                              overflow: "hidden",
-                              position: "relative",
-                            },
-                            buttonAnimatedStyle,
-                          ]}>
-                          <Button
-                            size="md"
-                            variant="outline"
-                            className="w-full border-0"
-                            style={{ backgroundColor: "transparent" }}
-                            disabled={isResetting}>
-                            {isResetting ? (
-                              <Spinner size="small" />
-                            ) : (
-                              <Icon size="md" className="text-white" as={RotateCcw} />
-                            )}
-                            <ButtonText className="text-white font-medium">
-                              {isResetting
-                                ? t("qada.reset")
-                                : isPressing
-                                  ? `${formatNumberToLocale(Math.ceil(resetProgress).toString())}% - ${t("qada.reset")}`
-                                  : t("qada.resetAll")}
-                            </ButtonText>
-                          </Button>
-
-                          {/* Progress overlay */}
-                          {isPressing && !isResetting && (
-                            <Animated.View style={progressOverlayStyle} pointerEvents="none" />
-                          )}
-                        </Animated.View>
-                      </GestureDetector>
-                    );
-                  })()}
-                </VStack>
-              )}
-            </VStack>
-          )}
-
           {/* Save Button */}
           <Button
             size="lg"
@@ -738,6 +633,120 @@ const QadaSettings = () => {
           </Button>
         </VStack>
       </ScrollView>
+
+      {/* Danger Zone - Fixed at Bottom */}
+      {(totalMissed > 0 || totalCompleted > 0) && (
+        <Box
+          className="absolute bottom-0 left-0 right-0 bg-background border-t border-outline"
+          style={{ paddingBottom: 20 }}>
+          <VStack space="md" className="px-4 py-4">
+            <Pressable
+              onPress={() => setDangerZoneExpanded(!dangerZoneExpanded)}
+              className="p-4 rounded-xl border border-red-600 bg-background">
+              <HStack className="items-center justify-between">
+                <HStack className="items-center flex-1" space="md">
+                  <Icon as={AlertTriangle} size="md" className="text-red-600" />
+                  <Text className="font-semibold text-red-600">{t("qada.dangerZone.title")}</Text>
+                </HStack>
+                <Icon
+                  as={ChevronDown}
+                  size="md"
+                  className={`text-red-600 transition-transform ${dangerZoneExpanded ? "rotate-180" : ""}`}
+                />
+              </HStack>
+            </Pressable>
+
+            {dangerZoneExpanded && (
+              <VStack space="md" className="px-2">
+                <VStack space="xs">
+                  <Text className="text-sm font-medium text-typography">
+                    {t("qada.dangerZone.resetTitle")}
+                  </Text>
+                  <Text className="text-xs text-typography-secondary">
+                    {t("qada.dangerZone.resetDescription")}
+                  </Text>
+                  {(totalMissed > 0 || totalCompleted > 0) && (
+                    <VStack space="xs" className="mt-2">
+                      <Text className="text-xs text-typography-secondary">
+                        {t("qada.dangerZone.willDelete")}
+                      </Text>
+                      {totalMissed > 0 && (
+                        <Text className="text-xs text-red-600">
+                          •{" "}
+                          {formatNumberToLocale(
+                            t("qada.dangerZone.missedCount", { count: totalMissed })
+                          )}
+                        </Text>
+                      )}
+                      {totalCompleted > 0 && (
+                        <Text className="text-xs text-red-600">
+                          •{" "}
+                          {formatNumberToLocale(
+                            t("qada.dangerZone.completedCount", { count: totalCompleted })
+                          )}
+                        </Text>
+                      )}
+                    </VStack>
+                  )}
+                </VStack>
+
+                <Text className="text-xs text-typography-secondary text-center">
+                  ⚠️ {t("qada.resetWarning")}
+                </Text>
+
+                {(() => {
+                  const longPressGesture = Gesture.Pan()
+                    .onBegin(() => {
+                      runOnJS(handleResetPressStart)();
+                    })
+                    .onFinalize(() => {
+                      runOnJS(handleResetPressEnd)();
+                    });
+
+                  return (
+                    <GestureDetector gesture={longPressGesture}>
+                      <Animated.View
+                        style={[
+                          {
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            position: "relative",
+                          },
+                          buttonAnimatedStyle,
+                        ]}>
+                        <Button
+                          size="md"
+                          variant="outline"
+                          className="w-full border-0"
+                          style={{ backgroundColor: "transparent" }}
+                          disabled={isResetting}>
+                          {isResetting ? (
+                            <Spinner size="small" />
+                          ) : (
+                            <Icon size="md" className="text-white" as={RotateCcw} />
+                          )}
+                          <ButtonText className="text-white font-medium">
+                            {isResetting
+                              ? t("qada.reset")
+                              : isPressing
+                                ? `${formatNumberToLocale(Math.ceil(resetProgress).toString())}% - ${t("qada.reset")}`
+                                : t("qada.resetAll")}
+                          </ButtonText>
+                        </Button>
+
+                        {/* Progress overlay */}
+                        {isPressing && !isResetting && (
+                          <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+                        )}
+                      </Animated.View>
+                    </GestureDetector>
+                  );
+                })()}
+              </VStack>
+            )}
+          </VStack>
+        </Box>
+      )}
     </Background>
   );
 };
