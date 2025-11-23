@@ -47,6 +47,7 @@ import { useCustomSoundsStore } from "@/stores/customSounds";
 
 // Utils
 import { getAvailableSoundsWithCustom } from "@/utils/sound";
+import { formatNumberToLocale } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
@@ -383,10 +384,13 @@ const QadaSettings = () => {
                 <Text className="text-sm font-medium text-typography">
                   {t("qada.daysBeforeRamadan")}
                 </Text>
-                <Text className="text-xs text-typography-secondary">1-365 days</Text>
+                <Text className="text-xs text-typography-secondary">
+                  {formatNumberToLocale("1")}-
+                  {formatNumberToLocale(t("qada.days_other", { count: 365 }))}
+                </Text>
               </HStack>
               <TextInput
-                value={tempReminderDaysText}
+                value={formatNumberToLocale(tempReminderDaysText)}
                 onChangeText={(text) => {
                   // Allow empty string or only digits
                   if (text === "" || /^\d+$/.test(text)) {
@@ -518,7 +522,9 @@ const QadaSettings = () => {
                   <Text className="text-sm text-typography">
                     {tempPrivacyMode
                       ? t("notification.qada.bodyPrivacy")
-                      : t("notification.qada.bodyWithCount", { count: remaining })}
+                      : formatNumberToLocale(
+                          t("notification.qada.bodyWithCount", { count: remaining })
+                        )}
                   </Text>
                 </VStack>
               </Box>
@@ -639,12 +645,18 @@ const QadaSettings = () => {
                         </Text>
                         {totalMissed > 0 && (
                           <Text className="text-xs text-red-600">
-                            • {t("qada.dangerZone.missedCount", { count: totalMissed })}
+                            •{" "}
+                            {formatNumberToLocale(
+                              t("qada.dangerZone.missedCount", { count: totalMissed })
+                            )}
                           </Text>
                         )}
                         {totalCompleted > 0 && (
                           <Text className="text-xs text-red-600">
-                            • {t("qada.dangerZone.completedCount", { count: totalCompleted })}
+                            •{" "}
+                            {formatNumberToLocale(
+                              t("qada.dangerZone.completedCount", { count: totalCompleted })
+                            )}
                           </Text>
                         )}
                       </VStack>
@@ -690,7 +702,7 @@ const QadaSettings = () => {
                               {isResetting
                                 ? t("qada.reset")
                                 : isPressing
-                                  ? `${Math.ceil(resetProgress)}% - ${t("qada.reset")}`
+                                  ? `${formatNumberToLocale(Math.ceil(resetProgress).toString())}% - ${t("qada.reset")}`
                                   : t("qada.resetAll")}
                             </ButtonText>
                           </Button>

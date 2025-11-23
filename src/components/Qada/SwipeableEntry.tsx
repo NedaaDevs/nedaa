@@ -25,6 +25,7 @@ import type { QadaHistory } from "@/services/qada-db";
 
 // Utils
 import { format } from "date-fns";
+import { formatNumberToLocale } from "@/utils/number";
 
 const SWIPE_THRESHOLD = 40; // Swipe 40px to show buttons
 
@@ -105,7 +106,7 @@ const ActionButtons = ({
             <HStack space="xs" className="items-center gap-1">
               <Icon as={CheckCheck} size="sm" className="text-background" />
               <Text className="text-background text-xs font-semibold">
-                {t("common.all")} ({entry.count})
+                {t("common.all")} ({formatNumberToLocale(entry.count.toString())})
               </Text>
             </HStack>
           </Pressable>
@@ -184,7 +185,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
             </Box>
             <VStack className="flex-1">
               <Text className="text-base font-semibold text-typography text-left">
-                {t("qada.daysCount", { count: entry.count })}
+                {formatNumberToLocale(t("qada.daysCount", { count: entry.count }))}
               </Text>
               <Text className="text-xs text-typography-secondary text-left">
                 {format(new Date(entry.created_at), "MMM dd, yyyy")}

@@ -35,6 +35,9 @@ import { Plus, Check, X, CalendarDays, Settings } from "lucide-react-native";
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
 
+// Utils
+import { formatNumberToLocale } from "@/utils/number";
+
 const QadaScreen = () => {
   const { t } = useTranslation();
   const {
@@ -203,10 +206,10 @@ const QadaScreen = () => {
                   className="text-4xl font-bold text-typography text-center w-full"
                   numberOfLines={1}
                   ellipsizeMode="clip">
-                  {remaining}
+                  {formatNumberToLocale(remaining.toString())}
                 </Text>
                 <Text className="text-lg text-typography-secondary text-center">
-                  {t("qada.daysRemaining", { count: remaining })}
+                  {formatNumberToLocale(t("qada.daysRemaining", { count: remaining }))}
                 </Text>
               </VStack>
 
@@ -217,11 +220,16 @@ const QadaScreen = () => {
                     <ProgressFilledTrack className="bg-accent-primary" />
                   </Progress>
                   <Text className="text-sm text-center text-typography-secondary">
-                    {t("qada.completionPercentage", { percentage: completionPercentage })} •{" "}
-                    {t("qada.progressContext", {
-                      completed: totalCompleted,
-                      total: totalOriginal,
-                    })}
+                    {formatNumberToLocale(
+                      t("qada.completionPercentage", { percentage: completionPercentage })
+                    )}{" "}
+                    •{" "}
+                    {formatNumberToLocale(
+                      t("qada.progressContext", {
+                        completed: totalCompleted,
+                        total: totalOriginal,
+                      })
+                    )}
                   </Text>
                 </VStack>
               )}
@@ -230,7 +238,7 @@ const QadaScreen = () => {
               <HStack space="xl" className="w-full justify-around pt-4">
                 <VStack space="xs" className="items-center">
                   <Text className="text-2xl font-semibold text-typography text-left">
-                    {totalMissed}
+                    {formatNumberToLocale(totalMissed.toString())}
                   </Text>
                   <Text className="text-xs text-typography-secondary text-left">
                     {t("qada.total")}
@@ -238,7 +246,7 @@ const QadaScreen = () => {
                 </VStack>
                 <VStack space="xs" className="items-center">
                   <Text className="text-2xl font-semibold text-success text-left">
-                    {totalCompleted}
+                    {formatNumberToLocale(totalCompleted.toString())}
                   </Text>
                   <Text className="text-xs text-typography-secondary text-left">
                     {t("qada.completed")}
@@ -252,7 +260,7 @@ const QadaScreen = () => {
               )}
               {remaining > 0 && (
                 <Text className="text-left text-typography-secondary">
-                  {t("qada.keepGoing", { count: remaining })}
+                  {formatNumberToLocale(t("qada.keepGoing", { count: remaining }))}
                 </Text>
               )}
             </VStack>
@@ -357,7 +365,7 @@ const QadaScreen = () => {
                           isDisabled={isLoading}
                           className="flex-1 border-accent-primary px-2">
                           <ButtonText className="text-accent-primary font-semibold text-center">
-                            +{days}
+                            +{formatNumberToLocale(days.toString())}
                           </ButtonText>
                         </Button>
                       ))}
@@ -386,9 +394,11 @@ const QadaScreen = () => {
                       </Pressable>
 
                       <Box className="flex-1 items-center">
-                        <Text className="text-5xl font-bold text-accent-primary">{amount}</Text>
+                        <Text className="text-5xl font-bold text-accent-primary">
+                          {formatNumberToLocale(amount.toString())}
+                        </Text>
                         <Text className="text-sm text-typography-secondary mt-1">
-                          {t("qada.days", { count: amount })}
+                          {formatNumberToLocale(t("qada.days", { count: amount }))}
                         </Text>
                       </Box>
 
@@ -430,7 +440,9 @@ const QadaScreen = () => {
                 className="w-full bg-accent-primary"
                 size="lg">
                 <ButtonText className="text-background text-base font-semibold">
-                  {t("qada.addDays", { count: amount, defaultValue: `Add ${amount} Days` })}
+                  {formatNumberToLocale(
+                    t("qada.addDays", { count: amount, defaultValue: `Add ${amount} Days` })
+                  )}
                 </ButtonText>
               </Button>
             </ModalFooter>
