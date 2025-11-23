@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
@@ -69,29 +69,26 @@ const QadaScreen = () => {
   const remaining = getRemaining();
   const completionPercentage = getCompletionPercentage();
 
-  const handleQuickAdd = async (days: number) => {
-    await hapticSelection();
-    await addMissed(days, notes || undefined);
-    setShowAddModal(false);
-    setNotes("");
-    await hapticSuccess();
-  };
-
-  const handleAddMissed = async () => {
-    if (amount <= 0) return;
-    await addMissed(amount, notes || undefined);
-    setAmount(1);
-    setNotes("");
-    setShowAddModal(false);
-    await hapticSuccess();
-  };
-
   const incrementAmount = () => {
     setAmount((prev) => Math.min(prev + 1, 999));
   };
 
   const decrementAmount = () => {
     setAmount((prev) => Math.max(prev - 1, 1));
+  };
+
+  const stopIncrement = () => {
+    if (incrementTimer.current) {
+      clearInterval(incrementTimer.current);
+      incrementTimer.current = null;
+    }
+  };
+
+  const stopDecrement = () => {
+    if (decrementTimer.current) {
+      clearInterval(decrementTimer.current);
+      decrementTimer.current = null;
+    }
   };
 
   const startIncrement = () => {
@@ -114,13 +111,6 @@ const QadaScreen = () => {
     incrementTimer.current = window.setInterval(runIncrement, 200);
   };
 
-  const stopIncrement = () => {
-    if (incrementTimer.current) {
-      clearInterval(incrementTimer.current);
-      incrementTimer.current = null;
-    }
-  };
-
   const startDecrement = () => {
     hapticLight();
     decrementAmount();
@@ -141,11 +131,32 @@ const QadaScreen = () => {
     decrementTimer.current = window.setInterval(runDecrement, 200);
   };
 
-  const stopDecrement = () => {
-    if (decrementTimer.current) {
-      clearInterval(decrementTimer.current);
-      decrementTimer.current = null;
-    }
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      stopIncrement();
+      stopDecrement();
+    };
+  }, []);
+
+  const handleQuickAdd = async (days: number) => {
+    await hapticSelection();
+    await addMissed(days, notes || undefined);
+    setShowAddModal(false);
+    setNotes("");
+    await hapticSuccess();
+  };
+
+  const handleAddMissed = async () => {
+    if (amount <= 0) return;
+    // Stop any running timers before adding
+    stopIncrement();
+    stopDecrement();
+    await addMissed(amount, notes || undefined);
+    setAmount(1);
+    setNotes("");
+    setShowAddModal(false);
+    await hapticSuccess();
   };
 
   const handleModalClose = () => {
@@ -387,6 +398,7 @@ const QadaScreen = () => {
                       <Pressable
                         onPressIn={startDecrement}
                         onPressOut={stopDecrement}
+                        onTouchEnd={stopDecrement}
                         disabled={isLoading}
                         className="w-14 h-14 bg-background border-2 border-outline rounded-full items-center justify-center active:bg-background-tertiary">
                         <Text className="text-2xl text-typography font-bold">−</Text>
@@ -404,6 +416,7 @@ const QadaScreen = () => {
                       <Pressable
                         onPressIn={startIncrement}
                         onPressOut={stopIncrement}
+                        onTouchEnd={stopIncrement}
                         disabled={isLoading}
                         className="w-14 h-14 bg-accent-primary rounded-full items-center justify-center active:opacity-80">
                         <Text className="text-2xl text-background font-bold">+</Text>
