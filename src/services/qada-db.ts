@@ -500,6 +500,20 @@ const resetAll = async (): Promise<boolean> => {
   }
 };
 
+/**
+ * Get the remaining count directly from the database
+ * This avoids circular dependency between qada and notification stores
+ */
+const getRemainingCount = async (): Promise<number> => {
+  try {
+    const qadaFast = await getQadaFast();
+    return Math.max(0, qadaFast?.total_missed ?? 0);
+  } catch (error) {
+    console.error("[Qada DB] Error getting remaining count:", error);
+    return 0;
+  }
+};
+
 export const QadaDB = {
   initialize: initializeDB,
   getQadaFast,
@@ -512,4 +526,5 @@ export const QadaDB = {
   getSettings,
   updateSettings,
   resetAll,
+  getRemainingCount,
 };

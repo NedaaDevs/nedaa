@@ -11,7 +11,6 @@ import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 // Stores
 import locationStore from "@/stores/location";
 import prayerTimesStore from "@/stores/prayerTimes";
-import { useQadaStore } from "@/stores/qada";
 
 // Services
 import { QadaDB } from "@/services/qada-db";
@@ -194,7 +193,7 @@ export const useNotificationStore = create<NotificationStore>()(
             let qadaData = null;
             try {
               const qadaSettings = await QadaDB.getSettings();
-              const qadaRemainingCount = useQadaStore.getState().getRemaining();
+              const qadaRemainingCount = await QadaDB.getRemainingCount();
               if (qadaSettings) {
                 qadaData = {
                   settings: qadaSettings,
