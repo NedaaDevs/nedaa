@@ -48,7 +48,7 @@ const QadaScreen = () => {
     isLoading,
     addMissed,
     completeEntry,
-    completeAllEntries,
+    completeSpecificEntry,
     deleteEntry,
     getRemaining,
     getCompletionPercentage,
@@ -174,9 +174,9 @@ const QadaScreen = () => {
     }
   };
 
-  const handleCompleteAll = async () => {
+  const handleCompleteAll = async (id: number) => {
     await hapticSuccess();
-    await completeAllEntries();
+    await completeSpecificEntry(id);
   };
 
   const handleDeleteEntry = async (id: number) => {

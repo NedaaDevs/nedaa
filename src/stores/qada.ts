@@ -79,6 +79,7 @@ export type QadaState = {
   loadHistory: (limit?: number) => Promise<void>;
   loadPendingEntries: () => Promise<void>;
   completeEntry: (id: number) => Promise<boolean>;
+  completeSpecificEntry: (id: number) => Promise<boolean>;
   completeAllEntries: () => Promise<boolean>;
   deleteEntry: (id: number) => Promise<boolean>;
   resetAll: () => Promise<boolean>;
@@ -314,6 +315,23 @@ export const useQadaStore = create<QadaState>()(
             return success;
           } catch (error) {
             console.error("[Qada Store] Error completing entry:", error);
+            return false;
+          }
+        },
+
+        completeSpecificEntry: async (id: number) => {
+          try {
+            const success = await QadaDB.updateEntryStatus(id, "completed");
+            if (success) {
+              // Reload data to update totals and entries
+              await get().loadData();
+
+              // Sync notifications with new count
+              await syncQadaNotifications();
+            }
+            return success;
+          } catch (error) {
+            console.error("[Qada Store] Error completing specific entry:", error);
             return false;
           }
         },

@@ -32,7 +32,7 @@ const SWIPE_THRESHOLD = 40; // Swipe 40px to show buttons
 type Props = {
   entry: QadaHistory;
   onComplete: (id: number) => void;
-  onCompleteAll: () => void;
+  onCompleteAll: (id: number) => void;
   onDelete: (id: number) => void;
 };
 
@@ -145,7 +145,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
   };
 
   const handleCompleteAll = () => {
-    onCompleteAll();
+    onCompleteAll(entry.id);
   };
 
   const handleDelete = () => {
