@@ -185,7 +185,7 @@ const QadaScreen = () => {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView className="flex-1">
       <Box className="relative">
         <TopBar title="qada.title" />
         {/* Settings Icon Overlay */}

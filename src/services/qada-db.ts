@@ -60,21 +60,6 @@ const openDatabase = async () =>
   );
 
 /**
- * Temporary migration to drop unused columns
- * Safe to delete after testing devices run this
- */
-const runSchemaCleanup = async (db: SQLite.SQLiteDatabase) => {
-  try {
-    // Drop original_count column (never read, only written)
-    await db.execAsync(`ALTER TABLE ${QADA_HISTORY_TABLE} DROP COLUMN original_count;`);
-    console.log("[Qada DB] Dropped unused original_count column");
-  } catch (error) {
-    // Column might already be dropped or syntax not supported
-    console.log("[Qada DB] Column drop skipped:", error);
-  }
-};
-
-/**
  * Initialize Qada database tables
  */
 const initializeDB = async () => {
@@ -142,9 +127,6 @@ const initializeDB = async () => {
         ["none", null, null, 0, now, now]
       );
     }
-
-    // Temporary: Drop unused columns (delete this call after testing)
-    await runSchemaCleanup(db);
 
     console.log("[Qada DB] Database initialized successfully");
   } catch (error: unknown) {
