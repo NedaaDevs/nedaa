@@ -19,12 +19,16 @@ import { Icon } from "@/components/ui/icon";
 // Icons
 import { CalendarDays, Check, Trash2, CheckCheck, MessageSquare } from "lucide-react-native";
 
+// Stores
+import { useAppStore } from "@/stores/app";
+
 // Types
 import type { QadaHistory } from "@/services/qada-db";
 
 // Utils
 import { format } from "date-fns";
 import { formatNumberToLocale } from "@/utils/number";
+import { getDateLocale } from "@/utils/date";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -192,6 +196,7 @@ const ActionButtons = ({
 
 export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: Props) => {
   const { t } = useTranslation();
+  const locale = useAppStore((state) => state.locale);
   const swipeableRef = useRef<React.ComponentRef<typeof Swipeable>>(null);
 
   const handleComplete = () => {
@@ -244,7 +249,11 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
                 {formatNumberToLocale(t("qada.daysCount", { count: entry.count }))}
               </Text>
               <Text className="text-xs text-typography-secondary text-left">
-                {format(new Date(entry.created_at), "MMM dd, yyyy")}
+                {formatNumberToLocale(
+                  format(new Date(entry.created_at), "MMM dd, yyyy", {
+                    locale: getDateLocale(locale),
+                  })
+                )}
               </Text>
               {entry.notes && (
                 <HStack space="xs" className="items-start mt-2">
