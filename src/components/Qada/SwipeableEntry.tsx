@@ -7,7 +7,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import { I18nManager } from "react-native";
+import { I18nManager, Platform, TouchableOpacity } from "react-native";
 
 // Components
 import { Text } from "@/components/ui/text";
@@ -15,7 +15,6 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
 import { Icon } from "@/components/ui/icon";
-import { Pressable } from "@/components/ui/pressable";
 
 // Icons
 import { CalendarDays, Check, Trash2, CheckCheck, MessageSquare } from "lucide-react-native";
@@ -26,6 +25,9 @@ import type { QadaHistory } from "@/services/qada-db";
 // Utils
 import { format } from "date-fns";
 import { formatNumberToLocale } from "@/utils/number";
+
+// Enums
+import { PlatformType } from "@/enums/app";
 
 const SWIPE_THRESHOLD = 40; // Swipe 40px to show buttons
 
@@ -55,6 +57,9 @@ const ActionButtons = ({
   onDelete,
   swipeableRef,
 }: ActionButtonsProps) => {
+  const isRTL = I18nManager.isRTL;
+  const isAndroid = Platform.OS === PlatformType.ANDROID;
+
   const containerStyle = useAnimatedStyle(() => {
     const dragDistance = Math.abs(drag.value);
     const opacity = interpolate(dragDistance, [20, 80], [0, 1], Extrapolation.CLAMP);
@@ -77,60 +82,110 @@ const ActionButtons = ({
     swipeableRef.current?.close();
   };
 
+  const androidStyle = isAndroid ? { elevation: 10, zIndex: 10 } : {};
+
   return (
     <Animated.View
+      collapsable={false}
+      pointerEvents="auto"
       style={[
         containerStyle,
         {
-          flexDirection: "row",
+          flexDirection: isRTL ? "row-reverse" : "row",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingRight: 8,
+          paddingHorizontal: 8,
           gap: 8,
+          ...androidStyle,
         },
       ]}>
       {/* Complete Button(s) */}
       {entry.count > 1 ? (
-        <VStack space="xs" className="gap-1">
-          <Pressable
+        <Box
+          collapsable={false}
+          style={{
+            gap: 4,
+            ...androidStyle,
+          }}>
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={handleCompletePress}
-            className="bg-success rounded-lg px-3 py-2.5 items-center justify-center">
+            style={{
+              backgroundColor: "#10b981",
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 80,
+              ...androidStyle,
+            }}>
             <HStack space="xs" className="items-center gap-1">
               <Icon as={Check} size="sm" className="text-background" />
               <Text className="text-background text-xs font-semibold">{t("common.complete")}</Text>
             </HStack>
-          </Pressable>
-          <Pressable
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={handleCompleteAllPress}
-            className="bg-info rounded-lg px-3 py-2.5 items-center justify-center">
+            style={{
+              backgroundColor: "#3b82f6",
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 80,
+              ...androidStyle,
+            }}>
             <HStack space="xs" className="items-center gap-1">
               <Icon as={CheckCheck} size="sm" className="text-background" />
               <Text className="text-background text-xs font-semibold">
                 {t("common.all")} ({formatNumberToLocale(entry.count.toString())})
               </Text>
             </HStack>
-          </Pressable>
-        </VStack>
+          </TouchableOpacity>
+        </Box>
       ) : (
-        <Pressable
+        <TouchableOpacity
+          activeOpacity={0.7}
           onPress={handleCompletePress}
-          className="bg-success rounded-lg px-4 h-[56px] items-center justify-center">
+          style={{
+            backgroundColor: "#10b981",
+            borderRadius: 8,
+            paddingHorizontal: 16,
+            height: 56,
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: 100,
+            ...androidStyle,
+          }}>
           <HStack space="xs" className="items-center gap-1">
             <Icon as={Check} size="sm" className="text-background" />
             <Text className="text-background text-sm font-semibold">{t("common.complete")}</Text>
           </HStack>
-        </Pressable>
+        </TouchableOpacity>
       )}
 
       {/* Delete Button */}
-      <Pressable
+      <TouchableOpacity
+        activeOpacity={0.7}
         onPress={handleDeletePress}
-        className="bg-error rounded-lg px-4 h-[56px] items-center justify-center">
+        style={{
+          backgroundColor: "#ef4444",
+          borderRadius: 8,
+          paddingHorizontal: 16,
+          height: 56,
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: 100,
+          ...androidStyle,
+        }}>
         <HStack space="xs" className="items-center gap-1">
           <Icon as={Trash2} size="sm" className="text-background" />
           <Text className="text-background text-sm font-semibold">{t("common.delete")}</Text>
         </HStack>
-      </Pressable>
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -138,7 +193,6 @@ const ActionButtons = ({
 export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: Props) => {
   const { t } = useTranslation();
   const swipeableRef = useRef<React.ComponentRef<typeof Swipeable>>(null);
-  const isRTL = I18nManager.isRTL;
 
   const handleComplete = () => {
     onComplete(entry.id);
@@ -166,16 +220,18 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
     );
   };
 
+  // Use fixed swipe direction (left) for both LTR and RTL to work around
+  // Android gesture handler bug where renderLeftActions doesn't receive touch events in RTL
   return (
     <Swipeable
       ref={swipeableRef}
-      renderRightActions={isRTL ? undefined : renderActions}
-      renderLeftActions={isRTL ? renderActions : undefined}
-      overshootRight={!isRTL}
-      overshootLeft={isRTL}
+      renderRightActions={renderActions}
+      renderLeftActions={undefined}
+      overshootRight={true}
+      overshootLeft={false}
       friction={2}
-      rightThreshold={isRTL ? undefined : SWIPE_THRESHOLD}
-      leftThreshold={isRTL ? SWIPE_THRESHOLD : undefined}
+      rightThreshold={SWIPE_THRESHOLD}
+      leftThreshold={undefined}
       enableTrackpadTwoFingerGesture={false}>
       <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
         <HStack className="justify-between items-center">
