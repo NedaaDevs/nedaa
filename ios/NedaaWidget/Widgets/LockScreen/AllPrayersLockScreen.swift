@@ -43,24 +43,36 @@ struct SplitPrayerProvider: IntentTimelineProvider {
     ) {
         let prayerService = PrayerDataService()
         let showSunrise = configuration.showSunrise as! Bool?
-        var todaysPrayers = prayerService.getTodaysPrayerTimes(
-            showSunrise: showSunrise ?? true)
+        let currentDate = Date()
+        
         let nextPrayer =
             prayerService.getNextPrayer(showSunrise: showSunrise ?? true)
             ?? PrayerData(name: "DB ERROR", date: Date())
         let previousPrayer =
             prayerService.getPreviousPrayer(showSunrise: showSunrise ?? true)
             ?? PrayerData(name: "DB ERROR", date: Date())
-        let currentDate = Date()
+        
+        var todaysPrayers = prayerService.getTodaysPrayerTimes(
+            showSunrise: showSunrise ?? true)
 
-        if currentDate > todaysPrayers?.last?.date ?? Date() {
-            todaysPrayers = prayerService.getTomorrowsPrayerTimes(
+        // Check if we're after the last prayer of today (Isha)
+        // If so, show tomorrow's prayers instead
+        let isAfterLastPrayer = currentDate > todaysPrayers?.last?.date ?? Date()
+        
+        let displayPrayers: [PrayerData]?
+        if isAfterLastPrayer {
+            // After Isha: Show tomorrow's prayers
+            let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(
                 showSunrise: showSunrise ?? true)
+            displayPrayers = tomorrowsPrayers?.enumerated().filter { index, _ in
+                isFirstHalf ? index < 3 : index >= 3
+            }.map { $0.element }
+        } else {
+            // During the day: Show today's prayers, but filter out past prayers
+            displayPrayers = todaysPrayers?.enumerated().filter { index, _ in
+                isFirstHalf ? index < 3 : index >= 3
+            }.map { $0.element }
         }
-
-        let displayPrayers = todaysPrayers?.enumerated().filter { index, _ in
-            isFirstHalf ? index < 3 : index >= 3
-        }.map { $0.element }
 
         let entry = AllPrayerEntry(
             date: currentDate,
@@ -119,7 +131,7 @@ struct PrayerView: View {
     var body: some View {
         if let prayers = entry.allPrayers {
             VStack(alignment: .leading, spacing: 2) {
-                ForEach(prayers, id: \.name) { prayer in
+                ForEach(prayers, id: \.id) { prayer in
                     let isNext = prayer.name == entry.nextPrayer?.name
                     let minutesUntilPrayer = timeToNextPrayer(prayer: prayer)
                     let showCountdown =
@@ -162,7 +174,6 @@ struct PrayerView: View {
         }
     }
 }
-
 
 @available(iOSApplicationExtension 16.0, *)
 struct MorningPrayerWidget: Widget {
