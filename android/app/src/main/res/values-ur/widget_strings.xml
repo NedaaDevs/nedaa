@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Prayer names -->
+    <string name="prayer_fajr">فجر</string>
+    <string name="prayer_sunrise">طلوع آفتاب</string>
+    <string name="prayer_dhuhr">ظہر</string>
+    <string name="prayer_asr">عصر</string>
+    <string name="prayer_maghrib">مغرب</string>
+    <string name="prayer_isha">عشاء</string>
+    <string name="prayer_jumuah">جمعہ</string>
+
+    <!-- Widget labels -->
+    <string name="widget_next_prayer">اگلی نماز</string>
+    <string name="widget_previous">پچھلی</string>
+    <string name="widget_next">اگلی</string>
+    <string name="widget_in_minutes">%1$d منٹ میں</string>
+    <string name="widget_in_hours_minutes">%1$d گھنٹے %2$d منٹ میں</string>
+    <string name="widget_prayer_times">نماز کے اوقات</string>
+    <string name="widget_prayer_times_title">نماز کے اوقات</string>
+    <string name="widget_next_prayer_in">اگلی نماز میں</string>
+    <string name="widget_no_data">معلومات دستیاب نہیں</string>
+    <string name="widget_open_app">ڈیٹا لوڈ کرنے کے لیے ایپ کھولیں</string>
+
+    <!-- Athkar labels -->
+    <string name="widget_athkar">اذکار</string>
+    <string name="widget_athkar_progress">اذکار کی پیشرفت</string>
+    <string name="widget_morning">صبح</string>
+    <string name="widget_evening">شام</string>
+    <string name="widget_today_progress">آج کی پیشرفت</string>
+    <string name="widget_current_streak">موجودہ</string>
+    <string name="widget_best_streak">بہترین</string>
+    <string name="widget_day_streak">دن کا سلسلہ</string>
+    <string name="widget_days_streak">دنوں کا سلسلہ</string>
+    <string name="widget_complete">مکمل</string>
+    <string name="widget_completed">مکمل ہوا</string>
+
+    <!-- Qada labels -->
+    <string name="widget_qada">قضا</string>
+    <string name="widget_qada_tracker">قضا ٹریکر</string>
+    <string name="widget_remaining">باقی</string>
+    <string name="widget_fasts_remaining">روزے باقی ہیں</string>
+    <string name="widget_today_completed">آج %1$d</string>
+    <string name="widget_progress">پیشرفت</string>
+    <string name="widget_no_qada">کوئی قضا نہیں</string>
+
+    <!-- Widget descriptions (shown in widget picker) -->
+    <string name="widget_prayer_times_description">نماز کے اوقات اور اگلی نماز تک کا وقت دکھاتا ہے</string>
+    <string name="widget_prayer_times_small_description">اگلی اور پچھلی نماز دکھاتا ہے (2×2)</string>
+    <string name="widget_prayer_times_medium_description">تمام نماز کے اوقات ایک قطار میں (4×2)</string>
+    <string name="widget_prayer_times_large_description">تمام نماز کے اوقات تفصیل سے (4×4)</string>
+    <string name="widget_athkar_description">روزانہ اذکار کی پیشرفت اور سلسلہ دیکھیں</string>
+    <string name="widget_qada_description">اپنے قضا روزوں کا حساب رکھیں</string>
+    <string name="widget_combined_description">نماز کے اوقات اور اذکار ایک ساتھ</string>
+
+    <!-- Widget names (shown in widget picker) -->
+    <string name="widget_prayer_times_name">ندا - نماز کے اوقات</string>
+    <string name="widget_prayer_times_small_name">نماز کے اوقات (چھوٹا)</string>
+    <string name="widget_prayer_times_medium_name">نماز کے اوقات (درمیانہ)</string>
+    <string name="widget_prayer_times_large_name">نماز کے اوقات (بڑا)</string>
+    <string name="widget_athkar_name">ندا - اذکار</string>
+    <string name="widget_qada_name">ندا - قضا</string>
+    <string name="widget_combined_name">ندا - نماز اور اذکار</string>
+
+    <!-- Configuration -->
+    <string name="widget_config_title">ویجٹ کی ترتیبات</string>
+    <string name="widget_config_show_timer">الٹی گنتی دکھائیں</string>
+    <string name="widget_config_show_sunrise">طلوع آفتاب کا وقت دکھائیں</string>
+    <string name="widget_config_save">محفوظ کریں</string>
+    <string name="widget_config_cancel">منسوخ</string>
+</resources>
