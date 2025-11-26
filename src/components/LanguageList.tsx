@@ -48,7 +48,6 @@ const LanguageList = () => {
     // Only proceed if a different language is selected
     if (item.id !== locale) {
       await setLocale(item.id);
-      MessageToast.showInfo(t("settings.languages.restartRequired"));
       await updateAddressTranslation();
     }
   };

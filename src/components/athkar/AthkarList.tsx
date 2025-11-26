@@ -37,7 +37,9 @@ import { formatNumberToLocale } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
-import { I18nManager } from "react-native";
+
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -48,6 +50,7 @@ type Props = {
 
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const {
     morningAthkarList,
     eveningAthkarList,
@@ -254,7 +257,7 @@ const AthkarList = ({ type }: Props) => {
       bottom: 0,
       backgroundColor: "rgba(255, 255, 255, 0.2)",
       transform: [{ scaleX: width }],
-      transformOrigin: I18nManager.isRTL ? "left" : "right",
+      transformOrigin: isRTL ? "left" : "right",
     };
   });
 

@@ -7,7 +7,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import { I18nManager, Platform, TouchableOpacity } from "react-native";
+import { Platform, TouchableOpacity } from "react-native";
 
 // Components
 import { Text } from "@/components/ui/text";
@@ -21,6 +21,9 @@ import { CalendarDays, Check, Trash2, CheckCheck, MessageSquare } from "lucide-r
 
 // Stores
 import { useAppStore } from "@/stores/app";
+
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
 
 // Types
 import type { QadaHistory } from "@/services/qada-db";
@@ -61,7 +64,7 @@ const ActionButtons = ({
   onDelete,
   swipeableRef,
 }: ActionButtonsProps) => {
-  const isRTL = I18nManager.isRTL;
+  const { isRTL } = useRTL();
   const isAndroid = Platform.OS === PlatformType.ANDROID;
 
   const containerStyle = useAnimatedStyle(() => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { I18nManager, Dimensions, View } from "react-native";
+import { Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
@@ -42,6 +42,9 @@ import { Icon } from "@/components/ui/icon";
 // Components
 import { AthkarFocusCompletion } from "@/components/athkar/AthkarFocusCompletion";
 
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
@@ -51,7 +54,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AthkarFocusScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const isRTL = I18nManager.isRTL;
+  const { isRTL } = useRTL();
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");

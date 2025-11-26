@@ -1,7 +1,9 @@
 // Plugins
 import { useTranslation } from "react-i18next";
 import { Link, useRouter } from "expo-router";
-import { I18nManager } from "react-native";
+
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -25,7 +27,7 @@ type Props = {
 const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   const router = useRouter();
   const { t } = useTranslation();
-  const isRTL = I18nManager.isRTL;
+  const { isRTL } = useRTL();
 
   // Determine which arrow to show based on RTL/LTR
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;

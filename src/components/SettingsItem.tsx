@@ -1,6 +1,8 @@
 // Plugins
 import { Link } from "expo-router";
-import { I18nManager } from "react-native";
+
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -23,8 +25,10 @@ type Props = {
   currentValue?: string;
 };
 
-const SettingsItem = ({ name, path, icon, currentValue, rtl = I18nManager.isRTL }: Props) => {
-  const ChevronIcon = rtl ? ChevronLeft : ChevronRight;
+const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
+  const { isRTL } = useRTL();
+  const effectiveRTL = rtl !== undefined ? rtl : isRTL;
+  const ChevronIcon = effectiveRTL ? ChevronLeft : ChevronRight;
 
   return (
     <Box className="relative inset-0 m-2 p-5 rounded-lg overflow-hidden bg-background-secondary">
