@@ -180,9 +180,6 @@
         }
       }
     },
-    "Complete" : {
-      "comment" : "Complete status"
-    },
     "completed" : {
       "localizations" : {
         "ar" : {
