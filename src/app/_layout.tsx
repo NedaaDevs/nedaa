@@ -9,9 +9,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontProvider } from "@/contexts/FontContext";
+import { RTLProvider } from "@/contexts/RTLContext";
 
 // Stores
-import { getDirection, isRTL, useAppStore } from "@/stores/app";
+import { useAppStore } from "@/stores/app";
 
 // Components
 import { ToastProvider } from "@/components/ToastContainer";
@@ -20,7 +21,6 @@ import CityChangeModal from "@/components/CityChangeModal";
 
 // Hooks
 import { useInitialSetup } from "@/hooks/useInitialSetup";
-import { useRTLSetup } from "@/hooks/useRTLSetup";
 import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
@@ -39,7 +39,7 @@ SplashScreen.setOptions({
 
 export default function RootLayout() {
   SplashScreen.preventAutoHideAsync();
-  const { mode, locale, showLoadingOverlay, loadingMessage } = useAppStore();
+  const { mode, showLoadingOverlay, loadingMessage } = useAppStore();
   // useDrizzleStudio(db);
   const {
     showCityChangeModal,
@@ -49,42 +49,42 @@ export default function RootLayout() {
     dismissCityChangeModal,
   } = useCityChangeHandler();
 
-  const shouldBeRTL = isRTL(getDirection(locale));
-  useRTLSetup(shouldBeRTL);
-
   useLoadFonts();
   useInitialSetup();
   useNotificationListeners();
   SplashScreen.hideAsync();
+
   return (
     <GluestackUIProvider mode={mode}>
-      <FontProvider>
-        <GestureHandlerRootView className="flex-1">
-          <SafeAreaView edges={["top", "right", "left"]} className="flex-1">
-            <StatusBar />
-            <ToastProvider />
-            <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
+      <RTLProvider>
+        <FontProvider>
+          <GestureHandlerRootView className="flex-1">
+            <SafeAreaView edges={["top", "right", "left"]} className="flex-1">
+              <StatusBar />
+              <ToastProvider />
+              <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
-            {pendingCityChange && (
-              <CityChangeModal
-                isOpen={showCityChangeModal}
-                onClose={dismissCityChangeModal}
-                onUpdate={handleCityChangeUpdate}
-                currentCity={pendingCityChange.currentCity}
-                newCity={pendingCityChange.newCity}
-                isUpdating={isUpdatingLocation}
-              />
-            )}
+              {pendingCityChange && (
+                <CityChangeModal
+                  isOpen={showCityChangeModal}
+                  onClose={dismissCityChangeModal}
+                  onUpdate={handleCityChangeUpdate}
+                  currentCity={pendingCityChange.currentCity}
+                  newCity={pendingCityChange.newCity}
+                  isUpdating={isUpdatingLocation}
+                />
+              )}
 
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}>
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-          </SafeAreaView>
-        </GestureHandlerRootView>
-      </FontProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}>
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+            </SafeAreaView>
+          </GestureHandlerRootView>
+        </FontProvider>
+      </RTLProvider>
     </GluestackUIProvider>
   );
 }
