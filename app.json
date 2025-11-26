@@ -11,7 +11,7 @@
     },
     "name": "nedaa",
     "slug": "nedaa",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
