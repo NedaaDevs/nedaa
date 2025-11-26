@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Prayer names -->
+    <string name="prayer_fajr">الفجر</string>
+    <string name="prayer_sunrise">الشروق</string>
+    <string name="prayer_dhuhr">الظهر</string>
+    <string name="prayer_asr">العصر</string>
+    <string name="prayer_maghrib">المغرب</string>
+    <string name="prayer_isha">العشاء</string>
+    <string name="prayer_jumuah">الجمعة</string>
+
+    <!-- Widget labels -->
+    <string name="widget_next_prayer">الصلاة القادمة</string>
+    <string name="widget_previous">السابقة</string>
+    <string name="widget_next">القادمة</string>
+    <string name="widget_in_minutes">خلال %1$d دقيقة</string>
+    <string name="widget_in_hours_minutes">خلال %1$d ساعة و%2$d دقيقة</string>
+    <string name="widget_prayer_times">أوقات الصلاة</string>
+    <string name="widget_prayer_times_title">أوقات الصلاة</string>
+    <string name="widget_next_prayer_in">الصلاة القادمة خلال</string>
+    <string name="widget_no_data">لا توجد بيانات</string>
+    <string name="widget_open_app">افتح التطبيق لتحميل البيانات</string>
+
+    <!-- Athkar labels -->
+    <string name="widget_athkar">الأذكار</string>
+    <string name="widget_athkar_progress">تقدم الأذكار</string>
+    <string name="widget_morning">الصباح</string>
+    <string name="widget_evening">المساء</string>
+    <string name="widget_today_progress">تقدم اليوم</string>
+    <string name="widget_current_streak">الحالي</string>
+    <string name="widget_best_streak">الأفضل</string>
+    <string name="widget_day_streak">يوم متتالي</string>
+    <string name="widget_days_streak">أيام متتالية</string>
+    <string name="widget_complete">مكتمل</string>
+    <string name="widget_completed">مكتمل</string>
+
+    <!-- Qada labels -->
+    <string name="widget_qada">القضاء</string>
+    <string name="widget_qada_tracker">متتبع القضاء</string>
+    <string name="widget_remaining">المتبقي</string>
+    <string name="widget_fasts_remaining">صيام متبقي</string>
+    <string name="widget_today_completed">%1$d اليوم</string>
+    <string name="widget_progress">التقدم</string>
+    <string name="widget_no_qada">لا يوجد قضاء للتتبع</string>
+
+    <!-- Widget descriptions (shown in widget picker) -->
+    <string name="widget_prayer_times_description">يعرض أوقات الصلاة والعد التنازلي للصلاة القادمة</string>
+    <string name="widget_prayer_times_small_description">يعرض الصلاة القادمة والسابقة (٢×٢)</string>
+    <string name="widget_prayer_times_medium_description">يعرض جميع أوقات الصلاة في صف (٤×٢)</string>
+    <string name="widget_prayer_times_large_description">يعرض جميع أوقات الصلاة بالتفصيل (٤×٤)</string>
+    <string name="widget_athkar_description">تتبع تقدم أذكارك اليومية وسلسلة المواظبة</string>
+    <string name="widget_qada_description">تتبع صيام القضاء</string>
+    <string name="widget_combined_description">أوقات الصلاة وتقدم الأذكار معاً</string>
+
+    <!-- Widget names (shown in widget picker) -->
+    <string name="widget_prayer_times_name">نداء - أوقات الصلاة</string>
+    <string name="widget_prayer_times_small_name">أوقات الصلاة (صغير)</string>
+    <string name="widget_prayer_times_medium_name">أوقات الصلاة (متوسط)</string>
+    <string name="widget_prayer_times_large_name">أوقات الصلاة (كبير)</string>
+    <string name="widget_athkar_name">نداء - الأذكار</string>
+    <string name="widget_qada_name">نداء - القضاء</string>
+    <string name="widget_combined_name">نداء - الصلاة والأذكار</string>
+
+    <!-- Configuration -->
+    <string name="widget_config_title">إعدادات الودجت</string>
+    <string name="widget_config_show_timer">إظهار العد التنازلي</string>
+    <string name="widget_config_show_sunrise">إظهار وقت الشروق</string>
+    <string name="widget_config_save">حفظ</string>
+    <string name="widget_config_cancel">إلغاء</string>
+</resources>
