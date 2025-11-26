@@ -124,13 +124,15 @@ struct SmallPrayerTimesView: View {
                             .font(.caption2)
                             .foregroundColor(NedaaColors.success.opacity(0.8))
                             .monospacedDigit()
-                            .frame(maxWidth: .infinity, alignment: .center)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
                     } else {
                         Text(previousPrayer.date, style: .time)
                             .font(.caption2)
                             .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                     }
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(NedaaColors.success.opacity(0.15))
@@ -161,7 +163,8 @@ struct SmallPrayerTimesView: View {
                             .fontWeight(.semibold)
                             .foregroundColor(NedaaColors.text(for: colorScheme))
                             .monospacedDigit()
-                            .frame(maxWidth: .infinity, alignment: .center)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
                     } else {
                         Text(nextPrayer.date, style: .time)
                             .font(.title3)
@@ -176,6 +179,7 @@ struct SmallPrayerTimesView: View {
                             .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                     }
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             } else {
