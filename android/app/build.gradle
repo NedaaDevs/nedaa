@@ -1,5 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
@@ -90,6 +91,12 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'dev.nedaa.android'
+
+    // Enable Compose for Jetpack Glance widgets
+    buildFeatures {
+        compose true
+    }
+
     defaultConfig {
         applicationId 'dev.nedaa.android'
         minSdkVersion rootProject.ext.minSdkVersion
@@ -181,4 +188,17 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Jetpack Glance for widgets (latest stable)
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+
+    // WorkManager for widget background updates
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+    // DataStore for widget configuration persistence
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Kotlin coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
