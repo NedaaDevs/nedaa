@@ -12,6 +12,9 @@ import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 import locationStore from "@/stores/location";
 import prayerTimesStore from "@/stores/prayerTimes";
 
+// Services
+import { QadaDB } from "@/services/qada-db";
+
 // Types
 import {
   AthkarNotificationSettings,
@@ -48,6 +51,11 @@ const defaultSettings: NotificationSettings = {
       vibration: false,
       timing: 15,
     },
+    qada: {
+      enabled: false,
+      sound: "tasbih",
+      vibration: true,
+    },
   },
   overrides: {
     // Set Maghrib iqama to 5 minutes by default
@@ -66,6 +74,7 @@ export const useNotificationStore = create<NotificationStore>()(
         settings: defaultSettings,
         isScheduling: false,
         lastScheduledDate: null,
+        migrationVersion: 0,
         morningNotification: {
           type: ATHKAR_TYPE.MORNING,
           enabled: false,
@@ -180,6 +189,21 @@ export const useNotificationStore = create<NotificationStore>()(
             // Get two weeks worth of prayer data
             const prayersData = prayerTimesStore.getState().twoWeeksTimings;
 
+            // Get qada settings and remaining count
+            let qadaData = null;
+            try {
+              const qadaSettings = await QadaDB.getSettings();
+              const qadaRemainingCount = await QadaDB.getRemainingCount();
+              if (qadaSettings) {
+                qadaData = {
+                  settings: qadaSettings,
+                  remainingCount: qadaRemainingCount,
+                };
+              }
+            } catch (error) {
+              console.warn("[Notification Store] Failed to load qada data:", error);
+            }
+
             const result = await scheduleAllNotifications(
               settings,
               {
@@ -187,7 +211,8 @@ export const useNotificationStore = create<NotificationStore>()(
                 eveningNotification,
               },
               prayersData,
-              timezone
+              timezone,
+              qadaData
             );
 
             if (result.success) {
@@ -252,6 +277,24 @@ export const useNotificationStore = create<NotificationStore>()(
       {
         name: "notification-storage",
         storage: createJSONStorage(() => Storage),
+        onRehydrateStorage: () => (state) => {
+          if (!state) return;
+
+          // Migration v1: Add qada defaults for old users
+          if (state.migrationVersion < 1) {
+            if (!state.settings?.defaults?.qada) {
+              state.settings = state.settings || { ...defaultSettings };
+              state.settings.defaults = state.settings.defaults || {};
+              state.settings.defaults.qada = {
+                enabled: false,
+                sound: "tasbih",
+                vibration: true,
+              };
+              console.log("[Notification Store] Migration v1: Added qada defaults");
+            }
+            state.migrationVersion = 1;
+          }
+        },
       }
     ),
     { name: "NotificationStore" }

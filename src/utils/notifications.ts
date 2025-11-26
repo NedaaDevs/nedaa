@@ -233,10 +233,10 @@ export const configureNotifications = () => {
             response.notification.request.identifier
           );
           console.log("[Notifications] Action:", response.actionIdentifier);
-          // TODO: enhance this to handle dynamic screen instead of manually checking
-          if (data.screen && data.screen === "/(tabs)/athkar") {
+          // Navigate to screen specified in notification data
+          if (data.screen) {
             const router = useRouter();
-            router.navigate("/(tabs)/athkar");
+            router.navigate(data.screen as any);
           }
         } catch (error) {
           console.error("[Notifications] Error handling notification response:", error);

@@ -9,7 +9,7 @@ import type { SoundOption, SoundAsset } from "@/types/sound";
 import type { CustomSound } from "@/types/customSound";
 
 // Utils
-import { isCustomSoundKey } from "@/utils/customSoundManager";
+import { isCustomSoundKey } from "@/utils/customSoundHelpers";
 
 // Type-safe helper to get available sounds
 export const getAvailableSounds = <T extends NotificationType>(type: T): SoundOption[] => {

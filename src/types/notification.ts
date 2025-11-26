@@ -1,6 +1,6 @@
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
-import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey } from "@/constants/sounds";
+import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey, QadaSoundKey } from "@/constants/sounds";
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/notifications";
@@ -19,6 +19,12 @@ export type IqamaNotificationConfig = NotificationWithTiming & {
 
 export type PreAthanNotificationConfig = NotificationWithTiming & {
   sound: PreAthanSoundKey;
+};
+
+export type QadaNotificationConfig = {
+  enabled: boolean;
+  sound: QadaSoundKey | "default";
+  vibration: boolean;
 };
 
 export type NotificationPermissionsState = {
@@ -43,19 +49,20 @@ export type NotificationState = {
   isScheduling: boolean;
   settings: NotificationSettings;
   lastScheduledDate: string | null;
+  migrationVersion: number;
   morningNotification: AthkarNotificationSettings;
   eveningNotification: AthkarNotificationSettings;
 };
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
-export type PrayerNotificationType = Exclude<NotificationType, "athkar">;
+export type PrayerNotificationType = Exclude<NotificationType, "athkar" | "qada">;
 
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
-  updateDefault: <T extends Partial<PrayerNotificationType>>(
+  updateDefault: <T extends Exclude<NotificationType, "athkar">>(
     type: T,
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
@@ -92,6 +99,7 @@ export type NotificationDefaults = {
   prayer: PrayerNotificationConfig;
   iqama: IqamaNotificationConfig;
   preAthan: PreAthanNotificationConfig;
+  qada: QadaNotificationConfig;
 };
 
 export type NotificationOverride = {
@@ -115,7 +123,9 @@ export function getEffectiveConfig<T extends Exclude<NotificationType, "athkar">
     ? IqamaNotificationConfig
     : T extends "preAthan"
       ? PreAthanNotificationConfig
-      : never {
+      : T extends "qada"
+        ? QadaNotificationConfig
+        : never {
   const defaultConfig = defaults[type];
   const override = overrides[prayerId]?.[type];
 
@@ -132,4 +142,6 @@ export type ConfigForType<T extends NotificationType> = T extends typeof NOTIFIC
     ? IqamaNotificationConfig
     : T extends typeof NOTIFICATION_TYPE.PRE_ATHAN
       ? PreAthanNotificationConfig
-      : never;
+      : T extends typeof NOTIFICATION_TYPE.QADA
+        ? QadaNotificationConfig
+        : never;

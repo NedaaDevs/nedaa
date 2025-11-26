@@ -18,6 +18,7 @@ import {
   scheduleRecurringNotification,
 } from "@/utils/notifications";
 import { timeZonedNow } from "@/utils/date";
+import { scheduleQadaNotifications } from "@/utils/qadaNotificationScheduler";
 
 // Types
 import type { NotificationContentInput } from "expo-notifications";
@@ -178,6 +179,7 @@ export const scheduleAllNotifications = async (
   },
   data: DayPrayerTimes[] | null,
   timezone: string,
+  qadaSettings: { settings: any; remainingCount: number } | null = null,
   options: Partial<SchedulingOptions> = {}
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
@@ -205,15 +207,16 @@ export const scheduleAllNotifications = async (
   }
 
   try {
+    // Get custom sounds (Android only, empty array for iOS)
+    const storeState = useCustomSoundsStore.getState();
+    const customSounds = Platform.OS === PlatformType.ANDROID ? storeState.customSounds : [];
+
     if (Platform.OS === PlatformType.ANDROID) {
-      // Get custom sounds from store
-      const storeState = useCustomSoundsStore.getState();
       console.log("[NotificationScheduler] Store state:", {
         isInitialized: storeState.isInitialized,
-        customSoundsCount: storeState.customSounds.length,
-        customSounds: storeState.customSounds.map((s) => ({ id: s.id, name: s.name })),
+        customSoundsCount: customSounds.length,
+        customSounds: customSounds.map((s) => ({ id: s.id, name: s.name })),
       });
-      const customSounds = storeState.customSounds;
 
       // Create/update notification channels before scheduling
       const needsUpdate = await shouldUpdateChannels(settings, customSounds, athkarSettings);
@@ -270,6 +273,18 @@ export const scheduleAllNotifications = async (
     console.log("[NotificationScheduler] Scheduling Athkar notifications...");
     await scheduleAthkarNotifications(athkarSettings, timezone, t);
 
+    // Schedule Qada notifications
+    if (qadaSettings && qadaSettings.settings) {
+      console.log("[NotificationScheduler] Scheduling Qada notifications...");
+      await scheduleQadaNotifications(
+        qadaSettings.settings,
+        qadaSettings.remainingCount,
+        t,
+        settings,
+        customSounds
+      );
+    }
+
     // Sort notifications by time
     notificationsToSchedule.sort((a, b) => a.time.getTime() - b.time.getTime());
 
@@ -277,10 +292,14 @@ export const scheduleAllNotifications = async (
     const athkarNotificationCount =
       (athkarSettings.morningNotification.enabled ? 1 : 0) +
       (athkarSettings.eveningNotification.enabled ? 1 : 0);
+
+    // Calculate qada notification count (1 if enabled, 0 if disabled)
+    const qadaNotificationCount = settings.defaults.qada.enabled ? 1 : 0;
+
     // Apply iOS limit(64 scheduled notifications max)
     let notificationsToProcess = notificationsToSchedule;
     if (Platform.OS === PlatformType.IOS) {
-      const maxAllowed = MAX_IOS_NOTIFICATIONS - athkarNotificationCount;
+      const maxAllowed = MAX_IOS_NOTIFICATIONS - athkarNotificationCount - qadaNotificationCount;
 
       if (notificationsToSchedule.length > maxAllowed) {
         notificationsToProcess = notificationsToSchedule.slice(0, maxAllowed);
@@ -332,7 +351,7 @@ export const scheduleAllNotifications = async (
         scheduledCount++;
       }
     }
-    scheduledCount = scheduledCount + athkarNotificationCount;
+    scheduledCount = scheduledCount + athkarNotificationCount + qadaNotificationCount;
     console.log(`[NotificationScheduler] Successfully scheduled ${scheduledCount} notifications`);
     return { success: true, scheduledCount };
   } catch (error) {

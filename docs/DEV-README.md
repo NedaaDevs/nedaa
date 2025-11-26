@@ -5,7 +5,7 @@
 Before running the project, make sure you have the following installed:
 
 - [Bun](https://bun.sh/) (version 1.1.45)
-- [Node.js](https://nodejs.org/)
+- [Node.js](https://nodejs.org/) (version 22)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - [Xcode](https://developer.apple.com/xcode/) (for iOS development)
 - [Android Studio](https://developer.android.com/studio) (for Android development)
@@ -143,7 +143,6 @@ act -j quality-checks -v
    ```
 
 2. **Android build fails**
-
    - Clean the Android build:
 
    ```bash
@@ -152,7 +151,6 @@ act -j quality-checks -v
    ```
 
 3. **Metro bundler issues**
-
    - Clear Metro bundler cache:
 
    ```bash
@@ -160,7 +158,6 @@ act -j quality-checks -v
    ```
 
 4. **Act Docker issues**
-
    - Clean up Docker containers:
 
    ```bash

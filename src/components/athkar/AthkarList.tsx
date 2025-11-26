@@ -5,11 +5,11 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   interpolate,
-  runOnJS,
   cancelAnimation,
   useAnimatedReaction,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { scheduleOnRN } from "react-native-worklets";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -159,7 +159,7 @@ const AthkarList = ({ type }: Props) => {
     () => progress.value,
     (current, previous) => {
       if (current >= 100 && (previous ?? 0) < 100) {
-        runOnJS(handleCompletion)();
+        scheduleOnRN(handleCompletion);
       }
     }
   );
@@ -222,10 +222,10 @@ const AthkarList = ({ type }: Props) => {
   // Gesture handler
   const longPressGesture = Gesture.Pan()
     .onBegin(() => {
-      runOnJS(handlePressStart)();
+      scheduleOnRN(handlePressStart);
     })
     .onFinalize(() => {
-      runOnJS(handlePressEnd)();
+      scheduleOnRN(handlePressEnd);
     });
 
   // Animated styles

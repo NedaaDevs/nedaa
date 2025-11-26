@@ -13,6 +13,7 @@ import { SUPPORTED_AUDIO_EXTENSIONS, CUSTOM_SOUND_KEY_PREFIX } from "@/types/cus
 
 // Utils
 import { getNotificationSound } from "@/utils/sound";
+import { isCustomSoundKey as isCustomSoundKeyHelper } from "@/utils/customSoundHelpers";
 
 /**
  * Pick an audio file from the device
@@ -230,10 +231,9 @@ export function getCustomSoundKey(customSound: CustomSound): string {
 
 /**
  * Check if a sound key is a custom sound
+ * Re-exported for backward compatibility
  */
-export function isCustomSoundKey(soundKey: string): boolean {
-  return soundKey.startsWith(CUSTOM_SOUND_KEY_PREFIX);
-}
+export const isCustomSoundKey = isCustomSoundKeyHelper;
 
 /**
  * Calculate total storage used by custom sounds
@@ -318,6 +318,7 @@ export const buildUsedSoundsSet = (notificationSettings: NotificationSettings): 
     notificationSettings.defaults.prayer.sound,
     notificationSettings.defaults.iqama.sound,
     notificationSettings.defaults.preAthan.sound,
+    notificationSettings.defaults.qada.sound,
   ];
   defaults.forEach((sound) => isCustomSoundKey(sound) && usedSounds.add(sound));
 
