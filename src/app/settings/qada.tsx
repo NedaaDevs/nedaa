@@ -48,7 +48,7 @@ import appStore from "@/stores/app";
 
 // Utils
 import { getAvailableSoundsWithCustom } from "@/utils/sound";
-import { formatNumberToLocale } from "@/utils/number";
+import { formatNumberToLocale, normalizeNumber } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
@@ -397,15 +397,18 @@ const QadaSettings = () => {
               <TextInput
                 value={formatNumberToLocale(tempReminderDaysText)}
                 onChangeText={(text) => {
+                  // Normalize the input first (convert Arabic digits to ASCII)
+                  const normalizedText = normalizeNumber(text);
+
                   // Allow empty string or only digits
-                  if (text === "" || /^\d+$/.test(text)) {
-                    setTempReminderDaysText(text);
+                  if (normalizedText === "" || /^\d+$/.test(normalizedText)) {
+                    setTempReminderDaysText(normalizedText);
 
                     // Validate the number
-                    if (text === "") {
+                    if (normalizedText === "") {
                       setDaysError(null);
                     } else {
-                      const num = parseInt(text);
+                      const num = parseInt(normalizedText);
                       if (isNaN(num) || num < 1 || num > 365) {
                         setDaysError(
                           t("qada.daysError", "Please enter a number between 1 and 365")

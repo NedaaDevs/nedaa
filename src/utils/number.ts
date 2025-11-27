@@ -7,3 +7,8 @@ export const formatNumberToLocale = (str: string) => {
   }
   return str;
 };
+
+export const normalizeNumber = (str: string) => {
+  const arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  return str.replace(/[٠-٩]/g, (d) => arabicDigits.indexOf(d).toString());
+};
