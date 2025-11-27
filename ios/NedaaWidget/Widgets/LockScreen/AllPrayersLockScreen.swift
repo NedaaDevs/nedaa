@@ -1,6 +1,32 @@
-import Intents
+import AppIntents
 import SwiftUI
 import WidgetKit
+
+// MARK: - Widget Configuration Intent
+
+@available(iOS 17.0, *)
+struct AllPrayersConfigurationIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "widget_all_prayers_settings"
+    static var description = IntentDescription("widget_all_prayers_settings_desc")
+    
+    @Parameter(title: "widget_show_timer", default: true)
+    var showTimer: Bool
+    
+    @Parameter(title: "widget_show_sunrise", default: true)
+    var showSunrise: Bool
+}
+
+// MARK: - Timeline Entry
+
+struct AllPrayersEntry: TimelineEntry {
+    let date: Date
+    let allPrayers: [PrayerData]?
+    let nextPrayer: PrayerData?
+    let showTimer: Bool
+    let showSunrise: Bool
+}
+
+// MARK: - Preview Data
 
 let morningPrayers: [PrayerData] = [
     PrayerData(name: NSLocalizedString("fajr", comment: ""), date: Date()),
@@ -14,93 +40,79 @@ let eveningPrayers: [PrayerData] = [
     PrayerData(name: NSLocalizedString("isha", comment: ""), date: Date()),
 ]
 
-struct SplitPrayerProvider: IntentTimelineProvider {
+// MARK: - Timeline Provider
+
+@available(iOS 17.0, *)
+struct SplitPrayerProvider: AppIntentTimelineProvider {
     let isFirstHalf: Bool
-
-    typealias Entry = AllPrayerEntry
-    typealias Intent = ConfigurationIntent
-
-    func placeholder(in context: Context) -> AllPrayerEntry {
-        AllPrayerEntry(
+    
+    typealias Entry = AllPrayersEntry
+    typealias Intent = AllPrayersConfigurationIntent
+    
+    private let prayerService = PrayerDataService()
+    
+    func placeholder(in context: Context) -> AllPrayersEntry {
+        AllPrayersEntry(
             date: Date(),
-            configuration: ConfigurationIntent(),
             allPrayers: isFirstHalf ? morningPrayers : eveningPrayers,
-            nextPrayer: PrayerData(name: "Fajr", date: Date())
+            nextPrayer: PrayerData(name: "Fajr", date: Date()),
+            showTimer: true,
+            showSunrise: true
         )
     }
-
-    func getSnapshot(
-        for configuration: ConfigurationIntent, in context: Context,
-        completion: @escaping (AllPrayerEntry) -> Void
-    ) {
-        let entry = placeholder(in: context)
-        completion(entry)
+    
+    func snapshot(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> AllPrayersEntry {
+        return placeholder(in: context)
     }
-
-    func getTimeline(
-        for configuration: ConfigurationIntent, in context: Context,
-        completion: @escaping (Timeline<AllPrayerEntry>) -> Void
-    ) {
-        let prayerService = PrayerDataService()
-        let showSunrise = configuration.showSunrise as! Bool?
+    
+    func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
         let currentDate = Date()
+        let showSunrise = configuration.showSunrise
+        let showTimer = configuration.showTimer
         
-        let nextPrayer =
-            prayerService.getNextPrayer(showSunrise: showSunrise ?? true)
-            ?? PrayerData(name: "DB ERROR", date: Date())
-        let previousPrayer =
-            prayerService.getPreviousPrayer(showSunrise: showSunrise ?? true)
-            ?? PrayerData(name: "DB ERROR", date: Date())
+        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise) ?? PrayerData(name: "DB ERROR", date: Date())
+        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise) ?? PrayerData(name: "DB ERROR", date: Date())
         
-        var todaysPrayers = prayerService.getTodaysPrayerTimes(
-            showSunrise: showSunrise ?? true)
-
+        let todaysPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise)
+        
         // Check if we're after the last prayer of today (Isha)
-        // If so, show tomorrow's prayers instead
         let isAfterLastPrayer = currentDate > todaysPrayers?.last?.date ?? Date()
         
         let displayPrayers: [PrayerData]?
         if isAfterLastPrayer {
             // After Isha: Show tomorrow's prayers
-            let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(
-                showSunrise: showSunrise ?? true)
+            let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
             displayPrayers = tomorrowsPrayers?.enumerated().filter { index, _ in
                 isFirstHalf ? index < 3 : index >= 3
             }.map { $0.element }
         } else {
-            // During the day: Show today's prayers, but filter out past prayers
+            // During the day: Show today's prayers
             displayPrayers = todaysPrayers?.enumerated().filter { index, _ in
                 isFirstHalf ? index < 3 : index >= 3
             }.map { $0.element }
         }
-
-        let entry = AllPrayerEntry(
+        
+        let entry = AllPrayersEntry(
             date: currentDate,
-            configuration: configuration,
             allPrayers: displayPrayers,
-            nextPrayer: nextPrayer
+            nextPrayer: nextPrayer,
+            showTimer: showTimer,
+            showSunrise: showSunrise
         )
-
+        
         let nextUpdateDate = calculateNextUpdateDate(
             currentDate: currentDate,
             nextPrayerDate: nextPrayer.date,
             previousPrayerDate: previousPrayer.date
         )
-
-        let timeline = Timeline(
-            entries: [entry], policy: .after(nextUpdateDate))
-
-        completion(timeline)
+        
+        return Timeline(entries: [entry], policy: .after(nextUpdateDate))
     }
-
-    func calculateNextUpdateDate(
-        currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date
-    ) -> Date {
-        let timeIntervalToNextPrayer = nextPrayerDate.timeIntervalSince(
-            currentDate)
-        let timeIntervalSincePreviousPrayer = currentDate.timeIntervalSince(
-            previousPrayerDate)
-
+    
+    private func calculateNextUpdateDate(currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date) -> Date {
+        let timeIntervalToNextPrayer = nextPrayerDate.timeIntervalSince(currentDate)
+        let timeIntervalSincePreviousPrayer = currentDate.timeIntervalSince(previousPrayerDate)
+        
         if timeIntervalSincePreviousPrayer < 1800 {
             // If the previous prayer was less than 30 minutes ago, update 30 minutes after the previous prayer
             return previousPrayerDate.addingTimeInterval(1800)
@@ -114,9 +126,9 @@ struct SplitPrayerProvider: IntentTimelineProvider {
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct PrayerView: View {
-    var entry: AllPrayerEntry
+    var entry: AllPrayersEntry
     @Environment(\.widgetFamily) var family
 
     func timeToNextPrayer(prayer: PrayerData) -> Int? {
@@ -134,9 +146,7 @@ struct PrayerView: View {
                 ForEach(prayers, id: \.id) { prayer in
                     let isNext = prayer.name == entry.nextPrayer?.name
                     let minutesUntilPrayer = timeToNextPrayer(prayer: prayer)
-                    let showCountdown =
-                        isNext && (minutesUntilPrayer ?? 0) <= 60
-                        && entry.configuration.showTimer == true
+                    let showCountdown = isNext && (minutesUntilPrayer ?? 0) <= 60 && entry.showTimer
 
                     HStack(spacing: 8) {
                         // Circle indicator
@@ -175,13 +185,14 @@ struct PrayerView: View {
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct MorningPrayerWidget: Widget {
     let kind: String = "MorningPrayerWidget"
 
     var body: some WidgetConfiguration {
-        IntentConfiguration(
-            kind: kind, intent: ConfigurationIntent.self,
+        AppIntentConfiguration(
+            kind: kind,
+            intent: AllPrayersConfigurationIntent.self,
             provider: SplitPrayerProvider(isFirstHalf: true)
         ) { entry in
             PrayerView(entry: entry)
@@ -195,13 +206,14 @@ struct MorningPrayerWidget: Widget {
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct EveningPrayerWidget: Widget {
     let kind: String = "EveningPrayerWidget"
 
     var body: some WidgetConfiguration {
-        IntentConfiguration(
-            kind: kind, intent: ConfigurationIntent.self,
+        AppIntentConfiguration(
+            kind: kind,
+            intent: AllPrayersConfigurationIntent.self,
             provider: SplitPrayerProvider(isFirstHalf: false)
         ) { entry in
             PrayerView(entry: entry)

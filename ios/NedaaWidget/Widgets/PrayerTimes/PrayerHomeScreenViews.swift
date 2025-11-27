@@ -101,13 +101,13 @@ struct SmallPrayerTimesView: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             // Hijri date at the top
             Text(entry.date.hijriDateString())
                 .font(.system(size: 10))
                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                 .lineLimit(1)
-                .padding(.top, 4)
+                .padding(.top, 2)
 
             // Previous Prayer
             if let previousPrayer = entry.previousPrayer {
@@ -120,12 +120,19 @@ struct SmallPrayerTimesView: View {
 
                     // Show count-up timer if within 30 minutes after prayer AND timer enabled
                     if shouldShowCountUp(for: previousPrayer) && isTimerEnabled {
-                        Text(previousPrayer.date, style: .timer)
-                            .font(.caption2)
-                            .foregroundColor(NedaaColors.success.opacity(0.8))
-                            .monospacedDigit()
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
+                        VStack(spacing: -2) {
+                            Text(previousPrayer.date, style: .timer)
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundColor(NedaaColors.success.opacity(0.8))
+                                .monospacedDigit()
+                                .multilineTextAlignment(.center)
+                                .minimumScaleFactor(0.8)
+                            
+                            Text(previousPrayer.date, style: .time)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(NedaaColors.textSecondary(for: colorScheme).opacity(0.7))
+                        }
+                        .frame(maxWidth: .infinity)
                     } else {
                         Text(previousPrayer.date, style: .time)
                             .font(.caption2)
@@ -144,7 +151,7 @@ struct SmallPrayerTimesView: View {
                 .fill(NedaaColors.textSecondary(for: colorScheme).opacity(0.3))
                 .frame(height: 1)
                 .padding(.horizontal, 20)
-                .padding(.vertical, 2)
+                .padding(.vertical, 1)
 
             // Next Prayer
             if let nextPrayer = entry.nextPrayer {
@@ -158,13 +165,18 @@ struct SmallPrayerTimesView: View {
 
                     // Show countdown timer if within 60 minutes before prayer AND timer enabled
                     if shouldShowCountdown(for: nextPrayer) && isTimerEnabled {
-                        Text(nextPrayer.date, style: .timer)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(NedaaColors.text(for: colorScheme))
-                            .monospacedDigit()
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
+                        VStack(spacing: 0) {
+                            Text(nextPrayer.date, style: .timer)
+                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .foregroundColor(NedaaColors.text(for: colorScheme))
+                                .monospacedDigit()
+                                .multilineTextAlignment(.center)
+                            
+                            Text(nextPrayer.date, style: .time)
+                                .font(.caption2)
+                                .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                        }
+                        .frame(maxWidth: .infinity)
                     } else {
                         Text(nextPrayer.date, style: .time)
                             .font(.title3)
@@ -173,7 +185,7 @@ struct SmallPrayerTimesView: View {
                     }
 
                     // "in X min" label when countdown is active
-                    if shouldShowCountdown(for: nextPrayer) {
+                    if shouldShowCountdown(for: nextPrayer) && !isTimerEnabled {
                         Text(relativeTimeString(for: nextPrayer.date))
                             .font(.caption2)
                             .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
@@ -181,7 +193,7 @@ struct SmallPrayerTimesView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
             } else {
                 Text("widget.noPrayerTimes")
                     .font(.caption)
@@ -485,9 +497,11 @@ struct MediumPrayerTimesListView: View {
     var body: some View {
         GeometryReader { geometry in
             let totalPadding = CGFloat(entry.allPrayers.count - 1) * 0.5
-            let topBottomPadding: CGFloat = 20  // Space for Hijri date header
+            let topBottomPadding: CGFloat = 15  // Space for Hijri date header
             let availableHeight = geometry.size.height - totalPadding - topBottomPadding
-            let fontHeight = availableHeight / CGFloat(entry.allPrayers.count)
+            
+            let baseHeight = availableHeight / (CGFloat(entry.allPrayers.count) + 0.5)
+            let activeHeight = baseHeight * 1.5
 
             VStack(alignment: .leading, spacing: 0) {
                 // Hijri date header
@@ -515,11 +529,17 @@ struct MediumPrayerTimesListView: View {
                     ForEach(entry.allPrayers) { prayer in
                         let isNextPrayer = prayer.isSame(as: entry.nextPrayer)
                         let isPastPrayer = prayer.isPast
+                        
+                        // Determine if this row is the "Active" one (showing timer)
+                        let isTimerActive = (isNextPrayer && shouldShowCountdown(for: prayer) && isTimerEnabled) ||
+                                          (isPastPrayer && shouldShowCountUp(for: prayer) && isTimerEnabled)
+                        
+                        let rowHeight = isTimerActive ? activeHeight : baseHeight
 
                         HStack {
                             // Prayer name
                             Text(LocalizedStringKey(prayer.name))
-                                .font(.system(size: fontHeight * 0.55))
+                                .font(.system(size: rowHeight * 0.55))
                                 .fontWeight(isNextPrayer ? .bold : .medium)
                                 .foregroundColor(
                                     prayerNameColor(isNext: isNextPrayer, isPast: isPastPrayer))
@@ -530,12 +550,14 @@ struct MediumPrayerTimesListView: View {
                             makePrayerTimeText(
                                 prayer: prayer,
                                 isNext: isNextPrayer,
-                                fontHeight: fontHeight
+                                isPast: isPastPrayer,
+                                fontHeight: rowHeight,
+                                isTimerActive: isTimerActive
                             )
                             .multilineTextAlignment(.trailing)
                         }
+                        .frame(height: rowHeight) // Enforce calculated height
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 3)
                         .background(rowBackgroundColor(isNext: isNextPrayer, isPast: isPastPrayer))
                         .cornerRadius(isNextPrayer ? 7 : 5)
                         .overlay(
@@ -558,19 +580,23 @@ struct MediumPrayerTimesListView: View {
     // MARK: - Helper Views
 
     @ViewBuilder
-    private func makePrayerTimeText(prayer: PrayerData, isNext: Bool, fontHeight: CGFloat) -> some View
+    private func makePrayerTimeText(prayer: PrayerData, isNext: Bool, isPast: Bool, fontHeight: CGFloat, isTimerActive: Bool) -> some View
     {
-        if isNext {
-            let isSoon = shouldShowCountdown(for: prayer) && isTimerEnabled
-            let timeStyle: Text.DateStyle = isSoon ? .timer : .time
-
-            Text(prayer.date, style: timeStyle)
-                .font(.system(size: fontHeight * 0.65))
-                .fontWeight(.semibold)
-                .foregroundColor(NedaaColors.text(for: colorScheme))
-                .monospacedDigit()
-                .fixedSize(horizontal: true, vertical: false)
-                .minimumScaleFactor(0.7)
+        if isTimerActive {
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(prayer.date, style: .timer)
+                    .font(.system(size: fontHeight * 0.52, weight: .bold, design: .rounded))
+                    .foregroundColor(isNext ? NedaaColors.text(for: colorScheme) : NedaaColors.success.opacity(0.8))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                
+                Text(prayer.date, style: .time)
+                    .font(.system(size: fontHeight * 0.42, weight: .medium))
+                    .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
         } else {
             PrayerTimeText(
                 date: prayer.date,
@@ -613,6 +639,14 @@ struct MediumPrayerTimesListView: View {
         let minutesUntil =
             Calendar.current.dateComponents([.minute], from: now, to: prayer.date).minute ?? 0
         return minutesUntil > 0 && minutesUntil <= 60
+    }
+    
+    /// Check if we should show count-up for previous prayer (within 30 minutes after)
+    private func shouldShowCountUp(for prayer: PrayerData) -> Bool {
+        let now = Date()
+        let minutesSince =
+            Calendar.current.dateComponents([.minute], from: prayer.date, to: now).minute ?? 0
+        return minutesSince >= 0 && minutesSince <= 30
     }
 }
 

@@ -1,6 +1,4 @@
 import Foundation
-import Foundation
-import Intents
 import SwiftUI
 import WidgetKit
 
@@ -38,27 +36,14 @@ struct OtherTimings: Decodable {
 
 // Widget Entry Types
 
-#if canImport(Intents)
-/// Entry type for prayer countdown widgets
-struct PrayerEntry: TimelineEntry {
+/// Entry type for Athkar widgets
+struct AthkarEntry: TimelineEntry {
     let date: Date
-    let configuration: ConfigurationIntent
-    let nextPrayer: PrayerData?
-    let previousPrayer: PrayerData?
+    let progress: AthkarSummary?
 }
-
-/// Entry type for all prayers widgets
-struct AllPrayerEntry: TimelineEntry {
-    let date: Date
-    let configuration: ConfigurationIntent
-    let allPrayers: [PrayerData]?
-    let nextPrayer: PrayerData?
-}
-#endif
 
 // Error Types
 
-/// Error type for database operations
 enum DatabaseError: Error {
     case openError(message: String)
     case queryError(message: String)
@@ -253,12 +238,6 @@ struct AthkarSummary {
     var isComplete: Bool {
         totalItems > 0 && completedItems == totalItems
     }
-}
-
-/// Entry type for Athkar widgets
-struct AthkarEntry: TimelineEntry {
-    let date: Date
-    let progress: AthkarSummary?
 }
 
 // MARK: - App Intents Types

@@ -1,40 +1,84 @@
 import WidgetKit
 import SwiftUI
-import Intents
+import AppIntents
 
+// MARK: - Widget Configuration Intent
 
-struct CountdownLockScreenViewProvider: IntentTimelineProvider {
-    typealias Entry = PrayerEntry
-    typealias Intent = ConfigurationIntent
+@available(iOS 17.0, *)
+struct PrayerCountdownConfigurationIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "widget_prayer_countdown_settings"
+    static var description = IntentDescription("widget_prayer_countdown_settings_desc")
     
-    func placeholder(in context: Context) -> PrayerEntry {
-        PrayerEntry(date: Date(), configuration: ConfigurationIntent(), nextPrayer: PrayerData(name: NSLocalizedString("isha", comment: "isha"), date: Date().addingTimeInterval(3600)), previousPrayer: PrayerData(name: "isha", date: Date().addingTimeInterval(3600)) )
+    @Parameter(title: "widget_show_timer", default: true)
+    var showTimer: Bool
+    
+    @Parameter(title: "widget_show_sunrise", default: true)
+    var showSunrise: Bool
+}
+
+// MARK: - Timeline Entry
+
+struct PrayerCountdownEntry: TimelineEntry {
+    let date: Date
+    let nextPrayer: PrayerData?
+    let previousPrayer: PrayerData?
+    let showTimer: Bool
+    let showSunrise: Bool
+}
+
+// MARK: - Timeline Provider
+
+@available(iOS 17.0, *)
+struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
+    typealias Entry = PrayerCountdownEntry
+    typealias Intent = PrayerCountdownConfigurationIntent
+    
+    private let prayerService = PrayerDataService()
+    
+    func placeholder(in context: Context) -> PrayerCountdownEntry {
+        PrayerCountdownEntry(
+            date: Date(),
+            nextPrayer: PrayerData(name: "isha", date: Date().addingTimeInterval(3600)),
+            previousPrayer: PrayerData(name: "maghrib", date: Date().addingTimeInterval(-1800)),
+            showTimer: true,
+            showSunrise: true
+        )
     }
     
-    func getSnapshot(for configuration: ConfigurationIntent, in context: Context, completion: @escaping (PrayerEntry) -> ()) {
-        let entry = PrayerEntry(date: Date(), configuration: configuration, nextPrayer: PrayerData(name: NSLocalizedString("isha", comment: "isha"), date: Date().addingTimeInterval(3600)), previousPrayer: PrayerData(name: NSLocalizedString("isha", comment: "isha"), date: Date().addingTimeInterval(3600)))
-        completion(entry)
+    func snapshot(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> PrayerCountdownEntry {
+        return createEntry(for: Date(), configuration: configuration)
     }
     
-    func getTimeline(for configuration: ConfigurationIntent, in context: Context, completion: @escaping (Timeline<PrayerEntry>) -> ()) {
-        var _: [PrayerEntry] = []
-        let prayerService = PrayerDataService()
-        let showSunrise = configuration.showSunrise as! Bool?
-        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise ?? true) ?? PrayerData(name: "GET NOT WOKRING", date: Date())
-        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise ?? true) ?? PrayerData(name: "GET NOT WOKRING", date: Date())
+    func timeline(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> Timeline<PrayerCountdownEntry> {
         let currentDate = Date()
+        let entry = createEntry(for: currentDate, configuration: configuration)
         
-        let nextUpdateDate = calculateNextUpdateDate(currentDate: currentDate, nextPrayerDate: nextPrayer.date, previousPrayerDate: previousPrayer.date)
+        let nextUpdateDate = calculateNextUpdateDate(
+            currentDate: currentDate,
+            nextPrayerDate: entry.nextPrayer?.date ?? currentDate.addingTimeInterval(3600),
+            previousPrayerDate: entry.previousPrayer?.date ?? currentDate
+        )
         
-        let entry = PrayerEntry(date: currentDate,configuration: configuration, nextPrayer: nextPrayer, previousPrayer: previousPrayer)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdateDate))
-        let dateformat = DateFormatter()
-        dateformat.dateFormat = "h:mm a"
-        
-        completion(timeline)
+        return Timeline(entries: [entry], policy: .after(nextUpdateDate))
     }
     
-    func calculateNextUpdateDate(currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date) -> Date {
+    private func createEntry(for date: Date, configuration: PrayerCountdownConfigurationIntent) -> PrayerCountdownEntry {
+        let showSunrise = configuration.showSunrise
+        let showTimer = configuration.showTimer
+        
+        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise) ?? PrayerData(name: "Error", date: Date())
+        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise) ?? PrayerData(name: "Error", date: Date())
+        
+        return PrayerCountdownEntry(
+            date: date,
+            nextPrayer: nextPrayer,
+            previousPrayer: previousPrayer,
+            showTimer: showTimer,
+            showSunrise: showSunrise
+        )
+    }
+    
+    private func calculateNextUpdateDate(currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date) -> Date {
         let timeIntervalToNextPrayer = nextPrayerDate.timeIntervalSince(currentDate)
         let timeIntervalSincePreviousPrayer = currentDate.timeIntervalSince(previousPrayerDate)
         
@@ -51,13 +95,12 @@ struct CountdownLockScreenViewProvider: IntentTimelineProvider {
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct PrayerCountdownLockScreenView: View {
-    var entry: CountdownLockScreenViewProvider.Entry
+    var entry: PrayerCountdownEntry
     
-    // get the widget family
-    @Environment(\.widgetFamily)
-    var family
+    @Environment(\.widgetFamily) var family
+    
     var body: some View {
         switch family {
         case .accessoryRectangular:
@@ -68,12 +111,11 @@ struct PrayerCountdownLockScreenView: View {
             Text("Select a family")
         }
     }
-    
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct RectangularView: View {
-    var entry: CountdownLockScreenViewProvider.Entry
+    var entry: PrayerCountdownEntry
     
     var body: some View {
         GeometryReader { geometry in
@@ -84,27 +126,27 @@ struct RectangularView: View {
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct CircularView: View {
-    var entry: CountdownLockScreenViewProvider.Entry
+    var entry: PrayerCountdownEntry
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                dataToShow(entry: entry, geometry: geometry, widgetFamily:  .accessoryCircular)
+                dataToShow(entry: entry, geometry: geometry, widgetFamily: .accessoryCircular)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }.widgetBackground(Color.clear)
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
-func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: GeometryProxy, widgetFamily: WidgetFamily  ) -> some View {
+@available(iOSApplicationExtension 17.0, *)
+func dataToShow(entry: PrayerCountdownEntry, geometry: GeometryProxy, widgetFamily: WidgetFamily) -> some View {
     let fontSize: Double = widgetFamily == WidgetFamily.accessoryCircular ? 0.25 : 0.18
     return Group {
         if let nextPrayer = entry.nextPrayer, let previousPrayer = entry.previousPrayer {
             // Check if the previous prayer was within the last 30 minutes
-            if Calendar.current.dateComponents([.minute], from: previousPrayer.date, to: Date()).minute ?? 0 < 30 && (entry.configuration.showTimer == true) {
+            if Calendar.current.dateComponents([.minute], from: previousPrayer.date, to: Date()).minute ?? 0 < 30 && entry.showTimer {
                 VStack {
                     Text(NSLocalizedString(previousPrayer.name, comment: "Previous prayer"))
                         .multilineTextAlignment(.center)
@@ -114,21 +156,18 @@ func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: Geometry
                         .lineLimit(1)
                         .font(.system(size: geometry.size.width * fontSize))
                 }
-            }
-            else {
+            } else {
                 VStack {
                     Text(NSLocalizedString(nextPrayer.name, comment: "Next prayer"))
                         .font(.system(size: geometry.size.width * fontSize))
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                     
-                    
-                    if Calendar.current.dateComponents([.minute], from: Date(), to: nextPrayer.date).minute ?? 0 <= 60 && (entry.configuration.showTimer == true) {
+                    if Calendar.current.dateComponents([.minute], from: Date(), to: nextPrayer.date).minute ?? 0 <= 60 && entry.showTimer {
                         Text(nextPrayer.date, style: .timer)
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
-                    }
-                    else {
+                    } else {
                         Text(nextPrayer.date, style: .time)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
@@ -140,26 +179,37 @@ func dataToShow(entry: CountdownLockScreenViewProvider.Entry, geometry: Geometry
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct PrayerCountdownLockScreenWidget: Widget {
     let kind: String = "PrayerCountdownLockScreenWidget"
     
     var body: some WidgetConfiguration {
-        IntentConfiguration(kind: kind, intent: ConfigurationIntent.self, provider: Provider()) { entry in
+        AppIntentConfiguration(
+            kind: kind,
+            intent: PrayerCountdownConfigurationIntent.self,
+            provider: CountdownLockScreenViewProvider()
+        ) { entry in
             PrayerCountdownLockScreenView(entry: entry)
         }
         .configurationDisplayName(NSLocalizedString("nextPrayerLockScreenWidgetTitle", comment: "Lock screen widget title"))
         .description(NSLocalizedString("nextPrayerLockScreenWidgetDesc", comment: "Lock screen widget description"))
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
         .contentMarginsDisabledIfAvailable()
-        
     }
 }
 
-@available(iOSApplicationExtension 16.0, *)
+@available(iOSApplicationExtension 17.0, *)
 struct PrayerCountdownLockScreenView_Previews: PreviewProvider {
     static var previews: some View {
-        PrayerCountdownLockScreenView(entry: PrayerEntry(date: Date(), configuration: ConfigurationIntent(), nextPrayer: PrayerData(name: "Maghrib", date: Date()), previousPrayer: PrayerData(name: "Maghrib", date: Date())))
-            .previewContext(WidgetPreviewContext(family: .accessoryCircular))
+        PrayerCountdownLockScreenView(
+            entry: PrayerCountdownEntry(
+                date: Date(),
+                nextPrayer: PrayerData(name: "Maghrib", date: Date()),
+                previousPrayer: PrayerData(name: "Asr", date: Date()),
+                showTimer: true,
+                showSunrise: true
+            )
+        )
+        .previewContext(WidgetPreviewContext(family: .accessoryCircular))
     }
 }

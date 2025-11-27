@@ -16,6 +16,47 @@ struct PrayerTimesConfigurationIntent: WidgetConfigurationIntent {
     var showSunrise: Bool
 }
 
+// MARK: - Localization Extension
+@available(iOS 17.0, *)
+extension LocalizedStringResource {
+    // Widget Configuration
+    static let widgetPrayerTimesSettings = LocalizedStringResource(
+        "widget_prayer_times_settings",
+        defaultValue: "Prayer Times Settings",
+        table: "Localizable",
+        locale: .current,
+        bundle: .main,
+        comment: "Widget configuration title"
+    )
+    
+    static let widgetPrayerTimesSettingsDesc = LocalizedStringResource(
+        "widget_prayer_times_settings_desc",
+        defaultValue: "Customize your prayer times widget display",
+        table: "Localizable",
+        locale: .current,
+        bundle: .main,
+        comment: "Widget configuration description"
+    )
+    
+    static let widgetShowTimer = LocalizedStringResource(
+        "widget_show_timer",
+        defaultValue: "Show Timer",
+        table: "Localizable",
+        locale: .current,
+        bundle: .main,
+        comment: "Show timer option"
+    )
+    
+    static let widgetShowSunrise = LocalizedStringResource(
+        "widget_show_sunrise",
+        defaultValue: "Show Sunrise",
+        table: "Localizable",
+        locale: .current,
+        bundle: .main,
+        comment: "Show sunrise option"
+    )
+}
+
 // MARK: - Timeline Entry
 
 struct PrayerHomeScreenEntry: TimelineEntry {
