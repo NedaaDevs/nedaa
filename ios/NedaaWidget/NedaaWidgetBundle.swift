@@ -35,11 +35,6 @@ struct WidgetsBundle17: WidgetBundle {
 @available(iOSApplicationExtension 16.0, *)
 struct WidgetsBundle16: WidgetBundle {
     var body: some Widget {
-        // Lock Screen Widgets
-        PrayerCountdownLockScreenWidget()
-        MorningPrayerWidget()
-        EveningPrayerWidget()
-
         // Home Screen Widgets
         QadaHomeScreen()
         AthkarProgressWidget()

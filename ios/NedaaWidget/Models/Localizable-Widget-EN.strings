@@ -1,0 +1,18 @@
+/* Widget Configuration - Prayer Times Home Screen */
+"widget_prayer_times_settings" = "Prayer Times Settings";
+"widget_prayer_times_settings_desc" = "Customize your prayer times widget display";
+"widget_show_timer" = "Show Timer";
+"widget_show_sunrise" = "Show Sunrise";
+
+/* Widget Configuration - Prayer Countdown Lock Screen */
+"widget_prayer_countdown_settings" = "Prayer Countdown Settings";
+"widget_prayer_countdown_settings_desc" = "Configure countdown display options";
+
+/* Widget Configuration - All Prayers Lock Screen */
+"widget_all_prayers_settings" = "All Prayers Settings";
+"widget_all_prayers_settings_desc" = "Customize prayer list display";
+
+/* Widget Configuration - Prayer Athkar */
+"widget_prayer_athkar_settings" = "Prayer & Athkar Settings";
+"widget_prayer_athkar_settings_desc" = "Configure prayer times and athkar display";
+"widget_show_countdown" = "Show Countdown";

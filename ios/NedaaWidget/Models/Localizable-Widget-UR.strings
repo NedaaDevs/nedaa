@@ -1,0 +1,18 @@
+/* Widget Configuration - Prayer Times Home Screen */
+"widget_prayer_times_settings" = "نماز کے اوقات کی ترتیبات";
+"widget_prayer_times_settings_desc" = "اپنے نماز کے اوقات ویجٹ کی نمائش کو حسب ضرورت بنائیں";
+"widget_show_timer" = "ٹائمر دکھائیں";
+"widget_show_sunrise" = "طلوع آفتاب دکھائیں";
+
+/* Widget Configuration - Prayer Countdown Lock Screen */
+"widget_prayer_countdown_settings" = "نماز کی الٹی گنتی کی ترتیبات";
+"widget_prayer_countdown_settings_desc" = "الٹی گنتی کی نمائش کے اختیارات مرتب کریں";
+
+/* Widget Configuration - All Prayers Lock Screen */
+"widget_all_prayers_settings" = "تمام نمازوں کی ترتیبات";
+"widget_all_prayers_settings_desc" = "نماز کی فہرست کی نمائش کو حسب ضرورت بنائیں";
+
+/* Widget Configuration - Prayer Athkar */
+"widget_prayer_athkar_settings" = "نماز اور اذکار کی ترتیبات";
+"widget_prayer_athkar_settings_desc" = "نماز کے اوقات اور اذکار کی نمائش کو مرتب کریں";
+"widget_show_countdown" = "الٹی گنتی دکھائیں";

@@ -224,6 +224,17 @@
         }
       }
     },
+    "Configuration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuration"
+          }
+        }
+      }
+    },
     "countdown_hours_minutes" : {
       "comment" : "in Xh Ym",
       "localizations" : {
@@ -692,6 +703,7 @@
       }
     },
     "My Widget" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1319,6 +1331,7 @@
       }
     },
     "This is an example widget." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1473,6 +1486,12 @@
         }
       }
     },
+    "widget_all_prayers_settings" : {
+
+    },
+    "widget_all_prayers_settings_desc" : {
+
+    },
     "widget_prayer_athkar_settings" : {
       "localizations" : {
         "ar" : {
@@ -1517,7 +1536,14 @@
         }
       }
     },
+    "widget_prayer_countdown_settings" : {
+
+    },
+    "widget_prayer_countdown_settings_desc" : {
+
+    },
     "widget_prayer_times_settings" : {
+      "comment" : "Widget configuration title",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1540,6 +1566,7 @@
       }
     },
     "widget_prayer_times_settings_desc" : {
+      "comment" : "Widget configuration description",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1584,6 +1611,7 @@
       }
     },
     "widget_show_sunrise" : {
+      "comment" : "Show sunrise option",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1606,6 +1634,7 @@
       }
     },
     "widget_show_timer" : {
+      "comment" : "Show timer option",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

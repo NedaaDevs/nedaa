@@ -1,0 +1,18 @@
+/* Widget Configuration - Prayer Times Home Screen */
+"widget_prayer_times_settings" = "إعدادات أوقات الصلاة";
+"widget_prayer_times_settings_desc" = "قم بتخصيص عرض ويدجت أوقات الصلاة";
+"widget_show_timer" = "إظهار المؤقت";
+"widget_show_sunrise" = "إظهار الشروق";
+
+/* Widget Configuration - Prayer Countdown Lock Screen */
+"widget_prayer_countdown_settings" = "إعدادات العد التنازلي للصلاة";
+"widget_prayer_countdown_settings_desc" = "تكوين خيارات عرض العد التنازلي";
+
+/* Widget Configuration - All Prayers Lock Screen */
+"widget_all_prayers_settings" = "إعدادات جميع الصلوات";
+"widget_all_prayers_settings_desc" = "تخصيص عرض قائمة الصلوات";
+
+/* Widget Configuration - Prayer Athkar */
+"widget_prayer_athkar_settings" = "إعدادات الصلاة والأذكار";
+"widget_prayer_athkar_settings_desc" = "تكوين عرض أوقات الصلاة والأذكار";
+"widget_show_countdown" = "إظهار العد التنازلي";

@@ -90,13 +90,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		35CEA3ED2ED6FBD8006D06C1 /* Exceptions for "NedaaWidget" folder in "nedaa" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Intents.intentdefinition,
-			);
-			target = 13B07F861A680F5B00A75B9A /* nedaa */;
-		};
 		35F778C92E05B033009C55CF /* Exceptions for "NedaaWidget" folder in "NedaaWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -110,7 +103,6 @@
 		35F778B92E05B032009C55CF /* NedaaWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				35CEA3ED2ED6FBD8006D06C1 /* Exceptions for "NedaaWidget" folder in "nedaa" target */,
 				35F778C92E05B033009C55CF /* Exceptions for "NedaaWidget" folder in "NedaaWidgetExtension" target */,
 			);
 			path = NedaaWidget;
@@ -314,8 +306,8 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
-				Base,
 				ur,
+				ar,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
 			preferredProjectObjectVersion = 77;
