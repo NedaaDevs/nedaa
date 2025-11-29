@@ -83,18 +83,6 @@
           }
         }
       }
-    },
-    "NSMicrophoneUsageDescription" : {
-      "comment" : "Privacy - Microphone Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "This app does not require microphone access."
-          }
-        }
-      }
     }
   },
   "version" : "1.0"
