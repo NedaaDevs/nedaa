@@ -188,15 +188,15 @@ export default function AlarmSettingsScreen() {
 
     if (permissionState === "unsupported") {
       return (
-        <Card className="bg-error-100 rounded-xl p-4 mb-4">
+        <Card className="bg-background-error rounded-xl p-4 mb-4">
           <VStack className="gap-3">
             <HStack className="items-center gap-3">
-              <Icon as={ShieldAlert} size="md" className="text-error-500" />
-              <Text className="text-error-700 font-semibold flex-1">
+              <Icon as={ShieldAlert} size="md" className="text-error" />
+              <Text className="text-error font-semibold flex-1">
                 {t("alarm.permission.unsupported", "Alarms Not Supported")}
               </Text>
             </HStack>
-            <Text className="text-error-600 text-sm">
+            <Text className="text-error text-sm">
               {Platform.OS === "ios"
                 ? t(
                     "alarm.permission.requiresIOS26",
@@ -211,15 +211,15 @@ export default function AlarmSettingsScreen() {
 
     if (permissionState === "notDetermined") {
       return (
-        <Card className="bg-warning-100 rounded-xl p-4 mb-4">
+        <Card className="bg-background-warning rounded-xl p-4 mb-4">
           <VStack className="gap-3">
             <HStack className="items-center gap-3">
-              <Icon as={ShieldAlert} size="md" className="text-warning-500" />
-              <Text className="text-warning-700 font-semibold flex-1">
+              <Icon as={ShieldAlert} size="md" className="text-warning" />
+              <Text className="text-warning font-semibold flex-1">
                 {t("alarm.permission.required", "Permission Required")}
               </Text>
             </HStack>
-            <Text className="text-warning-600 text-sm">
+            <Text className="text-warning text-sm">
               {t(
                 "alarm.permission.description",
                 "To use alarms, Nedaa needs permission to schedule notifications that can wake you up even when your phone is on silent or Do Not Disturb mode."
@@ -228,7 +228,7 @@ export default function AlarmSettingsScreen() {
             <Button
               onPress={requestPermission}
               disabled={isRequestingPermission}
-              className="bg-warning-500 mt-2">
+              className="bg-warning mt-2">
               {isRequestingPermission ? (
                 <HStack className="items-center gap-2">
                   <ActivityIndicator size="small" color="white" />
@@ -245,21 +245,21 @@ export default function AlarmSettingsScreen() {
 
     if (permissionState === "denied") {
       return (
-        <Card className="bg-error-100 rounded-xl p-4 mb-4">
+        <Card className="bg-background-error rounded-xl p-4 mb-4">
           <VStack className="gap-3">
             <HStack className="items-center gap-3">
-              <Icon as={ShieldAlert} size="md" className="text-error-500" />
-              <Text className="text-error-700 font-semibold flex-1">
+              <Icon as={ShieldAlert} size="md" className="text-error" />
+              <Text className="text-error font-semibold flex-1">
                 {t("alarm.permission.denied", "Permission Denied")}
               </Text>
             </HStack>
-            <Text className="text-error-600 text-sm">
+            <Text className="text-error text-sm">
               {t(
                 "alarm.permission.deniedDescription",
                 "Alarm permission was denied. To enable alarms, please go to Settings and allow Nedaa to schedule alarms."
               )}
             </Text>
-            <Button onPress={openAppSettings} className="bg-error-500 mt-2">
+            <Button onPress={openAppSettings} className="bg-error mt-2">
               <HStack className="items-center gap-2">
                 <Icon as={Settings} size="sm" className="text-white" />
                 <ButtonText>{t("alarm.permission.openSettings", "Open Settings")}</ButtonText>
@@ -283,7 +283,7 @@ export default function AlarmSettingsScreen() {
         {/* Header */}
         <Box className="mb-4">
           <HStack className="items-center gap-3 mb-2">
-            <Icon as={AlarmClock} size="xl" className="text-primary-500" />
+            <Icon as={AlarmClock} size="xl" className="text-primary" />
             <Text className="text-lg text-typography-secondary">
               {t("alarm.settings.description", "Set alarms for Fajr and Jummah prayers")}
             </Text>
@@ -323,7 +323,7 @@ export default function AlarmSettingsScreen() {
                     {t("alarm.settings.infoTitle", "About Alarms")}
                   </Text>
                 </HStack>
-                <Text className="text-xs text-typography-tertiary">
+                <Text className="text-xs text-typography-secondary">
                   {Platform.OS === "android"
                     ? t(
                         "alarm.settings.infoAndroid",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform, ActivityIndicator, ScrollView } from "react-native";
 import { useAudioPlayer } from "expo-audio";
+import { useColorScheme } from "nativewind";
 
 // Components
 import {
@@ -21,7 +22,7 @@ import { Pressable } from "@/components/ui/pressable";
 import SoundPreviewButton from "@/components/SoundPreviewButton";
 
 // Icons
-import { X, Music, Smartphone, Check } from "lucide-react-native";
+import { X, Music, Smartphone } from "lucide-react-native";
 
 // Types
 import type { AlarmSoundKey } from "@/types/alarm";
@@ -68,7 +69,11 @@ const AlarmSoundPicker = ({
   onSelectSound,
 }: AlarmSoundPickerProps) => {
   const { t } = useTranslation();
+  const { colorScheme } = useColorScheme();
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
+
+  // Theme-aware colors for native components
+  const primaryColor = colorScheme === "dark" ? "#E6C469" : "#1C5D85";
 
   // Separate audio player for system sounds
   const systemSoundPlayer = useAudioPlayer();
@@ -202,20 +207,19 @@ const AlarmSoundPicker = ({
         key={item.id}
         onPress={() => handleSoundSelect(item.id)}
         className={`p-4 rounded-xl mb-2 ${
-          selected ? "bg-primary-500/20 border border-primary-500" : "bg-background-tertiary"
+          selected ? "bg-accent-primary" : "bg-background-secondary dark:bg-background-tertiary"
         }`}>
         <HStack className="items-center justify-between">
-          <VStack className="flex-1 gap-1">
-            <HStack className="items-center gap-3">
-              {selected && <Icon as={Check} size="sm" className="text-primary-500" />}
-              <Text
-                className={`text-base ${selected ? "text-primary-500 font-semibold" : "text-typography"}`}
-                numberOfLines={1}>
-                {item.title}
-              </Text>
-            </HStack>
+          <VStack className="flex-1 gap-0.5">
+            <Text
+              className={`text-base font-medium ${selected ? "text-white" : "text-typography"}`}
+              numberOfLines={1}>
+              {item.title}
+            </Text>
             {item.description && (
-              <Text className="text-sm text-typography-secondary" numberOfLines={1}>
+              <Text
+                className={`text-xs ${selected ? "text-white/80" : "text-typography-secondary"}`}
+                numberOfLines={1}>
                 {item.description}
               </Text>
             )}
@@ -225,7 +229,7 @@ const AlarmSoundPicker = ({
             <SoundPreviewButton
               isPlaying={playing}
               onPress={() => handlePreview(item)}
-              color={selected ? "text-primary-500" : "text-typography-secondary"}
+              color={selected ? "text-white" : "text-typography-secondary"}
             />
           )}
         </HStack>
@@ -252,8 +256,10 @@ const AlarmSoundPicker = ({
           <HStack className="px-6 pb-4 gap-2">
             <Pressable
               onPress={() => setActiveCategory("app")}
-              className={`flex-1 py-3 rounded-xl flex-row items-center justify-center gap-2 ${
-                activeCategory === "app" ? "bg-primary-500" : "bg-background-tertiary"
+              className={`flex-1 py-3 rounded-full flex-row items-center justify-center gap-2 ${
+                activeCategory === "app"
+                  ? "bg-accent-primary"
+                  : "bg-background-secondary dark:bg-background-tertiary"
               }`}>
               <Icon
                 as={Music}
@@ -270,8 +276,10 @@ const AlarmSoundPicker = ({
 
             <Pressable
               onPress={() => setActiveCategory("system")}
-              className={`flex-1 py-3 rounded-xl flex-row items-center justify-center gap-2 ${
-                activeCategory === "system" ? "bg-primary-500" : "bg-background-tertiary"
+              className={`flex-1 py-3 rounded-full flex-row items-center justify-center gap-2 ${
+                activeCategory === "system"
+                  ? "bg-accent-primary"
+                  : "bg-background-secondary dark:bg-background-tertiary"
               }`}>
               <Icon
                 as={Smartphone}
@@ -310,14 +318,14 @@ const AlarmSoundPicker = ({
               <VStack>
                 {isLoadingSystemSounds ? (
                   <Box className="py-8 items-center">
-                    <ActivityIndicator size="large" color="#10b981" />
+                    <ActivityIndicator size="large" color={primaryColor} />
                     <Text className="text-typography-secondary mt-3">
                       {t("alarm.sound.loading", "Loading sounds...")}
                     </Text>
                   </Box>
                 ) : systemSoundItems.length === 0 ? (
                   <Box className="py-8 items-center">
-                    <Icon as={Smartphone} size="xl" className="text-typography-tertiary mb-3" />
+                    <Icon as={Smartphone} size="xl" className="text-typography-secondary mb-3" />
                     <Text className="text-typography-secondary text-center">
                       {t("alarm.sound.noSystemSounds", "No system alarm sounds found")}
                     </Text>

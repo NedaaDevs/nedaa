@@ -104,7 +104,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
         },
       ];
 
-  const snoozeDurations = [5, 10, 15];
+  const snoozeDurations = [0, 5, 10, 15]; // 0 = None/Off
   const challengeTypes: { id: AlarmChallengeType; label: string }[] = [
     { id: "none", label: t("alarm.wizard.challenge.none", "None") },
     { id: "math", label: t("alarm.wizard.challenge.math", "Math") },
@@ -185,8 +185,8 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
 
         <ModalHeader className="justify-items-center px-6 pt-6 pb-4 pr-12">
           <VStack className="items-center" space="sm">
-            <Box className="w-16 h-16 rounded-full bg-primary-500/20 items-center justify-center">
-              <Icon as={TitleIcon} className="text-primary-500" size="xl" />
+            <Box className="w-16 h-16 rounded-full bg-primary/20 items-center justify-center">
+              <Icon as={TitleIcon} className="text-primary" size="xl" />
             </Box>
             <Text className="text-xl font-bold text-typography text-center">
               {isFajr
@@ -199,7 +199,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                 <Box
                   key={i}
                   className={`w-2 h-2 rounded-full ${
-                    step === i + 1 ? "bg-primary-500" : "bg-typography-tertiary"
+                    step === i + 1 ? "bg-accent-primary" : "bg-outline"
                   }`}
                 />
               ))}
@@ -220,7 +220,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                   onPress={() => setSelectedTimeOption(option.id)}
                   className={`p-4 rounded-xl border-2 ${
                     selectedTimeOption === option.id
-                      ? "border-primary-500 bg-primary-500/10"
+                      ? "border-primary bg-accent-primary/10"
                       : "border-outline bg-background"
                   }`}>
                   <HStack className="items-center justify-between">
@@ -230,21 +230,21 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                         size="md"
                         className={
                           selectedTimeOption === option.id
-                            ? "text-primary-500"
+                            ? "text-primary"
                             : "text-typography-secondary"
                         }
                       />
                       <Text
                         className={`text-base ${
                           selectedTimeOption === option.id
-                            ? "text-primary-500 font-semibold"
+                            ? "text-primary font-semibold"
                             : "text-typography"
                         }`}>
                         {option.label}
                       </Text>
                     </HStack>
                     {selectedTimeOption === option.id && (
-                      <Box className="w-5 h-5 rounded-full bg-primary-500 items-center justify-center">
+                      <Box className="w-5 h-5 rounded-full bg-accent-primary items-center justify-center">
                         <Text className="text-white text-xs">✓</Text>
                       </Box>
                     )}
@@ -261,21 +261,23 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                 <Text className="text-typography-secondary font-medium">
                   {t("alarm.wizard.snooze", "Snooze Duration")}
                 </Text>
-                <HStack className="gap-3">
+                <HStack className="gap-2">
                   {snoozeDurations.map((duration) => (
                     <Pressable
                       key={duration}
                       onPress={() => setSelectedSnooze(duration)}
                       className={`flex-1 py-3 rounded-xl ${
                         selectedSnooze === duration
-                          ? "bg-primary-500"
+                          ? "bg-accent-primary"
                           : "bg-background border border-outline"
                       }`}>
                       <Text
                         className={`text-center font-medium ${
                           selectedSnooze === duration ? "text-white" : "text-typography"
                         }`}>
-                        {duration} {t("alarm.wizard.min", "min")}
+                        {duration === 0
+                          ? t("alarm.wizard.snoozeOff", "Off")
+                          : `${duration} ${t("alarm.wizard.min", "min")}`}
                       </Text>
                     </Pressable>
                   ))}
@@ -295,7 +297,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                         onPress={() => setSelectedChallenge(challenge.id)}
                         className={`flex-1 py-3 rounded-xl ${
                           selectedChallenge === challenge.id
-                            ? "bg-primary-500"
+                            ? "bg-accent-primary"
                             : "bg-background border border-outline"
                         }`}>
                         <Text
@@ -310,7 +312,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                 </VStack>
               )}
 
-              <Text className="text-center text-typography-tertiary text-sm mt-2">
+              <Text className="text-center text-typography-secondary text-sm mt-2">
                 {t("alarm.wizard.canChangeLater", "You can change these later")}
               </Text>
             </VStack>
@@ -337,7 +339,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                           onPress={() => setMathDifficulty(option.id)}
                           className={`flex-1 py-3 rounded-xl ${
                             mathDifficulty === option.id
-                              ? "bg-primary-500"
+                              ? "bg-accent-primary"
                               : "bg-background border border-outline"
                           }`}>
                           <Text
@@ -363,7 +365,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                           onPress={() => setMathQuestionCount(count)}
                           className={`flex-1 py-3 rounded-xl ${
                             mathQuestionCount === count
-                              ? "bg-primary-500"
+                              ? "bg-accent-primary"
                               : "bg-background border border-outline"
                           }`}>
                           <Text
@@ -392,7 +394,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                         onPress={() => setTapCount(count)}
                         className={`flex-1 py-3 rounded-xl ${
                           tapCount === count
-                            ? "bg-primary-500"
+                            ? "bg-accent-primary"
                             : "bg-background border border-outline"
                         }`}>
                         <Text
@@ -419,7 +421,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                       onPress={() => setChallengeGracePeriodSec(seconds)}
                       className={`flex-1 py-3 rounded-xl ${
                         challengeGracePeriodSec === seconds
-                          ? "bg-primary-500"
+                          ? "bg-accent-primary"
                           : "bg-background border border-outline"
                       }`}>
                       <Text
@@ -431,7 +433,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                     </Pressable>
                   ))}
                 </HStack>
-                <Text className="text-center text-typography-tertiary text-xs">
+                <Text className="text-center text-typography-secondary text-xs">
                   {t("alarm.wizard.gracePeriodHint", "Alarm mutes while you solve the challenge")}
                 </Text>
               </VStack>

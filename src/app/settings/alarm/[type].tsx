@@ -14,6 +14,14 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
+import {
+  Actionsheet,
+  ActionsheetBackdrop,
+  ActionsheetContent,
+  ActionsheetDragIndicator,
+  ActionsheetDragIndicatorWrapper,
+  ActionsheetFlatList,
+} from "@/components/ui/actionsheet";
 import TopBar from "@/components/TopBar";
 import TimePicker from "@/components/TimePicker";
 import AlarmSoundPicker from "@/components/alarm/AlarmSoundPicker";
@@ -31,6 +39,8 @@ import {
   Music,
   ChevronRight,
   ChevronLeft,
+  Clock,
+  Check,
 } from "lucide-react-native";
 
 // Stores
@@ -45,7 +55,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { timeZonedNow } from "@/utils/date";
 
 // Types
-import type { AlarmSettings, AlarmType, MathDifficulty } from "@/types/alarm";
+import type { AlarmSettings, AlarmType, MathDifficulty, AlarmChallengeType } from "@/types/alarm";
 
 // Constants
 import { getAlarmSound } from "@/constants/AlarmSounds";
@@ -55,6 +65,27 @@ import { isSystemAlarmSoundKey } from "@/services/alarm/sounds";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
+
+// ==========================================
+// TYPES
+// ==========================================
+
+type SettingOption<T> = {
+  value: T;
+  label: string;
+  description?: string;
+};
+
+type ActiveSheet =
+  | "timeMode"
+  | "offset"
+  | "snooze"
+  | "challengeType"
+  | "mathDifficulty"
+  | "mathQuestions"
+  | "tapCount"
+  | "gracePeriod"
+  | null;
 
 // ==========================================
 // COMPONENT
@@ -85,31 +116,127 @@ export default function AlarmEditScreen() {
   // Local state
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showSoundPicker, setShowSoundPicker] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
 
-  // Get display name for current sound
+  // ==========================================
+  // OPTIONS DATA
+  // ==========================================
+
+  const timeModeOptions: SettingOption<"dynamic" | "fixed">[] = [
+    {
+      value: "dynamic",
+      label: t("alarm.settings.dynamic", "Follow Prayer"),
+      description: t("alarm.settings.dynamicDesc", "Alarm adjusts with prayer time"),
+    },
+    {
+      value: "fixed",
+      label: t("alarm.settings.fixed", "Fixed Time"),
+      description: t("alarm.settings.fixedDesc", "Alarm at the same time daily"),
+    },
+  ];
+
+  const offsetOptions: SettingOption<number>[] = [
+    { value: -60, label: t("alarm.offset.before", { count: 60 }) },
+    { value: -30, label: t("alarm.offset.before", { count: 30 }) },
+    { value: -15, label: t("alarm.offset.before", { count: 15 }) },
+    { value: 0, label: t("alarm.offset.atTime", "At prayer time") },
+    { value: 10, label: t("alarm.offset.after", { count: 10 }) },
+  ];
+
+  const snoozeOptions: SettingOption<number>[] = [
+    { value: 0, label: t("alarm.snooze.off", "Off") },
+    { value: 5, label: t("common.minute", { count: 5 }) },
+    { value: 10, label: t("common.minute", { count: 10 }) },
+    { value: 15, label: t("common.minute", { count: 15 }) },
+  ];
+
+  const challengeTypeOptions: SettingOption<AlarmChallengeType>[] = [
+    {
+      value: "none",
+      label: t("alarm.challenge.none", "None"),
+      description: t("alarm.challenge.noneDesc", "Dismiss with a simple tap"),
+    },
+    {
+      value: "math",
+      label: t("alarm.challenge.math", "Math Problem"),
+      description: t("alarm.challenge.mathDesc", "Solve math to dismiss"),
+    },
+    {
+      value: "tap",
+      label: t("alarm.challenge.tap", "Tap Challenge"),
+      description: t("alarm.challenge.tapDesc", "Tap multiple times to dismiss"),
+    },
+  ];
+
+  const mathDifficultyOptions: SettingOption<MathDifficulty>[] = [
+    { value: "easy", label: t("alarm.difficulty.easy", "Easy"), description: "1 + 2 = ?" },
+    { value: "medium", label: t("alarm.difficulty.medium", "Medium"), description: "12 + 8 = ?" },
+    { value: "hard", label: t("alarm.difficulty.hard", "Hard"), description: "23 × 4 = ?" },
+  ];
+
+  const mathQuestionsOptions: SettingOption<number>[] = [
+    { value: 1, label: t("alarm.questions", { count: 1 }) },
+    { value: 2, label: t("alarm.questions", { count: 2 }) },
+    { value: 3, label: t("alarm.questions", { count: 3 }) },
+    { value: 5, label: t("alarm.questions", { count: 5 }) },
+  ];
+
+  const tapCountOptions: SettingOption<number>[] = [
+    { value: 10, label: t("alarm.taps", { count: 10 }) },
+    { value: 20, label: t("alarm.taps", { count: 20 }) },
+    { value: 30, label: t("alarm.taps", { count: 30 }) },
+    { value: 50, label: t("alarm.taps", { count: 50 }) },
+  ];
+
+  const gracePeriodOptions: SettingOption<number>[] = [
+    { value: 0, label: t("alarm.grace.none", "None") },
+    { value: 10, label: t("alarm.grace", { count: 10 }) },
+    { value: 15, label: t("alarm.grace", { count: 15 }) },
+    { value: 30, label: t("alarm.grace", { count: 30 }) },
+  ];
+
+  // ==========================================
+  // DISPLAY HELPERS
+  // ==========================================
+
   const getSoundDisplayName = useCallback((): string => {
     const soundKey = settings.sound;
-
-    // Check if it's the default system sound
-    if (soundKey === "default") {
-      return t("alarm.sound.default", "Default");
-    }
-
-    // Check if it's a system alarm sound
-    if (isSystemAlarmSoundKey(soundKey)) {
-      // For system sounds, we'd need to look up the title
-      // For now, show a generic label or extract from the key
-      return t("alarm.sound.systemSound", "System Alarm");
-    }
-
-    // It's an app sound
+    if (soundKey === "default") return t("alarm.sound.default", "Default");
+    if (isSystemAlarmSoundKey(soundKey)) return t("alarm.sound.systemSound", "System Alarm");
     const alarmSound = getAlarmSound(soundKey as any);
-    if (alarmSound?.label) {
-      return t(alarmSound.label);
-    }
-
+    if (alarmSound?.label) return t(alarmSound.label);
     return soundKey;
   }, [settings.sound, t]);
+
+  const getTimeModeDisplay = () =>
+    timeModeOptions.find((o) => o.value === settings.timeMode)?.label || "";
+
+  const getOffsetDisplay = () => {
+    const option = offsetOptions.find((o) => o.value === settings.offsetMinutes);
+    return option?.label || `${settings.offsetMinutes} min`;
+  };
+
+  const getSnoozeDisplay = () => {
+    if (!settings.snoozeEnabled) return t("alarm.snooze.off", "Off");
+    return snoozeOptions.find((o) => o.value === settings.snoozeDurationMinutes)?.label || "";
+  };
+
+  const getChallengeDisplay = () => {
+    if (!settings.challengeEnabled) return t("alarm.challenge.none", "None");
+    return challengeTypeOptions.find((o) => o.value === settings.challengeType)?.label || "";
+  };
+
+  const getDifficultyDisplay = () =>
+    mathDifficultyOptions.find((o) => o.value === settings.mathDifficulty)?.label || "";
+
+  const getQuestionsDisplay = () =>
+    mathQuestionsOptions.find((o) => o.value === settings.mathQuestionCount)?.label || "";
+
+  const getTapCountDisplay = () =>
+    tapCountOptions.find((o) => o.value === settings.tapCount)?.label || "";
+
+  const getGracePeriodDisplay = () =>
+    gracePeriodOptions.find((o) => o.value === settings.challengeGracePeriodSec)?.label || "";
 
   // ==========================================
   // HANDLERS
@@ -123,6 +250,26 @@ export default function AlarmEditScreen() {
     [updateSettings, hapticSelection]
   );
 
+  const handleSnoozeSelect = (value: number) => {
+    if (value === 0) {
+      handleSettingChange("snoozeEnabled", false);
+    } else {
+      handleSettingChange("snoozeEnabled", true);
+      handleSettingChange("snoozeDurationMinutes", value);
+    }
+    setActiveSheet(null);
+  };
+
+  const handleChallengeTypeSelect = (value: AlarmChallengeType) => {
+    if (value === "none") {
+      handleSettingChange("challengeEnabled", false);
+    } else {
+      handleSettingChange("challengeEnabled", true);
+      handleSettingChange("challengeType", value);
+    }
+    setActiveSheet(null);
+  };
+
   const handleDeleteAlarm = () => {
     Alert.alert(
       t("alarm.edit.deleteConfirm.title", "Delete Alarm"),
@@ -131,18 +278,12 @@ export default function AlarmEditScreen() {
         "Are you sure you want to delete this alarm? All settings will be reset."
       ),
       [
-        {
-          text: t("common.cancel", "Cancel"),
-          style: "cancel",
-        },
+        { text: t("common.cancel", "Cancel"), style: "cancel" },
         {
           text: t("common.delete", "Delete"),
           style: "destructive",
           onPress: async () => {
-            await updateSettings({
-              enabled: false,
-              hasCompletedSetup: false,
-            });
+            await updateSettings({ enabled: false, hasCompletedSetup: false });
             router.back();
           },
         },
@@ -161,42 +302,138 @@ export default function AlarmEditScreen() {
       const hour = settings.fixedHour ?? 5;
       const minute = settings.fixedMinute ?? 0;
       const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-
       const todayAlarm = new Date(now);
       todayAlarm.setHours(hour, minute, 0, 0);
 
-      if (todayAlarm > now) {
-        return t("alarm.edit.preview", "Next alarm: {{time}}", {
-          time: `${t("alarm.card.today", "Today")} ${timeString}`,
-        });
-      }
+      const occurrence =
+        todayAlarm > now ? t("alarm.card.today", "Today") : t("alarm.card.tomorrow", "Tomorrow");
       return t("alarm.edit.preview", "Next alarm: {{time}}", {
-        time: `${t("alarm.card.tomorrow", "Tomorrow")} ${timeString}`,
+        time: `${occurrence} ${timeString}`,
       });
     } else {
       const prayerTime = isFajr
         ? todayTimings?.timings?.fajr || tomorrowTimings?.timings?.fajr
         : todayTimings?.timings?.dhuhr;
-
       if (!prayerTime) return null;
 
       const prayerDate = parseISO(prayerTime);
       const offsetMs = (settings.offsetMinutes || 0) * 60 * 1000;
       const alarmDate = new Date(prayerDate.getTime() + offsetMs);
       const timeString = format(alarmDate, "HH:mm");
-
-      if (alarmDate > now) {
-        return t("alarm.edit.preview", "Next alarm: {{time}}", {
-          time: `${t("alarm.card.today", "Today")} ${timeString}`,
-        });
-      }
+      const occurrence =
+        alarmDate > now ? t("alarm.card.today", "Today") : t("alarm.card.tomorrow", "Tomorrow");
       return t("alarm.edit.preview", "Next alarm: {{time}}", {
-        time: `${t("alarm.card.tomorrow", "Tomorrow")} ${timeString}`,
+        time: `${occurrence} ${timeString}`,
       });
     }
   };
 
   const previewText = getPreviewTime();
+
+  // ==========================================
+  // SETTING ROW COMPONENT
+  // ==========================================
+
+  const SettingRow = ({
+    icon,
+    label,
+    value,
+    onPress,
+    showChevron = true,
+  }: {
+    icon: any;
+    label: string;
+    value: string;
+    onPress: () => void;
+    showChevron?: boolean;
+  }) => (
+    <Pressable onPress={onPress} className="py-4">
+      <HStack className="justify-between items-center">
+        <HStack className="items-center gap-3 flex-1">
+          <Icon as={icon} size="sm" className="text-typography-secondary" />
+          <Text className="text-base text-typography">{label}</Text>
+        </HStack>
+        <HStack className="items-center gap-2">
+          <Text className="text-base text-primary" numberOfLines={1}>
+            {value}
+          </Text>
+          {showChevron && <Icon as={ChevronIcon} size="sm" className="text-typography-secondary" />}
+        </HStack>
+      </HStack>
+    </Pressable>
+  );
+
+  const ToggleRow = ({
+    icon,
+    label,
+    value,
+    onValueChange,
+  }: {
+    icon: any;
+    label: string;
+    value: boolean;
+    onValueChange: (v: boolean) => void;
+  }) => (
+    <HStack className="justify-between items-center py-4">
+      <HStack className="items-center gap-3 flex-1">
+        <Icon as={icon} size="sm" className="text-typography-secondary" />
+        <Text className="text-base text-typography">{label}</Text>
+      </HStack>
+      <Switch value={value} onValueChange={onValueChange} />
+    </HStack>
+  );
+
+  // ==========================================
+  // ACTIONSHEET RENDERER
+  // ==========================================
+
+  const renderOptionSheet = <T,>(
+    options: SettingOption<T>[],
+    currentValue: T,
+    onSelect: (value: T) => void,
+    title: string
+  ) => (
+    <Actionsheet isOpen={activeSheet !== null} onClose={() => setActiveSheet(null)}>
+      <ActionsheetBackdrop />
+      <ActionsheetContent className="bg-background-secondary">
+        <ActionsheetDragIndicatorWrapper>
+          <ActionsheetDragIndicator />
+        </ActionsheetDragIndicatorWrapper>
+        <Text className="text-lg font-semibold text-typography mb-4 px-4">{title}</Text>
+        <ActionsheetFlatList
+          data={options}
+          keyExtractor={(item: any) => String(item.value)}
+          renderItem={({ item, index }: any) => {
+            const isSelected = item.value === currentValue;
+            return (
+              <Pressable
+                onPress={() => {
+                  hapticSelection();
+                  onSelect(item.value);
+                  setActiveSheet(null);
+                }}
+                className={`py-4 px-4 flex-row justify-between items-center ${
+                  index < options.length - 1 ? "border-b border-outline" : ""
+                }`}>
+                <VStack className="flex-1">
+                  <Text
+                    className={`text-base ${isSelected ? "text-primary font-semibold" : "text-typography"}`}>
+                    {item.label}
+                  </Text>
+                  {item.description && (
+                    <Text className="text-sm text-typography-secondary mt-0.5">
+                      {item.description}
+                    </Text>
+                  )}
+                </VStack>
+                {isSelected && <Icon as={Check} className="text-primary" size="md" />}
+              </Pressable>
+            );
+          }}
+        />
+      </ActionsheetContent>
+    </Actionsheet>
+  );
 
   // ==========================================
   // RENDER
@@ -221,8 +458,8 @@ export default function AlarmEditScreen() {
         showsVerticalScrollIndicator={false}>
         {/* Header with Icon */}
         <HStack className="items-center gap-3 mb-6">
-          <Box className="w-12 h-12 rounded-full bg-primary-500/20 items-center justify-center">
-            <Icon as={TitleIcon} className="text-primary-500" size="lg" />
+          <Box className="w-12 h-12 rounded-full bg-primary/20 items-center justify-center">
+            <Icon as={TitleIcon} className="text-primary" size="lg" />
           </Box>
           <VStack>
             <Text className="text-xl font-semibold text-typography">
@@ -230,433 +467,244 @@ export default function AlarmEditScreen() {
                 ? t("alarm.fajrPrayer", "Fajr Alarm")
                 : t("alarm.jummahPrayer", "Jummah Alarm")}
             </Text>
-            {previewText && <Text className="text-sm text-primary-500">{previewText}</Text>}
+            {previewText && <Text className="text-sm text-primary">{previewText}</Text>}
           </VStack>
         </HStack>
 
-        {/* ==========================================
-            SECTION: WAKE UP TIME
-            ========================================== */}
-        <Box className="bg-background-secondary rounded-xl p-4 mb-4">
-          <Text className="text-sm font-semibold text-typography-secondary uppercase mb-4">
-            {t("alarm.edit.section.time", "Wake Up Time")}
-          </Text>
+        {/* TIME SETTINGS */}
+        <Box className="bg-background-secondary rounded-xl px-4 mb-4">
+          <SettingRow
+            icon={Clock}
+            label={t("alarm.settings.timeMode", "Time Mode")}
+            value={getTimeModeDisplay()}
+            onPress={() => setActiveSheet("timeMode")}
+          />
 
-          {/* Time Mode Selection */}
-          <HStack className="gap-2 mb-4">
-            <Pressable
-              className={`flex-1 py-3 px-4 rounded-lg ${
-                settings.timeMode === "dynamic" ? "bg-primary-500" : "bg-background-tertiary"
-              }`}
-              onPress={() => handleSettingChange("timeMode", "dynamic")}>
-              <Text
-                className={`text-center font-medium ${
-                  settings.timeMode === "dynamic" ? "text-white" : "text-typography"
-                }`}>
-                {t("alarm.settings.dynamic", "Follow Prayer")}
-              </Text>
-            </Pressable>
-            <Pressable
-              className={`flex-1 py-3 px-4 rounded-lg ${
-                settings.timeMode === "fixed" ? "bg-primary-500" : "bg-background-tertiary"
-              }`}
-              onPress={() => handleSettingChange("timeMode", "fixed")}>
-              <Text
-                className={`text-center font-medium ${
-                  settings.timeMode === "fixed" ? "text-white" : "text-typography"
-                }`}>
-                {t("alarm.settings.fixed", "Fixed Time")}
-              </Text>
-            </Pressable>
-          </HStack>
-
-          {/* Dynamic Mode: Offset Selection */}
           {settings.timeMode === "dynamic" && (
-            <VStack space="sm">
-              <Text className="text-sm text-typography-secondary">
-                {t("alarm.settings.offset", "Time Offset")}
-              </Text>
-              <HStack className="gap-2 flex-wrap">
-                {[-60, -30, -15, 0, 15, 30].map((offset) => (
-                  <Pressable
-                    key={offset}
-                    className={`py-2 px-4 rounded-lg ${
-                      settings.offsetMinutes === offset
-                        ? "bg-primary-500"
-                        : "bg-background-tertiary"
-                    }`}
-                    onPress={() => handleSettingChange("offsetMinutes", offset)}>
-                    <Text
-                      className={`text-sm font-medium ${
-                        settings.offsetMinutes === offset ? "text-white" : "text-typography"
-                      }`}>
-                      {offset > 0 ? `+${offset}` : offset} min
-                    </Text>
-                  </Pressable>
-                ))}
-              </HStack>
-            </VStack>
+            <SettingRow
+              icon={Clock}
+              label={t("alarm.settings.offset", "Time Offset")}
+              value={getOffsetDisplay()}
+              onPress={() => setActiveSheet("offset")}
+            />
           )}
 
-          {/* Fixed Mode: Time Picker */}
           {settings.timeMode === "fixed" && (
-            <VStack space="sm">
-              <Text className="text-sm text-typography-secondary">
-                {t("alarm.settings.fixedTime", "Alarm Time")}
-              </Text>
-              <Pressable
-                className="bg-background-tertiary py-4 px-4 rounded-lg"
-                onPress={() => setShowTimePicker(true)}>
-                <Text className="text-2xl text-typography text-center font-semibold">
-                  {`${String(settings.fixedHour ?? 5).padStart(2, "0")}:${String(
-                    settings.fixedMinute ?? 0
-                  ).padStart(2, "0")}`}
-                </Text>
-              </Pressable>
-              {showTimePicker && (
-                <TimePicker
-                  isVisible={showTimePicker}
-                  currentHour={settings.fixedHour ?? 5}
-                  currentMinute={settings.fixedMinute ?? 0}
-                  onTimeChange={(hour, minute) => {
-                    handleSettingChange("fixedHour", hour);
-                    handleSettingChange("fixedMinute", minute);
-                  }}
-                  onClose={() => setShowTimePicker(false)}
+            <SettingRow
+              icon={Clock}
+              label={t("alarm.settings.fixedTime", "Alarm Time")}
+              value={`${String(settings.fixedHour ?? 5).padStart(2, "0")}:${String(settings.fixedMinute ?? 0).padStart(2, "0")}`}
+              onPress={() => setShowTimePicker(true)}
+            />
+          )}
+        </Box>
+
+        {/* SNOOZE & CHALLENGE */}
+        <Box className="bg-background-secondary rounded-xl px-4 mb-4">
+          <SettingRow
+            icon={RefreshCw}
+            label={t("alarm.settings.snooze", "Snooze")}
+            value={getSnoozeDisplay()}
+            onPress={() => setActiveSheet("snooze")}
+          />
+
+          {Platform.OS === "android" && (
+            <>
+              <SettingRow
+                icon={Zap}
+                label={t("alarm.settings.challenge", "Dismiss Challenge")}
+                value={getChallengeDisplay()}
+                onPress={() => setActiveSheet("challengeType")}
+              />
+
+              {settings.challengeEnabled && settings.challengeType === "math" && (
+                <>
+                  <SettingRow
+                    icon={Zap}
+                    label={t("alarm.settings.difficulty", "Difficulty")}
+                    value={getDifficultyDisplay()}
+                    onPress={() => setActiveSheet("mathDifficulty")}
+                  />
+                  <SettingRow
+                    icon={Zap}
+                    label={t("alarm.settings.questions", "Problems")}
+                    value={getQuestionsDisplay()}
+                    onPress={() => setActiveSheet("mathQuestions")}
+                  />
+                </>
+              )}
+
+              {settings.challengeEnabled && settings.challengeType === "tap" && (
+                <SettingRow
+                  icon={Zap}
+                  label={t("alarm.settings.tapCount", "Tap Count")}
+                  value={getTapCountDisplay()}
+                  onPress={() => setActiveSheet("tapCount")}
                 />
               )}
-            </VStack>
-          )}
-        </Box>
 
-        {/* ==========================================
-            SECTION: SNOOZE
-            ========================================== */}
-        <Box className="bg-background-secondary rounded-xl p-4 mb-4">
-          <Text className="text-sm font-semibold text-typography-secondary uppercase mb-4">
-            {t("alarm.edit.section.snooze", "Snooze")}
-          </Text>
-
-          <HStack className="justify-between items-center mb-4">
-            <HStack className="items-center gap-2">
-              <Icon as={RefreshCw} size="sm" className="text-typography-secondary" />
-              <Text className="text-base text-typography">
-                {t("alarm.settings.snoozeEnabled", "Enabled")}
-              </Text>
-            </HStack>
-            <Switch
-              value={settings.snoozeEnabled}
-              onValueChange={(v) => handleSettingChange("snoozeEnabled", v)}
-              trackColor={{ false: "#3e3e3e", true: "#4CAF50" }}
-            />
-          </HStack>
-
-          {settings.snoozeEnabled && (
-            <HStack className="gap-2">
-              {[5, 10, 15].map((duration) => (
-                <Pressable
-                  key={duration}
-                  className={`flex-1 py-3 px-4 rounded-lg ${
-                    settings.snoozeDurationMinutes === duration
-                      ? "bg-primary-500"
-                      : "bg-background-tertiary"
-                  }`}
-                  onPress={() => handleSettingChange("snoozeDurationMinutes", duration)}>
-                  <Text
-                    className={`text-center font-medium ${
-                      settings.snoozeDurationMinutes === duration ? "text-white" : "text-typography"
-                    }`}>
-                    {duration} min
-                  </Text>
-                </Pressable>
-              ))}
-            </HStack>
-          )}
-        </Box>
-
-        {/* ==========================================
-            SECTION: DISMISS CHALLENGE (Android only - iOS AlarmKit handles its own UI)
-            ========================================== */}
-        {Platform.OS === "android" && (
-          <Box className="bg-background-secondary rounded-xl p-4 mb-4">
-            <Text className="text-sm font-semibold text-typography-secondary uppercase mb-4">
-              {t("alarm.edit.section.challenge", "Dismiss Challenge")}
-            </Text>
-
-            <HStack className="justify-between items-center mb-4">
-              <HStack className="items-center gap-2">
-                <Icon as={Zap} size="sm" className="text-typography-secondary" />
-                <Text className="text-base text-typography">
-                  {t("alarm.settings.snoozeEnabled", "Enabled")}
-                </Text>
-              </HStack>
-              <Switch
-                value={settings.challengeEnabled}
-                onValueChange={(v) => handleSettingChange("challengeEnabled", v)}
-                trackColor={{ false: "#3e3e3e", true: "#4CAF50" }}
-              />
-            </HStack>
-
-            {settings.challengeEnabled && (
-              <VStack space="md">
-                {/* Challenge Type */}
-                <VStack space="sm">
-                  <Text className="text-sm text-typography-secondary">
-                    {t("alarm.edit.challengeType", "Type")}
-                  </Text>
-                  <HStack className="gap-2">
-                    <Pressable
-                      className={`flex-1 py-3 px-4 rounded-lg ${
-                        settings.challengeType === "math"
-                          ? "bg-primary-500"
-                          : "bg-background-tertiary"
-                      }`}
-                      onPress={() => handleSettingChange("challengeType", "math")}>
-                      <Text
-                        className={`text-center font-medium ${
-                          settings.challengeType === "math" ? "text-white" : "text-typography"
-                        }`}>
-                        {t("alarm.settings.math", "Math")}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      className={`flex-1 py-3 px-4 rounded-lg ${
-                        settings.challengeType === "tap"
-                          ? "bg-primary-500"
-                          : "bg-background-tertiary"
-                      }`}
-                      onPress={() => handleSettingChange("challengeType", "tap")}>
-                      <Text
-                        className={`text-center font-medium ${
-                          settings.challengeType === "tap" ? "text-white" : "text-typography"
-                        }`}>
-                        {t("alarm.settings.tap", "Tap")}
-                      </Text>
-                    </Pressable>
-                  </HStack>
-                </VStack>
-
-                {/* Math Difficulty */}
-                {settings.challengeType === "math" && (
-                  <>
-                    <VStack space="sm">
-                      <Text className="text-sm text-typography-secondary">
-                        {t("alarm.edit.difficulty", "Difficulty")}
-                      </Text>
-                      <HStack className="gap-2">
-                        {(["easy", "medium", "hard"] as MathDifficulty[]).map((diff) => (
-                          <Pressable
-                            key={diff}
-                            className={`flex-1 py-3 px-3 rounded-lg ${
-                              settings.mathDifficulty === diff
-                                ? "bg-secondary-500"
-                                : "bg-background-tertiary"
-                            }`}
-                            onPress={() => handleSettingChange("mathDifficulty", diff)}>
-                            <Text
-                              className={`text-center text-sm font-medium capitalize ${
-                                settings.mathDifficulty === diff ? "text-white" : "text-typography"
-                              }`}>
-                              {t(`alarm.settings.difficulty.${diff}`, diff)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </HStack>
-                    </VStack>
-
-                    {/* Math Question Count */}
-                    <VStack space="sm">
-                      <Text className="text-sm text-typography-secondary">
-                        {t("alarm.edit.mathQuestionCount", "Number of Problems")}
-                      </Text>
-                      <HStack className="gap-2">
-                        {[1, 2, 3, 5].map((count) => (
-                          <Pressable
-                            key={count}
-                            className={`flex-1 py-3 px-3 rounded-lg ${
-                              settings.mathQuestionCount === count
-                                ? "bg-secondary-500"
-                                : "bg-background-tertiary"
-                            }`}
-                            onPress={() => handleSettingChange("mathQuestionCount", count)}>
-                            <Text
-                              className={`text-center text-sm font-medium ${
-                                settings.mathQuestionCount === count
-                                  ? "text-white"
-                                  : "text-typography"
-                              }`}>
-                              {count}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </HStack>
-                    </VStack>
-                  </>
-                )}
-
-                {/* Tap Count */}
-                {settings.challengeType === "tap" && (
-                  <VStack space="sm">
-                    <Text className="text-sm text-typography-secondary">
-                      {t("alarm.edit.tapCount", "Tap Count")}
-                    </Text>
-                    <HStack className="gap-2">
-                      {[10, 20, 30, 50].map((count) => (
-                        <Pressable
-                          key={count}
-                          className={`flex-1 py-3 px-3 rounded-lg ${
-                            settings.tapCount === count
-                              ? "bg-secondary-500"
-                              : "bg-background-tertiary"
-                          }`}
-                          onPress={() => handleSettingChange("tapCount", count)}>
-                          <Text
-                            className={`text-center text-sm font-medium ${
-                              settings.tapCount === count ? "text-white" : "text-typography"
-                            }`}>
-                            {count}x
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </HStack>
-                  </VStack>
-                )}
-
-                {/* Grace Period (common to both challenge types) */}
-                <VStack space="sm">
-                  <Text className="text-sm text-typography-secondary">
-                    {t("alarm.edit.gracePeriod", "Grace Period")}
-                  </Text>
-                  <HStack className="gap-2">
-                    {[0, 10, 15, 30].map((seconds) => (
-                      <Pressable
-                        key={seconds}
-                        className={`flex-1 py-3 px-3 rounded-lg ${
-                          settings.challengeGracePeriodSec === seconds
-                            ? "bg-secondary-500"
-                            : "bg-background-tertiary"
-                        }`}
-                        onPress={() => handleSettingChange("challengeGracePeriodSec", seconds)}>
-                        <Text
-                          className={`text-center text-sm font-medium ${
-                            settings.challengeGracePeriodSec === seconds
-                              ? "text-white"
-                              : "text-typography"
-                          }`}>
-                          {seconds === 0 ? t("alarm.edit.gracePeriodNone", "None") : `${seconds}s`}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </HStack>
-                  <Text className="text-xs text-typography-tertiary">
-                    {t("alarm.edit.gracePeriodHint", "Alarm mutes while solving the challenge")}
-                  </Text>
-                </VStack>
-              </VStack>
-            )}
-          </Box>
-        )}
-
-        {/* ==========================================
-            SECTION: SOUND & VIBRATION
-            ========================================== */}
-        <Box className="bg-background-secondary rounded-xl p-4 mb-4">
-          <Text className="text-sm font-semibold text-typography-secondary uppercase mb-4">
-            {t("alarm.edit.section.sound", "Sound & Vibration")}
-          </Text>
-
-          <VStack space="md">
-            {/* Sound Selection */}
-            <Pressable onPress={() => setShowSoundPicker(true)} className="py-2">
-              <HStack className="justify-between items-center">
-                <HStack className="items-center gap-2">
-                  <Icon as={Music} size="sm" className="text-typography-secondary" />
-                  <Text className="text-base text-typography">
-                    {t("alarm.settings.sound", "Alarm Sound")}
-                  </Text>
-                </HStack>
-                <HStack className="items-center gap-2">
-                  <Text className="text-base text-primary-500" numberOfLines={1}>
-                    {getSoundDisplayName()}
-                  </Text>
-                  <Icon as={ChevronIcon} size="sm" className="text-typography-secondary" />
-                </HStack>
-              </HStack>
-            </Pressable>
-
-            {/* Gradual Volume */}
-            <HStack className="justify-between items-center">
-              <HStack className="items-center gap-2">
-                <Icon as={Volume2} size="sm" className="text-typography-secondary" />
-                <Text className="text-base text-typography">
-                  {t("alarm.settings.gradualVolume", "Gradual Volume")}
-                </Text>
-              </HStack>
-              <Switch
-                value={settings.gradualVolume}
-                onValueChange={(v) => handleSettingChange("gradualVolume", v)}
-                trackColor={{ false: "#3e3e3e", true: "#4CAF50" }}
-              />
-            </HStack>
-
-            {/* Vibration */}
-            <HStack className="justify-between items-center">
-              <HStack className="items-center gap-2">
-                <Icon as={Vibrate} size="sm" className="text-typography-secondary" />
-                <Text className="text-base text-typography">
-                  {t("alarm.settings.vibration", "Vibration")}
-                </Text>
-              </HStack>
-              <Switch
-                value={settings.vibration}
-                onValueChange={(v) => handleSettingChange("vibration", v)}
-                trackColor={{ false: "#3e3e3e", true: "#4CAF50" }}
-              />
-            </HStack>
-
-            {/* Override DND (Android only) */}
-            {Platform.OS === "android" && (
-              <HStack className="justify-between items-center">
-                <HStack className="items-center gap-2">
-                  <Icon as={Moon} size="sm" className="text-typography-secondary" />
-                  <Text className="text-base text-typography">
-                    {t("alarm.settings.overrideDnd", "Override Do Not Disturb")}
-                  </Text>
-                </HStack>
-                <Switch
-                  value={settings.overrideDnd}
-                  onValueChange={(v) => handleSettingChange("overrideDnd", v)}
-                  trackColor={{ false: "#3e3e3e", true: "#4CAF50" }}
+              {settings.challengeEnabled && (
+                <SettingRow
+                  icon={Zap}
+                  label={t("alarm.settings.gracePeriod", "Grace Period")}
+                  value={getGracePeriodDisplay()}
+                  onPress={() => setActiveSheet("gracePeriod")}
                 />
-              </HStack>
-            )}
-          </VStack>
+              )}
+            </>
+          )}
         </Box>
 
-        {/* ==========================================
-            DELETE ALARM
-            ========================================== */}
+        {/* SOUND & VIBRATION */}
+        <Box className="bg-background-secondary rounded-xl px-4 mb-4">
+          <SettingRow
+            icon={Music}
+            label={t("alarm.settings.sound", "Alarm Sound")}
+            value={getSoundDisplayName()}
+            onPress={() => setShowSoundPicker(true)}
+          />
+
+          <ToggleRow
+            icon={Volume2}
+            label={t("alarm.settings.gradualVolume", "Gradual Volume")}
+            value={settings.gradualVolume}
+            onValueChange={(v) => handleSettingChange("gradualVolume", v)}
+          />
+
+          <ToggleRow
+            icon={Vibrate}
+            label={t("alarm.settings.vibration", "Vibration")}
+            value={settings.vibration}
+            onValueChange={(v) => handleSettingChange("vibration", v)}
+          />
+
+          {Platform.OS === "android" && (
+            <ToggleRow
+              icon={Moon}
+              label={t("alarm.settings.overrideDnd", "Override Do Not Disturb")}
+              value={settings.overrideDnd}
+              onValueChange={(v) => handleSettingChange("overrideDnd", v)}
+            />
+          )}
+        </Box>
+
+        {/* DELETE ALARM */}
         <Button
           size="lg"
           variant="outline"
-          className="w-full border-error-500 mb-4"
+          className="w-full border-error mb-4"
           onPress={handleDeleteAlarm}>
           <HStack className="items-center gap-2">
-            <Icon as={Trash2} size="sm" className="text-error-500" />
-            <ButtonText className="text-error-500">
-              {t("alarm.edit.delete", "Delete Alarm")}
-            </ButtonText>
+            <Icon as={Trash2} size="sm" className="text-error" />
+            <ButtonText className="text-error">{t("alarm.edit.delete", "Delete Alarm")}</ButtonText>
           </HStack>
         </Button>
       </ScrollView>
 
-      {/* Sound Picker Modal */}
+      {/* TIME PICKER */}
+      {showTimePicker && (
+        <TimePicker
+          isVisible={showTimePicker}
+          currentHour={settings.fixedHour ?? 5}
+          currentMinute={settings.fixedMinute ?? 0}
+          onTimeChange={(hour, minute) => {
+            handleSettingChange("fixedHour", hour);
+            handleSettingChange("fixedMinute", minute);
+          }}
+          onClose={() => setShowTimePicker(false)}
+        />
+      )}
+
+      {/* SOUND PICKER */}
       <AlarmSoundPicker
         isOpen={showSoundPicker}
         onClose={() => setShowSoundPicker(false)}
         selectedSound={settings.sound}
         onSelectSound={(sound) => handleSettingChange("sound", sound)}
       />
+
+      {/* OPTION SHEETS */}
+      {activeSheet === "timeMode" &&
+        renderOptionSheet(
+          timeModeOptions,
+          settings.timeMode,
+          (v) => {
+            handleSettingChange("timeMode", v);
+            setActiveSheet(null);
+          },
+          t("alarm.settings.timeMode", "Time Mode")
+        )}
+
+      {activeSheet === "offset" &&
+        renderOptionSheet(
+          offsetOptions,
+          settings.offsetMinutes,
+          (v) => {
+            handleSettingChange("offsetMinutes", v);
+            setActiveSheet(null);
+          },
+          t("alarm.settings.offset", "Time Offset")
+        )}
+
+      {activeSheet === "snooze" &&
+        renderOptionSheet(
+          snoozeOptions,
+          settings.snoozeEnabled ? settings.snoozeDurationMinutes : 0,
+          handleSnoozeSelect,
+          t("alarm.settings.snooze", "Snooze")
+        )}
+
+      {activeSheet === "challengeType" &&
+        renderOptionSheet(
+          challengeTypeOptions,
+          settings.challengeEnabled ? settings.challengeType : "none",
+          handleChallengeTypeSelect,
+          t("alarm.settings.challenge", "Dismiss Challenge")
+        )}
+
+      {activeSheet === "mathDifficulty" &&
+        renderOptionSheet(
+          mathDifficultyOptions,
+          settings.mathDifficulty,
+          (v) => {
+            handleSettingChange("mathDifficulty", v);
+            setActiveSheet(null);
+          },
+          t("alarm.settings.difficulty", "Difficulty")
+        )}
+
+      {activeSheet === "mathQuestions" &&
+        renderOptionSheet(
+          mathQuestionsOptions,
+          settings.mathQuestionCount,
+          (v) => {
+            handleSettingChange("mathQuestionCount", v);
+            setActiveSheet(null);
+          },
+          t("alarm.settings.questions", "Number of Problems")
+        )}
+
+      {activeSheet === "tapCount" &&
+        renderOptionSheet(
+          tapCountOptions,
+          settings.tapCount,
+          (v) => {
+            handleSettingChange("tapCount", v);
+            setActiveSheet(null);
+          },
+          t("alarm.settings.tapCount", "Tap Count")
+        )}
+
+      {activeSheet === "gracePeriod" &&
+        renderOptionSheet(
+          gracePeriodOptions,
+          settings.challengeGracePeriodSec,
+          (v) => {
+            handleSettingChange("challengeGracePeriodSec", v);
+            setActiveSheet(null);
+          },
+          t("alarm.settings.gracePeriod", "Grace Period")
+        )}
     </Background>
   );
 }

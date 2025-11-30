@@ -284,7 +284,7 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
           <Icon
             as={CardIcon}
             size="xl"
-            className={settings.enabled ? "text-primary-500" : "text-typography-secondary"}
+            className={settings.enabled ? "text-primary" : "text-typography-secondary"}
           />
           <Text className="text-xl font-semibold text-typography">
             {isFajr ? t("alarm.fajrPrayer", "Fajr Alarm") : t("alarm.jummahPrayer", "Jummah Alarm")}
@@ -319,7 +319,7 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
                 variant="outline"
                 onPress={handlePreview}
                 disabled={isPreviewing}
-                className="border-typography-tertiary">
+                className="border-outline">
                 <HStack className="items-center gap-1">
                   <Icon as={Play} size="xs" className="text-typography-secondary" />
                   <ButtonText className="text-typography-secondary text-xs">
@@ -334,8 +334,8 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
 
             {/* Edit button */}
             <HStack className="items-center">
-              <Text className="text-primary-500 font-medium">{t("alarm.card.edit", "Edit")}</Text>
-              <Icon as={ChevronIcon} size="sm" className="text-primary-500" />
+              <Text className="text-primary font-medium">{t("alarm.card.edit", "Edit")}</Text>
+              <Icon as={ChevronIcon} size="sm" className="text-primary" />
             </HStack>
           </HStack>
         </Pressable>
