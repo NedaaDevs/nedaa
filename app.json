@@ -11,7 +11,7 @@
     },
     "name": "nedaa",
     "slug": "nedaa",
-    "version": "2.4.1",
+    "version": "2.5.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -71,7 +71,8 @@
         "com.apple.security.application-groups": ["group.dev.nedaa.app"]
       },
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "This app does not require microphone access."
+        "NSMicrophoneUsageDescription": "This app does not require microphone access.",
+        "NSAlarmKitUsageDescription": "Prayer Times needs alarm permissions to alert you for Fajr and Jummah prayers even when your phone is on silent."
       },
       "icon": {
         "light": "./assets/images/ios-light.png",
@@ -86,7 +87,16 @@
       },
       "package": "dev.nedaa.android",
       "blockedPermissions": ["ACTIVITY_RECOGNITION"],
-      "permissions": ["READ_MEDIA_AUDIO", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "READ_MEDIA_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "USE_FULL_SCREEN_INTENT",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "web": {
       "bundler": "metro",
