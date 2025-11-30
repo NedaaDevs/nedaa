@@ -231,8 +231,4 @@ class AlarmKitService {
   }
 }
 
-// Export singleton instance
 export const alarmKit = AlarmKitService.getInstance();
-
-// Export class for testing
-export { AlarmKitService };
