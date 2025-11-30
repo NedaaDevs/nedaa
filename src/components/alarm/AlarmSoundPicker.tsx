@@ -29,10 +29,10 @@ import type { SystemAlarmSound } from "@/types/customSound";
 
 // Constants
 import { ALARM_SOUND_KEYS, getAlarmSound } from "@/constants/AlarmSounds";
-import { SOUND_ASSETS } from "@/constants/sounds";
 
 // Utils
 import { getSystemAlarmSounds } from "@/utils/systemAlarmSounds";
+import { DEFAULT_SYSTEM_SOUND_KEY } from "@/services/alarm/sounds";
 
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
@@ -50,13 +50,15 @@ type AlarmSoundPickerProps = {
   onSelectSound: (sound: AlarmSoundKey) => void;
 };
 
-type SoundCategory = "app" | "system";
+type SoundCategory = "default" | "app" | "system";
 
 interface SoundItem {
   id: string;
   title: string;
   category: SoundCategory;
   uri?: string;
+  isPreviewable?: boolean;
+  description?: string;
 }
 
 const AlarmSoundPicker = ({
@@ -103,6 +105,15 @@ const AlarmSoundPicker = ({
     }
   };
 
+  // Default system sound item (always first)
+  const defaultSoundItem: SoundItem = {
+    id: DEFAULT_SYSTEM_SOUND_KEY,
+    title: t("alarm.sound.default", "Default"),
+    category: "default",
+    isPreviewable: false,
+    description: t("alarm.sound.defaultDescription", "Uses system default alarm sound"),
+  };
+
   // Build app sounds list
   const appSounds: SoundItem[] = ALARM_SOUND_KEYS.map((key) => {
     const sound = getAlarmSound(key);
@@ -111,6 +122,7 @@ const AlarmSoundPicker = ({
       id: key,
       title: sound?.label ? t(sound.label) : key,
       category: "app" as SoundCategory,
+      isPreviewable: true,
     };
   });
 
@@ -129,6 +141,11 @@ const AlarmSoundPicker = ({
 
   const handlePreview = useCallback(
     async (soundItem: SoundItem) => {
+      // Skip if not previewable (e.g., default system sound)
+      if (soundItem.isPreviewable === false) {
+        return;
+      }
+
       const soundId = soundItem.id;
 
       // For app sounds, use the existing preview system
@@ -174,7 +191,11 @@ const AlarmSoundPicker = ({
     const playing =
       item.category === "system"
         ? playingSystemSoundId === item.id
-        : isPlayingSound(NOTIFICATION_TYPE.PRAYER, item.id);
+        : item.category === "app"
+          ? isPlayingSound(NOTIFICATION_TYPE.PRAYER, item.id)
+          : false;
+
+    const canPreview = item.isPreviewable !== false;
 
     return (
       <Pressable
@@ -184,20 +205,29 @@ const AlarmSoundPicker = ({
           selected ? "bg-primary-500/20 border border-primary-500" : "bg-background-tertiary"
         }`}>
         <HStack className="items-center justify-between">
-          <HStack className="items-center gap-3 flex-1">
-            {selected && <Icon as={Check} size="sm" className="text-primary-500" />}
-            <Text
-              className={`text-base ${selected ? "text-primary-500 font-semibold" : "text-typography"}`}
-              numberOfLines={1}>
-              {item.title}
-            </Text>
-          </HStack>
+          <VStack className="flex-1 gap-1">
+            <HStack className="items-center gap-3">
+              {selected && <Icon as={Check} size="sm" className="text-primary-500" />}
+              <Text
+                className={`text-base ${selected ? "text-primary-500 font-semibold" : "text-typography"}`}
+                numberOfLines={1}>
+                {item.title}
+              </Text>
+            </HStack>
+            {item.description && (
+              <Text className="text-sm text-typography-secondary" numberOfLines={1}>
+                {item.description}
+              </Text>
+            )}
+          </VStack>
 
-          <SoundPreviewButton
-            isPlaying={playing}
-            onPress={() => handlePreview(item)}
-            color={selected ? "text-primary-500" : "text-typography-secondary"}
-          />
+          {canPreview && (
+            <SoundPreviewButton
+              isPlaying={playing}
+              onPress={() => handlePreview(item)}
+              color={selected ? "text-primary-500" : "text-typography-secondary"}
+            />
+          )}
         </HStack>
       </Pressable>
     );
@@ -260,7 +290,7 @@ const AlarmSoundPicker = ({
 
         <ModalBody className="px-6 pb-6">
           <ScrollView className="max-h-96" showsVerticalScrollIndicator={false}>
-            {/* App Sounds */}
+            {/* App Sounds (includes Default at the top) */}
             {(Platform.OS !== PlatformType.ANDROID || activeCategory === "app") && (
               <VStack>
                 {Platform.OS !== PlatformType.ANDROID && (
@@ -268,6 +298,9 @@ const AlarmSoundPicker = ({
                     {t("alarm.sound.appSounds", "App Sounds")}
                   </Text>
                 )}
+                {/* Default sound first */}
+                {renderSoundItem(defaultSoundItem)}
+                {/* App sounds */}
                 {appSounds.map(renderSoundItem)}
               </VStack>
             )}

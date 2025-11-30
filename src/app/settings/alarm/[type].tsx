@@ -90,6 +90,11 @@ export default function AlarmEditScreen() {
   const getSoundDisplayName = useCallback((): string => {
     const soundKey = settings.sound;
 
+    // Check if it's the default system sound
+    if (soundKey === "default") {
+      return t("alarm.sound.default", "Default");
+    }
+
     // Check if it's a system alarm sound
     if (isSystemAlarmSoundKey(soundKey)) {
       // For system sounds, we'd need to look up the title

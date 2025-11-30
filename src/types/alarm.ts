@@ -5,10 +5,11 @@ export type AlarmType = "fajr" | "jummah";
 
 /**
  * Alarm sound key can be:
+ * - "default" for system default alarm sound
  * - A bundled sound (PrayerSoundKey like "makkahAthan1")
  * - A system alarm sound (starts with "system_alarm_")
  */
-export type AlarmSoundKey = PrayerSoundKey | `system_alarm_${string}`;
+export type AlarmSoundKey = "default" | PrayerSoundKey | `system_alarm_${string}`;
 
 export type AlarmTimeMode = "dynamic" | "fixed";
 

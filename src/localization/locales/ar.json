@@ -82,6 +82,8 @@
   "alarm.snooze": "غفوة",
   "alarm.snoozed": "تم التأجيل",
   "alarm.sound.appSounds": "أصوات التطبيق",
+  "alarm.sound.default": "الافتراضي",
+  "alarm.sound.defaultDescription": "صوت المنبه الافتراضي للنظام",
   "alarm.sound.loading": "جاري تحميل الأصوات...",
   "alarm.sound.noSystemSounds": "لم يتم العثور على أصوات منبه النظام",
   "alarm.sound.systemSound": "منبه النظام",

@@ -82,6 +82,8 @@
   "alarm.snooze": "Snooze",
   "alarm.snoozed": "Snoozed",
   "alarm.sound.appSounds": "App Sounds",
+  "alarm.sound.default": "Default",
+  "alarm.sound.defaultDescription": "Uses system default alarm sound",
   "alarm.sound.loading": "Loading sounds...",
   "alarm.sound.noSystemSounds": "No system alarm sounds found",
   "alarm.sound.systemSound": "System Alarm",

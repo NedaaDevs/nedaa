@@ -80,6 +80,8 @@
   "alarm.snooze": "اسنوز",
   "alarm.snoozed": "اسنوز کیا گیا",
   "alarm.sound.appSounds": "ایپ کی آوازیں",
+  "alarm.sound.default": "ڈیفالٹ",
+  "alarm.sound.defaultDescription": "سسٹم کی ڈیفالٹ الارم آواز استعمال کرتا ہے",
   "alarm.sound.loading": "آوازیں لوڈ ہو رہی ہیں...",
   "alarm.sound.noSystemSounds": "سسٹم الارم کی آوازیں نہیں ملیں",
   "alarm.sound.systemSound": "سسٹم الارم",
