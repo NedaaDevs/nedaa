@@ -1,21 +1,32 @@
 import { Platform } from "react-native";
 import { addDays, setHours, setMinutes, setSeconds, setMilliseconds, isBefore } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
+
 import i18n from "@/localization/i18n";
+
+// DB
 import { PrayerTimesDB } from "@/services/db";
+
+// Native Alarm Service
 import { scheduleAlarm, cancelAllAlarms as nativeCancelAllAlarms } from "./NativeAlarmService";
+
+// AlarmKit
 import { alarmKit, type AlarmConfig } from "./AlarmKit";
+
+// Sounds
 import { getIOSSoundName } from "./sounds";
+
+// Location
 import locationStore from "@/stores/location";
 import type { AlarmSettings } from "@/types/alarm";
 import { dateToInt, timeZonedNow } from "@/utils/date";
 
-interface ScheduleResult {
+type ScheduleResult = {
   success: boolean;
   alarmId: string | null;
   scheduledTime: Date | null;
   error?: string;
-}
+};
 
 // ==========================================
 // ALARM SCHEDULER SERVICE
