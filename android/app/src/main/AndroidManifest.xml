@@ -5,11 +5,17 @@
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
   <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
+  <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
@@ -39,88 +45,46 @@
         <data android:scheme="exp+nedaa"/>
       </intent-filter>
     </activity>
-
-    <!-- Prayer Times Widget - Small (2x2) -->
-    <receiver
-        android:name=".widgets.prayer.PrayerTimesReceiverSmall"
-        android:exported="true"
-        android:label="@string/widget_prayer_times_small_name">
+    <activity android:name=".alarm.AlarmActivity" android:exported="false" android:launchMode="singleTop" android:showOnLockScreen="true" android:turnScreenOn="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:configChanges="orientation|screenSize|keyboardHidden"/>
+    <receiver android:name=".widgets.prayer.PrayerTimesReceiverSmall" android:exported="true" android:label="@string/widget_prayer_times_small_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_times_widget_small_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_times_widget_small_info"/>
     </receiver>
-
-    <!-- Prayer Times Widget - Medium (4x2) -->
-    <receiver
-        android:name=".widgets.prayer.PrayerTimesReceiverMedium"
-        android:exported="true"
-        android:label="@string/widget_prayer_times_medium_name">
+    <receiver android:name=".widgets.prayer.PrayerTimesReceiverMedium" android:exported="true" android:label="@string/widget_prayer_times_medium_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_times_widget_medium_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_times_widget_medium_info"/>
     </receiver>
-
-    <!-- TODO: Prayer Times Widget - Large (4x4) - TODO: Fix Isha display issue before enabling
-    <receiver
-        android:name=".widgets.prayer.PrayerTimesReceiverLarge"
-        android:exported="true"
-        android:label="@string/widget_prayer_times_large_name">
+    <receiver android:name=".widgets.combined.PrayerAthkarReceiver" android:exported="true" android:label="@string/widget_combined_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_times_widget_large_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_athkar_widget_info"/>
     </receiver>
-    -->
-
-    <!-- Combined Prayer + Athkar Widget (4x2) -->
-    <receiver
-        android:name=".widgets.combined.PrayerAthkarReceiver"
-        android:exported="true"
-        android:label="@string/widget_combined_name">
+    <receiver android:name=".widgets.athkar.AthkarReceiver" android:exported="true" android:label="@string/widget_athkar_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_athkar_widget_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/athkar_widget_info"/>
     </receiver>
-
-    <!-- Athkar Progress Widget (2x2) -->
-    <receiver
-        android:name=".widgets.athkar.AthkarReceiver"
-        android:exported="true"
-        android:label="@string/widget_athkar_name">
+    <receiver android:name=".widgets.qada.QadaReceiver" android:exported="true" android:label="@string/widget_qada_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/athkar_widget_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/qada_widget_info"/>
     </receiver>
-
-    <!-- Qada Widget (2x2) -->
-    <receiver
-        android:name=".widgets.qada.QadaReceiver"
-        android:exported="true"
-        android:label="@string/widget_qada_name">
+    <receiver android:name=".alarm.AlarmReceiver" android:enabled="true" android:exported="true">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="dev.nedaa.android.alarm.START_ALARM"/>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+        <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/qada_widget_info" />
     </receiver>
-
+    <service android:name=".alarm.AlarmPlaybackService" android:enabled="true" android:exported="false" android:stopWithTask="false" android:foregroundServiceType="mediaPlayback"/>
   </application>
 </manifest>
