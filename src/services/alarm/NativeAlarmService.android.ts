@@ -11,7 +11,7 @@ import type { AlarmSettings, AlarmType } from "@/types/alarm";
 import type { AlarmOverlayTranslations } from "@/types/alarmService";
 
 // Services
-import { getAndroidSoundUri } from "./sounds";
+import { getAlarmSoundUri } from "./sounds";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -73,6 +73,9 @@ export async function scheduleAlarm(config: {
   if (timestamp <= Date.now()) return null;
 
   try {
+    // Resolve sound URI (supports bundled and system alarm sounds)
+    const soundUri = await getAlarmSoundUri(settings.sound);
+
     return await NativeAlarmModule.scheduleAlarm({
       id,
       timestamp,
@@ -80,7 +83,7 @@ export async function scheduleAlarm(config: {
       title,
       body,
       subtitle,
-      soundUri: getAndroidSoundUri(settings.sound),
+      soundUri,
       vibration: settings.vibration,
       snoozeMinutes: settings.snoozeDurationMinutes,
       challengeType: settings.challengeEnabled ? settings.challengeType : undefined,

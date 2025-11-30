@@ -16,6 +16,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
 import TimePicker from "@/components/TimePicker";
+import AlarmSoundPicker from "@/components/alarm/AlarmSoundPicker";
 
 // Icons
 import {
@@ -27,6 +28,9 @@ import {
   Zap,
   RefreshCw,
   Trash2,
+  Music,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react-native";
 
 // Stores
@@ -43,6 +47,15 @@ import { timeZonedNow } from "@/utils/date";
 // Types
 import type { AlarmSettings, AlarmType, MathDifficulty } from "@/types/alarm";
 
+// Constants
+import { getAlarmSound } from "@/constants/AlarmSounds";
+
+// Utils
+import { isSystemAlarmSoundKey } from "@/services/alarm/sounds";
+
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
+
 // ==========================================
 // COMPONENT
 // ==========================================
@@ -52,6 +65,8 @@ export default function AlarmEditScreen() {
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
   const hapticSelection = useHaptic("selection");
+  const { isRTL } = useRTL();
+  const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
   const alarmType = type as AlarmType;
   const isFajr = alarmType === "fajr";
@@ -69,6 +84,27 @@ export default function AlarmEditScreen() {
 
   // Local state
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showSoundPicker, setShowSoundPicker] = useState(false);
+
+  // Get display name for current sound
+  const getSoundDisplayName = useCallback((): string => {
+    const soundKey = settings.sound;
+
+    // Check if it's a system alarm sound
+    if (isSystemAlarmSoundKey(soundKey)) {
+      // For system sounds, we'd need to look up the title
+      // For now, show a generic label or extract from the key
+      return t("alarm.sound.systemSound", "System Alarm");
+    }
+
+    // It's an app sound
+    const alarmSound = getAlarmSound(soundKey as any);
+    if (alarmSound?.label) {
+      return t(alarmSound.label);
+    }
+
+    return soundKey;
+  }, [settings.sound, t]);
 
   // ==========================================
   // HANDLERS
@@ -525,6 +561,24 @@ export default function AlarmEditScreen() {
           </Text>
 
           <VStack space="md">
+            {/* Sound Selection */}
+            <Pressable onPress={() => setShowSoundPicker(true)} className="py-2">
+              <HStack className="justify-between items-center">
+                <HStack className="items-center gap-2">
+                  <Icon as={Music} size="sm" className="text-typography-secondary" />
+                  <Text className="text-base text-typography">
+                    {t("alarm.settings.sound", "Alarm Sound")}
+                  </Text>
+                </HStack>
+                <HStack className="items-center gap-2">
+                  <Text className="text-base text-primary-500" numberOfLines={1}>
+                    {getSoundDisplayName()}
+                  </Text>
+                  <Icon as={ChevronIcon} size="sm" className="text-typography-secondary" />
+                </HStack>
+              </HStack>
+            </Pressable>
+
             {/* Gradual Volume */}
             <HStack className="justify-between items-center">
               <HStack className="items-center gap-2">
@@ -590,6 +644,14 @@ export default function AlarmEditScreen() {
           </HStack>
         </Button>
       </ScrollView>
+
+      {/* Sound Picker Modal */}
+      <AlarmSoundPicker
+        isOpen={showSoundPicker}
+        onClose={() => setShowSoundPicker(false)}
+        selectedSound={settings.sound}
+        onSelectSound={(sound) => handleSettingChange("sound", sound)}
+      />
     </Background>
   );
 }

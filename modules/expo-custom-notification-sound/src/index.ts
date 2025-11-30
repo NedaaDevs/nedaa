@@ -1,5 +1,17 @@
 import { requireNativeModule } from "expo-modules-core";
 
+/**
+ * System sound returned from RingtoneManager
+ */
+export type SystemSound = {
+  /** Unique identifier (e.g., "system_alarm_0") */
+  id: string;
+  /** Display title of the sound */
+  title: string;
+  /** Content URI of the sound */
+  uri: string;
+};
+
 // Define the native module interface
 export interface CustomNotificationSoundModule {
   /**
@@ -37,6 +49,18 @@ export interface CustomNotificationSoundModule {
    * @param contentUri - The content:// URI to check
    */
   isCustomSoundValid(contentUri: string): Promise<boolean>;
+
+  /**
+   * Get all system alarm sounds from RingtoneManager
+   * @returns Promise with array of system alarm sounds
+   */
+  getSystemAlarmSounds(): Promise<SystemSound[]>;
+
+  /**
+   * Get the default alarm sound URI
+   * @returns Promise with the default alarm sound URI, or null if not set
+   */
+  getDefaultAlarmSound(): Promise<string | null>;
 }
 
 // Load the native module

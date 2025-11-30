@@ -5,15 +5,25 @@ import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.records.Field
+import expo.modules.kotlin.records.Record
 import java.io.File
 import java.io.FileInputStream
-import java.io.OutputStream
+
+class SystemSound : Record {
+  @Field val id: String = ""
+
+  @Field val title: String = ""
+
+  @Field val uri: String = ""
+}
 
 class CustomNotificationSoundModule : Module() {
   override fun definition() = ModuleDefinition {
@@ -31,26 +41,28 @@ class CustomNotificationSoundModule : Module() {
         }
 
         // Prepare content values for MediaStore
-        val values = ContentValues().apply {
-          put(MediaStore.MediaColumns.DISPLAY_NAME, title)
-          put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(filePath))
-          put(MediaStore.Audio.Media.IS_NOTIFICATION, true)
-          put(MediaStore.Audio.Media.IS_RINGTONE, false)
-          put(MediaStore.Audio.Media.IS_ALARM, false)
-          put(MediaStore.Audio.Media.IS_MUSIC, false)
+        val values =
+                ContentValues().apply {
+                  put(MediaStore.MediaColumns.DISPLAY_NAME, title)
+                  put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(filePath))
+                  put(MediaStore.Audio.Media.IS_NOTIFICATION, true)
+                  put(MediaStore.Audio.Media.IS_RINGTONE, false)
+                  put(MediaStore.Audio.Media.IS_ALARM, false)
+                  put(MediaStore.Audio.Media.IS_MUSIC, false)
 
-          // For Android 10+, use relative path
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "Notifications/Nedaa")
-          }
-        }
+                  // For Android 10+, use relative path
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Notifications/Nedaa")
+                  }
+                }
 
         // Insert into MediaStore
-        val contentUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-          MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        } else {
-          MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-        }
+        val contentUri =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                  MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                } else {
+                  MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                }
 
         // Check if already exists and delete
         val existingUri = findExistingSoundByTitle(context, title)
@@ -68,9 +80,7 @@ class CustomNotificationSoundModule : Module() {
         // Copy file content to the new MediaStore entry
         try {
           context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-            FileInputStream(file).use { inputStream ->
-              inputStream.copyTo(outputStream)
-            }
+            FileInputStream(file).use { inputStream -> inputStream.copyTo(outputStream) }
           }
         } catch (e: Exception) {
           // Clean up the MediaStore entry if copy fails
@@ -87,39 +97,45 @@ class CustomNotificationSoundModule : Module() {
 
     // Create a notification channel with custom sound URI
     AsyncFunction("createChannelWithCustomSound") {
-      channelId: String,
-      channelName: String,
-      soundUriString: String,
-      importance: Int,
-      vibration: Boolean,
-      promise: Promise ->
-
+            channelId: String,
+            channelName: String,
+            soundUriString: String,
+            importance: Int,
+            vibration: Boolean,
+            promise: Promise ->
       try {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-          promise.reject("VERSION_ERROR", "Notification channels require Android O (API 26) or higher", null)
+          promise.reject(
+                  "VERSION_ERROR",
+                  "Notification channels require Android O (API 26) or higher",
+                  null
+          )
           return@AsyncFunction
         }
 
         val context = appContext.reactContext ?: throw Exception("Context not available")
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Delete existing channel if it exists (required to change sound)
         notificationManager.deleteNotificationChannel(channelId)
 
         val soundUri = Uri.parse(soundUriString)
-        val audioAttributes = AudioAttributes.Builder()
-          .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-          .build()
+        val audioAttributes =
+                AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
 
-        val channel = NotificationChannel(channelId, channelName, importance).apply {
-          setSound(soundUri, audioAttributes)
-          enableVibration(vibration)
-          if (vibration) {
-            vibrationPattern = longArrayOf(0, 250, 250, 250)
-          }
-          setShowBadge(true)
-        }
+        val channel =
+                NotificationChannel(channelId, channelName, importance).apply {
+                  setSound(soundUri, audioAttributes)
+                  enableVibration(vibration)
+                  if (vibration) {
+                    vibrationPattern = longArrayOf(0, 250, 250, 250)
+                  }
+                  setShowBadge(true)
+                }
 
         notificationManager.createNotificationChannel(channel)
         promise.resolve(null)
@@ -152,18 +168,73 @@ class CustomNotificationSoundModule : Module() {
         val context = appContext.reactContext ?: throw Exception("Context not available")
         val uri = Uri.parse(contentUriString)
 
-        val cursor = context.contentResolver.query(
-          uri,
-          arrayOf(MediaStore.MediaColumns._ID),
-          null,
-          null,
-          null
-        )
+        val cursor =
+                context.contentResolver.query(
+                        uri,
+                        arrayOf(MediaStore.MediaColumns._ID),
+                        null,
+                        null,
+                        null
+                )
 
         val isValid = cursor?.use { it.count > 0 } ?: false
         promise.resolve(isValid)
       } catch (e: Exception) {
         promise.resolve(false)
+      }
+    }
+
+    // Get all system alarm sounds
+    AsyncFunction("getSystemAlarmSounds") { promise: Promise ->
+      try {
+        val context = appContext.reactContext ?: throw Exception("Context not available")
+        val sounds = mutableListOf<Map<String, String>>()
+
+        val ringtoneManager = RingtoneManager(context)
+        ringtoneManager.setType(RingtoneManager.TYPE_ALARM)
+
+        val cursor = ringtoneManager.cursor
+
+        while (cursor.moveToNext()) {
+          val title = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX)
+          val uri = ringtoneManager.getRingtoneUri(cursor.position)
+
+          sounds.add(
+                  mapOf(
+                          "id" to "system_alarm_${cursor.position}",
+                          "title" to title,
+                          "uri" to uri.toString()
+                  )
+          )
+        }
+
+        promise.resolve(sounds)
+      } catch (e: Exception) {
+        promise.reject(
+                "GET_SYSTEM_SOUNDS_ERROR",
+                "Error getting system alarm sounds: ${e.message}",
+                e
+        )
+      }
+    }
+
+    // Get the default alarm sound URI
+    AsyncFunction("getDefaultAlarmSound") { promise: Promise ->
+      try {
+        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        if (uri != null) {
+          promise.resolve(uri.toString())
+        } else {
+          // Fallback to notification sound if no alarm sound set
+          val fallbackUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+          promise.resolve(fallbackUri?.toString())
+        }
+      } catch (e: Exception) {
+        promise.reject(
+                "GET_DEFAULT_ALARM_ERROR",
+                "Error getting default alarm sound: ${e.message}",
+                e
+        )
       }
     }
   }
@@ -186,13 +257,14 @@ class CustomNotificationSoundModule : Module() {
     val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ?"
     val selectionArgs = arrayOf(title)
 
-    val cursor = context.contentResolver.query(
-      MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-      projection,
-      selection,
-      selectionArgs,
-      null
-    )
+    val cursor =
+            context.contentResolver.query(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    projection,
+                    selection,
+                    selectionArgs,
+                    null
+            )
 
     return cursor?.use {
       if (it.moveToFirst()) {

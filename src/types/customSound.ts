@@ -30,6 +30,20 @@ export type CustomSound = {
 };
 
 /**
+ * System alarm sound from RingtoneManager
+ */
+export type SystemAlarmSound = {
+  /** Unique identifier (e.g., "system_alarm_0") */
+  id: string;
+
+  /** Display title of the sound */
+  title: string;
+
+  /** Content URI of the sound */
+  uri: string;
+};
+
+/**
  * Result from picking and adding a custom sound
  */
 export type AddCustomSoundResult =
@@ -57,3 +71,8 @@ export const SUPPORTED_AUDIO_EXTENSIONS = [".mp3", ".ogg", ".wav", ".m4a", ".aac
  * Custom sound key prefix to distinguish from bundled sounds
  */
 export const CUSTOM_SOUND_KEY_PREFIX = "custom_";
+
+/**
+ * System alarm sound key prefix to distinguish from bundled/custom sounds
+ */
+export const SYSTEM_ALARM_SOUND_KEY_PREFIX = "system_alarm_";

@@ -2,9 +2,14 @@ import { Platform } from "react-native";
 
 // Types
 import type { PrayerSoundKey } from "@/constants/sounds";
+import type { AlarmSoundKey } from "@/types/alarm";
+import { SYSTEM_ALARM_SOUND_KEY_PREFIX } from "@/types/customSound";
 
 // Constants
 import { SOUND_ASSETS } from "@/constants/sounds";
+
+// Cache for system alarm sounds to avoid repeated lookups
+let systemAlarmSoundsCache: Map<string, string> | null = null;
 
 /**
  * Maps sound keys to iOS AlarmKit sound names.
@@ -24,12 +29,55 @@ const SOUND_MAP_IOS: Partial<Record<PrayerSoundKey, string>> = {
 };
 
 /**
+ * Check if a sound key is a system alarm sound
+ */
+export function isSystemAlarmSoundKey(key: string): boolean {
+  return key.startsWith(SYSTEM_ALARM_SOUND_KEY_PREFIX);
+}
+
+/**
+ * Load and cache system alarm sounds
+ */
+async function loadSystemAlarmSoundsCache(): Promise<Map<string, string>> {
+  if (systemAlarmSoundsCache !== null) {
+    return systemAlarmSoundsCache;
+  }
+
+  systemAlarmSoundsCache = new Map();
+
+  if (Platform.OS !== "android") {
+    return systemAlarmSoundsCache;
+  }
+
+  try {
+    const { default: CustomNotificationSound } = await import("expo-custom-notification-sound");
+    const sounds = await CustomNotificationSound.getSystemAlarmSounds();
+
+    for (const sound of sounds) {
+      systemAlarmSoundsCache.set(sound.id, sound.uri);
+    }
+  } catch (error) {
+    console.error("[AlarmSounds] Error loading system alarm sounds:", error);
+  }
+
+  return systemAlarmSoundsCache;
+}
+
+/**
+ * Clear the system alarm sounds cache (useful for refreshing)
+ */
+export function clearSystemAlarmSoundsCache(): void {
+  systemAlarmSoundsCache = null;
+}
+
+/**
  * Get the sound URI/name for the current platform.
  *
  * - Android: Returns a resource URI like "android.resource://dev.nedaa.android/raw/makkah_athan1"
+ *           or a content:// URI for system alarm sounds
  * - iOS: Returns the sound filename without extension (e.g., "makkah_athan1")
  *
- * @param soundKey - The sound key from PrayerSoundKey
+ * @param soundKey - The sound key (bundled sound or system alarm sound)
  * @returns Sound URI/name for the platform, or undefined if not found
  */
 export function getSoundForPlatform(soundKey: PrayerSoundKey): string | undefined {
@@ -42,7 +90,28 @@ export function getSoundForPlatform(soundKey: PrayerSoundKey): string | undefine
 }
 
 /**
- * Get Android resource URI for a sound.
+ * Get the sound URI for an alarm sound key (async version that supports system sounds)
+ *
+ * @param soundKey - The sound key (bundled, system alarm, or custom)
+ * @returns Sound URI for Android, or undefined if not found
+ */
+export async function getAlarmSoundUri(soundKey: AlarmSoundKey): Promise<string | undefined> {
+  if (Platform.OS !== "android") {
+    return undefined;
+  }
+
+  // Check if it's a system alarm sound
+  if (isSystemAlarmSoundKey(soundKey)) {
+    const cache = await loadSystemAlarmSoundsCache();
+    return cache.get(soundKey);
+  }
+
+  // Otherwise, it's a bundled sound
+  return getAndroidSoundUri(soundKey as PrayerSoundKey);
+}
+
+/**
+ * Get Android resource URI for a bundled sound.
  */
 export function getAndroidSoundUri(soundKey: PrayerSoundKey): string | undefined {
   const asset = SOUND_ASSETS[soundKey];

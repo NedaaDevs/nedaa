@@ -3,6 +3,13 @@ import type { PrayerSoundKey } from "@/constants/sounds";
 
 export type AlarmType = "fajr" | "jummah";
 
+/**
+ * Alarm sound key can be:
+ * - A bundled sound (PrayerSoundKey like "makkahAthan1")
+ * - A system alarm sound (starts with "system_alarm_")
+ */
+export type AlarmSoundKey = PrayerSoundKey | `system_alarm_${string}`;
+
 export type AlarmTimeMode = "dynamic" | "fixed";
 
 export type AlarmChallengeType = "none" | "math" | "tap";
@@ -20,7 +27,7 @@ export type AlarmSettings = {
   offsetMinutes: number; // -60 to +30, for dynamic mode
 
   // Sound & volume
-  sound: PrayerSoundKey;
+  sound: AlarmSoundKey;
   volume: number; // 0.0 - 1.0
   gradualVolume: boolean; // Ramp up over time
   gradualVolumeDurationSec: number; // How long to ramp (default 30)
