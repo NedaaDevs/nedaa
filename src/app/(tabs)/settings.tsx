@@ -1,4 +1,5 @@
-import { ScrollView } from "react-native";
+import { ScrollView, Platform } from "react-native";
+import { useState, useEffect } from "react";
 
 // Plugins
 import { useTranslation } from "react-i18next";
@@ -19,19 +20,39 @@ import {
   Settings2Icon,
   BellRing,
   BookOpen,
+  AlarmClock,
 } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 
+// Services
+import { alarmKit } from "@/services/alarm/AlarmKit";
+
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
+import { PlatformType } from "@/enums/app";
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
+  const [isAlarmSupported, setIsAlarmSupported] = useState(false);
+
+  useEffect(() => {
+    const checkAlarmSupport = async () => {
+      if (Platform.OS === PlatformType.ANDROID) {
+        setIsAlarmSupported(true);
+      } else if (Platform.OS === PlatformType.IOS) {
+        // iOS requires AlarmKit (iOS 26+)
+        const supported = await alarmKit.isSupported();
+        setIsAlarmSupported(supported);
+      }
+    };
+    checkAlarmSupport();
+  }, []);
+
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -59,6 +80,15 @@ const SettingsScreen = () => {
           path="/settings/notification"
           icon={BellRing}
         />
+
+        {/* Alarms - Only show on supported platforms */}
+        {isAlarmSupported && (
+          <SettingsItem
+            name={t("settings.alarm.title", "Alarms")}
+            path={"/settings/alarm" as any}
+            icon={AlarmClock}
+          />
+        )}
 
         {/* Location */}
         <SettingsItem
