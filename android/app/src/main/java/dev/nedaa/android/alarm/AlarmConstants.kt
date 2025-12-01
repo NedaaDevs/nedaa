@@ -124,7 +124,7 @@ object AlarmConstants {
         const val MATH_DIFFICULTY = "easy"
         const val MATH_QUESTION_COUNT = 1
         const val TAP_COUNT = 10
-        const val CHALLENGE_GRACE_PERIOD_SEC = 15
+        const val CHALLENGE_GRACE_PERIOD_SEC = 10
         const val VIBRATION_ENABLED = true
     }
 }
