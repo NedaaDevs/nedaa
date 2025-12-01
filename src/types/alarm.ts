@@ -48,7 +48,7 @@ export type AlarmSettings = {
   mathDifficulty: MathDifficulty;
   mathQuestionCount: number; // How many math problems (default 1)
   tapCount: number; // For tap challenge (default 10)
-  challengeGracePeriodSec: number; // Seconds of silence while solving (default 15)
+  challengeGracePeriodSec: number; // Seconds of silence while solving (min/default 10)
 };
 
 export const DEFAULT_FAJR_ALARM_SETTINGS: AlarmSettings = {
@@ -72,7 +72,7 @@ export const DEFAULT_FAJR_ALARM_SETTINGS: AlarmSettings = {
   mathDifficulty: "easy",
   mathQuestionCount: 1,
   tapCount: 10,
-  challengeGracePeriodSec: 15,
+  challengeGracePeriodSec: 10,
 };
 
 export const DEFAULT_JUMMAH_ALARM_SETTINGS: AlarmSettings = {
@@ -96,7 +96,7 @@ export const DEFAULT_JUMMAH_ALARM_SETTINGS: AlarmSettings = {
   mathDifficulty: "easy",
   mathQuestionCount: 1,
   tapCount: 10,
-  challengeGracePeriodSec: 15,
+  challengeGracePeriodSec: 10,
 };
 
 // ==========================================

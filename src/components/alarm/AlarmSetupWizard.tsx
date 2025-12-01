@@ -51,7 +51,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
   const [mathDifficulty, setMathDifficulty] = useState<MathDifficulty>("easy");
   const [mathQuestionCount, setMathQuestionCount] = useState<number>(1);
   const [tapCount, setTapCount] = useState<number>(10);
-  const [challengeGracePeriodSec, setChallengeGracePeriodSec] = useState<number>(15);
+  const [challengeGracePeriodSec, setChallengeGracePeriodSec] = useState<number>(10);
 
   const isFajr = type === "fajr";
   const TitleIcon = isFajr ? Sun : CalendarDays;
@@ -120,7 +120,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
 
   const mathQuestionOptions = [1, 2, 3, 5];
   const tapCountOptions = [10, 20, 30, 50];
-  const gracePeriodOptions = [0, 10, 15, 30];
+  const gracePeriodOptions = [10, 15, 30, 60];
 
   // Calculate total steps (3 if challenge selected on Android, else 2)
   const hasChallenge = selectedChallenge !== "none" && Platform.OS === "android";
@@ -167,7 +167,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
     setMathDifficulty("easy");
     setMathQuestionCount(1);
     setTapCount(10);
-    setChallengeGracePeriodSec(15);
+    setChallengeGracePeriodSec(10);
   };
 
   const handleClose = () => {
@@ -428,7 +428,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                         className={`text-center font-medium ${
                           challengeGracePeriodSec === seconds ? "text-white" : "text-typography"
                         }`}>
-                        {seconds === 0 ? t("alarm.wizard.none", "None") : `${seconds}s`}
+                        {`${seconds}s`}
                       </Text>
                     </Pressable>
                   ))}

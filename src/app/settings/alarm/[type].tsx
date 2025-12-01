@@ -189,10 +189,10 @@ export default function AlarmEditScreen() {
   ];
 
   const gracePeriodOptions: SettingOption<number>[] = [
-    { value: 0, label: t("alarm.grace.none", "None") },
     { value: 10, label: t("alarm.grace", { count: 10 }) },
     { value: 15, label: t("alarm.grace", { count: 15 }) },
     { value: 30, label: t("alarm.grace", { count: 30 }) },
+    { value: 60, label: t("alarm.grace", { count: 60 }) },
   ];
 
   // ==========================================
@@ -557,12 +557,15 @@ export default function AlarmEditScreen() {
 
         {/* SOUND & VIBRATION */}
         <Box className="bg-background-secondary rounded-xl px-4 mb-4">
-          <SettingRow
-            icon={Music}
-            label={t("alarm.settings.sound", "Alarm Sound")}
-            value={getSoundDisplayName()}
-            onPress={() => setShowSoundPicker(true)}
-          />
+          {/* Sound picker - Android only, iOS uses system default(for now) */}
+          {Platform.OS === "android" && (
+            <SettingRow
+              icon={Music}
+              label={t("alarm.settings.sound", "Alarm Sound")}
+              value={getSoundDisplayName()}
+              onPress={() => setShowSoundPicker(true)}
+            />
+          )}
 
           <ToggleRow
             icon={Volume2}
