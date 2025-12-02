@@ -23,9 +23,6 @@ RCT_EXTERN_METHOD(cancelAlarm:(NSString *)alarmId
 RCT_EXTERN_METHOD(getAllAlarms:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(startObservingAlarms)
-RCT_EXTERN_METHOD(stopObservingAlarms)
-
 + (BOOL)requiresMainQueueSetup
 {
   return YES;
