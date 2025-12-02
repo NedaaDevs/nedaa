@@ -19,40 +19,6 @@ export type AlarmPermissionStatus = {
 };
 
 /**
- * Translations passed to the native alarm overlay UI (Android only).
- */
-export type AlarmOverlayTranslations = {
-  /** Main alarm title (e.g., "Fajr Prayer") */
-  alarmTitle: string;
-  /** Dismiss button text */
-  dismiss: string;
-  /** Snooze button text with minutes placeholder */
-  snoozeWithMinutes: string;
-  /** "Sound paused for X seconds" */
-  soundPausedFor: string;
-  /** "Sound resumes in X seconds" */
-  soundResumesIn: string;
-  /** "Sound resumed" */
-  soundResumed: string;
-  /** "Solve X math problems to dismiss" (plural) */
-  solveMathProblems: string;
-  /** "Solve the math problem to dismiss" (singular) */
-  solveMathProblem: string;
-  /** "Question X of Y" */
-  questionProgress: string;
-  /** Input placeholder for answer */
-  answer: string;
-  /** Submit button text */
-  submit: string;
-  /** "Wrong answer, try again" */
-  wrongAnswer: string;
-  /** "Tap the button X times" */
-  tapInstruction: string;
-  /** Tap button text */
-  tap: string;
-};
-
-/**
  * Configuration for scheduling an alarm.
  */
 export type ScheduleAlarmConfig = {
@@ -70,8 +36,6 @@ export type ScheduleAlarmConfig = {
   subtitle?: string;
   /** Alarm settings (sound, snooze, challenge, etc.) */
   settings: AlarmSettings;
-  /** Translations for native overlay UI (Android only) */
-  translations?: AlarmOverlayTranslations;
 };
 
 /**

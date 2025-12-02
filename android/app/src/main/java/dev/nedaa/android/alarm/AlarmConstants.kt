@@ -58,9 +58,6 @@ object AlarmConstants {
     /** Seconds of grace period before challenge is required */
     const val EXTRA_CHALLENGE_GRACE_PERIOD_SEC = "challenge_grace_period_sec"
 
-    /** JSON string containing UI translations */
-    const val EXTRA_TRANSLATIONS_JSON = "translations_json"
-
     // ==========================================
     // SHARED PREFERENCES
     // ==========================================

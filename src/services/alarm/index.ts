@@ -27,11 +27,7 @@ export { alarmScheduler } from "./alarmScheduler";
 export { alarmKit } from "./AlarmKit";
 
 // Types
-export type {
-  AlarmPermissionStatus,
-  AlarmOverlayTranslations,
-  ScheduleAlarmConfig,
-} from "@/types/alarmService";
+export type { AlarmPermissionStatus, ScheduleAlarmConfig } from "@/types/alarmService";
 export { ALARM_FEATURES } from "@/types/alarmService";
 
 // Sound utilities
@@ -40,4 +36,4 @@ export {
   getAndroidSoundUri,
   getIOSSoundName,
   DEFAULT_ALARM_SOUND,
-} from "./sounds";
+} from "@/services/alarm/sounds";

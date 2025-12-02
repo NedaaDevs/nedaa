@@ -9,7 +9,6 @@
  */
 
 import type { AlarmSettings, AlarmType } from "@/types/alarm";
-import type { AlarmOverlayTranslations } from "@/types/alarmService";
 
 import { alarmKit } from "./AlarmKit";
 import { getIOSSoundName } from "./sounds";
@@ -32,7 +31,6 @@ export async function scheduleAlarm(config: {
   body: string;
   subtitle?: string;
   settings: AlarmSettings;
-  translations?: AlarmOverlayTranslations;
 }): Promise<string | null> {
   const { id, type, scheduledTime, title, settings } = config;
   const timestamp = scheduledTime.getTime();

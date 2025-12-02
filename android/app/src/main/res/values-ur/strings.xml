@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Alarm Overlay Translations - Urdu -->
+  <string name="alarm_fajr_prayer">نماز فجر</string>
+  <string name="alarm_jummah_prayer">جمعہ کی نماز</string>
+  <string name="alarm_fajr_alarm">فجر کا الارم</string>
+  <string name="alarm_jummah_alarm">جمعہ کا الارم</string>
+  <string name="alarm_snooze">اسنوز</string>
+  <string name="alarm_snooze_with_minutes">اسنوز (%d م)</string>
+  <string name="alarm_dismiss">بند کریں</string>
+  <string name="alarm_prayer_better_than_sleep">نماز نیند سے بہتر ہے</string>
+  <string name="alarm_jummah_reminder">جمعہ کی نماز کی تیاری کا وقت</string>
+  <string name="alarm_sound_paused_for">آواز %d سیکنڈ کے لیے رکی ہوئی ہے</string>
+  <string name="alarm_sound_resumes_in">آواز %d سیکنڈ میں واپس آئے گی</string>
+  <string name="alarm_sound_resumed">آواز واپس آ گئی</string>
+  <string name="alarm_solve_math_problems">بند کرنے کے لیے %d ریاضی کے سوالات حل کریں</string>
+  <string name="alarm_solve_math_problem">بند کرنے کے لیے ریاضی کا سوال حل کریں</string>
+  <string name="alarm_question_progress">سوال %1$d از %2$d</string>
+  <string name="alarm_answer">جواب</string>
+  <string name="alarm_submit">جمع کرائیں</string>
+  <string name="alarm_wrong_answer">غلط جواب، دوبارہ کوشش کریں</string>
+  <string name="alarm_tap_instruction">بٹن کو %d بار ٹیپ کریں</string>
+  <string name="alarm_tap">ٹیپ</string>
+</resources>

@@ -4,4 +4,26 @@
   <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
   <string name="ExpoLocalization_supportsRTL" translatable="false">true</string>
+
+  <!-- Alarm Overlay Translations -->
+  <string name="alarm_fajr_prayer">Fajr Prayer</string>
+  <string name="alarm_jummah_prayer">Jummah Prayer</string>
+  <string name="alarm_fajr_alarm">Fajr Alarm</string>
+  <string name="alarm_jummah_alarm">Jummah Alarm</string>
+  <string name="alarm_snooze">Snooze</string>
+  <string name="alarm_snooze_with_minutes">Snooze (%d min)</string>
+  <string name="alarm_dismiss">Dismiss</string>
+  <string name="alarm_prayer_better_than_sleep">Prayer is better than sleep</string>
+  <string name="alarm_jummah_reminder">Time to prepare for Jummah prayer</string>
+  <string name="alarm_sound_paused_for">Sound paused for %d seconds</string>
+  <string name="alarm_sound_resumes_in">Sound resumes in %d seconds</string>
+  <string name="alarm_sound_resumed">Sound resumed</string>
+  <string name="alarm_solve_math_problems">Solve %d math problems to dismiss</string>
+  <string name="alarm_solve_math_problem">Solve a math problem to dismiss</string>
+  <string name="alarm_question_progress">Question %1$d of %2$d</string>
+  <string name="alarm_answer">Answer</string>
+  <string name="alarm_submit">Submit</string>
+  <string name="alarm_wrong_answer">Wrong answer, try again</string>
+  <string name="alarm_tap_instruction">Tap the button %d times</string>
+  <string name="alarm_tap">TAP</string>
 </resources>

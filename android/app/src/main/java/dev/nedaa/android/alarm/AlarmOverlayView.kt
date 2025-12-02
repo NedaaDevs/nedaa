@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import dev.nedaa.android.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,7 +32,6 @@ class AlarmOverlayView(
     private val mathQuestionCount: Int,
     private val tapCount: Int,
     private val challengeGracePeriodSec: Int,
-    private val translations: Map<String, String>,
     private val onDismiss: () -> Unit,
     private val onSnooze: () -> Unit,
     private val onChallengeStarted: () -> Unit,
@@ -64,7 +64,7 @@ class AlarmOverlayView(
     private val emergencyDismissTimeMs = 7 * 60 * 1000L // 7 minutes
 
     init {
-        Log.d(TAG, "AlarmOverlayView init: challengeType=$challengeType, translations=${translations.keys}")
+        Log.d(TAG, "AlarmOverlayView init: challengeType=$challengeType")
         orientation = VERTICAL
         setBackgroundColor(Color.BLACK)
         gravity = Gravity.CENTER
@@ -75,18 +75,6 @@ class AlarmOverlayView(
 
         createUI()
         startTimeUpdater()
-    }
-
-    private fun tr(key: String, default: String): String {
-        return translations[key] ?: default
-    }
-
-    private fun tr(key: String, default: String, vararg replacements: Pair<String, Any>): String {
-        var result = translations[key] ?: default
-        replacements.forEach { (placeholder, value) ->
-            result = result.replace("{{$placeholder}}", value.toString())
-        }
-        return result
     }
 
     private fun createUI() {
@@ -100,13 +88,16 @@ class AlarmOverlayView(
         addView(timeText)
         updateTime()
 
-        // Alarm title - use translation
+        // Alarm title - use Android string resources
         val alarmTitleText = TextView(context).apply {
             textSize = 28f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
             setPadding(0, 48, 0, 8)
-            text = tr("alarmTitle", if (alarmType == "fajr") "Fajr Prayer" else "Jummah Prayer")
+            text = if (alarmType == "fajr")
+                context.getString(R.string.alarm_fajr_prayer)
+            else
+                context.getString(R.string.alarm_jummah_prayer)
         }
         addView(alarmTitleText)
 
@@ -140,7 +131,7 @@ class AlarmOverlayView(
 
         // Snooze button
         snoozeButton = Button(context).apply {
-            text = tr("snoozeWithMinutes", "Snooze (${snoozeMinutes}m)", "minutes" to snoozeMinutes)
+            text = context.getString(R.string.alarm_snooze_with_minutes, snoozeMinutes)
             textSize = 18f
             setTextColor(Color.WHITE)
             setBackgroundColor(0xFF333333.toInt())
@@ -156,7 +147,7 @@ class AlarmOverlayView(
 
         // Dismiss button
         dismissButton = Button(context).apply {
-            text = tr("dismiss", "Dismiss")
+            text = context.getString(R.string.alarm_dismiss)
             textSize = 18f
             setTextColor(Color.WHITE)
             setBackgroundColor(0xFFE53935.toInt())
@@ -176,10 +167,10 @@ class AlarmOverlayView(
             val hintText = TextView(context).apply {
                 text = when (challengeType) {
                     "math" -> if (mathQuestionCount > 1)
-                        tr("solveMathProblems", "Solve $mathQuestionCount math problems to dismiss", "count" to mathQuestionCount)
+                        context.getString(R.string.alarm_solve_math_problems, mathQuestionCount)
                     else
-                        tr("solveMathProblem", "Solve a math problem to dismiss")
-                    "tap" -> tr("tapInstruction", "Tap the button $tapCount times", "count" to tapCount)
+                        context.getString(R.string.alarm_solve_math_problem)
+                    "tap" -> context.getString(R.string.alarm_tap_instruction, tapCount)
                     else -> ""
                 }
                 textSize = 14f
@@ -252,7 +243,7 @@ class AlarmOverlayView(
             setTextColor(0xFF4CAF50.toInt())
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 24)
-            text = tr("soundPausedFor", "Sound paused for ${challengeGracePeriodSec}s", "seconds" to challengeGracePeriodSec)
+            text = context.getString(R.string.alarm_sound_paused_for, challengeGracePeriodSec)
         }
         challengeContainer.addView(gracePeriodText)
 
@@ -289,14 +280,14 @@ class AlarmOverlayView(
                 gracePeriodRemaining--
 
                 if (gracePeriodRemaining > 0) {
-                    gracePeriodText?.text = tr("soundResumesIn", "Sound resumes in ${gracePeriodRemaining}s", "seconds" to gracePeriodRemaining)
+                    gracePeriodText?.text = context.getString(R.string.alarm_sound_resumes_in, gracePeriodRemaining)
                     gracePeriodText?.setTextColor(
                         if (gracePeriodRemaining <= 5) 0xFFFF5722.toInt() else 0xFF4CAF50.toInt()
                     )
                     handler.postDelayed(this, 1000)
                 } else {
                     gracePeriodActive = false
-                    gracePeriodText?.text = "⚠ ${tr("soundResumed", "Sound resumed")}"
+                    gracePeriodText?.text = "⚠ ${context.getString(R.string.alarm_sound_resumed)}"
                     gracePeriodText?.setTextColor(0xFFE53935.toInt())
                     onGracePeriodEnded()
                     // Return to dismiss/snooze buttons
@@ -310,7 +301,7 @@ class AlarmOverlayView(
     private fun resetGracePeriod() {
         Log.d(TAG, "Resetting grace period")
         gracePeriodRemaining = challengeGracePeriodSec
-        gracePeriodText?.text = tr("soundResumesIn", "Sound resumes in ${gracePeriodRemaining}s", "seconds" to gracePeriodRemaining)
+        gracePeriodText?.text = context.getString(R.string.alarm_sound_resumes_in, gracePeriodRemaining)
         gracePeriodText?.setTextColor(0xFF4CAF50.toInt())
     }
 
@@ -410,7 +401,7 @@ class AlarmOverlayView(
         challengeContainer.addView(questionText)
 
         val answerInput = EditText(context).apply {
-            hint = tr("answer", "Answer")
+            hint = context.getString(R.string.alarm_answer)
             textSize = 24f
             setTextColor(Color.WHITE)
             setHintTextColor(0xFF888888.toInt())
@@ -427,7 +418,7 @@ class AlarmOverlayView(
         challengeContainer.addView(answerInput, inputParams)
 
         val submitButton = Button(context).apply {
-            text = tr("submit", "Submit")
+            text = context.getString(R.string.alarm_submit)
             textSize = 18f
             setTextColor(Color.WHITE)
             setBackgroundColor(0xFF4CAF50.toInt())
@@ -456,7 +447,7 @@ class AlarmOverlayView(
                     }
                 } else {
                     answerInput.setText("")
-                    answerInput.error = tr("wrongAnswer", "Wrong answer, try again")
+                    answerInput.error = context.getString(R.string.alarm_wrong_answer)
                 }
             }
         }
@@ -474,7 +465,7 @@ class AlarmOverlayView(
         currentTapCount = 0
 
         val instructionText = TextView(context).apply {
-            text = tr("tapInstruction", "Tap the button $tapCount times", "count" to tapCount)
+            text = context.getString(R.string.alarm_tap_instruction, tapCount)
             textSize = 20f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
@@ -527,7 +518,7 @@ class AlarmOverlayView(
         challengeContainer.addView(progressContainer, progressContainerParams)
 
         val tapButton = Button(context).apply {
-            text = tr("tap", "TAP")
+            text = context.getString(R.string.alarm_tap)
             textSize = 24f
             setTextColor(Color.WHITE)
             setBackgroundColor(0xFF2196F3.toInt())

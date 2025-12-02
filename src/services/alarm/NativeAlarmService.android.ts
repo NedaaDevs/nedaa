@@ -8,7 +8,6 @@ import { NativeModules, Platform } from "react-native";
 
 // Types
 import type { AlarmSettings, AlarmType } from "@/types/alarm";
-import type { AlarmOverlayTranslations } from "@/types/alarmService";
 
 // Services
 import { getAlarmSoundUri } from "./sounds";
@@ -32,7 +31,6 @@ type AlarmManagerInterface = {
     mathQuestionCount?: number;
     tapCount?: number;
     challengeGracePeriodSec?: number;
-    translations?: { [key: string]: string };
   }): Promise<string>;
   cancelAlarm(id: string): Promise<boolean>;
   cancelAllAlarms(): Promise<boolean>;
@@ -63,11 +61,10 @@ export async function scheduleAlarm(config: {
   body: string;
   subtitle?: string;
   settings: AlarmSettings;
-  translations?: AlarmOverlayTranslations;
 }): Promise<string | null> {
   if (!NativeAlarmModule) return null;
 
-  const { id, type, scheduledTime, title, body, subtitle, settings, translations } = config;
+  const { id, type, scheduledTime, title, body, subtitle, settings } = config;
   const timestamp = scheduledTime.getTime();
 
   if (timestamp <= Date.now()) return null;
@@ -93,7 +90,6 @@ export async function scheduleAlarm(config: {
       challengeGracePeriodSec: settings.challengeEnabled
         ? settings.challengeGracePeriodSec
         : undefined,
-      translations: translations as { [key: string]: string } | undefined,
     });
   } catch (error) {
     console.error("[AlarmManager] Schedule failed:", error);

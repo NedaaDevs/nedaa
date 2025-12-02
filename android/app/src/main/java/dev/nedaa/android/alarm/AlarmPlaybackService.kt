@@ -28,7 +28,6 @@ import android.view.Gravity
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import org.json.JSONObject
 import java.util.UUID
 
 class AlarmPlaybackService : Service() {
@@ -69,7 +68,6 @@ class AlarmPlaybackService : Service() {
     private var currentMathQuestionCount: Int = 1
     private var currentTapCount: Int = 10
     private var currentChallengeGracePeriodSec: Int = 15
-    private var currentTranslationsJson: String? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): AlarmPlaybackService = this@AlarmPlaybackService
@@ -122,7 +120,6 @@ class AlarmPlaybackService : Service() {
                 currentMathQuestionCount = intent.getIntExtra(AlarmConstants.EXTRA_MATH_QUESTION_COUNT, 1)
                 currentTapCount = intent.getIntExtra(AlarmConstants.EXTRA_TAP_COUNT, 10)
                 currentChallengeGracePeriodSec = intent.getIntExtra(AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC, 15)
-                currentTranslationsJson = intent.getStringExtra(AlarmConstants.EXTRA_TRANSLATIONS_JSON)
 
                 savePersistentAlarmState()
                 startForegroundWithNotification()
@@ -408,9 +405,6 @@ class AlarmPlaybackService : Service() {
             try {
                 windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
-                // Parse translations using helper
-                val translations = AlarmTranslations.fromJson(currentTranslationsJson)
-
                 Log.d(TAG, "Creating overlay with challengeType=$currentChallengeType, mathDifficulty=$currentMathDifficulty, mathQuestionCount=$currentMathQuestionCount, tapCount=$currentTapCount, gracePeriod=$currentChallengeGracePeriodSec")
                 alarmView = AlarmOverlayView(
                     context = this,
@@ -422,7 +416,6 @@ class AlarmPlaybackService : Service() {
                     mathQuestionCount = currentMathQuestionCount,
                     tapCount = currentTapCount,
                     challengeGracePeriodSec = currentChallengeGracePeriodSec,
-                    translations = translations,
                     onDismiss = {
                         Log.d(TAG, "Overlay onDismiss called")
                         challengeCompleted = true
@@ -536,7 +529,6 @@ class AlarmPlaybackService : Service() {
             putExtra(AlarmConstants.EXTRA_MATH_QUESTION_COUNT, currentMathQuestionCount)
             putExtra(AlarmConstants.EXTRA_TAP_COUNT, currentTapCount)
             putExtra(AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC, currentChallengeGracePeriodSec)
-            putExtra(AlarmConstants.EXTRA_TRANSLATIONS_JSON, currentTranslationsJson)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -595,7 +587,6 @@ class AlarmPlaybackService : Service() {
             putInt(AlarmConstants.EXTRA_MATH_QUESTION_COUNT, currentMathQuestionCount)
             putInt(AlarmConstants.EXTRA_TAP_COUNT, currentTapCount)
             putInt(AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC, currentChallengeGracePeriodSec)
-            putString(AlarmConstants.EXTRA_TRANSLATIONS_JSON, currentTranslationsJson)
             apply()
         }
     }
@@ -617,7 +608,6 @@ class AlarmPlaybackService : Service() {
             currentMathQuestionCount = prefs.getInt(AlarmConstants.EXTRA_MATH_QUESTION_COUNT, AlarmConstants.Defaults.MATH_QUESTION_COUNT)
             currentTapCount = prefs.getInt(AlarmConstants.EXTRA_TAP_COUNT, AlarmConstants.Defaults.TAP_COUNT)
             currentChallengeGracePeriodSec = prefs.getInt(AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC, AlarmConstants.Defaults.CHALLENGE_GRACE_PERIOD_SEC)
-            currentTranslationsJson = prefs.getString(AlarmConstants.EXTRA_TRANSLATIONS_JSON, null)
         }
 
         return active

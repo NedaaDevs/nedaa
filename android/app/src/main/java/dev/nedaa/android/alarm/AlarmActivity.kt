@@ -79,13 +79,9 @@ class AlarmActivity : Activity() {
         challengeType = intent.getStringExtra(AlarmConstants.EXTRA_CHALLENGE_TYPE)
         val alarmType = intent.getStringExtra(AlarmConstants.EXTRA_ALARM_TYPE) ?: AlarmConstants.Defaults.ALARM_TYPE
 
-        // Parse translations from intent
-        val translationsJson = intent.getStringExtra(AlarmConstants.EXTRA_TRANSLATIONS_JSON)
-        val translations = AlarmTranslations.fromJson(translationsJson)
-
-        // Set alarm title using translations
-        alarmTitleText.text = AlarmTranslations.getPrayerTitle(translations, alarmType)
-        alarmTitleArabicText.text = if (alarmType == "fajr") "صلاة الفجر" else "صلاة الجمعة"
+        // Set alarm title using Android resources (follows device language)
+        alarmTitleText.text = AlarmTranslations.getPrayerTitle(this, alarmType)
+        alarmTitleArabicText.text = AlarmTranslations.getAlarmBody(this, alarmType)
 
         // Bind to service
         Intent(this, AlarmPlaybackService::class.java).also { intent ->

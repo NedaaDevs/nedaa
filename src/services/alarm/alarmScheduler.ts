@@ -170,8 +170,9 @@ class AlarmSchedulerService {
       id: alarmId,
       type: "fajr",
       scheduledTime: alarmTime,
-      title: "Fajr Alarm - صلاة الفجر",
-      body: "Time to wake up for Fajr prayer",
+      title: i18n.t("alarm.fajrPrayer"),
+      body: i18n.t("alarm.prayerBetterThanSleep"),
+      subtitle: i18n.t("alarm.prayerBetterThanSleep"),
       settings,
     });
 
@@ -340,8 +341,8 @@ class AlarmSchedulerService {
       id: alarmId,
       type: "jummah",
       scheduledTime: alarmTime,
-      title: "Jummah Alarm - صلاة الجمعة",
-      body: "Time to prepare for Jummah prayer",
+      title: i18n.t("alarm.jummahPrayer"),
+      body: i18n.t("alarm.jummahReminder"),
       settings,
     });
 

@@ -40,25 +40,6 @@ class AlarmModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             val tapCount = if (config.hasKey("tapCount")) config.getInt("tapCount") else 10
             val challengeGracePeriodSec = if (config.hasKey("challengeGracePeriodSec")) config.getInt("challengeGracePeriodSec") else 15
 
-            // Parse translations
-            val translationsJson = if (config.hasKey("translations")) {
-                val translationsMap = config.getMap("translations")
-                val jsonBuilder = StringBuilder("{")
-                translationsMap?.let { map ->
-                    val iterator = map.keySetIterator()
-                    var first = true
-                    while (iterator.hasNextKey()) {
-                        val key = iterator.nextKey()
-                        val value = map.getString(key)
-                        if (!first) jsonBuilder.append(",")
-                        jsonBuilder.append("\"$key\":\"${value?.replace("\"", "\\\"")}\"")
-                        first = false
-                    }
-                }
-                jsonBuilder.append("}")
-                jsonBuilder.toString()
-            } else null
-
             Log.d(TAG, "Scheduling alarm: id=$id, time=$timestamp, type=$alarmType, challenge=$challengeType")
 
             val context = reactApplicationContext
@@ -85,8 +66,7 @@ class AlarmModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                 mathDifficulty = mathDifficulty,
                 mathQuestionCount = mathQuestionCount,
                 tapCount = tapCount,
-                challengeGracePeriodSec = challengeGracePeriodSec,
-                translationsJson = translationsJson
+                challengeGracePeriodSec = challengeGracePeriodSec
             )
 
             val intent = Intent(context, AlarmReceiver::class.java).apply {

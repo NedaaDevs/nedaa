@@ -23,8 +23,7 @@ object AlarmIntentHelper {
         val mathDifficulty: String = AlarmConstants.Defaults.MATH_DIFFICULTY,
         val mathQuestionCount: Int = AlarmConstants.Defaults.MATH_QUESTION_COUNT,
         val tapCount: Int = AlarmConstants.Defaults.TAP_COUNT,
-        val challengeGracePeriodSec: Int = AlarmConstants.Defaults.CHALLENGE_GRACE_PERIOD_SEC,
-        val translationsJson: String? = null
+        val challengeGracePeriodSec: Int = AlarmConstants.Defaults.CHALLENGE_GRACE_PERIOD_SEC
     ) {
         /** Returns true if a challenge is configured */
         val hasChallenge: Boolean
@@ -66,8 +65,7 @@ object AlarmIntentHelper {
             challengeGracePeriodSec = intent.getIntExtra(
                 AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC,
                 AlarmConstants.Defaults.CHALLENGE_GRACE_PERIOD_SEC
-            ),
-            translationsJson = intent.getStringExtra(AlarmConstants.EXTRA_TRANSLATIONS_JSON)
+            )
         )
     }
 
@@ -88,7 +86,6 @@ object AlarmIntentHelper {
             putExtra(AlarmConstants.EXTRA_MATH_QUESTION_COUNT, config.mathQuestionCount)
             putExtra(AlarmConstants.EXTRA_TAP_COUNT, config.tapCount)
             putExtra(AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC, config.challengeGracePeriodSec)
-            putExtra(AlarmConstants.EXTRA_TRANSLATIONS_JSON, config.translationsJson)
         }
     }
 
