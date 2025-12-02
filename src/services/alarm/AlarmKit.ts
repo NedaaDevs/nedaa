@@ -1,4 +1,4 @@
-import { NativeModules, NativeEventEmitter, Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 // Types
 export type AuthorizationStatus =
@@ -82,10 +82,6 @@ export type AlarmConfig = {
 // ==========================================
 
 const { AlarmKitModule } = NativeModules;
-const eventEmitter =
-  Platform.OS === PlatformType.IOS && AlarmKitModule
-    ? new NativeEventEmitter(AlarmKitModule)
-    : null;
 
 // ==========================================
 // ALARMKIT SERVICE
@@ -210,24 +206,6 @@ class AlarmKitService {
     } catch {
       return [];
     }
-  }
-
-  /**
-   * Subscribe to alarm state changes
-   * @returns Unsubscribe function
-   */
-  onAlarmStateChanged(callback: (alarms: AlarmInfo[]) => void): () => void {
-    if (!eventEmitter || !AlarmKitModule) {
-      return () => {};
-    }
-
-    AlarmKitModule.startObservingAlarms();
-    const subscription = eventEmitter.addListener("onAlarmStateChanged", callback);
-
-    return () => {
-      subscription.remove();
-      AlarmKitModule.stopObservingAlarms();
-    };
   }
 }
 

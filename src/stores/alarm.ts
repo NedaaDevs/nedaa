@@ -34,13 +34,20 @@ export const useAlarmStore = create<AlarmStore>()(
         },
 
         updateFajrAlarmSettings: async (settings) => {
+          const previousSettings = get().fajrAlarm;
           set((state) => ({
             fajrAlarm: { ...state.fajrAlarm, ...settings },
           }));
 
           // Reschedule if alarm is enabled
           if (get().fajrAlarm.enabled) {
-            await get().scheduleAllAlarms();
+            const result = await get().scheduleAllAlarms();
+            // Revert settings if scheduling failed
+            if (!result.fajrSuccess && result.fajrError) {
+              console.error("[AlarmStore] Reverting Fajr settings due to error:", result.fajrError);
+              set({ fajrAlarm: previousSettings });
+              throw new Error(result.fajrError);
+            }
           }
         },
 
@@ -52,13 +59,23 @@ export const useAlarmStore = create<AlarmStore>()(
         },
 
         updateJummahAlarmSettings: async (settings) => {
+          const previousSettings = get().jummahAlarm;
           set((state) => ({
             jummahAlarm: { ...state.jummahAlarm, ...settings },
           }));
 
           // Reschedule if alarm is enabled
           if (get().jummahAlarm.enabled) {
-            await get().scheduleAllAlarms();
+            const result = await get().scheduleAllAlarms();
+            // Revert settings if scheduling failed
+            if (!result.jummahSuccess && result.jummahError) {
+              console.error(
+                "[AlarmStore] Reverting Jummah settings due to error:",
+                result.jummahError
+              );
+              set({ jummahAlarm: previousSettings });
+              throw new Error(result.jummahError);
+            }
           }
         },
 
@@ -82,6 +99,11 @@ export const useAlarmStore = create<AlarmStore>()(
           // Cancel existing alarms first
           await alarmScheduler.cancelAllAlarms();
 
+          let fajrSuccess = true;
+          let fajrError: string | undefined;
+          let jummahSuccess = true;
+          let jummahError: string | undefined;
+
           if (fajrAlarm.enabled) {
             console.log("[AlarmStore] Fajr alarm enabled, scheduling...");
             const result = await alarmScheduler.scheduleFajrAlarm(fajrAlarm);
@@ -89,6 +111,8 @@ export const useAlarmStore = create<AlarmStore>()(
               set({ scheduledFajrAlarmId: result.alarmId });
               console.log("[AlarmStore] Fajr alarm scheduled:", result.alarmId);
             } else {
+              fajrSuccess = false;
+              fajrError = result.error;
               console.warn("[AlarmStore] Failed to schedule Fajr alarm:", result.error);
             }
           }
@@ -100,11 +124,15 @@ export const useAlarmStore = create<AlarmStore>()(
               set({ scheduledJummahAlarmId: result.alarmId });
               console.log("[AlarmStore] Jummah alarm scheduled:", result.alarmId);
             } else {
+              jummahSuccess = false;
+              jummahError = result.error;
               console.warn("[AlarmStore] Failed to schedule Jummah alarm:", result.error);
             }
           }
 
           set({ lastScheduledDate: new Date().toISOString() });
+
+          return { fajrSuccess, fajrError, jummahSuccess, jummahError };
         },
 
         rescheduleIfNeeded: async (force = false) => {
