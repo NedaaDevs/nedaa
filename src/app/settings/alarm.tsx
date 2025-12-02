@@ -313,29 +313,6 @@ export default function AlarmSettingsScreen() {
               onPress={() => handleCardPress("jummah")}
               onEditPress={() => handleEditPress("jummah")}
             />
-
-            {/* Info Card */}
-            <Card className="bg-background-secondary rounded-xl p-4 mt-2">
-              <VStack className="gap-2">
-                <HStack className="items-center gap-2">
-                  <Icon as={Clock} size="sm" className="text-typography-secondary" />
-                  <Text className="text-sm text-typography-secondary">
-                    {t("alarm.settings.infoTitle", "About Alarms")}
-                  </Text>
-                </HStack>
-                <Text className="text-xs text-typography-secondary">
-                  {Platform.OS === "android"
-                    ? t(
-                        "alarm.settings.infoAndroid",
-                        "Alarms will ring even when the app is closed or your phone is on Do Not Disturb mode (if enabled above)."
-                      )
-                    : t(
-                        "alarm.settings.infoIOS",
-                        "Alarms use AlarmKit on iOS 26+ to ring even in Silent Mode and Focus Mode."
-                      )}
-                </Text>
-              </VStack>
-            </Card>
           </>
         )}
       </ScrollView>
