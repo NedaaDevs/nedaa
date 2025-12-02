@@ -1,10 +1,11 @@
 {
+  "alarm.card.alarmFiring": "جارٍ التشغيل...",
+  "alarm.card.alarmIn": "سيرن بعد {{seconds}} ثوانٍ",
   "alarm.card.edit": "تعديل",
   "alarm.card.friday": "الجمعة",
   "alarm.card.mathChallenge": "رياضيات",
   "alarm.card.nextFriday": "الجمعة القادمة",
-  "alarm.card.preview": "معاينة",
-  "alarm.card.previewing": "جاري البدء...",
+  "alarm.card.preview": "تجربة",
   "alarm.card.snoozeEnabled": "غفوة",
   "alarm.card.tapChallenge": "نقر",
   "alarm.card.tapToSetup": "اضغط للإعداد",

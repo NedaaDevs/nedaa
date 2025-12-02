@@ -1,10 +1,11 @@
 {
+  "alarm.card.alarmFiring": "Alarm firing...",
+  "alarm.card.alarmIn": "Alarm in {{seconds}}s",
   "alarm.card.edit": "Edit",
   "alarm.card.friday": "Friday",
   "alarm.card.mathChallenge": "Math",
   "alarm.card.nextFriday": "Next Friday",
   "alarm.card.preview": "Preview",
-  "alarm.card.previewing": "Starting...",
   "alarm.card.snoozeEnabled": "Snooze",
   "alarm.card.tapChallenge": "Tap",
   "alarm.card.tapToSetup": "Tap to set up",

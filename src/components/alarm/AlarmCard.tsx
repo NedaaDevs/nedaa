@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import { parseISO, format, isToday } from "date-fns";
@@ -14,7 +14,7 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Sun, CalendarDays, ChevronRight, ChevronLeft, Play } from "lucide-react-native";
+import { Sun, CalendarDays, ChevronRight, ChevronLeft, Play, X } from "lucide-react-native";
 
 // Services
 import { scheduleAlarm, alarmKit } from "@/services/alarm";
@@ -41,11 +41,19 @@ type AlarmCardProps = {
   onEditPress: () => void;
 };
 
+// Preview countdown duration in seconds (consistent across platforms)
+const PREVIEW_COUNTDOWN_SECONDS = 5;
+
 const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCardProps) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
-  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  // Preview state
+  const [previewState, setPreviewState] = useState<"idle" | "countdown" | "scheduled">("idle");
+  const [countdown, setCountdown] = useState(PREVIEW_COUNTDOWN_SECONDS);
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewAlarmIdRef = useRef<string | null>(null);
 
   const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
@@ -54,42 +62,67 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
   const isFajr = type === "fajr";
   const CardIcon = isFajr ? Sun : CalendarDays;
 
-  // Preview alarm - triggers alarm in a few seconds to test sound/settings
-  // Android: Full preview with overlay and challenges
-  // iOS: AlarmKit preview (no challenges - uses native Apple UI)
-  const handlePreview = async () => {
-    setIsPreviewing(true);
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      // Cancel any scheduled preview alarm
+      if (previewAlarmIdRef.current) {
+        import("@/services/alarm").then(({ cancelAlarm }) => {
+          if (previewAlarmIdRef.current) {
+            cancelAlarm(previewAlarmIdRef.current);
+          }
+        });
+      }
+    };
+  }, []);
+
+  // Cancel preview - cancels the scheduled alarm
+  const cancelPreview = useCallback(async () => {
+    // Clear countdown interval
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+
+    // Cancel scheduled alarm if exists
+    if (previewAlarmIdRef.current) {
+      try {
+        const { cancelAlarm } = await import("@/services/alarm");
+        await cancelAlarm(previewAlarmIdRef.current);
+      } catch (error) {
+        console.error("[AlarmCard] Cancel preview failed:", error);
+      }
+      previewAlarmIdRef.current = null;
+    }
+
+    // Reset state
+    setPreviewState("idle");
+    setCountdown(PREVIEW_COUNTDOWN_SECONDS);
+  }, []);
+
+  // Schedule the actual alarm
+  const schedulePreviewAlarm = useCallback(async () => {
     try {
+      const previewId = `preview-${type}-${Date.now()}`;
+      previewAlarmIdRef.current = previewId;
+
       if (Platform.OS === "android") {
-        const previewTime = new Date(Date.now() + 3000); // 3 seconds from now
+        const previewTime = new Date(Date.now() + 1000); // 1 second from now (countdown already passed)
         await scheduleAlarm({
-          id: `preview-${type}-${Date.now()}`,
+          id: previewId,
           type,
           scheduledTime: previewTime,
           title: isFajr ? t("alarm.overlay.fajrPrayer") : t("alarm.overlay.jummahPrayer"),
           body: isFajr ? t("alarm.prayerBetterThanSleep") : t("alarm.jummahReminder"),
           subtitle: isFajr ? t("alarm.prayerBetterThanSleep") : undefined,
           settings,
-          translations: {
-            alarmTitle: isFajr ? t("alarm.overlay.fajrPrayer") : t("alarm.overlay.jummahPrayer"),
-            dismiss: t("alarm.dismiss"),
-            snoozeWithMinutes: t("alarm.overlay.snoozeWithMinutes"),
-            soundPausedFor: t("alarm.overlay.soundPausedFor"),
-            soundResumesIn: t("alarm.overlay.soundResumesIn"),
-            soundResumed: t("alarm.overlay.soundResumed"),
-            solveMathProblems: t("alarm.overlay.solveMathProblems"),
-            solveMathProblem: t("alarm.overlay.solveMathProblem"),
-            questionProgress: t("alarm.overlay.questionProgress"),
-            answer: t("alarm.overlay.answer"),
-            submit: t("alarm.overlay.submit"),
-            wrongAnswer: t("alarm.overlay.wrongAnswer"),
-            tapInstruction: t("alarm.overlay.tapInstruction"),
-            tap: t("alarm.overlay.tap"),
-          },
         });
       } else if (Platform.OS === "ios") {
-        // iOS: Schedule a test alarm using AlarmKit (10 seconds from now)
-        const previewTime = new Date(Date.now() + 10 * 1000);
+        const previewTime = new Date(Date.now() + 1000);
         await alarmKit.scheduleAlarm({
           title: isFajr ? t("alarm.overlay.fajrPrayer") : t("alarm.overlay.jummahPrayer"),
           timestamp: previewTime.getTime(),
@@ -98,14 +131,42 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
           stopButtonText: isFajr ? t("alarm.prayerBetterThanSleep") : undefined,
         });
       }
+
+      setPreviewState("scheduled");
+
+      // Reset to idle after alarm should have fired
+      setTimeout(() => {
+        setPreviewState("idle");
+        setCountdown(PREVIEW_COUNTDOWN_SECONDS);
+        previewAlarmIdRef.current = null;
+      }, 3000);
     } catch (error) {
-      console.error("[AlarmCard] Preview failed:", error);
-    } finally {
-      // Reset preview state after delay
-      const delay = Platform.OS === PlatformType.IOS ? 10000 : 3000;
-      setTimeout(() => setIsPreviewing(false), delay);
+      console.error("[AlarmCard] Preview scheduling failed:", error);
+      setPreviewState("idle");
+      setCountdown(PREVIEW_COUNTDOWN_SECONDS);
     }
-  };
+  }, [type, isFajr, settings, t]);
+
+  // Start preview with countdown
+  const handlePreview = useCallback(() => {
+    setPreviewState("countdown");
+    setCountdown(PREVIEW_COUNTDOWN_SECONDS);
+
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          // Countdown finished - schedule alarm
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          schedulePreviewAlarm();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [schedulePreviewAlarm]);
 
   // Calculate next alarm time
   const getNextAlarmTime = (): { time: string; occurrence: string } | null => {
@@ -314,21 +375,46 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
           <HStack className="items-center justify-between mt-2">
             {/* Preview button (both platforms) */}
             {settings.enabled && (
-              <Button
-                size="sm"
-                variant="outline"
-                onPress={handlePreview}
-                disabled={isPreviewing}
-                className="border-outline">
-                <HStack className="items-center gap-1">
-                  <Icon as={Play} size="xs" className="text-typography-secondary" />
-                  <ButtonText className="text-typography-secondary text-xs">
-                    {isPreviewing
-                      ? t("alarm.card.previewing", "Starting...")
-                      : t("alarm.card.preview", "Preview")}
-                  </ButtonText>
-                </HStack>
-              </Button>
+              <>
+                {previewState === "idle" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={handlePreview}
+                    className="border-outline">
+                    <HStack className="items-center gap-1">
+                      <Icon as={Play} size="xs" className="text-typography-secondary" />
+                      <ButtonText className="text-typography-secondary text-xs">
+                        {t("alarm.card.preview", "Preview")}
+                      </ButtonText>
+                    </HStack>
+                  </Button>
+                )}
+
+                {previewState === "countdown" && (
+                  <HStack className="items-center gap-2">
+                    <Box className="bg-primary/20 rounded-full px-3 py-1.5">
+                      <Text className="text-primary font-bold text-sm">
+                        {t("alarm.card.alarmIn", "Alarm in {{seconds}}s", { seconds: countdown })}
+                      </Text>
+                    </Box>
+                    <Pressable
+                      onPress={cancelPreview}
+                      className="bg-error/20 rounded-full p-1.5"
+                      hitSlop={8}>
+                      <Icon as={X} size="xs" className="text-error" />
+                    </Pressable>
+                  </HStack>
+                )}
+
+                {previewState === "scheduled" && (
+                  <Box className="bg-success/20 rounded-full px-3 py-1.5">
+                    <Text className="text-success font-medium text-sm">
+                      {t("alarm.card.alarmFiring", "Alarm firing...")}
+                    </Text>
+                  </Box>
+                )}
+              </>
             )}
             {!settings.enabled && <Box />}
 
