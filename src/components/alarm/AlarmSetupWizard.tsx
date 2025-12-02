@@ -25,6 +25,16 @@ import { X, Sun, CalendarDays, Clock } from "lucide-react-native";
 // Types
 import type { AlarmType, AlarmSettings, AlarmChallengeType, MathDifficulty } from "@/types/alarm";
 
+// Constants
+import {
+  SNOOZE_DURATIONS,
+  CHALLENGE_TYPES,
+  MATH_DIFFICULTIES,
+  MATH_QUESTION_COUNTS,
+  TAP_COUNTS,
+  GRACE_PERIODS,
+} from "@/constants/AlarmOptions";
+
 type TimeOption = {
   id: string;
   offsetMinutes: number;
@@ -104,23 +114,17 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
         },
       ];
 
-  const snoozeDurations = [0, 5, 10, 15]; // 0 = None/Off
-  const challengeTypes: { id: AlarmChallengeType; label: string }[] = [
-    { id: "none", label: t("alarm.wizard.challenge.none", "None") },
-    { id: "math", label: t("alarm.wizard.challenge.math", "Math") },
-    { id: "tap", label: t("alarm.wizard.challenge.tap", "Tap") },
-  ];
+  const challengeTypeLabels: Record<AlarmChallengeType, string> = {
+    none: t("alarm.wizard.challenge.none", "None"),
+    math: t("alarm.wizard.challenge.math", "Math"),
+    tap: t("alarm.wizard.challenge.tap", "Tap"),
+  };
 
-  // Challenge configuration options
-  const mathDifficultyOptions: { id: MathDifficulty; label: string }[] = [
-    { id: "easy", label: t("alarm.wizard.difficulty.easy", "Easy") },
-    { id: "medium", label: t("alarm.wizard.difficulty.medium", "Medium") },
-    { id: "hard", label: t("alarm.wizard.difficulty.hard", "Hard") },
-  ];
-
-  const mathQuestionOptions = [1, 2, 3, 5];
-  const tapCountOptions = [10, 20, 30, 50];
-  const gracePeriodOptions = [10, 15, 30, 60];
+  const mathDifficultyLabels: Record<MathDifficulty, string> = {
+    easy: t("alarm.wizard.difficulty.easy", "Easy"),
+    medium: t("alarm.wizard.difficulty.medium", "Medium"),
+    hard: t("alarm.wizard.difficulty.hard", "Hard"),
+  };
 
   // Calculate total steps (3 if challenge selected on Android, else 2)
   const hasChallenge = selectedChallenge !== "none" && Platform.OS === "android";
@@ -140,8 +144,8 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
         hasCompletedSetup: true,
         timeMode: "dynamic",
         offsetMinutes: selectedOption?.offsetMinutes ?? -30,
-        snoozeEnabled: selectedSnooze > 0,
-        snoozeDurationMinutes: selectedSnooze || 5,
+        snoozeEnabled: true,
+        snoozeDurationMinutes: selectedSnooze,
         challengeEnabled: selectedChallenge !== "none",
         challengeType: selectedChallenge,
         mathDifficulty,
@@ -262,7 +266,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                   {t("alarm.wizard.snooze", "Snooze Duration")}
                 </Text>
                 <HStack className="gap-2">
-                  {snoozeDurations.map((duration) => (
+                  {SNOOZE_DURATIONS.map((duration) => (
                     <Pressable
                       key={duration}
                       onPress={() => setSelectedSnooze(duration)}
@@ -275,9 +279,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                         className={`text-center font-medium ${
                           selectedSnooze === duration ? "text-white" : "text-typography"
                         }`}>
-                        {duration === 0
-                          ? t("alarm.wizard.snoozeOff", "Off")
-                          : `${duration} ${t("alarm.wizard.min", "min")}`}
+                        {`${duration} ${t("alarm.wizard.min", "min")}`}
                       </Text>
                     </Pressable>
                   ))}
@@ -291,20 +293,20 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                     {t("alarm.wizard.dismissChallenge", "Dismiss Challenge")}
                   </Text>
                   <HStack className="gap-3">
-                    {challengeTypes.map((challenge) => (
+                    {CHALLENGE_TYPES.map((challengeType) => (
                       <Pressable
-                        key={challenge.id}
-                        onPress={() => setSelectedChallenge(challenge.id)}
+                        key={challengeType}
+                        onPress={() => setSelectedChallenge(challengeType)}
                         className={`flex-1 py-3 rounded-xl ${
-                          selectedChallenge === challenge.id
+                          selectedChallenge === challengeType
                             ? "bg-accent-primary"
                             : "bg-background border border-outline"
                         }`}>
                         <Text
                           className={`text-center font-medium ${
-                            selectedChallenge === challenge.id ? "text-white" : "text-typography"
+                            selectedChallenge === challengeType ? "text-white" : "text-typography"
                           }`}>
-                          {challenge.label}
+                          {challengeTypeLabels[challengeType]}
                         </Text>
                       </Pressable>
                     ))}
@@ -333,20 +335,20 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                       {t("alarm.wizard.mathDifficulty", "Difficulty")}
                     </Text>
                     <HStack className="gap-3">
-                      {mathDifficultyOptions.map((option) => (
+                      {MATH_DIFFICULTIES.map((difficulty) => (
                         <Pressable
-                          key={option.id}
-                          onPress={() => setMathDifficulty(option.id)}
+                          key={difficulty}
+                          onPress={() => setMathDifficulty(difficulty)}
                           className={`flex-1 py-3 rounded-xl ${
-                            mathDifficulty === option.id
+                            mathDifficulty === difficulty
                               ? "bg-accent-primary"
                               : "bg-background border border-outline"
                           }`}>
                           <Text
                             className={`text-center font-medium ${
-                              mathDifficulty === option.id ? "text-white" : "text-typography"
+                              mathDifficulty === difficulty ? "text-white" : "text-typography"
                             }`}>
-                            {option.label}
+                            {mathDifficultyLabels[difficulty]}
                           </Text>
                         </Pressable>
                       ))}
@@ -359,7 +361,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                       {t("alarm.wizard.mathQuestions", "Number of problems")}
                     </Text>
                     <HStack className="gap-3">
-                      {mathQuestionOptions.map((count) => (
+                      {MATH_QUESTION_COUNTS.map((count) => (
                         <Pressable
                           key={count}
                           onPress={() => setMathQuestionCount(count)}
@@ -388,7 +390,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                     {t("alarm.wizard.tapCount", "Number of taps")}
                   </Text>
                   <HStack className="gap-3">
-                    {tapCountOptions.map((count) => (
+                    {TAP_COUNTS.map((count) => (
                       <Pressable
                         key={count}
                         onPress={() => setTapCount(count)}
@@ -415,7 +417,7 @@ const AlarmSetupWizard = ({ isOpen, onClose, type, onComplete }: AlarmSetupWizar
                   {t("alarm.wizard.gracePeriod", "Grace period (seconds)")}
                 </Text>
                 <HStack className="gap-3">
-                  {gracePeriodOptions.map((seconds) => (
+                  {GRACE_PERIODS.map((seconds) => (
                     <Pressable
                       key={seconds}
                       onPress={() => setChallengeGracePeriodSec(seconds)}

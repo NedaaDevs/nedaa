@@ -120,12 +120,19 @@ export type AlarmStoreState = {
 // ALARM STORE ACTIONS
 // ==========================================
 
+export type ScheduleResult = {
+  fajrSuccess: boolean;
+  fajrError?: string;
+  jummahSuccess: boolean;
+  jummahError?: string;
+};
+
 export type AlarmStoreActions = {
   setFajrAlarmEnabled: (enabled: boolean) => Promise<void>;
   updateFajrAlarmSettings: (settings: Partial<AlarmSettings>) => Promise<void>;
   setJummahAlarmEnabled: (enabled: boolean) => Promise<void>;
   updateJummahAlarmSettings: (settings: Partial<AlarmSettings>) => Promise<void>;
   markSetupCompleted: (type: AlarmType) => void;
-  scheduleAllAlarms: () => Promise<void>;
+  scheduleAllAlarms: () => Promise<ScheduleResult>;
   rescheduleIfNeeded: (force?: boolean) => Promise<void>;
 };

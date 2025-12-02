@@ -59,6 +59,13 @@ import type { AlarmSettings, AlarmType, MathDifficulty, AlarmChallengeType } fro
 
 // Constants
 import { getAlarmSound } from "@/constants/AlarmSounds";
+import {
+  SNOOZE_DURATIONS,
+  MATH_DIFFICULTIES,
+  MATH_QUESTION_COUNTS,
+  TAP_COUNTS,
+  GRACE_PERIODS,
+} from "@/constants/AlarmOptions";
 
 // Utils
 import { isSystemAlarmSoundKey } from "@/services/alarm/sounds";
@@ -143,12 +150,10 @@ export default function AlarmEditScreen() {
     { value: 10, label: t("alarm.offset.after", { count: 10 }) },
   ];
 
-  const snoozeOptions: SettingOption<number>[] = [
-    { value: 0, label: t("alarm.snooze.off", "Off") },
-    { value: 5, label: t("common.minute", { count: 5 }) },
-    { value: 10, label: t("common.minute", { count: 10 }) },
-    { value: 15, label: t("common.minute", { count: 15 }) },
-  ];
+  const snoozeOptions: SettingOption<number>[] = SNOOZE_DURATIONS.map((duration) => ({
+    value: duration,
+    label: t("common.minute", { count: duration }),
+  }));
 
   const challengeTypeOptions: SettingOption<AlarmChallengeType>[] = [
     {
@@ -168,32 +173,34 @@ export default function AlarmEditScreen() {
     },
   ];
 
-  const mathDifficultyOptions: SettingOption<MathDifficulty>[] = [
-    { value: "easy", label: t("alarm.difficulty.easy", "Easy"), description: "1 + 2 = ?" },
-    { value: "medium", label: t("alarm.difficulty.medium", "Medium"), description: "12 + 8 = ?" },
-    { value: "hard", label: t("alarm.difficulty.hard", "Hard"), description: "23 × 4 = ?" },
-  ];
+  const mathDifficultyDescriptions: Record<MathDifficulty, string> = {
+    easy: "1 + 2 = ?",
+    medium: "12 + 8 = ?",
+    hard: "23 × 4 = ?",
+  };
 
-  const mathQuestionsOptions: SettingOption<number>[] = [
-    { value: 1, label: t("alarm.questions", { count: 1 }) },
-    { value: 2, label: t("alarm.questions", { count: 2 }) },
-    { value: 3, label: t("alarm.questions", { count: 3 }) },
-    { value: 5, label: t("alarm.questions", { count: 5 }) },
-  ];
+  const mathDifficultyOptions: SettingOption<MathDifficulty>[] = MATH_DIFFICULTIES.map(
+    (difficulty) => ({
+      value: difficulty,
+      label: t(`alarm.difficulty.${difficulty}`, difficulty),
+      description: mathDifficultyDescriptions[difficulty],
+    })
+  );
 
-  const tapCountOptions: SettingOption<number>[] = [
-    { value: 10, label: t("alarm.taps", { count: 10 }) },
-    { value: 20, label: t("alarm.taps", { count: 20 }) },
-    { value: 30, label: t("alarm.taps", { count: 30 }) },
-    { value: 50, label: t("alarm.taps", { count: 50 }) },
-  ];
+  const mathQuestionsOptions: SettingOption<number>[] = MATH_QUESTION_COUNTS.map((count) => ({
+    value: count,
+    label: t("alarm.questions", { count }),
+  }));
 
-  const gracePeriodOptions: SettingOption<number>[] = [
-    { value: 10, label: t("alarm.grace", { count: 10 }) },
-    { value: 15, label: t("alarm.grace", { count: 15 }) },
-    { value: 30, label: t("alarm.grace", { count: 30 }) },
-    { value: 60, label: t("alarm.grace", { count: 60 }) },
-  ];
+  const tapCountOptions: SettingOption<number>[] = TAP_COUNTS.map((count) => ({
+    value: count,
+    label: t("alarm.taps", { count }),
+  }));
+
+  const gracePeriodOptions: SettingOption<number>[] = GRACE_PERIODS.map((seconds) => ({
+    value: seconds,
+    label: t("alarm.grace", { count: seconds }),
+  }));
 
   // ==========================================
   // DISPLAY HELPERS
@@ -245,18 +252,19 @@ export default function AlarmEditScreen() {
   const handleSettingChange = useCallback(
     async <K extends keyof AlarmSettings>(key: K, value: AlarmSettings[K]) => {
       hapticSelection();
-      await updateSettings({ [key]: value });
+      try {
+        await updateSettings({ [key]: value });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t("alarm.error.unknown");
+        Alert.alert(t("alarm.error.title", "Alarm Error"), message);
+      }
     },
-    [updateSettings, hapticSelection]
+    [updateSettings, hapticSelection, t]
   );
 
   const handleSnoozeSelect = (value: number) => {
-    if (value === 0) {
-      handleSettingChange("snoozeEnabled", false);
-    } else {
-      handleSettingChange("snoozeEnabled", true);
-      handleSettingChange("snoozeDurationMinutes", value);
-    }
+    handleSettingChange("snoozeEnabled", true);
+    handleSettingChange("snoozeDurationMinutes", value);
     setActiveSheet(null);
   };
 
@@ -557,7 +565,7 @@ export default function AlarmEditScreen() {
 
         {/* SOUND & VIBRATION */}
         <Box className="bg-background-secondary rounded-xl px-4 mb-4">
-          {/* Sound picker - Android only, iOS uses system default(for now) */}
+          {/* Sound picker - Android only, iOS uses system default */}
           {Platform.OS === "android" && (
             <SettingRow
               icon={Music}
@@ -567,19 +575,23 @@ export default function AlarmEditScreen() {
             />
           )}
 
-          <ToggleRow
-            icon={Volume2}
-            label={t("alarm.settings.gradualVolume", "Gradual Volume")}
-            value={settings.gradualVolume}
-            onValueChange={(v) => handleSettingChange("gradualVolume", v)}
-          />
-
-          <ToggleRow
-            icon={Vibrate}
-            label={t("alarm.settings.vibration", "Vibration")}
-            value={settings.vibration}
-            onValueChange={(v) => handleSettingChange("vibration", v)}
-          />
+          {/* Gradual volume & Vibration - Android only, iOS AlarmKit doesn't support them */}
+          {Platform.OS === "android" && (
+            <>
+              <ToggleRow
+                icon={Volume2}
+                label={t("alarm.settings.gradualVolume", "Gradual Volume")}
+                value={settings.gradualVolume}
+                onValueChange={(v) => handleSettingChange("gradualVolume", v)}
+              />
+              <ToggleRow
+                icon={Vibrate}
+                label={t("alarm.settings.vibration", "Vibration")}
+                value={settings.vibration}
+                onValueChange={(v) => handleSettingChange("vibration", v)}
+              />
+            </>
+          )}
 
           {Platform.OS === "android" && (
             <ToggleRow
