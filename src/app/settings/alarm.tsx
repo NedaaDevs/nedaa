@@ -18,6 +18,7 @@ import AlarmSetupWizard from "@/components/alarm/AlarmSetupWizard";
 import { AlarmClock, ShieldAlert, Settings, Clock } from "lucide-react-native";
 import { useAlarmStore } from "@/stores/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { alarmKit, checkAlarmPermissions, requestAlarmPermissions } from "@/services/alarm";
 import type { AlarmSettings, AlarmType } from "@/types/alarm";
 
@@ -41,9 +42,20 @@ export default function AlarmSettingsScreen() {
   const [wizardType, setWizardType] = useState<AlarmType | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
+  const { isActive } = useAppVisibility();
+
+  // Check permissions on mount
   useEffect(() => {
     checkPermissions();
   }, []);
+
+  // Re-check permissions when app becomes active (e.g., returning from settings)
+  useEffect(() => {
+    if (isActive && permissionState !== "loading") {
+      checkPermissions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   const checkPermissions = async () => {
     setPermissionState("loading");
@@ -277,7 +289,7 @@ export default function AlarmSettingsScreen() {
     <Background>
       <TopBar title={t("alarm.settings.title", "Alarm Settings")} href="/" backOnClick />
       <ScrollView
-        className="flex-1 px-4 pt-2"
+        className="flex-1 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}>
         {/* Header */}

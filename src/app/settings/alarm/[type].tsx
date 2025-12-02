@@ -474,7 +474,7 @@ export default function AlarmEditScreen() {
         backOnClick
       />
       <ScrollView
-        className="flex-1 px-4 pt-2"
+        className="flex-1 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}>
         {/* Header with Icon */}
