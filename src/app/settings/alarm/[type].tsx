@@ -142,13 +142,26 @@ export default function AlarmEditScreen() {
     },
   ];
 
-  const offsetOptions: SettingOption<number>[] = [
-    { value: -60, label: t("alarm.offset.before", { count: 60 }) },
+  const fajrOffsetOptions: SettingOption<number>[] = [
+    { value: -120, label: t("alarm.offset.beforeHours", { count: 2 }) },
+    { value: -90, label: t("alarm.offset.beforeHourAndHalf", "1.5 hours before") },
+    { value: -60, label: t("alarm.offset.beforeHours", { count: 1 }) },
     { value: -30, label: t("alarm.offset.before", { count: 30 }) },
     { value: -15, label: t("alarm.offset.before", { count: 15 }) },
     { value: 0, label: t("alarm.offset.atTime", "At prayer time") },
+    { value: 5, label: t("alarm.offset.after", { count: 5 }) },
     { value: 10, label: t("alarm.offset.after", { count: 10 }) },
   ];
+
+  const jummahOffsetOptions: SettingOption<number>[] = [
+    { value: -120, label: t("alarm.offset.beforeHours", { count: 2 }) },
+    { value: -90, label: t("alarm.offset.beforeHourAndHalf", "1.5 hours before") },
+    { value: -60, label: t("alarm.offset.beforeHours", { count: 1 }) },
+    { value: -30, label: t("alarm.offset.before", { count: 30 }) },
+    { value: -15, label: t("alarm.offset.before", { count: 15 }) },
+  ];
+
+  const offsetOptions = isFajr ? fajrOffsetOptions : jummahOffsetOptions;
 
   const snoozeOptions: SettingOption<number>[] = SNOOZE_DURATIONS.map((duration) => ({
     value: duration,
