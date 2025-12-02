@@ -32,23 +32,24 @@ object AlarmTranslations {
     }
 
     // Default English translations (fallback)
+    // Uses {{placeholder}} format for consistency with AlarmOverlayView.tr() function
     private val defaultTranslations = mapOf(
         Keys.FAJR_PRAYER to "Fajr Prayer",
         Keys.JUMMAH_PRAYER to "Jummah Prayer",
         Keys.SNOOZE to "Snooze",
-        Keys.SNOOZE_WITH_MINUTES to "Snooze (%d min)",
+        Keys.SNOOZE_WITH_MINUTES to "Snooze ({{minutes}} min)",
         Keys.DISMISS to "Dismiss",
         Keys.PRAYER_BETTER_THAN_SLEEP to "Prayer is better than sleep",
-        Keys.SOUND_PAUSED_FOR to "Sound paused for %d seconds",
-        Keys.SOUND_RESUMES_IN to "Sound resumes in %d seconds",
+        Keys.SOUND_PAUSED_FOR to "Sound paused for {{seconds}} seconds",
+        Keys.SOUND_RESUMES_IN to "Sound resumes in {{seconds}} seconds",
         Keys.SOUND_RESUMED to "Sound resumed",
-        Keys.SOLVE_MATH_PROBLEMS to "Solve %d math problems to dismiss",
+        Keys.SOLVE_MATH_PROBLEMS to "Solve {{count}} math problems to dismiss",
         Keys.SOLVE_MATH_PROBLEM to "Solve the math problem to dismiss",
-        Keys.QUESTION_PROGRESS to "Question %d of %d",
+        Keys.QUESTION_PROGRESS to "Question {{current}} of {{total}}",
         Keys.ANSWER to "Answer",
         Keys.SUBMIT to "Submit",
         Keys.WRONG_ANSWER to "Wrong answer, try again",
-        Keys.TAP_INSTRUCTION to "Tap the button %d times",
+        Keys.TAP_INSTRUCTION to "Tap the button {{count}} times",
         Keys.TAP to "TAP"
     )
 
@@ -84,20 +85,15 @@ object AlarmTranslations {
     }
 
     /**
-     * Get a translated string with optional format arguments.
+     * Get a translated string with optional named replacements.
+     * Usage: get(translations, "key", "name" to value, "other" to value2)
      */
-    fun get(translations: Map<String, String>, key: String, vararg args: Any): String {
-        val template = translations[key] ?: defaultTranslations[key] ?: key
-        return if (args.isNotEmpty()) {
-            try {
-                String.format(template, *args)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to format translation for key=$key", e)
-                template
-            }
-        } else {
-            template
+    fun get(translations: Map<String, String>, key: String, vararg replacements: Pair<String, Any>): String {
+        var result = translations[key] ?: defaultTranslations[key] ?: key
+        replacements.forEach { (placeholder, value) ->
+            result = result.replace("{{$placeholder}}", value.toString())
         }
+        return result
     }
 
     /**

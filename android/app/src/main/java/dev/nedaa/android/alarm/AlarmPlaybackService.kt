@@ -527,10 +527,16 @@ class AlarmPlaybackService : Service() {
             putExtra(AlarmConstants.EXTRA_ALARM_TYPE, currentAlarmType)
             putExtra(AlarmConstants.EXTRA_ALARM_TITLE, currentAlarmTitle)
             putExtra(AlarmConstants.EXTRA_ALARM_BODY, currentAlarmBody)
+            putExtra(AlarmConstants.EXTRA_ALARM_SUBTITLE, currentAlarmSubtitle)
             putExtra(AlarmConstants.EXTRA_SOUND_URI, currentSoundUri)
             putExtra(AlarmConstants.EXTRA_VIBRATION, currentVibration)
             putExtra(AlarmConstants.EXTRA_SNOOZE_MINUTES, currentSnoozeMinutes)
             putExtra(AlarmConstants.EXTRA_CHALLENGE_TYPE, currentChallengeType)
+            putExtra(AlarmConstants.EXTRA_MATH_DIFFICULTY, currentMathDifficulty)
+            putExtra(AlarmConstants.EXTRA_MATH_QUESTION_COUNT, currentMathQuestionCount)
+            putExtra(AlarmConstants.EXTRA_TAP_COUNT, currentTapCount)
+            putExtra(AlarmConstants.EXTRA_CHALLENGE_GRACE_PERIOD_SEC, currentChallengeGracePeriodSec)
+            putExtra(AlarmConstants.EXTRA_TRANSLATIONS_JSON, currentTranslationsJson)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
