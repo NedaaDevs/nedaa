@@ -176,6 +176,26 @@ class AlarmModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     @ReactMethod
+    fun getNextAlarmClock(promise: Promise) {
+        try {
+            val context = reactApplicationContext
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+            val nextAlarm = alarmManager.nextAlarmClock
+            if (nextAlarm != null) {
+                val result: WritableMap = Arguments.createMap()
+                result.putDouble("timestamp", nextAlarm.triggerTime.toDouble())
+                promise.resolve(result)
+            } else {
+                promise.resolve(null)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get next alarm clock", e)
+            promise.reject("GET_NEXT_ALARM_ERROR", e.message, e)
+        }
+    }
+
+    @ReactMethod
     fun canScheduleExactAlarms(promise: Promise) {
         try {
             val context = reactApplicationContext

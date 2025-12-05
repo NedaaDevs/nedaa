@@ -95,6 +95,36 @@ export async function getScheduledAlarms(): Promise<string[]> {
 }
 
 /**
+ * Get the next scheduled alarm time from the system.
+ */
+export async function getNextAlarmClock(): Promise<Date | null> {
+  try {
+    const alarms = await alarmKit.getAllAlarms();
+    if (alarms.length === 0) return null;
+
+    const now = Date.now();
+    const futureAlarms = alarms
+      .filter((a) => {
+        const fireDate = a.nextFireDate ? new Date(a.nextFireDate).getTime() : 0;
+        return fireDate > now;
+      })
+      .sort((a, b) => {
+        const aTime = a.nextFireDate ? new Date(a.nextFireDate).getTime() : 0;
+        const bTime = b.nextFireDate ? new Date(b.nextFireDate).getTime() : 0;
+        return aTime - bTime;
+      });
+
+    if (futureAlarms.length > 0 && futureAlarms[0].nextFireDate) {
+      return new Date(futureAlarms[0].nextFireDate);
+    }
+    return null;
+  } catch (error) {
+    console.error("[NativeAlarmService.ios] Get next alarm failed:", error);
+    return null;
+  }
+}
+
+/**
  * Check alarm permissions on iOS.
  */
 export async function checkAlarmPermissions(): Promise<AlarmPermissionStatus> {

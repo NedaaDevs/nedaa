@@ -37,6 +37,7 @@ type AlarmManagerInterface = {
   getScheduledAlarms(): Promise<
     { id: string; timestamp: number; alarmType: string; title: string }[]
   >;
+  getNextAlarmClock(): Promise<{ timestamp: number } | null>;
   canScheduleExactAlarms(): Promise<boolean>;
   openAlarmPermissionSettings(): Promise<boolean>;
   canDrawOverlays(): Promise<boolean>;
@@ -123,6 +124,20 @@ export const getScheduledAlarms = async (): Promise<string[]> => {
   } catch (error) {
     console.error("[AlarmManager] Get alarms failed:", error);
     return [];
+  }
+};
+
+export const getNextAlarmClock = async (): Promise<Date | null> => {
+  if (!NativeAlarmModule) return null;
+  try {
+    const result = await NativeAlarmModule.getNextAlarmClock();
+    if (result?.timestamp) {
+      return new Date(result.timestamp);
+    }
+    return null;
+  } catch (error) {
+    console.error("[AlarmManager] Get next alarm failed:", error);
+    return null;
   }
 };
 
