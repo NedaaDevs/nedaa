@@ -275,18 +275,28 @@ export default function AlarmEditScreen() {
     [updateSettings, hapticSelection, t]
   );
 
-  const handleSnoozeSelect = (value: number) => {
-    handleSettingChange("snoozeEnabled", true);
-    handleSettingChange("snoozeDurationMinutes", value);
+  const handleSnoozeSelect = async (value: number) => {
+    hapticSelection();
+    try {
+      await updateSettings({ snoozeEnabled: true, snoozeDurationMinutes: value });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("alarm.error.unknown");
+      Alert.alert(t("alarm.error.title", "Alarm Error"), message);
+    }
     setActiveSheet(null);
   };
 
-  const handleChallengeTypeSelect = (value: AlarmChallengeType) => {
-    if (value === "none") {
-      handleSettingChange("challengeEnabled", false);
-    } else {
-      handleSettingChange("challengeEnabled", true);
-      handleSettingChange("challengeType", value);
+  const handleChallengeTypeSelect = async (value: AlarmChallengeType) => {
+    hapticSelection();
+    try {
+      if (value === "none") {
+        await updateSettings({ challengeEnabled: false });
+      } else {
+        await updateSettings({ challengeEnabled: true, challengeType: value });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("alarm.error.unknown");
+      Alert.alert(t("alarm.error.title", "Alarm Error"), message);
     }
     setActiveSheet(null);
   };
@@ -635,9 +645,14 @@ export default function AlarmEditScreen() {
           isVisible={showTimePicker}
           currentHour={settings.fixedHour ?? 5}
           currentMinute={settings.fixedMinute ?? 0}
-          onTimeChange={(hour, minute) => {
-            handleSettingChange("fixedHour", hour);
-            handleSettingChange("fixedMinute", minute);
+          onTimeChange={async (hour, minute) => {
+            hapticSelection();
+            try {
+              await updateSettings({ fixedHour: hour, fixedMinute: minute });
+            } catch (error) {
+              const message = error instanceof Error ? error.message : t("alarm.error.unknown");
+              Alert.alert(t("alarm.error.title", "Alarm Error"), message);
+            }
           }}
           onClose={() => setShowTimePicker(false)}
         />

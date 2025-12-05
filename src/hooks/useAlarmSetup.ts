@@ -7,10 +7,6 @@ import { alarmScheduler } from "@/services/alarm/alarmScheduler";
 // Stores
 import { useAlarmStore } from "@/stores/alarm";
 
-// ==========================================
-// ALARM SETUP HOOK
-// ==========================================
-
 /**
  * Hook to initialize and manage alarm scheduling.
  *
@@ -21,16 +17,12 @@ import { useAlarmStore } from "@/stores/alarm";
  * This hook handles:
  * - Initializing the alarm scheduler
  * - Rescheduling alarms when app comes to foreground
- * - Rescheduling when settings change
  */
 export function useAlarmSetup() {
   const initRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
 
-  // Store actions
   const rescheduleIfNeeded = useAlarmStore((state) => state.rescheduleIfNeeded);
-  const fajrAlarm = useAlarmStore((state) => state.fajrAlarm);
-  const jummahAlarm = useAlarmStore((state) => state.jummahAlarm);
 
   // ==========================================
   // INITIALIZATION
@@ -72,54 +64,4 @@ export function useAlarmSetup() {
       subscription.remove();
     };
   }, [rescheduleIfNeeded]);
-
-  // ==========================================
-  // SCHEDULE ON SETTINGS CHANGE
-  // ==========================================
-
-  // Track previous values to detect actual changes
-  const prevSettingsRef = useRef<string | null>(null);
-
-  // Reschedule when alarm settings change
-  useEffect(() => {
-    // Don't schedule on initial mount (will be handled by initialize)
-    if (!initRef.current) return;
-
-    // Create a settings key to detect actual changes
-    const settingsKey = JSON.stringify({
-      fajrEnabled: fajrAlarm.enabled,
-      fajrTimeMode: fajrAlarm.timeMode,
-      fajrOffset: fajrAlarm.offsetMinutes,
-      fajrHour: fajrAlarm.fixedHour,
-      fajrMinute: fajrAlarm.fixedMinute,
-      jummahEnabled: jummahAlarm.enabled,
-      jummahTimeMode: jummahAlarm.timeMode,
-      jummahOffset: jummahAlarm.offsetMinutes,
-      jummahHour: jummahAlarm.fixedHour,
-      jummahMinute: jummahAlarm.fixedMinute,
-    });
-
-    // Skip if settings haven't actually changed
-    if (prevSettingsRef.current === settingsKey) {
-      return;
-    }
-    prevSettingsRef.current = settingsKey;
-
-    const anyEnabled = fajrAlarm.enabled || jummahAlarm.enabled;
-    if (anyEnabled) {
-      rescheduleIfNeeded(true);
-    }
-  }, [
-    fajrAlarm.enabled,
-    jummahAlarm.enabled,
-    fajrAlarm.timeMode,
-    fajrAlarm.offsetMinutes,
-    fajrAlarm.fixedHour,
-    fajrAlarm.fixedMinute,
-    jummahAlarm.timeMode,
-    jummahAlarm.offsetMinutes,
-    jummahAlarm.fixedHour,
-    jummahAlarm.fixedMinute,
-    rescheduleIfNeeded,
-  ]);
 }
