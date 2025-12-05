@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import { addDays, setHours, setMinutes, setSeconds, setMilliseconds, isBefore } from "date-fns";
+import { addDays, isBefore } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
 import i18n from "@/localization/i18n";
@@ -11,10 +11,10 @@ import { PrayerTimesDB } from "@/services/db";
 import { scheduleAlarm, cancelAllAlarms as nativeCancelAllAlarms } from "./NativeAlarmService";
 
 // AlarmKit
-import { alarmKit, type AlarmConfig } from "./AlarmKit";
+import { alarmKit, type AlarmConfig } from "@/services/alarm/AlarmKit";
 
 // Sounds
-import { getIOSSoundName } from "./sounds";
+import { getIOSSoundName } from "@/services/alarm/sounds";
 
 // Location
 import locationStore from "@/stores/location";
@@ -113,17 +113,16 @@ class AlarmSchedulerService {
 
     // Fixed time mode
     if (settings.timeMode === "fixed" && settings.fixedHour !== undefined) {
-      let alarmTime = setHours(now, settings.fixedHour);
-      alarmTime = setMinutes(alarmTime, settings.fixedMinute ?? 0);
-      alarmTime = setSeconds(alarmTime, 0);
-      alarmTime = setMilliseconds(alarmTime, 0);
+      let alarmTime = new Date(now);
+      alarmTime.setUTCHours(settings.fixedHour);
+      alarmTime.setUTCMinutes(settings.fixedMinute ?? 0);
+      alarmTime.setUTCSeconds(0);
+      alarmTime.setUTCMilliseconds(0);
 
-      // If time has passed today, schedule for tomorrow
       if (isBefore(alarmTime, now)) {
         alarmTime = addDays(alarmTime, 1);
       }
 
-      // Convert from zoned time to UTC for scheduling
       return fromZonedTime(alarmTime, timezone);
     }
 
@@ -136,13 +135,9 @@ class AlarmSchedulerService {
       return null;
     }
 
-    // Parse Fajr time (format: "05:30")
     let alarmTime = this.parsePrayerTime(prayerTimes.timings.fajr, now, timezone);
-
-    // Apply offset
     alarmTime = new Date(alarmTime.getTime() + settings.offsetMinutes * 60 * 1000);
 
-    // If time has passed, get tomorrow's Fajr
     if (isBefore(alarmTime, new Date())) {
       const tomorrow = addDays(now, 1);
       const tomorrowInt = dateToInt(tomorrow);
@@ -271,10 +266,11 @@ class AlarmSchedulerService {
 
       if (daysUntilFriday === 0) {
         // It's Friday - check if time has passed
-        let alarmTime = setHours(now, settings.fixedHour);
-        alarmTime = setMinutes(alarmTime, settings.fixedMinute ?? 0);
-        alarmTime = setSeconds(alarmTime, 0);
-        alarmTime = setMilliseconds(alarmTime, 0);
+        let alarmTime = new Date(now);
+        alarmTime.setUTCHours(settings.fixedHour);
+        alarmTime.setUTCMinutes(settings.fixedMinute ?? 0);
+        alarmTime.setUTCSeconds(0);
+        alarmTime.setUTCMilliseconds(0);
 
         if (isBefore(alarmTime, now)) {
           // Time passed, schedule next Friday
@@ -287,10 +283,11 @@ class AlarmSchedulerService {
         targetDay = addDays(now, daysUntilFriday);
       }
 
-      let alarmTime = setHours(targetDay, settings.fixedHour);
-      alarmTime = setMinutes(alarmTime, settings.fixedMinute ?? 0);
-      alarmTime = setSeconds(alarmTime, 0);
-      alarmTime = setMilliseconds(alarmTime, 0);
+      let alarmTime = new Date(targetDay);
+      alarmTime.setUTCHours(settings.fixedHour);
+      alarmTime.setUTCMinutes(settings.fixedMinute ?? 0);
+      alarmTime.setUTCSeconds(0);
+      alarmTime.setUTCMilliseconds(0);
 
       return fromZonedTime(alarmTime, timezone);
     }
@@ -413,19 +410,23 @@ class AlarmSchedulerService {
   // ==========================================
 
   private parsePrayerTime(timeString: string, dateRef: Date, timezone: string): Date {
-    // Prayer time format: "05:30" or "05:30 (PKT)"
+    // ISO date string (e.g., "2025-12-05T05:23:00+03:00")
+    if (timeString.includes("T")) {
+      return new Date(timeString);
+    }
+
+    // Time string format: "05:30" or "05:30 (PKT)"
     const cleanTime = timeString.replace(/\s*\([^)]*\)\s*$/, "").trim();
     const [hourStr, minuteStr] = cleanTime.split(":");
     const hour = parseInt(hourStr, 10);
     const minute = parseInt(minuteStr, 10);
 
     let prayerDate = new Date(dateRef);
-    prayerDate = setHours(prayerDate, hour);
-    prayerDate = setMinutes(prayerDate, minute);
-    prayerDate = setSeconds(prayerDate, 0);
-    prayerDate = setMilliseconds(prayerDate, 0);
+    prayerDate.setUTCHours(hour);
+    prayerDate.setUTCMinutes(minute);
+    prayerDate.setUTCSeconds(0);
+    prayerDate.setUTCMilliseconds(0);
 
-    // Convert from zoned time to UTC
     return fromZonedTime(prayerDate, timezone);
   }
 }
