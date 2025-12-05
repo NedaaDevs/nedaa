@@ -112,6 +112,10 @@ export type AlarmStoreState = {
   scheduledFajrAlarmId: string | null;
   scheduledJummahAlarmId: string | null;
 
+  // Next scheduled alarm times (ISO strings from native)
+  nextFajrAlarmTime: string | null;
+  nextJummahAlarmTime: string | null;
+
   // Last scheduled times (for rescheduling detection)
   lastScheduledDate: string | null;
 };

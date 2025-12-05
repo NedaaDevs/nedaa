@@ -16,6 +16,7 @@ export {
   cancelAlarm,
   cancelAllAlarms,
   getScheduledAlarms,
+  getNextAlarmClock,
   checkAlarmPermissions,
   requestAlarmPermissions,
 } from "./NativeAlarmService";

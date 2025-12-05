@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import { parseISO, format, isToday } from "date-fns";
+import { format, isToday } from "date-fns";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -26,12 +26,7 @@ import { useRTL } from "@/contexts/RTLContext";
 import type { AlarmSettings, AlarmType } from "@/types/alarm";
 
 // Stores
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import locationStore from "@/stores/location";
-
-// Utils
-import { timeZonedNow } from "@/utils/date";
-import { PlatformType } from "@/enums/app";
+import { useAlarmStore } from "@/stores/alarm";
 
 type AlarmCardProps = {
   type: AlarmType;
@@ -55,9 +50,8 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previewAlarmIdRef = useRef<string | null>(null);
 
-  const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
-  const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
-  const timezone = locationStore.getState().locationDetails.timezone;
+  const nextFajrAlarmTime = useAlarmStore((state) => state.nextFajrAlarmTime);
+  const nextJummahAlarmTime = useAlarmStore((state) => state.nextJummahAlarmTime);
 
   const isFajr = type === "fajr";
   const CardIcon = isFajr ? Sun : CalendarDays;
@@ -168,105 +162,49 @@ const AlarmCard = ({ type, settings, onToggle, onPress, onEditPress }: AlarmCard
     }, 1000);
   }, [schedulePreviewAlarm]);
 
-  // Calculate next alarm time
+  // Get next alarm time from native scheduled time
   const getNextAlarmTime = (): { time: string; occurrence: string } | null => {
     if (!settings.hasCompletedSetup) return null;
 
-    const now = timeZonedNow(timezone);
+    const nativeTime = isFajr ? nextFajrAlarmTime : nextJummahAlarmTime;
 
-    if (settings.timeMode === "fixed") {
-      // Fixed time mode
-      const hour = settings.fixedHour ?? 5;
-      const minute = settings.fixedMinute ?? 0;
-      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+    if (nativeTime) {
+      const alarmDate = new Date(nativeTime);
+      const now = new Date();
+      const timeString = format(alarmDate, "HH:mm");
 
-      // Calculate next occurrence
-      const todayAlarm = new Date(now);
-      todayAlarm.setHours(hour, minute, 0, 0);
-
-      if (todayAlarm > now) {
+      if (isToday(alarmDate)) {
         return {
           time: timeString,
           occurrence: t("alarm.card.today", "Today"),
         };
-      } else {
+      }
+
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const isTomorrow =
+        alarmDate.getDate() === tomorrow.getDate() &&
+        alarmDate.getMonth() === tomorrow.getMonth() &&
+        alarmDate.getFullYear() === tomorrow.getFullYear();
+
+      if (isTomorrow) {
         return {
           time: timeString,
           occurrence: t("alarm.card.tomorrow", "Tomorrow"),
         };
       }
-    } else {
-      // Dynamic mode - based on prayer time
-      if (isFajr) {
-        // Use Fajr time
-        const fajrTime = todayTimings?.timings?.fajr;
-        const tomorrowFajrTime = tomorrowTimings?.timings?.fajr;
 
-        if (!fajrTime && !tomorrowFajrTime) return null;
-
-        const offsetMs = (settings.offsetMinutes || 0) * 60 * 1000;
-
-        // Check today's Fajr
-        if (fajrTime) {
-          const fajrDate = parseISO(fajrTime);
-          const alarmDate = new Date(fajrDate.getTime() + offsetMs);
-
-          if (alarmDate > now) {
-            const timeString = format(alarmDate, "HH:mm");
-            return {
-              time: timeString,
-              occurrence: isToday(alarmDate)
-                ? t("alarm.card.today", "Today")
-                : t("alarm.card.tomorrow", "Tomorrow"),
-            };
-          }
-        }
-
-        // Use tomorrow's Fajr
-        if (tomorrowFajrTime) {
-          const fajrDate = parseISO(tomorrowFajrTime);
-          const alarmDate = new Date(fajrDate.getTime() + offsetMs);
-          const timeString = format(alarmDate, "HH:mm");
-          return {
-            time: timeString,
-            occurrence: t("alarm.card.tomorrow", "Tomorrow"),
-          };
-        }
-      } else {
-        // Jummah - find next Friday Dhuhr
-        const dayOfWeek = now.getDay();
-        const daysUntilFriday = dayOfWeek === 5 ? 0 : (5 - dayOfWeek + 7) % 7;
-
-        // Get Dhuhr time for calculating Jummah alarm
-        const dhuhrTime = todayTimings?.timings?.dhuhr;
-        if (!dhuhrTime) return null;
-
-        const dhuhrDate = parseISO(dhuhrTime);
-        const offsetMs = (settings.offsetMinutes || 0) * 60 * 1000;
-
-        if (daysUntilFriday === 0) {
-          // Today is Friday
-          const alarmDate = new Date(dhuhrDate.getTime() + offsetMs);
-          if (alarmDate > now) {
-            const timeString = format(alarmDate, "HH:mm");
-            return {
-              time: timeString,
-              occurrence: t("alarm.card.today", "Today"),
-            };
-          }
-          // Friday has passed, next week
-          return {
-            time: format(new Date(dhuhrDate.getTime() + offsetMs), "HH:mm"),
-            occurrence: t("alarm.card.nextFriday", "Next Friday"),
-          };
-        } else {
-          // Calculate next Friday
-          return {
-            time: format(new Date(dhuhrDate.getTime() + offsetMs), "HH:mm"),
-            occurrence: t("alarm.card.friday", "Friday"),
-          };
-        }
+      if (!isFajr) {
+        return {
+          time: timeString,
+          occurrence: t("alarm.card.friday", "Friday"),
+        };
       }
+
+      return {
+        time: timeString,
+        occurrence: format(alarmDate, "EEE, MMM d"),
+      };
     }
 
     return null;

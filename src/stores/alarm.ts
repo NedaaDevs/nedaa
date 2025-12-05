@@ -18,6 +18,8 @@ const defaultState: AlarmStoreState = {
   jummahAlarm: DEFAULT_JUMMAH_ALARM_SETTINGS,
   scheduledFajrAlarmId: null,
   scheduledJummahAlarmId: null,
+  nextFajrAlarmTime: null,
+  nextJummahAlarmTime: null,
   lastScheduledDate: null,
 };
 
@@ -108,26 +110,44 @@ export const useAlarmStore = create<AlarmStore>()(
             console.log("[AlarmStore] Fajr alarm enabled, scheduling...");
             const result = await alarmScheduler.scheduleFajrAlarm(fajrAlarm);
             if (result.success && result.alarmId) {
-              set({ scheduledFajrAlarmId: result.alarmId });
-              console.log("[AlarmStore] Fajr alarm scheduled:", result.alarmId);
+              set({
+                scheduledFajrAlarmId: result.alarmId,
+                nextFajrAlarmTime: result.scheduledTime?.toISOString() ?? null,
+              });
+              console.log(
+                "[AlarmStore] Fajr alarm scheduled:",
+                result.scheduledTime?.toISOString()
+              );
             } else {
               fajrSuccess = false;
               fajrError = result.error;
+              set({ nextFajrAlarmTime: null });
               console.warn("[AlarmStore] Failed to schedule Fajr alarm:", result.error);
             }
+          } else {
+            set({ nextFajrAlarmTime: null });
           }
 
           if (jummahAlarm.enabled) {
             console.log("[AlarmStore] Jummah alarm enabled, scheduling...");
             const result = await alarmScheduler.scheduleJummahAlarm(jummahAlarm);
             if (result.success && result.alarmId) {
-              set({ scheduledJummahAlarmId: result.alarmId });
-              console.log("[AlarmStore] Jummah alarm scheduled:", result.alarmId);
+              set({
+                scheduledJummahAlarmId: result.alarmId,
+                nextJummahAlarmTime: result.scheduledTime?.toISOString() ?? null,
+              });
+              console.log(
+                "[AlarmStore] Jummah alarm scheduled:",
+                result.scheduledTime?.toISOString()
+              );
             } else {
               jummahSuccess = false;
               jummahError = result.error;
+              set({ nextJummahAlarmTime: null });
               console.warn("[AlarmStore] Failed to schedule Jummah alarm:", result.error);
             }
+          } else {
+            set({ nextJummahAlarmTime: null });
           }
 
           set({ lastScheduledDate: new Date().toISOString() });
@@ -166,11 +186,12 @@ export const useAlarmStore = create<AlarmStore>()(
         name: "alarm-storage",
         storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
-          // Only persist settings, not runtime state
           fajrAlarm: state.fajrAlarm,
           jummahAlarm: state.jummahAlarm,
           scheduledFajrAlarmId: state.scheduledFajrAlarmId,
           scheduledJummahAlarmId: state.scheduledJummahAlarmId,
+          nextFajrAlarmTime: state.nextFajrAlarmTime,
+          nextJummahAlarmTime: state.nextJummahAlarmTime,
           lastScheduledDate: state.lastScheduledDate,
         }),
         onRehydrateStorage: () => (state) => {
