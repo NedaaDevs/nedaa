@@ -78,6 +78,16 @@ const AlarmDebugScreen = () => {
     }
   };
 
+  const refreshAlarmList = async () => {
+    try {
+      const alarms = await ExpoAlarm.getScheduledAlarmIds();
+      setScheduledAlarms(alarms);
+      setLastResult(`Found ${alarms.length} alarm(s)`);
+    } catch (error) {
+      setLastResult(`Error: ${error}`);
+    }
+  };
+
   const handleCancelAll = async () => {
     try {
       await ExpoAlarm.cancelAllAlarms();
@@ -200,9 +210,14 @@ const AlarmDebugScreen = () => {
                 <Text className="text-sm text-typography-secondary">No alarms scheduled</Text>
               )}
 
-              <Button variant="outline" onPress={handleCancelAll}>
-                <ButtonText>Cancel All</ButtonText>
-              </Button>
+              <HStack space="sm">
+                <Button variant="outline" className="flex-1" onPress={refreshAlarmList}>
+                  <ButtonText>Refresh List</ButtonText>
+                </Button>
+                <Button variant="outline" className="flex-1" onPress={handleCancelAll}>
+                  <ButtonText>Cancel All</ButtonText>
+                </Button>
+              </HStack>
             </VStack>
           </Card>
 
