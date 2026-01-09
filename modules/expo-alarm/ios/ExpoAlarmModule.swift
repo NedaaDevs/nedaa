@@ -87,7 +87,7 @@ public class ExpoAlarmModule: Module {
                     do {
                         let triggerDate = Date(timeIntervalSince1970: triggerTimestamp / 1000.0)
 
-                        // Create schedule
+                        // Create fixed schedule for the alarm
                         let schedule = Alarm.Schedule.fixed(triggerDate)
 
                         // Create stop button
@@ -97,43 +97,28 @@ public class ExpoAlarmModule: Module {
                             systemImageName: "stop.circle.fill"
                         )
 
-                        // Create open app button
-                        let openButton = AlarmButton(
-                            text: "Open",
-                            textColor: .white,
-                            systemImageName: "arrow.right.circle.fill"
-                        )
-
                         // Create alert presentation
                         let alertPresentation = AlarmPresentation.Alert(
-                            title: title,
-                            stopButton: stopButton,
-                            secondaryButton: openButton,
-                            secondaryButtonBehavior: .custom
+                            title: LocalizedStringResource(stringLiteral: title),
+                            stopButton: stopButton
                         )
 
-                        // Create attributes
+                        // Create attributes with presentation
                         let attributes = AlarmAttributes<NedaaAlarmMetadata>(
                             presentation: AlarmPresentation(alert: alertPresentation),
                             tintColor: alarmType == "fajr" ? .orange : .green
                         )
 
-                        // Configure sound
-                        var alarmSound: AlertConfiguration.AlertSound? = nil
-                        if let soundName = sound {
-                            alarmSound = AlertConfiguration.AlertSound.named(soundName)
-                        }
-
-                        // Create configuration
-                        let config = AlarmConfiguration(
+                        // Create configuration using AlarmManager.AlarmConfiguration
+                        let config = AlarmManager.AlarmConfiguration(
                             schedule: schedule,
                             attributes: attributes,
-                            sound: alarmSound
+                            sound: .default
                         )
 
                         // Schedule the alarm
                         let alarmId = UUID(uuidString: id) ?? UUID()
-                        try await AlarmManager.shared.schedule(id: alarmId, configuration: config)
+                        _ = try await AlarmManager.shared.schedule(id: alarmId, configuration: config)
 
                         self.scheduledAlarmIds.insert(id)
                         promise.resolve(true)
@@ -156,7 +141,7 @@ public class ExpoAlarmModule: Module {
                 Task {
                     do {
                         if let alarmId = UUID(uuidString: id) {
-                            try await AlarmManager.shared.cancel(id: alarmId)
+                            try await AlarmManager.shared.stop(id: alarmId)
                             self.scheduledAlarmIds.remove(id)
                         }
                         promise.resolve(true)
@@ -177,7 +162,7 @@ public class ExpoAlarmModule: Module {
                     do {
                         for id in self.scheduledAlarmIds {
                             if let alarmId = UUID(uuidString: id) {
-                                try await AlarmManager.shared.cancel(id: alarmId)
+                                try await AlarmManager.shared.stop(id: alarmId)
                             }
                         }
                         self.scheduledAlarmIds.removeAll()

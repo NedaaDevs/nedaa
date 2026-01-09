@@ -47,6 +47,7 @@
     "expo-asset": "~12.0.10",
     "expo-audio": "~1.0.15",
     "expo-constants": "~18.0.10",
+    "expo-alarm": "file:./modules/expo-alarm",
     "expo-custom-notification-sound": "file:./modules/expo-custom-notification-sound",
     "expo-device": "~8.0.9",
     "expo-document-picker": "^14.0.7",

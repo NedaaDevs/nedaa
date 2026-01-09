@@ -206,6 +206,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - ExpoAlarm (1.0.0):
+    - ExpoModulesCore
   - ExpoAsset (12.0.10):
     - ExpoModulesCore
   - ExpoAudio (1.0.15):
@@ -2340,6 +2342,7 @@ DEPENDENCIES:
   - expo-dev-launcher (from `../node_modules/expo-dev-launcher`)
   - expo-dev-menu (from `../node_modules/expo-dev-menu`)
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
+  - ExpoAlarm (from `../modules/expo-alarm/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoAudio (from `../node_modules/expo-audio/ios`)
   - ExpoDevice (from `../node_modules/expo-device/ios`)
@@ -2467,6 +2470,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-dev-menu"
   expo-dev-menu-interface:
     :path: "../node_modules/expo-dev-menu-interface/ios"
+  ExpoAlarm:
+    :path: "../modules/expo-alarm/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
   ExpoAudio:
@@ -2675,6 +2680,7 @@ SPEC CHECKSUMS:
   expo-dev-launcher: 2c7725298ce170ea6fd2186b17cdbb4a585bae6b
   expo-dev-menu: 7b72a6130e42799659ba2cc349e35b22bcbb8aef
   expo-dev-menu-interface: 600df12ea01efecdd822daaf13cc0ac091775533
+  ExpoAlarm: 8f71cefb35639b1e79fb50d89e36736b29fc8681
   ExpoAsset: d839c8eae8124470332408427327e8f88beb2dfd
   ExpoAudio: a435784a5da9c27649d5c585b47c65ee4e25ff2a
   ExpoDevice: 148accb4071873d19fba80a2506c58ffa433d620
