@@ -108,6 +108,25 @@ export async function getScheduledAlarmIds(): Promise<string[]> {
   return NativeModule.getScheduledAlarmIds();
 }
 
+// MARK: - Shared Database (for widget communication)
+
+/**
+ * Mark alarm as completed in shared database
+ * This is used by the widget to check if alarm should re-trigger
+ */
+export function markAlarmCompleted(id: string): boolean {
+  if (!isAvailable) return false;
+  return NativeModule.markAlarmCompleted(id);
+}
+
+/**
+ * Delete alarm from shared database
+ */
+export function deleteAlarmFromDB(id: string): boolean {
+  if (!isAvailable) return false;
+  return NativeModule.deleteAlarmFromDB(id);
+}
+
 /**
  * Listen for alarm fired events
  */
@@ -181,6 +200,8 @@ export default {
   cancelAlarm,
   cancelAllAlarms,
   getScheduledAlarmIds,
+  markAlarmCompleted,
+  deleteAlarmFromDB,
   addAlarmFiredListener,
   startLiveActivity,
   updateLiveActivity,
