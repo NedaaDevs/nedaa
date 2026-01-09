@@ -121,5 +121,7 @@
 	<string>Automatic</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>Nedaa needs alarm access to wake you up for Fajr and Jummah prayers.</string>
 </dict>
 </plist>
