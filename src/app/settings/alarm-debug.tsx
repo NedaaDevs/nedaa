@@ -1,5 +1,6 @@
 import { ScrollView, Platform } from "react-native";
 import { useState, useEffect } from "react";
+import * as Crypto from "expo-crypto";
 
 // Components
 import { VStack } from "@/components/ui/vstack";
@@ -14,13 +15,17 @@ import { Background } from "@/components/ui/background";
 // Expo Alarm Module
 import * as ExpoAlarm from "expo-alarm";
 
+// Store
+import { useAlarmStore } from "@/stores/alarm";
+
 const AlarmDebugScreen = () => {
   const [isModuleAvailable, setIsModuleAvailable] = useState<boolean | null>(null);
   const [isAlarmKitAvailable, setIsAlarmKitAvailable] = useState<boolean | null>(null);
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [scheduledAlarms, setScheduledAlarms] = useState<string[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
-  const [liveActivityId, setLiveActivityId] = useState<string | null>(null);
+
+  const { scheduleAlarm, cancelAllAlarms, scheduledAlarms: storeAlarms } = useAlarmStore();
 
   useEffect(() => {
     checkStatus();
@@ -58,10 +63,12 @@ const AlarmDebugScreen = () => {
 
   const scheduleTestAlarm = async (seconds: number) => {
     try {
-      const id = `test-${Date.now()}`;
+      // AlarmKit requires valid UUIDs
+      const id = Crypto.randomUUID();
       const triggerDate = new Date(Date.now() + seconds * 1000);
 
-      const success = await ExpoAlarm.scheduleAlarm({
+      // Use store's scheduleAlarm (includes backup + Live Activity)
+      const success = await scheduleAlarm({
         id,
         triggerDate,
         title: `Test Alarm (${seconds}s)`,
@@ -69,7 +76,7 @@ const AlarmDebugScreen = () => {
       });
 
       if (success) {
-        setLastResult(`Scheduled alarm for ${triggerDate.toLocaleTimeString()}`);
+        setLastResult(`Scheduled: alarm + backup + Live Activity`);
         await checkStatus();
       } else {
         setLastResult("Failed to schedule alarm");
@@ -91,8 +98,9 @@ const AlarmDebugScreen = () => {
 
   const handleCancelAll = async () => {
     try {
-      await ExpoAlarm.cancelAllAlarms();
-      setLastResult("Cancelled all alarms");
+      // Use store's cancelAllAlarms (cancels alarms + backups + Live Activities)
+      await cancelAllAlarms();
+      setLastResult("Cancelled all alarms + backups + Live Activities");
       await checkStatus();
     } catch (error) {
       setLastResult(`Error: ${error}`);
@@ -102,41 +110,6 @@ const AlarmDebugScreen = () => {
   const getStatusColor = (value: boolean | null) => {
     if (value === null) return "warning";
     return value ? "success" : "error";
-  };
-
-  const handleStartLiveActivity = async (seconds: number) => {
-    try {
-      const triggerDate = new Date(Date.now() + seconds * 1000);
-      const activityId = await ExpoAlarm.startLiveActivity({
-        alarmId: `test-${Date.now()}`,
-        alarmType: "fajr",
-        title: `Fajr in ${seconds}s`,
-        triggerDate,
-      });
-      if (activityId) {
-        setLiveActivityId(activityId);
-        setLastResult(`Live Activity started: ${activityId.slice(0, 8)}...`);
-      } else {
-        setLastResult("Live Activity not supported");
-      }
-    } catch (error) {
-      setLastResult(`Error: ${error}`);
-    }
-  };
-
-  const handleEndLiveActivity = async () => {
-    try {
-      if (liveActivityId) {
-        await ExpoAlarm.endLiveActivity(liveActivityId);
-        setLiveActivityId(null);
-        setLastResult("Live Activity ended");
-      } else {
-        await ExpoAlarm.endAllLiveActivities();
-        setLastResult("All Live Activities ended");
-      }
-    } catch (error) {
-      setLastResult(`Error: ${error}`);
-    }
   };
 
   return (
@@ -160,7 +133,7 @@ const AlarmDebugScreen = () => {
               </HStack>
 
               <HStack className="justify-between items-center">
-                <Text className="text-typography">AlarmKit (iOS 26+)</Text>
+                <Text className="text-typography">AlarmKit (iOS 26.1+)</Text>
                 <Badge action={getStatusColor(isAlarmKitAvailable)}>
                   <BadgeText>
                     {isAlarmKitAvailable === null
@@ -220,35 +193,6 @@ const AlarmDebugScreen = () => {
                     <ButtonText>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</ButtonText>
                   </Button>
                 ))}
-              </HStack>
-            </VStack>
-          </Card>
-
-          {/* Live Activity Test */}
-          <Card className="p-4">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <Text className="text-lg font-semibold text-typography">Live Activity</Text>
-                {liveActivityId && (
-                  <Badge action="success">
-                    <BadgeText>Active</BadgeText>
-                  </Badge>
-                )}
-              </HStack>
-
-              <HStack space="sm" className="flex-wrap">
-                {[30, 60, 300].map((seconds) => (
-                  <Button
-                    key={seconds}
-                    size="sm"
-                    variant="outline"
-                    onPress={() => handleStartLiveActivity(seconds)}>
-                    <ButtonText>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</ButtonText>
-                  </Button>
-                ))}
-                <Button size="sm" variant="outline" onPress={handleEndLiveActivity}>
-                  <ButtonText>End</ButtonText>
-                </Button>
               </HStack>
             </VStack>
           </Card>
