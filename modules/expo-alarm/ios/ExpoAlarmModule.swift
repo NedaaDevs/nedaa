@@ -1,9 +1,23 @@
 import ExpoModulesCore
+import ActivityKit
 
 #if canImport(AlarmKit)
 import AlarmKit
 import AppIntents
 #endif
+
+// MARK: - Live Activity Attributes (must match widget extension)
+struct AlarmActivityAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        var state: String
+        var remainingSeconds: Int?
+    }
+
+    var alarmId: String
+    var alarmType: String
+    var title: String
+    var triggerTime: Date
+}
 
 public class ExpoAlarmModule: Module {
 
@@ -204,6 +218,93 @@ public class ExpoAlarmModule: Module {
 
         Function("getScheduledAlarmIds") { () -> [String] in
             return Array(self.scheduledAlarmIds)
+        }
+
+        // MARK: - Live Activity
+
+        AsyncFunction("startLiveActivity") { (
+            alarmId: String,
+            alarmType: String,
+            title: String,
+            triggerTimestamp: Double,
+            promise: Promise
+        ) in
+            if #available(iOS 16.2, *) {
+                guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+                    promise.resolve(nil)
+                    return
+                }
+
+                let triggerTime = Date(timeIntervalSince1970: triggerTimestamp / 1000.0)
+                let attributes = AlarmActivityAttributes(
+                    alarmId: alarmId,
+                    alarmType: alarmType,
+                    title: title,
+                    triggerTime: triggerTime
+                )
+                let state = AlarmActivityAttributes.ContentState(state: "countdown", remainingSeconds: nil)
+
+                do {
+                    let activity = try Activity.request(
+                        attributes: attributes,
+                        content: .init(state: state, staleDate: nil),
+                        pushType: nil
+                    )
+                    promise.resolve(activity.id)
+                } catch {
+                    promise.reject("LIVE_ACTIVITY_ERROR", error.localizedDescription)
+                }
+            } else {
+                promise.resolve(nil)
+            }
+        }
+
+        AsyncFunction("updateLiveActivity") { (activityId: String, state: String, promise: Promise) in
+            if #available(iOS 16.2, *) {
+                Task {
+                    let contentState = AlarmActivityAttributes.ContentState(state: state, remainingSeconds: nil)
+                    for activity in Activity<AlarmActivityAttributes>.activities {
+                        if activity.id == activityId {
+                            await activity.update(using: contentState)
+                            promise.resolve(true)
+                            return
+                        }
+                    }
+                    promise.resolve(false)
+                }
+            } else {
+                promise.resolve(false)
+            }
+        }
+
+        AsyncFunction("endLiveActivity") { (activityId: String, promise: Promise) in
+            if #available(iOS 16.2, *) {
+                Task {
+                    for activity in Activity<AlarmActivityAttributes>.activities {
+                        if activity.id == activityId {
+                            await activity.end(nil, dismissalPolicy: .immediate)
+                            promise.resolve(true)
+                            return
+                        }
+                    }
+                    promise.resolve(false)
+                }
+            } else {
+                promise.resolve(false)
+            }
+        }
+
+        AsyncFunction("endAllLiveActivities") { (promise: Promise) in
+            if #available(iOS 16.2, *) {
+                Task {
+                    for activity in Activity<AlarmActivityAttributes>.activities {
+                        await activity.end(nil, dismissalPolicy: .immediate)
+                    }
+                    promise.resolve(true)
+                }
+            } else {
+                promise.resolve(false)
+            }
         }
     }
 }

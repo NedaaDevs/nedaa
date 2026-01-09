@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import ActivityKit
 
 
 
@@ -29,6 +30,9 @@ struct WidgetsBundle17: WidgetBundle {
         QadaHomeScreen()
         AthkarProgressWidget()
         PrayerAthkarWidget()
+
+        // Live Activity
+        AlarmLiveActivity()
     }
 }
 

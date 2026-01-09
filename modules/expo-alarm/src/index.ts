@@ -121,6 +121,56 @@ export function addAlarmFiredListener(callback: (event: AlarmFiredEvent) => void
   return { remove: () => subscription.remove() };
 }
 
+// MARK: - Live Activity
+
+export interface StartLiveActivityParams {
+  alarmId: string;
+  alarmType: AlarmType;
+  title: string;
+  triggerDate: Date;
+}
+
+/**
+ * Start a Live Activity for the alarm (iOS 16.1+)
+ * @returns Activity ID or null if not supported
+ */
+export async function startLiveActivity(params: StartLiveActivityParams): Promise<string | null> {
+  if (!isAvailable) return null;
+  return NativeModule.startLiveActivity(
+    params.alarmId,
+    params.alarmType,
+    params.title,
+    params.triggerDate.getTime()
+  );
+}
+
+/**
+ * Update a Live Activity state
+ */
+export async function updateLiveActivity(
+  activityId: string,
+  state: "countdown" | "firing"
+): Promise<boolean> {
+  if (!isAvailable) return false;
+  return NativeModule.updateLiveActivity(activityId, state);
+}
+
+/**
+ * End a specific Live Activity
+ */
+export async function endLiveActivity(activityId: string): Promise<boolean> {
+  if (!isAvailable) return false;
+  return NativeModule.endLiveActivity(activityId);
+}
+
+/**
+ * End all alarm Live Activities
+ */
+export async function endAllLiveActivities(): Promise<boolean> {
+  if (!isAvailable) return false;
+  return NativeModule.endAllLiveActivities();
+}
+
 // Re-export for convenience
 export default {
   isNativeModuleAvailable,
@@ -132,4 +182,8 @@ export default {
   cancelAllAlarms,
   getScheduledAlarmIds,
   addAlarmFiredListener,
+  startLiveActivity,
+  updateLiveActivity,
+  endLiveActivity,
+  endAllLiveActivities,
 };
