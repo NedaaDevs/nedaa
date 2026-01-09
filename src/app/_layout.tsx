@@ -24,6 +24,7 @@ import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
+import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 
 /** For Viewing db in dev */
 // import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
@@ -52,6 +53,7 @@ export default function RootLayout() {
   useLoadFonts();
   useInitialSetup();
   useNotificationListeners();
+  useAlarmDeepLink();
   SplashScreen.hideAsync();
 
   return (
