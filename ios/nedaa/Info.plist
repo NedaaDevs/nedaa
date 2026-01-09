@@ -123,5 +123,7 @@
 	<false/>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Nedaa needs alarm access to wake you up for Fajr and Jummah prayers.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

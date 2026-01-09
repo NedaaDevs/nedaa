@@ -20,6 +20,7 @@ const AlarmDebugScreen = () => {
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [scheduledAlarms, setScheduledAlarms] = useState<string[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [liveActivityId, setLiveActivityId] = useState<string | null>(null);
 
   useEffect(() => {
     checkStatus();
@@ -103,6 +104,41 @@ const AlarmDebugScreen = () => {
     return value ? "success" : "error";
   };
 
+  const handleStartLiveActivity = async (seconds: number) => {
+    try {
+      const triggerDate = new Date(Date.now() + seconds * 1000);
+      const activityId = await ExpoAlarm.startLiveActivity({
+        alarmId: `test-${Date.now()}`,
+        alarmType: "fajr",
+        title: `Fajr in ${seconds}s`,
+        triggerDate,
+      });
+      if (activityId) {
+        setLiveActivityId(activityId);
+        setLastResult(`Live Activity started: ${activityId.slice(0, 8)}...`);
+      } else {
+        setLastResult("Live Activity not supported");
+      }
+    } catch (error) {
+      setLastResult(`Error: ${error}`);
+    }
+  };
+
+  const handleEndLiveActivity = async () => {
+    try {
+      if (liveActivityId) {
+        await ExpoAlarm.endLiveActivity(liveActivityId);
+        setLiveActivityId(null);
+        setLastResult("Live Activity ended");
+      } else {
+        await ExpoAlarm.endAllLiveActivities();
+        setLastResult("All Live Activities ended");
+      }
+    } catch (error) {
+      setLastResult(`Error: ${error}`);
+    }
+  };
+
   return (
     <Background>
       <TopBar title="Alarm Debug" href="/settings" backOnClick />
@@ -184,6 +220,35 @@ const AlarmDebugScreen = () => {
                     <ButtonText>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</ButtonText>
                   </Button>
                 ))}
+              </HStack>
+            </VStack>
+          </Card>
+
+          {/* Live Activity Test */}
+          <Card className="p-4">
+            <VStack space="md">
+              <HStack className="justify-between items-center">
+                <Text className="text-lg font-semibold text-typography">Live Activity</Text>
+                {liveActivityId && (
+                  <Badge action="success">
+                    <BadgeText>Active</BadgeText>
+                  </Badge>
+                )}
+              </HStack>
+
+              <HStack space="sm" className="flex-wrap">
+                {[30, 60, 300].map((seconds) => (
+                  <Button
+                    key={seconds}
+                    size="sm"
+                    variant="outline"
+                    onPress={() => handleStartLiveActivity(seconds)}>
+                    <ButtonText>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</ButtonText>
+                  </Button>
+                ))}
+                <Button size="sm" variant="outline" onPress={handleEndLiveActivity}>
+                  <ButtonText>End</ButtonText>
+                </Button>
               </HStack>
             </VStack>
           </Card>
