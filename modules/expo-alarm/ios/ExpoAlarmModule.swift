@@ -1,10 +1,103 @@
 import ExpoModulesCore
 import ActivityKit
+import SQLite3
 
 #if canImport(AlarmKit)
 import AlarmKit
 import AppIntents
 #endif
+
+// MARK: - Shared Database Helper
+
+private class AlarmDatabase {
+    static let shared = AlarmDatabase()
+    private let appGroupId = "group.dev.nedaa.app"
+    private let dbPath = "nedaa.db"
+    private let tableName = "alarms"
+
+    private init() {
+        createTableIfNeeded()
+    }
+
+    private func getDBPath() -> String? {
+        guard let directory = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+            return nil
+        }
+        return directory.appendingPathComponent(dbPath).path
+    }
+
+    private func createTableIfNeeded() {
+        guard let path = getDBPath() else { return }
+        var db: OpaquePointer?
+        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
+        defer { sqlite3_close(db) }
+
+        let sql = """
+            CREATE TABLE IF NOT EXISTS \(tableName) (
+                id TEXT PRIMARY KEY,
+                alarm_type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                trigger_time REAL NOT NULL,
+                completed INTEGER DEFAULT 0,
+                created_at REAL NOT NULL
+            )
+        """
+        sqlite3_exec(db, sql, nil, nil, nil)
+    }
+
+    func saveAlarm(id: String, alarmType: String, title: String, triggerTime: Double) {
+        guard let path = getDBPath() else { return }
+        var db: OpaquePointer?
+        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
+        defer { sqlite3_close(db) }
+
+        let sql = """
+            INSERT OR REPLACE INTO \(tableName)
+            (id, alarm_type, title, trigger_time, completed, created_at)
+            VALUES (?, ?, ?, ?, 0, ?)
+        """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, id, -1, nil)
+        sqlite3_bind_text(stmt, 2, alarmType, -1, nil)
+        sqlite3_bind_text(stmt, 3, title, -1, nil)
+        sqlite3_bind_double(stmt, 4, triggerTime)
+        sqlite3_bind_double(stmt, 5, Date().timeIntervalSince1970 * 1000)
+        sqlite3_step(stmt)
+    }
+
+    func markCompleted(id: String) {
+        guard let path = getDBPath() else { return }
+        var db: OpaquePointer?
+        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
+        defer { sqlite3_close(db) }
+
+        let sql = "UPDATE \(tableName) SET completed = 1 WHERE id = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, id, -1, nil)
+        sqlite3_step(stmt)
+    }
+
+    func deleteAlarm(id: String) {
+        guard let path = getDBPath() else { return }
+        var db: OpaquePointer?
+        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
+        defer { sqlite3_close(db) }
+
+        let sql = "DELETE FROM \(tableName) WHERE id = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, id, -1, nil)
+        sqlite3_step(stmt)
+    }
+}
 
 // MARK: - Live Activity Attributes (must match widget extension)
 struct AlarmActivityAttributes: ActivityAttributes {
@@ -32,7 +125,7 @@ public class ExpoAlarmModule: Module {
 
         AsyncFunction("isAlarmKitAvailable") { () -> Bool in
             #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.1, *) {
                 return true
             }
             #endif
@@ -43,7 +136,7 @@ public class ExpoAlarmModule: Module {
 
         AsyncFunction("requestAuthorization") { (promise: Promise) in
             #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.1, *) {
                 Task {
                     do {
                         let status = try await AlarmManager.shared.requestAuthorization()
@@ -69,7 +162,7 @@ public class ExpoAlarmModule: Module {
 
         AsyncFunction("getAuthorizationStatus") { (promise: Promise) in
             #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.1, *) {
                 Task {
                     do {
                         let status = try await AlarmManager.shared.requestAuthorization()
@@ -106,7 +199,7 @@ public class ExpoAlarmModule: Module {
             promise: Promise
         ) in
             #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.1, *) {
                 Task {
                     do {
                         let triggerDate = Date(timeIntervalSince1970: triggerTimestamp / 1000.0)
@@ -114,26 +207,9 @@ public class ExpoAlarmModule: Module {
                         // Create fixed schedule for the alarm
                         let schedule = Alarm.Schedule.fixed(triggerDate)
 
-                        // Create stop button with dynamic text
-                        let stopButton = AlarmButton(
-                            text: LocalizedStringResource(stringLiteral: dismissText ?? "Dismiss"),
-                            textColor: .white,
-                            systemImageName: "stop.circle.fill"
-                        )
-
-                        // Create open app button with dynamic text
-                        let openButton = AlarmButton(
-                            text: LocalizedStringResource(stringLiteral: openText ?? "Open"),
-                            textColor: .white,
-                            systemImageName: "arrow.right.circle.fill"
-                        )
-
-                        // Create alert presentation with secondary button
+                        // Create simple alert presentation
                         let alertPresentation = AlarmPresentation.Alert(
-                            title: LocalizedStringResource(stringLiteral: title),
-                            stopButton: stopButton,
-                            secondaryButton: openButton,
-                            secondaryButtonBehavior: .custom
+                            title: LocalizedStringResource(stringLiteral: title)
                         )
 
                         // Create attributes with presentation
@@ -143,21 +219,31 @@ public class ExpoAlarmModule: Module {
                         )
 
                         // Create intent to open app
-                        let openIntent = OpenNedaaAlarmIntent(alarmId: id, alarmType: alarmType)
+                        let openIntent = OpenNedaaAlarmIntent(alarmId: id, alarmType: alarmType, title: title)
 
-                        // Create configuration with secondary intent
+                        // Create configuration with stopIntent to open app on dismiss
                         let config = AlarmManager.AlarmConfiguration(
                             schedule: schedule,
                             attributes: attributes,
-                            secondaryIntent: openIntent,
+                            stopIntent: openIntent,
                             sound: .default
                         )
 
                         // Schedule the alarm
-                        let alarmId = UUID(uuidString: id) ?? UUID()
-                        _ = try await AlarmManager.shared.schedule(id: alarmId, configuration: config)
+                        let alarmUUID = UUID(uuidString: id) ?? UUID()
+                        _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
 
                         self.scheduledAlarmIds.insert(id)
+
+                        // Save to shared DB for widget access
+                        AlarmDatabase.shared.saveAlarm(
+                            id: id,
+                            alarmType: alarmType,
+                            title: title,
+                            triggerTime: triggerTimestamp
+                        )
+
+                        print("[ExpoAlarm] Scheduled: \(id) at \(triggerDate)")
                         promise.resolve(true)
 
                     } catch {
@@ -174,16 +260,19 @@ public class ExpoAlarmModule: Module {
 
         AsyncFunction("cancelAlarm") { (id: String, promise: Promise) in
             #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.1, *) {
                 Task {
                     do {
                         if let alarmId = UUID(uuidString: id) {
                             try await AlarmManager.shared.stop(id: alarmId)
                             self.scheduledAlarmIds.remove(id)
+                            print("[ExpoAlarm] Cancelled: \(id)")
                         }
                         promise.resolve(true)
                     } catch {
-                        promise.reject("CANCEL_ERROR", error.localizedDescription)
+                        // Alarm might not exist (already fired) - that's OK
+                        self.scheduledAlarmIds.remove(id)
+                        promise.resolve(true)
                     }
                 }
                 return
@@ -194,19 +283,28 @@ public class ExpoAlarmModule: Module {
 
         AsyncFunction("cancelAllAlarms") { (promise: Promise) in
             #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.1, *) {
                 Task {
-                    do {
-                        for id in self.scheduledAlarmIds {
-                            if let alarmId = UUID(uuidString: id) {
-                                try await AlarmManager.shared.stop(id: alarmId)
-                            }
+                    // Cancel alarms tracked in module
+                    let moduleCount = self.scheduledAlarmIds.count
+                    for id in self.scheduledAlarmIds {
+                        if let alarmId = UUID(uuidString: id) {
+                            try? await AlarmManager.shared.stop(id: alarmId)
                         }
-                        self.scheduledAlarmIds.removeAll()
-                        promise.resolve(true)
-                    } catch {
-                        promise.reject("CANCEL_ERROR", error.localizedDescription)
                     }
+                    self.scheduledAlarmIds.removeAll()
+
+                    // Cancel backup alarms tracked in UserDefaults
+                    let backupCount = AlarmTracker.shared.getAll().count
+                    for id in AlarmTracker.shared.getAll() {
+                        if let alarmId = UUID(uuidString: id) {
+                            try? await AlarmManager.shared.stop(id: alarmId)
+                        }
+                    }
+                    AlarmTracker.shared.clear()
+
+                    print("[ExpoAlarm] Cancelled all: \(moduleCount) module + \(backupCount) backups")
+                    promise.resolve(true)
                 }
                 return
             }
@@ -218,6 +316,18 @@ public class ExpoAlarmModule: Module {
 
         Function("getScheduledAlarmIds") { () -> [String] in
             return Array(self.scheduledAlarmIds)
+        }
+
+        // MARK: - Mark Alarm Completed (for widget DB)
+
+        Function("markAlarmCompleted") { (id: String) -> Bool in
+            AlarmDatabase.shared.markCompleted(id: id)
+            return true
+        }
+
+        Function("deleteAlarmFromDB") { (id: String) -> Bool in
+            AlarmDatabase.shared.deleteAlarm(id: id)
+            return true
         }
 
         // MARK: - Live Activity
@@ -312,16 +422,49 @@ public class ExpoAlarmModule: Module {
 // MARK: - Alarm Metadata
 
 #if canImport(AlarmKit)
-@available(iOS 26.0, *)
+@available(iOS 26.1, *)
 public struct NedaaAlarmMetadata: AlarmMetadata {
     public init() {}
 }
 #endif
 
+// MARK: - Scheduled Alarm Tracker (UserDefaults based for cross-process access)
+
+private class AlarmTracker {
+    static let shared = AlarmTracker()
+    private let appGroupId = "group.dev.nedaa.app"
+    private let key = "scheduledAlarmIds"
+
+    private var userDefaults: UserDefaults? {
+        UserDefaults(suiteName: appGroupId)
+    }
+
+    func add(_ id: String) {
+        var ids = getAll()
+        ids.insert(id)
+        userDefaults?.set(Array(ids), forKey: key)
+    }
+
+    func remove(_ id: String) {
+        var ids = getAll()
+        ids.remove(id)
+        userDefaults?.set(Array(ids), forKey: key)
+    }
+
+    func getAll() -> Set<String> {
+        let array = userDefaults?.stringArray(forKey: key) ?? []
+        return Set(array)
+    }
+
+    func clear() {
+        userDefaults?.set([String](), forKey: key)
+    }
+}
+
 // MARK: - App Intent to Open App
 
 #if canImport(AlarmKit)
-@available(iOS 26.0, *)
+@available(iOS 26.1, *)
 public struct OpenNedaaAlarmIntent: LiveActivityIntent {
     public static var title: LocalizedStringResource = "Open Nedaa Alarm"
     public static var description = IntentDescription("Opens Nedaa app to handle the alarm")
@@ -333,18 +476,52 @@ public struct OpenNedaaAlarmIntent: LiveActivityIntent {
     @Parameter(title: "Alarm Type")
     public var alarmType: String
 
+    @Parameter(title: "Title")
+    public var alarmTitle: String
+
     public init() {
         self.alarmId = ""
         self.alarmType = ""
+        self.alarmTitle = "Alarm"
     }
 
-    public init(alarmId: String, alarmType: String) {
+    public init(alarmId: String, alarmType: String, title: String) {
         self.alarmId = alarmId
         self.alarmType = alarmType
+        self.alarmTitle = title
     }
 
     public func perform() async throws -> some IntentResult {
+        // Schedule backup alarm (15s) in case user kills app
+        let backupId = UUID()
+        let backupTime = Date().addingTimeInterval(15)
+
+        do {
+            let schedule = Alarm.Schedule.fixed(backupTime)
+            let alertPresentation = AlarmPresentation.Alert(
+                title: LocalizedStringResource(stringLiteral: alarmTitle)
+            )
+            let attributes = AlarmAttributes<NedaaAlarmMetadata>(
+                presentation: AlarmPresentation(alert: alertPresentation),
+                tintColor: alarmType == "fajr" ? .orange : .green
+            )
+            // Backup uses same alarmId in deep link
+            let backupIntent = OpenNedaaAlarmIntent(alarmId: alarmId, alarmType: alarmType, title: alarmTitle)
+            let config = AlarmManager.AlarmConfiguration(
+                schedule: schedule,
+                attributes: attributes,
+                stopIntent: backupIntent,
+                sound: .default
+            )
+            _ = try await AlarmManager.shared.schedule(id: backupId, configuration: config)
+            AlarmTracker.shared.add(backupId.uuidString)
+            print("[ExpoAlarm] Backup scheduled: \(backupId) in 15s")
+        } catch {
+            print("[ExpoAlarm] Backup failed: \(error.localizedDescription)")
+        }
+
         // Open the app with deep link
+        print("[ExpoAlarm] Opening app for alarm: \(alarmId)")
         if let url = URL(string: "dev.nedaa.app://alarm?alarmId=\(alarmId)&alarmType=\(alarmType)") {
             await MainActor.run {
                 UIApplication.shared.open(url)
