@@ -11,6 +11,8 @@ export interface ScheduleAlarmParams {
   title: string;
   alarmType: AlarmType;
   sound?: string;
+  dismissText?: string;
+  openText?: string;
 }
 
 export interface AlarmFiredEvent {
@@ -76,7 +78,9 @@ export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolea
     params.triggerDate.getTime(),
     params.title,
     params.alarmType,
-    params.sound ?? null
+    params.sound ?? "",
+    params.dismissText ?? "",
+    params.openText ?? ""
   );
 }
 
