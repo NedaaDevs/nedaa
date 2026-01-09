@@ -19,6 +19,7 @@ import {
   Settings2Icon,
   BellRing,
   BookOpen,
+  AlarmClock,
 } from "lucide-react-native";
 
 // Stores
@@ -59,6 +60,9 @@ const SettingsScreen = () => {
           path="/settings/notification"
           icon={BellRing}
         />
+
+        {/* Alarm Debug */}
+        <SettingsItem name="Alarm Debug" path="/settings/alarm-debug" icon={AlarmClock} />
 
         {/* Location */}
         <SettingsItem
