@@ -85,7 +85,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "dev.nedaa.android",
-      "blockedPermissions": ["ACTIVITY_RECOGNITION"],
+      "blockedPermissions": ["ACTIVITY_RECOGNITION", "RECORD_AUDIO"],
       "permissions": ["READ_MEDIA_AUDIO", "READ_EXTERNAL_STORAGE"]
     },
     "web": {
