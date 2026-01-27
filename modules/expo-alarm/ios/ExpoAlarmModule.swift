@@ -1,115 +1,39 @@
 import ExpoModulesCore
 import ActivityKit
 import SQLite3
+import UserNotifications
+import BackgroundTasks
 
 #if canImport(AlarmKit)
 import AlarmKit
 import AppIntents
 #endif
 
-// MARK: - Shared Database Helper
-
-private class AlarmDatabase {
-    static let shared = AlarmDatabase()
-    private let appGroupId = "group.dev.nedaa.app"
-    private let dbPath = "nedaa.db"
-    private let tableName = "alarms"
-
-    private init() {
-        createTableIfNeeded()
-    }
-
-    private func getDBPath() -> String? {
-        guard let directory = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
-            return nil
-        }
-        return directory.appendingPathComponent(dbPath).path
-    }
-
-    private func createTableIfNeeded() {
-        guard let path = getDBPath() else { return }
-        var db: OpaquePointer?
-        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
-        defer { sqlite3_close(db) }
-
-        let sql = """
-            CREATE TABLE IF NOT EXISTS \(tableName) (
-                id TEXT PRIMARY KEY,
-                alarm_type TEXT NOT NULL,
-                title TEXT NOT NULL,
-                trigger_time REAL NOT NULL,
-                completed INTEGER DEFAULT 0,
-                created_at REAL NOT NULL
-            )
-        """
-        sqlite3_exec(db, sql, nil, nil, nil)
-    }
-
-    func saveAlarm(id: String, alarmType: String, title: String, triggerTime: Double) {
-        guard let path = getDBPath() else { return }
-        var db: OpaquePointer?
-        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
-        defer { sqlite3_close(db) }
-
-        let sql = """
-            INSERT OR REPLACE INTO \(tableName)
-            (id, alarm_type, title, trigger_time, completed, created_at)
-            VALUES (?, ?, ?, ?, 0, ?)
-        """
-        var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
-        defer { sqlite3_finalize(stmt) }
-
-        sqlite3_bind_text(stmt, 1, id, -1, nil)
-        sqlite3_bind_text(stmt, 2, alarmType, -1, nil)
-        sqlite3_bind_text(stmt, 3, title, -1, nil)
-        sqlite3_bind_double(stmt, 4, triggerTime)
-        sqlite3_bind_double(stmt, 5, Date().timeIntervalSince1970 * 1000)
-        sqlite3_step(stmt)
-    }
-
-    func markCompleted(id: String) {
-        guard let path = getDBPath() else { return }
-        var db: OpaquePointer?
-        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
-        defer { sqlite3_close(db) }
-
-        let sql = "UPDATE \(tableName) SET completed = 1 WHERE id = ?"
-        var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
-        defer { sqlite3_finalize(stmt) }
-
-        sqlite3_bind_text(stmt, 1, id, -1, nil)
-        sqlite3_step(stmt)
-    }
-
-    func deleteAlarm(id: String) {
-        guard let path = getDBPath() else { return }
-        var db: OpaquePointer?
-        guard sqlite3_open(path, &db) == SQLITE_OK else { return }
-        defer { sqlite3_close(db) }
-
-        let sql = "DELETE FROM \(tableName) WHERE id = ?"
-        var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
-        defer { sqlite3_finalize(stmt) }
-
-        sqlite3_bind_text(stmt, 1, id, -1, nil)
-        sqlite3_step(stmt)
-    }
-}
-
-// MARK: - Live Activity Attributes (must match widget extension)
-struct AlarmActivityAttributes: ActivityAttributes {
+// Module's own copy — widget uses ios/Shared/AlarmActivityAttributes.swift,
+// but this pod can't access app target files directly
+@available(iOS 16.2, *)
+public struct AlarmActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        var state: String
-        var remainingSeconds: Int?
+        public var state: String
+        public var remainingSeconds: Int?
+
+        public init(state: String, remainingSeconds: Int? = nil) {
+            self.state = state
+            self.remainingSeconds = remainingSeconds
+        }
     }
 
-    var alarmId: String
-    var alarmType: String
-    var title: String
-    var triggerTime: Date
+    public var alarmId: String
+    public var alarmType: String
+    public var title: String
+    public var triggerTime: Date
+
+    public init(alarmId: String, alarmType: String, title: String, triggerTime: Date) {
+        self.alarmId = alarmId
+        self.alarmType = alarmType
+        self.title = title
+        self.triggerTime = triggerTime
+    }
 }
 
 public class ExpoAlarmModule: Module {
@@ -119,9 +43,13 @@ public class ExpoAlarmModule: Module {
     public func definition() -> ModuleDefinition {
         Name("ExpoAlarm")
 
-        Events("onAlarmFired")
+        OnCreate {
+            AlarmObserver.startObserving()
 
-        // MARK: - Availability Check
+            if #available(iOS 13.0, *) {
+                AlarmBackgroundTaskManager.shared.registerTask()
+            }
+        }
 
         AsyncFunction("isAlarmKitAvailable") { () -> Bool in
             #if canImport(AlarmKit)
@@ -132,61 +60,27 @@ public class ExpoAlarmModule: Module {
             return false
         }
 
-        // MARK: - Authorization
+        Function("getBackgroundRefreshStatus") { () -> String in
+            let status = UIApplication.shared.backgroundRefreshStatus
+            switch status {
+            case .available:
+                return "available"
+            case .denied:
+                return "denied"
+            case .restricted:
+                return "restricted"
+            @unknown default:
+                return "unknown"
+            }
+        }
 
         AsyncFunction("requestAuthorization") { (promise: Promise) in
-            #if canImport(AlarmKit)
-            if #available(iOS 26.1, *) {
-                Task {
-                    do {
-                        let status = try await AlarmManager.shared.requestAuthorization()
-                        switch status {
-                        case .authorized:
-                            promise.resolve("authorized")
-                        case .denied:
-                            promise.resolve("denied")
-                        case .notDetermined:
-                            promise.resolve("notDetermined")
-                        @unknown default:
-                            promise.resolve("notDetermined")
-                        }
-                    } catch {
-                        promise.reject("AUTH_ERROR", error.localizedDescription)
-                    }
-                }
-                return
-            }
-            #endif
-            promise.resolve("denied")
+            self.resolveAuthorizationStatus(promise: promise)
         }
 
         AsyncFunction("getAuthorizationStatus") { (promise: Promise) in
-            #if canImport(AlarmKit)
-            if #available(iOS 26.1, *) {
-                Task {
-                    do {
-                        let status = try await AlarmManager.shared.requestAuthorization()
-                        switch status {
-                        case .authorized:
-                            promise.resolve("authorized")
-                        case .denied:
-                            promise.resolve("denied")
-                        case .notDetermined:
-                            promise.resolve("notDetermined")
-                        @unknown default:
-                            promise.resolve("notDetermined")
-                        }
-                    } catch {
-                        promise.resolve("denied")
-                    }
-                }
-                return
-            }
-            #endif
-            promise.resolve("denied")
+            self.resolveAuthorizationStatus(promise: promise)
         }
-
-        // MARK: - Schedule Alarm
 
         AsyncFunction("scheduleAlarm") { (
             id: String,
@@ -203,50 +97,78 @@ public class ExpoAlarmModule: Module {
                 Task {
                     do {
                         let triggerDate = Date(timeIntervalSince1970: triggerTimestamp / 1000.0)
+                        let secondsUntilAlarm = triggerDate.timeIntervalSince(Date())
 
-                        // Create fixed schedule for the alarm
+                        PersistentLog.shared.alarm("Scheduling alarm \(id.prefix(8)) type=\(alarmType) in \(Int(secondsUntilAlarm))s")
+
                         let schedule = Alarm.Schedule.fixed(triggerDate)
 
-                        // Create simple alert presentation
-                        let alertPresentation = AlarmPresentation.Alert(
-                            title: LocalizedStringResource(stringLiteral: title)
+                        let stopButton = AlarmButton(
+                            text: LocalizedStringResource(stringLiteral: dismissText.isEmpty ? "Stop" : dismissText),
+                            textColor: .white,
+                            systemImageName: "stop.circle.fill"
                         )
 
-                        // Create attributes with presentation
+                        let alertPresentation = AlarmPresentation.Alert(
+                            title: LocalizedStringResource(stringLiteral: title),
+                            stopButton: stopButton
+                        )
+
+                        let presentation = AlarmPresentation(
+                            alert: alertPresentation
+                        )
+
                         let attributes = AlarmAttributes<NedaaAlarmMetadata>(
-                            presentation: AlarmPresentation(alert: alertPresentation),
+                            presentation: presentation,
                             tintColor: alarmType == "fajr" ? .orange : .green
                         )
 
-                        // Create intent to open app
-                        let openIntent = OpenNedaaAlarmIntent(alarmId: id, alarmType: alarmType, title: title)
+                        let stopIntent = OpenNedaaAlarmIntent(alarmId: id, alarmType: alarmType, title: title)
 
-                        // Create configuration with stopIntent to open app on dismiss
-                        let config = AlarmManager.AlarmConfiguration(
+                        let config = AlarmManager.AlarmConfiguration.alarm(
                             schedule: schedule,
                             attributes: attributes,
-                            stopIntent: openIntent,
+                            stopIntent: stopIntent,
                             sound: .default
                         )
 
-                        // Schedule the alarm
                         let alarmUUID = UUID(uuidString: id) ?? UUID()
                         _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
 
                         self.scheduledAlarmIds.insert(id)
 
-                        // Save to shared DB for widget access
                         AlarmDatabase.shared.saveAlarm(
                             id: id,
                             alarmType: alarmType,
                             title: title,
-                            triggerTime: triggerTimestamp
+                            triggerTime: triggerTimestamp,
+                            isBackup: false
                         )
 
-                        print("[ExpoAlarm] Scheduled: \(id) at \(triggerDate)")
+                        AlarmDatabase.shared.clearCompleted(id: id)
+
+                        AlarmBackgroundTaskManager.shared.scheduleWakeTask(
+                            alarmTime: triggerDate,
+                            alarmId: id
+                        )
+
+                        let keepAliveThreshold: TimeInterval = 10 * 60
+                        if secondsUntilAlarm <= keepAliveThreshold {
+                            AlarmAudioManager.shared.startQuietKeepAlive()
+                            PersistentLog.shared.alarm("Keep-alive started (alarm < 10min)")
+
+                            AlarmObserver.stopObserving()
+                            AlarmObserver.startObserving()
+                            PersistentLog.shared.alarm("Observer restarted for imminent alarm")
+                        } else {
+                            PersistentLog.shared.alarm("Keep-alive deferred to BGTask (alarm in \(Int(secondsUntilAlarm/60))min)")
+                        }
+
+                        PersistentLog.shared.alarm("Alarm scheduled successfully: \(id.prefix(8))")
                         promise.resolve(true)
 
                     } catch {
+                        PersistentLog.shared.alarm("Schedule error: \(error.localizedDescription)")
                         promise.reject("SCHEDULE_ERROR", error.localizedDescription)
                     }
                 }
@@ -256,21 +178,20 @@ public class ExpoAlarmModule: Module {
             promise.resolve(false)
         }
 
-        // MARK: - Cancel Alarm
-
         AsyncFunction("cancelAlarm") { (id: String, promise: Promise) in
             #if canImport(AlarmKit)
             if #available(iOS 26.1, *) {
                 Task {
                     do {
                         if let alarmId = UUID(uuidString: id) {
-                            try await AlarmManager.shared.stop(id: alarmId)
+                            try AlarmManager.shared.cancel(id: alarmId)
                             self.scheduledAlarmIds.remove(id)
-                            print("[ExpoAlarm] Cancelled: \(id)")
+                        }
+                        if self.scheduledAlarmIds.isEmpty {
+                            AlarmAudioManager.shared.stopQuietKeepAlive()
                         }
                         promise.resolve(true)
                     } catch {
-                        // Alarm might not exist (already fired) - that's OK
                         self.scheduledAlarmIds.remove(id)
                         promise.resolve(true)
                     }
@@ -285,25 +206,30 @@ public class ExpoAlarmModule: Module {
             #if canImport(AlarmKit)
             if #available(iOS 26.1, *) {
                 Task {
-                    // Cancel alarms tracked in module
-                    let moduleCount = self.scheduledAlarmIds.count
                     for id in self.scheduledAlarmIds {
                         if let alarmId = UUID(uuidString: id) {
-                            try? await AlarmManager.shared.stop(id: alarmId)
+                            try? AlarmManager.shared.cancel(id: alarmId)
                         }
                     }
                     self.scheduledAlarmIds.removeAll()
 
-                    // Cancel backup alarms tracked in UserDefaults
-                    let backupCount = AlarmTracker.shared.getAll().count
-                    for id in AlarmTracker.shared.getAll() {
+                    let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
+                    for id in backupIds {
                         if let alarmId = UUID(uuidString: id) {
-                            try? await AlarmManager.shared.stop(id: alarmId)
+                            try? AlarmManager.shared.cancel(id: alarmId)
                         }
                     }
-                    AlarmTracker.shared.clear()
+                    AlarmDatabase.shared.deleteAllBackups()
 
-                    print("[ExpoAlarm] Cancelled all: \(moduleCount) module + \(backupCount) backups")
+                    AlarmBackgroundTaskManager.shared.cancelWakeTask()
+                    AlarmAudioManager.shared.stopQuietKeepAlive()
+
+                    AlarmDatabase.shared.clearBypassState()
+                    AlarmDatabase.shared.clearPendingChallenge()
+                    let center = UNUserNotificationCenter.current()
+                    center.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+
+                    PersistentLog.shared.alarm("Cancelled all alarms, backups, BGTask, bypass, keep-alive")
                     promise.resolve(true)
                 }
                 return
@@ -312,13 +238,47 @@ public class ExpoAlarmModule: Module {
             promise.resolve(nil)
         }
 
-        // MARK: - Get Scheduled Alarms
-
         Function("getScheduledAlarmIds") { () -> [String] in
             return Array(self.scheduledAlarmIds)
         }
 
-        // MARK: - Mark Alarm Completed (for widget DB)
+        AsyncFunction("getAlarmKitAlarms") { (promise: Promise) in
+            #if canImport(AlarmKit)
+            if #available(iOS 26.1, *) {
+                Task {
+                    do {
+                        let alarms = try AlarmManager.shared.alarms
+                        var result: [[String: Any]] = []
+                        for alarm in alarms {
+                            var info: [String: Any] = [
+                                "id": alarm.id.uuidString.lowercased(),
+                                "state": String(describing: alarm.state)
+                            ]
+                            if let schedule = alarm.schedule {
+                                switch schedule {
+                                case .fixed(let date):
+                                    info["triggerDate"] = date.timeIntervalSince1970 * 1000
+                                    info["scheduleType"] = "fixed"
+                                case .relative(let rel):
+                                    info["scheduleType"] = "relative"
+                                    info["hour"] = rel.time.hour
+                                    info["minute"] = rel.time.minute
+                                @unknown default:
+                                    info["scheduleType"] = "unknown"
+                                }
+                            }
+                            result.append(info)
+                        }
+                        promise.resolve(result)
+                    } catch {
+                        promise.resolve([])
+                    }
+                }
+                return
+            }
+            #endif
+            promise.resolve([])
+        }
 
         Function("markAlarmCompleted") { (id: String) -> Bool in
             AlarmDatabase.shared.markCompleted(id: id)
@@ -329,8 +289,6 @@ public class ExpoAlarmModule: Module {
             AlarmDatabase.shared.deleteAlarm(id: id)
             return true
         }
-
-        // MARK: - Live Activity
 
         AsyncFunction("startLiveActivity") { (
             alarmId: String,
@@ -345,6 +303,13 @@ public class ExpoAlarmModule: Module {
                     return
                 }
 
+                for activity in Activity<AlarmActivityAttributes>.activities {
+                    Task {
+                        let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
+                        await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
+                    }
+                }
+
                 let triggerTime = Date(timeIntervalSince1970: triggerTimestamp / 1000.0)
                 let attributes = AlarmActivityAttributes(
                     alarmId: alarmId,
@@ -357,7 +322,7 @@ public class ExpoAlarmModule: Module {
                 do {
                     let activity = try Activity.request(
                         attributes: attributes,
-                        content: .init(state: state, staleDate: nil),
+                        content: .init(state: state, staleDate: triggerTime),
                         pushType: nil
                     )
                     promise.resolve(activity.id)
@@ -373,14 +338,12 @@ public class ExpoAlarmModule: Module {
             if #available(iOS 16.2, *) {
                 Task {
                     let contentState = AlarmActivityAttributes.ContentState(state: state, remainingSeconds: nil)
-                    for activity in Activity<AlarmActivityAttributes>.activities {
-                        if activity.id == activityId {
-                            await activity.update(using: contentState)
-                            promise.resolve(true)
-                            return
-                        }
+                    if let activity = self.findActivity(id: activityId) {
+                        await activity.update(using: contentState)
+                        promise.resolve(true)
+                    } else {
+                        promise.resolve(false)
                     }
-                    promise.resolve(false)
                 }
             } else {
                 promise.resolve(false)
@@ -390,14 +353,12 @@ public class ExpoAlarmModule: Module {
         AsyncFunction("endLiveActivity") { (activityId: String, promise: Promise) in
             if #available(iOS 16.2, *) {
                 Task {
-                    for activity in Activity<AlarmActivityAttributes>.activities {
-                        if activity.id == activityId {
-                            await activity.end(nil, dismissalPolicy: .immediate)
-                            promise.resolve(true)
-                            return
-                        }
+                    if let activity = self.findActivity(id: activityId) {
+                        await activity.end(nil, dismissalPolicy: .immediate)
+                        promise.resolve(true)
+                    } else {
+                        promise.resolve(false)
                     }
-                    promise.resolve(false)
                 }
             } else {
                 promise.resolve(false)
@@ -416,118 +377,143 @@ public class ExpoAlarmModule: Module {
                 promise.resolve(false)
             }
         }
+
+        AsyncFunction("getPendingChallenge") { () -> [String: Any]? in
+            return AlarmDatabase.shared.getPendingChallenge()
+        }
+
+        AsyncFunction("clearPendingChallenge") { () -> Bool in
+            AlarmDatabase.shared.clearPendingChallenge()
+            return true
+        }
+
+        AsyncFunction("clearCompletedChallenges") { () -> Bool in
+            AlarmDatabase.shared.clearAllCompleted()
+            return true
+        }
+
+        AsyncFunction("cancelAllBackups") { (promise: Promise) in
+            #if canImport(AlarmKit)
+            if #available(iOS 26.1, *) {
+                Task {
+                    let backups = AlarmDatabase.shared.getBackupAlarmIds()
+                    var cancelledCount = 0
+                    for id in backups {
+                        if let uuid = UUID(uuidString: id) {
+                            do {
+                                try AlarmManager.shared.cancel(id: uuid)
+                                cancelledCount += 1
+                            } catch {
+                                PersistentLog.shared.alarm("Failed to cancel backup \(id.prefix(8)): \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                    AlarmDatabase.shared.deleteAllBackups()
+                    AlarmDatabase.shared.clearBypassState()
+
+                    let center = UNUserNotificationCenter.current()
+                    center.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+                    PersistentLog.shared.alarm("Cancelled \(cancelledCount) backups, cleared bypass + notifications")
+
+                    promise.resolve(cancelledCount)
+                }
+                return
+            }
+            #endif
+            promise.resolve(0)
+        }
+
+        AsyncFunction("startAlarmSound") { (soundName: String) -> Bool in
+            AlarmAudioManager.shared.startAlarmSound(soundName: soundName)
+            return true
+        }
+
+        AsyncFunction("stopAlarmSound") { () -> Bool in
+            AlarmAudioManager.shared.stopAlarmSound()
+            return true
+        }
+
+        Function("isAlarmSoundPlaying") { () -> Bool in
+            return AlarmAudioManager.shared.isCurrentlyPlaying()
+        }
+
+        Function("stopAllAlarmEffects") { () -> Bool in
+            AlarmAudioManager.shared.stopAll()
+            AlarmObserver.endBackgroundTask()
+            return true
+        }
+
+        Function("setAlarmVolume") { (volume: Float) -> Bool in
+            AlarmAudioManager.shared.setVolume(volume)
+            return true
+        }
+
+        Function("getAlarmVolume") { () -> Float in
+            return AlarmAudioManager.shared.getVolume()
+        }
+
+        AsyncFunction("getNativeLogs") { () -> [[String: String]] in
+            if #available(iOS 15.0, *) {
+                return exportNativeLogs()
+            }
+            return [["error": "Requires iOS 15+"]]
+        }
+
+        Function("getPersistentLog") { () -> String in
+            return PersistentLog.shared.read()
+        }
+
+        Function("clearPersistentLog") { () -> Bool in
+            PersistentLog.shared.clear()
+            return true
+        }
+
+        Function("getNextAlarmTime") { () -> Double? in
+            guard let nextTime = AlarmDatabase.shared.getNextAlarmTime() else {
+                return nil
+            }
+            return nextTime.timeIntervalSince1970 * 1000
+        }
+
+    }
+
+    // MARK: - Private Helpers
+
+    private func resolveAuthorizationStatus(promise: Promise) {
+        #if canImport(AlarmKit)
+        if #available(iOS 26.1, *) {
+            Task {
+                do {
+                    let status = try await AlarmManager.shared.requestAuthorization()
+                    switch status {
+                    case .authorized:
+                        promise.resolve("authorized")
+                    case .denied:
+                        promise.resolve("denied")
+                    case .notDetermined:
+                        promise.resolve("notDetermined")
+                    @unknown default:
+                        promise.resolve("notDetermined")
+                    }
+                } catch {
+                    promise.resolve("denied")
+                }
+            }
+            return
+        }
+        #endif
+        promise.resolve("denied")
+    }
+
+    @available(iOS 16.2, *)
+    private func findActivity(id: String) -> Activity<AlarmActivityAttributes>? {
+        return Activity<AlarmActivityAttributes>.activities.first { $0.id == id }
     }
 }
-
-// MARK: - Alarm Metadata
 
 #if canImport(AlarmKit)
 @available(iOS 26.1, *)
 public struct NedaaAlarmMetadata: AlarmMetadata {
     public init() {}
-}
-#endif
-
-// MARK: - Scheduled Alarm Tracker (UserDefaults based for cross-process access)
-
-private class AlarmTracker {
-    static let shared = AlarmTracker()
-    private let appGroupId = "group.dev.nedaa.app"
-    private let key = "scheduledAlarmIds"
-
-    private var userDefaults: UserDefaults? {
-        UserDefaults(suiteName: appGroupId)
-    }
-
-    func add(_ id: String) {
-        var ids = getAll()
-        ids.insert(id)
-        userDefaults?.set(Array(ids), forKey: key)
-    }
-
-    func remove(_ id: String) {
-        var ids = getAll()
-        ids.remove(id)
-        userDefaults?.set(Array(ids), forKey: key)
-    }
-
-    func getAll() -> Set<String> {
-        let array = userDefaults?.stringArray(forKey: key) ?? []
-        return Set(array)
-    }
-
-    func clear() {
-        userDefaults?.set([String](), forKey: key)
-    }
-}
-
-// MARK: - App Intent to Open App
-
-#if canImport(AlarmKit)
-@available(iOS 26.1, *)
-public struct OpenNedaaAlarmIntent: LiveActivityIntent {
-    public static var title: LocalizedStringResource = "Open Nedaa Alarm"
-    public static var description = IntentDescription("Opens Nedaa app to handle the alarm")
-    public static var openAppWhenRun: Bool = true
-
-    @Parameter(title: "Alarm ID")
-    public var alarmId: String
-
-    @Parameter(title: "Alarm Type")
-    public var alarmType: String
-
-    @Parameter(title: "Title")
-    public var alarmTitle: String
-
-    public init() {
-        self.alarmId = ""
-        self.alarmType = ""
-        self.alarmTitle = "Alarm"
-    }
-
-    public init(alarmId: String, alarmType: String, title: String) {
-        self.alarmId = alarmId
-        self.alarmType = alarmType
-        self.alarmTitle = title
-    }
-
-    public func perform() async throws -> some IntentResult {
-        // Schedule backup alarm (15s) in case user kills app
-        let backupId = UUID()
-        let backupTime = Date().addingTimeInterval(15)
-
-        do {
-            let schedule = Alarm.Schedule.fixed(backupTime)
-            let alertPresentation = AlarmPresentation.Alert(
-                title: LocalizedStringResource(stringLiteral: alarmTitle)
-            )
-            let attributes = AlarmAttributes<NedaaAlarmMetadata>(
-                presentation: AlarmPresentation(alert: alertPresentation),
-                tintColor: alarmType == "fajr" ? .orange : .green
-            )
-            // Backup uses same alarmId in deep link
-            let backupIntent = OpenNedaaAlarmIntent(alarmId: alarmId, alarmType: alarmType, title: alarmTitle)
-            let config = AlarmManager.AlarmConfiguration(
-                schedule: schedule,
-                attributes: attributes,
-                stopIntent: backupIntent,
-                sound: .default
-            )
-            _ = try await AlarmManager.shared.schedule(id: backupId, configuration: config)
-            AlarmTracker.shared.add(backupId.uuidString)
-            print("[ExpoAlarm] Backup scheduled: \(backupId) in 15s")
-        } catch {
-            print("[ExpoAlarm] Backup failed: \(error.localizedDescription)")
-        }
-
-        // Open the app with deep link
-        print("[ExpoAlarm] Opening app for alarm: \(alarmId)")
-        if let url = URL(string: "dev.nedaa.app://alarm?alarmId=\(alarmId)&alarmType=\(alarmType)") {
-            await MainActor.run {
-                UIApplication.shared.open(url)
-            }
-        }
-        return .result()
-    }
 }
 #endif
