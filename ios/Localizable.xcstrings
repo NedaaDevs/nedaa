@@ -45,6 +45,15 @@
         }
       }
     },
+    "Alarm Active" : {
+
+    },
+    "Alarm ID" : {
+
+    },
+    "Alarm Type" : {
+
+    },
     "asr" : {
       "localizations" : {
         "ar" : {
@@ -390,6 +399,12 @@
           }
         }
       }
+    },
+    "Dismiss" : {
+
+    },
+    "Dismiss Alarm" : {
+
     },
     "evening" : {
       "localizations" : {
@@ -904,6 +919,9 @@
         }
       }
     },
+    "Opens Nedaa to dismiss the alarm" : {
+
+    },
     "Overall Progress" : {
       "comment" : "Overall athkar progress label",
       "localizations" : {
@@ -1352,6 +1370,9 @@
           }
         }
       }
+    },
+    "Time to wake up!" : {
+
     },
     "today_progress" : {
       "localizations" : {
