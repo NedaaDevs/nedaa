@@ -1,8 +1,10 @@
 package dev.nedaa.android
 import expo.modules.splashscreen.SplashScreenManager
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -21,6 +23,24 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
+
+    handleAlarmIntent(intent)
+  }
+
+  private fun handleAlarmIntent(intent: Intent?) {
+    val uri = intent?.data ?: return
+    if (!uri.toString().contains("alarm")) return
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        setShowWhenLocked(true)
+        setTurnScreenOn(true)
+    } else {
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        )
+    }
   }
 
   /**
@@ -49,6 +69,14 @@ class MainActivity : ReactActivity() {
     * where moving root activities to background instead of finishing activities.
     * @see <a href="https://developer.android.com/reference/android/app/Activity#onBackPressed()">onBackPressed</a>
     */
+  override fun onUserLeaveHint() {
+      try {
+          super.onUserLeaveHint()
+      } catch (_: Throwable) {
+          // ReactHost may be null when alarm full-screen intent cold-starts the activity
+      }
+  }
+
   override fun invokeDefaultOnBackPressed() {
       if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
           if (!moveTaskToBack(false)) {

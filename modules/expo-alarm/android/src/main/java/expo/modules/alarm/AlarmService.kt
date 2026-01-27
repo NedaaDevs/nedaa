@@ -62,7 +62,7 @@ class AlarmService : Service() {
                 stopAlarm()
             }
         }
-        return START_NOT_STICKY
+        return START_REDELIVER_INTENT
     }
 
     private fun startAlarm(alarmId: String, alarmType: String, title: String, soundName: String) {
@@ -79,6 +79,10 @@ class AlarmService : Service() {
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.startAlarmSound(soundName)
         audioManager.startVibration()
+
+        // Launch activity directly — full-screen intent only auto-launches on locked/off screens
+        val launchIntent = notificationManager.buildAlarmIntent(alarmId, alarmType)
+        startActivity(launchIntent)
 
         Log.d(TAG, "Alarm service started with sound=$soundName")
     }

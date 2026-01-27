@@ -3,6 +3,7 @@ package expo.modules.alarm
 import android.app.AlarmManager
 import android.app.AlarmManager.AlarmClockInfo
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -54,8 +55,9 @@ class AlarmScheduler(private val context: Context) {
         )
 
         // Build a show intent that opens the app when user taps alarm in Quick Settings
-        val showIntent = Intent(Intent.ACTION_VIEW, Uri.parse("dev.nedaa.app://alarm?alarmId=$id")).apply {
-            setPackage(context.packageName)
+        val showIntent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("dev.nedaa.app://alarm?alarmId=$id&alarmType=$alarmType")
+            component = ComponentName(context.packageName, "${context.packageName}.MainActivity")
         }
         val showPendingIntent = PendingIntent.getActivity(
             context,
