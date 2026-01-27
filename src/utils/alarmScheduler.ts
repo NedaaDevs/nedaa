@@ -1,7 +1,6 @@
 import * as Crypto from "expo-crypto";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { alarmLogger } from "@/utils/alarmLogger";
 
 export function getNextPrayerDate(
   prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha"
@@ -30,7 +29,6 @@ export async function schedulePrayerAlarm(
 
   const triggerDate = getNextPrayerDate(prayerName);
   if (!triggerDate) {
-    alarmLogger.error(`No prayer time available for ${prayerName}`);
     return null;
   }
 
@@ -45,7 +43,6 @@ export async function schedulePrayerAlarm(
   });
 
   if (success) {
-    alarmLogger.info(`Scheduled ${prayerName}: ${triggerDate.toISOString()}`);
     return id;
   }
 
