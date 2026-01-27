@@ -229,6 +229,25 @@ export function getNextAlarmTime(): number | null {
   return NativeModule.getNextAlarmTime();
 }
 
+// Android-specific: battery optimization exemption
+export function isBatteryOptimizationExempt(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.isBatteryOptimizationExempt();
+  } catch {
+    return false;
+  }
+}
+
+export function requestBatteryOptimizationExemption(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.requestBatteryOptimizationExemption();
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -260,4 +279,6 @@ export default {
   getPersistentLog,
   clearPersistentLog,
   getNextAlarmTime,
+  isBatteryOptimizationExempt,
+  requestBatteryOptimizationExemption,
 };
