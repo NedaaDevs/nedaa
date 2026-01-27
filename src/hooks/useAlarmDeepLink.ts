@@ -1,30 +1,51 @@
 import { useEffect, useRef } from "react";
-import { Linking } from "react-native";
+import { Linking, AppState } from "react-native";
 import { router } from "expo-router";
 import { useAlarmStore } from "@/stores/alarm";
+import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
 
-// Simple in-memory Set to prevent duplicate processing
 const handledAlarmIds = new Set<string>();
 
-/**
- * Mark an alarm as handled (call this after challenge is done)
- */
+const navGuard = {
+  activeAlarmId: null as string | null,
+  lastNavTime: 0,
+};
+
+const NAVIGATION_DEBOUNCE_MS = 5000;
+
+export function setAlarmScreenActive(alarmId: string | null) {
+  navGuard.activeAlarmId = alarmId;
+  if (alarmId) {
+    navGuard.lastNavTime = Date.now();
+  }
+}
+
 export function markAlarmHandled(alarmId: string) {
-  console.log(`[Alarm] Marked handled: ${alarmId}`);
   handledAlarmIds.add(alarmId);
 }
 
-/**
- * Check if an alarm has been handled
- */
 export function isAlarmHandled(alarmId: string): boolean {
   return handledAlarmIds.has(alarmId);
 }
 
-/**
- * Hook to handle alarm deep links and check for firing alarms
- * Listens for URLs like: dev.nedaa.app://alarm?alarmId=xxx&alarmType=fajr
- */
+export function navigateToAlarm(alarmId: string, alarmType: string, _source: string) {
+  const now = Date.now();
+
+  if (navGuard.activeAlarmId) return false;
+  if (now - navGuard.lastNavTime < NAVIGATION_DEBOUNCE_MS) return false;
+  if (handledAlarmIds.has(alarmId)) return false;
+
+  navGuard.activeAlarmId = alarmId;
+  navGuard.lastNavTime = now;
+
+  router.replace({
+    pathname: "/alarm",
+    params: { alarmId, alarmType },
+  });
+
+  return true;
+}
+
 export function useAlarmDeepLink() {
   const { scheduledAlarms } = useAlarmStore();
   const initialUrlProcessed = useRef(false);
@@ -34,41 +55,37 @@ export function useAlarmDeepLink() {
       processAlarmUrl(event.url);
     };
 
-    // Check initial URL only once
     if (!initialUrlProcessed.current) {
       initialUrlProcessed.current = true;
       Linking.getInitialURL().then((url) => {
         if (url) {
           processAlarmUrl(url);
         } else {
-          checkForFiringAlarms(scheduledAlarms);
+          detectActiveAlarm(scheduledAlarms).then((active) => {
+            if (active) {
+              navigateToAlarm(active.alarmId, active.alarmType, active.source);
+            }
+          });
         }
       });
     }
 
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        detectActiveAlarm(scheduledAlarms).then((active) => {
+          if (active) {
+            navigateToAlarm(active.alarmId, active.alarmType, active.source);
+          }
+        });
+      }
+    });
+
     const subscription = Linking.addEventListener("url", handleUrl);
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      appStateSubscription.remove();
+    };
   }, [scheduledAlarms]);
-}
-
-/**
- * Check if there are any alarms that should have fired
- */
-function checkForFiringAlarms(
-  scheduledAlarms: Record<string, { alarmId: string; alarmType: string; triggerTime: number }>
-) {
-  const now = Date.now();
-
-  for (const alarm of Object.values(scheduledAlarms)) {
-    if (alarm.triggerTime <= now && !handledAlarmIds.has(alarm.alarmId)) {
-      console.log(`[Alarm] Found past-due alarm: ${alarm.alarmId}`);
-      router.push({
-        pathname: "/alarm",
-        params: { alarmId: alarm.alarmId, alarmType: alarm.alarmType },
-      });
-      return;
-    }
-  }
 }
 
 function processAlarmUrl(url: string) {
@@ -77,21 +94,12 @@ function processAlarmUrl(url: string) {
 
     const urlObj = new URL(url);
     const alarmId = urlObj.searchParams.get("alarmId");
-    const alarmType = urlObj.searchParams.get("alarmType");
+    const alarmType = urlObj.searchParams.get("alarmType") ?? "custom";
 
     if (alarmId) {
-      if (handledAlarmIds.has(alarmId)) {
-        console.log(`[Alarm] Deep link ignored (already handled): ${alarmId}`);
-        return;
-      }
-
-      console.log(`[Alarm] Deep link received: ${alarmId} (${alarmType ?? "unknown"})`);
-      router.push({
-        pathname: "/alarm",
-        params: { alarmId, ...(alarmType && { alarmType }) },
-      });
+      navigateToAlarm(alarmId, alarmType, "deep-link");
     }
-  } catch (e) {
-    console.warn(`[Alarm] Invalid URL: ${url}`);
+  } catch {
+    // invalid URL
   }
 }
