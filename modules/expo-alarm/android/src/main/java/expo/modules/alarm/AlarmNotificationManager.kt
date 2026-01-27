@@ -3,9 +3,9 @@ package expo.modules.alarm
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -28,8 +28,8 @@ class AlarmNotificationManager(private val context: Context) {
         ).apply {
             description = "Alarm notifications for prayer times"
             setBypassDnd(true)
-            enableVibration(false) // We handle vibration ourselves
-            setSound(null, null)   // We handle audio ourselves via MediaPlayer
+            enableVibration(false)
+            setSound(null, null)
             lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             setShowBadge(true)
         }
@@ -45,27 +45,7 @@ class AlarmNotificationManager(private val context: Context) {
     ): NotificationCompat.Builder {
         createNotificationChannel()
 
-        val deepLinkUri = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType")
-        val fullScreenIntent = Intent(Intent.ACTION_VIEW, deepLinkUri).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-            setPackage(context.packageName)
-        }
-
-        val fullScreenPendingIntent = PendingIntent.getActivity(
-            context,
-            alarmId.hashCode(),
-            fullScreenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val contentIntent = PendingIntent.getActivity(
-            context,
-            alarmId.hashCode() + 1,
-            fullScreenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent = buildAlarmPendingIntent(alarmId, alarmType)
 
         val iconRes = context.resources.getIdentifier(
             "notification_icon", "drawable", context.packageName
@@ -80,9 +60,30 @@ class AlarmNotificationManager(private val context: Context) {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
-            .setContentIntent(contentIntent)
+            .setLocalOnly(true)
+            .setFullScreenIntent(pendingIntent, true)
+            .setContentIntent(pendingIntent)
             .setSound(null)
+    }
+
+    fun buildAlarmPendingIntent(alarmId: String, alarmType: String): PendingIntent {
+        val intent = buildAlarmIntent(alarmId, alarmType)
+        return PendingIntent.getActivity(
+            context,
+            alarmId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    fun buildAlarmIntent(alarmId: String, alarmType: String): Intent {
+        return Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType")
+            component = ComponentName(context.packageName, "${context.packageName}.MainActivity")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
     }
 
     fun cancelNotification() {

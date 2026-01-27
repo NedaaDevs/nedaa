@@ -46,3 +46,6 @@ yarn-error.*
 
 .env
 .env.local
+
+# modules
+modules/expo-alarm/android/build
