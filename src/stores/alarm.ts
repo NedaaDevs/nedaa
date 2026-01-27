@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import * as ExpoAlarm from "expo-alarm";
+import * as Crypto from "expo-crypto";
+import { getNextPrayerDate } from "@/utils/alarmScheduler";
+import { ALARM_DEFAULTS } from "@/constants/Alarm";
 
 export interface ScheduledAlarm {
   alarmId: string;
@@ -9,6 +12,13 @@ export interface ScheduledAlarm {
   title: string;
   triggerTime: number;
   liveActivityId: string | null;
+  snoozeCount: number;
+}
+
+export interface SnoozeResult {
+  snoozeId: string;
+  snoozeEndTime: Date;
+  snoozeCount: number;
 }
 
 interface AlarmState {
@@ -19,9 +29,11 @@ interface AlarmState {
     triggerDate: Date;
     title: string;
     alarmType: "fajr" | "jummah" | "custom";
+    snoozeCount?: number;
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
+  snoozeAlarm: (alarmId: string) => Promise<SnoozeResult | null>;
   cancelAlarm: (alarmId: string) => Promise<void>;
   cancelAlarmsByType: (alarmType: "fajr" | "jummah" | "custom") => Promise<void>;
   cancelAllAlarms: () => Promise<void>;
@@ -35,7 +47,7 @@ export const useAlarmStore = create<AlarmState>()(
       (set, get) => ({
         scheduledAlarms: {},
 
-        scheduleAlarm: async ({ id, triggerDate, title, alarmType }) => {
+        scheduleAlarm: async ({ id, triggerDate, title, alarmType, snoozeCount }) => {
           try {
             const success = await ExpoAlarm.scheduleAlarm({
               id,
@@ -46,19 +58,6 @@ export const useAlarmStore = create<AlarmState>()(
 
             if (!success) return false;
 
-            // Start Live Activity
-            let liveActivityId: string | null = null;
-            try {
-              liveActivityId = await ExpoAlarm.startLiveActivity({
-                alarmId: id,
-                alarmType,
-                title,
-                triggerDate,
-              });
-            } catch {
-              // Live Activity not available
-            }
-
             set((state) => ({
               scheduledAlarms: {
                 ...state.scheduledAlarms,
@@ -67,26 +66,45 @@ export const useAlarmStore = create<AlarmState>()(
                   alarmType,
                   title,
                   triggerTime: triggerDate.getTime(),
-                  liveActivityId,
+                  liveActivityId: null,
+                  snoozeCount: snoozeCount ?? 0,
                 },
               },
             }));
 
             return true;
-          } catch (error) {
-            console.error(`[Alarm] Schedule error:`, error);
+          } catch {
             return false;
           }
         },
 
         completeAlarm: async (alarmId) => {
-          const { scheduledAlarms } = get();
-          const alarm = scheduledAlarms[alarmId];
+          const alarm = get().scheduledAlarms[alarmId];
+
+          ExpoAlarm.stopAllAlarmEffects();
+
+          await ExpoAlarm.cancelAllBackups();
+
+          await ExpoAlarm.clearPendingChallenge();
+          await ExpoAlarm.cancelAllAlarms();
+          await ExpoAlarm.endAllLiveActivities();
 
           ExpoAlarm.markAlarmCompleted(alarmId);
 
-          if (alarm?.liveActivityId) {
-            await ExpoAlarm.endLiveActivity(alarm.liveActivityId);
+          if (alarm && (alarm.alarmType === "fajr" || alarm.alarmType === "jummah")) {
+            const prayerName = alarm.alarmType === "fajr" ? "fajr" : "dhuhr";
+            const nextTrigger = getNextPrayerDate(prayerName);
+
+            if (nextTrigger) {
+              const nextId = Crypto.randomUUID();
+              const baseTitle = alarm.title.replace(/\s*\(Snoozed \d+\/\d+\)$/, "");
+              await get().scheduleAlarm({
+                id: nextId,
+                triggerDate: nextTrigger,
+                title: baseTitle,
+                alarmType: alarm.alarmType,
+              });
+            }
           }
 
           set((state) => {
@@ -96,15 +114,48 @@ export const useAlarmStore = create<AlarmState>()(
           });
         },
 
+        snoozeAlarm: async (alarmId) => {
+          const alarm = get().scheduledAlarms[alarmId];
+          if (!alarm) return null;
+
+          const { MAX_SNOOZES, SNOOZE_MINUTES } = ALARM_DEFAULTS;
+          if (alarm.snoozeCount >= MAX_SNOOZES) return null;
+
+          const snoozeTime = new Date(Date.now() + SNOOZE_MINUTES * 60 * 1000);
+          const snoozeId = Crypto.randomUUID();
+          const baseTitle = alarm.title.replace(/\s*\(Snoozed \d+\/\d+\)$/, "");
+          const newSnoozeCount = alarm.snoozeCount + 1;
+          const snoozeTitle = `${baseTitle} (Snoozed ${newSnoozeCount}/${MAX_SNOOZES})`;
+
+          ExpoAlarm.stopAllAlarmEffects();
+          await ExpoAlarm.cancelAllAlarms();
+          await ExpoAlarm.clearPendingChallenge();
+
+          await get().scheduleAlarm({
+            id: snoozeId,
+            triggerDate: snoozeTime,
+            title: snoozeTitle,
+            alarmType: alarm.alarmType,
+            snoozeCount: newSnoozeCount,
+          });
+
+          await ExpoAlarm.endAllLiveActivities();
+          await ExpoAlarm.startLiveActivity({
+            alarmId: snoozeId,
+            alarmType: alarm.alarmType,
+            title: snoozeTitle,
+            triggerDate: snoozeTime,
+          });
+
+          return {
+            snoozeId,
+            snoozeEndTime: snoozeTime,
+            snoozeCount: newSnoozeCount,
+          };
+        },
+
         cancelAlarm: async (alarmId) => {
-          const { scheduledAlarms } = get();
-          const alarm = scheduledAlarms[alarmId];
-
           await ExpoAlarm.cancelAlarm(alarmId);
-
-          if (alarm?.liveActivityId) {
-            await ExpoAlarm.endLiveActivity(alarm.liveActivityId);
-          }
 
           set((state) => {
             const newAlarms = { ...state.scheduledAlarms };
@@ -121,9 +172,6 @@ export const useAlarmStore = create<AlarmState>()(
 
           for (const alarm of toCancel) {
             await ExpoAlarm.cancelAlarm(alarm.alarmId);
-            if (alarm.liveActivityId) {
-              await ExpoAlarm.endLiveActivity(alarm.liveActivityId);
-            }
           }
 
           set((state) => {
@@ -136,15 +184,9 @@ export const useAlarmStore = create<AlarmState>()(
         },
 
         cancelAllAlarms: async () => {
-          const { scheduledAlarms } = get();
-
-          for (const alarm of Object.values(scheduledAlarms)) {
-            await ExpoAlarm.cancelAlarm(alarm.alarmId);
-            if (alarm.liveActivityId) {
-              await ExpoAlarm.endLiveActivity(alarm.liveActivityId);
-            }
-          }
-
+          await ExpoAlarm.cancelAllAlarms();
+          await ExpoAlarm.cancelAllBackups();
+          await ExpoAlarm.endAllLiveActivities();
           set({ scheduledAlarms: {} });
         },
 
