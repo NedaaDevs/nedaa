@@ -1,25 +1,16 @@
-import { useLocalSearchParams, router } from "expo-router";
-import { useEffect, useState, useMemo } from "react";
-import { Vibration } from "react-native";
-import * as ExpoAlarm from "expo-alarm";
-import * as Crypto from "expo-crypto";
+import { useLocalSearchParams, Stack } from "expo-router";
 
-// Components
 import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
+import { Clock } from "lucide-react-native";
 
-// Icons
-import { Bell, Sun, Building2 } from "lucide-react-native";
-
-// Store
-import { useAlarmStore } from "@/stores/alarm";
-import { markAlarmHandled, isAlarmHandled } from "@/hooks/useAlarmDeepLink";
-
-const TAPS_REQUIRED = 5;
+import { ALARM_TYPE_META } from "@/constants/Alarm";
+import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
 
 export default function AlarmTriggeredScreen() {
   const { alarmType, alarmId } = useLocalSearchParams<{
@@ -27,131 +18,148 @@ export default function AlarmTriggeredScreen() {
     alarmId: string;
   }>();
 
-  const [tapCount, setTapCount] = useState(0);
+  const {
+    isSnoozed,
+    snoozeEndTime,
+    snoozeTimeRemaining,
+    canSnooze,
+    remainingTaps,
+    remainingSnoozes,
+    handleTap,
+    handleSnooze,
+  } = useAlarmScreen(alarmId, alarmType);
 
-  const { cancelAllAlarms, scheduleAlarm, getAlarm } = useAlarmStore();
-
-  // Get alarm from store
-  const alarm = useMemo(() => getAlarm(alarmId), [alarmId, getAlarm]);
-
-  // If alarm is already handled, go back immediately
-  useEffect(() => {
-    if (isAlarmHandled(alarmId)) {
-      console.log(`[Alarm] Already handled, redirecting home: ${alarmId}`);
-      router.replace("/");
-    }
-  }, [alarmId]);
-
-  // Update Live Activity to "firing" state when screen opens
-  useEffect(() => {
-    if (alarm?.liveActivityId && !isAlarmHandled(alarmId)) {
-      ExpoAlarm.updateLiveActivity(alarm.liveActivityId, "firing");
-    }
-  }, [alarm?.liveActivityId, alarmId]);
-
-  // Vibrate continuously
-  useEffect(() => {
-    Vibration.vibrate([0, 500, 200, 500], true);
-    return () => Vibration.cancel();
-  }, []);
-
-  const handleTap = async () => {
-    const newCount = tapCount + 1;
-    setTapCount(newCount);
-
-    if (newCount >= TAPS_REQUIRED) {
-      Vibration.cancel();
-
-      // Mark as handled so deep link won't re-trigger
-      markAlarmHandled(alarmId);
-
-      // Save alarm info before cancelling (for rescheduling)
-      const alarmInfo = alarm
-        ? { triggerTime: alarm.triggerTime, title: alarm.title, alarmType: alarm.alarmType }
-        : null;
-
-      // Cancel ALL alarms (native handles backup cleanup)
-      console.log(`[Alarm] Challenge complete, cancelling all alarms`);
-      await ExpoAlarm.cancelAllAlarms();
-      await ExpoAlarm.endAllLiveActivities();
-
-      // Schedule next day's alarm
-      if (alarmInfo && (alarmType === "fajr" || alarmType === "jummah")) {
-        const nextTrigger = new Date(alarmInfo.triggerTime + 24 * 60 * 60 * 1000);
-        const nextId = Crypto.randomUUID();
-
-        await scheduleAlarm({
-          id: nextId,
-          triggerDate: nextTrigger,
-          title: alarmInfo.title,
-          alarmType: alarmInfo.alarmType,
-        });
-        console.log(`[Alarm] Scheduled next: ${nextTrigger.toISOString()}`);
-      }
-
-      router.replace("/");
-    }
-  };
-
-  const getAlarmIcon = () => {
-    switch (alarmType) {
-      case "fajr":
-        return Sun;
-      case "jummah":
-        return Building2;
-      default:
-        return Bell;
-    }
-  };
-
-  const getAlarmTitle = () => {
-    switch (alarmType) {
-      case "fajr":
-        return "Fajr Alarm";
-      case "jummah":
-        return "Jummah Alarm";
-      default:
-        return "Alarm";
-    }
-  };
-
-  const getAlarmColor = () => {
-    switch (alarmType) {
-      case "fajr":
-        return "text-warning";
-      case "jummah":
-        return "text-success";
-      default:
-        return "text-info";
-    }
-  };
-
-  const remainingTaps = TAPS_REQUIRED - tapCount;
+  const meta =
+    ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? "custom"] ??
+    ALARM_TYPE_META.custom;
 
   return (
-    <Background>
-      <VStack className="flex-1 items-center justify-center p-6" space="xl">
-        <Card className="p-8 w-full max-w-sm items-center">
-          <VStack space="lg" className="items-center">
-            <Icon as={getAlarmIcon()} size="xl" className={getAlarmColor()} />
+    <>
+      <Stack.Screen
+        options={{
+          gestureEnabled: false,
+          headerShown: false,
+          presentation: "fullScreenModal",
+        }}
+      />
+      <Background>
+        <VStack className="flex-1 items-center justify-center p-6" space="xl">
+          <Card className="p-8 w-full max-w-sm items-center">
+            {isSnoozed && snoozeEndTime ? (
+              <SnoozedView
+                snoozeTimeRemaining={snoozeTimeRemaining}
+                remainingTaps={remainingTaps}
+                onTap={handleTap}
+              />
+            ) : (
+              <ActiveAlarmView
+                icon={meta.icon}
+                title={meta.title}
+                colorClass={meta.colorClass}
+                remainingTaps={remainingTaps}
+                canSnooze={canSnooze}
+                remainingSnoozes={remainingSnoozes}
+                onTap={handleTap}
+                onSnooze={handleSnooze}
+              />
+            )}
+          </Card>
+        </VStack>
+      </Background>
+    </>
+  );
+}
 
-            <Text className="text-2xl font-bold text-typography">{getAlarmTitle()}</Text>
+function SnoozedView({
+  snoozeTimeRemaining,
+  remainingTaps,
+  onTap,
+}: {
+  snoozeTimeRemaining: number;
+  remainingTaps: number;
+  onTap: () => void;
+}) {
+  return (
+    <VStack space="lg" className="items-center">
+      <Icon as={Clock} size="xl" className="text-purple-500" />
 
-            <Text className="text-center text-typography-secondary">
-              It&apos;s time to wake up for prayer!
-            </Text>
+      <Text className="text-2xl font-bold text-typography">Snoozed</Text>
 
-            <Text className="text-5xl font-bold text-typography">{remainingTaps}</Text>
-            <Text className="text-sm text-typography-secondary">taps remaining</Text>
+      <Text className="text-4xl font-bold text-purple-500">
+        {formatTimeRemaining(snoozeTimeRemaining)}
+      </Text>
+      <Text className="text-sm text-typography-secondary">until alarm rings again</Text>
 
-            <Button size="xl" className="w-full mt-4" onPress={handleTap}>
-              <ButtonText className="text-lg">
-                {remainingTaps > 0 ? "Tap to Dismiss" : "Done!"}
-              </ButtonText>
-            </Button>
-          </VStack>
-        </Card>
+      <VStack className="mt-6 items-center" space="sm">
+        <Text className="text-5xl font-bold text-typography">{remainingTaps}</Text>
+        <Text className="text-sm text-typography-secondary">taps to dismiss forever</Text>
       </VStack>
-    </Background>
+
+      <Button size="xl" className="w-full mt-4" onPress={onTap}>
+        <ButtonText className="text-lg">
+          {remainingTaps > 0 ? "Tap to Dismiss" : "Done!"}
+        </ButtonText>
+      </Button>
+    </VStack>
+  );
+}
+
+function ActiveAlarmView({
+  icon,
+  title,
+  colorClass,
+  remainingTaps,
+  canSnooze,
+  remainingSnoozes,
+  onTap,
+  onSnooze,
+}: {
+  icon: React.ComponentType;
+  title: string;
+  colorClass: string;
+  remainingTaps: number;
+  canSnooze: boolean;
+  remainingSnoozes: number;
+  onTap: () => void;
+  onSnooze: () => void;
+}) {
+  return (
+    <VStack space="lg" className="items-center">
+      <Icon as={icon} size="xl" className={colorClass} />
+
+      <Text className="text-2xl font-bold text-typography">{title}</Text>
+
+      <Text className="text-center text-typography-secondary">
+        It&apos;s time to wake up for prayer!
+      </Text>
+
+      <Text className="text-5xl font-bold text-typography">{remainingTaps}</Text>
+      <Text className="text-sm text-typography-secondary">taps remaining</Text>
+
+      <Button size="xl" className="w-full mt-4" onPress={onTap}>
+        <ButtonText className="text-lg">
+          {remainingTaps > 0 ? "Tap to Dismiss" : "Done!"}
+        </ButtonText>
+      </Button>
+
+      <Button
+        size="lg"
+        variant="outline"
+        className="w-full mt-2"
+        onPress={onSnooze}
+        disabled={!canSnooze}>
+        <HStack space="sm" className="items-center">
+          <Icon
+            as={Clock}
+            size="sm"
+            className={canSnooze ? "text-typography-secondary" : "text-typography-disabled"}
+          />
+          <ButtonText
+            className={canSnooze ? "text-typography-secondary" : "text-typography-disabled"}>
+            {canSnooze ? `Snooze (${remainingSnoozes} left)` : "No more snoozes"}
+          </ButtonText>
+        </HStack>
+      </Button>
+    </VStack>
   );
 }
