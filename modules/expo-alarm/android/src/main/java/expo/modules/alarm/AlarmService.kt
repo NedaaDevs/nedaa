@@ -80,10 +80,6 @@ class AlarmService : Service() {
         audioManager.startAlarmSound(soundName)
         audioManager.startVibration()
 
-        // Launch activity directly — full-screen intent only auto-launches on locked/off screens
-        val launchIntent = notificationManager.buildAlarmIntent(alarmId, alarmType)
-        startActivity(launchIntent)
-
         Log.d(TAG, "Alarm service started with sound=$soundName")
     }
 
