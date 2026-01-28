@@ -161,9 +161,6 @@ class ExpoAlarmModule : Module() {
 
         Function("stopAllAlarmEffects") {
             audioManager.stopAll()
-            if (AlarmService.isRunning) {
-                AlarmService.stop(context)
-            }
             true
         }
 
