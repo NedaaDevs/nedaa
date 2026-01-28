@@ -248,6 +248,25 @@ export function requestBatteryOptimizationExemption(): boolean {
   }
 }
 
+// Android-specific: full-screen intent permission (API 34+)
+export function canUseFullScreenIntent(): boolean {
+  if (!isAvailable) return true;
+  try {
+    return NativeModule.canUseFullScreenIntent();
+  } catch {
+    return true;
+  }
+}
+
+export function requestFullScreenIntentPermission(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.requestFullScreenIntentPermission();
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -281,4 +300,6 @@ export default {
   getNextAlarmTime,
   isBatteryOptimizationExempt,
   requestBatteryOptimizationExemption,
+  canUseFullScreenIntent,
+  requestFullScreenIntentPermission,
 };

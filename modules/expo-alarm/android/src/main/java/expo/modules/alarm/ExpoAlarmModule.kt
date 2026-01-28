@@ -2,6 +2,7 @@ package expo.modules.alarm
 
 import android.Manifest
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -235,6 +236,29 @@ class ExpoAlarmModule : Module() {
             }
             true
         }
+
+        Function("canUseFullScreenIntent") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.canUseFullScreenIntent()
+            } else {
+                true
+            }
+        }
+
+        Function("requestFullScreenIntentPermission") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                if (!nm.canUseFullScreenIntent()) {
+                    val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                }
+            }
+            true
+        }
     }
 
     private fun getAuthStatus(): String {
@@ -250,6 +274,12 @@ class ExpoAlarmModule : Module() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             if (!am.canScheduleExactAlarms()) return "denied"
+        }
+
+        // Check full-screen intent permission (API 34+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (!nm.canUseFullScreenIntent()) return "denied"
         }
 
         return "authorized"
