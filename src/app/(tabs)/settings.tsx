@@ -61,8 +61,12 @@ const SettingsScreen = () => {
           icon={BellRing}
         />
 
-        {/* Alarm Debug */}
-        <SettingsItem name="Alarm Debug" path="/settings/alarm-debug" icon={AlarmClock} />
+        {/* Alarm Settings */}
+        <SettingsItem
+          name={t("alarm.settings.title")}
+          path={"/settings/alarm" as any}
+          icon={AlarmClock}
+        />
 
         {/* Location */}
         <SettingsItem

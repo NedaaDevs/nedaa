@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings Activity -->
+    <string name="alarm_settings_title">Alarm Settings</string>
+    <string name="fajr_alarm_title">Fajr Alarm</string>
+    <string name="friday_alarm_title">Friday Alarm</string>
+
+    <!-- Preferences -->
+    <string name="pref_enabled">Enable Alarm</string>
+    <string name="pref_enabled_summary">Alarm will ring at the scheduled time</string>
+
+    <string name="pref_category_sound">Sound</string>
+    <string name="pref_sound">Alarm Sound</string>
+    <string name="pref_volume">Volume</string>
+
+    <string name="pref_category_gentle_wakeup">Gentle Wake-up</string>
+    <string name="pref_gentle_wakeup">Enable Gentle Wake-up</string>
+    <string name="pref_gentle_wakeup_summary">Gradually increases volume</string>
+    <string name="pref_duration">Duration</string>
+
+    <string name="pref_category_challenge">Dismissal Challenge</string>
+    <string name="pref_challenge_type">Challenge Type</string>
+    <string name="pref_challenge_difficulty">Difficulty</string>
+    <string name="pref_challenge_count">Number of Challenges</string>
+
+    <string name="pref_category_vibration">Vibration</string>
+    <string name="pref_vibration">Enable Vibration</string>
+    <string name="pref_vibration_pattern">Vibration Pattern</string>
+
+    <string name="pref_category_snooze">Snooze</string>
+    <string name="pref_snooze">Enable Snooze</string>
+    <string name="pref_snooze_max">Maximum Snoozes</string>
+    <string name="pref_snooze_duration">Snooze Duration</string>
+
+    <!-- Sound options -->
+    <string name="sound_beep">Beep</string>
+    <string name="sound_makkah_athan">Makkah Athan</string>
+    <string name="sound_yasser_aldosari">Yasser Al Dosari</string>
+    <string name="sound_tasbih">Tasbih</string>
+    <string name="sound_athan2">Athan 2</string>
+    <string name="sound_athan3">Athan 3</string>
+    <string name="sound_medina_athan">Medina Athan</string>
+    <string name="sound_takbir">Takbir</string>
+    <string name="sound_knock">Knock</string>
+    <string name="sound_silent">Silent</string>
+
+    <!-- Challenge options -->
+    <string name="challenge_tap">Tap</string>
+    <string name="challenge_math">Math</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+
+    <!-- Vibration options -->
+    <string name="vibration_default">Default</string>
+    <string name="vibration_gentle">Gentle</string>
+    <string name="vibration_aggressive">Aggressive</string>
+
+    <!-- Duration formats -->
+    <string name="minute_format">%d min</string>
+</resources>

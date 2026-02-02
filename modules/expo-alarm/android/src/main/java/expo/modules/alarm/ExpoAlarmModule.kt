@@ -328,6 +328,64 @@ class ExpoAlarmModule : Module() {
         Function("hasAutoStartSettings") {
             getAutoStartIntent() != null
         }
+
+        // -- Native Settings --
+
+        Function("openNativeSettings") { alarmType: String ->
+            try {
+                val intent = AlarmSettingsActivity.createIntent(context, alarmType)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        AsyncFunction("getAlarmSettings") { alarmType: String ->
+            val settings = db.getAlarmSettings(alarmType)
+            mapOf(
+                "enabled" to settings.enabled,
+                "sound" to settings.sound,
+                "volume" to settings.volume,
+                "challengeType" to settings.challengeType,
+                "challengeDifficulty" to settings.challengeDifficulty,
+                "challengeCount" to settings.challengeCount,
+                "gentleWakeUpEnabled" to settings.gentleWakeUpEnabled,
+                "gentleWakeUpDuration" to settings.gentleWakeUpDuration,
+                "vibrationEnabled" to settings.vibrationEnabled,
+                "vibrationPattern" to settings.vibrationPattern,
+                "snoozeEnabled" to settings.snoozeEnabled,
+                "snoozeMaxCount" to settings.snoozeMaxCount,
+                "snoozeDuration" to settings.snoozeDuration
+            )
+        }
+
+        AsyncFunction("setAlarmSettings") { alarmType: String, settingsMap: Map<String, Any> ->
+            val currentSettings = db.getAlarmSettings(alarmType)
+            val newSettings = AlarmDatabase.AlarmSettingsRecord(
+                alarmType = alarmType,
+                enabled = (settingsMap["enabled"] as? Boolean) ?: currentSettings.enabled,
+                sound = (settingsMap["sound"] as? String) ?: currentSettings.sound,
+                volume = ((settingsMap["volume"] as? Number)?.toFloat()) ?: currentSettings.volume,
+                challengeType = (settingsMap["challengeType"] as? String) ?: currentSettings.challengeType,
+                challengeDifficulty = (settingsMap["challengeDifficulty"] as? String) ?: currentSettings.challengeDifficulty,
+                challengeCount = ((settingsMap["challengeCount"] as? Number)?.toInt()) ?: currentSettings.challengeCount,
+                gentleWakeUpEnabled = (settingsMap["gentleWakeUpEnabled"] as? Boolean) ?: currentSettings.gentleWakeUpEnabled,
+                gentleWakeUpDuration = ((settingsMap["gentleWakeUpDuration"] as? Number)?.toInt()) ?: currentSettings.gentleWakeUpDuration,
+                vibrationEnabled = (settingsMap["vibrationEnabled"] as? Boolean) ?: currentSettings.vibrationEnabled,
+                vibrationPattern = (settingsMap["vibrationPattern"] as? String) ?: currentSettings.vibrationPattern,
+                snoozeEnabled = (settingsMap["snoozeEnabled"] as? Boolean) ?: currentSettings.snoozeEnabled,
+                snoozeMaxCount = ((settingsMap["snoozeMaxCount"] as? Number)?.toInt()) ?: currentSettings.snoozeMaxCount,
+                snoozeDuration = ((settingsMap["snoozeDuration"] as? Number)?.toInt()) ?: currentSettings.snoozeDuration
+            )
+            db.saveAlarmSettings(newSettings)
+            true
+        }
+
+        Function("isAlarmTypeEnabled") { alarmType: String ->
+            db.isAlarmEnabled(alarmType)
+        }
     }
 
     private fun openAutoStartSettings(): Boolean {

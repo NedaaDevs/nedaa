@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <SwitchPreferenceCompat
+        android:key="enabled"
+        android:title="@string/pref_enabled"
+        android:summary="@string/pref_enabled_summary"
+        android:defaultValue="false" />
+
+    <PreferenceCategory
+        android:key="sound_category"
+        android:title="@string/pref_category_sound"
+        app:isPreferenceVisible="true">
+
+        <ListPreference
+            android:key="sound"
+            android:title="@string/pref_sound"
+            android:entries="@array/sound_entries"
+            android:entryValues="@array/sound_values"
+            android:defaultValue="beep" />
+
+        <SeekBarPreference
+            android:key="volume"
+            android:title="@string/pref_volume"
+            android:defaultValue="100"
+            android:max="100"
+            app:showSeekBarValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="gentle_wakeup_category"
+        android:title="@string/pref_category_gentle_wakeup">
+
+        <SwitchPreferenceCompat
+            android:key="gentle_wakeup_enabled"
+            android:title="@string/pref_gentle_wakeup"
+            android:summary="@string/pref_gentle_wakeup_summary"
+            android:defaultValue="false" />
+
+        <ListPreference
+            android:key="gentle_wakeup_duration"
+            android:title="@string/pref_duration"
+            android:entries="@array/gentle_wakeup_duration_entries"
+            android:entryValues="@array/gentle_wakeup_duration_values"
+            android:defaultValue="3"
+            android:dependency="gentle_wakeup_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="challenge_category"
+        android:title="@string/pref_category_challenge">
+
+        <ListPreference
+            android:key="challenge_type"
+            android:title="@string/pref_challenge_type"
+            android:entries="@array/challenge_type_entries"
+            android:entryValues="@array/challenge_type_values"
+            android:defaultValue="tap" />
+
+        <ListPreference
+            android:key="challenge_difficulty"
+            android:title="@string/pref_challenge_difficulty"
+            android:entries="@array/challenge_difficulty_entries"
+            android:entryValues="@array/challenge_difficulty_values"
+            android:defaultValue="easy" />
+
+        <ListPreference
+            android:key="challenge_count"
+            android:title="@string/pref_challenge_count"
+            android:entries="@array/challenge_count_entries"
+            android:entryValues="@array/challenge_count_values"
+            android:defaultValue="1" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="vibration_category"
+        android:title="@string/pref_category_vibration">
+
+        <SwitchPreferenceCompat
+            android:key="vibration_enabled"
+            android:title="@string/pref_vibration"
+            android:defaultValue="true" />
+
+        <ListPreference
+            android:key="vibration_pattern"
+            android:title="@string/pref_vibration_pattern"
+            android:entries="@array/vibration_pattern_entries"
+            android:entryValues="@array/vibration_pattern_values"
+            android:defaultValue="default"
+            android:dependency="vibration_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="snooze_category"
+        android:title="@string/pref_category_snooze">
+
+        <SwitchPreferenceCompat
+            android:key="snooze_enabled"
+            android:title="@string/pref_snooze"
+            android:defaultValue="true" />
+
+        <ListPreference
+            android:key="snooze_max_count"
+            android:title="@string/pref_snooze_max"
+            android:entries="@array/snooze_max_entries"
+            android:entryValues="@array/snooze_max_values"
+            android:defaultValue="3"
+            android:dependency="snooze_enabled" />
+
+        <ListPreference
+            android:key="snooze_duration"
+            android:title="@string/pref_snooze_duration"
+            android:entries="@array/snooze_duration_entries"
+            android:entryValues="@array/snooze_duration_values"
+            android:defaultValue="5"
+            android:dependency="snooze_enabled" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

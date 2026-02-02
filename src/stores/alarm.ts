@@ -33,7 +33,7 @@ interface AlarmState {
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
-  snoozeAlarm: (alarmId: string) => Promise<SnoozeResult | null>;
+  snoozeAlarm: (alarmId: string, snoozeDurationMinutes?: number) => Promise<SnoozeResult | null>;
   cancelAlarm: (alarmId: string) => Promise<void>;
   cancelAlarmsByType: (alarmType: "fajr" | "jummah" | "custom") => Promise<void>;
   cancelAllAlarms: () => Promise<void>;
@@ -111,14 +111,15 @@ export const useAlarmStore = create<AlarmState>()(
           });
         },
 
-        snoozeAlarm: async (alarmId) => {
+        snoozeAlarm: async (alarmId, snoozeDurationMinutes) => {
           const alarm = get().scheduledAlarms[alarmId];
           if (!alarm) return null;
 
           const { MAX_SNOOZES, SNOOZE_MINUTES } = ALARM_DEFAULTS;
           if (alarm.snoozeCount >= MAX_SNOOZES) return null;
 
-          const snoozeTime = new Date(Date.now() + SNOOZE_MINUTES * 60 * 1000);
+          const duration = snoozeDurationMinutes ?? SNOOZE_MINUTES;
+          const snoozeTime = new Date(Date.now() + duration * 60 * 1000);
           const snoozeId = Crypto.randomUUID();
           const baseTitle = alarm.title.replace(/\s*\(Snoozed \d+\/\d+\)$/, "");
           const newSnoozeCount = alarm.snoozeCount + 1;

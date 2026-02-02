@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sound options -->
+    <string-array name="sound_entries">
+        <item>@string/sound_beep</item>
+        <item>@string/sound_makkah_athan</item>
+        <item>@string/sound_yasser_aldosari</item>
+        <item>@string/sound_tasbih</item>
+        <item>@string/sound_athan2</item>
+        <item>@string/sound_athan3</item>
+        <item>@string/sound_medina_athan</item>
+        <item>@string/sound_takbir</item>
+        <item>@string/sound_knock</item>
+        <item>@string/sound_silent</item>
+    </string-array>
+
+    <string-array name="sound_values">
+        <item>beep</item>
+        <item>makkahAthan1</item>
+        <item>yasserAldosari</item>
+        <item>tasbih</item>
+        <item>athan2</item>
+        <item>athan3</item>
+        <item>medinaAthan</item>
+        <item>takbir</item>
+        <item>knock</item>
+        <item>silent</item>
+    </string-array>
+
+    <!-- Gentle wakeup duration -->
+    <string-array name="gentle_wakeup_duration_entries">
+        <item>1 min</item>
+        <item>3 min</item>
+        <item>5 min</item>
+    </string-array>
+
+    <string-array name="gentle_wakeup_duration_values">
+        <item>1</item>
+        <item>3</item>
+        <item>5</item>
+    </string-array>
+
+    <!-- Challenge type -->
+    <string-array name="challenge_type_entries">
+        <item>@string/challenge_tap</item>
+        <item>@string/challenge_math</item>
+    </string-array>
+
+    <string-array name="challenge_type_values">
+        <item>tap</item>
+        <item>math</item>
+    </string-array>
+
+    <!-- Challenge difficulty -->
+    <string-array name="challenge_difficulty_entries">
+        <item>@string/difficulty_easy</item>
+        <item>@string/difficulty_medium</item>
+        <item>@string/difficulty_hard</item>
+    </string-array>
+
+    <string-array name="challenge_difficulty_values">
+        <item>easy</item>
+        <item>medium</item>
+        <item>hard</item>
+    </string-array>
+
+    <!-- Challenge count -->
+    <string-array name="challenge_count_entries">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+    </string-array>
+
+    <string-array name="challenge_count_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+    </string-array>
+
+    <!-- Vibration pattern -->
+    <string-array name="vibration_pattern_entries">
+        <item>@string/vibration_default</item>
+        <item>@string/vibration_gentle</item>
+        <item>@string/vibration_aggressive</item>
+    </string-array>
+
+    <string-array name="vibration_pattern_values">
+        <item>default</item>
+        <item>gentle</item>
+        <item>aggressive</item>
+    </string-array>
+
+    <!-- Snooze max count -->
+    <string-array name="snooze_max_entries">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="snooze_max_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <!-- Snooze duration -->
+    <string-array name="snooze_duration_entries">
+        <item>1 min</item>
+        <item>3 min</item>
+        <item>5 min</item>
+        <item>10 min</item>
+    </string-array>
+
+    <string-array name="snooze_duration_values">
+        <item>1</item>
+        <item>3</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+</resources>

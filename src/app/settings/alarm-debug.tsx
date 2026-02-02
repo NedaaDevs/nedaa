@@ -9,6 +9,7 @@ import { Text } from "@/components/ui/text";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Badge, BadgeText } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import TopBar from "@/components/TopBar";
 import { Background } from "@/components/ui/background";
 
@@ -18,6 +19,17 @@ import * as ExpoAlarm from "expo-alarm";
 // Store
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+
+// Types
+import {
+  ChallengeType,
+  ChallengeDifficulty,
+  VibrationPattern,
+  CHALLENGE_TYPES,
+  CHALLENGE_DIFFICULTIES,
+  VIBRATION_PATTERNS,
+} from "@/types/alarm";
 
 // Utils
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
@@ -41,7 +53,17 @@ const AlarmDebugScreen = () => {
   const [hasAutoStart, setHasAutoStart] = useState<boolean | null>(null);
   const [deviceManufacturer, setDeviceManufacturer] = useState<string>("");
 
+  // Test alarm settings
+  const [testChallengeType, setTestChallengeType] = useState<ChallengeType>("tap");
+  const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>("easy");
+  const [testChallengeCount, setTestChallengeCount] = useState<number>(1);
+  const [testVibrationEnabled, setTestVibrationEnabled] = useState<boolean>(true);
+  const [testVibrationPattern, setTestVibrationPattern] = useState<VibrationPattern>("default");
+  const [testVolume, setTestVolume] = useState<number>(1.0);
+  const [testSnoozeEnabled, setTestSnoozeEnabled] = useState<boolean>(true);
+
   const { scheduleAlarm, cancelAllAlarms } = useAlarmStore();
+  const { fajr: fajrSettings, updateSettings } = useAlarmSettingsStore();
   const { todayTimings } = usePrayerTimesStore();
 
   useEffect(() => {
@@ -139,8 +161,31 @@ const AlarmDebugScreen = () => {
     }
   };
 
+  // Apply test settings to store before scheduling
+  const applyTestSettings = () => {
+    updateSettings("fajr", {
+      challenge: {
+        type: testChallengeType,
+        difficulty: testDifficulty,
+        count: testChallengeCount as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+      },
+      vibration: {
+        enabled: testVibrationEnabled,
+        pattern: testVibrationPattern,
+      },
+      volume: testVolume,
+      snooze: {
+        ...fajrSettings.snooze,
+        enabled: testSnoozeEnabled,
+      },
+    });
+  };
+
   const scheduleTestAlarm = async (seconds: number) => {
     try {
+      // Apply test settings to store first
+      applyTestSettings();
+
       // AlarmKit requires valid UUIDs
       const id = Crypto.randomUUID();
       const triggerDate = new Date(Date.now() + seconds * 1000);
@@ -154,7 +199,10 @@ const AlarmDebugScreen = () => {
       });
 
       if (success) {
-        setLastResult(`Scheduled: alarm + backup + Live Activity`);
+        setLastResult(
+          `Scheduled with: ${testChallengeType}/${testDifficulty}/${testChallengeCount}x, ` +
+            `vib=${testVibrationEnabled ? testVibrationPattern : "off"}, vol=${Math.round(testVolume * 100)}%`
+        );
         await checkStatus();
       } else {
         setLastResult("Failed to schedule alarm");
@@ -414,13 +462,137 @@ const AlarmDebugScreen = () => {
             </Card>
           )}
 
+          {/* Test Alarm Settings */}
+          <Card className="p-4 border-2 border-purple-500">
+            <VStack space="md">
+              <HStack className="justify-between items-center">
+                <Text className="text-lg font-semibold text-typography">Test Settings</Text>
+                <Badge action="info">
+                  <BadgeText>Quick Config</BadgeText>
+                </Badge>
+              </HStack>
+
+              <Text className="text-xs text-typography-secondary">
+                Configure these settings, then schedule a test alarm below.
+              </Text>
+
+              {/* Challenge Type */}
+              <VStack space="xs">
+                <Text className="text-sm text-typography">Challenge Type</Text>
+                <HStack space="sm">
+                  {CHALLENGE_TYPES.map((type) => (
+                    <Button
+                      key={type}
+                      size="sm"
+                      variant={testChallengeType === type ? "solid" : "outline"}
+                      onPress={() => setTestChallengeType(type)}
+                      className="flex-1">
+                      <ButtonText className="capitalize">{type}</ButtonText>
+                    </Button>
+                  ))}
+                </HStack>
+              </VStack>
+
+              {/* Challenge Difficulty */}
+              <VStack space="xs">
+                <Text className="text-sm text-typography">Difficulty</Text>
+                <HStack space="sm">
+                  {CHALLENGE_DIFFICULTIES.map((diff) => (
+                    <Button
+                      key={diff}
+                      size="sm"
+                      variant={testDifficulty === diff ? "solid" : "outline"}
+                      onPress={() => setTestDifficulty(diff)}
+                      className="flex-1">
+                      <ButtonText className="capitalize">{diff}</ButtonText>
+                    </Button>
+                  ))}
+                </HStack>
+              </VStack>
+
+              {/* Challenge Count */}
+              <VStack space="xs">
+                <Text className="text-sm text-typography">
+                  Challenge Count: {testChallengeCount}
+                </Text>
+                <HStack space="sm">
+                  {[1, 2, 3, 5, 10].map((count) => (
+                    <Button
+                      key={count}
+                      size="sm"
+                      variant={testChallengeCount === count ? "solid" : "outline"}
+                      onPress={() => setTestChallengeCount(count)}
+                      className="flex-1">
+                      <ButtonText>{count}</ButtonText>
+                    </Button>
+                  ))}
+                </HStack>
+              </VStack>
+
+              {/* Vibration */}
+              <VStack space="xs">
+                <HStack className="justify-between items-center">
+                  <Text className="text-sm text-typography">Vibration</Text>
+                  <Switch
+                    size="sm"
+                    value={testVibrationEnabled}
+                    onValueChange={setTestVibrationEnabled}
+                  />
+                </HStack>
+                {testVibrationEnabled && (
+                  <HStack space="sm">
+                    {(Object.keys(VIBRATION_PATTERNS) as VibrationPattern[]).map((pattern) => (
+                      <Button
+                        key={pattern}
+                        size="sm"
+                        variant={testVibrationPattern === pattern ? "solid" : "outline"}
+                        onPress={() => setTestVibrationPattern(pattern)}
+                        className="flex-1">
+                        <ButtonText className="capitalize text-xs">{pattern}</ButtonText>
+                      </Button>
+                    ))}
+                  </HStack>
+                )}
+              </VStack>
+
+              {/* Volume */}
+              <VStack space="xs">
+                <Text className="text-sm text-typography">
+                  Volume: {Math.round(testVolume * 100)}%
+                </Text>
+                <HStack space="sm">
+                  {[0, 0.25, 0.5, 0.75, 1.0].map((vol) => (
+                    <Button
+                      key={vol}
+                      size="sm"
+                      variant={testVolume === vol ? "solid" : "outline"}
+                      onPress={() => setTestVolume(vol)}
+                      className="flex-1">
+                      <ButtonText>{Math.round(vol * 100)}%</ButtonText>
+                    </Button>
+                  ))}
+                </HStack>
+              </VStack>
+
+              {/* Snooze */}
+              <HStack className="justify-between items-center">
+                <Text className="text-sm text-typography">Snooze Enabled</Text>
+                <Switch size="sm" value={testSnoozeEnabled} onValueChange={setTestSnoozeEnabled} />
+              </HStack>
+            </VStack>
+          </Card>
+
           {/* Schedule Test Alarms */}
           <Card className="p-4">
             <VStack space="md">
               <Text className="text-lg font-semibold text-typography">Schedule Test Alarm</Text>
 
+              <Text className="text-xs text-typography-secondary">
+                Uses settings above. Short times for quick testing.
+              </Text>
+
               <HStack space="sm" className="flex-wrap">
-                {[60, 180, 300, 600].map((seconds) => (
+                {[10, 30, 60, 180].map((seconds) => (
                   <Button
                     key={seconds}
                     size="sm"

@@ -352,6 +352,64 @@ export function openAutoStartSettings(): boolean {
   }
 }
 
+// Native alarm settings (Android only)
+export interface NativeAlarmSettings {
+  enabled: boolean;
+  sound: string;
+  volume: number;
+  challengeType: "tap" | "math";
+  challengeDifficulty: "easy" | "medium" | "hard";
+  challengeCount: number;
+  gentleWakeUpEnabled: boolean;
+  gentleWakeUpDuration: number;
+  vibrationEnabled: boolean;
+  vibrationPattern: "default" | "gentle" | "aggressive";
+  snoozeEnabled: boolean;
+  snoozeMaxCount: number;
+  snoozeDuration: number;
+}
+
+export function openNativeSettings(alarmType: "fajr" | "friday"): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.openNativeSettings(alarmType);
+  } catch {
+    return false;
+  }
+}
+
+export async function getAlarmSettings(
+  alarmType: "fajr" | "friday"
+): Promise<NativeAlarmSettings | null> {
+  if (!isAvailable) return null;
+  try {
+    return await NativeModule.getAlarmSettings(alarmType);
+  } catch {
+    return null;
+  }
+}
+
+export async function setAlarmSettings(
+  alarmType: "fajr" | "friday",
+  settings: Partial<NativeAlarmSettings>
+): Promise<boolean> {
+  if (!isAvailable) return false;
+  try {
+    return await NativeModule.setAlarmSettings(alarmType, settings);
+  } catch {
+    return false;
+  }
+}
+
+export function isAlarmTypeEnabled(alarmType: "fajr" | "friday"): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.isAlarmTypeEnabled(alarmType);
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -396,4 +454,8 @@ export default {
   getDeviceManufacturer,
   hasAutoStartSettings,
   openAutoStartSettings,
+  openNativeSettings,
+  getAlarmSettings,
+  setAlarmSettings,
+  isAlarmTypeEnabled,
 };
