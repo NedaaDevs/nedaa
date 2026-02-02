@@ -5,12 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
-import android.util.Log
+import android.provider.Settings
 
 class AlarmService : Service() {
 
     companion object {
-        private const val TAG = "AlarmService"
         private const val WAKE_LOCK_TAG = "nedaa:alarm_wake_lock"
         private const val WAKE_LOCK_TIMEOUT_MS = 10L * 60 * 1000 // 10 minutes
 
@@ -55,18 +54,14 @@ class AlarmService : Service() {
                 val alarmType = intent.getStringExtra(EXTRA_ALARM_TYPE) ?: "custom"
                 val title = intent.getStringExtra(EXTRA_ALARM_TITLE) ?: "Alarm"
                 val soundName = intent.getStringExtra(EXTRA_SOUND_NAME) ?: "beep"
-
                 startAlarm(alarmId, alarmType, title, soundName)
             }
-            ACTION_STOP -> {
-                stopAlarm()
-            }
+            ACTION_STOP -> stopAlarm()
         }
         return START_REDELIVER_INTENT
     }
 
     private fun startAlarm(alarmId: String, alarmType: String, title: String, soundName: String) {
-        Log.d(TAG, "Starting alarm service: $alarmId")
         currentAlarmId = alarmId
         isRunning = true
 
@@ -80,11 +75,14 @@ class AlarmService : Service() {
         audioManager.startAlarmSound(soundName)
         audioManager.startVibration()
 
-        Log.d(TAG, "Alarm service started with sound=$soundName")
+        // Start overlay service for bypass prevention (if permission granted)
+        if (Settings.canDrawOverlays(this)) {
+            AlarmOverlayService.start(this, alarmId, alarmType, title)
+        }
     }
 
     private fun stopAlarm() {
-        Log.d(TAG, "Stopping alarm service")
+        AlarmOverlayService.stop(this)
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
@@ -96,8 +94,6 @@ class AlarmService : Service() {
         currentAlarmId = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
-
-        Log.d(TAG, "Alarm service stopped")
     }
 
     private fun acquireWakeLock() {
@@ -109,7 +105,6 @@ class AlarmService : Service() {
             ).apply {
                 acquire(WAKE_LOCK_TIMEOUT_MS)
             }
-            Log.d(TAG, "Wake lock acquired (${WAKE_LOCK_TIMEOUT_MS / 1000}s timeout)")
         }
     }
 
@@ -118,16 +113,13 @@ class AlarmService : Service() {
             wakeLock?.let {
                 if (it.isHeld) it.release()
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error releasing wake lock: ${e.message}")
-        }
+        } catch (_: Exception) {}
         wakeLock = null
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (isRunning) {
-            Log.w(TAG, "Service destroyed while alarm was running")
             AlarmAudioManager.getInstance(this).stopAll()
             releaseWakeLock()
             isRunning = false

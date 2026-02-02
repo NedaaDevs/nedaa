@@ -9,13 +9,10 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.util.Log
 
 class AlarmAudioManager(private val context: Context) {
 
     companion object {
-        private const val TAG = "AlarmAudioManager"
-
         @Volatile
         private var instance: AlarmAudioManager? = null
 
@@ -48,12 +45,10 @@ class AlarmAudioManager(private val context: Context) {
         stopAlarmSound()
         try {
             val resId = findSoundResource(soundName)
-            if (resId == 0) {
-                Log.e(TAG, "Sound resource not found: $soundName")
-                return false
-            }
+            if (resId == 0) return false
 
             val uri = Uri.parse("android.resource://${context.packageName}/$resId")
+
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
@@ -73,10 +68,8 @@ class AlarmAudioManager(private val context: Context) {
             val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVol, 0)
 
-            Log.d(TAG, "Alarm sound started: $soundName")
             return true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start alarm sound: ${e.message}")
+        } catch (_: Exception) {
             mediaPlayer?.release()
             mediaPlayer = null
             return false
@@ -89,16 +82,14 @@ class AlarmAudioManager(private val context: Context) {
                 if (it.isPlaying) it.stop()
                 it.release()
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error stopping alarm sound: ${e.message}")
-        }
+        } catch (_: Exception) {}
         mediaPlayer = null
     }
 
     fun isPlaying(): Boolean {
         return try {
             mediaPlayer?.isPlaying == true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -125,9 +116,7 @@ class AlarmAudioManager(private val context: Context) {
                 @Suppress("DEPRECATION")
                 vib.vibrate(pattern, 0)
             }
-            Log.d(TAG, "Vibration started")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start vibration: ${e.message}")
+        } catch (_: Exception) {
             isVibrating = false
         }
     }
@@ -137,24 +126,19 @@ class AlarmAudioManager(private val context: Context) {
         isVibrating = false
         try {
             getVibrator().cancel()
-            Log.d(TAG, "Vibration stopped")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error stopping vibration: ${e.message}")
-        }
+        } catch (_: Exception) {}
     }
 
     fun stopAll() {
         stopAlarmSound()
         stopVibration()
-        Log.d(TAG, "All alarm effects stopped")
     }
 
     private fun findSoundResource(name: String): Int {
         val cleanName = name.replace(Regex("\\.(ogg|mp3|wav|m4a|caf)$"), "")
         val resId = context.resources.getIdentifier(cleanName, "raw", context.packageName)
         if (resId != 0) return resId
-
-        // Try common fallbacks
+        // Fallback to beep
         return context.resources.getIdentifier("beep", "raw", context.packageName)
     }
 }

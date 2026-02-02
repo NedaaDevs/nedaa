@@ -9,10 +9,12 @@ export interface ActiveAlarmInfo {
 }
 
 export async function detectActiveAlarm(
-  scheduledAlarms: Record<string, ScheduledAlarm>
+  scheduledAlarms: Record<string, ScheduledAlarm>,
+  retryCount = 0
 ): Promise<ActiveAlarmInfo | null> {
   try {
     const pending = await ExpoAlarm.getPendingChallenge();
+
     if (pending) {
       return {
         alarmId: pending.alarmId,
@@ -22,7 +24,11 @@ export async function detectActiveAlarm(
       };
     }
   } catch {
-    // native module may not be available
+    // Retry once after a short delay (native module may not be ready)
+    if (retryCount < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return detectActiveAlarm(scheduledAlarms, retryCount + 1);
+    }
   }
 
   const now = Date.now();

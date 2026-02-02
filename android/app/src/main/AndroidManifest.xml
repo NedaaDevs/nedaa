@@ -40,88 +40,37 @@
         <data android:scheme="exp+nedaa"/>
       </intent-filter>
     </activity>
-
-    <!-- Prayer Times Widget - Small (2x2) -->
-    <receiver
-        android:name=".widgets.prayer.PrayerTimesReceiverSmall"
-        android:exported="true"
-        android:label="@string/widget_prayer_times_small_name">
+    <receiver android:name=".widgets.prayer.PrayerTimesReceiverSmall" android:exported="true" android:label="@string/widget_prayer_times_small_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_times_widget_small_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_times_widget_small_info"/>
     </receiver>
-
-    <!-- Prayer Times Widget - Medium (4x2) -->
-    <receiver
-        android:name=".widgets.prayer.PrayerTimesReceiverMedium"
-        android:exported="true"
-        android:label="@string/widget_prayer_times_medium_name">
+    <receiver android:name=".widgets.prayer.PrayerTimesReceiverMedium" android:exported="true" android:label="@string/widget_prayer_times_medium_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_times_widget_medium_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_times_widget_medium_info"/>
     </receiver>
-
-    <!-- TODO: Prayer Times Widget - Large (4x4) - TODO: Fix Isha display issue before enabling
-    <receiver
-        android:name=".widgets.prayer.PrayerTimesReceiverLarge"
-        android:exported="true"
-        android:label="@string/widget_prayer_times_large_name">
+    <receiver android:name=".widgets.combined.PrayerAthkarReceiver" android:exported="true" android:label="@string/widget_combined_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_times_widget_large_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_athkar_widget_info"/>
     </receiver>
-    -->
-
-    <!-- Combined Prayer + Athkar Widget (4x2) -->
-    <receiver
-        android:name=".widgets.combined.PrayerAthkarReceiver"
-        android:exported="true"
-        android:label="@string/widget_combined_name">
+    <receiver android:name=".widgets.athkar.AthkarReceiver" android:exported="true" android:label="@string/widget_athkar_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/prayer_athkar_widget_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/athkar_widget_info"/>
     </receiver>
-
-    <!-- Athkar Progress Widget (2x2) -->
-    <receiver
-        android:name=".widgets.athkar.AthkarReceiver"
-        android:exported="true"
-        android:label="@string/widget_athkar_name">
+    <receiver android:name=".widgets.qada.QadaReceiver" android:exported="true" android:label="@string/widget_qada_name">
       <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/athkar_widget_info" />
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/qada_widget_info"/>
     </receiver>
-
-    <!-- Qada Widget (2x2) -->
-    <receiver
-        android:name=".widgets.qada.QadaReceiver"
-        android:exported="true"
-        android:label="@string/widget_qada_name">
-      <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-      </intent-filter>
-      <meta-data
-          android:name="android.appwidget.provider"
-          android:resource="@xml/qada_widget_info" />
-    </receiver>
-
   </application>
 </manifest>

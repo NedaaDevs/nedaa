@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
@@ -9,7 +9,7 @@ import { ALARM_DEFAULTS, VIBRATION_PATTERN } from "@/constants/Alarm";
 
 const { TAPS_REQUIRED, SNOOZE_MINUTES, MAX_SNOOZES } = ALARM_DEFAULTS;
 
-export function useAlarmScreen(alarmId: string, alarmType: string) {
+export function useAlarmScreen(alarmId: string, _alarmType: string) {
   const [tapCount, setTapCount] = useState(0);
   const [isSnoozed, setIsSnoozed] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -26,7 +26,8 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
   // Redirect home if already handled
   useEffect(() => {
-    if (isAlarmHandled(alarmId) && !isSnoozed && !snoozeEndTime) {
+    const handled = isAlarmHandled(alarmId);
+    if (handled && !isSnoozed && !snoozeEndTime) {
       router.replace("/");
     }
   }, [alarmId, isSnoozed, snoozeEndTime]);
@@ -47,7 +48,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
           await ExpoAlarm.startAlarmSound("beep");
         }
       } catch {
-        // audio session may not be available
+        // Silently handle errors
       }
     };
 
@@ -104,10 +105,8 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     if (newCount >= TAPS_REQUIRED) {
       setIsDismissed(true);
       Vibration.cancel();
-
       markAlarmHandled(alarmId);
       await completeAlarm(alarmId);
-
       router.replace("/");
     }
   };

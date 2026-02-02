@@ -21,6 +21,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Utils
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
+import { AlarmLogger } from "@/utils/alarmLogger";
 
 const AlarmDebugScreen = () => {
   const [isModuleAvailable, setIsModuleAvailable] = useState<boolean | null>(null);
@@ -32,6 +33,13 @@ const AlarmDebugScreen = () => {
   const [alarmKitAlarms, setAlarmKitAlarms] = useState<ExpoAlarm.AlarmKitAlarm[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [persistentLog, setPersistentLog] = useState<string>("");
+
+  // Android-specific states
+  const [isBatteryExempt, setIsBatteryExempt] = useState<boolean | null>(null);
+  const [canFullScreen, setCanFullScreen] = useState<boolean | null>(null);
+  const [canDrawOverlay, setCanDrawOverlay] = useState<boolean | null>(null);
+  const [hasAutoStart, setHasAutoStart] = useState<boolean | null>(null);
+  const [deviceManufacturer, setDeviceManufacturer] = useState<string>("");
 
   const { scheduleAlarm, cancelAllAlarms } = useAlarmStore();
   const { todayTimings } = usePrayerTimesStore();
@@ -70,6 +78,16 @@ const AlarmDebugScreen = () => {
     }
   };
 
+  const shareFullDebugLog = async () => {
+    try {
+      setLastResult("Generating full debug log...");
+      await AlarmLogger.shareLog();
+      setLastResult("Full debug log shared");
+    } catch (e) {
+      setLastResult(`Share failed: ${e}`);
+    }
+  };
+
   const checkStatus = async () => {
     // Check if native module is available
     const moduleAvailable = ExpoAlarm.isNativeModuleAvailable();
@@ -99,6 +117,15 @@ const AlarmDebugScreen = () => {
       // Get AlarmKit alarms (system level)
       const kitAlarms = await ExpoAlarm.getAlarmKitAlarms();
       setAlarmKitAlarms(kitAlarms);
+
+      // Android-specific checks
+      if (Platform.OS === "android") {
+        setIsBatteryExempt(ExpoAlarm.isBatteryOptimizationExempt());
+        setCanFullScreen(ExpoAlarm.canUseFullScreenIntent());
+        setCanDrawOverlay(ExpoAlarm.canDrawOverlays());
+        setHasAutoStart(ExpoAlarm.hasAutoStartSettings());
+        setDeviceManufacturer(ExpoAlarm.getDeviceManufacturer());
+      }
     }
   };
 
@@ -299,6 +326,94 @@ const AlarmDebugScreen = () => {
             </VStack>
           </Card>
 
+          {/* Android Permissions */}
+          {Platform.OS === "android" && (
+            <Card className="p-4 border-2 border-orange-500">
+              <VStack space="md">
+                <Text className="text-lg font-semibold text-typography">Android Permissions</Text>
+
+                <HStack className="justify-between items-center">
+                  <Text className="text-typography">Battery Optimization</Text>
+                  <Badge action={isBatteryExempt ? "success" : "error"}>
+                    <BadgeText>{isBatteryExempt ? "Exempt" : "Not Exempt"}</BadgeText>
+                  </Badge>
+                </HStack>
+                {!isBatteryExempt && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={() => {
+                      ExpoAlarm.requestBatteryOptimizationExemption();
+                      setLastResult("Opened battery optimization settings");
+                    }}>
+                    <ButtonText>Request Exemption</ButtonText>
+                  </Button>
+                )}
+
+                <HStack className="justify-between items-center">
+                  <Text className="text-typography">Full Screen Intent</Text>
+                  <Badge action={canFullScreen ? "success" : "error"}>
+                    <BadgeText>{canFullScreen ? "Allowed" : "Denied"}</BadgeText>
+                  </Badge>
+                </HStack>
+                {!canFullScreen && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={() => {
+                      ExpoAlarm.requestFullScreenIntentPermission();
+                      setLastResult("Opened full screen intent settings");
+                    }}>
+                    <ButtonText>Request Permission</ButtonText>
+                  </Button>
+                )}
+
+                <HStack className="justify-between items-center">
+                  <Text className="text-typography">Draw Over Apps</Text>
+                  <Badge action={canDrawOverlay ? "success" : "error"}>
+                    <BadgeText>{canDrawOverlay ? "Allowed" : "Denied"}</BadgeText>
+                  </Badge>
+                </HStack>
+                {!canDrawOverlay && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={() => {
+                      ExpoAlarm.requestDrawOverlaysPermission();
+                      setLastResult("Opened draw over apps settings");
+                    }}>
+                    <ButtonText>Request Permission</ButtonText>
+                  </Button>
+                )}
+
+                {hasAutoStart && (
+                  <>
+                    <HStack className="justify-between items-center">
+                      <Text className="text-typography">Auto-Start ({deviceManufacturer})</Text>
+                      <Badge action="warning">
+                        <BadgeText>Check Settings</BadgeText>
+                      </Badge>
+                    </HStack>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onPress={() => {
+                        ExpoAlarm.openAutoStartSettings();
+                        setLastResult(`Opened auto-start settings for ${deviceManufacturer}`);
+                      }}>
+                      <ButtonText>Open Auto-Start Settings</ButtonText>
+                    </Button>
+                  </>
+                )}
+
+                <Text className="text-xs text-typography-secondary">
+                  For reliable alarms: exempt from battery optimization, allow full screen intent,
+                  draw over apps (with challenge), and enable auto-start (OEM devices).
+                </Text>
+              </VStack>
+            </Card>
+          )}
+
           {/* Schedule Test Alarms */}
           <Card className="p-4">
             <VStack space="md">
@@ -440,62 +555,72 @@ const AlarmDebugScreen = () => {
             </Card>
           )}
 
+          {/* Full Debug Log Export */}
+          <Card className="p-4 border-2 border-blue-500">
+            <VStack space="md">
+              <HStack className="justify-between items-center">
+                <Text className="text-lg font-semibold text-typography">Debug Log Export</Text>
+                <Badge action="info">
+                  <BadgeText>Full</BadgeText>
+                </Badge>
+              </HStack>
+
+              <Text className="text-xs text-typography-secondary">
+                Exports native + React Native logs, device info, permissions, and alarm state.
+              </Text>
+
+              <Button variant="solid" onPress={shareFullDebugLog}>
+                <ButtonText>Export Full Debug Log</ButtonText>
+              </Button>
+            </VStack>
+          </Card>
+
           {/* Persistent Log (survives app kills) */}
-          {Platform.OS === "ios" && (
-            <Card className="p-4 border-2 border-yellow-500">
-              <VStack space="md">
-                <HStack className="justify-between items-center">
-                  <Text className="text-lg font-semibold text-typography">Persistent Log</Text>
-                  <Badge action="warning">
-                    <BadgeText>File-based</BadgeText>
-                  </Badge>
-                </HStack>
+          <Card className="p-4 border-2 border-yellow-500">
+            <VStack space="md">
+              <HStack className="justify-between items-center">
+                <Text className="text-lg font-semibold text-typography">Native Log</Text>
+                <Badge action="warning">
+                  <BadgeText>File-based</BadgeText>
+                </Badge>
+              </HStack>
 
-                <Text className="text-xs text-typography-secondary">
-                  📁 Survives app kills. Shows what happened when app was in background.
-                </Text>
+              <Text className="text-xs text-typography-secondary">
+                Survives app kills. Shows what happened in native code.
+              </Text>
 
-                <HStack space="sm">
-                  <Button size="sm" variant="solid" className="flex-1" onPress={fetchPersistentLog}>
-                    <ButtonText>Load</ButtonText>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onPress={sharePersistentLog}>
-                    <ButtonText>Share</ButtonText>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onPress={clearPersistentLog}>
-                    <ButtonText>Clear</ButtonText>
-                  </Button>
-                </HStack>
+              <HStack space="sm">
+                <Button size="sm" variant="solid" className="flex-1" onPress={fetchPersistentLog}>
+                  <ButtonText>Load</ButtonText>
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" onPress={sharePersistentLog}>
+                  <ButtonText>Share</ButtonText>
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" onPress={clearPersistentLog}>
+                  <ButtonText>Clear</ButtonText>
+                </Button>
+              </HStack>
 
-                {persistentLog ? (
-                  <ScrollView
-                    style={{
-                      height: 200,
-                      backgroundColor: "rgba(255,200,0,0.1)",
-                      borderRadius: 8,
-                      padding: 8,
-                    }}
-                    nestedScrollEnabled>
-                    <Text className="text-xs font-mono text-typography-secondary">
-                      {persistentLog}
-                    </Text>
-                  </ScrollView>
-                ) : (
-                  <Text className="text-sm text-typography-secondary italic">
-                    Tap &quot;Load Log&quot; to see native events
+              {persistentLog ? (
+                <ScrollView
+                  style={{
+                    height: 200,
+                    backgroundColor: "rgba(255,200,0,0.1)",
+                    borderRadius: 8,
+                    padding: 8,
+                  }}
+                  nestedScrollEnabled>
+                  <Text className="text-xs font-mono text-typography-secondary">
+                    {persistentLog}
                   </Text>
-                )}
-              </VStack>
-            </Card>
-          )}
+                </ScrollView>
+              ) : (
+                <Text className="text-sm text-typography-secondary italic">
+                  Tap &quot;Load&quot; to see native events
+                </Text>
+              )}
+            </VStack>
+          </Card>
 
           {/* Refresh Button */}
           <Button variant="outline" onPress={checkStatus}>

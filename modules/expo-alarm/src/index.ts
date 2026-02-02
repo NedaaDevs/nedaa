@@ -152,6 +152,44 @@ export async function clearCompletedChallenges(): Promise<boolean> {
   return NativeModule.clearCompletedChallenges();
 }
 
+// Completed queue (alarms completed via Android overlay, need JS processing)
+export interface CompletedAlarm {
+  alarmId: string;
+  alarmType: string;
+  title: string;
+  completedAt: number;
+}
+
+export async function getCompletedQueue(): Promise<CompletedAlarm[]> {
+  if (!isAvailable) return [];
+  return NativeModule.getCompletedQueue();
+}
+
+export async function clearCompletedQueue(): Promise<boolean> {
+  if (!isAvailable) return false;
+  return NativeModule.clearCompletedQueue();
+}
+
+// Snooze queue (alarms snoozed via Android overlay, need JS processing)
+export interface SnoozedAlarm {
+  originalAlarmId: string;
+  snoozeAlarmId: string;
+  alarmType: string;
+  title: string;
+  snoozeCount: number;
+  snoozeEndTime: number;
+}
+
+export async function getSnoozeQueue(): Promise<SnoozedAlarm[]> {
+  if (!isAvailable) return [];
+  return NativeModule.getSnoozeQueue();
+}
+
+export async function clearSnoozeQueue(): Promise<boolean> {
+  if (!isAvailable) return false;
+  return NativeModule.clearSnoozeQueue();
+}
+
 export async function cancelAllBackups(): Promise<number> {
   if (!isAvailable) return 0;
   return NativeModule.cancelAllBackups();
@@ -267,6 +305,53 @@ export function requestFullScreenIntentPermission(): boolean {
   }
 }
 
+// Android-specific: draw over apps (SYSTEM_ALERT_WINDOW)
+export function canDrawOverlays(): boolean {
+  if (!isAvailable) return true;
+  try {
+    return NativeModule.canDrawOverlays();
+  } catch {
+    return true;
+  }
+}
+
+export function requestDrawOverlaysPermission(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.requestDrawOverlaysPermission();
+  } catch {
+    return false;
+  }
+}
+
+// Android-specific: auto-start (OEM-specific)
+export function getDeviceManufacturer(): string {
+  if (!isAvailable) return "unknown";
+  try {
+    return NativeModule.getDeviceManufacturer();
+  } catch {
+    return "unknown";
+  }
+}
+
+export function hasAutoStartSettings(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.hasAutoStartSettings();
+  } catch {
+    return false;
+  }
+}
+
+export function openAutoStartSettings(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.openAutoStartSettings();
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -286,6 +371,10 @@ export default {
   getPendingChallenge,
   clearPendingChallenge,
   clearCompletedChallenges,
+  getCompletedQueue,
+  clearCompletedQueue,
+  getSnoozeQueue,
+  clearSnoozeQueue,
   cancelAllBackups,
   startAlarmSound,
   stopAlarmSound,
@@ -302,4 +391,9 @@ export default {
   requestBatteryOptimizationExemption,
   canUseFullScreenIntent,
   requestFullScreenIntentPermission,
+  canDrawOverlays,
+  requestDrawOverlaysPermission,
+  getDeviceManufacturer,
+  hasAutoStartSettings,
+  openAutoStartSettings,
 };

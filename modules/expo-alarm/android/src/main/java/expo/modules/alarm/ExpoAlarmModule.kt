@@ -3,6 +3,7 @@ package expo.modules.alarm
 import android.Manifest
 import android.app.AlarmManager
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,17 +11,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import android.util.Log
 import androidx.core.content.ContextCompat
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class ExpoAlarmModule : Module() {
-
-    companion object {
-        private const val TAG = "ExpoAlarmModule"
-    }
 
     private val context: Context
         get() = appContext.reactContext ?: throw IllegalStateException("React context not available")
@@ -71,12 +67,8 @@ class ExpoAlarmModule : Module() {
                 )
 
                 val scheduled = scheduler.scheduleAlarm(id, triggerMs, alarmType, title, soundName)
-                if (!scheduled) {
-                    Log.w(TAG, "scheduleAlarm failed — exact alarm permission denied")
-                }
                 promise.resolve(scheduled)
             } catch (e: Exception) {
-                Log.e(TAG, "scheduleAlarm error: ${e.message}")
                 promise.reject("SCHEDULE_ERROR", e.message, e)
             }
         }
@@ -145,6 +137,42 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        // Completed queue (for processing alarms completed via overlay)
+        AsyncFunction("getCompletedQueue") {
+            db.getCompletedQueue().map { record ->
+                mapOf(
+                    "alarmId" to record.alarmId,
+                    "alarmType" to record.alarmType,
+                    "title" to record.title,
+                    "completedAt" to record.completedAt
+                )
+            }
+        }
+
+        AsyncFunction("clearCompletedQueue") {
+            db.clearCompletedQueue()
+            true
+        }
+
+        // Snooze queue (for processing alarms snoozed via overlay)
+        AsyncFunction("getSnoozeQueue") {
+            db.getSnoozeQueue().map { record ->
+                mapOf(
+                    "originalAlarmId" to record.originalAlarmId,
+                    "snoozeAlarmId" to record.snoozeAlarmId,
+                    "alarmType" to record.alarmType,
+                    "title" to record.title,
+                    "snoozeCount" to record.snoozeCount,
+                    "snoozeEndTime" to record.snoozeEndTime
+                )
+            }
+        }
+
+        AsyncFunction("clearSnoozeQueue") {
+            db.clearSnoozeQueue()
+            true
+        }
+
         // -- Audio & Effects --
 
         AsyncFunction("startAlarmSound") { soundName: String ->
@@ -162,6 +190,13 @@ class ExpoAlarmModule : Module() {
 
         Function("stopAllAlarmEffects") {
             audioManager.stopAll()
+            // Stop all alarm services
+            if (AlarmService.isRunning) {
+                AlarmService.stop(context)
+            }
+            if (AlarmOverlayService.isRunning) {
+                AlarmOverlayService.stop(context)
+            }
             true
         }
 
@@ -206,16 +241,20 @@ class ExpoAlarmModule : Module() {
             emptyArray<Any>()
         }
 
-        AsyncFunction("getNativeLogs") {
-            emptyArray<Any>()
-        }
-
         Function("getPersistentLog") {
-            ""
+            val logger = AlarmLogger.getInstance(context)
+            logger.getFullLog()
         }
 
         Function("clearPersistentLog") {
-            false
+            val logger = AlarmLogger.getInstance(context)
+            logger.clear()
+            true
+        }
+
+        AsyncFunction("getNativeLogs") {
+            val logger = AlarmLogger.getInstance(context)
+            logger.getLogs()
         }
 
         // -- Android-specific --
@@ -259,6 +298,167 @@ class ExpoAlarmModule : Module() {
             }
             true
         }
+
+        Function("canDrawOverlays") {
+            Settings.canDrawOverlays(context)
+        }
+
+        Function("requestDrawOverlaysPermission") {
+            if (!Settings.canDrawOverlays(context)) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:${context.packageName}")
+                ).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            }
+            true
+        }
+
+        // Auto-start permission (OEM-specific)
+        Function("getDeviceManufacturer") {
+            Build.MANUFACTURER.lowercase()
+        }
+
+        Function("openAutoStartSettings") {
+            openAutoStartSettings()
+        }
+
+        Function("hasAutoStartSettings") {
+            getAutoStartIntent() != null
+        }
+    }
+
+    private fun openAutoStartSettings(): Boolean {
+        val intent = getAutoStartIntent()
+        if (intent != null) {
+            try {
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                return true
+            } catch (_: Exception) {}
+        }
+
+        // Fallback: open app info settings
+        return try {
+            val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(fallbackIntent)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun getAutoStartIntent(): Intent? {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+
+        val intents = when {
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.powercenter.PowerSettings"
+                ))
+            )
+            manufacturer.contains("oppo") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.coloros.safecenter",
+                    "com.coloros.safecenter.permission.startup.StartupAppListActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.oppo.safe",
+                    "com.oppo.safe.permission.startup.StartupAppListActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.coloros.safecenter",
+                    "com.coloros.safecenter.startupapp.StartupAppListActivity"
+                ))
+            )
+            manufacturer.contains("vivo") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.iqoo.secure",
+                    "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.vivo.permissionmanager",
+                    "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.iqoo.secure",
+                    "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"
+                ))
+            )
+            manufacturer.contains("huawei") || manufacturer.contains("honor") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.huawei.systemmanager",
+                    "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.huawei.systemmanager",
+                    "com.huawei.systemmanager.optimize.process.ProtectActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.huawei.systemmanager",
+                    "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity"
+                ))
+            )
+            manufacturer.contains("samsung") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.samsung.android.lool",
+                    "com.samsung.android.sm.battery.ui.BatteryActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.samsung.android.sm",
+                    "com.samsung.android.sm.battery.ui.BatteryActivity"
+                ))
+            )
+            manufacturer.contains("oneplus") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.oneplus.security",
+                    "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"
+                ))
+            )
+            manufacturer.contains("realme") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.coloros.safecenter",
+                    "com.coloros.safecenter.permission.startup.StartupAppListActivity"
+                )),
+                Intent().setComponent(ComponentName(
+                    "com.oplus.safecenter",
+                    "com.oplus.safecenter.permission.startup.StartupAppListActivity"
+                ))
+            )
+            manufacturer.contains("asus") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.asus.mobilemanager",
+                    "com.asus.mobilemanager.autostart.AutoStartActivity"
+                ))
+            )
+            manufacturer.contains("lenovo") -> listOf(
+                Intent().setComponent(ComponentName(
+                    "com.lenovo.security",
+                    "com.lenovo.security.purebackground.PureBackgroundActivity"
+                ))
+            )
+            else -> emptyList()
+        }
+
+        // Return the first intent that can be resolved
+        val pm = context.packageManager
+        for (intent in intents) {
+            if (intent.resolveActivity(pm) != null) {
+                return intent
+            }
+        }
+
+        return null
     }
 
     private fun getAuthStatus(): String {
