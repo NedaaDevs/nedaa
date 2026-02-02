@@ -4,13 +4,11 @@ import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 
 import { useAlarmStore } from "@/stores/alarm";
+import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
-import { ALARM_DEFAULTS, VIBRATION_PATTERN } from "@/constants/Alarm";
+import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
 
-const { TAPS_REQUIRED, SNOOZE_MINUTES, MAX_SNOOZES } = ALARM_DEFAULTS;
-
-export function useAlarmScreen(alarmId: string, _alarmType: string) {
-  const [tapCount, setTapCount] = useState(0);
+export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [isSnoozed, setIsSnoozed] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [snoozeEndTime, setSnoozeEndTime] = useState<Date | null>(null);
@@ -19,12 +17,20 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
   const { completeAlarm, snoozeAlarm, getAlarm } = useAlarmStore();
   const alarm = useMemo(() => getAlarm(alarmId), [alarmId, getAlarm]);
 
-  const snoozeCount = alarm?.snoozeCount ?? 0;
-  const canSnooze = snoozeCount < MAX_SNOOZES;
-  const remainingTaps = TAPS_REQUIRED - tapCount;
-  const remainingSnoozes = MAX_SNOOZES - snoozeCount;
+  const settingsType = alarmType === "jummah" ? "friday" : alarmType === "fajr" ? "fajr" : "fajr";
+  const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
-  // Redirect home if already handled
+  const snoozeCount = alarm?.snoozeCount ?? 0;
+  const maxSnoozes = alarmSettings.snooze.enabled ? alarmSettings.snooze.maxCount : 0;
+  const canSnooze = alarmSettings.snooze.enabled && snoozeCount < maxSnoozes;
+  const remainingSnoozes = Math.max(0, maxSnoozes - snoozeCount);
+
+  const challengeConfig: ChallengeConfig = alarmSettings.challenge ?? DEFAULT_CHALLENGE_CONFIG;
+
+  const vibrationPattern = alarmSettings.vibration.enabled
+    ? VIBRATION_PATTERNS[alarmSettings.vibration.pattern]
+    : null;
+
   useEffect(() => {
     const handled = isAlarmHandled(alarmId);
     if (handled && !isSnoozed && !snoozeEndTime) {
@@ -32,12 +38,10 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
     }
   }, [alarmId, isSnoozed, snoozeEndTime]);
 
-  // Clear bypass native effects on mount
   useEffect(() => {
     ExpoAlarm.stopAllAlarmEffects();
   }, []);
 
-  // Ensure audio is playing when alarm is active
   useEffect(() => {
     if (isSnoozed || isDismissed) return;
 
@@ -45,7 +49,8 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
       try {
         const isPlaying = ExpoAlarm.isAlarmSoundPlaying();
         if (!isPlaying) {
-          await ExpoAlarm.startAlarmSound("beep");
+          await ExpoAlarm.startAlarmSound(alarmSettings.sound || "beep");
+          ExpoAlarm.setAlarmVolume(alarmSettings.volume);
         }
       } catch {
         // Silently handle errors
@@ -53,9 +58,8 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
     };
 
     ensureAudioPlaying();
-  }, [isSnoozed, isDismissed]);
+  }, [isSnoozed, isDismissed, alarmSettings.sound, alarmSettings.volume]);
 
-  // Block Android hardware back button
   useEffect(() => {
     if (Platform.OS !== "android") return;
 
@@ -63,13 +67,11 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
     return () => backHandler.remove();
   }, []);
 
-  // Nav guard registration
   useEffect(() => {
     setAlarmScreenActive(alarmId);
     return () => setAlarmScreenActive(null);
   }, [alarmId]);
 
-  // Snooze countdown timer
   useEffect(() => {
     if (!snoozeEndTime) return;
 
@@ -81,34 +83,27 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
         clearInterval(interval);
         setIsSnoozed(false);
         setSnoozeEndTime(null);
-        setTapCount(0);
       }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [snoozeEndTime]);
 
-  // Vibration control
   useEffect(() => {
-    if (isSnoozed || isDismissed) {
+    if (isSnoozed || isDismissed || !vibrationPattern) {
       Vibration.cancel();
       return;
     }
-    Vibration.vibrate(VIBRATION_PATTERN, true);
+    Vibration.vibrate([...vibrationPattern], true);
     return () => Vibration.cancel();
-  }, [isSnoozed, isDismissed]);
+  }, [isSnoozed, isDismissed, vibrationPattern]);
 
-  const handleTap = async () => {
-    const newCount = tapCount + 1;
-    setTapCount(newCount);
-
-    if (newCount >= TAPS_REQUIRED) {
-      setIsDismissed(true);
-      Vibration.cancel();
-      markAlarmHandled(alarmId);
-      await completeAlarm(alarmId);
-      router.replace("/");
-    }
+  const handleChallengeComplete = async () => {
+    setIsDismissed(true);
+    Vibration.cancel();
+    markAlarmHandled(alarmId);
+    await completeAlarm(alarmId);
+    router.replace("/");
   };
 
   const handleSnooze = async () => {
@@ -117,24 +112,24 @@ export function useAlarmScreen(alarmId: string, _alarmType: string) {
     Vibration.cancel();
     markAlarmHandled(alarmId);
 
-    const result = await snoozeAlarm(alarmId);
+    const snoozeDuration = alarmSettings.snooze.durationMinutes;
+    const result = await snoozeAlarm(alarmId, snoozeDuration);
     if (result) {
       setIsSnoozed(true);
       setSnoozeEndTime(result.snoozeEndTime);
-      setSnoozeTimeRemaining(SNOOZE_MINUTES * 60);
+      setSnoozeTimeRemaining(snoozeDuration * 60);
     }
   };
 
   return {
-    tapCount,
     isSnoozed,
     isDismissed,
     snoozeEndTime,
     snoozeTimeRemaining,
     canSnooze,
-    remainingTaps,
     remainingSnoozes,
-    handleTap,
+    challengeConfig,
+    handleChallengeComplete,
     handleSnooze,
   };
 }

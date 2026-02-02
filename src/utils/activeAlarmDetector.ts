@@ -10,12 +10,17 @@ export interface ActiveAlarmInfo {
 
 export async function detectActiveAlarm(
   scheduledAlarms: Record<string, ScheduledAlarm>,
+  handledIds?: Set<string>,
   retryCount = 0
 ): Promise<ActiveAlarmInfo | null> {
+  // Check completed queue first to avoid showing challenge for already-completed alarms
+  const completedQueue = await ExpoAlarm.getCompletedQueue().catch(() => []);
+  const completedIds = new Set(completedQueue.map((item) => item.alarmId));
+
   try {
     const pending = await ExpoAlarm.getPendingChallenge();
 
-    if (pending) {
+    if (pending && !completedIds.has(pending.alarmId) && !handledIds?.has(pending.alarmId)) {
       return {
         alarmId: pending.alarmId,
         alarmType: pending.alarmType,
@@ -24,15 +29,16 @@ export async function detectActiveAlarm(
       };
     }
   } catch {
-    // Retry once after a short delay (native module may not be ready)
     if (retryCount < 2) {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      return detectActiveAlarm(scheduledAlarms, retryCount + 1);
+      return detectActiveAlarm(scheduledAlarms, handledIds, retryCount + 1);
     }
   }
 
   const now = Date.now();
-  const pastDue = Object.values(scheduledAlarms).find((a) => a.triggerTime <= now);
+  const pastDue = Object.values(scheduledAlarms).find(
+    (a) => a.triggerTime <= now && !completedIds.has(a.alarmId) && !handledIds?.has(a.alarmId)
+  );
   if (pastDue) {
     return {
       alarmId: pastDue.alarmId,

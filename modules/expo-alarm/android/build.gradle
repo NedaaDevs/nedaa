@@ -24,4 +24,6 @@ android {
 
 dependencies {
   implementation project(':expo-modules-core')
+  implementation 'androidx.preference:preference-ktx:1.2.1'
+  implementation 'androidx.appcompat:appcompat:1.6.1'
 }

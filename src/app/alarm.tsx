@@ -11,6 +11,8 @@ import { Clock } from "lucide-react-native";
 
 import { ALARM_TYPE_META } from "@/constants/Alarm";
 import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
+import { ChallengeWrapper } from "@/components/alarm/challenges";
+import { ChallengeConfig } from "@/types/alarm";
 
 export default function AlarmTriggeredScreen() {
   const { alarmType, alarmId } = useLocalSearchParams<{
@@ -23,9 +25,9 @@ export default function AlarmTriggeredScreen() {
     snoozeEndTime,
     snoozeTimeRemaining,
     canSnooze,
-    remainingTaps,
     remainingSnoozes,
-    handleTap,
+    challengeConfig,
+    handleChallengeComplete,
     handleSnooze,
   } = useAlarmScreen(alarmId, alarmType);
 
@@ -48,18 +50,18 @@ export default function AlarmTriggeredScreen() {
             {isSnoozed && snoozeEndTime ? (
               <SnoozedView
                 snoozeTimeRemaining={snoozeTimeRemaining}
-                remainingTaps={remainingTaps}
-                onTap={handleTap}
+                challengeConfig={challengeConfig}
+                onChallengeComplete={handleChallengeComplete}
               />
             ) : (
               <ActiveAlarmView
                 icon={meta.icon}
                 title={meta.title}
                 colorClass={meta.colorClass}
-                remainingTaps={remainingTaps}
+                challengeConfig={challengeConfig}
                 canSnooze={canSnooze}
                 remainingSnoozes={remainingSnoozes}
-                onTap={handleTap}
+                onChallengeComplete={handleChallengeComplete}
                 onSnooze={handleSnooze}
               />
             )}
@@ -72,15 +74,15 @@ export default function AlarmTriggeredScreen() {
 
 function SnoozedView({
   snoozeTimeRemaining,
-  remainingTaps,
-  onTap,
+  challengeConfig,
+  onChallengeComplete,
 }: {
   snoozeTimeRemaining: number;
-  remainingTaps: number;
-  onTap: () => void;
+  challengeConfig: ChallengeConfig;
+  onChallengeComplete: () => void;
 }) {
   return (
-    <VStack space="lg" className="items-center">
+    <VStack space="lg" className="items-center w-full">
       <Icon as={Clock} size="xl" className="text-purple-500" />
 
       <Text className="text-2xl font-bold text-typography">Snoozed</Text>
@@ -90,16 +92,9 @@ function SnoozedView({
       </Text>
       <Text className="text-sm text-typography-secondary">until alarm rings again</Text>
 
-      <VStack className="mt-6 items-center" space="sm">
-        <Text className="text-5xl font-bold text-typography">{remainingTaps}</Text>
-        <Text className="text-sm text-typography-secondary">taps to dismiss forever</Text>
+      <VStack className="mt-6 w-full" space="sm">
+        <ChallengeWrapper config={challengeConfig} onAllComplete={onChallengeComplete} />
       </VStack>
-
-      <Button size="xl" className="w-full mt-4" onPress={onTap}>
-        <ButtonText className="text-lg">
-          {remainingTaps > 0 ? "Tap to Dismiss" : "Done!"}
-        </ButtonText>
-      </Button>
     </VStack>
   );
 }
@@ -108,23 +103,23 @@ function ActiveAlarmView({
   icon,
   title,
   colorClass,
-  remainingTaps,
+  challengeConfig,
   canSnooze,
   remainingSnoozes,
-  onTap,
+  onChallengeComplete,
   onSnooze,
 }: {
   icon: React.ComponentType;
   title: string;
   colorClass: string;
-  remainingTaps: number;
+  challengeConfig: ChallengeConfig;
   canSnooze: boolean;
   remainingSnoozes: number;
-  onTap: () => void;
+  onChallengeComplete: () => void;
   onSnooze: () => void;
 }) {
   return (
-    <VStack space="lg" className="items-center">
+    <VStack space="lg" className="items-center w-full">
       <Icon as={icon} size="xl" className={colorClass} />
 
       <Text className="text-2xl font-bold text-typography">{title}</Text>
@@ -133,14 +128,7 @@ function ActiveAlarmView({
         It&apos;s time to wake up for prayer!
       </Text>
 
-      <Text className="text-5xl font-bold text-typography">{remainingTaps}</Text>
-      <Text className="text-sm text-typography-secondary">taps remaining</Text>
-
-      <Button size="xl" className="w-full mt-4" onPress={onTap}>
-        <ButtonText className="text-lg">
-          {remainingTaps > 0 ? "Tap to Dismiss" : "Done!"}
-        </ButtonText>
-      </Button>
+      <ChallengeWrapper config={challengeConfig} onAllComplete={onChallengeComplete} />
 
       <Button
         size="lg"

@@ -139,7 +139,7 @@ export function useAlarmDeepLink() {
         if (url) {
           processAlarmUrl(url);
         } else {
-          detectActiveAlarm(scheduledAlarms).then((active) => {
+          detectActiveAlarm(scheduledAlarms, handledAlarmIds).then((active) => {
             if (active) {
               navigateToAlarm(active.alarmId, active.alarmType, active.source);
             }
@@ -152,7 +152,7 @@ export function useAlarmDeepLink() {
       if (state === "active") {
         processCompletedQueue();
         processSnoozeQueue();
-        detectActiveAlarm(scheduledAlarms).then((active) => {
+        detectActiveAlarm(scheduledAlarms, handledAlarmIds).then((active) => {
           if (active) {
             navigateToAlarm(active.alarmId, active.alarmType, active.source);
           }
