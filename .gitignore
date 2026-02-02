@@ -49,3 +49,4 @@ yarn-error.*
 
 # modules
 modules/expo-alarm/android/build
+modules/expo-alarm/android/.gradle/
