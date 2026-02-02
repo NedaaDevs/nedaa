@@ -77,8 +77,9 @@ class AlarmNotificationManager(private val context: Context) {
     }
 
     fun buildAlarmIntent(alarmId: String, alarmType: String): Intent {
+        val uri = "dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType"
         return Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType")
+            data = Uri.parse(uri)
             component = ComponentName(context.packageName, "${context.packageName}.MainActivity")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or

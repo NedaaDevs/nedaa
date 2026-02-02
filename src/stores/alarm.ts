@@ -82,13 +82,10 @@ export const useAlarmStore = create<AlarmState>()(
           const alarm = get().scheduledAlarms[alarmId];
 
           ExpoAlarm.stopAllAlarmEffects();
-
           await ExpoAlarm.cancelAllBackups();
-
           await ExpoAlarm.clearPendingChallenge();
           await ExpoAlarm.cancelAllAlarms();
           await ExpoAlarm.endAllLiveActivities();
-
           ExpoAlarm.markAlarmCompleted(alarmId);
 
           if (alarm && (alarm.alarmType === "fajr" || alarm.alarmType === "jummah")) {
@@ -137,6 +134,13 @@ export const useAlarmStore = create<AlarmState>()(
             title: snoozeTitle,
             alarmType: alarm.alarmType,
             snoozeCount: newSnoozeCount,
+          });
+
+          // Remove the old alarm from store (new snooze alarm replaces it)
+          set((state) => {
+            const newAlarms = { ...state.scheduledAlarms };
+            delete newAlarms[alarmId];
+            return { scheduledAlarms: newAlarms };
           });
 
           await ExpoAlarm.endAllLiveActivities();

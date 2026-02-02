@@ -5,12 +5,14 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class AlarmDatabase private constructor(context: Context) :
+class AlarmDatabase private constructor(private val context: Context) :
     SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
 
     companion object {
         private const val DB_NAME = "alarm_state.db"
-        private const val DB_VERSION = 1
+        private const val DB_VERSION = 3
+        const val SNOOZE_MINUTES = 5
+        const val MAX_SNOOZES = 3
 
         @Volatile
         private var instance: AlarmDatabase? = null
@@ -31,6 +33,7 @@ class AlarmDatabase private constructor(context: Context) :
                 trigger_time REAL NOT NULL,
                 completed INTEGER DEFAULT 0,
                 is_backup INTEGER DEFAULT 0,
+                snooze_count INTEGER DEFAULT 0,
                 created_at REAL NOT NULL
             )
         """)
@@ -54,10 +57,62 @@ class AlarmDatabase private constructor(context: Context) :
                 activated_at REAL NOT NULL
             )
         """)
+
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS completed_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                alarm_id TEXT NOT NULL,
+                alarm_type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                completed_at REAL NOT NULL
+            )
+        """)
+
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS snooze_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                original_alarm_id TEXT NOT NULL,
+                snooze_alarm_id TEXT NOT NULL,
+                alarm_type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                snooze_count INTEGER NOT NULL,
+                snooze_end_time REAL NOT NULL,
+                snoozed_at REAL NOT NULL
+            )
+        """)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Future migrations go here
+        if (oldVersion < 2) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS completed_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    alarm_id TEXT NOT NULL,
+                    alarm_type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    completed_at REAL NOT NULL
+                )
+            """)
+        }
+        if (oldVersion < 3) {
+            // Add snooze_count column to alarms table
+            try {
+                db.execSQL("ALTER TABLE alarms ADD COLUMN snooze_count INTEGER DEFAULT 0")
+            } catch (_: Exception) {}
+
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS snooze_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    original_alarm_id TEXT NOT NULL,
+                    snooze_alarm_id TEXT NOT NULL,
+                    alarm_type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    snooze_count INTEGER NOT NULL,
+                    snooze_end_time REAL NOT NULL,
+                    snoozed_at REAL NOT NULL
+                )
+            """)
+        }
     }
 
     override fun onOpen(db: SQLiteDatabase) {
@@ -72,7 +127,8 @@ class AlarmDatabase private constructor(context: Context) :
         alarmType: String,
         title: String,
         triggerTime: Double,
-        isBackup: Boolean = false
+        isBackup: Boolean = false,
+        snoozeCount: Int = 0
     ) {
         val values = ContentValues().apply {
             put("id", id)
@@ -81,6 +137,7 @@ class AlarmDatabase private constructor(context: Context) :
             put("trigger_time", triggerTime)
             put("completed", 0)
             put("is_backup", if (isBackup) 1 else 0)
+            put("snooze_count", snoozeCount)
             put("created_at", System.currentTimeMillis().toDouble())
         }
         writableDatabase.insertWithOnConflict("alarms", null, values, SQLiteDatabase.CONFLICT_REPLACE)
@@ -92,12 +149,13 @@ class AlarmDatabase private constructor(context: Context) :
         val title: String,
         val triggerTime: Double,
         val completed: Boolean,
-        val isBackup: Boolean
+        val isBackup: Boolean,
+        val snoozeCount: Int
     )
 
     fun getAlarm(id: String): AlarmRecord? {
         val cursor = readableDatabase.rawQuery(
-            "SELECT id, alarm_type, title, trigger_time, completed, is_backup FROM alarms WHERE id = ?",
+            "SELECT id, alarm_type, title, trigger_time, completed, is_backup, snooze_count FROM alarms WHERE id = ?",
             arrayOf(id)
         )
         return cursor.use {
@@ -108,10 +166,16 @@ class AlarmDatabase private constructor(context: Context) :
                     title = it.getString(2),
                     triggerTime = it.getDouble(3),
                     completed = it.getInt(4) == 1,
-                    isBackup = it.getInt(5) == 1
+                    isBackup = it.getInt(5) == 1,
+                    snoozeCount = it.getInt(6)
                 )
             } else null
         }
+    }
+
+    fun getSnoozeCount(alarmId: String): Int {
+        val alarm = getAlarm(alarmId)
+        return alarm?.snoozeCount ?: 0
     }
 
     fun getAllAlarmIds(): List<String> {
@@ -163,9 +227,6 @@ class AlarmDatabase private constructor(context: Context) :
         writableDatabase.delete("alarms", null, null)
     }
 
-    fun deleteAllBackups() {
-        writableDatabase.delete("alarms", "is_backup = 1", null)
-    }
 
     fun clearAllCompleted() {
         val values = ContentValues().apply { put("completed", 0) }
@@ -185,15 +246,22 @@ class AlarmDatabase private constructor(context: Context) :
     // -- Pending Challenge --
 
     fun setPendingChallenge(alarmId: String, alarmType: String, title: String) {
-        writableDatabase.delete("pending_challenge", null, null)
-        val values = ContentValues().apply {
-            put("id", 1)
-            put("alarm_id", alarmId)
-            put("alarm_type", alarmType)
-            put("title", title)
-            put("timestamp", System.currentTimeMillis() / 1000.0)
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete("pending_challenge", null, null)
+            val values = ContentValues().apply {
+                put("id", 1)
+                put("alarm_id", alarmId)
+                put("alarm_type", alarmType)
+                put("title", title)
+                put("timestamp", System.currentTimeMillis() / 1000.0)
+            }
+            db.insert("pending_challenge", null, values)
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
-        writableDatabase.insert("pending_challenge", null, values)
     }
 
     data class PendingChallengeRecord(
@@ -268,5 +336,107 @@ class AlarmDatabase private constructor(context: Context) :
 
     fun clearBypassState() {
         writableDatabase.delete("bypass_state", null, null)
+    }
+
+    // -- Completed Queue (for JS to process on app open) --
+
+    fun addToCompletedQueue(alarmId: String, alarmType: String, title: String) {
+        val values = ContentValues().apply {
+            put("alarm_id", alarmId)
+            put("alarm_type", alarmType)
+            put("title", title)
+            put("completed_at", System.currentTimeMillis() / 1000.0)
+        }
+        writableDatabase.insert("completed_queue", null, values)
+    }
+
+    data class CompletedAlarmRecord(
+        val alarmId: String,
+        val alarmType: String,
+        val title: String,
+        val completedAt: Double
+    )
+
+    fun getCompletedQueue(): List<CompletedAlarmRecord> {
+        val queue = mutableListOf<CompletedAlarmRecord>()
+        val cursor = readableDatabase.rawQuery(
+            "SELECT alarm_id, alarm_type, title, completed_at FROM completed_queue ORDER BY completed_at ASC",
+            null
+        )
+        cursor.use {
+            while (it.moveToNext()) {
+                queue.add(
+                    CompletedAlarmRecord(
+                        alarmId = it.getString(0),
+                        alarmType = it.getString(1),
+                        title = it.getString(2),
+                        completedAt = it.getDouble(3)
+                    )
+                )
+            }
+        }
+        return queue
+    }
+
+    fun clearCompletedQueue() {
+        writableDatabase.delete("completed_queue", null, null)
+    }
+
+    // -- Snooze Queue (for JS to process on app open) --
+
+    fun addToSnoozeQueue(
+        originalAlarmId: String,
+        snoozeAlarmId: String,
+        alarmType: String,
+        title: String,
+        snoozeCount: Int,
+        snoozeEndTime: Double
+    ) {
+        val values = ContentValues().apply {
+            put("original_alarm_id", originalAlarmId)
+            put("snooze_alarm_id", snoozeAlarmId)
+            put("alarm_type", alarmType)
+            put("title", title)
+            put("snooze_count", snoozeCount)
+            put("snooze_end_time", snoozeEndTime)
+            put("snoozed_at", System.currentTimeMillis() / 1000.0)
+        }
+        writableDatabase.insert("snooze_queue", null, values)
+    }
+
+    data class SnoozeQueueRecord(
+        val originalAlarmId: String,
+        val snoozeAlarmId: String,
+        val alarmType: String,
+        val title: String,
+        val snoozeCount: Int,
+        val snoozeEndTime: Double
+    )
+
+    fun getSnoozeQueue(): List<SnoozeQueueRecord> {
+        val queue = mutableListOf<SnoozeQueueRecord>()
+        val cursor = readableDatabase.rawQuery(
+            "SELECT original_alarm_id, snooze_alarm_id, alarm_type, title, snooze_count, snooze_end_time FROM snooze_queue ORDER BY snoozed_at ASC",
+            null
+        )
+        cursor.use {
+            while (it.moveToNext()) {
+                queue.add(
+                    SnoozeQueueRecord(
+                        originalAlarmId = it.getString(0),
+                        snoozeAlarmId = it.getString(1),
+                        alarmType = it.getString(2),
+                        title = it.getString(3),
+                        snoozeCount = it.getInt(4),
+                        snoozeEndTime = it.getDouble(5)
+                    )
+                )
+            }
+        }
+        return queue
+    }
+
+    fun clearSnoozeQueue() {
+        writableDatabase.delete("snooze_queue", null, null)
     }
 }
