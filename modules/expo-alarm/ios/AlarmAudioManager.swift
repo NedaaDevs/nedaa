@@ -25,6 +25,8 @@ class AlarmAudioManager {
     private var keepAlivePlayer: AVAudioPlayer?
     private var isKeepAliveActive = false
 
+    private var savedSystemVolume: Float?
+
     private init() {
         setupInterruptionHandling()
     }
@@ -63,6 +65,26 @@ class AlarmAudioManager {
 
     func getVolume() -> Float {
         return volume
+    }
+
+    func saveSystemVolume() {
+        let audioSession = AVAudioSession.sharedInstance()
+        savedSystemVolume = audioSession.outputVolume
+        // TEMP: Debug logging for settings feature - remove after verification
+        log("TEMP: Saved system volume: \(savedSystemVolume ?? 0)")
+    }
+
+    func restoreSystemVolume() {
+        guard let saved = savedSystemVolume else {
+            // TEMP: Debug logging for settings feature - remove after verification
+            log("TEMP: No saved volume to restore")
+            return
+        }
+
+        // TEMP: Debug logging for settings feature - remove after verification
+        log("TEMP: Restoring system volume to: \(saved)")
+        setSystemVolume(saved)
+        savedSystemVolume = nil
     }
 
     @discardableResult
@@ -283,6 +305,7 @@ class AlarmAudioManager {
         log("Stopping all audio effects")
         stopAlarmSound()
         stopContinuousVibration()
+        restoreSystemVolume()
         stopVolumeMonitoring()
         stopQuietKeepAlive()
     }
@@ -354,14 +377,20 @@ class AlarmAudioManager {
     }
 
     /// Transition from quiet keep-alive to loud alarm (called when observer detects hardware dismiss)
-    func transitionToLoudAlarm(soundName: String = "beep") {
-        log("Transitioning to loud alarm")
+    func transitionToLoudAlarm(soundName: String = "beep", alarmVolume: Float = 1.0) {
+        log("Transitioning to loud alarm, volume: \(alarmVolume)")
 
         if isKeepAliveActive {
             keepAlivePlayer?.stop()
             keepAlivePlayer = nil
             isKeepAliveActive = false
         }
+
+        // Save system volume before we change it
+        saveSystemVolume()
+
+        // Set the alarm volume for audio player
+        volume = alarmVolume
 
         // No mixWithOthers — we want to be loud and interrupt other audio
         do {
@@ -381,7 +410,7 @@ class AlarmAudioManager {
             guard let self = self else { return }
             self.startAlarmSound(soundName: soundName)
             self.startContinuousVibration()
-            self.startVolumeMonitoring(targetVolume: 1.0)
+            self.startVolumeMonitoring(targetVolume: alarmVolume)
         }
     }
 
