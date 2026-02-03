@@ -376,16 +376,22 @@ import AppIntents
         }
 
         let metadata = AlarmDatabase.shared.getMetadata(for: originalAlarmId)
+        let alarmType = metadata?.alarmType ?? "prayer"
 
-        AlarmAudioManager.shared.transitionToLoudAlarm(soundName: "beep")
+        // Get configured alarm settings
+        let settingsKey = "alarm_settings_\(alarmType)"
+        let settings = UserDefaults.standard.dictionary(forKey: settingsKey) ?? [:]
+        let soundName = settings["sound"] as? String ?? "beep"
+        let volume = settings["volume"] as? Float ?? 1.0
+
+        AlarmAudioManager.shared.transitionToLoudAlarm(soundName: soundName, alarmVolume: volume)
 
         AlarmDatabase.shared.setBypassState(
             alarmId: originalAlarmId,
-            alarmType: metadata?.alarmType ?? "prayer",
+            alarmType: alarmType,
             title: metadata?.title ?? "Alarm"
         )
 
-        let alarmType = metadata?.alarmType ?? "prayer"
         let alarmTitle = metadata?.title ?? "Alarm"
         _ = await scheduleBypassBackup(
             originalAlarmId: originalAlarmId,

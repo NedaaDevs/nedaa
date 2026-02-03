@@ -27,6 +27,7 @@ class AlarmAudioManager(private val context: Context) {
     private var vibrator: Vibrator? = null
     private var isVibrating = false
     private var volume: Float = 1.0f
+    private var savedSystemVolume: Int? = null
 
     private fun getVibrator(): Vibrator {
         if (vibrator == null) {
@@ -41,13 +42,47 @@ class AlarmAudioManager(private val context: Context) {
         return vibrator!!
     }
 
+    // TEMP: Debug logging for settings feature - remove after verification
+    private fun log(message: String) {
+        AlarmLogger.getInstance(context).d("AlarmAudio", message)
+    }
+
+    fun saveSystemVolume() {
+        val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        savedSystemVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
+        log("TEMP: Saved system volume: $savedSystemVolume")
+    }
+
+    fun restoreSystemVolume() {
+        savedSystemVolume?.let { vol ->
+            try {
+                val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                am.setStreamVolume(AudioManager.STREAM_ALARM, vol, 0)
+                log("TEMP: Restored system volume to: $vol")
+            } catch (e: Exception) {
+                log("TEMP: Failed to restore volume: ${e.message}")
+            }
+            savedSystemVolume = null
+        } ?: log("TEMP: No saved volume to restore")
+    }
+
     fun startAlarmSound(soundName: String): Boolean {
+        return startAlarmSound(soundName, 1.0f)
+    }
+
+    fun startAlarmSound(soundName: String, volumeLevel: Float): Boolean {
         stopAlarmSound()
+        log("TEMP: Starting alarm sound=$soundName volumeLevel=$volumeLevel")
         try {
             val resId = findSoundResource(soundName)
-            if (resId == 0) return false
+            if (resId == 0) {
+                log("TEMP: Sound resource not found: $soundName")
+                return false
+            }
 
             val uri = Uri.parse("android.resource://${context.packageName}/$resId")
+
+            volume = volumeLevel.coerceIn(0f, 1f)
 
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(
@@ -63,13 +98,16 @@ class AlarmAudioManager(private val context: Context) {
                 start()
             }
 
-            // Force alarm stream to max volume
+            // Set alarm stream volume based on setting (0.0-1.0 mapped to system range)
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVol, 0)
+            val targetVol = (maxVol * volumeLevel).toInt().coerceIn(1, maxVol)
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, targetVol, 0)
+            log("TEMP: Set system alarm volume to $targetVol/$maxVol (from setting $volumeLevel)")
 
             return true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log("TEMP: Failed to start alarm sound: ${e.message}")
             mediaPlayer?.release()
             mediaPlayer = null
             return false
@@ -104,19 +142,28 @@ class AlarmAudioManager(private val context: Context) {
     fun getVolume(): Float = volume
 
     fun startVibration() {
+        startVibration("default")
+    }
+
+    fun startVibration(patternName: String) {
         if (isVibrating) return
         isVibrating = true
+        log("TEMP: Starting vibration with pattern=$patternName")
         try {
             val vib = getVibrator()
-            // 800ms on, 200ms off — matches iOS VIBRATION_PATTERN
-            val pattern = longArrayOf(0, 800, 200, 800, 200, 800, 200, 800)
+            val pattern = when (patternName) {
+                "gentle" -> longArrayOf(0, 200, 800, 200, 800, 200, 800)
+                "aggressive" -> longArrayOf(0, 100, 100, 100, 100, 100, 100, 100, 100)
+                else -> longArrayOf(0, 800, 200, 800, 200, 800, 200, 800) // default
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vib.vibrate(VibrationEffect.createWaveform(pattern, 0))
             } else {
                 @Suppress("DEPRECATION")
                 vib.vibrate(pattern, 0)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log("TEMP: Failed to start vibration: ${e.message}")
             isVibrating = false
         }
     }
@@ -132,6 +179,7 @@ class AlarmAudioManager(private val context: Context) {
     fun stopAll() {
         stopAlarmSound()
         stopVibration()
+        restoreSystemVolume()
     }
 
     private fun findSoundResource(name: String): Int {
