@@ -209,6 +209,16 @@ class ExpoAlarmModule : Module() {
             audioManager.getVolume()
         }
 
+        Function("saveSystemVolume") {
+            audioManager.saveSystemVolume()
+            true
+        }
+
+        Function("restoreSystemVolume") {
+            audioManager.restoreSystemVolume()
+            true
+        }
+
         // -- Scheduling Info --
 
         Function("getNextAlarmTime") {

@@ -194,9 +194,13 @@ class AlarmOverlayService : Service() {
         layout.addView(tapButton)
 
         val db = AlarmDatabase.getInstance(this)
+        val (snoozeEnabled, snoozeMaxCount, snoozeDurationMinutes) = db.getSnoozeConfig(alarmType)
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
-        val remainingSnoozes = AlarmDatabase.MAX_SNOOZES - currentSnoozeCount
-        val canSnooze = remainingSnoozes > 0
+        val remainingSnoozes = snoozeMaxCount - currentSnoozeCount
+        val canSnooze = snoozeEnabled && remainingSnoozes > 0
+
+        // TEMP: Debug logging for settings feature - remove after verification
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Snooze settings - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=$snoozeDurationMinutes, current=$currentSnoozeCount, remaining=$remainingSnoozes")
 
         val snoozeButton = Button(this).apply {
             text = if (canSnooze) "SNOOZE ($remainingSnoozes left)" else "NO SNOOZES LEFT"
@@ -205,6 +209,7 @@ class AlarmOverlayService : Service() {
             setBackgroundColor(if (canSnooze) Color.parseColor("#FF9800") else Color.parseColor("#666666"))
             setPadding(48, 24, 48, 24)
             isEnabled = canSnooze
+            visibility = if (snoozeEnabled) View.VISIBLE else View.GONE
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -257,21 +262,30 @@ class AlarmOverlayService : Service() {
     private fun onSnoozeClicked() {
         val db = AlarmDatabase.getInstance(this)
 
+        // Get snooze config from settings
+        val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
+
+        // TEMP: Debug logging for settings feature - remove after verification
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Snooze clicked - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=${snoozeDuration}min")
+
         // Get current snooze count
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
-        if (currentSnoozeCount >= AlarmDatabase.MAX_SNOOZES) {
+        if (!snoozeEnabled || currentSnoozeCount >= snoozeMaxCount) {
             Toast.makeText(this, "Maximum snoozes reached", Toast.LENGTH_SHORT).show()
             return
         }
 
         val newSnoozeCount = currentSnoozeCount + 1
-        val snoozeMs = AlarmDatabase.SNOOZE_MINUTES * 60 * 1000L
+        val snoozeMs = snoozeDuration * 60 * 1000L
         val snoozeTime = System.currentTimeMillis() + snoozeMs
         val snoozeId = UUID.randomUUID().toString()
 
+        // TEMP: Log snooze scheduling
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Scheduling snooze #$newSnoozeCount for ${snoozeDuration}min (${snoozeMs}ms)")
+
         // Build snooze title
         val baseTitle = title.replace(Regex("\\s*\\(Snoozed \\d+/\\d+\\)$"), "")
-        val snoozeTitle = "$baseTitle (Snoozed $newSnoozeCount/${AlarmDatabase.MAX_SNOOZES})"
+        val snoozeTitle = "$baseTitle (Snoozed $newSnoozeCount/$snoozeMaxCount)"
 
         // Stop current alarm effects
         val audioManager = AlarmAudioManager.getInstance(this)

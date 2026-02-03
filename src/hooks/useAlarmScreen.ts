@@ -101,6 +101,8 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const handleChallengeComplete = async () => {
     setIsDismissed(true);
     Vibration.cancel();
+    ExpoAlarm.stopAllAlarmEffects();
+    ExpoAlarm.restoreSystemVolume();
     markAlarmHandled(alarmId);
     await completeAlarm(alarmId);
     router.replace("/");
