@@ -9,7 +9,6 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
-import { Button, ButtonText, ButtonIcon } from "@/components/ui/button";
 import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
 
@@ -20,9 +19,10 @@ import {
   GentleWakeUpSettings,
   VibrationSettings,
   SnoozeSettings,
+  TimingSettings,
 } from "@/components/alarm";
 
-import { Volume2, Brain, Sunrise, Vibrate, Clock, ExternalLink } from "lucide-react-native";
+import { Volume2, Brain, Sunrise, Vibrate, Clock, Timer } from "lucide-react-native";
 
 import * as ExpoAlarm from "expo-alarm";
 
@@ -88,6 +88,10 @@ const AlarmTypeSettingsScreen = () => {
         nativeSettings.snoozeMaxCount = changes.snooze.maxCount;
         nativeSettings.snoozeDuration = changes.snooze.durationMinutes;
       }
+      if (changes.timing) {
+        nativeSettings.timingMode = changes.timing.mode;
+        nativeSettings.timingMinutesBefore = changes.timing.minutesBefore;
+      }
 
       if (Object.keys(nativeSettings).length > 0) {
         ExpoAlarm.setAlarmSettings(alarmType, nativeSettings).catch(() => {});
@@ -98,11 +102,6 @@ const AlarmTypeSettingsScreen = () => {
   const handleEnabledToggle = (enabled: boolean) => {
     hapticSelection();
     handleChange({ enabled });
-  };
-
-  const handleOpenNativeSettings = () => {
-    hapticSelection();
-    ExpoAlarm.openNativeSettings(alarmType);
   };
 
   const title =
@@ -135,23 +134,22 @@ const AlarmTypeSettingsScreen = () => {
             </HStack>
           </Card>
 
-          {/* Android Native Settings Button */}
-          {Platform.OS === "android" && settings.enabled && (
-            <Card className="mx-4 mb-4 p-4 rounded-2xl bg-background-secondary">
-              <VStack space="sm">
-                <Text className="text-sm text-typography-secondary">
-                  {t("alarm.settings.nativeSettingsDescription")}
-                </Text>
-                <Button variant="outline" onPress={handleOpenNativeSettings}>
-                  <ButtonText>{t("alarm.settings.openNativeSettings")}</ButtonText>
-                  <ButtonIcon as={ExternalLink} className="ml-2" />
-                </Button>
-              </VStack>
-            </Card>
-          )}
-
           {settings.enabled && (
             <>
+              {/* Timing Settings */}
+              <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
+                <Text className="text-sm text-typography-secondary mb-2">
+                  {alarmType === "fajr"
+                    ? t("alarm.settings.timingDescriptionFajr")
+                    : t("alarm.settings.timingDescriptionFriday")}
+                </Text>
+                <TimingSettings
+                  value={settings.timing}
+                  alarmType={alarmType}
+                  onChange={(timing) => handleChange({ timing })}
+                />
+              </SettingsSection>
+
               {/* Sound Settings */}
               <SettingsSection title={t("alarm.settings.sound")} icon={Volume2}>
                 <SoundPicker value={settings.sound} onChange={(sound) => handleChange({ sound })} />
