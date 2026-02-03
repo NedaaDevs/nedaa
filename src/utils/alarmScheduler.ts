@@ -22,7 +22,7 @@ export function getNextPrayerDate(
   return null;
 }
 
-export function getNextFridayDhuhr(): Date | null {
+export function getNextFriday(): Date | null {
   const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
 
   const allTimings = [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].filter(Boolean);
@@ -39,6 +39,17 @@ export function getNextFridayDhuhr(): Date | null {
   return null;
 }
 
+function applyTimingOffset(
+  prayerDate: Date,
+  timingMode: string | undefined,
+  minutesBefore: number | undefined
+): Date {
+  if (timingMode === "beforePrayerTime" && minutesBefore && minutesBefore > 0) {
+    return new Date(prayerDate.getTime() - minutesBefore * 60 * 1000);
+  }
+  return prayerDate;
+}
+
 export async function schedulePrayerAlarm(
   prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha",
   alarmType: "fajr" | "jummah" | "custom" = "custom"
@@ -51,8 +62,17 @@ export async function schedulePrayerAlarm(
     return null;
   }
 
-  const triggerDate = getNextPrayerDate(prayerName);
-  if (!triggerDate) {
+  const prayerDate = getNextPrayerDate(prayerName);
+  if (!prayerDate) {
+    return null;
+  }
+
+  // Apply timing offset from settings
+  const timing = settingsType ? alarmSettings[settingsType]?.timing : null;
+  const triggerDate = applyTimingOffset(prayerDate, timing?.mode, timing?.minutesBefore);
+
+  // Ensure trigger date is in the future
+  if (triggerDate.getTime() <= Date.now()) {
     return null;
   }
 
@@ -85,9 +105,21 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   if (!settings.enabled) return null;
 
   const alarmStore = useAlarmStore.getState();
-  const triggerDate = getNextFridayDhuhr();
+  const prayerDate = getNextFriday();
 
-  if (!triggerDate) return null;
+  if (!prayerDate) return null;
+
+  // Apply timing offset from settings (Friday always uses beforePrayerTime)
+  const triggerDate = applyTimingOffset(
+    prayerDate,
+    settings.timing?.mode,
+    settings.timing?.minutesBefore
+  );
+
+  // Ensure trigger date is in the future
+  if (triggerDate.getTime() <= Date.now()) {
+    return null;
+  }
 
   const id = Crypto.randomUUID();
   const title = "Jumu'ah Prayer";

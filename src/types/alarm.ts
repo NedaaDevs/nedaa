@@ -1,5 +1,7 @@
 export type AlarmType = "fajr" | "friday";
 
+export type TimingMode = "atPrayerTime" | "beforePrayerTime";
+
 export type ChallengeType = "tap" | "math";
 
 export type ChallengeDifficulty = "easy" | "medium" | "hard";
@@ -36,10 +38,16 @@ export interface SnoozeConfig {
   durationMinutes: SnoozeDuration;
 }
 
+export interface TimingConfig {
+  mode: TimingMode;
+  minutesBefore: number;
+}
+
 export interface AlarmTypeSettings {
   enabled: boolean;
   sound: string;
   volume: number;
+  timing: TimingConfig;
   challenge: ChallengeConfig;
   gentleWakeUp: GentleWakeUpConfig;
   vibration: VibrationConfig;
@@ -73,15 +81,26 @@ export const DEFAULT_SNOOZE_CONFIG: SnoozeConfig = {
   durationMinutes: 5,
 };
 
+export const DEFAULT_TIMING_CONFIG: TimingConfig = {
+  mode: "atPrayerTime",
+  minutesBefore: 0,
+};
+
 export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   enabled: false,
   sound: "beep",
   volume: 1.0,
+  timing: DEFAULT_TIMING_CONFIG,
   challenge: DEFAULT_CHALLENGE_CONFIG,
   gentleWakeUp: DEFAULT_GENTLE_WAKEUP_CONFIG,
   vibration: DEFAULT_VIBRATION_CONFIG,
   snooze: DEFAULT_SNOOZE_CONFIG,
 };
+
+export const TIMING_WINDOW_MINUTES = {
+  fajr: 90,
+  friday: 120,
+} as const;
 
 export const CHALLENGE_DIFFICULTY_CONFIG = {
   tap: {
