@@ -475,6 +475,25 @@ public class ExpoAlarmModule: Module {
             return nextTime.timeIntervalSince1970 * 1000
         }
 
+        AsyncFunction("getAlarmSettings") { (alarmType: String) -> [String: Any] in
+            return self.getAlarmSettings(alarmType)
+        }
+
+        AsyncFunction("setAlarmSettings") { (alarmType: String, settings: [String: Any]) -> Bool in
+            self.saveAlarmSettings(alarmType, settings: settings)
+            return true
+        }
+
+        Function("saveSystemVolume") { () -> Bool in
+            AlarmAudioManager.shared.saveSystemVolume()
+            return true
+        }
+
+        Function("restoreSystemVolume") { () -> Bool in
+            AlarmAudioManager.shared.restoreSystemVolume()
+            return true
+        }
+
     }
 
     // MARK: - Private Helpers
@@ -508,6 +527,39 @@ public class ExpoAlarmModule: Module {
     @available(iOS 16.2, *)
     private func findActivity(id: String) -> Activity<AlarmActivityAttributes>? {
         return Activity<AlarmActivityAttributes>.activities.first { $0.id == id }
+    }
+
+    // MARK: - Alarm Settings (UserDefaults)
+
+    private func getAlarmSettings(_ alarmType: String) -> [String: Any] {
+        let key = "alarm_settings_\(alarmType)"
+        if let saved = UserDefaults.standard.dictionary(forKey: key) {
+            return saved
+        }
+        return [
+            "enabled": false,
+            "sound": "beep",
+            "volume": 1.0,
+            "challengeType": "tap",
+            "challengeDifficulty": "easy",
+            "challengeCount": 1,
+            "gentleWakeUpEnabled": false,
+            "gentleWakeUpDuration": 3,
+            "vibrationEnabled": true,
+            "vibrationPattern": "default",
+            "snoozeEnabled": true,
+            "snoozeMaxCount": 3,
+            "snoozeDuration": 5
+        ]
+    }
+
+    private func saveAlarmSettings(_ alarmType: String, settings: [String: Any]) {
+        let key = "alarm_settings_\(alarmType)"
+        var current = getAlarmSettings(alarmType)
+        for (k, v) in settings {
+            current[k] = v
+        }
+        UserDefaults.standard.set(current, forKey: key)
     }
 }
 

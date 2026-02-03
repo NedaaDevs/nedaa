@@ -225,6 +225,24 @@ export function getAlarmVolume(): number {
   return NativeModule.getAlarmVolume();
 }
 
+export function saveSystemVolume(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.saveSystemVolume();
+  } catch {
+    return false;
+  }
+}
+
+export function restoreSystemVolume(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.restoreSystemVolume();
+  } catch {
+    return false;
+  }
+}
+
 export interface AlarmKitAlarm {
   id: string;
   state: string;
@@ -440,6 +458,8 @@ export default {
   stopAllAlarmEffects,
   setAlarmVolume,
   getAlarmVolume,
+  saveSystemVolume,
+  restoreSystemVolume,
   getAlarmKitAlarms,
   getNativeLogs,
   getPersistentLog,

@@ -61,6 +61,11 @@ class AlarmService : Service() {
         return START_REDELIVER_INTENT
     }
 
+    // TEMP: Debug logging for settings feature - remove after verification
+    private fun log(message: String) {
+        AlarmLogger.getInstance(this).d("AlarmService", message)
+    }
+
     private fun startAlarm(alarmId: String, alarmType: String, title: String, soundName: String) {
         currentAlarmId = alarmId
         isRunning = true
@@ -71,9 +76,30 @@ class AlarmService : Service() {
         val notification = notificationManager.buildAlarmNotification(alarmId, alarmType, title)
         startForeground(AlarmNotificationManager.NOTIFICATION_ID, notification.build())
 
+        // Read settings from database
+        val db = AlarmDatabase.getInstance(this)
+        val settings = db.getAlarmSettings(alarmType)
+
+        // TEMP: Log settings being used
+        log("TEMP: Alarm firing - type=$alarmType, id=$alarmId")
+        log("TEMP: Settings from DB: sound=${settings.sound}, volume=${settings.volume}, vibrationEnabled=${settings.vibrationEnabled}, vibrationPattern=${settings.vibrationPattern}")
+
         val audioManager = AlarmAudioManager.getInstance(this)
-        audioManager.startAlarmSound(soundName)
-        audioManager.startVibration()
+
+        // Save system volume before alarm so we can restore after
+        audioManager.saveSystemVolume()
+
+        // Use sound from settings if available, otherwise use passed soundName
+        val sound = if (settings.sound.isNotEmpty()) settings.sound else soundName
+        log("TEMP: Using sound=$sound (settings.sound=${settings.sound}, fallback=$soundName)")
+        audioManager.startAlarmSound(sound, settings.volume)
+
+        // Use vibration settings
+        if (settings.vibrationEnabled) {
+            audioManager.startVibration(settings.vibrationPattern)
+        } else {
+            log("TEMP: Vibration disabled in settings, skipping")
+        }
 
         // Start overlay service for bypass prevention (if permission granted)
         if (Settings.canDrawOverlays(this)) {
