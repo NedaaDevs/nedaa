@@ -43,11 +43,18 @@ public class ExpoAlarmModule: Module {
     public func definition() -> ModuleDefinition {
         Name("ExpoAlarm")
 
+        Events("onPlaybackFinished")
+
         OnCreate {
             AlarmObserver.startObserving()
 
             if #available(iOS 13.0, *) {
                 AlarmBackgroundTaskManager.shared.registerTask()
+            }
+
+            // Set up playback finished callback
+            AlarmAudioManager.shared.onPlaybackFinished = { [weak self] in
+                self?.sendEvent("onPlaybackFinished", [:])
             }
         }
 
@@ -492,6 +499,29 @@ public class ExpoAlarmModule: Module {
         Function("restoreSystemVolume") { () -> Bool in
             AlarmAudioManager.shared.restoreSystemVolume()
             return true
+        }
+
+        AsyncFunction("getSystemAlarmSounds") { () -> [[String: String]] in
+            // Return list of bundled iOS alarm ringtones
+            // These are m4a files in the ios/alarm_sounds directory, added to the Xcode project bundle
+            let ringtones: [[String: String]] = [
+                ["id": "iOS-Alarm", "name": "Alarm", "isSystem": "true"],
+                ["id": "iOS-Radar", "name": "Radar", "isSystem": "true"],
+                ["id": "iOS-Beacon", "name": "Beacon", "isSystem": "true"],
+                ["id": "iOS-Ascending", "name": "Ascending", "isSystem": "true"],
+                ["id": "iOS-Chimes", "name": "Chimes", "isSystem": "true"],
+                ["id": "iOS-Marimba", "name": "Marimba", "isSystem": "true"],
+                ["id": "iOS-Signal", "name": "Signal", "isSystem": "true"],
+                ["id": "iOS-Presto", "name": "Presto", "isSystem": "true"],
+                ["id": "iOS-Stargaze", "name": "Stargaze", "isSystem": "true"],
+                ["id": "iOS-Uplift", "name": "Uplift", "isSystem": "true"],
+                ["id": "iOS-Ripples", "name": "Ripples", "isSystem": "true"],
+                ["id": "iOS-Sencha", "name": "Sencha", "isSystem": "true"],
+                ["id": "iOS-Daybreak-EncoreInfinitum", "name": "Daybreak", "isSystem": "true"],
+                ["id": "iOS-Radial-EncoreInfinitum", "name": "Radial", "isSystem": "true"],
+                ["id": "iOS-Reflection-EncoreInfinitum", "name": "Reflection", "isSystem": "true"]
+            ]
+            return ringtones
         }
 
     }

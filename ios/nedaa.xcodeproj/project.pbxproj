@@ -7,7 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E19C01AB3F13A692D593841 /* iOS-Radar.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		276EF93FB225DA4D8E9A7F64 /* iOS-Ascending.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */; };
+		2945C6B468CB29381C4409A0 /* iOS-Presto.m4a in Resources */ = {isa = PBXBuildFile; fileRef = E56D427AB1225CD998955D09 /* iOS-Presto.m4a */; };
+		2CDC19E4F827976145FBF4CC /* iOS-Marimba.m4a in Resources */ = {isa = PBXBuildFile; fileRef = E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */; };
 		2F0B49C6D3EE8885F9559984 /* libPods-nedaa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 395E89B8D23B35426704FAA8 /* libPods-nedaa.a */; };
 		353E4C9C2DFCDB1F003E7634 /* makkah_athan1.caf in Resources */ = {isa = PBXBuildFile; fileRef = 353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */; };
 		3571E5702F12BEBF00DABED1 /* AlarmActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3571E56E2F12BEBF00DABED1 /* AlarmActivityAttributes.swift */; };
@@ -29,10 +33,21 @@
 		35F778B82E05B032009C55CF /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35F778B72E05B032009C55CF /* SwiftUI.framework */; };
 		35F778C52E05B033009C55CF /* NedaaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35F778B42E05B032009C55CF /* NedaaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		4436B005DBD03345B80C303A /* iOS-Ripples.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3B6CFF15E63924F40D01DEC8 /* iOS-Ripples.m4a */; };
+		46A74694DB38584E45D872EF /* iOS-Sencha.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 4F965BC8BA398FA918782408 /* iOS-Sencha.m4a */; };
+		4A9E95197C0218E1CD394B01 /* iOS-Uplift.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 38317CD359AE2453AE848ED7 /* iOS-Uplift.m4a */; };
+		4DEE9B543038A9D77B29EDDA /* iOS-Radial-EncoreInfinitum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 7FEA9357ECA69F397F59F024 /* iOS-Radial-EncoreInfinitum.m4a */; };
+		6C8CBC5F3FB2B770F4FCACFC /* iOS-Beacon.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CB31401727F611561E0B3393 /* iOS-Beacon.m4a */; };
+		7272C8E9A006736ADF518FD2 /* iOS-Alarm.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */; };
+		B9BCF485FE7430CECA3FC17F /* iOS-Daybreak-EncoreInfinitum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C8DD410D3DFF5769BF95E8D0 /* iOS-Chimes.m4a in Resources */ = {isa = PBXBuildFile; fileRef = BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */; };
 		DEAE4D9EFC16322A17A3F48F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E535398133B6C0CA3A79FCE0 /* ExpoModulesProvider.swift */; };
+		E25F4CE3BFAF846FC2ED802D /* iOS-Reflection-EncoreInfinitum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */; };
 		E520209B8F5242DABE076868 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DA08ED9376A040CA976C4F84 /* PrivacyInfo.xcprivacy */; };
+		E9270E2508E0EFBAA7698D3D /* iOS-Stargaze.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F613F027BF5FAFD6C3F9DFAD /* iOS-Signal.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +75,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Alarm.m4a"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* nedaa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nedaa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = nedaa/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = nedaa/Info.plist; sourceTree = "<group>"; };
@@ -81,14 +97,28 @@
 		35F778B52E05B032009C55CF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		35F778B72E05B032009C55CF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		35F778CB2E05B08B009C55CF /* NedaaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NedaaWidgetExtension.entitlements; sourceTree = "<group>"; };
+		38317CD359AE2453AE848ED7 /* iOS-Uplift.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Uplift.m4a"; sourceTree = "<group>"; };
 		395E89B8D23B35426704FAA8 /* libPods-nedaa.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-nedaa.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Signal.m4a"; sourceTree = "<group>"; };
+		3B6CFF15E63924F40D01DEC8 /* iOS-Ripples.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Ripples.m4a"; sourceTree = "<group>"; };
+		4F965BC8BA398FA918782408 /* iOS-Sencha.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Sencha.m4a"; sourceTree = "<group>"; };
+		7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Stargaze.m4a"; sourceTree = "<group>"; };
+		7FEA9357ECA69F397F59F024 /* iOS-Radial-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Radial-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
+		91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Radar.m4a"; sourceTree = "<group>"; };
+		A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Ascending.m4a"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = nedaa/SplashScreen.storyboard; sourceTree = "<group>"; };
+		BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Chimes.m4a"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Reflection-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
+		CB31401727F611561E0B3393 /* iOS-Beacon.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Beacon.m4a"; sourceTree = "<group>"; };
 		DA08ED9376A040CA976C4F84 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = PrivacyInfo.xcprivacy; path = nedaa/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E535398133B6C0CA3A79FCE0 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-nedaa/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		E56D427AB1225CD998955D09 /* iOS-Presto.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Presto.m4a"; sourceTree = "<group>"; };
+		E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Marimba.m4a"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = nedaa/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* nedaa-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "nedaa-Bridging-Header.h"; path = "nedaa/nedaa-Bridging-Header.h"; sourceTree = "<group>"; };
+		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
 		FDE52688DF5F5110C0D947CA /* Pods-nedaa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.debug.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -134,6 +164,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0279B5DCCC4F0F8A79E7947D /* sounds */ = {
+			isa = PBXGroup;
+			children = (
+				A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */,
+				7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */,
+				E56D427AB1225CD998955D09 /* iOS-Presto.m4a */,
+				91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */,
+				CB31401727F611561E0B3393 /* iOS-Beacon.m4a */,
+				7FEA9357ECA69F397F59F024 /* iOS-Radial-EncoreInfinitum.m4a */,
+				BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */,
+				3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */,
+				04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */,
+				4F965BC8BA398FA918782408 /* iOS-Sencha.m4a */,
+				BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */,
+				F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */,
+				3B6CFF15E63924F40D01DEC8 /* iOS-Ripples.m4a */,
+				38317CD359AE2453AE848ED7 /* iOS-Uplift.m4a */,
+				E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */,
+			);
+			name = sounds;
+			path = sounds;
+			sourceTree = "<group>";
+		};
 		0E7F9BAB775B53E623DF4A91 /* nedaa */ = {
 			isa = PBXGroup;
 			children = (
@@ -164,6 +217,7 @@
 				357DB6DA2DF7FE290040763A /* Localizable.xcstrings */,
 				35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */,
 				353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */,
+				0279B5DCCC4F0F8A79E7947D /* sounds */,
 			);
 			name = nedaa;
 			sourceTree = "<group>";
@@ -354,6 +408,21 @@
 				353E4C9C2DFCDB1F003E7634 /* makkah_athan1.caf in Resources */,
 				35DE52842E2591EB00FAF71E /* InfoPlist.xcstrings in Resources */,
 				E520209B8F5242DABE076868 /* PrivacyInfo.xcprivacy in Resources */,
+				276EF93FB225DA4D8E9A7F64 /* iOS-Ascending.m4a in Resources */,
+				E9270E2508E0EFBAA7698D3D /* iOS-Stargaze.m4a in Resources */,
+				2945C6B468CB29381C4409A0 /* iOS-Presto.m4a in Resources */,
+				0E19C01AB3F13A692D593841 /* iOS-Radar.m4a in Resources */,
+				6C8CBC5F3FB2B770F4FCACFC /* iOS-Beacon.m4a in Resources */,
+				4DEE9B543038A9D77B29EDDA /* iOS-Radial-EncoreInfinitum.m4a in Resources */,
+				E25F4CE3BFAF846FC2ED802D /* iOS-Reflection-EncoreInfinitum.m4a in Resources */,
+				F613F027BF5FAFD6C3F9DFAD /* iOS-Signal.m4a in Resources */,
+				7272C8E9A006736ADF518FD2 /* iOS-Alarm.m4a in Resources */,
+				46A74694DB38584E45D872EF /* iOS-Sencha.m4a in Resources */,
+				C8DD410D3DFF5769BF95E8D0 /* iOS-Chimes.m4a in Resources */,
+				B9BCF485FE7430CECA3FC17F /* iOS-Daybreak-EncoreInfinitum.m4a in Resources */,
+				4436B005DBD03345B80C303A /* iOS-Ripples.m4a in Resources */,
+				4A9E95197C0218E1CD394B01 /* iOS-Uplift.m4a in Resources */,
+				2CDC19E4F827976145FBF4CC /* iOS-Marimba.m4a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
