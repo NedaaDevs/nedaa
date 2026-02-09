@@ -5,11 +5,12 @@ import MediaPlayer
 import UIKit
 #endif
 
-class AlarmAudioManager {
+class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     static let shared = AlarmAudioManager()
 
     private var audioPlayer: AVAudioPlayer?
     private var isPlaying = false
+    private var isPreviewMode = false
     private var volume: Float = 1.0
     private var retryCount = 0
     private let maxRetries = 3
@@ -25,10 +26,25 @@ class AlarmAudioManager {
     private var keepAlivePlayer: AVAudioPlayer?
     private var isKeepAliveActive = false
 
-    private var savedSystemVolume: Float?
+    private let savedVolumeKey = "savedSystemVolume"
 
-    private init() {
+    // Callback for playback finished (used for preview mode)
+    var onPlaybackFinished: (() -> Void)?
+
+    private override init() {
+        super.init()
         setupInterruptionHandling()
+    }
+
+    // MARK: - AVAudioPlayerDelegate
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        log("Audio finished playing, success: \(flag), preview mode: \(isPreviewMode)")
+        if isPreviewMode {
+            isPlaying = false
+            isPreviewMode = false
+            onPlaybackFinished?()
+        }
     }
 
     private func log(_ message: String) {
@@ -68,23 +84,26 @@ class AlarmAudioManager {
     }
 
     func saveSystemVolume() {
+        // Check persisted value first (survives app kills)
+        if UserDefaults.standard.object(forKey: savedVolumeKey) != nil {
+            log("System volume already saved (persisted), skipping")
+            return
+        }
         let audioSession = AVAudioSession.sharedInstance()
-        savedSystemVolume = audioSession.outputVolume
-        // TEMP: Debug logging for settings feature - remove after verification
-        log("TEMP: Saved system volume: \(savedSystemVolume ?? 0)")
+        let volume = audioSession.outputVolume
+        UserDefaults.standard.set(volume, forKey: savedVolumeKey)
+        log("Saved system volume: \(volume)")
     }
 
     func restoreSystemVolume() {
-        guard let saved = savedSystemVolume else {
-            // TEMP: Debug logging for settings feature - remove after verification
-            log("TEMP: No saved volume to restore")
+        guard UserDefaults.standard.object(forKey: savedVolumeKey) != nil else {
+            log("No saved volume to restore")
             return
         }
-
-        // TEMP: Debug logging for settings feature - remove after verification
-        log("TEMP: Restoring system volume to: \(saved)")
+        let saved = UserDefaults.standard.float(forKey: savedVolumeKey)
+        log("Restoring system volume to: \(saved)")
         setSystemVolume(saved)
-        savedSystemVolume = nil
+        UserDefaults.standard.removeObject(forKey: savedVolumeKey)
     }
 
     @discardableResult
@@ -123,17 +142,19 @@ class AlarmAudioManager {
         }
     }
 
-    func startAlarmSound(soundName: String = "beep") {
+    func startAlarmSound(soundName: String = "beep", isPreview: Bool = false) {
         retryWorkItem?.cancel()
         retryWorkItem = nil
 
-        log("Starting alarm sound: \(soundName), isPlaying=\(isPlaying), retry=\(retryCount)/\(maxRetries)")
+        log("Starting alarm sound: \(soundName), isPlaying=\(isPlaying), retry=\(retryCount)/\(maxRetries), preview=\(isPreview)")
 
         guard !isPlaying else {
             log("Already playing, ignoring")
             retryCount = 0
             return
         }
+
+        isPreviewMode = isPreview
 
         let sessionConfigured = configureSession()
 
@@ -144,7 +165,7 @@ class AlarmAudioManager {
                 log("Session failed, retry \(retryCount)/\(maxRetries) in \(delay)s")
 
                 let workItem = DispatchWorkItem { [weak self] in
-                    self?.startAlarmSound(soundName: soundName)
+                    self?.startAlarmSound(soundName: soundName, isPreview: isPreview)
                 }
                 retryWorkItem = workItem
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
@@ -161,7 +182,8 @@ class AlarmAudioManager {
 
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.numberOfLoops = -1
+            audioPlayer?.delegate = self
+            audioPlayer?.numberOfLoops = isPreview ? 0 : -1  // Play once for preview, loop for alarm
             audioPlayer?.volume = volume
             audioPlayer?.prepareToPlay()
             let success = audioPlayer?.play() ?? false
@@ -179,7 +201,7 @@ class AlarmAudioManager {
 
                     let workItem = DispatchWorkItem { [weak self] in
                         self?.audioPlayer = nil
-                        self?.startAlarmSound(soundName: soundName)
+                        self?.startAlarmSound(soundName: soundName, isPreview: isPreview)
                     }
                     retryWorkItem = workItem
                     DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
@@ -196,14 +218,12 @@ class AlarmAudioManager {
         retryWorkItem = nil
         retryCount = 0
 
-        guard isPlaying else {
-            return
-        }
-
+        // Always attempt to stop, regardless of isPlaying flag (fixes state mismatch from retry logic)
         log("Stopping alarm sound")
         audioPlayer?.stop()
         audioPlayer = nil
         isPlaying = false
+        isPreviewMode = false
 
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -380,6 +400,12 @@ class AlarmAudioManager {
     func transitionToLoudAlarm(soundName: String = "beep", alarmVolume: Float = 1.0) {
         log("Transitioning to loud alarm, volume: \(alarmVolume)")
 
+        // Reset vibration state to ensure it restarts (fixes bug where BGTask expires
+        // and timer dies but isVibrating stays true, preventing restart)
+        isVibrating = false
+        vibrationTimer?.invalidate()
+        vibrationTimer = nil
+
         if isKeepAliveActive {
             keepAlivePlayer?.stop()
             keepAlivePlayer = nil
@@ -452,17 +478,10 @@ class AlarmAudioManager {
     }
 
     private func findSoundFile(named name: String) -> URL? {
-        if let url = Bundle.main.url(forResource: name, withExtension: "mp3") {
-            return url
-        }
-        if let url = Bundle.main.url(forResource: name, withExtension: "caf") {
-            return url
-        }
-        if let url = Bundle.main.url(forResource: name, withExtension: "wav") {
-            return url
-        }
-        if let url = Bundle.main.url(forResource: name, withExtension: "m4a") {
-            return url
+        for ext in ["caf", "mp3", "wav", "m4a"] {
+            if let url = Bundle.main.url(forResource: name, withExtension: ext) {
+                return url
+            }
         }
         return nil
     }

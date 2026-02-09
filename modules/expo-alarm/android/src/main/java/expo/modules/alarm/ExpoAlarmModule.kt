@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -395,6 +396,28 @@ class ExpoAlarmModule : Module() {
 
         Function("isAlarmTypeEnabled") { alarmType: String ->
             db.isAlarmEnabled(alarmType)
+        }
+
+        // -- System Sounds --
+
+        AsyncFunction("getSystemAlarmSounds") {
+            val sounds = mutableListOf<Map<String, String>>()
+            try {
+                val ringtoneManager = RingtoneManager(context)
+                ringtoneManager.setType(RingtoneManager.TYPE_ALARM)
+                val cursor = ringtoneManager.cursor
+                while (cursor.moveToNext()) {
+                    val position = cursor.position
+                    val title = ringtoneManager.getRingtone(position)?.getTitle(context) ?: "Unknown"
+                    val uri = ringtoneManager.getRingtoneUri(position)?.toString() ?: continue
+                    sounds.add(mapOf(
+                        "id" to uri,
+                        "name" to title,
+                        "isSystem" to "true"
+                    ))
+                }
+            } catch (_: Exception) {}
+            sounds
         }
     }
 

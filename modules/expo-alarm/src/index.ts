@@ -1,4 +1,4 @@
-import { requireOptionalNativeModule } from "expo-modules-core";
+import { requireOptionalNativeModule, EventEmitter, Subscription } from "expo-modules-core";
 
 export type AuthorizationStatus = "notDetermined" | "authorized" | "denied";
 
@@ -16,6 +16,15 @@ export interface ScheduleAlarmParams {
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
 const isAvailable = NativeModule !== null;
+const emitter = NativeModule ? new EventEmitter(NativeModule) : null;
+
+// Event listener for native events
+export function addListener(eventName: string, listener: () => void): Subscription {
+  if (!emitter) {
+    return { remove: () => {} };
+  }
+  return emitter.addListener(eventName, listener);
+}
 
 export function isNativeModuleAvailable(): boolean {
   return isAvailable;
@@ -428,6 +437,27 @@ export function isAlarmTypeEnabled(alarmType: "fajr" | "friday"): boolean {
   }
 }
 
+// System alarm sounds
+export interface SystemSound {
+  id: string; // URI string for system sounds, resource name for bundled
+  name: string; // Display name
+  isSystem: boolean;
+}
+
+export async function getSystemAlarmSounds(): Promise<SystemSound[]> {
+  if (!isAvailable) return [];
+  try {
+    const sounds = await NativeModule.getSystemAlarmSounds();
+    return sounds.map((s: { id: string; name: string; isSystem: string }) => ({
+      id: s.id,
+      name: s.name,
+      isSystem: s.isSystem === "true",
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -478,4 +508,5 @@ export default {
   getAlarmSettings,
   setAlarmSettings,
   isAlarmTypeEnabled,
+  getSystemAlarmSounds,
 };
