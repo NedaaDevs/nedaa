@@ -11,6 +11,7 @@ import { Box } from "@/components/ui/box";
 import { Volume2, VolumeX, Minus, Plus } from "lucide-react-native";
 
 import { useHaptic } from "@/hooks/useHaptic";
+import { useRTL } from "@/contexts/RTLContext";
 
 type Props = {
   value: number;
@@ -22,6 +23,7 @@ const VOLUME_STEPS = [0, 0.25, 0.5, 0.75, 1.0];
 const VolumeSlider: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
   const hapticLight = useHaptic("light");
+  const { isRTL } = useRTL();
 
   const volumePercentage = Math.round(value * 100);
 
@@ -47,14 +49,14 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
   return (
     <VStack space="sm">
       <HStack className="justify-between items-center">
-        <Text className="text-sm text-typography">{t("alarm.settings.volume")}</Text>
+        <Text className="text-left text-sm text-typography">{t("alarm.settings.volume")}</Text>
         <Text className="text-sm text-typography-secondary">{volumePercentage}%</Text>
       </HStack>
       <HStack space="sm" className="items-center">
         <Icon
-          as={VolumeX}
+          as={isRTL ? Volume2 : VolumeX}
           size="sm"
-          className={value === 0 ? "text-warning" : "text-typography-secondary"}
+          className={value === (isRTL ? 1 : 0) ? "text-warning" : "text-typography-secondary"}
         />
         <HStack className="flex-1 justify-between items-center px-2">
           <Pressable
@@ -81,7 +83,7 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
             <Icon as={Plus} size="sm" className="text-typography" />
           </Pressable>
         </HStack>
-        <Icon as={Volume2} size="sm" className="text-typography-secondary" />
+        <Icon as={isRTL ? VolumeX : Volume2} size="sm" className="text-typography-secondary" />
       </HStack>
     </VStack>
   );

@@ -1,4 +1,5 @@
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -14,8 +15,8 @@ import { useColorScheme } from "nativewind";
 
 const TabsLayout = () => {
   const { locale, mode } = useAppStore();
-
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -25,8 +26,8 @@ const TabsLayout = () => {
         tabBarActiveTintColor: colorScheme.colorScheme === "dark" ? "#E6C469" : "#1C5D85",
         tabBarInactiveTintColor: colorScheme.colorScheme === "dark" ? "#E3E2CE" : "#64748B",
         tabBarStyle: {
-          height: 70,
-          paddingBottom: 5,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
           paddingTop: 5,
           backgroundColor: colorScheme.colorScheme === "dark" ? "#393E46" : "#FFFFFF",
           borderTopColor:

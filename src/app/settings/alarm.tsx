@@ -50,7 +50,7 @@ const AlarmSettings = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack className="flex-1">
           <Box className="mx-4 mt-4 mb-2">
-            <Text className="text-sm text-typography-secondary">
+            <Text className="text-left text-sm text-typography-secondary">
               {t("alarm.settings.description")}
             </Text>
           </Box>
@@ -69,7 +69,7 @@ const AlarmSettings = () => {
 
                       <VStack className="flex-1">
                         <HStack className="items-center" space="sm">
-                          <Text className="text-lg font-semibold text-typography">
+                          <Text className="text-left text-lg font-semibold text-typography">
                             {alarm.title}
                           </Text>
                           <Badge
@@ -81,7 +81,9 @@ const AlarmSettings = () => {
                             </BadgeText>
                           </Badge>
                         </HStack>
-                        <Text className="text-sm text-typography-secondary" numberOfLines={2}>
+                        <Text
+                          className="text-left text-sm text-typography-secondary"
+                          numberOfLines={2}>
                           {alarm.description}
                         </Text>
                       </VStack>

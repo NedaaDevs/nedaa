@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { ScrollView } from "react-native";
 
 // Components
@@ -21,9 +20,6 @@ import { PrayerName } from "@/types/prayerTimes";
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
-// Hooks
-import { useAppVisibility } from "@/hooks/useAppVisibility";
-
 const prayerIcons: Record<PrayerName, React.ElementType> = {
   fajr: Sunrise,
   dhuhr: Sun,
@@ -36,10 +32,6 @@ const PrayerTimesList = () => {
   const { todayTimings, hasError, isLoading, getNextPrayer, loadPrayerTimes, clearError } =
     usePrayerTimesStore();
   const nextPrayer = getNextPrayer();
-
-  const { becameActiveAt } = useAppVisibility();
-
-  useEffect(() => {}, [becameActiveAt]);
 
   const handleRetry = async () => {
     clearError();

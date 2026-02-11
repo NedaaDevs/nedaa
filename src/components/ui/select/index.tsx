@@ -69,7 +69,7 @@ const selectTriggerStyle = tva({
 });
 
 const selectInputStyle = tva({
-  base: "py-auto px-3 placeholder:text-typography-500 web:w-full h-full pointer-events-none web:outline-none ios:leading-[0px]",
+  base: "flex-1 ps-3 pe-1 placeholder:text-typography-500 web:w-full h-full pointer-events-none web:outline-none",
   parentVariants: {
     size: {
       xl: "text-xl",
@@ -185,6 +185,9 @@ const SelectInput = React.forwardRef<React.ComponentRef<typeof UISelect.Input>, 
           style,
           {
             color: "rgb(var(--color-typography))",
+            textAlign: "center",
+            textAlignVertical: "center",
+            includeFontPadding: false,
           },
         ]}
         ref={ref}

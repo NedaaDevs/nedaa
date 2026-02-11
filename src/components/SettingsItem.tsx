@@ -37,7 +37,7 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
           <HStack className="justify-between items-center relative z-10 w-full">
             <HStack className="items-center">
               {icon && (
-                <Box className="mr-6">
+                <Box className="me-6">
                   <Icon className="font-bold text-typography" size="lg" as={icon}></Icon>
                 </Box>
               )}
@@ -46,7 +46,7 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
 
             <HStack className="items-center">
               {currentValue && (
-                <Text className="text-lg text-typography-secondary mr-2">{currentValue}</Text>
+                <Text className="text-lg text-typography-secondary me-2">{currentValue}</Text>
               )}
               <Icon size="xl" className="text-typography-secondary" as={ChevronIcon} />
             </HStack>

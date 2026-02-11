@@ -25,6 +25,7 @@ import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
+import { useColorScheme } from "nativewind";
 
 /** For Viewing db in dev */
 // import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
@@ -41,6 +42,7 @@ SplashScreen.setOptions({
 export default function RootLayout() {
   SplashScreen.preventAutoHideAsync();
   const { mode, showLoadingOverlay, loadingMessage } = useAppStore();
+  const colorScheme = useColorScheme();
   // useDrizzleStudio(db);
   const {
     showCityChangeModal,
@@ -61,8 +63,8 @@ export default function RootLayout() {
       <RTLProvider>
         <FontProvider>
           <GestureHandlerRootView className="flex-1">
-            <SafeAreaView edges={["top", "right", "left"]} className="flex-1">
-              <StatusBar />
+            <SafeAreaView edges={["top", "right", "left"]} className="flex-1 bg-background">
+              <StatusBar style={colorScheme.colorScheme === "dark" ? "light" : "dark"} />
               <ToastProvider />
               <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
