@@ -1,3 +1,4 @@
+import AVFoundation
 import Expo
 import React
 import ReactAppDependencyProvider
@@ -13,6 +14,9 @@ public class AppDelegate: ExpoAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    // Configure audio session early for warm-start background scenarios
+    configureAudioSession()
+
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -30,6 +34,16 @@ public class AppDelegate: ExpoAppDelegate {
 #endif
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func configureAudioSession() {
+    do {
+      let session = AVAudioSession.sharedInstance()
+      try session.setCategory(.playback, mode: .default, options: [])
+      // Don't activate yet - just configure for background readiness
+    } catch {
+      print("Audio session configuration failed: \(error)")
+    }
   }
 
   // Linking API

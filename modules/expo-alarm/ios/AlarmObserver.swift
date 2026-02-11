@@ -255,7 +255,7 @@ import AppIntents
                 schedule: .fixed(backupTime),
                 attributes: attributes,
                 stopIntent: backupIntent,
-                sound: .default
+                sound: .named("beep")
             )
             _ = try await AlarmManager.shared.schedule(id: backupId, configuration: config)
 
@@ -299,6 +299,16 @@ import AppIntents
         guard let metadata = metadata else {
             plog.observer("No metadata for alarm: \(alarmId)")
             return
+        }
+
+        // Start vibration immediately for backup alarms (they fire via AlarmKit,
+        // but we want vibration to start while system alarm is showing)
+        let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
+        if backupIds.contains(alarmId.lowercased()) {
+            plog.observer("Backup alarm alerting - starting vibration")
+            DispatchQueue.main.async {
+                AlarmAudioManager.shared.startContinuousVibration()
+            }
         }
 
         if AlarmDatabase.shared.isCompleted(id: originalAlarmId) {
@@ -382,7 +392,7 @@ import AppIntents
         let settingsKey = "alarm_settings_\(alarmType)"
         let settings = UserDefaults.standard.dictionary(forKey: settingsKey) ?? [:]
         let soundName = settings["sound"] as? String ?? "beep"
-        let volume = settings["volume"] as? Float ?? 1.0
+        let volume = Float(settings["volume"] as? Double ?? 1.0)
 
         AlarmAudioManager.shared.transitionToLoudAlarm(soundName: soundName, alarmVolume: volume)
 
