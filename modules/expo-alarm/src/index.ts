@@ -313,6 +313,25 @@ export function requestBatteryOptimizationExemption(): boolean {
   }
 }
 
+// Android-specific: exact alarm permission (API 31+)
+export function canScheduleExactAlarms(): boolean {
+  if (!isAvailable) return true;
+  try {
+    return NativeModule.canScheduleExactAlarms();
+  } catch {
+    return true;
+  }
+}
+
+export function requestExactAlarmPermission(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.requestExactAlarmPermission();
+  } catch {
+    return false;
+  }
+}
+
 // Android-specific: full-screen intent permission (API 34+)
 export function canUseFullScreenIntent(): boolean {
   if (!isAvailable) return true;
@@ -497,6 +516,8 @@ export default {
   getNextAlarmTime,
   isBatteryOptimizationExempt,
   requestBatteryOptimizationExemption,
+  canScheduleExactAlarms,
+  requestExactAlarmPermission,
   canUseFullScreenIntent,
   requestFullScreenIntentPermission,
   canDrawOverlays,

@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { ScrollView } from "react-native";
+import { ScrollView, Platform, Linking } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
+import * as Application from "expo-application";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -12,17 +14,206 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
+import { Spinner } from "@/components/ui/spinner";
 import TopBar from "@/components/TopBar";
 
-import { ChevronRight, Sun, Calendar } from "lucide-react-native";
+import {
+  ChevronRight,
+  Sun,
+  Calendar,
+  Bell,
+  Clock,
+  Maximize,
+  BatteryCharging,
+} from "lucide-react-native";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useRTL } from "@/contexts/RTLContext";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useHaptic } from "@/hooks/useHaptic";
+
+import {
+  isAlarmKitAvailable,
+  getAuthorizationStatus,
+  requestAuthorization,
+  canScheduleExactAlarms,
+  requestExactAlarmPermission,
+  canUseFullScreenIntent,
+  requestFullScreenIntentPermission,
+  isBatteryOptimizationExempt,
+  requestBatteryOptimizationExemption,
+} from "expo-alarm";
+
+import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
+import { PermissionStatus } from "expo-notifications";
+
+import { PlatformType } from "@/enums/app";
+
+interface PermissionItem {
+  id: string;
+  icon: typeof Bell;
+  titleKey: string;
+  descriptionKey: string;
+  granted: boolean;
+  canRequestInApp: boolean;
+  onRequest: () => Promise<void> | void;
+}
+
+const openAppSettings = () => {
+  if (Platform.OS === PlatformType.IOS) {
+    Linking.openURL("app-settings:");
+  } else {
+    Linking.openSettings();
+  }
+};
+
+const openNotificationSettings = () => {
+  if (Platform.OS === PlatformType.ANDROID) {
+    Linking.sendIntent("android.settings.APP_NOTIFICATION_SETTINGS", [
+      {
+        key: "android.provider.extra.APP_PACKAGE",
+        value: Application.applicationId ?? "dev.nedaa.android",
+      },
+    ]).catch(() => Linking.openSettings());
+  } else {
+    openAppSettings();
+  }
+};
+
+// Persists across remounts so we only skip the auth check on the very
+// first mount in the session (when status might be notDetermined).
+let alarmKitEverChecked = false;
 
 const AlarmSettings = () => {
   const { t } = useTranslation();
   const { fajr, friday } = useAlarmSettingsStore();
   const { isRTL } = useRTL();
+  const { becameActiveAt } = useAppVisibility();
+  const hapticMedium = useHaptic("medium");
+
+  const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
+  const [permissions, setPermissions] = useState<PermissionItem[]>([]);
+  const [skipGate, setSkipGate] = useState(false);
+
+  const allGranted = permissions.length === 0 || permissions.every((p) => p.granted);
+  const pendingPermissions = permissions.filter((p) => !p.granted);
+  const currentPermission = pendingPermissions[0];
+  const totalCount = permissions.length;
+
+  const buildIOSPermission = useCallback(
+    (granted: boolean, isDenied: boolean): PermissionItem => ({
+      id: "alarmkit",
+      icon: Bell,
+      titleKey: "alarm.permission.ios.alarmkit.title",
+      descriptionKey: "alarm.permission.ios.alarmkit.description",
+      granted,
+      canRequestInApp: !isDenied,
+      onRequest: async () => {
+        const result = await requestAuthorization();
+        const nowGranted = result === "authorized";
+        const nowDenied = result === "denied";
+        if (nowDenied && isDenied) {
+          openAppSettings();
+        }
+        setPermissions([buildIOSPermission(nowGranted, nowDenied)]);
+      },
+    }),
+    []
+  );
+
+  const checkAllPermissions = useCallback(async () => {
+    setIsCheckingPermissions(true);
+
+    if (Platform.OS === PlatformType.IOS) {
+      const alarmKitAvail = await isAlarmKitAvailable();
+      if (!alarmKitAvail) {
+        setSkipGate(true);
+        setIsCheckingPermissions(false);
+        return;
+      }
+
+      if (!alarmKitEverChecked) {
+        alarmKitEverChecked = true;
+        setPermissions([buildIOSPermission(false, false)]);
+      } else {
+        const status = await getAuthorizationStatus();
+        setPermissions([buildIOSPermission(status === "authorized", status === "denied")]);
+      }
+    } else {
+      const items: PermissionItem[] = [];
+
+      const { status: notifStatus } = await checkPermissions();
+      const notifGranted = notifStatus === PermissionStatus.GRANTED;
+      items.push({
+        id: "notifications",
+        icon: Bell,
+        titleKey: "alarm.permission.android.notifications.title",
+        descriptionKey: "alarm.permission.android.notifications.description",
+        granted: notifGranted,
+        canRequestInApp: notifStatus === PermissionStatus.UNDETERMINED,
+        onRequest:
+          notifStatus === PermissionStatus.UNDETERMINED
+            ? async () => {
+                await requestNotificationPermission();
+                await checkAllPermissions();
+              }
+            : openNotificationSettings,
+      });
+
+      const exactGranted = canScheduleExactAlarms();
+      items.push({
+        id: "exactAlarm",
+        icon: Clock,
+        titleKey: "alarm.permission.android.exactAlarm.title",
+        descriptionKey: "alarm.permission.android.exactAlarm.description",
+        granted: exactGranted,
+        canRequestInApp: false,
+        onRequest: () => {
+          requestExactAlarmPermission();
+        },
+      });
+
+      const fullScreenGranted = canUseFullScreenIntent();
+      items.push({
+        id: "fullScreen",
+        icon: Maximize,
+        titleKey: "alarm.permission.android.fullScreen.title",
+        descriptionKey: "alarm.permission.android.fullScreen.description",
+        granted: fullScreenGranted,
+        canRequestInApp: false,
+        onRequest: () => {
+          requestFullScreenIntentPermission();
+        },
+      });
+
+      const batteryGranted = isBatteryOptimizationExempt();
+      items.push({
+        id: "battery",
+        icon: BatteryCharging,
+        titleKey: "alarm.permission.android.battery.title",
+        descriptionKey: "alarm.permission.android.battery.description",
+        granted: batteryGranted,
+        canRequestInApp: false,
+        onRequest: () => {
+          requestBatteryOptimizationExemption();
+        },
+      });
+
+      setPermissions(items);
+    }
+
+    setIsCheckingPermissions(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildIOSPermission]);
+
+  useEffect(() => {
+    checkAllPermissions();
+  }, [becameActiveAt, checkAllPermissions]);
+
+  const handlePermissionRequest = (item: PermissionItem) => {
+    hapticMedium();
+    item.onRequest();
+  };
 
   const alarmTypes = [
     {
@@ -40,6 +231,72 @@ const AlarmSettings = () => {
       enabled: friday.enabled,
     },
   ];
+
+  if (isCheckingPermissions) {
+    return (
+      <Background>
+        <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+        <Box className="flex-1 items-center justify-center p-4">
+          <Spinner size="large" />
+        </Box>
+      </Background>
+    );
+  }
+
+  if (!allGranted && !skipGate && currentPermission) {
+    return (
+      <Background>
+        <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+        <VStack className="flex-1 items-center justify-center px-8">
+          <VStack className="items-center w-full" style={{ maxWidth: 320 }} space="xl">
+            <Box className="w-24 h-24 rounded-full bg-background-info items-center justify-center">
+              <Icon as={currentPermission.icon} size="xl" className="text-info" />
+            </Box>
+
+            <VStack space="sm" className="items-center">
+              <Text className="text-2xl font-bold text-typography text-center">
+                {t(currentPermission.titleKey)}
+              </Text>
+              <Text className="text-base text-typography-secondary text-center leading-relaxed">
+                {t(currentPermission.descriptionKey)}
+              </Text>
+            </VStack>
+
+            {totalCount > 1 && (
+              <HStack space="xs" className="items-center">
+                {permissions.map((p) => (
+                  <Box
+                    key={p.id}
+                    className={`h-1.5 rounded-full ${
+                      p.granted
+                        ? "bg-success w-6"
+                        : p.id === currentPermission.id
+                          ? "bg-primary w-6"
+                          : "bg-outline w-3"
+                    }`}
+                  />
+                ))}
+              </HStack>
+            )}
+
+            <VStack space="md" className="w-full items-center">
+              <Button
+                size="lg"
+                variant="solid"
+                className="w-full rounded-full bg-primary"
+                onPress={() => handlePermissionRequest(currentPermission)}>
+                <ButtonText className="font-semibold text-base text-typography-contrast">
+                  {currentPermission.canRequestInApp
+                    ? t("alarm.permission.allow")
+                    : t("alarm.permission.openSettings")}
+                </ButtonText>
+              </Button>
+            </VStack>
+          </VStack>
+        </VStack>
+      </Background>
+    );
+  }
 
   return (
     <Background>

@@ -287,6 +287,29 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        Function("canScheduleExactAlarms") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                am.canScheduleExactAlarms()
+            } else {
+                true
+            }
+        }
+
+        Function("requestExactAlarmPermission") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                if (!am.canScheduleExactAlarms()) {
+                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                }
+            }
+            true
+        }
+
         Function("canUseFullScreenIntent") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

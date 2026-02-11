@@ -164,8 +164,8 @@ const NotificationSettings = () => {
 
               {canAskPermission ? (
                 <Box className="w-full items-center">
-                  <Button onPress={handleRequestPermission} className="px-12" size="lg">
-                    <ButtonText className="font-medium">
+                  <Button onPress={handleRequestPermission} className="px-12 bg-primary" size="lg">
+                    <ButtonText className="font-medium text-typography-contrast">
                       {t("notification.permission.allow")}
                     </ButtonText>
                   </Button>
@@ -175,8 +175,8 @@ const NotificationSettings = () => {
                   <Text className="text-md text-typography text-center px-2">
                     {t("notification.permission.deniedMessage")}
                   </Text>
-                  <Button onPress={openAppSettings} className="px-12" size="lg">
-                    <ButtonText className="font-medium text-md">
+                  <Button onPress={openAppSettings} className="px-12 bg-primary" size="lg">
+                    <ButtonText className="font-medium text-md text-typography-contrast">
                       {t("notification.permission.openSettings")}
                     </ButtonText>
                   </Button>
