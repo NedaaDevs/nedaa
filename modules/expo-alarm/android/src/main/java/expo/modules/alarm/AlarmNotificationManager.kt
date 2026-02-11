@@ -51,7 +51,7 @@ class AlarmNotificationManager(private val context: Context) {
             "notification_icon", "drawable", context.packageName
         ).takeIf { it != 0 } ?: android.R.drawable.ic_lock_idle_alarm
 
-        return NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(iconRes)
             .setContentTitle(title)
             .setContentText("Tap to dismiss alarm")
@@ -61,9 +61,17 @@ class AlarmNotificationManager(private val context: Context) {
             .setOngoing(true)
             .setAutoCancel(false)
             .setLocalOnly(true)
-            .setFullScreenIntent(pendingIntent, true)
             .setContentIntent(pendingIntent)
             .setSound(null)
+
+        // Only use fullScreenIntent if overlay permission is NOT granted.
+        // When overlay is available, the native AlarmOverlayService handles the UI.
+        // Using both causes a conflict where the app opens and fights with the overlay.
+        if (!android.provider.Settings.canDrawOverlays(context)) {
+            builder.setFullScreenIntent(pendingIntent, true)
+        }
+
+        return builder
     }
 
     fun buildAlarmPendingIntent(alarmId: String, alarmType: String): PendingIntent {
