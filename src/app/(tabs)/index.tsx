@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { View } from "react-native";
 
 // Components
@@ -9,9 +10,20 @@ import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 
 // Stores
 import { useAppStore } from "@/stores/app";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+
+// Hooks
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
 
 export default function MainScreen() {
   const { mode } = useAppStore();
+  const { loadPrayerTimes } = usePrayerTimesStore();
+  const { becameActiveAt } = useAppVisibility();
+
+  useEffect(() => {
+    loadPrayerTimes().then(() => ensureAlarmsScheduled());
+  }, [becameActiveAt]);
 
   return (
     <Background>

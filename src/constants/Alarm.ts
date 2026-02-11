@@ -5,6 +5,7 @@ export const ALARM_DEFAULTS = {
   SNOOZE_MINUTES: 5,
   MAX_SNOOZES: 3,
   BACKUP_DELAY_SECONDS: 15,
+  STALE_ALARM_THRESHOLD_MS: 2 * 60 * 60 * 1000, // 2 hours
 } as const;
 
 // Vibration pattern: 800ms on, 200ms off (repeated)

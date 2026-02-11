@@ -12,6 +12,7 @@ import { useQadaStore } from "@/stores/qada";
 // Utils
 import { requestNotificationPermission } from "@/utils/notifications";
 import { requestLocationPermission } from "@/utils/location";
+import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
 
 export const firstRunSetup = async (appStore: AppState) => {
   try {
@@ -40,6 +41,7 @@ export const appSetup = async (
     const { loadPrayerTimes } = prayerStore;
 
     await loadPrayerTimes();
+    await ensureAlarmsScheduled();
 
     // Check for city changes (if auto-update is enabled)
     const locationStore = useLocationStore.getState();

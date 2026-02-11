@@ -2,9 +2,9 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import * as ExpoAlarm from "expo-alarm";
-import * as Crypto from "expo-crypto";
-import { getNextPrayerDate } from "@/utils/alarmScheduler";
+import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
+import { generateDeterministicUUID, getSnoozeKey } from "@/utils/alarmId";
 
 export interface ScheduledAlarm {
   alarmId: string;
@@ -88,20 +88,10 @@ export const useAlarmStore = create<AlarmState>()(
           await ExpoAlarm.endAllLiveActivities();
           ExpoAlarm.markAlarmCompleted(alarmId);
 
-          if (alarm && (alarm.alarmType === "fajr" || alarm.alarmType === "jummah")) {
-            const prayerName = alarm.alarmType === "fajr" ? "fajr" : "dhuhr";
-            const nextTrigger = getNextPrayerDate(prayerName);
-
-            if (nextTrigger) {
-              const nextId = Crypto.randomUUID();
-              const baseTitle = alarm.title.replace(/\s*\(Snoozed \d+\/\d+\)$/, "");
-              await get().scheduleAlarm({
-                id: nextId,
-                triggerDate: nextTrigger,
-                title: baseTitle,
-                alarmType: alarm.alarmType,
-              });
-            }
+          if (alarm?.alarmType === "fajr") {
+            await scheduleFajrAlarm();
+          } else if (alarm?.alarmType === "jummah") {
+            await scheduleFridayAlarm();
           }
 
           set((state) => {
@@ -120,9 +110,11 @@ export const useAlarmStore = create<AlarmState>()(
 
           const duration = snoozeDurationMinutes ?? SNOOZE_MINUTES;
           const snoozeTime = new Date(Date.now() + duration * 60 * 1000);
-          const snoozeId = Crypto.randomUUID();
           const baseTitle = alarm.title.replace(/\s*\(Snoozed \d+\/\d+\)$/, "");
           const newSnoozeCount = alarm.snoozeCount + 1;
+          const snoozeId = generateDeterministicUUID(
+            getSnoozeKey(alarm.alarmType, snoozeTime, newSnoozeCount)
+          );
           const snoozeTitle = `${baseTitle} (Snoozed ${newSnoozeCount}/${MAX_SNOOZES})`;
 
           ExpoAlarm.stopAllAlarmEffects();
