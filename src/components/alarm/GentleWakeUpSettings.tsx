@@ -46,13 +46,15 @@ const GentleWakeUpSettings: FC<Props> = ({ value, onChange }) => {
   return (
     <VStack space="sm">
       <HStack className="justify-between items-center">
-        <Text className="text-sm text-typography">{t("common.enabled")}</Text>
+        <Text className="text-left text-sm text-typography">{t("common.enabled")}</Text>
         <Switch value={value.enabled} onValueChange={handleToggle} size="sm" />
       </HStack>
 
       {value.enabled && (
         <HStack className="justify-between items-center">
-          <Text className="text-sm text-typography-secondary">{t("alarm.settings.duration")}</Text>
+          <Text className="text-left text-sm text-typography-secondary">
+            {t("alarm.settings.duration")}
+          </Text>
           <Select
             initialLabel={t("common.minute", { count: value.durationMinutes })}
             selectedValue={String(value.durationMinutes)}
@@ -60,9 +62,9 @@ const GentleWakeUpSettings: FC<Props> = ({ value, onChange }) => {
             <SelectTrigger
               variant="outline"
               size="md"
-              className="w-28 h-10 rounded-lg bg-background-primary">
+              className="w-32 h-10 rounded-lg bg-background-primary">
               <SelectInput className="text-left !text-typography font-medium text-sm" />
-              <SelectIcon className="mr-2" as={ChevronDown} />
+              <SelectIcon className="me-2" as={ChevronDown} />
             </SelectTrigger>
 
             <SelectPortal>

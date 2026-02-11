@@ -77,7 +77,7 @@ const AlarmTypePanel: FC<Props> = ({
           <HStack space="sm" className="items-center">
             <Switch value={settings.enabled} onValueChange={handleMainToggle} size="md" />
             {settings.enabled && (
-              <Box className="ml-2">
+              <Box className="ms-2">
                 {isExpanded ? (
                   <Icon className="text-typography-secondary" size="lg" as={ChevronUp} />
                 ) : (
