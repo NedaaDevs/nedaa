@@ -1,4 +1,6 @@
-import { useLocalSearchParams, Stack } from "expo-router";
+import { useEffect } from "react";
+import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -15,9 +17,11 @@ import { ChallengeWrapper } from "@/components/alarm/challenges";
 import { ChallengeConfig } from "@/types/alarm";
 
 export default function AlarmTriggeredScreen() {
-  const { alarmType, alarmId } = useLocalSearchParams<{
+  const { t } = useTranslation();
+  const { alarmType, alarmId, action } = useLocalSearchParams<{
     alarmType: string;
     alarmId: string;
+    action?: string;
   }>();
 
   const {
@@ -31,9 +35,22 @@ export default function AlarmTriggeredScreen() {
     handleSnooze,
   } = useAlarmScreen(alarmId, alarmType);
 
+  // Handle action=complete from Android overlay - redirect immediately
+  useEffect(() => {
+    if (action === "complete") {
+      router.replace({ pathname: "/alarm-complete", params: { alarmType } });
+    }
+  }, [action, alarmType]);
+
+  if (action === "complete") {
+    return null;
+  }
+
   const meta =
     ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? "custom"] ??
     ALARM_TYPE_META.custom;
+
+  const title = t(`alarm.types.${alarmType}`, { defaultValue: meta.title });
 
   return (
     <>
@@ -55,8 +72,9 @@ export default function AlarmTriggeredScreen() {
               />
             ) : (
               <ActiveAlarmView
+                alarmType={alarmType}
                 icon={meta.icon}
-                title={meta.title}
+                title={title}
                 colorClass={meta.colorClass}
                 challengeConfig={challengeConfig}
                 canSnooze={canSnooze}
@@ -81,16 +99,17 @@ function SnoozedView({
   challengeConfig: ChallengeConfig;
   onChallengeComplete: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <VStack space="lg" className="items-center w-full">
       <Icon as={Clock} size="xl" className="text-purple-500" />
 
-      <Text className="text-2xl font-bold text-typography">Snoozed</Text>
+      <Text className="text-2xl font-bold text-typography">{t("alarm.snoozed")}</Text>
 
       <Text className="text-4xl font-bold text-purple-500">
         {formatTimeRemaining(snoozeTimeRemaining)}
       </Text>
-      <Text className="text-sm text-typography-secondary">until alarm rings again</Text>
+      <Text className="text-sm text-typography-secondary">{t("alarm.untilRingsAgain")}</Text>
 
       <VStack className="mt-6 w-full" space="sm">
         <ChallengeWrapper config={challengeConfig} onAllComplete={onChallengeComplete} />
@@ -100,6 +119,7 @@ function SnoozedView({
 }
 
 function ActiveAlarmView({
+  alarmType,
   icon,
   title,
   colorClass,
@@ -109,6 +129,7 @@ function ActiveAlarmView({
   onChallengeComplete,
   onSnooze,
 }: {
+  alarmType: string;
   icon: React.ComponentType;
   title: string;
   colorClass: string;
@@ -118,36 +139,33 @@ function ActiveAlarmView({
   onChallengeComplete: () => void;
   onSnooze: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <VStack space="lg" className="items-center w-full">
       <Icon as={icon} size="xl" className={colorClass} />
 
       <Text className="text-2xl font-bold text-typography">{title}</Text>
 
-      <Text className="text-center text-typography-secondary">
-        It&apos;s time to wake up for prayer!
-      </Text>
+      <Text className="text-center text-typography-secondary">{t("alarm.wakeUpMessage")}</Text>
+
+      {alarmType === "fajr" && (
+        <Text className="text-center text-lg font-medium text-warning italic">
+          {t("alarm.prayerBetterThanSleep")}
+        </Text>
+      )}
 
       <ChallengeWrapper config={challengeConfig} onAllComplete={onChallengeComplete} />
 
-      <Button
-        size="lg"
-        variant="outline"
-        className="w-full mt-2"
-        onPress={onSnooze}
-        disabled={!canSnooze}>
-        <HStack space="sm" className="items-center">
-          <Icon
-            as={Clock}
-            size="sm"
-            className={canSnooze ? "text-typography-secondary" : "text-typography-disabled"}
-          />
-          <ButtonText
-            className={canSnooze ? "text-typography-secondary" : "text-typography-disabled"}>
-            {canSnooze ? `Snooze (${remainingSnoozes} left)` : "No more snoozes"}
-          </ButtonText>
-        </HStack>
-      </Button>
+      {canSnooze && (
+        <Button size="lg" variant="outline" className="w-full mt-2" onPress={onSnooze}>
+          <HStack space="sm" className="items-center">
+            <Icon as={Clock} size="sm" className="text-typography-secondary" />
+            <ButtonText className="text-typography-secondary">
+              {t("alarm.snoozeWithCount", { count: remainingSnoozes })}
+            </ButtonText>
+          </HStack>
+        </Button>
+      )}
     </VStack>
   );
 }

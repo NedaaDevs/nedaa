@@ -102,6 +102,11 @@ async function processSnoozeQueue() {
 }
 
 export function navigateToAlarm(alarmId: string, alarmType: string, _source: string) {
+  // Android: Native overlay handles alarms, don't navigate to /alarm
+  if (Platform.OS === "android") {
+    return false;
+  }
+
   const now = Date.now();
 
   if (navGuard.activeAlarmId) return false;
@@ -168,7 +173,7 @@ export function useAlarmDeepLink() {
   }, [scheduledAlarms]);
 }
 
-function processAlarmUrl(url: string) {
+async function processAlarmUrl(url: string) {
   try {
     if (!url.includes("alarm")) return;
 
@@ -181,7 +186,11 @@ function processAlarmUrl(url: string) {
 
     // Handle action=complete (from Android overlay challenge completion)
     if (action === "complete") {
-      processCompletedQueue();
+      await processCompletedQueue();
+      router.replace({
+        pathname: "/alarm-complete",
+        params: { alarmType },
+      });
       return;
     }
 

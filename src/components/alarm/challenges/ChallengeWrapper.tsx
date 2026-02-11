@@ -9,6 +9,7 @@ import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 
 import TapChallenge from "./TapChallenge";
 import MathChallenge from "./MathChallenge";
+import NoneChallenge from "./NoneChallenge";
 
 import { ChallengeConfig } from "@/types/alarm";
 
@@ -62,12 +63,14 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete }) => {
           difficulty={difficulty}
           onComplete={handleChallengeComplete}
         />
-      ) : (
+      ) : type === "math" ? (
         <MathChallenge
           key={challengeKey}
           difficulty={difficulty}
           onComplete={handleChallengeComplete}
         />
+      ) : (
+        <NoneChallenge onComplete={handleChallengeComplete} />
       )}
     </VStack>
   );

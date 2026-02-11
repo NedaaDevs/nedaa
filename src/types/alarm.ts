@@ -2,7 +2,7 @@ export type AlarmType = "fajr" | "friday";
 
 export type TimingMode = "atPrayerTime" | "beforePrayerTime";
 
-export type ChallengeType = "tap" | "math";
+export type ChallengeType = "tap" | "math" | "none";
 
 export type ChallengeDifficulty = "easy" | "medium" | "hard";
 
@@ -129,6 +129,6 @@ export const SNOOZE_MAX_COUNTS: SnoozeMaxCount[] = [1, 2, 3];
 
 export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-export const CHALLENGE_TYPES: ChallengeType[] = ["tap", "math"];
+export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math"];
 
 export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "hard"];

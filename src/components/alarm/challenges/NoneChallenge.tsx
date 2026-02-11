@@ -1,0 +1,35 @@
+import { FC } from "react";
+import { useTranslation } from "react-i18next";
+
+import { Button, ButtonText } from "@/components/ui/button";
+import { VStack } from "@/components/ui/vstack";
+import { Text } from "@/components/ui/text";
+
+import { useHaptic } from "@/hooks/useHaptic";
+
+type Props = {
+  onComplete: () => void;
+};
+
+const NoneChallenge: FC<Props> = ({ onComplete }) => {
+  const { t } = useTranslation();
+  const hapticSuccess = useHaptic("success");
+
+  const handleDismiss = () => {
+    hapticSuccess();
+    onComplete();
+  };
+
+  return (
+    <VStack space="lg" className="items-center">
+      <Text className="text-lg text-typography-secondary text-center">
+        {t("alarm.challenge.tapToDismissInstruction")}
+      </Text>
+      <Button size="xl" action="positive" onPress={handleDismiss}>
+        <ButtonText>{t("alarm.challenge.dismiss")}</ButtonText>
+      </Button>
+    </VStack>
+  );
+};
+
+export default NoneChallenge;
