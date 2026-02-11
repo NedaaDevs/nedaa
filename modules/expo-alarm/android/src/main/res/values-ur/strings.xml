@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overlay - Tap Challenge -->
+    <string name="overlay_tap_instruction">بند کرنے کے لیے بٹن %d بار ٹیپ کریں</string>
+    <string name="overlay_tap_progress">%1$d / %2$d</string>
+    <string name="overlay_tap_button">بند کرنے کے لیے ٹیپ کریں</string>
+
+    <!-- Overlay - Math Challenge -->
+    <string name="overlay_math_instruction_one">بند کرنے کے لیے 1 ریاضی کا سوال حل کریں</string>
+    <string name="overlay_math_instruction_many">بند کرنے کے لیے %d ریاضی کے سوالات حل کریں</string>
+    <string name="overlay_math_progress">سوال %1$d از %2$d</string>
+    <string name="overlay_math_hint">جواب درج کریں</string>
+    <string name="overlay_math_submit">جمع کریں</string>
+    <string name="overlay_math_wrong">غلط جواب، دوبارہ کوشش کریں</string>
+    <string name="overlay_math_invalid">براہ کرم ایک نمبر درج کریں</string>
+
+    <!-- Overlay - Snooze -->
+    <string name="overlay_snooze_button">سنوز (%d باقی)</string>
+    <string name="overlay_snooze_none">کوئی سنوز باقی نہیں</string>
+    <string name="overlay_snooze_max_reached">زیادہ سے زیادہ سنوز تک پہنچ گئے</string>
+
+    <!-- Overlay - Direct Dismiss (No Challenge) -->
+    <string name="overlay_dismiss_instruction">الارم بند کرنے کے لیے بٹن ٹیپ کریں</string>
+    <string name="overlay_dismiss_button">بند کریں</string>
+
+    <!-- Overlay - Notification -->
+    <string name="overlay_notification_title">الارم فعال</string>
+    <string name="overlay_notification_tap">بند کرنے کے لیے %d بار ٹیپ کریں</string>
+    <string name="overlay_notification_math_one">بند کرنے کے لیے 1 ریاضی کا سوال حل کریں</string>
+    <string name="overlay_notification_math_many">بند کرنے کے لیے %d ریاضی کے سوالات حل کریں</string>
+    <string name="overlay_notification_dismiss">بند کرنے کے لیے ٹیپ کریں</string>
+</resources>

@@ -18,18 +18,27 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.text.InputType
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import java.util.UUID
+import kotlin.random.Random
 
 class AlarmOverlayService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 9001
         private const val CHANNEL_ID = "alarm_overlay_channel"
-        private const val REQUIRED_TAPS = 5
+
+        // Tap counts per difficulty
+        private const val TAPS_EASY = 5
+        private const val TAPS_MEDIUM = 10
+        private const val TAPS_HARD = 20
 
         @Volatile
         var isRunning = false
@@ -63,9 +72,24 @@ class AlarmOverlayService : Service() {
     private var alarmType: String = ""
     private var title: String = ""
 
+    // Challenge state
+    private var challengeType: String = "tap"
+    private var challengeDifficulty: String = "easy"
+    private var challengeCount: Int = 1
+    private var requiredTaps: Int = TAPS_EASY
+
+    // Tap challenge state
     private var tapCount = 0
     private var tapButton: Button? = null
     private var tapCountText: TextView? = null
+
+    // Math challenge state
+    private var mathProblemText: TextView? = null
+    private var mathAnswerInput: EditText? = null
+    private var mathSubmitButton: Button? = null
+    private var mathProgressText: TextView? = null
+    private var currentMathAnswer: Int = 0
+    private var completedMathChallenges: Int = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -77,11 +101,33 @@ class AlarmOverlayService : Service() {
         alarmType = intent?.getStringExtra("alarm_type") ?: ""
         title = intent?.getStringExtra("title") ?: "Alarm"
 
+        // Load challenge settings from database
+        loadChallengeSettings()
+
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         showOverlay()
 
         return START_STICKY
+    }
+
+    private fun loadChallengeSettings() {
+        val db = AlarmDatabase.getInstance(this)
+        val (type, difficulty, count) = db.getChallengeConfig(alarmType)
+        challengeType = type
+        challengeDifficulty = difficulty
+        challengeCount = count
+
+        // Calculate required taps based on difficulty and count
+        val baseTaps = when (difficulty) {
+            "easy" -> TAPS_EASY
+            "medium" -> TAPS_MEDIUM
+            "hard" -> TAPS_HARD
+            else -> TAPS_EASY
+        }
+        requiredTaps = baseTaps * count
+
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge settings: type=$challengeType, difficulty=$challengeDifficulty, count=$challengeCount, requiredTaps=$requiredTaps")
     }
 
     override fun onDestroy() {
@@ -119,11 +165,21 @@ class AlarmOverlayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val contentText = when (challengeType) {
+            "math" -> if (challengeCount == 1) {
+                getString(R.string.overlay_notification_math_one)
+            } else {
+                getString(R.string.overlay_notification_math_many, challengeCount)
+            }
+            "none" -> getString(R.string.overlay_notification_dismiss)
+            else -> getString(R.string.overlay_notification_tap, requiredTaps)
+        }
+
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("Alarm Active")
-                .setContentText("Tap $REQUIRED_TAPS times to dismiss")
+                .setContentTitle(getString(R.string.overlay_notification_title))
+                .setContentText(contentText)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build()
@@ -131,8 +187,8 @@ class AlarmOverlayService : Service() {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("Alarm Active")
-                .setContentText("Tap $REQUIRED_TAPS times to dismiss")
+                .setContentTitle(getString(R.string.overlay_notification_title))
+                .setContentText(contentText)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build()
@@ -164,46 +220,24 @@ class AlarmOverlayService : Service() {
         }
         layout.addView(titleView)
 
-        val subtitleView = TextView(this).apply {
-            text = "Tap the button $REQUIRED_TAPS times to dismiss"
-            textSize = 18f
-            setTextColor(Color.parseColor("#AAAAAA"))
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 48)
+        // Build challenge-specific UI
+        when (challengeType) {
+            "math" -> buildMathChallengeUI(layout)
+            "none" -> buildDirectDismissUI(layout)
+            else -> buildTapChallengeUI(layout)
         }
-        layout.addView(subtitleView)
 
-        tapCountText = TextView(this).apply {
-            text = "0 / $REQUIRED_TAPS"
-            textSize = 72f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, 32)
-        }
-        layout.addView(tapCountText)
-
-        tapButton = Button(this).apply {
-            text = "TAP TO DISMISS"
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#4CAF50"))
-            setPadding(64, 48, 64, 48)
-            setOnClickListener { onTapButtonClicked() }
-        }
-        layout.addView(tapButton)
-
+        // Snooze button (common to both challenge types)
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDurationMinutes) = db.getSnoozeConfig(alarmType)
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
         val remainingSnoozes = snoozeMaxCount - currentSnoozeCount
         val canSnooze = snoozeEnabled && remainingSnoozes > 0
 
-        // TEMP: Debug logging for settings feature - remove after verification
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Snooze settings - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=$snoozeDurationMinutes, current=$currentSnoozeCount, remaining=$remainingSnoozes")
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=$snoozeDurationMinutes, current=$currentSnoozeCount, remaining=$remainingSnoozes")
 
         val snoozeButton = Button(this).apply {
-            text = if (canSnooze) "SNOOZE ($remainingSnoozes left)" else "NO SNOOZES LEFT"
+            text = if (canSnooze) getString(R.string.overlay_snooze_button, remainingSnoozes) else getString(R.string.overlay_snooze_none)
             textSize = 16f
             setTextColor(Color.WHITE)
             setBackgroundColor(if (canSnooze) Color.parseColor("#FF9800") else Color.parseColor("#666666"))
@@ -228,14 +262,23 @@ class AlarmOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
         }
 
+        // Math challenge needs focusable for keyboard input
+        val windowFlags = if (challengeType == "math") {
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        } else {
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        }
+
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
+            windowFlags,
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
@@ -245,11 +288,214 @@ class AlarmOverlayService : Service() {
         } catch (_: Exception) {}
     }
 
+    private fun buildTapChallengeUI(layout: LinearLayout) {
+        val subtitleView = TextView(this).apply {
+            text = getString(R.string.overlay_tap_instruction, requiredTaps)
+            textSize = 18f
+            setTextColor(Color.parseColor("#AAAAAA"))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 48)
+        }
+        layout.addView(subtitleView)
+
+        tapCountText = TextView(this).apply {
+            text = getString(R.string.overlay_tap_progress, 0, requiredTaps)
+            textSize = 72f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 0, 0, 32)
+        }
+        layout.addView(tapCountText)
+
+        tapButton = Button(this).apply {
+            text = getString(R.string.overlay_tap_button)
+            textSize = 24f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#4CAF50"))
+            setPadding(64, 48, 64, 48)
+            setOnClickListener { onTapButtonClicked() }
+        }
+        layout.addView(tapButton)
+    }
+
+    private fun buildDirectDismissUI(layout: LinearLayout) {
+        val subtitleView = TextView(this).apply {
+            text = getString(R.string.overlay_dismiss_instruction)
+            textSize = 18f
+            setTextColor(Color.parseColor("#AAAAAA"))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 48)
+        }
+        layout.addView(subtitleView)
+
+        val dismissButton = Button(this).apply {
+            text = getString(R.string.overlay_dismiss_button)
+            textSize = 24f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#4CAF50"))
+            setPadding(64, 48, 64, 48)
+            setOnClickListener { completeAlarm() }
+        }
+        layout.addView(dismissButton)
+    }
+
+    private fun buildMathChallengeUI(layout: LinearLayout) {
+        val subtitleView = TextView(this).apply {
+            text = if (challengeCount == 1) {
+                getString(R.string.overlay_math_instruction_one)
+            } else {
+                getString(R.string.overlay_math_instruction_many, challengeCount)
+            }
+            textSize = 18f
+            setTextColor(Color.parseColor("#AAAAAA"))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 24)
+        }
+        layout.addView(subtitleView)
+
+        mathProgressText = TextView(this).apply {
+            text = getString(R.string.overlay_math_progress, 1, challengeCount)
+            textSize = 16f
+            setTextColor(Color.parseColor("#AAAAAA"))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 16)
+        }
+        layout.addView(mathProgressText)
+
+        mathProblemText = TextView(this).apply {
+            textSize = 48f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 0, 0, 32)
+        }
+        layout.addView(mathProblemText)
+
+        mathAnswerInput = EditText(this).apply {
+            hint = getString(R.string.overlay_math_hint)
+            textSize = 32f
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.parseColor("#666666"))
+            setBackgroundColor(Color.parseColor("#333333"))
+            gravity = Gravity.CENTER
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            setPadding(48, 24, 48, 24)
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                width = 300
+            }
+            layoutParams = params
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    onMathAnswerSubmitted()
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+        layout.addView(mathAnswerInput)
+
+        mathSubmitButton = Button(this).apply {
+            text = getString(R.string.overlay_math_submit)
+            textSize = 24f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#4CAF50"))
+            setPadding(64, 48, 64, 48)
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 24 }
+            layoutParams = params
+            setOnClickListener { onMathAnswerSubmitted() }
+        }
+        layout.addView(mathSubmitButton)
+
+        // Generate first problem
+        generateMathProblem()
+    }
+
+    private fun generateMathProblem() {
+        val maxNum = when (challengeDifficulty) {
+            "easy" -> 10
+            "medium" -> 50
+            "hard" -> 100
+            else -> 10
+        }
+
+        val operations = if (challengeDifficulty == "hard") {
+            listOf("+", "-", "*")
+        } else {
+            listOf("+", "-")
+        }
+
+        val op = operations.random()
+        var a = Random.nextInt(1, maxNum + 1)
+        var b = Random.nextInt(1, maxNum + 1)
+
+        // For subtraction, ensure result is non-negative for easier solving
+        if (op == "-" && a < b) {
+            val temp = a
+            a = b
+            b = temp
+        }
+
+        currentMathAnswer = when (op) {
+            "+" -> a + b
+            "-" -> a - b
+            "*" -> a * b
+            else -> a + b
+        }
+
+        mathProblemText?.text = "$a $op $b = ?"
+        mathAnswerInput?.setText("")
+        mathProgressText?.text = getString(R.string.overlay_math_progress, completedMathChallenges + 1, challengeCount)
+    }
+
+    private fun onMathAnswerSubmitted() {
+        val userAnswer = mathAnswerInput?.text?.toString()?.trim()?.toIntOrNull()
+
+        if (userAnswer == null) {
+            showMathError(getString(R.string.overlay_math_invalid))
+            return
+        }
+
+        if (userAnswer == currentMathAnswer) {
+            completedMathChallenges++
+
+            if (completedMathChallenges >= challengeCount) {
+                completeAlarm()
+            } else {
+                // Show success feedback
+                mathSubmitButton?.setBackgroundColor(Color.parseColor("#66BB6A"))
+                mathSubmitButton?.postDelayed({
+                    mathSubmitButton?.setBackgroundColor(Color.parseColor("#4CAF50"))
+                    generateMathProblem()
+                }, 300)
+            }
+        } else {
+            showMathError(getString(R.string.overlay_math_wrong))
+            mathAnswerInput?.setText("")
+        }
+    }
+
+    private fun showMathError(message: String) {
+        mathSubmitButton?.setBackgroundColor(Color.parseColor("#F44336"))
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        mathSubmitButton?.postDelayed({
+            mathSubmitButton?.setBackgroundColor(Color.parseColor("#4CAF50"))
+        }, 500)
+    }
+
     private fun onTapButtonClicked() {
         tapCount++
-        tapCountText?.text = "$tapCount / $REQUIRED_TAPS"
+        tapCountText?.text = getString(R.string.overlay_tap_progress, tapCount, requiredTaps)
 
-        if (tapCount >= REQUIRED_TAPS) {
+        if (tapCount >= requiredTaps) {
             completeAlarm()
         } else {
             tapButton?.setBackgroundColor(Color.parseColor("#66BB6A"))
@@ -271,7 +517,7 @@ class AlarmOverlayService : Service() {
         // Get current snooze count
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
         if (!snoozeEnabled || currentSnoozeCount >= snoozeMaxCount) {
-            Toast.makeText(this, "Maximum snoozes reached", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.overlay_snooze_max_reached), Toast.LENGTH_SHORT).show()
             return
         }
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overlay - Tap Challenge -->
+    <string name="overlay_tap_instruction">Ketuk butang %d kali untuk tutup</string>
+    <string name="overlay_tap_progress">%1$d / %2$d</string>
+    <string name="overlay_tap_button">KETUK UNTUK TUTUP</string>
+
+    <!-- Overlay - Math Challenge -->
+    <string name="overlay_math_instruction_one">Selesaikan 1 soalan matematik untuk tutup</string>
+    <string name="overlay_math_instruction_many">Selesaikan %d soalan matematik untuk tutup</string>
+    <string name="overlay_math_progress">Soalan %1$d daripada %2$d</string>
+    <string name="overlay_math_hint">Masukkan jawapan</string>
+    <string name="overlay_math_submit">HANTAR</string>
+    <string name="overlay_math_wrong">Jawapan salah, cuba lagi</string>
+    <string name="overlay_math_invalid">Sila masukkan nombor</string>
+
+    <!-- Overlay - Snooze -->
+    <string name="overlay_snooze_button">TUNDA (%d lagi)</string>
+    <string name="overlay_snooze_none">TIADA TUNDA LAGI</string>
+    <string name="overlay_snooze_max_reached">Maksimum tunda dicapai</string>
+
+    <!-- Overlay - Direct Dismiss (No Challenge) -->
+    <string name="overlay_dismiss_instruction">Ketuk butang untuk tutup penggera</string>
+    <string name="overlay_dismiss_button">TUTUP</string>
+
+    <!-- Overlay - Notification -->
+    <string name="overlay_notification_title">Penggera Aktif</string>
+    <string name="overlay_notification_tap">Ketuk %d kali untuk tutup</string>
+    <string name="overlay_notification_math_one">Selesaikan 1 soalan matematik untuk tutup</string>
+    <string name="overlay_notification_math_many">Selesaikan %d soalan matematik untuk tutup</string>
+    <string name="overlay_notification_dismiss">Ketuk untuk tutup</string>
+</resources>

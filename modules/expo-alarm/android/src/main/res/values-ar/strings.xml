@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overlay - Tap Challenge -->
+    <string name="overlay_tap_instruction">انقر الزر %d مرة للإيقاف</string>
+    <string name="overlay_tap_progress">%1$d / %2$d</string>
+    <string name="overlay_tap_button">انقر للإيقاف</string>
+
+    <!-- Overlay - Math Challenge -->
+    <string name="overlay_math_instruction_one">حل مسألة رياضية واحدة للإيقاف</string>
+    <string name="overlay_math_instruction_many">حل %d مسائل رياضية للإيقاف</string>
+    <string name="overlay_math_progress">المسألة %1$d من %2$d</string>
+    <string name="overlay_math_hint">أدخل الإجابة</string>
+    <string name="overlay_math_submit">إرسال</string>
+    <string name="overlay_math_wrong">إجابة خاطئة، حاول مرة أخرى</string>
+    <string name="overlay_math_invalid">الرجاء إدخال رقم</string>
+
+    <!-- Overlay - Snooze -->
+    <string name="overlay_snooze_button">غفوة (%d متبقية)</string>
+    <string name="overlay_snooze_none">لا غفوات متبقية</string>
+    <string name="overlay_snooze_max_reached">تم الوصول للحد الأقصى من الغفوات</string>
+
+    <!-- Overlay - Direct Dismiss (No Challenge) -->
+    <string name="overlay_dismiss_instruction">انقر الزر لإيقاف المنبه</string>
+    <string name="overlay_dismiss_button">إيقاف</string>
+
+    <!-- Overlay - Notification -->
+    <string name="overlay_notification_title">المنبه نشط</string>
+    <string name="overlay_notification_tap">انقر %d مرة للإيقاف</string>
+    <string name="overlay_notification_math_one">حل مسألة رياضية واحدة للإيقاف</string>
+    <string name="overlay_notification_math_many">حل %d مسائل رياضية للإيقاف</string>
+    <string name="overlay_notification_dismiss">انقر للإيقاف</string>
+</resources>

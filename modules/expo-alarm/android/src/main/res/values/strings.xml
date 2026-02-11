@@ -58,4 +58,34 @@
 
     <!-- Duration formats -->
     <string name="minute_format">%d min</string>
+
+    <!-- Overlay - Tap Challenge -->
+    <string name="overlay_tap_instruction">Tap the button %d times to dismiss</string>
+    <string name="overlay_tap_progress">%1$d / %2$d</string>
+    <string name="overlay_tap_button">TAP TO DISMISS</string>
+
+    <!-- Overlay - Math Challenge -->
+    <string name="overlay_math_instruction_one">Solve 1 math problem to dismiss</string>
+    <string name="overlay_math_instruction_many">Solve %d math problems to dismiss</string>
+    <string name="overlay_math_progress">Problem %1$d of %2$d</string>
+    <string name="overlay_math_hint">Enter answer</string>
+    <string name="overlay_math_submit">SUBMIT</string>
+    <string name="overlay_math_wrong">Wrong answer, try again!</string>
+    <string name="overlay_math_invalid">Please enter a number</string>
+
+    <!-- Overlay - Snooze -->
+    <string name="overlay_snooze_button">SNOOZE (%d left)</string>
+    <string name="overlay_snooze_none">NO SNOOZES LEFT</string>
+    <string name="overlay_snooze_max_reached">Maximum snoozes reached</string>
+
+    <!-- Overlay - Direct Dismiss (No Challenge) -->
+    <string name="overlay_dismiss_instruction">Tap the button to dismiss the alarm</string>
+    <string name="overlay_dismiss_button">DISMISS</string>
+
+    <!-- Overlay - Notification -->
+    <string name="overlay_notification_title">Alarm Active</string>
+    <string name="overlay_notification_tap">Tap %d times to dismiss</string>
+    <string name="overlay_notification_math_one">Solve 1 math problem to dismiss</string>
+    <string name="overlay_notification_math_many">Solve %d math problems to dismiss</string>
+    <string name="overlay_notification_dismiss">Tap to dismiss</string>
 </resources>
