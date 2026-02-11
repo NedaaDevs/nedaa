@@ -38,26 +38,26 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     }
   }, [alarmId, isSnoozed, snoozeEndTime]);
 
+  // On Android, the native AlarmService/AlarmOverlayService handles audio.
+  // On iOS, we need to manage audio from React Native.
   useEffect(() => {
-    ExpoAlarm.stopAllAlarmEffects();
-  }, []);
-
-  useEffect(() => {
-    if (isSnoozed || isDismissed) return;
-
-    const ensureAudioPlaying = async () => {
-      try {
-        const isPlaying = ExpoAlarm.isAlarmSoundPlaying();
-        if (!isPlaying) {
-          await ExpoAlarm.startAlarmSound(alarmSettings.sound || "beep");
-          ExpoAlarm.setAlarmVolume(alarmSettings.volume);
+    if (Platform.OS === "ios") {
+      // iOS: ensure alarm sound is playing when screen mounts
+      const ensureAudioPlaying = async () => {
+        if (isSnoozed || isDismissed) return;
+        try {
+          const isPlaying = ExpoAlarm.isAlarmSoundPlaying();
+          if (!isPlaying) {
+            await ExpoAlarm.startAlarmSound(alarmSettings.sound || "beep");
+            ExpoAlarm.setAlarmVolume(alarmSettings.volume);
+          }
+        } catch {
+          // Silently handle errors
         }
-      } catch {
-        // Silently handle errors
-      }
-    };
-
-    ensureAudioPlaying();
+      };
+      ensureAudioPlaying();
+    }
+    // Android: native side manages audio, don't interfere
   }, [isSnoozed, isDismissed, alarmSettings.sound, alarmSettings.volume]);
 
   useEffect(() => {
@@ -105,7 +105,10 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     ExpoAlarm.restoreSystemVolume();
     markAlarmHandled(alarmId);
     await completeAlarm(alarmId);
-    router.replace("/");
+    router.replace({
+      pathname: "/alarm-complete",
+      params: { alarmType },
+    });
   };
 
   const handleSnooze = async () => {
