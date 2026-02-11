@@ -1,6 +1,7 @@
 import { ScrollView, Platform, Share } from "react-native";
 import { useState, useEffect } from "react";
-import * as Crypto from "expo-crypto";
+import { router } from "expo-router";
+import { generateDeterministicUUID } from "@/utils/alarmId";
 
 // Components
 import { VStack } from "@/components/ui/vstack";
@@ -12,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import TopBar from "@/components/TopBar";
 import { Background } from "@/components/ui/background";
+import SoundPicker from "@/components/alarm/SoundPicker";
 
 // Expo Alarm Module
 import * as ExpoAlarm from "expo-alarm";
@@ -61,6 +63,7 @@ const AlarmDebugScreen = () => {
   const [testVibrationPattern, setTestVibrationPattern] = useState<VibrationPattern>("default");
   const [testVolume, setTestVolume] = useState<number>(1.0);
   const [testSnoozeEnabled, setTestSnoozeEnabled] = useState<boolean>(true);
+  const [testSound, setTestSound] = useState<string>("beep");
 
   const { scheduleAlarm, cancelAllAlarms } = useAlarmStore();
   const { fajr: fajrSettings, updateSettings } = useAlarmSettingsStore();
@@ -164,6 +167,7 @@ const AlarmDebugScreen = () => {
   // Apply test settings to store before scheduling
   const applyTestSettings = () => {
     updateSettings("fajr", {
+      sound: testSound,
       challenge: {
         type: testChallengeType,
         difficulty: testDifficulty,
@@ -186,8 +190,8 @@ const AlarmDebugScreen = () => {
       // Apply test settings to store first
       applyTestSettings();
 
-      // AlarmKit requires valid UUIDs
-      const id = Crypto.randomUUID();
+      // AlarmKit requires valid UUIDs - use timestamp for debug alarms
+      const id = generateDeterministicUUID(`debug_${Date.now()}`);
       const triggerDate = new Date(Date.now() + seconds * 1000);
 
       // Use store's scheduleAlarm (includes backup + Live Activity)
@@ -200,7 +204,7 @@ const AlarmDebugScreen = () => {
 
       if (success) {
         setLastResult(
-          `Scheduled with: ${testChallengeType}/${testDifficulty}/${testChallengeCount}x, ` +
+          `Scheduled with: sound=${testSound}, ${testChallengeType}/${testDifficulty}/${testChallengeCount}x, ` +
             `vib=${testVibrationEnabled ? testVibrationPattern : "off"}, vol=${Math.round(testVolume * 100)}%`
         );
         await checkStatus();
@@ -476,6 +480,9 @@ const AlarmDebugScreen = () => {
                 Configure these settings, then schedule a test alarm below.
               </Text>
 
+              {/* Sound */}
+              <SoundPicker value={testSound} onChange={setTestSound} />
+
               {/* Challenge Type */}
               <VStack space="xs">
                 <Text className="text-sm text-typography">Challenge Type</Text>
@@ -599,6 +606,25 @@ const AlarmDebugScreen = () => {
                     variant="outline"
                     onPress={() => scheduleTestAlarm(seconds)}>
                     <ButtonText>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</ButtonText>
+                  </Button>
+                ))}
+              </HStack>
+            </VStack>
+          </Card>
+
+          {/* Test Success Screen */}
+          <Card className="p-4">
+            <VStack space="md">
+              <Text className="text-lg font-semibold text-typography">Success Screen</Text>
+              <HStack space="sm">
+                {(["fajr", "jummah", "custom"] as const).map((type) => (
+                  <Button
+                    key={type}
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onPress={() => router.push(`/alarm-complete?alarmType=${type}`)}>
+                    <ButtonText className="capitalize">{type}</ButtonText>
                   </Button>
                 ))}
               </HStack>
