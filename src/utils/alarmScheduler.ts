@@ -1,7 +1,7 @@
-import * as Crypto from "expo-crypto";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { generateDeterministicUUID, getAlarmKey } from "./alarmId";
 
 export function getNextPrayerDate(
   prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha"
@@ -16,7 +16,10 @@ export function getNextPrayerDate(
   }
 
   if (tomorrowTimings?.timings[prayerName]) {
-    return new Date(tomorrowTimings.timings[prayerName]);
+    const prayerDate = new Date(tomorrowTimings.timings[prayerName]);
+    if (prayerDate.getTime() > Date.now()) {
+      return prayerDate;
+    }
   }
 
   return null;
@@ -76,7 +79,7 @@ export async function schedulePrayerAlarm(
     return null;
   }
 
-  const id = Crypto.randomUUID();
+  const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
   const title = `${prayerName.charAt(0).toUpperCase() + prayerName.slice(1)} Prayer`;
 
   const success = await alarmStore.scheduleAlarm({
@@ -121,7 +124,7 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
     return null;
   }
 
-  const id = Crypto.randomUUID();
+  const id = generateDeterministicUUID(getAlarmKey("jummah", triggerDate));
   const title = "Jumu'ah Prayer";
 
   const success = await alarmStore.scheduleAlarm({
@@ -132,4 +135,16 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   });
 
   return success ? id : null;
+}
+
+export async function ensureAlarmsScheduled(): Promise<void> {
+  const alarmSettings = useAlarmSettingsStore.getState();
+  const alarmStore = useAlarmStore.getState();
+
+  if (alarmSettings.fajr.enabled && !alarmStore.getAlarmByType("fajr")) {
+    await scheduleFajrAlarm();
+  }
+  if (alarmSettings.friday.enabled && !alarmStore.getAlarmByType("jummah")) {
+    await scheduleFridayAlarm();
+  }
 }

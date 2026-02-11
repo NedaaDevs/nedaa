@@ -16,19 +16,29 @@ import {
   SoundPicker,
   VolumeSlider,
   ChallengePicker,
-  GentleWakeUpSettings,
   VibrationSettings,
   SnoozeSettings,
   TimingSettings,
 } from "@/components/alarm";
 
-import { Volume2, Brain, Sunrise, Vibrate, Clock, Timer } from "lucide-react-native";
+import { Volume2, Brain, Vibrate, Clock, Timer } from "lucide-react-native";
 
 import * as ExpoAlarm from "expo-alarm";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { useAlarmStore } from "@/stores/alarm";
+import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { SOUND_ASSETS } from "@/constants/sounds";
+
+// Get native sound filename (without extension) from sound key
+const getNativeSoundName = (soundKey: string): string => {
+  const asset = SOUND_ASSETS[soundKey as keyof typeof SOUND_ASSETS];
+  if (!asset?.notificationSound) return soundKey;
+  // Remove extension (.caf, .ogg, etc.)
+  return asset.notificationSound.replace(/\.[^.]+$/, "");
+};
 
 type SettingsSectionProps = {
   title: string;
@@ -64,20 +74,18 @@ const AlarmTypeSettingsScreen = () => {
   const handleChange = (changes: Partial<AlarmTypeSettings>) => {
     updateSettings(alarmType, changes);
 
-    // Sync to native settings on Android
+    // Sync to native settings (both platforms)
+    const nativeSettings: Record<string, unknown> = {};
+    if (changes.enabled !== undefined) nativeSettings.enabled = changes.enabled;
+    if (changes.sound !== undefined) nativeSettings.sound = getNativeSoundName(changes.sound);
+    if (changes.volume !== undefined) nativeSettings.volume = changes.volume;
+
+    // Android-specific settings
     if (Platform.OS === "android") {
-      const nativeSettings: Record<string, unknown> = {};
-      if (changes.enabled !== undefined) nativeSettings.enabled = changes.enabled;
-      if (changes.sound !== undefined) nativeSettings.sound = changes.sound;
-      if (changes.volume !== undefined) nativeSettings.volume = changes.volume;
       if (changes.challenge) {
         nativeSettings.challengeType = changes.challenge.type;
         nativeSettings.challengeDifficulty = changes.challenge.difficulty;
         nativeSettings.challengeCount = changes.challenge.count;
-      }
-      if (changes.gentleWakeUp) {
-        nativeSettings.gentleWakeUpEnabled = changes.gentleWakeUp.enabled;
-        nativeSettings.gentleWakeUpDuration = changes.gentleWakeUp.durationMinutes;
       }
       if (changes.vibration) {
         nativeSettings.vibrationEnabled = changes.vibration.enabled;
@@ -92,16 +100,28 @@ const AlarmTypeSettingsScreen = () => {
         nativeSettings.timingMode = changes.timing.mode;
         nativeSettings.timingMinutesBefore = changes.timing.minutesBefore;
       }
+    }
 
-      if (Object.keys(nativeSettings).length > 0) {
-        ExpoAlarm.setAlarmSettings(alarmType, nativeSettings).catch(() => {});
-      }
+    // Sync to native
+    if (Object.keys(nativeSettings).length > 0) {
+      ExpoAlarm.setAlarmSettings(alarmType, nativeSettings).catch(() => {});
     }
   };
 
-  const handleEnabledToggle = (enabled: boolean) => {
+  const handleEnabledToggle = async (enabled: boolean) => {
     hapticSelection();
     handleChange({ enabled });
+
+    if (enabled) {
+      if (alarmType === "fajr") {
+        await scheduleFajrAlarm();
+      } else {
+        await scheduleFridayAlarm();
+      }
+    } else {
+      const cancelType = alarmType === "fajr" ? "fajr" : "jummah";
+      await useAlarmStore.getState().cancelAlarmsByType(cancelType);
+    }
   };
 
   const title =
@@ -120,11 +140,11 @@ const AlarmTypeSettingsScreen = () => {
           {/* Enable Toggle */}
           <Card className="mx-4 mb-4 p-4 rounded-2xl bg-background-secondary">
             <HStack className="justify-between items-center">
-              <VStack className="flex-1 mr-4">
-                <Text className="text-lg font-semibold text-typography">
+              <VStack className="flex-1 me-4">
+                <Text className="text-left text-lg font-semibold text-typography">
                   {t("alarm.settings.enableAlarm")}
                 </Text>
-                <Text className="text-sm text-typography-secondary">
+                <Text className="text-left text-sm text-typography-secondary">
                   {alarmType === "fajr"
                     ? t("alarm.settings.fajrEnableDescription")
                     : t("alarm.settings.fridayEnableDescription")}
@@ -138,7 +158,7 @@ const AlarmTypeSettingsScreen = () => {
             <>
               {/* Timing Settings */}
               <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
-                <Text className="text-sm text-typography-secondary mb-2">
+                <Text className="text-left text-sm text-typography-secondary mb-2">
                   {alarmType === "fajr"
                     ? t("alarm.settings.timingDescriptionFajr")
                     : t("alarm.settings.timingDescriptionFriday")}
@@ -165,20 +185,9 @@ const AlarmTypeSettingsScreen = () => {
                 </VStack>
               </SettingsSection>
 
-              {/* Gentle Wake-up */}
-              <SettingsSection title={t("alarm.settings.gentleWakeUp")} icon={Sunrise}>
-                <Text className="text-sm text-typography-secondary mb-2">
-                  {t("alarm.settings.gentleWakeUpDescription")}
-                </Text>
-                <GentleWakeUpSettings
-                  value={settings.gentleWakeUp}
-                  onChange={(gentleWakeUp) => handleChange({ gentleWakeUp })}
-                />
-              </SettingsSection>
-
               {/* Challenge Settings */}
               <SettingsSection title={t("alarm.settings.challenge")} icon={Brain}>
-                <Text className="text-sm text-typography-secondary mb-2">
+                <Text className="text-left text-sm text-typography-secondary mb-2">
                   {t("alarm.settings.challengeDescription")}
                 </Text>
                 <ChallengePicker
