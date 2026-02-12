@@ -306,7 +306,7 @@
     "fajr": "فجر",
     "isha": "عشاء",
     "jumuah": "جمعہ",
-    "maghrib": "غروب",
+    "maghrib": "مغرب",
     "noData": "نماز کے اوقات دستیاب نہیں ہیں",
     "noDataDescription": "نماز کے اوقات کا ڈیٹا دستیاب نہیں ہے۔ براہ کرم دوبارہ کوشش کریں۔",
     "title": "نماز کے اوقات"
@@ -384,7 +384,7 @@
   "settings.crashReporting.accessibilityLabel": "خرابی رپورٹنگ کی ترتیبات",
   "settings.crashReporting.bullet1": "• تکنیکی خرابی کی معلومات",
   "settings.crashReporting.bullet2": "• ڈیوائس کا ماڈل اور آپریٹنگ سسٹم",
-  "settings.crashReporting.bullet3": "ایپ ورژن اور ترتیب",
+  "settings.crashReporting.bullet3": "• ایپ ورژن اور ترتیب",
   "settings.crashReporting.description": "ہم خرابی رپورٹس جمع کرتے ہیں جو ہمیں مسائل کی شناخت کرکے ایپ کو بہتر بنانے میں مدد دیتی ہیں۔ ان رپورٹس میں شامل ہیں:",
   "settings.crashReporting.enableToggle": "خرابی رپورٹنگ کو فعال کریں",
   "settings.crashReporting.privacyNote": "کوئی ذاتی ڈیٹا یا صارف کا مواد جمع نہیں کیا جاتا۔ آپ کسی بھی وقت اس سے باہر نکل سکتے ہیں۔",
