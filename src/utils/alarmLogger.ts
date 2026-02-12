@@ -1,5 +1,6 @@
 import * as ExpoAlarm from "expo-alarm";
 import * as Application from "expo-application";
+import * as Clipboard from "expo-clipboard";
 import * as Device from "expo-device";
 import { Platform, Share } from "react-native";
 import { File, Paths } from "expo-file-system";
@@ -207,6 +208,17 @@ export const AlarmLogger = {
     }
 
     return lines.join("\n");
+  },
+
+  async copyLog(category?: IssueCategory): Promise<boolean> {
+    try {
+      const log = await this.getFullDebugLog(category);
+      await Clipboard.setStringAsync(log);
+      return true;
+    } catch (e) {
+      console.error("Failed to copy log:", e);
+      return false;
+    }
   },
 
   async shareLog(category?: IssueCategory) {
