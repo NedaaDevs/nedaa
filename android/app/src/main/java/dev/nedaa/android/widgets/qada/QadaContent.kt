@@ -78,9 +78,10 @@ fun QadaContent(
                         text = "${summary.remaining}",
                         style = TextStyle(
                             color = NedaaColors.GlanceColors.primary,
-                            fontSize = 32.sp,
+                            fontSize = if (summary.remaining >= 100) 24.sp else 32.sp,
                             fontWeight = FontWeight.Bold
-                        )
+                        ),
+                        maxLines = 1
                     )
                 }
 
@@ -94,40 +95,42 @@ fun QadaContent(
                     )
                 )
 
-                // Today's completions and progress
+                // Today's completions and progress (stacked to prevent overflow on 2x2)
                 Spacer(modifier = GlanceModifier.height(6.dp))
 
-                Row(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (summary.todayCompleted > 0) {
-                        Text(
-                            text = "+${summary.todayCompleted}",
-                            style = TextStyle(
-                                color = NedaaColors.GlanceColors.success,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "+${summary.todayCompleted}",
+                                style = TextStyle(
+                                    color = NedaaColors.GlanceColors.success,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
-                        )
+                            Spacer(modifier = GlanceModifier.width(4.dp))
+                            Text(
+                                text = "${summary.completionPercentage}%",
+                                style = TextStyle(
+                                    color = NedaaColors.GlanceColors.textSecondary,
+                                    fontSize = 10.sp
+                                )
+                            )
+                        }
+                    } else {
                         Text(
-                            text = " ${context.getString(R.string.widget_today_completed, summary.todayCompleted).substringAfter(" ")}",
+                            text = "${summary.completionPercentage}%",
                             style = TextStyle(
                                 color = NedaaColors.GlanceColors.textSecondary,
                                 fontSize = 10.sp
                             )
                         )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
                     }
-
-                    // Progress percentage
-                    Text(
-                        text = "${summary.completionPercentage}%",
-                        style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
-                            fontSize = 10.sp
-                        )
-                    )
                 }
             }
         }
