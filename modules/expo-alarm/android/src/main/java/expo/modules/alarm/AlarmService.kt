@@ -20,6 +20,7 @@ class AlarmService : Service() {
         const val EXTRA_ALARM_TITLE = "alarm_title"
         const val EXTRA_SOUND_NAME = "sound_name"
 
+        @Volatile
         var isRunning = false
             private set
 
