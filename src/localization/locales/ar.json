@@ -623,5 +623,18 @@
   "settings.themes.system.description": "اتبع إعدادات النظام",
   "settings.themes.system.title": "النظام",
   "settings.themes.title": "السمات",
-  "settings.title": "الإعدادات"
+  "settings.title": "الإعدادات",
+  "settings.widgets.title": "تطبيقات مصغرة",
+  "settings.widgets.description": "أضف ودجات إلى شاشتك الرئيسية للوصول السريع لمواقيت الصلاة وتقدم الأذكار وتتبع القضاء.",
+  "settings.widgets.addToHomeScreen": "إضافة إلى الشاشة الرئيسية",
+  "settings.widgets.prayerSmall": "مواقيت الصلاة (صغير)",
+  "settings.widgets.prayerMedium": "مواقيت الصلاة (متوسط)",
+  "settings.widgets.prayerLarge": "مواقيت الصلاة (كبير)",
+  "settings.widgets.athkar": "تقدم الأذكار",
+  "settings.widgets.athkarMedium": "تقدم الأذكار (متوسط)",
+  "settings.widgets.qada": "تتبع القضاء",
+  "settings.widgets.qadaMedium": "تتبع القضاء (متوسط)",
+  "settings.widgets.prayerAthkar": "الصلاة والأذكار",
+  "settings.widgets.notSupported": "إضافة الودجات غير مدعومة على هذا الجهاز",
+  "settings.widgets.iosNote": "على iOS، أضف الودجات بالضغط المطول على الشاشة الرئيسية ثم الضغط على زر +."
 }

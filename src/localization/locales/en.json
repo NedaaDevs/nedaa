@@ -645,5 +645,18 @@
   "settings.themes.system.description": "Follow system appearance",
   "settings.themes.system.title": "System",
   "settings.themes.title": "Themes",
-  "settings.title": "Settings"
+  "settings.title": "Settings",
+  "settings.widgets.title": "Widgets",
+  "settings.widgets.description": "Add widgets to your home screen for quick access to prayer times, athkar progress, and qada tracking.",
+  "settings.widgets.addToHomeScreen": "Add to Home Screen",
+  "settings.widgets.prayerSmall": "Prayer Times (Small)",
+  "settings.widgets.prayerMedium": "Prayer Times (Medium)",
+  "settings.widgets.prayerLarge": "Prayer Times (Large)",
+  "settings.widgets.athkar": "Athkar Progress",
+  "settings.widgets.athkarMedium": "Athkar Progress (Medium)",
+  "settings.widgets.qada": "Qada Tracker",
+  "settings.widgets.qadaMedium": "Qada Tracker (Medium)",
+  "settings.widgets.prayerAthkar": "Prayer & Athkar",
+  "settings.widgets.notSupported": "Widget pinning is not supported on this device",
+  "settings.widgets.iosNote": "On iOS, add widgets by long-pressing your home screen and tapping the + button."
 }

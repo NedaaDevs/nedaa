@@ -440,5 +440,18 @@
   "settings.themes.system.description": "سسٹم کی ظاہری شکل کی پیروی کریں",
   "settings.themes.system.title": "نظام",
   "settings.themes.title": "موضوعات",
-  "settings.title": "ترتیبات"
+  "settings.title": "ترتیبات",
+  "settings.widgets.title": "وجیٹس",
+  "settings.widgets.description": "نماز کے اوقات، اذکار کی پیشرفت، اور قضا ٹریکنگ تک فوری رسائی کے لیے اپنی ہوم اسکرین پر وجیٹس شامل کریں۔",
+  "settings.widgets.addToHomeScreen": "ہوم اسکرین میں شامل کریں",
+  "settings.widgets.prayerSmall": "نماز کے اوقات (چھوٹا)",
+  "settings.widgets.prayerMedium": "نماز کے اوقات (درمیانہ)",
+  "settings.widgets.prayerLarge": "نماز کے اوقات (بڑا)",
+  "settings.widgets.athkar": "اذکار کی پیشرفت",
+  "settings.widgets.athkarMedium": "اذکار کی پیشرفت (درمیانہ)",
+  "settings.widgets.qada": "قضا ٹریکر",
+  "settings.widgets.qadaMedium": "قضا ٹریکر (درمیانہ)",
+  "settings.widgets.prayerAthkar": "نماز اور اذکار",
+  "settings.widgets.notSupported": "اس آلے پر وجیٹ پننگ تعاون یافتہ نہیں ہے",
+  "settings.widgets.iosNote": "iOS پر، اپنی ہوم اسکرین پر دیر تک دبائیں اور + بٹن دبائیں۔"
 }

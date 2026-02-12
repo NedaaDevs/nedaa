@@ -117,12 +117,22 @@ private fun SmallPrayerTimesView(
             .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Hijri date at top (compact for small widget)
+        // Weekday and Hijri date at top (compact for small widget)
+        Text(
+            text = DateUtils.getWeekdayName(currentDate, timezone),
+            style = TextStyle(
+                color = NedaaColors.GlanceColors.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            maxLines = 1
+        )
+        Spacer(modifier = GlanceModifier.height(1.dp))
         Text(
             text = DateUtils.getHijriDateStringCompact(currentDate, timezone),
             style = TextStyle(
                 color = NedaaColors.GlanceColors.textSecondary,
-                fontSize = 12.sp
+                fontSize = 10.sp
             ),
             maxLines = 1
         )

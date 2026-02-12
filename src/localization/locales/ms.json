@@ -373,5 +373,18 @@
   "settings.themes.system.description": "Ikut tetapan sistem",
   "settings.themes.system.title": "Sistem",
   "settings.themes.title": "Tema",
-  "settings.title": "Tetapan"
+  "settings.title": "Tetapan",
+  "settings.widgets.title": "Widget",
+  "settings.widgets.description": "Tambah widget ke skrin utama untuk akses pantas ke waktu solat, kemajuan azkar, dan penjejakan qada.",
+  "settings.widgets.addToHomeScreen": "Tambah ke Skrin Utama",
+  "settings.widgets.prayerSmall": "Waktu Solat (Kecil)",
+  "settings.widgets.prayerMedium": "Waktu Solat (Sederhana)",
+  "settings.widgets.prayerLarge": "Waktu Solat (Besar)",
+  "settings.widgets.athkar": "Kemajuan Azkar",
+  "settings.widgets.athkarMedium": "Kemajuan Azkar (Sederhana)",
+  "settings.widgets.qada": "Penjejak Qada",
+  "settings.widgets.qadaMedium": "Penjejak Qada (Sederhana)",
+  "settings.widgets.prayerAthkar": "Solat & Azkar",
+  "settings.widgets.notSupported": "Penambahan widget tidak disokong pada peranti ini",
+  "settings.widgets.iosNote": "Di iOS, tambah widget dengan menekan lama skrin utama dan ketik butang +."
 }

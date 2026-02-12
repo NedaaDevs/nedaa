@@ -20,6 +20,7 @@ import {
   BellRing,
   BookOpen,
   AlarmClock,
+  LayoutGrid,
 } from "lucide-react-native";
 
 // Stores
@@ -80,6 +81,13 @@ const SettingsScreen = () => {
         {isAthkarSupported(locale) && (
           <SettingsItem name={t("settings.athkar.title")} path="/settings/athkar" icon={BookOpen} />
         )}
+
+        {/* Widgets */}
+        <SettingsItem
+          name={t("settings.widgets.title")}
+          path={"/settings/widgets" as any}
+          icon={LayoutGrid}
+        />
 
         {/* Advance */}
         <SettingsItem

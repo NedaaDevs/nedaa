@@ -96,6 +96,18 @@ object DateUtils {
     }
 
     /**
+     * Get weekday name for a given date (locale-aware)
+     * Returns the full weekday name e.g., "Friday", "الجمعة"
+     */
+    fun getWeekdayName(date: Date, timezone: TimeZone? = null): String {
+        val tz = timezone ?: TimeZone.getDefault()
+        val locale = Locale.getDefault()
+        val formatter = SimpleDateFormat("EEEE", locale)
+        formatter.timeZone = tz
+        return formatter.format(date)
+    }
+
+    /**
      * Get Gregorian date string (locale-aware)
      */
     fun getGregorianDateString(date: Date, timezone: TimeZone? = null): String {
