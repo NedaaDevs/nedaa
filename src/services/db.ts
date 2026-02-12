@@ -57,32 +57,44 @@ export const getDirectory = async (): Promise<string> => {
   return SQLite.defaultDatabaseDirectory;
 };
 
-// Open Database
-const openDatabase = async () =>
-  await SQLite.openDatabaseAsync(
-    DB_NAME,
-    {
-      useNewConnection: true,
-    },
-    await getDirectory()
-  );
+// Singleton database connection with auto-initialization
+let dbInstance: SQLite.SQLiteDatabase | null = null;
+let dbInitialized = false;
 
-// Initialize Database Schema
-const initializeDB = async () => {
-  const db = await openDatabase();
+const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
+  if (!dbInstance) {
+    dbInstance = await SQLite.openDatabaseAsync(
+      DB_NAME,
+      { useNewConnection: true },
+      await getDirectory()
+    );
+  }
+  if (!dbInitialized) {
+    await ensureSchema();
+  }
+  return dbInstance;
+};
 
+const ensureSchema = async () => {
+  if (dbInitialized || !dbInstance) return;
   try {
-    await db.execAsync(
-      `CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
+    await dbInstance.execAsync(
+      `PRAGMA journal_mode = WAL;
+      CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
         date INTEGER PRIMARY KEY,
         timezone TEXT NOT NULL,
         timings TEXT NOT NULL,
         other_timings TEXT NOT NULL
       );`
     );
+    dbInitialized = true;
   } catch (error: unknown) {
     console.error("Error init db => ", error);
   }
+};
+
+const initializeDB = async () => {
+  await openDatabase();
 };
 
 const batchInsertPrayerTimesEntries = async (

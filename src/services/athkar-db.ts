@@ -42,16 +42,19 @@ const AthkarDailyItemSchema = z.object({
 type AthkarStreak = z.infer<typeof AthkarStreakSchema>;
 type AthkarDailyItem = z.infer<typeof AthkarDailyItemSchema>;
 
-// Open Database
-const openDatabase = async () =>
-  await SQLite.openDatabaseAsync(
-    ATHKAR_DB_NAME,
-    {
-      useNewConnection: true,
-      enableChangeListener: false,
-    },
-    await getDirectory()
-  );
+// Singleton database connection
+let dbInstance: SQLite.SQLiteDatabase | null = null;
+
+const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
+  if (!dbInstance) {
+    dbInstance = await SQLite.openDatabaseAsync(
+      ATHKAR_DB_NAME,
+      { useNewConnection: true },
+      await getDirectory()
+    );
+  }
+  return dbInstance;
+};
 
 // Migration helper for completed days table
 const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
@@ -153,6 +156,7 @@ const initializeDB = async () => {
   const db = await openDatabase();
 
   try {
+    await db.execAsync(`PRAGMA journal_mode = WAL;`);
     // Create streak table - stores calculated streak values
     await db.execAsync(
       `CREATE TABLE IF NOT EXISTS ${ATHKAR_STREAK_TABLE} (
