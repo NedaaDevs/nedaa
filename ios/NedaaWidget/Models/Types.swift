@@ -131,6 +131,29 @@ extension Date {
     }
 }
 
+/// Compute Smart Stack relevance based on proximity to next prayer time
+func prayerTimelineRelevance(nextPrayerDate: Date?, previousPrayerDate: Date?, currentDate: Date) -> TimelineEntryRelevance? {
+    if let prevDate = previousPrayerDate {
+        let sincePrev = currentDate.timeIntervalSince(prevDate)
+        if sincePrev >= 0 && sincePrev < 1800 {
+            return TimelineEntryRelevance(score: 0.75, duration: 1800 - sincePrev)
+        }
+    }
+
+    if let nextDate = nextPrayerDate {
+        let toNext = nextDate.timeIntervalSince(currentDate)
+        if toNext >= 0 && toNext <= 900 {
+            return TimelineEntryRelevance(score: 1.0, duration: toNext + 1800)
+        } else if toNext > 900 && toNext <= 1800 {
+            return TimelineEntryRelevance(score: 0.75, duration: toNext)
+        } else if toNext > 1800 && toNext <= 3600 {
+            return TimelineEntryRelevance(score: 0.5, duration: toNext)
+        }
+    }
+
+    return nil
+}
+
 /// Utility class for date operations
 class DateUtils {
     /// Converts a date to YYYYMMDD integer format

@@ -22,8 +22,13 @@ struct AllPrayersEntry: TimelineEntry {
     let date: Date
     let allPrayers: [PrayerData]?
     let nextPrayer: PrayerData?
+    let previousPrayer: PrayerData?
     let showTimer: Bool
     let showSunrise: Bool
+
+    var relevance: TimelineEntryRelevance? {
+        prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
+    }
 }
 
 // MARK: - Preview Data
@@ -56,6 +61,7 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
             date: Date(),
             allPrayers: isFirstHalf ? morningPrayers : eveningPrayers,
             nextPrayer: PrayerData(name: "Fajr", date: Date()),
+            previousPrayer: nil,
             showTimer: true,
             showSunrise: true
         )
@@ -96,6 +102,7 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
             date: currentDate,
             allPrayers: displayPrayers,
             nextPrayer: nextPrayer,
+            previousPrayer: previousPrayer,
             showTimer: showTimer,
             showSunrise: showSunrise
         )

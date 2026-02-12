@@ -67,6 +67,10 @@ struct PrayerHomeScreenEntry: TimelineEntry {
     let showTimer: Bool
     let showSunrise: Bool
 
+    var relevance: TimelineEntryRelevance? {
+        prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
+    }
+
     static var preview: PrayerHomeScreenEntry {
         let now = Date()
         let calendar = Calendar.current

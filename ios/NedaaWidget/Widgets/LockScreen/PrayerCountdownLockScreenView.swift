@@ -24,6 +24,10 @@ struct PrayerCountdownEntry: TimelineEntry {
     let previousPrayer: PrayerData?
     let showTimer: Bool
     let showSunrise: Bool
+
+    var relevance: TimelineEntryRelevance? {
+        prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
+    }
 }
 
 // MARK: - Timeline Provider

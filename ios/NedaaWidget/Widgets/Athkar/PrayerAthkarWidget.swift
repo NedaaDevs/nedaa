@@ -34,6 +34,10 @@ struct PrayerAthkarEntry: TimelineEntry {
     let showCountdown: Bool
     let showSunrise: Bool
 
+    var relevance: TimelineEntryRelevance? {
+        prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
+    }
+
     static var preview: PrayerAthkarEntry {
         let now = Date()
         let calendar = Calendar.current
