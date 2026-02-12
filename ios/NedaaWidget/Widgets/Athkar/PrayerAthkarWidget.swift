@@ -209,7 +209,7 @@ struct PrayerAthkarWidgetMediumView: View {
                     Text(LocalizedStringKey(nextPrayer.name))
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(NedaaColors.text(for: colorScheme))
-                        .widgetAccentable()
+                        .accentableWidget()
                     
                     HStack(spacing: 4) {
                         Image(systemName: "clock.fill")
@@ -230,7 +230,7 @@ struct PrayerAthkarWidgetMediumView: View {
                             Text(nextPrayer.countdown)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
-                                .contentTransition(.numericText())
+                                .numericContentTransition()
                         }
                     }
                 } else {
@@ -365,7 +365,7 @@ struct PrayerAthkarWidgetLargeView: View {
                             Text(nextPrayer.countdown)
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(NedaaColors.primary(for: colorScheme))
-                                .contentTransition(.numericText())
+                                .numericContentTransition()
                         }
                     }
                 }
@@ -375,7 +375,7 @@ struct PrayerAthkarWidgetLargeView: View {
                         Text(LocalizedStringKey(nextPrayer.name))
                             .font(.system(size: 26, weight: .bold))
                             .foregroundColor(NedaaColors.text(for: colorScheme))
-                            .widgetAccentable()
+                            .accentableWidget()
 
                         Spacer()
                         

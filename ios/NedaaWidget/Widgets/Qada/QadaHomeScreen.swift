@@ -136,8 +136,8 @@ struct SmallQadaView: View {
                 Text("\(entry.totalRemaining)")
                     .font(.system(size: showsBackground ? 40 : 48, weight: .bold))
                     .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                    .contentTransition(.numericText())
-                    .widgetAccentable()
+                    .numericContentTransition()
+                    .accentableWidget()
 
                 Text(NSLocalizedString("remaining", comment: ""))
                     .font(showsBackground ? .caption : .callout)
@@ -211,8 +211,8 @@ struct MediumQadaView: View {
                     Text("\(entry.totalRemaining)")
                         .font(.system(size: 36, weight: .bold))
                         .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                        .contentTransition(.numericText())
-                        .widgetAccentable()
+                        .numericContentTransition()
+                        .accentableWidget()
 
                     Text(NSLocalizedString("fastsRemaining", comment: ""))
                         .font(.caption)
@@ -359,8 +359,8 @@ struct LargeQadaView: View {
                     Text("\(entry.totalRemaining)")
                         .font(.system(size: 40, weight: .bold))
                         .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                        .contentTransition(.numericText())
-                        .widgetAccentable()
+                        .numericContentTransition()
+                        .accentableWidget()
 
                     Text(NSLocalizedString("remaining", comment: ""))
                         .font(.caption)

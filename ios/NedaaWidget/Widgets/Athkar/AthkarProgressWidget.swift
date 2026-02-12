@@ -111,8 +111,8 @@ struct AthkarProgressWidgetSmallView: View {
                     Text("\(percentage)%")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(NedaaColors.primary(for: colorScheme))
-                        .contentTransition(.numericText())
-                        .widgetAccentable()
+                        .numericContentTransition()
+                        .accentableWidget()
                 }
                 .frame(width: 85, height: 85)
                 
@@ -193,8 +193,8 @@ struct AthkarProgressWidgetMediumView: View {
                             Text("\(percentage)%")
                                 .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(NedaaColors.primary(for: colorScheme))
-                                .contentTransition(.numericText())
-                                .widgetAccentable()
+                                .numericContentTransition()
+                                .accentableWidget()
                             
                             // Progress bar
                             VStack(spacing: 4) {

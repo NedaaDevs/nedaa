@@ -143,7 +143,7 @@ struct SmallPrayerTimesView: View {
                                 .monospacedDigit()
                                 .multilineTextAlignment(.center)
                                 .minimumScaleFactor(0.8)
-                                .contentTransition(.numericText())
+                                .numericContentTransition()
 
                             Text(previousPrayer.date, style: .time)
                                 .font(.system(size: showsBackground ? 11 : 13, weight: .medium))
@@ -179,7 +179,7 @@ struct SmallPrayerTimesView: View {
                         .foregroundColor(NedaaColors.primary(for: colorScheme))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                        .widgetAccentable()
+                        .accentableWidget()
 
                     // Show countdown timer if within 60 minutes before prayer AND timer enabled
                     if shouldShowCountdown(for: nextPrayer) && isTimerEnabled {
@@ -189,7 +189,7 @@ struct SmallPrayerTimesView: View {
                                 .foregroundColor(NedaaColors.text(for: colorScheme))
                                 .monospacedDigit()
                                 .multilineTextAlignment(.center)
-                                .contentTransition(.numericText())
+                                .numericContentTransition()
 
                             Text(nextPrayer.date, style: .time)
                                 .font(showsBackground ? .caption2 : .caption)
@@ -412,14 +412,14 @@ struct LargePrayerTimesView: View {
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(NedaaColors.text(for: colorScheme))
-                        .contentTransition(.numericText())
+                        .numericContentTransition()
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(showsBackground ? NedaaColors.primary(for: colorScheme).opacity(0.15) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(.bottom, 4)
-                .widgetAccentable()
+                .accentableWidget()
             }
         }
         .padding(.horizontal, 16)
@@ -571,7 +571,7 @@ struct MediumPrayerTimesListView: View {
                                 .fontWeight(isNextPrayer ? .bold : .medium)
                                 .foregroundColor(
                                     prayerNameColor(isNext: isNextPrayer, isPast: isPastPrayer))
-                                .widgetAccentable(isNextPrayer)
+                                .accentableWidget(isNextPrayer)
 
                             Spacer()
 
@@ -620,7 +620,7 @@ struct MediumPrayerTimesListView: View {
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .contentTransition(.numericText())
+                    .numericContentTransition()
 
                 Text(prayer.date, style: .time)
                     .font(.system(size: fontHeight * 0.42, weight: .medium))

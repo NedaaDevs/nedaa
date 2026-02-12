@@ -155,7 +155,7 @@ fun QadaContentMedium(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "${summary.completed}",
+                            text = "${summary.totalCompleted}",
                             style = TextStyle(
                                 color = NedaaColors.GlanceColors.success,
                                 fontSize = 16.sp,
