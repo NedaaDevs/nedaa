@@ -3,6 +3,7 @@ import { ScrollView, Platform, Linking } from "react-native";
 import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
 import * as Application from "expo-application";
+import { openComposer } from "react-native-email-link";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -10,12 +11,15 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Badge, BadgeText } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/icon";
+import { Icon, MailIcon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
 import { Spinner } from "@/components/ui/spinner";
+import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
 import TopBar from "@/components/TopBar";
+
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 import {
   ChevronRight,
@@ -25,12 +29,19 @@ import {
   Clock,
   Maximize,
   BatteryCharging,
+  MessageSquareWarning,
+  BellOff,
+  ClockAlert,
+  VolumeOff,
+  ShieldAlert,
+  CircleHelp,
 } from "lucide-react-native";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useColorScheme } from "nativewind";
 
 import {
   isAlarmKitAvailable,
@@ -47,7 +58,8 @@ import {
 import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
 import { PermissionStatus } from "expo-notifications";
 
-import { PlatformType } from "@/enums/app";
+import { PlatformType, AppMode } from "@/enums/app";
+import { AlarmLogger, type IssueCategory } from "@/utils/alarmLogger";
 
 interface PermissionItem {
   id: string;
@@ -90,6 +102,82 @@ const AlarmSettings = () => {
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [permissions, setPermissions] = useState<PermissionItem[]>([]);
   const [skipGate, setSkipGate] = useState(false);
+  const { colorScheme } = useColorScheme();
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportStep, setReportStep] = useState<"category" | "contact">("category");
+  const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
+  const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
+  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
+
+  const issueOptions: { category: IssueCategory; icon: typeof Bell; labelKey: string }[] = [
+    { category: "alarm_not_firing", icon: BellOff, labelKey: "alarm.report.alarmNotFiring" },
+    { category: "wrong_time", icon: ClockAlert, labelKey: "alarm.report.wrongTime" },
+    { category: "no_sound", icon: VolumeOff, labelKey: "alarm.report.noSound" },
+    { category: "cant_dismiss", icon: ShieldAlert, labelKey: "alarm.report.cantDismiss" },
+    { category: "other", icon: CircleHelp, labelKey: "alarm.report.other" },
+  ];
+
+  const handleCategorySelect = (category: IssueCategory) => {
+    setSelectedCategory(category);
+    setReportStep("contact");
+  };
+
+  const closeReportModal = () => {
+    setReportModalOpen(false);
+    setReportStep("category");
+    setSelectedCategory(null);
+  };
+
+  const handleShareViaEmail = async () => {
+    if (!selectedCategory) return;
+    setIsExporting(true);
+    closeReportModal();
+    try {
+      const log = await AlarmLogger.getFullDebugLog(selectedCategory);
+      const categoryLabel = t(
+        issueOptions.find((o) => o.category === selectedCategory)?.labelKey ?? "alarm.report.other"
+      );
+      await openComposer({
+        to: supportEmail,
+        subject: `Nedaa Alarm: ${categoryLabel}`,
+        body: log,
+      });
+    } catch (e) {
+      console.error("Failed to open email:", e);
+    }
+    setIsExporting(false);
+  };
+
+  const handleShareViaWhatsApp = async () => {
+    if (!selectedCategory || !whatsappNumber) return;
+    setIsExporting(true);
+    closeReportModal();
+    try {
+      const summary = await AlarmLogger.getSummary(selectedCategory);
+      const encoded = encodeURIComponent(summary);
+      await Linking.openURL(`https://wa.me/${whatsappNumber}?text=${encoded}`);
+    } catch (e) {
+      console.error("Failed to open WhatsApp:", e);
+    }
+    setIsExporting(false);
+  };
+
+  const handleShareViaTelegram = async () => {
+    if (!selectedCategory || !telegramUsername) return;
+    setIsExporting(true);
+    closeReportModal();
+    try {
+      const summary = await AlarmLogger.getSummary(selectedCategory);
+      const encoded = encodeURIComponent(summary);
+      await Linking.openURL(`https://t.me/${telegramUsername}?text=${encoded}`);
+    } catch (e) {
+      console.error("Failed to open Telegram:", e);
+    }
+    setIsExporting(false);
+  };
 
   const allGranted = permissions.length === 0 || permissions.every((p) => p.granted);
   const pendingPermissions = permissions.filter((p) => !p.granted);
@@ -352,14 +440,107 @@ const AlarmSettings = () => {
             ))}
           </VStack>
 
-          <Box className="mx-4 mt-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={() => router.push("/settings/alarm-debug")}>
-              <ButtonText>Debug Panel</ButtonText>
-            </Button>
-          </Box>
+          <Pressable
+            className="mx-4 mt-8 mb-2 py-3 flex-row items-center justify-center"
+            disabled={isExporting}
+            onPress={() => {
+              hapticMedium();
+              setReportModalOpen(true);
+            }}>
+            <Icon as={MessageSquareWarning} size="sm" className="text-typography-secondary" />
+            <Text className="text-sm text-typography-secondary ml-2">
+              {isExporting ? t("alarm.report.exporting") : t("alarm.settings.reportProblem")}
+            </Text>
+          </Pressable>
+
+          {__DEV__ && (
+            <Box className="mx-4 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={() => router.push("/settings/alarm-debug")}>
+                <ButtonText>Debug Panel</ButtonText>
+              </Button>
+            </Box>
+          )}
+
+          <Modal isOpen={reportModalOpen} onClose={closeReportModal} size="md">
+            <ModalBackdrop />
+            <ModalContent className="bg-background-secondary rounded-2xl">
+              <ModalBody className="py-5 px-4">
+                {reportStep === "category" ? (
+                  <>
+                    <Text className="text-lg font-semibold text-typography text-center mb-4">
+                      {t("alarm.report.title")}
+                    </Text>
+                    <VStack space="sm">
+                      {issueOptions.map((option) => (
+                        <Pressable
+                          key={option.category}
+                          className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                          onPress={() => handleCategorySelect(option.category)}>
+                          <Icon as={option.icon} size="md" className="text-typography-secondary" />
+                          <Text className="text-base text-typography ml-3">
+                            {t(option.labelKey)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </VStack>
+                  </>
+                ) : (
+                  <>
+                    <Text className="text-lg font-semibold text-typography text-center mb-4">
+                      {t("alarm.report.shareVia")}
+                    </Text>
+                    <VStack space="sm">
+                      <Pressable
+                        className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                        onPress={handleShareViaEmail}>
+                        <Icon as={MailIcon} size="xl" className="text-accent-primary" />
+                        <Text className="text-base text-typography ml-3">
+                          {t("alarm.report.email")}
+                        </Text>
+                      </Pressable>
+
+                      {whatsappNumber && (
+                        <Pressable
+                          className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                          onPress={handleShareViaWhatsApp}>
+                          <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
+                          <Text className="text-base text-typography ml-3">
+                            {t("alarm.report.whatsapp")}
+                          </Text>
+                        </Pressable>
+                      )}
+
+                      {telegramUsername && (
+                        <Pressable
+                          className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                          onPress={handleShareViaTelegram}>
+                          <FontAwesome5
+                            name="telegram-plane"
+                            size={24}
+                            color={colorScheme === AppMode.DARK ? "white" : "black"}
+                          />
+                          <Text className="text-base text-typography ml-3">
+                            {t("alarm.report.telegram")}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </VStack>
+
+                    <Pressable
+                      className="mt-4 py-2 items-center"
+                      onPress={() => setReportStep("category")}>
+                      <Text className="text-sm text-typography-secondary">
+                        {t("common.cancel")}
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
+              </ModalBody>
+            </ModalContent>
+          </Modal>
         </VStack>
       </ScrollView>
     </Background>
