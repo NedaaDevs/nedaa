@@ -12,8 +12,7 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
-            intent.action != Intent.ACTION_LOCKED_BOOT_COMPLETED) {
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED) {
             return
         }
 
@@ -26,13 +25,17 @@ class BootReceiver : BroadcastReceiver() {
 
         var rescheduled = 0
         for (alarm in alarms) {
-            val triggerMs = alarm.triggerTime.toLong()
-            if (triggerMs > now) {
-                val soundName = if (alarm.alarmType == "fajr" || alarm.alarmType == "jummah") "beep" else "beep"
-                scheduler.scheduleAlarm(alarm.id, triggerMs, alarm.alarmType, alarm.title, soundName)
-                rescheduled++
-            } else {
-                Log.d(TAG, "Skipping expired alarm: ${alarm.id}")
+            try {
+                val triggerMs = alarm.triggerTime.toLong()
+                if (triggerMs > now) {
+                    val settings = db.getAlarmSettings(alarm.alarmType)
+                    scheduler.scheduleAlarm(alarm.id, triggerMs, alarm.alarmType, alarm.title, settings.sound)
+                    rescheduled++
+                } else {
+                    Log.d(TAG, "Skipping expired alarm: ${alarm.id}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to reschedule alarm ${alarm.id}: ${e.message}")
             }
         }
 
