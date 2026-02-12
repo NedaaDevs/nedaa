@@ -137,8 +137,15 @@ class AlarmAudioManager(private val context: Context) {
                     setDataSource(context, uri)
                     isLooping = true
                     setVolume(volume, volume)
-                    prepare()
-                    start()
+                    setOnPreparedListener { mp ->
+                        mp.start()
+                        log("TEMP: MediaPlayer prepared and started")
+                    }
+                    setOnErrorListener { _, what, extra ->
+                        log("TEMP: MediaPlayer error: what=$what extra=$extra")
+                        false
+                    }
+                    prepareAsync()
                 }
 
                 return true
