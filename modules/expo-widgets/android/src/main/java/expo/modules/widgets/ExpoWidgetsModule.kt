@@ -16,6 +16,9 @@ class ExpoWidgetsModule : Module() {
     private val context: Context
         get() = appContext.reactContext ?: throw IllegalStateException("React context not available")
 
+    private val activity: android.app.Activity?
+        get() = appContext.currentActivity
+
     private val widgetReceiverMap = mapOf(
         "prayer_small" to "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverSmall",
         "prayer_medium" to "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverMedium",
@@ -42,21 +45,22 @@ class ExpoWidgetsModule : Module() {
             return@Function widgetReceiverMap.keys.toList()
         }
 
-        Function("pinWidget") { widgetType: String ->
+        AsyncFunction("pinWidget") { widgetType: String ->
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                return@Function false
+                return@AsyncFunction false
             }
 
             val receiverClassName = widgetReceiverMap[widgetType]
-                ?: return@Function false
+                ?: return@AsyncFunction false
 
-            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val ctx = activity ?: context
+            val appWidgetManager = AppWidgetManager.getInstance(ctx)
             if (!appWidgetManager.isRequestPinAppWidgetSupported) {
-                return@Function false
+                return@AsyncFunction false
             }
 
-            val provider = ComponentName(context.packageName, receiverClassName)
-            return@Function appWidgetManager.requestPinAppWidget(provider, null, null)
+            val provider = ComponentName(ctx.packageName, receiverClassName)
+            return@AsyncFunction appWidgetManager.requestPinAppWidget(provider, null, null)
         }
 
         Function("isBatteryOptimizationDisabled") {
@@ -73,8 +77,13 @@ class ExpoWidgetsModule : Module() {
                 if (!pm.isIgnoringBatteryOptimizations(context.packageName)) {
                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                     intent.data = Uri.parse("package:${context.packageName}")
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
+                    val act = activity
+                    if (act != null) {
+                        act.startActivity(intent)
+                    } else {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    }
                     return@Function true
                 }
             }

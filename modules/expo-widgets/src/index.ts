@@ -22,7 +22,7 @@ export function getAvailableWidgets(): WidgetType[] {
   return NativeModule.getAvailableWidgets();
 }
 
-export function pinWidget(widgetType: WidgetType): boolean {
+export async function pinWidget(widgetType: WidgetType): Promise<boolean> {
   if (Platform.OS !== "android" || !NativeModule) return false;
   return NativeModule.pinWidget(widgetType);
 }
