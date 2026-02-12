@@ -104,7 +104,9 @@ const AlarmTypeSettingsScreen = () => {
 
     // Sync to native
     if (Object.keys(nativeSettings).length > 0) {
-      ExpoAlarm.setAlarmSettings(alarmType, nativeSettings).catch(() => {});
+      ExpoAlarm.setAlarmSettings(alarmType, nativeSettings).catch((e: unknown) =>
+        console.warn("Failed to sync alarm settings to native:", e)
+      );
     }
   };
 

@@ -38,9 +38,9 @@ SplashScreen.setOptions({
   duration: 1000,
   fade: true,
 });
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  SplashScreen.preventAutoHideAsync();
   const { mode, showLoadingOverlay, loadingMessage } = useAppStore();
   const colorScheme = useColorScheme();
   // useDrizzleStudio(db);
