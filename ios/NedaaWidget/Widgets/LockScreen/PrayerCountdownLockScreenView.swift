@@ -102,18 +102,21 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
 @available(iOSApplicationExtension 17.0, *)
 struct PrayerCountdownLockScreenView: View {
     var entry: PrayerCountdownEntry
-    
+
     @Environment(\.widgetFamily) var family
-    
+
     var body: some View {
-        switch family {
-        case .accessoryRectangular:
-            RectangularView(entry: entry)
-        case .accessoryCircular:
-            CircularView(entry: entry)
-        default:
-            Text("Select a family")
+        Group {
+            switch family {
+            case .accessoryRectangular:
+                RectangularView(entry: entry)
+            case .accessoryCircular:
+                CircularView(entry: entry)
+            default:
+                Text("Select a family")
+            }
         }
+        .widgetURL(URL(string: "myapp:///"))
     }
 }
 
@@ -161,6 +164,7 @@ func dataToShow(entry: PrayerCountdownEntry, geometry: GeometryProxy, widgetFami
                         .multilineTextAlignment(.center)
                         .lineLimit(1)
                         .font(.system(size: geometry.size.width * fontSize))
+                        .contentTransition(.numericText())
                 }
             } else {
                 VStack {
@@ -168,11 +172,12 @@ func dataToShow(entry: PrayerCountdownEntry, geometry: GeometryProxy, widgetFami
                         .font(.system(size: geometry.size.width * fontSize))
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                    
+
                     if Calendar.current.dateComponents([.minute], from: Date(), to: nextPrayer.date).minute ?? 0 <= 60 && entry.showTimer {
                         Text(nextPrayer.date, style: .timer)
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
+                            .contentTransition(.numericText())
                     } else {
                         Text(nextPrayer.date, style: .time)
                             .lineLimit(1)
@@ -200,6 +205,101 @@ struct PrayerCountdownLockScreenWidget: Widget {
         .configurationDisplayName(NSLocalizedString("nextPrayerLockScreenWidgetTitle", comment: "Lock screen widget title"))
         .description(NSLocalizedString("nextPrayerLockScreenWidgetDesc", comment: "Lock screen widget description"))
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        .contentMarginsDisabledIfAvailable()
+    }
+}
+
+// MARK: - Inline Lock Screen Widget
+
+@available(iOS 17.0, *)
+struct InlinePrayerProvider: TimelineProvider {
+    typealias Entry = PrayerCountdownEntry
+
+    private let prayerService = PrayerDataService()
+
+    func placeholder(in context: Context) -> PrayerCountdownEntry {
+        PrayerCountdownEntry(
+            date: Date(),
+            nextPrayer: PrayerData(name: "isha", date: Date().addingTimeInterval(3600)),
+            previousPrayer: nil,
+            showTimer: true,
+            showSunrise: false
+        )
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (PrayerCountdownEntry) -> Void) {
+        completion(placeholder(in: context))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerCountdownEntry>) -> Void) {
+        let currentDate = Date()
+        let nextPrayer = prayerService.getNextPrayer(showSunrise: false) ?? PrayerData(name: "Error", date: Date())
+        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: false)
+
+        let entry = PrayerCountdownEntry(
+            date: currentDate,
+            nextPrayer: nextPrayer,
+            previousPrayer: previousPrayer,
+            showTimer: true,
+            showSunrise: false
+        )
+
+        let nextUpdateDate = nextPrayer.date.addingTimeInterval(1800)
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdateDate))
+        completion(timeline)
+    }
+}
+
+@available(iOSApplicationExtension 17.0, *)
+struct InlinePrayerView: View {
+    var entry: PrayerCountdownEntry
+
+    var body: some View {
+        if let nextPrayer = entry.nextPrayer {
+            let minutesToNext = Calendar.current.dateComponents([.minute], from: Date(), to: nextPrayer.date).minute ?? 0
+
+            ViewThatFits {
+                Label {
+                    if minutesToNext > 0 && minutesToNext <= 60 {
+                        Text(NSLocalizedString(nextPrayer.name, comment: ""))
+                        + Text(" ")
+                        + Text(nextPrayer.date, style: .timer)
+                    } else {
+                        Text(NSLocalizedString(nextPrayer.name, comment: ""))
+                        + Text(" ")
+                        + Text(nextPrayer.date, style: .time)
+                    }
+                } icon: {
+                    Image(systemName: "moon.stars")
+                }
+
+                if minutesToNext > 0 && minutesToNext <= 60 {
+                    Text(NSLocalizedString(nextPrayer.name, comment: ""))
+                    + Text(" ")
+                    + Text(nextPrayer.date, style: .timer)
+                } else {
+                    Text(NSLocalizedString(nextPrayer.name, comment: ""))
+                    + Text(" ")
+                    + Text(nextPrayer.date, style: .time)
+                }
+            }
+            .widgetAccentable()
+        }
+    }
+}
+
+@available(iOSApplicationExtension 17.0, *)
+struct InlinePrayerWidget: Widget {
+    let kind: String = "InlinePrayerWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: InlinePrayerProvider()) { entry in
+            InlinePrayerView(entry: entry)
+                .widgetURL(URL(string: "myapp:///"))
+        }
+        .configurationDisplayName(NSLocalizedString("inlinePrayerWidgetTitle", comment: ""))
+        .description(NSLocalizedString("inlinePrayerWidgetDesc", comment: ""))
+        .supportedFamilies([.accessoryInline])
         .contentMarginsDisabledIfAvailable()
     }
 }

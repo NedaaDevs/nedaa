@@ -209,6 +209,7 @@ struct PrayerAthkarWidgetMediumView: View {
                     Text(LocalizedStringKey(nextPrayer.name))
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(NedaaColors.text(for: colorScheme))
+                        .widgetAccentable()
                     
                     HStack(spacing: 4) {
                         Image(systemName: "clock.fill")
@@ -229,6 +230,7 @@ struct PrayerAthkarWidgetMediumView: View {
                             Text(nextPrayer.countdown)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                                .contentTransition(.numericText())
                         }
                     }
                 } else {
@@ -363,16 +365,18 @@ struct PrayerAthkarWidgetLargeView: View {
                             Text(nextPrayer.countdown)
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(NedaaColors.primary(for: colorScheme))
+                                .contentTransition(.numericText())
                         }
                     }
                 }
-                
+
                 if let nextPrayer = entry.nextPrayer {
                     HStack(alignment: .firstTextBaseline) {
                         Text(LocalizedStringKey(nextPrayer.name))
                             .font(.system(size: 26, weight: .bold))
                             .foregroundColor(NedaaColors.text(for: colorScheme))
-                        
+                            .widgetAccentable()
+
                         Spacer()
                         
                         HStack(spacing: 4) {
@@ -603,16 +607,19 @@ struct PrayerAthkarWidget: Widget {
 struct PrayerAthkarWidgetEntryView: View {
     @Environment(\.widgetFamily) var family
     let entry: PrayerAthkarEntry
-    
+
     var body: some View {
-        switch family {
-        case .systemMedium:
-            PrayerAthkarWidgetMediumView(entry: entry)
-        case .systemLarge:
-            PrayerAthkarWidgetLargeView(entry: entry)
-        default:
-            PrayerAthkarWidgetMediumView(entry: entry)
+        Group {
+            switch family {
+            case .systemMedium:
+                PrayerAthkarWidgetMediumView(entry: entry)
+            case .systemLarge:
+                PrayerAthkarWidgetLargeView(entry: entry)
+            default:
+                PrayerAthkarWidgetMediumView(entry: entry)
+            }
         }
+        .widgetURL(URL(string: "myapp:///"))
     }
 }
 

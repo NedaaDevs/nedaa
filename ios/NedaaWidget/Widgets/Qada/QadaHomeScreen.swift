@@ -26,18 +26,21 @@ struct QadaHomeScreen: Widget {
 struct QadaHomeScreenEntryView: View {
     var entry: QadaHomeScreenEntry
     @Environment(\.widgetFamily) var widgetFamily
-    
+
     var body: some View {
-        switch widgetFamily {
-        case .systemSmall:
-            SmallQadaView(entry: entry)
-        case .systemMedium:
-            MediumQadaView(entry: entry)
-        case .systemLarge:
-            LargeQadaView(entry: entry)
-        default:
-            SmallQadaView(entry: entry)
+        Group {
+            switch widgetFamily {
+            case .systemSmall:
+                SmallQadaView(entry: entry)
+            case .systemMedium:
+                MediumQadaView(entry: entry)
+            case .systemLarge:
+                LargeQadaView(entry: entry)
+            default:
+                SmallQadaView(entry: entry)
+            }
         }
+        .widgetURL(URL(string: "myapp:///qada"))
     }
 }
 
@@ -130,6 +133,8 @@ struct SmallQadaView: View {
                 Text("\(entry.totalRemaining)")
                     .font(.system(size: 40, weight: .bold))
                     .foregroundStyle(NedaaColors.primary(for: colorScheme))
+                    .contentTransition(.numericText())
+                    .widgetAccentable()
 
                 Text(NSLocalizedString("remaining", comment: ""))
                     .font(.caption)
@@ -183,7 +188,9 @@ struct MediumQadaView: View {
                     Text("\(entry.totalRemaining)")
                         .font(.system(size: 36, weight: .bold))
                         .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                    
+                        .contentTransition(.numericText())
+                        .widgetAccentable()
+
                     Text(NSLocalizedString("fastsRemaining", comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -306,7 +313,9 @@ struct LargeQadaView: View {
                     Text("\(entry.totalRemaining)")
                         .font(.system(size: 40, weight: .bold))
                         .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                    
+                        .contentTransition(.numericText())
+                        .widgetAccentable()
+
                     Text(NSLocalizedString("remaining", comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)

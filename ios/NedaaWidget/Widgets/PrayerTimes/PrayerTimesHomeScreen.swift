@@ -22,21 +22,21 @@ struct PrayerTimesHomeScreen: Widget {
 struct PrayerTimesHomeScreenEntryView: View {
     var entry: PrayerHomeScreenEntry
     @Environment(\.widgetFamily) var widgetFamily
-    
+
     var body: some View {
-        switch widgetFamily {
-        case .systemSmall:
-            SmallPrayerTimesView(entry: entry)
-        case .systemMedium:
-            MediumPrayerTimesListView(entry: entry)
-            
-            // timeline view
-            // MediumPrayerTimesView(entry: entry)
-        case .systemLarge:
-            LargePrayerTimesView(entry: entry)
-        default:
-            SmallPrayerTimesView(entry: entry)
+        Group {
+            switch widgetFamily {
+            case .systemSmall:
+                SmallPrayerTimesView(entry: entry)
+            case .systemMedium:
+                MediumPrayerTimesListView(entry: entry)
+            case .systemLarge:
+                LargePrayerTimesView(entry: entry)
+            default:
+                SmallPrayerTimesView(entry: entry)
+            }
         }
+        .widgetURL(URL(string: "myapp:///"))
     }
 }
 

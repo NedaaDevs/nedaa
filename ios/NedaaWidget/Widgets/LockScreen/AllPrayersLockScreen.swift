@@ -177,6 +177,7 @@ struct PrayerView: View {
                             Text(prayer.date, style: .timer)
                                 .font(.system(size: 12, weight: .medium))
                                 .monospacedDigit()
+                                .contentTransition(.numericText())
                         } else {
                             Text(prayer.date, format: .dateTime.hour().minute())
                                 .font(.system(size: 12, weight: .medium))
@@ -204,6 +205,7 @@ struct MorningPrayerWidget: Widget {
             provider: SplitPrayerProvider(isFirstHalf: true)
         ) { entry in
             PrayerView(entry: entry)
+                .widgetURL(URL(string: "myapp:///"))
         }
         .configurationDisplayName(
             NSLocalizedString("morningPrayersWidgetTitle", comment: "")
@@ -225,6 +227,7 @@ struct EveningPrayerWidget: Widget {
             provider: SplitPrayerProvider(isFirstHalf: false)
         ) { entry in
             PrayerView(entry: entry)
+                .widgetURL(URL(string: "myapp:///"))
         }
         .configurationDisplayName(
             NSLocalizedString("eveningPrayersWidgetTitle", comment: "")

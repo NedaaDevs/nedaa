@@ -111,6 +111,8 @@ struct AthkarProgressWidgetSmallView: View {
                     Text("\(percentage)%")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(NedaaColors.primary(for: colorScheme))
+                        .contentTransition(.numericText())
+                        .widgetAccentable()
                 }
                 .frame(width: 85, height: 85)
                 
@@ -191,6 +193,8 @@ struct AthkarProgressWidgetMediumView: View {
                             Text("\(percentage)%")
                                 .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(NedaaColors.primary(for: colorScheme))
+                                .contentTransition(.numericText())
+                                .widgetAccentable()
                             
                             // Progress bar
                             VStack(spacing: 4) {
@@ -473,17 +477,19 @@ struct AthkarProgressWidget: Widget {
 struct AthkarProgressWidgetEntryView: View {
     @Environment(\.widgetFamily) var family
     let entry: AthkarProgressEntry
-    
+
     var body: some View {
-        switch family {
-        case .systemSmall:
-            AthkarProgressWidgetSmallView(entry: entry)
-        case .systemMedium:
-            AthkarProgressWidgetMediumView(entry: entry)
-        // Large widget view is commented out
-        default:
-            AthkarProgressWidgetSmallView(entry: entry)
+        Group {
+            switch family {
+            case .systemSmall:
+                AthkarProgressWidgetSmallView(entry: entry)
+            case .systemMedium:
+                AthkarProgressWidgetMediumView(entry: entry)
+            default:
+                AthkarProgressWidgetSmallView(entry: entry)
+            }
         }
+        .widgetURL(URL(string: "myapp:///athkar"))
     }
 }
 
