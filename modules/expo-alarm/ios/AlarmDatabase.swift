@@ -88,7 +88,12 @@ class AlarmDatabase {
             guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
             defer { sqlite3_finalize(stmt) }
             bind?(stmt!)
-            sqlite3_step(stmt)
+            let result = sqlite3_step(stmt)
+            if result != SQLITE_DONE && result != SQLITE_ROW {
+                let errMsg = String(cString: sqlite3_errmsg(db))
+                PersistentLog.shared.alarm("DB execute error (\(result)): \(errMsg)")
+                return false
+            }
             return true
         }
     }
