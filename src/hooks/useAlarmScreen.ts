@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
@@ -98,7 +98,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     return () => Vibration.cancel();
   }, [isSnoozed, isDismissed, vibrationPattern]);
 
-  const handleChallengeComplete = async () => {
+  const handleChallengeComplete = useCallback(async () => {
     setIsDismissed(true);
     Vibration.cancel();
     ExpoAlarm.stopAllAlarmEffects();
@@ -109,9 +109,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
       pathname: "/alarm-complete",
       params: { alarmType },
     });
-  };
+  }, [alarmId, alarmType, completeAlarm]);
 
-  const handleSnooze = async () => {
+  const handleSnooze = useCallback(async () => {
     if (!canSnooze) return;
 
     Vibration.cancel();
@@ -124,7 +124,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
       setSnoozeEndTime(result.snoozeEndTime);
       setSnoozeTimeRemaining(snoozeDuration * 60);
     }
-  };
+  }, [alarmId, canSnooze, alarmSettings.snooze.durationMinutes, snoozeAlarm]);
 
   return {
     isSnoozed,

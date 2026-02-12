@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -35,9 +35,10 @@ export default function AlarmTriggeredScreen() {
     handleSnooze,
   } = useAlarmScreen(alarmId, alarmType);
 
-  // Handle action=complete from Android overlay - redirect immediately
+  const hasRedirected = useRef(false);
   useEffect(() => {
-    if (action === "complete") {
+    if (action === "complete" && !hasRedirected.current) {
+      hasRedirected.current = true;
       router.replace({ pathname: "/alarm-complete", params: { alarmType } });
     }
   }, [action, alarmType]);

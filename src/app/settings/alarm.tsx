@@ -289,9 +289,9 @@ const AlarmSettings = () => {
     checkAllPermissions();
   }, [becameActiveAt, checkAllPermissions]);
 
-  const handlePermissionRequest = (item: PermissionItem) => {
+  const handlePermissionRequest = async (item: PermissionItem) => {
     hapticMedium();
-    item.onRequest();
+    await item.onRequest();
   };
 
   const alarmTypes = [
