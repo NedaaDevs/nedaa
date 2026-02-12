@@ -19,6 +19,7 @@
 		<string>ur</string>
 		<string>en</string>
 		<string>ar</string>
+		<string>ms</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
