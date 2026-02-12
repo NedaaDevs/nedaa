@@ -324,7 +324,7 @@ import AppIntents
             )
         }
 
-        _ = startFiringLiveActivity(
+        _ = await startFiringLiveActivity(
             alarmId: originalAlarmId,
             alarmType: metadata.alarmType,
             title: metadata.title
@@ -377,11 +377,15 @@ import AppIntents
         await MainActor.run {
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                backgroundTaskID = .invalid
             }
 
-            backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "AlarmBypassProtection") { [backgroundTaskID] in
+            backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "AlarmBypassProtection") {
                 plog.observer("BG task expired")
-                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                if backgroundTaskID != .invalid {
+                    UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                    backgroundTaskID = .invalid
+                }
             }
         }
 
@@ -498,7 +502,7 @@ func updateLiveActivityForDismiss(alarmId: String, metadata: (alarmType: String,
 }
 
 @available(iOS 16.2, *)
-func startFiringLiveActivity(alarmId: String, alarmType: String, title: String) -> String? {
+func startFiringLiveActivity(alarmId: String, alarmType: String, title: String) async -> String? {
     guard ActivityAuthorizationInfo().areActivitiesEnabled else {
         return nil
     }
@@ -506,12 +510,10 @@ func startFiringLiveActivity(alarmId: String, alarmType: String, title: String) 
     let existingCount = Activity<AlarmActivityAttributes>.activities.count
     if existingCount > 0 {
         for activity in Activity<AlarmActivityAttributes>.activities {
-            Task {
-                let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
-                await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
-            }
+            let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
+            await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
         }
-        Thread.sleep(forTimeInterval: 0.1)
+        try? await Task.sleep(nanoseconds: 100_000_000)
     }
 
     let attributes = AlarmActivityAttributes(
