@@ -44,6 +44,7 @@ fun PrayerAthkarContent(
     previousPrayer: PrayerData?,
     athkarSummary: AthkarSummary,
     timezone: TimeZone? = null,
+    currentDate: Date? = null,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
@@ -61,9 +62,9 @@ fun PrayerAthkarContent(
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Hijri date centered at top
+        // Hijri date centered at top (compact for tight 4x2 layout)
         Text(
-            text = DateUtils.getHijriDateString(Date(), tz),
+            text = DateUtils.getHijriDateStringCompact(currentDate ?: Date(), tz),
             style = TextStyle(
                 color = NedaaColors.GlanceColors.textSecondary,
                 fontSize = 11.sp

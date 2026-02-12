@@ -50,6 +50,7 @@ class PrayerAthkarWidget : GlanceAppWidget() {
                 previousPrayer = previousPrayer,
                 athkarSummary = athkarSummary,
                 timezone = todayPrayers?.getTimezoneObj(),
+                currentDate = todayPrayers?.getDateAsDate(),
                 modifier = GlanceModifier.fillMaxSize()
             )
         }
