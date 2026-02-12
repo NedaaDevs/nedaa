@@ -33,16 +33,16 @@ class AlarmAudioManager(private val context: Context) {
     private var savedSystemVolume: Int? = null
 
     private fun getVibrator(): Vibrator {
-        if (vibrator == null) {
-            vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                manager.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
+        vibrator?.let { return it }
+        val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
-        return vibrator!!
+        vibrator = v
+        return v
     }
 
     // TEMP: Debug logging for settings feature - remove after verification
@@ -50,6 +50,7 @@ class AlarmAudioManager(private val context: Context) {
         AlarmLogger.getInstance(context).d("AlarmAudio", message)
     }
 
+    @Synchronized
     fun saveSystemVolume() {
         // Only save if we don't already have a saved value (avoid overwriting original)
         if (savedSystemVolume != null) {
@@ -61,6 +62,7 @@ class AlarmAudioManager(private val context: Context) {
         log("TEMP: Saved system volume: $savedSystemVolume")
     }
 
+    @Synchronized
     fun restoreSystemVolume() {
         savedSystemVolume?.let { vol ->
             try {
@@ -78,6 +80,7 @@ class AlarmAudioManager(private val context: Context) {
         return startAlarmSound(soundName, 1.0f)
     }
 
+    @Synchronized
     fun startAlarmSound(soundName: String, volumeLevel: Float): Boolean {
         stopAlarmSound()
         log("TEMP: Starting alarm sound=$soundName volumeLevel=$volumeLevel")
@@ -150,6 +153,7 @@ class AlarmAudioManager(private val context: Context) {
         }
     }
 
+    @Synchronized
     fun stopAlarmSound() {
         try {
             mediaPlayer?.let {
@@ -165,6 +169,7 @@ class AlarmAudioManager(private val context: Context) {
         systemRingtone = null
     }
 
+    @Synchronized
     fun isPlaying(): Boolean {
         return try {
             mediaPlayer?.isPlaying == true || systemRingtone?.isPlaying == true
@@ -173,6 +178,7 @@ class AlarmAudioManager(private val context: Context) {
         }
     }
 
+    @Synchronized
     fun setVolume(vol: Float) {
         volume = vol.coerceIn(0f, 1f)
         try {
@@ -186,6 +192,7 @@ class AlarmAudioManager(private val context: Context) {
         startVibration("default")
     }
 
+    @Synchronized
     fun startVibration(patternName: String) {
         if (isVibrating) return
         isVibrating = true
@@ -209,6 +216,7 @@ class AlarmAudioManager(private val context: Context) {
         }
     }
 
+    @Synchronized
     fun stopVibration() {
         if (!isVibrating) return
         isVibrating = false
@@ -217,6 +225,7 @@ class AlarmAudioManager(private val context: Context) {
         } catch (_: Exception) {}
     }
 
+    @Synchronized
     fun stopAll() {
         stopAlarmSound()
         stopVibration()
