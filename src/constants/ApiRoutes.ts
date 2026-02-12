@@ -1,5 +1,5 @@
 export const PRAYER_TIMES = {
-  BASE: "/prayer-times",
+  BASE: "/prayers",
   get GET_PRAYER_TIMES() {
     return `${this.BASE}`;
   },
@@ -9,5 +9,5 @@ export const PRAYER_TIMES = {
 };
 
 export const GEOCODE = {
-  REVERSE: `/reverse-geocode`,
+  REVERSE: `/locations/reverse-geocode`,
 };

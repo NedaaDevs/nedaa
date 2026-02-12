@@ -1,6 +1,6 @@
 export type ReverseGeocodeParams = {
-  latitude: number;
-  longitude: number;
+  lat: number;
+  lng: number;
   locale: string;
 };
 

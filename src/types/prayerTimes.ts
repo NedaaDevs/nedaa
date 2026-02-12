@@ -19,6 +19,8 @@ export type PrayerMonthEntry = {
 
 export type PrayerTimesResponse = {
   timezone: string;
+  coordinates: { lat: number; lng: number };
+  provider: string;
   months: {
     [monthNumber: string]: PrayerMonthEntry[];
   };
@@ -26,7 +28,7 @@ export type PrayerTimesResponse = {
 
 export type PrayerTimesParams = {
   lat: number;
-  long: number;
+  lng: number;
 };
 
 export type PrayerName = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
@@ -56,9 +58,11 @@ export type Prayer = {
 };
 
 export type Provider = {
-  id: number;
+  id: string;
   name: string;
   website: string;
+  description: string;
+  supportedParams: string[];
 };
 
 export type OtherTiming = {

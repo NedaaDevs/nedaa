@@ -14,11 +14,11 @@ type ProviderSettings = AladhanSettings; // | SecondProviderSettings
  * Provider settings mapped by provider Id
  */
 interface AllProviderSettings {
-  [providerId: number]: ProviderSettings | undefined;
+  [providerId: string]: ProviderSettings | undefined;
 }
 
 interface ProviderSettingsState {
-  currentProviderId: number;
+  currentProviderId: string;
 
   // Settings for all providers by Id
   allSettings: AllProviderSettings;
@@ -42,7 +42,7 @@ interface ProviderSettingsActions {
   /**
    * Switch to a different provider by Id
    */
-  selectProviderById: (providerId: number) => void;
+  selectProviderById: (providerId: string) => void;
 
   /**
    * Switch to a different provider by key
@@ -68,13 +68,12 @@ interface ProviderSettingsActions {
 type ProviderSettingsStore = ProviderSettingsState & ProviderSettingsActions;
 
 // Helper to get provider key by Id
-const getProviderKeyById = (id: number): ProviderKey | undefined => {
+const getProviderKeyById = (id: string): ProviderKey | undefined => {
   const entry = Object.entries(PRAYER_TIME_PROVIDERS).find(([_, provider]) => provider.id === id);
   return entry ? (entry[0] as ProviderKey) : undefined;
 };
 
-// Helper to get default settings for a provider by Id
-const getProviderDefaultsById = (providerId: number): ProviderSettings => {
+const getProviderDefaultsById = (providerId: string): ProviderSettings => {
   const providerKey = getProviderKeyById(providerId);
   if (!providerKey) return {} as ProviderSettings;
 
@@ -199,11 +198,32 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
       }),
       {
         name: "provider-settings",
+        version: 1,
         storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
           currentProviderId: state.currentProviderId,
           allSettings: state.allSettings,
         }),
+        migrate: (persisted: any, version: number) => {
+          if (version === 0) {
+            const old = persisted as {
+              currentProviderId: number | string;
+              allSettings: Record<string, any>;
+            };
+            const ID_MAP: Record<string, string> = { "1": "aladhan" };
+            const newId =
+              typeof old.currentProviderId === "number"
+                ? ID_MAP[String(old.currentProviderId)] || "aladhan"
+                : old.currentProviderId;
+            const newSettings: Record<string, any> = {};
+            for (const [key, value] of Object.entries(old.allSettings)) {
+              const mappedKey = ID_MAP[key] || key;
+              newSettings[mappedKey] = value;
+            }
+            return { ...old, currentProviderId: newId, allSettings: newSettings };
+          }
+          return persisted;
+        },
       }
     ),
     { name: "ProviderSettings" }

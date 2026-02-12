@@ -69,16 +69,14 @@ const makeApiRequest = (
     .then((response) => {
       const statusNumber = response.status;
       const success = statusNumber >= 200 && statusNumber < 300;
-      const { data: responseData, message: responseMessage } = response.data;
       return {
-        data: responseData,
-        message: responseMessage,
+        data: response.data,
         status: statusNumber,
         success,
       } as Response;
     })
     .catch((error) => {
-      let message = error?.response?.data.message;
+      let message = error?.response?.data?.error;
       const statusNumber = error?.response?.status;
       let errors = [];
 
@@ -89,8 +87,8 @@ const makeApiRequest = (
         message = "Request timeout";
         NetworkStatusBanner.showSlow(i18n.t("network.messages.timeout"));
       } else if (error.response) {
-        message = error.response.data.message ? error.response.data.message : error.message;
-        errors = error.response.data.errors ?? [];
+        message = error.response.data?.error || error.message;
+        errors = error.response.data?.errors ?? [];
 
         if (statusNumber >= 500) {
           NetworkStatusBanner.showError(i18n.t("network.messages.serverError"));

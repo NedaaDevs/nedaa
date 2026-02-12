@@ -85,8 +85,8 @@ export const useLocationStore = create<LocationStore>()(
             // Get localized version
             const localizedGeocode = await get()
               .reverseGeocode({
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
+                lat: location.coords.latitude,
+                lng: location.coords.longitude,
                 locale: appStore.getState().locale,
               })
               .catch((error) => {
@@ -230,8 +230,8 @@ export const useLocationStore = create<LocationStore>()(
 
           const geocodeAdd = await get()
             .reverseGeocode({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
               locale: appStore.getState().locale,
             })
             .catch((e) => console.error("Failed to update address translation:", e));
@@ -257,8 +257,8 @@ export const useLocationStore = create<LocationStore>()(
         reverseGeocode: async (params) => {
           try {
             const response = await geocodeApi.reverseGeocode({
-              latitude: params.latitude,
-              longitude: params.longitude,
+              lat: params.lat,
+              lng: params.lng,
               locale: params.locale,
             });
 

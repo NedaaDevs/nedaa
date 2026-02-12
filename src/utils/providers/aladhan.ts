@@ -9,44 +9,51 @@ import type {
   AladhanTuning,
   AladhanTuningString,
   AladhanApiParams,
+  AladhanApiOptions,
 } from "@/types/providers/aladhan";
 
-import { getTimezoneYear, getTimezoneMonth } from "@/utils/date";
+import { getTimezoneYear } from "@/utils/date";
 
 /**
  * Return an api ready params
  */
-export const transformAladhanParams = (): AladhanApiParams => {
+export const transformAladhanParams = (yearOverride?: number): AladhanApiParams => {
   const location = useLocationStore.getState().locationDetails;
   const settings = useProviderSettingsStore.getState().getCurrentSettings<AladhanSettings>();
 
-  // Get current date
-  const year = getTimezoneYear(location.timezone);
-  const month = getTimezoneMonth(location.timezone);
+  const year = yearOverride ?? getTimezoneYear(location.timezone);
 
-  // Build params
   const params: AladhanApiParams = {
     lat: location.coords.latitude,
-    long: location.coords.longitude,
+    lng: location.coords.longitude,
     year,
-    month,
   };
 
-  // Add other settings if they exist
+  const options: AladhanApiOptions = {};
+  let hasOptions = false;
+
   if (settings?.method !== undefined) {
-    params.method = settings.method;
+    options.method = settings.method;
+    hasOptions = true;
   }
 
   if (settings?.madhab !== undefined) {
-    params.school = settings.madhab;
+    options.school = settings.madhab;
+    hasOptions = true;
   }
 
   if (settings?.midnightMode !== undefined) {
-    params.midnightMode = settings.midnightMode;
+    options.midnightMode = settings.midnightMode;
+    hasOptions = true;
   }
 
   if (settings?.tune) {
-    params.tune = tuningToString(settings.tune);
+    options.tune = tuningToString(settings.tune);
+    hasOptions = true;
+  }
+
+  if (hasOptions) {
+    params.options = options;
   }
 
   return params;

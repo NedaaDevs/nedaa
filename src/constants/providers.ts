@@ -5,7 +5,7 @@
 
 export const PRAYER_TIME_PROVIDERS = {
   ALADHAN: {
-    id: 1,
+    id: "aladhan",
     name: "Aladhan",
     website: "https://aladhan.com",
     docs: "https://aladhan.com/prayer-times-api",

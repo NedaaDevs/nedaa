@@ -197,15 +197,18 @@ export interface AladhanSettings {
   tune?: AladhanTuning;
 }
 
-export type AladhanApiParams = {
-  lat: number;
-  long: number;
-  year: number;
-  month: number;
+export type AladhanApiOptions = {
   method?: AladhanMethodId;
   school?: AladhanMadhabId;
   midnightMode?: AladhanMidnightModeId;
   tune?: AladhanTuningString;
+};
+
+export type AladhanApiParams = {
+  lat: number;
+  lng: number;
+  year: number;
+  options?: AladhanApiOptions;
 };
 
 /**

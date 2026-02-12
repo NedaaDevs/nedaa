@@ -45,7 +45,7 @@ export const ProviderList: FC = () => {
         return (
           <SelectItem
             key={provider.id}
-            value={provider.id.toString()}
+            value={provider.id}
             label={provider.name}
             className={`mx-2 text-typography mb-2 rounded-xl overflow-hidden border-0 ${
               isSelected ? "bg-surface-active" : "bg-background-secondary"
@@ -114,7 +114,7 @@ export const ProviderList: FC = () => {
       )}
 
       <Select
-        selectedValue={(selectedProvider && selectedProvider.id.toString()) ?? null}
+        selectedValue={(selectedProvider && selectedProvider.id) ?? null}
         initialLabel={(selectedProvider && selectedProvider.name) ?? ""}
         isDisabled={isGettingProviders || isChangingProvider}
         onValueChange={handleProviderChange}
