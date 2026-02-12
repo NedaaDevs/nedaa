@@ -282,7 +282,6 @@ const AlarmSettings = () => {
     }
 
     setIsCheckingPermissions(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildIOSPermission]);
 
   useEffect(() => {
