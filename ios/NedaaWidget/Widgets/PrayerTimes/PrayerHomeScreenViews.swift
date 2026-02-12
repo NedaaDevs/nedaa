@@ -4,8 +4,23 @@ import WidgetKit
 // MARK: - Date Extensions
 
 extension Date {
-    /// Automatic locale-aware Hijri date (uses device language)
+    /// Automatic locale-aware Hijri date with weekday (uses device language)
     func hijriDateString(timezone: TimeZone = .current) -> String {
+        var calendar = Calendar(identifier: .islamicUmmAlQura)
+        calendar.timeZone = timezone
+        calendar.locale = Locale.current
+
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale.current
+        formatter.timeZone = timezone
+        formatter.dateFormat = "EEEE، d MMMM yyyy"
+
+        return formatter.string(from: self)
+    }
+
+    /// Compact Hijri date without weekday (for small widgets)
+    func hijriDateStringCompact(timezone: TimeZone = .current) -> String {
         var calendar = Calendar(identifier: .islamicUmmAlQura)
         calendar.timeZone = timezone
         calendar.locale = Locale.current
@@ -19,7 +34,7 @@ extension Date {
         return formatter.string(from: self)
     }
 
-    /// Always returns Arabic Hijri date
+    /// Always returns Arabic Hijri date with weekday
     func hijriDateStringArabic(timezone: TimeZone = .current) -> String {
         var calendar = Calendar(identifier: .islamicUmmAlQura)
         calendar.timeZone = timezone
@@ -29,12 +44,12 @@ extension Date {
         formatter.calendar = calendar
         formatter.locale = Locale(identifier: "ar")
         formatter.timeZone = timezone
-        formatter.dateFormat = "d MMMM yyyy"
+        formatter.dateFormat = "EEEE، d MMMM yyyy"
 
         return formatter.string(from: self)
     }
 
-    /// Always returns English Hijri date
+    /// Always returns English Hijri date with weekday
     func hijriDateStringEnglish(timezone: TimeZone = .current) -> String {
         var calendar = Calendar(identifier: .islamicUmmAlQura)
         calendar.timeZone = timezone
@@ -44,7 +59,7 @@ extension Date {
         formatter.calendar = calendar
         formatter.locale = Locale(identifier: "en")
         formatter.timeZone = timezone
-        formatter.dateFormat = "d MMMM yyyy"
+        formatter.dateFormat = "EEEE, d MMMM yyyy"
 
         return formatter.string(from: self)
     }
@@ -102,8 +117,8 @@ struct SmallPrayerTimesView: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            // Hijri date at the top
-            Text(entry.date.hijriDateString())
+            // Hijri date at the top (compact for small widget)
+            Text(entry.date.hijriDateStringCompact())
                 .font(.system(size: 10))
                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                 .lineLimit(1)

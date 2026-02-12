@@ -29,32 +29,40 @@ object DateUtils {
     )
 
     /**
-     * Get Hijri date string for a given date (locale-aware)
-     * Format: "day MonthName year" e.g., "26 Jumada al-Awwal 1447"
+     * Get Hijri date string for a given date (locale-aware, with weekday)
+     * Format: "Weekday, day MonthName year" e.g., "Thursday, 26 Jumada al-Awwal 1447"
      */
     fun getHijriDateString(date: Date, timezone: TimeZone? = null): String {
         val locale = Locale.getDefault()
-        return getHijriDateForLocale(date, timezone, locale)
+        return getHijriDateForLocale(date, timezone, locale, includeWeekday = true)
+    }
+
+    /**
+     * Get Hijri date string without weekday (for compact displays)
+     */
+    fun getHijriDateStringCompact(date: Date, timezone: TimeZone? = null): String {
+        val locale = Locale.getDefault()
+        return getHijriDateForLocale(date, timezone, locale, includeWeekday = false)
     }
 
     /**
      * Get Hijri date string in Arabic
      */
     fun getHijriDateArabic(date: Date, timezone: TimeZone? = null): String {
-        return getHijriDateForLocale(date, timezone, Locale("ar"))
+        return getHijriDateForLocale(date, timezone, Locale("ar"), includeWeekday = true)
     }
 
     /**
      * Get Hijri date string in English
      */
     fun getHijriDateEnglish(date: Date, timezone: TimeZone? = null): String {
-        return getHijriDateForLocale(date, timezone, Locale.ENGLISH)
+        return getHijriDateForLocale(date, timezone, Locale.ENGLISH, includeWeekday = true)
     }
 
     /**
      * Get Hijri date for a specific locale
      */
-    private fun getHijriDateForLocale(date: Date, timezone: TimeZone?, locale: Locale): String {
+    private fun getHijriDateForLocale(date: Date, timezone: TimeZone?, locale: Locale, includeWeekday: Boolean = true): String {
         return try {
             val tz = timezone ?: TimeZone.getDefault()
 
@@ -72,7 +80,15 @@ object DateUtils {
             val monthNames = if (locale.language == "ar") ISLAMIC_MONTHS_AR else ISLAMIC_MONTHS_EN
             val monthName = if (month in 0..11) monthNames[month] else ""
 
-            val dateStr = "$day $monthName $year"
+            val dateStr = if (includeWeekday) {
+                val weekdayFormatter = SimpleDateFormat("EEEE", locale)
+                weekdayFormatter.timeZone = tz
+                val weekday = weekdayFormatter.format(date)
+                val separator = if (locale.language == "ar") "،" else ","
+                "$weekday$separator $day $monthName $year"
+            } else {
+                "$day $monthName $year"
+            }
             if (locale.language == "ar") "\u200F$dateStr" else dateStr
         } catch (e: Exception) {
             SimpleDateFormat("dd/MM/yyyy", locale).format(date)
