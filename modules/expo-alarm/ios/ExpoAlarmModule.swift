@@ -38,7 +38,14 @@ public struct AlarmActivityAttributes: ActivityAttributes {
 
 public class ExpoAlarmModule: Module {
 
-    private var scheduledAlarmIds: Set<String> = []
+    private var _scheduledAlarmIds: Set<String> = []
+    private let alarmIdsLock = NSLock()
+
+    private func withAlarmIds<T>(_ body: (inout Set<String>) -> T) -> T {
+        alarmIdsLock.lock()
+        defer { alarmIdsLock.unlock() }
+        return body(&_scheduledAlarmIds)
+    }
 
     public func definition() -> ModuleDefinition {
         Name("ExpoAlarm")
@@ -142,7 +149,7 @@ public class ExpoAlarmModule: Module {
                         let alarmUUID = UUID(uuidString: id) ?? UUID()
                         _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
 
-                        self.scheduledAlarmIds.insert(id)
+                        self.withAlarmIds { $0.insert(id) }
 
                         AlarmDatabase.shared.saveAlarm(
                             id: id,
@@ -192,14 +199,14 @@ public class ExpoAlarmModule: Module {
                     do {
                         if let alarmId = UUID(uuidString: id) {
                             try AlarmManager.shared.cancel(id: alarmId)
-                            self.scheduledAlarmIds.remove(id)
+                            self.withAlarmIds { $0.remove(id) }
                         }
-                        if self.scheduledAlarmIds.isEmpty {
+                        if self.withAlarmIds({ $0.isEmpty }) {
                             AlarmAudioManager.shared.stopQuietKeepAlive()
                         }
                         promise.resolve(true)
                     } catch {
-                        self.scheduledAlarmIds.remove(id)
+                        self.withAlarmIds { $0.remove(id) }
                         promise.resolve(true)
                     }
                 }
@@ -213,12 +220,13 @@ public class ExpoAlarmModule: Module {
             #if canImport(AlarmKit)
             if #available(iOS 26.1, *) {
                 Task {
-                    for id in self.scheduledAlarmIds {
+                    let idsToCancel = self.withAlarmIds { Array($0) }
+                    for id in idsToCancel {
                         if let alarmId = UUID(uuidString: id) {
                             try? AlarmManager.shared.cancel(id: alarmId)
                         }
                     }
-                    self.scheduledAlarmIds.removeAll()
+                    self.withAlarmIds { $0.removeAll() }
 
                     let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
                     for id in backupIds {
@@ -246,7 +254,7 @@ public class ExpoAlarmModule: Module {
         }
 
         Function("getScheduledAlarmIds") { () -> [String] in
-            return Array(self.scheduledAlarmIds)
+            return self.withAlarmIds { Array($0) }
         }
 
         AsyncFunction("getAlarmKitAlarms") { (promise: Promise) in
