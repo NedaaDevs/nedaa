@@ -105,7 +105,7 @@ class AlarmLogger private constructor(private val context: Context) {
     }
 
     fun getLogsAsString(): String {
-        return logs.joinToString("\n") { it.format(dateFormat) }
+        return logs.joinToString("\n") { it.format(dateFormat.get()!!) }
     }
 
     fun getFullLog(): String {
