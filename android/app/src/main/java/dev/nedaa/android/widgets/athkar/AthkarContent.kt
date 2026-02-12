@@ -131,49 +131,56 @@ fun AthkarContent(
                 )
             }
 
-            // Streaks row (current and best)
+            // Streaks (stacked vertically to prevent horizontal overflow on 2x2)
             Spacer(modifier = GlanceModifier.height(4.dp))
-            Row(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Current streak
-                Text(
-                    text = "🔥 ${summary.currentStreak}",
-                    style = TextStyle(
-                        color = NedaaColors.GlanceColors.text,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🔥 ${summary.currentStreak}",
+                        style = TextStyle(
+                            color = NedaaColors.GlanceColors.text,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     )
-                )
-                Spacer(modifier = GlanceModifier.width(2.dp))
-                Text(
-                    text = context.getString(R.string.widget_current_streak),
-                    style = TextStyle(
-                        color = NedaaColors.GlanceColors.textSecondary,
-                        fontSize = 9.sp
+                    Spacer(modifier = GlanceModifier.width(4.dp))
+                    Text(
+                        text = context.getString(R.string.widget_current_streak),
+                        style = TextStyle(
+                            color = NedaaColors.GlanceColors.textSecondary,
+                            fontSize = 9.sp
+                        ),
+                        maxLines = 1
                     )
-                )
+                }
 
-                Spacer(modifier = GlanceModifier.width(8.dp))
+                Spacer(modifier = GlanceModifier.height(2.dp))
 
-                // Best/longest streak
-                Text(
-                    text = "⭐ ${summary.longestStreak}",
-                    style = TextStyle(
-                        color = NedaaColors.GlanceColors.text,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "⭐ ${summary.longestStreak}",
+                        style = TextStyle(
+                            color = NedaaColors.GlanceColors.text,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     )
-                )
-                Spacer(modifier = GlanceModifier.width(2.dp))
-                Text(
-                    text = context.getString(R.string.widget_best_streak),
-                    style = TextStyle(
-                        color = NedaaColors.GlanceColors.textSecondary,
-                        fontSize = 9.sp
+                    Spacer(modifier = GlanceModifier.width(4.dp))
+                    Text(
+                        text = context.getString(R.string.widget_best_streak),
+                        style = TextStyle(
+                            color = NedaaColors.GlanceColors.textSecondary,
+                            fontSize = 9.sp
+                        ),
+                        maxLines = 1
                     )
-                )
+                }
             }
         }
     }
