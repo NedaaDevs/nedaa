@@ -468,10 +468,15 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
             }
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
 
-            if options.contains(.shouldResume) && isPlaying {
+            if options.contains(.shouldResume) {
                 configureSession()
-                audioPlayer?.play()
-                log("Resumed after interruption")
+                if isPlaying {
+                    audioPlayer?.play()
+                }
+                if isKeepAliveActive {
+                    keepAlivePlayer?.play()
+                }
+                log("Resumed after interruption (playing=\(isPlaying), keepAlive=\(isKeepAliveActive))")
             }
 
         @unknown default:

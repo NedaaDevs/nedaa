@@ -53,7 +53,7 @@ public struct OpenNedaaAlarmIntent: LiveActivityIntent {
             AlarmDatabase.shared.clearBypassState()
 
             let bypassCenter = UNUserNotificationCenter.current()
-            bypassCenter.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+            bypassCenter.removePendingNotificationRequests(withIdentifiers: AlarmObserver.bypassNotificationIds)
 
             plog.intent("Challenge completed, cleanup done")
             return .result()

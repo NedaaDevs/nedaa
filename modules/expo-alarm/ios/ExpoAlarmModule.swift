@@ -146,7 +146,10 @@ public class ExpoAlarmModule: Module {
                             sound: .default
                         )
 
-                        let alarmUUID = UUID(uuidString: id) ?? UUID()
+                        guard let alarmUUID = UUID(uuidString: id) else {
+                            promise.reject("ERR_INVALID_UUID", "Invalid alarm ID: \(id)")
+                            return
+                        }
                         _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
 
                         self.withAlarmIds { $0.insert(id) }
@@ -242,7 +245,7 @@ public class ExpoAlarmModule: Module {
                     AlarmDatabase.shared.clearBypassState()
                     AlarmDatabase.shared.clearPendingChallenge()
                     let center = UNUserNotificationCenter.current()
-                    center.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+                    center.removePendingNotificationRequests(withIdentifiers: AlarmObserver.bypassNotificationIds)
 
                     PersistentLog.shared.alarm("Cancelled all alarms, backups, BGTask, bypass, keep-alive")
                     promise.resolve(true)
@@ -427,7 +430,7 @@ public class ExpoAlarmModule: Module {
                     AlarmDatabase.shared.clearBypassState()
 
                     let center = UNUserNotificationCenter.current()
-                    center.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+                    center.removePendingNotificationRequests(withIdentifiers: AlarmObserver.bypassNotificationIds)
                     PersistentLog.shared.alarm("Cancelled \(cancelledCount) backups, cleared bypass + notifications")
 
                     promise.resolve(cancelledCount)
