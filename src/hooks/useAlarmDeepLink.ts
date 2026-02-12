@@ -6,7 +6,18 @@ import { getSnoozeQueue, clearSnoozeQueue } from "expo-alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
 
-const handledAlarmIds = new Set<string>();
+const handledAlarmIds = new Map<string, number>();
+const STALE_HANDLED_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours
+let isProcessingQueues = false;
+
+function pruneHandledAlarmIds() {
+  const cutoff = Date.now() - STALE_HANDLED_THRESHOLD_MS;
+  for (const [id, timestamp] of handledAlarmIds) {
+    if (timestamp < cutoff) {
+      handledAlarmIds.delete(id);
+    }
+  }
+}
 
 const navGuard = {
   activeAlarmId: null as string | null,
@@ -23,11 +34,23 @@ export function setAlarmScreenActive(alarmId: string | null) {
 }
 
 export function markAlarmHandled(alarmId: string) {
-  handledAlarmIds.add(alarmId);
+  handledAlarmIds.set(alarmId, Date.now());
 }
 
 export function isAlarmHandled(alarmId: string): boolean {
   return handledAlarmIds.has(alarmId);
+}
+
+async function processQueues() {
+  if (isProcessingQueues) return;
+  isProcessingQueues = true;
+  try {
+    await processCompletedQueue();
+    await processSnoozeQueue();
+    pruneHandledAlarmIds();
+  } finally {
+    isProcessingQueues = false;
+  }
 }
 
 // Process alarms completed via Android overlay
@@ -41,7 +64,7 @@ async function processCompletedQueue() {
     const { completeAlarm } = useAlarmStore.getState();
 
     for (const item of queue) {
-      handledAlarmIds.add(item.alarmId);
+      handledAlarmIds.set(item.alarmId, Date.now());
       await completeAlarm(item.alarmId);
     }
 
@@ -61,7 +84,7 @@ async function processSnoozeQueue() {
 
     for (const item of queue) {
       // Mark original alarm as handled
-      handledAlarmIds.add(item.originalAlarmId);
+      handledAlarmIds.set(item.originalAlarmId, Date.now());
 
       // Remove old alarm from store
       useAlarmStore.setState((state) => {
@@ -137,8 +160,7 @@ export function useAlarmDeepLink() {
       initialUrlProcessed.current = true;
 
       // Process any alarms completed/snoozed via Android overlay first
-      processCompletedQueue();
-      processSnoozeQueue();
+      processQueues();
 
       Linking.getInitialURL().then((url) => {
         if (url) {
@@ -155,8 +177,7 @@ export function useAlarmDeepLink() {
 
     const appStateSubscription = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        processCompletedQueue();
-        processSnoozeQueue();
+        processQueues();
         detectActiveAlarm(scheduledAlarms, handledAlarmIds).then((active) => {
           if (active) {
             navigateToAlarm(active.alarmId, active.alarmType, active.source);
@@ -186,7 +207,7 @@ async function processAlarmUrl(url: string) {
 
     // Handle action=complete (from Android overlay challenge completion)
     if (action === "complete") {
-      await processCompletedQueue();
+      await processQueues();
       router.replace({
         pathname: "/alarm-complete",
         params: { alarmType },
@@ -196,7 +217,7 @@ async function processAlarmUrl(url: string) {
 
     // Handle action=snooze (from Android overlay snooze button)
     if (action === "snooze") {
-      processSnoozeQueue();
+      await processQueues();
       return;
     }
 
