@@ -36,6 +36,7 @@ class AlarmService : Service() {
         }
 
         fun stop(context: Context) {
+            if (!isRunning) return
             val intent = Intent(context, AlarmService::class.java).apply {
                 action = ACTION_STOP
             }

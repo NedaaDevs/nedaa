@@ -80,7 +80,8 @@ class ExpoAlarmModule : Module() {
                 db.deleteAlarm(id)
                 promise.resolve(true)
             } catch (e: Exception) {
-                promise.resolve(true)
+                Log.e("ExpoAlarm", "cancelAlarm failed for $id: ${e.message}")
+                promise.resolve(false)
             }
         }
 
@@ -96,7 +97,8 @@ class ExpoAlarmModule : Module() {
                 }
                 promise.resolve(true)
             } catch (e: Exception) {
-                promise.resolve(null)
+                Log.e("ExpoAlarm", "cancelAllAlarms failed: ${e.message}")
+                promise.resolve(false)
             }
         }
 
