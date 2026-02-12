@@ -17,7 +17,9 @@ class ExpoWidgetsModule : Module() {
         "prayer_medium" to "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverMedium",
         "prayer_large" to "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverLarge",
         "athkar" to "dev.nedaa.android.widgets.athkar.AthkarReceiver",
+        "athkar_medium" to "dev.nedaa.android.widgets.athkar.AthkarReceiverMedium",
         "qada" to "dev.nedaa.android.widgets.qada.QadaReceiver",
+        "qada_medium" to "dev.nedaa.android.widgets.qada.QadaReceiverMedium",
         "prayer_athkar" to "dev.nedaa.android.widgets.combined.PrayerAthkarReceiver"
     )
 

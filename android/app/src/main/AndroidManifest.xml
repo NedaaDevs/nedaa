@@ -66,11 +66,23 @@
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/athkar_widget_info"/>
     </receiver>
+    <receiver android:name=".widgets.athkar.AthkarReceiverMedium" android:exported="true" android:label="@string/widget_athkar_medium_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/athkar_widget_medium_info"/>
+    </receiver>
     <receiver android:name=".widgets.qada.QadaReceiver" android:exported="true" android:label="@string/widget_qada_name">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/qada_widget_info"/>
+    </receiver>
+    <receiver android:name=".widgets.qada.QadaReceiverMedium" android:exported="true" android:label="@string/widget_qada_medium_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/qada_widget_medium_info"/>
     </receiver>
   </application>
 </manifest>

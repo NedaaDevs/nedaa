@@ -56,8 +56,9 @@ class QadaWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            Log.d(TAG, "Updating Qada widget")
+            Log.d(TAG, "Updating Qada widgets")
             QadaWidget().updateAll(context)
+            QadaWidgetMedium().updateAll(context)
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Error updating widget", e)

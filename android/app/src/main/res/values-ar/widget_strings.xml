@@ -49,7 +49,9 @@
     <string name="widget_prayer_times_medium_description">يعرض جميع أوقات الصلاة في صف (٤×٢)</string>
     <string name="widget_prayer_times_large_description">يعرض جميع أوقات الصلاة بالتفصيل (٤×٤)</string>
     <string name="widget_athkar_description">تتبع تقدم أذكارك اليومية وسلسلة المواظبة</string>
+    <string name="widget_athkar_medium_description">تقدم الأذكار مع حالة الصباح والمساء وسلسلة المواظبة (٤×٢)</string>
     <string name="widget_qada_description">تتبع صيام القضاء</string>
+    <string name="widget_qada_medium_description">متتبع القضاء مع العدد المتبقي والتقدم (٤×٢)</string>
     <string name="widget_combined_description">أوقات الصلاة وتقدم الأذكار معاً</string>
 
     <!-- Widget names (shown in widget picker) -->
@@ -58,7 +60,9 @@
     <string name="widget_prayer_times_medium_name">أوقات الصلاة (متوسط)</string>
     <string name="widget_prayer_times_large_name">أوقات الصلاة (كبير)</string>
     <string name="widget_athkar_name">نداء - الأذكار</string>
+    <string name="widget_athkar_medium_name">الأذكار (متوسط)</string>
     <string name="widget_qada_name">نداء - القضاء</string>
+    <string name="widget_qada_medium_name">القضاء (متوسط)</string>
     <string name="widget_combined_name">نداء - الصلاة والأذكار</string>
 
     <!-- Configuration -->

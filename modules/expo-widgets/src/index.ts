@@ -7,7 +7,9 @@ export type WidgetType =
   | "prayer_medium"
   | "prayer_large"
   | "athkar"
+  | "athkar_medium"
   | "qada"
+  | "qada_medium"
   | "prayer_athkar";
 
 export function isPinningSupported(): boolean {

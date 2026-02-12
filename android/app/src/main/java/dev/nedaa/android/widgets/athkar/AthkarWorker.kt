@@ -69,8 +69,9 @@ class AthkarWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            Log.d(TAG, "Updating Athkar widget")
+            Log.d(TAG, "Updating Athkar widgets")
             AthkarWidget().updateAll(context)
+            AthkarWidgetMedium().updateAll(context)
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Error updating widget", e)

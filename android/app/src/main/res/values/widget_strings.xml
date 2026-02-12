@@ -49,7 +49,9 @@
     <string name="widget_prayer_times_medium_description">Shows all prayer times in a row (4x2)</string>
     <string name="widget_prayer_times_large_description">Shows all prayer times with details (4x4)</string>
     <string name="widget_athkar_description">Track your daily Athkar progress and streaks</string>
+    <string name="widget_athkar_medium_description">Athkar progress with morning/evening status and streaks (4x2)</string>
     <string name="widget_qada_description">Track your missed fasts (Qada)</string>
+    <string name="widget_qada_medium_description">Qada tracker with remaining count and progress (4x2)</string>
     <string name="widget_combined_description">Prayer times and Athkar progress together</string>
 
     <!-- Widget names (shown in widget picker) -->
@@ -58,7 +60,9 @@
     <string name="widget_prayer_times_medium_name">Prayer Times (Medium)</string>
     <string name="widget_prayer_times_large_name">Prayer Times (Large)</string>
     <string name="widget_athkar_name">Nedaa Athkar</string>
+    <string name="widget_athkar_medium_name">Nedaa Athkar (Medium)</string>
     <string name="widget_qada_name">Nedaa Qada</string>
+    <string name="widget_qada_medium_name">Nedaa Qada (Medium)</string>
     <string name="widget_combined_name">Nedaa Prayer + Athkar</string>
 
     <!-- Configuration -->
