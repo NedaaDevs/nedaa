@@ -32,7 +32,7 @@ import kotlin.random.Random
 class AlarmOverlayService : Service() {
 
     companion object {
-        private const val NOTIFICATION_ID = 9001
+        private const val NOTIFICATION_ID = 9002
         private const val CHANNEL_ID = "alarm_overlay_channel"
 
         // Tap counts per difficulty
