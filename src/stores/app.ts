@@ -47,7 +47,7 @@ export const useAppStore = create<AppState>()(
           locale: initialLanguage,
           mode: Appearance.getColorScheme() as AppMode,
           direction: initialDirection,
-          sendCrashLogs: true,
+          sendCrashLogs: false,
           loadingMessage: "",
           showLoadingOverlay: false,
           hijriDaysOffset: 0,

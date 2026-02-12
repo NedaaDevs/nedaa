@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/react-native";
 
 // Types
-import type { AppState } from "@/types/app";
 import type { PrayerTimesStore } from "@/stores/prayerTimes";
 import type { NotificationStore } from "@/stores/notification";
 
@@ -10,28 +9,7 @@ import { useLocationStore } from "@/stores/location";
 import { useQadaStore } from "@/stores/qada";
 
 // Utils
-import { requestNotificationPermission } from "@/utils/notifications";
-import { requestLocationPermission } from "@/utils/location";
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
-
-export const firstRunSetup = async (appStore: AppState) => {
-  try {
-    // Only request if first run and permissions aren't determined
-    if (appStore.isFirstRun) {
-      // Request notification permission
-      await requestNotificationPermission();
-
-      // Request Location permission
-      await requestLocationPermission();
-
-      // Mark first run as complete
-      appStore.setIsFirstRun(false);
-    }
-  } catch (error) {
-    console.error("First run setup failed:", error);
-    Sentry.captureException(error);
-  }
-};
 
 export const appSetup = async (
   prayerStore: PrayerTimesStore,

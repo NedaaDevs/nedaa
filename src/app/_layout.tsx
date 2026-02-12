@@ -18,6 +18,7 @@ import { useAppStore } from "@/stores/app";
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
 import CityChangeModal from "@/components/CityChangeModal";
+import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 
 // Hooks
 import { useInitialSetup } from "@/hooks/useInitialSetup";
@@ -40,10 +41,8 @@ SplashScreen.setOptions({
 });
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const { mode, showLoadingOverlay, loadingMessage } = useAppStore();
-  const colorScheme = useColorScheme();
-  // useDrizzleStudio(db);
+function MainAppContent() {
+  const { showLoadingOverlay, loadingMessage } = useAppStore();
   const {
     showCityChangeModal,
     pendingCityChange,
@@ -52,10 +51,42 @@ export default function RootLayout() {
     dismissCityChangeModal,
   } = useCityChangeHandler();
 
-  useLoadFonts();
-  useInitialSetup();
   useNotificationListeners();
   useAlarmDeepLink();
+
+  return (
+    <>
+      <ToastProvider />
+      <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
+
+      {pendingCityChange && (
+        <CityChangeModal
+          isOpen={showCityChangeModal}
+          onClose={dismissCityChangeModal}
+          onUpdate={handleCityChangeUpdate}
+          currentCity={pendingCityChange.currentCity}
+          newCity={pendingCityChange.newCity}
+          isUpdating={isUpdatingLocation}
+        />
+      )}
+
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}>
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  const { mode, isFirstRun } = useAppStore();
+  const colorScheme = useColorScheme();
+  // useDrizzleStudio(db);
+
+  useLoadFonts();
+  useInitialSetup();
   SplashScreen.hideAsync();
 
   return (
@@ -65,26 +96,7 @@ export default function RootLayout() {
           <GestureHandlerRootView className="flex-1">
             <SafeAreaView edges={["top", "right", "left"]} className="flex-1 bg-background">
               <StatusBar style={colorScheme.colorScheme === "dark" ? "light" : "dark"} />
-              <ToastProvider />
-              <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
-
-              {pendingCityChange && (
-                <CityChangeModal
-                  isOpen={showCityChangeModal}
-                  onClose={dismissCityChangeModal}
-                  onUpdate={handleCityChangeUpdate}
-                  currentCity={pendingCityChange.currentCity}
-                  newCity={pendingCityChange.newCity}
-                  isUpdating={isUpdatingLocation}
-                />
-              )}
-
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}>
-                <Stack.Screen name="(tabs)" />
-              </Stack>
+              {isFirstRun ? <OnboardingScreen /> : <MainAppContent />}
             </SafeAreaView>
           </GestureHandlerRootView>
         </FontProvider>

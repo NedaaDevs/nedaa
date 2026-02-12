@@ -8,7 +8,7 @@ import { useNotificationStore } from "@/stores/notification";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 
 // Services
-import { appSetup, firstRunSetup } from "@/services/setup";
+import { appSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 import { QadaDB } from "@/services/qada-db";
 
@@ -33,26 +33,20 @@ export const useInitialSetup = () => {
   const customSoundsStore = useCustomSoundsStore();
 
   useEffect(() => {
+    if (appStore.isFirstRun) return;
+
     const initializeApp = async () => {
-      // Initialize Sentry based on user choice
-      await initSentry(appStore.sendCrashLogs);
+      initSentry(appStore.sendCrashLogs);
       await initDB();
 
-      // Initialize custom sounds store (Android only)
       await customSoundsStore.initialize();
 
-      // First run setup(Request notification and location permission)
-      await firstRunSetup(appStore);
-
-      // Every run setup(Fetching data, schedule notifications)
       await appSetup(prayerTimesStore, notificationStore);
     };
 
-    try {
-      initializeApp();
-    } catch (error) {
+    initializeApp().catch((error) => {
       console.error("App initialization failed: ", error);
-    }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [appStore.isFirstRun]);
 };
