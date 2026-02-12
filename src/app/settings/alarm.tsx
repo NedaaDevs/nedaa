@@ -80,10 +80,6 @@ const openNotificationSettings = () => {
   }
 };
 
-// Persists across remounts so we only skip the auth check on the very
-// first mount in the session (when status might be notDetermined).
-let alarmKitEverChecked = false;
-
 const AlarmSettings = () => {
   const { t } = useTranslation();
   const { fajr, friday } = useAlarmSettingsStore();
@@ -132,13 +128,8 @@ const AlarmSettings = () => {
         return;
       }
 
-      if (!alarmKitEverChecked) {
-        alarmKitEverChecked = true;
-        setPermissions([buildIOSPermission(false, false)]);
-      } else {
-        const status = await getAuthorizationStatus();
-        setPermissions([buildIOSPermission(status === "authorized", status === "denied")]);
-      }
+      const status = await getAuthorizationStatus();
+      setPermissions([buildIOSPermission(status === "authorized", status === "denied")]);
     } else {
       const items: PermissionItem[] = [];
 
