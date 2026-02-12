@@ -1,4 +1,4 @@
-import { ScrollView } from "react-native";
+import { Platform, ScrollView } from "react-native";
 
 // Plugins
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,8 @@ import {
   AlarmClock,
   LayoutGrid,
 } from "lucide-react-native";
+
+import { isPinningSupported } from "expo-widgets";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -82,12 +84,14 @@ const SettingsScreen = () => {
           <SettingsItem name={t("settings.athkar.title")} path="/settings/athkar" icon={BookOpen} />
         )}
 
-        {/* Widgets */}
-        <SettingsItem
-          name={t("settings.widgets.title")}
-          path={"/settings/widgets" as any}
-          icon={LayoutGrid}
-        />
+        {/* Widgets (Android with pinning support only) */}
+        {Platform.OS === "android" && isPinningSupported() && (
+          <SettingsItem
+            name={t("settings.widgets.title")}
+            path={"/settings/widgets" as any}
+            icon={LayoutGrid}
+          />
+        )}
 
         {/* Advance */}
         <SettingsItem

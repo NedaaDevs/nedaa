@@ -1,11 +1,7 @@
-import * as SQLite from "expo-sqlite";
 import { z } from "zod";
 
-// Constants
-import { DB_NAME } from "@/constants/DB";
-
 // Utils
-import { getDirectory } from "@/services/db";
+import { openDatabase } from "@/services/db";
 
 // Table names
 export const QADA_FASTS_TABLE = "qada_fasts" as const;
@@ -49,20 +45,6 @@ export type QadaFast = z.infer<typeof QadaFastSchema>;
 export type QadaHistory = z.infer<typeof QadaHistorySchema>;
 export type QadaSettings = z.infer<typeof QadaSettingsSchema>;
 
-// Singleton database connection
-let dbInstance: SQLite.SQLiteDatabase | null = null;
-
-const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
-  if (!dbInstance) {
-    dbInstance = await SQLite.openDatabaseAsync(
-      DB_NAME,
-      { useNewConnection: true },
-      await getDirectory()
-    );
-  }
-  return dbInstance;
-};
-
 /**
  * Initialize Qada database tables
  */
@@ -70,7 +52,6 @@ const initializeDB = async () => {
   const db = await openDatabase();
 
   try {
-    await db.execAsync(`PRAGMA journal_mode = WAL;`);
     // Create qada_fasts table
     await db.execAsync(
       `CREATE TABLE IF NOT EXISTS ${QADA_FASTS_TABLE} (

@@ -120,9 +120,13 @@ const WidgetCard = ({
   };
 
   const handlePin = async () => {
-    const success = await pinWidget(widget.type);
-    if (!success) {
-      Alert.alert(t("settings.widgets.notSupported"));
+    try {
+      const success = await pinWidget(widget.type);
+      if (!success) {
+        Alert.alert(t("settings.widgets.notSupported"));
+      }
+    } catch (error) {
+      Alert.alert("Error", String(error));
     }
   };
 

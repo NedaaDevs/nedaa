@@ -61,7 +61,7 @@ export const getDirectory = async (): Promise<string> => {
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 let dbInitialized = false;
 
-const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
+export const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
   if (!dbInstance) {
     dbInstance = await SQLite.openDatabaseAsync(
       DB_NAME,
