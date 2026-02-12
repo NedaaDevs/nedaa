@@ -291,7 +291,7 @@ private fun MediumPrayerTimesView(
                 Column(
                     modifier = GlanceModifier
                         .defaultWeight()
-                        .padding(horizontal = 4.dp),
+                        .padding(horizontal = 2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -300,7 +300,7 @@ private fun MediumPrayerTimesView(
                         text = getPrayerDisplayName(prayer.name, context),
                         style = TextStyle(
                             color = if (isNext) NedaaColors.GlanceColors.primary else NedaaColors.GlanceColors.text,
-                            fontSize = if (prayers.size > 5) 13.sp else 14.sp,
+                            fontSize = if (prayers.size > 5) 11.sp else 13.sp,
                             fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium
                         ),
                         maxLines = 1
@@ -313,7 +313,7 @@ private fun MediumPrayerTimesView(
                         text = prayer.formatTime12Hour(timezone),
                         style = TextStyle(
                             color = NedaaColors.GlanceColors.textSecondary,
-                            fontSize = if (prayers.size > 5) 12.sp else 13.sp
+                            fontSize = if (prayers.size > 5) 10.sp else 12.sp
                         ),
                         maxLines = 1
                     )
