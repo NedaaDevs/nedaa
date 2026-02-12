@@ -12,9 +12,11 @@ import { Bell, ChevronRight } from "lucide-react-native";
 import { useAlarmStore } from "@/stores/alarm";
 import { detectActiveAlarm, type ActiveAlarmInfo } from "@/utils/activeAlarmDetector";
 import { navigateToAlarm } from "@/hooks/useAlarmDeepLink";
+import { useRTL } from "@/contexts/RTLContext";
 
 export default function ActiveAlarmBanner() {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarmInfo | null>(null);
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
 
@@ -53,7 +55,7 @@ export default function ActiveAlarmBanner() {
             </Text>
           </VStack>
         </HStack>
-        <Icon as={ChevronRight} size="md" className="text-white" />
+        <Icon as={ChevronRight} size="md" className={`text-white ${isRTL ? "rotate-180" : ""}`} />
       </HStack>
     </Pressable>
   );

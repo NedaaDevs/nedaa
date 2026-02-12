@@ -448,7 +448,7 @@ const AlarmSettings = () => {
               setReportModalOpen(true);
             }}>
             <Icon as={MessageSquareWarning} size="sm" className="text-typography-secondary" />
-            <Text className="text-sm text-typography-secondary ml-2">
+            <Text className="text-sm text-typography-secondary ms-2">
               {isExporting ? t("alarm.report.exporting") : t("alarm.settings.reportProblem")}
             </Text>
           </Pressable>
@@ -480,7 +480,7 @@ const AlarmSettings = () => {
                           className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
                           onPress={() => handleCategorySelect(option.category)}>
                           <Icon as={option.icon} size="md" className="text-typography-secondary" />
-                          <Text className="text-base text-typography ml-3">
+                          <Text className="text-base text-typography ms-3">
                             {t(option.labelKey)}
                           </Text>
                         </Pressable>
@@ -497,7 +497,7 @@ const AlarmSettings = () => {
                         className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
                         onPress={handleShareViaEmail}>
                         <Icon as={MailIcon} size="xl" className="text-accent-primary" />
-                        <Text className="text-base text-typography ml-3">
+                        <Text className="text-base text-typography ms-3">
                           {t("alarm.report.email")}
                         </Text>
                       </Pressable>
@@ -507,7 +507,7 @@ const AlarmSettings = () => {
                           className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
                           onPress={handleShareViaWhatsApp}>
                           <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
-                          <Text className="text-base text-typography ml-3">
+                          <Text className="text-base text-typography ms-3">
                             {t("alarm.report.whatsapp")}
                           </Text>
                         </Pressable>
@@ -522,7 +522,7 @@ const AlarmSettings = () => {
                             size={24}
                             color={colorScheme === AppMode.DARK ? "white" : "black"}
                           />
-                          <Text className="text-base text-typography ml-3">
+                          <Text className="text-base text-typography ms-3">
                             {t("alarm.report.telegram")}
                           </Text>
                         </Pressable>
