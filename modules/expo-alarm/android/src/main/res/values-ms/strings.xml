@@ -1,5 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Settings Activity -->
+    <string name="alarm_settings_title">Tetapan Penggera</string>
+    <string name="fajr_alarm_title">Penggera Subuh</string>
+    <string name="friday_alarm_title">Penggera Jumaat</string>
+
+    <!-- Preferences -->
+    <string name="pref_enabled">Aktifkan Penggera</string>
+    <string name="pref_enabled_summary">Penggera akan berbunyi pada waktu yang dijadualkan</string>
+
+    <string name="pref_category_sound">Bunyi</string>
+    <string name="pref_sound">Bunyi Penggera</string>
+    <string name="pref_volume">Kelantangan</string>
+
+    <string name="pref_category_gentle_wakeup">Bangun Lembut</string>
+    <string name="pref_gentle_wakeup">Aktifkan Bangun Lembut</string>
+    <string name="pref_gentle_wakeup_summary">Meningkatkan kelantangan secara beransur</string>
+    <string name="pref_duration">Tempoh</string>
+
+    <string name="pref_category_challenge">Cabaran Penutup</string>
+    <string name="pref_challenge_type">Jenis Cabaran</string>
+    <string name="pref_challenge_difficulty">Kesukaran</string>
+    <string name="pref_challenge_count">Bilangan Cabaran</string>
+
+    <string name="pref_category_vibration">Getaran</string>
+    <string name="pref_vibration">Aktifkan Getaran</string>
+    <string name="pref_vibration_pattern">Corak Getaran</string>
+
+    <string name="pref_category_snooze">Tunda</string>
+    <string name="pref_snooze">Aktifkan Tunda</string>
+    <string name="pref_snooze_max">Maksimum Tunda</string>
+    <string name="pref_snooze_duration">Tempoh Tunda</string>
+
+    <!-- Sound options -->
+    <string name="sound_beep">Bip</string>
+    <string name="sound_makkah_athan">Azan Makkah</string>
+    <string name="sound_yasser_aldosari">Yasser Al Dosari</string>
+    <string name="sound_tasbih">Tasbih</string>
+    <string name="sound_athan2">Azan 2</string>
+    <string name="sound_athan3">Azan 3</string>
+    <string name="sound_medina_athan">Azan Madinah</string>
+    <string name="sound_takbir">Takbir</string>
+    <string name="sound_knock">Ketukan</string>
+    <string name="sound_silent">Senyap</string>
+
+    <!-- Challenge options -->
+    <string name="challenge_tap">Ketuk</string>
+    <string name="challenge_math">Matematik</string>
+    <string name="difficulty_easy">Mudah</string>
+    <string name="difficulty_medium">Sederhana</string>
+    <string name="difficulty_hard">Sukar</string>
+
+    <!-- Vibration options -->
+    <string name="vibration_default">Lalai</string>
+    <string name="vibration_gentle">Lembut</string>
+    <string name="vibration_aggressive">Agresif</string>
+
+    <!-- Duration formats -->
+    <string name="minute_format">%d min</string>
+
     <!-- Overlay - Tap Challenge -->
     <string name="overlay_tap_instruction">Ketuk butang %d kali untuk tutup</string>
     <string name="overlay_tap_progress">%1$d / %2$d</string>
