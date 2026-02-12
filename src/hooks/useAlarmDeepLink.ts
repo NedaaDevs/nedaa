@@ -5,6 +5,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { getSnoozeQueue, clearSnoozeQueue } from "expo-alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
+import { AlarmLogger } from "@/utils/alarmLogger";
 
 const handledAlarmIds = new Map<string, number>();
 const STALE_HANDLED_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -69,8 +70,12 @@ async function processCompletedQueue() {
     }
 
     await ExpoAlarm.clearCompletedQueue();
-  } catch {
-    // Silently handle errors
+  } catch (error) {
+    AlarmLogger.e(
+      "DeepLink",
+      "Failed to process completed queue",
+      error instanceof Error ? error : undefined
+    );
   }
 }
 
@@ -119,8 +124,12 @@ async function processSnoozeQueue() {
     }
 
     await clearSnoozeQueue();
-  } catch {
-    // Silently handle errors
+  } catch (error) {
+    AlarmLogger.e(
+      "DeepLink",
+      "Failed to process snooze queue",
+      error instanceof Error ? error : undefined
+    );
   }
 }
 
@@ -223,7 +232,11 @@ async function processAlarmUrl(url: string) {
 
     // Default: navigate to alarm screen
     navigateToAlarm(alarmId, alarmType, "deep-link");
-  } catch {
-    // Silently handle errors
+  } catch (error) {
+    AlarmLogger.e(
+      "DeepLink",
+      "Failed to handle deep link",
+      error instanceof Error ? error : undefined
+    );
   }
 }
