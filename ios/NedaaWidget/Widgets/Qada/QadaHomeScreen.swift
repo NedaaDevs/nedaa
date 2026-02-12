@@ -156,6 +156,7 @@ struct SmallQadaView: View {
             }
         }
         .padding()
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -254,6 +255,7 @@ struct MediumQadaView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -412,6 +414,7 @@ struct LargeQadaView: View {
             Spacer()
         }
         .padding()
+        .accessibilityElement(children: .combine)
     }
 }
 

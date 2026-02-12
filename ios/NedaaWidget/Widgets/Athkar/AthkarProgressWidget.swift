@@ -154,6 +154,7 @@ struct AthkarProgressWidgetSmallView: View {
                 }
             }
             .padding(12)
+            .accessibilityElement(children: .combine)
         } else {
             VStack {
                 Image(systemName: "book.closed")
@@ -304,6 +305,7 @@ struct AthkarProgressWidgetMediumView: View {
                 }
             }
             .padding(16)
+            .accessibilityElement(children: .combine)
         } else {
             HStack {
                 Image(systemName: "book.closed")

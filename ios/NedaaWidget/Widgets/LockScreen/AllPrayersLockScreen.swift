@@ -188,6 +188,7 @@ struct PrayerView: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .foregroundColor(.white)
+            .accessibilityElement(children: .combine)
         }
     }
 }

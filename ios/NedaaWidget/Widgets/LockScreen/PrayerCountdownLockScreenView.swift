@@ -127,13 +127,14 @@ struct RectangularView: View {
                 dataToShow(entry: entry, geometry: geometry, widgetFamily: .accessoryRectangular)
             }
         }.widgetBackground(Color.clear)
+            .accessibilityElement(children: .combine)
     }
 }
 
 @available(iOSApplicationExtension 17.0, *)
 struct CircularView: View {
     var entry: PrayerCountdownEntry
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -141,6 +142,7 @@ struct CircularView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }.widgetBackground(Color.clear)
+            .accessibilityElement(children: .combine)
     }
 }
 

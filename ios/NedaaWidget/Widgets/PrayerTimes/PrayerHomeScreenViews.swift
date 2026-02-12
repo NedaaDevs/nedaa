@@ -219,6 +219,7 @@ struct SmallPrayerTimesView: View {
         }
         .padding(.top, 12)
         .padding(.horizontal, 8)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Helper Functions
@@ -319,6 +320,7 @@ struct MediumPrayerTimesView: View {
             .padding(.horizontal, 6)
             .padding(.bottom, 6)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private func dotColor(for prayer: PrayerData) -> Color {
@@ -416,6 +418,7 @@ struct LargePrayerTimesView: View {
         .padding(.horizontal, 16)
         .padding(.top, 16)
         .padding(.bottom, 12)
+        .accessibilityElement(children: .combine)
     }
 
     private func isPreviousPrayer(_ prayer: PrayerData) -> Bool {
@@ -590,6 +593,7 @@ struct MediumPrayerTimesListView: View {
                 .padding(.bottom, 3)
             }
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Helper Views

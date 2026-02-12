@@ -299,6 +299,7 @@ struct PrayerAthkarWidgetMediumView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(14)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -486,6 +487,7 @@ struct PrayerAthkarWidgetLargeView: View {
             }
         }
         .padding(14)
+        .accessibilityElement(children: .combine)
     }
 }
 
