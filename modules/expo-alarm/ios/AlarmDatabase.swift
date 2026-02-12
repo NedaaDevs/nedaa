@@ -318,8 +318,11 @@ class AlarmDatabase {
     // MARK: - Completed
 
     func clearAllCompleted() {
-        execRaw("UPDATE alarms SET completed = 0")
-        PersistentLog.shared.alarm("DB: Cleared all completed statuses")
+        let now = Date().timeIntervalSince1970 * 1000
+        execute("UPDATE alarms SET completed = 0 WHERE trigger_time > ? AND is_backup = 0") { stmt in
+            sqlite3_bind_double(stmt, 1, now)
+        }
+        PersistentLog.shared.alarm("DB: Cleared completed statuses for future non-backup alarms")
     }
 
     func getCompletedCount() -> Int {

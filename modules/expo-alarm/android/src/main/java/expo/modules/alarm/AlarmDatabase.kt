@@ -270,7 +270,8 @@ class AlarmDatabase private constructor(private val context: Context) :
 
     fun clearAllCompleted() {
         val values = ContentValues().apply { put("completed", 0) }
-        writableDatabase.update("alarms", values, null, null)
+        val now = System.currentTimeMillis().toDouble()
+        writableDatabase.update("alarms", values, "trigger_time > ? AND is_backup = 0", arrayOf(now.toString()))
     }
 
     fun getNextAlarmTime(): Double? {
@@ -339,15 +340,22 @@ class AlarmDatabase private constructor(private val context: Context) :
     // -- Bypass State --
 
     fun setBypassState(alarmId: String, alarmType: String, title: String) {
-        writableDatabase.delete("bypass_state", null, null)
-        val values = ContentValues().apply {
-            put("id", 1)
-            put("alarm_id", alarmId)
-            put("alarm_type", alarmType)
-            put("title", title)
-            put("activated_at", System.currentTimeMillis() / 1000.0)
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete("bypass_state", null, null)
+            val values = ContentValues().apply {
+                put("id", 1)
+                put("alarm_id", alarmId)
+                put("alarm_type", alarmType)
+                put("title", title)
+                put("activated_at", System.currentTimeMillis() / 1000.0)
+            }
+            db.insert("bypass_state", null, values)
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
-        writableDatabase.insert("bypass_state", null, values)
     }
 
     data class BypassStateRecord(
