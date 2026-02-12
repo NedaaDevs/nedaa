@@ -52,6 +52,7 @@
   "alarm.report.exporting": "Preparing report...",
   "alarm.report.noSound": "No sound played",
   "alarm.report.other": "Something else",
+  "alarm.report.copyToClipboard": "Copy to clipboard",
   "alarm.report.shareVia": "Share via",
   "alarm.report.telegram": "Telegram",
   "alarm.report.title": "What's the issue?",

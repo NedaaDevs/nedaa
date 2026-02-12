@@ -35,6 +35,7 @@ import {
   VolumeOff,
   ShieldAlert,
   CircleHelp,
+  ClipboardCopy,
 } from "lucide-react-native";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
@@ -177,6 +178,12 @@ const AlarmSettings = () => {
       console.error("Failed to open Telegram:", e);
     }
     setIsExporting(false);
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!selectedCategory) return;
+    closeReportModal();
+    await AlarmLogger.copyLog(selectedCategory);
   };
 
   const allGranted = permissions.length === 0 || permissions.every((p) => p.granted);
@@ -526,6 +533,15 @@ const AlarmSettings = () => {
                           </Text>
                         </Pressable>
                       )}
+
+                      <Pressable
+                        className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                        onPress={handleCopyToClipboard}>
+                        <Icon as={ClipboardCopy} size="xl" className="text-typography-secondary" />
+                        <Text className="text-base text-typography ms-3">
+                          {t("alarm.report.copyToClipboard")}
+                        </Text>
+                      </Pressable>
                     </VStack>
 
                     <Pressable
