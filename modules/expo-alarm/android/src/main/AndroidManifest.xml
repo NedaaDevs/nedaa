@@ -14,13 +14,8 @@
 
     <activity
         android:name="expo.modules.alarm.AlarmSettingsActivity"
-        android:exported="true"
-        android:theme="@style/Theme.AppCompat.DayNight">
-      <intent-filter>
-        <action android:name="expo.modules.alarm.OPEN_SETTINGS" />
-        <category android:name="android.intent.category.DEFAULT" />
-      </intent-filter>
-    </activity>
+        android:exported="false"
+        android:theme="@style/Theme.AppCompat.DayNight" />
 
     <service
         android:name="expo.modules.alarm.AlarmService"
