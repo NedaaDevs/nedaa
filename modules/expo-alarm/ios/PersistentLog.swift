@@ -16,7 +16,7 @@ class PersistentLog {
 
     func write(_ category: String, _ message: String) {
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
+        formatter.dateFormat = "MM-dd HH:mm:ss.SSS"
         let timestamp = formatter.string(from: Date())
         let line = "[\(timestamp)][\(category)] \(message)\n"
 

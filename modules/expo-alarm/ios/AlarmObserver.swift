@@ -11,6 +11,7 @@ import AppIntents
 
 @objc public class AlarmObserver: NSObject {
     private static let stateLock = NSLock()
+    static let bypassNotificationIds = bypassNotificationIds
     private static var isObserving = false
     private static var observerTask: Task<Void, Never>?
     private static var heartbeatTask: Task<Void, Never>?
@@ -389,7 +390,7 @@ import AppIntents
             AlarmAudioManager.shared.stopAll()
 
             let center = UNUserNotificationCenter.current()
-            center.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+            center.removePendingNotificationRequests(withIdentifiers: bypassNotificationIds)
             return
         }
 
@@ -452,7 +453,7 @@ import AppIntents
     @available(iOS 26.1, *)
     private static func scheduleBypassNotifications() async {
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: (0..<5).map { "bypass-\($0)" })
+        center.removePendingNotificationRequests(withIdentifiers: bypassNotificationIds)
 
         for i in 0..<5 {
             let content = UNMutableNotificationContent()
