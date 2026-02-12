@@ -1,4 +1,6 @@
 {
+  "alarm.banner.activeAlarm": "Penggera Aktif",
+  "alarm.banner.tapToDismiss": "{{title}} — Ketik untuk tutup",
   "alarm.challenge.count": "Cabaran",
   "alarm.challenge.difficulty": "Kesukaran",
   "alarm.challenge.dismiss": "Tutup",
