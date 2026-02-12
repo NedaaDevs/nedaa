@@ -59,14 +59,6 @@ class ExpoAlarmModule : Module() {
                 val triggerMs = triggerTimestamp.toLong()
                 val soundName = if (sound.isNotEmpty()) sound else "beep"
 
-                db.saveAlarm(
-                    id = id,
-                    alarmType = alarmType,
-                    title = title,
-                    triggerTime = triggerTimestamp,
-                    isBackup = false
-                )
-
                 val scheduled = scheduler.scheduleAlarm(id, triggerMs, alarmType, title, soundName)
                 promise.resolve(scheduled)
             } catch (e: Exception) {
