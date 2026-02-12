@@ -124,9 +124,13 @@ import AppIntents
 
         if let bypassState = AlarmDatabase.shared.getBypassState() {
             let elapsed = Date().timeIntervalSince1970 - bypassState.activatedAt
+            let staleThreshold: TimeInterval = 30 * 60
             plog.observer("Bypass state found: \(bypassState.alarmId.prefix(8)) (active \(Int(elapsed))s ago)")
 
-            if !AlarmDatabase.shared.isCompleted(id: bypassState.alarmId) {
+            if elapsed > staleThreshold {
+                plog.observer("Bypass state is stale (\(Int(elapsed))s > \(Int(staleThreshold))s), clearing")
+                AlarmDatabase.shared.clearBypassState()
+            } else if !AlarmDatabase.shared.isCompleted(id: bypassState.alarmId) {
                 plog.observer("Challenge NOT completed, re-triggering bypass")
                 await handleAlarmDismissed(alarmId: bypassState.alarmId)
             } else {
