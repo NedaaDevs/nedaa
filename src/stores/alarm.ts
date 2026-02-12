@@ -84,7 +84,7 @@ export const useAlarmStore = create<AlarmState>()(
           ExpoAlarm.stopAllAlarmEffects();
           await ExpoAlarm.cancelAllBackups();
           await ExpoAlarm.clearPendingChallenge();
-          await ExpoAlarm.cancelAllAlarms();
+          await ExpoAlarm.cancelAlarm(alarmId);
           await ExpoAlarm.endAllLiveActivities();
           ExpoAlarm.markAlarmCompleted(alarmId);
 
@@ -118,7 +118,8 @@ export const useAlarmStore = create<AlarmState>()(
           const snoozeTitle = `${baseTitle} (Snoozed ${newSnoozeCount}/${MAX_SNOOZES})`;
 
           ExpoAlarm.stopAllAlarmEffects();
-          await ExpoAlarm.cancelAllAlarms();
+          await ExpoAlarm.cancelAlarm(alarmId);
+          await ExpoAlarm.cancelAllBackups();
           await ExpoAlarm.clearPendingChallenge();
 
           await get().scheduleAlarm({
