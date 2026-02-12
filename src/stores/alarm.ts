@@ -211,6 +211,10 @@ export const useAlarmStore = create<AlarmState>()(
       {
         name: "alarm-storage",
         storage: createJSONStorage(() => Storage),
+        merge: (persisted, current) => ({
+          ...current,
+          ...(persisted as object),
+        }),
       }
     ),
     { name: "alarm-store" }

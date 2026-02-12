@@ -17,7 +17,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const { completeAlarm, snoozeAlarm, getAlarm } = useAlarmStore();
   const alarm = useMemo(() => getAlarm(alarmId), [alarmId, getAlarm]);
 
-  const settingsType = alarmType === "jummah" ? "friday" : alarmType === "fajr" ? "fajr" : "fajr";
+  const settingsType = alarmType === "jummah" ? "friday" : "fajr";
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
   const snoozeCount = alarm?.snoozeCount ?? 0;
