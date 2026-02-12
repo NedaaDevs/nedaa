@@ -225,10 +225,12 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         isPlaying = false
         isPreviewMode = false
 
-        do {
-            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        } catch let error as NSError {
-            logError("Deactivate error: \(error.localizedDescription)")
+        if !isKeepAliveActive {
+            do {
+                try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            } catch let error as NSError {
+                logError("Deactivate error: \(error.localizedDescription)")
+            }
         }
     }
 
