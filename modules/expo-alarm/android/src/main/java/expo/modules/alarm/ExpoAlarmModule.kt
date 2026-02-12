@@ -425,7 +425,9 @@ class ExpoAlarmModule : Module() {
                 val cursor = ringtoneManager.cursor
                 while (cursor.moveToNext()) {
                     val position = cursor.position
-                    val title = ringtoneManager.getRingtone(position)?.getTitle(context) ?: "Unknown"
+                    val ringtone = ringtoneManager.getRingtone(position)
+                    val title = ringtone?.getTitle(context) ?: "Unknown"
+                    ringtone?.stop()
                     val uri = ringtoneManager.getRingtoneUri(position)?.toString() ?: continue
                     sounds.add(mapOf(
                         "id" to uri,

@@ -475,26 +475,76 @@ import AppIntents
         PersistentLog.shared.observer("Bypass protection active: loud alarm + backup + 5 notifications")
     }
     #endif
-}
 
-// MARK: - Live Activity Helpers
+    // MARK: - Live Activity Helpers
 
-@available(iOS 16.2, *)
-func updateLiveActivityForDismiss(alarmId: String, metadata: (alarmType: String, title: String)?) async {
-    let log = NativeLogger.shared
+    @available(iOS 16.2, *)
+    static func updateLiveActivityForDismiss(alarmId: String, metadata: (alarmType: String, title: String)?) async {
+        let log = NativeLogger.shared
 
-    var activityToUpdate: Activity<AlarmActivityAttributes>?
+        var activityToUpdate: Activity<AlarmActivityAttributes>?
 
-    for activity in Activity<AlarmActivityAttributes>.activities {
-        if activity.attributes.alarmId == alarmId {
-            activityToUpdate = activity
-            break
+        for activity in Activity<AlarmActivityAttributes>.activities {
+            if activity.attributes.alarmId == alarmId {
+                activityToUpdate = activity
+                break
+            }
         }
+
+        if activityToUpdate == nil {
+            let alarmType = metadata?.alarmType ?? "prayer"
+            let title = metadata?.title ?? "Alarm"
+
+            let attributes = AlarmActivityAttributes(
+                alarmId: alarmId,
+                alarmType: alarmType,
+                title: title,
+                triggerTime: Date()
+            )
+            let state = AlarmActivityAttributes.ContentState(state: "firing")
+
+            do {
+                activityToUpdate = try Activity.request(
+                    attributes: attributes,
+                    content: .init(state: state, staleDate: nil),
+                    pushType: nil
+                )
+            } catch {
+                log.observerError("Failed to create Live Activity: \(error)")
+                return
+            }
+        }
+
+        guard let activity = activityToUpdate else { return }
+
+        let newState = AlarmActivityAttributes.ContentState(state: "firing")
+
+        let alertConfig = AlertConfiguration(
+            title: "Complete challenge to dismiss",
+            body: "Unlock device to dismiss alarm",
+            sound: .default
+        )
+
+        await activity.update(
+            ActivityContent(state: newState, staleDate: nil),
+            alertConfiguration: alertConfig
+        )
     }
 
-    if activityToUpdate == nil {
-        let alarmType = metadata?.alarmType ?? "prayer"
-        let title = metadata?.title ?? "Alarm"
+    @available(iOS 16.2, *)
+    static func startFiringLiveActivity(alarmId: String, alarmType: String, title: String) async -> String? {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            return nil
+        }
+
+        let existingCount = Activity<AlarmActivityAttributes>.activities.count
+        if existingCount > 0 {
+            for activity in Activity<AlarmActivityAttributes>.activities {
+                let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
+                await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
 
         let attributes = AlarmActivityAttributes(
             alarmId: alarmId,
@@ -505,65 +555,15 @@ func updateLiveActivityForDismiss(alarmId: String, metadata: (alarmType: String,
         let state = AlarmActivityAttributes.ContentState(state: "firing")
 
         do {
-            activityToUpdate = try Activity.request(
+            let activity = try Activity.request(
                 attributes: attributes,
                 content: .init(state: state, staleDate: nil),
                 pushType: nil
             )
+            return activity.id
         } catch {
-            log.observerError("Failed to create Live Activity: \(error)")
-            return
+            PersistentLog.shared.alarm("Failed to start Live Activity: \(error)")
+            return nil
         }
-    }
-
-    guard let activity = activityToUpdate else { return }
-
-    let newState = AlarmActivityAttributes.ContentState(state: "firing")
-
-    let alertConfig = AlertConfiguration(
-        title: "Complete challenge to dismiss",
-        body: "Unlock device to dismiss alarm",
-        sound: .default
-    )
-
-    await activity.update(
-        ActivityContent(state: newState, staleDate: nil),
-        alertConfiguration: alertConfig
-    )
-}
-
-@available(iOS 16.2, *)
-func startFiringLiveActivity(alarmId: String, alarmType: String, title: String) async -> String? {
-    guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-        return nil
-    }
-
-    let existingCount = Activity<AlarmActivityAttributes>.activities.count
-    if existingCount > 0 {
-        for activity in Activity<AlarmActivityAttributes>.activities {
-            let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
-            await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
-        }
-        try? await Task.sleep(nanoseconds: 100_000_000)
-    }
-
-    let attributes = AlarmActivityAttributes(
-        alarmId: alarmId,
-        alarmType: alarmType,
-        title: title,
-        triggerTime: Date()
-    )
-    let state = AlarmActivityAttributes.ContentState(state: "firing")
-
-    do {
-        let activity = try Activity.request(
-            attributes: attributes,
-            content: .init(state: state, staleDate: nil),
-            pushType: nil
-        )
-        return activity.id
-    } catch {
-        PersistentLog.shared.alarm("Failed to start Live Activity: \(error)")
-        return nil
     }
 }
