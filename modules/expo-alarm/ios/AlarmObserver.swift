@@ -11,7 +11,7 @@ import AppIntents
 
 @objc public class AlarmObserver: NSObject {
     private static let stateLock = NSLock()
-    static let bypassNotificationIds = bypassNotificationIds
+    static let bypassNotificationIds = (0..<5).map { "bypass-\($0)" }
     private static var isObserving = false
     private static var observerTask: Task<Void, Never>?
     private static var heartbeatTask: Task<Void, Never>?
