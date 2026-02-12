@@ -1,4 +1,6 @@
 {
+  "alarm.banner.activeAlarm": "منبه نشط",
+  "alarm.banner.tapToDismiss": "{{title}} — اضغط للإيقاف",
   "alarm.challenge.count": "التحديات",
   "alarm.challenge.difficulty": "الصعوبة",
   "alarm.challenge.dismiss": "إيقاف",

@@ -1,4 +1,6 @@
 {
+  "alarm.banner.activeAlarm": "فعال الارم",
+  "alarm.banner.tapToDismiss": "{{title}} — بند کرنے کے لیے ٹیپ کریں",
   "alarm.challenge.count": "چیلنجز",
   "alarm.challenge.difficulty": "مشکل کی سطح",
   "alarm.challenge.dismiss": "بند کریں",

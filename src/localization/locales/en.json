@@ -1,4 +1,6 @@
 {
+  "alarm.banner.activeAlarm": "Active Alarm",
+  "alarm.banner.tapToDismiss": "{{title}} — Tap to dismiss",
   "alarm.challenge.count": "Challenges",
   "alarm.challenge.difficulty": "Difficulty",
   "alarm.challenge.dismiss": "Dismiss",

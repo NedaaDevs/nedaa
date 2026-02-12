@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { AppState } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -13,6 +14,7 @@ import { detectActiveAlarm, type ActiveAlarmInfo } from "@/utils/activeAlarmDete
 import { navigateToAlarm } from "@/hooks/useAlarmDeepLink";
 
 export default function ActiveAlarmBanner() {
+  const { t } = useTranslation();
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarmInfo | null>(null);
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
 
@@ -45,8 +47,10 @@ export default function ActiveAlarmBanner() {
         <HStack space="md" className="items-center flex-1">
           <Icon as={Bell} size="md" className="text-white" />
           <VStack>
-            <Text className="font-bold text-white">Active Alarm</Text>
-            <Text className="text-sm text-white/80">{activeAlarm.title} — Tap to dismiss</Text>
+            <Text className="font-bold text-white">{t("alarm.banner.activeAlarm")}</Text>
+            <Text className="text-sm text-white/80">
+              {t("alarm.banner.tapToDismiss", { title: activeAlarm.title })}
+            </Text>
           </VStack>
         </HStack>
         <Icon as={ChevronRight} size="md" className="text-white" />
