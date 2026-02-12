@@ -113,6 +113,16 @@ const AlarmDebugScreen = () => {
     }
   };
 
+  const copyFullDebugLog = async () => {
+    try {
+      setLastResult("Copying debug log...");
+      const ok = await AlarmLogger.copyLog();
+      setLastResult(ok ? "Debug log copied to clipboard" : "Failed to copy");
+    } catch (e) {
+      setLastResult(`Copy failed: ${e}`);
+    }
+  };
+
   const checkStatus = async () => {
     // Check if native module is available
     const moduleAvailable = ExpoAlarm.isNativeModuleAvailable();
@@ -767,9 +777,14 @@ const AlarmDebugScreen = () => {
                 Exports native + React Native logs, device info, permissions, and alarm state.
               </Text>
 
-              <Button variant="solid" onPress={shareFullDebugLog}>
-                <ButtonText>Export Full Debug Log</ButtonText>
-              </Button>
+              <HStack space="sm">
+                <Button variant="solid" className="flex-1" onPress={shareFullDebugLog}>
+                  <ButtonText>Share</ButtonText>
+                </Button>
+                <Button variant="outline" className="flex-1" onPress={copyFullDebugLog}>
+                  <ButtonText>Copy</ButtonText>
+                </Button>
+              </HStack>
             </VStack>
           </Card>
 
