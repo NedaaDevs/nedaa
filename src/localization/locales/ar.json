@@ -52,6 +52,7 @@
   "alarm.report.exporting": "جارٍ إعداد التقرير...",
   "alarm.report.noSound": "لم يصدر صوت",
   "alarm.report.other": "شيء آخر",
+  "alarm.report.copyToClipboard": "نسخ إلى الحافظة",
   "alarm.report.shareVia": "مشاركة عبر",
   "alarm.report.telegram": "تيليجرام",
   "alarm.report.title": "ما المشكلة؟",
