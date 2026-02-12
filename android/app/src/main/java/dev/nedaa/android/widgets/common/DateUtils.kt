@@ -72,10 +72,10 @@ object DateUtils {
             val monthNames = if (locale.language == "ar") ISLAMIC_MONTHS_AR else ISLAMIC_MONTHS_EN
             val monthName = if (month in 0..11) monthNames[month] else ""
 
-            "$day $monthName $year"
+            val dateStr = "$day $monthName $year"
+            if (locale.language == "ar") "\u200F$dateStr" else dateStr
         } catch (e: Exception) {
-            // Fallback to empty string on error
-            ""
+            SimpleDateFormat("dd/MM/yyyy", locale).format(date)
         }
     }
 
