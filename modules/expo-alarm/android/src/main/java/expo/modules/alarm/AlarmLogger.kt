@@ -25,7 +25,9 @@ class AlarmLogger private constructor(private val context: Context) {
     }
 
     private val logs = CopyOnWriteArrayList<LogEntry>()
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    private val dateFormat: ThreadLocal<SimpleDateFormat> = ThreadLocal.withInitial {
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    }
 
     data class LogEntry(
         val timestamp: Long,
@@ -86,7 +88,7 @@ class AlarmLogger private constructor(private val context: Context) {
     private fun appendToFile(entry: LogEntry) {
         try {
             val file = File(context.filesDir, LOG_FILE_NAME)
-            file.appendText(entry.format(dateFormat) + "\n")
+            file.appendText(entry.format(dateFormat.get()!!) + "\n")
 
             // Trim file if too large (> 100KB)
             if (file.length() > 100 * 1024) {
@@ -117,7 +119,7 @@ class AlarmLogger private constructor(private val context: Context) {
 
         return buildString {
             appendLine("=== ALARM DEBUG LOG ===")
-            appendLine("Generated: ${dateFormat.format(Date())}")
+            appendLine("Generated: ${dateFormat.get()!!.format(Date())}")
             appendLine()
             appendLine("--- File Log (persistent) ---")
             appendLine(fileLogs)
