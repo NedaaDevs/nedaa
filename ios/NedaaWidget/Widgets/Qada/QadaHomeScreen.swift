@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -145,8 +146,28 @@ struct SmallQadaView: View {
 
             Spacer()
 
-            // Today's progress
-            if entry.todayCompleted > 0 {
+            // Today's progress + interactive button
+            if #available(iOS 17.0, *) {
+                HStack(spacing: 6) {
+                    if entry.todayCompleted > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(NedaaColors.success)
+                                .font(.caption2)
+                            Text("+\(entry.todayCompleted)")
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                        }
+                    }
+
+                    Button(intent: IncrementQadaIntent()) {
+                        Label("+1", systemImage: "plus.circle.fill")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                    }
+                    .tint(NedaaColors.primary(for: colorScheme))
+                }
+            } else if entry.todayCompleted > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(NedaaColors.success)
@@ -211,20 +232,31 @@ struct MediumQadaView: View {
                 
                 Spacer()
                 
-                if entry.todayCompleted > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(NedaaColors.success)
-                            .font(.caption)
-                        
-                        Text(String(format: NSLocalizedString("completedToday", comment: ""), entry.todayCompleted))
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                HStack(spacing: 8) {
+                    if entry.todayCompleted > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(NedaaColors.success)
+                                .font(.caption)
+
+                            Text(String(format: NSLocalizedString("completedToday", comment: ""), entry.todayCompleted))
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                        }
+                    }
+
+                    if #available(iOS 17.0, *) {
+                        Button(intent: IncrementQadaIntent()) {
+                            Label("+1", systemImage: "plus.circle.fill")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                        }
+                        .tint(NedaaColors.primary(for: colorScheme))
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
+
             Divider()
 
             // Right side - Progress visualization
@@ -293,20 +325,31 @@ struct LargeQadaView: View {
                 }
                 
                 Spacer()
-                
-                if entry.todayCompleted > 0 {
-                    HStack(spacing: 4) {
-                        Text("+\(entry.todayCompleted)")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(NedaaColors.success)
-                            .font(.caption)
+
+                HStack(spacing: 8) {
+                    if entry.todayCompleted > 0 {
+                        HStack(spacing: 4) {
+                            Text("+\(entry.todayCompleted)")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(NedaaColors.success)
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(showsBackground ? NedaaColors.success.opacity(0.2) : Color.clear)
+                        .clipShape(Capsule())
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(showsBackground ? NedaaColors.success.opacity(0.2) : Color.clear)
-                    .clipShape(Capsule())
+
+                    if #available(iOS 17.0, *) {
+                        Button(intent: IncrementQadaIntent()) {
+                            Label("+1", systemImage: "plus.circle.fill")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                        }
+                        .tint(NedaaColors.primary(for: colorScheme))
+                    }
                 }
             }
 
