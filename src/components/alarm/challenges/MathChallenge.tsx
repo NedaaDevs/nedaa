@@ -119,18 +119,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
         placeholder={t("alarm.challenge.enterAnswer")}
         placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
         autoFocus
-        style={{
-          width: "100%",
-          fontSize: 24,
-          fontWeight: "bold",
-          textAlign: "center",
-          padding: 16,
-          borderRadius: 12,
-          backgroundColor: isDark ? "#1f2937" : "#f3f4f6",
-          color: isDark ? "#f9fafb" : "#111827",
-          borderWidth: isWrong ? 2 : 0,
-          borderColor: isWrong ? "#ef4444" : "transparent",
-        }}
+        className={`w-full text-2xl font-bold text-center p-4 rounded-xl bg-background-muted text-typography ${isWrong ? "border-2 border-error" : ""}`}
         onSubmitEditing={handleSubmit}
         returnKeyType="done"
       />
