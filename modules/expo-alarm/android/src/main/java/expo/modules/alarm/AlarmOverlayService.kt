@@ -97,9 +97,14 @@ class AlarmOverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        alarmId = intent?.getStringExtra("alarm_id") ?: ""
-        alarmType = intent?.getStringExtra("alarm_type") ?: ""
-        title = intent?.getStringExtra("title") ?: "Alarm"
+        if (intent == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        alarmId = intent.getStringExtra("alarm_id") ?: ""
+        alarmType = intent.getStringExtra("alarm_type") ?: ""
+        title = intent.getStringExtra("title") ?: "Alarm"
 
         // Load challenge settings from database
         loadChallengeSettings()
@@ -108,7 +113,7 @@ class AlarmOverlayService : Service() {
         startForeground(NOTIFICATION_ID, createNotification())
         showOverlay()
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun loadChallengeSettings() {
