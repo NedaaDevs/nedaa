@@ -1,5 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Settings Activity -->
+    <string name="alarm_settings_title">الارم کی ترتیبات</string>
+    <string name="fajr_alarm_title">فجر کا الارم</string>
+    <string name="friday_alarm_title">جمعہ کا الارم</string>
+
+    <!-- Preferences -->
+    <string name="pref_enabled">الارم فعال کریں</string>
+    <string name="pref_enabled_summary">الارم مقررہ وقت پر بجے گا</string>
+
+    <string name="pref_category_sound">آواز</string>
+    <string name="pref_sound">الارم کی آواز</string>
+    <string name="pref_volume">والیوم</string>
+
+    <string name="pref_category_gentle_wakeup">آہستہ جاگنا</string>
+    <string name="pref_gentle_wakeup">آہستہ جاگنا فعال کریں</string>
+    <string name="pref_gentle_wakeup_summary">آہستہ آہستہ آواز بڑھاتا ہے</string>
+    <string name="pref_duration">مدت</string>
+
+    <string name="pref_category_challenge">بند کرنے کا چیلنج</string>
+    <string name="pref_challenge_type">چیلنج کی قسم</string>
+    <string name="pref_challenge_difficulty">مشکل کی سطح</string>
+    <string name="pref_challenge_count">چیلنجز کی تعداد</string>
+
+    <string name="pref_category_vibration">وائبریشن</string>
+    <string name="pref_vibration">وائبریشن فعال کریں</string>
+    <string name="pref_vibration_pattern">وائبریشن پیٹرن</string>
+
+    <string name="pref_category_snooze">سنوز</string>
+    <string name="pref_snooze">سنوز فعال کریں</string>
+    <string name="pref_snooze_max">زیادہ سے زیادہ سنوز</string>
+    <string name="pref_snooze_duration">سنوز مدت</string>
+
+    <!-- Sound options -->
+    <string name="sound_beep">بیپ</string>
+    <string name="sound_makkah_athan">اذان مکہ</string>
+    <string name="sound_yasser_aldosari">یاسر الدوسری</string>
+    <string name="sound_tasbih">تسبیح</string>
+    <string name="sound_athan2">اذان ۲</string>
+    <string name="sound_athan3">اذان ۳</string>
+    <string name="sound_medina_athan">اذان مدینہ</string>
+    <string name="sound_takbir">تکبیر</string>
+    <string name="sound_knock">دستک</string>
+    <string name="sound_silent">خاموش</string>
+
+    <!-- Challenge options -->
+    <string name="challenge_tap">ٹیپ</string>
+    <string name="challenge_math">ریاضی</string>
+    <string name="difficulty_easy">آسان</string>
+    <string name="difficulty_medium">درمیانہ</string>
+    <string name="difficulty_hard">مشکل</string>
+
+    <!-- Vibration options -->
+    <string name="vibration_default">ڈیفالٹ</string>
+    <string name="vibration_gentle">نرم</string>
+    <string name="vibration_aggressive">شدید</string>
+
+    <!-- Duration formats -->
+    <string name="minute_format">%d منٹ</string>
+
     <!-- Overlay - Tap Challenge -->
     <string name="overlay_tap_instruction">بند کرنے کے لیے بٹن %d بار ٹیپ کریں</string>
     <string name="overlay_tap_progress">%1$d / %2$d</string>

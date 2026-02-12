@@ -1,5 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Settings Activity -->
+    <string name="alarm_settings_title">إعدادات المنبه</string>
+    <string name="fajr_alarm_title">منبه الفجر</string>
+    <string name="friday_alarm_title">منبه الجمعة</string>
+
+    <!-- Preferences -->
+    <string name="pref_enabled">تفعيل المنبه</string>
+    <string name="pref_enabled_summary">سيرن المنبه في الوقت المحدد</string>
+
+    <string name="pref_category_sound">الصوت</string>
+    <string name="pref_sound">صوت المنبه</string>
+    <string name="pref_volume">مستوى الصوت</string>
+
+    <string name="pref_category_gentle_wakeup">الاستيقاظ اللطيف</string>
+    <string name="pref_gentle_wakeup">تفعيل الاستيقاظ اللطيف</string>
+    <string name="pref_gentle_wakeup_summary">يرفع الصوت تدريجياً</string>
+    <string name="pref_duration">المدة</string>
+
+    <string name="pref_category_challenge">تحدي الإيقاف</string>
+    <string name="pref_challenge_type">نوع التحدي</string>
+    <string name="pref_challenge_difficulty">الصعوبة</string>
+    <string name="pref_challenge_count">عدد التحديات</string>
+
+    <string name="pref_category_vibration">الاهتزاز</string>
+    <string name="pref_vibration">تفعيل الاهتزاز</string>
+    <string name="pref_vibration_pattern">نمط الاهتزاز</string>
+
+    <string name="pref_category_snooze">الغفوة</string>
+    <string name="pref_snooze">تفعيل الغفوة</string>
+    <string name="pref_snooze_max">الحد الأقصى للغفوات</string>
+    <string name="pref_snooze_duration">مدة الغفوة</string>
+
+    <!-- Sound options -->
+    <string name="sound_beep">صافرة</string>
+    <string name="sound_makkah_athan">أذان مكة</string>
+    <string name="sound_yasser_aldosari">ياسر الدوسري</string>
+    <string name="sound_tasbih">تسبيح</string>
+    <string name="sound_athan2">أذان ٢</string>
+    <string name="sound_athan3">أذان ٣</string>
+    <string name="sound_medina_athan">أذان المدينة</string>
+    <string name="sound_takbir">تكبير</string>
+    <string name="sound_knock">طرق</string>
+    <string name="sound_silent">صامت</string>
+
+    <!-- Challenge options -->
+    <string name="challenge_tap">نقر</string>
+    <string name="challenge_math">رياضيات</string>
+    <string name="difficulty_easy">سهل</string>
+    <string name="difficulty_medium">متوسط</string>
+    <string name="difficulty_hard">صعب</string>
+
+    <!-- Vibration options -->
+    <string name="vibration_default">افتراضي</string>
+    <string name="vibration_gentle">لطيف</string>
+    <string name="vibration_aggressive">قوي</string>
+
+    <!-- Duration formats -->
+    <string name="minute_format">%d دقيقة</string>
+
     <!-- Overlay - Tap Challenge -->
     <string name="overlay_tap_instruction">انقر الزر %d مرة للإيقاف</string>
     <string name="overlay_tap_progress">%1$d / %2$d</string>
