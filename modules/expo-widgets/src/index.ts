@@ -26,3 +26,13 @@ export function pinWidget(widgetType: WidgetType): boolean {
   if (Platform.OS !== "android" || !NativeModule) return false;
   return NativeModule.pinWidget(widgetType);
 }
+
+export function isBatteryOptimizationDisabled(): boolean {
+  if (Platform.OS !== "android" || !NativeModule) return true;
+  return NativeModule.isBatteryOptimizationDisabled();
+}
+
+export function requestDisableBatteryOptimization(): boolean {
+  if (Platform.OS !== "android" || !NativeModule) return false;
+  return NativeModule.requestDisableBatteryOptimization();
+}

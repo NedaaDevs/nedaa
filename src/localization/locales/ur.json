@@ -452,6 +452,17 @@
   "settings.widgets.qada": "قضا ٹریکر",
   "settings.widgets.qadaMedium": "قضا ٹریکر (درمیانہ)",
   "settings.widgets.prayerAthkar": "نماز اور اذکار",
+  "settings.widgets.prayerSmallDesc": "اگلی نماز اور الٹی گنتی",
+  "settings.widgets.prayerMediumDesc": "تمام نماز کے اوقات ایک قطار میں",
+  "settings.widgets.prayerLargeDesc": "مکمل نماز شیڈول تفصیلات کے ساتھ",
+  "settings.widgets.athkarDesc": "روزانہ اذکار کی تکمیل کا دائرہ",
+  "settings.widgets.athkarMediumDesc": "اذکار کی پیشرفت اور سلسلہ",
+  "settings.widgets.qadaDesc": "باقی روزوں کا شمار",
+  "settings.widgets.qadaMediumDesc": "قضا کی پیشرفت اور تکمیل کے اعداد و شمار",
+  "settings.widgets.prayerAthkarDesc": "نماز کے اوقات اور اذکار ایک ساتھ",
   "settings.widgets.notSupported": "اس آلے پر وجیٹ پننگ تعاون یافتہ نہیں ہے",
-  "settings.widgets.iosNote": "iOS پر، اپنی ہوم اسکرین پر دیر تک دبائیں اور + بٹن دبائیں۔"
+  "settings.widgets.iosNote": "iOS پر، اپنی ہوم اسکرین پر دیر تک دبائیں اور + بٹن دبائیں۔",
+  "settings.widgets.batteryOptTitle": "بیٹری آپٹیمائزیشن بند کریں",
+  "settings.widgets.batteryOptDesc": "وجیٹس کو پس منظر میں قابل اعتماد طریقے سے اپ ڈیٹ ہونے دیتا ہے۔ نداء کے لیے بیٹری آپٹیمائزیشن بند کرنے کے لیے ٹیپ کریں۔",
+  "settings.widgets.batteryOptDone": "بیٹری آپٹیمائزیشن بند ہے — وجیٹس قابل اعتماد طریقے سے اپ ڈیٹ ہوں گے"
 }

@@ -657,6 +657,17 @@
   "settings.widgets.qada": "Qada Tracker",
   "settings.widgets.qadaMedium": "Qada Tracker (Medium)",
   "settings.widgets.prayerAthkar": "Prayer & Athkar",
+  "settings.widgets.prayerSmallDesc": "Next prayer with countdown timer",
+  "settings.widgets.prayerMediumDesc": "All prayer times in a row",
+  "settings.widgets.prayerLargeDesc": "Full prayer schedule with details",
+  "settings.widgets.athkarDesc": "Daily athkar completion circle",
+  "settings.widgets.athkarMediumDesc": "Athkar progress with streaks",
+  "settings.widgets.qadaDesc": "Remaining fasts counter",
+  "settings.widgets.qadaMediumDesc": "Qada progress with completion stats",
+  "settings.widgets.prayerAthkarDesc": "Prayer times and athkar together",
   "settings.widgets.notSupported": "Widget pinning is not supported on this device",
-  "settings.widgets.iosNote": "On iOS, add widgets by long-pressing your home screen and tapping the + button."
+  "settings.widgets.iosNote": "On iOS, add widgets by long-pressing your home screen and tapping the + button.",
+  "settings.widgets.batteryOptTitle": "Disable Battery Optimization",
+  "settings.widgets.batteryOptDesc": "Allows widgets to update reliably in the background. Tap to disable battery optimization for Nedaa.",
+  "settings.widgets.batteryOptDone": "Battery optimization is disabled — widgets will update reliably"
 }

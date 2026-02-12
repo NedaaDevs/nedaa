@@ -385,6 +385,17 @@
   "settings.widgets.qada": "Penjejak Qada",
   "settings.widgets.qadaMedium": "Penjejak Qada (Sederhana)",
   "settings.widgets.prayerAthkar": "Solat & Azkar",
+  "settings.widgets.prayerSmallDesc": "Solat seterusnya dengan pemasa undur",
+  "settings.widgets.prayerMediumDesc": "Semua waktu solat dalam satu baris",
+  "settings.widgets.prayerLargeDesc": "Jadual solat penuh dengan butiran",
+  "settings.widgets.athkarDesc": "Bulatan kemajuan azkar harian",
+  "settings.widgets.athkarMediumDesc": "Kemajuan azkar dengan rekod berturut-turut",
+  "settings.widgets.qadaDesc": "Pembilang puasa yang tinggal",
+  "settings.widgets.qadaMediumDesc": "Kemajuan qada dengan statistik penyelesaian",
+  "settings.widgets.prayerAthkarDesc": "Waktu solat dan azkar bersama",
   "settings.widgets.notSupported": "Penambahan widget tidak disokong pada peranti ini",
-  "settings.widgets.iosNote": "Di iOS, tambah widget dengan menekan lama skrin utama dan ketik butang +."
+  "settings.widgets.iosNote": "Di iOS, tambah widget dengan menekan lama skrin utama dan ketik butang +.",
+  "settings.widgets.batteryOptTitle": "Lumpuhkan Pengoptimuman Bateri",
+  "settings.widgets.batteryOptDesc": "Membenarkan widget dikemas kini dengan pasti di latar belakang. Ketik untuk melumpuhkan pengoptimuman bateri untuk Nedaa.",
+  "settings.widgets.batteryOptDone": "Pengoptimuman bateri dilumpuhkan — widget akan dikemas kini dengan pasti"
 }

@@ -635,6 +635,17 @@
   "settings.widgets.qada": "تتبع القضاء",
   "settings.widgets.qadaMedium": "تتبع القضاء (متوسط)",
   "settings.widgets.prayerAthkar": "الصلاة والأذكار",
-  "settings.widgets.notSupported": "إضافة الودجات غير مدعومة على هذا الجهاز",
-  "settings.widgets.iosNote": "على iOS، أضف الودجات بالضغط المطول على الشاشة الرئيسية ثم الضغط على زر +."
+  "settings.widgets.prayerSmallDesc": "الصلاة القادمة مع العد التنازلي",
+  "settings.widgets.prayerMediumDesc": "جميع مواقيت الصلاة في صف واحد",
+  "settings.widgets.prayerLargeDesc": "جدول الصلاة الكامل مع التفاصيل",
+  "settings.widgets.athkarDesc": "دائرة إتمام الأذكار اليومية",
+  "settings.widgets.athkarMediumDesc": "تقدم الأذكار مع السلسلة",
+  "settings.widgets.qadaDesc": "عداد الصيام المتبقي",
+  "settings.widgets.qadaMediumDesc": "تقدم القضاء مع إحصائيات الإتمام",
+  "settings.widgets.prayerAthkarDesc": "مواقيت الصلاة والأذكار معاً",
+  "settings.widgets.notSupported": "إضافة التطبيقات المصغرة غير مدعومة على هذا الجهاز",
+  "settings.widgets.iosNote": "على iOS، أضف التطبيقات المصغرة بالضغط المطول على الشاشة الرئيسية ثم الضغط على زر +.",
+  "settings.widgets.batteryOptTitle": "تعطيل تحسين البطارية",
+  "settings.widgets.batteryOptDesc": "يسمح بتحديث التطبيقات المصغرة بشكل موثوق في الخلفية. اضغط لتعطيل تحسين البطارية لتطبيق نداء.",
+  "settings.widgets.batteryOptDone": "تحسين البطارية معطل — ستُحدّث التطبيقات المصغرة بشكل موثوق"
 }

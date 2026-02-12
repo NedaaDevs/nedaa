@@ -3,7 +3,11 @@ package expo.modules.widgets
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -53,6 +57,28 @@ class ExpoWidgetsModule : Module() {
 
             val provider = ComponentName(context.packageName, receiverClassName)
             return@Function appWidgetManager.requestPinAppWidget(provider, null, null)
+        }
+
+        Function("isBatteryOptimizationDisabled") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                return@Function pm.isIgnoringBatteryOptimizations(context.packageName)
+            }
+            return@Function true
+        }
+
+        Function("requestDisableBatteryOptimization") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                if (!pm.isIgnoringBatteryOptimizations(context.packageName)) {
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    intent.data = Uri.parse("package:${context.packageName}")
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                    return@Function true
+                }
+            }
+            return@Function false
         }
     }
 }
