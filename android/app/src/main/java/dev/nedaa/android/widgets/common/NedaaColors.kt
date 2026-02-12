@@ -19,7 +19,7 @@ object NedaaColors {
         val text = Color(0xFF1C1B1F)
         val textSecondary = Color(0xFF49454F)
         val success = Color(0xFF4CAF50)
-        val primaryBackground = Color(0x261C5D85)  // primary with 15% opacity
+        val primaryBackground = Color(0x401C5D85)  // primary with 25% opacity
         val successBackground = Color(0x154CAF50)  // success with 8% opacity
         val divider = Color(0x4D49454F)      // textSecondary with 30% opacity
     }
@@ -34,7 +34,7 @@ object NedaaColors {
         val text = Color.White
         val textSecondary = Color.Gray
         val success = Color(0xFF4CAF50)
-        val primaryBackground = Color(0x26E6C469)  // primary with 15% opacity
+        val primaryBackground = Color(0x40E6C469)  // primary with 25% opacity
         val successBackground = Color(0x154CAF50)  // success with 8% opacity
         val divider = Color(0x4D808080)      // gray with 30% opacity
     }
