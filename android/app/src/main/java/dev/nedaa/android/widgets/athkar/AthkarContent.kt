@@ -2,6 +2,7 @@ package dev.nedaa.android.widgets.athkar
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,13 +37,15 @@ fun AthkarContent(
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
-    val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+    val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse("myapp:///athkar")).apply {
+        setPackage(context.packageName)
+    }
 
     Box(
         modifier = modifier
             .background(NedaaColors.GlanceColors.background)
             .cornerRadius(16.dp)
-            .clickable(actionStartActivity(launchIntent ?: Intent()))
+            .clickable(actionStartActivity(deepLinkIntent))
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
