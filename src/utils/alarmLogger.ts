@@ -1,5 +1,8 @@
 import * as ExpoAlarm from "expo-alarm";
+import * as Application from "expo-application";
+import * as Device from "expo-device";
 import { Platform, Share } from "react-native";
+import { File, Paths } from "expo-file-system";
 
 interface LogEntry {
   timestamp: number;
@@ -48,6 +51,16 @@ function addLog(level: LogEntry["level"], tag: string, message: string) {
   }
 }
 
+export const ISSUE_CATEGORIES = [
+  "alarm_not_firing",
+  "wrong_time",
+  "no_sound",
+  "cant_dismiss",
+  "other",
+] as const;
+
+export type IssueCategory = (typeof ISSUE_CATEGORIES)[number];
+
 export const AlarmLogger = {
   d: (tag: string, message: string) => addLog("DEBUG", tag, message),
   i: (tag: string, message: string) => addLog("INFO", tag, message),
@@ -72,29 +85,37 @@ export const AlarmLogger = {
     logs.length = 0;
   },
 
-  async getFullDebugLog(): Promise<string> {
+  async getFullDebugLog(category?: IssueCategory): Promise<string> {
     const sections: string[] = [];
 
-    sections.push("=== ALARM DEBUG LOG ===");
+    const appVersion = Application.nativeApplicationVersion ?? "unknown";
+    const buildNumber = Application.nativeBuildVersion ?? "unknown";
+    const deviceModel = Device.modelName ?? "unknown";
+    const deviceBrand = Device.brand ?? "";
+    const osVersion = Device.osVersion ?? "unknown";
+
+    sections.push("=== NEDAA ALARM DIAGNOSTIC REPORT ===");
     sections.push(`Generated: ${new Date().toISOString()}`);
-    sections.push(`Platform: ${Platform.OS} ${Platform.Version}`);
+    if (category) {
+      sections.push(`Issue: ${category}`);
+    }
     sections.push("");
 
-    // Device info
-    sections.push("--- Device Info ---");
-    sections.push(`Platform: ${Platform.OS}`);
-    sections.push(`Version: ${Platform.Version}`);
-    sections.push(`Native Module Available: ${ExpoAlarm.isNativeModuleAvailable()}`);
+    sections.push("--- App & Device ---");
+    sections.push(`App Version: ${appVersion} (${buildNumber})`);
+    sections.push(`Device: ${deviceBrand} ${deviceModel}`);
+    sections.push(`OS: ${Platform.OS} ${osVersion}`);
+    sections.push(`Native Module: ${ExpoAlarm.isNativeModuleAvailable()}`);
     sections.push("");
 
     // Permission status
     try {
       const authStatus = await ExpoAlarm.getAuthorizationStatus();
       sections.push("--- Permissions ---");
-      sections.push(`Authorization Status: ${authStatus}`);
+      sections.push(`Authorization: ${authStatus}`);
       if (Platform.OS === "android") {
-        sections.push(`Battery Optimization Exempt: ${ExpoAlarm.isBatteryOptimizationExempt()}`);
-        sections.push(`Full Screen Intent: ${ExpoAlarm.canUseFullScreenIntent()}`);
+        sections.push(`Battery Exempt: ${ExpoAlarm.isBatteryOptimizationExempt()}`);
+        sections.push(`Full Screen: ${ExpoAlarm.canUseFullScreenIntent()}`);
       }
       sections.push("");
     } catch (e) {
@@ -154,13 +175,63 @@ export const AlarmLogger = {
     return sections.join("\n");
   },
 
-  async shareLog() {
+  async getSummary(category: IssueCategory): Promise<string> {
+    const appVersion = Application.nativeApplicationVersion ?? "unknown";
+    const buildNumber = Application.nativeBuildVersion ?? "unknown";
+    const deviceModel = Device.modelName ?? "unknown";
+    const osVersion = Device.osVersion ?? "unknown";
+
+    const lines: string[] = [
+      `Nedaa Alarm Report`,
+      `Issue: ${category}`,
+      `App: ${appVersion} (${buildNumber})`,
+      `Device: ${deviceModel}, ${Platform.OS} ${osVersion}`,
+    ];
+
     try {
-      const log = await this.getFullDebugLog();
-      await Share.share({
-        message: log,
-        title: "Nedaa Alarm Debug Log",
-      });
+      const authStatus = await ExpoAlarm.getAuthorizationStatus();
+      lines.push(`Auth: ${authStatus}`);
+    } catch {
+      // skip
+    }
+
+    try {
+      const alarmIds = await ExpoAlarm.getScheduledAlarmIds();
+      lines.push(`Alarms: ${alarmIds.length}`);
+      const nextAlarmTime = ExpoAlarm.getNextAlarmTime();
+      if (nextAlarmTime) {
+        lines.push(`Next: ${new Date(nextAlarmTime).toLocaleString()}`);
+      }
+    } catch {
+      // skip
+    }
+
+    return lines.join("\n");
+  },
+
+  async shareLog(category?: IssueCategory) {
+    try {
+      const log = await this.getFullDebugLog(category);
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const fileName = `nedaa-alarm-log-${timestamp}.txt`;
+      const file = new File(Paths.cache, fileName);
+
+      try {
+        file.create();
+      } catch {
+        // file may already exist, overwrite
+      }
+      file.write(log);
+
+      if (Platform.OS === "ios") {
+        await Share.share({ url: file.uri });
+      } else {
+        await Share.share({
+          message: log,
+          title: fileName,
+        });
+      }
     } catch (e) {
       console.error("Failed to share log:", e);
     }
