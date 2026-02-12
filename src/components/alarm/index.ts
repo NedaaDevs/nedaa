@@ -1,4 +1,3 @@
-export { default as AlarmTypePanel } from "./AlarmTypePanel";
 export { default as SoundPicker } from "./SoundPicker";
 export { default as VolumeSlider } from "./VolumeSlider";
 export { default as ChallengePicker } from "./ChallengePicker";
