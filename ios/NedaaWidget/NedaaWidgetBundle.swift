@@ -35,6 +35,7 @@ struct WidgetsBundle26: WidgetBundle {
     var body: some Widget {
         // Lock Screen Widgets
         PrayerCountdownLockScreenWidget()
+        InlinePrayerWidget()
         MorningPrayerWidget()
         EveningPrayerWidget()
 
@@ -56,6 +57,7 @@ struct WidgetsBundle17: WidgetBundle {
     var body: some Widget {
         // Lock Screen Widgets
         PrayerCountdownLockScreenWidget()
+        InlinePrayerWidget()
         MorningPrayerWidget()
         EveningPrayerWidget()
 

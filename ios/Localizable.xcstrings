@@ -1,1850 +1,1866 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "%lld" : {
-
-    },
-    "%lld%%" : {
-
-    },
-    "%lld%% %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld%% %2$@"
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld": {},
+    "%lld%%": {},
+    "%lld%% %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld%% %2$@"
           }
         }
       }
-    },
-    "•" : {
-
     },
-    "+%lld" : {
-
-    },
-    "afternoon_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلاة العصر"
+    "•": {},
+    "+%lld": {},
+    "afternoon_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلاة العصر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afternoon Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afternoon Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عصر کی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عصر کی نماز"
           }
         }
       }
-    },
-    "Alarm Active" : {
-
-    },
-    "Alarm ID" : {
-
     },
-    "Alarm Type" : {
-
-    },
-    "asr" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "العصر"
+    "Alarm Active": {},
+    "Alarm ID": {},
+    "Alarm Type": {},
+    "asr": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العصر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Asr"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asr"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عصر"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عصر"
           }
         }
       }
     },
-    "athkar" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أذكار"
+    "athkar": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athkar"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athkar"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اذکار"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اذکار"
           }
         }
       }
     },
-    "athkar_progress_widget_desc" : {
-      "comment" : "Track your daily Athkar completion and progress",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تتبع إتمام أذكارك اليومية وتقدمك"
+    "athkar_progress_widget_desc": {
+      "comment": "Track your daily Athkar completion and progress",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتبع إتمام أذكارك اليومية وتقدمك"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Track your daily Athkar completion and progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track your daily Athkar completion and progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اپنے روزانہ اذکار کی تکمیل اور پیش رفت کو ٹریک کریں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اپنے روزانہ اذکار کی تکمیل اور پیش رفت کو ٹریک کریں"
           }
         }
       }
     },
-    "athkar_progress_widget_title" : {
-      "comment" : "Athkar Progress",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تقدم الأذكار"
+    "athkar_progress_widget_title": {
+      "comment": "Athkar Progress",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم الأذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athkar Progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athkar Progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اذکار کی پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اذکار کی پیش رفت"
           }
         }
       }
     },
-    "best" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الأفضل"
+    "best": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأفضل"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Best"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "بہترین"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بہترین"
           }
         }
       }
     },
-    "complete" : {
-      "comment" : "Complete status",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مكتمل"
+    "complete": {
+      "comment": "Complete status",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مكتمل"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مکمل"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مکمل"
           }
         }
       }
     },
-    "completed" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مكتمل"
+    "completed": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مكتمل"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completed"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مکمل"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مکمل"
           }
         }
       }
     },
-    "completedToday" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مكتمل اليوم"
+    "completedToday": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مكتمل اليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completed Today"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed Today"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج مکمل"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج مکمل"
           }
         }
       }
     },
-    "Configuration" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configuration"
+    "Configuration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuration"
           }
         }
       }
     },
-    "countdown_hours_minutes" : {
-      "comment" : "in Xh Ym",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خلال %d س %d د"
+    "countdown_hours_minutes": {
+      "comment": "in Xh Ym",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خلال %d س %d د"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in %dh %dm"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %dh %dm"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d گھ %d م میں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d گھ %d م میں"
           }
         }
       }
     },
-    "countdown_minutes" : {
-      "comment" : "in Xm",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خلال %d د"
+    "countdown_minutes": {
+      "comment": "in Xm",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خلال %d د"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in %dm"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %dm"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d منٹ میں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d منٹ میں"
           }
         }
       }
     },
-    "current" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الحالي"
+    "current": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الحالي"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Current"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "موجودہ"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "موجودہ"
           }
         }
       }
     },
-    "dawn_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلاة الفجر"
+    "dawn_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلاة الفجر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dawn Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dawn Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فجر کی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فجر کی نماز"
           }
         }
       }
     },
-    "day_streak" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سلسلة الأيام"
+    "day_streak": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سلسلة الأيام"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Day Streak"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day Streak"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "روزانہ سلسلہ"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "روزانہ سلسلہ"
           }
         }
       }
     },
-    "days" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أيام"
+    "days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أيام"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Days"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Days"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "دن"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "دن"
           }
         }
       }
     },
-    "dhuhr" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الظهر"
+    "dhuhr": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الظهر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duhur"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duhur"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ظہر"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ظہر"
           }
         }
       }
-    },
-    "Dismiss" : {
-
-    },
-    "Dismiss Alarm" : {
-
     },
-    "evening" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "المساء"
+    "Dismiss": {},
+    "Dismiss Alarm": {},
+    "evening": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المساء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Evening"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evening"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "شام"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شام"
           }
         }
       }
     },
-    "eveningPrayersWidgetDesc" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تتبع مواقيت صلاة العصر والمغرب والعشاء بلمحة"
+    "eveningPrayersWidgetDesc": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتبع مواقيت صلاة العصر والمغرب والعشاء بلمحة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Track Asr, Maghrib, and Isha prayer times at a glance"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track Asr, Maghrib, and Isha prayer times at a glance"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ایک نظر میں عصر، مغرب اور عشاء کے اوقات دیکھیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ایک نظر میں عصر، مغرب اور عشاء کے اوقات دیکھیں"
           }
         }
       }
     },
-    "eveningPrayersWidgetTitle" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلوات المساء"
+    "eveningPrayersWidgetTitle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلوات المساء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Evening Prayers"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evening Prayers"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "شام کی نمازیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شام کی نمازیں"
           }
         }
       }
     },
-    "fajr" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الفجر"
+    "fajr": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الفجر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fajr"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fajr"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فجر"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فجر"
           }
         }
       }
     },
-    "fastsRemaining" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صيام متبقي"
+    "fastsRemaining": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام متبقي"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fasts Remaining"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasts Remaining"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "باقی روزے"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "باقی روزے"
           }
         }
       }
     },
-    "friday_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلاة الجمعة"
+    "friday_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلاة الجمعة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Friday Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Friday Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "جمعہ کی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جمعہ کی نماز"
           }
         }
       }
     },
-    "isha" : {
-      "comment" : "isha",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "العشاء"
+    "isha": {
+      "comment": "isha",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العشاء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Isha"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isha"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عشاء"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عشاء"
           }
         }
       }
     },
-    "Items" : {
-      "comment" : "Athkar items label",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عناصر"
+    "Items": {
+      "comment": "Athkar items label",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عناصر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Items"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Items"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اشیاء"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اشیاء"
           }
         }
       }
     },
-    "jumuah" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الجمعة"
+    "jumuah": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجمعة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jumu'ah"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jumu'ah"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "جمعہ"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جمعہ"
           }
         }
       }
     },
-    "maghrib" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "المغرب"
+    "maghrib": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المغرب"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Maghrib"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maghrib"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "غروب"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غروب"
           }
         }
       }
     },
-    "missedFasts" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صيام فائت"
+    "missedFasts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام فائت"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Missed Fasts"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missed Fasts"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "چھوٹے ہوئے روزے"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "چھوٹے ہوئے روزے"
           }
         }
       }
     },
-    "morning" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصباح"
+    "morning": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصباح"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Morning"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صبح"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صبح"
           }
         }
       }
     },
-    "morningPrayersWidgetDesc" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تبع مواقيت صلاة الفجر والشروق والظهر بلمحة"
+    "morningPrayersWidgetDesc": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تبع مواقيت صلاة الفجر والشروق والظهر بلمحة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Track Fajr, Sunrise, and Dhuhr prayer times at a glance"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track Fajr, Sunrise, and Dhuhr prayer times at a glance"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ایک نظر میں فجر، سورج طلوع ہونے کا وقت، اور ظہر کے اوقات دیکھیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ایک نظر میں فجر، سورج طلوع ہونے کا وقت، اور ظہر کے اوقات دیکھیں"
           }
         }
       }
     },
-    "morningPrayersWidgetTitle" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلوات الصباح"
+    "morningPrayersWidgetTitle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلوات الصباح"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Morning Prayers"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning Prayers"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صبح کی نمازیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صبح کی نمازیں"
           }
         }
       }
     },
-    "My Widget" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ويدجت"
+    "My Widget": {
+      "extractionState": "stale",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ويدجت"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My Widget"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Widget"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "میرا ویجٹ"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "میرا ویجٹ"
           }
         }
       }
     },
-    "next_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصلاة القادمة"
+    "next_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة القادمة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اگلی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلی نماز"
           }
         }
       }
     },
-    "nextPrayerLockScreenWidgetDesc" : {
-      "comment" : "Lock screen widget description",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يعرض وقت الصلاة القادمة. يظهر مؤقت العد التنازلي 60 دقيقة قبل الصلاة. ويبدأ العد 30 دقيقة بعد الصلاة"
+    "nextPrayerLockScreenWidgetDesc": {
+      "comment": "Lock screen widget description",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يعرض وقت الصلاة القادمة. يظهر مؤقت العد التنازلي 60 دقيقة قبل الصلاة. ويبدأ العد 30 دقيقة بعد الصلاة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Displays the next prayer. it shows a countdown timer 60 minutes before the prayer. And count up 30 minutes after"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displays the next prayer. it shows a countdown timer 60 minutes before the prayer. And count up 30 minutes after"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اگلی نماز ظاہر ہوتی ہے۔ نماز سے 60 منٹ پہلے الٹی گنتی اور نماز کے 30 منٹ بعد سیدھی گنتی دکھائی جاتی ہے۔"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلی نماز ظاہر ہوتی ہے۔ نماز سے 60 منٹ پہلے الٹی گنتی اور نماز کے 30 منٹ بعد سیدھی گنتی دکھائی جاتی ہے۔"
           }
         }
       }
     },
-    "nextPrayerLockScreenWidgetTitle" : {
-      "comment" : "Lock screen widget title",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصلاة القادمة"
+    "nextPrayerLockScreenWidgetTitle": {
+      "comment": "Lock screen widget title",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة القادمة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اگلی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلی نماز"
           }
         }
       }
     },
-    "night_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلاة العشاء"
+    "night_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلاة العشاء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Night Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عشاء کی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عشاء کی نماز"
           }
         }
       }
     },
-    "No Athkar data available" : {
-      "comment" : "No athkar data message",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا توجد بيانات أذكار"
+    "No Athkar data available": {
+      "comment": "No athkar data message",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد بيانات أذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Athkar data available"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Athkar data available"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اذکار کا ڈیٹا دستیاب نہیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اذکار کا ڈیٹا دستیاب نہیں"
           }
         }
       }
     },
-    "no_athkar_data" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا توجد بيانات أذكار"
+    "no_athkar_data": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد بيانات أذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Athkar data available"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Athkar data available"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اذکار کا ڈیٹا دستیاب نہیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اذکار کا ڈیٹا دستیاب نہیں"
           }
         }
       }
     },
-    "no_data" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا توجد بيانات"
+    "no_data": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد بيانات"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No data"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ڈیٹا دستیاب نہیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ڈیٹا دستیاب نہیں"
           }
         }
       }
     },
-    "noon_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلاة الظهر"
+    "noon_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلاة الظهر"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noon Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noon Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ظہر کی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ظہر کی نماز"
           }
         }
       }
     },
-    "Opens Nedaa to dismiss the alarm" : {
-
-    },
-    "Overall Progress" : {
-      "comment" : "Overall athkar progress label",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "التقدم الإجمالي"
+    "Opens Nedaa to dismiss the alarm": {},
+    "Overall Progress": {
+      "comment": "Overall athkar progress label",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التقدم الإجمالي"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Overall Progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overall Progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مجموعی پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مجموعی پیش رفت"
           }
         }
       }
     },
-    "passed" : {
-      "comment" : "Prayer time has passed",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مضى"
+    "passed": {
+      "comment": "Prayer time has passed",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مضى"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passed"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passed"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "گزر گیا"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "گزر گیا"
           }
         }
       }
     },
-    "Prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصلاة"
+    "Prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز"
           }
         }
       }
     },
-    "prayer_athkar_widget_desc" : {
-      "comment" : "View next prayer time and daily Athkar progress together",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عرض وقت الصلاة القادمة وتقدم الأذكار اليومية معاً"
+    "prayer_athkar_widget_desc": {
+      "comment": "View next prayer time and daily Athkar progress together",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض وقت الصلاة القادمة وتقدم الأذكار اليومية معاً"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "View next prayer time and daily Athkar progress together"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View next prayer time and daily Athkar progress together"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اگلے نماز کا وقت اور روزانہ اذکار کی پیش رفت ایک ساتھ دیکھیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلے نماز کا وقت اور روزانہ اذکار کی پیش رفت ایک ساتھ دیکھیں"
           }
         }
       }
     },
-    "prayer_athkar_widget_title" : {
-      "comment" : "Prayer & Athkar",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصلاة والأذكار"
+    "prayer_athkar_widget_title": {
+      "comment": "Prayer & Athkar",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة والأذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prayer & Athkar"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prayer & Athkar"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز اور اذکار"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز اور اذکار"
           }
         }
       }
     },
-    "prayerTimesWidgetDesc" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عرض أوقات الصلاة لليوم"
+    "prayerTimesWidgetDesc": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض أوقات الصلاة لليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "View prayer times for today"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View prayer times for today"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج کے نماز کے اوقات دیکھیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج کے نماز کے اوقات دیکھیں"
           }
         }
       }
     },
-    "prayerTimesWidgetTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أوقات الصلاة"
+    "prayerTimesWidgetTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أوقات الصلاة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prayer Times"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prayer Times"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز کے اوقات"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز کے اوقات"
           }
         }
       }
     },
-    "progress" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تقدم"
+    "progress": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پیش رفت"
           }
         }
       }
     },
-    "Progress" : {
-      "comment" : "Athkar progress label",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تقدم"
+    "Progress": {
+      "comment": "Athkar progress label",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پیش رفت"
           }
         }
       }
     },
-    "qada" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "قضاء"
+    "qada": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قضاء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qada"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qada"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "قضا"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قضا"
           }
         }
       }
     },
-    "qadaTracker" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "متتبع القضاء"
+    "qadaTracker": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متتبع القضاء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qada Tracker"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qada Tracker"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "قضا ٹریکر"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قضا ٹریکر"
           }
         }
       }
     },
-    "qadaTrackerWidgetDesc" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تتبع صيام القضاء وتقدمك"
+    "qadaTrackerWidgetDesc": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتبع صيام القضاء وتقدمك"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Track your Qada fasts and progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track your Qada fasts and progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اپنے قضا روزوں اور پیش رفت کو ٹریک کریں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اپنے قضا روزوں اور پیش رفت کو ٹریک کریں"
           }
         }
       }
     },
-    "qadaTrackerWidgetTitle" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "متتبع القضاء"
+    "qadaTrackerWidgetTitle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متتبع القضاء"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qada Tracker"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qada Tracker"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "قضا ٹریکر"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قضا ٹریکر"
           }
         }
       }
     },
-    "remaining" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "متبقي"
+    "remaining": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متبقي"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "remaining"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "remaining"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "باقی"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "باقی"
           }
         }
       }
     },
-    "Select a family" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اختر مجموعة"
+    "Select a family": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر مجموعة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select a family"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a family"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ایک خاندان منتخب کریں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ایک خاندان منتخب کریں"
           }
         }
       }
     },
-    "Start tracking your daily Athkar in the app" : {
-      "comment" : "Start athkar tracking message",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ابدأ بتتبع أذكارك اليومية في التطبيق"
+    "Start tracking your daily Athkar in the app": {
+      "comment": "Start athkar tracking message",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابدأ بتتبع أذكارك اليومية في التطبيق"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start tracking your daily Athkar in the app"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start tracking your daily Athkar in the app"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ایپ میں اپنے روزانہ اذکار کو ٹریک کرنا شروع کریں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ایپ میں اپنے روزانہ اذکار کو ٹریک کرنا شروع کریں"
           }
         }
       }
     },
-    "sunrise" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الشروق"
+    "sunrise": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشروق"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sunrise"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sunrise"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "طلوع آفتاب"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طلوع آفتاب"
           }
         }
       }
     },
-    "sunrise_time" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "وقت الشروق"
+    "sunrise_time": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وقت الشروق"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sunrise Time"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sunrise Time"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "طلوع آفتاب کا وقت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طلوع آفتاب کا وقت"
           }
         }
       }
     },
-    "sunset_prayer" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "صلاة المغرب"
+    "sunset_prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صلاة المغرب"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sunset Prayer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sunset Prayer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مغرب کی نماز"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مغرب کی نماز"
           }
         }
       }
     },
-    "This is an example widget." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هذا ويدجت تجريبي"
+    "This is an example widget.": {
+      "extractionState": "stale",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا ويدجت تجريبي"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This is an example widget."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is an example widget."
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "یہ ایک مثال کا ویجٹ ہے۔"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "یہ ایک مثال کا ویجٹ ہے۔"
           }
         }
       }
-    },
-    "Time to wake up!" : {
-
     },
-    "today_progress" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تقدم اليوم"
+    "Time to wake up!": {},
+    "today_progress": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم اليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's Progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج کی پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج کی پیش رفت"
           }
         }
       }
     },
-    "Today's Athkar Progress" : {
-      "comment" : "Today's athkar progress title",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تقدم أذكار اليوم"
+    "Today's Athkar Progress": {
+      "comment": "Today's athkar progress title",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم أذكار اليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's Athkar Progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Athkar Progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج کے اذکار کی پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج کے اذکار کی پیش رفت"
           }
         }
       }
     },
-    "todayCompleted" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مكتمل اليوم"
+    "todayCompleted": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مكتمل اليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today Completed"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today Completed"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج مکمل"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج مکمل"
           }
         }
       }
     },
-    "todayProgress" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تقدم اليوم"
+    "todayProgress": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم اليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today Progress"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today Progress"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج کی پیش رفت"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج کی پیش رفت"
           }
         }
       }
     },
-    "todays_athkar" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أذكار اليوم"
+    "todays_athkar": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أذكار اليوم"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's Athkar"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Athkar"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آج کے اذکار"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آج کے اذکار"
           }
         }
       }
     },
-    "totalFasts" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إجمالي الصيام"
+    "totalFasts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إجمالي الصيام"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total Fasts"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total Fasts"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "کل روزے"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کل روزے"
           }
         }
       }
-    },
-    "widget_all_prayers_settings" : {
-
-    },
-    "widget_all_prayers_settings_desc" : {
-
     },
-    "widget_prayer_athkar_settings" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إعدادات الصلاة والأذكار"
+    "widget_all_prayers_settings": {},
+    "widget_all_prayers_settings_desc": {},
+    "widget_prayer_athkar_settings": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعدادات الصلاة والأذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prayer & Athkar Settings"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prayer & Athkar Settings"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز اور اذکار کی ترتیبات"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز اور اذکار کی ترتیبات"
           }
         }
       }
     },
-    "widget_prayer_athkar_settings_desc" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تكوين خيارات عرض الصلاة والأذكار"
+    "widget_prayer_athkar_settings_desc": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تكوين خيارات عرض الصلاة والأذكار"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configure your Prayer & Athkar widget display options"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure your Prayer & Athkar widget display options"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز اور اذکار ویجٹ ڈسپلے اختیارات کو ترتیب دیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز اور اذکار ویجٹ ڈسپلے اختیارات کو ترتیب دیں"
           }
         }
       }
     },
-    "widget_prayer_countdown_settings" : {
-
+    "widget_prayer_countdown_settings": {},
+    "widget_prayer_countdown_settings_desc": {},
+    "widget_prayer_times_settings": {
+      "comment": "Widget configuration title",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعدادات أوقات الصلاة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prayer Times Settings"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز کے اوقات کی ترتیبات"
+          }
+        }
+      }
     },
-    "widget_prayer_countdown_settings_desc" : {
-
+    "widget_prayer_times_settings_desc": {
+      "comment": "Widget configuration description",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تكوين خيارات عرض أوقات الصلاة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure your Prayer Times widget display options"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز کے اوقات ویجٹ ڈسپلے اختیارات کو ترتیب دیں"
+          }
+        }
+      }
     },
-    "widget_prayer_times_settings" : {
-      "comment" : "Widget configuration title",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إعدادات أوقات الصلاة"
+    "widget_show_countdown": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار العد التنازلي"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prayer Times Settings"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Countdown"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز کے اوقات کی ترتیبات"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الٹی گنتی دکھائیں"
           }
         }
       }
     },
-    "widget_prayer_times_settings_desc" : {
-      "comment" : "Widget configuration description",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تكوين خيارات عرض أوقات الصلاة"
+    "widget_show_sunrise": {
+      "comment": "Show sunrise option",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار الشروق"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configure your Prayer Times widget display options"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Sunrise"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز کے اوقات ویجٹ ڈسپلے اختیارات کو ترتیب دیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طلوع آفتاب دکھائیں"
           }
         }
       }
     },
-    "widget_show_countdown" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إظهار العد التنازلي"
+    "widget_show_timer": {
+      "comment": "Show timer option",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار المؤقت"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show Countdown"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Timer"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الٹی گنتی دکھائیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ٹائمر دکھائیں"
           }
         }
       }
     },
-    "widget_show_sunrise" : {
-      "comment" : "Show sunrise option",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إظهار الشروق"
+    "widget.inHoursMinutes": {
+      "comment": "in %d h %d m",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خلال %d س %d د"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show Sunrise"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %dh %dm"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "طلوع آفتاب دکھائیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d گھ %d م میں"
           }
         }
       }
     },
-    "widget_show_timer" : {
-      "comment" : "Show timer option",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إظهار المؤقت"
+    "widget.inMinutes": {
+      "comment": "in %d min",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خلال %d د"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show Timer"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %d min"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ٹائمر دکھائیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d منٹ میں"
           }
         }
       }
     },
-    "widget.inHoursMinutes" : {
-      "comment" : "in %d h %d m",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خلال %d س %d د"
+    "widget.next": {
+      "comment": "Next",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القادمة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in %dh %dm"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d گھ %d م میں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلا"
           }
         }
       }
     },
-    "widget.inMinutes" : {
-      "comment" : "in %d min",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خلال %d د"
+    "widget.nextPrayerIn": {
+      "comment": "Next prayer in",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة القادمة خلال"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in %d min"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next prayer in"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d منٹ میں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلی نماز میں"
           }
         }
       }
     },
-    "widget.next" : {
-      "comment" : "Next",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "القادمة"
+    "widget.noPrayerTimes": {
+      "comment": "No prayer times available",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد أوقات صلاة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No prayer times available"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اگلا"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز کے اوقات دستیاب نہیں"
           }
         }
       }
     },
-    "widget.nextPrayerIn" : {
-      "comment" : "Next prayer in",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصلاة القادمة خلال"
+    "widget.prayerTimes": {
+      "comment": "Prayer Times",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أوقات الصلاة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next prayer in"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prayer Times"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اگلی نماز میں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نماز کے اوقات"
           }
         }
       }
     },
-    "widget.noPrayerTimes" : {
-      "comment" : "No prayer times available",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا توجد أوقات صلاة"
+    "widget.previous": {
+      "comment": "Previous",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السابقة"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No prayer times available"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز کے اوقات دستیاب نہیں"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پچھلا"
           }
         }
       }
     },
-    "widget.prayerTimes" : {
-      "comment" : "Prayer Times",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أوقات الصلاة"
+    "inlinePrayerWidgetTitle": {
+      "comment": "Inline lock screen widget title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Prayer Inline"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prayer Times"
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة القادمة (مضمّن)"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نماز کے اوقات"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلی نماز (ان لائن)"
           }
         }
       }
     },
-    "widget.previous" : {
-      "comment" : "Previous",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "السابقة"
+    "inlinePrayerWidgetDesc": {
+      "comment": "Inline lock screen widget description",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows next prayer name and time above the clock"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Previous"
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يعرض اسم ووقت الصلاة القادمة فوق الساعة"
           }
         },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "پچھلا"
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "گھڑی کے اوپر اگلی نماز کا نام اور وقت دکھاتا ہے"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
