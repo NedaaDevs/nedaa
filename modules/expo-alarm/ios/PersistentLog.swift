@@ -5,6 +5,7 @@ class PersistentLog {
     private let appGroupId = "group.dev.nedaa.app"
     private let fileName = "alarm_debug.log"
     private let maxLines = 500
+    private let queue = DispatchQueue(label: "dev.nedaa.app.persistentlog")
 
     private func getLogPath() -> URL? {
         guard let directory = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
@@ -14,26 +15,28 @@ class PersistentLog {
     }
 
     func write(_ category: String, _ message: String) {
-        guard let path = getLogPath() else { return }
-
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
         let timestamp = formatter.string(from: Date())
         let line = "[\(timestamp)][\(category)] \(message)\n"
 
-        if FileManager.default.fileExists(atPath: path.path) {
-            if let handle = try? FileHandle(forWritingTo: path) {
-                handle.seekToEndOfFile()
-                if let data = line.data(using: .utf8) {
-                    handle.write(data)
-                }
-                handle.closeFile()
-            }
-        } else {
-            try? line.write(to: path, atomically: true, encoding: .utf8)
-        }
+        queue.async { [self] in
+            guard let path = getLogPath() else { return }
 
-        trimIfNeeded()
+            if FileManager.default.fileExists(atPath: path.path) {
+                if let handle = try? FileHandle(forWritingTo: path) {
+                    handle.seekToEndOfFile()
+                    if let data = line.data(using: .utf8) {
+                        handle.write(data)
+                    }
+                    handle.closeFile()
+                }
+            } else {
+                try? line.write(to: path, atomically: true, encoding: .utf8)
+            }
+
+            trimIfNeeded()
+        }
     }
 
     private func trimIfNeeded() {
@@ -48,13 +51,17 @@ class PersistentLog {
     }
 
     func read() -> String {
-        guard let path = getLogPath() else { return "" }
-        return (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+        return queue.sync {
+            guard let path = getLogPath() else { return "" }
+            return (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+        }
     }
 
     func clear() {
-        guard let path = getLogPath() else { return }
-        try? FileManager.default.removeItem(at: path)
+        queue.async { [self] in
+            guard let path = getLogPath() else { return }
+            try? FileManager.default.removeItem(at: path)
+        }
     }
 
     func observer(_ msg: String) { write("OBS", msg) }
