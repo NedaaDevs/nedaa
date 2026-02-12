@@ -10,6 +10,7 @@ import AppIntents
 #endif
 
 @objc public class AlarmObserver: NSObject {
+    private static let stateLock = NSLock()
     private static var isObserving = false
     private static var observerTask: Task<Void, Never>?
     private static var heartbeatTask: Task<Void, Never>?
@@ -18,15 +19,18 @@ import AppIntents
     @objc public static func startObserving() {
         #if canImport(AlarmKit)
         if #available(iOS 26.1, *) {
+            stateLock.lock()
             guard !isObserving else {
+                stateLock.unlock()
                 PersistentLog.shared.observer("Already observing, skipping restart")
                 return
             }
             isObserving = true
+            stateLock.unlock()
 
             startHeartbeat()
 
-            observerTask = Task {
+            let task = Task {
                 let plog = PersistentLog.shared
                 var previousAlarms: [UUID: Alarm.State] = [:]
                 var isFirstIteration = true
@@ -53,31 +57,41 @@ import AppIntents
 
                 plog.observer("Observer ended")
             }
+            stateLock.lock()
+            observerTask = task
+            stateLock.unlock()
         }
         #endif
     }
 
     @objc public static func stopObserving() {
+        stateLock.lock()
         heartbeatTask?.cancel()
         heartbeatTask = nil
         observerTask?.cancel()
         observerTask = nil
         isObserving = false
+        stateLock.unlock()
         PersistentLog.shared.observer("Observer stopped")
     }
 
     @objc public static func endBackgroundTask() {
-        if backgroundTaskID != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTaskID)
-            backgroundTaskID = .invalid
+        stateLock.lock()
+        let taskId = backgroundTaskID
+        backgroundTaskID = .invalid
+        stateLock.unlock()
+        if taskId != .invalid {
+            UIApplication.shared.endBackgroundTask(taskId)
         }
     }
 
     // MARK: - Heartbeat
 
     private static func startHeartbeat() {
+        stateLock.lock()
         heartbeatTask?.cancel()
-        heartbeatTask = Task {
+        stateLock.unlock()
+        let task = Task {
             let plog = PersistentLog.shared
             var beatCount = 0
 
@@ -101,6 +115,9 @@ import AppIntents
                 plog.observer("Heartbeat #\(beatCount) keepAlive=\(keepAlive) audio=\(audioPlaying) [\(alarmStates.joined(separator: ","))]")
             }
         }
+        stateLock.lock()
+        heartbeatTask = task
+        stateLock.unlock()
     }
 
     // MARK: - First Iteration Processing
@@ -379,18 +396,27 @@ import AppIntents
         plog.observer("Not completed — starting bypass protection")
 
         await MainActor.run {
-            if backgroundTaskID != .invalid {
-                UIApplication.shared.endBackgroundTask(backgroundTaskID)
-                backgroundTaskID = .invalid
+            stateLock.lock()
+            let oldTaskId = backgroundTaskID
+            backgroundTaskID = .invalid
+            stateLock.unlock()
+            if oldTaskId != .invalid {
+                UIApplication.shared.endBackgroundTask(oldTaskId)
             }
 
-            backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "AlarmBypassProtection") {
+            let newTaskId = UIApplication.shared.beginBackgroundTask(withName: "AlarmBypassProtection") {
                 plog.observer("BG task expired")
-                if backgroundTaskID != .invalid {
-                    UIApplication.shared.endBackgroundTask(backgroundTaskID)
-                    backgroundTaskID = .invalid
+                stateLock.lock()
+                let expiredTaskId = backgroundTaskID
+                backgroundTaskID = .invalid
+                stateLock.unlock()
+                if expiredTaskId != .invalid {
+                    UIApplication.shared.endBackgroundTask(expiredTaskId)
                 }
             }
+            stateLock.lock()
+            backgroundTaskID = newTaskId
+            stateLock.unlock()
         }
 
         let metadata = AlarmDatabase.shared.getMetadata(for: originalAlarmId)
