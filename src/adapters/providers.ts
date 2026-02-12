@@ -9,7 +9,8 @@ import { transformAladhanParams } from "@/utils/providers/aladhan";
 
 export const providerAdapters = {
   ALADHAN: {
-    toParams: (yearOverride?: number): AladhanApiParams => transformAladhanParams(yearOverride),
+    toParams: (yearOverride?: number, month?: number): AladhanApiParams =>
+      transformAladhanParams(yearOverride, month),
   },
 } as const;
 

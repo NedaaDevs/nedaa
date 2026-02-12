@@ -17,7 +17,7 @@ import { getTimezoneYear } from "@/utils/date";
 /**
  * Return an api ready params
  */
-export const transformAladhanParams = (yearOverride?: number): AladhanApiParams => {
+export const transformAladhanParams = (yearOverride?: number, month?: number): AladhanApiParams => {
   const location = useLocationStore.getState().locationDetails;
   const settings = useProviderSettingsStore.getState().getCurrentSettings<AladhanSettings>();
 
@@ -28,6 +28,10 @@ export const transformAladhanParams = (yearOverride?: number): AladhanApiParams 
     lng: location.coords.longitude,
     year,
   };
+
+  if (month !== undefined) {
+    params.month = month;
+  }
 
   const options: AladhanApiOptions = {};
   let hasOptions = false;

@@ -12,7 +12,6 @@ import {
   OtherTimingName,
   Prayer,
   PrayerName,
-  PrayerTimesParams,
   PrayerTimesResponse,
   Provider,
 } from "@/types/prayerTimes";
@@ -30,7 +29,7 @@ import providerSettingsStore from "@/stores/providerSettings";
 import { useAppStore } from "@/stores/app";
 
 // Utils
-import { dateToInt, timeZonedNow } from "@/utils/date";
+import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
 import { checkLocationPermission } from "@/utils/location";
 
 // Adapters
@@ -48,9 +47,9 @@ export type PrayerTimesStore = {
   tomorrowTimings: DayPrayerTimes | null;
   twoWeeksTimings: DayPrayerTimes[] | null;
   providers: Provider[];
-  getPrayerTimes: (params: PrayerTimesParams) => Promise<PrayerTimesResponse>;
+  getPrayerTimes: (yearOverride?: number, month?: number) => Promise<PrayerTimesResponse>;
   getProviders: () => Promise<Provider[]>;
-  getAndStorePrayerTimes: (params: PrayerTimesParams) => Promise<boolean>;
+  getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<boolean>;
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
   getNextPrayer: () => Prayer | null;
   getNextOtherTiming: () => OtherTiming | null;
@@ -87,7 +86,10 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         twoWeeksTimings: null,
         providers: [],
 
-        getPrayerTimes: async (): Promise<PrayerTimesResponse> => {
+        getPrayerTimes: async (
+          yearOverride?: number,
+          month?: number
+        ): Promise<PrayerTimesResponse> => {
           try {
             set({ isLoading: true });
 
@@ -95,9 +97,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             const adapter = getAdapterByProviderId(currentProviderId);
 
-            const apiParams = adapter.toParams();
+            const apiParams = adapter.toParams(yearOverride, month);
 
-            // Make API call(we also should include provider id as get param)
             const response = await prayerTimesApi.get(apiParams);
 
             if (!response.success) {
@@ -137,9 +138,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
         },
 
-        getAndStorePrayerTimes: async (params): Promise<boolean> => {
+        getAndStorePrayerTimes: async (yearOverride?: number, month?: number): Promise<boolean> => {
           try {
-            const data = await get().getPrayerTimes(params);
+            const data = await get().getPrayerTimes(yearOverride, month);
 
             locationStore.getState().setTimezone(data.timezone);
 
@@ -202,28 +203,30 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               twoWeeksTimings.find((timing) => timing.date === tomorrow) ?? null;
 
             // Check if we need to fetch fresh data
-            // Either we're forcing a refresh, missing data.
             if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
-              const success = await get().getAndStorePrayerTimes({
-                lat: locationDetails.coords.latitude,
-                long: locationDetails.coords.longitude,
-              });
+              const currentYear = getTimezoneYear(locationDetails.timezone);
+              const currentMonth = getTimezoneMonth(locationDetails.timezone);
+
+              // Fetch from the current month onward for the current year
+              const success = await get().getAndStorePrayerTimes(undefined, currentMonth);
 
               if (!success) {
                 throw new Error("Failed to fetch and store prayer times");
               }
 
-              // After storing, get the updated prayer times
-              // First get yesterday
-              const newYesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
+              // Fetch adjacent year if at a year boundary
+              if (currentMonth === 1) {
+                await get().getAndStorePrayerTimes(currentYear - 1);
+              } else if (currentMonth === 12) {
+                await get().getAndStorePrayerTimes(currentYear + 1);
+              }
 
-              // Then get the two weeks data again
+              // Re-query DB for the updated data
+              const newYesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
               const newTwoWeeksTimings = await PrayerTimesDB.getPrayerTimesByDateRange(
                 startDate,
                 endDate
               );
-
-              // Find today and tomorrow in the new data by date
               const newTodayTimings =
                 newTwoWeeksTimings.find((timing) => timing.date === today) ?? null;
               const newTomorrowTimings =
@@ -236,7 +239,6 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
                 twoWeeksTimings: newTwoWeeksTimings.length > 0 ? newTwoWeeksTimings : null,
               });
             } else {
-              // If we have all the data, just update the store
               set({
                 yesterdayTimings,
                 todayTimings,

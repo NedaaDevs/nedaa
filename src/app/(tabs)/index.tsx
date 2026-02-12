@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { View } from "react-native";
 
 // Components
@@ -20,9 +20,15 @@ export default function MainScreen() {
   const { mode } = useAppStore();
   const { loadPrayerTimes } = usePrayerTimesStore();
   const { becameActiveAt } = useAppVisibility();
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
     loadPrayerTimes().then(() => ensureAlarmsScheduled());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [becameActiveAt]);
 
   return (

@@ -208,6 +208,7 @@ export type AladhanApiParams = {
   lat: number;
   lng: number;
   year: number;
+  month?: number;
   options?: AladhanApiOptions;
 };
 
