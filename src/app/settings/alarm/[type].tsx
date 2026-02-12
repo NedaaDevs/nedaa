@@ -112,15 +112,19 @@ const AlarmTypeSettingsScreen = () => {
     hapticSelection();
     handleChange({ enabled });
 
-    if (enabled) {
-      if (alarmType === "fajr") {
-        await scheduleFajrAlarm();
+    try {
+      if (enabled) {
+        if (alarmType === "fajr") {
+          await scheduleFajrAlarm();
+        } else {
+          await scheduleFridayAlarm();
+        }
       } else {
-        await scheduleFridayAlarm();
+        const cancelType = alarmType === "fajr" ? "fajr" : "jummah";
+        await useAlarmStore.getState().cancelAlarmsByType(cancelType);
       }
-    } else {
-      const cancelType = alarmType === "fajr" ? "fajr" : "jummah";
-      await useAlarmStore.getState().cancelAlarmsByType(cancelType);
+    } catch {
+      handleChange({ enabled: !enabled });
     }
   };
 
