@@ -47,7 +47,12 @@ class AlarmDatabase {
                     created_at REAL NOT NULL
                 )
             """
-            sqlite3_exec(db, alarmsSql, nil, nil, nil)
+            var errMsg: UnsafeMutablePointer<CChar>?
+
+            if sqlite3_exec(db, alarmsSql, nil, nil, &errMsg) != SQLITE_OK, let err = errMsg {
+                PersistentLog.shared.alarm("DB table 'alarms' creation failed: \(String(cString: err))")
+                sqlite3_free(err)
+            }
 
             let pendingSql = """
                 CREATE TABLE IF NOT EXISTS pending_challenge (
@@ -58,7 +63,10 @@ class AlarmDatabase {
                     timestamp REAL NOT NULL
                 )
             """
-            sqlite3_exec(db, pendingSql, nil, nil, nil)
+            if sqlite3_exec(db, pendingSql, nil, nil, &errMsg) != SQLITE_OK, let err = errMsg {
+                PersistentLog.shared.alarm("DB table 'pending_challenge' creation failed: \(String(cString: err))")
+                sqlite3_free(err)
+            }
 
             let bypassSql = """
                 CREATE TABLE IF NOT EXISTS bypass_state (
@@ -69,7 +77,10 @@ class AlarmDatabase {
                     activated_at REAL NOT NULL
                 )
             """
-            sqlite3_exec(db, bypassSql, nil, nil, nil)
+            if sqlite3_exec(db, bypassSql, nil, nil, &errMsg) != SQLITE_OK, let err = errMsg {
+                PersistentLog.shared.alarm("DB table 'bypass_state' creation failed: \(String(cString: err))")
+                sqlite3_free(err)
+            }
 
             sqlite3_exec(db, "ALTER TABLE alarms ADD COLUMN is_backup INTEGER DEFAULT 0", nil, nil, nil)
         }
@@ -253,10 +264,32 @@ class AlarmDatabase {
     }
 
     func clearPendingChallenge() {
-        if let pending = getPendingChallenge(), let alarmId = pending["alarmId"] as? String {
-            markCompleted(id: alarmId)
+        queue.sync {
+            guard let db = openDB() else { return }
+            defer { sqlite3_close(db) }
+
+            var stmt: OpaquePointer?
+            let selectSql = "SELECT alarm_id FROM pending_challenge WHERE id = 1"
+            if sqlite3_prepare_v2(db, selectSql, -1, &stmt, nil) == SQLITE_OK {
+                if sqlite3_step(stmt) == SQLITE_ROW {
+                    let alarmId = String(cString: sqlite3_column_text(stmt, 0))
+                    sqlite3_finalize(stmt)
+                    stmt = nil
+
+                    var updateStmt: OpaquePointer?
+                    if sqlite3_prepare_v2(db, "UPDATE alarms SET completed = 1 WHERE id = ?", -1, &updateStmt, nil) == SQLITE_OK {
+                        sqlite3_bind_text(updateStmt, 1, alarmId, -1, SQLITE_TRANSIENT)
+                        sqlite3_step(updateStmt)
+                        sqlite3_finalize(updateStmt)
+                    }
+                } else {
+                    sqlite3_finalize(stmt)
+                    stmt = nil
+                }
+            }
+
+            sqlite3_exec(db, "DELETE FROM pending_challenge", nil, nil, nil)
         }
-        execRaw("DELETE FROM pending_challenge")
         PersistentLog.shared.alarm("DB: Cleared pending challenge")
     }
 
