@@ -10,7 +10,11 @@ class AlarmBackgroundTaskManager {
 
     func registerTask() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.taskIdentifier, using: nil) { task in
-            self.handleBackgroundTask(task as! BGProcessingTask)
+            guard let processingTask = task as? BGProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleBackgroundTask(processingTask)
         }
         PersistentLog.shared.alarm("BGTask registered: \(Self.taskIdentifier)")
     }
@@ -42,7 +46,11 @@ class AlarmBackgroundTaskManager {
     private func handleBackgroundTask(_ task: BGProcessingTask) {
         PersistentLog.shared.alarm("BGTask running")
 
+        var isCompleted = false
+
         task.expirationHandler = {
+            guard !isCompleted else { return }
+            isCompleted = true
             PersistentLog.shared.alarm("BGTask expired")
             task.setTaskCompleted(success: false)
         }
@@ -50,6 +58,8 @@ class AlarmBackgroundTaskManager {
         AlarmObserver.startObserving()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+            guard !isCompleted else { return }
+            isCompleted = true
             PersistentLog.shared.alarm("BGTask completing (25s elapsed)")
             task.setTaskCompleted(success: true)
             self.rescheduleIfNeeded()
