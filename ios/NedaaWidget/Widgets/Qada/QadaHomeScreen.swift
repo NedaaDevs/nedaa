@@ -9,6 +9,7 @@ struct QadaHomeScreen: Widget {
         StaticConfiguration(kind: kind, provider: QadaHomeScreenProvider()) { entry in
             if #available(iOS 17.0, *) {
                 QadaHomeScreenEntryView(entry: entry)
+                    .standByAware()
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
                 QadaHomeScreenEntryView(entry: entry)
@@ -114,7 +115,8 @@ struct QadaHomeScreenProvider: TimelineProvider {
 struct SmallQadaView: View {
     let entry: QadaHomeScreenEntry
     @Environment(\.colorScheme) var colorScheme
-    
+    @Environment(\.showsBackground) var showsBackground
+
     var body: some View {
         VStack(spacing: 8) {
             // Header
@@ -122,7 +124,7 @@ struct SmallQadaView: View {
                 Image(systemName: "arrow.circlepath")
                     .foregroundStyle(NedaaColors.primary(for: colorScheme))
                 Text(NSLocalizedString("qada", comment: ""))
-                    .font(.caption)
+                    .font(showsBackground ? .caption : .callout)
                     .fontWeight(.semibold)
             }
 
@@ -131,13 +133,13 @@ struct SmallQadaView: View {
             // Total Count
             VStack(spacing: 4) {
                 Text("\(entry.totalRemaining)")
-                    .font(.system(size: 40, weight: .bold))
+                    .font(.system(size: showsBackground ? 40 : 48, weight: .bold))
                     .foregroundStyle(NedaaColors.primary(for: colorScheme))
                     .contentTransition(.numericText())
                     .widgetAccentable()
 
                 Text(NSLocalizedString("remaining", comment: ""))
-                    .font(.caption)
+                    .font(showsBackground ? .caption : .callout)
                     .foregroundStyle(.secondary)
             }
 
@@ -148,15 +150,15 @@ struct SmallQadaView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(NedaaColors.success)
-                        .font(.caption2)
+                        .font(showsBackground ? .caption2 : .caption)
 
                     Text(String(format: NSLocalizedString("todayCompleted", comment: ""), entry.todayCompleted))
-                        .font(.caption2)
+                        .font(showsBackground ? .caption2 : .caption)
                         .fontWeight(.semibold)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(NedaaColors.success.opacity(0.2))
+                .background(showsBackground ? NedaaColors.success.opacity(0.2) : Color.clear)
                 .clipShape(Capsule())
             }
         }
@@ -270,6 +272,7 @@ struct MediumQadaView: View {
 struct LargeQadaView: View {
     let entry: QadaHomeScreenEntry
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.showsBackground) var showsBackground
     
     var body: some View {
         VStack(spacing: 16) {
@@ -302,11 +305,11 @@ struct LargeQadaView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(NedaaColors.success.opacity(0.2))
+                    .background(showsBackground ? NedaaColors.success.opacity(0.2) : Color.clear)
                     .clipShape(Capsule())
                 }
             }
-            
+
             // Summary Stats
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -322,7 +325,7 @@ struct LargeQadaView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(NedaaColors.primary(for: colorScheme).opacity(0.1))
+                .background(showsBackground ? NedaaColors.primary(for: colorScheme).opacity(0.1) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -336,7 +339,7 @@ struct LargeQadaView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(NedaaColors.success.opacity(0.1))
+                .background(showsBackground ? NedaaColors.success.opacity(0.1) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             
@@ -417,7 +420,7 @@ struct LargeQadaView: View {
                 }
             }
             .padding()
-            .background(Color.secondary.opacity(0.05))
+            .background(showsBackground ? Color.secondary.opacity(0.05) : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Spacer()

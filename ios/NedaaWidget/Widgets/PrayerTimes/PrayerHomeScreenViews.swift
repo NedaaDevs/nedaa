@@ -114,12 +114,13 @@ struct PrayerTimeText: View {
 struct SmallPrayerTimesView: View {
     let entry: PrayerHomeScreenEntry
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.showsBackground) var showsBackground
 
     var body: some View {
         VStack(spacing: 2) {
             // Hijri date at the top (compact for small widget)
             Text(entry.date.hijriDateStringCompact())
-                .font(.system(size: 10))
+                .font(.system(size: showsBackground ? 10 : 12))
                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                 .lineLimit(1)
                 .padding(.top, 2)
@@ -128,7 +129,7 @@ struct SmallPrayerTimesView: View {
             if let previousPrayer = entry.previousPrayer {
                 VStack(spacing: 2) {
                     Text(LocalizedStringKey(previousPrayer.name))
-                        .font(.caption)
+                        .font(showsBackground ? .caption : .callout)
                         .fontWeight(.medium)
                         .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                         .lineLimit(1)
@@ -137,7 +138,7 @@ struct SmallPrayerTimesView: View {
                     if shouldShowCountUp(for: previousPrayer) && isTimerEnabled {
                         VStack(spacing: -2) {
                             Text(previousPrayer.date, style: .timer)
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .font(.system(size: showsBackground ? 18 : 22, weight: .bold, design: .rounded))
                                 .foregroundColor(NedaaColors.success.opacity(0.8))
                                 .monospacedDigit()
                                 .multilineTextAlignment(.center)
@@ -145,20 +146,20 @@ struct SmallPrayerTimesView: View {
                                 .contentTransition(.numericText())
 
                             Text(previousPrayer.date, style: .time)
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.system(size: showsBackground ? 11 : 13, weight: .medium))
                                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme).opacity(0.7))
                         }
                         .frame(maxWidth: .infinity)
                     } else {
                         Text(previousPrayer.date, style: .time)
-                            .font(.caption2)
+                            .font(showsBackground ? .caption2 : .caption)
                             .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(NedaaColors.success.opacity(0.15))
+                .background(showsBackground ? NedaaColors.success.opacity(0.15) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
@@ -173,7 +174,7 @@ struct SmallPrayerTimesView: View {
             if let nextPrayer = entry.nextPrayer {
                 VStack(spacing: 4) {
                     Text(LocalizedStringKey(nextPrayer.name))
-                        .font(.title2)
+                        .font(showsBackground ? .title2 : .title)
                         .fontWeight(.bold)
                         .foregroundColor(NedaaColors.primary(for: colorScheme))
                         .lineLimit(1)
@@ -184,20 +185,20 @@ struct SmallPrayerTimesView: View {
                     if shouldShowCountdown(for: nextPrayer) && isTimerEnabled {
                         VStack(spacing: 0) {
                             Text(nextPrayer.date, style: .timer)
-                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .font(.system(size: showsBackground ? 18 : 22, weight: .semibold, design: .rounded))
                                 .foregroundColor(NedaaColors.text(for: colorScheme))
                                 .monospacedDigit()
                                 .multilineTextAlignment(.center)
                                 .contentTransition(.numericText())
 
                             Text(nextPrayer.date, style: .time)
-                                .font(.caption2)
+                                .font(showsBackground ? .caption2 : .caption)
                                 .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
                         }
                         .frame(maxWidth: .infinity)
                     } else {
                         Text(nextPrayer.date, style: .time)
-                            .font(.title3)
+                            .font(showsBackground ? .title3 : .title2)
                             .fontWeight(.medium)
                             .foregroundColor(NedaaColors.text(for: colorScheme))
                     }
@@ -345,6 +346,7 @@ struct MediumPrayerTimesView: View {
 struct LargePrayerTimesView: View {
     let entry: PrayerHomeScreenEntry
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.showsBackground) var showsBackground
 
     var body: some View {
         VStack(spacing: 12) {
@@ -414,7 +416,7 @@ struct LargePrayerTimesView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(NedaaColors.primary(for: colorScheme).opacity(0.15))
+                .background(showsBackground ? NedaaColors.primary(for: colorScheme).opacity(0.15) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(.bottom, 4)
                 .widgetAccentable()
@@ -441,6 +443,7 @@ struct PrayerRowView: View {
     let isPrevious: Bool
     let isNext: Bool
     let colorScheme: ColorScheme
+    @Environment(\.showsBackground) var showsBackground
 
     var body: some View {
         HStack(spacing: 8) {
@@ -502,6 +505,7 @@ struct PrayerRowView: View {
     }
 
     private var rowBackground: Color {
+        guard showsBackground else { return Color.clear }
         if isNext {
             return NedaaColors.primary(for: colorScheme).opacity(0.1)
         } else if isPrevious {
@@ -516,6 +520,7 @@ struct PrayerRowView: View {
 struct MediumPrayerTimesListView: View {
     let entry: PrayerHomeScreenEntry
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.showsBackground) var showsBackground
 
     var body: some View {
         GeometryReader { geometry in
@@ -645,6 +650,7 @@ struct MediumPrayerTimesListView: View {
     }
 
     private func rowBackgroundColor(isNext: Bool, isPast: Bool) -> Color {
+        guard showsBackground else { return Color.clear }
         if isNext {
             return NedaaColors.primary(for: colorScheme).opacity(0.15)
         } else if isPast {
