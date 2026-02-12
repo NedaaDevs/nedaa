@@ -127,26 +127,27 @@ const WidgetCard = ({
   };
 
   return (
-    <Pressable
-      onPress={toggleExpand}
-      className="rounded-2xl bg-background-secondary border border-outline overflow-hidden">
-      {/* Header row */}
-      <HStack className="p-4 items-center">
-        <Box className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
-          <Icon as={widget.icon} size="sm" className="text-primary" />
-        </Box>
-        <VStack className="flex-1 ms-3">
-          <Text className="text-base font-semibold text-typography text-left">
-            {t(widget.nameKey)}
-          </Text>
-          <Text className="text-xs text-typography-secondary text-left">{widget.size}</Text>
-        </VStack>
-        <Icon
-          as={ChevronDown}
-          size="sm"
-          className={`text-typography-secondary ${expanded ? "rotate-180" : ""}`}
-        />
-      </HStack>
+    <Box className="rounded-2xl bg-background-secondary border border-outline overflow-hidden">
+      {/* Header row - tappable */}
+      <Pressable onPress={toggleExpand} className="p-4">
+        <HStack className="items-center">
+          <Box className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
+            <Icon as={widget.icon} size="sm" className="text-primary" />
+          </Box>
+          <VStack className="flex-1 ms-3">
+            <Text className="text-base font-semibold text-typography text-left">
+              {t(widget.nameKey)}
+            </Text>
+            <Text className="text-xs text-typography-secondary text-left">{widget.size}</Text>
+          </VStack>
+          <Icon
+            as={ChevronDown}
+            size="sm"
+            className="text-typography-secondary"
+            style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
+          />
+        </HStack>
+      </Pressable>
 
       {/* Expanded content */}
       {expanded && (
@@ -160,7 +161,7 @@ const WidgetCard = ({
           </Button>
         </VStack>
       )}
-    </Pressable>
+    </Box>
   );
 };
 
