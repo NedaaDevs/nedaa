@@ -29,7 +29,6 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
 
-  // Determine which arrow to show based on RTL/LTR
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
   const handlePress = () => {
@@ -39,21 +38,44 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   };
 
   return (
-    <Box className="px-5 py-4 flex flex-row items-center bg-background-elevated">
-      <Box className="flex-1 flex-row items-center gap-3">
+    <Box
+      paddingHorizontal="$5"
+      paddingVertical="$4"
+      flexDirection="row"
+      alignItems="center"
+      backgroundColor="$backgroundElevated">
+      <Box flex={1} flexDirection="row" alignItems="center" gap="$3">
         {backOnClick && (
-          <Pressable onPress={handlePress} className="p-2 rounded-lg">
-            <Icon as={BackArrow} size="lg" className="text-typography-contrast" />
+          <Pressable
+            onPress={handlePress}
+            padding="$2"
+            borderRadius="$4"
+            minHeight={44}
+            minWidth={44}
+            alignItems="center"
+            justifyContent="center"
+            accessibilityRole="button"
+            accessibilityLabel="Back">
+            <Icon as={BackArrow} size="lg" color="$typographyContrast" />
           </Pressable>
         )}
-        <Text className="text-2xl font-bold text-typography-contrast">{t(title)}</Text>
+        <Text size="2xl" bold color="$typographyContrast">
+          {t(title)}
+        </Text>
       </Box>
 
-      <Box className="w-12 items-end">
+      <Box width={48} alignItems="flex-end">
         {href && !backOnClick && (
           <Link href={href} asChild>
-            <Pressable className="p-2 rounded-lg">
-              <Icon as={icon} size="lg" className="text-typography-contrast" />
+            <Pressable
+              padding="$2"
+              borderRadius="$4"
+              minHeight={44}
+              minWidth={44}
+              alignItems="center"
+              justifyContent="center"
+              accessibilityRole="button">
+              <Icon as={icon} size="lg" color="$typographyContrast" />
             </Pressable>
           </Link>
         )}
