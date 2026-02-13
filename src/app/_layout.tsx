@@ -43,7 +43,7 @@ SplashScreen.preventAutoHideAsync();
 function AppShell() {
   const theme = useTheme();
   const themeName = useThemeName();
-  const { showLoadingOverlay, loadingMessage } = useAppStore();
+  const { showLoadingOverlay, loadingMessage, isFirstRun } = useAppStore();
   const {
     showCityChangeModal,
     pendingCityChange,
@@ -54,8 +54,6 @@ function AppShell() {
 
   useNotificationListeners();
   useAlarmDeepLink();
-
-  const { isFirstRun } = useAppStore();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

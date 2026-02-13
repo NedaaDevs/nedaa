@@ -14,7 +14,7 @@ const SIZE_HEIGHT: Record<ProgressSize, number> = {
 };
 
 const ProgressContext = createStyledContext({
-  value: 0,
+  progress: 0,
   size: "md" as ProgressSize,
 });
 
@@ -42,7 +42,7 @@ const Progress = ProgressFrame.styleable<{
   const clampedValue = Math.max(0, Math.min(100, value));
 
   return (
-    <ProgressContext.Provider value={clampedValue} size={size}>
+    <ProgressContext.Provider progress={clampedValue} size={size}>
       <ProgressFrame
         ref={ref}
         height={SIZE_HEIGHT[size]}
@@ -69,7 +69,9 @@ const ProgressFilledTrack = ProgressFilledTrackFrame.styleable((props, ref) => {
   const ctx = ProgressContext.useStyledContext();
   const height = SIZE_HEIGHT[(ctx.size as ProgressSize) ?? "md"];
 
-  return <ProgressFilledTrackFrame ref={ref} height={height} width={`${ctx.value}%`} {...props} />;
+  return (
+    <ProgressFilledTrackFrame ref={ref} height={height} width={`${ctx.progress}%`} {...props} />
+  );
 });
 ProgressFilledTrack.displayName = "ProgressFilledTrack";
 

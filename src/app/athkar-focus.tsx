@@ -487,7 +487,11 @@ const AthkarFocusScreen = () => {
                               cx={128}
                               cy={128}
                               r={CIRCLE_RADIUS}
-                              stroke={`${progressStartColor}1A`}
+                              stroke={
+                                progressStartColor.startsWith("#")
+                                  ? `${progressStartColor}1A`
+                                  : "rgba(0,0,0,0.1)"
+                              }
                               strokeWidth={8}
                               fill="none"
                             />

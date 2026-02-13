@@ -90,7 +90,7 @@ type SkeletonTextProps = ViewProps & {
   children?: React.ReactNode;
 };
 
-const SkeletonText = React.forwardRef<React.ComponentRef<typeof Animated.View>, SkeletonTextProps>(
+const SkeletonText = React.forwardRef<any, SkeletonTextProps>(
   ({ _lines, isLoaded = false, startColor, gap = 8, children, style, ...props }, ref) => {
     const theme = useTheme();
     const resolvedColor = startColor ?? theme.backgroundMuted.val;
@@ -100,7 +100,7 @@ const SkeletonText = React.forwardRef<React.ComponentRef<typeof Animated.View>, 
 
     if (_lines && _lines > 1) {
       return (
-        <SkeletonTextContainer gap={gap} ref={ref as any}>
+        <SkeletonTextContainer gap={gap} ref={ref}>
           {Array.from({ length: _lines }).map((_, index) => (
             <Skeleton
               key={index}

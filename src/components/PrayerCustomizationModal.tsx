@@ -144,7 +144,7 @@ const PrayerCustomizationModal: FC<Props> = ({
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalBackdrop />
       <ModalContent>
-        <ModalCloseButton style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <ModalCloseButton style={{ position: "absolute", top: 16, end: 16, zIndex: 10 }}>
           <Icon size="lg" color="$typographySecondary" as={X} />
         </ModalCloseButton>
 

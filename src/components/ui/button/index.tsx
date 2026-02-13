@@ -63,8 +63,8 @@ const ButtonFrame = styled(View, {
       positive: { backgroundColor: "$success", borderColor: "$success" },
       negative: { backgroundColor: "$error", borderColor: "$error" },
       default: {
-        backgroundColor: "transparent",
-        borderColor: "transparent",
+        backgroundColor: "$backgroundMuted",
+        borderColor: "$backgroundMuted",
       },
     },
     size: {

@@ -198,7 +198,7 @@ export default function AddCustomSoundModal({
               {t("notification.customSound.add")}
             </Text>
           </HStack>
-          <ModalCloseButton style={{ position: "absolute", right: 16, top: 0 }}>
+          <ModalCloseButton style={{ position: "absolute", end: 16, top: 0 }}>
             <Icon as={X} size="lg" color="$typographySecondary" />
           </ModalCloseButton>
         </ModalHeader>
