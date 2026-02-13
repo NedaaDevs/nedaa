@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useNotificationStore } from "@/stores/notification";
+import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 
 /**
  * Hook to handle city change detection and coordinate updates across stores
@@ -51,6 +52,7 @@ export const useCityChangeHandler = () => {
       }
 
       await notificationStore.scheduleAllNotifications();
+      await rescheduleAllAlarms();
 
       console.log("[CityChangeHandler] All updates completed successfully");
 
