@@ -1,44 +1,30 @@
-"use client";
-import React from "react";
-import { createImage } from "@gluestack-ui/image";
-import { Platform, Image as RNImage } from "react-native";
-import { tva } from "@gluestack-ui/nativewind-utils/tva";
-import type { VariantProps } from "@gluestack-ui/nativewind-utils";
+import { styled } from "tamagui";
+import { Image as RNImage } from "react-native";
+import type { GetProps } from "tamagui";
 
-const imageStyle = tva({
-  base: "max-w-full",
+type ImageSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "full" | "none";
+
+const Image = styled(RNImage, {
+  name: "Image",
   variants: {
     size: {
-      "2xs": "h-6 w-6",
-      xs: "h-10 w-10",
-      sm: "h-16 w-16",
-      md: "h-20 w-20",
-      lg: "h-24 w-24",
-      xl: "h-32 w-32",
-      "2xl": "h-64 w-64",
-      full: "h-full w-full",
-      none: "",
+      "2xs": { width: 24, height: 24 },
+      xs: { width: 40, height: 40 },
+      sm: { width: 64, height: 64 },
+      md: { width: 80, height: 80 },
+      lg: { width: 96, height: 96 },
+      xl: { width: 128, height: 128 },
+      "2xl": { width: 256, height: 256 },
+      full: { width: "100%" as any, height: "100%" as any },
+      none: {},
     },
+  } as const,
+  defaultVariants: {
+    size: "md",
   },
 });
 
-const UIImage = createImage({ Root: RNImage });
+type ImageProps = GetProps<typeof Image>;
 
-type ImageProps = VariantProps<typeof imageStyle> & React.ComponentProps<typeof UIImage>;
-const Image = React.forwardRef<
-  React.ComponentRef<typeof UIImage>,
-  ImageProps & { className?: string }
->(function Image({ size = "md", className, ...props }, ref) {
-  return (
-    <UIImage
-      className={imageStyle({ size, class: className })}
-      {...props}
-      ref={ref}
-      // @ts-expect-error : web only
-      style={Platform.OS === "web" ? { height: "revert-layer", width: "revert-layer" } : undefined}
-    />
-  );
-});
-
-Image.displayName = "Image";
 export { Image };
+export type { ImageProps, ImageSize };
