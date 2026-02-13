@@ -150,7 +150,7 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
 
   return (
     <HStack justifyContent="space-between" alignItems="center">
-      <Text textAlign="left" size="sm" color="$typography" flex={1}>
+      <Text size="sm" color="$typography" flex={1}>
         {t("alarm.settings.sound")}
       </Text>
       <Select

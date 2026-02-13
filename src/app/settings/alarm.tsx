@@ -60,7 +60,7 @@ import {
 import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
 import { PermissionStatus } from "expo-notifications";
 
-import { PlatformType, AppMode } from "@/enums/app";
+import { PlatformType } from "@/enums/app";
 import { AlarmLogger, type IssueCategory } from "@/utils/alarmLogger";
 
 interface PermissionItem {
@@ -449,7 +449,7 @@ const AlarmSettings = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1}>
           <Box marginHorizontal="$4" marginTop="$4" marginBottom="$2">
-            <Text textAlign="left" size="sm" color="$typographySecondary">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.settings.description")}
             </Text>
           </Box>
@@ -477,7 +477,7 @@ const AlarmSettings = () => {
 
                       <VStack flex={1}>
                         <HStack alignItems="center" gap="$2">
-                          <Text textAlign="left" size="lg" fontWeight="600" color="$typography">
+                          <Text size="lg" fontWeight="600" color="$typography">
                             {alarm.title}
                           </Text>
                           <Badge
@@ -489,15 +489,11 @@ const AlarmSettings = () => {
                             </Badge.Text>
                           </Badge>
                         </HStack>
-                        <Text
-                          textAlign="left"
-                          size="sm"
-                          color="$typographySecondary"
-                          numberOfLines={2}>
+                        <Text size="sm" color="$typographySecondary" numberOfLines={2}>
                           {alarm.description}
                         </Text>
                         {alarm.firesAt && (
-                          <Text textAlign="left" size="xs" color="$primary" marginTop="$1">
+                          <Text size="xs" color="$primary" marginTop="$1">
                             {alarm.firesAt}
                           </Text>
                         )}

@@ -62,16 +62,14 @@ const CrashLogButton = () => {
           </ModalCloseButton>
 
           <ModalHeader>
-            <Text size="xl" bold color="$typography" textAlign="left">
+            <Text size="xl" bold color="$typography">
               {t("settings.crashReporting.title")}
             </Text>
           </ModalHeader>
 
           <ModalBody>
             <VStack gap="$3">
-              <Text textAlign="left" color="$typographySecondary">
-                {t("settings.crashReporting.description")}
-              </Text>
+              <Text color="$typographySecondary">{t("settings.crashReporting.description")}</Text>
 
               <VStack gap="$1">
                 <Text color="$typography">{t("settings.crashReporting.bullet1")}</Text>
@@ -79,9 +77,7 @@ const CrashLogButton = () => {
                 <Text color="$typography">{t("settings.crashReporting.bullet3")}</Text>
               </VStack>
 
-              <Text textAlign="left" color="$typographySecondary">
-                {t("settings.crashReporting.privacyNote")}
-              </Text>
+              <Text color="$typographySecondary">{t("settings.crashReporting.privacyNote")}</Text>
 
               <HStack justifyContent="space-between" alignItems="center">
                 <Text fontWeight="500" color="$typography" flex={1}>

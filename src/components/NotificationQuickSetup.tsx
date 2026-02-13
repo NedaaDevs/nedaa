@@ -108,7 +108,7 @@ const NotificationQuickSetup: FC<Props> = ({
           </Text>
         </HStack>
 
-        <Text textAlign="left" size="sm" color="$typography">
+        <Text size="sm" color="$typography">
           {t("notification.quickSetupDescription")}
         </Text>
 

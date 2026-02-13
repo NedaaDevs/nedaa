@@ -264,10 +264,10 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
               <Icon as={CalendarDays} color="$primary" />
             </Box>
             <VStack flex={1}>
-              <Text size="md" fontWeight="600" color="$typography" textAlign="left">
+              <Text size="md" fontWeight="600" color="$typography">
                 {formatNumberToLocale(t("qada.daysCount", { count: entry.count }))}
               </Text>
-              <Text size="xs" color="$typographySecondary" textAlign="left">
+              <Text size="xs" color="$typographySecondary">
                 {formatNumberToLocale(
                   format(new Date(entry.created_at), "MMM dd, yyyy", {
                     locale: getDateLocale(locale),
@@ -277,7 +277,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
               {entry.notes && (
                 <HStack gap="$1" alignItems="flex-start" marginTop="$2">
                   <Icon as={MessageSquare} size="xs" color="$primary" />
-                  <Text size="xs" color="$typography" fontStyle="italic" flex={1} textAlign="left">
+                  <Text size="xs" color="$typography" fontStyle="italic" flex={1}>
                     {entry.notes}
                   </Text>
                 </HStack>

@@ -150,10 +150,10 @@ const WidgetCard = ({
             <Icon as={widget.icon} size="sm" color="$primary" />
           </Box>
           <VStack flex={1} marginStart="$3">
-            <Text size="lg" fontWeight="600" textAlign="left">
+            <Text size="lg" fontWeight="600">
               {t(widget.nameKey)}
             </Text>
-            <Text size="xs" color="$typographySecondary" textAlign="left">
+            <Text size="xs" color="$typographySecondary">
               {widget.size}
             </Text>
           </VStack>
@@ -169,7 +169,7 @@ const WidgetCard = ({
       {/* Expanded content */}
       {expanded && (
         <VStack paddingHorizontal="$4" paddingBottom="$4" gap="$3">
-          <Text size="sm" color="$typographySecondary" textAlign="left">
+          <Text size="sm" color="$typographySecondary">
             {t(widget.descKey)}
           </Text>
           <Button size="md" width="100%" onPress={handlePin} disabled={!canPin}>
@@ -212,7 +212,7 @@ const WidgetSettings = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack gap="$3" paddingHorizontal="$4" paddingTop="$6" paddingBottom="$4">
           {/* Description */}
-          <Text size="sm" color="$typographySecondary" textAlign="left">
+          <Text size="sm" color="$typographySecondary">
             {t("settings.widgets.description")}
           </Text>
 
@@ -227,7 +227,7 @@ const WidgetSettings = () => {
               borderColor="$outline"
               alignItems="flex-start">
               <Icon as={Info} size="sm" color="$primary" style={{ marginTop: 2 }} />
-              <Text size="sm" flex={1} textAlign="left">
+              <Text size="sm" flex={1}>
                 {t("settings.widgets.iosNote")}
               </Text>
             </HStack>
@@ -245,10 +245,10 @@ const WidgetSettings = () => {
               <HStack gap="$3" alignItems="flex-start">
                 <Icon as={BatteryWarning} size="md" color="$warning" style={{ marginTop: 2 }} />
                 <VStack flex={1} gap="$1">
-                  <Text size="sm" fontWeight="600" textAlign="left">
+                  <Text size="sm" fontWeight="600">
                     {t("settings.widgets.batteryOptTitle")}
                   </Text>
-                  <Text size="xs" color="$typographySecondary" textAlign="left">
+                  <Text size="xs" color="$typographySecondary">
                     {t("settings.widgets.batteryOptDesc")}
                   </Text>
                 </VStack>
@@ -267,7 +267,7 @@ const WidgetSettings = () => {
               borderColor="$outline"
               alignItems="center">
               <Icon as={CheckCircle} size="sm" color="$success" />
-              <Text size="xs" color="$typographySecondary" textAlign="left" flex={1}>
+              <Text size="xs" color="$typographySecondary" flex={1}>
                 {t("settings.widgets.batteryOptDone")}
               </Text>
             </HStack>

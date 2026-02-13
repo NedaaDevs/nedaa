@@ -122,7 +122,7 @@ const HijriSettings = () => {
           </Box>
         </Box>
 
-        <Text textAlign="left" size="xl" fontWeight="600" color="$typography" marginBottom="$4">
+        <Text size="xl" fontWeight="600" color="$typography" marginBottom="$4">
           {t("settings.hijri.date.adjustmentTitle")}
         </Text>
 
@@ -138,7 +138,7 @@ const HijriSettings = () => {
             <Text size="sm" color="$typographySecondary" marginBottom="$1">
               {t("settings.hijri.date.currentAdjustment")}
             </Text>
-            <Text textAlign="left" color="$typography" fontWeight="500">
+            <Text color="$typography" fontWeight="500">
               {currentAdjustmentLabel}
             </Text>
           </VStack>
@@ -171,7 +171,7 @@ const HijriSettings = () => {
                   backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
                   key={option.value}
                   onPress={() => handleSelectAdjustment(option.value)}>
-                  <ActionsheetItemText color="$typography" fontWeight="500" textAlign="left">
+                  <ActionsheetItemText color="$typography" fontWeight="500">
                     {option.label}
                   </ActionsheetItemText>
                 </ActionsheetItem>

@@ -323,7 +323,7 @@ const AthkarList = ({ type }: Props) => {
             </VStack>
           </HStack>
 
-          <Text textAlign="left" size="sm" color="$typographySecondary">
+          <Text size="sm" color="$typographySecondary">
             {t("athkar.todayProgress")}
           </Text>
           <Progress
@@ -333,7 +333,7 @@ const AthkarList = ({ type }: Props) => {
             marginTop="$2">
             <ProgressFilledTrack backgroundColor="$info" />
           </Progress>
-          <Text size="xs" color="$typographySecondary" marginTop="$2" textAlign="right">
+          <Text size="xs" color="$typographySecondary" marginTop="$2">
             {formatNumberToLocale(`${Math.round(overallProgress)}`)}%
           </Text>
         </Card>

@@ -112,13 +112,13 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
         </ModalCloseButton>
 
         <ModalHeader>
-          <Text size="lg" fontWeight="600" color="$typography" textAlign="left">
+          <Text size="lg" fontWeight="600" color="$typography">
             {t("location.settings.keepLocationUpdated.infoTitle")}
           </Text>
         </ModalHeader>
 
         <ModalBody>
-          <Text textAlign="left" size="sm" color="$typographySecondary">
+          <Text size="sm" color="$typographySecondary">
             {t("location.settings.keepLocationUpdated.infoDescription")}
           </Text>
         </ModalBody>
@@ -246,10 +246,10 @@ const KeepLocationUpdated = () => {
           <HStack alignItems="center" flex={1} gap="$3">
             <Icon as={MapPin} color="$accentPrimary" size="md" />
             <VStack flex={1}>
-              <Text textAlign="left" size="sm" color="$typographySecondary">
+              <Text size="sm" color="$typographySecondary">
                 {t("location.current")}
               </Text>
-              <Text textAlign="left" size="xl" fontWeight="600" color="$typography">
+              <Text size="xl" fontWeight="600" color="$typography">
                 {localizedLocation.city ?? locationDetails.address?.city},{" "}
                 {localizedLocation.country ?? locationDetails.address?.country}
               </Text>

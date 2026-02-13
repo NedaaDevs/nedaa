@@ -43,7 +43,7 @@ const VibrationSettings: FC<Props> = ({ value, onChange }) => {
   return (
     <VStack gap="$2">
       <HStack justifyContent="space-between" alignItems="center">
-        <Text textAlign="left" size="sm" color="$typography">
+        <Text size="sm" color="$typography">
           {t("common.enabled")}
         </Text>
         <Switch value={value.enabled} onValueChange={handleToggle} size="sm" />
@@ -51,7 +51,7 @@ const VibrationSettings: FC<Props> = ({ value, onChange }) => {
 
       {value.enabled && (
         <HStack justifyContent="space-between" alignItems="center">
-          <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
+          <Text size="sm" color="$typographySecondary" flex={1}>
             {t("alarm.settings.pattern")}
           </Text>
           <Select
