@@ -29,7 +29,6 @@ type Props = {
   onClose: () => void;
 };
 
-// Mail Clients List Component
 const MailClientsList = ({ onClose }: Props) => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
@@ -47,9 +46,7 @@ const MailClientsList = ({ onClose }: Props) => {
       setLoading(true);
       const clients = await getEmailClients();
 
-      // Map the clients to our format with icons
       const formattedClients = clients.map((client) => {
-        // Determine icon based on client id
         let icon = "mail";
         const id = client.id.toLowerCase();
 
@@ -78,7 +75,6 @@ const MailClientsList = ({ onClose }: Props) => {
       const appVersion = await Application.nativeApplicationVersion;
       const buildNumber = await Application.nativeBuildVersion;
 
-      // Get device information
       const deviceModel = Device.modelName || "Unknown Device";
       const deviceBrand = Device.brand || "";
       const osName = Device.osName || Platform.OS;
@@ -90,7 +86,6 @@ const MailClientsList = ({ onClose }: Props) => {
 
       const subject = t("email.template.subject");
 
-      // Build the email body with translations
       const body = `${t("email.template.describeRequest")}\n\n\n\n\n${t("email.template.appInfo")}\n- ${t("email.template.version")}: ${appVersion} (${buildNumber})\n- ${t("email.template.device")}: ${deviceBrand} ${deviceModel}\n- ${t("email.template.os")}: ${systemVersion}`;
 
       await openComposer({
@@ -100,7 +95,6 @@ const MailClientsList = ({ onClose }: Props) => {
         body: body,
       });
 
-      // Close the mail clients list
       onClose();
     } catch (error) {
       console.error("Error opening mail client:", error);
@@ -111,7 +105,7 @@ const MailClientsList = ({ onClose }: Props) => {
   const renderClientIcon = (icon: string) => {
     switch (icon) {
       case "mail":
-        return <Icon as={MailIcon} size="xl" className="text-accent-primary" />;
+        return <Icon as={MailIcon} size="xl" color="$accentPrimary" />;
       case "gmail":
         return <FontAwesome5 name="google" size={24} color="#DB4437" />;
       case "outlook":
@@ -119,22 +113,33 @@ const MailClientsList = ({ onClose }: Props) => {
       case "yahoo":
         return <FontAwesome5 name="yahoo" size={24} color="#6001D2" />;
       default:
-        return <Icon as={MailIcon} size="xl" className="text-accent-primary" />;
+        return <Icon as={MailIcon} size="xl" color="$accentPrimary" />;
     }
   };
 
   if (loading) {
     return (
-      <Box className="w-full h-60 flex items-center justify-center bg-background-secondary">
-        <Text className="text-typography">{t("loading")}</Text>
+      <Box
+        width="100%"
+        height={240}
+        alignItems="center"
+        justifyContent="center"
+        backgroundColor="$backgroundSecondary">
+        <Text color="$typography">{t("loading")}</Text>
       </Box>
     );
   }
 
   return (
-    <Box className="w-full px-4 py-5 bg-background-secondary rounded-t-2xl">
-      <Box className="w-full flex flex-col items-center mb-4">
-        <Text className="text-xl font-semibold text-typography">
+    <Box
+      width="100%"
+      paddingHorizontal="$4"
+      paddingVertical="$5"
+      backgroundColor="$backgroundSecondary"
+      borderTopLeftRadius="$7"
+      borderTopRightRadius="$7">
+      <Box width="100%" flexDirection="column" alignItems="center" marginBottom="$4">
+        <Text size="xl" fontWeight="600" color="$typography">
           {t("email.clients.selectClient")}
         </Text>
       </Box>
@@ -144,15 +149,21 @@ const MailClientsList = ({ onClose }: Props) => {
           data={mailClients}
           renderItem={({ item, index }: any) => (
             <Box
-              className={`w-full ${
-                index < mailClients.length - 1 ? "border-b border-outline" : ""
-              }`}>
+              width="100%"
+              borderBottomWidth={index < mailClients.length - 1 ? 1 : 0}
+              borderColor={index < mailClients.length - 1 ? "$outline" : undefined}>
               <Pressable
                 onPress={() => handleMailClientSelect(item)}
-                className="py-4 px-3 flex-row justify-between items-center">
-                <Box className="flex-row items-center">
+                paddingVertical="$4"
+                paddingHorizontal="$3"
+                flexDirection="row"
+                justifyContent="space-between"
+                alignItems="center">
+                <Box flexDirection="row" alignItems="center">
                   {renderClientIcon(item.icon)}
-                  <Text className="text-lg font-medium text-typography ml-4">{item.title}</Text>
+                  <Text size="lg" fontWeight="500" color="$typography" marginStart="$4">
+                    {item.title}
+                  </Text>
                 </Box>
               </Pressable>
             </Box>
@@ -160,19 +171,28 @@ const MailClientsList = ({ onClose }: Props) => {
           keyExtractor={(item: any) => item.id}
         />
       ) : (
-        <Box className="w-full py-5 flex items-center justify-center">
-          <Text className="text-typography">{t("email.clients.noClientsFound")}</Text>
+        <Box width="100%" paddingVertical="$5" alignItems="center" justifyContent="center">
+          <Text color="$typography">{t("email.clients.noClientsFound")}</Text>
         </Box>
       )}
 
-      <Box className="mt-4">
+      <Box marginTop="$4">
         <Pressable
           onPress={() => {
             hapticLight();
             onClose();
           }}
-          className="w-full py-3 flex items-center justify-center bg-background-muted rounded-lg">
-          <Text className="text-typography font-medium">{t("cancel")}</Text>
+          width="100%"
+          paddingVertical="$3"
+          minHeight={44}
+          alignItems="center"
+          justifyContent="center"
+          backgroundColor="$backgroundMuted"
+          borderRadius="$4"
+          accessibilityRole="button">
+          <Text color="$typography" fontWeight="500">
+            {t("cancel")}
+          </Text>
         </Pressable>
       </Box>
     </Box>
