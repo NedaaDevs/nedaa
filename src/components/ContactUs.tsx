@@ -15,15 +15,13 @@ import MailClientsList from "@/components/MailClientsList";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 // Hooks
-import { useColorScheme } from "nativewind";
 import { useHaptic } from "@/hooks/useHaptic";
 
-// Enums
-import { AppMode } from "@/enums/app";
+import { useTheme } from "tamagui";
 
 const ContactUs = () => {
   const { t } = useTranslation();
-  const { colorScheme } = useColorScheme();
+  const theme = useTheme();
   const hapticMedium = useHaptic("medium");
 
   const [mailModalVisible, setMailModalVisible] = useState(false);
@@ -63,7 +61,6 @@ const ContactUs = () => {
     },
   ];
 
-  // Render option if number available
   if (whatsappNumber) {
     contactOptions.push({
       id: "whatsapp",
@@ -73,7 +70,6 @@ const ContactUs = () => {
     });
   }
 
-  // Render option if username available
   if (telegramUsername) {
     contactOptions.push({
       id: "telegram",
@@ -86,17 +82,11 @@ const ContactUs = () => {
   const renderIcon = (icon: string) => {
     switch (icon) {
       case "mail":
-        return <Icon as={MailIcon} size="xl" className="text-accent-primary" />;
+        return <Icon as={MailIcon} size="xl" color="$accentPrimary" />;
       case "whatsapp":
         return <FontAwesome5 name="whatsapp" size={24} color="#25D366" />;
       case "telegram":
-        return (
-          <FontAwesome5
-            name="telegram-plane"
-            size={24}
-            color={colorScheme === AppMode.DARK ? "white" : "black"}
-          />
-        );
+        return <FontAwesome5 name="telegram-plane" size={24} color={theme.typography?.val} />;
       default:
         return null;
     }
@@ -104,27 +94,39 @@ const ContactUs = () => {
 
   return (
     <>
-      <Box className="w-full px-4 pt-6 pb-4 flex flex-col bg-background">
-        <Box className="w-full flex flex-col items-start mb-4">
-          <Text className="text-2xl text-typography-secondary font-medium">
+      <Box
+        width="100%"
+        paddingHorizontal="$4"
+        paddingTop="$6"
+        paddingBottom="$4"
+        flexDirection="column"
+        backgroundColor="$background">
+        <Box width="100%" flexDirection="column" alignItems="flex-start" marginBottom="$4">
+          <Text size="2xl" color="$typographySecondary" fontWeight="500">
             {t("settings.help.contactUs").toUpperCase()}
           </Text>
         </Box>
 
-        <Box className="w-full rounded-lg overflow-hidden">
+        <Box width="100%" borderRadius="$4" overflow="hidden">
           <ActionsheetFlatList
             data={contactOptions}
             renderItem={({ item, index }: any) => (
               <Box
-                className={`w-full ${
-                  index < contactOptions.length - 1 ? "border-b border-outline" : ""
-                }`}>
+                width="100%"
+                borderBottomWidth={index < contactOptions.length - 1 ? 1 : 0}
+                borderColor={index < contactOptions.length - 1 ? "$outline" : undefined}>
                 <Pressable
                   onPress={item.action}
-                  className="py-5 px-5 flex-row justify-between items-center">
-                  <Box className="flex-row items-center">
+                  paddingVertical="$5"
+                  paddingHorizontal="$5"
+                  flexDirection="row"
+                  justifyContent="space-between"
+                  alignItems="center">
+                  <Box flexDirection="row" alignItems="center">
                     {renderIcon(item.icon)}
-                    <Text className="text-xl font-semibold text-typography ml-4">{item.title}</Text>
+                    <Text size="xl" fontWeight="600" color="$typography" marginStart="$4">
+                      {item.title}
+                    </Text>
                   </Box>
                 </Pressable>
               </Box>
@@ -134,8 +136,7 @@ const ContactUs = () => {
         </Box>
       </Box>
 
-      {/* Mail Clients Modal */}
-      <Modal useRNModal isOpen={mailModalVisible} onClose={handleCloseMailModal}>
+      <Modal isOpen={mailModalVisible} onClose={handleCloseMailModal}>
         <MailClientsList onClose={handleCloseMailModal} />
       </Modal>
     </>
