@@ -1,160 +1,80 @@
-"use client";
 import React from "react";
-import { createProgress } from "@gluestack-ui/progress";
-import { View } from "react-native";
-import { tva } from "@gluestack-ui/nativewind-utils/tva";
-import { withStyleContext, useStyleContext } from "@gluestack-ui/nativewind-utils/withStyleContext";
-import { cssInterop } from "nativewind";
-import type { VariantProps } from "@gluestack-ui/nativewind-utils";
+import { styled, View, createStyledContext } from "tamagui";
+import type { GetProps } from "tamagui";
 
-const SCOPE = "PROGRESS";
-export const UIProgress = createProgress({
-  Root: withStyleContext(View, SCOPE),
-  FilledTrack: View,
+type ProgressSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+
+const SIZE_HEIGHT: Record<ProgressSize, number> = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  "2xl": 24,
+};
+
+const ProgressContext = createStyledContext({
+  value: 0,
+  size: "md" as ProgressSize,
 });
 
-cssInterop(UIProgress, { className: "style" });
-cssInterop(UIProgress.FilledTrack, { className: "style" });
+// --- Progress track ---
 
-const progressStyle = tva({
-  base: "bg-background-300 rounded-full w-full",
-  variants: {
-    orientation: {
-      horizontal: "w-full",
-      vertical: "h-full",
-    },
-    size: {
-      xs: "h-1",
-      sm: "h-2",
-      md: "h-3",
-      lg: "h-4",
-      xl: "h-5",
-      "2xl": "h-6",
-    },
-  },
-  compoundVariants: [
-    {
-      orientation: "vertical",
-      size: "xs",
-      class: "h-full w-1 justify-end",
-    },
-    {
-      orientation: "vertical",
-      size: "sm",
-      class: "h-full w-2 justify-end",
-    },
-    {
-      orientation: "vertical",
-      size: "md",
-      class: "h-full w-3 justify-end",
-    },
-    {
-      orientation: "vertical",
-      size: "lg",
-      class: "h-full w-4 justify-end",
-    },
-
-    {
-      orientation: "vertical",
-      size: "xl",
-      class: "h-full w-5 justify-end",
-    },
-    {
-      orientation: "vertical",
-      size: "2xl",
-      class: "h-full w-6 justify-end",
-    },
-  ],
+const ProgressFrame = styled(View, {
+  name: "Progress",
+  context: ProgressContext,
+  backgroundColor: "$backgroundMuted",
+  borderRadius: "$10",
+  width: "100%",
+  overflow: "hidden",
 });
 
-const progressFilledTrackStyle = tva({
-  base: "bg-primary-500 rounded-full",
-  parentVariants: {
-    orientation: {
-      horizontal: "w-full",
-      vertical: "h-full",
-    },
-    size: {
-      xs: "h-1",
-      sm: "h-2",
-      md: "h-3",
-      lg: "h-4",
-      xl: "h-5",
-      "2xl": "h-6",
-    },
-  },
-  parentCompoundVariants: [
-    {
-      orientation: "vertical",
-      size: "xs",
-      class: "h-full w-1",
-    },
-    {
-      orientation: "vertical",
-      size: "sm",
-      class: "h-full w-2",
-    },
-    {
-      orientation: "vertical",
-      size: "md",
-      class: "h-full w-3",
-    },
-    {
-      orientation: "vertical",
-      size: "lg",
-      class: "h-full w-4",
-    },
+type ProgressFrameProps = GetProps<typeof ProgressFrame> & {
+  value?: number;
+  size?: ProgressSize;
+};
 
-    {
-      orientation: "vertical",
-      size: "xl",
-      class: "h-full w-5",
-    },
-    {
-      orientation: "vertical",
-      size: "2xl",
-      class: "h-full w-6",
-    },
-  ],
-});
-
-type IProgressProps = VariantProps<typeof progressStyle> & React.ComponentProps<typeof UIProgress>;
-type IProgressFilledTrackProps = VariantProps<typeof progressFilledTrackStyle> &
-  React.ComponentProps<typeof UIProgress.FilledTrack>;
-
-const Progress = React.forwardRef<React.ComponentRef<typeof UIProgress>, IProgressProps>(
-  function Progress({ className, size = "md", orientation = "horizontal", ...props }, ref) {
-    return (
-      <UIProgress
-        ref={ref}
-        {...props}
-        className={progressStyle({ size, orientation, class: className })}
-        context={{ size, orientation }}
-        orientation={orientation}
-      />
-    );
-  }
-);
-
-const ProgressFilledTrack = React.forwardRef<
-  React.ComponentRef<typeof UIProgress.FilledTrack>,
-  IProgressFilledTrackProps
->(function ProgressFilledTrack({ className, ...props }, ref) {
-  const { size: parentSize, orientation: parentOrientation } = useStyleContext(SCOPE);
+const Progress = ProgressFrame.styleable<{
+  value?: number;
+  size?: ProgressSize;
+}>((props, ref) => {
+  const { value = 0, size = "md", children, ...rest } = props;
+  const clampedValue = Math.max(0, Math.min(100, value));
 
   return (
-    <UIProgress.FilledTrack
-      ref={ref}
-      className={progressFilledTrackStyle({
-        parentVariants: {
-          size: parentSize,
-          orientation: parentOrientation,
-        },
-        class: className,
-      })}
-      {...props}
-    />
+    <ProgressContext.Provider value={clampedValue} size={size}>
+      <ProgressFrame
+        ref={ref}
+        height={SIZE_HEIGHT[size]}
+        role="progressbar"
+        accessibilityValue={{ min: 0, max: 100, now: clampedValue }}
+        {...rest}>
+        {children}
+      </ProgressFrame>
+    </ProgressContext.Provider>
   );
 });
+Progress.displayName = "Progress";
+
+// --- ProgressFilledTrack (indicator) ---
+
+const ProgressFilledTrackFrame = styled(View, {
+  name: "ProgressFilledTrack",
+  context: ProgressContext,
+  backgroundColor: "$primary",
+  borderRadius: "$10",
+});
+
+const ProgressFilledTrack = ProgressFilledTrackFrame.styleable((props, ref) => {
+  const ctx = ProgressContext.useStyledContext();
+  const height = SIZE_HEIGHT[(ctx.size as ProgressSize) ?? "md"];
+
+  return <ProgressFilledTrackFrame ref={ref} height={height} width={`${ctx.value}%`} {...props} />;
+});
+ProgressFilledTrack.displayName = "ProgressFilledTrack";
+
+type ProgressProps = ProgressFrameProps;
+type ProgressFilledTrackProps = GetProps<typeof ProgressFilledTrackFrame>;
 
 export { Progress, ProgressFilledTrack };
+export type { ProgressProps, ProgressFilledTrackProps, ProgressSize };
