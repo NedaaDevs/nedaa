@@ -35,7 +35,8 @@ class ExpoWidgetsModule : Module() {
 
         Function("isPinningSupported") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val ctx = appContext.reactContext ?: return@Function false
+                val appWidgetManager = AppWidgetManager.getInstance(ctx)
                 return@Function appWidgetManager.isRequestPinAppWidgetSupported
             }
             return@Function false
