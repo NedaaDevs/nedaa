@@ -118,6 +118,6 @@
   },
   "private": true,
   "patchedDependencies": {
-    "expo-sensors@15.0.7": "patches/expo-sensors@15.0.7.patch"
+    "expo-sensors@15.0.8": "patches/expo-sensors@15.0.8.patch"
   }
 }
