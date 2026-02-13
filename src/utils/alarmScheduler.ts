@@ -1,3 +1,4 @@
+import i18next from "@/localization/i18n";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -80,7 +81,7 @@ export async function schedulePrayerAlarm(
   }
 
   const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
-  const title = `${prayerName.charAt(0).toUpperCase() + prayerName.slice(1)} Prayer`;
+  const title = i18next.t(`prayerTimes.${prayerName}`);
 
   const success = await alarmStore.scheduleAlarm({
     id,
@@ -125,7 +126,7 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   }
 
   const id = generateDeterministicUUID(getAlarmKey("jummah", triggerDate));
-  const title = "Jumu'ah Prayer";
+  const title = i18next.t("prayerTimes.jumuah");
 
   const success = await alarmStore.scheduleAlarm({
     id,
@@ -145,6 +146,20 @@ export async function ensureAlarmsScheduled(): Promise<void> {
     await scheduleFajrAlarm();
   }
   if (alarmSettings.friday.enabled && !alarmStore.getAlarmByType("jummah")) {
+    await scheduleFridayAlarm();
+  }
+}
+
+export async function rescheduleAllAlarms(): Promise<void> {
+  const alarmSettings = useAlarmSettingsStore.getState();
+  const alarmStore = useAlarmStore.getState();
+
+  if (alarmSettings.fajr.enabled) {
+    await alarmStore.cancelAlarmsByType("fajr");
+    await scheduleFajrAlarm();
+  }
+  if (alarmSettings.friday.enabled) {
+    await alarmStore.cancelAlarmsByType("jummah");
     await scheduleFridayAlarm();
   }
 }
