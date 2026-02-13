@@ -1,16 +1,7 @@
-import { View, ViewProps } from "react-native";
-import React from "react";
-import { centerStyle } from "./styles";
-import type { VariantProps } from "@gluestack-ui/nativewind-utils";
+import { styled, YStack } from "tamagui";
 
-type ICenterProps = ViewProps & VariantProps<typeof centerStyle>;
-
-const Center = React.forwardRef<React.ComponentRef<typeof View>, ICenterProps>(
-  ({ className, ...props }, ref) => {
-    return <View className={centerStyle({ class: className })} {...props} ref={ref} />;
-  }
-);
-
-Center.displayName = "Center";
-
-export { Center };
+export const Center = styled(YStack, {
+  name: "Center",
+  alignItems: "center",
+  justifyContent: "center",
+});
