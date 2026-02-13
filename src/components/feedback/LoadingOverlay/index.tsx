@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
 import { Props } from "./types";
@@ -18,7 +18,6 @@ const LoadingOverlay: FC<Props> = ({
   cancellable = false,
   onCancel,
   estimatedTime,
-  className = "",
 }) => {
   const { t } = useTranslation();
 
@@ -38,28 +37,39 @@ const LoadingOverlay: FC<Props> = ({
   };
 
   return (
-    <Modal isOpen={visible} onClose={() => {}} size="full" closeOnOverlayClick={false}>
-      <Box className="flex-1 items-center justify-center p-6">
-        <Box className={`bg-background-secondary rounded-xl p-8 max-w-sm w-full ${className}`}>
-          <VStack className="items-center space-y-6">
+    <Modal isOpen={visible} onClose={() => {}} size="full">
+      <Box flex={1} alignItems="center" justifyContent="center" padding="$6">
+        <Box
+          backgroundColor="$backgroundSecondary"
+          borderRadius="$6"
+          padding="$8"
+          maxWidth={384}
+          width="100%">
+          <VStack alignItems="center" gap="$6">
             {/* Spinner */}
-            <Spinner size="large" className="text-accent-primary" />
+            <Spinner size="large" />
 
             {/* Message */}
-            <Text className="text-xl font-semibold text-typography text-center">
+            <Text size="xl" fontWeight="600" color="$typography" textAlign="center">
               {message || getDefaultMessage()}
             </Text>
 
             {/* Progress Bar */}
             {progress !== undefined && (
-              <VStack className="w-full space-y-2">
-                <Box className="w-full h-2 bg-surface-active rounded-full overflow-hidden">
+              <VStack width="100%" gap="$2">
+                <Box
+                  width="100%"
+                  height={8}
+                  backgroundColor="$backgroundMuted"
+                  borderRadius={999}
+                  overflow="hidden">
                   <Box
-                    className="h-full bg-accent-primary transition-all duration-300 ease-out"
+                    height="100%"
+                    backgroundColor="$accentPrimary"
                     style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                   />
                 </Box>
-                <Text className="text-sm text-typography-secondary text-center">
+                <Text size="sm" color="$typographySecondary" textAlign="center">
                   {Math.round(progress)}%
                 </Text>
               </VStack>
@@ -67,7 +77,7 @@ const LoadingOverlay: FC<Props> = ({
 
             {/* Estimated Time */}
             {estimatedTime && (
-              <Text className="text-sm text-typography-secondary text-center">
+              <Text size="sm" color="$typographySecondary" textAlign="center">
                 {t("common.estimatedTime")}: {formatEstimatedTime(estimatedTime)}
               </Text>
             )}
@@ -77,8 +87,10 @@ const LoadingOverlay: FC<Props> = ({
               <Button
                 variant="outline"
                 onPress={onCancel}
-                className="w-full bg-background border-outline">
-                <ButtonText className="text-typography">{t("common.cancel")}</ButtonText>
+                width="100%"
+                backgroundColor="$background"
+                borderColor="$outline">
+                <Button.Text color="$typography">{t("common.cancel")}</Button.Text>
               </Button>
             )}
           </VStack>

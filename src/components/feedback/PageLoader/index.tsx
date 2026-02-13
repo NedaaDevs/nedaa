@@ -26,11 +26,13 @@ export const PageLoader: React.FC<Props> = ({
 }) => {
   if (loading) {
     return (
-      <Box className="flex-1 items-center justify-center" style={{ minHeight }}>
-        <VStack space="md" className="items-center">
-          <ActivityIndicator size={size} className="text-accent-primary" />
+      <Box flex={1} alignItems="center" justifyContent="center" minHeight={minHeight}>
+        <VStack gap="$3" alignItems="center">
+          <ActivityIndicator size={size} />
           {showMessage && message && (
-            <Text className="text-sm text-typography-secondary text-center">{message}</Text>
+            <Text size="sm" color="$typographySecondary" textAlign="center">
+              {message}
+            </Text>
           )}
         </VStack>
       </Box>

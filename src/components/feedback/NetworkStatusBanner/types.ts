@@ -33,9 +33,4 @@ export type Props = {
    * Dismiss callback
    */
   onDismiss?: () => void;
-
-  /**
-   * Custom class name
-   */
-  className?: string;
 };

@@ -6,7 +6,7 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 // Icons
 import { RefreshCw, MapPin, Wifi, AlertCircle } from "lucide-react-native";
@@ -31,8 +31,8 @@ const getEmptyStateConfig = (type: EmptyStateType, t: any) => {
     case "error":
       return {
         icon: AlertCircle,
-        iconColor: "text-error",
-        bgColor: "bg-background-error",
+        iconColor: "$error",
+        bgColor: "$backgroundError",
         title: t("errors.prayerTimes.fetchFailed"),
         description: t("errors.prayerTimes.fetchDescription"),
         retryLabel: t("common.retry"),
@@ -40,8 +40,8 @@ const getEmptyStateConfig = (type: EmptyStateType, t: any) => {
     case "offline":
       return {
         icon: Wifi,
-        iconColor: "text-warning",
-        bgColor: "bg-background-warning",
+        iconColor: "$warning",
+        bgColor: "$backgroundWarning",
         title: t("network.noConnection"),
         description: t("network.messages.offline"),
         retryLabel: t("common.retry"),
@@ -49,8 +49,8 @@ const getEmptyStateConfig = (type: EmptyStateType, t: any) => {
     case "noLocation":
       return {
         icon: MapPin,
-        iconColor: "text-info",
-        bgColor: "bg-background-info",
+        iconColor: "$info",
+        bgColor: "$backgroundInfo",
         title: t("location.permission.title"),
         description: t("location.permission.description"),
         retryLabel: t("location.permission.allow"),
@@ -59,8 +59,8 @@ const getEmptyStateConfig = (type: EmptyStateType, t: any) => {
     default:
       return {
         icon: RefreshCw,
-        iconColor: "text-typography-secondary",
-        bgColor: "bg-background-muted",
+        iconColor: "$typographySecondary",
+        bgColor: "$backgroundMuted",
         title: t("prayerTimes.noData"),
         description: t("prayerTimes.noDataDescription"),
         retryLabel: t("common.retry"),
@@ -87,28 +87,34 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   };
 
   return (
-    <VStack className="flex-1 items-center justify-center p-8" space="lg">
+    <VStack flex={1} alignItems="center" justifyContent="center" padding="$8" gap="$4">
       {/* Icon */}
-      <Box className={`w-20 h-20 rounded-full ${config.bgColor} items-center justify-center`}>
-        <Icon className={`${config.iconColor}`} as={config.icon} size="xl" />
+      <Box
+        width={80}
+        height={80}
+        borderRadius={999}
+        backgroundColor={config.bgColor}
+        alignItems="center"
+        justifyContent="center">
+        <Icon color={config.iconColor} as={config.icon} size="xl" />
       </Box>
 
       {/* Content */}
-      <VStack space="sm" className="items-center max-w-xs">
-        <Text className="text-xl font-semibold text-typography text-center">
+      <VStack gap="$2" alignItems="center" maxWidth={280}>
+        <Text size="xl" fontWeight="600" color="$typography" textAlign="center">
           {title || config.title}
         </Text>
-        <Text className="text-sm text-typography-secondary text-center leading-relaxed">
+        <Text size="sm" color="$typographySecondary" textAlign="center">
           {description || config.description}
         </Text>
       </VStack>
 
       {/* Action Button */}
       {onRetry && (
-        <Button onPress={handleRetry} disabled={isRetrying} size="lg" className="px-8">
-          <ButtonText className="font-medium">
+        <Button onPress={handleRetry} disabled={isRetrying} size="lg" paddingHorizontal="$8">
+          <Button.Text fontWeight="500">
             {isRetrying ? t("common.loading") : retryLabel || config.retryLabel}
-          </ButtonText>
+          </Button.Text>
         </Button>
       )}
     </VStack>
