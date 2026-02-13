@@ -8,6 +8,7 @@ import Animated, {
   Extrapolation,
 } from "react-native-reanimated";
 import { Platform, TouchableOpacity } from "react-native";
+import { useTheme } from "tamagui";
 
 // Components
 import { Text } from "@/components/ui/text";
@@ -65,6 +66,7 @@ const ActionButtons = ({
   swipeableRef,
 }: ActionButtonsProps) => {
   const { isRTL } = useRTL();
+  const theme = useTheme();
   const isAndroid = Platform.OS === PlatformType.ANDROID;
 
   const containerStyle = useAnimatedStyle(() => {
@@ -108,90 +110,98 @@ const ActionButtons = ({
       ]}>
       {/* Complete Button(s) */}
       {entry.count > 1 ? (
-        <Box
-          collapsable={false}
-          style={{
-            gap: 4,
-            ...androidStyle,
-          }}>
+        <>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleCompletePress}
+            accessibilityLabel={t("common.complete")}
             style={{
-              backgroundColor: "#10b981",
-              borderRadius: 8,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
+              flexDirection: "column",
+              backgroundColor: theme.success?.val,
+              borderRadius: 10,
+              paddingHorizontal: 10,
+              paddingVertical: 8,
               alignItems: "center",
               justifyContent: "center",
-              minWidth: 80,
+              minWidth: 64,
+              minHeight: 56,
+              gap: 2,
               ...androidStyle,
             }}>
-            <HStack space="xs" className="items-center gap-1">
-              <Icon as={Check} size="sm" className="text-background" />
-              <Text className="text-background text-xs font-semibold">{t("common.complete")}</Text>
-            </HStack>
+            <Icon as={Check} size="sm" color={theme.typographyContrast?.val} />
+            <Text color="$typographyContrast" size="2xs" fontWeight="600" numberOfLines={1}>
+              {t("common.complete")}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleCompleteAllPress}
+            accessibilityLabel={`${t("common.all")} (${formatNumberToLocale(entry.count.toString())})`}
             style={{
-              backgroundColor: "#3b82f6",
-              borderRadius: 8,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
+              flexDirection: "column",
+              backgroundColor: theme.info?.val,
+              borderRadius: 10,
+              paddingHorizontal: 10,
+              paddingVertical: 8,
               alignItems: "center",
               justifyContent: "center",
-              minWidth: 80,
+              minWidth: 64,
+              minHeight: 56,
+              gap: 2,
               ...androidStyle,
             }}>
-            <HStack space="xs" className="items-center gap-1">
-              <Icon as={CheckCheck} size="sm" className="text-background" />
-              <Text className="text-background text-xs font-semibold">
-                {t("common.all")} ({formatNumberToLocale(entry.count.toString())})
-              </Text>
-            </HStack>
+            <Icon as={CheckCheck} size="sm" color={theme.typographyContrast?.val} />
+            <Text color="$typographyContrast" size="2xs" fontWeight="600" numberOfLines={1}>
+              {t("common.all")} ({formatNumberToLocale(entry.count.toString())})
+            </Text>
           </TouchableOpacity>
-        </Box>
+        </>
       ) : (
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleCompletePress}
+          accessibilityLabel={t("common.complete")}
           style={{
-            backgroundColor: "#10b981",
-            borderRadius: 8,
-            paddingHorizontal: 16,
-            height: 56,
+            flexDirection: "column",
+            backgroundColor: theme.success?.val,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
             alignItems: "center",
             justifyContent: "center",
-            minWidth: 100,
+            minWidth: 72,
+            minHeight: 56,
+            gap: 4,
             ...androidStyle,
           }}>
-          <HStack space="xs" className="items-center gap-1">
-            <Icon as={Check} size="sm" className="text-background" />
-            <Text className="text-background text-sm font-semibold">{t("common.complete")}</Text>
-          </HStack>
+          <Icon as={Check} size="sm" color={theme.typographyContrast?.val} />
+          <Text color="$typographyContrast" size="xs" fontWeight="600">
+            {t("common.complete")}
+          </Text>
         </TouchableOpacity>
       )}
 
-      {/* Delete Button */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handleDeletePress}
+        accessibilityLabel={t("common.delete")}
         style={{
-          backgroundColor: "#ef4444",
-          borderRadius: 8,
-          paddingHorizontal: 16,
-          height: 56,
+          flexDirection: "column",
+          backgroundColor: theme.error?.val,
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
           alignItems: "center",
           justifyContent: "center",
-          minWidth: 100,
+          minWidth: 72,
+          minHeight: 56,
+          gap: 4,
           ...androidStyle,
         }}>
-        <HStack space="xs" className="items-center gap-1">
-          <Icon as={Trash2} size="sm" className="text-background" />
-          <Text className="text-background text-sm font-semibold">{t("common.delete")}</Text>
-        </HStack>
+        <Icon as={Trash2} size="sm" color={theme.typographyContrast?.val} />
+        <Text color="$typographyContrast" size="xs" fontWeight="600">
+          {t("common.delete")}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -241,17 +251,23 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
       rightThreshold={SWIPE_THRESHOLD}
       leftThreshold={undefined}
       enableTrackpadTwoFingerGesture={false}>
-      <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
-        <HStack className="justify-between items-center">
-          <HStack space="md" className="items-center flex-1">
-            <Box className="w-12 h-12 rounded-full bg-accent-primary/20 items-center justify-center">
-              <Icon as={CalendarDays} className="text-accent-primary" />
+      <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+        <HStack justifyContent="space-between" alignItems="center">
+          <HStack gap="$3" alignItems="center" flex={1}>
+            <Box
+              width={48}
+              height={48}
+              borderRadius={999}
+              backgroundColor="$backgroundPrimary"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={CalendarDays} color="$primary" />
             </Box>
-            <VStack className="flex-1">
-              <Text className="text-base font-semibold text-typography text-left">
+            <VStack flex={1}>
+              <Text size="md" fontWeight="600" color="$typography" textAlign="left">
                 {formatNumberToLocale(t("qada.daysCount", { count: entry.count }))}
               </Text>
-              <Text className="text-xs text-typography-secondary text-left">
+              <Text size="xs" color="$typographySecondary" textAlign="left">
                 {formatNumberToLocale(
                   format(new Date(entry.created_at), "MMM dd, yyyy", {
                     locale: getDateLocale(locale),
@@ -259,9 +275,9 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
                 )}
               </Text>
               {entry.notes && (
-                <HStack space="xs" className="items-start mt-2">
-                  <Icon as={MessageSquare} size="xs" className="text-accent-primary mt-0.5" />
-                  <Text className="text-xs text-typography italic flex-1 text-left">
+                <HStack gap="$1" alignItems="flex-start" marginTop="$2">
+                  <Icon as={MessageSquare} size="xs" color="$primary" />
+                  <Text size="xs" color="$typography" fontStyle="italic" flex={1} textAlign="left">
                     {entry.notes}
                   </Text>
                 </HStack>

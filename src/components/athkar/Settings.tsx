@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { TouchableOpacity } from "react-native";
+import { Pressable } from "@/components/ui/pressable";
 
 // Components
 import { VStack } from "@/components/ui/vstack";
@@ -75,15 +75,15 @@ const Settings = () => {
 
   return (
     <>
-      <VStack className="p-4" space="lg">
+      <VStack padding="$4" gap="$4">
         {/* Notification Settings Section */}
-        <VStack space="md">
+        <VStack gap="$3">
           {/* Morning Athkar Notification */}
-          <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <VStack className="flex-1 mr-4">
-                  <Text className="text-left text-base font-medium text-typography">
+          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <VStack flex={1} marginEnd="$4">
+                  <Text textAlign="left" fontWeight="500" color="$typography">
                     {t("settings.athkar.notifications.morning.title")}
                   </Text>
                 </VStack>
@@ -91,25 +91,30 @@ const Settings = () => {
               </HStack>
 
               {morningNotification.enabled && (
-                <VStack space="sm" className="mt-3">
-                  <HStack className="items-center justify-between">
-                    <HStack className="items-center" space="sm">
-                      <Text className="text-sm text-typography-secondary">
+                <VStack gap="$2" marginTop="$3">
+                  <HStack alignItems="center" justifyContent="space-between">
+                    <HStack alignItems="center" gap="$2">
+                      <Text size="sm" color="$typographySecondary">
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
                     <VStack>
-                      <TouchableOpacity
+                      <Pressable
                         onPress={() => openTimePicker("morning")}
-                        className="bg-primary-500 rounded-lg px-4 py-2">
-                        <Text className="font-medium text-primary rounded-lg">
+                        accessibilityLabel={t("settings.athkar.notifications.time")}
+                        borderRadius="$2"
+                        paddingHorizontal="$4"
+                        minHeight={44}
+                        justifyContent="center"
+                        alignItems="center">
+                        <Text fontWeight="500" color="$primary">
                           {formatTime12Hour(
                             morningNotification.hour,
                             morningNotification.minute || 0
                           )}
                         </Text>
-                      </TouchableOpacity>
-                      <Text className="text-xs text-center text-primary rounded-lg">
+                      </Pressable>
+                      <Text size="xs" textAlign="center" color="$primary">
                         {t("settings.athkar.notifications.morning.time.note")}
                       </Text>
                     </VStack>
@@ -120,11 +125,11 @@ const Settings = () => {
           </Box>
 
           {/* Evening Athkar Notification */}
-          <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <VStack className="flex-1 mr-4">
-                  <Text className="text-left text-base font-medium text-typography">
+          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <VStack flex={1} marginEnd="$4">
+                  <Text textAlign="left" fontWeight="500" color="$typography">
                     {t("settings.athkar.notifications.evening.title")}
                   </Text>
                 </VStack>
@@ -132,27 +137,32 @@ const Settings = () => {
               </HStack>
 
               {eveningNotification.enabled && (
-                <VStack space="sm" className="mt-3">
-                  <HStack className="items-center justify-between">
-                    <HStack className="items-center" space="sm">
-                      <Text className="text-sm text-typography-secondary">
+                <VStack gap="$2" marginTop="$3">
+                  <HStack alignItems="center" justifyContent="space-between">
+                    <HStack alignItems="center" gap="$2">
+                      <Text size="sm" color="$typographySecondary">
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
                     <VStack>
-                      <TouchableOpacity
+                      <Pressable
                         onPress={() => openTimePicker("evening")}
-                        className="bg-primary-500 rounded-lg px-4 py-2">
-                        <Text className="text-primary font-medium">
+                        accessibilityLabel={t("settings.athkar.notifications.time")}
+                        borderRadius="$2"
+                        paddingHorizontal="$4"
+                        minHeight={44}
+                        justifyContent="center"
+                        alignItems="center">
+                        <Text color="$primary" fontWeight="500">
                           {formatTime12Hour(
                             eveningNotification.hour,
                             eveningNotification.minute || 0
                           )}
                         </Text>
-                        <Text className="text-xs text-center text-primary rounded-lg">
-                          {t("settings.athkar.notifications.evening.time.note")}
-                        </Text>
-                      </TouchableOpacity>
+                      </Pressable>
+                      <Text size="xs" textAlign="center" color="$primary">
+                        {t("settings.athkar.notifications.evening.time.note")}
+                      </Text>
                     </VStack>
                   </HStack>
                 </VStack>
@@ -161,18 +171,18 @@ const Settings = () => {
           </Box>
         </VStack>
 
-        <Divider className="my-4" />
+        <Divider marginVertical="$4" />
 
         {/* App Settings Section */}
-        <VStack space="md">
+        <VStack gap="$3">
           {/* Auto Move Setting */}
-          {/* <Box className="bg-background-secondary dark:bg-background-tertiary rounded-xl p-4">
-            <HStack className="justify-between items-center">
-              <VStack className="flex-1 mr-4">
-                <Text className="text-base font-medium text-typography">
+          {/* <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <HStack justifyContent="space-between" alignItems="center">
+              <VStack flex={1} marginEnd="$4">
+                <Text fontWeight="500" color="$typography">
                   {t("settings.athkar.autoMove.title")}
                 </Text>
-                <Text className="text-sm text-typography-secondary mt-1">
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
                   {t("settings.athkar.autoMove.description")}
                 </Text>
               </VStack>
@@ -184,13 +194,13 @@ const Settings = () => {
           </Box> */}
 
           {/* Show streak Setting */}
-          <Box className="bg-background-secondary  rounded-xl p-4">
-            <HStack className="justify-between items-center">
-              <VStack className="flex-1 mr-4">
-                <Text className="text-left text-base font-medium text-typography">
+          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <HStack justifyContent="space-between" alignItems="center">
+              <VStack flex={1} marginEnd="$4">
+                <Text textAlign="left" fontWeight="500" color="$typography">
                   {t("settings.athkar.showStreak.title")}
                 </Text>
-                <Text className="text-left text-sm text-typography-secondary mt-1">
+                <Text textAlign="left" size="sm" color="$typographySecondary" marginTop="$1">
                   {t("settings.athkar.showStreak.description")}
                 </Text>
               </VStack>
@@ -199,13 +209,13 @@ const Settings = () => {
           </Box>
 
           {/* Enable short version Setting */}
-          <Box className="bg-background-secondary  rounded-xl p-4">
-            <HStack className="justify-between items-center">
-              <VStack className="flex-1 mr-4">
-                <Text className="text-left text-base font-medium text-typography">
+          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <HStack justifyContent="space-between" alignItems="center">
+              <VStack flex={1} marginEnd="$4">
+                <Text textAlign="left" fontWeight="500" color="$typography">
                   {t("settings.athkar.shortVersion.title")}
                 </Text>
-                <Text className="text-left text-sm text-typography-secondary mt-1">
+                <Text textAlign="left" size="sm" color="$typographySecondary" marginTop="$1">
                   {t("settings.athkar.shortVersion.description", {
                     thikir: t("athkar.items.laIlahaIllaAllahFull"),
                     count: 100,

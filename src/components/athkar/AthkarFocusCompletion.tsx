@@ -7,7 +7,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { X } from "lucide-react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -40,39 +40,58 @@ export const AthkarFocusCompletion = ({
   };
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <Box className="flex-1 bg-background">
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Box flex={1} backgroundColor="$background">
         {/* Header */}
-        <Box className="absolute top-12 right-4 z-10">
+        <Box position="absolute" top={48} end={16} zIndex={10}>
           <Button
             size="md"
             variant="outline"
+            action="default"
             onPress={handleFinish}
-            className="w-12 h-12 p-0 rounded-full bg-background-secondary/80">
-            <Icon size="md" className="text-typography" as={X} />
+            accessibilityLabel={t("common.close")}
+            width={48}
+            height={48}
+            padding={0}
+            borderRadius={999}
+            backgroundColor="$backgroundSecondary"
+            opacity={0.8}>
+            <Icon size="md" color="$typography" as={X} />
           </Button>
         </Box>
 
-        <VStack className="flex-1 justify-center items-center px-8" space="2xl">
+        <VStack
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+          paddingHorizontal="$8"
+          gap="$7">
           {/* Completion Animation */}
-          <Animated.View style={completionStyle} className="items-center">
-            <VStack space="xl" className="items-center">
+          <Animated.View style={[completionStyle, { alignItems: "center" }]}>
+            <VStack gap="$5" alignItems="center">
               {/* Success Icon */}
-              <Box className="w-32 h-32 rounded-full bg-success/10 items-center justify-center">
-                <Text className="text-6xl">🎉</Text>
+              <Box
+                width={128}
+                height={128}
+                borderRadius={999}
+                backgroundColor="$backgroundSuccess"
+                alignItems="center"
+                justifyContent="center"
+                overflow="visible">
+                <Text style={{ fontSize: 48, lineHeight: 56 }}>🎉</Text>
               </Box>
 
               {/* Completion Message */}
-              <VStack space="md" className="items-center">
-                <Text className="text-2xl font-bold text-success text-center">
+              <VStack gap="$3" alignItems="center">
+                <Text size="2xl" bold color="$success" textAlign="center">
                   {t("athkar.focus.allCompleted", {
                     type: t(`athkar.${currentType}`),
                   })}
                 </Text>
-                <Text className="text-lg text-typography-secondary text-center">
+                <Text size="lg" color="$typographySecondary" textAlign="center">
                   {t("athkar.focus.mayAllahAccept")}
                 </Text>
-                <Text className="text-sm text-typography-tertiary text-center">
+                <Text size="sm" color="$typographySecondary" textAlign="center">
                   {currentType === ATHKAR_TYPE.MORNING
                     ? t("athkar.focus.seeYouEvening")
                     : t("athkar.focus.seeYouTomorrow")}
@@ -80,25 +99,29 @@ export const AthkarFocusCompletion = ({
               </VStack>
 
               {/* Session Stats */}
-              <Box className="bg-background-secondary dark:bg-background-tertiary p-6 rounded-xl w-full">
-                <VStack space="md" className="items-center">
-                  <Text className="text-typography-secondary font-medium">
+              <Box
+                backgroundColor="$backgroundSecondary"
+                padding="$6"
+                borderRadius="$6"
+                width="100%">
+                <VStack gap="$3" alignItems="center">
+                  <Text color="$typographySecondary" fontWeight="500">
                     {t("athkar.focus.sessionComplete")}
                   </Text>
-                  <HStack space="xl" className="justify-center">
-                    <VStack className="items-center" space="xs">
-                      <Text className="text-3xl font-bold text-accent-info">
+                  <HStack gap="$5" justifyContent="center">
+                    <VStack alignItems="center" gap="$1">
+                      <Text size="3xl" bold color="$info">
                         {formatNumberToLocale(`${athkarCount}`)}
                       </Text>
-                      <Text className="text-xs text-typography-secondary">
+                      <Text size="xs" color="$typographySecondary">
                         {t("athkar.focus.athkarLabel")}
                       </Text>
                     </VStack>
-                    <VStack className="items-center" space="xs">
-                      <Text className="text-3xl font-bold text-success">
+                    <VStack alignItems="center" gap="$1">
+                      <Text size="3xl" bold color="$success">
                         {formatNumberToLocale("100")}%
                       </Text>
-                      <Text className="text-xs text-typography-secondary">
+                      <Text size="xs" color="$typographySecondary">
                         {t("athkar.focus.completeLabel")}
                       </Text>
                     </VStack>
@@ -109,11 +132,19 @@ export const AthkarFocusCompletion = ({
               {/* Finish Button */}
               <Button
                 size="lg"
+                action="positive"
                 onPress={handleFinish}
-                className="bg-success w-full justify-center items-center">
-                <ButtonText className="text-white font-semibold text-lg text-center w-full">
+                width="100%"
+                justifyContent="center"
+                alignItems="center">
+                <Button.Text
+                  color="$typographyContrast"
+                  fontWeight="600"
+                  size="lg"
+                  textAlign="center"
+                  width="100%">
                   {t("athkar.focus.finish")}
-                </ButtonText>
+                </Button.Text>
               </Button>
             </VStack>
           </Animated.View>
