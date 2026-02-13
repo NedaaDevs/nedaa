@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import {
   styled,
   XStack,
@@ -8,6 +9,7 @@ import {
   useTheme,
 } from "tamagui";
 import type { GetProps } from "tamagui";
+import { PlatformType } from "@/enums/app";
 
 type BadgeAction = "error" | "warning" | "success" | "info" | "muted";
 type BadgeSize = "sm" | "md" | "lg";
@@ -89,6 +91,7 @@ const BadgeTextFrame = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "400",
   textTransform: "uppercase",
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
     action: {

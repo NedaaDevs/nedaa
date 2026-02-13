@@ -107,7 +107,7 @@ const ContactUs = () => {
           </Text>
         </Box>
 
-        <Box width="100%" borderRadius="$4" overflow="hidden">
+        <Box width="100%" borderRadius="$4">
           <ActionsheetFlatList
             data={contactOptions}
             renderItem={({ item, index }: any) => (

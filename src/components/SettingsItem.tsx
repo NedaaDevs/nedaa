@@ -31,12 +31,7 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
   const ChevronIcon = effectiveRTL ? ChevronLeft : ChevronRight;
 
   return (
-    <Box
-      margin="$2"
-      padding="$5"
-      borderRadius="$4"
-      overflow="hidden"
-      backgroundColor="$backgroundSecondary">
+    <Box margin="$2" padding="$5" borderRadius="$4" backgroundColor="$backgroundSecondary">
       <Link href={path} asChild>
         <Pressable flexDirection="row" alignItems="center">
           <HStack justifyContent="space-between" alignItems="center" zIndex={10} width="100%">

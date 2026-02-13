@@ -125,6 +125,10 @@ const AlarmTypeSettingsScreen = () => {
         nativeSettings.timingMode = changes.timing.mode;
         nativeSettings.timingMinutesBefore = changes.timing.minutesBefore;
       }
+      if (changes.gentleWakeUp) {
+        nativeSettings.gentleWakeUpEnabled = changes.gentleWakeUp.enabled;
+        nativeSettings.gentleWakeUpDuration = changes.gentleWakeUp.durationMinutes;
+      }
     }
 
     if (Object.keys(nativeSettings).length > 0) {

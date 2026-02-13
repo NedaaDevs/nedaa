@@ -365,7 +365,6 @@ const AthkarList = ({ type }: Props) => {
           style={[
             {
               borderRadius: 8,
-              overflow: "hidden",
               position: "relative",
             },
             buttonAnimatedStyle,

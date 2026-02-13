@@ -118,11 +118,7 @@ const NotificationTypePanel: FC<Props> = ({
 
   return (
     <>
-      <Box
-        backgroundColor="$backgroundSecondary"
-        marginHorizontal="$4"
-        borderRadius="$4"
-        overflow="hidden">
+      <Box backgroundColor="$backgroundSecondary" marginHorizontal="$4" borderRadius="$4">
         {/* Header */}
         <Pressable onPress={handleToggle} disabled={!defaults.enabled}>
           <HStack

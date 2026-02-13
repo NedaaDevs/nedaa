@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import {
   styled,
   View,
@@ -8,6 +9,7 @@ import {
   useTheme,
 } from "tamagui";
 import type { GetProps } from "tamagui";
+import { PlatformType } from "@/enums/app";
 
 type FabSize = "sm" | "md" | "lg";
 type FabPlacement =
@@ -104,6 +106,7 @@ const FabLabel = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "600",
   color: "$typographyContrast",
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
     size: {

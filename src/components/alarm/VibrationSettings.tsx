@@ -50,8 +50,8 @@ const VibrationSettings: FC<Props> = ({ value, onChange }) => {
       </HStack>
 
       {value.enabled && (
-        <HStack justifyContent="space-between" alignItems="center">
-          <Text size="sm" color="$typographySecondary" flex={1}>
+        <VStack gap="$0.5">
+          <Text size="sm" color="$typographySecondary">
             {t("alarm.settings.pattern")}
           </Text>
           <Select
@@ -60,7 +60,7 @@ const VibrationSettings: FC<Props> = ({ value, onChange }) => {
             items={patternItems}
             placeholder={t("alarm.settings.pattern")}
           />
-        </HStack>
+        </VStack>
       )}
     </VStack>
   );

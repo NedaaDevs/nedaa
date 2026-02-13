@@ -1,5 +1,7 @@
 import React from "react";
+import { Platform } from "react-native";
 import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
+import { PlatformType } from "@/enums/app";
 
 // Font size + line height mapping (from tamagui.config.ts font definitions).
 // We resolve sizes to numeric values directly because Android's Fabric renderer
@@ -98,6 +100,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         fontSize={resolvedFontSize}
         lineHeight={fontSize != null ? undefined : sizeValues.lineHeight}
         style={[
+          Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },

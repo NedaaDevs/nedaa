@@ -94,9 +94,12 @@ export default function RootLayout() {
   const { mode, locale } = useAppStore();
   const systemScheme = useColorScheme();
 
-  useLoadFonts();
+  const [fontsLoaded] = useLoadFonts();
   useInitialSetup();
-  SplashScreen.hideAsync();
+
+  if (fontsLoaded) {
+    SplashScreen.hideAsync();
+  }
 
   const resolvedTheme =
     mode === "system"

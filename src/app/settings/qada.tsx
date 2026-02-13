@@ -747,7 +747,6 @@ const QadaSettings = () => {
                         style={[
                           {
                             borderRadius: 8,
-                            overflow: "hidden",
                             position: "relative",
                           },
                           buttonAnimatedStyle,

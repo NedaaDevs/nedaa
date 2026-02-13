@@ -1,7 +1,8 @@
 import React from "react";
 import { styled, View, Text as TamaguiText, Sheet, useTheme } from "tamagui";
 import type { GetProps } from "tamagui";
-import { FlatList, ScrollView as RNScrollView } from "react-native";
+import { FlatList, Platform, ScrollView as RNScrollView } from "react-native";
+import { PlatformType } from "@/enums/app";
 import type { FlatListProps, ScrollViewProps } from "react-native";
 
 // --- Actionsheet ---
@@ -114,6 +115,7 @@ const ActionsheetItemText = styled(TamaguiText, {
   fontFamily: "$body",
   fontSize: "$3",
   color: "$typography",
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 });
 
 // --- ActionsheetIcon ---

@@ -67,13 +67,9 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
   );
 
   return (
-    <VStack gap="$3">
-      <Text size="sm" fontWeight="500" color="$typography">
-        {t("alarm.settings.challenge")}
-      </Text>
-
-      <HStack justifyContent="space-between" alignItems="center">
-        <Text size="sm" color="$typographySecondary" flex={1}>
+    <VStack gap="$2">
+      <VStack gap="$0.5">
+        <Text size="sm" color="$typographySecondary">
           {t("alarm.challenge.type")}
         </Text>
         <Select
@@ -82,12 +78,12 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
           items={typeItems}
           placeholder={t("alarm.challenge.type")}
         />
-      </HStack>
+      </VStack>
 
       {value.type !== "none" && (
         <>
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text size="sm" color="$typographySecondary" flex={1}>
+          <VStack gap="$0.5">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.challenge.difficulty")}
             </Text>
             <Select
@@ -96,10 +92,10 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
               items={difficultyItems}
               placeholder={t("alarm.challenge.difficulty")}
             />
-          </HStack>
+          </VStack>
 
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text size="sm" color="$typographySecondary" flex={1}>
+          <VStack gap="$0.5">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.challenge.count")}
             </Text>
             <Select
@@ -108,7 +104,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
               items={countItems}
               placeholder={t("alarm.challenge.count")}
             />
-          </HStack>
+          </VStack>
         </>
       )}
     </VStack>

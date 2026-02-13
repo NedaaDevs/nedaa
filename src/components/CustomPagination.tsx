@@ -170,26 +170,21 @@ const CustomPagination: FC<PaginationProps> = ({
   );
 
   const renderLines = () => (
-    <Box paddingBottom="$5" paddingTop="$2" alignItems="center">
-      <Box flexDirection="row" gap="$3">
-        {data.map((_, index) => (
-          <Pressable
-            key={index}
-            onPress={() => onPress(index)}
-            minHeight={44}
-            minWidth={44}
-            alignItems="center"
-            justifyContent="center"
-            accessibilityRole="button">
-            <Box
-              width={24}
-              height={2}
-              backgroundColor={currentIndex === index ? "$accentPrimary" : "$outline"}
-              borderRadius={currentIndex === index ? 2 : 0}
-            />
-          </Pressable>
-        ))}
-      </Box>
+    <Box flexDirection="row" justifyContent="center" gap="$2" paddingVertical="$1.5">
+      {data.map((_, index) => (
+        <Pressable
+          key={index}
+          onPress={() => onPress(index)}
+          hitSlop={12}
+          accessibilityRole="button">
+          <Box
+            width={20}
+            height={2}
+            backgroundColor={currentIndex === index ? "$accentPrimary" : "$outline"}
+            borderRadius={999}
+          />
+        </Pressable>
+      ))}
     </Box>
   );
 

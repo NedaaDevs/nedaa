@@ -1,5 +1,6 @@
 import React from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, Platform } from "react-native";
+import { PlatformType } from "@/enums/app";
 import {
   styled,
   View,
@@ -103,6 +104,7 @@ const ButtonTextFrame = styled(TamaguiText, {
   context: ButtonContext,
   fontFamily: "$body",
   fontWeight: "600",
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
     action: {

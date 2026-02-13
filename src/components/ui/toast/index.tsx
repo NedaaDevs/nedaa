@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import {
   styled,
   YStack,
@@ -6,6 +7,7 @@ import {
   withStaticProperties,
 } from "tamagui";
 import type { GetProps } from "tamagui";
+import { PlatformType } from "@/enums/app";
 
 type ToastAction = "error" | "warning" | "success" | "info" | "muted";
 
@@ -63,6 +65,7 @@ const ToastTitle = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "700",
   fontSize: 12,
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
     action: {
@@ -83,6 +86,7 @@ const ToastDescription = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "400",
   fontSize: 12,
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
     action: {

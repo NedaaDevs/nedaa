@@ -42,7 +42,6 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
       margin="$2"
       padding="$4"
       borderRadius="$4"
-      overflow="hidden"
       backgroundColor={isNext ? "$primary" : "$backgroundSecondary"}>
       {isNext && (
         <Box
@@ -51,6 +50,8 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
           bottom={0}
           width={4}
           backgroundColor="$accentPrimary"
+          borderTopStartRadius="$4"
+          borderBottomStartRadius="$4"
           style={{ insetInlineStart: 0 }}
         />
       )}

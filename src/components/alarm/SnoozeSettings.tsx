@@ -65,8 +65,8 @@ const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
 
       {value.enabled && (
         <VStack gap="$2">
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text size="sm" color="$typographySecondary" flex={1}>
+          <VStack gap="$0.5">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.settings.maxSnoozes")}
             </Text>
             <Select
@@ -75,10 +75,10 @@ const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
               items={maxCountItems}
               placeholder={t("alarm.settings.maxSnoozes")}
             />
-          </HStack>
+          </VStack>
 
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text size="sm" color="$typographySecondary" flex={1}>
+          <VStack gap="$0.5">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.settings.snoozeDuration")}
             </Text>
             <Select
@@ -87,7 +87,7 @@ const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
               items={durationItems}
               placeholder={t("alarm.settings.snoozeDuration")}
             />
-          </HStack>
+          </VStack>
         </VStack>
       )}
     </VStack>

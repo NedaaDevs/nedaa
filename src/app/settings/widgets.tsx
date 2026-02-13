@@ -135,8 +135,7 @@ const WidgetCard = ({
       borderRadius="$7"
       backgroundColor="$backgroundSecondary"
       borderWidth={1}
-      borderColor="$outline"
-      overflow="hidden">
+      borderColor="$outline">
       {/* Header row - tappable */}
       <Pressable onPress={toggleExpand} padding="$4">
         <HStack alignItems="center">
