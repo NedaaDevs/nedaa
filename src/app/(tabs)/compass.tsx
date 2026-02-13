@@ -17,7 +17,7 @@ import { useLocationStore } from "@/stores/location";
 
 // Hooks
 import { useCompass } from "@/hooks/useCompass";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "tamagui";
 // Utils
 import { calculateQiblaDirection, getTranslatedCompassDirection } from "@/utils/compass";
 import { reshapeArabic } from "@/utils/reshaper";
@@ -25,7 +25,7 @@ import { reshapeArabic } from "@/utils/reshaper";
 const Compass = () => {
   const { heading, accuracy, isAvailable, isActive } = useCompass();
   const { locationDetails } = useLocationStore();
-  const { colorScheme } = useColorScheme();
+  const theme = useTheme();
   const { t } = useTranslation();
 
   const compassSize = 300;
@@ -34,13 +34,12 @@ const Compass = () => {
   const radius = (compassSize - 80) / 2;
   const letterDistance = radius - 15;
 
-  // Theme-aware colors
   const colors = {
-    primary: colorScheme === "dark" ? "#5b7da7" : "#315287",
-    secondary: colorScheme === "dark" ? "#94a3b8" : "#64748b",
-    text: colorScheme === "dark" ? "#f1f5f9" : "#1e293b",
-    background: colorScheme === "dark" ? "#374151" : "#e4e5e6d6",
-    north: colorScheme === "dark" ? "#ef4444" : "#dc2626",
+    primary: theme.primary.val,
+    secondary: theme.typographySecondary.val,
+    text: theme.typography.val,
+    background: theme.backgroundSecondary.val,
+    north: theme.error.val,
   };
 
   // Calculate Qibla direction if location is available
@@ -54,9 +53,9 @@ const Compass = () => {
   return (
     <Background>
       <TopBar title="compass.title" />
-      <Center className="flex-1 px-6">
-        <Box className="items-center">
-          <Box className="bg-background rounded-full p-1 shadow-lg">
+      <Center flex={1} paddingHorizontal="$6">
+        <Box alignItems="center">
+          <Box backgroundColor="$background" borderRadius={999} padding="$1">
             <Svg width={compassSize} height={compassSize} fill={colors.background}>
               {/* Fixed reference line at top - doesn't rotate */}
               <Line
@@ -165,7 +164,7 @@ const Compass = () => {
                       cy={centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20)}
                       r="12"
                       fill={colors.primary}
-                      stroke="#ffffff"
+                      stroke={theme.typographyContrast.val}
                       strokeWidth="2"
                     />
 
@@ -183,7 +182,7 @@ const Compass = () => {
                         y2={
                           centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 6
                         }
-                        stroke="#ffffff"
+                        stroke={theme.typographyContrast.val}
                         strokeWidth="2"
                         strokeLinecap="round"
                       />
@@ -199,7 +198,7 @@ const Compass = () => {
                         y2={
                           centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 3
                         }
-                        stroke="#ffffff"
+                        stroke={theme.typographyContrast.val}
                         strokeWidth="2"
                         strokeLinecap="round"
                       />
@@ -214,7 +213,7 @@ const Compass = () => {
                         y2={
                           centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 3
                         }
-                        stroke="#ffffff"
+                        stroke={theme.typographyContrast.val}
                         strokeWidth="2"
                         strokeLinecap="round"
                       />
@@ -251,29 +250,29 @@ const Compass = () => {
           </Box>
 
           {/* Compass Information Card */}
-          <Box className="mt-6 w-full max-w-sm">
-            <Box className="p-4 rounded-xl bg-background-secondary dark:bg-background-tertiary">
+          <Box marginTop="$6" width="100%" maxWidth={384}>
+            <Box padding="$4" borderRadius="$6" backgroundColor="$backgroundSecondary">
               {!isAvailable ? (
-                <Text className="text-error text-center font-medium">
+                <Text color="$error" textAlign="center" fontWeight="500">
                   {t("compass.notAvailable")}
                 </Text>
               ) : !isActive ? (
-                <Text className="text-typography-secondary text-center">
+                <Text color="$typographySecondary" textAlign="center">
                   {t("compass.starting")}
                 </Text>
               ) : (
-                <VStack space="md">
+                <VStack gap="$3">
                   {/* Current Direction */}
-                  <HStack className="justify-between items-center">
-                    <Text className="text-typography font-medium">
+                  <HStack justifyContent="space-between" alignItems="center">
+                    <Text color="$typography" fontWeight="500">
                       {t("compass.currentDirection")}
                     </Text>
-                    <HStack className="items-center" space="sm">
-                      <Text className="text-typography-secondary text-xl font-bold">
+                    <HStack alignItems="center" gap="$2">
+                      <Text color="$typographySecondary" size="xl" bold>
                         {Math.round(heading)}°
                       </Text>
-                      <Box className="w-8">
-                        <Text className="text-typography-secondary text-sm text-center">
+                      <Box width={32}>
+                        <Text color="$typographySecondary" size="sm" textAlign="center">
                           {getTranslatedCompassDirection(heading, t)}
                         </Text>
                       </Box>
@@ -282,16 +281,16 @@ const Compass = () => {
 
                   {/* Qibla Direction */}
                   {qiblaDirection !== null && (
-                    <HStack className="justify-between items-center">
-                      <Text className="text-typography font-medium">
+                    <HStack justifyContent="space-between" alignItems="center">
+                      <Text color="$typography" fontWeight="500">
                         {t("compass.qiblaDirection")}
                       </Text>
-                      <HStack className="items-center" space="sm">
-                        <Text className="text-green-600 dark:text-green-400 text-xl font-bold">
+                      <HStack alignItems="center" gap="$2">
+                        <Text color="$success" size="xl" bold>
                           {Math.round(qiblaDirection)}°
                         </Text>
-                        <Box className="w-8">
-                          <Text className="text-typography-secondary text-sm text-center">
+                        <Box width={32}>
+                          <Text color="$typographySecondary" size="sm" textAlign="center">
                             {getTranslatedCompassDirection(qiblaDirection, t)}
                           </Text>
                         </Box>
@@ -300,16 +299,22 @@ const Compass = () => {
                   )}
 
                   {/* Accuracy */}
-                  <HStack className="justify-between items-center">
-                    <Text className="text-typography font-medium">{t("compass.accuracy")}</Text>
-                    <Text className="text-typography-secondary text-base">
+                  <HStack justifyContent="space-between" alignItems="center">
+                    <Text color="$typography" fontWeight="500">
+                      {t("compass.accuracy")}
+                    </Text>
+                    <Text color="$typographySecondary" size="md">
                       {Math.round(accuracy)}%
                     </Text>
                   </HStack>
 
                   {/* Calibration Note */}
-                  <Box className="mt-2 p-3 rounded-lg bg-background-tertiary dark:bg-background">
-                    <Text className="text-typography-info text-xs text-center">
+                  <Box
+                    marginTop="$2"
+                    padding="$3"
+                    borderRadius="$4"
+                    backgroundColor="$backgroundMuted">
+                    <Text color="$info" size="xs" textAlign="center">
                       {t("compass.calibrationNote")}
                     </Text>
                   </Box>

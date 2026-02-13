@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { View } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -33,16 +32,16 @@ export default function MainScreen() {
 
   return (
     <Background>
-      <View style={{ flex: 1 }}>
+      <Box flex={1}>
         <ActiveAlarmBanner />
         <Box>
           <Header />
         </Box>
 
-        <Box className="flex-1">
+        <Box flex={1}>
           <TimingsCarousel mode={mode} />
         </Box>
-      </View>
+      </Box>
     </Background>
   );
 }

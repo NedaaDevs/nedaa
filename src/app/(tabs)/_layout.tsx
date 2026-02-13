@@ -11,11 +11,11 @@ import { Home, Settings, BookOpenText, Compass, CalendarCheck } from "lucide-rea
 import { isAthkarSupported } from "@/utils/athkar";
 
 // Hooks
-import { useColorScheme } from "nativewind";
+import { useTheme } from "tamagui";
 
 const TabsLayout = () => {
   const { locale, mode } = useAppStore();
-  const colorScheme = useColorScheme();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -23,15 +23,14 @@ const TabsLayout = () => {
       key={`tabs-${mode}`}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colorScheme.colorScheme === "dark" ? "#E6C469" : "#1C5D85",
-        tabBarInactiveTintColor: colorScheme.colorScheme === "dark" ? "#E3E2CE" : "#64748B",
+        tabBarActiveTintColor: theme.primary.val,
+        tabBarInactiveTintColor: theme.typographySecondary.val,
         tabBarStyle: {
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom,
           paddingTop: 5,
-          backgroundColor: colorScheme.colorScheme === "dark" ? "#393E46" : "#FFFFFF",
-          borderTopColor:
-            colorScheme.colorScheme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#E2E8F0",
+          backgroundColor: theme.backgroundSecondary.val,
+          borderTopColor: theme.outline.val,
         },
       }}>
       <Tabs.Screen
