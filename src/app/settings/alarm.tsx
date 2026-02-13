@@ -9,8 +9,8 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Badge, BadgeText } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Icon, MailIcon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
@@ -39,10 +39,11 @@ import {
 } from "lucide-react-native";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { useAlarmStore } from "@/stores/alarm";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "tamagui";
 
 import {
   isAlarmKitAvailable,
@@ -93,9 +94,48 @@ const openNotificationSettings = () => {
   }
 };
 
+const formatAlarmTime = (
+  triggerTime: number,
+  t: (key: string, options?: Record<string, string>) => string,
+  locale: string
+): string | null => {
+  if (!triggerTime) return null;
+  const triggerDate = new Date(triggerTime);
+  if (triggerDate.getTime() <= Date.now()) return null;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const triggerDay = new Date(
+    triggerDate.getFullYear(),
+    triggerDate.getMonth(),
+    triggerDate.getDate()
+  );
+
+  let day: string;
+  if (triggerDay.getTime() === today.getTime()) {
+    day = t("alarm.settings.today");
+  } else if (triggerDay.getTime() === tomorrow.getTime()) {
+    day = t("alarm.settings.tomorrow");
+  } else {
+    day = triggerDate.toLocaleDateString(locale, { weekday: "long" });
+  }
+
+  const time = triggerDate.toLocaleTimeString(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return t("alarm.settings.firesAt", { day, time });
+};
+
 const AlarmSettings = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { fajr, friday } = useAlarmSettingsStore();
+  const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
+  const fajrAlarm = Object.values(scheduledAlarms).find((a) => a.alarmType === "fajr");
+  const jummahAlarm = Object.values(scheduledAlarms).find((a) => a.alarmType === "jummah");
   const { isRTL } = useRTL();
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
@@ -103,7 +143,7 @@ const AlarmSettings = () => {
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [permissions, setPermissions] = useState<PermissionItem[]>([]);
   const [skipGate, setSkipGate] = useState(false);
-  const { colorScheme } = useColorScheme();
+  const theme = useTheme();
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportStep, setReportStep] = useState<"category" | "contact">("category");
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
@@ -307,6 +347,8 @@ const AlarmSettings = () => {
       description: t("alarm.settings.fajrDescription"),
       icon: Sun,
       enabled: fajr.enabled,
+      firesAt:
+        fajr.enabled && fajrAlarm ? formatAlarmTime(fajrAlarm.triggerTime, t, i18n.language) : null,
     },
     {
       type: "friday",
@@ -314,6 +356,10 @@ const AlarmSettings = () => {
       description: t("alarm.settings.fridayDescription"),
       icon: Calendar,
       enabled: friday.enabled,
+      firesAt:
+        friday.enabled && jummahAlarm
+          ? formatAlarmTime(jummahAlarm.triggerTime, t, i18n.language)
+          : null,
     },
   ];
 
@@ -321,7 +367,7 @@ const AlarmSettings = () => {
     return (
       <Background>
         <TopBar title="alarm.settings.title" href="/settings" backOnClick />
-        <Box className="flex-1 items-center justify-center p-4">
+        <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
           <Spinner size="large" />
         </Box>
       </Background>
@@ -332,49 +378,60 @@ const AlarmSettings = () => {
     return (
       <Background>
         <TopBar title="alarm.settings.title" href="/settings" backOnClick />
-        <VStack className="flex-1 items-center justify-center px-8">
-          <VStack className="items-center w-full" style={{ maxWidth: 320 }} space="xl">
-            <Box className="w-24 h-24 rounded-full bg-background-info items-center justify-center">
-              <Icon as={currentPermission.icon} size="xl" className="text-info" />
+        <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8">
+          <VStack alignItems="center" width="100%" maxWidth={320} gap="$5">
+            <Box
+              width={96}
+              height={96}
+              borderRadius={999}
+              backgroundColor="$backgroundInfo"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={currentPermission.icon} size="xl" color="$info" />
             </Box>
 
-            <VStack space="sm" className="items-center">
-              <Text className="text-2xl font-bold text-typography text-center">
+            <VStack gap="$2" alignItems="center">
+              <Text size="2xl" bold color="$typography" textAlign="center">
                 {t(currentPermission.titleKey)}
               </Text>
-              <Text className="text-base text-typography-secondary text-center leading-relaxed">
+              <Text size="md" color="$typographySecondary" textAlign="center" lineHeight={22}>
                 {t(currentPermission.descriptionKey)}
               </Text>
             </VStack>
 
             {totalCount > 1 && (
-              <HStack space="xs" className="items-center">
+              <HStack gap="$1" alignItems="center">
                 {permissions.map((p) => (
                   <Box
                     key={p.id}
-                    className={`h-1.5 rounded-full ${
+                    height={6}
+                    borderRadius={999}
+                    backgroundColor={
                       p.granted
-                        ? "bg-success w-6"
+                        ? "$success"
                         : p.id === currentPermission.id
-                          ? "bg-primary w-6"
-                          : "bg-outline w-3"
-                    }`}
+                          ? "$primary"
+                          : "$outline"
+                    }
+                    width={p.granted || p.id === currentPermission.id ? 24 : 12}
                   />
                 ))}
               </HStack>
             )}
 
-            <VStack space="md" className="w-full items-center">
+            <VStack gap="$3" width="100%" alignItems="center">
               <Button
                 size="lg"
                 variant="solid"
-                className="w-full rounded-full bg-primary"
+                width="100%"
+                borderRadius={999}
+                backgroundColor="$primary"
                 onPress={() => handlePermissionRequest(currentPermission)}>
-                <ButtonText className="font-semibold text-base text-typography-contrast">
+                <Button.Text fontWeight="600" fontSize={16} color="$typographyContrast">
                   {currentPermission.canRequestInApp
                     ? t("alarm.permission.allow")
                     : t("alarm.permission.openSettings")}
-                </ButtonText>
+                </Button.Text>
               </Button>
             </VStack>
           </VStack>
@@ -390,103 +447,133 @@ const AlarmSettings = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
-        <VStack className="flex-1">
-          <Box className="mx-4 mt-4 mb-2">
-            <Text className="text-left text-sm text-typography-secondary">
+        <VStack flex={1}>
+          <Box marginHorizontal="$4" marginTop="$4" marginBottom="$2">
+            <Text textAlign="left" size="sm" color="$typographySecondary">
               {t("alarm.settings.description")}
             </Text>
           </Box>
 
-          <VStack className="mx-2">
+          <VStack marginHorizontal="$2">
             {alarmTypes.map((alarm, index) => (
               <Box key={alarm.type}>
                 <Pressable
-                  className="p-4 rounded-xl bg-background-secondary m-2"
+                  padding="$4"
+                  borderRadius="$6"
+                  backgroundColor="$backgroundSecondary"
+                  margin="$2"
                   onPress={() => router.push(`/settings/alarm/${alarm.type}` as any)}>
-                  <HStack className="justify-between items-center">
-                    <HStack className="items-center flex-1" space="md">
-                      <Box className="w-12 h-12 rounded-full bg-surface-active items-center justify-center">
-                        <Icon as={alarm.icon} size="xl" className="text-typography" />
+                  <HStack justifyContent="space-between" alignItems="center">
+                    <HStack alignItems="center" flex={1} gap="$3">
+                      <Box
+                        width={48}
+                        height={48}
+                        borderRadius={999}
+                        backgroundColor="$surfaceActive"
+                        alignItems="center"
+                        justifyContent="center">
+                        <Icon as={alarm.icon} size="xl" color="$typography" />
                       </Box>
 
-                      <VStack className="flex-1">
-                        <HStack className="items-center" space="sm">
-                          <Text className="text-left text-lg font-semibold text-typography">
+                      <VStack flex={1}>
+                        <HStack alignItems="center" gap="$2">
+                          <Text textAlign="left" size="lg" fontWeight="600" color="$typography">
                             {alarm.title}
                           </Text>
                           <Badge
                             action={alarm.enabled ? "success" : "muted"}
                             size="sm"
-                            className="rounded-full">
-                            <BadgeText>
+                            borderRadius={999}>
+                            <Badge.Text>
                               {alarm.enabled ? t("common.on") : t("common.off")}
-                            </BadgeText>
+                            </Badge.Text>
                           </Badge>
                         </HStack>
                         <Text
-                          className="text-left text-sm text-typography-secondary"
+                          textAlign="left"
+                          size="sm"
+                          color="$typographySecondary"
                           numberOfLines={2}>
                           {alarm.description}
                         </Text>
+                        {alarm.firesAt && (
+                          <Text textAlign="left" size="xs" color="$primary" marginTop="$1">
+                            {alarm.firesAt}
+                          </Text>
+                        )}
                       </VStack>
                     </HStack>
 
                     <Icon
                       as={ChevronRight}
                       size="lg"
-                      className={`text-typography-secondary ${isRTL ? "rotate-180" : ""}`}
+                      color="$typographySecondary"
+                      style={isRTL ? { transform: [{ rotate: "180deg" }] } : undefined}
                     />
                   </HStack>
                 </Pressable>
 
-                {index < alarmTypes.length - 1 && (
-                  <Divider className="bg-outline mx-6 w-[calc(100%-48px)]" />
-                )}
+                {index < alarmTypes.length - 1 && <Divider marginHorizontal="$6" />}
               </Box>
             ))}
           </VStack>
 
           <Pressable
-            className="mx-4 mt-8 mb-2 py-3 flex-row items-center justify-center"
+            marginHorizontal="$4"
+            marginTop="$8"
+            marginBottom="$2"
+            minHeight={44}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
             disabled={isExporting}
             onPress={() => {
               hapticMedium();
               setReportModalOpen(true);
             }}>
-            <Icon as={MessageSquareWarning} size="sm" className="text-typography-secondary" />
-            <Text className="text-sm text-typography-secondary ms-2">
+            <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
+            <Text size="sm" color="$typographySecondary" marginStart="$2">
               {isExporting ? t("alarm.report.exporting") : t("alarm.settings.reportProblem")}
             </Text>
           </Pressable>
 
           {__DEV__ && (
-            <Box className="mx-4 mt-2">
+            <Box marginHorizontal="$4" marginTop="$2">
               <Button
                 variant="outline"
                 size="sm"
                 onPress={() => router.push("/settings/alarm-debug")}>
-                <ButtonText>Debug Panel</ButtonText>
+                <Button.Text>Debug Panel</Button.Text>
               </Button>
             </Box>
           )}
 
           <Modal isOpen={reportModalOpen} onClose={closeReportModal} size="md">
             <ModalBackdrop />
-            <ModalContent className="bg-background-secondary rounded-2xl">
-              <ModalBody className="py-5 px-4">
+            <ModalContent>
+              <ModalBody>
                 {reportStep === "category" ? (
                   <>
-                    <Text className="text-lg font-semibold text-typography text-center mb-4">
+                    <Text
+                      size="lg"
+                      fontWeight="600"
+                      color="$typography"
+                      textAlign="center"
+                      marginBottom="$4">
                       {t("alarm.report.title")}
                     </Text>
-                    <VStack space="sm">
+                    <VStack gap="$2">
                       {issueOptions.map((option) => (
                         <Pressable
                           key={option.category}
-                          className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                          flexDirection="row"
+                          alignItems="center"
+                          minHeight={44}
+                          paddingHorizontal="$3"
+                          borderRadius="$6"
                           onPress={() => handleCategorySelect(option.category)}>
-                          <Icon as={option.icon} size="md" className="text-typography-secondary" />
-                          <Text className="text-base text-typography ms-3">
+                          <Icon as={option.icon} size="md" color="$typographySecondary" />
+                          <Text size="md" color="$typography" marginStart="$3">
                             {t(option.labelKey)}
                           </Text>
                         </Pressable>
@@ -495,25 +582,38 @@ const AlarmSettings = () => {
                   </>
                 ) : (
                   <>
-                    <Text className="text-lg font-semibold text-typography text-center mb-4">
+                    <Text
+                      size="lg"
+                      fontWeight="600"
+                      color="$typography"
+                      textAlign="center"
+                      marginBottom="$4">
                       {t("alarm.report.shareVia")}
                     </Text>
-                    <VStack space="sm">
+                    <VStack gap="$2">
                       <Pressable
-                        className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                        flexDirection="row"
+                        alignItems="center"
+                        minHeight={44}
+                        paddingHorizontal="$3"
+                        borderRadius="$6"
                         onPress={handleShareViaEmail}>
-                        <Icon as={MailIcon} size="xl" className="text-accent-primary" />
-                        <Text className="text-base text-typography ms-3">
+                        <Icon as={MailIcon} size="xl" color="$primary" />
+                        <Text size="md" color="$typography" marginStart="$3">
                           {t("alarm.report.email")}
                         </Text>
                       </Pressable>
 
                       {whatsappNumber && (
                         <Pressable
-                          className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                          flexDirection="row"
+                          alignItems="center"
+                          minHeight={44}
+                          paddingHorizontal="$3"
+                          borderRadius="$6"
                           onPress={handleShareViaWhatsApp}>
                           <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
-                          <Text className="text-base text-typography ms-3">
+                          <Text size="md" color="$typography" marginStart="$3">
                             {t("alarm.report.whatsapp")}
                           </Text>
                         </Pressable>
@@ -521,33 +621,44 @@ const AlarmSettings = () => {
 
                       {telegramUsername && (
                         <Pressable
-                          className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                          flexDirection="row"
+                          alignItems="center"
+                          minHeight={44}
+                          paddingHorizontal="$3"
+                          borderRadius="$6"
                           onPress={handleShareViaTelegram}>
                           <FontAwesome5
                             name="telegram-plane"
                             size={24}
-                            color={colorScheme === AppMode.DARK ? "white" : "black"}
+                            color={theme.typography.val}
                           />
-                          <Text className="text-base text-typography ms-3">
+                          <Text size="md" color="$typography" marginStart="$3">
                             {t("alarm.report.telegram")}
                           </Text>
                         </Pressable>
                       )}
 
                       <Pressable
-                        className="flex-row items-center py-3 px-3 rounded-xl active:bg-background-muted"
+                        flexDirection="row"
+                        alignItems="center"
+                        minHeight={44}
+                        paddingHorizontal="$3"
+                        borderRadius="$6"
                         onPress={handleCopyToClipboard}>
-                        <Icon as={ClipboardCopy} size="xl" className="text-typography-secondary" />
-                        <Text className="text-base text-typography ms-3">
+                        <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
+                        <Text size="md" color="$typography" marginStart="$3">
                           {t("alarm.report.copyToClipboard")}
                         </Text>
                       </Pressable>
                     </VStack>
 
                     <Pressable
-                      className="mt-4 py-2 items-center"
+                      marginTop="$4"
+                      minHeight={44}
+                      justifyContent="center"
+                      alignItems="center"
                       onPress={() => setReportStep("category")}>
-                      <Text className="text-sm text-typography-secondary">
+                      <Text size="sm" color="$typographySecondary">
                         {t("common.cancel")}
                       </Text>
                     </Pressable>

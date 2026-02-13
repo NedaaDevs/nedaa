@@ -3,13 +3,19 @@ import { useTranslation } from "react-i18next";
 
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Sun, Building2, CheckCircle } from "lucide-react-native";
 
 type AlarmType = "fajr" | "jummah" | "custom";
+
+const COLOR_MAP: Record<string, string> = {
+  "text-warning": "$warning",
+  "text-success": "$success",
+  "text-info": "$info",
+};
 
 const SUCCESS_CONTENT: Record<
   AlarmType,
@@ -46,6 +52,7 @@ export default function AlarmCompleteScreen() {
 
   const type: AlarmType = (alarmType as AlarmType) ?? "custom";
   const content = SUCCESS_CONTENT[type] ?? SUCCESS_CONTENT.custom;
+  const resolvedColor = COLOR_MAP[content.colorClass] ?? "$typography";
 
   const handleGoHome = () => {
     router.replace("/");
@@ -61,27 +68,31 @@ export default function AlarmCompleteScreen() {
         }}
       />
       <Background>
-        <VStack className="flex-1 items-center justify-center p-6" space="xl">
-          <Card className="p-8 w-full max-w-sm items-center">
-            <VStack space="lg" className="items-center w-full">
-              <Icon as={content.icon} size="xl" className={content.colorClass} />
+        <VStack flex={1} alignItems="center" justifyContent="center" padding="$6" gap="$5">
+          <Card padding="$8" width="100%" maxWidth={384} alignItems="center">
+            <VStack gap="$4" alignItems="center" width="100%">
+              <Icon as={content.icon} size="xl" color={resolvedColor} />
 
-              <Text className="text-2xl font-bold text-typography text-center">
+              <Text size="2xl" bold color="$typography" textAlign="center">
                 {t(content.titleKey)}
               </Text>
 
-              <Text className="text-center text-typography-secondary">
+              <Text textAlign="center" color="$typographySecondary">
                 {t(content.subtitleKey)}
               </Text>
 
-              <Text className="text-center text-lg font-medium text-success italic mt-2">
+              <Text
+                textAlign="center"
+                size="lg"
+                fontWeight="500"
+                color="$success"
+                fontStyle="italic"
+                marginTop="$2">
                 {t("alarm.complete.encouragement")}
               </Text>
 
-              <Button size="lg" className="w-full mt-4 bg-primary" onPress={handleGoHome}>
-                <ButtonText className="text-typography-contrast">
-                  {t("alarm.complete.goHome")}
-                </ButtonText>
+              <Button size="lg" width="100%" marginTop="$4" onPress={handleGoHome}>
+                <Button.Text>{t("alarm.complete.goHome")}</Button.Text>
               </Button>
             </VStack>
           </Card>
