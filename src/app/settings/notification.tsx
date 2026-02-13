@@ -9,8 +9,8 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Badge, BadgeText } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { Card } from "@/components/ui/card";
 import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
@@ -135,8 +135,8 @@ const NotificationSettings = () => {
     return (
       <Background>
         <TopBar title="settings.notification.title" href="/" backOnClick />
-        <Box className="flex-1 items-center justify-center p-4">
-          <Text className="text-typography">{t("common.loading")}</Text>
+        <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
+          <Text color="$typography">{t("common.loading")}</Text>
         </Box>
       </Background>
     );
@@ -146,39 +146,57 @@ const NotificationSettings = () => {
     return (
       <Background>
         <TopBar title="settings.notification.title" href="/" backOnClick />
-        <VStack className="flex-1 p-4 items-center justify-center" space="lg">
-          <Card className="p-6 w-full" style={{ maxWidth: 320 }}>
-            <VStack space="lg" className="items-center">
-              <Box className="w-20 h-20 rounded-full bg-background-info items-center justify-center">
-                <Icon className="text-info" as={Bell} size="xl" />
+        <VStack flex={1} padding="$4" alignItems="center" justifyContent="center" gap="$4">
+          <Card padding="$6" width="100%" style={{ maxWidth: 320 }}>
+            <VStack gap="$4" alignItems="center">
+              <Box
+                width={80}
+                height={80}
+                borderRadius={999}
+                backgroundColor="$backgroundInfo"
+                alignItems="center"
+                justifyContent="center">
+                <Icon color="$info" as={Bell} size="xl" />
               </Box>
 
-              <VStack space="sm" className="items-center">
-                <Text className="text-xl font-semibold text-typography text-center">
+              <VStack gap="$2" alignItems="center">
+                <Text size="xl" fontWeight="600" color="$typography" textAlign="center">
                   {t("notification.permission.title")}
                 </Text>
-                <Text className="text-sm text-typography-secondary text-center px-2">
+                <Text
+                  size="sm"
+                  color="$typographySecondary"
+                  textAlign="center"
+                  paddingHorizontal="$2">
                   {t("notification.permission.description")}
                 </Text>
               </VStack>
 
               {canAskPermission ? (
-                <Box className="w-full items-center">
-                  <Button onPress={handleRequestPermission} className="px-12 bg-primary" size="lg">
-                    <ButtonText className="font-medium text-typography-contrast">
+                <Box width="100%" alignItems="center">
+                  <Button
+                    onPress={handleRequestPermission}
+                    paddingHorizontal="$7"
+                    backgroundColor="$primary"
+                    size="lg">
+                    <Button.Text fontWeight="500" color="$typographyContrast">
                       {t("notification.permission.allow")}
-                    </ButtonText>
+                    </Button.Text>
                   </Button>
                 </Box>
               ) : (
-                <VStack space="sm" className="w-full items-center">
-                  <Text className="text-md text-typography text-center px-2">
+                <VStack gap="$2" width="100%" alignItems="center">
+                  <Text color="$typography" textAlign="center" paddingHorizontal="$2">
                     {t("notification.permission.deniedMessage")}
                   </Text>
-                  <Button onPress={openAppSettings} className="px-12 bg-primary" size="lg">
-                    <ButtonText className="font-medium text-md text-typography-contrast">
+                  <Button
+                    onPress={openAppSettings}
+                    paddingHorizontal="$7"
+                    backgroundColor="$primary"
+                    size="lg">
+                    <Button.Text fontWeight="500" color="$typographyContrast">
                       {t("notification.permission.openSettings")}
-                    </ButtonText>
+                    </Button.Text>
                   </Button>
                 </VStack>
               )}
@@ -196,19 +214,23 @@ const NotificationSettings = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}>
-        <VStack className="flex-1" space="md">
+        <VStack flex={1} gap="$3">
           {/* Master Toggle */}
-          <Box className="bg-background-secondary mx-4 mt-4 rounded-lg">
-            <HStack className="p-4 justify-between items-center">
-              <VStack className="flex-1">
-                <Text className="text-left text-lg font-semibold text-typography">
+          <Box
+            backgroundColor="$backgroundSecondary"
+            marginHorizontal="$4"
+            marginTop="$4"
+            borderRadius="$4">
+            <HStack padding="$4" justifyContent="space-between" alignItems="center">
+              <VStack flex={1}>
+                <Text textAlign="left" size="lg" fontWeight="600" color="$typography">
                   {t("notification.enableAll")}
                 </Text>
                 {totalOverrideCount > 0 && (
-                  <Badge size="sm" variant="outline" className="mt-1 self-start">
-                    <BadgeText>
+                  <Badge size="sm" variant="outline" marginTop="$1" alignSelf="flex-start">
+                    <Badge.Text>
                       {totalOverrideCount} {t("notification.customSettings")}
-                    </BadgeText>
+                    </Badge.Text>
                   </Badge>
                 )}
               </VStack>
@@ -235,18 +257,19 @@ const NotificationSettings = () => {
 
               {/* Custom Sounds Button (Android Only) */}
               {Platform.OS === PlatformType.ANDROID && (
-                <Box className="mx-4">
+                <Box marginHorizontal="$4">
                   <Button
                     size="lg"
-                    className="bg-accent-primary rounded-xl"
+                    backgroundColor="$accentPrimary"
+                    borderRadius="$6"
                     onPress={() => {
                       hapticMedium();
                       router.push("/settings/customSounds");
                     }}>
-                    <Icon as={Volume1} size="md" className="text-background mr-2" />
-                    <ButtonText className="text-background font-semibold">
+                    <Icon as={Volume1} size="md" color="$typographyContrast" />
+                    <Button.Text color="$typographyContrast" fontWeight="600">
                       {t("notification.customSound.manage")}
-                    </ButtonText>
+                    </Button.Text>
                   </Button>
                 </Box>
               )}
@@ -309,9 +332,13 @@ const NotificationSettings = () => {
 
               {/* Sync Status */}
               {isScheduling && (
-                <Box className="bg-background-muted mx-4 p-3 rounded-lg">
-                  <HStack space="sm" className="items-center">
-                    <Text className="text-sm text-typography">
+                <Box
+                  backgroundColor="$backgroundMuted"
+                  marginHorizontal="$4"
+                  padding="$3"
+                  borderRadius="$4">
+                  <HStack gap="$2" alignItems="center">
+                    <Text size="sm" color="$typography">
                       {t("notification.schedulingNotifications")}...
                     </Text>
                   </HStack>
@@ -323,21 +350,21 @@ const NotificationSettings = () => {
           {/* Debug/Test Section */}
           {__DEV__ && (
             <>
-              <Box className="mx-4 mt-4">
+              <Box marginHorizontal="$4" marginTop="$4">
                 <Button variant="outline" size="sm" onPress={scheduleAllNotifications}>
-                  <ButtonText>Reschedule All Notifications</ButtonText>
+                  <Button.Text>Reschedule All Notifications</Button.Text>
                 </Button>
               </Box>
-              <Box className="mx-4 mt-4">
+              <Box marginHorizontal="$4" marginTop="$4">
                 <Button variant="outline" size="sm" onPress={handleNotificationList}>
-                  <ButtonText>List All Notifications</ButtonText>
+                  <Button.Text>List All Notifications</Button.Text>
                 </Button>
               </Box>
 
               {/* Debug channel info */}
-              <Box className="mx-4 mt-2">
+              <Box marginHorizontal="$4" marginTop="$2">
                 <Button variant="outline" size="sm" onPress={debugChannelInfo}>
-                  <ButtonText>Debug Channel Info</ButtonText>
+                  <Button.Text>Debug Channel Info</Button.Text>
                 </Button>
               </Box>
             </>

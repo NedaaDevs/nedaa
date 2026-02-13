@@ -3,27 +3,23 @@ import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { generateDeterministicUUID } from "@/utils/alarmId";
 
-// Components
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Badge, BadgeText } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import TopBar from "@/components/TopBar";
 import { Background } from "@/components/ui/background";
 import SoundPicker from "@/components/alarm/SoundPicker";
 
-// Expo Alarm Module
 import * as ExpoAlarm from "expo-alarm";
 
-// Store
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 
-// Types
 import {
   ChallengeType,
   ChallengeDifficulty,
@@ -33,7 +29,6 @@ import {
   VIBRATION_PATTERNS,
 } from "@/types/alarm";
 
-// Utils
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
 import { AlarmLogger } from "@/utils/alarmLogger";
 
@@ -48,14 +43,12 @@ const AlarmDebugScreen = () => {
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [persistentLog, setPersistentLog] = useState<string>("");
 
-  // Android-specific states
   const [isBatteryExempt, setIsBatteryExempt] = useState<boolean | null>(null);
   const [canFullScreen, setCanFullScreen] = useState<boolean | null>(null);
   const [canDrawOverlay, setCanDrawOverlay] = useState<boolean | null>(null);
   const [hasAutoStart, setHasAutoStart] = useState<boolean | null>(null);
   const [deviceManufacturer, setDeviceManufacturer] = useState<string>("");
 
-  // Test alarm settings
   const [testChallengeType, setTestChallengeType] = useState<ChallengeType>("tap");
   const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>("easy");
   const [testChallengeCount, setTestChallengeCount] = useState<number>(1);
@@ -124,36 +117,28 @@ const AlarmDebugScreen = () => {
   };
 
   const checkStatus = async () => {
-    // Check if native module is available
     const moduleAvailable = ExpoAlarm.isNativeModuleAvailable();
     setIsModuleAvailable(moduleAvailable);
 
     if (moduleAvailable) {
-      // Check AlarmKit availability
       const alarmKitAvailable = await ExpoAlarm.isAlarmKitAvailable();
       setIsAlarmKitAvailable(alarmKitAvailable);
 
-      // Get auth status
       const status = await ExpoAlarm.getAuthorizationStatus();
       setAuthStatus(status);
 
-      // Get background refresh status
       const bgStatus = ExpoAlarm.getBackgroundRefreshStatus();
       setBgRefreshStatus(bgStatus);
 
-      // Get next alarm time (for BGTask)
       const nextTime = ExpoAlarm.getNextAlarmTime();
       setNextAlarmTime(nextTime ? new Date(nextTime) : null);
 
-      // Get scheduled alarms (module tracking)
       const alarms = await ExpoAlarm.getScheduledAlarmIds();
       setScheduledAlarms(alarms);
 
-      // Get AlarmKit alarms (system level)
       const kitAlarms = await ExpoAlarm.getAlarmKitAlarms();
       setAlarmKitAlarms(kitAlarms);
 
-      // Android-specific checks
       if (Platform.OS === "android") {
         setIsBatteryExempt(ExpoAlarm.isBatteryOptimizationExempt());
         setCanFullScreen(ExpoAlarm.canUseFullScreenIntent());
@@ -174,7 +159,6 @@ const AlarmDebugScreen = () => {
     }
   };
 
-  // Apply test settings to store before scheduling
   const applyTestSettings = () => {
     updateSettings("fajr", {
       sound: testSound,
@@ -197,14 +181,11 @@ const AlarmDebugScreen = () => {
 
   const scheduleTestAlarm = async (seconds: number) => {
     try {
-      // Apply test settings to store first
       applyTestSettings();
 
-      // AlarmKit requires valid UUIDs - use timestamp for debug alarms
       const id = generateDeterministicUUID(`debug_${Date.now()}`);
       const triggerDate = new Date(Date.now() + seconds * 1000);
 
-      // Use store's scheduleAlarm (includes backup + Live Activity)
       const success = await scheduleAlarm({
         id,
         triggerDate,
@@ -253,7 +234,6 @@ const AlarmDebugScreen = () => {
 
   const handleCancelAll = async () => {
     try {
-      // Use store's cancelAllAlarms (cancels alarms + backups + Live Activities)
       await cancelAllAlarms();
       setLastResult("Cancelled all alarms + backups + Live Activities");
       await checkStatus();
@@ -302,34 +282,36 @@ const AlarmDebugScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
-        <VStack className="flex-1 p-4" space="md">
+        <VStack flex={1} padding="$4" gap="$3">
           {/* Status Card */}
-          <Card className="p-4">
-            <VStack space="md">
-              <Text className="text-lg font-semibold text-typography">Module Status</Text>
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Module Status
+              </Text>
 
-              <HStack className="justify-between items-center">
-                <Text className="text-typography">Native Module</Text>
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text color="$typography">Native Module</Text>
                 <Badge action={getStatusColor(isModuleAvailable)}>
-                  <BadgeText>{isModuleAvailable ? "Available" : "Not Available"}</BadgeText>
+                  <Badge.Text>{isModuleAvailable ? "Available" : "Not Available"}</Badge.Text>
                 </Badge>
               </HStack>
 
-              <HStack className="justify-between items-center">
-                <Text className="text-typography">AlarmKit (iOS 26.1+)</Text>
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text color="$typography">AlarmKit (iOS 26.1+)</Text>
                 <Badge action={getStatusColor(isAlarmKitAvailable)}>
-                  <BadgeText>
+                  <Badge.Text>
                     {isAlarmKitAvailable === null
                       ? "Unknown"
                       : isAlarmKitAvailable
                         ? "Available"
                         : "Not Available"}
-                  </BadgeText>
+                  </Badge.Text>
                 </Badge>
               </HStack>
 
-              <HStack className="justify-between items-center">
-                <Text className="text-typography">Authorization</Text>
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text color="$typography">Authorization</Text>
                 <Badge
                   action={
                     authStatus === "authorized"
@@ -338,12 +320,12 @@ const AlarmDebugScreen = () => {
                         ? "error"
                         : "warning"
                   }>
-                  <BadgeText>{authStatus ?? "Unknown"}</BadgeText>
+                  <Badge.Text>{authStatus ?? "Unknown"}</Badge.Text>
                 </Badge>
               </HStack>
 
-              <HStack className="justify-between items-center">
-                <Text className="text-typography">Background Refresh</Text>
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text color="$typography">Background Refresh</Text>
                 <Badge
                   action={
                     bgRefreshStatus === "available"
@@ -354,50 +336,54 @@ const AlarmDebugScreen = () => {
                           ? "warning"
                           : "info"
                   }>
-                  <BadgeText>{bgRefreshStatus ?? "Unknown"}</BadgeText>
+                  <Badge.Text>{bgRefreshStatus ?? "Unknown"}</Badge.Text>
                 </Badge>
               </HStack>
 
               {nextAlarmTime && (
-                <HStack className="justify-between items-center">
-                  <Text className="text-typography">BGTask Wake</Text>
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text color="$typography">BGTask Wake</Text>
                   <Badge action="info">
-                    <BadgeText>
+                    <Badge.Text>
                       {new Date(nextAlarmTime.getTime() - 60000).toLocaleTimeString()}
-                    </BadgeText>
+                    </Badge.Text>
                   </Badge>
                 </HStack>
               )}
 
-              <HStack className="justify-between items-center">
-                <Text className="text-typography">Platform</Text>
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text color="$typography">Platform</Text>
                 <Badge action="info">
-                  <BadgeText>{Platform.OS}</BadgeText>
+                  <Badge.Text>{Platform.OS}</Badge.Text>
                 </Badge>
               </HStack>
             </VStack>
           </Card>
 
           {/* Authorization */}
-          <Card className="p-4">
-            <VStack space="md">
-              <Text className="text-lg font-semibold text-typography">Authorization</Text>
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Authorization
+              </Text>
               <Button onPress={handleRequestAuth}>
-                <ButtonText>Request Authorization</ButtonText>
+                <Button.Text>Request Authorization</Button.Text>
               </Button>
             </VStack>
           </Card>
 
           {/* Android Permissions */}
           {Platform.OS === "android" && (
-            <Card className="p-4 border-2 border-orange-500">
-              <VStack space="md">
-                <Text className="text-lg font-semibold text-typography">Android Permissions</Text>
+            <Card padding="$4" borderWidth={2} borderColor="$warning">
+              <VStack gap="$3">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  Android Permissions
+                </Text>
 
-                <HStack className="justify-between items-center">
-                  <Text className="text-typography">Battery Optimization</Text>
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text color="$typography">Battery Optimization</Text>
                   <Badge action={isBatteryExempt ? "success" : "error"}>
-                    <BadgeText>{isBatteryExempt ? "Exempt" : "Not Exempt"}</BadgeText>
+                    <Badge.Text>{isBatteryExempt ? "Exempt" : "Not Exempt"}</Badge.Text>
                   </Badge>
                 </HStack>
                 {!isBatteryExempt && (
@@ -408,14 +394,14 @@ const AlarmDebugScreen = () => {
                       ExpoAlarm.requestBatteryOptimizationExemption();
                       setLastResult("Opened battery optimization settings");
                     }}>
-                    <ButtonText>Request Exemption</ButtonText>
+                    <Button.Text>Request Exemption</Button.Text>
                   </Button>
                 )}
 
-                <HStack className="justify-between items-center">
-                  <Text className="text-typography">Full Screen Intent</Text>
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text color="$typography">Full Screen Intent</Text>
                   <Badge action={canFullScreen ? "success" : "error"}>
-                    <BadgeText>{canFullScreen ? "Allowed" : "Denied"}</BadgeText>
+                    <Badge.Text>{canFullScreen ? "Allowed" : "Denied"}</Badge.Text>
                   </Badge>
                 </HStack>
                 {!canFullScreen && (
@@ -426,14 +412,14 @@ const AlarmDebugScreen = () => {
                       ExpoAlarm.requestFullScreenIntentPermission();
                       setLastResult("Opened full screen intent settings");
                     }}>
-                    <ButtonText>Request Permission</ButtonText>
+                    <Button.Text>Request Permission</Button.Text>
                   </Button>
                 )}
 
-                <HStack className="justify-between items-center">
-                  <Text className="text-typography">Draw Over Apps</Text>
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text color="$typography">Draw Over Apps</Text>
                   <Badge action={canDrawOverlay ? "success" : "error"}>
-                    <BadgeText>{canDrawOverlay ? "Allowed" : "Denied"}</BadgeText>
+                    <Badge.Text>{canDrawOverlay ? "Allowed" : "Denied"}</Badge.Text>
                   </Badge>
                 </HStack>
                 {!canDrawOverlay && (
@@ -444,16 +430,16 @@ const AlarmDebugScreen = () => {
                       ExpoAlarm.requestDrawOverlaysPermission();
                       setLastResult("Opened draw over apps settings");
                     }}>
-                    <ButtonText>Request Permission</ButtonText>
+                    <Button.Text>Request Permission</Button.Text>
                   </Button>
                 )}
 
                 {hasAutoStart && (
                   <>
-                    <HStack className="justify-between items-center">
-                      <Text className="text-typography">Auto-Start ({deviceManufacturer})</Text>
+                    <HStack justifyContent="space-between" alignItems="center">
+                      <Text color="$typography">Auto-Start ({deviceManufacturer})</Text>
                       <Badge action="warning">
-                        <BadgeText>Check Settings</BadgeText>
+                        <Badge.Text>Check Settings</Badge.Text>
                       </Badge>
                     </HStack>
                     <Button
@@ -463,12 +449,12 @@ const AlarmDebugScreen = () => {
                         ExpoAlarm.openAutoStartSettings();
                         setLastResult(`Opened auto-start settings for ${deviceManufacturer}`);
                       }}>
-                      <ButtonText>Open Auto-Start Settings</ButtonText>
+                      <Button.Text>Open Auto-Start Settings</Button.Text>
                     </Button>
                   </>
                 )}
 
-                <Text className="text-xs text-typography-secondary">
+                <Text size="xs" color="$typographySecondary">
                   For reliable alarms: exempt from battery optimization, allow full screen intent,
                   draw over apps (with challenge), and enable auto-start (OEM devices).
                 </Text>
@@ -477,16 +463,18 @@ const AlarmDebugScreen = () => {
           )}
 
           {/* Test Alarm Settings */}
-          <Card className="p-4 border-2 border-purple-500">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <Text className="text-lg font-semibold text-typography">Test Settings</Text>
+          <Card padding="$4" borderWidth={2} borderColor="$primary">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  Test Settings
+                </Text>
                 <Badge action="info">
-                  <BadgeText>Quick Config</BadgeText>
+                  <Badge.Text>Quick Config</Badge.Text>
                 </Badge>
               </HStack>
 
-              <Text className="text-xs text-typography-secondary">
+              <Text size="xs" color="$typographySecondary">
                 Configure these settings, then schedule a test alarm below.
               </Text>
 
@@ -494,62 +482,68 @@ const AlarmDebugScreen = () => {
               <SoundPicker value={testSound} onChange={setTestSound} />
 
               {/* Challenge Type */}
-              <VStack space="xs">
-                <Text className="text-sm text-typography">Challenge Type</Text>
-                <HStack space="sm">
+              <VStack gap="$1">
+                <Text size="sm" color="$typography">
+                  Challenge Type
+                </Text>
+                <HStack gap="$2">
                   {CHALLENGE_TYPES.map((type) => (
                     <Button
                       key={type}
                       size="sm"
                       variant={testChallengeType === type ? "solid" : "outline"}
                       onPress={() => setTestChallengeType(type)}
-                      className="flex-1">
-                      <ButtonText className="capitalize">{type}</ButtonText>
+                      flex={1}>
+                      <Button.Text textTransform="capitalize">{type}</Button.Text>
                     </Button>
                   ))}
                 </HStack>
               </VStack>
 
               {/* Challenge Difficulty */}
-              <VStack space="xs">
-                <Text className="text-sm text-typography">Difficulty</Text>
-                <HStack space="sm">
+              <VStack gap="$1">
+                <Text size="sm" color="$typography">
+                  Difficulty
+                </Text>
+                <HStack gap="$2">
                   {CHALLENGE_DIFFICULTIES.map((diff) => (
                     <Button
                       key={diff}
                       size="sm"
                       variant={testDifficulty === diff ? "solid" : "outline"}
                       onPress={() => setTestDifficulty(diff)}
-                      className="flex-1">
-                      <ButtonText className="capitalize">{diff}</ButtonText>
+                      flex={1}>
+                      <Button.Text textTransform="capitalize">{diff}</Button.Text>
                     </Button>
                   ))}
                 </HStack>
               </VStack>
 
               {/* Challenge Count */}
-              <VStack space="xs">
-                <Text className="text-sm text-typography">
+              <VStack gap="$1">
+                <Text size="sm" color="$typography">
                   Challenge Count: {testChallengeCount}
                 </Text>
-                <HStack space="sm">
+                <HStack gap="$2">
                   {[1, 2, 3, 5, 10].map((count) => (
                     <Button
                       key={count}
                       size="sm"
                       variant={testChallengeCount === count ? "solid" : "outline"}
                       onPress={() => setTestChallengeCount(count)}
-                      className="flex-1">
-                      <ButtonText>{count}</ButtonText>
+                      flex={1}>
+                      <Button.Text>{count}</Button.Text>
                     </Button>
                   ))}
                 </HStack>
               </VStack>
 
               {/* Vibration */}
-              <VStack space="xs">
-                <HStack className="justify-between items-center">
-                  <Text className="text-sm text-typography">Vibration</Text>
+              <VStack gap="$1">
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text size="sm" color="$typography">
+                    Vibration
+                  </Text>
                   <Switch
                     size="sm"
                     value={testVibrationEnabled}
@@ -557,15 +551,17 @@ const AlarmDebugScreen = () => {
                   />
                 </HStack>
                 {testVibrationEnabled && (
-                  <HStack space="sm">
+                  <HStack gap="$2">
                     {(Object.keys(VIBRATION_PATTERNS) as VibrationPattern[]).map((pattern) => (
                       <Button
                         key={pattern}
                         size="sm"
                         variant={testVibrationPattern === pattern ? "solid" : "outline"}
                         onPress={() => setTestVibrationPattern(pattern)}
-                        className="flex-1">
-                        <ButtonText className="capitalize text-xs">{pattern}</ButtonText>
+                        flex={1}>
+                        <Button.Text textTransform="capitalize" fontSize={10}>
+                          {pattern}
+                        </Button.Text>
                       </Button>
                     ))}
                   </HStack>
@@ -573,49 +569,53 @@ const AlarmDebugScreen = () => {
               </VStack>
 
               {/* Volume */}
-              <VStack space="xs">
-                <Text className="text-sm text-typography">
+              <VStack gap="$1">
+                <Text size="sm" color="$typography">
                   Volume: {Math.round(testVolume * 100)}%
                 </Text>
-                <HStack space="sm">
+                <HStack gap="$2">
                   {[0, 0.25, 0.5, 0.75, 1.0].map((vol) => (
                     <Button
                       key={vol}
                       size="sm"
                       variant={testVolume === vol ? "solid" : "outline"}
                       onPress={() => setTestVolume(vol)}
-                      className="flex-1">
-                      <ButtonText>{Math.round(vol * 100)}%</ButtonText>
+                      flex={1}>
+                      <Button.Text>{Math.round(vol * 100)}%</Button.Text>
                     </Button>
                   ))}
                 </HStack>
               </VStack>
 
               {/* Snooze */}
-              <HStack className="justify-between items-center">
-                <Text className="text-sm text-typography">Snooze Enabled</Text>
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="sm" color="$typography">
+                  Snooze Enabled
+                </Text>
                 <Switch size="sm" value={testSnoozeEnabled} onValueChange={setTestSnoozeEnabled} />
               </HStack>
             </VStack>
           </Card>
 
           {/* Schedule Test Alarms */}
-          <Card className="p-4">
-            <VStack space="md">
-              <Text className="text-lg font-semibold text-typography">Schedule Test Alarm</Text>
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Schedule Test Alarm
+              </Text>
 
-              <Text className="text-xs text-typography-secondary">
+              <Text size="xs" color="$typographySecondary">
                 Uses settings above. Short times for quick testing.
               </Text>
 
-              <HStack space="sm" className="flex-wrap">
+              <HStack gap="$2" flexWrap="wrap">
                 {[10, 30, 60, 180].map((seconds) => (
                   <Button
                     key={seconds}
                     size="sm"
                     variant="outline"
                     onPress={() => scheduleTestAlarm(seconds)}>
-                    <ButtonText>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</ButtonText>
+                    <Button.Text>{seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</Button.Text>
                   </Button>
                 ))}
               </HStack>
@@ -623,18 +623,20 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Test Success Screen */}
-          <Card className="p-4">
-            <VStack space="md">
-              <Text className="text-lg font-semibold text-typography">Success Screen</Text>
-              <HStack space="sm">
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Success Screen
+              </Text>
+              <HStack gap="$2">
                 {(["fajr", "jummah", "custom"] as const).map((type) => (
                   <Button
                     key={type}
                     size="sm"
                     variant="outline"
-                    className="flex-1"
+                    flex={1}
                     onPress={() => router.push(`/alarm-complete?alarmType=${type}`)}>
-                    <ButtonText className="capitalize">{type}</ButtonText>
+                    <Button.Text textTransform="capitalize">{type}</Button.Text>
                   </Button>
                 ))}
               </HStack>
@@ -642,14 +644,16 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Prayer Time Alarm */}
-          <Card className="p-4">
-            <VStack space="md">
-              <Text className="text-lg font-semibold text-typography">Prayer Time Alarm</Text>
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Prayer Time Alarm
+              </Text>
               <Button onPress={scheduleNextFajr}>
-                <ButtonText>Schedule Next Fajr</ButtonText>
+                <Button.Text>Schedule Next Fajr</Button.Text>
               </Button>
               {todayTimings && (
-                <Text className="text-sm text-typography-secondary">
+                <Text size="sm" color="$typographySecondary">
                   Next Fajr: {getNextPrayerDate("fajr")?.toLocaleString() ?? "N/A"}
                 </Text>
               )}
@@ -657,65 +661,76 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Scheduled Alarms */}
-          <Card className="p-4">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <Text className="text-lg font-semibold text-typography">Scheduled Alarms</Text>
+          <Card padding="$4">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  Scheduled Alarms
+                </Text>
                 <Badge action="info">
-                  <BadgeText>{scheduledAlarms.length}</BadgeText>
+                  <Badge.Text>{scheduledAlarms.length}</Badge.Text>
                 </Badge>
               </HStack>
 
               {scheduledAlarms.length > 0 ? (
-                <VStack space="xs">
+                <VStack gap="$1">
                   {scheduledAlarms.map((id) => (
-                    <Text key={id} className="text-sm text-typography-secondary font-mono">
+                    <Text key={id} size="sm" color="$typographySecondary" fontFamily="$mono">
                       {id}
                     </Text>
                   ))}
                 </VStack>
               ) : (
-                <Text className="text-sm text-typography-secondary">No alarms scheduled</Text>
+                <Text size="sm" color="$typographySecondary">
+                  No alarms scheduled
+                </Text>
               )}
 
-              <HStack space="sm">
-                <Button variant="outline" className="flex-1" onPress={refreshAlarmList}>
-                  <ButtonText>Refresh List</ButtonText>
+              <HStack gap="$2">
+                <Button variant="outline" flex={1} onPress={refreshAlarmList}>
+                  <Button.Text>Refresh List</Button.Text>
                 </Button>
-                <Button variant="outline" className="flex-1" onPress={handleCancelAll}>
-                  <ButtonText>Cancel All</ButtonText>
+                <Button variant="outline" flex={1} onPress={handleCancelAll}>
+                  <Button.Text>Cancel All</Button.Text>
                 </Button>
               </HStack>
 
               <Button variant="outline" onPress={handleResetState}>
-                <ButtonText>Reset All State (Debug)</ButtonText>
+                <Button.Text>Reset All State (Debug)</Button.Text>
               </Button>
             </VStack>
           </Card>
 
           {/* AlarmKit Verification (System Level) */}
-          <Card className="p-4">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <Text className="text-lg font-semibold text-typography">AlarmKit (System)</Text>
+          <Card padding="$4">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  AlarmKit (System)
+                </Text>
                 <Badge action="info">
-                  <BadgeText>{alarmKitAlarms.length}</BadgeText>
+                  <Badge.Text>{alarmKitAlarms.length}</Badge.Text>
                 </Badge>
               </HStack>
 
-              <Text className="text-xs text-typography-secondary">
+              <Text size="xs" color="$typographySecondary">
                 Shows alarms actually scheduled with AlarmKit at the system level. If empty after
                 scheduling, the alarm won&apos;t fire when app is killed.
               </Text>
 
               {alarmKitAlarms.length > 0 ? (
-                <VStack space="sm">
+                <VStack gap="$2">
                   {alarmKitAlarms.map((alarm) => (
-                    <VStack key={alarm.id} space="xs" className="p-2 bg-background-muted rounded">
-                      <Text className="text-xs font-mono text-typography">
+                    <VStack
+                      key={alarm.id}
+                      gap="$1"
+                      padding="$2"
+                      backgroundColor="$backgroundMuted"
+                      borderRadius="$2">
+                      <Text size="xs" fontFamily="$mono" color="$typography">
                         ID: {alarm.id.substring(0, 8)}...
                       </Text>
-                      <HStack space="sm">
+                      <HStack gap="$2">
                         <Badge
                           action={
                             alarm.state === "scheduled"
@@ -725,16 +740,16 @@ const AlarmDebugScreen = () => {
                                 : "info"
                           }
                           size="sm">
-                          <BadgeText>{alarm.state}</BadgeText>
+                          <Badge.Text>{alarm.state}</Badge.Text>
                         </Badge>
                         {alarm.scheduleType && (
                           <Badge action="info" size="sm">
-                            <BadgeText>{alarm.scheduleType}</BadgeText>
+                            <Badge.Text>{alarm.scheduleType}</Badge.Text>
                           </Badge>
                         )}
                       </HStack>
                       {alarm.triggerDate && (
-                        <Text className="text-xs text-typography-secondary">
+                        <Text size="xs" color="$typographySecondary">
                           Trigger: {new Date(alarm.triggerDate).toLocaleString()}
                         </Text>
                       )}
@@ -742,75 +757,83 @@ const AlarmDebugScreen = () => {
                   ))}
                 </VStack>
               ) : (
-                <Text className="text-sm text-typography-secondary italic">
+                <Text size="sm" color="$typographySecondary" fontStyle="italic">
                   No AlarmKit alarms - tap Check to verify
                 </Text>
               )}
 
               <Button variant="outline" onPress={checkAlarmKitAlarms}>
-                <ButtonText>Check AlarmKit</ButtonText>
+                <Button.Text>Check AlarmKit</Button.Text>
               </Button>
             </VStack>
           </Card>
 
           {/* Last Result */}
           {lastResult && (
-            <Card className="p-4 bg-background-muted">
-              <VStack space="sm">
-                <Text className="text-sm font-semibold text-typography">Last Result</Text>
-                <Text className="text-sm text-typography-secondary">{lastResult}</Text>
+            <Card padding="$4" backgroundColor="$backgroundMuted">
+              <VStack gap="$2">
+                <Text size="sm" fontWeight="600" color="$typography">
+                  Last Result
+                </Text>
+                <Text size="sm" color="$typographySecondary">
+                  {lastResult}
+                </Text>
               </VStack>
             </Card>
           )}
 
           {/* Full Debug Log Export */}
-          <Card className="p-4 border-2 border-blue-500">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <Text className="text-lg font-semibold text-typography">Debug Log Export</Text>
+          <Card padding="$4" borderWidth={2} borderColor="$info">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  Debug Log Export
+                </Text>
                 <Badge action="info">
-                  <BadgeText>Full</BadgeText>
+                  <Badge.Text>Full</Badge.Text>
                 </Badge>
               </HStack>
 
-              <Text className="text-xs text-typography-secondary">
+              <Text size="xs" color="$typographySecondary">
                 Exports native + React Native logs, device info, permissions, and alarm state.
               </Text>
 
-              <HStack space="sm">
-                <Button variant="solid" className="flex-1" onPress={shareFullDebugLog}>
-                  <ButtonText>Share</ButtonText>
+              <HStack gap="$2">
+                <Button variant="solid" flex={1} onPress={shareFullDebugLog}>
+                  <Button.Text>Share</Button.Text>
                 </Button>
-                <Button variant="outline" className="flex-1" onPress={copyFullDebugLog}>
-                  <ButtonText>Copy</ButtonText>
+                <Button variant="outline" flex={1} onPress={copyFullDebugLog}>
+                  <Button.Text>Copy</Button.Text>
                 </Button>
               </HStack>
             </VStack>
           </Card>
 
           {/* Persistent Log (survives app kills) */}
-          <Card className="p-4 border-2 border-yellow-500">
-            <VStack space="md">
-              <HStack className="justify-between items-center">
-                <Text className="text-lg font-semibold text-typography">Native Log</Text>
+          <Card padding="$4" borderWidth={2} borderColor="$warning">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  Native Log
+                </Text>
                 <Badge action="warning">
-                  <BadgeText>File-based</BadgeText>
+                  <Badge.Text>File-based</Badge.Text>
                 </Badge>
               </HStack>
 
-              <Text className="text-xs text-typography-secondary">
+              <Text size="xs" color="$typographySecondary">
                 Survives app kills. Shows what happened in native code.
               </Text>
 
-              <HStack space="sm">
-                <Button size="sm" variant="solid" className="flex-1" onPress={fetchPersistentLog}>
-                  <ButtonText>Load</ButtonText>
+              <HStack gap="$2">
+                <Button size="sm" variant="solid" flex={1} onPress={fetchPersistentLog}>
+                  <Button.Text>Load</Button.Text>
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1" onPress={sharePersistentLog}>
-                  <ButtonText>Share</ButtonText>
+                <Button size="sm" variant="outline" flex={1} onPress={sharePersistentLog}>
+                  <Button.Text>Share</Button.Text>
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1" onPress={clearPersistentLog}>
-                  <ButtonText>Clear</ButtonText>
+                <Button size="sm" variant="outline" flex={1} onPress={clearPersistentLog}>
+                  <Button.Text>Clear</Button.Text>
                 </Button>
               </HStack>
 
@@ -823,12 +846,12 @@ const AlarmDebugScreen = () => {
                     padding: 8,
                   }}
                   nestedScrollEnabled>
-                  <Text className="text-xs font-mono text-typography-secondary">
+                  <Text size="xs" fontFamily="$mono" color="$typographySecondary">
                     {persistentLog}
                   </Text>
                 </ScrollView>
               ) : (
-                <Text className="text-sm text-typography-secondary italic">
+                <Text size="sm" color="$typographySecondary" fontStyle="italic">
                   Tap &quot;Load&quot; to see native events
                 </Text>
               )}
@@ -837,7 +860,7 @@ const AlarmDebugScreen = () => {
 
           {/* Refresh Button */}
           <Button variant="outline" onPress={checkStatus}>
-            <ButtonText>Refresh Status</ButtonText>
+            <Button.Text>Refresh Status</Button.Text>
           </Button>
         </VStack>
       </ScrollView>

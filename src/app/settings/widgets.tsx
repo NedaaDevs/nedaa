@@ -10,7 +10,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 
@@ -131,23 +131,36 @@ const WidgetCard = ({
   };
 
   return (
-    <Box className="rounded-2xl bg-background-secondary border border-outline overflow-hidden">
+    <Box
+      borderRadius="$7"
+      backgroundColor="$backgroundSecondary"
+      borderWidth={1}
+      borderColor="$outline"
+      overflow="hidden">
       {/* Header row - tappable */}
-      <Pressable onPress={toggleExpand} className="p-4">
-        <HStack className="items-center">
-          <Box className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
-            <Icon as={widget.icon} size="sm" className="text-primary" />
+      <Pressable onPress={toggleExpand} padding="$4">
+        <HStack alignItems="center">
+          <Box
+            width={40}
+            height={40}
+            borderRadius="$6"
+            backgroundColor="$primarySubtle"
+            alignItems="center"
+            justifyContent="center">
+            <Icon as={widget.icon} size="sm" color="$primary" />
           </Box>
-          <VStack className="flex-1 ms-3">
-            <Text className="text-base font-semibold text-typography text-left">
+          <VStack flex={1} marginStart="$3">
+            <Text size="lg" fontWeight="600" textAlign="left">
               {t(widget.nameKey)}
             </Text>
-            <Text className="text-xs text-typography-secondary text-left">{widget.size}</Text>
+            <Text size="xs" color="$typographySecondary" textAlign="left">
+              {widget.size}
+            </Text>
           </VStack>
           <Icon
             as={ChevronDown}
             size="sm"
-            className="text-typography-secondary"
+            color="$typographySecondary"
             style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
           />
         </HStack>
@@ -155,13 +168,13 @@ const WidgetCard = ({
 
       {/* Expanded content */}
       {expanded && (
-        <VStack className="px-4 pb-4" space="md">
-          <Text className="text-sm text-typography-secondary text-left">{t(widget.descKey)}</Text>
-          <Button size="md" className="bg-primary w-full" onPress={handlePin} disabled={!canPin}>
-            <Icon as={Plus} size="sm" className="text-typography-contrast" />
-            <ButtonText className="text-typography-contrast font-medium">
-              {t("settings.widgets.addToHomeScreen")}
-            </ButtonText>
+        <VStack paddingHorizontal="$4" paddingBottom="$4" gap="$3">
+          <Text size="sm" color="$typographySecondary" textAlign="left">
+            {t(widget.descKey)}
+          </Text>
+          <Button size="md" width="100%" onPress={handlePin} disabled={!canPin}>
+            <Icon as={Plus} size="sm" color="$typographyContrast" />
+            <Button.Text fontWeight="500">{t("settings.widgets.addToHomeScreen")}</Button.Text>
           </Button>
         </VStack>
       )}
@@ -171,7 +184,12 @@ const WidgetCard = ({
 
 const WidgetSettings = () => {
   const { t } = useTranslation();
-  const canPin = Platform.OS === "android" && isPinningSupported();
+  let canPin = false;
+  try {
+    canPin = Platform.OS === "android" && isPinningSupported();
+  } catch {
+    canPin = false;
+  }
   const [batteryOptDisabled, setBatteryOptDisabled] = useState(true);
 
   useFocusEffect(
@@ -192,19 +210,24 @@ const WidgetSettings = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
-        <VStack space="md" className="px-4 pt-6 pb-4">
+        <VStack gap="$3" paddingHorizontal="$4" paddingTop="$6" paddingBottom="$4">
           {/* Description */}
-          <Text className="text-sm text-typography-secondary text-left">
+          <Text size="sm" color="$typographySecondary" textAlign="left">
             {t("settings.widgets.description")}
           </Text>
 
           {/* iOS info note */}
           {Platform.OS === "ios" && (
             <HStack
-              space="md"
-              className="p-4 rounded-2xl bg-background-secondary border border-outline items-start">
-              <Icon as={Info} size="sm" className="text-primary mt-0.5" />
-              <Text className="text-sm text-typography flex-1 text-left">
+              gap="$3"
+              padding="$4"
+              borderRadius="$7"
+              backgroundColor="$backgroundSecondary"
+              borderWidth={1}
+              borderColor="$outline"
+              alignItems="flex-start">
+              <Icon as={Info} size="sm" color="$primary" style={{ marginTop: 2 }} />
+              <Text size="sm" flex={1} textAlign="left">
                 {t("settings.widgets.iosNote")}
               </Text>
             </HStack>
@@ -214,14 +237,18 @@ const WidgetSettings = () => {
           {Platform.OS === "android" && !batteryOptDisabled && (
             <Pressable
               onPress={handleBatteryOptimization}
-              className="p-4 rounded-2xl border border-warning bg-warning/5">
-              <HStack space="md" className="items-start">
-                <Icon as={BatteryWarning} size="md" className="text-warning mt-0.5" />
-                <VStack className="flex-1" space="xs">
-                  <Text className="text-sm font-semibold text-typography text-left">
+              padding="$4"
+              borderRadius="$7"
+              borderWidth={1}
+              borderColor="$warning"
+              backgroundColor="$warningSubtle">
+              <HStack gap="$3" alignItems="flex-start">
+                <Icon as={BatteryWarning} size="md" color="$warning" style={{ marginTop: 2 }} />
+                <VStack flex={1} gap="$1">
+                  <Text size="sm" fontWeight="600" textAlign="left">
                     {t("settings.widgets.batteryOptTitle")}
                   </Text>
-                  <Text className="text-xs text-typography-secondary text-left">
+                  <Text size="xs" color="$typographySecondary" textAlign="left">
                     {t("settings.widgets.batteryOptDesc")}
                   </Text>
                 </VStack>
@@ -231,10 +258,16 @@ const WidgetSettings = () => {
 
           {Platform.OS === "android" && batteryOptDisabled && (
             <HStack
-              space="sm"
-              className="px-4 py-3 rounded-2xl bg-background-secondary border border-outline items-center">
-              <Icon as={CheckCircle} size="sm" className="text-success" />
-              <Text className="text-xs text-typography-secondary text-left flex-1">
+              gap="$2"
+              paddingHorizontal="$4"
+              paddingVertical="$3"
+              borderRadius="$7"
+              backgroundColor="$backgroundSecondary"
+              borderWidth={1}
+              borderColor="$outline"
+              alignItems="center">
+              <Icon as={CheckCircle} size="sm" color="$success" />
+              <Text size="xs" color="$typographySecondary" textAlign="left" flex={1}>
                 {t("settings.widgets.batteryOptDone")}
               </Text>
             </HStack>
@@ -242,13 +275,13 @@ const WidgetSettings = () => {
 
           {/* Android widget list */}
           {Platform.OS === "android" && (
-            <VStack space="sm">
+            <VStack gap="$2">
               {WIDGETS.map((widget) => (
                 <WidgetCard key={widget.type} widget={widget} canPin={canPin} t={t} />
               ))}
 
               {!canPin && (
-                <Text className="text-xs text-typography-secondary text-center mt-2">
+                <Text size="xs" color="$typographySecondary" textAlign="center" marginTop="$2">
                   {t("settings.widgets.notSupported")}
                 </Text>
               )}

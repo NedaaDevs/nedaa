@@ -75,7 +75,8 @@ const HijriSettings = () => {
             ? t("settings.hijri.date.adjustments.minus")
             : t("settings.hijri.date.adjustments.plus");
 
-        const days = t("settings.hijri.date.adjustments.days", { count: i });
+        const absCount = Math.abs(i);
+        const days = t("settings.hijri.date.adjustments.days", { count: absCount });
         label = `${prefix} ${formatNumberToLocale(days)}`;
       }
 
@@ -102,33 +103,46 @@ const HijriSettings = () => {
     <Background>
       <TopBar title={t("settings.hijri.date.title")} href="/" backOnClick />
 
-      <Box className="flex-1 p-4">
-        <Box className="bg-background-secondary p-6 rounded-xl mb-6">
-          <Box className="flex-row items-center justify-center mb-2">
-            <Icon as={Calendar} className="text-accent-primary mr-2" size="md" />
-            <VStack className="items-center my-3">
-              <Text className="text-lg font-bold text-typography">{dayName}</Text>
-              <Text className="text-lg font-bold text-typography-secondary">
+      <Box flex={1} padding="$4">
+        <Box
+          backgroundColor="$backgroundSecondary"
+          padding="$6"
+          borderRadius="$6"
+          marginBottom="$6">
+          <Box flexDirection="row" alignItems="center" justifyContent="center" marginBottom="$2">
+            <Icon as={Calendar} color="$accentPrimary" size="md" />
+            <VStack alignItems="center" marginVertical="$3">
+              <Text size="lg" bold color="$typography">
+                {dayName}
+              </Text>
+              <Text size="lg" bold color="$typographySecondary">
                 {formattedDateDetails}
               </Text>
             </VStack>
           </Box>
         </Box>
 
-        <Text className="text-left text-xl font-semibold text-typography mb-4">
+        <Text textAlign="left" size="xl" fontWeight="600" color="$typography" marginBottom="$4">
           {t("settings.hijri.date.adjustmentTitle")}
         </Text>
 
         <Pressable
           onPress={() => setShowActionSheet(true)}
-          className="bg-background-secondary p-4 rounded-lg flex-row items-center justify-between">
+          backgroundColor="$backgroundSecondary"
+          padding="$4"
+          borderRadius="$4"
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-between">
           <VStack>
-            <Text className="text-sm text-typography-secondary mb-1">
+            <Text size="sm" color="$typographySecondary" marginBottom="$1">
               {t("settings.hijri.date.currentAdjustment")}
             </Text>
-            <Text className="text-left !text-typography font-medium">{currentAdjustmentLabel}</Text>
+            <Text textAlign="left" color="$typography" fontWeight="500">
+              {currentAdjustmentLabel}
+            </Text>
           </VStack>
-          <Icon as={ChevronDown} className="text-typography-secondary" size="lg" />
+          <Icon as={ChevronDown} color="$typographySecondary" size="lg" />
         </Pressable>
       </Box>
 
@@ -139,7 +153,12 @@ const HijriSettings = () => {
             <ActionsheetDragIndicator />
           </ActionsheetDragIndicatorWrapper>
 
-          <Text className="text-lg font-semibold text-typography px-4 py-3">
+          <Text
+            size="lg"
+            fontWeight="600"
+            color="$typography"
+            paddingHorizontal="$4"
+            paddingVertical="$3">
             {t("settings.hijri.date.selectAdjustment")}
           </Text>
 
@@ -148,10 +167,11 @@ const HijriSettings = () => {
               const isSelected = option.value === hijriDaysOffset;
               return (
                 <ActionsheetItem
-                  className={`rounded-xl ${isSelected ? "bg-surface-active" : ""}`}
+                  borderRadius="$6"
+                  backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
                   key={option.value}
                   onPress={() => handleSelectAdjustment(option.value)}>
-                  <ActionsheetItemText className="text-left text-typography font-medium">
+                  <ActionsheetItemText color="$typography" fontWeight="500" textAlign="left">
                     {option.label}
                   </ActionsheetItemText>
                 </ActionsheetItem>
