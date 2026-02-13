@@ -1,4 +1,3 @@
-import React from "react";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useTranslation } from "react-i18next";
@@ -12,7 +11,7 @@ import { Image } from "@/components/ui/image";
 import { Pressable } from "@/components/ui/pressable";
 
 // Stores
-import useAppStore from "@/stores/app";
+import { useAppStore } from "@/stores/app";
 
 // Enums
 import { AppMode } from "@/enums/app";

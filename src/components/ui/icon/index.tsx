@@ -1,7 +1,7 @@
 import React from "react";
 import { View as RNView, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "tamagui";
-import { Sun, Mail } from "lucide-react-native";
+import { Mail } from "lucide-react-native";
 
 type IconSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -53,8 +53,7 @@ const Icon = React.forwardRef<any, IconProps>(
 
 Icon.displayName = "Icon";
 
-const SunIcon = Sun;
 const MailIcon = Mail;
 
-export { Icon, SunIcon, MailIcon };
+export { Icon, MailIcon };
 export type { IconProps, IconSize };

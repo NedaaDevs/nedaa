@@ -286,7 +286,6 @@ const lightTheme = {
   backgroundSuccess: tokens.color.lightBackgroundSuccess,
   backgroundWarning: tokens.color.lightBackgroundWarning,
   backgroundInfo: tokens.color.lightBackgroundInfo,
-  backgroundInfoEmphasis: tokens.color.lightBackgroundInfoEmphasis,
   backgroundMuted: tokens.color.lightBackgroundMuted,
   backgroundPrimary: tokens.color.lightBackgroundSecondary,
 
@@ -302,7 +301,6 @@ const lightTheme = {
   borderColorFocus: tokens.color.lightOutlineAccent,
 
   outline: tokens.color.lightOutline,
-  outlineAccent: tokens.color.lightOutlineAccent,
   outlineSecondary: tokens.color.lightOutline,
   borderError: tokens.color.lightBorderError,
   borderSuccess: tokens.color.lightBorderSuccess,
@@ -318,8 +316,6 @@ const lightTheme = {
   warning: tokens.color.lightWarning,
   info: tokens.color.lightInfo,
 
-  // Aliases for missing token references
-  primary400: tokens.color.lightPrimary,
   primarySubtle: "rgba(28, 93, 133, 0.1)",
   warningSubtle: "rgba(217, 119, 6, 0.05)",
 
@@ -348,7 +344,6 @@ const darkTheme = {
   backgroundSuccess: tokens.color.darkBackgroundSuccess,
   backgroundWarning: tokens.color.darkBackgroundWarning,
   backgroundInfo: tokens.color.darkBackgroundInfo,
-  backgroundInfoEmphasis: tokens.color.darkBackgroundInfoEmphasis,
   backgroundMuted: tokens.color.darkBackgroundMuted,
   backgroundPrimary: tokens.color.darkBackgroundSecondary,
 
@@ -364,7 +359,6 @@ const darkTheme = {
   borderColorFocus: tokens.color.darkOutlineAccent,
 
   outline: tokens.color.darkOutline,
-  outlineAccent: tokens.color.darkOutlineAccent,
   outlineSecondary: tokens.color.darkOutline,
   borderError: tokens.color.darkBorderError,
   borderSuccess: tokens.color.darkBorderSuccess,
@@ -380,8 +374,6 @@ const darkTheme = {
   warning: tokens.color.darkWarning,
   info: tokens.color.darkInfo,
 
-  // Aliases for missing token references
-  primary400: tokens.color.darkPrimary,
   primarySubtle: "rgba(230, 196, 105, 0.1)",
   warningSubtle: "rgba(252, 211, 77, 0.05)",
 
@@ -467,7 +459,6 @@ const config = createTamagui({
     as: "alignSelf",
     fd: "flexDirection",
     fw: "flexWrap",
-    gap: "gap",
   } as const,
   settings: {
     ...defaultConfig.settings,
@@ -484,5 +475,6 @@ export default config;
 type AppConfig = typeof config;
 
 declare module "tamagui" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface TamaguiCustomConfig extends AppConfig {}
 }
