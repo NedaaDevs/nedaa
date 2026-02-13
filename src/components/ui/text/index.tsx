@@ -1,5 +1,5 @@
 import React from "react";
-import { Text as TamaguiText, type TextProps as TamaguiTextProps } from "tamagui";
+import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
 
 // Font size + line height mapping (from tamagui.config.ts font definitions).
 // We resolve sizes to numeric values directly because Android's Fabric renderer
@@ -81,6 +81,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
     },
     ref
   ) => {
+    const theme = useTheme();
     const resolvedWeight = resolveFontWeight(bold, fontWeight);
     const tokenKey = SIZE_MAP[size] ?? "$3";
     const sizeValues = FONT_SIZES[tokenKey] ?? FONT_SIZES["$3"];
@@ -100,7 +101,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },
-          highlight && { backgroundColor: "$backgroundWarning" },
+          highlight && { backgroundColor: theme.backgroundWarning.val },
           sub && { fontSize: 12 },
           style,
         ]}

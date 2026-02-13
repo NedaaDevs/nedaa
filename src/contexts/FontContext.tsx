@@ -11,7 +11,7 @@ export type FontWeight = "regular" | "medium" | "semibold" | "bold";
 export const FONT_MAPPINGS = {
   [AppLocale.AR]: {
     regular: "IBMPlexSans-Regular",
-    medium: "IBMPlexSans-medium",
+    medium: "IBMPlexSans-Medium",
     semibold: "IBMPlexSans-SemiBold",
     bold: "IBMPlexSans-Bold",
   },
