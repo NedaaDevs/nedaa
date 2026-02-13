@@ -6,7 +6,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
 import { useAppStore } from "@/stores/app";
@@ -20,29 +20,42 @@ const CrashReportingStep = ({ onNext }: CrashReportingStepProps) => {
   const { sendCrashLogs, setSendCrashLogs } = useAppStore();
 
   return (
-    <VStack className="flex-1 items-center justify-center px-8" space="xl">
-      <Box className="w-20 h-20 rounded-full bg-background-info items-center justify-center">
-        <Icon as={Shield} size="xl" className="text-info" />
+    <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8" gap="$5">
+      <Box
+        width={80}
+        height={80}
+        borderRadius={999}
+        backgroundColor="$backgroundInfo"
+        alignItems="center"
+        justifyContent="center">
+        <Icon as={Shield} size="xl" color="$info" />
       </Box>
 
-      <VStack space="sm" className="items-center">
-        <Text className="text-2xl font-bold text-typography text-center">
+      <VStack gap="$2" alignItems="center">
+        <Text size="3xl" bold textAlign="center">
           {t("onboarding.crashReporting.title")}
         </Text>
-        <Text className="text-base text-typography-secondary text-center" style={{ maxWidth: 280 }}>
+        <Text size="lg" color="$typographySecondary" textAlign="center" maxWidth={280}>
           {t("onboarding.crashReporting.description")}
         </Text>
       </VStack>
 
-      <HStack className="items-center justify-between w-full px-4" style={{ maxWidth: 320 }}>
-        <Text className="text-base text-typography">{t("onboarding.crashReporting.enable")}</Text>
-        <Switch value={sendCrashLogs} onValueChange={setSendCrashLogs} />
+      <HStack
+        alignItems="center"
+        justifyContent="space-between"
+        width="100%"
+        paddingHorizontal="$4"
+        maxWidth={320}>
+        <Text size="lg">{t("onboarding.crashReporting.enable")}</Text>
+        <Switch
+          value={sendCrashLogs}
+          onValueChange={setSendCrashLogs}
+          accessibilityLabel={t("onboarding.crashReporting.enable")}
+        />
       </HStack>
 
-      <Button onPress={onNext} className="min-h-[44px] px-12 bg-primary" size="lg">
-        <ButtonText className="font-medium text-typography-contrast">
-          {t("onboarding.crashReporting.finish")}
-        </ButtonText>
+      <Button onPress={onNext} size="lg" paddingHorizontal="$12">
+        <Button.Text fontWeight="500">{t("onboarding.crashReporting.finish")}</Button.Text>
       </Button>
     </VStack>
   );

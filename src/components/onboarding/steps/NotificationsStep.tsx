@@ -6,7 +6,7 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 import { requestNotificationPermission } from "@/utils/notifications";
 
@@ -31,30 +31,40 @@ const NotificationsStep = ({ onNext }: NotificationsStepProps) => {
   };
 
   return (
-    <VStack className="flex-1 items-center justify-center px-8" space="xl">
-      <Box className="w-20 h-20 rounded-full bg-background-info items-center justify-center">
-        <Icon as={Bell} size="xl" className="text-info" />
-      </Box>
-
-      <VStack space="sm" className="items-center">
-        <Text className="text-2xl font-bold text-typography text-center">
-          {t("onboarding.notifications.title")}
-        </Text>
-        <Text className="text-base text-typography-secondary text-center" style={{ maxWidth: 280 }}>
-          {t("onboarding.notifications.description")}
-        </Text>
-      </VStack>
-
+    <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8" gap="$5">
       {denied ? (
-        <Text className="text-sm text-typography-secondary text-center" style={{ maxWidth: 280 }}>
+        <Text size="lg" color="$typographySecondary" textAlign="center" maxWidth={280}>
           {t("onboarding.notifications.denied")}
         </Text>
       ) : (
-        <Button onPress={handleAllow} className="min-h-[44px] px-12 bg-primary" size="lg">
-          <ButtonText className="font-medium text-typography-contrast">
-            {t("onboarding.notifications.allow")}
-          </ButtonText>
-        </Button>
+        <>
+          <Box
+            width={80}
+            height={80}
+            borderRadius={999}
+            backgroundColor="$backgroundInfo"
+            alignItems="center"
+            justifyContent="center">
+            <Icon as={Bell} size="xl" color="$info" />
+          </Box>
+
+          <VStack gap="$2" alignItems="center">
+            <Text size="3xl" bold textAlign="center">
+              {t("onboarding.notifications.title")}
+            </Text>
+            <Text size="lg" color="$typographySecondary" textAlign="center" maxWidth={280}>
+              {t("onboarding.notifications.description")}
+            </Text>
+          </VStack>
+
+          <Button
+            onPress={handleAllow}
+            size="lg"
+            paddingHorizontal="$12"
+            accessibilityLabel={t("onboarding.notifications.allow")}>
+            <Button.Text fontWeight="500">{t("onboarding.notifications.allow")}</Button.Text>
+          </Button>
+        </>
       )}
     </VStack>
   );

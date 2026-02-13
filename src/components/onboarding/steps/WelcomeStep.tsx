@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 type WelcomeStepProps = {
   onNext: () => void;
@@ -14,28 +14,26 @@ const WelcomeStep = ({ onNext }: WelcomeStepProps) => {
   const { t } = useTranslation();
 
   return (
-    <VStack className="flex-1 items-center justify-center px-8" space="xl">
-      <Box className="w-24 h-24 rounded-3xl overflow-hidden">
+    <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8" gap="$5">
+      <Box width={96} height={96} borderRadius="$9" overflow="hidden">
         <Image
           source={require("../../../../assets/images/icon.png")}
-          className="w-full h-full"
+          style={{ width: "100%", height: "100%" }}
           resizeMode="contain"
         />
       </Box>
 
-      <VStack space="sm" className="items-center">
-        <Text className="text-2xl font-bold text-typography text-center">
+      <VStack gap="$2" alignItems="center">
+        <Text size="3xl" bold textAlign="center">
           {t("onboarding.welcome.title")}
         </Text>
-        <Text className="text-base text-typography-secondary text-center" style={{ maxWidth: 280 }}>
+        <Text size="lg" color="$typographySecondary" textAlign="center" maxWidth={280}>
           {t("onboarding.welcome.tagline")}
         </Text>
       </VStack>
 
-      <Button onPress={onNext} className="min-h-[44px] px-12 bg-primary" size="lg">
-        <ButtonText className="font-medium text-typography-contrast">
-          {t("onboarding.welcome.getStarted")}
-        </ButtonText>
+      <Button onPress={onNext} size="lg" paddingHorizontal="$12">
+        <Button.Text fontWeight="500">{t("onboarding.welcome.getStarted")}</Button.Text>
       </Button>
     </VStack>
   );
