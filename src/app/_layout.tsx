@@ -38,6 +38,7 @@ SplashScreen.setOptions({
   duration: 1000,
   fade: true,
 });
+SplashScreen.preventAutoHideAsync();
 
 function AppShell() {
   const theme = useTheme();
@@ -92,7 +93,6 @@ function AppShell() {
 }
 
 export default function RootLayout() {
-  SplashScreen.preventAutoHideAsync();
   const { mode, locale } = useAppStore();
   const systemScheme = useColorScheme();
 

@@ -99,7 +99,7 @@ const ibmPlexSansFont = createFont({
   },
   face: {
     400: { normal: "IBMPlexSans-Regular" },
-    500: { normal: "IBMPlexSans-medium" },
+    500: { normal: "IBMPlexSans-Medium" },
     600: { normal: "IBMPlexSans-SemiBold" },
     700: { normal: "IBMPlexSans-Bold" },
   },
