@@ -95,15 +95,13 @@ const PrayerCustomizationModal: FC<Props> = ({
     [soundOptions, t]
   );
 
-  const timingOptions = [5, 10, 15, 20, 30];
-
   const timingItems = useMemo(
     () =>
-      timingOptions.map((min) => ({
+      [5, 10, 15, 20, 30].map((min) => ({
         label: t("common.minute", { count: min }),
         value: min.toString(),
       })),
-    [t, timingOptions]
+    [t]
   );
 
   const handleSoundPreview = async (type: NotificationType) => {
@@ -149,7 +147,7 @@ const PrayerCustomizationModal: FC<Props> = ({
         </ModalCloseButton>
 
         <ModalHeader>
-          <Text size="xl" bold color="$typography" textAlign="left">
+          <Text size="xl" bold color="$typography">
             {t("notification.customize")} {prayerName}
           </Text>
         </ModalHeader>
@@ -158,7 +156,7 @@ const PrayerCustomizationModal: FC<Props> = ({
           <VStack gap="$4">
             {/* Enabled Toggle */}
             <HStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
-              <Text fontWeight="500" color="$typography" textAlign="left" flex={1}>
+              <Text fontWeight="500" color="$typography" flex={1}>
                 {t("common.enable")}
               </Text>
               <Switch
@@ -174,7 +172,7 @@ const PrayerCustomizationModal: FC<Props> = ({
             {hasTiming && timingLabel && (
               <>
                 <HStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
-                  <Text fontWeight="500" color="$typography" textAlign="left" flex={1}>
+                  <Text fontWeight="500" color="$typography" flex={1}>
                     {timingLabel}
                   </Text>
                   <Select
@@ -190,7 +188,7 @@ const PrayerCustomizationModal: FC<Props> = ({
 
             {/* Sound Selection */}
             <HStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
-              <Text fontWeight="500" color="$typography" textAlign="left" flex={1}>
+              <Text fontWeight="500" color="$typography" flex={1}>
                 {t("notification.sound")}
               </Text>
               <Select
@@ -213,7 +211,7 @@ const PrayerCustomizationModal: FC<Props> = ({
               <>
                 <Divider backgroundColor="$outline" />
                 <HStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
-                  <Text fontWeight="500" color="$typography" textAlign="left" flex={1}>
+                  <Text fontWeight="500" color="$typography" flex={1}>
                     {t("notification.vibration")}
                   </Text>
                   <Switch

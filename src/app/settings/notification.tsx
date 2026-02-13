@@ -223,7 +223,7 @@ const NotificationSettings = () => {
             borderRadius="$4">
             <HStack padding="$4" justifyContent="space-between" alignItems="center">
               <VStack flex={1}>
-                <Text textAlign="left" size="lg" fontWeight="600" color="$typography">
+                <Text size="lg" fontWeight="600" color="$typography">
                   {t("notification.enableAll")}
                 </Text>
                 {totalOverrideCount > 0 && (

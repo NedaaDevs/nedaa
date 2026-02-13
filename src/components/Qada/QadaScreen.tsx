@@ -264,18 +264,18 @@ const QadaScreen = () => {
               {/* Stats Row */}
               <HStack gap="$5" width="100%" justifyContent="space-around" paddingTop="$4">
                 <VStack gap="$1" alignItems="center">
-                  <Text size="2xl" fontWeight="600" color="$typography" textAlign="left">
+                  <Text size="2xl" fontWeight="600" color="$typography">
                     {formatNumberToLocale(totalMissed.toString())}
                   </Text>
-                  <Text size="xs" color="$typographySecondary" textAlign="left">
+                  <Text size="xs" color="$typographySecondary">
                     {t("qada.total")}
                   </Text>
                 </VStack>
                 <VStack gap="$1" alignItems="center">
-                  <Text size="2xl" fontWeight="600" color="$success" textAlign="left">
+                  <Text size="2xl" fontWeight="600" color="$success">
                     {formatNumberToLocale(totalCompleted.toString())}
                   </Text>
-                  <Text size="xs" color="$typographySecondary" textAlign="left">
+                  <Text size="xs" color="$typographySecondary">
                     {t("qada.completed")}
                   </Text>
                 </VStack>
@@ -283,12 +283,12 @@ const QadaScreen = () => {
 
               {/* Motivational Message */}
               {remaining === 0 && totalMissed > 0 && (
-                <Text textAlign="left" color="$success" fontWeight="500">
+                <Text color="$success" fontWeight="500">
                   {t("qada.allComplete")}
                 </Text>
               )}
               {remaining > 0 && (
-                <Text textAlign="left" color="$typographySecondary">
+                <Text color="$typographySecondary">
                   {formatNumberToLocale(t("qada.keepGoing", { count: remaining }))}
                 </Text>
               )}
@@ -311,7 +311,7 @@ const QadaScreen = () => {
           {/* Pending Entries List */}
           {pendingEntries.length > 0 && (
             <VStack gap="$3">
-              <Text size="lg" fontWeight="600" color="$typography" textAlign="left">
+              <Text size="lg" fontWeight="600" color="$typography">
                 {t("qada.pendingEntries")}
               </Text>
 
@@ -397,7 +397,7 @@ const QadaScreen = () => {
             </ModalCloseButton>
 
             <ModalHeader>
-              <Text size="xl" bold color="$typography" textAlign="left">
+              <Text size="xl" bold color="$typography">
                 {t("qada.addMissedDays")}
               </Text>
             </ModalHeader>
@@ -407,7 +407,7 @@ const QadaScreen = () => {
                 <VStack gap="$5">
                   {/* Quick Add: One-tap shortcuts for common values (1, 3, 7, 30 days) */}
                   <VStack gap="$2">
-                    <Text size="sm" color="$typographySecondary" textAlign="left">
+                    <Text size="sm" color="$typographySecondary">
                       {t("qada.quickAdd")}
                     </Text>
                     <HStack gap="$1" width="100%">
@@ -439,7 +439,7 @@ const QadaScreen = () => {
 
                   {/* Stepper Control: Fine-tune any amount with -/+ buttons */}
                   <VStack gap="$2">
-                    <Text size="sm" color="$typographySecondary" textAlign="left">
+                    <Text size="sm" color="$typographySecondary">
                       {t("qada.customAmount")}
                     </Text>
                     <HStack gap="$3" alignItems="center" justifyContent="center">
@@ -490,7 +490,7 @@ const QadaScreen = () => {
 
                   {/* Optional Notes Input */}
                   <VStack gap="$2">
-                    <Text size="sm" color="$typographySecondary" textAlign="left">
+                    <Text size="sm" color="$typographySecondary">
                       {t("qada.notes")} ({t("common.optional")})
                     </Text>
                     <TextInput

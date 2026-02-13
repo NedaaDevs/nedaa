@@ -180,10 +180,10 @@ const AlarmTypeSettingsScreen = () => {
             backgroundColor="$backgroundSecondary">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
-                <Text textAlign="left" size="lg" fontWeight="600" color="$typography">
+                <Text size="lg" fontWeight="600" color="$typography">
                   {t("alarm.settings.enableAlarm")}
                 </Text>
-                <Text textAlign="left" size="sm" color="$typographySecondary">
+                <Text size="sm" color="$typographySecondary">
                   {alarmType === "fajr"
                     ? t("alarm.settings.fajrEnableDescription")
                     : t("alarm.settings.fridayEnableDescription")}
@@ -197,7 +197,7 @@ const AlarmTypeSettingsScreen = () => {
             <>
               {/* Timing Settings */}
               <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
-                <Text textAlign="left" size="sm" color="$typographySecondary" marginBottom="$2">
+                <Text size="sm" color="$typographySecondary" marginBottom="$2">
                   {alarmType === "fajr"
                     ? t("alarm.settings.timingDescriptionFajr")
                     : t("alarm.settings.timingDescriptionFriday")}
@@ -231,7 +231,7 @@ const AlarmTypeSettingsScreen = () => {
 
               {/* Challenge Settings */}
               <SettingsSection title={t("alarm.settings.challenge")} icon={Brain}>
-                <Text textAlign="left" size="sm" color="$typographySecondary" marginBottom="$2">
+                <Text size="sm" color="$typographySecondary" marginBottom="$2">
                   {t("alarm.settings.challengeDescription")}
                 </Text>
                 <ChallengePicker

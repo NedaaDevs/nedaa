@@ -68,12 +68,12 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
 
   return (
     <VStack gap="$3">
-      <Text textAlign="left" size="sm" fontWeight="500" color="$typography">
+      <Text size="sm" fontWeight="500" color="$typography">
         {t("alarm.settings.challenge")}
       </Text>
 
       <HStack justifyContent="space-between" alignItems="center">
-        <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
+        <Text size="sm" color="$typographySecondary" flex={1}>
           {t("alarm.challenge.type")}
         </Text>
         <Select
@@ -87,7 +87,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
       {value.type !== "none" && (
         <>
           <HStack justifyContent="space-between" alignItems="center">
-            <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
+            <Text size="sm" color="$typographySecondary" flex={1}>
               {t("alarm.challenge.difficulty")}
             </Text>
             <Select
@@ -99,7 +99,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
           </HStack>
 
           <HStack justifyContent="space-between" alignItems="center">
-            <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
+            <Text size="sm" color="$typographySecondary" flex={1}>
               {t("alarm.challenge.count")}
             </Text>
             <Select

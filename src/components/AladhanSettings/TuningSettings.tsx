@@ -173,10 +173,10 @@ export const TuningSettings: FC = () => {
             minHeight={44}
             accessibilityLabel={t("providers.aladhan.tuning.title")}>
             <VStack flex={1}>
-              <Text textAlign="left" fontSize="$2" color="$typographySecondary">
+              <Text fontSize="$2" color="$typographySecondary">
                 {t("providers.aladhan.tuning.inputLabel")}
               </Text>
-              <Text textAlign="left" fontSize="$4" fontWeight="500" color="$typography">
+              <Text fontSize="$4" fontWeight="500" color="$typography">
                 {getSummaryText()}
               </Text>
             </VStack>

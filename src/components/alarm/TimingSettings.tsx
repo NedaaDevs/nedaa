@@ -121,7 +121,7 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
       {(timing.mode === "beforePrayerTime" || !showAtPrayerTimeOption) && (
         <VStack gap="$2">
           <HStack justifyContent="space-between" alignItems="center">
-            <Text textAlign="left" size="sm" color="$typographySecondary">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.settings.minutesBefore")}
             </Text>
             <Box

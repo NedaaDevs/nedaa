@@ -75,7 +75,6 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
           {/* Athkar Text */}
           <Text
             size="xl"
-            textAlign="left"
             style={{ lineHeight: 28 }}
             color={isCompleted ? "$typographySecondary" : "$typography"}>
             {t(athkar.text)}
@@ -110,7 +109,6 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
               {/* Count Display */}
               <Text
                 size="md"
-                textAlign="left"
                 fontWeight="500"
                 color={isCompleted ? "$typographyContrast" : "$typographySecondary"}>
                 {isRTL

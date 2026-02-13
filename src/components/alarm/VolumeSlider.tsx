@@ -49,7 +49,7 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
   return (
     <VStack gap="$2">
       <HStack justifyContent="space-between" alignItems="center">
-        <Text textAlign="left" size="sm" color="$typography">
+        <Text size="sm" color="$typography">
           {t("alarm.settings.volume")}
         </Text>
         <Text size="sm" color="$typographySecondary">

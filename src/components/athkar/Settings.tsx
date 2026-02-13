@@ -83,7 +83,7 @@ const Settings = () => {
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
-                  <Text textAlign="left" fontWeight="500" color="$typography">
+                  <Text fontWeight="500" color="$typography">
                     {t("settings.athkar.notifications.morning.title")}
                   </Text>
                 </VStack>
@@ -129,7 +129,7 @@ const Settings = () => {
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
-                  <Text textAlign="left" fontWeight="500" color="$typography">
+                  <Text fontWeight="500" color="$typography">
                     {t("settings.athkar.notifications.evening.title")}
                   </Text>
                 </VStack>
@@ -197,10 +197,10 @@ const Settings = () => {
           <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
-                <Text textAlign="left" fontWeight="500" color="$typography">
+                <Text fontWeight="500" color="$typography">
                   {t("settings.athkar.showStreak.title")}
                 </Text>
-                <Text textAlign="left" size="sm" color="$typographySecondary" marginTop="$1">
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
                   {t("settings.athkar.showStreak.description")}
                 </Text>
               </VStack>
@@ -212,10 +212,10 @@ const Settings = () => {
           <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
-                <Text textAlign="left" fontWeight="500" color="$typography">
+                <Text fontWeight="500" color="$typography">
                   {t("settings.athkar.shortVersion.title")}
                 </Text>
-                <Text textAlign="left" size="sm" color="$typographySecondary" marginTop="$1">
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
                   {t("settings.athkar.shortVersion.description", {
                     thikir: t("athkar.items.laIlahaIllaAllahFull"),
                     count: 100,

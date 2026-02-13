@@ -21,8 +21,8 @@ export function ToastProvider() {
         zIndex: 50,
       }}>
       <Toast action={type}>
-        {title && <ToastTitle textAlign="left">{title}</ToastTitle>}
-        <ToastDescription textAlign="left">{message}</ToastDescription>
+        {title && <ToastTitle>{title}</ToastTitle>}
+        <ToastDescription>{message}</ToastDescription>
       </Toast>
     </Animated.View>
   );
