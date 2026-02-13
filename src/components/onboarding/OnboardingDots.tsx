@@ -7,11 +7,14 @@ type OnboardingDotsProps = {
 };
 
 const OnboardingDots = ({ total, current }: OnboardingDotsProps) => (
-  <HStack space="sm" className="justify-center py-6">
+  <HStack gap="$2" justifyContent="center" paddingVertical="$6">
     {Array.from({ length: total }, (_, i) => (
       <Box
         key={i}
-        className={`w-2 h-2 rounded-full ${i === current ? "bg-primary" : "bg-background-muted"}`}
+        width="$2"
+        height="$2"
+        borderRadius={999}
+        backgroundColor={i === current ? "$primary" : "$backgroundMuted"}
       />
     ))}
   </HStack>

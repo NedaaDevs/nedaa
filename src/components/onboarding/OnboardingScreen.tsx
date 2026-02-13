@@ -21,7 +21,7 @@ const OnboardingScreen = () => {
 
   if (loading || steps.length === 0) {
     return (
-      <Box className="flex-1 items-center justify-center bg-background">
+      <Box flex={1} alignItems="center" justifyContent="center" backgroundColor="$background">
         <ActivityIndicator size="large" />
       </Box>
     );
@@ -30,7 +30,7 @@ const OnboardingScreen = () => {
   const CurrentStep = steps[currentIndex].component;
 
   return (
-    <Box className="flex-1 bg-background">
+    <Box flex={1} backgroundColor="$background">
       <CurrentStep onNext={handleNext} />
       <OnboardingDots total={steps.length} current={currentIndex} />
     </Box>
