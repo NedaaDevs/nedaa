@@ -28,7 +28,7 @@
     "@expo/html-elements": "^0.13.8",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-community/datetimepicker": "8.4.4",
-    "@react-navigation/native": "^7.1.8",
+    "@react-navigation/native": "^7.1.21",
     "@sentry/react-native": "~7.2.0",
     "@tamagui/animations-moti": "^2.0.0-rc.12",
     "@tamagui/config": "^2.0.0-rc.12",
