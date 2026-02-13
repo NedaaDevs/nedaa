@@ -37,8 +37,16 @@ Actionsheet.displayName = "Actionsheet";
 
 // --- ActionsheetBackdrop ---
 
-const ActionsheetBackdrop: React.FC = () => {
-  return <Sheet.Overlay backgroundColor="rgba(0,0,0,0.5)" />;
+type ActionsheetBackdropProps = {
+  opacity?: number;
+  backgroundColor?: string;
+};
+
+const ActionsheetBackdrop: React.FC<ActionsheetBackdropProps> = ({
+  backgroundColor = "rgba(0,0,0,0.5)",
+  ...props
+}) => {
+  return <Sheet.Overlay backgroundColor={backgroundColor as any} {...props} />;
 };
 ActionsheetBackdrop.displayName = "ActionsheetBackdrop";
 
@@ -104,7 +112,7 @@ const ActionsheetItem = styled(View, {
 const ActionsheetItemText = styled(TamaguiText, {
   name: "ActionsheetItemText",
   fontFamily: "$body",
-  fontSize: 14,
+  fontSize: "$3",
   color: "$typography",
 });
 

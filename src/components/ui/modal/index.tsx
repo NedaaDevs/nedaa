@@ -37,7 +37,7 @@ Modal.displayName = "Modal";
 // --- ModalBackdrop ---
 
 const ModalBackdrop: React.FC = () => {
-  return <Dialog.Overlay key="modal-overlay" opacity={0.5} backgroundColor="rgba(0,0,0,0.5)" />;
+  return <Dialog.Overlay key="modal-overlay" backgroundColor="rgba(0,0,0,0.5)" />;
 };
 ModalBackdrop.displayName = "ModalBackdrop";
 
@@ -90,7 +90,11 @@ type ModalBodyProps = {
 };
 
 const ModalBody: React.FC<ModalBodyProps> = ({ children }) => {
-  return <ScrollView style={{ paddingHorizontal: 20 }}>{children}</ScrollView>;
+  return (
+    <ScrollView>
+      <YStack paddingHorizontal="$5">{children}</YStack>
+    </ScrollView>
+  );
 };
 ModalBody.displayName = "ModalBody";
 
@@ -121,7 +125,7 @@ const ModalCloseButton: React.FC<ModalCloseButtonProps> = ({ children, onPress, 
         accessibilityLabel="Close"
         position="absolute"
         top="$2"
-        right="$2"
+        end={8}
         zIndex={10}
         minWidth={44}
         minHeight={44}

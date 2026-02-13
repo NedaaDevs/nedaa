@@ -31,7 +31,6 @@ const Select: React.FC<SelectProps> = ({
   size,
 }) => {
   const allItems = items ?? groups?.flatMap((g) => g.items) ?? [];
-  let globalIndex = 0;
 
   return (
     <TamaguiSelect
@@ -67,19 +66,22 @@ const Select: React.FC<SelectProps> = ({
       <TamaguiSelect.Content>
         <TamaguiSelect.Viewport>
           {groups ? (
-            groups.map((group, gi) => (
-              <TamaguiSelect.Group key={gi}>
-                {group.label && <TamaguiSelect.Label>{group.label}</TamaguiSelect.Label>}
-                {group.items.map((item) => {
-                  const idx = globalIndex++;
-                  return (
-                    <TamaguiSelect.Item key={item.value} index={idx} value={item.value}>
+            groups.map((group, gi) => {
+              const baseIndex = groups.slice(0, gi).reduce((sum, g) => sum + g.items.length, 0);
+              return (
+                <TamaguiSelect.Group key={gi}>
+                  {group.label && <TamaguiSelect.Label>{group.label}</TamaguiSelect.Label>}
+                  {group.items.map((item, itemIdx) => (
+                    <TamaguiSelect.Item
+                      key={item.value}
+                      index={baseIndex + itemIdx}
+                      value={item.value}>
                       <TamaguiSelect.ItemText>{item.label}</TamaguiSelect.ItemText>
                     </TamaguiSelect.Item>
-                  );
-                })}
-              </TamaguiSelect.Group>
-            ))
+                  ))}
+                </TamaguiSelect.Group>
+              );
+            })
           ) : (
             <TamaguiSelect.Group>
               {allItems.map((item, idx) => (
