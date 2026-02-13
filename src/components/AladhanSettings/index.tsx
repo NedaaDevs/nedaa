@@ -6,7 +6,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 import { MethodSettings } from "@/components/AladhanSettings/MethodSettings";
 import { SchoolSettings } from "@/components/AladhanSettings/SchoolSettings";
@@ -17,6 +17,7 @@ import { TuningSettings } from "@/components/AladhanSettings/TuningSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { useNotificationStore } from "@/stores/notification";
+import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 
 const AladhanSettings: FC = () => {
   const { t } = useTranslation();
@@ -53,6 +54,7 @@ const AladhanSettings: FC = () => {
       }
 
       await scheduleAllNotifications();
+      await rescheduleAllAlarms();
 
       hapticSuccess();
     } catch (error) {
@@ -61,17 +63,18 @@ const AladhanSettings: FC = () => {
   };
 
   return (
-    <Box className="relative mx-4 mt-2">
+    <Box position="relative" marginHorizontal="$4" marginTop="$2">
       {(isModified || isLoading || isFetchingPrayers) && (
-        <Box className="w-full bg-accent-primary rounded-lg">
+        <Box width="100%" backgroundColor="$accentPrimary" borderRadius="$4">
           <Button
             onPress={handleSaveSetting}
-            className="w-full bg-accent-primary"
-            isDisabled={isLoading || isFetchingPrayers}>
+            backgroundColor="$accentPrimary"
+            width="100%"
+            disabled={isLoading || isFetchingPrayers}>
             {!(isLoading || isFetchingPrayers) && (
-              <ButtonText className="text-background">{t("common.save")}</ButtonText>
+              <Button.Text color="$typographyContrast">{t("common.save")}</Button.Text>
             )}
-            {(isLoading || isFetchingPrayers) && <ButtonSpinner />}
+            {(isLoading || isFetchingPrayers) && <Button.Spinner />}
           </Button>
         </Box>
       )}
