@@ -11,14 +11,14 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Icon } from "@/components/ui/icon";
 import { Box } from "@/components/ui/box";
 
 // Icons
-import { MapPin, X } from "lucide-react-native";
+import { MapPin, X, ArrowDown } from "lucide-react-native";
 
 type Props = {
   isOpen: boolean;
@@ -42,73 +42,100 @@ const CityChangeModal: FC<Props> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalBackdrop />
-      <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
-        <ModalCloseButton className="absolute top-4 right-4 z-10">
-          <Icon as={X} className="text-typography-secondary" size="lg" />
+      <ModalContent>
+        <ModalCloseButton>
+          <Icon as={X} color="$typographySecondary" size="lg" />
         </ModalCloseButton>
 
-        <ModalHeader className="justify-items-center px-6 pt-6 pb-2 pr-12">
-          <VStack className=" items-center" space="sm">
-            <Box className="w-16 h-16 rounded-full bg-background-info items-center justify-center">
-              <Icon as={MapPin} className="text-info" size="xl" />
+        <ModalHeader justifyContent="center">
+          <VStack alignItems="center" gap="$2">
+            <Box
+              width={64}
+              height={64}
+              borderRadius={999}
+              backgroundColor="$backgroundInfo"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={MapPin} color="$info" size="xl" />
             </Box>
-            <Text className="text-xl font-bold text-typography text-center">
+            <Text size="xl" bold color="$typography" textAlign="center">
               {t("location.cityChanged.title")}
             </Text>
           </VStack>
         </ModalHeader>
 
-        <ModalBody className="px-6 pt-2">
-          <VStack space="md">
-            <Text className="text-center text-typography-secondary leading-relaxed">
+        <ModalBody>
+          <VStack gap="$3">
+            <Text textAlign="center" color="$typographySecondary">
               {t("location.cityChanged.message")}
             </Text>
 
-            <VStack space="sm">
-              <VStack className="p-4 bg-background rounded-lg border border-outline" space="xs">
-                <Text className="text-sm font-medium text-typography-secondary text-center">
+            <VStack gap="$2" alignItems="center">
+              <VStack
+                padding="$4"
+                backgroundColor="$background"
+                borderRadius="$4"
+                borderWidth={1}
+                borderColor="$outline"
+                gap="$1"
+                width="100%">
+                <Text size="sm" fontWeight="500" color="$typographySecondary" textAlign="center">
                   {t("location.cityChanged.currentCity")}
                 </Text>
-                <Text className="text-lg font-bold text-typography text-center">{currentCity}</Text>
+                <Text size="lg" bold color="$typography" textAlign="center">
+                  {currentCity}
+                </Text>
               </VStack>
 
+              <Icon as={ArrowDown} color="$typographySecondary" size="md" />
+
               <VStack
-                className="p-4 bg-background-success/10 rounded-lg border border-success/20"
-                space="xs">
-                <Text className="text-sm font-medium text-typography-secondary text-center">
+                padding="$4"
+                backgroundColor="$backgroundSuccess"
+                borderRadius="$4"
+                borderWidth={1}
+                borderColor="$success"
+                gap="$1"
+                width="100%">
+                <Text size="sm" fontWeight="500" color="$typographySecondary" textAlign="center">
                   {t("location.cityChanged.newCity")}
                 </Text>
-                <Text className="text-lg font-bold text-success text-center">{newCity}</Text>
+                <Text size="lg" bold color="$success" textAlign="center">
+                  {newCity}
+                </Text>
               </VStack>
             </VStack>
 
-            <Text className="text-sm text-center text-typography-secondary leading-relaxed">
+            <Text size="sm" textAlign="center" color="$typographySecondary">
               {t("location.cityChanged.description")}
             </Text>
           </VStack>
         </ModalBody>
 
-        <ModalFooter className="px-6 py-6">
-          <VStack space="sm" className="w-full">
+        <ModalFooter>
+          <VStack gap="$2" width="100%">
             <Button
               size="lg"
-              className="w-full bg-accent-primary"
+              width="100%"
+              backgroundColor="$accentPrimary"
               onPress={onUpdate}
-              isDisabled={isUpdating}>
-              <ButtonText className="text-background font-medium">
-                {isUpdating
-                  ? t("location.cityChanged.updating")
-                  : t("location.cityChanged.updateLocation")}
-              </ButtonText>
+              disabled={isUpdating}>
+              {isUpdating ? (
+                <Button.Spinner />
+              ) : (
+                <Button.Text color="$typographyContrast" fontWeight="500">
+                  {t("location.cityChanged.updateLocation")}
+                </Button.Text>
+              )}
             </Button>
 
             <Button
               size="lg"
               variant="outline"
-              className="w-full"
+              width="100%"
               onPress={onClose}
-              isDisabled={isUpdating}>
-              <ButtonText className="text-typography">{t("common.keepCurrent")}</ButtonText>
+              disabled={isUpdating}>
+              <Button.Text color="$typography">{t("common.keepCurrent")}</Button.Text>
             </Button>
           </VStack>
         </ModalFooter>

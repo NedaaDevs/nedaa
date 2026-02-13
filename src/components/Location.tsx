@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Linking, Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -8,9 +8,10 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Modal,
@@ -37,8 +38,8 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
 
 const LoadingView = () => (
-  <Box className="flex-1 items-center justify-center p-4">
-    <ActivityIndicator size="large" className="text-accent-primary" />
+  <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
+    <Spinner size="large" />
   </Box>
 );
 
@@ -54,37 +55,41 @@ const PermissionRequestView = ({
   const { t } = useTranslation();
 
   return (
-    <VStack className="flex-1 p-4 items-center justify-center" space="lg">
-      <Card className="p-6 w-full" style={{ maxWidth: 320 }}>
-        <VStack space="lg" className="items-center">
-          <Box className="w-20 h-20 rounded-full bg-background-info items-center justify-center">
-            <Icon className="text-info" as={MapPin} size="xl" />
+    <VStack flex={1} padding="$4" alignItems="center" justifyContent="center" gap="$4">
+      <Card padding="$6" width="100%" style={{ maxWidth: 320 }}>
+        <VStack gap="$4" alignItems="center">
+          <Box
+            width={80}
+            height={80}
+            borderRadius={999}
+            backgroundColor="$backgroundInfo"
+            alignItems="center"
+            justifyContent="center">
+            <Icon color="$info" as={MapPin} size="xl" />
           </Box>
 
-          <VStack space="sm" className="items-center">
-            <Text className="text-xl font-semibold text-typography text-center">
+          <VStack gap="$2" alignItems="center">
+            <Text size="xl" fontWeight="600" color="$typography" textAlign="center">
               {t("location.permission.title")}
             </Text>
-            <Text className="text-sm text-typography-secondary text-center px-2">
+            <Text size="sm" color="$typographySecondary" textAlign="center" paddingHorizontal="$2">
               {t("location.permission.description")}
             </Text>
           </VStack>
 
           {canAskPermission ? (
-            <Box className="w-full items-center">
-              <Button onPress={onRequestPermission} className="px-12" size="lg">
-                <ButtonText className="font-medium">{t("location.permission.allow")}</ButtonText>
+            <Box width="100%" alignItems="center">
+              <Button onPress={onRequestPermission} paddingHorizontal="$7" size="lg">
+                <Button.Text fontWeight="500">{t("location.permission.allow")}</Button.Text>
               </Button>
             </Box>
           ) : (
-            <VStack space="sm" className="w-full items-center">
-              <Text className="text-md text-typography text-center px-2">
+            <VStack gap="$2" width="100%" alignItems="center">
+              <Text color="$typography" textAlign="center" paddingHorizontal="$2">
                 {t("location.permission.deniedMessage")}
               </Text>
-              <Button onPress={onOpenSettings} className="px-12" size="lg">
-                <ButtonText className="font-medium text-md">
-                  {t("location.permission.openSettings")}
-                </ButtonText>
+              <Button onPress={onOpenSettings} paddingHorizontal="$7" size="lg">
+                <Button.Text fontWeight="500">{t("location.permission.openSettings")}</Button.Text>
               </Button>
             </VStack>
           )}
@@ -101,31 +106,32 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
   return (
     <Modal isOpen={isVisible} onClose={onClose} size="md">
       <ModalBackdrop />
-      <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
-        <ModalCloseButton className="absolute top-4 right-4 z-10">
-          <Icon as={X} className="text-typography-secondary" size="lg" />
+      <ModalContent>
+        <ModalCloseButton>
+          <Icon as={X} color="$typographySecondary" size="lg" />
         </ModalCloseButton>
 
-        <ModalHeader className="px-6 pt-6 pb-4 pr-12">
-          <Text className="text-lg font-semibold text-typography text-left">
+        <ModalHeader>
+          <Text size="lg" fontWeight="600" color="$typography" textAlign="left">
             {t("location.settings.keepLocationUpdated.infoTitle")}
           </Text>
         </ModalHeader>
 
-        <ModalBody className="px-6">
-          <Text className="text-left text-sm text-typography-secondary leading-relaxed">
+        <ModalBody>
+          <Text textAlign="left" size="sm" color="$typographySecondary">
             {t("location.settings.keepLocationUpdated.infoDescription")}
           </Text>
         </ModalBody>
 
-        <ModalFooter className="px-6 py-6">
+        <ModalFooter>
           <Button
             onPress={() => {
               hapticLight();
               onClose();
             }}
-            className="w-full bg-accent-primary">
-            <ButtonText className="text-background">{t("common.ok")}</ButtonText>
+            width="100%"
+            backgroundColor="$accentPrimary">
+            <Button.Text color="$typographyContrast">{t("common.ok")}</Button.Text>
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -226,20 +232,24 @@ const KeepLocationUpdated = () => {
   }
 
   return (
-    <VStack className="flex-1" space="md">
+    <VStack flex={1} gap="$3">
       {/* Current Location Section */}
-      <Box className="bg-background-secondary mt-2 rounded-lg">
+      <Box backgroundColor="$backgroundSecondary" marginTop="$2" borderRadius="$4">
         <Pressable
           onPress={handleManualRefresh}
           disabled={isGettingLocation || isFetchingPrayers}
-          className="py-5 px-5 flex-row justify-between items-center">
-          <HStack className="items-center flex-1" space="md">
-            <Icon as={MapPin} className="text-accent-primary" size="md" />
-            <VStack className="flex-1">
-              <Text className="text-left text-sm text-typography-secondary">
+          paddingVertical="$5"
+          paddingHorizontal="$5"
+          flexDirection="row"
+          justifyContent="space-between"
+          alignItems="center">
+          <HStack alignItems="center" flex={1} gap="$3">
+            <Icon as={MapPin} color="$accentPrimary" size="md" />
+            <VStack flex={1}>
+              <Text textAlign="left" size="sm" color="$typographySecondary">
                 {t("location.current")}
               </Text>
-              <Text className="text-left text-xl font-semibold text-typography">
+              <Text textAlign="left" size="xl" fontWeight="600" color="$typography">
                 {localizedLocation.city ?? locationDetails.address?.city},{" "}
                 {localizedLocation.country ?? locationDetails.address?.country}
               </Text>
@@ -247,33 +257,44 @@ const KeepLocationUpdated = () => {
           </HStack>
 
           {isGettingLocation || isFetchingPrayers ? (
-            <ActivityIndicator size="small" className="text-accent-primary" />
+            <Spinner size="small" />
           ) : (
-            <Icon as={RefreshCw} className="text-accent-primary" size="md" />
+            <Icon as={RefreshCw} color="$accentPrimary" size="md" />
           )}
         </Pressable>
 
         {locationDetails.error && (
-          <Box className="px-5 pb-3">
-            <Text className="text-sm text-error">{locationDetails.error}</Text>
+          <Box paddingHorizontal="$5" paddingBottom="$3">
+            <Text size="sm" color="$error">
+              {locationDetails.error}
+            </Text>
           </Box>
         )}
       </Box>
 
       {/* Keep Location Updated Setting */}
-      <Box className="bg-background-secondary rounded-lg">
-        <Box className="py-4 px-5 flex-row justify-between items-center">
-          <HStack className="items-center flex-1" space="sm">
-            <Text className="text-base text-typography">
-              {t("location.settings.keepLocationUpdated.title")}
-            </Text>
+      <Box backgroundColor="$backgroundSecondary" borderRadius="$4">
+        <Box
+          paddingVertical="$4"
+          paddingHorizontal="$5"
+          flexDirection="row"
+          justifyContent="space-between"
+          alignItems="center">
+          <HStack alignItems="center" flex={1} gap="$2">
+            <Text color="$typography">{t("location.settings.keepLocationUpdated.title")}</Text>
             <Pressable
               onPress={() => {
                 hapticLight();
                 setShowInfoModal(true);
               }}
-              className="p-1">
-              <Icon as={Info} className="text-typography-secondary" size="sm" />
+              padding="$2"
+              minHeight={44}
+              minWidth={44}
+              alignItems="center"
+              justifyContent="center"
+              accessibilityRole="button"
+              accessibilityLabel={t("location.settings.keepLocationUpdated.infoTitle")}>
+              <Icon as={Info} color="$typographySecondary" size="sm" />
             </Pressable>
           </HStack>
           <Switch value={autoUpdateLocation} onValueChange={toggleAutoLocationUpdated} />
