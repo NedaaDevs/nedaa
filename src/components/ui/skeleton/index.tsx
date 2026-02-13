@@ -1,131 +1,132 @@
-import React, { forwardRef } from "react";
-import type { VariantProps } from "@gluestack-ui/nativewind-utils";
-import { Animated, Easing, Platform, View } from "react-native";
-import { skeletonStyle, skeletonTextStyle } from "./styles";
+import React, { useRef, useEffect } from "react";
+import { Animated, Easing, type ViewProps } from "react-native";
+import { styled, YStack, useTheme } from "tamagui";
 
-type ISkeletonProps = React.ComponentProps<typeof View> &
-  VariantProps<typeof skeletonStyle> & {
-    isLoaded?: boolean;
-    startColor?: string;
-  };
+type SkeletonVariant = "sharp" | "circular" | "rounded";
 
-type ISkeletonTextProps = React.ComponentProps<typeof View> &
-  VariantProps<typeof skeletonTextStyle> & {
-    _lines?: number;
-    isLoaded?: boolean;
-    startColor?: string;
-  };
+const VARIANT_RADIUS: Record<SkeletonVariant, number> = {
+  sharp: 0,
+  circular: 999,
+  rounded: 6,
+};
 
-const Skeleton = forwardRef<React.ComponentRef<typeof Animated.View>, ISkeletonProps>(
-  function Skeleton(
-    {
-      className,
-      variant,
-      children,
-      startColor = "bg-background-200",
-      isLoaded = false,
-      speed = 2,
-      ...props
-    },
-    ref
-  ) {
-    const pulseAnim = new Animated.Value(1);
-    const customTimingFunction = Easing.bezier(0.4, 0, 0.6, 1);
-    const fadeDuration = 0.6;
-    const animationDuration = (fadeDuration * 10000) / speed; // Convert seconds to milliseconds
+// --- Skeleton ---
+// Uses RN Animated for the looping pulse (Tamagui animations don't support loop).
 
-    const pulse = Animated.sequence([
-      Animated.timing(pulseAnim, {
-        toValue: 1, // Start with opacity 1
-        duration: animationDuration / 2, // Third of the animation duration
-        easing: customTimingFunction,
-        useNativeDriver: Platform.OS !== "web",
-      }),
-      Animated.timing(pulseAnim, {
-        toValue: 0.75,
-        duration: animationDuration / 2, // Third of the animation duration
-        easing: customTimingFunction,
-        useNativeDriver: Platform.OS !== "web",
-      }),
-      Animated.timing(pulseAnim, {
-        toValue: 1,
-        duration: animationDuration / 2, // Third of the animation duration
-        easing: customTimingFunction,
-        useNativeDriver: Platform.OS !== "web",
-      }),
-    ]);
+type SkeletonProps = ViewProps & {
+  variant?: SkeletonVariant;
+  isLoaded?: boolean;
+  startColor?: string;
+  children?: React.ReactNode;
+};
 
-    if (!isLoaded) {
-      Animated.loop(pulse).start();
-      return (
-        <Animated.View
-          style={{ opacity: pulseAnim }}
-          className={`${startColor} ${skeletonStyle({
-            variant,
-            class: className,
-          })}`}
-          {...props}
-          ref={ref}
-        />
+const Skeleton = React.forwardRef<React.ComponentRef<typeof Animated.View>, SkeletonProps>(
+  ({ variant = "rounded", isLoaded = false, startColor, children, style, ...props }, ref) => {
+    const theme = useTheme();
+    const resolvedColor = startColor ?? theme.backgroundMuted.val;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      if (isLoaded) return;
+
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 0.5,
+            duration: 800,
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          }),
+        ])
       );
-    } else {
-      Animated.loop(pulse).stop();
 
-      return children;
-    }
-  }
-);
+      animation.start();
+      return () => animation.stop();
+    }, [isLoaded, pulseAnim]);
 
-const SkeletonText = forwardRef<React.ComponentRef<typeof View>, ISkeletonTextProps>(
-  function SkeletonText(
-    {
-      className,
-      _lines,
-      isLoaded = false,
-      startColor = "bg-background-200",
-      gap = 2,
-      children,
-      ...props
-    },
-    ref
-  ) {
-    if (!isLoaded) {
-      if (_lines) {
-        return (
-          <View
-            className={`${skeletonTextStyle({
-              gap,
-            })}`}
-            ref={ref}>
-            {Array.from({ length: _lines }).map((_, index) => (
-              <Skeleton
-                key={index}
-                className={`${startColor} ${skeletonTextStyle({
-                  class: className,
-                })}`}
-                {...props}
-              />
-            ))}
-          </View>
-        );
-      } else {
-        return (
-          <Skeleton
-            className={`${startColor} ${skeletonTextStyle({
-              class: className,
-            })}`}
-            {...props}
-            ref={ref}
-          />
-        );
-      }
-    } else {
-      return children;
+    if (isLoaded) {
+      return <>{children}</>;
     }
+
+    return (
+      <Animated.View
+        ref={ref}
+        style={[
+          {
+            backgroundColor: resolvedColor,
+            borderRadius: VARIANT_RADIUS[variant],
+            width: "100%",
+            height: "100%",
+            opacity: pulseAnim,
+          },
+          style,
+        ]}
+        {...props}
+      />
+    );
   }
 );
 
 Skeleton.displayName = "Skeleton";
+
+// --- SkeletonText ---
+// Uses Tamagui YStack for layout, individual Skeleton for each line.
+
+const SkeletonTextContainer = styled(YStack, {
+  name: "SkeletonTextContainer",
+});
+
+type SkeletonTextProps = ViewProps & {
+  _lines?: number;
+  isLoaded?: boolean;
+  startColor?: string;
+  gap?: number;
+  children?: React.ReactNode;
+};
+
+const SkeletonText = React.forwardRef<React.ComponentRef<typeof Animated.View>, SkeletonTextProps>(
+  ({ _lines, isLoaded = false, startColor, gap = 8, children, style, ...props }, ref) => {
+    const theme = useTheme();
+    const resolvedColor = startColor ?? theme.backgroundMuted.val;
+    if (isLoaded) {
+      return <>{children}</>;
+    }
+
+    if (_lines && _lines > 1) {
+      return (
+        <SkeletonTextContainer gap={gap} ref={ref as any}>
+          {Array.from({ length: _lines }).map((_, index) => (
+            <Skeleton
+              key={index}
+              variant="rounded"
+              startColor={resolvedColor}
+              style={[{ width: "100%", borderRadius: 4 }, style]}
+              {...props}
+            />
+          ))}
+        </SkeletonTextContainer>
+      );
+    }
+
+    return (
+      <Skeleton
+        ref={ref}
+        variant="rounded"
+        startColor={resolvedColor}
+        style={[{ width: "100%", borderRadius: 4 }, style]}
+        {...props}
+      />
+    );
+  }
+);
+
 SkeletonText.displayName = "SkeletonText";
 
 export { Skeleton, SkeletonText };
+export type { SkeletonProps, SkeletonTextProps };
