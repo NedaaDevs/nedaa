@@ -1,11 +1,11 @@
 import { FC, useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { TextInput, Keyboard } from "react-native";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "tamagui";
 
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/box";
 
 import { ChallengeDifficulty, CHALLENGE_DIFFICULTY_CONFIG } from "@/types/alarm";
@@ -61,15 +61,13 @@ const generateProblem = (difficulty: ChallengeDifficulty): MathProblem => {
 
 const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useColorScheme();
+  const theme = useTheme();
   const hapticSuccess = useHaptic("success");
   const hapticError = useHaptic("error");
 
   const [problem, setProblem] = useState<MathProblem>(() => generateProblem(difficulty));
   const [userAnswer, setUserAnswer] = useState("");
   const [isWrong, setIsWrong] = useState(false);
-
-  const isDark = colorScheme === "dark";
 
   const handleSubmit = useCallback(() => {
     Keyboard.dismiss();
@@ -99,13 +97,16 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   }, [problem.operation]);
 
   return (
-    <VStack space="lg" className="items-center w-full">
-      <Text className="text-sm text-typography-secondary mb-2">
+    <VStack gap="$4" alignItems="center" width="100%">
+      <Text size="sm" color="$typographySecondary" marginBottom="$2">
         {t("alarm.challenge.solveMath")}
       </Text>
 
-      <Box className={`p-6 rounded-xl ${isWrong ? "bg-error/20" : "bg-background-muted"}`}>
-        <Text className="text-4xl font-bold text-typography text-center">
+      <Box
+        padding="$6"
+        borderRadius="$6"
+        backgroundColor={isWrong ? "$backgroundError" : "$backgroundMuted"}>
+        <Text size="4xl" bold color="$typography" textAlign="center">
           {problem.num1} {operationSymbol} {problem.num2} = ?
         </Text>
       </Box>
@@ -117,18 +118,32 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
         }}
         keyboardType="numeric"
         placeholder={t("alarm.challenge.enterAnswer")}
-        placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
+        placeholderTextColor={theme.placeholderColor.val}
         autoFocus
-        className={`w-full text-2xl font-bold text-center p-4 rounded-xl bg-background-muted text-typography ${isWrong ? "border-2 border-error" : ""}`}
+        style={{
+          width: "100%",
+          fontSize: 24,
+          fontWeight: "700",
+          textAlign: "center",
+          padding: 16,
+          borderRadius: 12,
+          backgroundColor: theme.backgroundMuted.val,
+          color: theme.typography.val,
+          ...(isWrong && { borderWidth: 2, borderColor: theme.error.val }),
+        }}
         onSubmitEditing={handleSubmit}
         returnKeyType="done"
       />
 
-      <Button size="xl" className="w-full mt-4" onPress={handleSubmit} disabled={!userAnswer}>
-        <ButtonText className="text-lg">{t("alarm.challenge.submit")}</ButtonText>
+      <Button size="xl" width="100%" marginTop="$4" onPress={handleSubmit} disabled={!userAnswer}>
+        <Button.Text size="lg">{t("alarm.challenge.submit")}</Button.Text>
       </Button>
 
-      {isWrong && <Text className="text-error text-sm">{t("alarm.challenge.wrongAnswer")}</Text>}
+      {isWrong && (
+        <Text color="$error" size="sm">
+          {t("alarm.challenge.wrongAnswer")}
+        </Text>
+      )}
     </VStack>
   );
 };

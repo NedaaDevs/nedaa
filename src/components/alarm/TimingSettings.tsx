@@ -29,7 +29,6 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
 
-  // Ensure value has defaults if undefined
   const timing = value ?? DEFAULT_TIMING;
 
   const showAtPrayerTimeOption = alarmType === "fajr";
@@ -70,41 +69,49 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
       if (mins === 0) {
         return t("common.hour", { count: hours });
       }
-      return `${hours}h ${mins}m`;
+      return `${t("common.hour", { count: hours })} ${t("common.minute", { count: mins })}`;
     }
     return t("common.minute", { count: minutes });
   };
 
   return (
-    <VStack space="md">
+    <VStack gap="$3">
       {showAtPrayerTimeOption && (
-        <HStack space="sm">
+        <HStack gap="$2">
           <Pressable
-            className={`flex-1 p-3 rounded-lg border ${
-              timing.mode === "atPrayerTime"
-                ? "bg-surface-active border-primary-400"
-                : "bg-background-primary border-outline-secondary"
-            }`}
+            flex={1}
+            padding="$3"
+            borderRadius="$4"
+            borderWidth={1}
+            backgroundColor={
+              timing.mode === "atPrayerTime" ? "$surfaceActive" : "$backgroundPrimary"
+            }
+            borderColor={timing.mode === "atPrayerTime" ? "$primary" : "$outlineSecondary"}
             onPress={() => handleModeChange("atPrayerTime")}>
             <Text
-              className={`text-sm text-center font-medium ${
-                timing.mode === "atPrayerTime" ? "text-typography" : "text-typography-secondary"
-              }`}>
+              size="sm"
+              textAlign="center"
+              fontWeight="500"
+              color={timing.mode === "atPrayerTime" ? "$typography" : "$typographySecondary"}>
               {t("alarm.settings.atPrayerTime")}
             </Text>
           </Pressable>
 
           <Pressable
-            className={`flex-1 p-3 rounded-lg border ${
-              timing.mode === "beforePrayerTime"
-                ? "bg-surface-active border-primary-400"
-                : "bg-background-primary border-outline-secondary"
-            }`}
+            flex={1}
+            padding="$3"
+            borderRadius="$4"
+            borderWidth={1}
+            backgroundColor={
+              timing.mode === "beforePrayerTime" ? "$surfaceActive" : "$backgroundPrimary"
+            }
+            borderColor={timing.mode === "beforePrayerTime" ? "$primary" : "$outlineSecondary"}
             onPress={() => handleModeChange("beforePrayerTime")}>
             <Text
-              className={`text-sm text-center font-medium ${
-                timing.mode === "beforePrayerTime" ? "text-typography" : "text-typography-secondary"
-              }`}>
+              size="sm"
+              textAlign="center"
+              fontWeight="500"
+              color={timing.mode === "beforePrayerTime" ? "$typography" : "$typographySecondary"}>
               {t("alarm.settings.beforePrayerTime")}
             </Text>
           </Pressable>
@@ -112,39 +119,54 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
       )}
 
       {(timing.mode === "beforePrayerTime" || !showAtPrayerTimeOption) && (
-        <VStack space="sm">
-          <HStack className="justify-between items-center">
-            <Text className="text-left text-sm text-typography-secondary">
+        <VStack gap="$2">
+          <HStack justifyContent="space-between" alignItems="center">
+            <Text textAlign="left" size="sm" color="$typographySecondary">
               {t("alarm.settings.minutesBefore")}
             </Text>
-            <Box className="bg-surface-active px-3 py-1 rounded-lg">
-              <Text className="text-sm font-semibold text-typography">
+            <Box
+              backgroundColor="$surfaceActive"
+              paddingHorizontal="$3"
+              paddingVertical="$1"
+              borderRadius="$4">
+              <Text size="sm" fontWeight="600" color="$typography">
                 {formatMinutes(timing.minutesBefore || minuteSteps[0])}
               </Text>
             </Box>
           </HStack>
 
-          <HStack space="sm" className="items-center">
+          <HStack gap="$2" alignItems="center">
             <Pressable
               onPress={handleDecrease}
-              className="w-10 h-10 rounded-full bg-background-muted items-center justify-center">
-              <Icon as={Minus} size="md" className="text-typography" />
+              width={44}
+              height={44}
+              borderRadius={999}
+              backgroundColor="$backgroundMuted"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={Minus} size="md" color="$typography" />
             </Pressable>
 
-            <HStack space="xs" className="flex-1 justify-center flex-wrap">
+            <HStack gap="$1" flex={1} justifyContent="center" flexWrap="wrap">
               {minuteSteps
                 .filter((m) => (alarmType === "fajr" ? m > 0 : true))
                 .map((minutes) => (
                   <Pressable
                     key={minutes}
                     onPress={() => handleStepPress(minutes)}
-                    className="px-1 py-1">
+                    minWidth={28}
+                    minHeight={28}
+                    alignItems="center"
+                    justifyContent="center">
                     <Box
-                      className={`w-3 h-3 rounded-full ${
+                      width={12}
+                      height={12}
+                      borderRadius={999}
+                      backgroundColor={
                         (timing.minutesBefore || 0) >= minutes
-                          ? "bg-accent-primary"
-                          : "bg-background-muted"
-                      }`}
+                          ? "$accentPrimary"
+                          : "$backgroundMuted"
+                      }
                     />
                   </Pressable>
                 ))}
@@ -152,8 +174,13 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
             <Pressable
               onPress={handleIncrease}
-              className="w-10 h-10 rounded-full bg-background-muted items-center justify-center">
-              <Icon as={Plus} size="md" className="text-typography" />
+              width={44}
+              height={44}
+              borderRadius={999}
+              backgroundColor="$backgroundMuted"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={Plus} size="md" color="$typography" />
             </Pressable>
           </HStack>
         </VStack>

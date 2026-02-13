@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Badge, BadgeText } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 
 import TapChallenge from "./TapChallenge";
@@ -38,17 +38,17 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete }) => {
   }, [completedCount, count, onAllComplete]);
 
   return (
-    <VStack space="lg" className="w-full">
+    <VStack gap="$4" width="100%">
       {count > 1 && (
-        <VStack space="sm">
-          <HStack className="justify-between items-center">
-            <Text className="text-sm text-typography-secondary">
+        <VStack gap="$2">
+          <HStack justifyContent="space-between" alignItems="center">
+            <Text size="sm" color="$typographySecondary">
               {t("alarm.challenge.progress")}
             </Text>
             <Badge size="sm" action="info">
-              <BadgeText>
+              <Badge.Text>
                 {completedCount}/{count}
-              </BadgeText>
+              </Badge.Text>
             </Badge>
           </HStack>
           <Progress value={progress} size="sm">
