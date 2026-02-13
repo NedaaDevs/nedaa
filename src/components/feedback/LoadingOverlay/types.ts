@@ -28,9 +28,4 @@ export type Props = {
    * Estimated time remaining in seconds
    */
   estimatedTime?: number;
-
-  /**
-   * Custom class name
-   */
-  className?: string;
 };
