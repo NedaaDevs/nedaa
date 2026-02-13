@@ -1,9 +1,8 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
-import { SOUND_ASSETS } from "@/constants/sounds";
 
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
@@ -25,26 +24,14 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicatorWrapper,
-  SelectDragIndicator,
-  SelectItem,
-  SelectScrollView,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 
 import SoundPreviewButton from "@/components/SoundPreviewButton";
 
 // Icons
-import { Zap, ChevronDown } from "lucide-react-native";
+import { Zap } from "lucide-react-native";
 
 type Props = {
   currentSound: PrayerSoundKey;
@@ -82,6 +69,15 @@ const NotificationQuickSetup: FC<Props> = ({
 
   const soundOptions = getAvailableSoundsWithCustom(NOTIFICATION_TYPE.PRAYER, customSounds);
 
+  const soundItems = useMemo(
+    () =>
+      soundOptions.map((option) => ({
+        label: option.isCustom ? option.label : t(option.label),
+        value: option.value,
+      })),
+    [soundOptions, t]
+  );
+
   const handleApply = () => {
     hapticSuccess();
     stopPreview();
@@ -102,92 +98,45 @@ const NotificationQuickSetup: FC<Props> = ({
     setLocalSound(value as PrayerSoundKey);
   };
 
-  const getTranslatedLabel = () => {
-    // Check if this is a custom sound
-    const customSound = customSounds.find((s) => s.id === localSound);
-    if (customSound) return customSound.name;
-
-    // Otherwise, it's a bundled sound
-    const soundAsset = SOUND_ASSETS[localSound as keyof typeof SOUND_ASSETS];
-    if (!soundAsset) return t("notification.sound.unknown");
-    return t(soundAsset.label);
-  };
-
   return (
-    <Box className="mx-4 p-4 rounded-lg">
-      <VStack space="md">
-        <HStack space="sm" className="items-center">
-          <Icon className="text-accent-primary" size="lg" as={Zap} />
-          <Text className="text-base font-semibold text-typography-accent">
+    <Box marginHorizontal="$4" padding="$4" borderRadius="$4">
+      <VStack gap="$3">
+        <HStack gap="$2" alignItems="center">
+          <Icon color="$accentPrimary" size="lg" as={Zap} />
+          <Text fontWeight="600" color="$accentPrimary">
             {t("notification.quickSetup")}
           </Text>
         </HStack>
 
-        <Text className="text-left text-sm text-typography">
+        <Text textAlign="left" size="sm" color="$typography">
           {t("notification.quickSetupDescription")}
         </Text>
 
-        <VStack space="sm">
-          <HStack className="justify-between items-center">
-            <Text className="text-sm text-typography">{t("notification.sound")}</Text>
+        <VStack gap="$2">
+          <HStack justifyContent="space-between" alignItems="center">
+            <Text size="sm" color="$typography">
+              {t("notification.sound")}
+            </Text>
             <Select
-              initialLabel={localSound ? getTranslatedLabel() : ""}
               selectedValue={localSound}
               onValueChange={handleValueChange}
-              accessibilityLabel={t("notification.sound.selectPlaceholder")}>
-              <SelectTrigger
-                variant="outline"
-                size="lg"
-                className="w-48 h-12 rounded-lg bg-background-primary transition-all duration-200 active:bg-surface-hover">
-                <SelectInput
-                  placeholder={t("notification.sound.selectPlaceholder")}
-                  className="text-left !text-typography font-medium"
-                />
-                <SelectIcon className="mr-3" as={ChevronDown} />
-              </SelectTrigger>
-
-              <SelectPortal>
-                <SelectBackdrop />
-                <SelectContent className="bg-background-secondary rounded-xl shadow-xl mx-4">
-                  <SelectDragIndicatorWrapper>
-                    <SelectDragIndicator />
-                  </SelectDragIndicatorWrapper>
-
-                  <SelectScrollView className="px-2 pt-1 pb-4 max-h-[50vh]">
-                    {soundOptions.map((option) => {
-                      const isSelected = localSound === option.value;
-                      // Custom sounds have their label already translated
-                      const displayLabel = option.isCustom ? option.label : t(option.label);
-
-                      return (
-                        <SelectItem
-                          key={option.value}
-                          label={displayLabel}
-                          value={option.value}
-                          className={`px-4 py-4 mb-2 rounded-lg transition-all duration-200 ease-in-out ${
-                            isSelected
-                              ? "bg-surface-active"
-                              : "bg-background-primary hover:bg-surface-hover"
-                          }`}
-                        />
-                      );
-                    })}
-                  </SelectScrollView>
-                </SelectContent>
-              </SelectPortal>
-            </Select>
+              items={soundItems}
+              placeholder={t("notification.sound.selectPlaceholder")}
+            />
 
             <SoundPreviewButton
               isPlaying={isPlayingSound(NOTIFICATION_TYPE.PRAYER, localSound)}
               onPress={() => handleSoundPreview(NOTIFICATION_TYPE.PRAYER)}
               disabled={localSound === "silent"}
-              color="text-typography-accent"
+              color="$accentPrimary"
             />
           </HStack>
 
           {supportsVibration && (
-            <HStack className="justify-between items-center">
-              <Text className="text-sm text-typography">{t("notification.vibration")}</Text>
+            <HStack justifyContent="space-between" alignItems="center">
+              <Text size="sm" color="$typography">
+                {t("notification.vibration")}
+              </Text>
               <Switch
                 value={localVibration}
                 onValueChange={(value) => {
@@ -195,16 +144,14 @@ const NotificationQuickSetup: FC<Props> = ({
                   setLocalVibration(value);
                 }}
                 size="sm"
+                accessibilityLabel={t("notification.vibration")}
               />
             </HStack>
           )}
         </VStack>
 
-        <Button
-          onPress={handleApply}
-          size="sm"
-          className="bg-accent-primary hover:bg-accent-primary">
-          <ButtonText className="text-background">{t("notification.applyToAll")}</ButtonText>
+        <Button onPress={handleApply} size="lg" backgroundColor="$accentPrimary">
+          <Button.Text color="$typographyContrast">{t("notification.applyToAll")}</Button.Text>
         </Button>
       </VStack>
     </Box>

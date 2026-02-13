@@ -7,7 +7,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import { Badge, BadgeText } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 
@@ -118,35 +118,50 @@ const NotificationTypePanel: FC<Props> = ({
 
   return (
     <>
-      <Box className="bg-background-secondary mx-4 rounded-lg overflow-hidden shadow-sm">
+      <Box
+        backgroundColor="$backgroundSecondary"
+        marginHorizontal="$4"
+        borderRadius="$4"
+        overflow="hidden">
         {/* Header */}
         <Pressable onPress={handleToggle} disabled={!defaults.enabled}>
-          <HStack className="p-4 justify-between items-center bg-background-muted">
-            <HStack space="sm" className="items-center flex-1">
-              <Icon className="text-typography" size="xl" as={IconComponent} />
-              <VStack className="flex-1">
-                <HStack space="sm" className="items-center">
-                  <Text className="text-lg font-semibold text-typography">{title}</Text>
+          <HStack
+            padding="$4"
+            justifyContent="space-between"
+            alignItems="center"
+            backgroundColor="$backgroundMuted">
+            <HStack gap="$2" alignItems="center" flex={1}>
+              <Icon color="$typography" size="xl" as={IconComponent} />
+              <VStack flex={1}>
+                <HStack gap="$2" alignItems="center">
+                  <Text size="lg" fontWeight="600" color="$typography">
+                    {title}
+                  </Text>
                   {hasTiming && (
                     <Badge size="sm" variant="outline">
-                      <BadgeText>
+                      <Badge.Text>
                         {t("common.minute", {
                           count: (defaults as NotificationWithTiming).timing,
                         })}
-                      </BadgeText>
+                      </Badge.Text>
                     </Badge>
                   )}
                 </HStack>
               </VStack>
             </HStack>
-            <HStack space="sm" className="items-center">
-              <Switch value={defaults.enabled} onValueChange={handleMainToggle} size="md" />
+            <HStack gap="$2" alignItems="center">
+              <Switch
+                value={defaults.enabled}
+                onValueChange={handleMainToggle}
+                size="md"
+                accessibilityLabel={title}
+              />
               {defaults.enabled && (
-                <Box className="ml-2">
+                <Box marginStart="$2">
                   {isExpanded ? (
-                    <Icon className="text-typography-secondary" size="lg" as={ChevronUp} />
+                    <Icon color="$typographySecondary" size="lg" as={ChevronUp} />
                   ) : (
-                    <Icon className="text-typography-secondary" size="lg" as={ChevronDown} />
+                    <Icon color="$typographySecondary" size="lg" as={ChevronDown} />
                   )}
                 </Box>
               )}
@@ -156,21 +171,29 @@ const NotificationTypePanel: FC<Props> = ({
 
         {/* Expanded Content */}
         {isExpanded && defaults.enabled && (
-          <VStack className="p-4" space="md">
+          <VStack padding="$4" gap="$3">
             {
-              <VStack space="xs">
+              <VStack gap="$1">
                 {PRAYERS.map((prayer) => {
                   const status = getPrayerStatus(prayer.id);
                   return (
-                    <HStack key={prayer.id} className="justify-between items-center py-3 px-2">
-                      <HStack space="sm" className="items-center flex-1">
-                        <Text className="text-base text-typography">{t(prayer.name)}</Text>
+                    <HStack
+                      key={prayer.id}
+                      justifyContent="space-between"
+                      alignItems="center"
+                      paddingVertical="$3"
+                      paddingHorizontal="$2">
+                      <HStack gap="$2" alignItems="center" flex={1}>
+                        <Text color="$typography">{t(prayer.name)}</Text>
                         <Badge size="sm">
-                          <BadgeText>{status.label}</BadgeText>
+                          <Badge.Text>{status.label}</Badge.Text>
                         </Badge>
                       </HStack>
-                      <Pressable onPress={() => openCustomization(prayer.id)} className="p-2">
-                        <Icon className="text-typography-secondary" size="md" as={Settings} />
+                      <Pressable
+                        onPress={() => openCustomization(prayer.id)}
+                        padding="$2"
+                        accessibilityLabel={t(prayer.name)}>
+                        <Icon color="$typographySecondary" size="md" as={Settings} />
                       </Pressable>
                     </HStack>
                   );
