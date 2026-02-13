@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Icon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Modal,
   ModalBackdrop,
@@ -41,50 +41,50 @@ const CrashLogButton = () => {
   return (
     <>
       <Pressable
-        className="items-center justify-center p-2 rounded-md"
+        alignItems="center"
+        justifyContent="center"
+        padding="$2"
+        borderRadius="$2"
+        minHeight={44}
+        minWidth={44}
         onPress={() => setModalVisible(true)}
+        accessibilityRole="button"
         accessibilityLabel={t("settings.crashReporting.accessibilityLabel")}
         accessibilityHint={t("settings.crashReporting.accessibilityHint")}>
-        <Icon className="text-typography" as={Bug} />
+        <Icon color="$typography" as={Bug} />
       </Pressable>
 
       <Modal isOpen={modalVisible} onClose={() => setModalVisible(false)} size="md">
         <ModalBackdrop />
-        <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl relative">
-          <ModalCloseButton className="absolute top-4 right-4 z-10">
-            <Icon as={X} className="text-typography-secondary" size="lg" />
+        <ModalContent>
+          <ModalCloseButton>
+            <Icon as={X} color="$typographySecondary" size="lg" />
           </ModalCloseButton>
 
-          <ModalHeader className="px-6 pt-6 pb-4 pr-12">
-            <Text className="text-xl font-bold text-typography text-left">
+          <ModalHeader>
+            <Text size="xl" bold color="$typography" textAlign="left">
               {t("settings.crashReporting.title")}
             </Text>
           </ModalHeader>
 
-          <ModalBody className="px-6">
-            <VStack space="md">
-              <Text className="text-left text-typography-secondary">
+          <ModalBody>
+            <VStack gap="$3">
+              <Text textAlign="left" color="$typographySecondary">
                 {t("settings.crashReporting.description")}
               </Text>
 
-              <VStack space="xs">
-                <Text className="text-base text-typography">
-                  {t("settings.crashReporting.bullet1")}
-                </Text>
-                <Text className="text-base text-typography">
-                  {t("settings.crashReporting.bullet2")}
-                </Text>
-                <Text className="text-base text-typography">
-                  {t("settings.crashReporting.bullet3")}
-                </Text>
+              <VStack gap="$1">
+                <Text color="$typography">{t("settings.crashReporting.bullet1")}</Text>
+                <Text color="$typography">{t("settings.crashReporting.bullet2")}</Text>
+                <Text color="$typography">{t("settings.crashReporting.bullet3")}</Text>
               </VStack>
 
-              <Text className="text-left text-typography-secondary">
+              <Text textAlign="left" color="$typographySecondary">
                 {t("settings.crashReporting.privacyNote")}
               </Text>
 
-              <HStack className="justify-between items-center">
-                <Text className="text-base font-medium text-typography flex-1">
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontWeight="500" color="$typography" flex={1}>
                   {t("settings.crashReporting.enableToggle")}
                 </Text>
                 <Switch value={sendCrashLogs} onValueChange={handleToggle} />
@@ -92,9 +92,9 @@ const CrashLogButton = () => {
             </VStack>
           </ModalBody>
 
-          <ModalFooter className="px-6 py-6">
-            <Button onPress={() => setModalVisible(false)} className="w-full bg-accent-primary">
-              <ButtonText className="text-background">{t("common.done")}</ButtonText>
+          <ModalFooter>
+            <Button onPress={() => setModalVisible(false)} width="100%">
+              <Button.Text>{t("common.done")}</Button.Text>
             </Button>
           </ModalFooter>
         </ModalContent>

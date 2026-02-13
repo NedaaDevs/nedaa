@@ -31,24 +31,33 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
   const ChevronIcon = effectiveRTL ? ChevronLeft : ChevronRight;
 
   return (
-    <Box className="relative inset-0 m-2 p-5 rounded-lg overflow-hidden bg-background-secondary">
+    <Box
+      margin="$2"
+      padding="$5"
+      borderRadius="$4"
+      overflow="hidden"
+      backgroundColor="$backgroundSecondary">
       <Link href={path} asChild>
-        <Pressable className="flex-row items-center">
-          <HStack className="justify-between items-center relative z-10 w-full">
-            <HStack className="items-center">
+        <Pressable flexDirection="row" alignItems="center">
+          <HStack justifyContent="space-between" alignItems="center" zIndex={10} width="100%">
+            <HStack alignItems="center">
               {icon && (
-                <Box className="me-6">
-                  <Icon className="font-bold text-typography" size="lg" as={icon}></Icon>
+                <Box marginEnd="$6">
+                  <Icon color="$typography" size="lg" as={icon} />
                 </Box>
               )}
-              <Text className="text-xl font-medium text-typography">{name}</Text>
+              <Text size="xl" fontWeight="500" color="$typography">
+                {name}
+              </Text>
             </HStack>
 
-            <HStack className="items-center">
+            <HStack alignItems="center">
               {currentValue && (
-                <Text className="text-lg text-typography-secondary me-2">{currentValue}</Text>
+                <Text size="lg" color="$typographySecondary" marginEnd="$2">
+                  {currentValue}
+                </Text>
               )}
-              <Icon size="xl" className="text-typography-secondary" as={ChevronIcon} />
+              <Icon size="xl" color="$typographySecondary" as={ChevronIcon} />
             </HStack>
           </HStack>
         </Pressable>

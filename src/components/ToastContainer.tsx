@@ -1,8 +1,8 @@
 import { Toast, ToastTitle, ToastDescription } from "@/components/ui/toast";
 import { useToastStore } from "@/stores/toast";
-import { Motion } from "@legendapp/motion";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { FadeInUp } from "react-native-reanimated";
 
 export function ToastProvider() {
   const { message, title, type, isVisible } = useToastStore();
@@ -11,25 +11,19 @@ export function ToastProvider() {
   if (!isVisible) return null;
 
   return (
-    <>
-      <Motion.View
-        style={[
-          {
-            position: Platform.OS === "web" ? "fixed" : "absolute",
-            top: insets.top + 10,
-            left: 10,
-            right: 10,
-            zIndex: 50,
-          },
-        ]}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}>
-        <Toast action={type}>
-          {title && <ToastTitle className="text-left">{title}</ToastTitle>}
-          <ToastDescription className="text-left">{message}</ToastDescription>
-        </Toast>
-      </Motion.View>
-    </>
+    <Animated.View
+      entering={FadeInUp.duration(200)}
+      style={{
+        position: Platform.OS === "web" ? ("fixed" as any) : "absolute",
+        top: insets.top + 10,
+        left: 10,
+        right: 10,
+        zIndex: 50,
+      }}>
+      <Toast action={type}>
+        {title && <ToastTitle textAlign="left">{title}</ToastTitle>}
+        <ToastDescription textAlign="left">{message}</ToastDescription>
+      </Toast>
+    </Animated.View>
   );
 }
