@@ -44,7 +44,8 @@ const Select: React.FC<SelectProps> = ({
         borderWidth={1}
         borderRadius="$4"
         backgroundColor="$backgroundSecondary"
-        minHeight={44}>
+        minHeight={44}
+        flexShrink={1}>
         <TamaguiSelect.Value placeholder={placeholder} />
       </TamaguiSelect.Trigger>
 
