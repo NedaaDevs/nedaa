@@ -1,39 +1,23 @@
-"use client";
-import React from "react";
-import { tva } from "@gluestack-ui/nativewind-utils/tva";
-import { Platform, View } from "react-native";
-import type { VariantProps } from "@gluestack-ui/nativewind-utils";
+import { styled, Separator } from "tamagui";
 
-const dividerStyle = tva({
-  base: "bg-background-200",
+export const Divider = styled(Separator, {
+  name: "Divider",
+  borderColor: "$outline",
+
   variants: {
     orientation: {
-      vertical: "w-px h-full",
-      horizontal: "h-px w-full",
+      horizontal: {
+        width: "100%",
+        borderBottomWidth: 1,
+      },
+      vertical: {
+        height: "100%",
+        borderRightWidth: 1,
+      },
     },
+  } as const,
+
+  defaultVariants: {
+    orientation: "horizontal",
   },
 });
-
-type IUIDividerProps = React.ComponentPropsWithoutRef<typeof View> &
-  VariantProps<typeof dividerStyle>;
-
-const Divider = React.forwardRef<React.ComponentRef<typeof View>, IUIDividerProps>(
-  ({ className, orientation = "horizontal", ...props }, ref) => {
-    return (
-      <View
-        ref={ref}
-        {...props}
-        aria-orientation={orientation}
-        role={Platform.OS === "web" ? "separator" : undefined}
-        className={dividerStyle({
-          orientation,
-          class: className,
-        })}
-      />
-    );
-  }
-);
-
-Divider.displayName = "Divider";
-
-export { Divider };
