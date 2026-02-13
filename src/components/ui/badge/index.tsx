@@ -10,7 +10,6 @@ import {
 import type { GetProps } from "tamagui";
 
 type BadgeAction = "error" | "warning" | "success" | "info" | "muted";
-type BadgeVariant = "solid" | "outline";
 type BadgeSize = "sm" | "md" | "lg";
 
 const BadgeContext = createStyledContext({
@@ -40,8 +39,6 @@ const BadgeFrame = styled(XStack, {
   context: BadgeContext,
   alignItems: "center",
   borderRadius: "$1",
-  paddingHorizontal: "$2",
-  paddingVertical: "$1",
 
   variants: {
     action: {
@@ -71,9 +68,9 @@ const BadgeFrame = styled(XStack, {
       outline: { borderWidth: 1 },
     },
     size: {
-      sm: {},
-      md: {},
-      lg: {},
+      sm: { paddingHorizontal: "$1", paddingVertical: 2 },
+      md: { paddingHorizontal: "$2", paddingVertical: "$1" },
+      lg: { paddingHorizontal: "$3", paddingVertical: "$1" },
     },
   } as const,
 
