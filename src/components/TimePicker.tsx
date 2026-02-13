@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { t } from "i18next";
-import { ScrollView, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Pressable } from "@/components/ui/pressable";
 
 // Utils
 import { formatTime12Hour, formatTime24Hour } from "@/utils/date";
@@ -64,11 +65,28 @@ const TimePicker = ({
   if (!isVisible) return null;
 
   return (
-    <Box className="absolute inset-0 bg-black/60 z-50 justify-center items-center">
-      <Box className="bg-background-secondary rounded-3xl p-6 mx-4 w-80 border border-border-subtle">
+    <Box
+      position="absolute"
+      top={0}
+      left={0}
+      right={0}
+      bottom={0}
+      backgroundColor="rgba(0,0,0,0.6)"
+      zIndex={50}
+      justifyContent="center"
+      alignItems="center"
+      accessibilityRole="none">
+      <Box
+        backgroundColor="$backgroundSecondary"
+        borderRadius="$8"
+        padding="$6"
+        marginHorizontal="$4"
+        width={320}
+        borderWidth={1}
+        borderColor="$outline">
         {/* Current Time Display */}
-        <Box className="bg-background-elevated rounded-2xl p-5 mb-6">
-          <Text className="text-typography-contrast text-center text-3xl font-bold tracking-wider">
+        <Box backgroundColor="$backgroundElevated" borderRadius="$7" padding="$5" marginBottom="$6">
+          <Text color="$typographyContrast" textAlign="center" size="3xl" bold>
             {use12HourFormat
               ? formatTime12Hour(selectedHour, selectedMinute)
               : formatTime24Hour(selectedHour, selectedMinute)}
@@ -76,19 +94,29 @@ const TimePicker = ({
         </Box>
 
         {/* Time Selectors */}
-        <HStack space="lg" className="justify-between mb-6">
+        <HStack gap="$4" justifyContent="space-between" marginBottom="$6">
           {/* Hour Picker */}
-          <VStack className="flex-1">
-            <Text className="text-center text-typography-secondary mb-3 text-sm font-semibold uppercase tracking-wide">
-              {t("common.hour")}
+          <VStack flex={1}>
+            <Text
+              textAlign="center"
+              color="$typographySecondary"
+              marginBottom="$3"
+              size="sm"
+              fontWeight="600">
+              {t("common.hourLabel")}
             </Text>
-            <Box className="bg-background rounded-xl p-2 border border-border-subtle">
+            <Box
+              backgroundColor="$background"
+              borderRadius="$6"
+              padding="$2"
+              borderWidth={1}
+              borderColor="$outline">
               <ScrollView
-                className="h-44"
+                style={{ height: 176 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 4 }}>
                 {hours.map((hour) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={hour}
                     onPress={() => {
                       if (use12HourFormat) {
@@ -98,49 +126,77 @@ const TimePicker = ({
                         setSelectedHour(hour);
                       }
                     }}
-                    className={`p-3 rounded-xl mb-2 mx-1 transition-all duration-200  ${
-                      displayHour === hour
-                        ? "bg-primary"
-                        : "bg-background-secondary border border-border-subtle hover:bg-surface-hover"
-                    }`}>
-                    <Text
-                      className={`text-center font-semibold text-lg ${
-                        displayHour === hour ? "text-typography-contrast" : "text-typography"
-                      }`}>
-                      {use12HourFormat ? hour.toString() : hour.toString().padStart(2, "0")}
-                    </Text>
-                  </TouchableOpacity>
+                    padding="$3"
+                    borderRadius="$3"
+                    marginBottom="$2"
+                    marginHorizontal="$1"
+                    minHeight={44}>
+                    <Box
+                      backgroundColor={displayHour === hour ? "$primary" : "$backgroundSecondary"}
+                      borderWidth={displayHour === hour ? 0 : 1}
+                      borderColor="$outline"
+                      borderRadius="$6"
+                      padding="$3">
+                      <Text
+                        textAlign="center"
+                        fontWeight="600"
+                        size="lg"
+                        color={displayHour === hour ? "$typographyContrast" : "$typography"}>
+                        {use12HourFormat ? hour.toString() : hour.toString().padStart(2, "0")}
+                      </Text>
+                    </Box>
+                  </Pressable>
                 ))}
               </ScrollView>
             </Box>
           </VStack>
 
           {/* Minute Picker */}
-          <VStack className="flex-1">
-            <Text className="text-center text-typography-secondary mb-3 text-sm font-semibold uppercase tracking-wide">
+          <VStack flex={1}>
+            <Text
+              textAlign="center"
+              color="$typographySecondary"
+              marginBottom="$3"
+              size="sm"
+              fontWeight="600">
               {t("common.minute")}
             </Text>
-            <Box className="bg-background rounded-xl p-2 border border-border-subtle">
+            <Box
+              backgroundColor="$background"
+              borderRadius="$6"
+              padding="$2"
+              borderWidth={1}
+              borderColor="$outline">
               <ScrollView
-                className="h-44"
+                style={{ height: 176 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 4 }}>
                 {minutes.map((minute) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={minute}
                     onPress={() => setSelectedMinute(minute)}
-                    className={`p-3 rounded-xl mb-2 mx-1 transition-all duration-200 ${
-                      selectedMinute === minute
-                        ? "bg-primary"
-                        : "bg-background-secondary border border-border-subtle hover:bg-surface-hover"
-                    }`}>
-                    <Text
-                      className={`text-center font-semibold text-lg ${
-                        selectedMinute === minute ? "text-typography-contrast" : "text-typography"
-                      }`}>
-                      {minute.toString().padStart(2, "0")}
-                    </Text>
-                  </TouchableOpacity>
+                    padding="$3"
+                    borderRadius="$3"
+                    marginBottom="$2"
+                    marginHorizontal="$1"
+                    minHeight={44}>
+                    <Box
+                      backgroundColor={
+                        selectedMinute === minute ? "$primary" : "$backgroundSecondary"
+                      }
+                      borderWidth={selectedMinute === minute ? 0 : 1}
+                      borderColor="$outline"
+                      borderRadius="$6"
+                      padding="$3">
+                      <Text
+                        textAlign="center"
+                        fontWeight="600"
+                        size="lg"
+                        color={selectedMinute === minute ? "$typographyContrast" : "$typography"}>
+                        {minute.toString().padStart(2, "0")}
+                      </Text>
+                    </Box>
+                  </Pressable>
                 ))}
               </ScrollView>
             </Box>
@@ -148,24 +204,31 @@ const TimePicker = ({
         </HStack>
 
         {/* Action Buttons  */}
-        <VStack space="md" className="mt-2">
+        <VStack gap="$3" marginTop="$2">
           <Button
             onPress={() => {
               onTimeChange(selectedHour, selectedMinute);
               onClose();
             }}
-            className="w-full bg-primary rounded-xl border-0">
-            <ButtonText className="text-center text-typography-contrast font-semibold text-base">
+            width="100%"
+            backgroundColor="$primary"
+            borderRadius="$6"
+            borderWidth={0}>
+            <Button.Text textAlign="center" color="$typographyContrast" fontWeight="600">
               {t("common.confirm")}
-            </ButtonText>
+            </Button.Text>
           </Button>
 
           <Button
             onPress={onClose}
-            className="w-full bg-background border border-border-primary rounded-xl">
-            <ButtonText className="text-center text-typography font-semibold text-base">
+            width="100%"
+            backgroundColor="$background"
+            borderWidth={1}
+            borderColor="$primary"
+            borderRadius="$6">
+            <Button.Text textAlign="center" color="$typography" fontWeight="600">
               {t("common.cancel")}
-            </ButtonText>
+            </Button.Text>
           </Button>
         </VStack>
       </Box>

@@ -45,20 +45,28 @@ const ThemeList = () => {
   };
 
   return (
-    <Box className="bg-background-secondary mt-2 rounded-lg">
+    <Box backgroundColor="$backgroundSecondary" marginTop="$2" borderRadius="$4">
       <ActionsheetFlatList
         data={modeData}
         renderItem={({ item, index }: any) => (
           <Pressable
             onPress={() => handleSelectTheme(item)}
-            className={`py-5 px-5 flex-row justify-between items-center ${
-              index < modeData.length - 1 ? "border-b border-outline" : ""
-            }`}>
+            paddingVertical="$5"
+            paddingHorizontal="$5"
+            flexDirection="row"
+            justifyContent="space-between"
+            alignItems="center"
+            borderBottomWidth={index < modeData.length - 1 ? 1 : 0}
+            borderColor={index < modeData.length - 1 ? "$outline" : undefined}>
             <Box>
-              <Text className="text-xl font-semibold text-typography">{item.title}</Text>
-              <Text className="text-lg text-typography-secondary mt-1">{item.description}</Text>
+              <Text size="xl" fontWeight="600" color="$typography">
+                {item.title}
+              </Text>
+              <Text size="lg" color="$typographySecondary" marginTop="$1">
+                {item.description}
+              </Text>
             </Box>
-            {mode === item.id && <Icon as={Check} className="text-accent-primary" size="lg" />}
+            {mode === item.id && <Icon as={Check} color="$accentPrimary" size="lg" />}
           </Pressable>
         )}
         keyExtractor={(item: any) => item.id}

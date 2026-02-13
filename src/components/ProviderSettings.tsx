@@ -1,5 +1,4 @@
 import { FC, useEffect, useState } from "react";
-import { TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 
 // Store
@@ -13,6 +12,7 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Spinner } from "@/components/ui/spinner";
+import { Pressable } from "@/components/ui/pressable";
 
 import { ProviderList } from "@/components/ProviderList";
 import AladhanSettings from "@/components/AladhanSettings";
@@ -48,19 +48,25 @@ export const ProviderSettings: FC = () => {
 
   if (isGettingProviders) {
     return (
-      <Box className="items-center justify-center my-auto">
-        <Spinner className="text-accent-primary" size="large" />
-        <Text className="text-typography">{t("common.loading")}</Text>
+      <Box alignItems="center" justifyContent="center" marginVertical="auto">
+        <Spinner color="$accentPrimary" size="large" />
+        <Text color="$typography">{t("common.loading")}</Text>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box className="items-center justify-center my-auto">
-        <TouchableOpacity onPress={handleRetry}>
-          <Text className="text-typography">{t("common.retry")}</Text>
-        </TouchableOpacity>
+      <Box alignItems="center" justifyContent="center" marginVertical="auto">
+        <Pressable
+          onPress={handleRetry}
+          minHeight={44}
+          minWidth={44}
+          alignItems="center"
+          justifyContent="center"
+          accessibilityRole="button">
+          <Text color="$typography">{t("common.retry")}</Text>
+        </Pressable>
       </Box>
     );
   }

@@ -19,17 +19,26 @@ const SoundPreviewButton: FC<Props> = ({
   isPlaying,
   onPress,
   size = "lg",
-  color = "text-typography-secondary",
+  color = "$typographySecondary",
   disabled = false,
 }) => {
   if (disabled) return null;
 
   return (
-    <Pressable onPress={onPress} className="p-2" disabled={disabled}>
+    <Pressable
+      onPress={onPress}
+      padding="$2"
+      disabled={disabled}
+      minHeight={44}
+      minWidth={44}
+      alignItems="center"
+      justifyContent="center"
+      accessibilityRole="button"
+      accessibilityLabel={isPlaying ? "Stop" : "Play"}>
       {isPlaying ? (
-        <Icon size={size} className={color} as={Square} />
+        <Icon size={size} color={color} as={Square} />
       ) : (
-        <Icon size={size} className={color} as={Play} />
+        <Icon size={size} color={color} as={Play} />
       )}
     </Pressable>
   );

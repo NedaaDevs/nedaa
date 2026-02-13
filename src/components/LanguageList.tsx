@@ -7,7 +7,6 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import { MessageToast } from "@/components/feedback";
 
 // Icons
 import { Check } from "lucide-react-native";
@@ -45,7 +44,6 @@ const LanguageList = () => {
   const handleSelectLanguage = async (item: ItemType) => {
     hapticSelection();
 
-    // Only proceed if a different language is selected
     if (item.id !== locale) {
       await setLocale(item.id);
       await updateAddressTranslation();
@@ -53,20 +51,28 @@ const LanguageList = () => {
   };
 
   return (
-    <Box className="bg-background-secondary mt-2 rounded-lg">
+    <Box backgroundColor="$backgroundSecondary" marginTop="$2" borderRadius="$4">
       <ActionsheetFlatList
         data={localeData}
         renderItem={({ item, index }: any) => (
           <Pressable
             onPress={async () => await handleSelectLanguage(item)}
-            className={`py-5 px-5 flex-row justify-between items-center ${
-              index < localeData.length - 1 ? "border-b border-outline" : ""
-            }`}>
+            paddingVertical="$5"
+            paddingHorizontal="$5"
+            flexDirection="row"
+            justifyContent="space-between"
+            alignItems="center"
+            borderBottomWidth={index < localeData.length - 1 ? 1 : 0}
+            borderColor={index < localeData.length - 1 ? "$outline" : undefined}>
             <Box>
-              <Text className="text-xl font-semibold text-typography">{item.title}</Text>
-              <Text className="text-lg text-typography-secondary mt-1">{item.nativeTitle}</Text>
+              <Text size="xl" fontWeight="600" color="$typography">
+                {item.title}
+              </Text>
+              <Text size="lg" color="$typographySecondary" marginTop="$1">
+                {item.nativeTitle}
+              </Text>
             </Box>
-            {locale === item.id && <Icon as={Check} className="text-accent-primary" size="lg" />}
+            {locale === item.id && <Icon as={Check} color="$accentPrimary" size="lg" />}
           </Pressable>
         )}
         keyExtractor={(item: any) => item.id}
