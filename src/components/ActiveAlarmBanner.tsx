@@ -44,18 +44,28 @@ export default function ActiveAlarmBanner() {
   };
 
   return (
-    <Pressable onPress={handlePress} className="mx-4 mt-2 rounded-xl bg-error-600 p-4">
-      <HStack className="items-center justify-between">
-        <HStack space="md" className="items-center flex-1">
-          <Icon as={Bell} size="md" className="text-white" />
+    <Pressable
+      onPress={handlePress}
+      marginHorizontal="$4"
+      marginTop="$2"
+      borderRadius="$6"
+      backgroundColor="$error"
+      padding="$4"
+      accessibilityRole="button"
+      accessibilityLabel={t("alarm.banner.activeAlarm")}>
+      <HStack alignItems="center" justifyContent="space-between">
+        <HStack gap="$3" alignItems="center" flex={1}>
+          <Icon as={Bell} size="md" color="$typographyContrast" />
           <VStack>
-            <Text className="font-bold text-white">{t("alarm.banner.activeAlarm")}</Text>
-            <Text className="text-sm text-white/80">
+            <Text bold color="$typographyContrast">
+              {t("alarm.banner.activeAlarm")}
+            </Text>
+            <Text size="sm" color="$typographyContrast" opacity={0.8}>
               {t("alarm.banner.tapToDismiss", { title: activeAlarm.title })}
             </Text>
           </VStack>
         </HStack>
-        <Icon as={ChevronRight} size="md" className={`text-white ${isRTL ? "rotate-180" : ""}`} />
+        <Icon as={ChevronRight} size="md" color="$typographyContrast" />
       </HStack>
     </Pressable>
   );

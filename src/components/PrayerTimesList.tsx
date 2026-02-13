@@ -36,18 +36,16 @@ const PrayerTimesList = () => {
   const handleRetry = async () => {
     clearError();
     try {
-      await loadPrayerTimes(true); // Force refresh
+      await loadPrayerTimes(true);
     } catch {
       // Error is handled in the store
     }
   };
 
-  // Show empty state if there's an error
   if (hasError && !todayTimings) {
     return <EmptyState type="error" onRetry={handleRetry} isRetrying={isLoading} />;
   }
 
-  // Show loading skeleton if loading
   if (isLoading && !todayTimings) {
     return (
       <ScrollView
@@ -57,27 +55,27 @@ const PrayerTimesList = () => {
           paddingTop: 10,
         }}
         showsVerticalScrollIndicator={false}>
-        {/* Show skeleton loading for 5 prayer times */}
         {Array.from({ length: 5 }).map((_, index) => (
           <Box
             key={`prayer-skeleton-${index}`}
-            className="mx-4 mb-3 p-4 rounded-xl bg-background-secondary">
-            <VStack className="gap-3">
-              {/* Prayer name skeleton */}
-              <HStack className="justify-between items-center">
-                <SkeletonText className="h-5 w-16" />
-                <Skeleton variant="circular" className="h-[24px] w-[24px]" />
+            marginHorizontal="$4"
+            marginBottom="$3"
+            padding="$4"
+            borderRadius="$6"
+            backgroundColor="$backgroundSecondary">
+            <VStack gap="$3">
+              <HStack justifyContent="space-between" alignItems="center">
+                <SkeletonText style={{ height: 20, width: 64 }} />
+                <Skeleton variant="circular" style={{ height: 24, width: 24 }} />
               </HStack>
 
-              {/* Prayer time skeleton */}
-              <VStack className="items-center gap-2">
-                <SkeletonText className="h-8 w-20" />
-                <SkeletonText className="h-3 w-12" />
+              <VStack alignItems="center" gap="$2">
+                <SkeletonText style={{ height: 32, width: 80 }} />
+                <SkeletonText style={{ height: 12, width: 48 }} />
               </VStack>
 
-              {/* Status indicator skeleton */}
-              <Box className="items-center">
-                <Skeleton variant="rounded" className="h-6 w-16" />
+              <Box alignItems="center">
+                <Skeleton variant="rounded" style={{ height: 24, width: 64 }} />
               </Box>
             </VStack>
           </Box>
@@ -102,9 +100,7 @@ const PrayerTimesList = () => {
         scrollEnabled={true}>
         {Object.entries(todayTimings.timings).map(([prayer, time]) => {
           const prayerName = prayer as PrayerName;
-
           const isNext = nextPrayer?.name === prayer;
-
           const name =
             prayerName === "dhuhr" && isFriday(todayTimings.timezone)
               ? "prayerTimes.jumuah"
