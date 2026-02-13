@@ -34,7 +34,6 @@ const Header = () => {
 
   const [showOtherTiming, setShowOtherTiming] = useState(false);
 
-  // Reset the timing display after 10 seconds
   useEffect(() => {
     if (showOtherTiming) {
       const timer = setTimeout(() => {
@@ -56,7 +55,6 @@ const Header = () => {
 
   const timing = showOtherTiming ? nextOtherTiming : nextPrayer;
 
-  // Get human-readable time remaining
   const getFormattedTimeRemaining = () => {
     if (!timing) return "";
     const timingDate = parseISO(timing.time);
@@ -67,17 +65,13 @@ const Header = () => {
     return formatNumberToLocale(timeRemaining);
   };
 
-  // Format day name "Friday"
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
-  // Get localized month name "رمضان or Ramadan"
   const hijriMonth = t(`hijriMonths.${hijriDate.month - 1}`);
 
-  // Format numbers for Arabic locale
   const formattedDay = formatNumberToLocale(hijriDate.day.toString());
   const formattedYear = formatNumberToLocale(hijriDate.year.toString());
 
-  // Format date components separately now
   const formattedDateDetails = `${formattedDay} ${hijriMonth} ${formattedYear}`;
 
   const formattedPrayerTime = (date: string) => {
@@ -91,11 +85,16 @@ const Header = () => {
 
   if (!timing) {
     return (
-      <Box className="m-1 rounded-2xl">
-        <Box className="p-3 rounded-xl mx-2 mt-1 bg-background-secondary">
-          <VStack className="items-center my-3 gap-2">
-            <SkeletonText className="h-7 w-32" />
-            <SkeletonText className="h-5 w-40" />
+      <Box margin="$1" borderRadius="$7">
+        <Box
+          padding="$3"
+          borderRadius="$6"
+          marginHorizontal="$2"
+          marginTop="$1"
+          backgroundColor="$backgroundSecondary">
+          <VStack alignItems="center" marginVertical="$3" gap="$2">
+            <SkeletonText style={{ height: 28, width: 128 }} />
+            <SkeletonText style={{ height: 20, width: 160 }} />
           </VStack>
         </Box>
       </Box>
@@ -118,46 +117,75 @@ const Header = () => {
       : `prayerTimes.${timing.name}`;
 
   return (
-    <Box className="m-1 rounded-2xl">
-      <Box className="p-4 rounded-xl mx-2 mt-1 ">
-        <VStack className="items-center gap-1">
-          <Text className="text-2xl font-bold text-typography text-center">{dayName}</Text>
-          <Text className="text-lg text-typography-secondary text-center">
+    <Box margin="$1" borderRadius="$7">
+      <Box padding="$3" borderRadius="$6" marginHorizontal="$2" marginTop="$1">
+        <VStack alignItems="center" gap="$0.5">
+          <Text size="xl" bold color="$typography" textAlign="center" numberOfLines={1}>
+            {dayName}
+          </Text>
+          <Text size="md" color="$typographySecondary" textAlign="center">
             {formattedDateDetails}
           </Text>
         </VStack>
       </Box>
 
-      <VStack className="items-center my-4 gap-2">
-        <VStack className="items-center gap-1">
-          <Text className="text-2xl font-semibold text-typography text-center px-2">
-            {localizedLocation.city ?? locationDetails.address?.city}
-          </Text>
-          <Text className="text-base text-typography-secondary text-center px-2">
-            {localizedLocation.country ?? locationDetails.address?.country}
-          </Text>
-        </VStack>
+      <VStack alignItems="center" marginVertical="$1" gap="$0.5">
+        <Text
+          size="lg"
+          fontWeight="600"
+          color="$typography"
+          textAlign="center"
+          paddingHorizontal="$2"
+          numberOfLines={1}>
+          {localizedLocation.city ?? locationDetails.address?.city}
+        </Text>
+        <Text
+          size="sm"
+          color="$typographySecondary"
+          textAlign="center"
+          paddingHorizontal="$2"
+          numberOfLines={1}>
+          {localizedLocation.country ?? locationDetails.address?.country}
+        </Text>
       </VStack>
 
       <PreviousPrayer />
 
       <Pressable
-        className="p-8 bg-background-secondary rounded-xl mx-1 mt-2 mb-2"
-        onPress={handleBoxClick}>
-        <HStack className="justify-between items-center w-full gap-4">
-          <Text className="text-4xl font-bold text-accent-primary flex-1 text-left">
+        padding="$6"
+        backgroundColor="$backgroundSecondary"
+        borderRadius="$6"
+        marginHorizontal="$1"
+        marginTop="$2"
+        marginBottom="$2"
+        onPress={handleBoxClick}
+        accessibilityRole="button">
+        <HStack justifyContent="space-between" alignItems="center" width="100%" gap="$4">
+          <Text size="2xl" bold color="$accentPrimary" flex={1} numberOfLines={1}>
             {t(timingName)}
           </Text>
 
-          <Divider className="h-14 w-px flex-shrink-0 bg-outline" />
+          <Divider
+            orientation="vertical"
+            height={40}
+            width={1}
+            flexShrink={0}
+            backgroundColor="$outline"
+          />
 
-          <VStack className="items-end flex-1">
-            <Text className="text-4xl font-semibold text-accent-primary text-right">
+          <VStack alignItems="center" gap="$1">
+            <Text size="2xl" fontWeight="600" color="$accentPrimary" textAlign="center">
               {formattedPrayerTime(timing.time)}
             </Text>
 
-            <Box className="mt-1 px-4 py-1 rounded-full bg-background-interactive">
-              <Text className="text-center text-typography">{getFormattedTimeRemaining()}</Text>
+            <Box
+              paddingHorizontal="$3"
+              paddingVertical="$0.5"
+              borderRadius={999}
+              backgroundColor="$backgroundInteractive">
+              <Text size="sm" textAlign="center" color="$typography">
+                {getFormattedTimeRemaining()}
+              </Text>
             </Box>
           </VStack>
         </HStack>
