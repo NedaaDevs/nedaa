@@ -38,10 +38,9 @@ const TimingsCarousel = (props: Props) => {
   };
 
   return (
-    <Box style={{ flex: 1, flexDirection: "column" }}>
-      <Divider className="mb-2" />
+    <Box flex={1} flexDirection="column">
+      <Divider marginBottom="$2" />
 
-      {/* Swipeable Content */}
       <PagerView
         ref={pagerRef}
         style={{ flex: 1 }}
@@ -49,19 +48,16 @@ const TimingsCarousel = (props: Props) => {
         onPageSelected={handlePageSelected}
         scrollEnabled={true}
         overdrag={true}>
-        {/* Page 1: Prayer Times */}
-        <Box key="prayer-times" style={{ flex: 1 }}>
+        <Box key="prayer-times" flex={1}>
           <PrayerTimes />
         </Box>
 
-        {/* Page 2: Other Timings */}
-        <Box key="other-timings" style={{ flex: 1 }}>
+        <Box key="other-timings" flex={1}>
           <OtherTimes />
         </Box>
       </PagerView>
 
-      {/* Bottom Navigation */}
-      <Box className="absolute bottom-0 left-0 right-0 bg-background-secondary">
+      <Box position="absolute" bottom={0} left={0} right={0} backgroundColor="$backgroundSecondary">
         <CustomPagination
           data={data}
           onPress={handleTabPress}

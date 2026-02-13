@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { ScrollView, View } from "react-native";
+import { ScrollView } from "react-native";
 
 // Components
+import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 
 import TimingItem from "@/components/TimingItem";
@@ -39,9 +40,9 @@ const OtherTimingsList = () => {
 
   if (!todayTimings || !todayTimings.otherTimings) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Box flex={1} justifyContent="center" alignItems="center">
         <Text>{t("loadingPrayerTimings")}</Text>
-      </View>
+      </Box>
     );
   }
 
@@ -49,21 +50,16 @@ const OtherTimingsList = () => {
     const now = new Date();
     const timings = Object.entries(todayTimings.otherTimings);
 
-    // Convert all timings to Date objects with their names
     const timingsWithDates = timings.map(([name, time]) => ({
       name: name as OtherTimingName,
       time,
       date: new Date(time),
     }));
 
-    // Sort by time
     timingsWithDates.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    // Find the next timing after current time
     const nextTiming = timingsWithDates.find((timing) => timing.date > now);
 
-    // If no timing is found for today, the first timing of tomorrow would be next
-    // But this list should be updated with next day timings after Isha
     return nextTiming?.name;
   };
 
