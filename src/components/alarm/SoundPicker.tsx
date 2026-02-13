@@ -1,28 +1,11 @@
-import { FC, useState, useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { FC, useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { HStack } from "@/components/ui/hstack";
-import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicatorWrapper,
-  SelectDragIndicator,
-  SelectItem,
-  SelectScrollView,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import SoundPreviewButton from "@/components/SoundPreviewButton";
 
-import { ChevronDown } from "lucide-react-native";
-
-import { SOUND_ASSETS } from "@/constants/sounds";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -57,14 +40,12 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
   const hapticLight = useHaptic("light");
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
   const [systemSounds, setSystemSounds] = useState<SoundOption[]>([]);
-  const [systemSoundsLoaded, setSystemSoundsLoaded] = useState(false);
+  const [, setSystemSoundsLoaded] = useState(false);
   const [isPreviewingSystem, setIsPreviewingSystem] = useState(false);
-  const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch system sounds on both platforms
   useEffect(() => {
     ExpoAlarm.getSystemAlarmSounds().then((sounds) => {
-      // Deduplicate system sounds (Android RingtoneManager may return duplicates)
       const seen = new Set<string>();
       const options: SoundOption[] = sounds
         .filter((s) => {
@@ -82,7 +63,6 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
     });
   }, []);
 
-  // Listen for playback finished event (iOS preview completion)
   useEffect(() => {
     const subscription = ExpoAlarm.addListener("onPlaybackFinished", () => {
       setIsPreviewingSystem(false);
@@ -94,7 +74,6 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
     return () => subscription.remove();
   }, []);
 
-  // Cleanup preview timeout on unmount
   useEffect(() => {
     return () => {
       if (previewTimeoutRef.current) {
@@ -105,7 +84,6 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
   }, []);
 
   const isSystemSound = (soundValue: string) => {
-    // Android system sounds use content:// URI, iOS system sounds start with "iOS-"
     return soundValue.startsWith("content://") || soundValue.startsWith("iOS-");
   };
 
@@ -117,29 +95,25 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
   const handleSoundPreview = async () => {
     hapticLight();
 
-    // Stop any ongoing preview first
     if (previewTimeoutRef.current) {
       clearTimeout(previewTimeoutRef.current);
       previewTimeoutRef.current = null;
     }
 
     if (isSystemSound(value)) {
-      // System sound preview using native player
       if (isPreviewingSystem) {
         await ExpoAlarm.stopAlarmSound();
         setIsPreviewingSystem(false);
       } else {
-        await stopPreview(); // Stop any bundled sound preview
+        await stopPreview();
         await ExpoAlarm.startAlarmSound(value);
         setIsPreviewingSystem(true);
-        // Auto-stop after 5 seconds
         previewTimeoutRef.current = setTimeout(async () => {
           await ExpoAlarm.stopAlarmSound();
           setIsPreviewingSystem(false);
         }, 5000);
       }
     } else {
-      // Bundled sound preview
       if (isPreviewingSystem) {
         await ExpoAlarm.stopAlarmSound();
         setIsPreviewingSystem(false);
@@ -152,103 +126,40 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
     }
   };
 
-  const getTranslatedLabel = () => {
-    // Check if it's a system sound
-    if (isSystemSound(value)) {
-      // Wait for system sounds to load before showing label
-      if (!systemSoundsLoaded) {
-        return "...";
-      }
-      const systemSound = systemSounds.find((s) => s.value === value);
-      return systemSound?.label ?? t("notification.sound.unknown");
+  const translatedAppSounds = useMemo(
+    () => ALARM_SOUNDS.map((s) => ({ label: t(s.label), value: s.value })),
+    [t]
+  );
+
+  const translatedSystemSounds = useMemo(
+    () => systemSounds.map((s) => ({ label: s.label, value: s.value })),
+    [systemSounds]
+  );
+
+  const allSoundItems = useMemo(() => {
+    const items = [...translatedAppSounds];
+    if (translatedSystemSounds.length > 0) {
+      items.push(...translatedSystemSounds);
     }
-    // Bundled sound
-    const soundAsset = SOUND_ASSETS[value as keyof typeof SOUND_ASSETS];
-    if (!soundAsset) return t("notification.sound.unknown");
-    return t(soundAsset.label);
-  };
+    return items;
+  }, [translatedAppSounds, translatedSystemSounds]);
 
   const isCurrentlyPlaying = isSystemSound(value)
     ? isPreviewingSystem
     : isPlayingSound(NOTIFICATION_TYPE.PRAYER, value);
 
   return (
-    <HStack className="justify-between items-center">
-      <Text className="text-left text-sm text-typography">{t("alarm.settings.sound")}</Text>
-      <HStack space="sm" className="items-center">
-        <Select
-          key={systemSoundsLoaded ? "loaded" : "loading"}
-          initialLabel={value ? getTranslatedLabel() : ""}
-          selectedValue={value}
-          onValueChange={handleValueChange}
-          accessibilityLabel={t("alarm.settings.selectSound")}>
-          <SelectTrigger
-            variant="outline"
-            size="lg"
-            className="w-40 h-10 rounded-lg bg-background-primary">
-            <SelectInput
-              placeholder={t("alarm.settings.selectSound")}
-              className="text-left !text-typography font-medium text-sm"
-            />
-            <SelectIcon className="me-3" as={ChevronDown} />
-          </SelectTrigger>
-
-          <SelectPortal>
-            <SelectBackdrop />
-            <SelectContent className="bg-background-secondary rounded-xl shadow-xl mx-4">
-              <SelectDragIndicatorWrapper>
-                <SelectDragIndicator />
-              </SelectDragIndicatorWrapper>
-
-              <SelectScrollView className="px-2 pt-1 pb-4 max-h-[50vh]">
-                {/* App Sounds Section */}
-                <VStack className="mb-2">
-                  <Text className="text-xs text-typography-secondary px-4 py-2 uppercase">
-                    {t("alarm.settings.appSounds")}
-                  </Text>
-                  {ALARM_SOUNDS.map((option) => {
-                    const isSelected = value === option.value;
-                    return (
-                      <SelectItem
-                        key={option.value}
-                        label={t(option.label)}
-                        value={option.value}
-                        className={`px-4 py-4 mb-2 rounded-lg ${
-                          isSelected ? "bg-surface-active" : "bg-background-primary"
-                        }`}
-                      />
-                    );
-                  })}
-                </VStack>
-
-                {/* System Sounds Section */}
-                {systemSounds.length > 0 && (
-                  <VStack>
-                    <Text className="text-xs text-typography-secondary px-4 py-2 uppercase">
-                      {t("alarm.settings.systemSounds")}
-                    </Text>
-                    {systemSounds.map((option) => {
-                      const isSelected = value === option.value;
-                      return (
-                        <SelectItem
-                          key={option.value}
-                          label={option.label}
-                          value={option.value}
-                          className={`px-4 py-4 mb-2 rounded-lg ${
-                            isSelected ? "bg-surface-active" : "bg-background-primary"
-                          }`}
-                        />
-                      );
-                    })}
-                  </VStack>
-                )}
-              </SelectScrollView>
-            </SelectContent>
-          </SelectPortal>
-        </Select>
-
-        <SoundPreviewButton isPlaying={isCurrentlyPlaying} onPress={handleSoundPreview} size="md" />
-      </HStack>
+    <HStack justifyContent="space-between" alignItems="center">
+      <Text textAlign="left" size="sm" color="$typography" flex={1}>
+        {t("alarm.settings.sound")}
+      </Text>
+      <Select
+        selectedValue={value}
+        onValueChange={handleValueChange}
+        items={allSoundItems}
+        placeholder={t("alarm.settings.selectSound")}
+      />
+      <SoundPreviewButton isPlaying={isCurrentlyPlaying} onPress={handleSoundPreview} size="md" />
     </HStack>
   );
 };

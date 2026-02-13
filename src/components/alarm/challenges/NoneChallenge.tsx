@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 
@@ -21,12 +21,12 @@ const NoneChallenge: FC<Props> = ({ onComplete }) => {
   };
 
   return (
-    <VStack space="lg" className="items-center">
-      <Text className="text-lg text-typography-secondary text-center">
+    <VStack gap="$4" alignItems="center" width="100%">
+      <Text size="lg" color="$typographySecondary" textAlign="center">
         {t("alarm.challenge.tapToDismissInstruction")}
       </Text>
-      <Button size="xl" action="positive" onPress={handleDismiss}>
-        <ButtonText>{t("alarm.challenge.dismiss")}</ButtonText>
+      <Button size="xl" action="positive" width="100%" onPress={handleDismiss}>
+        <Button.Text>{t("alarm.challenge.dismiss")}</Button.Text>
       </Button>
     </VStack>
   );

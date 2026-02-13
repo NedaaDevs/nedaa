@@ -47,31 +47,47 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
   };
 
   return (
-    <VStack space="sm">
-      <HStack className="justify-between items-center">
-        <Text className="text-left text-sm text-typography">{t("alarm.settings.volume")}</Text>
-        <Text className="text-sm text-typography-secondary">{volumePercentage}%</Text>
+    <VStack gap="$2">
+      <HStack justifyContent="space-between" alignItems="center">
+        <Text textAlign="left" size="sm" color="$typography">
+          {t("alarm.settings.volume")}
+        </Text>
+        <Text size="sm" color="$typographySecondary">
+          {volumePercentage}%
+        </Text>
       </HStack>
-      <HStack space="sm" className="items-center">
+      <HStack gap="$2" alignItems="center">
         <Icon
           as={isRTL ? Volume2 : VolumeX}
           size="sm"
-          className={value === (isRTL ? 1 : 0) ? "text-warning" : "text-typography-secondary"}
+          color={value === (isRTL ? 1 : 0) ? "$warning" : "$typographySecondary"}
         />
-        <HStack className="flex-1 justify-between items-center px-2">
+        <HStack flex={1} justifyContent="space-between" alignItems="center" paddingHorizontal="$2">
           <Pressable
             onPress={handleDecrease}
-            className="w-8 h-8 rounded-full bg-background-muted items-center justify-center">
-            <Icon as={Minus} size="sm" className="text-typography" />
+            width={44}
+            height={44}
+            borderRadius={999}
+            backgroundColor="$backgroundMuted"
+            alignItems="center"
+            justifyContent="center">
+            <Icon as={Minus} size="sm" color="$typography" />
           </Pressable>
 
-          <HStack space="xs" className="flex-1 justify-center">
+          <HStack gap="$1" flex={1} justifyContent="center">
             {VOLUME_STEPS.map((step) => (
-              <Pressable key={step} onPress={() => handleStepPress(step)} className="px-1">
+              <Pressable
+                key={step}
+                onPress={() => handleStepPress(step)}
+                minWidth={28}
+                minHeight={28}
+                alignItems="center"
+                justifyContent="center">
                 <Box
-                  className={`w-3 h-3 rounded-full ${
-                    value >= step ? "bg-accent-primary" : "bg-background-muted"
-                  }`}
+                  width={12}
+                  height={12}
+                  borderRadius={999}
+                  backgroundColor={value >= step ? "$accentPrimary" : "$backgroundMuted"}
                 />
               </Pressable>
             ))}
@@ -79,11 +95,16 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
 
           <Pressable
             onPress={handleIncrease}
-            className="w-8 h-8 rounded-full bg-background-muted items-center justify-center">
-            <Icon as={Plus} size="sm" className="text-typography" />
+            width={44}
+            height={44}
+            borderRadius={999}
+            backgroundColor="$backgroundMuted"
+            alignItems="center"
+            justifyContent="center">
+            <Icon as={Plus} size="sm" color="$typography" />
           </Pressable>
         </HStack>
-        <Icon as={isRTL ? VolumeX : Volume2} size="sm" className="text-typography-secondary" />
+        <Icon as={isRTL ? VolumeX : Volume2} size="sm" color="$typographySecondary" />
       </HStack>
     </VStack>
   );

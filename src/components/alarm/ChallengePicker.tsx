@@ -1,24 +1,10 @@
-import { FC } from "react";
+import { FC, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicatorWrapper,
-  SelectDragIndicator,
-  SelectItem,
-  SelectScrollView,
-} from "@/components/ui/select";
-
-import { ChevronDown } from "lucide-react-native";
+import { Select } from "@/components/ui/select";
 
 import {
   ChallengeConfig,
@@ -65,136 +51,63 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
     onChange({ ...value, count: parseInt(count, 10) as ChallengeCount });
   };
 
+  const typeItems = useMemo(
+    () => CHALLENGE_TYPES.map((c) => ({ label: t(c.label), value: c.value })),
+    [t]
+  );
+
+  const difficultyItems = useMemo(
+    () => CHALLENGE_DIFFICULTIES.map((d) => ({ label: t(d.label), value: d.value })),
+    [t]
+  );
+
+  const countItems = useMemo(
+    () => CHALLENGE_COUNTS.map((c) => ({ label: String(c), value: String(c) })),
+    []
+  );
+
   return (
-    <VStack space="md">
-      <Text className="text-left text-sm font-medium text-typography">
+    <VStack gap="$3">
+      <Text textAlign="left" size="sm" fontWeight="500" color="$typography">
         {t("alarm.settings.challenge")}
       </Text>
 
-      <HStack className="justify-between items-center">
-        <Text className="text-left text-sm text-typography-secondary">
+      <HStack justifyContent="space-between" alignItems="center">
+        <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
           {t("alarm.challenge.type")}
         </Text>
         <Select
-          initialLabel={t(CHALLENGE_TYPES.find((c) => c.value === value.type)?.label || "")}
           selectedValue={value.type}
-          onValueChange={handleTypeChange}>
-          <SelectTrigger
-            variant="outline"
-            size="md"
-            className="w-32 h-10 rounded-lg bg-background-primary">
-            <SelectInput className="text-left !text-typography font-medium text-sm" />
-            <SelectIcon className="me-2" as={ChevronDown} />
-          </SelectTrigger>
-
-          <SelectPortal>
-            <SelectBackdrop />
-            <SelectContent className="bg-background-secondary rounded-xl shadow-xl mx-4">
-              <SelectDragIndicatorWrapper>
-                <SelectDragIndicator />
-              </SelectDragIndicatorWrapper>
-
-              <SelectScrollView className="px-2 pt-1 pb-4">
-                {CHALLENGE_TYPES.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    label={t(option.label)}
-                    value={option.value}
-                    className={`px-4 py-3 mb-2 rounded-lg ${
-                      value.type === option.value ? "bg-surface-active" : "bg-background-primary"
-                    }`}
-                  />
-                ))}
-              </SelectScrollView>
-            </SelectContent>
-          </SelectPortal>
-        </Select>
+          onValueChange={handleTypeChange}
+          items={typeItems}
+          placeholder={t("alarm.challenge.type")}
+        />
       </HStack>
 
       {value.type !== "none" && (
         <>
-          <HStack className="justify-between items-center">
-            <Text className="text-left text-sm text-typography-secondary">
+          <HStack justifyContent="space-between" alignItems="center">
+            <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
               {t("alarm.challenge.difficulty")}
             </Text>
             <Select
-              initialLabel={t(
-                CHALLENGE_DIFFICULTIES.find((d) => d.value === value.difficulty)?.label || ""
-              )}
               selectedValue={value.difficulty}
-              onValueChange={handleDifficultyChange}>
-              <SelectTrigger
-                variant="outline"
-                size="md"
-                className="w-32 h-10 rounded-lg bg-background-primary">
-                <SelectInput className="text-left !text-typography font-medium text-sm" />
-                <SelectIcon className="me-2" as={ChevronDown} />
-              </SelectTrigger>
-
-              <SelectPortal>
-                <SelectBackdrop />
-                <SelectContent className="bg-background-secondary rounded-xl shadow-xl mx-4">
-                  <SelectDragIndicatorWrapper>
-                    <SelectDragIndicator />
-                  </SelectDragIndicatorWrapper>
-
-                  <SelectScrollView className="px-2 pt-1 pb-4">
-                    {CHALLENGE_DIFFICULTIES.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        label={t(option.label)}
-                        value={option.value}
-                        className={`px-4 py-3 mb-2 rounded-lg ${
-                          value.difficulty === option.value
-                            ? "bg-surface-active"
-                            : "bg-background-primary"
-                        }`}
-                      />
-                    ))}
-                  </SelectScrollView>
-                </SelectContent>
-              </SelectPortal>
-            </Select>
+              onValueChange={handleDifficultyChange}
+              items={difficultyItems}
+              placeholder={t("alarm.challenge.difficulty")}
+            />
           </HStack>
 
-          <HStack className="justify-between items-center">
-            <Text className="text-left text-sm text-typography-secondary">
+          <HStack justifyContent="space-between" alignItems="center">
+            <Text textAlign="left" size="sm" color="$typographySecondary" flex={1}>
               {t("alarm.challenge.count")}
             </Text>
             <Select
-              initialLabel={String(value.count)}
               selectedValue={String(value.count)}
-              onValueChange={handleCountChange}>
-              <SelectTrigger
-                variant="outline"
-                size="md"
-                className="w-32 h-10 rounded-lg bg-background-primary">
-                <SelectInput className="text-left !text-typography font-medium text-sm" />
-                <SelectIcon className="me-2" as={ChevronDown} />
-              </SelectTrigger>
-
-              <SelectPortal>
-                <SelectBackdrop />
-                <SelectContent className="bg-background-secondary rounded-xl shadow-xl mx-4">
-                  <SelectDragIndicatorWrapper>
-                    <SelectDragIndicator />
-                  </SelectDragIndicatorWrapper>
-
-                  <SelectScrollView className="px-2 pt-1 pb-4 max-h-[40vh]">
-                    {CHALLENGE_COUNTS.map((count) => (
-                      <SelectItem
-                        key={count}
-                        label={String(count)}
-                        value={String(count)}
-                        className={`px-4 py-3 mb-2 rounded-lg ${
-                          value.count === count ? "bg-surface-active" : "bg-background-primary"
-                        }`}
-                      />
-                    ))}
-                  </SelectScrollView>
-                </SelectContent>
-              </SelectPortal>
-            </Select>
+              onValueChange={handleCountChange}
+              items={countItems}
+              placeholder={t("alarm.challenge.count")}
+            />
           </HStack>
         </>
       )}
