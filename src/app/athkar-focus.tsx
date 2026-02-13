@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useTheme } from "tamagui";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -55,6 +56,7 @@ const AthkarFocusScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const { isRTL } = useRTL();
+  const theme = useTheme();
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -227,6 +229,10 @@ const AthkarFocusScreen = () => {
   const CIRCLE_RADIUS = 120;
   const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
+  // Resolve theme colors for animation interpolation
+  const progressStartColor = theme.info.val;
+  const progressEndColor = theme.success.val;
+
   // Animated props for the progress circle
   const animatedCircleProps = useAnimatedProps(() => {
     const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - animatedProgress.value);
@@ -236,7 +242,7 @@ const AthkarFocusScreen = () => {
       stroke: interpolateColor(
         animatedProgress.value,
         [0, 1],
-        ["#1E40AF", "#10b981"] // Blue to green
+        [progressStartColor, progressEndColor]
       ),
     };
   });
@@ -415,51 +421,63 @@ const AthkarFocusScreen = () => {
   }
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <Box className="flex-1 bg-background">
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Box flex={1} backgroundColor="$background">
         {/* Header */}
-        <Box className="absolute top-12 right-4 z-10">
+        <Box position="absolute" top={48} end={16} zIndex={10}>
           <Button
             size="md"
             variant="outline"
+            action="default"
+            accessibilityLabel={t("common.close")}
             onPress={() => router.back()}
-            className="w-12 h-12 p-0 rounded-full bg-background-secondary/80">
-            <Icon size="md" className="text-typography" as={X} />
+            width={48}
+            height={48}
+            padding={0}
+            borderRadius={999}
+            backgroundColor="$backgroundSecondary"
+            opacity={0.8}>
+            <Icon size="md" color="$typography" as={X} />
           </Button>
         </Box>
 
         {/* Progress Indicator */}
-        <Box className="absolute top-12 left-4 right-20 z-10">
-          <Text className="text-sm text-typography-secondary mb-2">
+        <Box position="absolute" top={48} start={16} end={80} zIndex={10}>
+          <Text size="sm" color="$typographySecondary" marginBottom="$2">
             {formatNumberToLocale(`${currentAthkarIndex + 1}`)} /
             {formatNumberToLocale(`${currentAthkarList.length}`)}
           </Text>
-          <Progress
-            value={((currentAthkarIndex + 1) / currentAthkarList.length) * 100}
-            className="h-2">
-            <ProgressFilledTrack className="bg-accent-primary" />
+          <Progress value={((currentAthkarIndex + 1) / currentAthkarList.length) * 100} size="xs">
+            <ProgressFilledTrack backgroundColor="$primary" />
           </Progress>
         </Box>
 
         <GestureDetector gesture={combinedGestures}>
-          <Pressable onPress={handleTap} className="flex-1">
-            <Box style={{ flex: 1, overflow: "visible" }}>
+          <Pressable onPress={handleTap} flex={1}>
+            <Box flex={1} overflow="visible">
               <Box
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  paddingHorizontal: 32,
-                  paddingVertical: 100,
-                  overflow: "visible",
-                }}>
-                <Box style={{ width: "100%", alignItems: "center", overflow: "visible" }}>
-                  <Animated.View style={slideStyle} className="items-center max-w-full">
-                    <VStack space="2xl" className="items-center max-w-full">
+                flex={1}
+                justifyContent="center"
+                alignItems="center"
+                paddingHorizontal="$8"
+                paddingVertical={100}
+                overflow="visible">
+                <Box width="100%" alignItems="center" overflow="visible">
+                  <Animated.View style={[slideStyle, { alignItems: "center", maxWidth: "100%" }]}>
+                    <VStack gap="$7" alignItems="center" maxWidth="100%">
                       {/* Circular Progress */}
                       <View style={{ position: "relative", width: 256, height: 256 }}>
                         {/* Background Circle */}
-                        <View className="absolute inset-0 items-center justify-center">
+                        <View
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}>
                           <Svg
                             width={256}
                             height={256}
@@ -469,7 +487,7 @@ const AthkarFocusScreen = () => {
                               cx={128}
                               cy={128}
                               r={CIRCLE_RADIUS}
-                              stroke="rgba(30, 64, 175, 0.1)"
+                              stroke={`${progressStartColor}1A`}
                               strokeWidth={8}
                               fill="none"
                             />
@@ -492,21 +510,24 @@ const AthkarFocusScreen = () => {
                           style={[
                             {
                               position: "absolute",
-                              inset: 0,
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
                               alignItems: "center",
                               justifyContent: "center",
                             },
                             countAnimatedStyle,
                           ]}>
-                          <VStack className="items-center justify-center" space="xs">
+                          <VStack alignItems="center" justifyContent="center" gap="$1">
                             <Text
-                              className={`text-5xl font-bold ${
-                                isCompleted ? "text-typography-secondary" : "text-accent-info"
-                              }`}>
+                              size="5xl"
+                              bold
+                              color={isCompleted ? "$typographySecondary" : "$info"}>
                               {formatNumberToLocale(`${currentCount}`)}
                             </Text>
                             <Text
-                              className="text-typography-secondary"
+                              color="$typographySecondary"
                               style={{
                                 lineHeight: 20,
                                 includeFontPadding: false,
@@ -518,8 +539,12 @@ const AthkarFocusScreen = () => {
                       </View>
 
                       {/* Athkar Text */}
-                      <VStack space="lg" className="items-center max-w-full">
-                        <Text className="text-xl text-center text-typography leading-relaxed ">
+                      <VStack gap="$4" alignItems="center" maxWidth="100%">
+                        <Text
+                          size="xl"
+                          textAlign="center"
+                          color="$typography"
+                          style={{ lineHeight: 28 }}>
                           {t(currentAthkar.text)}
                         </Text>
                       </VStack>
@@ -533,9 +558,9 @@ const AthkarFocusScreen = () => {
                 <Animated.View
                   entering={FadeIn}
                   exiting={FadeOut}
-                  className="absolute bottom-20 left-4 right-4">
-                  <VStack space="xs">
-                    <Text className="text-sm text-typography-secondary text-center">
+                  style={{ position: "absolute", bottom: 80, left: 16, right: 16 }}>
+                  <VStack gap="$1">
+                    <Text size="sm" color="$typographySecondary" textAlign="center">
                       {t("athkar.focus.tapToIncrement")} •{" "}
                       {t(
                         isRTL
@@ -543,7 +568,7 @@ const AthkarFocusScreen = () => {
                           : "athkar.focus.swipeLeftToDecrease"
                       )}
                     </Text>
-                    <Text className="text-xs text-typography-secondary text-center">
+                    <Text size="xs" color="$typographySecondary" textAlign="center">
                       {t("athkar.focus.swipeUpDownToNavigate")}
                     </Text>
                   </VStack>
@@ -553,12 +578,16 @@ const AthkarFocusScreen = () => {
               {/* Swipe Indicator */}
               {showSwipeIndicator && currentCount > 0 && (
                 <Animated.View
-                  style={[swipeIndicatorStyle]}
-                  className="absolute left-0 right-0 top-1/2 items-center">
-                  <HStack className="items-center" space="lg">
-                    <Icon as={ChevronLeft} size="xl" className="text-warning" />
-                    <Text className="text-lg font-semibold text-warning">{currentCount - 1}</Text>
-                    <Icon as={ChevronRight} size="xl" className="text-warning" />
+                  style={[
+                    swipeIndicatorStyle,
+                    { position: "absolute", left: 0, right: 0, top: "50%", alignItems: "center" },
+                  ]}>
+                  <HStack alignItems="center" gap="$4">
+                    <Icon as={ChevronLeft} size="xl" color="$warning" />
+                    <Text size="lg" fontWeight="600" color="$warning">
+                      {currentCount - 1}
+                    </Text>
+                    <Icon as={ChevronRight} size="xl" color="$warning" />
                   </HStack>
                 </Animated.View>
               )}
@@ -566,11 +595,13 @@ const AthkarFocusScreen = () => {
               {/* Navigation Indicator */}
               {showNavigationIndicator && (
                 <Animated.View
-                  style={[navigationIndicatorStyle]}
-                  className="absolute left-0 right-0 top-1/2 items-center">
-                  <VStack className="items-center" space="sm">
-                    <Icon as={ChevronUp} size="lg" className="text-accent-info" />
-                    <Icon as={ChevronDown} size="lg" className="text-accent-info" />
+                  style={[
+                    navigationIndicatorStyle,
+                    { position: "absolute", left: 0, right: 0, top: "50%", alignItems: "center" },
+                  ]}>
+                  <VStack alignItems="center" gap="$2">
+                    <Icon as={ChevronUp} size="lg" color="$info" />
+                    <Icon as={ChevronDown} size="lg" color="$info" />
                   </VStack>
                 </Animated.View>
               )}

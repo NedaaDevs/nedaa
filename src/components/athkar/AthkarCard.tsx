@@ -65,42 +65,54 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
   return (
     <Pressable onPress={handleIncrement} disabled={isCompleted}>
       <Box
-        className={`p-4 rounded-xl relative ${
-          isCompleted
-            ? "bg-accent-success dark:bg-accent-success border-2 border-success"
-            : "bg-background-secondary dark:bg-background-tertiary"
-        }`}>
-        <VStack space="md">
+        padding="$4"
+        borderRadius="$6"
+        position="relative"
+        backgroundColor={isCompleted ? "$backgroundSuccess" : "$backgroundSecondary"}
+        borderWidth={isCompleted ? 2 : 0}
+        borderColor={isCompleted ? "$success" : "transparent"}>
+        <VStack gap="$3">
           {/* Athkar Text */}
           <Text
-            className={`text-xl text-left leading-relaxed ${isCompleted ? " text-typography-secondary" : "text-typography"}`}>
+            size="xl"
+            textAlign="left"
+            style={{ lineHeight: 28 }}
+            color={isCompleted ? "$typographySecondary" : "$typography"}>
             {t(athkar.text)}
           </Text>
 
           {/* Progress Section */}
-          <VStack space="sm">
+          <VStack gap="$2">
             {/* Counter with buttons */}
-            <HStack className="justify-between items-center">
-              <HStack space="sm" className="items-center">
+            <HStack justifyContent="space-between" alignItems="center">
+              <HStack gap="$2" alignItems="center">
                 {currentCount > 0 && (
                   <Button
                     size="xs"
                     variant="outline"
-                    onPress={(e) => {
+                    action="default"
+                    accessibilityLabel={t("common.decrement")}
+                    onPress={(e: any) => {
                       e.stopPropagation();
                       decrementCount(athkar.id);
                       hapticWarning();
                     }}
-                    className={`w-10 h-10 p-0 rounded-full ${isCompleted ? "bg-black/20 border border-primary/50" : "text-typography-info"}`}>
-                    <Icon as={Minus} className="text-typography-info" />
+                    width={44}
+                    height={44}
+                    padding={0}
+                    borderRadius={999}
+                    backgroundColor={isCompleted ? "$backgroundMuted" : "transparent"}
+                    borderColor={isCompleted ? "$outlineSecondary" : "$info"}>
+                    <Icon as={Minus} color="$info" />
                   </Button>
                 )}
               </HStack>
               {/* Count Display */}
               <Text
-                className={`text-base text-left font-medium ${
-                  isCompleted ? "text-white" : "text-typography-secondary"
-                }`}>
+                size="md"
+                textAlign="left"
+                fontWeight="500"
+                color={isCompleted ? "$typographyContrast" : "$typographySecondary"}>
                 {isRTL
                   ? `${formatNumberToLocale(`${total}`)} / ${formatNumberToLocale(`${currentCount}`)}`
                   : `${formatNumberToLocale(`${currentCount}`)} / ${formatNumberToLocale(`${total}`)}`}
@@ -108,16 +120,25 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
             </HStack>
 
             {/* Progress Bar */}
-            <Progress
-              value={progressPercentage}
-              className={`h-3 ${isCompleted ? "bg-white/40" : "bg-background-tertiary"}`}>
-              <ProgressFilledTrack className={isCompleted ? "bg-white" : "bg-accent-primary"} />
+            <Progress value={progressPercentage} size="md" backgroundColor="$backgroundMuted">
+              <ProgressFilledTrack
+                backgroundColor={isCompleted ? "$typographyContrast" : "$primary"}
+              />
             </Progress>
           </VStack>
 
           {isCompleted && (
-            <Box className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-success items-center justify-center shadow-md">
-              <Icon as={Check} className="" />
+            <Box
+              position="absolute"
+              top={-8}
+              end={-8}
+              width={40}
+              height={40}
+              borderRadius={999}
+              backgroundColor="$success"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={Check} color="$typographyContrast" />
             </Box>
           )}
         </VStack>

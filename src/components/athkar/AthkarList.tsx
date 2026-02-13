@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "tamagui";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,7 +19,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 import AthkarCard from "@/components/athkar/AthkarCard";
@@ -51,6 +52,7 @@ type Props = {
 const AthkarList = ({ type }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
+  const theme = useTheme();
   const {
     morningAthkarList,
     eveningAthkarList,
@@ -232,16 +234,10 @@ const AthkarList = ({ type }: Props) => {
     });
 
   // Animated styles
+  const resetButtonColor = theme.info.val;
   const buttonAnimatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolate(backgroundProgress.value, [0, 1], [0x3b82f6, 0x3b82f6]);
-
-    // Convert hex to rgba
-    const r = (backgroundColor >> 16) & 255;
-    const g = (backgroundColor >> 8) & 255;
-    const b = backgroundColor & 255;
-
     return {
-      backgroundColor: `rgb(${r}, ${g}, ${b})`,
+      backgroundColor: resetButtonColor,
       transform: [{ scale: scaleValue.value }],
     };
   });
@@ -264,36 +260,45 @@ const AthkarList = ({ type }: Props) => {
   // Show loading indicator while initializing
   if (isInitializing) {
     return (
-      <VStack className="flex-1 justify-center items-center" space="md">
+      <VStack flex={1} justifyContent="center" alignItems="center" gap="$3">
         <Spinner size="large" />
-        <Text className="text-typography-secondary">{t("athkar.loading.initializing")}</Text>
+        <Text color="$typographySecondary">{t("athkar.loading.initializing")}</Text>
       </VStack>
     );
   }
 
   return (
-    <VStack space="md" className="relative">
+    <VStack gap="$3" position="relative">
       {/* Show loading overlay while resetting */}
       {isResetting && (
         <VStack
-          className="absolute inset-0 bg-background/80 justify-center items-center z-50"
-          space="md">
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          backgroundColor="$background"
+          opacity={0.8}
+          justifyContent="center"
+          alignItems="center"
+          zIndex={50}
+          gap="$3">
           <Spinner size="large" />
-          <Text className="text-typography-secondary">{t("athkar.loading.resetting")}</Text>
+          <Text color="$typographySecondary">{t("athkar.loading.resetting")}</Text>
         </VStack>
       )}
       {/* Streak Card */}
       {settings.showStreak && (
-        <Card className="p-4 bg-background-secondary dark:bg-background-tertiary">
-          <HStack className="justify-between items-center mb-4">
-            <VStack space="md" className="flex-1">
-              <HStack className="justify-between items-center">
-                <HStack space="sm" className="items-center">
-                  <Icon as={Flame} size="sm" className="text-accent-info" />
-                  <Text className="text-sm text-typography-secondary">
+        <Card padding="$4" backgroundColor="$backgroundSecondary">
+          <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+            <VStack gap="$3" flex={1}>
+              <HStack justifyContent="space-between" alignItems="center">
+                <HStack gap="$2" alignItems="center">
+                  <Icon as={Flame} size="sm" color="$info" />
+                  <Text size="sm" color="$typographySecondary">
                     {t("athkar.dailyStreak")}
                   </Text>
-                  <Text className="text-sm font-medium text-typography">
+                  <Text size="sm" fontWeight="500" color="$typography">
                     {t("athkar.day", {
                       count: streakDays,
                       value: formatNumberToLocale(`${streakDays}`),
@@ -301,11 +306,13 @@ const AthkarList = ({ type }: Props) => {
                   </Text>
                 </HStack>
 
-                <HStack space="sm" className="items-center">
-                  <Icon as={Trophy} size="sm" className="text-orange-500" />
-                  <Text className="text-sm text-orange-500">{t("athkar.streak.best")}</Text>
+                <HStack gap="$2" alignItems="center">
+                  <Icon as={Trophy} size="sm" color="$warning" />
+                  <Text size="sm" color="$warning">
+                    {t("athkar.streak.best")}
+                  </Text>
 
-                  <Text className="text-sm font-medium text-typography">
+                  <Text size="sm" fontWeight="500" color="$typography">
                     {t("athkar.day", {
                       count: longestStreak,
                       value: formatNumberToLocale(`${longestStreak}`),
@@ -316,15 +323,17 @@ const AthkarList = ({ type }: Props) => {
             </VStack>
           </HStack>
 
-          <Text className="text-left text-sm text-typography-secondary">
+          <Text textAlign="left" size="sm" color="$typographySecondary">
             {t("athkar.todayProgress")}
           </Text>
           <Progress
             value={overallProgress}
-            className="h-3 bg-background-tertiary dark:bg-background mt-2">
-            <ProgressFilledTrack className="bg-accent-info" />
+            size="md"
+            backgroundColor="$backgroundMuted"
+            marginTop="$2">
+            <ProgressFilledTrack backgroundColor="$info" />
           </Progress>
-          <Text className="text-xs text-typography-secondary mt-2 text-right">
+          <Text size="xs" color="$typographySecondary" marginTop="$2" textAlign="right">
             {formatNumberToLocale(`${Math.round(overallProgress)}`)}%
           </Text>
         </Card>
@@ -364,15 +373,17 @@ const AthkarList = ({ type }: Props) => {
           <Button
             size="md"
             variant="outline"
-            className="w-full border-0"
-            style={{ backgroundColor: "transparent" }}
+            action="default"
+            width="100%"
+            borderWidth={0}
+            backgroundColor="transparent"
             disabled={isResetting}>
             {isResetting ? (
               <Spinner size="small" />
             ) : (
-              <Icon size="md" className="text-white" as={RotateCcw} />
+              <Icon as={RotateCcw} size="md" color="$typographyContrast" />
             )}
-            <ButtonText className="text-white font-medium">
+            <Button.Text color="$typographyContrast" fontWeight="500">
               {isResetting
                 ? t("athkar.loading.resetting")
                 : isPressing
@@ -380,7 +391,7 @@ const AthkarList = ({ type }: Props) => {
                       progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
                     })
                   : t("common.resetDailyProgress")}
-            </ButtonText>
+            </Button.Text>
           </Button>
 
           {/* Progress overlay */}

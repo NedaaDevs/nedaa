@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "tamagui";
 import { router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -11,7 +12,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
@@ -40,6 +41,7 @@ import { formatNumberToLocale } from "@/utils/number";
 
 const QadaScreen = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const {
     totalMissed,
     totalCompleted,
@@ -185,8 +187,8 @@ const QadaScreen = () => {
   };
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <Box className="relative">
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Box position="relative">
         <TopBar title="qada.title" />
         {/* Settings Icon Overlay */}
         <Pressable
@@ -194,9 +196,18 @@ const QadaScreen = () => {
             hapticLight();
             router.push("/settings/qada");
           }}
-          className="absolute right-6 top-2 justify-center p-2 rounded-lg"
-          style={{ zIndex: 50, elevation: 4 }}>
-          <Icon as={Settings} size="lg" className="text-typography-contrast" />
+          accessibilityLabel={t("common.settings")}
+          position="absolute"
+          end={24}
+          top={8}
+          justifyContent="center"
+          minWidth={44}
+          minHeight={44}
+          alignItems="center"
+          padding="$2"
+          borderRadius="$4"
+          zIndex={50}>
+          <Icon as={Settings} size="lg" color="$typographyContrast" />
         </Pressable>
       </Box>
 
@@ -206,30 +217,36 @@ const QadaScreen = () => {
         }}
         showsVerticalScrollIndicator={false}>
         {/* Progress Dashboard */}
-        <VStack className="px-4 pt-6 pb-4" space="xl">
+        <VStack paddingHorizontal="$4" paddingTop="$6" paddingBottom="$4" gap="$5">
           {/* Progress Card */}
-          <Box className="bg-background-secondary rounded-xl p-6">
-            <VStack space="lg" className="items-center">
+          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$6">
+            <VStack gap="$4" alignItems="center">
               {/* Main Stats */}
-              <VStack space="sm" className="items-center w-full">
+              <VStack gap="$2" alignItems="center" width="100%">
                 <Text
-                  className="text-4xl font-bold text-typography text-center w-full"
-                  numberOfLines={1}
-                  ellipsizeMode="clip">
+                  size="4xl"
+                  bold
+                  color="$typography"
+                  textAlign="center"
+                  width="100%"
+                  numberOfLines={1}>
                   {formatNumberToLocale(remaining.toString())}
                 </Text>
-                <Text className="text-lg text-typography-secondary text-center">
+                <Text size="lg" color="$typographySecondary" textAlign="center">
                   {formatNumberToLocale(t("qada.daysRemaining", { count: remaining }))}
                 </Text>
               </VStack>
 
               {/* Progress Bar */}
               {totalMissed > 0 && (
-                <VStack space="sm" className="w-full">
-                  <Progress value={completionPercentage} className="h-3 bg-background-tertiary">
-                    <ProgressFilledTrack className="bg-accent-primary" />
+                <VStack gap="$2" width="100%">
+                  <Progress
+                    value={completionPercentage}
+                    size="md"
+                    backgroundColor="$backgroundMuted">
+                    <ProgressFilledTrack backgroundColor="$primary" />
                   </Progress>
-                  <Text className="text-sm text-center text-typography-secondary">
+                  <Text size="sm" textAlign="center" color="$typographySecondary">
                     {formatNumberToLocale(
                       t("qada.completionPercentage", { percentage: completionPercentage })
                     )}{" "}
@@ -245,20 +262,20 @@ const QadaScreen = () => {
               )}
 
               {/* Stats Row */}
-              <HStack space="xl" className="w-full justify-around pt-4">
-                <VStack space="xs" className="items-center">
-                  <Text className="text-2xl font-semibold text-typography text-left">
+              <HStack gap="$5" width="100%" justifyContent="space-around" paddingTop="$4">
+                <VStack gap="$1" alignItems="center">
+                  <Text size="2xl" fontWeight="600" color="$typography" textAlign="left">
                     {formatNumberToLocale(totalMissed.toString())}
                   </Text>
-                  <Text className="text-xs text-typography-secondary text-left">
+                  <Text size="xs" color="$typographySecondary" textAlign="left">
                     {t("qada.total")}
                   </Text>
                 </VStack>
-                <VStack space="xs" className="items-center">
-                  <Text className="text-2xl font-semibold text-success text-left">
+                <VStack gap="$1" alignItems="center">
+                  <Text size="2xl" fontWeight="600" color="$success" textAlign="left">
                     {formatNumberToLocale(totalCompleted.toString())}
                   </Text>
-                  <Text className="text-xs text-typography-secondary text-left">
+                  <Text size="xs" color="$typographySecondary" textAlign="left">
                     {t("qada.completed")}
                   </Text>
                 </VStack>
@@ -266,10 +283,12 @@ const QadaScreen = () => {
 
               {/* Motivational Message */}
               {remaining === 0 && totalMissed > 0 && (
-                <Text className="text-left text-success font-medium">{t("qada.allComplete")}</Text>
+                <Text textAlign="left" color="$success" fontWeight="500">
+                  {t("qada.allComplete")}
+                </Text>
               )}
               {remaining > 0 && (
-                <Text className="text-left text-typography-secondary">
+                <Text textAlign="left" color="$typographySecondary">
                   {formatNumberToLocale(t("qada.keepGoing", { count: remaining }))}
                 </Text>
               )}
@@ -281,23 +300,22 @@ const QadaScreen = () => {
             onPress={() => {
               setShowAddModal(true);
             }}
-            className="bg-accent-primary"
             size="lg"
-            isDisabled={isLoading}>
-            <HStack space="sm" className="items-center">
-              <Icon as={Plus} className="text-background" />
-              <ButtonText className="text-background">{t("qada.addMissedDays")}</ButtonText>
+            disabled={isLoading}>
+            <HStack gap="$2" alignItems="center">
+              <Icon as={Plus} color="$typographyContrast" />
+              <Button.Text>{t("qada.addMissedDays")}</Button.Text>
             </HStack>
           </Button>
 
           {/* Pending Entries List */}
           {pendingEntries.length > 0 && (
-            <VStack space="md">
-              <Text className="text-lg font-semibold text-typography text-left">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography" textAlign="left">
                 {t("qada.pendingEntries")}
               </Text>
 
-              <VStack space="sm">
+              <VStack gap="$2">
                 {pendingEntries.map((entry) => (
                   <SwipeableEntry
                     key={entry.id}
@@ -309,9 +327,13 @@ const QadaScreen = () => {
                 ))}
               </VStack>
 
-              <Box className="bg-background-secondary/80 rounded-lg p-3">
-                <Text className="text-xs text-typography-secondary text-center">
-                  💡 {t("qada.swipeHintFull")}
+              <Box
+                backgroundColor="$backgroundSecondary"
+                opacity={0.8}
+                borderRadius="$4"
+                padding="$3">
+                <Text size="xs" color="$typographySecondary" textAlign="center">
+                  {t("qada.swipeHintFull")}
                 </Text>
               </Box>
             </VStack>
@@ -319,13 +341,25 @@ const QadaScreen = () => {
 
           {/* Empty State */}
           {pendingEntries.length === 0 && remaining === 0 && totalMissed > 0 && (
-            <VStack className="py-12 items-center" space="md">
-              <Box className="w-20 h-20 bg-success/10 rounded-full items-center justify-center">
-                <Icon as={Check} className="text-success" size="xl" />
+            <VStack paddingVertical="$8" alignItems="center" gap="$3">
+              <Box
+                width={80}
+                height={80}
+                backgroundColor="$backgroundSuccess"
+                borderRadius={999}
+                alignItems="center"
+                justifyContent="center">
+                <Icon as={Check} color="$success" size="xl" />
               </Box>
-              <VStack className="items-center" space="xs">
-                <Text className="text-lg font-semibold text-success">{t("qada.allComplete")}</Text>
-                <Text className="text-sm text-typography-secondary text-center px-4">
+              <VStack alignItems="center" gap="$1">
+                <Text size="lg" fontWeight="600" color="$success">
+                  {t("qada.allComplete")}
+                </Text>
+                <Text
+                  size="sm"
+                  color="$typographySecondary"
+                  textAlign="center"
+                  paddingHorizontal="$4">
                   {t("qada.allCompleteMessage")}
                 </Text>
               </VStack>
@@ -333,11 +367,21 @@ const QadaScreen = () => {
           )}
 
           {pendingEntries.length === 0 && totalMissed === 0 && (
-            <VStack className="py-12 items-center" space="md">
-              <Box className="w-20 h-20 bg-background-secondary rounded-full items-center justify-center">
-                <Icon as={CalendarDays} className="text-typography-secondary" size="xl" />
+            <VStack paddingVertical="$8" alignItems="center" gap="$3">
+              <Box
+                width={80}
+                height={80}
+                backgroundColor="$backgroundSecondary"
+                borderRadius={999}
+                alignItems="center"
+                justifyContent="center">
+                <Icon as={CalendarDays} color="$typographySecondary" size="xl" />
               </Box>
-              <Text className="text-base text-typography-secondary text-center px-4">
+              <Text
+                size="md"
+                color="$typographySecondary"
+                textAlign="center"
+                paddingHorizontal="$4">
                 {t("qada.noEntriesYet")}
               </Text>
             </VStack>
@@ -347,68 +391,81 @@ const QadaScreen = () => {
         {/* Add Missed Days Modal: Quick add buttons + stepper control for intuitive UX */}
         <Modal isOpen={showAddModal} onClose={handleModalClose} size="md">
           <ModalBackdrop />
-          <ModalContent className="bg-background-secondary mx-4 rounded-xl shadow-xl">
-            <ModalCloseButton className="absolute top-4 right-4 z-10">
-              <Icon as={X} className="text-typography-secondary" size="lg" />
+          <ModalContent>
+            <ModalCloseButton>
+              <Icon as={X} color="$typographySecondary" size="lg" />
             </ModalCloseButton>
 
-            <ModalHeader className="px-6 pt-6 pb-4">
-              <Text className="text-xl font-bold text-typography text-left">
+            <ModalHeader>
+              <Text size="xl" bold color="$typography" textAlign="left">
                 {t("qada.addMissedDays")}
               </Text>
             </ModalHeader>
 
-            <ModalBody className="px-6 py-2">
+            <ModalBody>
               <ScrollView showsVerticalScrollIndicator={false}>
-                <VStack space="xl">
+                <VStack gap="$5">
                   {/* Quick Add: One-tap shortcuts for common values (1, 3, 7, 30 days) */}
-                  <VStack space="sm">
-                    <Text className="text-sm text-typography-secondary text-left">
+                  <VStack gap="$2">
+                    <Text size="sm" color="$typographySecondary" textAlign="left">
                       {t("qada.quickAdd")}
                     </Text>
-                    <HStack space="xs" className="w-full">
+                    <HStack gap="$1" width="100%">
                       {[1, 3, 7, 30].map((days) => (
                         <Button
                           key={days}
                           onPress={() => handleQuickAdd(days)}
                           variant="outline"
-                          isDisabled={isLoading}
-                          className="flex-1 border-accent-primary px-2">
-                          <ButtonText className="text-accent-primary font-semibold text-center">
+                          disabled={isLoading}
+                          flex={1}
+                          paddingHorizontal="$2"
+                          borderColor="$primary">
+                          <Button.Text color="$primary" fontWeight="600" textAlign="center">
                             +{formatNumberToLocale(days.toString())}
-                          </ButtonText>
+                          </Button.Text>
                         </Button>
                       ))}
                     </HStack>
                   </VStack>
 
                   {/* Divider with "or" text */}
-                  <HStack space="sm" className="items-center">
-                    <Box className="flex-1 h-px bg-outline" />
-                    <Text className="text-xs text-typography-secondary">{t("common.or")}</Text>
-                    <Box className="flex-1 h-px bg-outline" />
+                  <HStack gap="$2" alignItems="center">
+                    <Box flex={1} height={1} backgroundColor="$outline" />
+                    <Text size="xs" color="$typographySecondary">
+                      {t("common.or")}
+                    </Text>
+                    <Box flex={1} height={1} backgroundColor="$outline" />
                   </HStack>
 
                   {/* Stepper Control: Fine-tune any amount with -/+ buttons */}
-                  <VStack space="sm">
-                    <Text className="text-sm text-typography-secondary text-left">
+                  <VStack gap="$2">
+                    <Text size="sm" color="$typographySecondary" textAlign="left">
                       {t("qada.customAmount")}
                     </Text>
-                    <HStack space="md" className="items-center justify-center">
+                    <HStack gap="$3" alignItems="center" justifyContent="center">
                       <Pressable
                         onPressIn={startDecrement}
                         onPressOut={stopDecrement}
                         onTouchEnd={stopDecrement}
                         disabled={isLoading}
-                        className="w-14 h-14 bg-background border-2 border-outline rounded-full items-center justify-center active:bg-background-tertiary">
-                        <Text className="text-2xl text-typography font-bold">−</Text>
+                        width={56}
+                        height={56}
+                        backgroundColor="$background"
+                        borderWidth={2}
+                        borderColor="$outline"
+                        borderRadius={999}
+                        alignItems="center"
+                        justifyContent="center">
+                        <Text size="2xl" color="$typography" bold>
+                          −
+                        </Text>
                       </Pressable>
 
-                      <Box className="flex-1 items-center">
-                        <Text className="text-5xl font-bold text-accent-primary">
+                      <Box flex={1} alignItems="center">
+                        <Text size="5xl" bold color="$primary">
                           {formatNumberToLocale(amount.toString())}
                         </Text>
-                        <Text className="text-sm text-typography-secondary mt-1">
+                        <Text size="sm" color="$typographySecondary" marginTop="$1">
                           {formatNumberToLocale(t("qada.days", { count: amount }))}
                         </Text>
                       </Box>
@@ -418,15 +475,22 @@ const QadaScreen = () => {
                         onPressOut={stopIncrement}
                         onTouchEnd={stopIncrement}
                         disabled={isLoading}
-                        className="w-14 h-14 bg-accent-primary rounded-full items-center justify-center active:opacity-80">
-                        <Text className="text-2xl text-background font-bold">+</Text>
+                        width={56}
+                        height={56}
+                        backgroundColor="$primary"
+                        borderRadius={999}
+                        alignItems="center"
+                        justifyContent="center">
+                        <Text size="2xl" color="$typographyContrast" bold>
+                          +
+                        </Text>
                       </Pressable>
                     </HStack>
                   </VStack>
 
                   {/* Optional Notes Input */}
-                  <VStack space="sm">
-                    <Text className="text-sm text-typography-secondary text-left">
+                  <VStack gap="$2">
+                    <Text size="sm" color="$typographySecondary" textAlign="left">
                       {t("qada.notes")} ({t("common.optional")})
                     </Text>
                     <TextInput
@@ -437,25 +501,33 @@ const QadaScreen = () => {
                       numberOfLines={3}
                       maxLength={200}
                       textAlignVertical="top"
-                      className="p-3 bg-background-secondary rounded-lg text-sm text-typography border border-outline min-h-[80px]"
-                      placeholderTextColor="#9CA3AF"
+                      style={{
+                        padding: 12,
+                        borderRadius: 8,
+                        fontSize: 14,
+                        borderWidth: 1,
+                        borderColor: theme.outline?.val,
+                        color: theme.typography?.val,
+                        minHeight: 80,
+                      }}
+                      placeholderTextColor={theme.typographySecondary?.val}
                     />
                   </VStack>
                 </VStack>
               </ScrollView>
             </ModalBody>
 
-            <ModalFooter className="px-6 py-6">
+            <ModalFooter>
               <Button
                 onPress={handleAddMissed}
-                isDisabled={isLoading || amount <= 0}
-                className="w-full bg-accent-primary"
+                disabled={isLoading || amount <= 0}
+                width="100%"
                 size="lg">
-                <ButtonText className="text-background text-base font-semibold">
+                <Button.Text size="md" fontWeight="600">
                   {formatNumberToLocale(
                     t("qada.addDays", { count: amount, defaultValue: `Add ${amount} Days` })
                   )}
-                </ButtonText>
+                </Button.Text>
               </Button>
             </ModalFooter>
           </ModalContent>

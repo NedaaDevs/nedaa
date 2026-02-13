@@ -55,31 +55,42 @@ const AthkarTabs = () => {
   }, []);
 
   return (
-    <Box className="flex-1">
+    <Box flex={1}>
       {/* Tab Header */}
-      <Box className="bg-background dark:bg-background-secondary">
-        <HStack className="justify-center items-center py-2">
+      <Box backgroundColor="$background">
+        <HStack justifyContent="center" alignItems="center" paddingVertical="$2">
           {/* Morning Tab */}
           <Pressable
             onPress={() => {
               setActiveTab(ATHKAR_TYPE.MORNING);
               setCurrentType(ATHKAR_TYPE.MORNING);
             }}
-            className={`flex-1 py-3 px-4 mx-2 rounded-full items-center ${
-              activeTab === ATHKAR_TYPE.MORNING
-                ? "bg-accent-primary"
-                : "bg-background-secondary dark:bg-background-tertiary"
-            }`}>
-            <HStack space="sm" className="items-center">
+            role="tab"
+            accessibilityLabel={t("athkar.morning")}
+            flex={1}
+            minHeight={44}
+            paddingVertical="$3"
+            paddingHorizontal="$4"
+            marginHorizontal="$2"
+            borderRadius={999}
+            alignItems="center"
+            justifyContent="center"
+            backgroundColor={
+              activeTab === ATHKAR_TYPE.MORNING ? "$primary" : "$backgroundSecondary"
+            }>
+            <HStack gap="$2" alignItems="center">
               <Icon
                 as={Sun}
-                className={activeTab !== ATHKAR_TYPE.MORNING ? "text-typography-secondary" : ""}
                 size="md"
+                color={
+                  activeTab === ATHKAR_TYPE.MORNING ? "$typographyContrast" : "$typographySecondary"
+                }
               />
               <Text
-                className={`font-medium ${
-                  activeTab === ATHKAR_TYPE.MORNING ? "text-white" : "text-typography-secondary"
-                }`}>
+                fontWeight="500"
+                color={
+                  activeTab === ATHKAR_TYPE.MORNING ? "$typographyContrast" : "$typographySecondary"
+                }>
                 {t("athkar.morning")}
               </Text>
             </HStack>
@@ -91,21 +102,32 @@ const AthkarTabs = () => {
               setActiveTab(ATHKAR_TYPE.EVENING);
               setCurrentType(ATHKAR_TYPE.EVENING);
             }}
-            className={`flex-1 py-3 px-4 mx-2 rounded-full items-center ${
-              activeTab === ATHKAR_TYPE.EVENING
-                ? "bg-accent-primary"
-                : "bg-background-secondary dark:bg-background-tertiary"
-            }`}>
-            <HStack space="sm" className="items-center">
+            role="tab"
+            accessibilityLabel={t("athkar.evening")}
+            flex={1}
+            minHeight={44}
+            paddingVertical="$3"
+            paddingHorizontal="$4"
+            marginHorizontal="$2"
+            borderRadius={999}
+            alignItems="center"
+            justifyContent="center"
+            backgroundColor={
+              activeTab === ATHKAR_TYPE.EVENING ? "$primary" : "$backgroundSecondary"
+            }>
+            <HStack gap="$2" alignItems="center">
               <Icon
                 as={Moon}
-                className={activeTab !== ATHKAR_TYPE.EVENING ? "text-typography-secondary" : ""}
                 size="md"
+                color={
+                  activeTab === ATHKAR_TYPE.EVENING ? "$typographyContrast" : "$typographySecondary"
+                }
               />
               <Text
-                className={`font-medium ${
-                  activeTab === ATHKAR_TYPE.EVENING ? "text-white" : "text-typography-secondary"
-                }`}>
+                fontWeight="500"
+                color={
+                  activeTab === ATHKAR_TYPE.EVENING ? "$typographyContrast" : "$typographySecondary"
+                }>
                 {t("athkar.evening")}
               </Text>
             </HStack>
@@ -114,14 +136,18 @@ const AthkarTabs = () => {
       </Box>
 
       {/* Content Area */}
-      <ScrollView className="flex-1 bg-background">
-        <Box className="p-4">
+      <ScrollView style={{ flex: 1, backgroundColor: "transparent" }}>
+        <Box padding="$4">
           <AthkarList type={activeTab} />
         </Box>
       </ScrollView>
 
-      <Fab onPress={() => router.push("/athkar-focus")} size="lg" className="bg-primary ">
-        <FabIcon as={Focus} color="white" />
+      <Fab
+        onPress={() => router.push("/athkar-focus")}
+        size="lg"
+        placement="bottom right"
+        accessibilityLabel={t("athkar.focus.title")}>
+        <FabIcon as={Focus} color="$typographyContrast" />
       </Fab>
     </Box>
   );
