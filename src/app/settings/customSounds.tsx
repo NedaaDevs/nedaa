@@ -7,10 +7,10 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
-import { Badge, BadgeText } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
@@ -69,12 +69,18 @@ export default function CustomSoundsScreen() {
     return (
       <Background>
         <TopBar title={t("notification.customSound.title")} backOnClick />
-        <Box className="flex-1 justify-center items-center p-6">
-          <VStack space="md" className="items-center max-w-md">
-            <Box className="w-20 h-20 rounded-full bg-background-muted items-center justify-center">
-              <Icon as={Volume2} size="xl" className="text-typography-secondary" />
+        <Box flex={1} justifyContent="center" alignItems="center" padding="$6">
+          <VStack gap="$3" alignItems="center" maxWidth={400}>
+            <Box
+              width={80}
+              height={80}
+              borderRadius={999}
+              backgroundColor="$backgroundMuted"
+              alignItems="center"
+              justifyContent="center">
+              <Icon as={Volume2} size="xl" color="$typographySecondary" />
             </Box>
-            <Text className="text-center text-typography font-medium text-lg">
+            <Text textAlign="center" color="$typography" fontWeight="500" size="lg">
               {t("notification.customSound.androidOnly")}
             </Text>
           </VStack>
@@ -202,32 +208,51 @@ export default function CustomSoundsScreen() {
     <Background>
       <TopBar title={t("notification.customSound.title")} backOnClick />
 
-      <ScrollView className="flex-1">
-        <VStack space="lg" className="p-4">
+      <ScrollView style={{ flex: 1 }}>
+        <VStack gap="$4" padding="$4">
           {/* Info Card */}
-          <Card className="p-5 bg-background-secondary rounded-xl border border-outline shadow-sm">
-            <HStack space="md" className="items-start">
-              <Box className="w-10 h-10 rounded-full bg-background-info items-center justify-center">
-                <Icon as={Info} size="md" className="text-primary" />
+          <Card
+            padding="$5"
+            backgroundColor="$backgroundSecondary"
+            borderRadius="$6"
+            borderWidth={1}
+            borderColor="$outline">
+            <HStack gap="$3" alignItems="flex-start">
+              <Box
+                width={40}
+                height={40}
+                borderRadius={999}
+                backgroundColor="$backgroundInfo"
+                alignItems="center"
+                justifyContent="center">
+                <Icon as={Info} size="md" color="$primary" />
               </Box>
-              <VStack space="sm" className="flex-1">
-                <Text size="sm" className="text-typography leading-relaxed">
+              <VStack gap="$2" flex={1}>
+                <Text size="sm" color="$typography">
                   {t("notification.customSound.info")}
                 </Text>
-                <HStack space="sm" className="mt-2 flex-wrap">
+                <HStack gap="$2" marginTop="$2" flexWrap="wrap">
                   <Badge
                     size="sm"
-                    className="bg-background-muted border-outline rounded-lg px-3 py-1.5">
-                    <BadgeText size="sm" className="text-typography-secondary font-medium">
+                    backgroundColor="$backgroundMuted"
+                    borderColor="$outline"
+                    borderRadius="$4"
+                    paddingHorizontal="$3"
+                    paddingVertical="$1">
+                    <Badge.Text size="sm" color="$typographySecondary" fontWeight="500">
                       {t("notification.customSound.storage")}: {formatFileSize(totalStorage)}
-                    </BadgeText>
+                    </Badge.Text>
                   </Badge>
                   <Badge
                     size="sm"
-                    className="bg-primary/10 border-primary/20 rounded-lg px-3 py-1.5">
-                    <BadgeText size="sm" className="text-primary font-medium">
+                    backgroundColor="$backgroundInfo"
+                    borderColor="$primary"
+                    borderRadius="$4"
+                    paddingHorizontal="$3"
+                    paddingVertical="$1">
+                    <Badge.Text size="sm" color="$primary" fontWeight="500">
                       {customSounds.length} {t("notification.customSound.sounds")}
-                    </BadgeText>
+                    </Badge.Text>
                   </Badge>
                 </HStack>
               </VStack>
@@ -237,70 +262,97 @@ export default function CustomSoundsScreen() {
           {/* Add Button */}
           <Button
             size="lg"
-            className="bg-accent-primary rounded-xl shadow-sm"
+            backgroundColor="$accentPrimary"
+            borderRadius="$6"
             onPress={() => {
               hapticMedium();
               setIsAddModalOpen(true);
             }}>
-            <Icon as={Plus} size="md" className="text-background mr-2" />
-            <ButtonText className="text-background font-semibold">
+            <Icon as={Plus} size="md" color="$typographyContrast" />
+            <Button.Text color="$typographyContrast" fontWeight="600">
               {t("notification.customSound.addNew")}
-            </ButtonText>
+            </Button.Text>
           </Button>
 
           {/* Custom Sounds List */}
           {customSounds.length === 0 ? (
-            <Card className="p-10 bg-background-secondary rounded-xl border border-outline">
-              <VStack space="md" className="items-center">
-                <Box className="w-16 h-16 rounded-full bg-background-muted items-center justify-center">
-                  <Icon as={Volume2} size="xl" className="text-typography-secondary" />
+            <Card
+              padding="$7"
+              backgroundColor="$backgroundSecondary"
+              borderRadius="$6"
+              borderWidth={1}
+              borderColor="$outline">
+              <VStack gap="$3" alignItems="center">
+                <Box
+                  width={64}
+                  height={64}
+                  borderRadius={999}
+                  backgroundColor="$backgroundMuted"
+                  alignItems="center"
+                  justifyContent="center">
+                  <Icon as={Volume2} size="xl" color="$typographySecondary" />
                 </Box>
-                <Text className="text-typography text-center font-medium">
+                <Text color="$typography" textAlign="center" fontWeight="500">
                   {t("notification.customSound.empty")}
                 </Text>
-                <Text size="sm" className="text-typography-secondary text-center leading-relaxed">
+                <Text size="sm" color="$typographySecondary" textAlign="center">
                   {t("notification.customSound.emptyHint")}
                 </Text>
               </VStack>
             </Card>
           ) : (
-            <VStack space="md">
+            <VStack gap="$3">
               {customSounds.map((sound) => (
                 <Card
                   key={sound.id}
-                  className="p-4 bg-background-secondary rounded-xl border border-outline shadow-sm">
-                  <HStack space="md" className="items-start">
+                  padding="$4"
+                  backgroundColor="$backgroundSecondary"
+                  borderRadius="$6"
+                  borderWidth={1}
+                  borderColor="$outline">
+                  <HStack gap="$3" alignItems="flex-start">
                     <Pressable
                       onPress={() => handleSoundPreview(sound)}
-                      className="w-12 h-12 rounded-xl bg-primary/10 items-center justify-center">
+                      width={48}
+                      height={48}
+                      borderRadius="$6"
+                      backgroundColor="$backgroundInfo"
+                      alignItems="center"
+                      justifyContent="center">
                       {isPlayingSound(
                         sound.availableFor[0] || NOTIFICATION_TYPE.PRAYER,
                         sound.id
                       ) ? (
-                        <Icon as={Square} size="lg" className="text-primary" />
+                        <Icon as={Square} size="lg" color="$primary" />
                       ) : (
-                        <Icon as={Play} size="lg" className="text-primary" />
+                        <Icon as={Play} size="lg" color="$primary" />
                       )}
                     </Pressable>
 
-                    <VStack space="sm" className="flex-1">
-                      <Text className="text-base font-bold text-typography">{sound.name}</Text>
-                      <Text size="sm" className="text-typography-secondary">
+                    <VStack gap="$2" flex={1}>
+                      <Text bold color="$typography">
+                        {sound.name}
+                      </Text>
+                      <Text size="sm" color="$typographySecondary">
                         {sound.fileName}
                       </Text>
-                      <HStack space="sm" className="flex-wrap mt-0.5">
+                      <HStack gap="$2" flexWrap="wrap" marginTop="$0.5">
                         {sound.availableFor.map((type) => (
                           <Badge
                             key={type}
                             size="sm"
-                            className="bg-background-info/20 border-primary/20 rounded-md px-2 py-0.5">
-                            <BadgeText size="sm" className="text-primary font-medium">
+                            backgroundColor="$backgroundInfo"
+                            borderColor="$primary"
+                            borderRadius="$2"
+                            paddingHorizontal="$2"
+                            paddingVertical="$0.5">
+                            <Badge.Text size="sm" color="$primary" fontWeight="500">
                               {getTypeLabel(type)}
-                            </BadgeText>
+                            </Badge.Text>
                           </Badge>
                         ))}
                       </HStack>
-                      <Text size="sm" className="text-typography-secondary mt-0.5">
+                      <Text size="sm" color="$typographySecondary" marginTop="$0.5">
                         {formatFileSize(sound.fileSize)}
                       </Text>
                     </VStack>
@@ -308,9 +360,10 @@ export default function CustomSoundsScreen() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-error/30 rounded-lg"
+                      borderColor="$error"
+                      borderRadius="$4"
                       onPress={() => handleDelete(sound.id)}>
-                      <Icon as={Trash2} size="sm" className="text-error" />
+                      <Icon as={Trash2} size="sm" color="$error" />
                     </Button>
                   </HStack>
                 </Card>
