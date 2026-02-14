@@ -144,8 +144,7 @@
           "motionPermission": false
         }
       ],
-      "expo-asset",
-      "./plugins/withDisableNotificationsBootActions"
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

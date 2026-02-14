@@ -10,10 +10,10 @@ export type FontWeight = "regular" | "medium" | "semibold" | "bold";
 
 export const FONT_MAPPINGS = {
   [AppLocale.AR]: {
-    regular: "NotoSansArabic-Regular",
-    medium: "NotoSansArabic-Medium",
-    semibold: "NotoSansArabic-SemiBold",
-    bold: "NotoSansArabic-Bold",
+    regular: "IBMPlexSans-Regular",
+    medium: "IBMPlexSans-Medium",
+    semibold: "IBMPlexSans-SemiBold",
+    bold: "IBMPlexSans-Bold",
   },
   [AppLocale.EN]: {
     regular: "Asap-Regular",

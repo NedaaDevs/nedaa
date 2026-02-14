@@ -1,10 +1,10 @@
 import { useFonts } from "expo-font";
 import {
-  NotoSansArabic_400Regular,
-  NotoSansArabic_500Medium,
-  NotoSansArabic_600SemiBold,
-  NotoSansArabic_700Bold,
-} from "@expo-google-fonts/noto-sans-arabic";
+  IBMPlexSansArabic_400Regular,
+  IBMPlexSansArabic_500Medium,
+  IBMPlexSansArabic_600SemiBold,
+  IBMPlexSansArabic_700Bold,
+} from "@expo-google-fonts/ibm-plex-sans-arabic";
 import {
   Asap_400Regular,
   Asap_500Medium,
@@ -14,16 +14,16 @@ import {
 
 // Font family constants
 export const FontFamily = {
-  NotoSansArabic: "NotoSansArabic",
+  IBM: "IBM",
   Asap: "Asap",
 };
 
-// NotoSansArabic font weights
-export const NotoSansArabicFonts = {
-  400: "NotoSansArabic-Regular",
-  500: "NotoSansArabic-Medium",
-  600: "NotoSansArabic-SemiBold",
-  700: "NotoSansArabic-Bold",
+// IBMPlexSans font weights
+export const IBMPlexSansFonts = {
+  400: "IBMPlexSans-Regular",
+  500: "IBMPlexSans-Medium",
+  600: "IBMPlexSans-SemiBold",
+  700: "IBMPlexSans-Bold",
 };
 
 // Asap font weights
@@ -36,11 +36,11 @@ export const AsapFonts = {
 
 export const useLoadFonts = () => {
   return useFonts({
-    // Noto Sans Arabic fonts
-    "NotoSansArabic-Regular": NotoSansArabic_400Regular,
-    "NotoSansArabic-Medium": NotoSansArabic_500Medium,
-    "NotoSansArabic-SemiBold": NotoSansArabic_600SemiBold,
-    "NotoSansArabic-Bold": NotoSansArabic_700Bold,
+    // IBM Plex Sans Arabic fonts
+    "IBMPlexSans-Regular": IBMPlexSansArabic_400Regular,
+    "IBMPlexSans-Medium": IBMPlexSansArabic_500Medium,
+    "IBMPlexSans-SemiBold": IBMPlexSansArabic_600SemiBold,
+    "IBMPlexSans-Bold": IBMPlexSansArabic_700Bold,
 
     // Asap fonts
     "Asap-Regular": Asap_400Regular,

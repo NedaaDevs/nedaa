@@ -55,8 +55,8 @@ const asapFont = createFont({
   },
 });
 
-const notoSansArabicFont = createFont({
-  family: "NotoSansArabic-Regular",
+const ibmPlexSansFont = createFont({
+  family: "IBMPlexSans-Regular",
   size: {
     1: 10,
     2: 12,
@@ -98,10 +98,10 @@ const notoSansArabicFont = createFont({
     true: 0,
   },
   face: {
-    400: { normal: "NotoSansArabic-Regular" },
-    500: { normal: "NotoSansArabic-Medium" },
-    600: { normal: "NotoSansArabic-SemiBold" },
-    700: { normal: "NotoSansArabic-Bold" },
+    400: { normal: "IBMPlexSans-Regular" },
+    500: { normal: "IBMPlexSans-Medium" },
+    600: { normal: "IBMPlexSans-SemiBold" },
+    700: { normal: "IBMPlexSans-Bold" },
   },
 });
 
@@ -428,9 +428,9 @@ const config = createTamagui({
   },
   fonts: {
     heading: asapFont,
-    heading_ar: notoSansArabicFont,
+    heading_ar: ibmPlexSansFont,
     body: asapFont,
-    body_ar: notoSansArabicFont,
+    body_ar: ibmPlexSansFont,
     mono: monoFont,
   },
   fontLanguages: ["ar"],

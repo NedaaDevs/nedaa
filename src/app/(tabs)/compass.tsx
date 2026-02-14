@@ -90,7 +90,7 @@ const Compass = () => {
                     alignmentBaseline="middle"
                     fontSize="18"
                     fontWeight="bolder"
-                    fontFamily="NotoSansArabic-Regular"
+                    fontFamily="IBMPlexSans-Regular"
                     fill={colors.north}>
                     {reshapeArabic(t("compass.directions.N"))}
                   </SvgText>

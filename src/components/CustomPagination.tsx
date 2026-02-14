@@ -170,7 +170,7 @@ const CustomPagination: FC<PaginationProps> = ({
   );
 
   const renderLines = () => (
-    <Box flexDirection="row" justifyContent="center" gap="$1" paddingVertical="$1">
+    <Box flexDirection="row" justifyContent="center" gap="$2" paddingVertical="$1.5">
       {data.map((_, index) => (
         <Pressable
           key={index}
@@ -178,8 +178,8 @@ const CustomPagination: FC<PaginationProps> = ({
           hitSlop={12}
           accessibilityRole="button">
           <Box
-            width={6}
-            height={6}
+            width={20}
+            height={2}
             backgroundColor={currentIndex === index ? "$accentPrimary" : "$outline"}
             borderRadius={999}
           />
