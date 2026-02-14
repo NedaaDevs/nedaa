@@ -65,6 +65,8 @@ const resolveFontSize = (value: any): number | undefined => {
   return isNaN(num) ? undefined : num;
 };
 
+const IS_ANDROID = Platform.OS === PlatformType.ANDROID;
+
 const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>(
   (
     {
@@ -99,8 +101,11 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         {...props}
         fontSize={resolvedFontSize}
         lineHeight={fontSize != null ? undefined : sizeValues.lineHeight}
+        // Android mismeasures Arabic glyph widths; "simple" break strategy
+        // uses a more generous width calculation in StaticLayout.
+        {...(IS_ANDROID && { textBreakStrategy: "simple" })}
         style={[
-          Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 },
+          IS_ANDROID && { paddingHorizontal: 6 },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },

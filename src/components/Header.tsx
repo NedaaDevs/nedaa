@@ -120,10 +120,10 @@ const Header = () => {
     <Box margin="$1" borderRadius="$7">
       <Box padding="$3" borderRadius="$6" marginHorizontal="$2" marginTop="$1">
         <VStack alignItems="center" gap="$0.5">
-          <Text size="xl" bold color="$typography" textAlign="center" numberOfLines={1}>
+          <Text size="xl" bold color="$typography" textAlign="center" width="100%">
             {dayName}
           </Text>
-          <Text size="md" color="$typographySecondary" textAlign="center">
+          <Text size="md" color="$typographySecondary" textAlign="center" width="100%">
             {formattedDateDetails}
           </Text>
         </VStack>
@@ -161,7 +161,7 @@ const Header = () => {
         onPress={handleBoxClick}
         accessibilityRole="button">
         <HStack justifyContent="space-between" alignItems="center" width="100%" gap="$4">
-          <Text size="2xl" bold color="$accentPrimary" flex={1} numberOfLines={1}>
+          <Text size="2xl" bold color="$accentPrimary" flex={1}>
             {t(timingName)}
           </Text>
 
