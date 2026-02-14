@@ -65,7 +65,7 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
             size="xl"
             fontWeight={isNext ? "700" : "500"}
             color={isNext ? "$typographyContrast" : "$typography"}
-            flexShrink={1}>
+            flex={1}>
             {t(name)}
           </Text>
         </HStack>
