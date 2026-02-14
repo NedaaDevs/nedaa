@@ -100,7 +100,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         fontSize={resolvedFontSize}
         lineHeight={fontSize != null ? undefined : sizeValues.lineHeight}
         style={[
-          Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 },
+          Platform.OS === PlatformType.ANDROID && { paddingEnd: 4, paddingStart: 4 },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },

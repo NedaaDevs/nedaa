@@ -10,18 +10,14 @@ import { Box } from "@/components/ui/box";
 import { Image } from "@/components/ui/image";
 import { Pressable } from "@/components/ui/pressable";
 
-// Stores
-import { useAppStore } from "@/stores/app";
-
-// Enums
-import { AppMode } from "@/enums/app";
+import { useThemeName } from "tamagui";
 
 const logoLight = require("../../assets/images/icon.png");
 const logoDark = require("../../assets/images/ios-dark.png");
 
 const SettingsFooter = () => {
   const { t } = useTranslation();
-  const mode = useAppStore((s) => s.mode);
+  const themeName = useThemeName();
 
   const appVersion =
     Application.nativeApplicationVersion || Constants.expoConfig?.version || "1.0.0";
@@ -29,7 +25,7 @@ const SettingsFooter = () => {
   const buildNumber =
     Application.nativeBuildVersion || Constants.expoConfig?.ios?.buildNumber || "1";
 
-  const logo = mode === AppMode.DARK ? logoDark : logoLight;
+  const logo = themeName === "dark" ? logoDark : logoLight;
 
   const openWebsite = async () => {
     const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE ?? "";
