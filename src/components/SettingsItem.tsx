@@ -34,14 +34,19 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
     <Box margin="$2" padding="$5" borderRadius="$4" backgroundColor="$backgroundSecondary">
       <Link href={path} asChild>
         <Pressable flexDirection="row" alignItems="center">
-          <HStack justifyContent="space-between" alignItems="center" zIndex={10} width="100%">
-            <HStack alignItems="center" flex={1} flexShrink={1}>
+          <HStack
+            justifyContent="space-between"
+            alignItems="center"
+            zIndex={10}
+            width="100%"
+            gap="$2">
+            <HStack alignItems="center" flexShrink={1}>
               {icon && (
-                <Box marginEnd="$6" flexShrink={0}>
+                <Box marginEnd="$6">
                   <Icon color="$typography" size="lg" as={icon} />
                 </Box>
               )}
-              <Text size="xl" fontWeight="500" color="$typography" flex={1}>
+              <Text size="xl" fontWeight="500" color="$typography" flexShrink={1}>
                 {name}
               </Text>
             </HStack>
