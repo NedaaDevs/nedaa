@@ -30,7 +30,7 @@ import {
 } from "@/types/alarm";
 
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
-import { AlarmLogger } from "@/utils/alarmLogger";
+import { shareAlarmReport, copyAlarmReport } from "@/utils/alarmReport";
 
 const AlarmDebugScreen = () => {
   const [isModuleAvailable, setIsModuleAvailable] = useState<boolean | null>(null);
@@ -99,7 +99,7 @@ const AlarmDebugScreen = () => {
   const shareFullDebugLog = async () => {
     try {
       setLastResult("Generating full debug log...");
-      await AlarmLogger.shareLog();
+      await shareAlarmReport();
       setLastResult("Full debug log shared");
     } catch (e) {
       setLastResult(`Share failed: ${e}`);
@@ -109,7 +109,7 @@ const AlarmDebugScreen = () => {
   const copyFullDebugLog = async () => {
     try {
       setLastResult("Copying debug log...");
-      const ok = await AlarmLogger.copyLog();
+      const ok = await copyAlarmReport();
       setLastResult(ok ? "Debug log copied to clipboard" : "Failed to copy");
     } catch (e) {
       setLastResult(`Copy failed: ${e}`);
