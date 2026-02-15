@@ -5,3 +5,4 @@ export const ATHKAR_DB_NAME = "athkar.db" as const;
 export const ATHKAR_STREAK_TABLE = "athkar_streak" as const;
 export const ATHKAR_COMPLETED_DAYS_TABLE = "athkar_completed_days" as const;
 export const ATHKAR_DAILY_ITEMS_TABLE = "athkar_daily_items" as const;
+export const ATHKAR_AUDIO_DOWNLOADS_TABLE = "athkar_audio_downloads" as const;

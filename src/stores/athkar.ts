@@ -97,6 +97,7 @@ export const useAthkarStore = create<AthkarStore>()(
         settings: {
           autoMoveToNext: true,
           showStreak: true,
+          showTranslation: true,
         },
         shortVersion: false,
         lastMorningIndex: 0,
@@ -313,43 +314,15 @@ export const useAthkarStore = create<AthkarStore>()(
           // Ensure the last known index is within bounds
           const safeLastIndex = Math.min(Math.max(lastKnownIndex, 0), currentList.length - 1);
 
-          // Check if the athkar at the last known position is incomplete
-
-          const athkarAtLastIndex = currentList[safeLastIndex];
-          const progressItem = state.currentProgress.find(
-            (p) => p.athkarId === athkarAtLastIndex.id
-          );
-
-          // If the last position is incomplete, continue from there
-          if (!progressItem?.completed) {
-            console.log(`[Athkar Store] Continuing from last position: ${safeLastIndex}`);
-            return safeLastIndex;
-          }
-
-          // If last position is complete, find the first incomplete athkar after the last position
-          for (let i = safeLastIndex + 1; i < currentList.length; i++) {
-            const athkar = currentList[i];
-            const progressItem = state.currentProgress.find((p) => p.athkarId === athkar.id);
-            if (!progressItem?.completed) {
-              console.log(`[Athkar Store] Found incomplete athkar after last position: ${i}`);
+          // Starting from last position, wrap around to find first incomplete
+          for (let offset = 0; offset < currentList.length; offset++) {
+            const i = (safeLastIndex + offset) % currentList.length;
+            if (!state.currentProgress.find((p) => p.athkarId === currentList[i].id)?.completed) {
               return i;
             }
           }
 
-          // If no incomplete found after last position, search from the beginning
-          for (let i = 0; i < safeLastIndex; i++) {
-            const athkar = currentList[i];
-            const progressItem = state.currentProgress.find((p) => p.athkarId === athkar.id);
-            if (!progressItem?.completed) {
-              console.log(`[Athkar Store] Found incomplete athkar from beginning: ${i}`);
-              return i;
-            }
-          }
-
-          // If all athkar are completed, stay at the last known position
-          console.log(
-            `[Athkar Store] All athkar completed, staying at last position: ${safeLastIndex}`
-          );
+          // All completed — stay at last position
           return safeLastIndex;
         },
 
@@ -441,6 +414,16 @@ export const useAthkarStore = create<AthkarStore>()(
 
             return { currentProgress: updatedProgress };
           });
+
+          // Sync lastIndex so focus mode knows where the user was
+          const athkarList =
+            state.currentType === ATHKAR_TYPE.MORNING
+              ? state.morningAthkarList
+              : state.eveningAthkarList;
+          const tappedIndex = athkarList.findIndex((a) => a.id === athkarId);
+          if (tappedIndex !== -1) {
+            get().updateLastIndex(state.currentType, tappedIndex);
+          }
 
           // Get the updated progress item
           const updatedState = get();
@@ -605,6 +588,14 @@ export const useAthkarStore = create<AthkarStore>()(
             settings: {
               ...state.settings,
               showStreak: !state.settings.showStreak,
+            },
+          })),
+
+        toggleShowTranslation: () =>
+          set((state) => ({
+            settings: {
+              ...state.settings,
+              showTranslation: !state.settings.showTranslation,
             },
           })),
 

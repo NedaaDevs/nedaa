@@ -2,6 +2,12 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 export type AthkarType = (typeof ATHKAR_TYPE)[keyof typeof ATHKAR_TYPE];
 
+export type AthkarGroupInfo = {
+  texts: string[];
+  audioIds: string[];
+  itemsPerRound: number;
+};
+
 export type Athkar = {
   id: string; //  "1-morning", "1-evening"
   title: string;
@@ -9,6 +15,7 @@ export type Athkar = {
   count: number;
   type: AthkarType;
   order: number;
+  group?: AthkarGroupInfo;
 };
 
 export type AthkarProgress = {
@@ -45,6 +52,7 @@ export type AthkarState = {
   settings: {
     autoMoveToNext: boolean;
     showStreak: boolean;
+    showTranslation: boolean;
   };
 };
 
@@ -63,6 +71,7 @@ export type AthkarActions = {
   setCurrentType: (type: Exclude<AthkarType, "all">) => void;
   toggleAutoMove: () => void;
   toggleShowStreak: () => void;
+  toggleShowTranslation: () => void;
   toggleShortVersion: () => void;
   updateLastIndex: (type: Exclude<AthkarType, "all">, index: number) => void;
   getLastIndex: (type: Exclude<AthkarType, "all">) => number;
