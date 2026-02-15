@@ -93,6 +93,7 @@ const downloadPack = async (
     }
   }
 
+  log.i("Download", `Pack download complete: ${completed} ok, ${failed} failed`);
   return { success: completed, failed, failedIds };
 };
 
@@ -102,6 +103,7 @@ const retryFailed = async (
   failedIds: string[],
   onProgress?: (completed: number, total: number) => void
 ): Promise<{ success: number; failed: number; failedIds: string[] }> => {
+  log.i("Download", `Retrying ${failedIds.length} failed downloads`);
   const total = failedIds.length;
   let completed = 0;
   let failed = 0;
@@ -130,6 +132,7 @@ const retryFailed = async (
     onProgress?.(completed + failed, total);
   }
 
+  log.i("Download", `Retry complete: ${completed} ok, ${failed} still failed`);
   return { success: completed, failed, failedIds: stillFailedIds };
 };
 
@@ -177,6 +180,7 @@ const deleteReciterPack = async (reciterId: string): Promise<boolean> => {
     }
 
     await AthkarDB.deleteReciterDownloads(reciterId);
+    log.i("Download", `Deleted pack for ${reciterId}`);
     return true;
   } catch (error) {
     log.e("Download", "Error deleting reciter pack", error instanceof Error ? error : undefined);
