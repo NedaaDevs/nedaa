@@ -1,4 +1,6 @@
+import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
+import { PlatformType } from "@/enums/app";
 
 // Components
 import { HStack } from "@/components/ui/hstack";
@@ -65,7 +67,7 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
             size="xl"
             fontWeight={isNext ? "700" : "500"}
             color={isNext ? "$typographyContrast" : "$typography"}
-            flex={1}>
+            {...(Platform.OS === PlatformType.ANDROID ? { flex: 1 } : { flexShrink: 1 })}>
             {t(name)}
           </Text>
         </HStack>
