@@ -1,7 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
-
 import { apiGet } from "@/services/api";
-import { AUDIO_STORAGE } from "@/constants/AthkarAudio";
 import type { ReciterCatalog, ReciterCatalogEntry, ReciterManifest } from "@/types/athkar-audio";
 
 const API = {
@@ -9,109 +6,38 @@ const API = {
   MANIFEST: (reciterId: string) => `/athkar/reciters/${reciterId}/manifest`,
 } as const;
 
-const catalogCachePath = `${FileSystem.documentDirectory}${AUDIO_STORAGE.CATALOG_FILE}`;
-const manifestsDir = `${FileSystem.documentDirectory}${AUDIO_STORAGE.MANIFESTS_DIR}`;
+let lastCatalog: ReciterCatalog | null = null;
 
-let memoryCatalog: ReciterCatalog | null = null;
-let memoryManifests: Map<string, ReciterManifest> = new Map();
-
-const ensureDirectories = async () => {
-  const info = await FileSystem.getInfoAsync(manifestsDir);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(manifestsDir, { intermediates: true });
-  }
-};
-
-const fetchCatalog = async (forceRefresh = false): Promise<ReciterCatalog | null> => {
-  // Return memory cache if available and not forcing refresh
-  if (memoryCatalog && !forceRefresh) {
-    return memoryCatalog;
-  }
-
-  // Try local cache first
-  if (!forceRefresh) {
-    try {
-      const info = await FileSystem.getInfoAsync(catalogCachePath);
-      if (info.exists) {
-        const content = await FileSystem.readAsStringAsync(catalogCachePath);
-        const cached = JSON.parse(content) as ReciterCatalog;
-        memoryCatalog = cached;
-        return cached;
-      }
-    } catch (error) {
-      console.log("[ReciterRegistry] Local cache read failed:", error);
-    }
-  }
-
-  // Fetch from API
+const fetchCatalog = async (): Promise<ReciterCatalog | null> => {
   try {
     const response = await apiGet<ReciterCatalog>(API.RECITERS);
 
     if (!response.success || !response.data) {
-      console.error("[ReciterRegistry] API fetch failed");
-      return memoryCatalog;
+      console.error("[ReciterRegistry]", "Catalog fetch failed");
+      return lastCatalog;
     }
 
-    const catalog = response.data;
-    memoryCatalog = catalog;
-
-    // Cache locally
-    await ensureDirectories();
-    await FileSystem.writeAsStringAsync(catalogCachePath, JSON.stringify(catalog));
-
-    return catalog;
+    lastCatalog = response.data;
+    return lastCatalog;
   } catch (error) {
-    console.error("[ReciterRegistry] Error fetching catalog:", error);
-    return memoryCatalog;
+    console.error("[ReciterRegistry]", "Error fetching catalog", error);
+    return lastCatalog;
   }
 };
 
-const fetchManifest = async (
-  reciterId: string,
-  forceRefresh = false
-): Promise<ReciterManifest | null> => {
-  // Memory cache
-  if (!forceRefresh && memoryManifests.has(reciterId)) {
-    return memoryManifests.get(reciterId)!;
-  }
-
-  const localPath = `${manifestsDir}/${reciterId}.json`;
-
-  // Local cache
-  if (!forceRefresh) {
-    try {
-      const info = await FileSystem.getInfoAsync(localPath);
-      if (info.exists) {
-        const content = await FileSystem.readAsStringAsync(localPath);
-        const manifest = JSON.parse(content) as ReciterManifest;
-        memoryManifests.set(reciterId, manifest);
-        return manifest;
-      }
-    } catch (error) {
-      console.log("[ReciterRegistry] Local manifest cache read failed:", error);
-    }
-  }
-
-  // Fetch from API
+const fetchManifest = async (reciterId: string): Promise<ReciterManifest | null> => {
   try {
     const response = await apiGet<ReciterManifest>(API.MANIFEST(reciterId));
 
     if (!response.success || !response.data) {
-      console.error("[ReciterRegistry] Manifest fetch failed for", reciterId);
-      return memoryManifests.get(reciterId) ?? null;
+      console.error("[ReciterRegistry]", `Manifest fetch failed for ${reciterId}`);
+      return null;
     }
 
-    const manifest = response.data;
-    memoryManifests.set(reciterId, manifest);
-
-    // Cache locally
-    await ensureDirectories();
-    await FileSystem.writeAsStringAsync(localPath, JSON.stringify(manifest));
-
-    return manifest;
+    return response.data;
   } catch (error) {
-    console.error("[ReciterRegistry] Error fetching manifest:", error);
-    return memoryManifests.get(reciterId) ?? null;
+    console.error("[ReciterRegistry]", "Error fetching manifest", error);
+    return null;
   }
 };
 
@@ -133,12 +59,7 @@ const getDefaultReciter = async (): Promise<ReciterCatalogEntry | null> => {
   return catalog.reciters.find((r) => r.isDefault) ?? catalog.reciters[0];
 };
 
-const getCachedCatalog = (): ReciterCatalog | null => memoryCatalog;
-
-const clearCache = () => {
-  memoryCatalog = null;
-  memoryManifests.clear();
-};
+const getCachedCatalog = (): ReciterCatalog | null => lastCatalog;
 
 export const reciterRegistry = {
   fetchCatalog,
@@ -146,5 +67,4 @@ export const reciterRegistry = {
   getLocalizedName,
   getDefaultReciter,
   getCachedCatalog,
-  clearCache,
 };
