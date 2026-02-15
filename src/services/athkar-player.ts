@@ -3,7 +3,7 @@ import { useAudioPlayer } from "expo-audio";
 import { SMART_PAUSE, getThikrId, PLAYBACK_MODE } from "@/constants/AthkarAudio";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { soundPreviewManager } from "@/utils/sound";
-
+import { AppLogger } from "@/utils/appLogger";
 import type {
   PlayerState,
   PlaybackMode,
@@ -12,6 +12,8 @@ import type {
   QueueItem,
 } from "@/types/athkar-audio";
 import type { Athkar } from "@/types/athkar";
+
+const log = AppLogger.create("athkar-audio");
 
 type PlayerInstance = ReturnType<typeof useAudioPlayer>;
 
@@ -174,6 +176,7 @@ class AthkarPlayer {
     });
     this.queueIndex = 0;
     this.currentRepeat = 0;
+    log.i("Player", `Queue built with ${this.queue.length} items for ${sessionType}`);
   }
 
   // --- Playback control ---
@@ -193,10 +196,11 @@ class AthkarPlayer {
     if (!this.player || this.state !== "playing") return;
 
     try {
+      log.i("Player", "Paused");
       this.setState("paused");
       await this.player.pause();
     } catch (error) {
-      console.error("[AthkarPlayer] Pause error:", error);
+      log.e("Player", "Pause error", error instanceof Error ? error : undefined);
     }
   }
 
@@ -207,7 +211,7 @@ class AthkarPlayer {
       await this.player.play();
       this.setState("playing");
     } catch (error) {
-      console.error("[AthkarPlayer] Resume error:", error);
+      log.e("Player", "Resume error", error instanceof Error ? error : undefined);
     }
   }
 
@@ -219,6 +223,7 @@ class AthkarPlayer {
       this.currentRepeat = 0;
       await this.loadAndPlayCurrent();
     } else {
+      log.i("Player", "Session completed");
       this.setState("completed");
       this.onSessionProgress?.(this.queue.length, this.queue.length);
     }
@@ -256,6 +261,7 @@ class AthkarPlayer {
 
   stop() {
     this.dismiss();
+    log.i("Player", "Stopped");
     this.queue = [];
     this.queueIndex = 0;
     this.currentRepeat = 0;
@@ -267,7 +273,7 @@ class AthkarPlayer {
     try {
       await this.player.seekTo(seconds);
     } catch (error) {
-      console.error("[AthkarPlayer] Seek error:", error);
+      log.e("Player", "Seek error", error instanceof Error ? error : undefined);
     }
   }
 
@@ -332,7 +338,7 @@ class AthkarPlayer {
     }
 
     if (!localPath) {
-      console.log(`[AthkarPlayer] No audio for ${item.thikrId}, skipping`);
+      log.w("Player", `No audio for ${item.thikrId}, skipping`);
       this.onError?.("trackUnavailable");
       if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
         await this.advanceToNext();
@@ -346,6 +352,10 @@ class AthkarPlayer {
       await this.player.replace({ uri: localPath });
       await this.player.play();
       this.setState("playing");
+      log.d(
+        "Player",
+        `Playing ${item.thikrId} (repeat ${this.currentRepeat + 1}/${this.getEffectiveRepeats(item)})`
+      );
 
       // Activate lock screen controls
       this.updateLockScreen(item);
@@ -353,7 +363,7 @@ class AthkarPlayer {
       // Prefetch next
       this.prefetchNext();
     } catch (error) {
-      console.error("[AthkarPlayer] Play error:", error);
+      log.e("Player", "Play error", error instanceof Error ? error : undefined);
       if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
         await this.advanceToNext();
       } else {
@@ -387,7 +397,7 @@ class AthkarPlayer {
           this.setState("playing");
         }
       } catch (error) {
-        console.error("[AthkarPlayer] Replay error:", error);
+        log.e("Player", "Replay error", error instanceof Error ? error : undefined);
         this.handlingEnd = false;
         await this.advanceToNext();
       }
@@ -474,7 +484,7 @@ class AthkarPlayer {
         showSeekBackward: false,
       });
     } catch (error) {
-      console.error("[AthkarPlayer] Lock screen error:", error);
+      log.e("Player", "Lock screen error", error instanceof Error ? error : undefined);
     }
   }
 

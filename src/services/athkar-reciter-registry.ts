@@ -1,5 +1,8 @@
 import { apiGet } from "@/services/api";
+import { AppLogger } from "@/utils/appLogger";
 import type { ReciterCatalog, ReciterCatalogEntry, ReciterManifest } from "@/types/athkar-audio";
+
+const log = AppLogger.create("athkar-audio");
 
 const API = {
   RECITERS: "/athkar/reciters",
@@ -13,14 +16,14 @@ const fetchCatalog = async (): Promise<ReciterCatalog | null> => {
     const response = await apiGet<ReciterCatalog>(API.RECITERS);
 
     if (!response.success || !response.data) {
-      console.error("[ReciterRegistry]", "Catalog fetch failed");
+      log.e("Registry", "Catalog fetch failed");
       return lastCatalog;
     }
 
     lastCatalog = response.data;
     return lastCatalog;
   } catch (error) {
-    console.error("[ReciterRegistry]", "Error fetching catalog", error);
+    log.e("Registry", "Error fetching catalog", error instanceof Error ? error : undefined);
     return lastCatalog;
   }
 };
@@ -30,13 +33,13 @@ const fetchManifest = async (reciterId: string): Promise<ReciterManifest | null>
     const response = await apiGet<ReciterManifest>(API.MANIFEST(reciterId));
 
     if (!response.success || !response.data) {
-      console.error("[ReciterRegistry]", `Manifest fetch failed for ${reciterId}`);
+      log.e("Registry", `Manifest fetch failed for ${reciterId}`);
       return null;
     }
 
     return response.data;
   } catch (error) {
-    console.error("[ReciterRegistry]", "Error fetching manifest", error);
+    log.e("Registry", "Error fetching manifest", error instanceof Error ? error : undefined);
     return null;
   }
 };
