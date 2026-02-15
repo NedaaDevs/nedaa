@@ -237,6 +237,8 @@ PODS:
     - ExpoModulesCore
   - ExpoLocation (19.0.8):
     - ExpoModulesCore
+  - ExpoMediaControls (1.0.0):
+    - ExpoModulesCore
   - ExpoModulesCore (3.0.29):
     - hermes-engine
     - RCTRequired
@@ -1585,7 +1587,7 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-  - react-native-pager-view (8.0.0):
+  - react-native-pager-view (6.9.1):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1606,7 +1608,6 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - SwiftUIIntrospect (~> 1.0)
     - Yoga
   - react-native-safe-area-context (5.6.2):
     - hermes-engine
@@ -2192,7 +2193,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNSentry (8.0.0):
+  - RNSentry (7.2.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2214,7 +2215,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - Sentry (= 9.4.1)
+    - Sentry/HybridSDK (= 8.56.1)
     - Yoga
   - RNSVG (15.12.1):
     - hermes-engine
@@ -2332,10 +2333,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - Sentry (9.4.1):
-    - Sentry/Core (= 9.4.1)
-  - Sentry/Core (9.4.1)
-  - SwiftUIIntrospect (1.3.0)
+  - Sentry/HybridSDK (8.56.1)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2365,6 +2363,7 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
+  - ExpoMediaControls (from `../modules/expo-media-controls/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSensors (from `../node_modules/expo-sensors/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
@@ -2456,7 +2455,6 @@ SPEC REPOS:
   trunk:
     - ReachabilitySwift
     - Sentry
-    - SwiftUIIntrospect
 
 EXTERNAL SOURCES:
   EASClient:
@@ -2511,6 +2509,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-localization/ios"
   ExpoLocation:
     :path: "../node_modules/expo-location/ios"
+  ExpoMediaControls:
+    :path: "../modules/expo-media-controls/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoSensors:
@@ -2710,6 +2710,7 @@ SPEC CHECKSUMS:
   ExpoLinking: 8f0aaf69aa56f832913030503b6263dc6f647f37
   ExpoLocalization: d9168d5300a5b03e5e78b986124d11fb6ec3ebbd
   ExpoLocation: d5b61cb4970fa982e39ca94246a206a0c3b812ca
+  ExpoMediaControls: d70f4cc7379423d3674a3922061c405fb6a12932
   ExpoModulesCore: f3da4f1ab5a8375d0beafab763739dbee8446583
   ExpoSensors: a0149ed128aa9b7678d68e41acfc19891a0d12c3
   ExpoSplashScreen: bc3cffefca2716e5f22350ca109badd7e50ec14d
@@ -2755,7 +2756,7 @@ SPEC CHECKSUMS:
   React-logger: 50fdb9a8236da90c0b1072da5c32ee03aeb5bf28
   React-Mapbuffer: 9050ee10c19f4f7fca8963d0211b2854d624973e
   React-microtasksnativemodule: f775db9e991c6f3b8ccbc02bfcde22770f96e23b
-  react-native-pager-view: adc7d78123fb395e03a70d19e8d75805b49838b5
+  react-native-pager-view: c8817c1d9f4643417e68f0b846c51214b2252eea
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2
   React-NativeModulesApple: 8969913947d5b576de4ed371a939455a8daf28aa
   React-oscompat: ce47230ed20185e91de62d8c6d139ae61763d09c
@@ -2792,11 +2793,10 @@ SPEC CHECKSUMS:
   RNGestureHandler: 2914750df066d89bf9d8f48a10ad5f0051108ac3
   RNReanimated: e5c702a3e24cc1c68b2de67671713f35461678f4
   RNScreens: d8d6f1792f6e7ac12b0190d33d8d390efc0c1845
-  RNSentry: 1e1ac789648ea1be530dd810c24893c8234baabf
+  RNSentry: 41979b419908128847ef662cc130a400b7576fa9
   RNSVG: 31d6639663c249b7d5abc9728dde2041eb2a3c34
   RNWorklets: 76fce72926e28e304afb44f0da23b2d24f2c1fa0
-  Sentry: 990a381d8592207a52e7be654b31a27738c3a6a8
-  SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
+  Sentry: b3ec44d01708fce73f99b544beb57e890eca4406
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
 
 PODFILE CHECKSUM: 187ab401a64848729b5c6079cde787b947409cd9

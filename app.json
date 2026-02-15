@@ -11,7 +11,7 @@
     },
     "name": "nedaa",
     "slug": "nedaa",
-    "version": "2.5.0",
+    "version": "2.6.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -144,7 +144,9 @@
           "motionPermission": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "@sentry/react-native",
+      "./plugins/withAthkarMediaControls"
     ],
     "experiments": {
       "typedRoutes": true
