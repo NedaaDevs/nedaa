@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { Pressable } from "@/components/ui/pressable";
 
 // Components
@@ -9,6 +10,8 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
+import { Icon } from "@/components/ui/icon";
+import { Volume2, ChevronRight } from "lucide-react-native";
 
 import TimePicker from "@/components/TimePicker";
 
@@ -22,9 +25,16 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 // Utils
 import { formatTime12Hour } from "@/utils/date";
 
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
+
 const Settings = () => {
-  const { t } = useTranslation();
-  const { settings, shortVersion, toggleShowStreak, toggleShortVersion } = useAthkarStore();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
+  const { isRTL } = useRTL();
+  const isArabic = i18n.language === "ar";
+  const { settings, shortVersion, toggleShowStreak, toggleShowTranslation, toggleShortVersion } =
+    useAthkarStore();
 
   const { morningNotification, eveningNotification, updateAthkarNotificationSetting } =
     useNotificationStore();
@@ -208,6 +218,23 @@ const Settings = () => {
             </HStack>
           </Box>
 
+          {/* Show Translation Setting — only for non-Arabic locales */}
+          {!isArabic && (
+            <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+              <HStack justifyContent="space-between" alignItems="center">
+                <VStack flex={1} marginEnd="$4">
+                  <Text fontWeight="500" color="$typography">
+                    {t("settings.athkar.showTranslation.title")}
+                  </Text>
+                  <Text size="sm" color="$typographySecondary" marginTop="$1">
+                    {t("settings.athkar.showTranslation.description")}
+                  </Text>
+                </VStack>
+                <Switch value={settings.showTranslation} onValueChange={toggleShowTranslation} />
+              </HStack>
+            </Box>
+          )}
+
           {/* Enable short version Setting */}
           <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
             <HStack justifyContent="space-between" alignItems="center">
@@ -227,6 +254,36 @@ const Settings = () => {
             </HStack>
           </Box>
         </VStack>
+      </VStack>
+
+      {/* Audio Settings Link */}
+      <VStack padding="$4" gap="$3">
+        <Divider />
+        <Pressable
+          onPress={() => router.push("/settings/athkar-audio" as any)}
+          backgroundColor="$backgroundSecondary"
+          borderRadius="$6"
+          padding="$4">
+          <HStack justifyContent="space-between" alignItems="center">
+            <HStack alignItems="center" gap="$3" flex={1}>
+              <Icon as={Volume2} size="md" color="$primary" />
+              <VStack flex={1}>
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.athkarAudio.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary">
+                  {t("settings.athkarAudio.description")}
+                </Text>
+              </VStack>
+            </HStack>
+            <Icon
+              as={ChevronRight}
+              size="md"
+              color="$typographySecondary"
+              style={isRTL ? { transform: [{ rotate: "180deg" }] } : undefined}
+            />
+          </HStack>
+        </Pressable>
       </VStack>
 
       <TimePicker

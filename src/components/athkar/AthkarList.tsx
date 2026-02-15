@@ -47,9 +47,10 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 type Props = {
   type: AthkarType;
+  onRequestOnboarding?: () => void;
 };
 
-const AthkarList = ({ type }: Props) => {
+const AthkarList = ({ type, onRequestOnboarding }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const theme = useTheme();
@@ -356,6 +357,7 @@ const AthkarList = ({ type }: Props) => {
               total: totalCount,
               completed: isCompleted,
             }}
+            onRequestOnboarding={onRequestOnboarding}
           />
         );
       })}

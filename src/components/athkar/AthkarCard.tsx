@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Check, Minus } from "lucide-react-native";
+import { Check, Minus, Volume2 } from "lucide-react-native";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
+import { useAthkarAudioStore } from "@/stores/athkar-audio";
 
 // Types
 import { Athkar } from "@/types/athkar";
@@ -26,6 +27,10 @@ import { formatNumberToLocale } from "@/utils/number";
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
 
+import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
+import { athkarPlayer } from "@/services/athkar-player";
+import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
+
 type Props = {
   athkar: Athkar;
   progress: {
@@ -33,11 +38,15 @@ type Props = {
     total: number;
     completed: boolean;
   };
+  onRequestOnboarding?: () => void;
 };
 
-const AthkarCard: FC<Props> = ({ athkar, progress }) => {
+const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const { t, i18n } = useTranslation();
   const { incrementCount, decrementCount } = useAthkarStore();
+  const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
+  const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
+  const showAudioIcon = playbackMode !== PLAYBACK_MODE.OFF;
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -47,6 +56,10 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
 
   const { current: currentCount, total, completed: isCompleted } = progress;
   const progressPercentage = (currentCount / total) * 100;
+
+  const isGrouped = !!athkar.group;
+  const groupInfo = athkar.group;
+  const currentGroupIndex = isGrouped ? currentCount % groupInfo!.itemsPerRound : 0;
 
   const handleIncrement = () => {
     hapticSelection();
@@ -73,12 +86,36 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
         borderColor={isCompleted ? "$success" : "transparent"}>
         <VStack gap="$3">
           {/* Athkar Text */}
-          <Text
+          <AthkarTextDisplay
+            textKey={athkar.text}
             size="xl"
-            style={{ lineHeight: 28 }}
-            color={isCompleted ? "$typographySecondary" : "$typography"}>
-            {t(athkar.text)}
-          </Text>
+            textAlign="left"
+            color={isCompleted ? "$typographySecondary" : "$typography"}
+          />
+
+          {/* Surah label pills for grouped items */}
+          {isGrouped && groupInfo && (
+            <HStack gap="$2" flexWrap="wrap">
+              {groupInfo.texts.map((_, index) => {
+                const isActive = !isCompleted && index === currentGroupIndex;
+                return (
+                  <Box
+                    key={index}
+                    paddingHorizontal="$2"
+                    paddingVertical="$1"
+                    borderRadius="$4"
+                    backgroundColor={isActive ? "$primary" : "$backgroundMuted"}>
+                    <Text
+                      size="xs"
+                      fontWeight={isActive ? "600" : "400"}
+                      color={isActive ? "$typographyContrast" : "$typographySecondary"}>
+                      {t(`athkar.group.labels.${index}`)}
+                    </Text>
+                  </Box>
+                );
+              })}
+            </HStack>
+          )}
 
           {/* Progress Section */}
           <VStack gap="$2">
@@ -106,15 +143,37 @@ const AthkarCard: FC<Props> = ({ athkar, progress }) => {
                   </Button>
                 )}
               </HStack>
-              {/* Count Display */}
-              <Text
-                size="md"
-                fontWeight="500"
-                color={isCompleted ? "$typographyContrast" : "$typographySecondary"}>
-                {isRTL
-                  ? `${formatNumberToLocale(`${total}`)} / ${formatNumberToLocale(`${currentCount}`)}`
-                  : `${formatNumberToLocale(`${currentCount}`)} / ${formatNumberToLocale(`${total}`)}`}
-              </Text>
+              <HStack alignItems="center" gap="$2">
+                {showAudioIcon && !isCompleted && (
+                  <Pressable
+                    onPress={(e: any) => {
+                      e.stopPropagation();
+                      hapticSelection();
+                      if (!onboardingCompleted && onRequestOnboarding) {
+                        onRequestOnboarding();
+                        return;
+                      }
+                      athkarPlayer.jumpTo(athkar.id, currentCount);
+                    }}
+                    width={32}
+                    height={32}
+                    borderRadius={16}
+                    backgroundColor="$backgroundMuted"
+                    alignItems="center"
+                    justifyContent="center">
+                    <Icon as={Volume2} size="xs" color="$primary" />
+                  </Pressable>
+                )}
+                {/* Count Display */}
+                <Text
+                  size="md"
+                  fontWeight="500"
+                  color={isCompleted ? "$typographyContrast" : "$typographySecondary"}>
+                  {isRTL
+                    ? `${formatNumberToLocale(`${total}`)} / ${formatNumberToLocale(`${currentCount}`)}`
+                    : `${formatNumberToLocale(`${currentCount}`)} / ${formatNumberToLocale(`${total}`)}`}
+                </Text>
+              </HStack>
             </HStack>
 
             {/* Progress Bar */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
@@ -12,15 +12,20 @@ import { Fab, FabIcon } from "@/components/ui/fab";
 import { Icon } from "@/components/ui/icon";
 
 import AthkarList from "@/components/athkar/AthkarList";
+import MiniPlayer from "@/components/athkar/MiniPlayer";
+import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
+import { useAthkarAudioStore } from "@/stores/athkar-audio";
 
 // Hooks
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
+import { useAthkarAudioBridge } from "@/hooks/useAthkarAudioBridge";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { PLAYBACK_MODE, AUDIO_UI } from "@/constants/AthkarAudio";
 
 // Icons
 import { Sun, Moon, Focus } from "lucide-react-native";
@@ -31,27 +36,79 @@ import { AthkarType } from "@/types/athkar";
 // Utils
 import { getCurrentAthkarPeriod } from "@/utils/athkar";
 
+// Services
+import { athkarPlayer } from "@/services/athkar-player";
+import { reciterRegistry } from "@/services/athkar-reciter-registry";
+
 const AthkarTabs = () => {
   const { t } = useTranslation();
   const router = useRouter();
 
-  const { setCurrentType, validateDailyStreak } = useAthkarStore();
+  const { morningAthkarList, eveningAthkarList, setCurrentType, validateDailyStreak } =
+    useAthkarStore();
+  const audioStop = useAthkarAudioStore((s) => s.stop);
+  const playerState = useAthkarAudioStore((s) => s.playerState);
+  const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
+  const selectedReciterId = useAthkarAudioStore((s) => s.selectedReciterId);
+  const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
+
+  const isPlayerActive =
+    playerState === "playing" ||
+    playerState === "paused" ||
+    playerState === "loading" ||
+    playerState === "advancing";
+  const miniPlayerHeight = comfortMode
+    ? AUDIO_UI.MINI_PLAYER_HEIGHT_COMFORT
+    : AUDIO_UI.MINI_PLAYER_HEIGHT;
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   type activeTabType = Exclude<AthkarType, "all">;
 
   const [activeTab, setActiveTab] = useState<activeTabType>(() => {
-    // will set tab based on the time of the day
     return getCurrentAthkarPeriod();
   });
 
   // Initialize athkar data
   useInitializeAthkar();
 
+  // Mount audio bridge for background playback
+  useAthkarAudioBridge();
+
   // Check for daily reset and validate streak on mount
   useEffect(() => {
     setCurrentType(activeTab);
-    validateDailyStreak(); // Only check when athkar page opens
+    validateDailyStreak();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Build audio queue so play buttons in the list work
+  const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF;
+  const currentAthkarList =
+    activeTab === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
+
+  useEffect(() => {
+    if (!showAudioControls || !selectedReciterId || currentAthkarList.length === 0) return;
+
+    const buildQueue = async () => {
+      const catalog = await reciterRegistry.fetchCatalog();
+      const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
+      if (!reciter) return;
+
+      const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
+      if (!manifest) return;
+
+      athkarPlayer.setMode(playbackMode);
+      athkarPlayer.setRepeatLimit(useAthkarAudioStore.getState().repeatLimit);
+      athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, activeTab);
+    };
+
+    buildQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAudioControls, selectedReciterId, activeTab, currentAthkarList.length]);
+
+  const handleRequestOnboarding = useCallback(() => {
+    setShowOnboarding(true);
   }, []);
 
   return (
@@ -62,6 +119,9 @@ const AthkarTabs = () => {
           {/* Morning Tab */}
           <Pressable
             onPress={() => {
+              if (activeTab !== ATHKAR_TYPE.MORNING && playerState !== "idle") {
+                audioStop();
+              }
               setActiveTab(ATHKAR_TYPE.MORNING);
               setCurrentType(ATHKAR_TYPE.MORNING);
             }}
@@ -99,6 +159,9 @@ const AthkarTabs = () => {
           {/* Evening Tab */}
           <Pressable
             onPress={() => {
+              if (activeTab !== ATHKAR_TYPE.EVENING && playerState !== "idle") {
+                audioStop();
+              }
               setActiveTab(ATHKAR_TYPE.EVENING);
               setCurrentType(ATHKAR_TYPE.EVENING);
             }}
@@ -138,17 +201,23 @@ const AthkarTabs = () => {
       {/* Content Area */}
       <ScrollView style={{ flex: 1, backgroundColor: "transparent" }}>
         <Box padding="$4">
-          <AthkarList type={activeTab} />
+          <AthkarList type={activeTab} onRequestOnboarding={handleRequestOnboarding} />
         </Box>
       </ScrollView>
+
+      {/* Mini Player — shows when audio is active */}
+      <MiniPlayer />
 
       <Fab
         onPress={() => router.push("/athkar-focus")}
         size="lg"
         placement="bottom right"
+        bottom={isPlayerActive ? 16 + miniPlayerHeight + 8 : 16}
         accessibilityLabel={t("athkar.focus.title")}>
         <FabIcon as={Focus} color="$typographyContrast" />
       </Fab>
+
+      <AudioOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </Box>
   );
 };
