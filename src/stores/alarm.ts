@@ -5,7 +5,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
 import { generateDeterministicUUID, getSnoozeKey } from "@/utils/alarmId";
-import { AlarmLogger } from "@/utils/alarmLogger";
+import { alarmLog } from "@/utils/alarmReport";
 
 export interface ScheduledAlarm {
   alarmId: string;
@@ -90,7 +90,7 @@ export const useAlarmStore = create<AlarmState>()(
           ExpoAlarm.markAlarmCompleted(alarmId);
 
           if (!alarm) {
-            AlarmLogger.w("AlarmStore", `completeAlarm: alarm ${alarmId} not found in store`);
+            alarmLog.w("Store", `completeAlarm: alarm ${alarmId} not found in store`);
           }
 
           try {
@@ -100,8 +100,8 @@ export const useAlarmStore = create<AlarmState>()(
               await scheduleFridayAlarm();
             }
           } catch (error) {
-            AlarmLogger.e(
-              "AlarmStore",
+            alarmLog.e(
+              "Store",
               "Failed to reschedule after completing alarm",
               error instanceof Error ? error : undefined
             );

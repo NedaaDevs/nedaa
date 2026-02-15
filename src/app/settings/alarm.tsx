@@ -61,7 +61,12 @@ import { checkPermissions, requestNotificationPermission } from "@/utils/notific
 import { PermissionStatus } from "expo-notifications";
 
 import { PlatformType } from "@/enums/app";
-import { AlarmLogger, type IssueCategory } from "@/utils/alarmLogger";
+import {
+  getAlarmDiagnosticReport,
+  getAlarmSummary,
+  copyAlarmReport,
+  type IssueCategory,
+} from "@/utils/alarmReport";
 
 interface PermissionItem {
   id: string;
@@ -177,7 +182,7 @@ const AlarmSettings = () => {
     setIsExporting(true);
     closeReportModal();
     try {
-      const log = await AlarmLogger.getFullDebugLog(selectedCategory);
+      const log = await getAlarmDiagnosticReport(selectedCategory);
       const categoryLabel = t(
         issueOptions.find((o) => o.category === selectedCategory)?.labelKey ?? "alarm.report.other"
       );
@@ -197,7 +202,7 @@ const AlarmSettings = () => {
     setIsExporting(true);
     closeReportModal();
     try {
-      const summary = await AlarmLogger.getSummary(selectedCategory);
+      const summary = await getAlarmSummary(selectedCategory);
       const encoded = encodeURIComponent(summary);
       await Linking.openURL(`https://wa.me/${whatsappNumber}?text=${encoded}`);
     } catch (e) {
@@ -211,7 +216,7 @@ const AlarmSettings = () => {
     setIsExporting(true);
     closeReportModal();
     try {
-      const summary = await AlarmLogger.getSummary(selectedCategory);
+      const summary = await getAlarmSummary(selectedCategory);
       const encoded = encodeURIComponent(summary);
       await Linking.openURL(`https://t.me/${telegramUsername}?text=${encoded}`);
     } catch (e) {
@@ -223,7 +228,7 @@ const AlarmSettings = () => {
   const handleCopyToClipboard = async () => {
     if (!selectedCategory) return;
     closeReportModal();
-    await AlarmLogger.copyLog(selectedCategory);
+    await copyAlarmReport(selectedCategory);
   };
 
   const allGranted = permissions.length === 0 || permissions.every((p) => p.granted);
