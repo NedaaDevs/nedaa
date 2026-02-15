@@ -2,8 +2,10 @@ import * as FileSystem from "expo-file-system/legacy";
 
 import { AthkarDB } from "@/services/athkar-db";
 import { AUDIO_STORAGE, getThikrId } from "@/constants/AthkarAudio";
-
+import { AppLogger } from "@/utils/appLogger";
 import type { ReciterManifest } from "@/types/athkar-audio";
+
+const log = AppLogger.create("athkar-audio");
 
 const audioBaseDir = `${FileSystem.documentDirectory}${AUDIO_STORAGE.AUDIO_DIR}`;
 
@@ -37,7 +39,7 @@ const downloadFile = async (
     const result = await FileSystem.downloadAsync(url, localPath);
 
     if (result.status !== 200) {
-      console.error(`[AudioDownload] Failed to download ${thikrId}: status ${result.status}`);
+      log.e("Download", `Failed to download ${thikrId}: status ${result.status}`);
       return null;
     }
 
@@ -46,7 +48,7 @@ const downloadFile = async (
 
     return localPath;
   } catch (error) {
-    console.error(`[AudioDownload] Error downloading ${thikrId}:`, error);
+    log.e("Download", `Error downloading ${thikrId}`, error instanceof Error ? error : undefined);
     return null;
   }
 };
@@ -177,7 +179,7 @@ const deleteReciterPack = async (reciterId: string): Promise<boolean> => {
     await AthkarDB.deleteReciterDownloads(reciterId);
     return true;
   } catch (error) {
-    console.error("[AudioDownload] Error deleting reciter pack:", error);
+    log.e("Download", "Error deleting reciter pack", error instanceof Error ? error : undefined);
     return false;
   }
 };
@@ -199,7 +201,11 @@ const getStorageBreakdown = async (): Promise<{ reciterId: string; size: number 
 
     return breakdown;
   } catch (error) {
-    console.error("[AudioDownload] Error getting storage breakdown:", error);
+    log.e(
+      "Download",
+      "Error getting storage breakdown",
+      error instanceof Error ? error : undefined
+    );
     return [];
   }
 };

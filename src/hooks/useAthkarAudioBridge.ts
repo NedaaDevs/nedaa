@@ -10,7 +10,9 @@ import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { useAthkarStore } from "@/stores/athkar";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { MessageToast } from "@/components/feedback/MessageToast";
-import { AppMode } from "@/enums/app";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("athkar-audio");
 
 export const useAthkarAudioBridge = () => {
   const { t } = useTranslation();
@@ -31,6 +33,7 @@ export const useAthkarAudioBridge = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
+    log.i("Bridge", "Audio bridge mounted");
 
     // Enable background audio and silent mode playback
     setAudioModeAsync({
@@ -62,7 +65,7 @@ export const useAthkarAudioBridge = () => {
         }
       }
 
-      const isDark = Appearance.getColorScheme() === AppMode.DARK;
+      const isDark = Appearance.getColorScheme() === "dark";
       const artworkUrl = isDark ? darkIcon : lightIcon;
 
       return { title, artist, artworkUrl };
@@ -105,6 +108,7 @@ export const useAthkarAudioBridge = () => {
     });
 
     return () => {
+      log.i("Bridge", "Audio bridge unmounted");
       isMountedRef.current = false;
       MediaControls.disable();
       nextSub.remove();
