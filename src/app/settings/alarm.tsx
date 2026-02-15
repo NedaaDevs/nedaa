@@ -579,6 +579,17 @@ const AlarmSettings = () => {
                         </Pressable>
                       ))}
                     </VStack>
+
+                    <Pressable
+                      marginTop="$4"
+                      minHeight={44}
+                      justifyContent="center"
+                      alignItems="center"
+                      onPress={closeReportModal}>
+                      <Text size="sm" color="$typographySecondary">
+                        {t("common.cancel")}
+                      </Text>
+                    </Pressable>
                   </>
                 ) : (
                   <>
