@@ -12,6 +12,7 @@ import {
   ATHKAR_STREAK_TABLE,
   ATHKAR_COMPLETED_DAYS_TABLE,
   ATHKAR_DAILY_ITEMS_TABLE,
+  ATHKAR_AUDIO_DOWNLOADS_TABLE,
   ATHKAR_DB_NAME,
 } from "@/constants/DB";
 
@@ -39,8 +40,18 @@ const AthkarDailyItemSchema = z.object({
   updated_at: z.string(),
 });
 
+const AthkarAudioDownloadSchema = z.object({
+  id: z.number(),
+  reciter_id: z.string(),
+  thikr_id: z.string(),
+  file_path: z.string(),
+  file_size: z.number().min(0),
+  downloaded_at: z.string(),
+});
+
 type AthkarStreak = z.infer<typeof AthkarStreakSchema>;
 type AthkarDailyItem = z.infer<typeof AthkarDailyItemSchema>;
+type AthkarAudioDownload = z.infer<typeof AthkarAudioDownloadSchema>;
 
 // Singleton database connection
 let dbInstance: SQLite.SQLiteDatabase | null = null;
@@ -211,8 +222,26 @@ const initializeDB = async () => {
     );
 
     await db.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_completed_days_date 
+      `CREATE INDEX IF NOT EXISTS idx_completed_days_date
        ON ${ATHKAR_COMPLETED_DAYS_TABLE}(date DESC);`
+    );
+
+    // Create audio downloads table
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${ATHKAR_AUDIO_DOWNLOADS_TABLE} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reciter_id TEXT NOT NULL,
+        thikr_id TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        downloaded_at TEXT NOT NULL,
+        UNIQUE(reciter_id, thikr_id)
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE INDEX IF NOT EXISTS idx_audio_downloads_reciter
+       ON ${ATHKAR_AUDIO_DOWNLOADS_TABLE}(reciter_id);`
     );
 
     // Insert default streak entry if none exists
@@ -818,6 +847,143 @@ const validateStreakForToday = async (
   }
 };
 
+/** AUDIO DOWNLOAD OPERATIONS */
+
+const insertAudioDownload = async (
+  reciterId: string,
+  thikrId: string,
+  filePath: string,
+  fileSize: number
+): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `INSERT OR REPLACE INTO ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+       (reciter_id, thikr_id, file_path, file_size, downloaded_at)
+       VALUES (?, ?, ?, ?, ?);`,
+      [reciterId, thikrId, filePath, fileSize, now]
+    );
+    return true;
+  } catch (error) {
+    console.error("[Athkar-DB] Error inserting audio download:", error);
+    return false;
+  }
+};
+
+const getAudioDownload = async (
+  reciterId: string,
+  thikrId: string
+): Promise<AthkarAudioDownload | null> => {
+  const db = await openDatabase();
+
+  try {
+    const result = await db.getFirstAsync(
+      `SELECT * FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+       WHERE reciter_id = ? AND thikr_id = ?;`,
+      [reciterId, thikrId]
+    );
+
+    if (!result) return null;
+    return AthkarAudioDownloadSchema.parse(result);
+  } catch (error) {
+    console.error("[Athkar-DB] Error getting audio download:", error);
+    return null;
+  }
+};
+
+const getReciterDownloads = async (reciterId: string): Promise<AthkarAudioDownload[]> => {
+  const db = await openDatabase();
+
+  try {
+    const results = await db.getAllAsync(
+      `SELECT * FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+       WHERE reciter_id = ?
+       ORDER BY thikr_id;`,
+      [reciterId]
+    );
+
+    if (!results) return [];
+
+    return results
+      .map((r) => {
+        try {
+          return AthkarAudioDownloadSchema.parse(r);
+        } catch {
+          return null;
+        }
+      })
+      .filter((item): item is AthkarAudioDownload => item !== null);
+  } catch (error) {
+    console.error("[Athkar-DB] Error getting reciter downloads:", error);
+    return [];
+  }
+};
+
+const deleteReciterDownloads = async (reciterId: string): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    await db.runAsync(`DELETE FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ?;`, [
+      reciterId,
+    ]);
+    return true;
+  } catch (error) {
+    console.error("[Athkar-DB] Error deleting reciter downloads:", error);
+    return false;
+  }
+};
+
+const deleteAudioDownload = async (reciterId: string, thikrId: string): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    await db.runAsync(
+      `DELETE FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ? AND thikr_id = ?;`,
+      [reciterId, thikrId]
+    );
+    return true;
+  } catch (error) {
+    console.error("[Athkar-DB] Error deleting audio download:", error);
+    return false;
+  }
+};
+
+const getAudioStorageUsed = async (reciterId?: string): Promise<number> => {
+  const db = await openDatabase();
+
+  try {
+    const query = reciterId
+      ? `SELECT COALESCE(SUM(file_size), 0) as total FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ?;`
+      : `SELECT COALESCE(SUM(file_size), 0) as total FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE};`;
+
+    const params = reciterId ? [reciterId] : [];
+    const result: any = await db.getFirstAsync(query, params);
+
+    return result?.total ?? 0;
+  } catch (error) {
+    console.error("[Athkar-DB] Error getting audio storage used:", error);
+    return 0;
+  }
+};
+
+const isThikrDownloaded = async (reciterId: string, thikrId: string): Promise<boolean> => {
+  const db = await openDatabase();
+
+  try {
+    const result = await db.getFirstAsync(
+      `SELECT id FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+       WHERE reciter_id = ? AND thikr_id = ?;`,
+      [reciterId, thikrId]
+    );
+    return result !== null;
+  } catch (error) {
+    console.error("[Athkar-DB] Error checking thikr download:", error);
+    return false;
+  }
+};
+
 export const AthkarDB = {
   open: openDatabase,
   initialize: initializeDB,
@@ -838,6 +1004,15 @@ export const AthkarDB = {
   resetCurrentStreak,
   updateStreakSettings,
   validateStreakForToday,
+
+  // Audio downloads
+  insertAudioDownload,
+  getAudioDownload,
+  getReciterDownloads,
+  deleteAudioDownload,
+  deleteReciterDownloads,
+  getAudioStorageUsed,
+  isThikrDownloaded,
 
   // Utility
   cleanOldData,

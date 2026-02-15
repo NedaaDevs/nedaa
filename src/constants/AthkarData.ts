@@ -16,29 +16,16 @@ export const DEFAULT_ATHKAR_DATA: Athkar[] = [
 
   {
     id: "2",
-    title: "athkar.titles.surahAlIkhlas",
+    title: "athkar.titles.threeQuls",
     text: "athkar.items.surahAlIkhlas",
-    count: 3,
+    count: 9,
     type: ATHKAR_TYPE.ALL,
     order: 2,
-  },
-
-  {
-    id: "3",
-    title: "athkar.titles.surahAlFalaq",
-    text: "athkar.items.surahAlFalaq",
-    count: 3,
-    type: ATHKAR_TYPE.ALL,
-    order: 3,
-  },
-
-  {
-    id: "4",
-    title: "athkar.titles.surahAnNas",
-    text: "athkar.items.surahAnNas",
-    count: 3,
-    type: ATHKAR_TYPE.ALL,
-    order: 4,
+    group: {
+      texts: ["athkar.items.surahAlIkhlas", "athkar.items.surahAlFalaq", "athkar.items.surahAnNas"],
+      audioIds: ["al-ikhlas", "al-falaq", "an-nas"],
+      itemsPerRound: 3,
+    },
   },
 
   {
