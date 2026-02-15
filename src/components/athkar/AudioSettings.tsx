@@ -2,6 +2,7 @@ import { FC, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, ScrollView } from "react-native";
 import { router } from "expo-router";
+import * as Application from "expo-application";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 
 import { Box } from "@/components/ui/box";
@@ -13,12 +14,13 @@ import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import { Trash2, Check } from "lucide-react-native";
+import { Trash2, Check, MessageSquareWarning } from "lucide-react-native";
 
 import ReciterCard from "@/components/athkar/ReciterCard";
 import DownloadProgress from "@/components/athkar/DownloadProgress";
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 import { MessageToast } from "@/components/feedback/MessageToast";
+import ReportProblemModal from "@/components/ReportProblemModal";
 
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
@@ -26,8 +28,11 @@ import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { AthkarDB } from "@/services/athkar-db";
 import { formatFileSize } from "@/utils/customSoundManager";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
+import { AppLogger } from "@/utils/appLogger";
 
 import type { ReciterCatalogEntry, ReciterManifest, PlaybackMode } from "@/types/athkar-audio";
+
+const athkarLog = AppLogger.create("athkar-audio");
 
 const AudioSettings: FC = () => {
   const { t, i18n } = useTranslation();
@@ -54,6 +59,20 @@ const AudioSettings: FC = () => {
   const [failedIds, setFailedIds] = useState<string[]>([]);
   const [cachedManifest, setCachedManifest] = useState<ReciterManifest | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  const getReportText = useCallback(async () => {
+    const logText = await athkarLog.getLogText();
+    const appVersion = Application.nativeApplicationVersion ?? "unknown";
+    const buildNumber = Application.nativeBuildVersion ?? "unknown";
+    return `App: ${appVersion} (${buildNumber})\nReciter: ${selectedReciterId}\nMode: ${playbackMode}\n\n${logText}`;
+  }, [selectedReciterId, playbackMode]);
+
+  const getSummaryText = useCallback(async () => {
+    const appVersion = Application.nativeApplicationVersion ?? "unknown";
+    const buildNumber = Application.nativeBuildVersion ?? "unknown";
+    return `Nedaa Athkar Audio\nApp: ${appVersion} (${buildNumber})\nReciter: ${selectedReciterId}\nMode: ${playbackMode}`;
+  }, [selectedReciterId, playbackMode]);
 
   // Sample player
   const samplePlayer = useAudioPlayer();
@@ -410,6 +429,19 @@ const AudioSettings: FC = () => {
             <Button.Text color="$primary">{t("settings.athkarAudio.rerunWalkthrough")}</Button.Text>
           </Button>
 
+          <Pressable
+            marginTop="$4"
+            minHeight={44}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+            onPress={() => setReportModalOpen(true)}>
+            <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
+            <Text size="sm" color="$typographySecondary" marginStart="$2">
+              {t("settings.athkarAudio.reportProblem")}
+            </Text>
+          </Pressable>
+
           {__DEV__ && (
             <Button
               variant="outline"
@@ -422,6 +454,15 @@ const AudioSettings: FC = () => {
       </ScrollView>
 
       <AudioOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+
+      <ReportProblemModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        emailSubject="Nedaa: Athkar Audio"
+        getReportText={getReportText}
+        getSummaryText={getSummaryText}
+        onCopy={() => athkarLog.copyLog()}
+      />
     </>
   );
 };
