@@ -17,6 +17,7 @@ import { Trash2, Check } from "lucide-react-native";
 import ReciterCard from "@/components/athkar/ReciterCard";
 import DownloadProgress from "@/components/athkar/DownloadProgress";
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
+import { MessageToast } from "@/components/feedback/MessageToast";
 
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
@@ -25,7 +26,7 @@ import { AthkarDB } from "@/services/athkar-db";
 import { formatFileSize } from "@/utils/customSoundManager";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
-import type { ReciterCatalogEntry, PlaybackMode } from "@/types/athkar-audio";
+import type { ReciterCatalogEntry, ReciterManifest, PlaybackMode } from "@/types/athkar-audio";
 
 const AudioSettings: FC = () => {
   const { t, i18n } = useTranslation();
@@ -49,6 +50,9 @@ const AudioSettings: FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadCompleted, setDownloadCompleted] = useState(0);
   const [downloadTotal, setDownloadTotal] = useState(0);
+  const [failedIds, setFailedIds] = useState<string[]>([]);
+  const [cachedManifest, setCachedManifest] = useState<ReciterManifest | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Sample player
   const samplePlayer = useAudioPlayer();
@@ -139,21 +143,56 @@ const AudioSettings: FC = () => {
     if (!reciter) return;
 
     setIsDownloading(true);
+    setFailedIds([]);
     const manifest = await reciterRegistry.fetchManifest(reciterId);
     if (!manifest) {
       setIsDownloading(false);
       return;
     }
 
+    setCachedManifest(manifest);
     const total = Object.keys(manifest.files).length;
     setDownloadTotal(total);
     setDownloadCompleted(0);
 
-    await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
+    const result = await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
       setDownloadCompleted(completed);
     });
 
+    if (result.failed > 0) {
+      setFailedIds(result.failedIds);
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+    }
+
     setIsDownloading(false);
+    await refreshStorage();
+  };
+
+  const handleRetryFailed = async () => {
+    if (!selectedReciterId || !cachedManifest || failedIds.length === 0) return;
+
+    setIsRetrying(true);
+    setDownloadTotal(failedIds.length);
+    setDownloadCompleted(0);
+
+    const result = await audioDownloadManager.retryFailed(
+      selectedReciterId,
+      cachedManifest,
+      failedIds,
+      (completed) => {
+        setDownloadCompleted(completed);
+      }
+    );
+
+    if (result.failed > 0) {
+      setFailedIds(result.failedIds);
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+    } else {
+      setFailedIds([]);
+      MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
+    }
+
+    setIsRetrying(false);
     await refreshStorage();
   };
 
@@ -211,6 +250,20 @@ const AudioSettings: FC = () => {
                   />
                   {isSelected && !hasDownload && isDownloading && (
                     <DownloadProgress completed={downloadCompleted} total={downloadTotal} />
+                  )}
+                  {isSelected && isRetrying && (
+                    <DownloadProgress
+                      completed={downloadCompleted}
+                      total={downloadTotal}
+                      label={t("athkar.audio.retrying")}
+                    />
+                  )}
+                  {isSelected && !isDownloading && !isRetrying && failedIds.length > 0 && (
+                    <Button size="sm" variant="outline" onPress={handleRetryFailed}>
+                      <Button.Text color="$primary">
+                        {t("athkar.audio.retry")} ({failedIds.length})
+                      </Button.Text>
+                    </Button>
                   )}
                 </VStack>
               );

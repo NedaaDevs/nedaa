@@ -24,6 +24,7 @@ type ThikrChangeCallback = (
 ) => void;
 type ProgressCallback = (current: number, total: number) => void;
 type AudioPositionCallback = (position: number, duration: number) => void;
+type ErrorCallback = (message: string) => void;
 
 type AudioStatus = {
   playing: boolean;
@@ -59,6 +60,7 @@ class AthkarPlayer {
   private onThikrChange: ThikrChangeCallback | null = null;
   private onSessionProgress: ProgressCallback | null = null;
   private onAudioPosition: AudioPositionCallback | null = null;
+  private onError: ErrorCallback | null = null;
 
   private constructor() {}
 
@@ -82,12 +84,14 @@ class AthkarPlayer {
     onThikrChange?: ThikrChangeCallback;
     onSessionProgress?: ProgressCallback;
     onAudioPosition?: AudioPositionCallback;
+    onError?: ErrorCallback;
   }) {
     if (callbacks.onStateChange) this.onStateChange = callbacks.onStateChange;
     if (callbacks.onCountIncrement) this.onCountIncrement = callbacks.onCountIncrement;
     if (callbacks.onThikrChange) this.onThikrChange = callbacks.onThikrChange;
     if (callbacks.onSessionProgress) this.onSessionProgress = callbacks.onSessionProgress;
     if (callbacks.onAudioPosition) this.onAudioPosition = callbacks.onAudioPosition;
+    if (callbacks.onError) this.onError = callbacks.onError;
   }
 
   setMode(mode: PlaybackMode) {
@@ -325,8 +329,8 @@ class AthkarPlayer {
     }
 
     if (!localPath) {
-      // No audio available — skip to next in autopilot, stay in manual
       console.log(`[AthkarPlayer] No audio for ${item.thikrId}, skipping`);
+      this.onError?.("trackUnavailable");
       if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
         await this.advanceToNext();
       } else {

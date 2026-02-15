@@ -55,11 +55,12 @@ const downloadPack = async (
   reciterId: string,
   manifest: ReciterManifest,
   onProgress?: (completed: number, total: number) => void
-): Promise<{ success: number; failed: number }> => {
+): Promise<{ success: number; failed: number; failedIds: string[] }> => {
   const files = Object.entries(manifest.files);
   const total = files.length;
   let completed = 0;
   let failed = 0;
+  const failedIds: string[] = [];
 
   for (const [thikrId, fileEntry] of files) {
     const result = await downloadFile(reciterId, thikrId, fileEntry.url, fileEntry.size);
@@ -67,6 +68,7 @@ const downloadPack = async (
       completed++;
     } else {
       failed++;
+      failedIds.push(thikrId);
     }
     onProgress?.(completed + failed, total);
   }
@@ -84,11 +86,49 @@ const downloadPack = async (
         completed++;
       } else {
         failed++;
+        failedIds.push(`session-${sessionId}`);
       }
     }
   }
 
-  return { success: completed, failed };
+  return { success: completed, failed, failedIds };
+};
+
+const retryFailed = async (
+  reciterId: string,
+  manifest: ReciterManifest,
+  failedIds: string[],
+  onProgress?: (completed: number, total: number) => void
+): Promise<{ success: number; failed: number; failedIds: string[] }> => {
+  const total = failedIds.length;
+  let completed = 0;
+  let failed = 0;
+  const stillFailedIds: string[] = [];
+
+  for (const thikrId of failedIds) {
+    const isSession = thikrId.startsWith("session-");
+    const fileEntry = isSession
+      ? manifest.sessions?.[thikrId.replace("session-", "")]
+      : manifest.files[thikrId];
+
+    if (!fileEntry) {
+      failed++;
+      stillFailedIds.push(thikrId);
+      onProgress?.(completed + failed, total);
+      continue;
+    }
+
+    const result = await downloadFile(reciterId, thikrId, fileEntry.url, fileEntry.size);
+    if (result) {
+      completed++;
+    } else {
+      failed++;
+      stillFailedIds.push(thikrId);
+    }
+    onProgress?.(completed + failed, total);
+  }
+
+  return { success: completed, failed, failedIds: stillFailedIds };
 };
 
 const prefetchUpcoming = async (
@@ -171,6 +211,7 @@ const getThikrIdForAthkar = (order: number, sessionType: "morning" | "evening"):
 export const audioDownloadManager = {
   downloadFile,
   downloadPack,
+  retryFailed,
   prefetchUpcoming,
   getLocalPath,
   deleteReciterPack,
