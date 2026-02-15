@@ -15,13 +15,14 @@ import { Headphones, Hand, VolumeX } from "lucide-react-native";
 
 import ReciterCard from "@/components/athkar/ReciterCard";
 import DownloadProgress from "@/components/athkar/DownloadProgress";
+import { MessageToast } from "@/components/feedback/MessageToast";
 
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
-import type { ReciterCatalogEntry, PlaybackMode } from "@/types/athkar-audio";
+import type { ReciterCatalogEntry, ReciterManifest, PlaybackMode } from "@/types/athkar-audio";
 
 type Props = {
   isOpen: boolean;
@@ -42,6 +43,9 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
   const [downloadCompleted, setDownloadCompleted] = useState(0);
   const [downloadTotal, setDownloadTotal] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [failedIds, setFailedIds] = useState<string[]>([]);
+  const [cachedManifest, setCachedManifest] = useState<ReciterManifest | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Sample player
   const samplePlayer = useAudioPlayer();
@@ -95,6 +99,9 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
     setDownloadCompleted(0);
     setDownloadTotal(0);
     setIsDownloading(false);
+    setFailedIds([]);
+    setCachedManifest(null);
+    setIsRetrying(false);
 
     const loadReciters = async () => {
       const catalog = await reciterRegistry.fetchCatalog();
@@ -139,6 +146,7 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
     if (!reciter) return;
 
     setIsDownloading(true);
+    setFailedIds([]);
 
     const manifest = await reciterRegistry.fetchManifest(reciterId);
     if (!manifest) {
@@ -146,14 +154,51 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
       return;
     }
 
+    setCachedManifest(manifest);
     const total = Object.keys(manifest.files).length;
     setDownloadTotal(total);
 
-    await audioDownloadManager.downloadPack(reciterId, manifest, (completed, _total) => {
-      setDownloadCompleted(completed);
-    });
+    const result = await audioDownloadManager.downloadPack(
+      reciterId,
+      manifest,
+      (completed, _total) => {
+        setDownloadCompleted(completed);
+      }
+    );
+
+    if (result.failed > 0) {
+      setFailedIds(result.failedIds);
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+    }
 
     setIsDownloading(false);
+  };
+
+  const handleRetryFailed = async () => {
+    if (!selectedId || !cachedManifest || failedIds.length === 0) return;
+
+    setIsRetrying(true);
+    setDownloadTotal(failedIds.length);
+    setDownloadCompleted(0);
+
+    const result = await audioDownloadManager.retryFailed(
+      selectedId,
+      cachedManifest,
+      failedIds,
+      (completed) => {
+        setDownloadCompleted(completed);
+      }
+    );
+
+    if (result.failed > 0) {
+      setFailedIds(result.failedIds);
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+    } else {
+      setFailedIds([]);
+      MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
+    }
+
+    setIsRetrying(false);
   };
 
   const modeOptions = [
@@ -312,15 +357,35 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                   </Text>
                 </VStack>
 
-                {downloadTotal > 0 && (
+                {downloadTotal > 0 && !isRetrying && (
                   <DownloadProgress completed={downloadCompleted} total={downloadTotal} />
                 )}
 
-                {!isDownloading && downloadCompleted === downloadTotal && downloadTotal > 0 && (
-                  <Text size="sm" color="$success" textAlign="center" fontWeight="500">
-                    {t("athkar.onboarding.download.complete")}
-                  </Text>
+                {isRetrying && (
+                  <DownloadProgress
+                    completed={downloadCompleted}
+                    total={downloadTotal}
+                    label={t("athkar.audio.retrying")}
+                  />
                 )}
+
+                {!isDownloading && !isRetrying && failedIds.length > 0 && (
+                  <Button size="sm" variant="outline" onPress={handleRetryFailed}>
+                    <Button.Text color="$primary">
+                      {t("athkar.audio.retry")} ({failedIds.length})
+                    </Button.Text>
+                  </Button>
+                )}
+
+                {!isDownloading &&
+                  !isRetrying &&
+                  failedIds.length === 0 &&
+                  downloadCompleted === downloadTotal &&
+                  downloadTotal > 0 && (
+                    <Text size="sm" color="$success" textAlign="center" fontWeight="500">
+                      {t("athkar.onboarding.download.complete")}
+                    </Text>
+                  )}
               </VStack>
             )}
 

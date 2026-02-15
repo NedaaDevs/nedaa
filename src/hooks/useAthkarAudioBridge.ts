@@ -8,6 +8,7 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { useAthkarStore } from "@/stores/athkar";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
+import { MessageToast } from "@/components/feedback/MessageToast";
 
 export const useAthkarAudioBridge = () => {
   const { t } = useTranslation();
@@ -84,6 +85,11 @@ export const useAthkarAudioBridge = () => {
         if (isMountedRef.current) {
           setAudioPosition(position);
           setAudioDuration(duration);
+        }
+      },
+      onError: (key) => {
+        if (isMountedRef.current) {
+          MessageToast.showWarning(t(`athkar.audio.${key}`));
         }
       },
     });
