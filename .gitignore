@@ -50,6 +50,9 @@ yarn-error.*
 # modules
 modules/expo-alarm/android/build
 modules/expo-alarm/android/.gradle/
+modules/expo-media-controls/android/build
+modules/expo-media-controls/android/.gradle
+
 
 
 
