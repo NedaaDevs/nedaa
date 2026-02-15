@@ -1,6 +1,7 @@
 import { FC, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, ScrollView } from "react-native";
+import { router } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 
 import { Box } from "@/components/ui/box";
@@ -408,6 +409,15 @@ const AudioSettings: FC = () => {
             }}>
             <Button.Text color="$primary">{t("settings.athkarAudio.rerunWalkthrough")}</Button.Text>
           </Button>
+
+          {__DEV__ && (
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => router.push("/settings/athkar-audio-debug")}>
+              <Button.Text>{t("settings.athkarAudio.debug.title")}</Button.Text>
+            </Button>
+          )}
         </VStack>
       </ScrollView>
 
