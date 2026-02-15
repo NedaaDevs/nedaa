@@ -3,7 +3,6 @@ import { ScrollView, Platform, Linking } from "react-native";
 import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
 import * as Application from "expo-application";
-import { openComposer } from "react-native-email-link";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -11,15 +10,14 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Icon, MailIcon } from "@/components/ui/icon";
+import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
 import { Spinner } from "@/components/ui/spinner";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
 import TopBar from "@/components/TopBar";
-
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import ReportProblemModal from "@/components/ReportProblemModal";
 
 import {
   ChevronRight,
@@ -35,7 +33,6 @@ import {
   VolumeOff,
   ShieldAlert,
   CircleHelp,
-  ClipboardCopy,
 } from "lucide-react-native";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
@@ -43,7 +40,6 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
-import { useTheme } from "tamagui";
 
 import {
   isAlarmKitAvailable,
@@ -148,15 +144,9 @@ const AlarmSettings = () => {
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [permissions, setPermissions] = useState<PermissionItem[]>([]);
   const [skipGate, setSkipGate] = useState(false);
-  const theme = useTheme();
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportStep, setReportStep] = useState<"category" | "contact">("category");
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-
-  const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
-  const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
-  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
 
   const issueOptions: { category: IssueCategory; icon: typeof Bell; labelKey: string }[] = [
     { category: "alarm_not_firing", icon: BellOff, labelKey: "alarm.report.alarmNotFiring" },
@@ -168,68 +158,29 @@ const AlarmSettings = () => {
 
   const handleCategorySelect = (category: IssueCategory) => {
     setSelectedCategory(category);
-    setReportStep("contact");
+    setCategoryModalOpen(false);
+    setShareModalOpen(true);
   };
 
-  const closeReportModal = () => {
-    setReportModalOpen(false);
-    setReportStep("category");
+  const closeShareModal = () => {
+    setShareModalOpen(false);
     setSelectedCategory(null);
   };
 
-  const handleShareViaEmail = async () => {
-    if (!selectedCategory) return;
-    setIsExporting(true);
-    closeReportModal();
-    try {
-      const log = await getAlarmDiagnosticReport(selectedCategory);
-      const categoryLabel = t(
-        issueOptions.find((o) => o.category === selectedCategory)?.labelKey ?? "alarm.report.other"
-      );
-      await openComposer({
-        to: supportEmail,
-        subject: `Nedaa Alarm: ${categoryLabel}`,
-        body: log,
-      });
-    } catch (e) {
-      console.error("Failed to open email:", e);
-    }
-    setIsExporting(false);
-  };
+  const emailSubject = selectedCategory
+    ? `Nedaa Alarm: ${t(issueOptions.find((o) => o.category === selectedCategory)?.labelKey ?? "alarm.report.other")}`
+    : "Nedaa Alarm";
 
-  const handleShareViaWhatsApp = async () => {
-    if (!selectedCategory || !whatsappNumber) return;
-    setIsExporting(true);
-    closeReportModal();
-    try {
-      const summary = await getAlarmSummary(selectedCategory);
-      const encoded = encodeURIComponent(summary);
-      await Linking.openURL(`https://wa.me/${whatsappNumber}?text=${encoded}`);
-    } catch (e) {
-      console.error("Failed to open WhatsApp:", e);
-    }
-    setIsExporting(false);
-  };
+  const getReportText = useCallback(
+    () => getAlarmDiagnosticReport(selectedCategory ?? undefined),
+    [selectedCategory]
+  );
 
-  const handleShareViaTelegram = async () => {
-    if (!selectedCategory || !telegramUsername) return;
-    setIsExporting(true);
-    closeReportModal();
-    try {
-      const summary = await getAlarmSummary(selectedCategory);
-      const encoded = encodeURIComponent(summary);
-      await Linking.openURL(`https://t.me/${telegramUsername}?text=${encoded}`);
-    } catch (e) {
-      console.error("Failed to open Telegram:", e);
-    }
-    setIsExporting(false);
-  };
+  const getSummaryText = useCallback(() => getAlarmSummary(selectedCategory!), [selectedCategory]);
 
-  const handleCopyToClipboard = async () => {
-    if (!selectedCategory) return;
-    closeReportModal();
-    await copyAlarmReport(selectedCategory);
-  };
+  const handleCopy = useCallback(async () => {
+    await copyAlarmReport(selectedCategory ?? undefined);
+  }, [selectedCategory]);
 
   const allGranted = permissions.length === 0 || permissions.every((p) => p.granted);
   const pendingPermissions = permissions.filter((p) => !p.granted);
@@ -524,17 +475,17 @@ const AlarmSettings = () => {
             marginTop="$8"
             marginBottom="$2"
             minHeight={44}
-            disabled={isExporting}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
             onPress={() => {
               hapticMedium();
-              setReportModalOpen(true);
+              setCategoryModalOpen(true);
             }}>
-            <HStack alignItems="center" justifyContent="center" width="100%" gap="$2">
-              <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
-              <Text size="sm" color="$typographySecondary">
-                {isExporting ? t("alarm.report.exporting") : t("alarm.settings.reportProblem")}
-              </Text>
-            </HStack>
+            <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
+            <Text size="sm" color="$typographySecondary" marginStart="$2">
+              {t("alarm.settings.reportProblem")}
+            </Text>
           </Pressable>
 
           {__DEV__ && (
@@ -548,136 +499,58 @@ const AlarmSettings = () => {
             </Box>
           )}
 
-          <Modal isOpen={reportModalOpen} onClose={closeReportModal} size="md">
+          <Modal isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} size="md">
             <ModalBackdrop />
             <ModalContent>
               <ModalBody>
-                {reportStep === "category" ? (
-                  <>
-                    <Text
-                      size="lg"
-                      fontWeight="600"
-                      color="$typography"
-                      textAlign="center"
-                      marginBottom="$4">
-                      {t("alarm.report.title")}
-                    </Text>
-                    <VStack gap="$2">
-                      {issueOptions.map((option) => (
-                        <Pressable
-                          key={option.category}
-                          minHeight={44}
-                          paddingHorizontal="$3"
-                          borderRadius="$6"
-                          onPress={() => handleCategorySelect(option.category)}>
-                          <HStack alignItems="center" width="100%" gap="$3">
-                            <Icon as={option.icon} size="md" color="$typographySecondary" />
-                            <Text size="md" color="$typography">
-                              {t(option.labelKey)}
-                            </Text>
-                          </HStack>
-                        </Pressable>
-                      ))}
-                    </VStack>
-
+                <Text
+                  size="lg"
+                  fontWeight="600"
+                  color="$typography"
+                  textAlign="center"
+                  marginBottom="$4">
+                  {t("alarm.report.title")}
+                </Text>
+                <VStack gap="$2">
+                  {issueOptions.map((option) => (
                     <Pressable
-                      marginTop="$4"
-                      minHeight={44}
-                      justifyContent="center"
+                      key={option.category}
+                      flexDirection="row"
                       alignItems="center"
-                      onPress={closeReportModal}>
-                      <Text size="sm" color="$typographySecondary">
-                        {t("common.cancel")}
+                      minHeight={44}
+                      paddingHorizontal="$3"
+                      borderRadius="$6"
+                      onPress={() => handleCategorySelect(option.category)}>
+                      <Icon as={option.icon} size="md" color="$typographySecondary" />
+                      <Text size="md" color="$typography" marginStart="$3">
+                        {t(option.labelKey)}
                       </Text>
                     </Pressable>
-                  </>
-                ) : (
-                  <>
-                    <Text
-                      size="lg"
-                      fontWeight="600"
-                      color="$typography"
-                      textAlign="center"
-                      marginBottom="$4">
-                      {t("alarm.report.shareVia")}
-                    </Text>
-                    <VStack gap="$2">
-                      <Pressable
-                        minHeight={44}
-                        paddingHorizontal="$3"
-                        borderRadius="$6"
-                        onPress={handleShareViaEmail}>
-                        <HStack alignItems="center" width="100%" gap="$3">
-                          <Icon as={MailIcon} size="xl" color="$primary" />
-                          <Text size="md" color="$typography">
-                            {t("alarm.report.email")}
-                          </Text>
-                        </HStack>
-                      </Pressable>
+                  ))}
+                </VStack>
 
-                      {whatsappNumber && (
-                        <Pressable
-                          minHeight={44}
-                          paddingHorizontal="$3"
-                          borderRadius="$6"
-                          onPress={handleShareViaWhatsApp}>
-                          <HStack alignItems="center" width="100%" gap="$3">
-                            <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
-                            <Text size="md" color="$typography">
-                              {t("alarm.report.whatsapp")}
-                            </Text>
-                          </HStack>
-                        </Pressable>
-                      )}
-
-                      {telegramUsername && (
-                        <Pressable
-                          minHeight={44}
-                          paddingHorizontal="$3"
-                          borderRadius="$6"
-                          onPress={handleShareViaTelegram}>
-                          <HStack alignItems="center" width="100%" gap="$3">
-                            <FontAwesome5
-                              name="telegram-plane"
-                              size={24}
-                              color={theme.typography.val}
-                            />
-                            <Text size="md" color="$typography">
-                              {t("alarm.report.telegram")}
-                            </Text>
-                          </HStack>
-                        </Pressable>
-                      )}
-
-                      <Pressable
-                        minHeight={44}
-                        paddingHorizontal="$3"
-                        borderRadius="$6"
-                        onPress={handleCopyToClipboard}>
-                        <HStack alignItems="center" width="100%" gap="$3">
-                          <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
-                          <Text size="md" color="$typography">
-                            {t("alarm.report.copyToClipboard")}
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </VStack>
-
-                    <Pressable
-                      marginTop="$4"
-                      minHeight={44}
-                      justifyContent="center"
-                      alignItems="center"
-                      onPress={() => setReportStep("category")}>
-                      <Text size="sm" color="$typographySecondary">
-                        {t("common.cancel")}
-                      </Text>
-                    </Pressable>
-                  </>
-                )}
+                <Pressable
+                  marginTop="$4"
+                  minHeight={44}
+                  justifyContent="center"
+                  alignItems="center"
+                  onPress={() => setCategoryModalOpen(false)}>
+                  <Text size="sm" color="$typographySecondary">
+                    {t("common.cancel")}
+                  </Text>
+                </Pressable>
               </ModalBody>
             </ModalContent>
           </Modal>
+
+          <ReportProblemModal
+            isOpen={shareModalOpen}
+            onClose={closeShareModal}
+            emailSubject={emailSubject}
+            getReportText={getReportText}
+            getSummaryText={getSummaryText}
+            onCopy={handleCopy}
+          />
         </VStack>
       </ScrollView>
     </Background>
