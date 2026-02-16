@@ -125,8 +125,6 @@ const AthkarFocusScreen = () => {
   const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF;
   const isAutopilot = playbackMode === PLAYBACK_MODE.AUTOPILOT;
 
-  const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
-
   // Reduce motion check
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
