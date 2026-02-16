@@ -32,7 +32,10 @@ type AudioStatus = {
   duration: number;
 };
 
-type MetadataResolver = (thikrId: string, reciterId: string) => { title: string; artist: string };
+type MetadataResolver = (
+  thikrId: string,
+  reciterId: string
+) => { title: string; artist: string; artworkUrl?: string };
 
 class AthkarPlayer {
   private static instance: AthkarPlayer;

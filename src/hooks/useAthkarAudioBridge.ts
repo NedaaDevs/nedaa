@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Appearance, Image } from "react-native";
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from "expo-audio";
 
 import * as MediaControls from "expo-media-controls";
@@ -9,6 +10,7 @@ import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { useAthkarStore } from "@/stores/athkar";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { MessageToast } from "@/components/feedback/MessageToast";
+import { AppMode } from "@/enums/app";
 
 export const useAthkarAudioBridge = () => {
   const { t } = useTranslation();
@@ -40,6 +42,10 @@ export const useAthkarAudioBridge = () => {
     // Pass player to singleton
     athkarPlayer.setPlayer(player, playerIdRef.current);
 
+    // Resolve app icons for lock screen artwork (light & dark variants)
+    const lightIcon = Image.resolveAssetSource(require("../../assets/images/icon.png"))?.uri;
+    const darkIcon = Image.resolveAssetSource(require("../../assets/images/ios-dark.png"))?.uri;
+
     // Wire metadata resolver for lock screen
     athkarPlayer.setMetadataResolver((_thikrId, reciterId) => {
       const currentType = useAthkarStore.getState().currentType;
@@ -55,7 +61,11 @@ export const useAthkarAudioBridge = () => {
           artist = reciter.name["ar"] ?? reciter.name["en"] ?? reciterId;
         }
       }
-      return { title, artist };
+
+      const isDark = Appearance.getColorScheme() === AppMode.DARK;
+      const artworkUrl = isDark ? darkIcon : lightIcon;
+
+      return { title, artist, artworkUrl };
     });
 
     // Enable lock screen next/previous track controls
