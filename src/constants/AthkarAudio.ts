@@ -1,3 +1,5 @@
+export const ATHKAR_AUDIO_ENABLED = false;
+
 export const PLAYBACK_MODE = {
   AUTOPILOT: "autopilot",
   MANUAL: "manual",

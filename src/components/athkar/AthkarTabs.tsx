@@ -25,7 +25,7 @@ import { useAthkarAudioBridge } from "@/hooks/useAthkarAudioBridge";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { PLAYBACK_MODE, AUDIO_UI } from "@/constants/AthkarAudio";
+import { ATHKAR_AUDIO_ENABLED, PLAYBACK_MODE, AUDIO_UI } from "@/constants/AthkarAudio";
 
 // Icons
 import { Sun, Moon, Focus } from "lucide-react-native";
@@ -73,7 +73,7 @@ const AthkarTabs = () => {
   useInitializeAthkar();
 
   // Mount audio bridge for background playback
-  useAthkarAudioBridge();
+  useAthkarAudioBridge({ enabled: ATHKAR_AUDIO_ENABLED });
 
   // Check for daily reset and validate streak on mount
   useEffect(() => {

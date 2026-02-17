@@ -50,7 +50,7 @@ import { reciterRegistry } from "@/services/athkar-reciter-registry";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
+import { ATHKAR_AUDIO_ENABLED, PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
@@ -86,7 +86,7 @@ const AthkarFocusScreen = () => {
   const hapticWarning = useHaptic("warning");
 
   // Audio bridge
-  useAthkarAudioBridge();
+  useAthkarAudioBridge({ enabled: ATHKAR_AUDIO_ENABLED });
 
   const {
     morningAthkarList,
