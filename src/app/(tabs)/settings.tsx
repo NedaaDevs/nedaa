@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Platform, ScrollView } from "react-native";
 
 // Plugins
@@ -32,10 +33,18 @@ import { useLocationStore } from "@/stores/location";
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
 
+// Services
+import ExpoAlarm from "expo-alarm";
+
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
+  const [alarmAvailable, setAlarmAvailable] = useState(false);
+
+  useEffect(() => {
+    ExpoAlarm.isAlarmKitAvailable().then(setAlarmAvailable);
+  }, []);
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -64,12 +73,14 @@ const SettingsScreen = () => {
           icon={BellRing}
         />
 
-        {/* Alarm Settings */}
-        <SettingsItem
-          name={t("alarm.settings.title")}
-          path={"/settings/alarm" as any}
-          icon={AlarmClock}
-        />
+        {/* Alarm Settings — only on iOS 26+ (AlarmKit) */}
+        {alarmAvailable && (
+          <SettingsItem
+            name={t("alarm.settings.title")}
+            path={"/settings/alarm" as any}
+            icon={AlarmClock}
+          />
+        )}
 
         {/* Location */}
         <SettingsItem
