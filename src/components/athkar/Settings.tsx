@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
 import { Icon } from "@/components/ui/icon";
 import { Volume2, ChevronRight } from "lucide-react-native";
-import { ATHKAR_AUDIO_ENABLED } from "@/constants/AthkarAudio";
 
 import TimePicker from "@/components/TimePicker";
 
@@ -258,36 +257,34 @@ const Settings = () => {
       </VStack>
 
       {/* Audio Settings Link */}
-      {ATHKAR_AUDIO_ENABLED && (
-        <VStack padding="$4" gap="$3">
-          <Divider />
-          <Pressable
-            onPress={() => router.push("/settings/athkar-audio" as any)}
-            backgroundColor="$backgroundSecondary"
-            borderRadius="$6"
-            padding="$4">
-            <HStack justifyContent="space-between" alignItems="center">
-              <HStack alignItems="center" gap="$3" flex={1}>
-                <Icon as={Volume2} size="md" color="$primary" />
-                <VStack flex={1}>
-                  <Text fontWeight="500" color="$typography">
-                    {t("settings.athkarAudio.title")}
-                  </Text>
-                  <Text size="sm" color="$typographySecondary">
-                    {t("settings.athkarAudio.description")}
-                  </Text>
-                </VStack>
-              </HStack>
-              <Icon
-                as={ChevronRight}
-                size="md"
-                color="$typographySecondary"
-                style={isRTL ? { transform: [{ rotate: "180deg" }] } : undefined}
-              />
+      <VStack padding="$4" gap="$3">
+        <Divider />
+        <Pressable
+          onPress={() => router.push("/settings/athkar-audio" as any)}
+          backgroundColor="$backgroundSecondary"
+          borderRadius="$6"
+          padding="$4">
+          <HStack justifyContent="space-between" alignItems="center">
+            <HStack alignItems="center" gap="$3" flex={1}>
+              <Icon as={Volume2} size="md" color="$primary" />
+              <VStack flex={1}>
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.athkarAudio.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary">
+                  {t("settings.athkarAudio.description")}
+                </Text>
+              </VStack>
             </HStack>
-          </Pressable>
-        </VStack>
-      )}
+            <Icon
+              as={ChevronRight}
+              size="md"
+              color="$typographySecondary"
+              style={isRTL ? { transform: [{ rotate: "180deg" }] } : undefined}
+            />
+          </HStack>
+        </Pressable>
+      </VStack>
 
       <TimePicker
         isVisible={showTimePicker}

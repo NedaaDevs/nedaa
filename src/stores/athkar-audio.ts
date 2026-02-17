@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage, devtools } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 
-import { ATHKAR_AUDIO_ENABLED, PLAYBACK_MODE } from "@/constants/AthkarAudio";
+import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 import { athkarPlayer } from "@/services/athkar-player";
 
 import type {
@@ -82,7 +82,6 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
 
         // --- Settings actions ---
         setPlaybackMode: (mode: PlaybackMode) => {
-          if (!ATHKAR_AUDIO_ENABLED) return;
           set({ playbackMode: mode });
           athkarPlayer.setMode(mode);
         },
@@ -133,11 +132,6 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
           repeatLimit: state.repeatLimit,
           comfortMode: state.comfortMode,
           onboardingCompleted: state.onboardingCompleted,
-        }),
-        merge: (persisted, current) => ({
-          ...current,
-          ...(persisted as object),
-          ...(ATHKAR_AUDIO_ENABLED ? {} : { playbackMode: PLAYBACK_MODE.OFF }),
         }),
       }
     ),

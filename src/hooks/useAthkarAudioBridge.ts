@@ -12,7 +12,7 @@ import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { MessageToast } from "@/components/feedback/MessageToast";
 import { AppMode } from "@/enums/app";
 
-export const useAthkarAudioBridge = ({ enabled = true }: { enabled?: boolean } = {}) => {
+export const useAthkarAudioBridge = () => {
   const { t } = useTranslation();
   const player = useAudioPlayer();
   const status = useAudioPlayerStatus(player);
@@ -30,8 +30,6 @@ export const useAthkarAudioBridge = ({ enabled = true }: { enabled?: boolean } =
   const setAudioPosition = useAthkarAudioStore((s) => s.setAudioPosition);
 
   useEffect(() => {
-    if (!enabled) return;
-
     isMountedRef.current = true;
 
     // Enable background audio and silent mode playback
@@ -114,13 +112,13 @@ export const useAthkarAudioBridge = ({ enabled = true }: { enabled?: boolean } =
       athkarPlayer.notifyPlayerUnmount(playerIdRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player, enabled]);
+  }, [player]);
 
   // Feed real-time status from useAudioPlayerStatus to the singleton
   useEffect(() => {
-    if (!enabled || !isMountedRef.current) return;
+    if (!isMountedRef.current) return;
     athkarPlayer.onStatusUpdate(status);
-  }, [status, enabled]);
+  }, [status]);
 
   return { player, playerId: playerIdRef.current };
 };
