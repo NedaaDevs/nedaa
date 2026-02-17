@@ -55,9 +55,11 @@ public class ExpoAlarmModule: Module {
         OnCreate {
             AlarmObserver.startObserving()
 
-            if #available(iOS 13.0, *) {
+            #if canImport(AlarmKit)
+            if #available(iOS 26.1, *) {
                 AlarmBackgroundTaskManager.shared.registerTask()
             }
+            #endif
 
             // Set up playback finished callback
             AlarmAudioManager.shared.onPlaybackFinished = { [weak self] in
