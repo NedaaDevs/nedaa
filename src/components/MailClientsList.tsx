@@ -9,6 +9,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon, MailIcon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -157,14 +158,13 @@ const MailClientsList = ({ onClose }: Props) => {
                 paddingVertical="$4"
                 paddingHorizontal="$3"
                 flexDirection="row"
-                justifyContent="space-between"
                 alignItems="center">
-                <Box flexDirection="row" alignItems="center">
+                <HStack alignItems="center" width="100%" gap="$4">
                   {renderClientIcon(item.icon)}
-                  <Text size="lg" fontWeight="500" color="$typography" marginStart="$4">
+                  <Text size="lg" fontWeight="500" color="$typography">
                     {item.title}
                   </Text>
-                </Box>
+                </HStack>
               </Pressable>
             </Box>
           )}

@@ -5,6 +5,7 @@ import { Linking } from "react-native";
 // Components
 import { ActionsheetFlatList } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon, MailIcon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -120,14 +121,13 @@ const ContactUs = () => {
                   paddingVertical="$5"
                   paddingHorizontal="$5"
                   flexDirection="row"
-                  justifyContent="space-between"
                   alignItems="center">
-                  <Box flexDirection="row" alignItems="center">
+                  <HStack alignItems="center" width="100%" gap="$4">
                     {renderIcon(item.icon)}
-                    <Text size="xl" fontWeight="600" color="$typography" marginStart="$4">
+                    <Text size="xl" fontWeight="600" color="$typography">
                       {item.title}
                     </Text>
-                  </Box>
+                  </HStack>
                 </Pressable>
               </Box>
             )}

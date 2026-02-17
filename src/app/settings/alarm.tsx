@@ -519,18 +519,17 @@ const AlarmSettings = () => {
             marginTop="$8"
             marginBottom="$2"
             minHeight={44}
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="center"
             disabled={isExporting}
             onPress={() => {
               hapticMedium();
               setReportModalOpen(true);
             }}>
-            <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
-            <Text size="sm" color="$typographySecondary" marginStart="$2">
-              {isExporting ? t("alarm.report.exporting") : t("alarm.settings.reportProblem")}
-            </Text>
+            <HStack alignItems="center" justifyContent="center" width="100%" gap="$2">
+              <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
+              <Text size="sm" color="$typographySecondary">
+                {isExporting ? t("alarm.report.exporting") : t("alarm.settings.reportProblem")}
+              </Text>
+            </HStack>
           </Pressable>
 
           {__DEV__ && (
@@ -562,16 +561,16 @@ const AlarmSettings = () => {
                       {issueOptions.map((option) => (
                         <Pressable
                           key={option.category}
-                          flexDirection="row"
-                          alignItems="center"
                           minHeight={44}
                           paddingHorizontal="$3"
                           borderRadius="$6"
                           onPress={() => handleCategorySelect(option.category)}>
-                          <Icon as={option.icon} size="md" color="$typographySecondary" />
-                          <Text size="md" color="$typography" marginStart="$3">
-                            {t(option.labelKey)}
-                          </Text>
+                          <HStack alignItems="center" width="100%" gap="$3">
+                            <Icon as={option.icon} size="md" color="$typographySecondary" />
+                            <Text size="md" color="$typography">
+                              {t(option.labelKey)}
+                            </Text>
+                          </HStack>
                         </Pressable>
                       ))}
                     </VStack>
@@ -588,63 +587,63 @@ const AlarmSettings = () => {
                     </Text>
                     <VStack gap="$2">
                       <Pressable
-                        flexDirection="row"
-                        alignItems="center"
                         minHeight={44}
                         paddingHorizontal="$3"
                         borderRadius="$6"
                         onPress={handleShareViaEmail}>
-                        <Icon as={MailIcon} size="xl" color="$primary" />
-                        <Text size="md" color="$typography" marginStart="$3">
-                          {t("alarm.report.email")}
-                        </Text>
+                        <HStack alignItems="center" width="100%" gap="$3">
+                          <Icon as={MailIcon} size="xl" color="$primary" />
+                          <Text size="md" color="$typography">
+                            {t("alarm.report.email")}
+                          </Text>
+                        </HStack>
                       </Pressable>
 
                       {whatsappNumber && (
                         <Pressable
-                          flexDirection="row"
-                          alignItems="center"
                           minHeight={44}
                           paddingHorizontal="$3"
                           borderRadius="$6"
                           onPress={handleShareViaWhatsApp}>
-                          <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
-                          <Text size="md" color="$typography" marginStart="$3">
-                            {t("alarm.report.whatsapp")}
-                          </Text>
+                          <HStack alignItems="center" width="100%" gap="$3">
+                            <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
+                            <Text size="md" color="$typography">
+                              {t("alarm.report.whatsapp")}
+                            </Text>
+                          </HStack>
                         </Pressable>
                       )}
 
                       {telegramUsername && (
                         <Pressable
-                          flexDirection="row"
-                          alignItems="center"
                           minHeight={44}
                           paddingHorizontal="$3"
                           borderRadius="$6"
                           onPress={handleShareViaTelegram}>
-                          <FontAwesome5
-                            name="telegram-plane"
-                            size={24}
-                            color={theme.typography.val}
-                          />
-                          <Text size="md" color="$typography" marginStart="$3">
-                            {t("alarm.report.telegram")}
-                          </Text>
+                          <HStack alignItems="center" width="100%" gap="$3">
+                            <FontAwesome5
+                              name="telegram-plane"
+                              size={24}
+                              color={theme.typography.val}
+                            />
+                            <Text size="md" color="$typography">
+                              {t("alarm.report.telegram")}
+                            </Text>
+                          </HStack>
                         </Pressable>
                       )}
 
                       <Pressable
-                        flexDirection="row"
-                        alignItems="center"
                         minHeight={44}
                         paddingHorizontal="$3"
                         borderRadius="$6"
                         onPress={handleCopyToClipboard}>
-                        <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
-                        <Text size="md" color="$typography" marginStart="$3">
-                          {t("alarm.report.copyToClipboard")}
-                        </Text>
+                        <HStack alignItems="center" width="100%" gap="$3">
+                          <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
+                          <Text size="md" color="$typography">
+                            {t("alarm.report.copyToClipboard")}
+                          </Text>
+                        </HStack>
                       </Pressable>
                     </VStack>
 

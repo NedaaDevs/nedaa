@@ -7,6 +7,7 @@ import { useRTL } from "@/contexts/RTLContext";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
@@ -38,33 +39,29 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
   };
 
   return (
-    <Box
-      paddingHorizontal="$5"
-      paddingVertical="$4"
-      flexDirection="row"
-      alignItems="center"
-      backgroundColor="$backgroundElevated">
-      <Box flex={1} flexDirection="row" alignItems="center" gap="$3">
-        {backOnClick && (
-          <Pressable
-            onPress={handlePress}
-            padding="$2"
-            borderRadius="$4"
-            minHeight={44}
-            minWidth={44}
-            alignItems="center"
-            justifyContent="center"
-            accessibilityRole="button"
-            accessibilityLabel="Back">
-            <Icon as={BackArrow} size="lg" color="$typographyContrast" />
-          </Pressable>
-        )}
-        <Text size="2xl" bold color="$typographyContrast">
-          {t(title)}
-        </Text>
-      </Box>
+    <Box paddingHorizontal="$5" paddingVertical="$4" backgroundColor="$backgroundElevated">
+      <HStack justifyContent="space-between" alignItems="center" width="100%">
+        <HStack alignItems="center" gap="$3" flexShrink={1}>
+          {backOnClick && (
+            <Pressable
+              onPress={handlePress}
+              padding="$2"
+              borderRadius="$4"
+              minHeight={44}
+              minWidth={44}
+              alignItems="center"
+              justifyContent="center"
+              accessibilityRole="button"
+              accessibilityLabel="Back">
+              <Icon as={BackArrow} size="lg" color="$typographyContrast" />
+            </Pressable>
+          )}
 
-      <Box width={48} alignItems="flex-end">
+          <Text size="2xl" bold color="$typographyContrast">
+            {t(title)}
+          </Text>
+        </HStack>
+
         {href && !backOnClick && (
           <Link href={href} asChild>
             <Pressable
@@ -79,7 +76,7 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
             </Pressable>
           </Link>
         )}
-      </Box>
+      </HStack>
     </Box>
   );
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { I18nManager, Platform } from "react-native";
+import { Platform } from "react-native";
 import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
 import { PlatformType } from "@/enums/app";
 
@@ -105,8 +105,6 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         // uses a more generous width calculation in StaticLayout.
         {...(IS_ANDROID && { textBreakStrategy: "simple" })}
         style={[
-          IS_ANDROID && { paddingHorizontal: 6 },
-          !IS_ANDROID && I18nManager.isRTL && { writingDirection: "rtl" as const },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },

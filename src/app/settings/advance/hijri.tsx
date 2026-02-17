@@ -9,6 +9,7 @@ import { useLocationStore } from "@/stores/location";
 // Components
 import { Background } from "@/components/ui/background";
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
@@ -109,7 +110,12 @@ const HijriSettings = () => {
           padding="$6"
           borderRadius="$6"
           marginBottom="$6">
-          <Box flexDirection="row" alignItems="center" justifyContent="center" marginBottom="$2">
+          <HStack
+            alignItems="center"
+            justifyContent="center"
+            width="100%"
+            marginBottom="$2"
+            gap="$3">
             <Icon as={Calendar} color="$accentPrimary" size="md" />
             <VStack alignItems="center" marginVertical="$3">
               <Text size="lg" bold color="$typography">
@@ -119,7 +125,7 @@ const HijriSettings = () => {
                 {formattedDateDetails}
               </Text>
             </VStack>
-          </Box>
+          </HStack>
         </Box>
 
         <Text size="xl" fontWeight="600" color="$typography" marginBottom="$4">
@@ -132,17 +138,18 @@ const HijriSettings = () => {
           padding="$4"
           borderRadius="$4"
           flexDirection="row"
-          alignItems="center"
-          justifyContent="space-between">
-          <VStack>
-            <Text size="sm" color="$typographySecondary" marginBottom="$1">
-              {t("settings.hijri.date.currentAdjustment")}
-            </Text>
-            <Text color="$typography" fontWeight="500">
-              {currentAdjustmentLabel}
-            </Text>
-          </VStack>
-          <Icon as={ChevronDown} color="$typographySecondary" size="lg" />
+          alignItems="center">
+          <HStack justifyContent="space-between" alignItems="center" width="100%">
+            <VStack>
+              <Text size="sm" color="$typographySecondary" marginBottom="$1">
+                {t("settings.hijri.date.currentAdjustment")}
+              </Text>
+              <Text color="$typography" fontWeight="500">
+                {currentAdjustmentLabel}
+              </Text>
+            </VStack>
+            <Icon as={ChevronDown} color="$typographySecondary" size="lg" />
+          </HStack>
         </Pressable>
       </Box>
 

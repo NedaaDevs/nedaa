@@ -241,26 +241,27 @@ const KeepLocationUpdated = () => {
           paddingVertical="$5"
           paddingHorizontal="$5"
           flexDirection="row"
-          justifyContent="space-between"
           alignItems="center">
-          <HStack alignItems="center" flex={1} gap="$3">
-            <Icon as={MapPin} color="$accentPrimary" size="md" />
-            <VStack flex={1}>
-              <Text size="sm" color="$typographySecondary">
-                {t("location.current")}
-              </Text>
-              <Text size="xl" fontWeight="600" color="$typography">
-                {localizedLocation.city ?? locationDetails.address?.city},{" "}
-                {localizedLocation.country ?? locationDetails.address?.country}
-              </Text>
-            </VStack>
-          </HStack>
+          <HStack justifyContent="space-between" alignItems="center" width="100%">
+            <HStack alignItems="center" flex={1} gap="$3">
+              <Icon as={MapPin} color="$accentPrimary" size="md" />
+              <VStack flex={1}>
+                <Text size="sm" color="$typographySecondary">
+                  {t("location.current")}
+                </Text>
+                <Text size="xl" fontWeight="600" color="$typography">
+                  {localizedLocation.city ?? locationDetails.address?.city},{" "}
+                  {localizedLocation.country ?? locationDetails.address?.country}
+                </Text>
+              </VStack>
+            </HStack>
 
-          {isGettingLocation || isFetchingPrayers ? (
-            <Spinner size="small" />
-          ) : (
-            <Icon as={RefreshCw} color="$accentPrimary" size="md" />
-          )}
+            {isGettingLocation || isFetchingPrayers ? (
+              <Spinner size="small" />
+            ) : (
+              <Icon as={RefreshCw} color="$accentPrimary" size="md" />
+            )}
+          </HStack>
         </Pressable>
 
         {locationDetails.error && (
@@ -274,30 +275,27 @@ const KeepLocationUpdated = () => {
 
       {/* Keep Location Updated Setting */}
       <Box backgroundColor="$backgroundSecondary" borderRadius="$4">
-        <Box
-          paddingVertical="$4"
-          paddingHorizontal="$5"
-          flexDirection="row"
-          justifyContent="space-between"
-          alignItems="center">
-          <HStack alignItems="center" flex={1} gap="$2">
-            <Text color="$typography">{t("location.settings.keepLocationUpdated.title")}</Text>
-            <Pressable
-              onPress={() => {
-                hapticLight();
-                setShowInfoModal(true);
-              }}
-              padding="$2"
-              minHeight={44}
-              minWidth={44}
-              alignItems="center"
-              justifyContent="center"
-              accessibilityRole="button"
-              accessibilityLabel={t("location.settings.keepLocationUpdated.infoTitle")}>
-              <Icon as={Info} color="$typographySecondary" size="sm" />
-            </Pressable>
+        <Box paddingVertical="$4" paddingHorizontal="$5">
+          <HStack justifyContent="space-between" alignItems="center" width="100%">
+            <HStack alignItems="center" flex={1} gap="$2">
+              <Text color="$typography">{t("location.settings.keepLocationUpdated.title")}</Text>
+              <Pressable
+                onPress={() => {
+                  hapticLight();
+                  setShowInfoModal(true);
+                }}
+                padding="$2"
+                minHeight={44}
+                minWidth={44}
+                alignItems="center"
+                justifyContent="center"
+                accessibilityRole="button"
+                accessibilityLabel={t("location.settings.keepLocationUpdated.infoTitle")}>
+                <Icon as={Info} color="$typographySecondary" size="sm" />
+              </Pressable>
+            </HStack>
+            <Switch value={autoUpdateLocation} onValueChange={toggleAutoLocationUpdated} />
           </HStack>
-          <Switch value={autoUpdateLocation} onValueChange={toggleAutoLocationUpdated} />
         </Box>
       </Box>
 

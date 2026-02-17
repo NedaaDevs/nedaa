@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 // Components
 import { ActionsheetFlatList } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -60,19 +61,20 @@ const LanguageList = () => {
             paddingVertical="$5"
             paddingHorizontal="$5"
             flexDirection="row"
-            justifyContent="space-between"
             alignItems="center"
             borderBottomWidth={index < localeData.length - 1 ? 1 : 0}
             borderColor={index < localeData.length - 1 ? "$outline" : undefined}>
-            <Box>
-              <Text size="xl" fontWeight="600" color="$typography">
-                {item.title}
-              </Text>
-              <Text size="lg" color="$typographySecondary" marginTop="$1">
-                {item.nativeTitle}
-              </Text>
-            </Box>
-            {locale === item.id && <Icon as={Check} color="$accentPrimary" size="lg" />}
+            <HStack justifyContent="space-between" alignItems="center" width="100%">
+              <Box>
+                <Text size="xl" fontWeight="600" color="$typography">
+                  {item.title}
+                </Text>
+                <Text size="lg" color="$typographySecondary" marginTop="$1">
+                  {item.nativeTitle}
+                </Text>
+              </Box>
+              {locale === item.id && <Icon as={Check} color="$accentPrimary" size="lg" />}
+            </HStack>
           </Pressable>
         )}
         keyExtractor={(item: any) => item.id}

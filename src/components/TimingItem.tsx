@@ -1,6 +1,4 @@
-import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
-import { PlatformType } from "@/enums/app";
 
 // Components
 import { HStack } from "@/components/ui/hstack";
@@ -57,17 +55,13 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
           style={{ insetInlineStart: 0 }}
         />
       )}
-      <HStack justifyContent="space-between" alignItems="center" zIndex={10}>
-        <HStack alignItems="center" gap="$3" flex={1} flexShrink={1}>
-          <Box flexShrink={0}>
-            <Icon as={icon || Sun} size="md" color={isNext ? "$typographyContrast" : "$primary"} />
-          </Box>
-
+      <HStack justifyContent="space-between" alignItems="center" zIndex={10} width="100%">
+        <HStack alignItems="center" gap="$3">
+          <Icon as={icon || Sun} size="md" color={isNext ? "$typographyContrast" : "$primary"} />
           <Text
             size="xl"
             fontWeight={isNext ? "700" : "500"}
-            color={isNext ? "$typographyContrast" : "$typography"}
-            {...(Platform.OS === PlatformType.ANDROID ? { flex: 1 } : { flexShrink: 1 })}>
+            color={isNext ? "$typographyContrast" : "$typography"}>
             {t(name)}
           </Text>
         </HStack>
@@ -75,8 +69,7 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
         <Text
           size="xl"
           fontWeight={isNext ? "700" : "500"}
-          color={isNext ? "$typographyContrast" : "$primary"}
-          flexShrink={0}>
+          color={isNext ? "$typographyContrast" : "$primary"}>
           {formattedPrayerTime(time)}
         </Text>
       </HStack>

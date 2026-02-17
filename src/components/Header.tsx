@@ -1,4 +1,4 @@
-import { format, parseISO, formatDistance } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,9 @@ import { getDateLocale, isFriday, timeZonedNow, HijriConverter } from "@/utils/d
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+
+// Hooks
+import { useCountdownTimer } from "@/hooks/useCountdownTimer";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -30,7 +33,7 @@ const Header = () => {
   const { t } = useTranslation();
   const { locale, hijriDaysOffset } = useAppStore();
   const { localizedLocation, locationDetails } = useLocationStore();
-  const { getNextPrayer, getNextOtherTiming } = usePrayerTimesStore();
+  const { getNextPrayer, getNextOtherTiming, getPreviousPrayer } = usePrayerTimesStore();
 
   const [showOtherTiming, setShowOtherTiming] = useState(false);
 
@@ -50,20 +53,17 @@ const Header = () => {
 
   const nextPrayer = getNextPrayer();
   const nextOtherTiming = getNextOtherTiming();
+  const previousPrayer = getPreviousPrayer();
   const now = timeZonedNow(locationDetails.timezone);
   const hijriDate = HijriConverter.toHijri(now, hijriDaysOffset);
 
   const timing = showOtherTiming ? nextOtherTiming : nextPrayer;
 
-  const getFormattedTimeRemaining = () => {
-    if (!timing) return "";
-    const timingDate = parseISO(timing.time);
-    const timeRemaining = formatDistance(timingDate, now, {
-      addSuffix: false,
-      locale: getDateLocale(locale),
-    });
-    return formatNumberToLocale(timeRemaining);
-  };
+  const {
+    mode: timerMode,
+    display: timerDisplay,
+    iqamaPrayerName,
+  } = useCountdownTimer(nextPrayer, previousPrayer, locationDetails.timezone);
 
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
@@ -160,22 +160,28 @@ const Header = () => {
         marginBottom="$2"
         onPress={handleBoxClick}
         accessibilityRole="button">
-        <HStack justifyContent="space-between" alignItems="center" width="100%" gap="$4">
-          <Text size="2xl" bold color="$accentPrimary" flex={1}>
-            {t(timingName)}
-          </Text>
+        <HStack justifyContent="space-between" alignItems="center" width="100%">
+          <Box flexShrink={1}>
+            <Text size="2xl" bold color="$accentPrimary">
+              {timerMode === "iqama" && iqamaPrayerName
+                ? `${t(`prayerTimes.${iqamaPrayerName}`)} - ${t("header.iqama")}`
+                : t(timingName)}
+            </Text>
+          </Box>
 
           <Divider
             orientation="vertical"
             height={40}
             width={1}
-            flexShrink={0}
+            marginHorizontal="$3"
             backgroundColor="$outline"
           />
 
           <VStack alignItems="center" gap="$1">
             <Text size="2xl" fontWeight="600" color="$accentPrimary" textAlign="center">
-              {formattedPrayerTime(timing.time)}
+              {timerMode === "iqama" && previousPrayer
+                ? formattedPrayerTime(previousPrayer.time)
+                : formattedPrayerTime(timing.time)}
             </Text>
 
             <Box
@@ -184,7 +190,7 @@ const Header = () => {
               borderRadius={999}
               backgroundColor="$backgroundInteractive">
               <Text size="sm" textAlign="center" color="$typography">
-                {getFormattedTimeRemaining()}
+                {timerDisplay}
               </Text>
             </Box>
           </VStack>
