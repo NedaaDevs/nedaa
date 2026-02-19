@@ -78,9 +78,9 @@ class AlarmOverlayService : Service() {
             if (isRunning) return
 
             val intent = Intent(context, AlarmOverlayService::class.java).apply {
-                putExtra("alarm_id", alarmId)
-                putExtra("alarm_type", alarmType)
-                putExtra("title", title)
+                putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+                putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
+                putExtra(AlarmReceiver.EXTRA_ALARM_TITLE, title)
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -167,9 +167,9 @@ class AlarmOverlayService : Service() {
             return START_NOT_STICKY
         }
 
-        alarmId = intent.getStringExtra("alarm_id") ?: ""
-        alarmType = intent.getStringExtra("alarm_type") ?: ""
-        title = intent.getStringExtra("title") ?: "Alarm"
+        alarmId = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_ID) ?: ""
+        alarmType = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_TYPE) ?: ""
+        title = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_TITLE) ?: "Alarm"
 
         loadChallengeSettings()
         loadSoundSettings()
@@ -524,7 +524,9 @@ class AlarmOverlayService : Service() {
 
         try {
             windowManager?.addView(overlayView, params)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this).d("AlarmOverlay", "showOverlay addView failed: ${e.message}")
+        }
     }
 
     private fun buildTapChallengeUI(card: LinearLayout, dp: Float) {
@@ -906,7 +908,9 @@ class AlarmOverlayService : Service() {
                         Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this).d("AlarmOverlay", "scheduleSnooze startActivity failed: ${e.message}")
+        }
 
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -940,7 +944,9 @@ class AlarmOverlayService : Service() {
                         Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this).d("AlarmOverlay", "completeAlarm startActivity failed: ${e.message}")
+        }
 
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -952,6 +958,8 @@ class AlarmOverlayService : Service() {
                 windowManager?.removeView(it)
                 overlayView = null
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this).d("AlarmOverlay", "removeOverlay failed: ${e.message}")
+        }
     }
 }
