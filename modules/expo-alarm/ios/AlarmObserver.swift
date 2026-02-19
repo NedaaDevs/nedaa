@@ -167,13 +167,20 @@ import AppIntents
 
         plog.observer("DB alarms: \(dbAlarmIds.count), AlarmKit: \(alarmKitIds.count)")
 
+        let staleThresholdMs: Double = 2 * 60 * 60 * 1000 // 2 hours
         for dbId in dbAlarmIds {
             if !alarmKitIds.contains(dbId.lowercased()) {
                 if let alarmInfo = AlarmDatabase.shared.getAlarm(id: dbId) {
                     if alarmInfo.triggerTime < now && !alarmInfo.completed {
-                        plog.observer("Missed dismiss detected: \(dbId.prefix(8))")
-                        await handleAlarmDismissed(alarmId: dbId)
-                        AlarmDatabase.shared.deleteAlarm(id: dbId)
+                        let age = now - alarmInfo.triggerTime
+                        if age > staleThresholdMs {
+                            plog.observer("Stale alarm \(dbId.prefix(8)) (\(Int(age/1000))s old), cleaning up")
+                            AlarmDatabase.shared.deleteAlarm(id: dbId)
+                        } else {
+                            plog.observer("Missed dismiss detected: \(dbId.prefix(8))")
+                            await handleAlarmDismissed(alarmId: dbId)
+                            AlarmDatabase.shared.deleteAlarm(id: dbId)
+                        }
                     }
                 }
             }

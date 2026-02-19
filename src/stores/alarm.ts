@@ -167,6 +167,7 @@ export const useAlarmStore = create<AlarmState>()(
 
         cancelAlarm: async (alarmId) => {
           await ExpoAlarm.cancelAlarm(alarmId);
+          ExpoAlarm.deleteAlarmFromDB(alarmId);
 
           set((state) => {
             const newAlarms = { ...state.scheduledAlarms };
@@ -183,6 +184,7 @@ export const useAlarmStore = create<AlarmState>()(
 
           for (const alarm of toCancel) {
             await ExpoAlarm.cancelAlarm(alarm.alarmId);
+            ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
           }
 
           set((state) => {
