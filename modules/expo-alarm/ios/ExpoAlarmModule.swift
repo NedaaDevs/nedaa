@@ -159,6 +159,7 @@ public class ExpoAlarmModule: Module {
                             promise.reject("ERR_INVALID_UUID", "Invalid alarm ID: \(id)")
                             return
                         }
+                        try? AlarmManager.shared.cancel(id: alarmUUID)
                         _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
 
                         self.withAlarmIds { $0.insert(id) }
