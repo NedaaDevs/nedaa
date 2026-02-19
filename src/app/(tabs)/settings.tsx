@@ -15,6 +15,7 @@ import SettingsFooter from "@/components/SettingsFooter";
 import {
   Languages,
   Palette,
+  Monitor,
   CircleHelp,
   MapPin,
   Settings2Icon,
@@ -35,6 +36,7 @@ import { isAthkarSupported } from "@/utils/athkar";
 
 // Services
 import ExpoAlarm from "expo-alarm";
+import { PlatformType } from "@/enums/app";
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
@@ -65,6 +67,10 @@ const SettingsScreen = () => {
           icon={Palette}
           currentValue={t(`settings.themes.${mode}.title`)}
         />
+        <Divider marginHorizontal="$4" />
+        {/* Display */}
+        <SettingsItem name={t("settings.display.title")} path="/settings/display" icon={Monitor} />
+        <Divider marginHorizontal="$4" />
 
         {/* Notification */}
         <SettingsItem
@@ -73,8 +79,8 @@ const SettingsScreen = () => {
           icon={BellRing}
         />
 
-        {/* Alarm Settings — only on iOS 26+ (AlarmKit) */}
-        {alarmAvailable && (
+        {/* Alarm Settings — iOS 26+ (AlarmKit) or Android */}
+        {(Platform.OS === PlatformType.ANDROID || alarmAvailable) && (
           <SettingsItem
             name={t("alarm.settings.title")}
             path={"/settings/alarm" as any}
@@ -96,7 +102,7 @@ const SettingsScreen = () => {
         )}
 
         {/* Widgets (Android with pinning support only) */}
-        {Platform.OS === "android" && isPinningSupported() && (
+        {Platform.OS === PlatformType.ANDROID && isPinningSupported() && (
           <SettingsItem
             name={t("settings.widgets.title")}
             path={"/settings/widgets" as any}
