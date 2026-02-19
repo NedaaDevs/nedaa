@@ -188,10 +188,13 @@ export const scheduleAllNotifications = async (
   options: Partial<SchedulingOptions> = {}
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
-    console.warn("[NotificationScheduler] Notification Permission not granted cancel scheduling");
+    console.warn(
+      "[NotificationScheduler] Notification permission not granted, skipping scheduling"
+    );
     return {
       success: false,
       scheduledCount: 0,
+      error: new Error("Notification permission not granted"),
     };
   }
 
