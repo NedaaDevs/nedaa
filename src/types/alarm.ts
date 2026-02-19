@@ -132,3 +132,11 @@ export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math"];
 
 export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "hard"];
+
+export const GRACE_PERIOD_SECONDS: Record<
+  Exclude<ChallengeType, "none">,
+  Record<ChallengeDifficulty, number>
+> = {
+  tap: { easy: 10, medium: 15, hard: 20 },
+  math: { easy: 15, medium: 20, hard: 30 },
+};

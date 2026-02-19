@@ -11,9 +11,10 @@ import { useHaptic } from "@/hooks/useHaptic";
 type Props = {
   difficulty: ChallengeDifficulty;
   onComplete: () => void;
+  onInteraction?: () => void;
 };
 
-const TapChallenge: FC<Props> = ({ difficulty, onComplete }) => {
+const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const { t } = useTranslation();
   const hapticLight = useHaptic("light");
   const hapticSuccess = useHaptic("success");
@@ -33,6 +34,7 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   }, [tapCount, requiredTaps, onComplete, hapticSuccess]);
 
   const handleTap = () => {
+    onInteraction?.();
     hapticLight();
     setTapCount((prev) => prev + 1);
   };

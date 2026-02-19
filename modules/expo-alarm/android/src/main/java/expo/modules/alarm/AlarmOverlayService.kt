@@ -8,22 +8,29 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
+import android.text.InputType
+import android.text.TextWatcher
+import android.text.Editable
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.text.InputType
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import java.util.UUID
@@ -39,6 +46,27 @@ class AlarmOverlayService : Service() {
         private const val TAPS_EASY = 5
         private const val TAPS_MEDIUM = 10
         private const val TAPS_HARD = 20
+
+        // Grace period seconds (must match JS GRACE_PERIOD_SECONDS)
+        private val GRACE_TAP = mapOf("easy" to 10, "medium" to 15, "hard" to 20)
+        private val GRACE_MATH = mapOf("easy" to 15, "medium" to 20, "hard" to 30)
+
+        // UI colors
+        private const val COLOR_BG = "#F0111827"
+        private const val COLOR_CARD_BG = "#FF1E293B"
+        private const val COLOR_PRIMARY = "#FF6366F1"
+        private const val COLOR_PRIMARY_LIGHT = "#FF818CF8"
+        private const val COLOR_SUCCESS = "#FF22C55E"
+        private const val COLOR_SUCCESS_LIGHT = "#FF4ADE80"
+        private const val COLOR_WARNING = "#FFFBBF24"
+        private const val COLOR_ERROR = "#FFEF4444"
+        private const val COLOR_SNOOZE = "#FFF59E0B"
+        private const val COLOR_TEXT = "#FFFFFFFF"
+        private const val COLOR_TEXT_MUTED = "#FF94A3B8"
+        private const val COLOR_INPUT_BG = "#FF334155"
+        private const val COLOR_DISABLED = "#FF475569"
+
+        private const val GRACE_UPDATE_INTERVAL_MS = 50L
 
         @Volatile
         var isRunning = false
@@ -80,6 +108,8 @@ class AlarmOverlayService : Service() {
 
     // Tap challenge state
     private var tapCount = 0
+    private var tapsPerRound: Int = TAPS_EASY
+    private var tapRoundsCompleted: Int = 0
     private var tapButton: Button? = null
     private var tapCountText: TextView? = null
 
@@ -90,6 +120,37 @@ class AlarmOverlayService : Service() {
     private var mathProgressText: TextView? = null
     private var currentMathAnswer: Int = 0
     private var completedMathChallenges: Int = 0
+
+    // Grace period state
+    private var graceProgressBar: ProgressBar? = null
+    private var graceExpiredText: TextView? = null
+    private var graceDurationMs: Long = 0
+    private var graceStartTime: Long = 0
+    private var graceActive = false
+    private var graceExpired = false
+    private var graceTimerRunning = false
+    private val graceHandler = Handler(Looper.getMainLooper())
+    private val graceRunnable = object : Runnable {
+        override fun run() {
+            if (!graceActive) return
+            val elapsed = System.currentTimeMillis() - graceStartTime
+            val remaining = graceDurationMs - elapsed
+            if (remaining <= 0) {
+                onGraceExpired()
+            } else {
+                val progress = ((remaining.toFloat() / graceDurationMs) * 10000).toInt()
+                graceProgressBar?.progress = progress
+                updateGraceBarColor(remaining.toFloat() / graceDurationMs)
+                graceHandler.postDelayed(this, GRACE_UPDATE_INTERVAL_MS)
+            }
+        }
+    }
+
+    // Settings for restarting sound after grace
+    private var alarmSound: String = "beep"
+    private var alarmVolume: Float = 1.0f
+    private var vibrationEnabled: Boolean = true
+    private var vibrationPattern: String = "default"
 
     override fun onCreate() {
         super.onCreate()
@@ -106,8 +167,8 @@ class AlarmOverlayService : Service() {
         alarmType = intent.getStringExtra("alarm_type") ?: ""
         title = intent.getStringExtra("title") ?: "Alarm"
 
-        // Load challenge settings from database
         loadChallengeSettings()
+        loadSoundSettings()
 
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
@@ -123,25 +184,126 @@ class AlarmOverlayService : Service() {
         challengeDifficulty = difficulty
         challengeCount = count
 
-        // Calculate required taps based on difficulty and count
-        val baseTaps = when (difficulty) {
+        tapsPerRound = when (difficulty) {
             "easy" -> TAPS_EASY
             "medium" -> TAPS_MEDIUM
             "hard" -> TAPS_HARD
             else -> TAPS_EASY
         }
-        requiredTaps = baseTaps * count
+        requiredTaps = tapsPerRound * count
 
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge settings: type=$challengeType, difficulty=$challengeDifficulty, count=$challengeCount, requiredTaps=$requiredTaps")
+        // Calculate grace period
+        graceDurationMs = when (type) {
+            "tap" -> (GRACE_TAP[difficulty] ?: 10) * 1000L
+            "math" -> (GRACE_MATH[difficulty] ?: 15) * 1000L
+            else -> 0L
+        }
+
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge settings: type=$challengeType, difficulty=$challengeDifficulty, count=$challengeCount, requiredTaps=$requiredTaps, graceDuration=${graceDurationMs}ms")
+    }
+
+    private fun loadSoundSettings() {
+        val db = AlarmDatabase.getInstance(this)
+        val settings = db.getAlarmSettings(alarmType)
+        alarmSound = settings.sound.ifEmpty { "beep" }
+        alarmVolume = settings.volume
+        vibrationEnabled = settings.vibrationEnabled
+        vibrationPattern = settings.vibrationPattern
     }
 
     override fun onDestroy() {
+        graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
         isRunning = false
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    // --- Grace Period ---
+
+    private fun onInteraction() {
+        if (graceDurationMs <= 0) return
+
+        // Reset the countdown
+        graceStartTime = System.currentTimeMillis()
+        graceProgressBar?.progress = 10000
+        graceProgressBar?.visibility = View.VISIBLE
+
+        // If expired, silence alarm again
+        if (graceExpired) {
+            graceExpired = false
+            graceExpiredText?.visibility = View.GONE
+            val audioManager = AlarmAudioManager.getInstance(this)
+            audioManager.stopAlarmSound()
+            audioManager.stopVibration()
+        }
+
+        graceActive = true
+
+        // Only start the interval loop once
+        if (!graceTimerRunning) {
+            graceTimerRunning = true
+
+            // Silence alarm on first interaction
+            val audioManager = AlarmAudioManager.getInstance(this)
+            audioManager.stopAlarmSound()
+            audioManager.stopVibration()
+
+            graceHandler.post(graceRunnable)
+            AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period started: ${graceDurationMs}ms")
+        }
+    }
+
+    private fun onGraceExpired() {
+        graceActive = false
+        graceExpired = true
+        graceHandler.removeCallbacksAndMessages(null)
+
+        graceProgressBar?.progress = 0
+        updateGraceBarColor(0f)
+        graceExpiredText?.visibility = View.VISIBLE
+
+        // Restart alarm sound
+        val audioManager = AlarmAudioManager.getInstance(this)
+        audioManager.startAlarmSound(alarmSound, alarmVolume)
+        if (vibrationEnabled) {
+            audioManager.startVibration(vibrationPattern)
+        }
+
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period expired, sound restarted")
+    }
+
+    private fun resetGraceForNextRound() {
+        graceHandler.removeCallbacksAndMessages(null)
+        graceActive = false
+        graceExpired = false
+        graceTimerRunning = false
+        graceStartTime = 0
+        graceProgressBar?.visibility = View.GONE
+        graceProgressBar?.progress = 10000
+        graceExpiredText?.visibility = View.GONE
+
+        // Restart sound for the new round (user hasn't interacted yet)
+        val audioManager = AlarmAudioManager.getInstance(this)
+        if (!audioManager.isPlaying()) {
+            audioManager.startAlarmSound(alarmSound, alarmVolume)
+        }
+        if (vibrationEnabled) {
+            audioManager.startVibration(vibrationPattern)
+        }
+    }
+
+    private fun updateGraceBarColor(fraction: Float) {
+        val color = when {
+            fraction > 0.30f -> Color.parseColor(COLOR_PRIMARY)
+            fraction > 0.10f -> Color.parseColor(COLOR_WARNING)
+            else -> Color.parseColor(COLOR_ERROR)
+        }
+        graceProgressBar?.progressTintList = ColorStateList.valueOf(color)
+    }
+
+    // --- Notification ---
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -200,6 +362,8 @@ class AlarmOverlayService : Service() {
         }
     }
 
+    // --- Overlay UI ---
+
     private fun showOverlay() {
         if (!Settings.canDrawOverlays(this)) {
             stopSelf()
@@ -207,32 +371,83 @@ class AlarmOverlayService : Service() {
         }
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val dp = resources.displayMetrics.density
 
-        val layout = LinearLayout(this).apply {
+        val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#EE1a1a2e"))
-            setPadding(64, 64, 64, 64)
+            setBackgroundColor(Color.parseColor(COLOR_BG))
+            setPadding((24 * dp).toInt(), (48 * dp).toInt(), (24 * dp).toInt(), (48 * dp).toInt())
         }
 
+        // Card container
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_CARD_BG))
+                cornerRadius = 24 * dp
+            }
+            setPadding((28 * dp).toInt(), (32 * dp).toInt(), (28 * dp).toInt(), (32 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = params
+        }
+
+        // Title
         val titleView = TextView(this).apply {
             text = title
-            textSize = 36f
-            setTextColor(Color.WHITE)
+            textSize = 28f
+            setTextColor(Color.parseColor(COLOR_TEXT))
             gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, 16)
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+            setPadding(0, 0, 0, (8 * dp).toInt())
         }
-        layout.addView(titleView)
+        card.addView(titleView)
 
-        // Build challenge-specific UI
+        // Grace period progress bar (hidden initially, shown on first interaction)
+        graceProgressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 10000
+            progress = 10000
+            progressTintList = ColorStateList.valueOf(Color.parseColor(COLOR_PRIMARY))
+            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#33FFFFFF"))
+            visibility = View.GONE
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (4 * dp).toInt()
+            ).apply {
+                topMargin = (8 * dp).toInt()
+                bottomMargin = (4 * dp).toInt()
+            }
+            layoutParams = params
+        }
+        card.addView(graceProgressBar)
+
+        // Grace expired text (hidden initially)
+        graceExpiredText = TextView(this).apply {
+            text = getString(R.string.overlay_grace_expired)
+            textSize = 12f
+            setTextColor(Color.parseColor(COLOR_ERROR))
+            gravity = Gravity.CENTER
+            visibility = View.GONE
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = (8 * dp).toInt() }
+            layoutParams = params
+        }
+        card.addView(graceExpiredText)
+
+        // Challenge-specific UI
         when (challengeType) {
-            "math" -> buildMathChallengeUI(layout)
-            "none" -> buildDirectDismissUI(layout)
-            else -> buildTapChallengeUI(layout)
+            "math" -> buildMathChallengeUI(card, dp)
+            "none" -> buildDirectDismissUI(card, dp)
+            else -> buildTapChallengeUI(card, dp)
         }
 
-        // Snooze button (common to both challenge types)
+        // Snooze button
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDurationMinutes) = db.getSnoozeConfig(alarmType)
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
@@ -241,24 +456,34 @@ class AlarmOverlayService : Service() {
 
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=$snoozeDurationMinutes, current=$currentSnoozeCount, remaining=$remainingSnoozes")
 
-        val snoozeButton = Button(this).apply {
-            text = if (canSnooze) getString(R.string.overlay_snooze_button, remainingSnoozes) else getString(R.string.overlay_snooze_none)
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(if (canSnooze) Color.parseColor("#FF9800") else Color.parseColor("#666666"))
-            setPadding(48, 24, 48, 24)
-            isEnabled = canSnooze
-            visibility = if (snoozeEnabled) View.VISIBLE else View.GONE
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = 32 }
-            layoutParams = params
-            setOnClickListener { onSnoozeClicked() }
+        if (snoozeEnabled) {
+            val snoozeButton = Button(this).apply {
+                text = if (canSnooze) getString(R.string.overlay_snooze_button, remainingSnoozes) else getString(R.string.overlay_snooze_none)
+                textSize = 15f
+                isAllCaps = false
+                setTextColor(if (canSnooze) Color.parseColor(COLOR_TEXT) else Color.parseColor(COLOR_TEXT_MUTED))
+                background = GradientDrawable().apply {
+                    if (canSnooze) {
+                        setColor(Color.parseColor(COLOR_SNOOZE))
+                    } else {
+                        setColor(Color.parseColor(COLOR_DISABLED))
+                    }
+                    cornerRadius = 12 * dp
+                }
+                setPadding((24 * dp).toInt(), (14 * dp).toInt(), (24 * dp).toInt(), (14 * dp).toInt())
+                isEnabled = canSnooze
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (12 * dp).toInt() }
+                layoutParams = params
+                setOnClickListener { onSnoozeClicked() }
+            }
+            card.addView(snoozeButton)
         }
-        layout.addView(snoozeButton)
 
-        overlayView = layout
+        rootLayout.addView(card)
+        overlayView = rootLayout
 
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -267,7 +492,6 @@ class AlarmOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
         }
 
-        // Math challenge needs focusable for keyboard input
         val windowFlags = if (challengeType == "math") {
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
@@ -293,106 +517,142 @@ class AlarmOverlayService : Service() {
         } catch (_: Exception) {}
     }
 
-    private fun buildTapChallengeUI(layout: LinearLayout) {
+    private fun buildTapChallengeUI(card: LinearLayout, dp: Float) {
         val subtitleView = TextView(this).apply {
             text = getString(R.string.overlay_tap_instruction, requiredTaps)
-            textSize = 18f
-            setTextColor(Color.parseColor("#AAAAAA"))
+            textSize = 15f
+            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 48)
+            setPadding(0, (8 * dp).toInt(), 0, (24 * dp).toInt())
         }
-        layout.addView(subtitleView)
+        card.addView(subtitleView)
 
         tapCountText = TextView(this).apply {
             text = getString(R.string.overlay_tap_progress, 0, requiredTaps)
-            textSize = 72f
-            setTextColor(Color.WHITE)
+            textSize = 56f
+            setTextColor(Color.parseColor(COLOR_TEXT))
             gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, 32)
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            setPadding(0, 0, 0, (24 * dp).toInt())
         }
-        layout.addView(tapCountText)
+        card.addView(tapCountText)
 
         tapButton = Button(this).apply {
             text = getString(R.string.overlay_tap_button)
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#4CAF50"))
-            setPadding(64, 48, 64, 48)
+            textSize = 18f
+            isAllCaps = false
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_SUCCESS))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = params
             setOnClickListener { onTapButtonClicked() }
         }
-        layout.addView(tapButton)
+        card.addView(tapButton)
     }
 
-    private fun buildDirectDismissUI(layout: LinearLayout) {
+    private fun buildDirectDismissUI(card: LinearLayout, dp: Float) {
         val subtitleView = TextView(this).apply {
             text = getString(R.string.overlay_dismiss_instruction)
-            textSize = 18f
-            setTextColor(Color.parseColor("#AAAAAA"))
+            textSize = 15f
+            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 48)
+            setPadding(0, (8 * dp).toInt(), 0, (32 * dp).toInt())
         }
-        layout.addView(subtitleView)
+        card.addView(subtitleView)
 
         val dismissButton = Button(this).apply {
             text = getString(R.string.overlay_dismiss_button)
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#4CAF50"))
-            setPadding(64, 48, 64, 48)
+            textSize = 18f
+            isAllCaps = false
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_SUCCESS))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = params
             setOnClickListener { completeAlarm() }
         }
-        layout.addView(dismissButton)
+        card.addView(dismissButton)
     }
 
-    private fun buildMathChallengeUI(layout: LinearLayout) {
+    private fun buildMathChallengeUI(card: LinearLayout, dp: Float) {
         val subtitleView = TextView(this).apply {
             text = if (challengeCount == 1) {
                 getString(R.string.overlay_math_instruction_one)
             } else {
                 getString(R.string.overlay_math_instruction_many, challengeCount)
             }
-            textSize = 18f
-            setTextColor(Color.parseColor("#AAAAAA"))
+            textSize = 15f
+            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 24)
+            setPadding(0, (8 * dp).toInt(), 0, (16 * dp).toInt())
         }
-        layout.addView(subtitleView)
+        card.addView(subtitleView)
 
-        mathProgressText = TextView(this).apply {
-            text = getString(R.string.overlay_math_progress, 1, challengeCount)
-            textSize = 16f
-            setTextColor(Color.parseColor("#AAAAAA"))
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 16)
+        if (challengeCount > 1) {
+            mathProgressText = TextView(this).apply {
+                text = getString(R.string.overlay_math_progress, 1, challengeCount)
+                textSize = 13f
+                setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, (12 * dp).toInt())
+            }
+            card.addView(mathProgressText)
         }
-        layout.addView(mathProgressText)
+
+        // Problem display in a rounded box
+        val problemContainer = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_INPUT_BG))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt(), (20 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = (20 * dp).toInt() }
+            layoutParams = params
+        }
 
         mathProblemText = TextView(this).apply {
-            textSize = 48f
-            setTextColor(Color.WHITE)
+            textSize = 36f
+            setTextColor(Color.parseColor(COLOR_TEXT))
             gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, 32)
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
         }
-        layout.addView(mathProblemText)
+        problemContainer.addView(mathProblemText)
+        card.addView(problemContainer)
 
         mathAnswerInput = EditText(this).apply {
             hint = getString(R.string.overlay_math_hint)
-            textSize = 32f
-            setTextColor(Color.WHITE)
-            setHintTextColor(Color.parseColor("#666666"))
-            setBackgroundColor(Color.parseColor("#333333"))
+            textSize = 28f
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            setHintTextColor(Color.parseColor("#FF64748B"))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_INPUT_BG))
+                cornerRadius = 12 * dp
+            }
             gravity = Gravity.CENTER
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
             imeOptions = EditorInfo.IME_ACTION_DONE
-            setPadding(48, 24, 48, 24)
+            setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt())
             val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                width = 300
-            }
+            ).apply { bottomMargin = (16 * dp).toInt() }
             layoutParams = params
             setOnEditorActionListener { _, actionId, _ ->
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -402,27 +662,39 @@ class AlarmOverlayService : Service() {
                     false
                 }
             }
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (!s.isNullOrEmpty()) onInteraction()
+                }
+            })
         }
-        layout.addView(mathAnswerInput)
+        card.addView(mathAnswerInput)
 
         mathSubmitButton = Button(this).apply {
             text = getString(R.string.overlay_math_submit)
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#4CAF50"))
-            setPadding(64, 48, 64, 48)
+            textSize = 18f
+            isAllCaps = false
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_PRIMARY))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
             val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = 24 }
+            )
             layoutParams = params
             setOnClickListener { onMathAnswerSubmitted() }
         }
-        layout.addView(mathSubmitButton)
+        card.addView(mathSubmitButton)
 
-        // Generate first problem
         generateMathProblem()
     }
+
+    // --- Challenge Logic ---
 
     private fun generateMathProblem() {
         val maxNum = when (challengeDifficulty) {
@@ -442,7 +714,6 @@ class AlarmOverlayService : Service() {
         var a = Random.nextInt(1, maxNum + 1)
         var b = Random.nextInt(1, maxNum + 1)
 
-        // For subtraction, ensure result is non-negative for easier solving
         if (op == "-" && a < b) {
             val temp = a
             a = b
@@ -456,7 +727,13 @@ class AlarmOverlayService : Service() {
             else -> a + b
         }
 
-        mathProblemText?.text = "$a $op $b = ?"
+        val displayOp = when (op) {
+            "-" -> "\u2212"
+            "*" -> "\u00D7"
+            else -> op
+        }
+
+        mathProblemText?.text = "$a $displayOp $b = ?"
         mathAnswerInput?.setText("")
         mathProgressText?.text = getString(R.string.overlay_math_progress, completedMathChallenges + 1, challengeCount)
     }
@@ -475,10 +752,11 @@ class AlarmOverlayService : Service() {
             if (completedMathChallenges >= challengeCount) {
                 completeAlarm()
             } else {
-                // Show success feedback
-                mathSubmitButton?.setBackgroundColor(Color.parseColor("#66BB6A"))
+                // Success feedback then next problem
+                setButtonColor(mathSubmitButton, COLOR_SUCCESS)
                 mathSubmitButton?.postDelayed({
-                    mathSubmitButton?.setBackgroundColor(Color.parseColor("#4CAF50"))
+                    setButtonColor(mathSubmitButton, COLOR_PRIMARY)
+                    resetGraceForNextRound()
                     generateMathProblem()
                 }, 300)
             }
@@ -489,37 +767,56 @@ class AlarmOverlayService : Service() {
     }
 
     private fun showMathError(message: String) {
-        mathSubmitButton?.setBackgroundColor(Color.parseColor("#F44336"))
+        setButtonColor(mathSubmitButton, COLOR_ERROR)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         mathSubmitButton?.postDelayed({
-            mathSubmitButton?.setBackgroundColor(Color.parseColor("#4CAF50"))
+            setButtonColor(mathSubmitButton, COLOR_PRIMARY)
         }, 500)
     }
 
     private fun onTapButtonClicked() {
+        onInteraction()
         tapCount++
         tapCountText?.text = getString(R.string.overlay_tap_progress, tapCount, requiredTaps)
 
         if (tapCount >= requiredTaps) {
             completeAlarm()
         } else {
-            tapButton?.setBackgroundColor(Color.parseColor("#66BB6A"))
-            tapButton?.postDelayed({
-                tapButton?.setBackgroundColor(Color.parseColor("#4CAF50"))
-            }, 100)
+            val nextRoundBoundary = (tapRoundsCompleted + 1) * tapsPerRound
+            if (tapCount >= nextRoundBoundary) {
+                tapRoundsCompleted++
+                setButtonColor(tapButton, COLOR_SUCCESS_LIGHT)
+                tapButton?.postDelayed({
+                    setButtonColor(tapButton, COLOR_SUCCESS)
+                    resetGraceForNextRound()
+                }, 200)
+            } else {
+                setButtonColor(tapButton, COLOR_SUCCESS_LIGHT)
+                tapButton?.postDelayed({
+                    setButtonColor(tapButton, COLOR_SUCCESS)
+                }, 100)
+            }
         }
     }
+
+    private fun setButtonColor(button: Button?, colorHex: String) {
+        val bg = button?.background
+        if (bg is GradientDrawable) {
+            bg.setColor(Color.parseColor(colorHex))
+        } else {
+            button?.setBackgroundColor(Color.parseColor(colorHex))
+        }
+    }
+
+    // --- Snooze & Complete ---
 
     private fun onSnoozeClicked() {
         val db = AlarmDatabase.getInstance(this)
 
-        // Get snooze config from settings
         val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
 
-        // TEMP: Debug logging for settings feature - remove after verification
         AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Snooze clicked - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=${snoozeDuration}min")
 
-        // Get current snooze count
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
         if (!snoozeEnabled || currentSnoozeCount >= snoozeMaxCount) {
             Toast.makeText(this, getString(R.string.overlay_snooze_max_reached), Toast.LENGTH_SHORT).show()
@@ -531,26 +828,20 @@ class AlarmOverlayService : Service() {
         val snoozeTime = System.currentTimeMillis() + snoozeMs
         val snoozeId = UUID.randomUUID().toString()
 
-        // TEMP: Log snooze scheduling
         AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Scheduling snooze #$newSnoozeCount for ${snoozeDuration}min (${snoozeMs}ms)")
 
-        // Build snooze title
         val baseTitle = title.replace(Regex("\\s*\\(Snoozed \\d+/\\d+\\)$"), "")
         val snoozeTitle = "$baseTitle (Snoozed $newSnoozeCount/$snoozeMaxCount)"
 
-        // Stop current alarm effects
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 
-        // Clear pending challenge and mark original as completed
         db.clearPendingChallenge()
         db.markCompleted(alarmId)
 
-        // Schedule snooze alarm
         val scheduler = AlarmScheduler(this)
         scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, "beep", newSnoozeCount)
 
-        // Add to snooze queue for JS to sync state
         db.addToSnoozeQueue(
             originalAlarmId = alarmId,
             snoozeAlarmId = snoozeId,
@@ -560,14 +851,13 @@ class AlarmOverlayService : Service() {
             snoozeEndTime = snoozeTime.toDouble()
         )
 
-        // Stop services
         AlarmService.stop(this)
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
+        graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
 
-        // Open app so it can update Live Activity (optional, user can kill)
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 data = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType&action=snooze")
@@ -583,6 +873,8 @@ class AlarmOverlayService : Service() {
     }
 
     private fun completeAlarm() {
+        graceHandler.removeCallbacksAndMessages(null)
+
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 

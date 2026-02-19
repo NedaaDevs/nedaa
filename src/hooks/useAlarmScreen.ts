@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
@@ -98,7 +98,10 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     return () => Vibration.cancel();
   }, [isSnoozed, isDismissed, vibrationPattern]);
 
+  const dismissedRef = useRef(false);
+
   const handleChallengeComplete = useCallback(async () => {
+    dismissedRef.current = true;
     setIsDismissed(true);
     Vibration.cancel();
     ExpoAlarm.stopAllAlarmEffects();
@@ -110,6 +113,22 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
       params: { alarmType },
     });
   }, [alarmId, alarmType, completeAlarm]);
+
+  const handleGraceStart = useCallback(() => {
+    if (dismissedRef.current) return;
+    Vibration.cancel();
+    ExpoAlarm.stopAlarmSound();
+  }, []);
+
+  const handleGraceExpire = useCallback(async () => {
+    if (dismissedRef.current || isSnoozed) return;
+    const sound = alarmSettings.sound || "beep";
+    await ExpoAlarm.startAlarmSound(sound);
+    ExpoAlarm.setAlarmVolume(alarmSettings.volume);
+    if (vibrationPattern) {
+      Vibration.vibrate([...vibrationPattern], true);
+    }
+  }, [isSnoozed, alarmSettings.sound, alarmSettings.volume, vibrationPattern]);
 
   const handleSnooze = useCallback(async () => {
     if (!canSnooze) return;
@@ -136,6 +155,8 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     challengeConfig,
     handleChallengeComplete,
     handleSnooze,
+    handleGraceStart,
+    handleGraceExpire,
   };
 }
 

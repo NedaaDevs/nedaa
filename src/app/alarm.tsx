@@ -41,6 +41,8 @@ export default function AlarmTriggeredScreen() {
     challengeConfig,
     handleChallengeComplete,
     handleSnooze,
+    handleGraceStart,
+    handleGraceExpire,
   } = useAlarmScreen(alarmId, alarmType);
 
   const hasRedirected = useRef(false);
@@ -78,6 +80,8 @@ export default function AlarmTriggeredScreen() {
                 snoozeTimeRemaining={snoozeTimeRemaining}
                 challengeConfig={challengeConfig}
                 onChallengeComplete={handleChallengeComplete}
+                onGraceStart={handleGraceStart}
+                onGraceExpire={handleGraceExpire}
               />
             ) : (
               <ActiveAlarmView
@@ -90,6 +94,8 @@ export default function AlarmTriggeredScreen() {
                 remainingSnoozes={remainingSnoozes}
                 onChallengeComplete={handleChallengeComplete}
                 onSnooze={handleSnooze}
+                onGraceStart={handleGraceStart}
+                onGraceExpire={handleGraceExpire}
               />
             )}
           </Card>
@@ -103,10 +109,14 @@ function SnoozedView({
   snoozeTimeRemaining,
   challengeConfig,
   onChallengeComplete,
+  onGraceStart,
+  onGraceExpire,
 }: {
   snoozeTimeRemaining: number;
   challengeConfig: ChallengeConfig;
   onChallengeComplete: () => void;
+  onGraceStart: () => void;
+  onGraceExpire: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -125,7 +135,12 @@ function SnoozedView({
       </Text>
 
       <VStack marginTop="$6" width="100%" gap="$2">
-        <ChallengeWrapper config={challengeConfig} onAllComplete={onChallengeComplete} />
+        <ChallengeWrapper
+          config={challengeConfig}
+          onAllComplete={onChallengeComplete}
+          onGraceStart={onGraceStart}
+          onGraceExpire={onGraceExpire}
+        />
       </VStack>
     </VStack>
   );
@@ -141,6 +156,8 @@ function ActiveAlarmView({
   remainingSnoozes,
   onChallengeComplete,
   onSnooze,
+  onGraceStart,
+  onGraceExpire,
 }: {
   alarmType: string;
   icon: React.ComponentType;
@@ -151,6 +168,8 @@ function ActiveAlarmView({
   remainingSnoozes: number;
   onChallengeComplete: () => void;
   onSnooze: () => void;
+  onGraceStart: () => void;
+  onGraceExpire: () => void;
 }) {
   const { t } = useTranslation();
   const resolvedColor = COLOR_MAP[colorClass] ?? "$typography";
@@ -173,7 +192,12 @@ function ActiveAlarmView({
         </Text>
       )}
 
-      <ChallengeWrapper config={challengeConfig} onAllComplete={onChallengeComplete} />
+      <ChallengeWrapper
+        config={challengeConfig}
+        onAllComplete={onChallengeComplete}
+        onGraceStart={onGraceStart}
+        onGraceExpire={onGraceExpire}
+      />
 
       {canSnooze && (
         <Button

@@ -23,6 +23,7 @@ interface MathProblem {
 type Props = {
   difficulty: ChallengeDifficulty;
   onComplete: () => void;
+  onInteraction?: () => void;
 };
 
 const generateProblem = (difficulty: ChallengeDifficulty): MathProblem => {
@@ -59,7 +60,7 @@ const generateProblem = (difficulty: ChallengeDifficulty): MathProblem => {
   return { num1, num2, operation, answer };
 };
 
-const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
+const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const hapticSuccess = useHaptic("success");
@@ -70,6 +71,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   const [isWrong, setIsWrong] = useState(false);
 
   const handleSubmit = useCallback(() => {
+    onInteraction?.();
     Keyboard.dismiss();
     const parsedAnswer = parseInt(userAnswer, 10);
 
@@ -83,7 +85,15 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
       setProblem(generateProblem(difficulty));
       setTimeout(() => setIsWrong(false), 500);
     }
-  }, [userAnswer, problem.answer, difficulty, onComplete, hapticSuccess, hapticError]);
+  }, [
+    userAnswer,
+    problem.answer,
+    difficulty,
+    onComplete,
+    onInteraction,
+    hapticSuccess,
+    hapticError,
+  ]);
 
   const operationSymbol = useMemo(() => {
     switch (problem.operation) {
@@ -114,6 +124,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
       <TextInput
         value={userAnswer}
         onChangeText={(text) => {
+          onInteraction?.();
           setUserAnswer(text.replace(/[^0-9-]/g, ""));
         }}
         keyboardType="numeric"
