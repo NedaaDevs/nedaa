@@ -14,6 +14,15 @@ class AlarmScheduler(private val context: Context) {
     private val alarmManager: AlarmManager
         get() = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    private fun stableRequestCode(id: String): Int {
+        var h = 0
+        for (c in id) {
+            h = 31 * h + c.code
+            h = h xor (h ushr 16)
+        }
+        return h and 0x7FFFFFFF
+    }
+
     fun canScheduleExactAlarms(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             alarmManager.canScheduleExactAlarms()
@@ -46,7 +55,7 @@ class AlarmScheduler(private val context: Context) {
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            id.hashCode(),
+            stableRequestCode(id),
             receiverIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -57,7 +66,7 @@ class AlarmScheduler(private val context: Context) {
         }
         val showPendingIntent = PendingIntent.getActivity(
             context,
-            id.hashCode() + 100,
+            stableRequestCode(id) + 100,
             showIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -74,7 +83,7 @@ class AlarmScheduler(private val context: Context) {
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            id.hashCode(),
+            stableRequestCode(id),
             receiverIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
