@@ -173,7 +173,9 @@ class AlarmAudioManager(private val context: Context) {
 
         try {
             systemRingtone?.stop()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(context).d("AlarmAudio", "stopAlarmSound ringtone failed: ${e.message}")
+        }
         systemRingtone = null
     }
 
@@ -181,7 +183,8 @@ class AlarmAudioManager(private val context: Context) {
     fun isPlaying(): Boolean {
         return try {
             mediaPlayer?.isPlaying == true || systemRingtone?.isPlaying == true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(context).d("AlarmAudio", "isPlaying check failed: ${e.message}")
             false
         }
     }
@@ -191,7 +194,9 @@ class AlarmAudioManager(private val context: Context) {
         volume = vol.coerceIn(0f, 1f)
         try {
             mediaPlayer?.setVolume(volume, volume)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(context).d("AlarmAudio", "setVolume failed: ${e.message}")
+        }
     }
 
     fun getVolume(): Float = volume
@@ -230,7 +235,9 @@ class AlarmAudioManager(private val context: Context) {
         isVibrating = false
         try {
             getVibrator().cancel()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(context).d("AlarmAudio", "stopVibration failed: ${e.message}")
+        }
     }
 
     @Synchronized

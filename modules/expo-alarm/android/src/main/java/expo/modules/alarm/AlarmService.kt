@@ -135,7 +135,9 @@ class AlarmService : Service() {
             wakeLock?.let {
                 if (it.isHeld) it.release()
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this).d("AlarmService", "releaseWakeLock failed: ${e.message}")
+        }
         wakeLock = null
     }
 
