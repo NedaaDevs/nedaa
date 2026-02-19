@@ -45,35 +45,36 @@ class AlarmAudioManager(private val context: Context) {
         return v
     }
 
-    // TEMP: Debug logging for settings feature - remove after verification
     private fun log(message: String) {
         AlarmLogger.getInstance(context).d("AlarmAudio", message)
     }
 
+    private val prefs = context.getSharedPreferences("alarm_audio_prefs", Context.MODE_PRIVATE)
+    private val PREF_SAVED_VOLUME = "saved_system_volume"
+
     @Synchronized
     fun saveSystemVolume() {
-        // Only save if we don't already have a saved value (avoid overwriting original)
-        if (savedSystemVolume != null) {
-            log("TEMP: System volume already saved, skipping")
-            return
-        }
+        if (savedSystemVolume != null) return
         val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         savedSystemVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
-        log("TEMP: Saved system volume: $savedSystemVolume")
+        prefs.edit().putInt(PREF_SAVED_VOLUME, savedSystemVolume!!).apply()
+        log("Saved system volume: $savedSystemVolume")
     }
 
     @Synchronized
     fun restoreSystemVolume() {
-        savedSystemVolume?.let { vol ->
+        val vol = savedSystemVolume ?: prefs.getInt(PREF_SAVED_VOLUME, -1).takeIf { it >= 0 }
+        if (vol != null) {
             try {
                 val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
                 am.setStreamVolume(AudioManager.STREAM_ALARM, vol, 0)
-                log("TEMP: Restored system volume to: $vol")
+                log("Restored system volume to: $vol")
             } catch (e: Exception) {
-                log("TEMP: Failed to restore volume: ${e.message}")
+                log("Failed to restore volume: ${e.message}")
             }
-            savedSystemVolume = null
-        } ?: log("TEMP: No saved volume to restore")
+        }
+        savedSystemVolume = null
+        prefs.edit().remove(PREF_SAVED_VOLUME).apply()
     }
 
     fun startAlarmSound(soundName: String): Boolean {
@@ -83,7 +84,7 @@ class AlarmAudioManager(private val context: Context) {
     @Synchronized
     fun startAlarmSound(soundName: String, volumeLevel: Float): Boolean {
         stopAlarmSound()
-        log("TEMP: Starting alarm sound=$soundName volumeLevel=$volumeLevel")
+        log("Starting alarm sound=$soundName volumeLevel=$volumeLevel")
         try {
             volume = volumeLevel.coerceIn(0f, 1f)
 
@@ -92,7 +93,7 @@ class AlarmAudioManager(private val context: Context) {
             val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             val targetVol = (maxVol * volumeLevel).toInt().coerceIn(1, maxVol)
             audioManager.setStreamVolume(AudioManager.STREAM_ALARM, targetVol, 0)
-            log("TEMP: Set system alarm volume to $targetVol/$maxVol (from setting $volumeLevel)")
+            log("Set system alarm volume to $targetVol/$maxVol (from setting $volumeLevel)")
 
             if (soundName.startsWith("content://")) {
                 // System sound URI - use Ringtone API for better compatibility
@@ -106,7 +107,7 @@ class AlarmAudioManager(private val context: Context) {
                 }
 
                 if (systemRingtone == null) {
-                    log("TEMP: Failed to get Ringtone for URI: $soundName, falling back to default")
+                    log("Failed to get Ringtone for URI: $soundName, falling back to default")
                     val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                     systemRingtone = RingtoneManager.getRingtone(context, defaultUri)?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -122,7 +123,7 @@ class AlarmAudioManager(private val context: Context) {
                 // Bundled resource - use MediaPlayer
                 val resId = findSoundResource(soundName)
                 if (resId == 0) {
-                    log("TEMP: Sound resource not found: $soundName")
+                    log("Sound resource not found: $soundName")
                     return false
                 }
                 val uri = Uri.parse("android.resource://${context.packageName}/$resId")
@@ -139,10 +140,10 @@ class AlarmAudioManager(private val context: Context) {
                     setVolume(volume, volume)
                     setOnPreparedListener { mp ->
                         mp.start()
-                        log("TEMP: MediaPlayer prepared and started")
+                        log("MediaPlayer prepared and started")
                     }
                     setOnErrorListener { _, what, extra ->
-                        log("TEMP: MediaPlayer error: what=$what extra=$extra")
+                        log("MediaPlayer error: what=$what extra=$extra")
                         false
                     }
                     prepareAsync()
@@ -151,7 +152,7 @@ class AlarmAudioManager(private val context: Context) {
                 return true
             }
         } catch (e: Exception) {
-            log("TEMP: Failed to start alarm sound: ${e.message}")
+            log("Failed to start alarm sound: ${e.message}")
             mediaPlayer?.release()
             mediaPlayer = null
             systemRingtone?.stop()
@@ -203,7 +204,7 @@ class AlarmAudioManager(private val context: Context) {
     fun startVibration(patternName: String) {
         if (isVibrating) return
         isVibrating = true
-        log("TEMP: Starting vibration with pattern=$patternName")
+        log("Starting vibration with pattern=$patternName")
         try {
             val vib = getVibrator()
             val pattern = when (patternName) {
@@ -218,7 +219,7 @@ class AlarmAudioManager(private val context: Context) {
                 vib.vibrate(pattern, 0)
             }
         } catch (e: Exception) {
-            log("TEMP: Failed to start vibration: ${e.message}")
+            log("Failed to start vibration: ${e.message}")
             isVibrating = false
         }
     }
