@@ -46,11 +46,19 @@ class AlarmBackgroundTaskManager {
     private func handleBackgroundTask(_ task: BGProcessingTask) {
         PersistentLog.shared.alarm("BGTask running")
 
-        var isCompleted = false
+        let completionLock = NSLock()
+        var _isCompleted = false
+
+        func tryComplete() -> Bool {
+            completionLock.lock()
+            defer { completionLock.unlock() }
+            guard !_isCompleted else { return false }
+            _isCompleted = true
+            return true
+        }
 
         task.expirationHandler = {
-            guard !isCompleted else { return }
-            isCompleted = true
+            guard tryComplete() else { return }
             PersistentLog.shared.alarm("BGTask expired")
             task.setTaskCompleted(success: false)
         }
@@ -58,8 +66,7 @@ class AlarmBackgroundTaskManager {
         AlarmObserver.startObserving()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
-            guard !isCompleted else { return }
-            isCompleted = true
+            guard tryComplete() else { return }
             PersistentLog.shared.alarm("BGTask completing (25s elapsed)")
             task.setTaskCompleted(success: true)
             self.rescheduleIfNeeded()
