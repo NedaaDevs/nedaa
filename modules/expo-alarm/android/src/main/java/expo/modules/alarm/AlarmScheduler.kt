@@ -73,6 +73,7 @@ class AlarmScheduler(private val context: Context) {
 
         val alarmClockInfo = AlarmClockInfo(triggerTimeMs, showPendingIntent)
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm scheduled: id=$id triggerTime=$triggerTimeMs")
 
         return true
     }
@@ -89,6 +90,7 @@ class AlarmScheduler(private val context: Context) {
         )
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
+        AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm cancelled: id=$id")
     }
 
     fun cancelAll(ids: List<String>) {
