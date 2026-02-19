@@ -235,9 +235,8 @@ class AlarmDatabase {
     // MARK: - Pending Challenge
 
     func setPendingChallenge(alarmId: String, alarmType: String, title: String) {
-        execRaw("DELETE FROM pending_challenge")
         let sql = """
-            INSERT INTO pending_challenge (id, alarm_id, alarm_type, title, timestamp)
+            INSERT OR REPLACE INTO pending_challenge (id, alarm_id, alarm_type, title, timestamp)
             VALUES (1, ?, ?, ?, ?)
         """
         execute(sql) { [SQLITE_TRANSIENT] stmt in
@@ -334,9 +333,8 @@ class AlarmDatabase {
     // MARK: - Bypass State
 
     func setBypassState(alarmId: String, alarmType: String, title: String) {
-        execRaw("DELETE FROM bypass_state")
         let sql = """
-            INSERT INTO bypass_state (id, alarm_id, alarm_type, title, activated_at)
+            INSERT OR REPLACE INTO bypass_state (id, alarm_id, alarm_type, title, activated_at)
             VALUES (1, ?, ?, ?, ?)
         """
         execute(sql) { [SQLITE_TRANSIENT] stmt in
