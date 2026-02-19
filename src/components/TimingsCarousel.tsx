@@ -58,12 +58,7 @@ const TimingsCarousel = (props: Props) => {
       </PagerView>
 
       <Box position="absolute" bottom={0} left={0} right={0} backgroundColor="$backgroundSecondary">
-        <CustomPagination
-          data={data}
-          onPress={handleTabPress}
-          currentIndex={currentIndex}
-          variant="lines"
-        />
+        <CustomPagination data={data} onPress={handleTabPress} currentIndex={currentIndex} />
       </Box>
     </Box>
   );
