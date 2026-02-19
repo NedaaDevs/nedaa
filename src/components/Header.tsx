@@ -1,8 +1,8 @@
-import { format, parseISO } from "date-fns";
+import { format, parseISO, formatDistance } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { useTranslation } from "react-i18next";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -66,6 +66,17 @@ const Header = () => {
     display: timerDisplay,
     iqamaPrayerName,
   } = useCountdownTimer(nextPrayer, previousPrayer, locationDetails.timezone);
+
+  const otherTimingDisplay = useMemo(() => {
+    if (!nextOtherTiming) return "";
+    const otherTime = parseISO(nextOtherTiming.time);
+    return formatNumberToLocale(
+      formatDistance(otherTime, now, {
+        addSuffix: false,
+        locale: getDateLocale(locale),
+      })
+    );
+  }, [nextOtherTiming, now, locale]);
 
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
@@ -165,7 +176,7 @@ const Header = () => {
         <HStack justifyContent="space-between" alignItems="center" width="100%">
           <Box flexShrink={1}>
             <Text size="2xl" bold color="$accentPrimary">
-              {timerMode === "iqama" && iqamaPrayerName
+              {!showOtherTiming && timerMode === "iqama" && iqamaPrayerName
                 ? `${t(`prayerTimes.${iqamaPrayerName}`)} - ${t("header.iqama")}`
                 : t(timingName)}
             </Text>
@@ -181,7 +192,7 @@ const Header = () => {
 
           <VStack alignItems="center" gap="$1">
             <Text size="2xl" fontWeight="600" color="$accentPrimary" textAlign="center">
-              {timerMode === "iqama" && previousPrayer
+              {!showOtherTiming && timerMode === "iqama" && previousPrayer
                 ? formattedPrayerTime(previousPrayer.time)
                 : formattedPrayerTime(timing.time)}
             </Text>
@@ -192,7 +203,7 @@ const Header = () => {
               borderRadius={999}
               backgroundColor="$backgroundInteractive">
               <Text size="sm" textAlign="center" color="$typography">
-                {timerDisplay}
+                {showOtherTiming ? otherTimingDisplay : timerDisplay}
               </Text>
             </Box>
           </VStack>
