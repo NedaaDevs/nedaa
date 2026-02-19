@@ -6,7 +6,7 @@ import { toZonedTime } from "date-fns-tz";
 // Utils
 import { scheduleNotification, scheduleRecurringNotification } from "@/utils/notifications";
 import { createChannelWithCustomSound } from "@/utils/customSoundManager";
-import { timeZonedNow, HijriConverter } from "@/utils/date";
+import { timeZonedNow, HijriNative } from "@/utils/date";
 import locationStore from "@/stores/location";
 
 // Types
@@ -25,10 +25,13 @@ export const calculateNextRamadan = (): Date => {
   const timezone = locationStore.getState().locationDetails.timezone;
   const today = timeZonedNow(timezone);
 
-  const currentHijri = HijriConverter.toHijri(today);
+  const currentHijri = HijriNative.today(timezone);
+
+  const toDate = (g: { year: number; month: number; day: number }) =>
+    new Date(g.year, g.month - 1, g.day);
 
   // Check if we've passed Ramadan this year (inclusive - if today is Ramadan, return it)
-  const currentYearRamadan = HijriConverter.toGregorian(currentHijri.year, 9, 1); // 1 Ramadan
+  const currentYearRamadan = toDate(HijriNative.toGregorian(currentHijri.year, 9, 1)); // 1 Ramadan
 
   let nextRamadan: Date;
   let hijriYear: number;
@@ -39,7 +42,7 @@ export const calculateNextRamadan = (): Date => {
   } else {
     // Ramadan has passed this year, use next year
     hijriYear = currentHijri.year + 1;
-    nextRamadan = HijriConverter.toGregorian(hijriYear, 9, 1); // 1 Ramadan next year
+    nextRamadan = toDate(HijriNative.toGregorian(hijriYear, 9, 1)); // 1 Ramadan next year
   }
 
   console.log(

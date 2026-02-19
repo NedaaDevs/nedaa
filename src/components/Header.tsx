@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale, isFriday, timeZonedNow, HijriConverter } from "@/utils/date";
+import { getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -55,7 +55,9 @@ const Header = () => {
   const nextOtherTiming = getNextOtherTiming();
   const previousPrayer = getPreviousPrayer();
   const now = timeZonedNow(locationDetails.timezone);
-  const hijriDate = HijriConverter.toHijri(now, hijriDaysOffset);
+  const todayHijri = HijriNative.today(locationDetails.timezone);
+  const hijriDate =
+    hijriDaysOffset !== 0 ? HijriNative.addDays(todayHijri, hijriDaysOffset) : todayHijri;
 
   const timing = showOtherTiming ? nextOtherTiming : nextPrayer;
 

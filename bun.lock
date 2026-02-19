@@ -48,6 +48,7 @@
         "expo-updates": "~29.0.16",
         "expo-web-browser": "~15.0.10",
         "expo-widgets": "file:./modules/expo-widgets",
+        "hijri-native": "0.1.2",
         "i18next": "^25.8.7",
         "intl-pluralrules": "^2.0.1",
         "lucide-react-native": "^0.564.0",
@@ -1737,6 +1738,8 @@
     "hermes-parser": ["hermes-parser@0.29.1", "", { "dependencies": { "hermes-estree": "0.29.1" } }, "sha512-xBHWmUtRC5e/UL0tI7Ivt2riA/YBq9+SiYFU7C1oBa/j2jYGlIF9043oak1F47ihuDIxQ5nbsKueYJDRY02UgA=="],
 
     "hey-listen": ["hey-listen@1.0.8", "", {}, "sha512-COpmrF2NOg4TBWUJ5UVyaCU2A88wEMkUPK4hNqyCkqHbxT92BbvfjoSozkAIIm6XhicGlJHhFdullInrdhwU8Q=="],
+
+    "hijri-native": ["hijri-native@0.1.2", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-ylJBHTo61YkKtOWJXybQl4N1wjICdPBEokkmstwLfo9meK16PHIS/jrwi5H6dNgLc9/h88Vnxb5E46lATr388Q=="],
 
     "hoist-non-react-statics": ["hoist-non-react-statics@3.3.2", "", { "dependencies": { "react-is": "^16.7.0" } }, "sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw=="],
 

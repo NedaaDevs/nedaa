@@ -33,7 +33,7 @@ import { Calendar, ChevronDown } from "lucide-react-native";
 import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
-import { getDateLocale, HijriConverter, timeZonedNow } from "@/utils/date";
+import { getDateLocale, HijriNative, timeZonedNow } from "@/utils/date";
 import { formatNumberToLocale } from "@/utils/number";
 
 type AdjustmentOption = {
@@ -50,7 +50,9 @@ const HijriSettings = () => {
   const [showActionSheet, setShowActionSheet] = useState(false);
 
   const now = timeZonedNow(locationDetails.timezone);
-  const hijriDate = HijriConverter.toHijri(now, hijriDaysOffset);
+  const todayHijri = HijriNative.today(locationDetails.timezone);
+  const hijriDate =
+    hijriDaysOffset !== 0 ? HijriNative.addDays(todayHijri, hijriDaysOffset) : todayHijri;
 
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
