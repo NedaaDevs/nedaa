@@ -477,6 +477,69 @@ export async function getSystemAlarmSounds(): Promise<SystemSound[]> {
   }
 }
 
+// -- Athan Playback Service (Android) --
+
+export interface ScheduleAthanParams {
+  id: string;
+  triggerDate: Date;
+  prayerId: string;
+  soundName: string;
+  title: string;
+  stopLabel: string;
+}
+
+export async function scheduleAthan(params: ScheduleAthanParams): Promise<boolean> {
+  if (!isAvailable) return false;
+  try {
+    return await NativeModule.scheduleAthan(
+      params.id,
+      params.triggerDate.getTime(),
+      params.prayerId,
+      params.soundName,
+      params.title,
+      params.stopLabel
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function cancelAthan(id: string): Promise<boolean> {
+  if (!isAvailable) return false;
+  try {
+    return await NativeModule.cancelAthan(id);
+  } catch {
+    return false;
+  }
+}
+
+export async function cancelAllAthans(ids: string[]): Promise<boolean> {
+  if (!isAvailable) return false;
+  try {
+    return await NativeModule.cancelAllAthans(ids);
+  } catch {
+    return false;
+  }
+}
+
+export function stopAthan(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.stopAthan();
+  } catch {
+    return false;
+  }
+}
+
+export function isAthanPlaying(): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.isAthanPlaying();
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -530,4 +593,9 @@ export default {
   setAlarmSettings,
   isAlarmTypeEnabled,
   getSystemAlarmSounds,
+  scheduleAthan,
+  cancelAthan,
+  cancelAllAthans,
+  stopAthan,
+  isAthanPlaying,
 };

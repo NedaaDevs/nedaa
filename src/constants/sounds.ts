@@ -8,6 +8,9 @@ import type { SoundAssetsConfig, ExtractSoundKeys } from "@/types/sound";
 // Hooks
 import { getPlatformSoundName } from "@/hooks/useSoundResolver";
 
+// Utils
+import { isCustomSoundKey } from "@/utils/customSoundHelpers";
+
 // Define all sound assets with proper typing
 export const SOUND_ASSETS = {
   makkahAthan1: {
@@ -124,6 +127,26 @@ export type PreAthanSoundKey = ExtractSoundKeys<
   typeof NOTIFICATION_TYPE.PRE_ATHAN
 >;
 export type QadaSoundKey = ExtractSoundKeys<typeof SOUND_ASSETS, typeof NOTIFICATION_TYPE.QADA>;
+
+/**
+ * Sound keys that are full athan recitations (long audio).
+ * These need the Android foreground service to avoid interruption.
+ */
+export const ATHAN_SOUND_KEYS = new Set([
+  "makkahAthan1",
+  "yasserAldosari",
+  "athan2",
+  "athan3",
+  "medinaAthan",
+]);
+
+/**
+ * Check if a sound key is a long athan that needs the foreground service.
+ * Includes both built-in athan sounds and custom (user-imported) sounds.
+ */
+export const isAthanSound = (soundKey: string): boolean => {
+  return ATHAN_SOUND_KEYS.has(soundKey) || isCustomSoundKey(soundKey);
+};
 
 // Type guard to check if a key is valid for a notification type
 export function isSoundKeyValid<T extends NotificationType>(

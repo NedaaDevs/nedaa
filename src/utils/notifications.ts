@@ -14,6 +14,9 @@ import { cleanupManager } from "@/services/cleanup";
 // Enums
 import { PlatformType } from "@/enums/app";
 
+// Native modules
+import { stopAthan } from "expo-alarm";
+
 // Types
 import type { NotificationOptions } from "@/types/notification";
 
@@ -233,6 +236,12 @@ export const configureNotifications = () => {
             response.notification.request.identifier
           );
           console.log("[Notifications] Action:", response.actionIdentifier);
+
+          // Stop athan playback if user taps a prayer notification
+          if (Platform.OS === PlatformType.ANDROID && data.type === "prayer") {
+            stopAthan();
+          }
+
           // Navigate to screen specified in notification data
           if (data.screen) {
             const router = useRouter();

@@ -43,6 +43,7 @@ import { Background } from "@/components/ui/background";
 // Utils
 
 import { debugChannelInfo } from "@/utils/notificationChannels";
+import { scheduleAthan, stopAthan, isAthanPlaying } from "expo-alarm";
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
@@ -367,6 +368,42 @@ const NotificationSettings = () => {
                   <Button.Text>Debug Channel Info</Button.Text>
                 </Button>
               </Box>
+
+              {/* Test Athan Service (Android only) */}
+              {Platform.OS === PlatformType.ANDROID && (
+                <Box marginHorizontal="$4" marginTop="$2" gap="$2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onPress={async () => {
+                      const triggerDate = new Date(Date.now() + 10_000);
+                      const ok = await scheduleAthan({
+                        id: `test_athan_${Date.now()}`,
+                        triggerDate,
+                        prayerId: "fajr",
+                        soundName: "makkah_athan1",
+                        title: t("prayerTimes.fajr"),
+                        stopLabel: t("common.stop"),
+                      });
+                      console.log(
+                        `[AthanTest] Scheduled test athan in 10s: ${ok ? "OK" : "FAILED"}`
+                      );
+                    }}>
+                    <Button.Text>Test Athan (10s)</Button.Text>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    action="negative"
+                    onPress={() => {
+                      const playing = isAthanPlaying();
+                      console.log(`[AthanTest] isPlaying: ${playing}`);
+                      if (playing) stopAthan();
+                    }}>
+                    <Button.Text>Stop Athan</Button.Text>
+                  </Button>
+                </Box>
+              )}
             </>
           )}
         </VStack>

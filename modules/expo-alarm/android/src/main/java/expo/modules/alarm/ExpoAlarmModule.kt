@@ -32,6 +32,9 @@ class ExpoAlarmModule : Module() {
     private val audioManager: AlarmAudioManager
         get() = AlarmAudioManager.getInstance(context)
 
+    private val athanScheduler: AthanScheduler
+        get() = AthanScheduler(context)
+
     override fun definition() = ModuleDefinition {
         Name("ExpoAlarm")
 
@@ -219,6 +222,47 @@ class ExpoAlarmModule : Module() {
 
         Function("getNextAlarmTime") {
             db.getNextAlarmTime()
+        }
+
+        // -- Athan Playback Service --
+
+        AsyncFunction("scheduleAthan") { id: String, triggerTimestamp: Double, prayerId: String, soundName: String, title: String, stopLabel: String, promise: Promise ->
+            try {
+                val triggerMs = triggerTimestamp.toLong()
+                val scheduled = athanScheduler.scheduleAthan(id, triggerMs, prayerId, soundName, title, stopLabel)
+                promise.resolve(scheduled)
+            } catch (e: Exception) {
+                promise.reject("ATHAN_SCHEDULE_ERROR", e.message, e)
+            }
+        }
+
+        AsyncFunction("cancelAthan") { id: String, promise: Promise ->
+            try {
+                athanScheduler.cancelAthan(id)
+                promise.resolve(true)
+            } catch (e: Exception) {
+                promise.resolve(false)
+            }
+        }
+
+        AsyncFunction("cancelAllAthans") { _ids: List<String>, promise: Promise ->
+            try {
+                athanScheduler.cancelAllPersisted()
+                promise.resolve(true)
+            } catch (e: Exception) {
+                promise.resolve(false)
+            }
+        }
+
+        Function("stopAthan") {
+            if (AthanService.isRunning) {
+                AthanService.stop(context)
+            }
+            true
+        }
+
+        Function("isAthanPlaying") {
+            AthanService.isRunning
         }
 
         // -- iOS-only stubs --

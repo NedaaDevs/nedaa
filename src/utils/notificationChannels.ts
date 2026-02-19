@@ -13,6 +13,7 @@ import type { CustomSound } from "@/types/customSound";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { isAthanSound } from "@/constants/sounds";
 
 // Utils
 import { getNotificationSound } from "@/utils/sound";
@@ -213,11 +214,15 @@ export const createNotificationChannels = async (
 
     // Prayer notification channel
     if (prayerConfig.enabled) {
+      // Athan sounds play via AthanService — set channel sound to null
+      const useServiceForSound = isAthanSound(prayerConfig.sound);
       channels.push({
         id: generateChannelId(prayer, NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
         name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
-        sound: getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
+        sound: useServiceForSound
+          ? null
+          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
         vibrationPattern: prayerConfig.vibration ? [0, 250, 250, 250] : undefined,
         showBadge: true,
         prayerName: prayer,
@@ -346,7 +351,8 @@ export const createNotificationChannels = async (
         await Notifications.setNotificationChannelAsync(channel.id, {
           name: channel.name,
           importance: channel.importance,
-          sound: channel.sound || undefined, // Convert null to undefined for expo-notifications
+          // null = silent (athan sounds play via AthanService), undefined = default
+          sound: channel.sound === null ? null : channel.sound || undefined,
           vibrationPattern: channel.vibrationPattern,
           showBadge: channel.showBadge,
         });

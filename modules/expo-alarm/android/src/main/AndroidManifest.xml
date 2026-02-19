@@ -39,6 +39,15 @@
       </intent-filter>
     </receiver>
 
+    <service
+        android:name="expo.modules.alarm.AthanService"
+        android:exported="false"
+        android:foregroundServiceType="mediaPlayback" />
+
+    <receiver
+        android:name="expo.modules.alarm.AthanReceiver"
+        android:exported="false" />
+
   </application>
 
 </manifest>

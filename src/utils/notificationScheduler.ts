@@ -32,6 +32,7 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { isAthanSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
@@ -39,6 +40,9 @@ import { PlatformType } from "@/enums/app";
 
 // Stores
 import { useCustomSoundsStore } from "@/stores/customSounds";
+
+// Native modules
+import { scheduleAthan, cancelAllAthans } from "expo-alarm";
 
 // Utils
 import {
@@ -70,6 +74,7 @@ type NotificationScheduleItem = {
   type: NotificationType;
   prayerId: PrayerName;
   sound: string;
+  soundKey?: string;
   vibration: boolean;
   categoryId: string;
   channelId?: string;
@@ -226,6 +231,11 @@ export const scheduleAllNotifications = async (
       }
     }
 
+    // Cancel all pending athan service alarms (Android)
+    if (Platform.OS === PlatformType.ANDROID) {
+      await cancelAllAthans([]);
+    }
+
     // Cancel all existing notifications
     console.log("[NotificationScheduler] Cancelling existing notifications...");
     await cancelAllScheduledNotifications();
@@ -349,6 +359,24 @@ export const scheduleAllNotifications = async (
 
       if (result.success) {
         scheduledCount++;
+
+        // Schedule native athan service for prayer notifications with athan sounds (Android)
+        if (
+          Platform.OS === PlatformType.ANDROID &&
+          notification.type === NOTIFICATION_TYPE.PRAYER &&
+          notification.soundKey &&
+          isAthanSound(notification.soundKey)
+        ) {
+          const athanId = `athan_${notification.prayerId}_${notification.time.getTime()}`;
+          await scheduleAthan({
+            id: athanId,
+            triggerDate: notification.time,
+            prayerId: notification.prayerId,
+            soundName: notification.sound,
+            title: notification.title,
+            stopLabel: t("common.stop"),
+          });
+        }
       }
     }
     scheduledCount = scheduledCount + athkarNotificationCount + qadaNotificationCount;
@@ -448,6 +476,11 @@ const generatePrayerNotifications = (
         prayerConfig.sound
       );
 
+      // Athan sounds play via AthanService — notification itself should be silent
+      const prayerSound = isAthanSound(prayerConfig.sound)
+        ? "default"
+        : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default";
+
       notifications.push({
         id: `prayer_${prayerId}_${prayerTime.getTime()}`,
         time: prayerTime,
@@ -458,7 +491,8 @@ const generatePrayerNotifications = (
         categoryId: `prayer_${prayerId}`,
         channelId: prayerChannelId,
         vibration: prayerConfig.vibration,
-        sound: getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default",
+        sound: prayerSound,
+        soundKey: prayerConfig.sound,
       });
     }
   }
