@@ -475,17 +475,16 @@ const AlarmSettings = () => {
             marginTop="$8"
             marginBottom="$2"
             minHeight={44}
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="center"
             onPress={() => {
               hapticMedium();
               setCategoryModalOpen(true);
             }}>
-            <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
-            <Text size="sm" color="$typographySecondary" marginStart="$2">
-              {t("alarm.settings.reportProblem")}
-            </Text>
+            <HStack alignItems="center" justifyContent="center" width="100%" gap="$2">
+              <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
+              <Text size="sm" color="$typographySecondary">
+                {t("alarm.settings.reportProblem")}
+              </Text>
+            </HStack>
           </Pressable>
 
           {__DEV__ && (
@@ -515,16 +514,16 @@ const AlarmSettings = () => {
                   {issueOptions.map((option) => (
                     <Pressable
                       key={option.category}
-                      flexDirection="row"
-                      alignItems="center"
                       minHeight={44}
                       paddingHorizontal="$3"
                       borderRadius="$6"
                       onPress={() => handleCategorySelect(option.category)}>
-                      <Icon as={option.icon} size="md" color="$typographySecondary" />
-                      <Text size="md" color="$typography" marginStart="$3">
-                        {t(option.labelKey)}
-                      </Text>
+                      <HStack alignItems="center" width="100%" gap="$3">
+                        <Icon as={option.icon} size="md" color="$typographySecondary" />
+                        <Text size="md" color="$typography">
+                          {t(option.labelKey)}
+                        </Text>
+                      </HStack>
                     </Pressable>
                   ))}
                 </VStack>

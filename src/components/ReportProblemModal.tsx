@@ -7,6 +7,7 @@ import { useTheme } from "tamagui";
 
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon, MailIcon } from "@/components/ui/icon";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
@@ -90,59 +91,55 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
           </Text>
           <VStack gap="$2">
             <Pressable
-              flexDirection="row"
-              alignItems="center"
               minHeight={44}
               paddingHorizontal="$3"
               borderRadius="$6"
               onPress={handleEmail}>
-              <Icon as={MailIcon} size="xl" color="$primary" />
-              <Text size="md" color="$typography" marginStart="$3">
-                {t("alarm.report.email")}
-              </Text>
+              <HStack alignItems="center" width="100%" gap="$3">
+                <Icon as={MailIcon} size="xl" color="$primary" />
+                <Text size="md" color="$typography">
+                  {t("alarm.report.email")}
+                </Text>
+              </HStack>
             </Pressable>
 
             {whatsappNumber && (
               <Pressable
-                flexDirection="row"
-                alignItems="center"
                 minHeight={44}
                 paddingHorizontal="$3"
                 borderRadius="$6"
                 onPress={handleWhatsApp}>
-                <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
-                <Text size="md" color="$typography" marginStart="$3">
-                  {t("alarm.report.whatsapp")}
-                </Text>
+                <HStack alignItems="center" width="100%" gap="$3">
+                  <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
+                  <Text size="md" color="$typography">
+                    {t("alarm.report.whatsapp")}
+                  </Text>
+                </HStack>
               </Pressable>
             )}
 
             {telegramUsername && (
               <Pressable
-                flexDirection="row"
-                alignItems="center"
                 minHeight={44}
                 paddingHorizontal="$3"
                 borderRadius="$6"
                 onPress={handleTelegram}>
-                <FontAwesome5 name="telegram-plane" size={24} color={theme.typography.val} />
-                <Text size="md" color="$typography" marginStart="$3">
-                  {t("alarm.report.telegram")}
-                </Text>
+                <HStack alignItems="center" width="100%" gap="$3">
+                  <FontAwesome5 name="telegram-plane" size={24} color={theme.typography.val} />
+                  <Text size="md" color="$typography">
+                    {t("alarm.report.telegram")}
+                  </Text>
+                </HStack>
               </Pressable>
             )}
 
-            <Pressable
-              flexDirection="row"
-              alignItems="center"
-              minHeight={44}
-              paddingHorizontal="$3"
-              borderRadius="$6"
-              onPress={handleCopy}>
-              <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
-              <Text size="md" color="$typography" marginStart="$3">
-                {t("alarm.report.copyToClipboard")}
-              </Text>
+            <Pressable minHeight={44} paddingHorizontal="$3" borderRadius="$6" onPress={handleCopy}>
+              <HStack alignItems="center" width="100%" gap="$3">
+                <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
+                <Text size="md" color="$typography">
+                  {t("alarm.report.copyToClipboard")}
+                </Text>
+              </HStack>
             </Pressable>
           </VStack>
 
