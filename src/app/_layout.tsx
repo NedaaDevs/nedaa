@@ -113,8 +113,8 @@ export default function RootLayout() {
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
       <FontLanguage
-        body={locale === "ar" ? "ar" : undefined}
-        heading={locale === "ar" ? "ar" : undefined}>
+        body={locale === "ar" ? "ar" : "default"}
+        heading={locale === "ar" ? "ar" : "default"}>
         <RTLProvider>
           <FontProvider>
             <AppShell />

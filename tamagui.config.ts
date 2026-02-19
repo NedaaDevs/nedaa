@@ -428,12 +428,14 @@ const config = createTamagui({
   },
   fonts: {
     heading: asapFont,
+    heading_default: asapFont,
     heading_ar: ibmPlexSansFont,
     body: asapFont,
+    body_default: asapFont,
     body_ar: ibmPlexSansFont,
     mono: monoFont,
   },
-  fontLanguages: ["ar"],
+  fontLanguages: ["default", "ar"],
   animations,
   media: {
     sm: { maxWidth: 640 },
