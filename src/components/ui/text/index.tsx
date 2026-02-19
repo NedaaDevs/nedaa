@@ -103,7 +103,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         lineHeight={fontSize != null ? undefined : sizeValues.lineHeight}
         // Android mismeasures Arabic glyph widths; "simple" break strategy
         // uses a more generous width calculation in StaticLayout.
-        {...(IS_ANDROID && { textBreakStrategy: "simple" })}
+        {...(IS_ANDROID && { textBreakStrategy: "simple", paddingEnd: 8 })}
         style={[
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
