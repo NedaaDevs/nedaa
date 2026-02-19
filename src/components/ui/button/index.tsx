@@ -104,7 +104,7 @@ const ButtonTextFrame = styled(TamaguiText, {
   context: ButtonContext,
   fontFamily: "$body",
   fontWeight: "600",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 8, textBreakStrategy: "simple" }),
 
   variants: {
     action: {
