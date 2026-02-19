@@ -1,7 +1,11 @@
 import appStore from "@/stores/app";
+import { useDisplayStore } from "@/stores/display";
 
 export const formatNumberToLocale = (str: string) => {
-  if (appStore.getState().locale.startsWith("ar")) {
+  if (
+    appStore.getState().locale.startsWith("ar") &&
+    !useDisplayStore.getState().useWesternNumerals
+  ) {
     const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
     return str.replace(/[0-9]/g, (digit: string): string => arabicDigits[parseInt(digit)]);
   }
