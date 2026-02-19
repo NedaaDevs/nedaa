@@ -96,6 +96,10 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         setupInterruptionHandling()
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     // MARK: - AVAudioPlayerDelegate
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
