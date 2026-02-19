@@ -1,5 +1,5 @@
-import "@/localization/i18n";
 import "@tamagui/native/setup-zeego";
+import "@/localization/i18n";
 import "@tamagui/linear-gradient";
 
 import { Stack } from "expo-router";
@@ -110,11 +110,13 @@ export default function RootLayout() {
         ? "dark"
         : "light";
 
+  const isArabicScript = locale === "ar" || locale === "ur";
+
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
       <FontLanguage
-        body={locale === "ar" ? "ar" : "default"}
-        heading={locale === "ar" ? "ar" : "default"}>
+        body={isArabicScript ? "ar" : "default"}
+        heading={isArabicScript ? "ar" : "default"}>
         <RTLProvider>
           <FontProvider>
             <AppShell />
