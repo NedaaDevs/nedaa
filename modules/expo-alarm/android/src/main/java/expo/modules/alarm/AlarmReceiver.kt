@@ -15,6 +15,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val alarmId = intent.getStringExtra(EXTRA_ALARM_ID) ?: return
+        AlarmLogger.getInstance(context).d("AlarmReceiver", "Alarm received: id=$alarmId")
         val alarmType = intent.getStringExtra(EXTRA_ALARM_TYPE) ?: "custom"
         val title = intent.getStringExtra(EXTRA_ALARM_TITLE) ?: "Alarm"
         val soundName = intent.getStringExtra(EXTRA_SOUND_NAME) ?: "beep"
