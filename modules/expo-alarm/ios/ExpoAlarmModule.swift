@@ -61,6 +61,13 @@ public class ExpoAlarmModule: Module {
             }
             #endif
 
+            let dbAlarmIds = AlarmDatabase.shared.getAllAlarmIds()
+            self.withAlarmIds { ids in
+                for id in dbAlarmIds {
+                    ids.insert(id)
+                }
+            }
+
             // Set up playback finished callback
             AlarmAudioManager.shared.onPlaybackFinished = { [weak self] in
                 self?.sendEvent("onPlaybackFinished", [:])
