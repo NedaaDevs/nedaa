@@ -67,6 +67,7 @@ class AlarmOverlayService : Service() {
         private const val COLOR_DISABLED = "#FF475569"
 
         private const val GRACE_UPDATE_INTERVAL_MS = 50L
+        private const val AUTO_SNOOZE_TIMEOUT_MS = 15 * 60 * 1000L
 
         @Volatile
         var isRunning = false
@@ -122,6 +123,8 @@ class AlarmOverlayService : Service() {
     private var currentMathAnswer: Int = 0
     private var completedMathChallenges: Int = 0
 
+    private var autoSnoozeRunnable: Runnable? = null
+
     // Grace period state
     private var graceProgressBar: ProgressBar? = null
     private var graceExpiredText: TextView? = null
@@ -174,6 +177,7 @@ class AlarmOverlayService : Service() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         showOverlay()
+        startAutoSnoozeTimeout()
 
         return START_NOT_STICKY
     }
@@ -273,6 +277,7 @@ class AlarmOverlayService : Service() {
             audioManager.startVibration(vibrationPattern)
         }
 
+        startAutoSnoozeTimeout()
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period expired, sound restarted")
     }
 
@@ -294,6 +299,7 @@ class AlarmOverlayService : Service() {
         if (vibrationEnabled) {
             audioManager.startVibration(vibrationPattern)
         }
+        startAutoSnoozeTimeout()
     }
 
     private fun updateGraceBarColor(fraction: Float) {
@@ -497,12 +503,14 @@ class AlarmOverlayService : Service() {
         val windowFlags = if (challengeType == "math") {
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         } else {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         }
 
         val params = WindowManager.LayoutParams(
@@ -810,19 +818,52 @@ class AlarmOverlayService : Service() {
         }
     }
 
+    // --- Auto-Snooze Timeout ---
+
+    private fun startAutoSnoozeTimeout() {
+        cancelAutoSnoozeTimeout()
+        autoSnoozeRunnable = Runnable {
+            AlarmLogger.getInstance(this).d("AlarmOverlay", "Auto-snooze timeout reached")
+            performAutoSnooze()
+        }
+        graceHandler.postDelayed(autoSnoozeRunnable!!, AUTO_SNOOZE_TIMEOUT_MS)
+    }
+
+    private fun cancelAutoSnoozeTimeout() {
+        autoSnoozeRunnable?.let { graceHandler.removeCallbacks(it) }
+        autoSnoozeRunnable = null
+    }
+
+    private fun performAutoSnooze() {
+        val db = AlarmDatabase.getInstance(this)
+        val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
+        val currentSnoozeCount = db.getSnoozeCount(alarmId)
+
+        if (snoozeEnabled && currentSnoozeCount < snoozeMaxCount) {
+            scheduleSnooze(db, snoozeMaxCount, snoozeDuration, currentSnoozeCount)
+        } else {
+            completeAlarm()
+        }
+    }
+
     // --- Snooze & Complete ---
 
     private fun onSnoozeClicked() {
+        cancelAutoSnoozeTimeout()
+
         val db = AlarmDatabase.getInstance(this)
-
         val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
-
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
+
         if (!snoozeEnabled || currentSnoozeCount >= snoozeMaxCount) {
             Toast.makeText(this, getString(R.string.overlay_snooze_max_reached), Toast.LENGTH_SHORT).show()
             return
         }
 
+        scheduleSnooze(db, snoozeMaxCount, snoozeDuration, currentSnoozeCount)
+    }
+
+    private fun scheduleSnooze(db: AlarmDatabase, snoozeMaxCount: Int, snoozeDuration: Int, currentSnoozeCount: Int) {
         val newSnoozeCount = currentSnoozeCount + 1
         val snoozeMs = snoozeDuration * 60 * 1000L
         val snoozeTime = System.currentTimeMillis() + snoozeMs
@@ -872,6 +913,7 @@ class AlarmOverlayService : Service() {
     }
 
     private fun completeAlarm() {
+        cancelAutoSnoozeTimeout()
         graceHandler.removeCallbacksAndMessages(null)
 
         val audioManager = AlarmAudioManager.getInstance(this)
