@@ -1,7 +1,7 @@
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useTranslation } from "react-i18next";
-import { Linking } from "react-native";
+import { Linking, useColorScheme } from "react-native";
 
 // Components
 import CrashLogButton from "@/components/CrashLogButton";
@@ -22,6 +22,7 @@ const logoDark = require("../../assets/images/ios-dark.png");
 const SettingsFooter = () => {
   const { t } = useTranslation();
   const mode = useAppStore((s) => s.mode);
+  const systemScheme = useColorScheme();
 
   const appVersion =
     Application.nativeApplicationVersion || Constants.expoConfig?.version || "1.0.0";
@@ -29,7 +30,8 @@ const SettingsFooter = () => {
   const buildNumber =
     Application.nativeBuildVersion || Constants.expoConfig?.ios?.buildNumber || "1";
 
-  const logo = mode === AppMode.DARK ? logoDark : logoLight;
+  const isDark = mode === AppMode.DARK || (mode === AppMode.SYSTEM && systemScheme === "dark");
+  const logo = isDark ? logoDark : logoLight;
 
   const openWebsite = async () => {
     const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE ?? "";
