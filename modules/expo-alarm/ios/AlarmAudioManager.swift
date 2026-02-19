@@ -8,28 +8,88 @@ import UIKit
 class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     static let shared = AlarmAudioManager()
 
-    private var audioPlayer: AVAudioPlayer?
-    private var isPlaying = false
-    private var isPreviewMode = false
-    private var volume: Float = 1.0
-    private var retryCount = 0
+    private let queue = DispatchQueue(label: "expo.alarm.audio")
+
+    private var _audioPlayer: AVAudioPlayer?
+    private var _isPlaying = false
+    private var _isPreviewMode = false
+    private var _volume: Float = 1.0
+    private var _retryCount = 0
     private let maxRetries = 3
-    private var retryWorkItem: DispatchWorkItem?
+    private var _retryWorkItem: DispatchWorkItem?
 
-    private var vibrationTimer: Timer?
-    private var isVibrating = false
+    private var _vibrationTimer: Timer?
+    private var _isVibrating = false
 
-    private var volumeObservation: NSKeyValueObservation?
-    private var targetVolume: Float?
-    private var volumeView: MPVolumeView?
+    private var _volumeObservation: NSKeyValueObservation?
+    private var _targetVolume: Float?
+    private var _volumeView: MPVolumeView?
 
-    private var keepAlivePlayer: AVAudioPlayer?
-    private var isKeepAliveActive = false
+    private var _keepAlivePlayer: AVAudioPlayer?
+    private var _isKeepAliveActive = false
 
     private let savedVolumeKey = "savedSystemVolume"
 
-    // Callback for playback finished (used for preview mode)
-    var onPlaybackFinished: (() -> Void)?
+    private var _onPlaybackFinished: (() -> Void)?
+
+    // MARK: - Thread-safe accessors
+
+    private var audioPlayer: AVAudioPlayer? {
+        get { queue.sync { _audioPlayer } }
+        set { queue.sync { _audioPlayer = newValue } }
+    }
+    private var isPlaying: Bool {
+        get { queue.sync { _isPlaying } }
+        set { queue.sync { _isPlaying = newValue } }
+    }
+    private var isPreviewMode: Bool {
+        get { queue.sync { _isPreviewMode } }
+        set { queue.sync { _isPreviewMode = newValue } }
+    }
+    private var volume: Float {
+        get { queue.sync { _volume } }
+        set { queue.sync { _volume = newValue } }
+    }
+    private var retryCount: Int {
+        get { queue.sync { _retryCount } }
+        set { queue.sync { _retryCount = newValue } }
+    }
+    private var retryWorkItem: DispatchWorkItem? {
+        get { queue.sync { _retryWorkItem } }
+        set { queue.sync { _retryWorkItem = newValue } }
+    }
+    private var vibrationTimer: Timer? {
+        get { queue.sync { _vibrationTimer } }
+        set { queue.sync { _vibrationTimer = newValue } }
+    }
+    private var isVibrating: Bool {
+        get { queue.sync { _isVibrating } }
+        set { queue.sync { _isVibrating = newValue } }
+    }
+    private var volumeObservation: NSKeyValueObservation? {
+        get { queue.sync { _volumeObservation } }
+        set { queue.sync { _volumeObservation = newValue } }
+    }
+    private var targetVolume: Float? {
+        get { queue.sync { _targetVolume } }
+        set { queue.sync { _targetVolume = newValue } }
+    }
+    private var volumeView: MPVolumeView? {
+        get { queue.sync { _volumeView } }
+        set { queue.sync { _volumeView = newValue } }
+    }
+    private var keepAlivePlayer: AVAudioPlayer? {
+        get { queue.sync { _keepAlivePlayer } }
+        set { queue.sync { _keepAlivePlayer = newValue } }
+    }
+    private var isKeepAliveActive: Bool {
+        get { queue.sync { _isKeepAliveActive } }
+        set { queue.sync { _isKeepAliveActive = newValue } }
+    }
+    var onPlaybackFinished: (() -> Void)? {
+        get { queue.sync { _onPlaybackFinished } }
+        set { queue.sync { _onPlaybackFinished = newValue } }
+    }
 
     private override init() {
         super.init()
@@ -39,11 +99,13 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     // MARK: - AVAudioPlayerDelegate
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        log("Audio finished playing, success: \(flag), preview mode: \(isPreviewMode)")
-        if isPreviewMode {
+        let preview = isPreviewMode
+        log("Audio finished playing, success: \(flag), preview mode: \(preview)")
+        if preview {
             isPlaying = false
             isPreviewMode = false
-            onPlaybackFinished?()
+            let callback = onPlaybackFinished
+            callback?()
         }
     }
 
@@ -74,9 +136,10 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     #endif
 
     func setVolume(_ newVolume: Float) {
-        volume = max(0, min(1, newVolume))
-        audioPlayer?.volume = volume
-        log("Volume set to: \(volume)")
+        let clamped = max(0, min(1, newVolume))
+        volume = clamped
+        audioPlayer?.volume = clamped
+        log("Volume set to: \(clamped)")
     }
 
     func getVolume() -> Float {
@@ -181,12 +244,14 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         }
 
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.delegate = self
-            audioPlayer?.numberOfLoops = isPreview ? 0 : -1  // Play once for preview, loop for alarm
-            audioPlayer?.volume = volume
-            audioPlayer?.prepareToPlay()
-            let success = audioPlayer?.play() ?? false
+            let player = try AVAudioPlayer(contentsOf: url)
+            let currentVolume = volume
+            player.delegate = self
+            player.numberOfLoops = isPreview ? 0 : -1
+            player.volume = currentVolume
+            player.prepareToPlay()
+            let success = player.play()
+            audioPlayer = player
             isPlaying = success
 
             if success {
@@ -218,9 +283,9 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         retryWorkItem = nil
         retryCount = 0
 
-        // Always attempt to stop, regardless of isPlaying flag (fixes state mismatch from retry logic)
         log("Stopping alarm sound")
-        audioPlayer?.stop()
+        let player = audioPlayer
+        player?.stop()
         audioPlayer = nil
         isPlaying = false
         isPreviewMode = false
@@ -259,7 +324,8 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
 
         log("Stopping vibration")
         isVibrating = false
-        vibrationTimer?.invalidate()
+        let timer = vibrationTimer
+        timer?.invalidate()
         vibrationTimer = nil
     }
 
@@ -301,12 +367,14 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     }
 
     func stopVolumeMonitoring() {
-        volumeObservation?.invalidate()
+        let observation = volumeObservation
+        observation?.invalidate()
         volumeObservation = nil
         targetVolume = nil
 
         DispatchQueue.main.async { [weak self] in
-            self?.volumeView?.removeFromSuperview()
+            let view = self?.volumeView
+            view?.removeFromSuperview()
             self?.volumeView = nil
         }
     }
@@ -360,12 +428,13 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
                 return
             }
 
-            keepAlivePlayer = try AVAudioPlayer(contentsOf: url)
-            keepAlivePlayer?.numberOfLoops = -1
-            keepAlivePlayer?.volume = 0.001
-            keepAlivePlayer?.prepareToPlay()
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = -1
+            player.volume = 0.001
+            player.prepareToPlay()
 
-            let success = keepAlivePlayer?.play() ?? false
+            let success = player.play()
+            keepAlivePlayer = player
             isKeepAliveActive = success
 
             if success {
@@ -389,7 +458,8 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         guard isKeepAliveActive else { return }
 
         log("Stopping quiet keep-alive")
-        keepAlivePlayer?.stop()
+        let player = keepAlivePlayer
+        player?.stop()
         keepAlivePlayer = nil
         isKeepAliveActive = false
     }
@@ -402,14 +472,14 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     func transitionToLoudAlarm(soundName: String = "beep", alarmVolume: Float = 1.0) {
         log("Transitioning to loud alarm, volume: \(alarmVolume)")
 
-        // Reset vibration state to ensure it restarts (fixes bug where BGTask expires
-        // and timer dies but isVibrating stays true, preventing restart)
         isVibrating = false
-        vibrationTimer?.invalidate()
+        let timer = vibrationTimer
+        timer?.invalidate()
         vibrationTimer = nil
 
         if isKeepAliveActive {
-            keepAlivePlayer?.stop()
+            let player = keepAlivePlayer
+            player?.stop()
             keepAlivePlayer = nil
             isKeepAliveActive = false
         }
