@@ -73,12 +73,16 @@ class AlarmBackgroundTaskManager {
         }
     }
 
-    private func rescheduleIfNeeded() {
-        guard AlarmDatabase.shared.hasAlarms() else { return }
-
-        if let nextAlarmTime = AlarmDatabase.shared.getNextAlarmTime(),
-           nextAlarmTime > Date() {
-            scheduleWakeTask(alarmTime: nextAlarmTime, alarmId: "reschedule")
+    func rescheduleForNextAlarm() {
+        guard let nextAlarmTime = AlarmDatabase.shared.getNextAlarmTime(),
+              nextAlarmTime > Date() else {
+            cancelWakeTask()
+            return
         }
+        scheduleWakeTask(alarmTime: nextAlarmTime, alarmId: "reschedule")
+    }
+
+    private func rescheduleIfNeeded() {
+        rescheduleForNextAlarm()
     }
 }

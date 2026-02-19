@@ -217,9 +217,11 @@ public class ExpoAlarmModule: Module {
                         if self.withAlarmIds({ $0.isEmpty }) {
                             AlarmAudioManager.shared.stopQuietKeepAlive()
                         }
+                        AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()
                         promise.resolve(true)
                     } catch {
                         self.withAlarmIds { $0.remove(id) }
+                        AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()
                         promise.resolve(true)
                     }
                 }
@@ -315,6 +317,7 @@ public class ExpoAlarmModule: Module {
 
         Function("deleteAlarmFromDB") { (id: String) -> Bool in
             AlarmDatabase.shared.deleteAlarm(id: id)
+            AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()
             return true
         }
 
