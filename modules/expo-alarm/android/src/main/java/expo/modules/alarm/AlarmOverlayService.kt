@@ -74,6 +74,7 @@ class AlarmOverlayService : Service() {
 
         fun start(context: Context, alarmId: String, alarmType: String, title: String) {
             if (!Settings.canDrawOverlays(context)) return
+            if (isRunning) return
 
             val intent = Intent(context, AlarmOverlayService::class.java).apply {
                 putExtra("alarm_id", alarmId)
@@ -258,6 +259,7 @@ class AlarmOverlayService : Service() {
     private fun onGraceExpired() {
         graceActive = false
         graceExpired = true
+        graceTimerRunning = false
         graceHandler.removeCallbacksAndMessages(null)
 
         graceProgressBar?.progress = 0
@@ -754,7 +756,7 @@ class AlarmOverlayService : Service() {
             } else {
                 // Success feedback then next problem
                 setButtonColor(mathSubmitButton, COLOR_SUCCESS)
-                mathSubmitButton?.postDelayed({
+                graceHandler.postDelayed({
                     setButtonColor(mathSubmitButton, COLOR_PRIMARY)
                     resetGraceForNextRound()
                     generateMathProblem()
@@ -769,7 +771,7 @@ class AlarmOverlayService : Service() {
     private fun showMathError(message: String) {
         setButtonColor(mathSubmitButton, COLOR_ERROR)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        mathSubmitButton?.postDelayed({
+        graceHandler.postDelayed({
             setButtonColor(mathSubmitButton, COLOR_PRIMARY)
         }, 500)
     }
@@ -786,13 +788,13 @@ class AlarmOverlayService : Service() {
             if (tapCount >= nextRoundBoundary) {
                 tapRoundsCompleted++
                 setButtonColor(tapButton, COLOR_SUCCESS_LIGHT)
-                tapButton?.postDelayed({
+                graceHandler.postDelayed({
                     setButtonColor(tapButton, COLOR_SUCCESS)
                     resetGraceForNextRound()
                 }, 200)
             } else {
                 setButtonColor(tapButton, COLOR_SUCCESS_LIGHT)
-                tapButton?.postDelayed({
+                graceHandler.postDelayed({
                     setButtonColor(tapButton, COLOR_SUCCESS)
                 }, 100)
             }
@@ -815,8 +817,6 @@ class AlarmOverlayService : Service() {
 
         val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
 
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Snooze clicked - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=${snoozeDuration}min")
-
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
         if (!snoozeEnabled || currentSnoozeCount >= snoozeMaxCount) {
             Toast.makeText(this, getString(R.string.overlay_snooze_max_reached), Toast.LENGTH_SHORT).show()
@@ -828,8 +828,6 @@ class AlarmOverlayService : Service() {
         val snoozeTime = System.currentTimeMillis() + snoozeMs
         val snoozeId = UUID.randomUUID().toString()
 
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "TEMP: Scheduling snooze #$newSnoozeCount for ${snoozeDuration}min (${snoozeMs}ms)")
-
         val baseTitle = title.replace(Regex("\\s*\\(Snoozed \\d+/\\d+\\)$"), "")
         val snoozeTitle = "$baseTitle (Snoozed $newSnoozeCount/$snoozeMaxCount)"
 
@@ -840,7 +838,7 @@ class AlarmOverlayService : Service() {
         db.markCompleted(alarmId)
 
         val scheduler = AlarmScheduler(this)
-        scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, "beep", newSnoozeCount)
+        scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount)
 
         db.addToSnoozeQueue(
             originalAlarmId = alarmId,
@@ -869,6 +867,7 @@ class AlarmOverlayService : Service() {
             startActivity(intent)
         } catch (_: Exception) {}
 
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
@@ -901,6 +900,7 @@ class AlarmOverlayService : Service() {
             startActivity(intent)
         } catch (_: Exception) {}
 
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
