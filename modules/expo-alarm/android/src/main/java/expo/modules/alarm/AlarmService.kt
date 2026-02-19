@@ -36,7 +36,6 @@ class AlarmService : Service() {
         }
 
         fun stop(context: Context) {
-            if (!isRunning) return
             val intent = Intent(context, AlarmService::class.java).apply {
                 action = ACTION_STOP
             }
@@ -50,22 +49,30 @@ class AlarmService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_START -> {
-                val alarmId = intent.getStringExtra(EXTRA_ALARM_ID) ?: return START_NOT_STICKY
+        if (intent?.action == ACTION_STOP) {
+            stopAlarm()
+            return START_NOT_STICKY
+        }
+
+        if (intent?.action == ACTION_START) {
+            val alarmId = intent.getStringExtra(EXTRA_ALARM_ID)
+            if (alarmId != null) {
                 val alarmType = intent.getStringExtra(EXTRA_ALARM_TYPE) ?: "custom"
                 val title = intent.getStringExtra(EXTRA_ALARM_TITLE) ?: "Alarm"
                 val soundName = intent.getStringExtra(EXTRA_SOUND_NAME) ?: "beep"
                 startAlarm(alarmId, alarmType, title, soundName)
+                return START_REDELIVER_INTENT
             }
-            ACTION_STOP -> stopAlarm()
         }
-        return START_REDELIVER_INTENT
-    }
 
-    // TEMP: Debug logging for settings feature - remove after verification
-    private fun log(message: String) {
-        AlarmLogger.getInstance(this).d("AlarmService", message)
+        // Null/unknown action: must still call startForeground to avoid crash,
+        // then immediately stop
+        val notificationManager = AlarmNotificationManager(this)
+        val notification = notificationManager.buildAlarmNotification("", "", "Alarm")
+        startForeground(AlarmNotificationManager.NOTIFICATION_ID, notification.build())
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        return START_NOT_STICKY
     }
 
     private fun startAlarm(alarmId: String, alarmType: String, title: String, soundName: String) {
@@ -78,32 +85,19 @@ class AlarmService : Service() {
         val notification = notificationManager.buildAlarmNotification(alarmId, alarmType, title)
         startForeground(AlarmNotificationManager.NOTIFICATION_ID, notification.build())
 
-        // Read settings from database
         val db = AlarmDatabase.getInstance(this)
         val settings = db.getAlarmSettings(alarmType)
 
-        // TEMP: Log settings being used
-        log("TEMP: Alarm firing - type=$alarmType, id=$alarmId")
-        log("TEMP: Settings from DB: sound=${settings.sound}, volume=${settings.volume}, vibrationEnabled=${settings.vibrationEnabled}, vibrationPattern=${settings.vibrationPattern}")
-
         val audioManager = AlarmAudioManager.getInstance(this)
-
-        // Save system volume before alarm so we can restore after
         audioManager.saveSystemVolume()
 
-        // Use sound from settings if available, otherwise use passed soundName
         val sound = if (settings.sound.isNotEmpty()) settings.sound else soundName
-        log("TEMP: Using sound=$sound (settings.sound=${settings.sound}, fallback=$soundName)")
         audioManager.startAlarmSound(sound, settings.volume)
 
-        // Use vibration settings
         if (settings.vibrationEnabled) {
             audioManager.startVibration(settings.vibrationPattern)
-        } else {
-            log("TEMP: Vibration disabled in settings, skipping")
         }
 
-        // Start overlay service for bypass prevention (if permission granted)
         if (Settings.canDrawOverlays(this)) {
             AlarmOverlayService.start(this, alarmId, alarmType, title)
         }
@@ -118,10 +112,10 @@ class AlarmService : Service() {
         AlarmNotificationManager(this).cancelNotification()
         releaseWakeLock()
 
-        isRunning = false
         currentAlarmId = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        isRunning = false
     }
 
     private fun acquireWakeLock() {
