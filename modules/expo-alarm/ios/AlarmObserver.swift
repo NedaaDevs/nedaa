@@ -31,7 +31,8 @@ import AppIntents
 
             startHeartbeat()
 
-            let task = Task {
+            stateLock.lock()
+            observerTask = Task {
                 let plog = PersistentLog.shared
                 var previousAlarms: [UUID: Alarm.State] = [:]
                 var isFirstIteration = true
@@ -58,8 +59,6 @@ import AppIntents
 
                 plog.observer("Observer ended")
             }
-            stateLock.lock()
-            observerTask = task
             stateLock.unlock()
         }
         #endif
@@ -91,8 +90,7 @@ import AppIntents
     private static func startHeartbeat() {
         stateLock.lock()
         heartbeatTask?.cancel()
-        stateLock.unlock()
-        let task = Task {
+        heartbeatTask = Task {
             let plog = PersistentLog.shared
             var beatCount = 0
 
@@ -116,8 +114,6 @@ import AppIntents
                 plog.observer("Heartbeat #\(beatCount) keepAlive=\(keepAlive) audio=\(audioPlaying) [\(alarmStates.joined(separator: ","))]")
             }
         }
-        stateLock.lock()
-        heartbeatTask = task
         stateLock.unlock()
     }
 
