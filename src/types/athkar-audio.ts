@@ -91,6 +91,7 @@ export type AthkarAudioState = {
   repeatLimit: RepeatLimit;
   comfortMode: boolean;
   onboardingCompleted: boolean;
+  audioControlsExpanded: boolean;
 
   // Playback state (runtime)
   playerState: PlayerState;
@@ -134,6 +135,7 @@ export type AthkarAudioActions = {
   setRepeatLimit: (limit: RepeatLimit) => void;
   toggleComfortMode: () => void;
   setOnboardingCompleted: (completed: boolean) => void;
+  setAudioControlsExpanded: (expanded: boolean) => void;
 
   // Downloads
   setDownloadStatus: (thikrId: string, status: DownloadStatus) => void;

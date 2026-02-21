@@ -54,7 +54,7 @@ const MiniPlayer: FC = () => {
     playerState === "playing" ||
     playerState === "paused" ||
     playerState === "loading" ||
-    playerState === "advancing";
+    playerState === "crossfading";
 
   useEffect(() => {
     if (isActive) {
