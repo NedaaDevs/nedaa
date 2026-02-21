@@ -45,6 +45,7 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         repeatLimit: "all" as RepeatLimit,
         comfortMode: false,
         onboardingCompleted: false,
+        audioControlsExpanded: true,
 
         // Runtime playback state
         ...initialPlaybackState,
@@ -88,8 +89,7 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
 
         selectReciter: (id: string) => {
           const { playerState } = get();
-          // Stop playback if switching reciter while playing
-          if (playerState !== "idle" && playerState !== "completed") {
+          if (playerState !== "idle") {
             athkarPlayer.stop();
             set(initialPlaybackState);
           }
@@ -104,6 +104,8 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         toggleComfortMode: () => set((state) => ({ comfortMode: !state.comfortMode })),
 
         setOnboardingCompleted: (completed: boolean) => set({ onboardingCompleted: completed }),
+
+        setAudioControlsExpanded: (expanded: boolean) => set({ audioControlsExpanded: expanded }),
 
         // --- Download actions ---
         setDownloadStatus: (thikrId: string, status: DownloadStatus) =>
@@ -132,6 +134,7 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
           repeatLimit: state.repeatLimit,
           comfortMode: state.comfortMode,
           onboardingCompleted: state.onboardingCompleted,
+          audioControlsExpanded: state.audioControlsExpanded,
         }),
       }
     ),
