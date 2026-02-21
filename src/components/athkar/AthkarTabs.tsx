@@ -25,7 +25,7 @@ import { useAthkarAudioBridge } from "@/hooks/useAthkarAudioBridge";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { PLAYBACK_MODE, AUDIO_UI } from "@/constants/AthkarAudio";
+import { AUDIO_UI } from "@/constants/AthkarAudio";
 
 // Icons
 import { Sun, Moon, Focus } from "lucide-react-native";
@@ -36,27 +36,20 @@ import { AthkarType } from "@/types/athkar";
 // Utils
 import { getCurrentAthkarPeriod } from "@/utils/athkar";
 
-// Services
-import { athkarPlayer } from "@/services/athkar-player";
-import { reciterRegistry } from "@/services/athkar-reciter-registry";
-
 const AthkarTabs = () => {
   const { t } = useTranslation();
   const router = useRouter();
 
-  const { morningAthkarList, eveningAthkarList, setCurrentType, validateDailyStreak } =
-    useAthkarStore();
+  const { setCurrentType, validateDailyStreak } = useAthkarStore();
   const audioStop = useAthkarAudioStore((s) => s.stop);
   const playerState = useAthkarAudioStore((s) => s.playerState);
-  const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
-  const selectedReciterId = useAthkarAudioStore((s) => s.selectedReciterId);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
 
   const isPlayerActive =
     playerState === "playing" ||
     playerState === "paused" ||
     playerState === "loading" ||
-    playerState === "advancing";
+    playerState === "crossfading";
   const miniPlayerHeight = comfortMode
     ? AUDIO_UI.MINI_PLAYER_HEIGHT_COMFORT
     : AUDIO_UI.MINI_PLAYER_HEIGHT;
@@ -81,31 +74,6 @@ const AthkarTabs = () => {
     validateDailyStreak();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Build audio queue so play buttons in the list work
-  const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF;
-  const currentAthkarList =
-    activeTab === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
-
-  useEffect(() => {
-    if (!showAudioControls || !selectedReciterId || currentAthkarList.length === 0) return;
-
-    const buildQueue = async () => {
-      const catalog = await reciterRegistry.fetchCatalog();
-      const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
-      if (!reciter) return;
-
-      const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
-      if (!manifest) return;
-
-      athkarPlayer.setMode(playbackMode);
-      athkarPlayer.setRepeatLimit(useAthkarAudioStore.getState().repeatLimit);
-      athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, activeTab);
-    };
-
-    buildQueue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAudioControls, selectedReciterId, activeTab, currentAthkarList.length]);
 
   const handleRequestOnboarding = useCallback(() => {
     setShowOnboarding(true);
