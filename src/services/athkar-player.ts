@@ -339,6 +339,7 @@ class AthkarPlayer {
   async next() {
     this.clearAdvanceTimer();
     this.clearCrossfadeTimer();
+    this.resetPlayerVolumes();
     this.invalidateBuffer();
 
     if (this.queueIndex < this.queue.length - 1) {
@@ -356,6 +357,7 @@ class AthkarPlayer {
   async previous() {
     this.clearAdvanceTimer();
     this.clearCrossfadeTimer();
+    this.resetPlayerVolumes();
     this.invalidateBuffer();
 
     if (this.queueIndex > 0) {
@@ -694,6 +696,19 @@ class AthkarPlayer {
     if (this.crossfadeTimer) {
       clearInterval(this.crossfadeTimer);
       this.crossfadeTimer = null;
+    }
+  }
+
+  private resetPlayerVolumes() {
+    for (const ref of [this.refA, this.refB]) {
+      const p = ref?.current;
+      if (p) {
+        try {
+          p.volume = 1;
+        } catch {
+          // safe
+        }
+      }
     }
   }
 
