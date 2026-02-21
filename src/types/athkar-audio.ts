@@ -6,8 +6,19 @@ export type PlaybackMode = (typeof PLAYBACK_MODE)[keyof typeof PLAYBACK_MODE];
 // Repeat limit
 export type RepeatLimit = (typeof REPEAT_LIMIT_OPTIONS)[number]["value"];
 
-// Player state machine
-export type PlayerState = "idle" | "loading" | "playing" | "paused" | "advancing" | "completed";
+// State machine
+export type MachineState = "idle" | "loading" | "playing" | "crossfading" | "paused" | "error";
+
+export const VALID_TRANSITIONS: Record<MachineState, MachineState[]> = {
+  idle: ["loading"],
+  loading: ["playing", "error", "idle"],
+  playing: ["crossfading", "paused", "idle", "error", "loading"],
+  crossfading: ["playing", "error", "idle"],
+  paused: ["loading", "idle", "playing"],
+  error: ["loading", "idle"],
+};
+
+export type PlayerState = MachineState;
 
 // Download status
 export type DownloadStatus = "pending" | "downloading" | "complete" | "failed";
