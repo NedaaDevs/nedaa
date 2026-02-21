@@ -476,8 +476,9 @@ const AthkarFocusScreen = () => {
       // First play — sync queue to the thikr the user is currently viewing
       if (currentAthkar) {
         athkarPlayer.jumpTo(currentAthkar.id, currentCount);
+      } else {
+        audioPlay();
       }
-      audioPlay();
     }
   }, [
     playerState,

@@ -507,6 +507,11 @@ class AthkarPlayer {
 
     try {
       await this.ensureAudioSession();
+      try {
+        player.pause();
+      } catch {
+        /* safe */
+      }
       player.replace({ uri: localPath });
       const success = this.playWithRetry();
 
@@ -628,6 +633,11 @@ class AthkarPlayer {
       incoming.play();
     } catch (error) {
       log.e("Player", "Crossfade incoming play failed", error instanceof Error ? error : undefined);
+      try {
+        outgoing.pause();
+      } catch {
+        /* safe */
+      }
       this.transition("playing");
       await this.advanceToNext();
       return;
