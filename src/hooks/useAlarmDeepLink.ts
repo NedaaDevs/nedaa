@@ -207,28 +207,19 @@ async function processAlarmUrl(url: string) {
   try {
     if (!url.includes("alarm")) return;
 
+    // alarm-complete URL: Expo Router already navigated to /alarm-complete,
+    // just process the completed queue to sync JS state
+    if (url.includes("alarm-complete")) {
+      await processQueues();
+      return;
+    }
+
     const urlObj = new URL(url);
     const alarmId = urlObj.searchParams.get("alarmId");
     const alarmType = urlObj.searchParams.get("alarmType") ?? "custom";
     const action = urlObj.searchParams.get("action");
 
     if (!alarmId) return;
-
-    // Handle action=complete (from Android overlay challenge completion)
-    if (action === "complete") {
-      await processQueues();
-      router.replace({
-        pathname: "/alarm-complete",
-        params: { alarmType },
-      });
-      return;
-    }
-
-    // Handle action=snooze (from Android overlay snooze button)
-    if (action === "snooze") {
-      await processQueues();
-      return;
-    }
 
     // Default: navigate to alarm screen
     navigateToAlarm(alarmId, alarmType, "deep-link");

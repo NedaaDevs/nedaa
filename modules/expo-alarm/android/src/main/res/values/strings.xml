@@ -82,6 +82,9 @@
     <string name="overlay_dismiss_instruction">Tap the button to dismiss the alarm</string>
     <string name="overlay_dismiss_button">DISMISS</string>
 
+    <!-- Overlay - Start Solving -->
+    <string name="overlay_start_solving">START SOLVING</string>
+
     <!-- Overlay - Grace Period -->
     <string name="overlay_grace_expired">Time\'s up — solve to silence</string>
 

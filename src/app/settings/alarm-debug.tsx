@@ -177,6 +177,20 @@ const AlarmDebugScreen = () => {
         enabled: testSnoozeEnabled,
       },
     });
+
+    // Sync to native so the alarm service uses these values
+    ExpoAlarm.setAlarmSettings("fajr", {
+      sound: testSound,
+      volume: testVolume,
+      challengeType: testChallengeType,
+      challengeDifficulty: testDifficulty,
+      challengeCount: testChallengeCount,
+      vibrationEnabled: testVibrationEnabled,
+      vibrationPattern: testVibrationPattern,
+      snoozeEnabled: testSnoozeEnabled,
+      snoozeMaxCount: fajrSettings.snooze.maxCount,
+      snoozeDuration: fajrSettings.snooze.durationMinutes,
+    }).catch(() => {});
   };
 
   const scheduleTestAlarm = async (seconds: number) => {

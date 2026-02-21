@@ -1,5 +1,4 @@
-import { useEffect, useRef } from "react";
-import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useLocalSearchParams, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { VStack } from "@/components/ui/vstack";
@@ -26,10 +25,9 @@ const COLOR_MAP: Record<string, string> = {
 
 export default function AlarmTriggeredScreen() {
   const { t } = useTranslation();
-  const { alarmType, alarmId, action } = useLocalSearchParams<{
+  const { alarmType, alarmId } = useLocalSearchParams<{
     alarmType: string;
     alarmId: string;
-    action?: string;
   }>();
 
   const {
@@ -44,18 +42,6 @@ export default function AlarmTriggeredScreen() {
     handleGraceStart,
     handleGraceExpire,
   } = useAlarmScreen(alarmId, alarmType);
-
-  const hasRedirected = useRef(false);
-  useEffect(() => {
-    if (action === "complete" && !hasRedirected.current) {
-      hasRedirected.current = true;
-      router.replace({ pathname: "/alarm-complete", params: { alarmType } });
-    }
-  }, [action, alarmType]);
-
-  if (action === "complete") {
-    return null;
-  }
 
   const meta =
     ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? "custom"] ??
