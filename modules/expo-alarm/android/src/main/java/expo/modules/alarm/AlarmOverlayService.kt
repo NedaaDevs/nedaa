@@ -107,6 +107,9 @@ class AlarmOverlayService : Service() {
     private var challengeDifficulty: String = "easy"
     private var challengeCount: Int = 1
     private var requiredTaps: Int = TAPS_EASY
+    private var challengeStarted = false
+    private var startSolvingContainer: LinearLayout? = null
+    private var challengeContainer: LinearLayout? = null
 
     // Tap challenge state
     private var tapCount = 0
@@ -291,14 +294,7 @@ class AlarmOverlayService : Service() {
         graceProgressBar?.progress = 10000
         graceExpiredText?.visibility = View.GONE
 
-        // Restart sound for the new round (user hasn't interacted yet)
-        val audioManager = AlarmAudioManager.getInstance(this)
-        if (!audioManager.isPlaying()) {
-            audioManager.startAlarmSound(alarmSound, alarmVolume)
-        }
-        if (vibrationEnabled) {
-            audioManager.startVibration(vibrationPattern)
-        }
+        // User already started solving — keep challenge visible, restart grace on next interaction
         startAutoSnoozeTimeout()
     }
 
@@ -448,12 +444,26 @@ class AlarmOverlayService : Service() {
         }
         card.addView(graceExpiredText)
 
-        // Challenge-specific UI
-        when (challengeType) {
-            "math" -> buildMathChallengeUI(card, dp)
-            "none" -> buildDirectDismissUI(card, dp)
-            else -> buildTapChallengeUI(card, dp)
+        // "Start Solving" gate (shown initially)
+        startSolvingContainer = buildStartSolvingUI(dp)
+        card.addView(startSolvingContainer)
+
+        // Challenge-specific UI (hidden until Start Solving pressed)
+        challengeContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
+        when (challengeType) {
+            "math" -> buildMathChallengeUI(challengeContainer!!, dp)
+            "none" -> buildDirectDismissUI(challengeContainer!!, dp)
+            else -> buildTapChallengeUI(challengeContainer!!, dp)
+        }
+        card.addView(challengeContainer)
 
         // Snooze button
         val db = AlarmDatabase.getInstance(this)
@@ -527,6 +537,77 @@ class AlarmOverlayService : Service() {
         } catch (e: Exception) {
             AlarmLogger.getInstance(this).d("AlarmOverlay", "showOverlay addView failed: ${e.message}")
         }
+    }
+
+    private fun buildStartSolvingUI(dp: Float): LinearLayout {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val instructionText = when (challengeType) {
+            "math" -> if (challengeCount == 1) {
+                getString(R.string.overlay_math_instruction_one)
+            } else {
+                getString(R.string.overlay_math_instruction_many, challengeCount)
+            }
+            "none" -> getString(R.string.overlay_dismiss_instruction)
+            else -> getString(R.string.overlay_tap_instruction, requiredTaps)
+        }
+
+        val instruction = TextView(this).apply {
+            text = instructionText
+            textSize = 15f
+            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
+            gravity = Gravity.CENTER
+            setPadding(0, (8 * dp).toInt(), 0, (32 * dp).toInt())
+        }
+        container.addView(instruction)
+
+        val startButton = Button(this).apply {
+            text = getString(R.string.overlay_start_solving)
+            textSize = 18f
+            isAllCaps = false
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_PRIMARY))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = params
+            setOnClickListener { onStartSolving() }
+        }
+        container.addView(startButton)
+
+        return container
+    }
+
+    private fun onStartSolving() {
+        challengeStarted = true
+
+        // Always silence alarm when user starts solving
+        val audioManager = AlarmAudioManager.getInstance(this)
+        audioManager.stopAlarmSound()
+        audioManager.stopVibration()
+
+        // Start grace timer if configured
+        if (graceDurationMs > 0) {
+            onInteraction()
+        }
+
+        // Swap UI: hide start button, show challenge
+        startSolvingContainer?.visibility = View.GONE
+        challengeContainer?.visibility = View.VISIBLE
+
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge started by user")
     }
 
     private fun buildTapChallengeUI(card: LinearLayout, dp: Float) {
@@ -751,6 +832,7 @@ class AlarmOverlayService : Service() {
     }
 
     private fun onMathAnswerSubmitted() {
+        onInteraction()
         val userAnswer = mathAnswerInput?.text?.toString()?.trim()?.toIntOrNull()
 
         if (userAnswer == null) {
@@ -900,9 +982,7 @@ class AlarmOverlayService : Service() {
         removeOverlay()
 
         try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType&action=snooze")
-                component = ComponentName(packageName, "$packageName.MainActivity")
+            val intent = Intent(this, Class.forName("$packageName.MainActivity")).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
                         Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -937,7 +1017,7 @@ class AlarmOverlayService : Service() {
 
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType&action=complete")
+                data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
                 component = ComponentName(packageName, "$packageName.MainActivity")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or

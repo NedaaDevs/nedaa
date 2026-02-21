@@ -73,6 +73,9 @@
     <string name="overlay_math_wrong">غلط جواب، دوبارہ کوشش کریں</string>
     <string name="overlay_math_invalid">براہ کرم ایک نمبر درج کریں</string>
 
+    <!-- Overlay - Start Solving -->
+    <string name="overlay_start_solving">حل شروع کریں</string>
+
     <!-- Overlay - Snooze -->
     <string name="overlay_snooze_button">سنوز (%d باقی)</string>
     <string name="overlay_snooze_none">کوئی سنوز باقی نہیں</string>

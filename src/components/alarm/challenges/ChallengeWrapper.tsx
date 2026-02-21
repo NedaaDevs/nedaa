@@ -5,6 +5,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 
 import TapChallenge from "./TapChallenge";
@@ -25,10 +26,27 @@ function getGraceDuration(config: ChallengeConfig): number {
   return GRACE_PERIOD_SECONDS[config.type][config.difficulty];
 }
 
+function getChallengeInstruction(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  type: string,
+  difficulty: string,
+  count: number
+): string {
+  if (type === "tap") {
+    const taps = difficulty === "hard" ? 20 : difficulty === "medium" ? 10 : 5;
+    return t("alarm.challenge.tapInstruction", { count: taps * count });
+  }
+  if (type === "math") {
+    return t("alarm.challenge.mathInstruction", { count });
+  }
+  return t("alarm.challenge.dismissInstruction");
+}
+
 type GraceState = "idle" | "active" | "expired";
 
 const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGraceExpire }) => {
   const { t } = useTranslation();
+  const [started, setStarted] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [challengeKey, setChallengeKey] = useState(0);
 
@@ -93,6 +111,16 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
     startOrResetGrace();
   }, [startOrResetGrace]);
 
+  const handleStartSolving = useCallback(() => {
+    setStarted(true);
+    // Silence alarm
+    onGraceStart?.();
+    // Start grace timer if configured
+    if (graceDuration > 0) {
+      startOrResetGrace();
+    }
+  }, [onGraceStart, graceDuration, startOrResetGrace]);
+
   const handleChallengeComplete = useCallback(() => {
     const newCount = completedCount + 1;
     setCompletedCount(newCount);
@@ -101,6 +129,7 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
       clearGraceTimer();
       onAllComplete();
     } else {
+      // Reset grace for next round but keep started — no sound restart
       clearGraceTimer();
       graceStartTimeRef.current = 0;
       graceExpiredRef.current = false;
@@ -146,7 +175,16 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
         </VStack>
       )}
 
-      {type === "tap" ? (
+      {!started ? (
+        <VStack gap="$4" alignItems="center" width="100%">
+          <Text size="sm" color="$typographySecondary" textAlign="center">
+            {getChallengeInstruction(t, type, difficulty, count)}
+          </Text>
+          <Button size="xl" width="100%" onPress={handleStartSolving}>
+            <Button.Text size="lg">{t("alarm.challenge.startSolving")}</Button.Text>
+          </Button>
+        </VStack>
+      ) : type === "tap" ? (
         <TapChallenge
           key={challengeKey}
           difficulty={difficulty}

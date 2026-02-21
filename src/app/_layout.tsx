@@ -2,6 +2,7 @@ import "@tamagui/native/setup-zeego";
 import "@/localization/i18n";
 import "@tamagui/linear-gradient";
 
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "react-native";
@@ -94,11 +95,17 @@ export default function RootLayout() {
   const { mode, locale } = useAppStore();
   const systemScheme = useColorScheme();
 
-  const [fontsLoaded] = useLoadFonts();
+  const [fontsLoaded, fontError] = useLoadFonts();
   useInitialSetup();
 
-  if (fontsLoaded) {
-    SplashScreen.hideAsync();
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
   }
 
   const resolvedTheme =
