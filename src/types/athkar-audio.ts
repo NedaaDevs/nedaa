@@ -12,7 +12,7 @@ export type MachineState = "idle" | "loading" | "playing" | "crossfading" | "pau
 export const VALID_TRANSITIONS: Record<MachineState, MachineState[]> = {
   idle: ["loading"],
   loading: ["playing", "error", "idle"],
-  playing: ["crossfading", "paused", "idle", "error", "loading"],
+  playing: ["crossfading", "paused", "idle", "error", "loading", "playing"],
   crossfading: ["playing", "error", "idle"],
   paused: ["loading", "idle", "playing"],
   error: ["loading", "idle"],

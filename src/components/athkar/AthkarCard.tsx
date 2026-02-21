@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -28,7 +29,6 @@ import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
 
 import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
-import { athkarPlayer } from "@/services/athkar-player";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 type Props = {
@@ -43,6 +43,7 @@ type Props = {
 
 const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const { incrementCount, decrementCount } = useAthkarStore();
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
   const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
@@ -153,7 +154,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                         onRequestOnboarding();
                         return;
                       }
-                      athkarPlayer.jumpTo(athkar.id, currentCount);
+                      router.push("/athkar-focus");
                     }}
                     width={32}
                     height={32}
