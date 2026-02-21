@@ -37,7 +37,7 @@ import { Icon } from "@/components/ui/icon";
 
 import { AthkarFocusCompletion } from "@/components/athkar/AthkarFocusCompletion";
 import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
-import AudioControls from "@/components/athkar/AudioControls";
+import AudioControls, { CollapsedAudioBar } from "@/components/athkar/AudioControls";
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 
 // Stores
@@ -54,7 +54,6 @@ import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
-import { useAthkarAudioBridge } from "@/hooks/useAthkarAudioBridge";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -85,9 +84,6 @@ const AthkarFocusScreen = () => {
   const hapticSuccess = useHaptic("success");
   const hapticWarning = useHaptic("warning");
 
-  // Audio bridge
-  useAthkarAudioBridge();
-
   const {
     morningAthkarList,
     eveningAthkarList,
@@ -112,10 +108,10 @@ const AthkarFocusScreen = () => {
   const audioPlay = useAthkarAudioStore((s) => s.play);
   const audioPause = useAthkarAudioStore((s) => s.pause);
   const audioResume = useAthkarAudioStore((s) => s.resume);
-  const audioNext = useAthkarAudioStore((s) => s.next);
-  const audioPrevious = useAthkarAudioStore((s) => s.previous);
   const audioStop = useAthkarAudioStore((s) => s.stop);
   const audioDismiss = useAthkarAudioStore((s) => s.dismiss);
+  const audioControlsExpanded = useAthkarAudioStore((s) => s.audioControlsExpanded);
+  const setAudioControlsExpanded = useAthkarAudioStore((s) => s.setAudioControlsExpanded);
 
   const audioDuration = useAthkarAudioStore((s) => s.audioDuration);
   const audioPosition = useAthkarAudioStore((s) => s.audioPosition);
@@ -204,6 +200,14 @@ const AthkarFocusScreen = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto-show onboarding for users who haven't completed setup
+  useEffect(() => {
+    if (!onboardingCompleted) {
+      const timer = setTimeout(() => setShowOnboarding(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [onboardingCompleted]);
+
   // Get current athkar and progress using store's currentAthkarIndex
   const currentAthkar = currentAthkarList[currentAthkarIndex];
 
@@ -261,7 +265,11 @@ const AthkarFocusScreen = () => {
 
   // Sync audio player when user navigates to different thikr
   useEffect(() => {
-    if (showAudioControls && currentAthkar && playerState !== "idle") {
+    if (
+      showAudioControls &&
+      currentAthkar &&
+      (playerState === "playing" || playerState === "paused")
+    ) {
       athkarPlayer.jumpTo(currentAthkar.id, currentCount);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -339,7 +347,7 @@ const AthkarFocusScreen = () => {
 
   // Stop audio when shortVersion changes (athkar list changes)
   useEffect(() => {
-    if (playerState !== "idle" && playerState !== "completed") {
+    if (playerState !== "idle") {
       audioStop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -482,14 +490,20 @@ const AthkarFocusScreen = () => {
   ]);
 
   const handleAudioNext = useCallback(() => {
-    audioNext();
     moveToNext();
-  }, [audioNext, moveToNext]);
+  }, [moveToNext]);
 
   const handleAudioPrevious = useCallback(() => {
-    audioPrevious();
     moveToPrevious();
-  }, [audioPrevious, moveToPrevious]);
+  }, [moveToPrevious]);
+
+  const handleCollapseControls = useCallback(() => {
+    setAudioControlsExpanded(false);
+  }, [setAudioControlsExpanded]);
+
+  const handleExpandControls = useCallback(() => {
+    setAudioControlsExpanded(true);
+  }, [setAudioControlsExpanded]);
 
   // Handle horizontal swipe for decrement
   const horizontalSwipe = Gesture.Pan()
@@ -820,11 +834,9 @@ const AthkarFocusScreen = () => {
                                 })}
                               </Text>
                             )}
-                            {(playerState === "loading" || playerState === "advancing") && (
+                            {playerState === "loading" && (
                               <Text size="xs" color="$primary" style={{ marginTop: 4 }}>
-                                {playerState === "loading"
-                                  ? t("athkar.audio.loading")
-                                  : t("athkar.audio.nextThikr")}
+                                {t("athkar.audio.loading")}
                               </Text>
                             )}
                           </VStack>
@@ -933,13 +945,17 @@ const AthkarFocusScreen = () => {
         </GestureDetector>
 
         {/* Audio Controls — bottom strip */}
-        {showAudioControls && (
+        {showAudioControls && audioControlsExpanded && (
           <AudioControls
             onPlayPause={handlePlayPause}
             onNext={handleAudioNext}
             onPrevious={handleAudioPrevious}
-            onStop={audioDismiss}
+            onCollapse={handleCollapseControls}
+            onDismiss={audioDismiss}
           />
+        )}
+        {showAudioControls && !audioControlsExpanded && (
+          <CollapsedAudioBar onExpand={handleExpandControls} onPlayPause={handlePlayPause} />
         )}
       </Box>
 
