@@ -91,11 +91,9 @@ const AthkarAudioDebugScreen = () => {
                   action={
                     playerState === "playing"
                       ? "success"
-                      : playerState === "loading"
+                      : playerState === "loading" || playerState === "crossfading"
                         ? "warning"
-                        : playerState === "completed"
-                          ? "info"
-                          : "muted"
+                        : "muted"
                   }>
                   <Badge.Text>{playerState}</Badge.Text>
                 </Badge>
