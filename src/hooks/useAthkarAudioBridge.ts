@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Appearance, Image } from "react-native";
-import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from "expo-audio";
-
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import * as MediaControls from "expo-media-controls";
 
 import { athkarPlayer } from "@/services/athkar-player";
@@ -16,10 +15,23 @@ const log = AppLogger.create("athkar-audio");
 
 export const useAthkarAudioBridge = () => {
   const { t } = useTranslation();
-  const player = useAudioPlayer();
-  const status = useAudioPlayerStatus(player);
-  const playerIdRef = useRef(`athkar-audio-${Date.now()}-${Math.random()}`);
+  const playerA = useAudioPlayer();
+  const playerB = useAudioPlayer();
+  const statusA = useAudioPlayerStatus(playerA);
+  const statusB = useAudioPlayerStatus(playerB);
+
+  // Stable refs — update silently without re-running the main effect
+  const playerARef = useRef(playerA);
+  const playerBRef = useRef(playerB);
   const isMountedRef = useRef(true);
+
+  // Keep refs in sync with latest player instances (no effect re-run)
+  useEffect(() => {
+    playerARef.current = playerA;
+  }, [playerA]);
+  useEffect(() => {
+    playerBRef.current = playerB;
+  }, [playerB]);
 
   const incrementCount = useAthkarStore((s) => s.incrementCount);
 
@@ -31,21 +43,15 @@ export const useAthkarAudioBridge = () => {
   const setAudioDuration = useAthkarAudioStore((s) => s.setAudioDuration);
   const setAudioPosition = useAthkarAudioStore((s) => s.setAudioPosition);
 
+  // Bridge mounts ONCE — empty deps
   useEffect(() => {
     isMountedRef.current = true;
     log.i("Bridge", "Audio bridge mounted");
 
-    // Enable background audio and silent mode playback
-    setAudioModeAsync({
-      playsInSilentMode: true,
-      shouldPlayInBackground: true,
-      interruptionMode: "doNotMix",
-    });
+    // Pass stable refs to singleton
+    athkarPlayer.setPlayers(playerARef, playerBRef);
 
-    // Pass player to singleton
-    athkarPlayer.setPlayer(player, playerIdRef.current);
-
-    // Resolve app icons for lock screen artwork (light & dark variants)
+    // Resolve app icons for lock screen artwork
     const lightIcon = Image.resolveAssetSource(require("../../assets/images/icon.png"))?.uri;
     const darkIcon = Image.resolveAssetSource(require("../../assets/images/ios-dark.png"))?.uri;
 
@@ -67,11 +73,10 @@ export const useAthkarAudioBridge = () => {
 
       const isDark = Appearance.getColorScheme() === "dark";
       const artworkUrl = isDark ? darkIcon : lightIcon;
-
       return { title, artist, artworkUrl };
     });
 
-    // Enable lock screen next/previous track controls
+    // Lock screen next/previous controls
     MediaControls.enable();
     const nextSub = MediaControls.onRemoteNext(() => athkarPlayer.next());
     const prevSub = MediaControls.onRemotePrevious(() => athkarPlayer.previous());
@@ -105,6 +110,11 @@ export const useAthkarAudioBridge = () => {
           MessageToast.showWarning(t(`athkar.audio.${key}`));
         }
       },
+      onSessionComplete: () => {
+        if (isMountedRef.current) {
+          setPlayerState("idle");
+        }
+      },
     });
 
     return () => {
@@ -113,16 +123,25 @@ export const useAthkarAudioBridge = () => {
       MediaControls.disable();
       nextSub.remove();
       prevSub.remove();
-      athkarPlayer.notifyPlayerUnmount(playerIdRef.current);
+      athkarPlayer.notifyPlayerUnmount();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player]);
+  }, []);
 
-  // Feed real-time status from useAudioPlayerStatus to the singleton
+  // Feed status from active player only
   useEffect(() => {
     if (!isMountedRef.current) return;
-    athkarPlayer.onStatusUpdate(status);
-  }, [status]);
+    if (athkarPlayer.getActiveSlot() === "a") {
+      athkarPlayer.onStatusUpdate(statusA);
+    }
+  }, [statusA]);
 
-  return { player, playerId: playerIdRef.current };
+  useEffect(() => {
+    if (!isMountedRef.current) return;
+    if (athkarPlayer.getActiveSlot() === "b") {
+      athkarPlayer.onStatusUpdate(statusB);
+    }
+  }, [statusB]);
+
+  return { player: playerA };
 };
