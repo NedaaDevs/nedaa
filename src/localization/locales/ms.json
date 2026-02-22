@@ -130,6 +130,7 @@
   "athkar.audio.seekBar": "Kemajuan audio",
   "athkar.audio.seekHint": "Tekan dan seret untuk cari",
   "athkar.audio.stop": "Berhenti",
+  "athkar.audio.thikrProgress": "Zikir {{current}} daripada {{total}}",
   "athkar.audio.trackUnavailable": "Trek tidak tersedia, melangkau...",
   "athkar.audio.unavailableOffline": "Audio tidak tersedia luar talian",
   "athkar.focus.noAthkar": "Tiada azkar tersedia",
