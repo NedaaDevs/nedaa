@@ -1,7 +1,5 @@
 import { FC } from "react";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "expo-router";
-
 // Components
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -13,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Check, Minus, Volume2 } from "lucide-react-native";
+import { Check, Minus, Play, Pause } from "lucide-react-native";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
@@ -30,6 +28,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
+import { athkarPlayer } from "@/services/athkar-player";
 
 type Props = {
   athkar: Athkar;
@@ -43,11 +42,15 @@ type Props = {
 
 const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const { t, i18n } = useTranslation();
-  const router = useRouter();
   const { incrementCount, decrementCount } = useAthkarStore();
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
   const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
+  const currentAthkarId = useAthkarAudioStore((s) => s.currentAthkarId);
+  const playerState = useAthkarAudioStore((s) => s.playerState);
   const showAudioIcon = playbackMode !== PLAYBACK_MODE.OFF;
+
+  const isThisPlaying = currentAthkarId === athkar.id && playerState === "playing";
+  const isThisPaused = currentAthkarId === athkar.id && playerState === "paused";
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -154,15 +157,27 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                         onRequestOnboarding();
                         return;
                       }
-                      router.push("/athkar-focus");
+                      if (isThisPlaying) {
+                        athkarPlayer.pause();
+                      } else if (isThisPaused) {
+                        athkarPlayer.play();
+                      } else {
+                        athkarPlayer.jumpTo(athkar.id);
+                      }
                     }}
                     width={32}
                     height={32}
                     borderRadius={16}
-                    backgroundColor="$backgroundMuted"
+                    backgroundColor={
+                      isThisPlaying || isThisPaused ? "$primary" : "$backgroundMuted"
+                    }
                     alignItems="center"
                     justifyContent="center">
-                    <Icon as={Volume2} size="xs" color="$primary" />
+                    <Icon
+                      as={isThisPlaying ? Pause : Play}
+                      size="xs"
+                      color={isThisPlaying || isThisPaused ? "$typographyContrast" : "$primary"}
+                    />
                   </Pressable>
                 )}
                 {/* Count Display */}
