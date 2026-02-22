@@ -3,7 +3,6 @@ import { persist, createJSONStorage, devtools } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
-import { athkarPlayer } from "@/services/athkar-player";
 
 import type {
   AthkarAudioState,
@@ -20,19 +19,23 @@ const initialPlaybackState: Pick<
   AthkarAudioState,
   | "playerState"
   | "currentThikrId"
-  | "currentRepeat"
-  | "totalRepeats"
+  | "currentAthkarId"
+  | "repeatProgress"
   | "sessionProgress"
-  | "audioDuration"
-  | "audioPosition"
+  | "position"
+  | "duration"
+  | "showBottomSheet"
+  | "showCompletion"
 > = {
   playerState: "idle",
   currentThikrId: null,
-  currentRepeat: 0,
-  totalRepeats: 0,
+  currentAthkarId: null,
+  repeatProgress: { current: 0, total: 0 },
   sessionProgress: { current: 0, total: 0 },
-  audioDuration: 0,
-  audioPosition: 0,
+  position: 0,
+  duration: 0,
+  showBottomSheet: false,
+  showCompletion: false,
 };
 
 export const useAthkarAudioStore = create<AthkarAudioStore>()(
@@ -45,7 +48,6 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         repeatLimit: "all" as RepeatLimit,
         comfortMode: false,
         onboardingCompleted: false,
-        audioControlsExpanded: true,
 
         // Runtime playback state
         ...initialPlaybackState,
@@ -55,57 +57,27 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         downloadProgress: {},
         totalStorageUsed: 0,
 
-        // --- Playback actions (proxy to engine) ---
-        play: () => athkarPlayer.play(),
-        pause: () => athkarPlayer.pause(),
-        resume: () => athkarPlayer.resume(),
-        next: () => athkarPlayer.next(),
-        previous: () => athkarPlayer.previous(),
-        seekTo: (seconds: number) => athkarPlayer.seekTo(seconds),
-        stop: () => {
-          athkarPlayer.stop();
-          set(initialPlaybackState);
-        },
-        dismiss: () => {
-          athkarPlayer.dismiss();
-          set({ playerState: "idle" });
-        },
-
-        // --- State setters (called by bridge) ---
+        // --- State setters (called by athkarPlayer service only) ---
         setPlayerState: (state: PlayerState) => set({ playerState: state }),
-        setCurrentThikrId: (id: string | null) => set({ currentThikrId: id }),
-        setCurrentRepeat: (repeat: number) => set({ currentRepeat: repeat }),
-        setTotalRepeats: (total: number) => set({ totalRepeats: total }),
-        setSessionProgress: (progress: { current: number; total: number }) =>
-          set({ sessionProgress: progress }),
-        setAudioDuration: (duration: number) => set({ audioDuration: duration }),
-        setAudioPosition: (position: number) => set({ audioPosition: position }),
+        setCurrentTrack: (thikrId, athkarId) =>
+          set({ currentThikrId: thikrId, currentAthkarId: athkarId }),
+        setRepeatProgress: (progress) => set({ repeatProgress: progress }),
+        setSessionProgress: (progress) => set({ sessionProgress: progress }),
+        setPosition: (position: number) => set({ position }),
+        setDuration: (duration: number) => set({ duration }),
+        setShowBottomSheet: (show: boolean) => set({ showBottomSheet: show }),
+        setShowCompletion: (show: boolean) => set({ showCompletion: show }),
 
         // --- Settings actions ---
-        setPlaybackMode: (mode: PlaybackMode) => {
-          set({ playbackMode: mode });
-          athkarPlayer.setMode(mode);
-        },
+        setPlaybackMode: (mode: PlaybackMode) => set({ playbackMode: mode }),
 
         selectReciter: (id: string) => {
-          const { playerState } = get();
-          if (playerState !== "idle") {
-            athkarPlayer.stop();
-            set(initialPlaybackState);
-          }
-          set({ selectedReciterId: id });
+          set({ selectedReciterId: id, ...initialPlaybackState });
         },
 
-        setRepeatLimit: (limit: RepeatLimit) => {
-          set({ repeatLimit: limit });
-          athkarPlayer.setRepeatLimit(limit);
-        },
-
+        setRepeatLimit: (limit: RepeatLimit) => set({ repeatLimit: limit }),
         toggleComfortMode: () => set((state) => ({ comfortMode: !state.comfortMode })),
-
         setOnboardingCompleted: (completed: boolean) => set({ onboardingCompleted: completed }),
-
-        setAudioControlsExpanded: (expanded: boolean) => set({ audioControlsExpanded: expanded }),
 
         // --- Download actions ---
         setDownloadStatus: (thikrId: string, status: DownloadStatus) =>
@@ -134,7 +106,6 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
           repeatLimit: state.repeatLimit,
           comfortMode: state.comfortMode,
           onboardingCompleted: state.onboardingCompleted,
-          audioControlsExpanded: state.audioControlsExpanded,
         }),
       }
     ),
