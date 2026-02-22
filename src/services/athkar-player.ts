@@ -343,7 +343,7 @@ class AthkarPlayer {
     }
   }
 
-  async handleQueueEnded(_event: { track?: Track | null; position: number }): Promise<void> {
+  async handleQueueEnded(_event: { track?: number; position: number }): Promise<void> {
     if (this.handlingEnd) return;
 
     // Check if this is truly the end (last repeat of last track)
