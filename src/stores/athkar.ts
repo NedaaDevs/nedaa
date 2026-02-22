@@ -389,7 +389,7 @@ export const useAthkarStore = create<AthkarStore>()(
             return updates;
           }),
 
-        incrementCount: (athkarId) => {
+        incrementCount: (athkarId, skipAutoMove) => {
           const state = get();
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
@@ -433,8 +433,13 @@ export const useAthkarStore = create<AthkarStore>()(
             // Queue DB update (debounced)
             debouncedDBUpdate.add(athkarId, todayInt, athkarId, updatedItem.currentCount);
 
-            // Handle auto-move in focus mode
-            if (state.focusMode && updatedItem.completed && state.settings.autoMoveToNext) {
+            // Handle auto-move in focus mode (skipped when audio player drives navigation)
+            if (
+              !skipAutoMove &&
+              state.focusMode &&
+              updatedItem.completed &&
+              state.settings.autoMoveToNext
+            ) {
               requestAnimationFrame(() => get().moveToNext());
             }
 

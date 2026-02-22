@@ -401,7 +401,7 @@ class AthkarPlayer {
 
     // On natural advance: increment count for the completed track
     if (!wasManualSkip && this.previousAthkarId) {
-      this.athkarStore.incrementCount(this.previousAthkarId);
+      this.athkarStore.incrementCount(this.previousAthkarId, true);
     }
 
     // Smart pause when transitioning to a different thikr (natural advance only)
@@ -490,7 +490,7 @@ class AthkarPlayer {
 
     // Increment count for the last track in the session
     if (this.previousAthkarId) {
-      this.athkarStore.incrementCount(this.previousAthkarId);
+      this.athkarStore.incrementCount(this.previousAthkarId, true);
     }
 
     await this.handleSessionComplete();
