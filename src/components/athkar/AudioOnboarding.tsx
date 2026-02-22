@@ -1,7 +1,7 @@
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
-import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import TrackPlayer, { useProgress, useIsPlaying } from "react-native-track-player";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -47,43 +47,54 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
   const [cachedManifest, setCachedManifest] = useState<ReciterManifest | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
 
-  // Sample player
-  const samplePlayer = useAudioPlayer();
-  const sampleStatus = useAudioPlayerStatus(samplePlayer);
+  // Sample player via TrackPlayer
+  const { position, duration } = useProgress();
+  const { playing } = useIsPlaying();
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
-  const sampleProgress =
-    sampleStatus.duration > 0 ? sampleStatus.currentTime / sampleStatus.duration : 0;
+  const playingSampleIdRef = useRef<string | null>(null);
+  const sampleProgress = duration > 0 ? position / duration : 0;
+
+  // Keep ref in sync for use in non-reactive callbacks
+  useEffect(() => {
+    playingSampleIdRef.current = playingSampleId;
+  }, [playingSampleId]);
 
   // Detect sample completion via status
   useEffect(() => {
-    if (
-      playingSampleId &&
-      !sampleStatus.playing &&
-      sampleStatus.duration > 0 &&
-      sampleStatus.currentTime >= sampleStatus.duration - 0.1
-    ) {
+    if (playingSampleId && !playing && duration > 0 && position >= duration - 0.1) {
       setPlayingSampleId(null);
     }
-  }, [sampleStatus, playingSampleId]);
+  }, [playing, position, duration, playingSampleId]);
 
   const stopSample = useCallback(() => {
     try {
-      samplePlayer.pause();
+      TrackPlayer.pause();
     } catch {}
     setPlayingSampleId(null);
-  }, [samplePlayer]);
+  }, []);
 
   const playSample = useCallback(
     async (reciterId: string, url: string) => {
       stopSample();
       try {
-        await samplePlayer.replace({ uri: url });
-        await samplePlayer.play();
+        await TrackPlayer.load({ url, title: reciterId });
+        await TrackPlayer.play();
         setPlayingSampleId(reciterId);
       } catch {}
     },
-    [samplePlayer, stopSample]
+    [stopSample]
   );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (playingSampleIdRef.current) {
+        try {
+          TrackPlayer.pause();
+        } catch {}
+      }
+    };
+  }, []);
 
   // Stop sample when closing or selecting a different reciter
   useEffect(() => {

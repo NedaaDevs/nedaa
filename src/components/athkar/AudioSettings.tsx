@@ -1,9 +1,9 @@
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, ScrollView } from "react-native";
 import { router } from "expo-router";
 import * as Application from "expo-application";
-import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import TrackPlayer, { useProgress, useIsPlaying } from "react-native-track-player";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -74,51 +74,53 @@ const AudioSettings: FC = () => {
     return `Nedaa Athkar Audio\nApp: ${appVersion} (${buildNumber})\nReciter: ${selectedReciterId}\nMode: ${playbackMode}`;
   }, [selectedReciterId, playbackMode]);
 
-  // Sample player
-  const samplePlayer = useAudioPlayer();
-  const sampleStatus = useAudioPlayerStatus(samplePlayer);
+  // Sample player via TrackPlayer
+  const { position, duration } = useProgress();
+  const { playing } = useIsPlaying();
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
-  const sampleProgress =
-    sampleStatus.duration > 0 ? sampleStatus.currentTime / sampleStatus.duration : 0;
+  const playingSampleIdRef = useRef<string | null>(null);
+  const sampleProgress = duration > 0 ? position / duration : 0;
 
-  // Detect sample completion via status
+  // Keep ref in sync for use in non-reactive callbacks
   useEffect(() => {
-    if (
-      playingSampleId &&
-      !sampleStatus.playing &&
-      sampleStatus.duration > 0 &&
-      sampleStatus.currentTime >= sampleStatus.duration - 0.1
-    ) {
+    playingSampleIdRef.current = playingSampleId;
+  }, [playingSampleId]);
+
+  // Detect sample completion
+  useEffect(() => {
+    if (playingSampleId && !playing && duration > 0 && position >= duration - 0.1) {
       setPlayingSampleId(null);
     }
-  }, [sampleStatus, playingSampleId]);
+  }, [playing, position, duration, playingSampleId]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      try {
-        samplePlayer.pause();
-      } catch {}
+      if (playingSampleIdRef.current) {
+        try {
+          TrackPlayer.pause();
+        } catch {}
+      }
     };
-  }, [samplePlayer]);
+  }, []);
 
   const stopSample = useCallback(() => {
     try {
-      samplePlayer.pause();
+      TrackPlayer.pause();
     } catch {}
     setPlayingSampleId(null);
-  }, [samplePlayer]);
+  }, []);
 
   const playSample = useCallback(
     async (reciterId: string, url: string) => {
       stopSample();
       try {
-        await samplePlayer.replace({ uri: url });
-        await samplePlayer.play();
+        await TrackPlayer.load({ url, title: reciterId });
+        await TrackPlayer.play();
         setPlayingSampleId(reciterId);
       } catch {}
     },
-    [samplePlayer, stopSample]
+    [stopSample]
   );
 
   const refreshStorage = useCallback(async () => {

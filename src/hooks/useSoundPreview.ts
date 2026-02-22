@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAudioPlayer } from "expo-audio";
 
 // Utils
 import { soundPreviewManager } from "@/utils/sound";
@@ -26,12 +25,10 @@ type UseSoundPreviewReturn = {
 };
 
 export const useSoundPreview = (): UseSoundPreviewReturn => {
-  const player = useAudioPlayer();
   const { customSounds } = useCustomSoundsStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSound, setCurrentSound] = useState<string | null>(null);
   const isMountedRef = useRef(true);
-  const playerIdRef = useRef(`player-${Date.now()}-${Math.random()}`);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -54,38 +51,29 @@ export const useSoundPreview = (): UseSoundPreviewReturn => {
     return () => {
       isMountedRef.current = false;
       unsubscribe();
-      // Notify the manager that this player is unmounting
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      soundPreviewManager.notifyPlayerUnmount(playerIdRef.current);
     };
-  }, [player]);
+  }, []);
 
   const playPreview = useCallback(
     async <T extends NotificationType>(type: T, soundKey: NotificationSoundKey<T>) => {
       try {
-        await soundPreviewManager.playPreview(
-          type,
-          soundKey,
-          player,
-          playerIdRef.current,
-          customSounds
-        );
+        await soundPreviewManager.playPreview(type, soundKey, customSounds);
       } catch (error) {
         console.error("Error in playPreview:", error);
       }
     },
-    [player, customSounds]
+    [customSounds]
   );
 
   const stopPreview = useCallback(async () => {
     try {
-      await soundPreviewManager.stopPreview(player);
+      await soundPreviewManager.stopPreview();
     } catch (error) {
       console.error("Error in stopPreview:", error);
       // If we can't stop it properly, at least reset the state
       soundPreviewManager.forceReset();
     }
-  }, [player]);
+  }, []);
 
   const isPlayingSound = useCallback(
     <T extends NotificationType>(type: T, soundKey: NotificationSoundKey<T>): boolean => {
