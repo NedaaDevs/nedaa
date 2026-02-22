@@ -21,6 +21,7 @@ import { Icon } from "@/components/ui/icon";
 import { Play, Pause, SkipBack, SkipForward, X } from "lucide-react-native";
 
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
 import { AUDIO_UI } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
@@ -30,7 +31,8 @@ type Props = {
   onPlayPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-  onStop: () => void;
+  onCollapse: () => void;
+  onDismiss: () => void;
 };
 
 const formatTime = (seconds: number): string => {
@@ -47,19 +49,17 @@ const TOUCH_TARGET_HEIGHT = 44;
 const EASE_OUT = Easing.out(Easing.cubic);
 const EASE_IN = Easing.in(Easing.cubic);
 
-const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onStop }) => {
+const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse, onDismiss }) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const theme = useTheme();
   const hapticSelection = useHaptic("selection");
 
   const playerState = useAthkarAudioStore((s) => s.playerState);
-  const currentRepeat = useAthkarAudioStore((s) => s.currentRepeat);
-  const totalRepeats = useAthkarAudioStore((s) => s.totalRepeats);
-  const audioDuration = useAthkarAudioStore((s) => s.audioDuration);
-  const audioPosition = useAthkarAudioStore((s) => s.audioPosition);
+  const repeatProgress = useAthkarAudioStore((s) => s.repeatProgress);
+  const audioDuration = useAthkarAudioStore((s) => s.duration);
+  const audioPosition = useAthkarAudioStore((s) => s.position);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
-  const seekTo = useAthkarAudioStore((s) => s.seekTo);
 
   const isPlaying = playerState === "playing";
   const isLoading = playerState === "loading";
@@ -97,11 +97,11 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onStop }) =
     (progress: number) => {
       if (audioDuration > 0) {
         const clamped = Math.max(0, Math.min(1, progress));
-        seekTo(clamped * audioDuration);
+        athkarPlayer.seekTo(clamped * audioDuration);
       }
       setIsSeeking(false);
     },
-    [audioDuration, seekTo]
+    [audioDuration]
   );
 
   const enterSeekMode = useCallback(() => {
@@ -154,6 +154,36 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onStop }) =
       isSeeking_.value = false;
     });
 
+  // Swipe-down-to-collapse gesture
+  const swipeTranslateY = useSharedValue(0);
+
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetY(20)
+    .onUpdate((e) => {
+      if (isSeeking_.value) return;
+      if (e.translationY > 0) {
+        swipeTranslateY.value = e.translationY;
+      }
+    })
+    .onEnd((e) => {
+      if (isSeeking_.value) {
+        swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
+        return;
+      }
+      if (e.translationY > 50 && e.velocityY > 300) {
+        runOnJS(onCollapse)();
+      }
+      swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
+    })
+    .onFinalize(() => {
+      swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
+    });
+
+  const swipeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: swipeTranslateY.value }],
+    opacity: 1 - swipeTranslateY.value / 200,
+  }));
+
   const trackAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scaleY: trackScale.value }],
   }));
@@ -173,210 +203,283 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onStop }) =
   const trackVerticalPad = (TOUCH_TARGET_HEIGHT - TRACK_HEIGHT) / 2;
 
   return (
-    <Box
-      paddingHorizontal="$4"
-      paddingVertical="$3"
-      backgroundColor="$backgroundSecondary"
-      borderTopStartRadius="$6"
-      borderTopEndRadius="$6">
-      {/* Stop button — top end corner */}
-      <Pressable
-        onPress={onStop}
-        width={44}
-        height={44}
-        borderRadius={22}
-        alignItems="center"
-        justifyContent="center"
-        style={{ position: "absolute", top: 4, end: 4, zIndex: 1 }}
-        accessibilityLabel={t("athkar.audio.stop")}>
-        <Icon as={X} size="sm" color="$typographySecondary" />
-      </Pressable>
+    <GestureDetector gesture={swipeGesture}>
+      <Animated.View style={swipeAnimatedStyle}>
+        <Box
+          paddingHorizontal="$4"
+          paddingVertical="$3"
+          backgroundColor="$backgroundSecondary"
+          borderTopStartRadius="$6"
+          borderTopEndRadius="$6">
+          {/* Close button — tap to collapse, long-press to dismiss */}
+          <Pressable
+            onPress={onCollapse}
+            onLongPress={() => {
+              hapticSelection();
+              onDismiss();
+            }}
+            delayLongPress={500}
+            width={44}
+            height={44}
+            borderRadius={22}
+            alignItems="center"
+            justifyContent="center"
+            style={{ position: "absolute", top: 4, end: 4, zIndex: 1 }}
+            accessibilityLabel={t("athkar.audio.minimize", { defaultValue: "Minimize" })}
+            accessibilityHint={t("athkar.audio.minimizeHint", {
+              defaultValue: "Long press to stop",
+            })}>
+            <Icon as={X} size="sm" color="$typographySecondary" />
+          </Pressable>
 
-      <VStack gap="$2">
-        {/* Seekable progress bar */}
-        <VStack gap="$1">
-          <GestureDetector gesture={seekGesture}>
-            <View
-              onLayout={onTrackLayout}
-              onTouchStart={() => {
-                if (!seekHintShown.current && !isSeeking) {
-                  seekHintShown.current = true;
-                  setShowSeekHint(true);
-                  setTimeout(() => setShowSeekHint(false), 2000);
-                }
-              }}
-              style={{
-                paddingVertical: trackVerticalPad,
-                justifyContent: "center",
-                minHeight: TOUCH_TARGET_HEIGHT,
-              }}
-              accessibilityRole="adjustable"
-              accessibilityLabel={t("athkar.audio.seekBar", {
-                defaultValue: "Audio progress",
-              })}
-              accessibilityValue={{
-                min: 0,
-                max: 100,
-                now: Math.round(progressPercent * 100),
-              }}>
-              <Animated.View
-                style={[
-                  {
-                    height: TRACK_HEIGHT,
-                    borderRadius: TRACK_HEIGHT / 2,
-                    backgroundColor: theme.backgroundMuted.val,
-                    overflow: "visible",
-                    justifyContent: "center",
-                  },
-                  trackAnimatedStyle,
-                ]}>
-                {/* Filled track */}
-                <Animated.View
-                  style={[
-                    {
-                      position: "absolute",
-                      top: 0,
-                      bottom: 0,
-                      start: 0,
-                      borderRadius: TRACK_HEIGHT / 2,
-                    },
-                    filledTrackStyle,
-                  ]}>
-                  <View
-                    style={{
-                      flex: 1,
-                      borderRadius: TRACK_HEIGHT / 2,
-                      backgroundColor: theme.primary.val,
-                    }}
-                  />
-                </Animated.View>
-              </Animated.View>
-
-              {/* Thumb */}
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    width: THUMB_SIZE,
-                    height: THUMB_SIZE,
-                    borderRadius: THUMB_SIZE / 2,
-                    marginStart: -(THUMB_SIZE / 2),
-                    top: trackVerticalPad - THUMB_SIZE / 2 + TRACK_HEIGHT / 2,
-                  },
-                  thumbStyle,
-                ]}>
+          <VStack gap="$2">
+            {/* Seekable progress bar */}
+            <VStack gap="$1">
+              <GestureDetector gesture={seekGesture}>
                 <View
-                  style={{
-                    flex: 1,
-                    borderRadius: THUMB_SIZE / 2,
-                    backgroundColor: theme.primary.val,
+                  onLayout={onTrackLayout}
+                  onTouchStart={() => {
+                    if (!seekHintShown.current && !isSeeking) {
+                      seekHintShown.current = true;
+                      setShowSeekHint(true);
+                      setTimeout(() => setShowSeekHint(false), 2000);
+                    }
                   }}
-                />
-              </Animated.View>
-            </View>
-          </GestureDetector>
+                  style={{
+                    paddingVertical: trackVerticalPad,
+                    justifyContent: "center",
+                    minHeight: TOUCH_TARGET_HEIGHT,
+                  }}
+                  accessibilityRole="adjustable"
+                  accessibilityLabel={t("athkar.audio.seekBar", {
+                    defaultValue: "Audio progress",
+                  })}
+                  accessibilityValue={{
+                    min: 0,
+                    max: 100,
+                    now: Math.round(progressPercent * 100),
+                  }}>
+                  <Animated.View
+                    style={[
+                      {
+                        height: TRACK_HEIGHT,
+                        borderRadius: TRACK_HEIGHT / 2,
+                        backgroundColor: theme.backgroundMuted.val,
+                        overflow: "visible",
+                        justifyContent: "center",
+                      },
+                      trackAnimatedStyle,
+                    ]}>
+                    {/* Filled track */}
+                    <Animated.View
+                      style={[
+                        {
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          start: 0,
+                          borderRadius: TRACK_HEIGHT / 2,
+                        },
+                        filledTrackStyle,
+                      ]}>
+                      <View
+                        style={{
+                          flex: 1,
+                          borderRadius: TRACK_HEIGHT / 2,
+                          backgroundColor: theme.primary.val,
+                        }}
+                      />
+                    </Animated.View>
+                  </Animated.View>
 
-          {/* Seek hint — shown once on first tap */}
-          {showSeekHint && (
-            <Text size="xs" color="$primary" textAlign="center" marginTop="$1">
-              {t("athkar.audio.seekHint")}
-            </Text>
-          )}
+                  {/* Thumb */}
+                  <Animated.View
+                    style={[
+                      {
+                        position: "absolute",
+                        width: THUMB_SIZE,
+                        height: THUMB_SIZE,
+                        borderRadius: THUMB_SIZE / 2,
+                        marginStart: -(THUMB_SIZE / 2),
+                        top: trackVerticalPad - THUMB_SIZE / 2 + TRACK_HEIGHT / 2,
+                      },
+                      thumbStyle,
+                    ]}>
+                    <View
+                      style={{
+                        flex: 1,
+                        borderRadius: THUMB_SIZE / 2,
+                        backgroundColor: theme.primary.val,
+                      }}
+                    />
+                  </Animated.View>
+                </View>
+              </GestureDetector>
 
-          {/* Time display */}
-          {isSeeking ? (
-            <HStack justifyContent="space-between">
-              <Text size="xs" color="$primary" fontWeight="500">
-                {formatTime(seekDisplayTime)}
-              </Text>
-              <Text size="xs" color="$typographySecondary">
-                {formatTime(audioDuration)}
-              </Text>
+              {/* Seek hint — shown once on first tap */}
+              {showSeekHint && (
+                <Text size="xs" color="$primary" textAlign="center" marginTop="$1">
+                  {t("athkar.audio.seekHint")}
+                </Text>
+              )}
+
+              {/* Time display */}
+              {isSeeking ? (
+                <HStack justifyContent="space-between">
+                  <Text size="xs" color="$primary" fontWeight="500">
+                    {formatTime(seekDisplayTime)}
+                  </Text>
+                  <Text size="xs" color="$typographySecondary">
+                    {formatTime(audioDuration)}
+                  </Text>
+                </HStack>
+              ) : (
+                audioDuration > 0 && (
+                  <HStack justifyContent="space-between">
+                    <Text size="xs" color="$typographySecondary">
+                      {formatTime(audioPosition)}
+                    </Text>
+                    <Text size="xs" color="$typographySecondary">
+                      {formatTime(audioDuration)}
+                    </Text>
+                  </HStack>
+                )
+              )}
+            </VStack>
+
+            {/* Controls row */}
+            <HStack justifyContent="center" alignItems="center" gap={AUDIO_UI.CONTROL_GAP * 3}>
+              {/* Previous */}
+              <Pressable
+                onPress={onPrevious}
+                width={controlSize}
+                height={controlSize}
+                borderRadius={controlSize / 2}
+                backgroundColor="$backgroundMuted"
+                alignItems="center"
+                justifyContent="center"
+                accessibilityLabel={t("athkar.audio.previous")}>
+                <Icon as={PrevIcon} size="md" color="$typography" />
+                {comfortMode && (
+                  <Text size="xs" color="$typographySecondary">
+                    {t("athkar.audio.previous")}
+                  </Text>
+                )}
+              </Pressable>
+
+              {/* Play/Pause */}
+              <Pressable
+                onPress={onPlayPause}
+                width={playSize}
+                height={playSize}
+                borderRadius={playSize / 2}
+                backgroundColor="$primary"
+                alignItems="center"
+                justifyContent="center"
+                opacity={isLoading ? 0.6 : 1}
+                disabled={isLoading}
+                accessibilityLabel={isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}>
+                <Icon as={isPlaying ? Pause : Play} size="lg" color="$typographyContrast" />
+                {comfortMode && (
+                  <Text size="xs" color="$typographyContrast">
+                    {isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}
+                  </Text>
+                )}
+              </Pressable>
+
+              {/* Next */}
+              <Pressable
+                onPress={onNext}
+                width={controlSize}
+                height={controlSize}
+                borderRadius={controlSize / 2}
+                backgroundColor="$backgroundMuted"
+                alignItems="center"
+                justifyContent="center"
+                accessibilityLabel={t("athkar.audio.next")}>
+                <Icon as={NextIcon} size="md" color="$typography" />
+                {comfortMode && (
+                  <Text size="xs" color="$typographySecondary">
+                    {t("athkar.audio.next")}
+                  </Text>
+                )}
+              </Pressable>
             </HStack>
-          ) : (
-            audioDuration > 0 && (
-              <HStack justifyContent="space-between">
-                <Text size="xs" color="$typographySecondary">
-                  {formatTime(audioPosition)}
-                </Text>
-                <Text size="xs" color="$typographySecondary">
-                  {formatTime(audioDuration)}
-                </Text>
-              </HStack>
-            )
-          )}
-        </VStack>
 
-        {/* Controls row */}
-        <HStack justifyContent="center" alignItems="center" gap={AUDIO_UI.CONTROL_GAP * 3}>
-          {/* Previous */}
-          <Pressable
-            onPress={onPrevious}
-            width={controlSize}
-            height={controlSize}
-            borderRadius={controlSize / 2}
-            backgroundColor="$backgroundMuted"
-            alignItems="center"
-            justifyContent="center"
-            accessibilityLabel={t("athkar.audio.previous")}>
-            <Icon as={PrevIcon} size="md" color="$typography" />
-            {comfortMode && (
-              <Text size="xs" color="$typographySecondary">
-                {t("athkar.audio.previous")}
+            {/* Repeat counter */}
+            {repeatProgress.total > 1 && (
+              <Text size="xs" color="$typographySecondary" textAlign="center">
+                {t("athkar.audio.repeatCount", {
+                  current: formatNumberToLocale(`${repeatProgress.current}`),
+                  total: formatNumberToLocale(`${repeatProgress.total}`),
+                })}
               </Text>
             )}
-          </Pressable>
+          </VStack>
+        </Box>
+      </Animated.View>
+    </GestureDetector>
+  );
+};
 
-          {/* Play/Pause */}
-          <Pressable
-            onPress={onPlayPause}
-            width={playSize}
-            height={playSize}
-            borderRadius={playSize / 2}
+// Compact bar shown when audio controls are collapsed
+type CollapsedBarProps = {
+  onExpand: () => void;
+  onPlayPause: () => void;
+};
+
+export const CollapsedAudioBar: FC<CollapsedBarProps> = ({ onExpand, onPlayPause }) => {
+  const { t } = useTranslation();
+
+  const playerState = useAthkarAudioStore((s) => s.playerState);
+  const sessionProgress = useAthkarAudioStore((s) => s.sessionProgress);
+
+  const isPlaying = playerState === "playing";
+  const isLoading = playerState === "loading";
+  const progressPercent =
+    sessionProgress.total > 0 ? sessionProgress.current / sessionProgress.total : 0;
+
+  return (
+    <Pressable
+      onPress={onExpand}
+      accessibilityLabel={t("athkar.audio.expand", { defaultValue: "Expand audio controls" })}>
+      <HStack
+        height={48}
+        paddingHorizontal="$4"
+        backgroundColor="$backgroundSecondary"
+        borderTopStartRadius="$6"
+        borderTopEndRadius="$6"
+        alignItems="center"
+        gap="$3">
+        {/* Play/Pause mini button */}
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onPlayPause();
+          }}
+          width={36}
+          height={36}
+          borderRadius={18}
+          backgroundColor="$primary"
+          alignItems="center"
+          justifyContent="center"
+          opacity={isLoading ? 0.6 : 1}
+          disabled={isLoading}
+          accessibilityLabel={isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}>
+          <Icon as={isPlaying ? Pause : Play} size="sm" color="$typographyContrast" />
+        </Pressable>
+
+        {/* Session progress bar */}
+        <Box flex={1} height={4} borderRadius={2} backgroundColor="$backgroundMuted">
+          <Box
+            height={4}
+            borderRadius={2}
             backgroundColor="$primary"
-            alignItems="center"
-            justifyContent="center"
-            opacity={isLoading ? 0.6 : 1}
-            disabled={isLoading}
-            accessibilityLabel={isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}>
-            <Icon as={isPlaying ? Pause : Play} size="lg" color="$typographyContrast" />
-            {comfortMode && (
-              <Text size="xs" color="$typographyContrast">
-                {isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}
-              </Text>
-            )}
-          </Pressable>
-
-          {/* Next */}
-          <Pressable
-            onPress={onNext}
-            width={controlSize}
-            height={controlSize}
-            borderRadius={controlSize / 2}
-            backgroundColor="$backgroundMuted"
-            alignItems="center"
-            justifyContent="center"
-            accessibilityLabel={t("athkar.audio.next")}>
-            <Icon as={NextIcon} size="md" color="$typography" />
-            {comfortMode && (
-              <Text size="xs" color="$typographySecondary">
-                {t("athkar.audio.next")}
-              </Text>
-            )}
-          </Pressable>
-        </HStack>
-
-        {/* Repeat counter */}
-        {totalRepeats > 1 && (
-          <Text size="xs" color="$typographySecondary" textAlign="center">
-            {t("athkar.audio.repeatCount", {
-              current: formatNumberToLocale(`${currentRepeat}`),
-              total: formatNumberToLocale(`${totalRepeats}`),
-            })}
-          </Text>
-        )}
-      </VStack>
-    </Box>
+            style={{ width: `${progressPercent * 100}%` }}
+          />
+        </Box>
+      </HStack>
+    </Pressable>
   );
 };
 
