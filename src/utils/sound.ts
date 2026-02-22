@@ -1,4 +1,5 @@
-import { useAudioPlayer, AudioSource } from "expo-audio";
+import { Image } from "react-native";
+import TrackPlayer from "react-native-track-player";
 
 // Constants
 import { SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
@@ -7,6 +8,9 @@ import { SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
 import type { NotificationType } from "@/types/notification";
 import type { SoundOption, SoundAsset } from "@/types/sound";
 import type { CustomSound } from "@/types/customSound";
+
+// Stores
+import { useAthkarAudioStore } from "@/stores/athkar-audio";
 
 // Utils
 import { isCustomSoundKey } from "@/utils/customSoundHelpers";
@@ -44,7 +48,7 @@ export const getNotificationSound = <T extends NotificationType>(
 export const getPreviewSource = <T extends NotificationType>(
   type: T,
   soundKey: string
-): AudioSource | null => {
+): string | number | null => {
   const asset = getSoundAsset(type, soundKey);
   return asset?.previewSource ?? null;
 };
@@ -58,6 +62,20 @@ export const isSoundPreviewable = <T extends NotificationType>(
   return asset?.previewSource !== null;
 };
 
+// Resolve a preview source (require() number or URI string) to a TrackPlayer-compatible URL
+function resolveSourceUrl(source: string | number): string | null {
+  if (typeof source === "string") {
+    return source;
+  }
+  // require() returns a number — resolve via Image.resolveAssetSource
+  try {
+    const resolved = Image.resolveAssetSource(source);
+    return resolved?.uri ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Event emitter for state synchronization
 type SoundPreviewListener = () => void;
 
@@ -67,8 +85,6 @@ class SoundPreviewManager {
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
   private listeners: Set<SoundPreviewListener> = new Set();
-  private currentSoundSource: AudioSource | null = null;
-  private currentPlayerId: string | null = null;
 
   private constructor() {}
 
@@ -96,10 +112,14 @@ class SoundPreviewManager {
   async playPreview<T extends NotificationType>(
     type: T,
     soundKey: string,
-    player: ReturnType<typeof useAudioPlayer>,
-    playerId: string,
     customSounds?: import("@/types/customSound").CustomSound[]
   ): Promise<void> {
+    // Guard: don't interrupt active athkar playback
+    const athkarState = useAthkarAudioStore.getState().playerState;
+    if (athkarState === "playing" || athkarState === "loading") {
+      return;
+    }
+
     // Check if it's a custom sound
     const isCustom = isCustomSoundKey(soundKey);
 
@@ -124,25 +144,19 @@ class SoundPreviewManager {
         if (this.isPlaying) {
           this.isPlaying = false;
           this.currentSoundId = null;
-          this.currentPlayerId = null;
           this.notifyListeners();
         }
 
         this.isPlaying = true;
         this.currentSoundId = soundId;
-        this.currentSoundSource = customSound.contentUri;
-        this.currentPlayerId = playerId;
         this.notifyListeners();
 
-        // Play custom sound from content URI
-        await player.replace(customSound.contentUri);
-        await player.play();
+        await TrackPlayer.load({ url: customSound.contentUri, title: soundKey });
+        await TrackPlayer.play();
       } catch (error) {
         console.error("Error playing custom sound preview:", error);
         this.isPlaying = false;
         this.currentSoundId = null;
-        this.currentSoundSource = null;
-        this.currentPlayerId = null;
         this.notifyListeners();
         throw error;
       }
@@ -168,53 +182,49 @@ class SoundPreviewManager {
       return;
     }
 
+    const url = resolveSourceUrl(soundSource);
+    if (!url) {
+      console.error(`Could not resolve preview source URL: ${type}.${soundKey}`);
+      return;
+    }
+
     const soundId = `${type}.${soundKey}`;
 
     try {
       // Stop any currently playing sound first
       if (this.isPlaying) {
-        // Just update state, don't try to stop old player
         this.isPlaying = false;
         this.currentSoundId = null;
-        this.currentPlayerId = null;
         this.notifyListeners();
       }
 
       this.isPlaying = true;
       this.currentSoundId = soundId;
-      this.currentSoundSource = soundSource;
-      this.currentPlayerId = playerId;
       this.notifyListeners();
 
-      await player.replace(soundSource);
-      await player.play();
+      await TrackPlayer.load({ url, title: soundKey });
+      await TrackPlayer.play();
     } catch (error) {
       console.error("Error playing sound preview:", error);
       this.isPlaying = false;
       this.currentSoundId = null;
-      this.currentSoundSource = null;
-      this.currentPlayerId = null;
       this.notifyListeners();
       throw error;
     }
   }
 
-  async stopPreview(player: ReturnType<typeof useAudioPlayer>): Promise<void> {
+  async stopPreview(): Promise<void> {
     try {
-      await player.pause();
-      await player.seekTo(0);
+      await TrackPlayer.pause();
+      await TrackPlayer.seekTo(0);
       this.isPlaying = false;
       this.currentSoundId = null;
-      this.currentSoundSource = null;
-      this.currentPlayerId = null;
       this.notifyListeners();
     } catch (error) {
       console.error("Error stopping sound preview:", error);
       // Force reset state even if error occurs
       this.isPlaying = false;
       this.currentSoundId = null;
-      this.currentSoundSource = null;
-      this.currentPlayerId = null;
       this.notifyListeners();
     }
   }
@@ -230,28 +240,10 @@ class SoundPreviewManager {
     return this.currentSoundId;
   }
 
-  getCurrentSoundSource(): AudioSource | null {
-    return this.currentSoundSource;
-  }
-
-  // Notify when a player is unmounting
-  notifyPlayerUnmount(playerId: string): void {
-    if (this.currentPlayerId === playerId) {
-      // The player that was playing is unmounting, so reset state
-      this.isPlaying = false;
-      this.currentSoundId = null;
-      this.currentSoundSource = null;
-      this.currentPlayerId = null;
-      this.notifyListeners();
-    }
-  }
-
   // Force reset state (useful for cleanup)
   forceReset(): void {
     this.isPlaying = false;
     this.currentSoundId = null;
-    this.currentSoundSource = null;
-    this.currentPlayerId = null;
     this.notifyListeners();
   }
 }
