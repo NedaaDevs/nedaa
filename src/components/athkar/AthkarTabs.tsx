@@ -12,7 +12,6 @@ import { Fab, FabIcon } from "@/components/ui/fab";
 import { Icon } from "@/components/ui/icon";
 
 import AthkarList from "@/components/athkar/AthkarList";
-import MiniPlayer from "@/components/athkar/MiniPlayer";
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 
 // Stores
@@ -21,11 +20,13 @@ import { useAthkarAudioStore } from "@/stores/athkar-audio";
 
 // Hooks
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
-import { useAthkarAudioBridge } from "@/hooks/useAthkarAudioBridge";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { AUDIO_UI } from "@/constants/AthkarAudio";
+
+// Services
+import { athkarPlayer } from "@/services/athkar-player";
 
 // Icons
 import { Sun, Moon, Focus } from "lucide-react-native";
@@ -41,15 +42,11 @@ const AthkarTabs = () => {
   const router = useRouter();
 
   const { setCurrentType, validateDailyStreak } = useAthkarStore();
-  const audioStop = useAthkarAudioStore((s) => s.stop);
   const playerState = useAthkarAudioStore((s) => s.playerState);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
 
   const isPlayerActive =
-    playerState === "playing" ||
-    playerState === "paused" ||
-    playerState === "loading" ||
-    playerState === "crossfading";
+    playerState === "playing" || playerState === "paused" || playerState === "loading";
   const miniPlayerHeight = comfortMode
     ? AUDIO_UI.MINI_PLAYER_HEIGHT_COMFORT
     : AUDIO_UI.MINI_PLAYER_HEIGHT;
@@ -64,9 +61,6 @@ const AthkarTabs = () => {
 
   // Initialize athkar data
   useInitializeAthkar();
-
-  // Mount audio bridge for background playback
-  useAthkarAudioBridge();
 
   // Check for daily reset and validate streak on mount
   useEffect(() => {
@@ -88,7 +82,7 @@ const AthkarTabs = () => {
           <Pressable
             onPress={() => {
               if (activeTab !== ATHKAR_TYPE.MORNING && playerState !== "idle") {
-                audioStop();
+                athkarPlayer.stop();
               }
               setActiveTab(ATHKAR_TYPE.MORNING);
               setCurrentType(ATHKAR_TYPE.MORNING);
@@ -128,7 +122,7 @@ const AthkarTabs = () => {
           <Pressable
             onPress={() => {
               if (activeTab !== ATHKAR_TYPE.EVENING && playerState !== "idle") {
-                audioStop();
+                athkarPlayer.stop();
               }
               setActiveTab(ATHKAR_TYPE.EVENING);
               setCurrentType(ATHKAR_TYPE.EVENING);
@@ -172,9 +166,6 @@ const AthkarTabs = () => {
           <AthkarList type={activeTab} onRequestOnboarding={handleRequestOnboarding} />
         </Box>
       </ScrollView>
-
-      {/* Mini Player — shows when audio is active */}
-      <MiniPlayer />
 
       <Fab
         onPress={() => router.push("/athkar-focus")}
