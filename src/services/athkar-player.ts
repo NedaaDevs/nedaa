@@ -213,7 +213,11 @@ class AthkarPlayer {
     const queue = await TrackPlayer.getQueue();
 
     if (currentIndex !== undefined && currentIndex !== null && currentIndex < queue.length - 1) {
-      await TrackPlayer.skipToNext();
+      try {
+        await TrackPlayer.skipToNext();
+      } catch (error) {
+        log.w("Player", `next skip failed: ${(error as Error)?.message}`);
+      }
     } else {
       await this.handleSessionComplete();
     }
@@ -227,7 +231,11 @@ class AthkarPlayer {
     const currentIndex = await TrackPlayer.getActiveTrackIndex();
 
     if (currentIndex !== undefined && currentIndex !== null && currentIndex > 0) {
-      await TrackPlayer.skipToPrevious();
+      try {
+        await TrackPlayer.skipToPrevious();
+      } catch (error) {
+        log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
+      }
     } else {
       await TrackPlayer.seekTo(0);
     }
@@ -266,9 +274,13 @@ class AthkarPlayer {
     this.handlingEnd = false;
     this.currentRepeat = 0;
 
-    await TrackPlayer.skip(trackIndex);
-    await TrackPlayer.play();
-    this.setPlayerState("playing");
+    try {
+      await TrackPlayer.skip(trackIndex);
+      await TrackPlayer.play();
+      this.setPlayerState("playing");
+    } catch (error) {
+      log.w("Player", `jumpTo skip/play failed: ${(error as Error)?.message}`);
+    }
   }
 
   async startAndJumpTo(athkarId: string): Promise<void> {
@@ -399,6 +411,13 @@ class AthkarPlayer {
     await this.handleSessionComplete();
   }
 
+  handlePlaybackError(event: { code?: string; message?: string }): void {
+    log.e(
+      "Player",
+      `Playback error: ${event.code ?? "unknown"} — ${event.message ?? "no message"}`
+    );
+  }
+
   // ─── Repeat Handling ───────────────────────────────────────────────
 
   private async handleRepeatOrAdvance(): Promise<void> {
@@ -453,9 +472,14 @@ class AthkarPlayer {
     if (currentIndex !== undefined && currentIndex !== null && currentIndex < queue.length - 1) {
       this.currentRepeat = 0;
       this.handlingEnd = false;
-      await TrackPlayer.skipToNext();
-      await TrackPlayer.play();
-      this.setPlayerState("playing");
+      try {
+        await TrackPlayer.skipToNext();
+        await TrackPlayer.play();
+        this.setPlayerState("playing");
+      } catch (error) {
+        log.w("Player", `advance failed: ${(error as Error)?.message}`);
+        this.handlingEnd = false;
+      }
     } else {
       await this.handleSessionComplete();
     }
