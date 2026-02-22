@@ -6,24 +6,13 @@ export type PlaybackMode = (typeof PLAYBACK_MODE)[keyof typeof PLAYBACK_MODE];
 // Repeat limit
 export type RepeatLimit = (typeof REPEAT_LIMIT_OPTIONS)[number]["value"];
 
-// State machine
-export type MachineState = "idle" | "loading" | "playing" | "crossfading" | "paused" | "error";
-
-export const VALID_TRANSITIONS: Record<MachineState, MachineState[]> = {
-  idle: ["loading"],
-  loading: ["playing", "error", "idle"],
-  playing: ["crossfading", "paused", "idle", "error", "loading", "playing"],
-  crossfading: ["playing", "error", "idle"],
-  paused: ["loading", "idle", "playing"],
-  error: ["loading", "idle"],
-};
-
-export type PlayerState = MachineState;
+// Player state — no more crossfading
+export type PlayerState = "idle" | "loading" | "playing" | "paused" | "ended";
 
 // Download status
 export type DownloadStatus = "pending" | "downloading" | "complete" | "failed";
 
-// Reciter catalog entry (from API)
+// Reciter catalog entry (from API) — UNCHANGED
 export type ReciterCatalogEntry = {
   id: string;
   name: Record<string, string>;
@@ -36,20 +25,20 @@ export type ReciterCatalogEntry = {
   isDefault: boolean;
 };
 
-// Reciter catalog (from API)
+// Reciter catalog (from API) — UNCHANGED
 export type ReciterCatalog = {
   version: number;
   reciters: ReciterCatalogEntry[];
 };
 
-// Audio file entry in manifest
+// Audio file entry in manifest — UNCHANGED
 export type AudioFileEntry = {
   url: string;
   duration: number;
   size: number;
 };
 
-// Session marker for full session recordings
+// Session marker for full session recordings — UNCHANGED
 export type SessionMarker = {
   thikrId: string;
   start: number;
@@ -57,7 +46,7 @@ export type SessionMarker = {
   totalCount: number;
 };
 
-// Session file entry
+// Session file entry — UNCHANGED
 export type SessionFileEntry = {
   url: string;
   duration: number;
@@ -65,7 +54,7 @@ export type SessionFileEntry = {
   markers: SessionMarker[];
 };
 
-// Reciter manifest (per-reciter, fetched from manifestUrl)
+// Reciter manifest — UNCHANGED
 export type ReciterManifest = {
   id: string;
   version: number;
@@ -74,7 +63,7 @@ export type ReciterManifest = {
   sessions?: Record<string, SessionFileEntry>;
 };
 
-// Queue item for the player engine
+// Queue item for the player engine — simplified
 export type QueueItem = {
   athkarId: string;
   thikrId: string;
@@ -91,16 +80,19 @@ export type AthkarAudioState = {
   repeatLimit: RepeatLimit;
   comfortMode: boolean;
   onboardingCompleted: boolean;
-  audioControlsExpanded: boolean;
 
-  // Playback state (runtime)
+  // Playback state (runtime — read-only mirror of RNTP)
   playerState: PlayerState;
   currentThikrId: string | null;
-  currentRepeat: number;
-  totalRepeats: number;
+  currentAthkarId: string | null;
+  repeatProgress: { current: number; total: number };
   sessionProgress: { current: number; total: number };
-  audioDuration: number;
-  audioPosition: number;
+  position: number;
+  duration: number;
+
+  // UI state
+  showBottomSheet: boolean;
+  showCompletion: boolean;
 
   // Download state (runtime)
   downloads: Record<string, DownloadStatus>;
@@ -108,26 +100,17 @@ export type AthkarAudioState = {
   totalStorageUsed: number;
 };
 
-// Actions
+// Actions — simplified, no more bridge setters
 export type AthkarAudioActions = {
-  // Playback
-  play: () => void;
-  pause: () => void;
-  resume: () => void;
-  next: () => void;
-  previous: () => void;
-  stop: () => void;
-  dismiss: () => void;
-  seekTo: (seconds: number) => void;
-
-  // State setters (called by bridge/engine)
+  // State setters (called by athkarPlayer service only)
   setPlayerState: (state: PlayerState) => void;
-  setCurrentThikrId: (id: string | null) => void;
-  setCurrentRepeat: (repeat: number) => void;
-  setTotalRepeats: (total: number) => void;
+  setCurrentTrack: (thikrId: string | null, athkarId: string | null) => void;
+  setRepeatProgress: (progress: { current: number; total: number }) => void;
   setSessionProgress: (progress: { current: number; total: number }) => void;
-  setAudioDuration: (duration: number) => void;
-  setAudioPosition: (position: number) => void;
+  setPosition: (position: number) => void;
+  setDuration: (duration: number) => void;
+  setShowBottomSheet: (show: boolean) => void;
+  setShowCompletion: (show: boolean) => void;
 
   // Settings
   setPlaybackMode: (mode: PlaybackMode) => void;
@@ -135,7 +118,6 @@ export type AthkarAudioActions = {
   setRepeatLimit: (limit: RepeatLimit) => void;
   toggleComfortMode: () => void;
   setOnboardingCompleted: (completed: boolean) => void;
-  setAudioControlsExpanded: (expanded: boolean) => void;
 
   // Downloads
   setDownloadStatus: (thikrId: string, status: DownloadStatus) => void;
