@@ -21,6 +21,7 @@ import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
 import CityChangeModal from "@/components/CityChangeModal";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
+import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 
 import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useLoadFonts } from "@/config/fonts";
@@ -91,6 +92,7 @@ function AppShell() {
             <Stack.Screen name="(tabs)" />
           </Stack>
         )}
+        <MiniPlayerBar />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
