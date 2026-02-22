@@ -32,6 +32,7 @@ import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 
 import TrackPlayer from "react-native-track-player";
 import { PlaybackService } from "@/services/playback-service";
+import { athkarPlayer } from "@/services/athkar-player";
 
 TrackPlayer.registerPlaybackService(() => PlaybackService);
 
@@ -106,6 +107,10 @@ export default function RootLayout() {
 
   const [fontsLoaded, fontError] = useLoadFonts();
   useInitialSetup();
+
+  useEffect(() => {
+    athkarPlayer.initialize();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
