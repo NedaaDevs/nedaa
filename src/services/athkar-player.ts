@@ -178,7 +178,7 @@ class AthkarPlayer {
 
     await TrackPlayer.reset();
     await TrackPlayer.add(tracks);
-    await TrackPlayer.setRepeatMode(RepeatMode.Off);
+    await TrackPlayer.setRepeatMode(RepeatMode.Track);
 
     // Update store
     this.store.setSessionProgress({ current: 1, total: tracks.length });
@@ -271,11 +271,41 @@ class AthkarPlayer {
     this.setPlayerState("playing");
   }
 
+  async startAndJumpTo(athkarId: string): Promise<void> {
+    const rnQueue = await TrackPlayer.getQueue();
+    if (rnQueue.length > 0) {
+      await this.jumpTo(athkarId);
+      return;
+    }
+
+    const { selectedReciterId } = this.store;
+    if (!selectedReciterId) {
+      log.w("Player", "startAndJumpTo: no reciter selected");
+      return;
+    }
+
+    const { currentType, morningAthkarList, eveningAthkarList } = this.athkarStore;
+    const athkarList = currentType === "morning" ? morningAthkarList : eveningAthkarList;
+
+    const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
+    if (!manifest) {
+      log.w("Player", "startAndJumpTo: failed to fetch manifest");
+      return;
+    }
+
+    this.setPlayerState("loading");
+    await this.buildQueue(athkarList, manifest, selectedReciterId, currentType);
+    await this.jumpTo(athkarId);
+  }
+
   // ─── Event Handlers (called by PlaybackService) ────────────────────
 
   async handleTrackChanged(event: { track?: Track | null; index?: number | null }): Promise<void> {
     const { track, index } = event;
     if (!track || index === null || index === undefined) return;
+
+    // Skip non-athkar tracks (e.g. sound previews)
+    if (!track.athkarId) return;
 
     this.currentRepeat = 0;
     this.handlingEnd = false;
@@ -321,9 +351,16 @@ class AthkarPlayer {
   }
 
   handleProgressUpdate(event: { position: number; duration: number; buffered: number }): void {
+    if (this.queue.length === 0) return;
+
     this.store.setPosition(event.position);
     if (event.duration > 0) {
       this.store.setDuration(event.duration);
+    }
+
+    // Reset handlingEnd when position wraps back to start (RepeatMode.Track looped)
+    if (this.handlingEnd && event.position < 1 && event.duration > 1) {
+      this.handlingEnd = false;
     }
 
     // Detect natural track completion for repeat handling
@@ -333,6 +370,9 @@ class AthkarPlayer {
   }
 
   handlePlayWhenReadyChanged(event: { playWhenReady: boolean }): void {
+    if (this.queue.length === 0) return;
+    if (this.handlingEnd) return;
+
     if (event.playWhenReady) {
       this.setPlayerState("playing");
     } else {
@@ -344,6 +384,7 @@ class AthkarPlayer {
   }
 
   async handleQueueEnded(_event: { track?: number; position: number }): Promise<void> {
+    if (this.queue.length === 0) return;
     if (this.handlingEnd) return;
 
     // Check if this is truly the end (last repeat of last track)
@@ -385,13 +426,12 @@ class AthkarPlayer {
     });
 
     if (this.currentRepeat < totalRepeats) {
-      // More repeats -- gapless restart
-      await TrackPlayer.seekTo(0);
-      await TrackPlayer.play();
-      this.handlingEnd = false;
+      // More repeats — RepeatMode.Track handles the loop natively
+      // handlingEnd stays true until position wraps back to start
       log.d("Player", `Repeat ${this.currentRepeat + 1}/${totalRepeats}`);
     } else {
-      // All repeats done -- smart pause then advance
+      // All repeats done — pause to stop the RepeatMode.Track loop
+      await TrackPlayer.pause();
       const duration = (activeTrack.duration as number) ?? 0;
       const pauseMs = this.getSmartPause(duration);
 

@@ -162,7 +162,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                       } else if (isThisPaused) {
                         athkarPlayer.play();
                       } else {
-                        athkarPlayer.jumpTo(athkar.id);
+                        athkarPlayer.startAndJumpTo(athkar.id);
                       }
                     }}
                     width={32}
