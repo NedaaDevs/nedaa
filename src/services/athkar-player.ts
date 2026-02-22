@@ -1,106 +1,40 @@
-import { AppState } from "react-native";
-import type { AppStateStatus } from "react-native";
-import { setAudioModeAsync } from "expo-audio";
-import type { AudioPlayer } from "expo-audio";
-import type { RefObject } from "react";
+import { Appearance, Image } from "react-native";
+import TrackPlayer, { Capability, RepeatMode } from "react-native-track-player";
+import type { Track } from "react-native-track-player";
 
-import { SMART_PAUSE, getThikrId, PLAYBACK_MODE } from "@/constants/AthkarAudio";
+import { SMART_PAUSE, getThikrId } from "@/constants/AthkarAudio";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
-import { soundPreviewManager } from "@/utils/sound";
+import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { useAthkarStore } from "@/stores/athkar";
+import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { AppLogger } from "@/utils/appLogger";
-import { VALID_TRANSITIONS } from "@/types/athkar-audio";
-import type {
-  MachineState,
-  PlaybackMode,
-  RepeatLimit,
-  ReciterManifest,
-  QueueItem,
-} from "@/types/athkar-audio";
+import type { PlayerState, ReciterManifest, QueueItem } from "@/types/athkar-audio";
 import type { Athkar } from "@/types/athkar";
 
 const log = AppLogger.create("athkar-audio");
 
-const CROSSFADE_MS = 400;
-const CROSSFADE_STEP_MS = 25;
 const PREFETCH_AHEAD = 3;
-const MAX_CONSECUTIVE_ERRORS = 3;
-
-type StateChangeCallback = (state: MachineState) => void;
-type CountIncrementCallback = (athkarId: string) => void;
-type ThikrChangeCallback = (
-  thikrId: string | null,
-  currentRepeat: number,
-  totalRepeats: number
-) => void;
-type ProgressCallback = (current: number, total: number) => void;
-type AudioPositionCallback = (position: number, duration: number) => void;
-type ErrorCallback = (message: string) => void;
-type SessionCompleteCallback = () => void;
-
-type AudioStatus = {
-  playing: boolean;
-  currentTime: number;
-  duration: number;
-};
-
-type MetadataResolver = (
-  thikrId: string,
-  reciterId: string
-) => { title: string; artist: string; artworkUrl?: string };
 
 class AthkarPlayer {
   private static instance: AthkarPlayer;
+  private initialized = false;
 
-  // Player refs (from bridge)
-  private refA: RefObject<AudioPlayer> | null = null;
-  private refB: RefObject<AudioPlayer> | null = null;
-  private activeSlot: "a" | "b" = "a";
-  private mounted = false;
-
-  // Buffer tracking
-  private bufferThikrId: string | null = null;
-  private bufferLocalPath: string | null = null;
-
-  // Queue
+  // Queue (JS-side tracking -- RNTP has its own queue but we need metadata)
   private queue: QueueItem[] = [];
-  private queueIndex = 0;
   private currentRepeat = 0;
-
-  // State machine
-  private state: MachineState = "idle";
-  private mode: PlaybackMode = "off";
-  private repeatLimit: RepeatLimit = "all";
+  private sessionType: "morning" | "evening" = "morning";
   private reciterId: string | null = null;
+  private manifest: ReciterManifest | null = null;
 
-  // Timers & flags
-  private advanceTimer: ReturnType<typeof setTimeout> | null = null;
-  private crossfadeTimer: ReturnType<typeof setInterval> | null = null;
+  // Timers
+  private smartPauseTimer: ReturnType<typeof setTimeout> | null = null;
   private handlingEnd = false;
-  private consecutiveErrors = 0;
-  private currentDuration = 0;
 
   // Download dedup
   private activeDownloads: Map<string, Promise<string | null>> = new Map();
   private failedDownloads: Set<string> = new Set();
 
-  // Metadata
-  private metadataResolver: MetadataResolver | null = null;
-
-  // Callbacks
-  private onStateChange: StateChangeCallback | null = null;
-  private onCountIncrement: CountIncrementCallback | null = null;
-  private onThikrChange: ThikrChangeCallback | null = null;
-  private onSessionProgress: ProgressCallback | null = null;
-  private onAudioPosition: AudioPositionCallback | null = null;
-  private onError: ErrorCallback | null = null;
-  private onSessionComplete: SessionCompleteCallback | null = null;
-
-  // AppState listener
-  private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
-
-  private constructor() {
-    this.appStateSubscription = AppState.addEventListener("change", this.handleAppStateChange);
-  }
+  private constructor() {}
 
   static getInstance(): AthkarPlayer {
     if (!AthkarPlayer.instance) {
@@ -109,162 +43,71 @@ class AthkarPlayer {
     return AthkarPlayer.instance;
   }
 
-  // ─── State Machine ─────────────────────────────────────────────────
+  // ─── Store Access Helpers ─────────────────────────────────────────
 
-  private transition(to: MachineState): boolean {
-    const allowed = VALID_TRANSITIONS[this.state];
-    if (!allowed.includes(to)) {
-      log.w("Player", `Invalid transition: ${this.state} → ${to}`);
-      return false;
-    }
-    const from = this.state;
-    this.state = to;
-    log.d("Player", `State: ${from} → ${to}`);
-    this.onStateChange?.(to);
-    return true;
+  private get store() {
+    return useAthkarAudioStore.getState();
   }
 
-  // ─── Player Ref Accessors ──────────────────────────────────────────
-
-  private get activePlayer(): AudioPlayer | null {
-    const ref = this.activeSlot === "a" ? this.refA : this.refB;
-    return ref?.current ?? null;
+  private get athkarStore() {
+    return useAthkarStore.getState();
   }
 
-  private get bufferPlayer(): AudioPlayer | null {
-    const ref = this.activeSlot === "a" ? this.refB : this.refA;
-    return ref?.current ?? null;
+  private setPlayerState(state: PlayerState) {
+    this.store.setPlayerState(state);
   }
 
-  private swapPlayers() {
-    const outgoing = this.activePlayer;
-    if (outgoing) {
-      try {
-        outgoing.pause();
-      } catch {
-        // safe — player may already be paused
-      }
-    }
-    this.activeSlot = this.activeSlot === "a" ? "b" : "a";
-  }
+  // ─── Initialize ───────────────────────────────────────────────────
 
-  getActiveSlot(): "a" | "b" {
-    return this.activeSlot;
-  }
-
-  // ─── Setup ─────────────────────────────────────────────────────────
-
-  setPlayers(refA: RefObject<AudioPlayer>, refB: RefObject<AudioPlayer>) {
-    this.refA = refA;
-    this.refB = refB;
-    this.mounted = true;
-    this.bufferThikrId = null;
-    this.bufferLocalPath = null;
-    log.i("Player", "Player refs set");
-  }
-
-  setCallbacks(callbacks: {
-    onStateChange?: StateChangeCallback;
-    onCountIncrement?: CountIncrementCallback;
-    onThikrChange?: ThikrChangeCallback;
-    onSessionProgress?: ProgressCallback;
-    onAudioPosition?: AudioPositionCallback;
-    onError?: ErrorCallback;
-    onSessionComplete?: SessionCompleteCallback;
-  }) {
-    if (callbacks.onStateChange) this.onStateChange = callbacks.onStateChange;
-    if (callbacks.onCountIncrement) this.onCountIncrement = callbacks.onCountIncrement;
-    if (callbacks.onThikrChange) this.onThikrChange = callbacks.onThikrChange;
-    if (callbacks.onSessionProgress) this.onSessionProgress = callbacks.onSessionProgress;
-    if (callbacks.onAudioPosition) this.onAudioPosition = callbacks.onAudioPosition;
-    if (callbacks.onError) this.onError = callbacks.onError;
-    if (callbacks.onSessionComplete) this.onSessionComplete = callbacks.onSessionComplete;
-  }
-
-  setMode(mode: PlaybackMode) {
-    this.mode = mode;
-  }
-
-  setRepeatLimit(limit: RepeatLimit) {
-    this.repeatLimit = limit;
-  }
-
-  setMetadataResolver(resolver: MetadataResolver) {
-    this.metadataResolver = resolver;
-  }
-
-  // ─── Audio Session Recovery ────────────────────────────────────────
-
-  private async ensureAudioSession() {
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
     try {
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        shouldPlayInBackground: true,
-        interruptionMode: "doNotMix",
+      await TrackPlayer.setupPlayer({
+        autoHandleInterruptions: true,
       });
+      await TrackPlayer.updateOptions({
+        progressUpdateEventInterval: 1,
+        capabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+          Capability.Stop,
+          Capability.SeekTo,
+        ],
+        compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
+      });
+      this.initialized = true;
+      log.i("Player", "TrackPlayer initialized");
     } catch (error) {
-      log.e("Player", "Audio session setup failed", error instanceof Error ? error : undefined);
-    }
-  }
-
-  private handleAppStateChange = (nextState: AppStateStatus) => {
-    if (nextState === "active" && this.state === "playing") {
-      this.ensureAudioSession();
-    }
-  };
-
-  // ─── Status from useAudioPlayerStatus hook ─────────────────────────
-
-  onStatusUpdate(status: AudioStatus) {
-    if (!this.mounted) return;
-
-    if (status.duration > 0) {
-      this.currentDuration = status.duration;
-    }
-
-    if (this.state === "playing") {
-      this.onAudioPosition?.(status.currentTime, status.duration);
-
-      // Check if approaching end for crossfade trigger
-      if (
-        status.duration > 0 &&
-        status.currentTime >= status.duration - 0.8 &&
-        !this.handlingEnd &&
-        this.bufferThikrId &&
-        this.bufferLocalPath
-      ) {
-        const item = this.queue[this.queueIndex];
-        if (item) {
-          this.handlePlaybackEnd(item);
-        }
-        return;
-      }
-    }
-
-    // Detect natural playback completion (no crossfade scenario)
-    if (
-      this.state === "playing" &&
-      !this.handlingEnd &&
-      !status.playing &&
-      status.duration > 0 &&
-      status.currentTime >= status.duration - 0.3
-    ) {
-      const item = this.queue[this.queueIndex];
-      if (item) {
-        this.handlePlaybackEnd(item);
+      if ((error as Error)?.message?.includes("already been initialized")) {
+        this.initialized = true;
+        log.i("Player", "TrackPlayer was already initialized");
+      } else {
+        log.e("Player", "TrackPlayer init failed", error instanceof Error ? error : undefined);
+        throw error;
       }
     }
   }
 
   // ─── Queue Building ────────────────────────────────────────────────
 
-  buildQueue(
+  async buildQueue(
     athkarList: Athkar[],
     manifest: ReciterManifest,
     reciterId: string,
     sessionType: "morning" | "evening"
-  ) {
+  ): Promise<void> {
+    await this.initialize();
+
     this.reciterId = reciterId;
+    this.manifest = manifest;
+    this.sessionType = sessionType;
+    this.currentRepeat = 0;
+    this.handlingEnd = false;
+    this.clearSmartPauseTimer();
+
+    // Build JS queue
     this.queue = athkarList.flatMap((athkar) => {
       if (athkar.group) {
         const rounds = Math.ceil(athkar.count / athkar.group.itemsPerRound);
@@ -286,506 +129,313 @@ class AthkarPlayer {
 
       const thikrId = getThikrId(athkar.order, sessionType);
       const audioFile = thikrId ? (manifest.files[thikrId] ?? null) : null;
+      const totalRepeats = athkar.count;
 
       return {
         athkarId: athkar.id,
         thikrId: thikrId ?? athkar.id,
-        totalRepeats: athkar.count,
+        totalRepeats,
         audioFile,
         localPath: null,
       };
     });
-    this.queueIndex = 0;
-    this.currentRepeat = 0;
-    log.i("Player", `Queue built with ${this.queue.length} items for ${sessionType}`);
-  }
 
-  // ─── Playback Control ──────────────────────────────────────────────
+    // Resolve local paths and build RNTP tracks
+    const tracks: Track[] = [];
+    for (let i = 0; i < this.queue.length; i++) {
+      const item = this.queue[i];
+      if (!item.audioFile) continue;
 
-  async play() {
-    if (!this.activePlayer || this.queue.length === 0) return;
-
-    if (soundPreviewManager.isCurrentlyPlaying()) {
-      soundPreviewManager.forceReset();
-    }
-
-    await this.loadAndPlayCurrent();
-  }
-
-  async pause() {
-    if (!this.activePlayer || this.state !== "playing") return;
-
-    try {
-      this.activePlayer.pause();
-      this.transition("paused");
-      log.i("Player", "Paused");
-    } catch (error) {
-      log.e("Player", "Pause error", error instanceof Error ? error : undefined);
-    }
-  }
-
-  async resume() {
-    if (!this.activePlayer || this.state !== "paused") return;
-
-    try {
-      await this.ensureAudioSession();
-      this.activePlayer.play();
-      this.transition("playing");
-    } catch (error) {
-      log.e("Player", "Resume error", error instanceof Error ? error : undefined);
-    }
-  }
-
-  async next() {
-    this.clearAdvanceTimer();
-    this.clearCrossfadeTimer();
-    this.resetPlayerVolumes();
-    this.invalidateBuffer();
-
-    if (this.queueIndex < this.queue.length - 1) {
-      this.queueIndex++;
-      this.currentRepeat = 0;
-      await this.loadAndPlayCurrent();
-    } else {
-      log.i("Player", "Session completed");
-      this.transition("idle");
-      this.onSessionProgress?.(this.queue.length, this.queue.length);
-      this.onSessionComplete?.();
-    }
-  }
-
-  async previous() {
-    this.clearAdvanceTimer();
-    this.clearCrossfadeTimer();
-    this.resetPlayerVolumes();
-    this.invalidateBuffer();
-
-    if (this.queueIndex > 0) {
-      this.queueIndex--;
-      this.currentRepeat = 0;
-      await this.loadAndPlayCurrent();
-    } else {
-      this.currentRepeat = 0;
-      await this.loadAndPlayCurrent();
-    }
-  }
-
-  dismiss() {
-    this.clearAdvanceTimer();
-    this.clearCrossfadeTimer();
-    this.handlingEnd = false;
-
-    for (const ref of [this.refA, this.refB]) {
-      const p = ref?.current;
-      if (p) {
-        try {
-          p.clearLockScreenControls();
-          p.pause();
-        } catch {
-          // safe
-        }
-      }
-    }
-
-    this.invalidateBuffer();
-    this.transition("idle");
-  }
-
-  stop() {
-    this.dismiss();
-    log.i("Player", "Stopped");
-    this.queue = [];
-    this.queueIndex = 0;
-    this.currentRepeat = 0;
-    this.activeDownloads.clear();
-    this.failedDownloads.clear();
-    this.onThikrChange?.(null, 0, 0);
-  }
-
-  async seekTo(seconds: number) {
-    if (!this.activePlayer) return;
-    try {
-      await this.activePlayer.seekTo(seconds);
-      this.onAudioPosition?.(seconds, this.currentDuration);
-    } catch (error) {
-      log.e("Player", "Seek error", error instanceof Error ? error : undefined);
-    }
-  }
-
-  async jumpTo(athkarId: string, currentCount: number = 0) {
-    const firstIndex = this.queue.findIndex((q) => q.athkarId === athkarId);
-    if (firstIndex === -1) return;
-
-    this.clearAdvanceTimer();
-    this.clearCrossfadeTimer();
-    this.handlingEnd = false;
-    this.invalidateBuffer();
-
-    const matchingCount = this.queue.filter((q) => q.athkarId === athkarId).length;
-
-    if (matchingCount > 1 && this.queue[firstIndex].totalRepeats === 1) {
-      const offset = Math.min(currentCount, matchingCount - 1);
-      this.queueIndex = firstIndex + offset;
-      this.currentRepeat = 0;
-    } else {
-      this.queueIndex = firstIndex;
-      this.currentRepeat = 0;
-    }
-
-    await this.loadAndPlayCurrent();
-  }
-
-  // ─── Internal Playback ─────────────────────────────────────────────
-
-  private async loadAndPlayCurrent() {
-    const player = this.activePlayer;
-    if (!player || !this.reciterId) return;
-
-    const item = this.queue[this.queueIndex];
-    if (!item) {
-      this.transition("idle");
-      this.onSessionComplete?.();
-      return;
-    }
-
-    this.handlingEnd = false;
-    this.onThikrChange?.(item.thikrId, this.currentRepeat, this.getEffectiveRepeats(item));
-    this.onSessionProgress?.(this.queueIndex + 1, this.queue.length);
-
-    // Check if buffer has this track preloaded
-    if (this.bufferThikrId === item.thikrId && this.bufferLocalPath) {
-      log.d("Player", `Swapping to preloaded ${item.thikrId}`);
-      this.swapPlayers();
-      item.localPath = this.bufferLocalPath;
-      this.bufferThikrId = null;
-      this.bufferLocalPath = null;
-
-      try {
-        await this.ensureAudioSession();
-        const success = this.playWithRetry();
-        if (success) {
-          this.consecutiveErrors = 0;
-          this.transition("playing");
-          log.d(
-            "Player",
-            `Playing ${item.thikrId} (repeat ${this.currentRepeat + 1}/${this.getEffectiveRepeats(item)})`
-          );
-          this.updateLockScreen(item);
-          this.prefetchAhead();
-          return;
-        }
-      } catch {
-        // Fall through to normal load
-      }
-      this.swapPlayers();
-    }
-
-    // Normal load path
-    this.transition("loading");
-
-    let localPath = item.localPath;
-    if (!localPath && item.audioFile) {
-      localPath = await this.resolveLocalPath(
-        this.reciterId,
+      const localPath = await this.resolveLocalPath(
+        reciterId,
         item.thikrId,
         item.audioFile.url,
         item.audioFile.size
       );
-      if (localPath) {
-        item.localPath = localPath;
-      }
+      if (!localPath) continue;
+
+      item.localPath = localPath;
+
+      const effectiveRepeats = this.getEffectiveRepeats(item);
+
+      tracks.push({
+        id: item.athkarId,
+        url: localPath,
+        title: this.getSessionTitle(),
+        artist: this.getReciterName(),
+        artwork: this.getArtworkUrl(),
+        thikrId: item.thikrId,
+        athkarId: item.athkarId,
+        totalRepeats: effectiveRepeats,
+        queueIndex: i,
+      });
     }
 
-    if (!localPath) {
-      log.w("Player", `No audio for ${item.thikrId}, skipping`);
-      this.onError?.("trackUnavailable");
-      if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
-        await this.advanceToNext();
-      } else {
-        this.transition("idle");
-      }
+    if (tracks.length === 0) {
+      log.w("Player", "No tracks available for queue");
       return;
     }
 
-    try {
-      await this.ensureAudioSession();
-      try {
-        player.pause();
-      } catch {
-        /* safe */
+    await TrackPlayer.reset();
+    await TrackPlayer.add(tracks);
+    await TrackPlayer.setRepeatMode(RepeatMode.Off);
+
+    // Update store
+    this.store.setSessionProgress({ current: 1, total: tracks.length });
+    this.store.setCurrentTrack(this.queue[0]?.thikrId ?? null, this.queue[0]?.athkarId ?? null);
+    this.store.setRepeatProgress({
+      current: 0,
+      total: this.getEffectiveRepeats(this.queue[0]),
+    });
+
+    log.i("Player", `Queue built: ${tracks.length} tracks for ${sessionType}`);
+  }
+
+  // ─── Playback Control ──────────────────────────────────────────────
+
+  async play(): Promise<void> {
+    await this.initialize();
+    this.setPlayerState("playing");
+    await TrackPlayer.play();
+  }
+
+  async pause(): Promise<void> {
+    this.setPlayerState("paused");
+    await TrackPlayer.pause();
+  }
+
+  async next(): Promise<void> {
+    this.clearSmartPauseTimer();
+    this.handlingEnd = false;
+    this.currentRepeat = 0;
+
+    const currentIndex = await TrackPlayer.getActiveTrackIndex();
+    const queue = await TrackPlayer.getQueue();
+
+    if (currentIndex !== undefined && currentIndex !== null && currentIndex < queue.length - 1) {
+      await TrackPlayer.skipToNext();
+    } else {
+      await this.handleSessionComplete();
+    }
+  }
+
+  async previous(): Promise<void> {
+    this.clearSmartPauseTimer();
+    this.handlingEnd = false;
+    this.currentRepeat = 0;
+
+    const currentIndex = await TrackPlayer.getActiveTrackIndex();
+
+    if (currentIndex !== undefined && currentIndex !== null && currentIndex > 0) {
+      await TrackPlayer.skipToPrevious();
+    } else {
+      await TrackPlayer.seekTo(0);
+    }
+  }
+
+  async stop(): Promise<void> {
+    this.clearSmartPauseTimer();
+    this.handlingEnd = false;
+    this.currentRepeat = 0;
+
+    await TrackPlayer.reset();
+
+    this.queue = [];
+    this.activeDownloads.clear();
+    this.failedDownloads.clear();
+
+    this.store.resetPlaybackState();
+    log.i("Player", "Stopped");
+  }
+
+  async seekTo(seconds: number): Promise<void> {
+    await TrackPlayer.seekTo(seconds);
+    this.store.setPosition(seconds);
+  }
+
+  async jumpTo(athkarId: string): Promise<void> {
+    const rnQueue = await TrackPlayer.getQueue();
+    const trackIndex = rnQueue.findIndex((t) => t.id === athkarId);
+
+    if (trackIndex === -1) {
+      log.w("Player", `jumpTo: athkarId ${athkarId} not found in queue`);
+      return;
+    }
+
+    this.clearSmartPauseTimer();
+    this.handlingEnd = false;
+    this.currentRepeat = 0;
+
+    await TrackPlayer.skip(trackIndex);
+    await TrackPlayer.play();
+    this.setPlayerState("playing");
+  }
+
+  // ─── Event Handlers (called by PlaybackService) ────────────────────
+
+  async handleTrackChanged(event: { track?: Track | null; index?: number | null }): Promise<void> {
+    const { track, index } = event;
+    if (!track || index === null || index === undefined) return;
+
+    this.currentRepeat = 0;
+    this.handlingEnd = false;
+
+    const thikrId = track.thikrId as string | undefined;
+    const athkarId = track.athkarId as string | undefined;
+    const totalRepeats = track.totalRepeats as number | undefined;
+    const queueIndex = track.queueIndex as number | undefined;
+
+    if (thikrId && athkarId) {
+      this.store.setCurrentTrack(thikrId, athkarId);
+    }
+    if (totalRepeats) {
+      this.store.setRepeatProgress({ current: 0, total: totalRepeats });
+    }
+
+    const rnQueue = await TrackPlayer.getQueue();
+    this.store.setSessionProgress({
+      current: index + 1,
+      total: rnQueue.length,
+    });
+
+    // Sync athkar store index
+    if (athkarId) {
+      const {
+        currentType,
+        morningAthkarList,
+        eveningAthkarList,
+        currentAthkarIndex,
+        setCurrentAthkarIndex,
+      } = this.athkarStore;
+      const list = currentType === "morning" ? morningAthkarList : eveningAthkarList;
+      const idx = list.findIndex((a) => a.id === athkarId);
+      if (idx !== -1 && idx !== currentAthkarIndex) {
+        setCurrentAthkarIndex(idx);
       }
-      player.replace({ uri: localPath });
-      const success = this.playWithRetry();
+    }
 
-      if (!success) {
-        this.consecutiveErrors++;
-        log.e("Player", `Consecutive errors: ${this.consecutiveErrors}`);
+    // Prefetch upcoming tracks
+    this.prefetchAhead(queueIndex ?? index);
 
-        if (this.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-          log.e("Player", "Circuit breaker: too many consecutive errors");
-          this.onError?.("audioSessionError");
-          this.transition("error");
-          return;
-        }
+    log.d("Player", `Track changed: ${thikrId} (index ${index})`);
+  }
 
-        if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
-          await this.advanceToNext();
-        } else {
-          this.transition("error");
-        }
-        return;
-      }
+  handleProgressUpdate(event: { position: number; duration: number; buffered: number }): void {
+    this.store.setPosition(event.position);
+    if (event.duration > 0) {
+      this.store.setDuration(event.duration);
+    }
 
-      this.consecutiveErrors = 0;
-      this.transition("playing");
-      log.d(
-        "Player",
-        `Playing ${item.thikrId} (repeat ${this.currentRepeat + 1}/${this.getEffectiveRepeats(item)})`
-      );
+    // Detect natural track completion for repeat handling
+    if (event.duration > 0 && event.position >= event.duration - 0.3 && !this.handlingEnd) {
+      this.handleRepeatOrAdvance();
+    }
+  }
 
-      this.updateLockScreen(item);
-      this.prefetchAhead();
-    } catch (error) {
-      log.e("Player", "Play error", error instanceof Error ? error : undefined);
-      this.consecutiveErrors++;
-
-      if (this.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        this.onError?.("audioSessionError");
-        this.transition("error");
-        return;
-      }
-
-      if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
-        await this.advanceToNext();
-      } else {
-        this.transition("error");
+  handlePlayWhenReadyChanged(event: { playWhenReady: boolean }): void {
+    if (event.playWhenReady) {
+      this.setPlayerState("playing");
+    } else {
+      const currentState = this.store.playerState;
+      if (currentState === "playing") {
+        this.setPlayerState("paused");
       }
     }
   }
 
-  private async handlePlaybackEnd(item: QueueItem) {
+  async handleQueueEnded(_event: { track?: Track | null; position: number }): Promise<void> {
+    if (this.handlingEnd) return;
+
+    // Check if this is truly the end (last repeat of last track)
+    const activeTrack = await TrackPlayer.getActiveTrack();
+    if (activeTrack) {
+      const totalRepeats = (activeTrack.totalRepeats as number) ?? 1;
+      if (this.currentRepeat < totalRepeats - 1) {
+        return;
+      }
+    }
+
+    await this.handleSessionComplete();
+  }
+
+  // ─── Repeat Handling ───────────────────────────────────────────────
+
+  private async handleRepeatOrAdvance(): Promise<void> {
     if (this.handlingEnd) return;
     this.handlingEnd = true;
 
-    const effectiveRepeats = this.getEffectiveRepeats(item);
+    const activeTrack = await TrackPlayer.getActiveTrack();
+    if (!activeTrack) {
+      this.handlingEnd = false;
+      return;
+    }
 
-    if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
-      this.onCountIncrement?.(item.athkarId);
+    const totalRepeats = (activeTrack.totalRepeats as number) ?? 1;
+    const athkarId = activeTrack.athkarId as string | undefined;
+
+    // Increment counter in athkar store
+    if (athkarId) {
+      this.athkarStore.incrementCount(athkarId);
     }
 
     this.currentRepeat++;
-    this.onThikrChange?.(item.thikrId, this.currentRepeat, effectiveRepeats);
-
-    if (this.currentRepeat < effectiveRepeats) {
-      // Replay same file
-      try {
-        const player = this.activePlayer;
-        if (player) {
-          this.transition("loading");
-          await player.seekTo(0);
-          player.play();
-          this.handlingEnd = false;
-          this.transition("playing");
-        }
-      } catch (error) {
-        log.e("Player", "Replay error", error instanceof Error ? error : undefined);
-        this.handlingEnd = false;
-        await this.advanceToNext();
-      }
-    } else {
-      // All repeats done — check for crossfade to next track
-      this.handlingEnd = false;
-      const nextItem = this.queue[this.queueIndex + 1];
-
-      if (nextItem && this.bufferThikrId === nextItem.thikrId && this.bufferLocalPath) {
-        await this.crossfadeToNext();
-      } else {
-        await this.advanceToNext();
-      }
-    }
-  }
-
-  // ─── Crossfade ─────────────────────────────────────────────────────
-
-  private async crossfadeToNext() {
-    const outgoing = this.activePlayer;
-    const incoming = this.bufferPlayer;
-    if (!outgoing || !incoming) {
-      await this.advanceToNext();
-      return;
-    }
-
-    if (!this.transition("crossfading")) {
-      await this.advanceToNext();
-      return;
-    }
-
-    const nextItem = this.queue[this.queueIndex + 1];
-    if (!nextItem) {
-      await this.advanceToNext();
-      return;
-    }
-
-    log.d("Player", `Crossfading to ${nextItem.thikrId}`);
-
-    // Start incoming at volume 0
-    incoming.volume = 0;
-    try {
-      await this.ensureAudioSession();
-      incoming.play();
-    } catch (error) {
-      log.e("Player", "Crossfade incoming play failed", error instanceof Error ? error : undefined);
-      try {
-        outgoing.pause();
-      } catch {
-        /* safe */
-      }
-      this.transition("playing");
-      await this.advanceToNext();
-      return;
-    }
-
-    const steps = Math.ceil(CROSSFADE_MS / CROSSFADE_STEP_MS);
-    let step = 0;
-
-    await new Promise<void>((resolve) => {
-      this.crossfadeTimer = setInterval(() => {
-        step++;
-        const progress = Math.min(step / steps, 1);
-
-        try {
-          outgoing.volume = 1 - progress;
-          incoming.volume = progress;
-        } catch {
-          // safe — player may have been destroyed
-        }
-
-        if (progress >= 1) {
-          this.clearCrossfadeTimer();
-          resolve();
-        }
-      }, CROSSFADE_STEP_MS);
+    this.store.setRepeatProgress({
+      current: this.currentRepeat,
+      total: totalRepeats,
     });
 
-    // Swap players (pauses outgoing)
-    this.swapPlayers();
-
-    // Update queue state
-    this.queueIndex++;
-    this.currentRepeat = 0;
-    nextItem.localPath = this.bufferLocalPath;
-    this.bufferThikrId = null;
-    this.bufferLocalPath = null;
-
-    // Restore active volume to full
-    const newActive = this.activePlayer;
-    if (newActive) {
-      newActive.volume = 1;
-    }
-
-    this.consecutiveErrors = 0;
-    this.transition("playing");
-
-    this.onThikrChange?.(nextItem.thikrId, 0, this.getEffectiveRepeats(nextItem));
-    this.onSessionProgress?.(this.queueIndex + 1, this.queue.length);
-    this.updateLockScreen(nextItem);
-    this.prefetchAhead();
-  }
-
-  private clearCrossfadeTimer() {
-    if (this.crossfadeTimer) {
-      clearInterval(this.crossfadeTimer);
-      this.crossfadeTimer = null;
-    }
-  }
-
-  private resetPlayerVolumes() {
-    for (const ref of [this.refA, this.refB]) {
-      const p = ref?.current;
-      if (p) {
-        try {
-          p.volume = 1;
-        } catch {
-          // safe
-        }
-      }
-    }
-  }
-
-  // ─── Advance ───────────────────────────────────────────────────────
-
-  private async advanceToNext() {
-    if (this.queueIndex >= this.queue.length - 1) {
-      this.transition("idle");
-      this.onSessionProgress?.(this.queue.length, this.queue.length);
-      this.onSessionComplete?.();
-      return;
-    }
-
-    const currentItem = this.queue[this.queueIndex];
-    const pauseDuration = this.getSmartPause(currentItem?.audioFile?.duration ?? 0);
-
-    if (pauseDuration > 0) {
-      // Use "loading" state for smart pause (replaces old "advancing")
-      this.transition("loading");
-      this.advanceTimer = setTimeout(async () => {
-        if (this.state !== "loading") return;
-
-        this.queueIndex++;
-        this.currentRepeat = 0;
-
-        if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
-          await this.loadAndPlayCurrent();
-        } else {
-          this.onThikrChange?.(
-            this.queue[this.queueIndex]?.thikrId ?? null,
-            0,
-            this.getEffectiveRepeats(this.queue[this.queueIndex])
-          );
-          this.onSessionProgress?.(this.queueIndex + 1, this.queue.length);
-          this.transition("idle");
-        }
-      }, pauseDuration);
+    if (this.currentRepeat < totalRepeats) {
+      // More repeats -- gapless restart
+      await TrackPlayer.seekTo(0);
+      await TrackPlayer.play();
+      this.handlingEnd = false;
+      log.d("Player", `Repeat ${this.currentRepeat + 1}/${totalRepeats}`);
     } else {
-      this.queueIndex++;
-      this.currentRepeat = 0;
+      // All repeats done -- smart pause then advance
+      const duration = (activeTrack.duration as number) ?? 0;
+      const pauseMs = this.getSmartPause(duration);
 
-      if (this.mode === PLAYBACK_MODE.AUTOPILOT) {
-        await this.loadAndPlayCurrent();
+      if (pauseMs > 0) {
+        this.setPlayerState("loading");
+        this.smartPauseTimer = setTimeout(async () => {
+          await this.advanceToNextTrack();
+        }, pauseMs);
       } else {
-        this.onThikrChange?.(
-          this.queue[this.queueIndex]?.thikrId ?? null,
-          0,
-          this.getEffectiveRepeats(this.queue[this.queueIndex])
-        );
-        this.onSessionProgress?.(this.queueIndex + 1, this.queue.length);
-        this.transition("idle");
+        await this.advanceToNextTrack();
       }
     }
   }
 
-  // ─── Play With Retry ───────────────────────────────────────────────
+  private async advanceToNextTrack(): Promise<void> {
+    const currentIndex = await TrackPlayer.getActiveTrackIndex();
+    const queue = await TrackPlayer.getQueue();
 
-  private playWithRetry(maxRetries = 3): boolean {
-    const player = this.activePlayer;
-    if (!player) return false;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        player.play();
-        return true;
-      } catch (error) {
-        log.e(
-          "Player",
-          `Play attempt ${attempt + 1} failed`,
-          error instanceof Error ? error : undefined
-        );
-      }
+    if (currentIndex !== undefined && currentIndex !== null && currentIndex < queue.length - 1) {
+      this.currentRepeat = 0;
+      this.handlingEnd = false;
+      await TrackPlayer.skipToNext();
+      await TrackPlayer.play();
+      this.setPlayerState("playing");
+    } else {
+      await this.handleSessionComplete();
     }
-    return false;
   }
 
-  // ─── Download Dedup & Resolve ──────────────────────────────────────
+  async handleSessionComplete(): Promise<void> {
+    log.i("Player", "Session complete");
+    await TrackPlayer.reset();
+
+    this.queue = [];
+    this.currentRepeat = 0;
+    this.handlingEnd = false;
+    this.clearSmartPauseTimer();
+
+    this.store.setPlayerState("idle");
+    this.store.setShowCompletion(true);
+    this.store.setCurrentTrack(null, null);
+  }
+
+  // ─── Download & Prefetch ───────────────────────────────────────────
 
   private async resolveLocalPath(
     reciterId: string,
@@ -793,31 +443,21 @@ class AthkarPlayer {
     url: string,
     size: number
   ): Promise<string | null> {
-    // Check cache first
     const existing = await audioDownloadManager.getLocalPath(reciterId, thikrId);
     if (existing) return existing;
 
-    // Check failed cache
     const key = `${reciterId}/${thikrId}`;
-    if (this.failedDownloads.has(key)) {
-      log.d("Player", `Skipping previously failed download: ${key}`);
-      return null;
-    }
+    if (this.failedDownloads.has(key)) return null;
 
-    // Dedup: return existing promise if in-flight
     if (this.activeDownloads.has(key)) {
-      log.d("Player", `Joining existing download: ${key}`);
       return this.activeDownloads.get(key)!;
     }
 
-    // Start new download
     const downloadPromise = audioDownloadManager
       .downloadFile(reciterId, thikrId, url, size)
       .then((result) => {
         this.activeDownloads.delete(key);
-        if (!result) {
-          this.failedDownloads.add(key);
-        }
+        if (!result) this.failedDownloads.add(key);
         return result;
       })
       .catch((error) => {
@@ -831,17 +471,15 @@ class AthkarPlayer {
     return downloadPromise;
   }
 
-  // ─── Prefetch Ahead Pipeline ───────────────────────────────────────
+  private async prefetchAhead(currentQueueIndex: number): Promise<void> {
+    if (!this.reciterId || !this.manifest) return;
 
-  private async prefetchAhead() {
-    if (!this.reciterId) return;
-
-    const startIdx = this.queueIndex + 1;
+    const startIdx = currentQueueIndex + 1;
     const endIdx = Math.min(startIdx + PREFETCH_AHEAD, this.queue.length);
 
     for (let i = startIdx; i < endIdx; i++) {
       const item = this.queue[i];
-      if (!item || !item.audioFile || item.localPath) continue;
+      if (!item?.audioFile || item.localPath) continue;
 
       const localPath = await this.resolveLocalPath(
         this.reciterId,
@@ -849,75 +487,17 @@ class AthkarPlayer {
         item.audioFile.url,
         item.audioFile.size
       );
-      if (localPath) {
-        item.localPath = localPath;
-      }
+      if (localPath) item.localPath = localPath;
     }
-
-    // Preload next track into buffer player
-    await this.preloadNextIntoBuffer();
-  }
-
-  private async preloadNextIntoBuffer() {
-    if (!this.reciterId) return;
-    const buffer = this.bufferPlayer;
-    if (!buffer) return;
-
-    const nextItem = this.queue[this.queueIndex + 1];
-    if (!nextItem) {
-      this.invalidateBuffer();
-      return;
-    }
-
-    // Already preloaded
-    if (this.bufferThikrId === nextItem.thikrId && this.bufferLocalPath) {
-      return;
-    }
-
-    let localPath = nextItem.localPath;
-    if (!localPath && nextItem.audioFile) {
-      localPath = await this.resolveLocalPath(
-        this.reciterId,
-        nextItem.thikrId,
-        nextItem.audioFile.url,
-        nextItem.audioFile.size
-      );
-      if (localPath) nextItem.localPath = localPath;
-    }
-
-    if (!localPath) {
-      this.invalidateBuffer();
-      return;
-    }
-
-    try {
-      // Pause buffer player before replace
-      try {
-        buffer.pause();
-      } catch {
-        // safe
-      }
-      buffer.replace({ uri: localPath });
-      this.bufferThikrId = nextItem.thikrId;
-      this.bufferLocalPath = localPath;
-      log.d("Player", `Preloaded ${nextItem.thikrId} into buffer`);
-    } catch (error) {
-      log.e("Player", "Preload error", error instanceof Error ? error : undefined);
-      this.invalidateBuffer();
-    }
-  }
-
-  private invalidateBuffer() {
-    this.bufferThikrId = null;
-    this.bufferLocalPath = null;
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────
 
   private getEffectiveRepeats(item: QueueItem | undefined): number {
     if (!item) return 0;
-    if (this.repeatLimit === "all") return item.totalRepeats;
-    return Math.min(this.repeatLimit as number, item.totalRepeats);
+    const repeatLimit = this.store.repeatLimit;
+    if (repeatLimit === "all") return item.totalRepeats;
+    return Math.min(repeatLimit as number, item.totalRepeats);
   }
 
   private getSmartPause(audioDuration: number): number {
@@ -926,74 +506,47 @@ class AthkarPlayer {
     return SMART_PAUSE.LONG_PAUSE;
   }
 
-  private updateLockScreen(item: QueueItem) {
-    const player = this.activePlayer;
-    if (!player || !this.reciterId) return;
+  private getSessionTitle(): string {
+    return this.sessionType === "morning" ? "Morning Athkar" : "Evening Athkar";
+  }
 
-    const metadata = this.metadataResolver
-      ? this.metadataResolver(item.thikrId, this.reciterId)
-      : { title: item.thikrId, artist: this.reciterId };
+  private getReciterName(): string {
+    if (!this.reciterId) return "";
+    const catalog = reciterRegistry.getCachedCatalog();
+    if (!catalog) return this.reciterId;
+    const reciter = catalog.reciters.find((r) => r.id === this.reciterId);
+    if (!reciter) return this.reciterId;
+    return reciter.name["ar"] ?? reciter.name["en"] ?? this.reciterId;
+  }
 
+  private getArtworkUrl(): string | undefined {
     try {
-      player.setActiveForLockScreen(true, metadata, {
-        showSeekForward: false,
-        showSeekBackward: false,
-      });
-    } catch (error) {
-      log.e("Player", "Lock screen error", error instanceof Error ? error : undefined);
+      const isDark = Appearance.getColorScheme() === "dark";
+      const icon = isDark
+        ? Image.resolveAssetSource(require("../../assets/images/ios-dark.png"))
+        : Image.resolveAssetSource(require("../../assets/images/icon.png"));
+      return icon?.uri;
+    } catch {
+      return undefined;
     }
   }
 
-  private clearAdvanceTimer() {
-    if (this.advanceTimer) {
-      clearTimeout(this.advanceTimer);
-      this.advanceTimer = null;
+  private clearSmartPauseTimer() {
+    if (this.smartPauseTimer) {
+      clearTimeout(this.smartPauseTimer);
+      this.smartPauseTimer = null;
     }
   }
 
   // ─── Getters ───────────────────────────────────────────────────────
 
-  getState(): MachineState {
-    return this.state;
-  }
-
-  getCurrentQueueIndex(): number {
-    return this.queueIndex;
-  }
-
-  getQueueLength(): number {
-    return this.queue.length;
-  }
-
   isActive(): boolean {
-    return this.state !== "idle" && this.state !== "error";
+    const state = this.store.playerState;
+    return state !== "idle" && state !== "ended";
   }
 
-  // ─── Unmount ───────────────────────────────────────────────────────
-
-  notifyPlayerUnmount() {
-    if (!this.mounted) return;
-
-    this.clearAdvanceTimer();
-    this.clearCrossfadeTimer();
-    this.handlingEnd = false;
-
-    // Do not call pause() on players during unmount — expo-audio
-    // destroys native objects, so calling methods races with cleanup
-    this.state = "idle";
-    this.onStateChange?.("idle");
-
-    log.i("Player", "Stopped (unmount)");
-    this.queue = [];
-    this.queueIndex = 0;
-    this.currentRepeat = 0;
-    this.onThikrChange?.(null, 0, 0);
-    this.refA = null;
-    this.refB = null;
-    this.mounted = false;
-    this.invalidateBuffer();
-    this.activeDownloads.clear();
-    this.failedDownloads.clear();
+  getCurrentAthkarId(): string | null {
+    return this.store.currentAthkarId;
   }
 }
 
