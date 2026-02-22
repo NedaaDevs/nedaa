@@ -130,6 +130,7 @@
   "athkar.audio.seekBar": "شريط التقدم الصوتي",
   "athkar.audio.seekHint": "اضغط مع السحب للتقديم",
   "athkar.audio.stop": "إيقاف",
+  "athkar.audio.thikrProgress": "ذكر {{current}} من {{total}}",
   "athkar.audio.trackUnavailable": "المقطع غير متوفر، جارٍ التخطي...",
   "athkar.audio.unavailableOffline": "الصوت غير متوفر بدون اتصال",
   "athkar.dailyStreak": "التتابع اليومي",

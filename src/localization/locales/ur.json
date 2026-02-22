@@ -130,6 +130,7 @@
   "athkar.audio.seekBar": "آڈیو پیش رفت",
   "athkar.audio.seekHint": "تلاش کرنے کے لیے دبائیں اور گھسیٹیں",
   "athkar.audio.stop": "بند کریں",
+  "athkar.audio.thikrProgress": "ذکر {{current}} از {{total}}",
   "athkar.audio.trackUnavailable": "ٹریک دستیاب نہیں، چھوڑا جا رہا ہے...",
   "athkar.audio.unavailableOffline": "آڈیو آف لائن دستیاب نہیں",
   "athkar.dailyStreak": "روزانہ سلسلہ",

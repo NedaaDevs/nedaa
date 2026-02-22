@@ -130,6 +130,7 @@
   "athkar.audio.seekBar": "Audio progress",
   "athkar.audio.seekHint": "Hold and drag to seek",
   "athkar.audio.stop": "Stop",
+  "athkar.audio.thikrProgress": "Thikr {{current}} of {{total}}",
   "athkar.audio.trackUnavailable": "Track unavailable, skipping...",
   "athkar.audio.unavailableOffline": "Audio unavailable offline",
   "athkar.dailyStreak": "Daily Streak",
