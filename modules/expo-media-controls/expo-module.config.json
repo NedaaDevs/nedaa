@@ -1,9 +1,0 @@
-{
-  "platforms": ["ios", "android"],
-  "ios": {
-    "modules": ["ExpoMediaControlsModule"]
-  },
-  "android": {
-    "modules": ["expo.modules.mediacontrols.ExpoMediaControlsModule"]
-  }
-}
