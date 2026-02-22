@@ -28,6 +28,11 @@ import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 
+import TrackPlayer from "react-native-track-player";
+import { PlaybackService } from "@/services/playback-service";
+
+TrackPlayer.registerPlaybackService(() => PlaybackService);
+
 /** For Viewing db in dev */
 // import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 // import * as SQLite from "expo-sqlite";
