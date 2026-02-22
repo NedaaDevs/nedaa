@@ -105,16 +105,10 @@ const AthkarFocusScreen = () => {
   const playerState = useAthkarAudioStore((s) => s.playerState);
   const selectedReciterId = useAthkarAudioStore((s) => s.selectedReciterId);
   const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
-  const audioPlay = useAthkarAudioStore((s) => s.play);
-  const audioPause = useAthkarAudioStore((s) => s.pause);
-  const audioResume = useAthkarAudioStore((s) => s.resume);
-  const audioStop = useAthkarAudioStore((s) => s.stop);
-  const audioDismiss = useAthkarAudioStore((s) => s.dismiss);
-  const audioControlsExpanded = useAthkarAudioStore((s) => s.audioControlsExpanded);
-  const setAudioControlsExpanded = useAthkarAudioStore((s) => s.setAudioControlsExpanded);
+  const currentAthkarId = useAthkarAudioStore((s) => s.currentAthkarId);
 
-  const audioDuration = useAthkarAudioStore((s) => s.audioDuration);
-  const audioPosition = useAthkarAudioStore((s) => s.audioPosition);
+  const audioDuration = useAthkarAudioStore((s) => s.duration);
+  const audioPosition = useAthkarAudioStore((s) => s.position);
 
   const shortVersion = useAthkarStore((s) => s.shortVersion);
 
@@ -129,6 +123,9 @@ const AthkarFocusScreen = () => {
 
   // Onboarding modal
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Audio controls expanded/collapsed
+  const [audioControlsExpanded, setAudioControlsExpanded] = useState(true);
 
   // State for showing instructions
   const [showInstructions, setShowInstructions] = useState(true);
@@ -169,28 +166,6 @@ const AthkarFocusScreen = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentType]);
-
-  // Build audio queue when entering focus mode with audio enabled
-  useEffect(() => {
-    if (!showAudioControls || !selectedReciterId) return;
-    if (athkarPlayer.isActive() || athkarPlayer.getQueueLength() > 0) return; // don't clobber a running or dismissed session
-
-    const buildQueue = async () => {
-      const catalog = await reciterRegistry.fetchCatalog();
-      const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
-      if (!reciter) return;
-
-      const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
-      if (!manifest) return;
-
-      athkarPlayer.setMode(playbackMode);
-      athkarPlayer.setRepeatLimit(useAthkarAudioStore.getState().repeatLimit);
-      athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, currentType);
-    };
-
-    buildQueue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAudioControls, selectedReciterId, currentType]);
 
   // Hide instructions after 5 seconds
   useEffect(() => {
@@ -263,17 +238,16 @@ const AthkarFocusScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAthkarIndex, currentAthkar, progressPercentage]);
 
-  // Sync audio player when user navigates to different thikr
+  // One-way sync: when audio changes track, update focus screen to match
   useEffect(() => {
-    if (
-      showAudioControls &&
-      currentAthkar &&
-      (playerState === "playing" || playerState === "paused")
-    ) {
-      athkarPlayer.jumpTo(currentAthkar.id, currentCount);
+    if (currentAthkarId && (playerState === "playing" || playerState === "paused")) {
+      const idx = currentAthkarList.findIndex((a) => a.id === currentAthkarId);
+      if (idx !== -1 && idx !== currentAthkarIndex) {
+        setCurrentAthkarIndex(idx);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAthkarIndex]);
+  }, [currentAthkarId]);
 
   // Track previous index for slide direction
   const [previousIndex, setPreviousIndex] = useState(currentAthkarIndex);
@@ -340,7 +314,7 @@ const AthkarFocusScreen = () => {
   // Stop audio when all athkar completed
   useEffect(() => {
     if (allCompleted && playerState !== "idle") {
-      audioStop();
+      athkarPlayer.stop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allCompleted]);
@@ -348,7 +322,7 @@ const AthkarFocusScreen = () => {
   // Stop audio when shortVersion changes (athkar list changes)
   useEffect(() => {
     if (playerState !== "idle") {
-      audioStop();
+      athkarPlayer.stop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shortVersion]);
@@ -461,50 +435,54 @@ const AthkarFocusScreen = () => {
   };
 
   // Audio control handlers
-  const handlePlayPause = useCallback(() => {
-    // Check onboarding first
+  const handlePlayPause = useCallback(async () => {
     if (!onboardingCompleted) {
       setShowOnboarding(true);
       return;
     }
 
     if (playerState === "playing") {
-      audioPause();
+      athkarPlayer.pause();
     } else if (playerState === "paused") {
-      audioResume();
+      athkarPlayer.play();
     } else {
-      // First play — sync queue to the thikr the user is currently viewing
+      // First play — build queue and start
+      if (!selectedReciterId) return;
+      const catalog = await reciterRegistry.fetchCatalog();
+      const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
+      if (!reciter) return;
+      const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
+      if (!manifest) return;
+      await athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, currentType);
       if (currentAthkar) {
-        athkarPlayer.jumpTo(currentAthkar.id, currentCount);
-      } else {
-        audioPlay();
+        await athkarPlayer.jumpTo(currentAthkar.id);
       }
+      await athkarPlayer.play();
     }
   }, [
     playerState,
     onboardingCompleted,
-    audioPlay,
-    audioPause,
-    audioResume,
+    selectedReciterId,
+    currentAthkarList,
+    currentType,
     currentAthkar,
-    currentCount,
   ]);
 
   const handleAudioNext = useCallback(() => {
-    moveToNext();
-  }, [moveToNext]);
+    athkarPlayer.next();
+  }, []);
 
   const handleAudioPrevious = useCallback(() => {
-    moveToPrevious();
-  }, [moveToPrevious]);
+    athkarPlayer.previous();
+  }, []);
 
   const handleCollapseControls = useCallback(() => {
     setAudioControlsExpanded(false);
-  }, [setAudioControlsExpanded]);
+  }, []);
 
   const handleExpandControls = useCallback(() => {
     setAudioControlsExpanded(true);
-  }, [setAudioControlsExpanded]);
+  }, []);
 
   // Handle horizontal swipe for decrement
   const horizontalSwipe = Gesture.Pan()
@@ -952,7 +930,7 @@ const AthkarFocusScreen = () => {
             onNext={handleAudioNext}
             onPrevious={handleAudioPrevious}
             onCollapse={handleCollapseControls}
-            onDismiss={audioDismiss}
+            onDismiss={() => athkarPlayer.stop()}
           />
         )}
         {showAudioControls && !audioControlsExpanded && (
