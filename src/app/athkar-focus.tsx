@@ -484,6 +484,24 @@ const AthkarFocusScreen = () => {
     setAudioControlsExpanded(true);
   }, []);
 
+  const handleSwipeToNext = useCallback(() => {
+    moveToNext();
+    if (athkarPlayer.isActive()) {
+      const { currentAthkarIndex: idx } = useAthkarStore.getState();
+      const athkar = currentAthkarList[idx];
+      if (athkar) athkarPlayer.jumpTo(athkar.id);
+    }
+  }, [moveToNext, currentAthkarList]);
+
+  const handleSwipeToPrevious = useCallback(() => {
+    moveToPrevious();
+    if (athkarPlayer.isActive()) {
+      const { currentAthkarIndex: idx } = useAthkarStore.getState();
+      const athkar = currentAthkarList[idx];
+      if (athkar) athkarPlayer.jumpTo(athkar.id);
+    }
+  }, [moveToPrevious, currentAthkarList]);
+
   // Handle horizontal swipe for decrement
   const horizontalSwipe = Gesture.Pan()
     .activeOffsetX([-20, 20])
@@ -554,14 +572,14 @@ const AthkarFocusScreen = () => {
         slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
           slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
         });
-        scheduleOnRN(moveToNext);
+        scheduleOnRN(handleSwipeToNext);
       } else if (event.translationY > NAVIGATION_THRESHOLD) {
         // Swipe down - Previous athkar
         scheduleOnRN(hapticSelection);
         slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
           slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
         });
-        scheduleOnRN(moveToPrevious);
+        scheduleOnRN(handleSwipeToPrevious);
       } else {
         // Return to original state if swipe wasn't strong enough
         slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
