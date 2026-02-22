@@ -159,6 +159,7 @@ class AthkarPlayer {
 
     // Resolve local paths and build RNTP tracks (expanded: one track per repeat)
     const tracks: Track[] = [];
+    let trackCounter = 0;
     for (let i = 0; i < this.queue.length; i++) {
       const item = this.queue[i];
       if (!item.audioFile) continue;
@@ -177,7 +178,7 @@ class AthkarPlayer {
 
       for (let r = 0; r < effectiveRepeats; r++) {
         tracks.push({
-          id: `${item.athkarId}_r${r}`,
+          id: `t${trackCounter++}`,
           url: localPath,
           title: this.getSessionTitle(),
           artist: this.getReciterName(),
@@ -325,19 +326,29 @@ class AthkarPlayer {
 
   async jumpTo(athkarId: string): Promise<void> {
     const rnQueue = await TrackPlayer.getQueue();
-    // Find first track with matching athkarId (first repeat)
-    const trackIndex = rnQueue.findIndex((t) => t.athkarId === athkarId);
 
-    if (trackIndex === -1) {
+    // Collect all RNTP tracks for this athkarId
+    const matchingIndices: number[] = [];
+    for (let i = 0; i < rnQueue.length; i++) {
+      if (rnQueue[i].athkarId === athkarId) matchingIndices.push(i);
+    }
+
+    if (matchingIndices.length === 0) {
       log.w("Player", `jumpTo: athkarId ${athkarId} not found in queue`);
       return;
     }
+
+    // Use current count to resume at the right track (skip already-completed ones)
+    const progressItem = this.athkarStore.currentProgress.find((p) => p.athkarId === athkarId);
+    const currentCount = progressItem?.currentCount ?? 0;
+    const offset = Math.min(currentCount, matchingIndices.length - 1);
+    const targetIndex = matchingIndices[offset];
 
     this.clearSmartPauseTimer();
     this.isManualSkip = true;
 
     try {
-      await TrackPlayer.skip(trackIndex);
+      await TrackPlayer.skip(targetIndex);
       await TrackPlayer.play();
       this.setPlayerState("playing");
     } catch (error) {
