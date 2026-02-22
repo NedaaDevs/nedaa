@@ -27,8 +27,7 @@ const AthkarAudioDebugScreen = () => {
     playerState,
     selectedReciterId,
     currentThikrId,
-    currentRepeat,
-    totalRepeats,
+    repeatProgress,
     sessionProgress,
   } = useAthkarAudioStore();
 
@@ -91,7 +90,7 @@ const AthkarAudioDebugScreen = () => {
                   action={
                     playerState === "playing"
                       ? "success"
-                      : playerState === "loading" || playerState === "crossfading"
+                      : playerState === "loading"
                         ? "warning"
                         : "muted"
                   }>
@@ -133,7 +132,7 @@ const AthkarAudioDebugScreen = () => {
                 <Text color="$typography">Repeat</Text>
                 <Badge action="info">
                   <Badge.Text>
-                    {currentRepeat} / {totalRepeats}
+                    {repeatProgress.current} / {repeatProgress.total}
                   </Badge.Text>
                 </Badge>
               </HStack>
