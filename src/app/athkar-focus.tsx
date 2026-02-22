@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -152,6 +152,16 @@ const AthkarFocusScreen = () => {
   const currentAthkarList =
     currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
 
+  // Suppress all slide animations until the initial effects settle
+  const hasSettled = useRef(false);
+  useEffect(() => {
+    hasSettled.current = false;
+    const timer = setTimeout(() => {
+      hasSettled.current = true;
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [currentType]);
+
   // Initialize focus mode and optimal index on mount
   useEffect(() => {
     toggleFocusMode();
@@ -254,6 +264,12 @@ const AthkarFocusScreen = () => {
 
   useEffect(() => {
     if (previousIndex !== currentAthkarIndex) {
+      // Skip animation during initial settling (mount, audio sync, auto-move)
+      if (!hasSettled.current) {
+        setPreviousIndex(currentAthkarIndex);
+        return;
+      }
+
       if (reduceMotion) {
         // Instant update — no animation
         slideOpacity.value = 1;
