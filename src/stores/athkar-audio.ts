@@ -8,34 +8,16 @@ import type {
   AthkarAudioState,
   AthkarAudioActions,
   PlaybackMode,
-  PlayerState,
   RepeatLimit,
   DownloadStatus,
 } from "@/types/athkar-audio";
 
 type AthkarAudioStore = AthkarAudioState & AthkarAudioActions;
 
-const initialPlaybackState: Pick<
-  AthkarAudioState,
-  | "playerState"
-  | "currentThikrId"
-  | "currentAthkarId"
-  | "repeatProgress"
-  | "sessionProgress"
-  | "position"
-  | "duration"
-  | "showBottomSheet"
-  | "showCompletion"
-> = {
-  playerState: "idle",
-  currentThikrId: null,
-  currentAthkarId: null,
-  repeatProgress: { current: 0, total: 0 },
-  sessionProgress: { current: 0, total: 0 },
+const initialPlaybackState: Pick<AthkarAudioState, "position" | "duration" | "showBottomSheet"> = {
   position: 0,
   duration: 0,
   showBottomSheet: false,
-  showCompletion: false,
 };
 
 export const useAthkarAudioStore = create<AthkarAudioStore>()(
@@ -57,16 +39,10 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         downloadProgress: {},
         totalStorageUsed: 0,
 
-        // --- State setters (called by athkarPlayer service only) ---
-        setPlayerState: (state: PlayerState) => set({ playerState: state }),
-        setCurrentTrack: (thikrId, athkarId) =>
-          set({ currentThikrId: thikrId, currentAthkarId: athkarId }),
-        setRepeatProgress: (progress) => set({ repeatProgress: progress }),
-        setSessionProgress: (progress) => set({ sessionProgress: progress }),
+        // --- State setters ---
         setPosition: (position: number) => set({ position }),
         setDuration: (duration: number) => set({ duration }),
         setShowBottomSheet: (show: boolean) => set({ showBottomSheet: show }),
-        setShowCompletion: (show: boolean) => set({ showCompletion: show }),
 
         // --- Settings actions ---
         setPlaybackMode: (mode: PlaybackMode) => set({ playbackMode: mode }),
@@ -93,9 +69,6 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         setTotalStorageUsed: (bytes: number) => set({ totalStorageUsed: bytes }),
 
         clearDownloads: () => set({ downloads: {}, downloadProgress: {} }),
-
-        // --- Reset ---
-        resetPlaybackState: () => set(initialPlaybackState),
       }),
       {
         name: "athkar-audio-storage",

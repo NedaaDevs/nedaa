@@ -11,6 +11,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Play, Pause, SkipBack, SkipForward, X, ChevronDown } from "lucide-react-native";
 
+import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
@@ -29,10 +30,10 @@ const PlayerBottomSheet: FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
 
+  const playerState = useAthkarStore((s) => s.playerState);
+  const repeatProgress = useAthkarStore((s) => s.repeatProgress);
+  const sessionProgress = useAthkarStore((s) => s.sessionProgress);
   const showBottomSheet = useAthkarAudioStore((s) => s.showBottomSheet);
-  const playerState = useAthkarAudioStore((s) => s.playerState);
-  const repeatProgress = useAthkarAudioStore((s) => s.repeatProgress);
-  const sessionProgress = useAthkarAudioStore((s) => s.sessionProgress);
   const position = useAthkarAudioStore((s) => s.position);
   const duration = useAthkarAudioStore((s) => s.duration);
 

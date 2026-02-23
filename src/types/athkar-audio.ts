@@ -81,18 +81,12 @@ export type AthkarAudioState = {
   comfortMode: boolean;
   onboardingCompleted: boolean;
 
-  // Playback state (runtime — read-only mirror of RNTP)
-  playerState: PlayerState;
-  currentThikrId: string | null;
-  currentAthkarId: string | null;
-  repeatProgress: { current: number; total: number };
-  sessionProgress: { current: number; total: number };
+  // High-frequency playback data (stays separate to avoid excessive re-renders)
   position: number;
   duration: number;
 
   // UI state
   showBottomSheet: boolean;
-  showCompletion: boolean;
 
   // Download state (runtime)
   downloads: Record<string, DownloadStatus>;
@@ -100,17 +94,12 @@ export type AthkarAudioState = {
   totalStorageUsed: number;
 };
 
-// Actions — simplified, no more bridge setters
+// Actions
 export type AthkarAudioActions = {
-  // State setters (called by athkarPlayer service only)
-  setPlayerState: (state: PlayerState) => void;
-  setCurrentTrack: (thikrId: string | null, athkarId: string | null) => void;
-  setRepeatProgress: (progress: { current: number; total: number }) => void;
-  setSessionProgress: (progress: { current: number; total: number }) => void;
+  // High-frequency playback data setters
   setPosition: (position: number) => void;
   setDuration: (duration: number) => void;
   setShowBottomSheet: (show: boolean) => void;
-  setShowCompletion: (show: boolean) => void;
 
   // Settings
   setPlaybackMode: (mode: PlaybackMode) => void;
@@ -124,7 +113,4 @@ export type AthkarAudioActions = {
   setDownloadProgress: (thikrId: string, progress: number) => void;
   setTotalStorageUsed: (bytes: number) => void;
   clearDownloads: () => void;
-
-  // Reset
-  resetPlaybackState: () => void;
 };
