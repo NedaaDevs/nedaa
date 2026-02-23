@@ -1,4 +1,5 @@
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import type { PlayerState } from "@/types/athkar-audio";
 
 export type AthkarType = (typeof ATHKAR_TYPE)[keyof typeof ATHKAR_TYPE];
 
@@ -54,10 +55,34 @@ export type AthkarState = {
     showStreak: boolean;
     showTranslation: boolean;
   };
+
+  // Audio playback state (merged from athkar-audio store for atomic updates)
+  playerState: PlayerState;
+  currentAthkarId: string | null;
+  currentThikrId: string | null;
+  repeatProgress: { current: number; total: number };
+  sessionProgress: { current: number; total: number };
+};
+
+export type TrackTransitionParams = {
+  previousAthkarId: string | null;
+  newAthkarId: string;
+  newThikrId: string;
+  repeatProgress: { current: number; total: number };
+  sessionProgress: { current: number; total: number };
+  newIndex: number;
 };
 
 // Actions
 export type AthkarActions = {
+  // Audio state (sole writer: player singleton)
+  setPlayerState: (state: PlayerState) => void;
+  setCurrentTrack: (thikrId: string | null, athkarId: string | null) => void;
+  setRepeatProgress: (progress: { current: number; total: number }) => void;
+  setSessionProgress: (progress: { current: number; total: number }) => void;
+  transitionTrack: (params: TrackTransitionParams) => void;
+  resetPlaybackState: () => void;
+
   // Synchronous
   setMorningAthkarList: (list: Athkar[]) => void;
   setEveningAthkarList: (list: Athkar[]) => void;

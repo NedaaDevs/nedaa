@@ -18,6 +18,7 @@ import { Icon } from "@/components/ui/icon";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Play, Pause, X } from "lucide-react-native";
 
+import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
 import { AUDIO_UI } from "@/constants/AthkarAudio";
@@ -29,8 +30,8 @@ const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
   const pathname = usePathname();
 
-  const playerState = useAthkarAudioStore((s) => s.playerState);
-  const sessionProgress = useAthkarAudioStore((s) => s.sessionProgress);
+  const playerState = useAthkarStore((s) => s.playerState);
+  const sessionProgress = useAthkarStore((s) => s.sessionProgress);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);

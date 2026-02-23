@@ -42,7 +42,7 @@ const AthkarTabs = () => {
   const router = useRouter();
 
   const { setCurrentType, validateDailyStreak } = useAthkarStore();
-  const playerState = useAthkarAudioStore((s) => s.playerState);
+  const playerState = useAthkarStore((s) => s.playerState);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
 
   const isPlayerActive =

@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import TopBar from "@/components/TopBar";
 import { Background } from "@/components/ui/background";
 
+import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { AthkarDB } from "@/services/athkar-db";
@@ -22,14 +23,8 @@ const log = AppLogger.create("athkar-audio");
 const AthkarAudioDebugScreen = () => {
   const { t } = useTranslation();
 
-  const {
-    playbackMode,
-    playerState,
-    selectedReciterId,
-    currentThikrId,
-    repeatProgress,
-    sessionProgress,
-  } = useAthkarAudioStore();
+  const { playerState, currentThikrId, repeatProgress, sessionProgress } = useAthkarStore();
+  const { playbackMode, selectedReciterId } = useAthkarAudioStore();
 
   const [logText, setLogText] = useState("");
   const [storageBreakdown, setStorageBreakdown] = useState<{ reciterId: string; size: number }[]>(
