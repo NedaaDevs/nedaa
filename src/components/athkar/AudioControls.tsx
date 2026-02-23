@@ -20,6 +20,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Play, Pause, SkipBack, SkipForward, X } from "lucide-react-native";
 
+import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
@@ -55,8 +56,8 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const theme = useTheme();
   const hapticSelection = useHaptic("selection");
 
-  const playerState = useAthkarAudioStore((s) => s.playerState);
-  const repeatProgress = useAthkarAudioStore((s) => s.repeatProgress);
+  const playerState = useAthkarStore((s) => s.playerState);
+  const repeatProgress = useAthkarStore((s) => s.repeatProgress);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
@@ -431,8 +432,8 @@ type CollapsedBarProps = {
 export const CollapsedAudioBar: FC<CollapsedBarProps> = ({ onExpand, onPlayPause }) => {
   const { t } = useTranslation();
 
-  const playerState = useAthkarAudioStore((s) => s.playerState);
-  const sessionProgress = useAthkarAudioStore((s) => s.sessionProgress);
+  const playerState = useAthkarStore((s) => s.playerState);
+  const sessionProgress = useAthkarStore((s) => s.sessionProgress);
 
   const isPlaying = playerState === "playing";
   const isLoading = playerState === "loading";

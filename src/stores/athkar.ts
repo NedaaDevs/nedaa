@@ -103,6 +103,13 @@ export const useAthkarStore = create<AthkarStore>()(
         lastMorningIndex: 0,
         lastEveningIndex: 0,
 
+        // Audio playback state (sole writer: player singleton)
+        playerState: "idle",
+        currentAthkarId: null,
+        currentThikrId: null,
+        repeatProgress: { current: 0, total: 0 },
+        sessionProgress: { current: 0, total: 0 },
+
         // Initialize DB and load data
         initializeStore: async () => {
           try {
@@ -297,6 +304,81 @@ export const useAthkarStore = create<AthkarStore>()(
         setEveningAthkarList: (list) => set({ eveningAthkarList: list }),
         setCurrentType: (type) => set({ currentType: type }),
         setCurrentAthkarIndex: (index: number) => set({ currentAthkarIndex: index }),
+
+        // Audio state actions (sole writer: player singleton)
+        setPlayerState: (playerState) => set({ playerState }),
+        setCurrentTrack: (thikrId, athkarId) =>
+          set({ currentThikrId: thikrId, currentAthkarId: athkarId }),
+        setRepeatProgress: (repeatProgress) => set({ repeatProgress }),
+        setSessionProgress: (sessionProgress) => set({ sessionProgress }),
+
+        transitionTrack: (params) => {
+          const {
+            previousAthkarId,
+            newAthkarId,
+            newThikrId,
+            repeatProgress,
+            sessionProgress,
+            newIndex,
+          } = params;
+
+          set((state) => {
+            const updates: Partial<AthkarState> = {
+              currentAthkarId: newAthkarId,
+              currentThikrId: newThikrId,
+              repeatProgress,
+              sessionProgress,
+              currentAthkarIndex: newIndex,
+            };
+
+            if (state.currentType === ATHKAR_TYPE.MORNING) {
+              updates.lastMorningIndex = newIndex;
+            } else {
+              updates.lastEveningIndex = newIndex;
+            }
+
+            if (previousAthkarId) {
+              updates.currentProgress = state.currentProgress.map((p) => {
+                if (p.athkarId === previousAthkarId) {
+                  const newCount = Math.min(p.currentCount + 1, p.totalCount);
+                  return { ...p, currentCount: newCount, completed: newCount >= p.totalCount };
+                }
+                return p;
+              });
+            }
+
+            return updates;
+          });
+
+          if (previousAthkarId) {
+            const tz = locationStore.getState().locationDetails.timezone;
+            const todayInt = getTodayInt(tz);
+            const updatedItem = get().currentProgress.find((p) => p.athkarId === previousAthkarId);
+            if (updatedItem) {
+              debouncedDBUpdate.add(
+                previousAthkarId,
+                todayInt,
+                previousAthkarId,
+                updatedItem.currentCount
+              );
+              if (updatedItem.completed) {
+                setTimeout(async () => {
+                  await get().checkAndUpdateSessionCompletion(previousAthkarId);
+                }, 400);
+              }
+            }
+          }
+        },
+
+        resetPlaybackState: () =>
+          set({
+            playerState: "idle",
+            currentAthkarId: null,
+            currentThikrId: null,
+            repeatProgress: { current: 0, total: 0 },
+            sessionProgress: { current: 0, total: 0 },
+          }),
+
         toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
 
         // Find the optimal starting index for focus mode
@@ -391,6 +473,16 @@ export const useAthkarStore = create<AthkarStore>()(
 
         incrementCount: (athkarId, skipAutoMove) => {
           const state = get();
+
+          // Audio guard: block manual UI taps on the thikr currently being played.
+          // Player calls pass skipAutoMove=true to bypass this guard.
+          if (
+            !skipAutoMove &&
+            state.playerState === "playing" &&
+            state.currentAthkarId === athkarId
+          )
+            return;
+
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
           if (!progressItem) return;

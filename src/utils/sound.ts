@@ -10,7 +10,7 @@ import type { SoundOption, SoundAsset } from "@/types/sound";
 import type { CustomSound } from "@/types/customSound";
 
 // Stores
-import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { useAthkarStore } from "@/stores/athkar";
 
 // Utils
 import { isCustomSoundKey } from "@/utils/customSoundHelpers";
@@ -115,7 +115,7 @@ class SoundPreviewManager {
     customSounds?: import("@/types/customSound").CustomSound[]
   ): Promise<void> {
     // Guard: don't interrupt active athkar playback
-    const athkarState = useAthkarAudioStore.getState().playerState;
+    const athkarState = useAthkarStore.getState().playerState;
     if (athkarState === "playing" || athkarState === "loading") {
       return;
     }
@@ -215,14 +215,12 @@ class SoundPreviewManager {
 
   async stopPreview(): Promise<void> {
     try {
-      await TrackPlayer.pause();
-      await TrackPlayer.seekTo(0);
+      await TrackPlayer.reset();
       this.isPlaying = false;
       this.currentSoundId = null;
       this.notifyListeners();
     } catch (error) {
       console.error("Error stopping sound preview:", error);
-      // Force reset state even if error occurs
       this.isPlaying = false;
       this.currentSoundId = null;
       this.notifyListeners();

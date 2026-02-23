@@ -43,10 +43,10 @@ type Props = {
 const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const { t, i18n } = useTranslation();
   const { incrementCount, decrementCount } = useAthkarStore();
+  const playerState = useAthkarStore((s) => s.playerState);
+  const currentAthkarId = useAthkarStore((s) => s.currentAthkarId);
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
   const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
-  const currentAthkarId = useAthkarAudioStore((s) => s.currentAthkarId);
-  const playerState = useAthkarAudioStore((s) => s.playerState);
   const showAudioIcon = playbackMode !== PLAYBACK_MODE.OFF;
 
   const isThisPlaying = currentAthkarId === athkar.id && playerState === "playing";

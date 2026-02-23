@@ -100,13 +100,14 @@ const AthkarFocusScreen = () => {
     moveToPrevious,
   } = useAthkarStore();
 
-  // Audio store
+  // Audio state (sync-critical fields moved to athkarStore)
+  const playerState = useAthkarStore((s) => s.playerState);
+  const currentAthkarId = useAthkarStore((s) => s.currentAthkarId);
+
+  // Audio preferences + high-frequency data (remain in audio store)
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
-  const playerState = useAthkarAudioStore((s) => s.playerState);
   const selectedReciterId = useAthkarAudioStore((s) => s.selectedReciterId);
   const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
-  const currentAthkarId = useAthkarAudioStore((s) => s.currentAthkarId);
-
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
 
@@ -152,14 +153,10 @@ const AthkarFocusScreen = () => {
   const currentAthkarList =
     currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
 
-  // Suppress all slide animations until the initial effects settle
-  const hasSettled = useRef(false);
+  // Skip slide animation for the first index change after mount/type-switch
+  const isFirstRender = useRef(true);
   useEffect(() => {
-    hasSettled.current = false;
-    const timer = setTimeout(() => {
-      hasSettled.current = true;
-    }, 400);
-    return () => clearTimeout(timer);
+    isFirstRender.current = true;
   }, [currentType]);
 
   // Initialize focus mode and optimal index on mount
@@ -248,24 +245,14 @@ const AthkarFocusScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAthkarIndex, currentAthkar, progressPercentage]);
 
-  // One-way sync: when audio changes track, update focus screen to match
-  useEffect(() => {
-    if (currentAthkarId && (playerState === "playing" || playerState === "paused")) {
-      const idx = currentAthkarList.findIndex((a) => a.id === currentAthkarId);
-      if (idx !== -1 && idx !== currentAthkarIndex) {
-        setCurrentAthkarIndex(idx);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAthkarId]);
-
   // Track previous index for slide direction
   const [previousIndex, setPreviousIndex] = useState(currentAthkarIndex);
 
   useEffect(() => {
     if (previousIndex !== currentAthkarIndex) {
-      // Skip animation during initial settling (mount, audio sync, auto-move)
-      if (!hasSettled.current) {
+      // Skip animation on first index change after mount/type-switch
+      if (isFirstRender.current) {
+        isFirstRender.current = false;
         setPreviousIndex(currentAthkarIndex);
         return;
       }
@@ -335,10 +322,14 @@ const AthkarFocusScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allCompleted]);
 
-  // Stop audio when shortVersion changes (athkar list changes)
+  // Stop audio when shortVersion changes (athkar list changes) — skip mount
+  const prevShortVersion = useRef(shortVersion);
   useEffect(() => {
-    if (playerState !== "idle") {
-      athkarPlayer.stop();
+    if (prevShortVersion.current !== shortVersion) {
+      prevShortVersion.current = shortVersion;
+      if (playerState !== "idle") {
+        athkarPlayer.stop();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shortVersion]);

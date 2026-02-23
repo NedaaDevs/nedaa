@@ -59,7 +59,7 @@ class AthkarPlayer {
   }
 
   private setPlayerState(state: PlayerState) {
-    this.store.setPlayerState(state);
+    this.athkarStore.setPlayerState(state);
   }
 
   // ─── Initialize ───────────────────────────────────────────────────
@@ -200,10 +200,13 @@ class AthkarPlayer {
     await TrackPlayer.add(tracks);
     await TrackPlayer.setRepeatMode(RepeatMode.Off);
 
-    // Update store
-    this.store.setSessionProgress({ current: 1, total: this.uniqueThikrIds.length });
-    this.store.setCurrentTrack(this.queue[0]?.thikrId ?? null, this.queue[0]?.athkarId ?? null);
-    this.store.setRepeatProgress({
+    // Update athkar store (sync-critical state)
+    this.athkarStore.setSessionProgress({ current: 1, total: this.uniqueThikrIds.length });
+    this.athkarStore.setCurrentTrack(
+      this.queue[0]?.thikrId ?? null,
+      this.queue[0]?.athkarId ?? null
+    );
+    this.athkarStore.setRepeatProgress({
       current: 0,
       total: this.getEffectiveRepeats(this.queue[0]),
     });
@@ -315,7 +318,9 @@ class AthkarPlayer {
     this.activeDownloads.clear();
     this.failedDownloads.clear();
 
-    this.store.resetPlaybackState();
+    this.athkarStore.resetPlaybackState();
+    this.store.setPosition(0);
+    this.store.setDuration(0);
     log.i("Player", "Stopped");
   }
 
@@ -399,55 +404,55 @@ class AthkarPlayer {
     const wasManualSkip = this.isManualSkip;
     this.isManualSkip = false;
 
-    // On natural advance: increment count for the completed track
-    if (!wasManualSkip && this.previousAthkarId) {
-      this.athkarStore.incrementCount(this.previousAthkarId, true);
-    }
+    const athkarChanged = athkarId !== this.previousAthkarId;
 
-    // Smart pause when transitioning to a different thikr (natural advance only)
-    if (!wasManualSkip && this.previousAthkarId && this.previousAthkarId !== athkarId) {
-      const pauseMs = this.getSmartPause(this.previousDuration);
-      if (pauseMs > 0) {
-        this.isSmartPausing = true;
-        await TrackPlayer.pause();
-        this.setPlayerState("loading");
-        await new Promise((resolve) => {
-          this.smartPauseTimer = setTimeout(resolve, pauseMs);
-        });
-        this.smartPauseTimer = null;
-        await TrackPlayer.play();
-        this.setPlayerState("playing");
-        this.isSmartPausing = false;
-      }
-    }
+    if (athkarChanged) {
+      // ── Thikr transition (or first track): atomic UI update ──
 
-    // Update store
-    this.store.setCurrentTrack(thikrId, athkarId);
-    this.store.setRepeatProgress({ current: repeatIndex, total: totalRepeats });
+      // Compute session progress
+      const thikrNumber = this.uniqueThikrIds.indexOf(athkarId);
+      const sessionProgress =
+        thikrNumber !== -1
+          ? { current: thikrNumber + 1, total: this.uniqueThikrIds.length }
+          : this.athkarStore.sessionProgress;
 
-    // Session progress (unique thikr position, not raw RNTP index)
-    const thikrNumber = this.uniqueThikrIds.indexOf(athkarId);
-    if (thikrNumber !== -1) {
-      this.store.setSessionProgress({
-        current: thikrNumber + 1,
-        total: this.uniqueThikrIds.length,
-      });
-    }
-
-    // Sync athkar store index when thikr changes
-    if (athkarId !== this.previousAthkarId) {
-      const {
-        currentType,
-        morningAthkarList,
-        eveningAthkarList,
-        currentAthkarIndex,
-        setCurrentAthkarIndex,
-      } = this.athkarStore;
+      // Compute focus screen index
+      const { currentType, morningAthkarList, eveningAthkarList } = this.athkarStore;
       const list = currentType === "morning" ? morningAthkarList : eveningAthkarList;
-      const idx = list.findIndex((a) => a.id === athkarId);
-      if (idx !== -1 && idx !== currentAthkarIndex) {
-        setCurrentAthkarIndex(idx);
+      const newIndex = list.findIndex((a) => a.id === athkarId);
+
+      // One atomic set(): increment previous count + set new track + progress + index
+      this.athkarStore.transitionTrack({
+        previousAthkarId: !wasManualSkip && this.previousAthkarId ? this.previousAthkarId : null,
+        newAthkarId: athkarId,
+        newThikrId: thikrId,
+        repeatProgress: { current: repeatIndex, total: totalRepeats },
+        sessionProgress,
+        newIndex: newIndex !== -1 ? newIndex : this.athkarStore.currentAthkarIndex,
+      });
+
+      // Smart pause AFTER UI update (user sees the new card instantly)
+      if (!wasManualSkip && this.previousAthkarId) {
+        const pauseMs = this.getSmartPause(this.previousDuration);
+        if (pauseMs > 0) {
+          this.isSmartPausing = true;
+          this.setPlayerState("loading");
+          await TrackPlayer.pause();
+          await new Promise((resolve) => {
+            this.smartPauseTimer = setTimeout(resolve, pauseMs);
+          });
+          this.smartPauseTimer = null;
+          await TrackPlayer.play();
+          this.setPlayerState("playing");
+          this.isSmartPausing = false;
+        }
       }
+    } else {
+      // ── Same thikr, new repeat: increment count + update repeat progress ──
+      if (!wasManualSkip && this.previousAthkarId) {
+        this.athkarStore.incrementCount(this.previousAthkarId, true);
+      }
+      this.athkarStore.setRepeatProgress({ current: repeatIndex, total: totalRepeats });
     }
 
     this.previousAthkarId = athkarId;
@@ -478,7 +483,7 @@ class AthkarPlayer {
     if (event.playWhenReady) {
       this.setPlayerState("playing");
     } else {
-      const currentState = this.store.playerState;
+      const currentState = this.athkarStore.playerState;
       if (currentState === "playing") {
         this.setPlayerState("paused");
       }
@@ -517,9 +522,9 @@ class AthkarPlayer {
     this.isSmartPausing = false;
     this.clearSmartPauseTimer();
 
-    this.store.setPlayerState("idle");
-    this.store.setShowCompletion(true);
-    this.store.setCurrentTrack(null, null);
+    this.athkarStore.resetPlaybackState();
+    this.store.setPosition(0);
+    this.store.setDuration(0);
   }
 
   // ─── Download & Prefetch ───────────────────────────────────────────
@@ -628,12 +633,12 @@ class AthkarPlayer {
   // ─── Getters ───────────────────────────────────────────────────────
 
   isActive(): boolean {
-    const state = this.store.playerState;
+    const state = this.athkarStore.playerState;
     return state !== "idle" && state !== "ended";
   }
 
   getCurrentAthkarId(): string | null {
-    return this.store.currentAthkarId;
+    return this.athkarStore.currentAthkarId;
   }
 }
 
