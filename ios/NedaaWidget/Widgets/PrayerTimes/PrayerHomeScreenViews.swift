@@ -104,7 +104,7 @@ struct PrayerTimeText: View {
     var body: some View {
         Text(date, style: .time)
             .font(font)
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .fixedSize(horizontal: true, vertical: false)
             .minimumScaleFactor(0.7)
     }
@@ -121,7 +121,7 @@ struct SmallPrayerTimesView: View {
             // Hijri date at the top (compact for small widget)
             Text(entry.date.hijriDateStringCompact())
                 .font(.system(size: showsBackground ? 10 : 12))
-                .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                 .lineLimit(1)
                 .padding(.top, 2)
 
@@ -131,7 +131,7 @@ struct SmallPrayerTimesView: View {
                     Text(LocalizedStringKey(previousPrayer.name))
                         .font(showsBackground ? .caption : .callout)
                         .fontWeight(.medium)
-                        .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                         .lineLimit(1)
 
                     // Show count-up timer if within 30 minutes after prayer AND timer enabled
@@ -139,7 +139,7 @@ struct SmallPrayerTimesView: View {
                         VStack(spacing: -2) {
                             Text(previousPrayer.date, style: .timer)
                                 .font(.system(size: showsBackground ? 18 : 22, weight: .bold, design: .rounded))
-                                .foregroundColor(NedaaColors.success.opacity(0.8))
+                                .foregroundStyle(NedaaColors.success.opacity(0.8))
                                 .monospacedDigit()
                                 .multilineTextAlignment(.center)
                                 .minimumScaleFactor(0.8)
@@ -147,13 +147,13 @@ struct SmallPrayerTimesView: View {
 
                             Text(previousPrayer.date, style: .time)
                                 .font(.system(size: showsBackground ? 11 : 13, weight: .medium))
-                                .foregroundColor(NedaaColors.textSecondary(for: colorScheme).opacity(0.7))
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme).opacity(0.7))
                         }
                         .frame(maxWidth: .infinity)
                     } else {
                         Text(previousPrayer.date, style: .time)
                             .font(showsBackground ? .caption2 : .caption)
-                            .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -176,7 +176,7 @@ struct SmallPrayerTimesView: View {
                     Text(LocalizedStringKey(nextPrayer.name))
                         .font(showsBackground ? .title2 : .title)
                         .fontWeight(.bold)
-                        .foregroundColor(NedaaColors.primary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.primary(for: colorScheme))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .accentableWidget()
@@ -186,28 +186,28 @@ struct SmallPrayerTimesView: View {
                         VStack(spacing: 0) {
                             Text(nextPrayer.date, style: .timer)
                                 .font(.system(size: showsBackground ? 18 : 22, weight: .semibold, design: .rounded))
-                                .foregroundColor(NedaaColors.text(for: colorScheme))
+                                .foregroundStyle(NedaaColors.text(for: colorScheme))
                                 .monospacedDigit()
                                 .multilineTextAlignment(.center)
                                 .numericContentTransition()
 
                             Text(nextPrayer.date, style: .time)
                                 .font(showsBackground ? .caption2 : .caption)
-                                .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                         }
                         .frame(maxWidth: .infinity)
                     } else {
                         Text(nextPrayer.date, style: .time)
                             .font(showsBackground ? .title3 : .title2)
                             .fontWeight(.medium)
-                            .foregroundColor(NedaaColors.text(for: colorScheme))
+                            .foregroundStyle(NedaaColors.text(for: colorScheme))
                     }
 
                     // "in X min" label when countdown is active
                     if shouldShowCountdown(for: nextPrayer) && !isTimerEnabled {
                         Text(relativeTimeString(for: nextPrayer.date))
                             .font(.caption2)
-                            .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -216,7 +216,7 @@ struct SmallPrayerTimesView: View {
             } else {
                 Text("widget.noPrayerTimes")
                     .font(.caption)
-                    .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
             }
 
             Spacer()
@@ -273,11 +273,11 @@ struct MediumPrayerTimesView: View {
             HStack(spacing: 4) {
                 Image(systemName: "moon.stars.fill")
                     .font(.system(size: 8))
-                    .foregroundColor(NedaaColors.primary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
 
                 Text(entry.date.hijriDateString())
                     .font(.system(size: 8))
-                    .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
 
@@ -285,7 +285,7 @@ struct MediumPrayerTimesView: View {
 
                 Text(entry.date, style: .date)
                     .font(.system(size: 8))
-                    .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
             }
             .padding(.horizontal, 10)
             .padding(.top, 3)
@@ -300,7 +300,7 @@ struct MediumPrayerTimesView: View {
                             .fontWeight(.semibold)
                             .minimumScaleFactor(0.4)
                             .lineLimit(1)
-                            .foregroundColor(NedaaColors.text(for: colorScheme))
+                            .foregroundStyle(NedaaColors.text(for: colorScheme))
 
                         PrayerTimeText(
                             date: prayer.date,
@@ -351,26 +351,26 @@ struct LargePrayerTimesView: View {
             HStack {
                 Image(systemName: "moon.stars.fill")
                     .font(.title3)
-                    .foregroundColor(NedaaColors.primary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("widget.prayerTimes")
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundColor(NedaaColors.text(for: colorScheme))
+                        .foregroundStyle(NedaaColors.text(for: colorScheme))
 
                     HStack(spacing: 4) {
                         Text(entry.date, style: .date)
                             .font(.caption2)
-                            .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
                         Text("•")
                             .font(.caption2)
-                            .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
                         Text(entry.date.hijriDateString())
                             .font(.caption2)
-                            .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                     }
                 }
 
@@ -398,17 +398,17 @@ struct LargePrayerTimesView: View {
             if let nextPrayer = entry.nextPrayer, nextPrayer.date > entry.date {
                 HStack(spacing: 6) {
                     Image(systemName: "clock.fill")
-                        .foregroundColor(NedaaColors.primary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.primary(for: colorScheme))
                         .font(.caption)
 
                     Text("widget.nextPrayerIn")
                         .font(.caption)
-                        .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
                     Text(nextPrayer.date, style: .relative)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(NedaaColors.text(for: colorScheme))
+                        .foregroundStyle(NedaaColors.text(for: colorScheme))
                         .numericContentTransition()
                 }
                 .padding(.horizontal, 10)
@@ -453,7 +453,7 @@ struct PrayerRowView: View {
             Text(LocalizedStringKey(prayer.name))
                 .font(.caption)
                 .fontWeight(isNext || isPrevious ? .semibold : .regular)
-                .foregroundColor(NedaaColors.text(for: colorScheme))
+                .foregroundStyle(NedaaColors.text(for: colorScheme))
 
             Spacer()
 
@@ -469,7 +469,7 @@ struct PrayerRowView: View {
                 Text("widget.previous")
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundColor(NedaaColors.success)
+                    .foregroundStyle(NedaaColors.success)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(NedaaColors.success.opacity(0.2))
@@ -478,7 +478,7 @@ struct PrayerRowView: View {
                 Text("widget.next")
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundColor(NedaaColors.primary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(NedaaColors.primary(for: colorScheme).opacity(0.2))
@@ -533,17 +533,17 @@ struct MediumPrayerTimesListView: View {
                 HStack {
                     Image(systemName: "moon.stars.fill")
                         .font(.system(size: 9))
-                        .foregroundColor(NedaaColors.primary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.primary(for: colorScheme))
 
                     Text(entry.date.hijriDateString())
                         .font(.system(size: 9))
-                        .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
                     Spacer()
 
                     Text(entry.date, style: .date)
                         .font(.system(size: 9))
-                        .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                 }
                 .padding(.horizontal, 10)
                 .padding(.top, 3)
@@ -566,7 +566,7 @@ struct MediumPrayerTimesListView: View {
                             Text(LocalizedStringKey(prayer.name))
                                 .font(.system(size: rowHeight * 0.55))
                                 .fontWeight(isNextPrayer ? .bold : .medium)
-                                .foregroundColor(
+                                .foregroundStyle(
                                     prayerNameColor(isNext: isNextPrayer, isPast: isPastPrayer))
                                 .accentableWidget(isNextPrayer)
 
@@ -585,7 +585,7 @@ struct MediumPrayerTimesListView: View {
                         .frame(height: rowHeight) // Enforce calculated height
                         .padding(.horizontal, 10)
                         .background(rowBackgroundColor(isNext: isNextPrayer, isPast: isPastPrayer))
-                        .cornerRadius(isNextPrayer ? 7 : 5)
+                        .clipShape(.rect(cornerRadius: isNextPrayer ? 7 : 5))
                         .overlay(
                             RoundedRectangle(cornerRadius: isNextPrayer ? 7 : 5)
                                 .strokeBorder(
@@ -613,7 +613,7 @@ struct MediumPrayerTimesListView: View {
             VStack(alignment: .trailing, spacing: 0) {
                 Text(prayer.date, style: .timer)
                     .font(.system(size: fontHeight * 0.52, weight: .bold, design: .rounded))
-                    .foregroundColor(isNext ? NedaaColors.text(for: colorScheme) : NedaaColors.success.opacity(0.8))
+                    .foregroundStyle(isNext ? NedaaColors.text(for: colorScheme) : NedaaColors.success.opacity(0.8))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -621,7 +621,7 @@ struct MediumPrayerTimesListView: View {
 
                 Text(prayer.date, style: .time)
                     .font(.system(size: fontHeight * 0.42, weight: .medium))
-                    .foregroundColor(NedaaColors.textSecondary(for: colorScheme))
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
