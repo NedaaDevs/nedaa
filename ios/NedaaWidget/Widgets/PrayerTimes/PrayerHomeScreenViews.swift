@@ -116,149 +116,126 @@ struct SmallPrayerTimesView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.showsBackground) var showsBackground
 
+    private var timerPhase: PrayerTimelineUtils.TimerPhase {
+        PrayerTimelineUtils.timerPhase(
+            at: entry.date,
+            previousPrayer: entry.previousPrayer,
+            nextPrayer: entry.nextPrayer,
+            timerEnabled: entry.showTimer
+        )
+    }
+
     var body: some View {
-        VStack(spacing: 2) {
-            // Hijri date at the top (compact for small widget)
+        VStack(spacing: 4) {
+            headerIcon
+                .padding(.top, 4)
+
+            Spacer(minLength: 0)
+
+            mainContent
+
+            Spacer(minLength: 0)
+
             Text(entry.date.hijriDateStringCompact())
-                .font(.system(size: showsBackground ? 10 : 12))
+                .font(WidgetTypography.smallHijri)
                 .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
                 .lineLimit(1)
-                .padding(.top, 2)
-
-            // Previous Prayer
-            if let previousPrayer = entry.previousPrayer {
-                VStack(spacing: 2) {
-                    Text(LocalizedStringKey(previousPrayer.name))
-                        .font(showsBackground ? .caption : .callout)
-                        .fontWeight(.medium)
-                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                        .lineLimit(1)
-
-                    // Show count-up timer if within 30 minutes after prayer AND timer enabled
-                    if shouldShowCountUp(for: previousPrayer) && isTimerEnabled {
-                        VStack(spacing: -2) {
-                            Text(previousPrayer.date, style: .timer)
-                                .font(.system(size: showsBackground ? 18 : 22, weight: .bold, design: .rounded))
-                                .foregroundStyle(NedaaColors.success.opacity(0.8))
-                                .monospacedDigit()
-                                .multilineTextAlignment(.center)
-                                .minimumScaleFactor(0.8)
-                                .numericContentTransition()
-
-                            Text(previousPrayer.date, style: .time)
-                                .font(.system(size: showsBackground ? 11 : 13, weight: .medium))
-                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme).opacity(0.7))
-                        }
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        Text(previousPrayer.date, style: .time)
-                            .font(showsBackground ? .caption2 : .caption)
-                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(showsBackground ? NedaaColors.success.opacity(0.15) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-
-            // Divider line
-            Rectangle()
-                .fill(NedaaColors.textSecondary(for: colorScheme).opacity(0.3))
-                .frame(height: 1)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 1)
-
-            // Next Prayer
-            if let nextPrayer = entry.nextPrayer {
-                VStack(spacing: 4) {
-                    Text(LocalizedStringKey(nextPrayer.name))
-                        .font(showsBackground ? .title2 : .title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .accentableWidget()
-
-                    // Show countdown timer if within 60 minutes before prayer AND timer enabled
-                    if shouldShowCountdown(for: nextPrayer) && isTimerEnabled {
-                        VStack(spacing: 0) {
-                            Text(nextPrayer.date, style: .timer)
-                                .font(.system(size: showsBackground ? 18 : 22, weight: .semibold, design: .rounded))
-                                .foregroundStyle(NedaaColors.text(for: colorScheme))
-                                .monospacedDigit()
-                                .multilineTextAlignment(.center)
-                                .numericContentTransition()
-
-                            Text(nextPrayer.date, style: .time)
-                                .font(showsBackground ? .caption2 : .caption)
-                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                        }
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        Text(nextPrayer.date, style: .time)
-                            .font(showsBackground ? .title3 : .title2)
-                            .fontWeight(.medium)
-                            .foregroundStyle(NedaaColors.text(for: colorScheme))
-                    }
-
-                    // "in X min" label when countdown is active
-                    if shouldShowCountdown(for: nextPrayer) && !isTimerEnabled {
-                        Text(relativeTimeString(for: nextPrayer.date))
-                            .font(.caption2)
-                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-            } else {
-                Text("widget.noPrayerTimes")
-                    .font(.caption)
-                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-            }
-
-            Spacer()
+                .padding(.bottom, 4)
         }
-        .padding(.top, 12)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Helper Functions
-
-    /// Check if timer is enabled in configuration
-    private var isTimerEnabled: Bool {
-        return entry.showTimer
-    }
-
-    /// Check if we should show countdown for next prayer (within 60 minutes)
-    private func shouldShowCountdown(for prayer: PrayerData) -> Bool {
-        let minutesUntil =
-            Calendar.current.dateComponents([.minute], from: entry.date, to: prayer.date).minute ?? 0
-        return minutesUntil > 0 && minutesUntil <= 60
-    }
-
-    /// Check if we should show count-up for previous prayer (within 30 minutes after)
-    private func shouldShowCountUp(for prayer: PrayerData) -> Bool {
-        let minutesSince =
-            Calendar.current.dateComponents([.minute], from: prayer.date, to: entry.date).minute ?? 0
-        return minutesSince >= 0 && minutesSince <= 30
-    }
-
-    /// Generate relative time string (e.g., "in 25 min")
-    private func relativeTimeString(for date: Date) -> String {
-        let components = Calendar.current.dateComponents([.hour, .minute], from: entry.date, to: date)
-
-        if let hours = components.hour, let minutes = components.minute {
-            if hours > 0 {
-                return String(format: String(localized: "widget.inHoursMinutes"), hours, minutes)
-            } else {
-                return String(format: String(localized: "widget.inMinutes"), minutes)
+    @ViewBuilder
+    private var headerIcon: some View {
+        let iconName: String = {
+            switch timerPhase {
+            case .countUp(let prayer):
+                return WidgetIcons.prayerIcon(for: prayer.name)
+            case .countdown(let prayer), .absoluteTime(let prayer):
+                return WidgetIcons.prayerIcon(for: prayer.name)
+            case .none:
+                return "moon.stars.fill"
             }
+        }()
+
+        Image(systemName: iconName)
+            .font(.system(size: showsBackground ? 16 : 20))
+            .foregroundStyle(NedaaColors.primary(for: colorScheme))
+            .accentableWidget()
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
+        switch timerPhase {
+        case .countUp(let prayer):
+            VStack(spacing: 2) {
+                Text(LocalizedStringKey(prayer.name))
+                    .font(showsBackground ? WidgetTypography.standByPrayerName : WidgetTypography.smallPrayerName)
+                    .foregroundStyle(NedaaColors.completed(for: colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+
+                Text(prayer.date, style: .timer)
+                    .font(showsBackground ? WidgetTypography.standByTimer : WidgetTypography.smallTimer)
+                    .foregroundStyle(NedaaColors.completed(for: colorScheme).opacity(0.8))
+                    .monospacedDigit()
+                    .numericContentTransition()
+
+                if let next = entry.nextPrayer {
+                    HStack(spacing: 4) {
+                        Text(LocalizedStringKey(next.name))
+                        Text(next.date, style: .time)
+                    }
+                    .font(WidgetTypography.smallCaption)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme).opacity(0.6))
+                }
+            }
+
+        case .countdown(let prayer):
+            VStack(spacing: 2) {
+                Text(LocalizedStringKey(prayer.name))
+                    .font(showsBackground ? WidgetTypography.standByPrayerName : WidgetTypography.smallPrayerName)
+                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .accentableWidget()
+
+                Text(prayer.date, style: .timer)
+                    .font(showsBackground ? WidgetTypography.standByTimer : WidgetTypography.smallTimer)
+                    .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .monospacedDigit()
+                    .numericContentTransition()
+
+                Text(prayer.date, style: .time)
+                    .font(WidgetTypography.smallCaption)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+            }
+
+        case .absoluteTime(let prayer):
+            VStack(spacing: 4) {
+                Text(LocalizedStringKey(prayer.name))
+                    .font(showsBackground ? WidgetTypography.standByPrayerName : WidgetTypography.smallPrayerName)
+                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .accentableWidget()
+
+                Text(prayer.date, style: .time)
+                    .font(showsBackground ? WidgetTypography.standByTime : WidgetTypography.smallTime)
+                    .foregroundStyle(NedaaColors.text(for: colorScheme))
+
+                Text(prayer.date, style: .relative)
+                    .font(WidgetTypography.smallCaption)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+            }
+
+        case .none:
+            Text("widget.noPrayerTimes")
+                .font(.caption)
+                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
         }
-        return ""
     }
 }
 
