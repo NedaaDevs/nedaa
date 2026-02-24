@@ -246,7 +246,7 @@ struct LargePrayerTimesView: View {
     @Environment(\.showsBackground) var showsBackground
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             // Header
             HStack {
                 Image(systemName: "moon.stars.fill")
@@ -255,22 +255,22 @@ struct LargePrayerTimesView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("widget.prayerTimes")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
+                        .font(WidgetTypography.largeHeader)
                         .foregroundStyle(NedaaColors.text(for: colorScheme))
 
                     HStack(spacing: 4) {
                         Text(entry.date, style: .date)
-                            .font(.caption2)
+                            .font(WidgetTypography.largeSubheader)
                             .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
                         Text("•")
-                            .font(.caption2)
+                            .font(WidgetTypography.largeSubheader)
                             .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
                         Text(entry.date.hijriDateString())
-                            .font(.caption2)
+                            .font(WidgetTypography.largeSubheader)
                             .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                            .lineLimit(1)
                     }
                 }
 
@@ -281,12 +281,14 @@ struct LargePrayerTimesView: View {
                 .background(NedaaColors.textSecondary(for: colorScheme).opacity(0.3))
 
             // All Prayers List
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 ForEach(entry.allPrayers) { prayer in
                     PrayerRowView(
                         prayer: prayer,
-                        isPrevious: isPreviousPrayer(prayer),
-                        isNext: isNextPrayer(prayer),
+                        isNext: prayer.isSame(as: entry.nextPrayer),
+                        isPast: prayer.isPast(at: entry.date),
+                        entryDate: entry.date,
+                        showTimer: entry.showTimer,
                         colorScheme: colorScheme
                     )
                 }
@@ -294,110 +296,141 @@ struct LargePrayerTimesView: View {
 
             Spacer(minLength: 0)
 
-            // Footer - Next Prayer Countdown
-            if let nextPrayer = entry.nextPrayer, nextPrayer.date > entry.date {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.fill")
-                        .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                        .font(.caption)
-
-                    Text("widget.nextPrayerIn")
-                        .font(.caption)
-                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-
-                    Text(nextPrayer.date, style: .relative)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(NedaaColors.text(for: colorScheme))
-                        .numericContentTransition()
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(showsBackground ? NedaaColors.primary(for: colorScheme).opacity(0.15) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .padding(.bottom, 4)
-                .accentableWidget()
-            }
+            // Day progress bar
+            DayProgressBar(
+                allPrayers: entry.allPrayers,
+                entryDate: entry.date,
+                colorScheme: colorScheme
+            )
+            .padding(.bottom, 4)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
         .accessibilityElement(children: .combine)
-    }
-
-    private func isPreviousPrayer(_ prayer: PrayerData) -> Bool {
-        return prayer.isSame(as: entry.previousPrayer)
-    }
-
-    private func isNextPrayer(_ prayer: PrayerData) -> Bool {
-        return prayer.isSame(as: entry.nextPrayer)
     }
 }
 
 // MARK: - Supporting Views
+
+private struct DayProgressBar: View {
+    let allPrayers: [PrayerData]
+    let entryDate: Date
+    let colorScheme: ColorScheme
+
+    private var progress: Double {
+        guard let first = allPrayers.first, let last = allPrayers.last else { return 0 }
+        let totalDuration = last.date.timeIntervalSince(first.date)
+        guard totalDuration > 0 else { return 0 }
+        let elapsed = entryDate.timeIntervalSince(first.date)
+        return min(max(elapsed / totalDuration, 0), 1)
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(NedaaColors.textSecondary(for: colorScheme).opacity(0.15))
+                        .frame(height: 4)
+
+                    Capsule()
+                        .fill(NedaaColors.primary(for: colorScheme))
+                        .frame(width: geometry.size.width * progress, height: 4)
+                }
+            }
+            .frame(height: 4)
+
+            HStack {
+                if let first = allPrayers.first {
+                    Text(LocalizedStringKey(first.name))
+                        .font(.system(size: 8))
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                }
+                Spacer()
+                if let last = allPrayers.last {
+                    Text(LocalizedStringKey(last.name))
+                        .font(.system(size: 8))
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                }
+            }
+        }
+    }
+}
+
 struct PrayerRowView: View {
     let prayer: PrayerData
-    let isPrevious: Bool
     let isNext: Bool
+    let isPast: Bool
+    let entryDate: Date
+    let showTimer: Bool
     let colorScheme: ColorScheme
     @Environment(\.showsBackground) var showsBackground
 
+    private var minutesToPrayer: Int {
+        Calendar.current.dateComponents([.minute], from: entryDate, to: prayer.date).minute ?? 0
+    }
+
+    private var showCountdown: Bool {
+        isNext && minutesToPrayer > 0 && minutesToPrayer <= 60 && showTimer
+    }
+
     var body: some View {
         HStack(spacing: 8) {
-            // Status dot
-            Circle()
-                .fill(dotColor)
-                .frame(width: 8, height: 8)
+            // Status indicator
+            statusIcon
 
             // Prayer name
             Text(LocalizedStringKey(prayer.name))
-                .font(.caption)
-                .fontWeight(isNext || isPrevious ? .semibold : .regular)
-                .foregroundStyle(NedaaColors.text(for: colorScheme))
+                .font(isNext ? WidgetTypography.largePrayerNameActive : WidgetTypography.largePrayerName)
+                .foregroundStyle(nameColor)
+                .accentableWidget(isNext)
 
             Spacer()
 
-            // Time
-            PrayerTimeText(
-                date: prayer.date,
-                font: .caption2,
-                color: NedaaColors.textSecondary(for: colorScheme)
-            )
-
-            // Label
-            if isPrevious {
-                Text("widget.previous")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(NedaaColors.success)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(NedaaColors.success.opacity(0.2))
-                    .clipShape(Capsule())
-            } else if isNext {
-                Text("widget.next")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(NedaaColors.primary(for: colorScheme).opacity(0.2))
-                    .clipShape(Capsule())
+            // Time or countdown
+            if showCountdown {
+                Text(prayer.date, style: .timer)
+                    .font(WidgetTypography.largeTimer)
+                    .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .numericContentTransition()
+            } else {
+                Text(prayer.date, format: .dateTime.hour().minute())
+                    .font(WidgetTypography.largeTime)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .monospacedDigit()
             }
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
         .background(rowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(.rect(cornerRadius: 8))
     }
 
-    private var dotColor: Color {
+    @ViewBuilder
+    private var statusIcon: some View {
+        if isNext {
+            Circle()
+                .fill(NedaaColors.primary(for: colorScheme))
+                .frame(width: 8, height: 8)
+        } else if isPast {
+            Image(systemName: "checkmark")
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(NedaaColors.completed(for: colorScheme).opacity(0.6))
+        } else {
+            Circle()
+                .stroke(NedaaColors.textSecondary(for: colorScheme).opacity(0.3), lineWidth: 1)
+                .frame(width: 8, height: 8)
+        }
+    }
+
+    private var nameColor: Color {
         if isNext {
             return NedaaColors.primary(for: colorScheme)
-        } else if prayer.isPast {
-            return NedaaColors.success
+        } else if isPast {
+            return NedaaColors.textSecondary(for: colorScheme)
         } else {
-            return NedaaColors.textSecondary(for: colorScheme).opacity(0.3)
+            return NedaaColors.text(for: colorScheme)
         }
     }
 
@@ -405,11 +438,8 @@ struct PrayerRowView: View {
         guard showsBackground else { return Color.clear }
         if isNext {
             return NedaaColors.primary(for: colorScheme).opacity(0.1)
-        } else if isPrevious {
-            return NedaaColors.success.opacity(0.05)
-        } else {
-            return Color.clear
         }
+        return Color.clear
     }
 }
 
