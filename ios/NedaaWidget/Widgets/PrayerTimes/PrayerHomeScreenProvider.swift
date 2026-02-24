@@ -151,7 +151,8 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
             tomorrowPrayers: tomorrowPrayers,
             isRamadan: isRamadan,
             imsakTime: imsakTime,
-            maghribTime: maghribTime
+            maghribTime: maghribTime,
+            showTimer: showTimer
         )
 
         var entries: [PrayerHomeScreenEntry] = []

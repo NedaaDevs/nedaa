@@ -87,7 +87,8 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
         let entryDates = PrayerTimelineUtils.generateEntryDates(
             from: currentDate,
             todayPrayers: allTodayPrayers,
-            tomorrowPrayers: tomorrowsPrayers
+            tomorrowPrayers: tomorrowsPrayers,
+            showTimer: showTimer
         )
 
         var entries: [AllPrayersEntry] = []

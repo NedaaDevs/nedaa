@@ -84,7 +84,8 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
             tomorrowPrayers: tomorrowPrayers,
             isRamadan: isRamadan,
             imsakTime: imsakTime,
-            maghribTime: maghribTime
+            maghribTime: maghribTime,
+            showTimer: showTimer
         )
 
         var entries: [PrayerCountdownEntry] = []
@@ -260,7 +261,8 @@ struct InlinePrayerProvider: TimelineProvider {
         let entryDates = PrayerTimelineUtils.generateEntryDates(
             from: currentDate,
             todayPrayers: todayPrayers,
-            tomorrowPrayers: tomorrowPrayers
+            tomorrowPrayers: tomorrowPrayers,
+            showTimer: true
         )
 
         var entries: [PrayerCountdownEntry] = []
