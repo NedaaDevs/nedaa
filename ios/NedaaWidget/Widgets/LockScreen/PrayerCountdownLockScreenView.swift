@@ -50,31 +50,12 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
     }
     
     func snapshot(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> PrayerCountdownEntry {
-        return createEntry(for: Date(), configuration: configuration)
-    }
-    
-    func timeline(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> Timeline<PrayerCountdownEntry> {
-        let currentDate = Date()
-        let entry = createEntry(for: currentDate, configuration: configuration)
-        
-        let nextUpdateDate = calculateNextUpdateDate(
-            currentDate: currentDate,
-            nextPrayerDate: entry.nextPrayer?.date ?? currentDate.addingTimeInterval(3600),
-            previousPrayerDate: entry.previousPrayer?.date ?? currentDate
-        )
-        
-        return Timeline(entries: [entry], policy: .after(nextUpdateDate))
-    }
-    
-    private func createEntry(for date: Date, configuration: PrayerCountdownConfigurationIntent) -> PrayerCountdownEntry {
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
-        
-        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise) ?? PrayerData(name: "Error", date: Date())
-        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise) ?? PrayerData(name: "Error", date: Date())
-        
+        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise)
+        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise)
         return PrayerCountdownEntry(
-            date: date,
+            date: Date(),
             nextPrayer: nextPrayer,
             previousPrayer: previousPrayer,
             showTimer: showTimer,
@@ -82,20 +63,55 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
         )
     }
     
-    private func calculateNextUpdateDate(currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date) -> Date {
-        let timeIntervalToNextPrayer = nextPrayerDate.timeIntervalSince(currentDate)
-        let timeIntervalSincePreviousPrayer = currentDate.timeIntervalSince(previousPrayerDate)
-        
-        if timeIntervalSincePreviousPrayer < 1800 {
-            // If the previous prayer was less than 30 minutes ago, update 30 minutes after the previous prayer
-            return previousPrayerDate.addingTimeInterval(1800)
-        } else if timeIntervalToNextPrayer > 3600 {
-            // If the next prayer is more than 1 hour away, update 60 minutes before the next prayer
-            return nextPrayerDate.addingTimeInterval(-3600)
-        } else {
-            // Otherwise, update 30 minutes after the next prayer
-            return nextPrayerDate.addingTimeInterval(1800)
+    func timeline(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> Timeline<PrayerCountdownEntry> {
+        let currentDate = Date()
+        let showSunrise = configuration.showSunrise
+        let showTimer = configuration.showTimer
+
+        guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
+            let fallback = placeholder(in: context)
+            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
         }
+        let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
+
+        let isRamadan = PrayerTimelineUtils.isRamadan(currentDate)
+        let imsakTime = isRamadan ? prayerService.getImsakTime()?.date : nil
+        let maghribTime = isRamadan ? todayPrayers.first(where: { $0.name == "maghrib" })?.date : nil
+
+        let entryDates = PrayerTimelineUtils.generateEntryDates(
+            from: currentDate,
+            todayPrayers: todayPrayers,
+            tomorrowPrayers: tomorrowPrayers,
+            isRamadan: isRamadan,
+            imsakTime: imsakTime,
+            maghribTime: maghribTime
+        )
+
+        var entries: [PrayerCountdownEntry] = []
+        for entryDate in entryDates {
+            let isAfterMidnight = entryDate >= Calendar.current.startOfDay(
+                for: Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            )
+            let prayers = isAfterMidnight ? (tomorrowPrayers ?? todayPrayers) : todayPrayers
+            let yesterdayPrayers = isAfterMidnight ? todayPrayers : nil
+
+            let previousPrayer = PrayerTimelineUtils.previousPrayer(
+                at: entryDate, todayPrayers: prayers, yesterdayPrayers: yesterdayPrayers
+            )
+            let nextPrayer = PrayerTimelineUtils.nextPrayer(
+                at: entryDate, todayPrayers: prayers, tomorrowPrayers: isAfterMidnight ? nil : tomorrowPrayers
+            )
+
+            entries.append(PrayerCountdownEntry(
+                date: entryDate,
+                nextPrayer: nextPrayer,
+                previousPrayer: previousPrayer,
+                showTimer: showTimer,
+                showSunrise: showSunrise
+            ))
+        }
+
+        return Timeline(entries: entries, policy: .atEnd)
     }
 }
 
@@ -233,20 +249,45 @@ struct InlinePrayerProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerCountdownEntry>) -> Void) {
         let currentDate = Date()
-        let nextPrayer = prayerService.getNextPrayer(showSunrise: false) ?? PrayerData(name: "Error", date: Date())
-        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: false)
 
-        let entry = PrayerCountdownEntry(
-            date: currentDate,
-            nextPrayer: nextPrayer,
-            previousPrayer: previousPrayer,
-            showTimer: true,
-            showSunrise: false
+        guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false) else {
+            let fallback = placeholder(in: context)
+            completion(Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600))))
+            return
+        }
+        let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: false)
+
+        let entryDates = PrayerTimelineUtils.generateEntryDates(
+            from: currentDate,
+            todayPrayers: todayPrayers,
+            tomorrowPrayers: tomorrowPrayers
         )
 
-        let nextUpdateDate = nextPrayer.date.addingTimeInterval(1800)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdateDate))
-        completion(timeline)
+        var entries: [PrayerCountdownEntry] = []
+        for entryDate in entryDates {
+            let isAfterMidnight = entryDate >= Calendar.current.startOfDay(
+                for: Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            )
+            let prayers = isAfterMidnight ? (tomorrowPrayers ?? todayPrayers) : todayPrayers
+            let yesterdayPrayers = isAfterMidnight ? todayPrayers : nil
+
+            let nextPrayer = PrayerTimelineUtils.nextPrayer(
+                at: entryDate, todayPrayers: prayers, tomorrowPrayers: isAfterMidnight ? nil : tomorrowPrayers
+            )
+            let previousPrayer = PrayerTimelineUtils.previousPrayer(
+                at: entryDate, todayPrayers: prayers, yesterdayPrayers: yesterdayPrayers
+            )
+
+            entries.append(PrayerCountdownEntry(
+                date: entryDate,
+                nextPrayer: nextPrayer,
+                previousPrayer: previousPrayer,
+                showTimer: true,
+                showSunrise: false
+            ))
+        }
+
+        completion(Timeline(entries: entries, policy: .atEnd))
     }
 }
 

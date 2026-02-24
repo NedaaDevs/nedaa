@@ -75,61 +75,60 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
         let currentDate = Date()
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
-        
-        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise) ?? PrayerData(name: "DB ERROR", date: Date())
-        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise) ?? PrayerData(name: "DB ERROR", date: Date())
-        
+
         let todaysPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise)
-        
-        // Check if we're after the last prayer of today (Isha)
-        let isAfterLastPrayer = currentDate > todaysPrayers?.last?.date ?? Date()
-        
-        let displayPrayers: [PrayerData]?
-        if isAfterLastPrayer {
-            // After Isha: Show tomorrow's prayers
-            let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
-            displayPrayers = tomorrowsPrayers?.enumerated().filter { index, _ in
+        let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
+
+        guard let allTodayPrayers = todaysPrayers else {
+            let fallback = placeholder(in: context)
+            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
+        }
+
+        let entryDates = PrayerTimelineUtils.generateEntryDates(
+            from: currentDate,
+            todayPrayers: allTodayPrayers,
+            tomorrowPrayers: tomorrowsPrayers
+        )
+
+        var entries: [AllPrayersEntry] = []
+        for entryDate in entryDates {
+            let isAfterMidnight = entryDate >= Calendar.current.startOfDay(
+                for: Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            )
+
+            let allPrayers = isAfterMidnight ? (tomorrowsPrayers ?? allTodayPrayers) : allTodayPrayers
+            let yesterdayPrayers = isAfterMidnight ? allTodayPrayers : nil
+
+            let isAfterLastPrayer = entryDate > (allPrayers.last?.date ?? Date())
+            let sourcePrayers: [PrayerData]
+            if isAfterLastPrayer, let tomorrow = (isAfterMidnight ? nil : tomorrowsPrayers) {
+                sourcePrayers = tomorrow
+            } else {
+                sourcePrayers = allPrayers
+            }
+
+            let displayPrayers = sourcePrayers.enumerated().filter { index, _ in
                 isFirstHalf ? index < 3 : index >= 3
             }.map { $0.element }
-        } else {
-            // During the day: Show today's prayers
-            displayPrayers = todaysPrayers?.enumerated().filter { index, _ in
-                isFirstHalf ? index < 3 : index >= 3
-            }.map { $0.element }
+
+            let nextPrayer = PrayerTimelineUtils.nextPrayer(
+                at: entryDate, todayPrayers: allPrayers, tomorrowPrayers: isAfterMidnight ? nil : tomorrowsPrayers
+            )
+            let previousPrayer = PrayerTimelineUtils.previousPrayer(
+                at: entryDate, todayPrayers: allPrayers, yesterdayPrayers: yesterdayPrayers
+            )
+
+            entries.append(AllPrayersEntry(
+                date: entryDate,
+                allPrayers: displayPrayers,
+                nextPrayer: nextPrayer,
+                previousPrayer: previousPrayer,
+                showTimer: showTimer,
+                showSunrise: showSunrise
+            ))
         }
-        
-        let entry = AllPrayersEntry(
-            date: currentDate,
-            allPrayers: displayPrayers,
-            nextPrayer: nextPrayer,
-            previousPrayer: previousPrayer,
-            showTimer: showTimer,
-            showSunrise: showSunrise
-        )
-        
-        let nextUpdateDate = calculateNextUpdateDate(
-            currentDate: currentDate,
-            nextPrayerDate: nextPrayer.date,
-            previousPrayerDate: previousPrayer.date
-        )
-        
-        return Timeline(entries: [entry], policy: .after(nextUpdateDate))
-    }
-    
-    private func calculateNextUpdateDate(currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date) -> Date {
-        let timeIntervalToNextPrayer = nextPrayerDate.timeIntervalSince(currentDate)
-        let timeIntervalSincePreviousPrayer = currentDate.timeIntervalSince(previousPrayerDate)
-        
-        if timeIntervalSincePreviousPrayer < 1800 {
-            // If the previous prayer was less than 30 minutes ago, update 30 minutes after the previous prayer
-            return previousPrayerDate.addingTimeInterval(1800)
-        } else if timeIntervalToNextPrayer > 3600 {
-            // If the next prayer is more than 1 hour away, update 60 minutes before the next prayer
-            return nextPrayerDate.addingTimeInterval(-3600)
-        } else {
-            // Otherwise, update 30 minutes after the next prayer
-            return nextPrayerDate.addingTimeInterval(1800)
-        }
+
+        return Timeline(entries: entries, policy: .atEnd)
     }
 }
 
