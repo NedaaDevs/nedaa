@@ -16,3 +16,11 @@
 "widget_prayer_athkar_settings" = "نماز اور اذکار کی ترتیبات";
 "widget_prayer_athkar_settings_desc" = "نماز کے اوقات اور اذکار کی نمائش کو مرتب کریں";
 "widget_show_countdown" = "الٹی گنتی دکھائیں";
+
+/* Widget Configuration - Suhoor & Iftar */
+"widget_suhoor_iftar_settings" = "سحری اور افطار کی ترتیبات";
+"widget_suhoor_iftar_settings_desc" = "سحری اور افطار کی الٹی گنتی مرتب کریں";
+
+/* Widget Configuration - Ramadan Progress */
+"widget_ramadan_progress_settings" = "رمضان کی پیشرفت کی ترتیبات";
+"widget_ramadan_progress_settings_desc" = "رمضان کی پیشرفت کی نمائش مرتب کریں";
