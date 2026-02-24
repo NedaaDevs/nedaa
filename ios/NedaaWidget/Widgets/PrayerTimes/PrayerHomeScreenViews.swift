@@ -147,19 +147,15 @@ struct SmallPrayerTimesView: View {
 
             Spacer(minLength: 0)
 
-            if entry.isRamadan, entry.showRamadanLabels {
-                Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.date.ramadanDay))
-                    .font(WidgetTypography.smallHijri)
-                    .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
-                    .lineLimit(1)
-                    .padding(.bottom, 4)
-            } else {
-                Text(entry.date.hijriDateStringCompact())
-                    .font(WidgetTypography.smallHijri)
-                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                    .lineLimit(1)
-                    .padding(.bottom, 4)
-            }
+            Text(entry.date.hijriDateStringCompact())
+                .font(WidgetTypography.smallHijri)
+                .foregroundStyle(
+                    entry.isRamadan && entry.showRamadanLabels
+                        ? NedaaColors.ramadanAccent(for: colorScheme)
+                        : NedaaColors.textSecondary(for: colorScheme)
+                )
+                .lineLimit(1)
+                .padding(.bottom, 4)
         }
         .padding(.horizontal, 12)
         .accessibilityElement(children: .combine)
@@ -203,6 +199,7 @@ struct SmallPrayerTimesView: View {
                 Text(prayer.date, style: .timer)
                     .font(showsBackground ? WidgetTypography.standByTimer : WidgetTypography.smallTimer)
                     .foregroundStyle(NedaaColors.completed(for: colorScheme).opacity(0.8))
+                    .multilineTextAlignment(.center)
                     .monospacedDigit()
                     .numericContentTransition()
 
@@ -228,6 +225,7 @@ struct SmallPrayerTimesView: View {
                 Text(prayer.date, style: .timer)
                     .font(showsBackground ? WidgetTypography.standByTimer : WidgetTypography.smallTimer)
                     .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .multilineTextAlignment(.center)
                     .monospacedDigit()
                     .numericContentTransition()
 
@@ -287,7 +285,7 @@ struct LargePrayerTimesView: View {
 
                     if entry.isRamadan, entry.showRamadanLabels {
                         HStack(spacing: 4) {
-                            Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.date.ramadanDay))
+                            Text(entry.date.hijriDateStringCompact())
                                 .font(WidgetTypography.largeSubheader)
                                 .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
 
@@ -509,17 +507,14 @@ struct MediumPrayerTimesListView: View {
                             : NedaaColors.primary(for: colorScheme)
                     )
 
-                if entry.isRamadan, entry.showRamadanLabels {
-                    Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.date.ramadanDay))
-                        .font(WidgetTypography.mediumHijri)
-                        .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
-                        .lineLimit(1)
-                } else {
-                    Text(entry.date.hijriDateString())
-                        .font(WidgetTypography.mediumHijri)
-                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                        .lineLimit(1)
-                }
+                Text(entry.date.hijriDateStringCompact())
+                    .font(WidgetTypography.mediumHijri)
+                    .foregroundStyle(
+                        entry.isRamadan && entry.showRamadanLabels
+                            ? NedaaColors.ramadanAccent(for: colorScheme)
+                            : NedaaColors.textSecondary(for: colorScheme)
+                    )
+                    .lineLimit(1)
 
                 Spacer()
 
