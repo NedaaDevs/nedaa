@@ -336,9 +336,10 @@ struct RamadanProgressWidgetView: View {
 
             Spacer()
 
-            Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.ramadanDay))
+            Text(entry.date.hijriDateStringCompact())
                 .font(WidgetTypography.mediumPrayerName)
                 .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
+                .lineLimit(1)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
                 .background(

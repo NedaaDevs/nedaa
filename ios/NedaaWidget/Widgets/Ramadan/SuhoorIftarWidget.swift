@@ -276,6 +276,7 @@ struct SuhoorIftarWidgetView: View {
                 Text(imsakDate, style: .timer)
                     .font(WidgetTypography.smallTimer)
                     .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .multilineTextAlignment(.center)
                     .monospacedDigit()
                     .numericContentTransition()
 
@@ -286,7 +287,7 @@ struct SuhoorIftarWidgetView: View {
 
             Spacer(minLength: 0)
 
-            ramadanDayBadge
+            hijriDateFooter
                 .padding(.bottom, 4)
         }
         .padding(.horizontal, 12)
@@ -315,6 +316,7 @@ struct SuhoorIftarWidgetView: View {
                 Text(iftarDate, style: .timer)
                     .font(WidgetTypography.smallTimer)
                     .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .multilineTextAlignment(.center)
                     .monospacedDigit()
                     .numericContentTransition()
 
@@ -325,7 +327,7 @@ struct SuhoorIftarWidgetView: View {
 
             Spacer(minLength: 0)
 
-            ramadanDayBadge
+            hijriDateFooter
                 .padding(.bottom, 4)
         }
         .padding(.horizontal, 12)
@@ -355,7 +357,7 @@ struct SuhoorIftarWidgetView: View {
 
             Spacer(minLength: 0)
 
-            ramadanDayBadge
+            hijriDateFooter
                 .padding(.bottom, 4)
         }
         .padding(.horizontal, 12)
@@ -389,10 +391,10 @@ struct SuhoorIftarWidgetView: View {
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Ramadan Day Badge
+    // MARK: - Hijri Date Footer
 
-    private var ramadanDayBadge: some View {
-        Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.ramadanDay))
+    private var hijriDateFooter: some View {
+        Text(entry.date.hijriDateStringCompact())
             .font(WidgetTypography.smallHijri)
             .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
             .lineLimit(1)
