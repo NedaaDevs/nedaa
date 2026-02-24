@@ -10,6 +10,7 @@ import { useQadaStore } from "@/stores/qada";
 
 // Utils
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
+import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 
 export const appSetup = async (
   prayerStore: PrayerTimesStore,
@@ -32,6 +33,8 @@ export const appSetup = async (
     await qadaStore.loadData();
 
     await notificationStore.scheduleAllNotifications();
+
+    reloadPrayerWidgets();
   } catch (error) {
     console.error("App setup failed:", error);
     Sentry.captureException(error);
