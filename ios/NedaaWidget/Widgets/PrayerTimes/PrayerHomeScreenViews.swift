@@ -110,6 +110,17 @@ struct PrayerTimeText: View {
     }
 }
 
+// MARK: - Ramadan Display Name Helper
+
+/// Returns Ramadan-specific display name when applicable
+func ramadanDisplayName(for prayerName: String, isRamadan: Bool, showLabels: Bool) -> String {
+    guard isRamadan, showLabels else { return prayerName }
+    switch prayerName.lowercased() {
+    case "maghrib": return "widget_iftar"
+    default: return prayerName
+    }
+}
+
 // MARK: - Small Widget View
 struct SmallPrayerTimesView: View {
     let entry: PrayerHomeScreenEntry
@@ -136,11 +147,19 @@ struct SmallPrayerTimesView: View {
 
             Spacer(minLength: 0)
 
-            Text(entry.date.hijriDateStringCompact())
-                .font(WidgetTypography.smallHijri)
-                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                .lineLimit(1)
-                .padding(.bottom, 4)
+            if entry.isRamadan, entry.showRamadanLabels {
+                Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.date.ramadanDay))
+                    .font(WidgetTypography.smallHijri)
+                    .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
+                    .lineLimit(1)
+                    .padding(.bottom, 4)
+            } else {
+                Text(entry.date.hijriDateStringCompact())
+                    .font(WidgetTypography.smallHijri)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .lineLimit(1)
+                    .padding(.bottom, 4)
+            }
         }
         .padding(.horizontal, 12)
         .accessibilityElement(children: .combine)
@@ -161,7 +180,11 @@ struct SmallPrayerTimesView: View {
 
         Image(systemName: iconName)
             .font(.system(size: showsBackground ? 16 : 20))
-            .foregroundStyle(NedaaColors.primary(for: colorScheme))
+            .foregroundStyle(
+                entry.isRamadan && entry.showRamadanLabels
+                    ? NedaaColors.ramadanAccent(for: colorScheme)
+                    : NedaaColors.primary(for: colorScheme)
+            )
             .accentableWidget()
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -171,7 +194,7 @@ struct SmallPrayerTimesView: View {
         switch timerPhase {
         case .countUp(let prayer):
             VStack(spacing: 2) {
-                Text(LocalizedStringKey(prayer.name))
+                Text(LocalizedStringKey(ramadanDisplayName(for: prayer.name, isRamadan: entry.isRamadan, showLabels: entry.showRamadanLabels)))
                     .font(showsBackground ? WidgetTypography.standByPrayerName : WidgetTypography.smallPrayerName)
                     .foregroundStyle(NedaaColors.completed(for: colorScheme))
                     .lineLimit(1)
@@ -185,7 +208,7 @@ struct SmallPrayerTimesView: View {
 
                 if let next = entry.nextPrayer {
                     HStack(spacing: 4) {
-                        Text(LocalizedStringKey(next.name))
+                        Text(LocalizedStringKey(ramadanDisplayName(for: next.name, isRamadan: entry.isRamadan, showLabels: entry.showRamadanLabels)))
                         Text(next.date, style: .time)
                     }
                     .font(WidgetTypography.smallCaption)
@@ -195,7 +218,7 @@ struct SmallPrayerTimesView: View {
 
         case .countdown(let prayer):
             VStack(spacing: 2) {
-                Text(LocalizedStringKey(prayer.name))
+                Text(LocalizedStringKey(ramadanDisplayName(for: prayer.name, isRamadan: entry.isRamadan, showLabels: entry.showRamadanLabels)))
                     .font(showsBackground ? WidgetTypography.standByPrayerName : WidgetTypography.smallPrayerName)
                     .foregroundStyle(NedaaColors.primary(for: colorScheme))
                     .lineLimit(1)
@@ -215,7 +238,7 @@ struct SmallPrayerTimesView: View {
 
         case .absoluteTime(let prayer):
             VStack(spacing: 4) {
-                Text(LocalizedStringKey(prayer.name))
+                Text(LocalizedStringKey(ramadanDisplayName(for: prayer.name, isRamadan: entry.isRamadan, showLabels: entry.showRamadanLabels)))
                     .font(showsBackground ? WidgetTypography.standByPrayerName : WidgetTypography.smallPrayerName)
                     .foregroundStyle(NedaaColors.primary(for: colorScheme))
                     .lineLimit(1)
@@ -251,26 +274,47 @@ struct LargePrayerTimesView: View {
             HStack {
                 Image(systemName: "moon.stars.fill")
                     .font(.title3)
-                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
+                    .foregroundStyle(
+                        entry.isRamadan && entry.showRamadanLabels
+                            ? NedaaColors.ramadanAccent(for: colorScheme)
+                            : NedaaColors.primary(for: colorScheme)
+                    )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("widget.prayerTimes")
                         .font(WidgetTypography.largeHeader)
                         .foregroundStyle(NedaaColors.text(for: colorScheme))
 
-                    HStack(spacing: 4) {
-                        Text(entry.date, style: .date)
-                            .font(WidgetTypography.largeSubheader)
-                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    if entry.isRamadan, entry.showRamadanLabels {
+                        HStack(spacing: 4) {
+                            Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.date.ramadanDay))
+                                .font(WidgetTypography.largeSubheader)
+                                .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
 
-                        Text("•")
-                            .font(WidgetTypography.largeSubheader)
-                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                            Text("•")
+                                .font(WidgetTypography.largeSubheader)
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
 
-                        Text(entry.date.hijriDateString())
-                            .font(WidgetTypography.largeSubheader)
-                            .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                            .lineLimit(1)
+                            Text(entry.date, style: .date)
+                                .font(WidgetTypography.largeSubheader)
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                                .lineLimit(1)
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Text(entry.date, style: .date)
+                                .font(WidgetTypography.largeSubheader)
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+
+                            Text("•")
+                                .font(WidgetTypography.largeSubheader)
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+
+                            Text(entry.date.hijriDateString())
+                                .font(WidgetTypography.largeSubheader)
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                                .lineLimit(1)
+                        }
                     }
                 }
 
@@ -289,6 +333,8 @@ struct LargePrayerTimesView: View {
                         isPast: prayer.isPast(at: entry.date),
                         entryDate: entry.date,
                         showTimer: entry.showTimer,
+                        isRamadan: entry.isRamadan,
+                        showRamadanLabels: entry.showRamadanLabels,
                         colorScheme: colorScheme
                     )
                 }
@@ -364,6 +410,8 @@ struct PrayerRowView: View {
     let isPast: Bool
     let entryDate: Date
     let showTimer: Bool
+    let isRamadan: Bool
+    let showRamadanLabels: Bool
     let colorScheme: ColorScheme
     @Environment(\.showsBackground) var showsBackground
 
@@ -381,7 +429,7 @@ struct PrayerRowView: View {
             statusIcon
 
             // Prayer name
-            Text(LocalizedStringKey(prayer.name))
+            Text(LocalizedStringKey(ramadanDisplayName(for: prayer.name, isRamadan: isRamadan, showLabels: showRamadanLabels)))
                 .font(isNext ? WidgetTypography.largePrayerNameActive : WidgetTypography.largePrayerName)
                 .foregroundStyle(nameColor)
                 .accentableWidget(isNext)
@@ -455,12 +503,23 @@ struct MediumPrayerTimesListView: View {
             HStack {
                 Image(systemName: "moon.stars.fill")
                     .font(.system(size: 9))
-                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
+                    .foregroundStyle(
+                        entry.isRamadan && entry.showRamadanLabels
+                            ? NedaaColors.ramadanAccent(for: colorScheme)
+                            : NedaaColors.primary(for: colorScheme)
+                    )
 
-                Text(entry.date.hijriDateString())
-                    .font(WidgetTypography.mediumHijri)
-                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                    .lineLimit(1)
+                if entry.isRamadan, entry.showRamadanLabels {
+                    Text(String(format: NSLocalizedString("widget_ramadan_day", comment: ""), entry.date.ramadanDay))
+                        .font(WidgetTypography.mediumHijri)
+                        .foregroundStyle(NedaaColors.ramadanAccent(for: colorScheme))
+                        .lineLimit(1)
+                } else {
+                    Text(entry.date.hijriDateString())
+                        .font(WidgetTypography.mediumHijri)
+                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                        .lineLimit(1)
+                }
 
                 Spacer()
 
@@ -491,7 +550,7 @@ struct MediumPrayerTimesListView: View {
                         statusIcon(isNext: isNext, isPast: isPast, isPreviousActive: isPreviousActive)
 
                         // Prayer name
-                        Text(LocalizedStringKey(prayer.name))
+                        Text(LocalizedStringKey(ramadanDisplayName(for: prayer.name, isRamadan: entry.isRamadan, showLabels: entry.showRamadanLabels)))
                             .font(isNext ? WidgetTypography.mediumPrayerNameActive : WidgetTypography.mediumPrayerName)
                             .foregroundStyle(prayerNameColor(isNext: isNext, isPast: isPast))
                             .lineLimit(1)
