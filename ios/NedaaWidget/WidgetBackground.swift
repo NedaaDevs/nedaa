@@ -59,19 +59,21 @@ extension View {
 // MARK: - iOS 17+ API Compatibility Helpers
 
 extension View {
+    @ViewBuilder
     func numericContentTransition() -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
-            return AnyView(self.contentTransition(.numericText()))
+            self.contentTransition(.numericText())
         } else {
-            return AnyView(self)
+            self
         }
     }
 
+    @ViewBuilder
     func accentableWidget(_ condition: Bool = true) -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
-            return AnyView(self.widgetAccentable(condition))
+            self.widgetAccentable(condition)
         } else {
-            return AnyView(self)
+            self
         }
     }
 }
