@@ -147,6 +147,30 @@ struct PrayerDataService {
     
     
     
+    func getImsakTime(for date: Date? = nil) -> PrayerData? {
+        if dbService.timeZone.isEmpty {
+            dbService.getTimezone()
+        }
+
+        guard let timeZoneObj = TimeZone(identifier: dbService.timeZone) else {
+            return nil
+        }
+
+        let targetDate = date ?? Date().toLocalTime(timezone: timeZoneObj)
+        let dateInt = getDateInt(for: targetDate, in: timeZoneObj)
+
+        guard let imsakString = dbService.getImsakTime(dateInt: dateInt) else {
+            return nil
+        }
+
+        do {
+            let imsakDate = try dbService.convertStringToDate(timeString: imsakString)
+            return PrayerData(name: "imsak", date: imsakDate)
+        } catch {
+            return nil
+        }
+    }
+
     private func getDateInt(for date: Date, in timeZone: TimeZone) -> Int {
         var calendar = Calendar.current
         calendar.timeZone = timeZone
