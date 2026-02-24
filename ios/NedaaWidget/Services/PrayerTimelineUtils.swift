@@ -23,7 +23,8 @@ enum PrayerTimelineUtils {
         tomorrowPrayers: [PrayerData]?,
         isRamadan: Bool = false,
         imsakTime: Date? = nil,
-        maghribTime: Date? = nil
+        maghribTime: Date? = nil,
+        showTimer: Bool = false
     ) -> [Date] {
         var dates: Set<Date> = []
 
@@ -35,16 +36,25 @@ enum PrayerTimelineUtils {
             dates.insert(imsak.addingTimeInterval(-2700))
         }
 
-        // 3. Ramadan: at Imsak + at Imsak+30min (count-up cap)
+        // 3. Ramadan: at Imsak + (when timer enabled) at Imsak+30min (count-up cap)
         if isRamadan, let imsak = imsakTime, imsak > currentDate {
             dates.insert(imsak)
-            dates.insert(imsak.addingTimeInterval(1800))
+            if showTimer {
+                dates.insert(imsak.addingTimeInterval(1800))
+            }
         }
 
-        // 4. Each future prayer today: at prayer time + at prayer+30min (count-up cap)
+        // 4. Each future prayer today: at prayer time
+        //    When timer is enabled, also add prayer-60min (countdown start) and prayer+30min (count-up cap)
         for prayer in todayPrayers where prayer.date > currentDate {
             dates.insert(prayer.date)
-            dates.insert(prayer.date.addingTimeInterval(1800))
+            if showTimer {
+                let countdownStart = prayer.date.addingTimeInterval(-3600)
+                if countdownStart > currentDate {
+                    dates.insert(countdownStart)
+                }
+                dates.insert(prayer.date.addingTimeInterval(1800))
+            }
         }
 
         // 5. Ramadan: 60min before Maghrib (iftar anticipation)
@@ -59,8 +69,18 @@ enum PrayerTimelineUtils {
         dates.insert(startOfTomorrow)
 
         // 7. Tomorrow's first prayer (so widget shows correct data after midnight)
+        //    Include countdown/count-up entries when timer is enabled
         if let fajr = tomorrowPrayers?.first {
+            if showTimer {
+                let countdownStart = fajr.date.addingTimeInterval(-3600)
+                if countdownStart > currentDate {
+                    dates.insert(countdownStart)
+                }
+            }
             dates.insert(fajr.date)
+            if showTimer {
+                dates.insert(fajr.date.addingTimeInterval(1800))
+            }
         }
 
         // Filter out dates in the past, sort, return
