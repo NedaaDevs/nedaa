@@ -89,6 +89,20 @@ struct NedaaColors {
         colorScheme == .dark ? Dark.textSecondary : Light.textSecondary
     }
 
+    /// Completed prayer color — muted teal (replaces raw Color.green)
+    static func completed(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark
+            ? Color(hex: "#6BBF9F")
+            : Color(hex: "#5BA89D")
+    }
+
+    /// Ramadan accent — warm gold
+    static func ramadanAccent(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark
+            ? Color(hex: "#E8C468")
+            : Color(hex: "#D4A853")
+    }
+
     // MARK: - Status Colors (same in both themes)
 
     /// Success/completed color
@@ -109,17 +123,17 @@ struct NedaaColors {
 extension View {
     /// Apply Nedaa primary color
     func nedaaPrimary(_ colorScheme: ColorScheme) -> some View {
-        self.foregroundColor(NedaaColors.primary(for: colorScheme))
+        self.foregroundStyle(NedaaColors.primary(for: colorScheme))
     }
 
     /// Apply Nedaa secondary color
     func nedaaSecondary(_ colorScheme: ColorScheme) -> some View {
-        self.foregroundColor(NedaaColors.secondary(for: colorScheme))
+        self.foregroundStyle(NedaaColors.secondary(for: colorScheme))
     }
 
     /// Apply Nedaa text color
     func nedaaText(_ colorScheme: ColorScheme) -> some View {
-        self.foregroundColor(NedaaColors.text(for: colorScheme))
+        self.foregroundStyle(NedaaColors.text(for: colorScheme))
     }
 
     /// Apply Nedaa background
@@ -198,7 +212,7 @@ extension Color {
                 VStack(spacing: 10) {
                     Text("Dark Theme")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
 
                     HStack {
                         ColorPreviewBox(color: NedaaColors.Dark.primary, name: "Primary")
