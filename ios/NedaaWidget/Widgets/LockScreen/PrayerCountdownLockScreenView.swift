@@ -14,6 +14,9 @@ struct PrayerCountdownConfigurationIntent: WidgetConfigurationIntent {
     
     @Parameter(title: "widget_show_sunrise", default: true)
     var showSunrise: Bool
+
+    @Parameter(title: "widget_show_ramadan_labels", default: true)
+    var showRamadanLabels: Bool
 }
 
 // MARK: - Timeline Entry
@@ -24,6 +27,8 @@ struct PrayerCountdownEntry: TimelineEntry {
     let previousPrayer: PrayerData?
     let showTimer: Bool
     let showSunrise: Bool
+    let isRamadan: Bool
+    let showRamadanLabels: Bool
 
     var relevance: TimelineEntryRelevance? {
         prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
@@ -45,10 +50,12 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
             nextPrayer: PrayerData(name: "isha", date: Date().addingTimeInterval(3600)),
             previousPrayer: PrayerData(name: "maghrib", date: Date().addingTimeInterval(-1800)),
             showTimer: true,
-            showSunrise: true
+            showSunrise: true,
+            isRamadan: false,
+            showRamadanLabels: true
         )
     }
-    
+
     func snapshot(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> PrayerCountdownEntry {
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
@@ -59,7 +66,9 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
             nextPrayer: nextPrayer,
             previousPrayer: previousPrayer,
             showTimer: showTimer,
-            showSunrise: showSunrise
+            showSunrise: showSunrise,
+            isRamadan: PrayerTimelineUtils.isRamadan(Date()),
+            showRamadanLabels: configuration.showRamadanLabels
         )
     }
     
@@ -108,7 +117,9 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
                 nextPrayer: nextPrayer,
                 previousPrayer: previousPrayer,
                 showTimer: showTimer,
-                showSunrise: showSunrise
+                showSunrise: showSunrise,
+                isRamadan: isRamadan,
+                showRamadanLabels: configuration.showRamadanLabels
             ))
         }
 
@@ -240,7 +251,9 @@ struct InlinePrayerProvider: TimelineProvider {
             nextPrayer: PrayerData(name: "isha", date: Date().addingTimeInterval(3600)),
             previousPrayer: nil,
             showTimer: true,
-            showSunrise: false
+            showSunrise: false,
+            isRamadan: false,
+            showRamadanLabels: true
         )
     }
 
@@ -285,7 +298,9 @@ struct InlinePrayerProvider: TimelineProvider {
                 nextPrayer: nextPrayer,
                 previousPrayer: previousPrayer,
                 showTimer: true,
-                showSunrise: false
+                showSunrise: false,
+                isRamadan: PrayerTimelineUtils.isRamadan(currentDate),
+                showRamadanLabels: true
             ))
         }
 
@@ -356,7 +371,9 @@ struct PrayerCountdownLockScreenView_Previews: PreviewProvider {
                 nextPrayer: PrayerData(name: "Maghrib", date: Date()),
                 previousPrayer: PrayerData(name: "Asr", date: Date()),
                 showTimer: true,
-                showSunrise: true
+                showSunrise: true,
+                isRamadan: false,
+                showRamadanLabels: true
             )
         )
         .previewContext(WidgetPreviewContext(family: .accessoryCircular))

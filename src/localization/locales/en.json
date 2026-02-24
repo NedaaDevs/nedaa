@@ -376,6 +376,8 @@
   "notification.customSound.usage.preAthan": "{{prayer}} Pre-Athan notifications",
   "notification.customSound.validationError": "Please fill all fields and select at least one notification type",
   "notification.enableAll": "Enable All Notifications",
+  "notification.fullAthanPlayback": "Full Athan Playback",
+  "notification.fullAthanPlayback.description": "Play the complete athan via a persistent player that can't be silenced by the side button. When off, athan plays as a regular notification sound.",
   "notification.iqama.body": "{{count}} minutes since {{prayerName}} Athan 🕌",
   "notification.iqama.body_one": "{{count}} minute since {{prayerName}} Athan 🕌",
   "notification.iqama.body_other": "{{count}} minutes since {{prayerName}} Athan 🕌",
@@ -786,5 +788,10 @@
   "settings.widgets.qadaDesc": "Remaining fasts counter",
   "settings.widgets.qadaMedium": "Qada Tracker (Medium)",
   "settings.widgets.qadaMediumDesc": "Qada progress with completion stats",
-  "settings.widgets.title": "Widgets"
+  "settings.widgets.title": "Widgets",
+  "widget_iftar": "Iftar",
+  "widget_imsak": "Imsak",
+  "widget_ramadan_day": "Ramadan Day %d",
+  "widget_show_ramadan_labels": "Show Ramadan Labels",
+  "widget_suhoor": "Suhoor"
 }
