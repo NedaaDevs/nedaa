@@ -129,6 +129,14 @@ extension Date {
         formatter.dateFormat = format
         return formatter.string(from: self)
     }
+
+    var isRamadan: Bool {
+        Calendar(identifier: .islamicUmmAlQura).component(.month, from: self) == 9
+    }
+
+    var ramadanDay: Int {
+        Calendar(identifier: .islamicUmmAlQura).component(.day, from: self)
+    }
 }
 
 /// Compute Smart Stack relevance based on proximity to next prayer time

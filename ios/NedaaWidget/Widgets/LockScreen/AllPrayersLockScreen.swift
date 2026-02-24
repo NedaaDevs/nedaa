@@ -14,6 +14,9 @@ struct AllPrayersConfigurationIntent: WidgetConfigurationIntent {
     
     @Parameter(title: "widget_show_sunrise", default: true)
     var showSunrise: Bool
+
+    @Parameter(title: "widget_show_ramadan_labels", default: true)
+    var showRamadanLabels: Bool
 }
 
 // MARK: - Timeline Entry
@@ -25,6 +28,8 @@ struct AllPrayersEntry: TimelineEntry {
     let previousPrayer: PrayerData?
     let showTimer: Bool
     let showSunrise: Bool
+    let isRamadan: Bool
+    let showRamadanLabels: Bool
 
     var relevance: TimelineEntryRelevance? {
         prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
@@ -63,12 +68,24 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
             nextPrayer: PrayerData(name: "Fajr", date: Date()),
             previousPrayer: nil,
             showTimer: true,
-            showSunrise: true
+            showSunrise: true,
+            isRamadan: false,
+            showRamadanLabels: true
         )
     }
-    
+
     func snapshot(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> AllPrayersEntry {
-        return placeholder(in: context)
+        let currentDate = Date()
+        return AllPrayersEntry(
+            date: currentDate,
+            allPrayers: isFirstHalf ? morningPrayers : eveningPrayers,
+            nextPrayer: PrayerData(name: "Fajr", date: currentDate),
+            previousPrayer: nil,
+            showTimer: true,
+            showSunrise: true,
+            isRamadan: PrayerTimelineUtils.isRamadan(currentDate),
+            showRamadanLabels: configuration.showRamadanLabels
+        )
     }
     
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
@@ -125,7 +142,9 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
                 nextPrayer: nextPrayer,
                 previousPrayer: previousPrayer,
                 showTimer: showTimer,
-                showSunrise: showSunrise
+                showSunrise: showSunrise,
+                isRamadan: PrayerTimelineUtils.isRamadan(currentDate),
+                showRamadanLabels: configuration.showRamadanLabels
             ))
         }
 

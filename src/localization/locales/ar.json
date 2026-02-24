@@ -382,6 +382,8 @@
   "notification.customSound.usage.preAthan": "إشعارات قبل أذان {{prayer}}",
   "notification.customSound.validationError": "يرجى ملء جميع الحقول واختيار نوع إشعار واحد على الأقل",
   "notification.enableAll": "تفعيل جميع الإشعارات",
+  "notification.fullAthanPlayback": "تشغيل الأذان الكامل",
+  "notification.fullAthanPlayback.description": "تشغيل الأذان كاملاً عبر مشغّل مستمر لا يتوقف بالضغط على زر الصوت الجانبي. عند الإيقاف، يُشغّل الأذان كصوت إشعار عادي.",
   "notification.iqama.body_few": "مضت {{count}} دقائق منذ أذان {{prayerName}} 🕌",
   "notification.iqama.body_many": "مضت {{count}} دقيقة منذ أذان {{prayerName}} 🕌",
   "notification.iqama.body_one": "مضت دقيقة واحدة منذ أذان {{prayerName}} 🕌",
@@ -768,5 +770,10 @@
   "settings.widgets.qadaDesc": "عداد الصيام المتبقي",
   "settings.widgets.qadaMedium": "تتبع القضاء (متوسط)",
   "settings.widgets.qadaMediumDesc": "تقدم القضاء مع إحصائيات الإتمام",
-  "settings.widgets.title": "تطبيقات مصغرة"
+  "settings.widgets.title": "تطبيقات مصغرة",
+  "widget_iftar": "إفطار",
+  "widget_imsak": "إمساك",
+  "widget_ramadan_day": "رمضان يوم %d",
+  "widget_show_ramadan_labels": "عرض تسميات رمضان",
+  "widget_suhoor": "سحور"
 }
