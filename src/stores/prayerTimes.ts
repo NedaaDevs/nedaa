@@ -35,6 +35,9 @@ import { checkLocationPermission } from "@/utils/location";
 // Adapters
 import { getAdapterByProviderId } from "@/adapters/providers";
 
+// Widget
+import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
   isLoading: boolean;
@@ -151,6 +154,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
                 cause: insertionResult.error,
               });
             }
+
+            reloadPrayerWidgets();
 
             return true;
           } catch (error: any) {

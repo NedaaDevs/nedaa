@@ -18,6 +18,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { useNotificationStore } from "@/stores/notification";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
+import { reloadPrayerWidgets } from "../../../modules/expo-widget/src";
 
 const AladhanSettings: FC = () => {
   const { t } = useTranslation();
@@ -55,6 +56,8 @@ const AladhanSettings: FC = () => {
 
       await scheduleAllNotifications();
       await rescheduleAllAlarms();
+
+      reloadPrayerWidgets();
 
       hapticSuccess();
     } catch (error) {
