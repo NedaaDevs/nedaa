@@ -239,83 +239,6 @@ struct SmallPrayerTimesView: View {
     }
 }
 
-// MARK: - Medium Widget View
-struct MediumPrayerTimesView: View {
-    let entry: PrayerHomeScreenEntry
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(spacing: 2) {
-            // Hijri date header
-            HStack(spacing: 4) {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 8))
-                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
-
-                Text(entry.date.hijriDateString())
-                    .font(.system(size: 8))
-                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
-                Spacer()
-
-                Text(entry.date, style: .date)
-                    .font(.system(size: 8))
-                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-            }
-            .padding(.horizontal, 10)
-            .padding(.top, 3)
-            .padding(.bottom, 1)
-
-            // Prayer times
-            HStack(spacing: entry.allPrayers.count > 5 ? 0 : 2) {
-                ForEach(entry.allPrayers) { prayer in
-                    VStack(spacing: 2) {
-                        Text(LocalizedStringKey(prayer.name))
-                            .font(.system(size: entry.allPrayers.count > 5 ? 9 : 10.5))
-                            .fontWeight(.semibold)
-                            .minimumScaleFactor(0.4)
-                            .lineLimit(1)
-                            .foregroundStyle(NedaaColors.text(for: colorScheme))
-
-                        PrayerTimeText(
-                            date: prayer.date,
-                            font: .system(size: entry.allPrayers.count > 5 ? 8 : 9),
-                            color: NedaaColors.textSecondary(for: colorScheme)
-                        )
-
-                        // Progress dot
-                        Circle()
-                            .fill(dotColor(for: prayer))
-                            .frame(width: 5, height: 5)
-                            .padding(.top, 1)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, entry.allPrayers.count > 5 ? 1 : 2)
-                }
-            }
-            .padding(.horizontal, 6)
-            .padding(.bottom, 6)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func dotColor(for prayer: PrayerData) -> Color {
-        if isNextPrayer(prayer) {
-            return NedaaColors.primary(for: colorScheme)
-        } else if prayer.isPast {
-            return NedaaColors.success
-        } else {
-            return NedaaColors.textSecondary(for: colorScheme).opacity(0.3)
-        }
-    }
-
-    private func isNextPrayer(_ prayer: PrayerData) -> Bool {
-        return prayer.isSame(as: entry.nextPrayer)
-    }
-}
-
 // MARK: - Large Widget View
 struct LargePrayerTimesView: View {
     let entry: PrayerHomeScreenEntry
@@ -497,121 +420,109 @@ struct MediumPrayerTimesListView: View {
     @Environment(\.showsBackground) var showsBackground
 
     var body: some View {
-        GeometryReader { geometry in
-            let totalPadding = CGFloat(entry.allPrayers.count - 1) * 0.5
-            let topBottomPadding: CGFloat = 15  // Space for Hijri date header
-            let availableHeight = geometry.size.height - totalPadding - topBottomPadding
-            
-            let baseHeight = availableHeight / (CGFloat(entry.allPrayers.count) + 0.5)
-            let activeHeight = baseHeight * 1.5
+        VStack(alignment: .leading, spacing: 0) {
+            // Hijri date header
+            HStack {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(NedaaColors.primary(for: colorScheme))
 
-            VStack(alignment: .leading, spacing: 0) {
-                // Hijri date header
-                HStack {
-                    Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 9))
-                        .foregroundStyle(NedaaColors.primary(for: colorScheme))
+                Text(entry.date.hijriDateString())
+                    .font(WidgetTypography.mediumHijri)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .lineLimit(1)
 
-                    Text(entry.date.hijriDateString())
-                        .font(.system(size: 9))
-                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                Spacer()
 
-                    Spacer()
-
-                    Text(entry.date, style: .date)
-                        .font(.system(size: 9))
-                        .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                }
-                .padding(.horizontal, 10)
-                .padding(.top, 3)
-                .padding(.bottom, 2)
-
-                // Prayer list
-                VStack(alignment: .leading, spacing: 0.5) {
-                    ForEach(entry.allPrayers) { prayer in
-                        let isNextPrayer = prayer.isSame(as: entry.nextPrayer)
-                        let isPastPrayer = prayer.isPast
-                        
-                        // Determine if this row is the "Active" one (showing timer)
-                        let isTimerActive = (isNextPrayer && shouldShowCountdown(for: prayer) && isTimerEnabled) ||
-                                          (isPastPrayer && shouldShowCountUp(for: prayer) && isTimerEnabled)
-                        
-                        let rowHeight = isTimerActive ? activeHeight : baseHeight
-
-                        HStack {
-                            // Prayer name
-                            Text(LocalizedStringKey(prayer.name))
-                                .font(.system(size: rowHeight * 0.55))
-                                .fontWeight(isNextPrayer ? .bold : .medium)
-                                .foregroundStyle(
-                                    prayerNameColor(isNext: isNextPrayer, isPast: isPastPrayer))
-                                .accentableWidget(isNextPrayer)
-
-                            Spacer()
-
-                            // Prayer time with conditional timer
-                            makePrayerTimeText(
-                                prayer: prayer,
-                                isNext: isNextPrayer,
-                                isPast: isPastPrayer,
-                                fontHeight: rowHeight,
-                                isTimerActive: isTimerActive
-                            )
-                            .multilineTextAlignment(.trailing)
-                        }
-                        .frame(height: rowHeight) // Enforce calculated height
-                        .padding(.horizontal, 10)
-                        .background(rowBackgroundColor(isNext: isNextPrayer, isPast: isPastPrayer))
-                        .clipShape(.rect(cornerRadius: isNextPrayer ? 7 : 5))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: isNextPrayer ? 7 : 5)
-                                .strokeBorder(
-                                    isNextPrayer
-                                        ? NedaaColors.primary(for: colorScheme).opacity(0.3)
-                                        : Color.clear,
-                                    lineWidth: isNextPrayer ? 1.5 : 0
-                                )
-                        )
-                        .padding(.horizontal, isNextPrayer ? 8 : 0)
-                    }
-                }
-                .padding(.bottom, 3)
+                Text(entry.date, style: .date)
+                    .font(WidgetTypography.mediumDate)
+                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
             }
+            .padding(.horizontal, 10)
+            .padding(.top, 4)
+            .padding(.bottom, 3)
+
+            // Prayer list
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(entry.allPrayers) { prayer in
+                    let isNext = prayer.isSame(as: entry.nextPrayer)
+                    let isPast = prayer.isPast(at: entry.date)
+                    let minutesToPrayer = Calendar.current.dateComponents(
+                        [.minute], from: entry.date, to: prayer.date
+                    ).minute ?? 0
+                    let showCountdown = isNext && minutesToPrayer > 0 && minutesToPrayer <= 60 && entry.showTimer
+                    let minutesSincePrayer = Calendar.current.dateComponents(
+                        [.minute], from: prayer.date, to: entry.date
+                    ).minute ?? 0
+                    let isPreviousActive = prayer.isSame(as: entry.previousPrayer) && minutesSincePrayer >= 0 && minutesSincePrayer <= 30 && entry.showTimer
+
+                    HStack(spacing: 6) {
+                        // Status indicator
+                        statusIcon(isNext: isNext, isPast: isPast, isPreviousActive: isPreviousActive)
+
+                        // Prayer name
+                        Text(LocalizedStringKey(prayer.name))
+                            .font(isNext ? WidgetTypography.mediumPrayerNameActive : WidgetTypography.mediumPrayerName)
+                            .foregroundStyle(prayerNameColor(isNext: isNext, isPast: isPast))
+                            .lineLimit(1)
+                            .accentableWidget(isNext)
+
+                        Spacer()
+
+                        // Time or timer
+                        if isPreviousActive {
+                            Text(prayer.date, style: .timer)
+                                .font(WidgetTypography.mediumTimer)
+                                .foregroundStyle(NedaaColors.completed(for: colorScheme))
+                                .monospacedDigit()
+                                .numericContentTransition()
+                        } else if showCountdown {
+                            Text(prayer.date, style: .timer)
+                                .font(WidgetTypography.mediumTimer)
+                                .foregroundStyle(NedaaColors.text(for: colorScheme))
+                                .monospacedDigit()
+                                .numericContentTransition()
+                        } else {
+                            Text(prayer.date, format: .dateTime.hour().minute())
+                                .font(WidgetTypography.mediumTime)
+                                .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                                .monospacedDigit()
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 3)
+                    .background(rowBackground(isNext: isNext, isPreviousActive: isPreviousActive))
+                    .clipShape(.rect(cornerRadius: 6))
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 4)
         }
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Helper Views
+    // MARK: - Helpers
 
     @ViewBuilder
-    private func makePrayerTimeText(prayer: PrayerData, isNext: Bool, isPast: Bool, fontHeight: CGFloat, isTimerActive: Bool) -> some View
-    {
-        if isTimerActive {
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(prayer.date, style: .timer)
-                    .font(.system(size: fontHeight * 0.52, weight: .bold, design: .rounded))
-                    .foregroundStyle(isNext ? NedaaColors.text(for: colorScheme) : NedaaColors.success.opacity(0.8))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .numericContentTransition()
-
-                Text(prayer.date, style: .time)
-                    .font(.system(size: fontHeight * 0.42, weight: .medium))
-                    .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
+    private func statusIcon(isNext: Bool, isPast: Bool, isPreviousActive: Bool) -> some View {
+        if isPreviousActive {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 8))
+                .foregroundStyle(NedaaColors.completed(for: colorScheme))
+        } else if isNext {
+            Circle()
+                .fill(NedaaColors.primary(for: colorScheme))
+                .frame(width: 7, height: 7)
+        } else if isPast {
+            Image(systemName: "checkmark")
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(NedaaColors.completed(for: colorScheme).opacity(0.6))
         } else {
-            PrayerTimeText(
-                date: prayer.date,
-                font: .system(size: fontHeight * 0.65),
-                color: NedaaColors.textSecondary(for: colorScheme)
-            )
+            Circle()
+                .stroke(NedaaColors.textSecondary(for: colorScheme).opacity(0.3), lineWidth: 1)
+                .frame(width: 7, height: 7)
         }
     }
-
-    // MARK: - Helper Functions
 
     private func prayerNameColor(isNext: Bool, isPast: Bool) -> Color {
         if isNext {
@@ -623,34 +534,14 @@ struct MediumPrayerTimesListView: View {
         }
     }
 
-    private func rowBackgroundColor(isNext: Bool, isPast: Bool) -> Color {
+    private func rowBackground(isNext: Bool, isPreviousActive: Bool) -> Color {
         guard showsBackground else { return Color.clear }
         if isNext {
-            return NedaaColors.primary(for: colorScheme).opacity(0.15)
-        } else if isPast {
-            return NedaaColors.success.opacity(0.08)
-        } else {
-            return Color.clear
+            return NedaaColors.primary(for: colorScheme).opacity(0.12)
+        } else if isPreviousActive {
+            return NedaaColors.completed(for: colorScheme).opacity(0.08)
         }
-    }
-
-    /// Check if timer is enabled in configuration
-    private var isTimerEnabled: Bool {
-        return entry.showTimer
-    }
-
-    /// Check if we should show countdown for next prayer (within 60 minutes)
-    private func shouldShowCountdown(for prayer: PrayerData) -> Bool {
-        let minutesUntil =
-            Calendar.current.dateComponents([.minute], from: entry.date, to: prayer.date).minute ?? 0
-        return minutesUntil > 0 && minutesUntil <= 60
-    }
-
-    /// Check if we should show count-up for previous prayer (within 30 minutes after)
-    private func shouldShowCountUp(for prayer: PrayerData) -> Bool {
-        let minutesSince =
-            Calendar.current.dateComponents([.minute], from: prayer.date, to: entry.date).minute ?? 0
-        return minutesSince >= 0 && minutesSince <= 30
+        return Color.clear
     }
 }
 
