@@ -45,6 +45,10 @@ struct WidgetsBundle26: WidgetBundle {
         AthkarProgressWidget()
         PrayerAthkarWidget()
 
+        // Ramadan Widgets
+        SuhoorIftarWidget()
+        RamadanProgressWidget()
+
         // Live Activities
         AlarmLiveActivity()  // Regular Live Activity (fallback)
         AlarmKitCountdownWidget()  // AlarmKit countdown (Dynamic Island)
@@ -66,6 +70,10 @@ struct WidgetsBundle17: WidgetBundle {
         QadaHomeScreen()
         AthkarProgressWidget()
         PrayerAthkarWidget()
+
+        // Ramadan Widgets
+        SuhoorIftarWidget()
+        RamadanProgressWidget()
 
         // Live Activity
         AlarmLiveActivity()

@@ -16,3 +16,11 @@
 "widget_prayer_athkar_settings" = "Prayer & Athkar Settings";
 "widget_prayer_athkar_settings_desc" = "Configure prayer times and athkar display";
 "widget_show_countdown" = "Show Countdown";
+
+/* Widget Configuration - Suhoor & Iftar */
+"widget_suhoor_iftar_settings" = "Suhoor & Iftar Settings";
+"widget_suhoor_iftar_settings_desc" = "Configure suhoor and iftar countdown";
+
+/* Widget Configuration - Ramadan Progress */
+"widget_ramadan_progress_settings" = "Ramadan Progress Settings";
+"widget_ramadan_progress_settings_desc" = "Configure Ramadan progress display";
