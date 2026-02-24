@@ -183,6 +183,7 @@ class DatabaseService {
         let asr: String
         let maghrib: String
         let isha: String
+        let imsak: String
     }
     
     /// Executes a query that returns prayer timings data
@@ -231,7 +232,8 @@ class DatabaseService {
                             dhuhr: timings.dhuhr,
                             asr: timings.asr,
                             maghrib: timings.maghrib,
-                            isha: timings.isha
+                            isha: timings.isha,
+                            imsak: otherTimings.imsak
                         )
                     } catch {
                         Logger.database("JSON decoding error: \(error.localizedDescription)", level: .error)
@@ -275,6 +277,41 @@ class DatabaseService {
         return date
     }
     
+    /// Gets imsak time for a specific date
+    /// - Parameter dateInt: Date in YYYYMMDD format
+    /// - Returns: Imsak time string if found, nil otherwise
+    func getImsakTime(dateInt: Int) -> String? {
+        let query = "SELECT \(columnOtherTimings) FROM \(prayerTimesTable) WHERE \(columnDate) = ?"
+
+        do {
+            try openDB()
+            defer { closeDB() }
+
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+
+            guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+                return nil
+            }
+
+            sqlite3_bind_int(statement, 1, Int32(dateInt))
+
+            guard sqlite3_step(statement) == SQLITE_ROW,
+                  let otherTimingsText = sqlite3_column_text(statement, 0) else {
+                return nil
+            }
+
+            let json = String(cString: otherTimingsText)
+            guard let data = json.data(using: .utf8) else { return nil }
+
+            let otherTimings = try JSONDecoder().decode(OtherTimings.self, from: data)
+            return otherTimings.imsak
+        } catch {
+            Logger.database("Error getting imsak time: \(error.localizedDescription)", level: .error)
+            return nil
+        }
+    }
+
     /// Checks if the database schema is valid
     /// - Returns: True if the schema is valid, false otherwise
     func validateSchema() -> Bool {
