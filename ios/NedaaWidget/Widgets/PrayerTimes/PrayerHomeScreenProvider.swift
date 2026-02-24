@@ -14,6 +14,9 @@ struct PrayerTimesConfigurationIntent: WidgetConfigurationIntent {
     
     @Parameter(title: "widget_show_sunrise", default: true)
     var showSunrise: Bool
+
+    @Parameter(title: "widget_show_ramadan_labels", default: true)
+    var showRamadanLabels: Bool
 }
 
 // MARK: - Localization Extension
@@ -66,6 +69,8 @@ struct PrayerHomeScreenEntry: TimelineEntry {
     let allPrayers: [PrayerData]
     let showTimer: Bool
     let showSunrise: Bool
+    let isRamadan: Bool
+    let showRamadanLabels: Bool
 
     var relevance: TimelineEntryRelevance? {
         prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
@@ -90,7 +95,9 @@ struct PrayerHomeScreenEntry: TimelineEntry {
             nextPrayer: prayers[3],
             allPrayers: prayers,
             showTimer: true,
-            showSunrise: true
+            showSunrise: true,
+            isRamadan: false,
+            showRamadanLabels: true
         )
     }
 }
@@ -177,7 +184,9 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
                 nextPrayer: nextPrayer,
                 allPrayers: prayers,
                 showTimer: showTimer,
-                showSunrise: showSunrise
+                showSunrise: showSunrise,
+                isRamadan: isRamadan,
+                showRamadanLabels: configuration.showRamadanLabels
             )
             entries.append(entry)
         }
@@ -206,7 +215,9 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
             nextPrayer: nextPrayer,
             allPrayers: prayers,
             showTimer: showTimer,
-            showSunrise: showSunrise
+            showSunrise: showSunrise,
+            isRamadan: PrayerTimelineUtils.isRamadan(date),
+            showRamadanLabels: configuration.showRamadanLabels
         )
     }
 }
