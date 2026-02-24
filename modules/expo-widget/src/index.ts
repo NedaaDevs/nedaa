@@ -1,7 +1,14 @@
 import { Platform } from "react-native";
 import { requireNativeModule } from "expo-modules-core";
 
-const ExpoWidget = Platform.OS === "ios" ? requireNativeModule("ExpoWidget") : null;
+let ExpoWidget: any = null;
+if (Platform.OS === "ios") {
+  try {
+    ExpoWidget = requireNativeModule("ExpoWidget");
+  } catch {
+    // Module not available — native rebuild required
+  }
+}
 
 export function reloadPrayerWidgets(): void {
   ExpoWidget?.reloadPrayerWidgets();
