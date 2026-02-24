@@ -141,7 +141,7 @@ struct PrayerView: View {
     func timeToNextPrayer(prayer: PrayerData) -> Int? {
         if prayer.name == entry.nextPrayer?.name {
             return Calendar.current.dateComponents(
-                [.minute], from: Date(), to: prayer.date
+                [.minute], from: entry.date, to: prayer.date
             ).minute
         }
         return nil
