@@ -155,7 +155,7 @@ func dataToShow(entry: PrayerCountdownEntry, geometry: GeometryProxy, widgetFami
     return Group {
         if let nextPrayer = entry.nextPrayer, let previousPrayer = entry.previousPrayer {
             // Check if the previous prayer was within the last 30 minutes
-            if Calendar.current.dateComponents([.minute], from: previousPrayer.date, to: Date()).minute ?? 0 < 30 && entry.showTimer {
+            if Calendar.current.dateComponents([.minute], from: previousPrayer.date, to: entry.date).minute ?? 0 < 30 && entry.showTimer {
                 VStack {
                     Text(NSLocalizedString(previousPrayer.name, comment: "Previous prayer"))
                         .multilineTextAlignment(.center)
@@ -173,7 +173,7 @@ func dataToShow(entry: PrayerCountdownEntry, geometry: GeometryProxy, widgetFami
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
 
-                    if Calendar.current.dateComponents([.minute], from: Date(), to: nextPrayer.date).minute ?? 0 <= 60 && entry.showTimer {
+                    if Calendar.current.dateComponents([.minute], from: entry.date, to: nextPrayer.date).minute ?? 0 <= 60 && entry.showTimer {
                         Text(nextPrayer.date, style: .timer)
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
@@ -256,7 +256,7 @@ struct InlinePrayerView: View {
 
     var body: some View {
         if let nextPrayer = entry.nextPrayer {
-            let minutesToNext = Calendar.current.dateComponents([.minute], from: Date(), to: nextPrayer.date).minute ?? 0
+            let minutesToNext = Calendar.current.dateComponents([.minute], from: entry.date, to: nextPrayer.date).minute ?? 0
 
             ViewThatFits {
                 Label {

@@ -235,24 +235,21 @@ struct SmallPrayerTimesView: View {
 
     /// Check if we should show countdown for next prayer (within 60 minutes)
     private func shouldShowCountdown(for prayer: PrayerData) -> Bool {
-        let now = Date()
         let minutesUntil =
-            Calendar.current.dateComponents([.minute], from: now, to: prayer.date).minute ?? 0
+            Calendar.current.dateComponents([.minute], from: entry.date, to: prayer.date).minute ?? 0
         return minutesUntil > 0 && minutesUntil <= 60
     }
 
     /// Check if we should show count-up for previous prayer (within 30 minutes after)
     private func shouldShowCountUp(for prayer: PrayerData) -> Bool {
-        let now = Date()
         let minutesSince =
-            Calendar.current.dateComponents([.minute], from: prayer.date, to: now).minute ?? 0
+            Calendar.current.dateComponents([.minute], from: prayer.date, to: entry.date).minute ?? 0
         return minutesSince >= 0 && minutesSince <= 30
     }
 
     /// Generate relative time string (e.g., "in 25 min")
     private func relativeTimeString(for date: Date) -> String {
-        let now = Date()
-        let components = Calendar.current.dateComponents([.hour, .minute], from: now, to: date)
+        let components = Calendar.current.dateComponents([.hour, .minute], from: entry.date, to: date)
 
         if let hours = components.hour, let minutes = components.minute {
             if hours > 0 {
@@ -667,17 +664,15 @@ struct MediumPrayerTimesListView: View {
 
     /// Check if we should show countdown for next prayer (within 60 minutes)
     private func shouldShowCountdown(for prayer: PrayerData) -> Bool {
-        let now = Date()
         let minutesUntil =
-            Calendar.current.dateComponents([.minute], from: now, to: prayer.date).minute ?? 0
+            Calendar.current.dateComponents([.minute], from: entry.date, to: prayer.date).minute ?? 0
         return minutesUntil > 0 && minutesUntil <= 60
     }
-    
+
     /// Check if we should show count-up for previous prayer (within 30 minutes after)
     private func shouldShowCountUp(for prayer: PrayerData) -> Bool {
-        let now = Date()
         let minutesSince =
-            Calendar.current.dateComponents([.minute], from: prayer.date, to: now).minute ?? 0
+            Calendar.current.dateComponents([.minute], from: prayer.date, to: entry.date).minute ?? 0
         return minutesSince >= 0 && minutesSince <= 30
     }
 }

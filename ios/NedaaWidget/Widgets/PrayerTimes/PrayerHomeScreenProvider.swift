@@ -97,11 +97,16 @@ struct PrayerHomeScreenEntry: TimelineEntry {
 
 // Extension to add convenience properties
 extension PrayerData {
+    /// Check if prayer is past relative to a reference date (for widget archived views)
+    func isPast(at referenceDate: Date) -> Bool {
+        date < referenceDate
+    }
+
+    /// Kept for non-widget code compatibility
     var isPast: Bool {
         date < Date()
     }
-    
-    // Helper to compare prayers
+
     func isSame(as other: PrayerData?) -> Bool {
         guard let other = other else { return false }
         return self.name == other.name && self.date == other.date
