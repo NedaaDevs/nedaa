@@ -73,7 +73,14 @@ struct PrayerHomeScreenEntry: TimelineEntry {
     let showRamadanLabels: Bool
 
     var relevance: TimelineEntryRelevance? {
-        prayerTimelineRelevance(nextPrayerDate: nextPrayer?.date, previousPrayerDate: previousPrayer?.date, currentDate: date)
+        prayerTimelineRelevance(
+            nextPrayerDate: nextPrayer?.date,
+            previousPrayerDate: previousPrayer?.date,
+            currentDate: date,
+            isRamadan: isRamadan,
+            imsakDate: nil,
+            maghribDate: isRamadan ? allPrayers.first(where: { $0.name == "maghrib" })?.date : nil
+        )
     }
 
     static var preview: PrayerHomeScreenEntry {

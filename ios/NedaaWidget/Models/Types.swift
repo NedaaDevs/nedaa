@@ -139,8 +139,36 @@ extension Date {
     }
 }
 
-/// Compute Smart Stack relevance based on proximity to next prayer time
-func prayerTimelineRelevance(nextPrayerDate: Date?, previousPrayerDate: Date?, currentDate: Date) -> TimelineEntryRelevance? {
+/// Compute Smart Stack relevance based on proximity to prayer times.
+/// Higher scores make the widget surface to the top of the Smart Stack.
+func prayerTimelineRelevance(
+    nextPrayerDate: Date?,
+    previousPrayerDate: Date?,
+    currentDate: Date,
+    isRamadan: Bool = false,
+    imsakDate: Date? = nil,
+    maghribDate: Date? = nil
+) -> TimelineEntryRelevance? {
+    // Ramadan high-priority windows
+    if isRamadan {
+        // 45min before imsak (suhoor urgency)
+        if let imsak = imsakDate {
+            let toImsak = imsak.timeIntervalSince(currentDate)
+            if toImsak > 0 && toImsak <= 2700 {
+                return TimelineEntryRelevance(score: 1.0, duration: toImsak)
+            }
+        }
+
+        // 60min before maghrib (iftar anticipation)
+        if let maghrib = maghribDate {
+            let toMaghrib = maghrib.timeIntervalSince(currentDate)
+            if toMaghrib > 0 && toMaghrib <= 3600 {
+                return TimelineEntryRelevance(score: 1.0, duration: toMaghrib)
+            }
+        }
+    }
+
+    // Count-up: 0-30min after previous prayer
     if let prevDate = previousPrayerDate {
         let sincePrev = currentDate.timeIntervalSince(prevDate)
         if sincePrev >= 0 && sincePrev < 1800 {
@@ -148,15 +176,24 @@ func prayerTimelineRelevance(nextPrayerDate: Date?, previousPrayerDate: Date?, c
         }
     }
 
+    // Countdown tiers before next prayer
     if let nextDate = nextPrayerDate {
         let toNext = nextDate.timeIntervalSince(currentDate)
         if toNext >= 0 && toNext <= 900 {
+            // 0-15min: highest priority
             return TimelineEntryRelevance(score: 1.0, duration: toNext + 1800)
         } else if toNext > 900 && toNext <= 1800 {
+            // 15-30min: high
             return TimelineEntryRelevance(score: 0.75, duration: toNext)
         } else if toNext > 1800 && toNext <= 3600 {
+            // 30-60min: medium
             return TimelineEntryRelevance(score: 0.5, duration: toNext)
         }
+    }
+
+    // Ramadan baseline boost (widget is more useful during Ramadan)
+    if isRamadan {
+        return TimelineEntryRelevance(score: 0.25, duration: 3600)
     }
 
     return nil
