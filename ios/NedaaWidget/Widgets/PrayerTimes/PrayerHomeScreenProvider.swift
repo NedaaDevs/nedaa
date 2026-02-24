@@ -132,16 +132,56 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
 
     func timeline(for configuration: PrayerTimesConfigurationIntent, in context: Context) async -> Timeline<PrayerHomeScreenEntry> {
         let currentDate = Date()
-        let entry = createEntry(for: currentDate, configuration: configuration)
+        let showSunrise = configuration.showSunrise
+        let showTimer = configuration.showTimer
 
-        // Calculate next update time
-        let nextUpdateDate = calculateNextUpdateDate(
-            currentDate: currentDate,
-            nextPrayerDate: entry.nextPrayer?.date ?? currentDate.addingTimeInterval(3600),
-            previousPrayerDate: entry.previousPrayer?.date ?? currentDate
+        guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
+            let fallback = PrayerHomeScreenEntry.preview
+            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
+        }
+        let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
+
+        let isRamadan = PrayerTimelineUtils.isRamadan(currentDate)
+        let imsakTime = isRamadan ? prayerService.getImsakTime()?.date : nil
+        let maghribTime = isRamadan ? todayPrayers.first(where: { $0.name == "maghrib" })?.date : nil
+
+        let entryDates = PrayerTimelineUtils.generateEntryDates(
+            from: currentDate,
+            todayPrayers: todayPrayers,
+            tomorrowPrayers: tomorrowPrayers,
+            isRamadan: isRamadan,
+            imsakTime: imsakTime,
+            maghribTime: maghribTime
         )
 
-        return Timeline(entries: [entry], policy: .after(nextUpdateDate))
+        var entries: [PrayerHomeScreenEntry] = []
+        for entryDate in entryDates {
+            let isAfterMidnight = entryDate >= Calendar.current.startOfDay(
+                for: Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            )
+
+            let prayers = isAfterMidnight ? (tomorrowPrayers ?? todayPrayers) : todayPrayers
+            let yesterdayPrayers = isAfterMidnight ? todayPrayers : nil
+
+            let previousPrayer = PrayerTimelineUtils.previousPrayer(
+                at: entryDate, todayPrayers: prayers, yesterdayPrayers: yesterdayPrayers
+            )
+            let nextPrayer = PrayerTimelineUtils.nextPrayer(
+                at: entryDate, todayPrayers: prayers, tomorrowPrayers: isAfterMidnight ? nil : tomorrowPrayers
+            )
+
+            let entry = PrayerHomeScreenEntry(
+                date: entryDate,
+                previousPrayer: previousPrayer,
+                nextPrayer: nextPrayer,
+                allPrayers: prayers,
+                showTimer: showTimer,
+                showSunrise: showSunrise
+            )
+            entries.append(entry)
+        }
+
+        return Timeline(entries: entries, policy: .atEnd)
     }
 
     private func createEntry(for date: Date, configuration: PrayerTimesConfigurationIntent) -> PrayerHomeScreenEntry {
@@ -167,21 +207,5 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
             showTimer: showTimer,
             showSunrise: showSunrise
         )
-    }
-
-    private func calculateNextUpdateDate(currentDate: Date, nextPrayerDate: Date, previousPrayerDate: Date) -> Date {
-        let timeIntervalToNextPrayer = nextPrayerDate.timeIntervalSince(currentDate)
-        let timeIntervalSincePreviousPrayer = currentDate.timeIntervalSince(previousPrayerDate)
-
-        if timeIntervalSincePreviousPrayer < 1800 {
-            // If the previous prayer was less than 30 minutes ago, update 30 minutes after the previous prayer
-            return previousPrayerDate.addingTimeInterval(1800)
-        } else if timeIntervalToNextPrayer > 3600 {
-            // If the next prayer is more than 1 hour away, update 60 minutes before the next prayer
-            return nextPrayerDate.addingTimeInterval(-3600)
-        } else {
-            // Otherwise, update 30 minutes after the next prayer
-            return nextPrayerDate.addingTimeInterval(1800)
-        }
     }
 }
