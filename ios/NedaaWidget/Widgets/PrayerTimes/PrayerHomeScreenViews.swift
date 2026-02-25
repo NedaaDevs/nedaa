@@ -161,19 +161,16 @@ struct SmallPrayerTimesView: View {
         .accessibilityElement(children: .combine)
     }
 
-    @ViewBuilder
-    private var headerIcon: some View {
-        let iconName: String = {
-            switch timerPhase {
-            case .countUp(let prayer):
-                return WidgetIcons.prayerIcon(for: prayer.name)
-            case .countdown(let prayer), .absoluteTime(let prayer):
-                return WidgetIcons.prayerIcon(for: prayer.name)
-            case .none:
-                return "moon.stars.fill"
-            }
-        }()
+    private var iconName: String {
+        switch timerPhase {
+        case .countUp(let prayer), .countdown(let prayer), .absoluteTime(let prayer):
+            return WidgetIcons.prayerIcon(for: prayer.name)
+        case .none:
+            return "moon.stars.fill"
+        }
+    }
 
+    private var headerIcon: some View {
         Image(systemName: iconName)
             .font(.system(size: showsBackground ? 16 : 20))
             .foregroundStyle(
