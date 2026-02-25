@@ -102,7 +102,6 @@ struct SuhoorIftarProvider: AppIntentTimelineProvider {
         let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false)
         let maghribTime = todayPrayers?.first(where: { $0.name == "maghrib" })?.date
 
-        let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: false)
         let tomorrowImsakTime: Date? = {
             guard let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: currentDate) else {
                 return nil
