@@ -116,7 +116,7 @@ struct PrayerTimeText: View {
 func ramadanDisplayName(for prayerName: String, isRamadan: Bool, showLabels: Bool) -> String {
     guard isRamadan, showLabels else { return prayerName }
     switch prayerName.lowercased() {
-    case "maghrib": return "widget_iftar"
+    case "maghrib": return "iftar"
     default: return prayerName
     }
 }
