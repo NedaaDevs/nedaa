@@ -16,6 +16,7 @@
 "widget_prayer_athkar_settings" = "إعدادات الصلاة والأذكار";
 "widget_prayer_athkar_settings_desc" = "تكوين عرض أوقات الصلاة والأذكار";
 "widget_show_countdown" = "إظهار العد التنازلي";
+"widget_show_ramadan_labels" = "إظهار تسميات رمضان";
 
 /* Widget Configuration - Suhoor & Iftar */
 "widget_suhoor_iftar_settings" = "إعدادات السحور والإفطار";

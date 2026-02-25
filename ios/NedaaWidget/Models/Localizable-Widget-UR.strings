@@ -16,6 +16,7 @@
 "widget_prayer_athkar_settings" = "نماز اور اذکار کی ترتیبات";
 "widget_prayer_athkar_settings_desc" = "نماز کے اوقات اور اذکار کی نمائش کو مرتب کریں";
 "widget_show_countdown" = "الٹی گنتی دکھائیں";
+"widget_show_ramadan_labels" = "رمضان کے لیبل دکھائیں";
 
 /* Widget Configuration - Suhoor & Iftar */
 "widget_suhoor_iftar_settings" = "سحری اور افطار کی ترتیبات";

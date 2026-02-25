@@ -2100,6 +2100,22 @@
           }
         }
       }
+    },
+    "widget_show_ramadan_labels": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Ramadan Labels"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار تسميات رمضان"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
