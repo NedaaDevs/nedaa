@@ -16,6 +16,7 @@
 "widget_prayer_athkar_settings" = "Prayer & Athkar Settings";
 "widget_prayer_athkar_settings_desc" = "Configure prayer times and athkar display";
 "widget_show_countdown" = "Show Countdown";
+"widget_show_ramadan_labels" = "Show Ramadan Labels";
 
 /* Widget Configuration - Suhoor & Iftar */
 "widget_suhoor_iftar_settings" = "Suhoor & Iftar Settings";
