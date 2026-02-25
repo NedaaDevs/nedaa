@@ -212,6 +212,7 @@ struct SmallPrayerTimesView: View {
                     .foregroundStyle(NedaaColors.textSecondary(for: colorScheme).opacity(0.6))
                 }
             }
+            .frame(maxWidth: .infinity)
 
         case .countdown(let prayer):
             VStack(spacing: 2) {
@@ -232,7 +233,9 @@ struct SmallPrayerTimesView: View {
                 Text(prayer.date, style: .time)
                     .font(WidgetTypography.smallCaption)
                     .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
 
         case .absoluteTime(let prayer):
             VStack(spacing: 4) {
@@ -246,11 +249,14 @@ struct SmallPrayerTimesView: View {
                 Text(prayer.date, style: .time)
                     .font(showsBackground ? WidgetTypography.standByTime : WidgetTypography.smallTime)
                     .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .multilineTextAlignment(.center)
 
                 Text(prayer.date, style: .relative)
                     .font(WidgetTypography.smallCaption)
                     .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
 
         case .none:
             Text("widget.noPrayerTimes")

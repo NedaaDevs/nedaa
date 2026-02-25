@@ -283,7 +283,9 @@ struct SuhoorIftarWidgetView: View {
                 Text(imsakDate, style: .time)
                     .font(WidgetTypography.smallCaption)
                     .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 0)
 
@@ -323,7 +325,9 @@ struct SuhoorIftarWidgetView: View {
                 Text(iftarDate, style: .time)
                     .font(WidgetTypography.smallCaption)
                     .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 0)
 
