@@ -117,7 +117,6 @@ struct RamadanProgressProvider: AppIntentTimelineProvider {
         }
 
         let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false)
-        let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: false)
 
         let imsakTime = prayerService.getImsakTime()?.date
         let maghribTime = todayPrayers?.first(where: { $0.name == "maghrib" })?.date
@@ -134,7 +133,7 @@ struct RamadanProgressProvider: AppIntentTimelineProvider {
 
         var entries: [RamadanProgressEntry] = []
         for entryDate in entryDates {
-            let entry = createEntry(for: entryDate, todayPrayers: todayPrayers, tomorrowPrayers: tomorrowPrayers)
+            let entry = createEntry(for: entryDate, todayPrayers: todayPrayers)
             entries.append(entry)
         }
 
@@ -143,8 +142,7 @@ struct RamadanProgressProvider: AppIntentTimelineProvider {
 
     private func createEntry(
         for date: Date,
-        todayPrayers: [PrayerData]? = nil,
-        tomorrowPrayers: [PrayerData]? = nil
+        todayPrayers: [PrayerData]? = nil
     ) -> RamadanProgressEntry {
         let isRamadan = PrayerTimelineUtils.isRamadan(date)
 
