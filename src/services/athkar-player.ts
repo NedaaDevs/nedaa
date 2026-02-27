@@ -10,6 +10,7 @@ import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { AppLogger } from "@/utils/appLogger";
 import type { PlayerState, ReciterManifest, QueueItem } from "@/types/athkar-audio";
 import type { Athkar } from "@/types/athkar";
+import i18n from "@/localization/i18n";
 
 const log = AppLogger.create("athkar-audio");
 
@@ -30,6 +31,7 @@ class AthkarPlayer {
   private previousAthkarId: string | null = null;
   private previousDuration = 0;
   private isManualSkip = false;
+  private manualSkipDirection: "next" | "previous" | null = null;
   private isSmartPausing = false;
 
   // Timers
@@ -111,6 +113,7 @@ class AthkarPlayer {
     this.previousAthkarId = null;
     this.previousDuration = 0;
     this.isManualSkip = false;
+    this.manualSkipDirection = null;
     this.isSmartPausing = false;
     this.clearSmartPauseTimer();
 
@@ -176,6 +179,10 @@ class AthkarPlayer {
 
       const effectiveRepeats = this.getEffectiveRepeats(item);
 
+      const isGroup =
+        item.totalRepeats === 1 &&
+        this.queue.some((q) => q.athkarId === item.athkarId && q.thikrId !== item.thikrId);
+
       for (let r = 0; r < effectiveRepeats; r++) {
         tracks.push({
           id: `t${trackCounter++}`,
@@ -187,6 +194,7 @@ class AthkarPlayer {
           athkarId: item.athkarId,
           repeatIndex: r,
           totalRepeats: effectiveRepeats,
+          isGroup,
         });
       }
     }
@@ -237,16 +245,25 @@ class AthkarPlayer {
     const queue = await TrackPlayer.getQueue();
     if (currentIndex === undefined || currentIndex === null) return;
 
-    const currentAthkarId = queue[currentIndex]?.athkarId;
+    const currentTrack = queue[currentIndex];
+    const isGroup = currentTrack?.isGroup;
 
-    // Skip past all remaining repeats of the current thikr
-    let nextIndex = currentIndex + 1;
-    while (nextIndex < queue.length && queue[nextIndex].athkarId === currentAthkarId) {
-      nextIndex++;
+    let nextIndex: number;
+    if (isGroup) {
+      // Groups: move one track at a time (each track is a different audio in the group)
+      nextIndex = currentIndex + 1;
+    } else {
+      // Non-groups: skip past all remaining repeats of the current athkar
+      const currentAthkarId = currentTrack?.athkarId;
+      nextIndex = currentIndex + 1;
+      while (nextIndex < queue.length && queue[nextIndex].athkarId === currentAthkarId) {
+        nextIndex++;
+      }
     }
 
     if (nextIndex < queue.length) {
       this.isManualSkip = true;
+      this.manualSkipDirection = "next";
       try {
         await TrackPlayer.skip(nextIndex);
         await TrackPlayer.play();
@@ -266,41 +283,60 @@ class AthkarPlayer {
     const queue = await TrackPlayer.getQueue();
     if (currentIndex === undefined || currentIndex === null) return;
 
-    const currentAthkarId = queue[currentIndex]?.athkarId;
+    const currentTrack = queue[currentIndex];
+    const isGroup = currentTrack?.isGroup;
 
-    // Find first repeat of current athkarId
-    let firstRepeatIndex = currentIndex;
-    while (firstRepeatIndex > 0 && queue[firstRepeatIndex - 1]?.athkarId === currentAthkarId) {
-      firstRepeatIndex--;
-    }
-
-    if (firstRepeatIndex < currentIndex) {
-      // Go back to first repeat of current thikr
-      this.isManualSkip = true;
-      try {
-        await TrackPlayer.skip(firstRepeatIndex);
-        await TrackPlayer.play();
-        this.setPlayerState("playing");
-      } catch (error) {
-        log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
-      }
-    } else if (firstRepeatIndex > 0) {
-      // Already at first repeat — go to first repeat of previous thikr
-      const prevAthkarId = queue[firstRepeatIndex - 1]?.athkarId;
-      let prevFirstIndex = firstRepeatIndex - 1;
-      while (prevFirstIndex > 0 && queue[prevFirstIndex - 1]?.athkarId === prevAthkarId) {
-        prevFirstIndex--;
-      }
-      this.isManualSkip = true;
-      try {
-        await TrackPlayer.skip(prevFirstIndex);
-        await TrackPlayer.play();
-        this.setPlayerState("playing");
-      } catch (error) {
-        log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
+    if (isGroup) {
+      // Groups: move one track back (each track is a different audio in the group)
+      if (currentIndex > 0) {
+        this.isManualSkip = true;
+        this.manualSkipDirection = "previous";
+        try {
+          await TrackPlayer.skip(currentIndex - 1);
+          await TrackPlayer.play();
+          this.setPlayerState("playing");
+        } catch (error) {
+          log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
+        }
+      } else {
+        await TrackPlayer.seekTo(0);
       }
     } else {
-      await TrackPlayer.seekTo(0);
+      // Non-groups: find first repeat of current athkarId
+      const currentAthkarId = currentTrack?.athkarId;
+      let firstRepeatIndex = currentIndex;
+      while (firstRepeatIndex > 0 && queue[firstRepeatIndex - 1]?.athkarId === currentAthkarId) {
+        firstRepeatIndex--;
+      }
+
+      if (firstRepeatIndex < currentIndex) {
+        // Go back to first repeat of current thikr
+        this.isManualSkip = true;
+        try {
+          await TrackPlayer.skip(firstRepeatIndex);
+          await TrackPlayer.play();
+          this.setPlayerState("playing");
+        } catch (error) {
+          log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
+        }
+      } else if (firstRepeatIndex > 0) {
+        // Already at first repeat — go to first repeat of previous thikr
+        const prevAthkarId = queue[firstRepeatIndex - 1]?.athkarId;
+        let prevFirstIndex = firstRepeatIndex - 1;
+        while (prevFirstIndex > 0 && queue[prevFirstIndex - 1]?.athkarId === prevAthkarId) {
+          prevFirstIndex--;
+        }
+        this.isManualSkip = true;
+        try {
+          await TrackPlayer.skip(prevFirstIndex);
+          await TrackPlayer.play();
+          this.setPlayerState("playing");
+        } catch (error) {
+          log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
+        }
+      } else {
+        await TrackPlayer.seekTo(0);
+      }
     }
   }
 
@@ -314,6 +350,7 @@ class AthkarPlayer {
     this.previousAthkarId = null;
     this.previousDuration = 0;
     this.isManualSkip = false;
+    this.manualSkipDirection = null;
     this.isSmartPausing = false;
     this.activeDownloads.clear();
     this.failedDownloads.clear();
@@ -402,9 +439,12 @@ class AthkarPlayer {
     const repeatIndex = (track.repeatIndex as number) ?? 0;
     const totalRepeats = (track.totalRepeats as number) ?? 1;
     const wasManualSkip = this.isManualSkip;
+    const skipDirection = this.manualSkipDirection;
     this.isManualSkip = false;
+    this.manualSkipDirection = null;
 
     const athkarChanged = athkarId !== this.previousAthkarId;
+    const isGroup = !!track.isGroup;
 
     if (athkarChanged) {
       // ── Thikr transition (or first track): atomic UI update ──
@@ -448,11 +488,21 @@ class AthkarPlayer {
         }
       }
     } else {
-      // ── Same thikr, new repeat: increment count + update repeat progress ──
-      if (!wasManualSkip && this.previousAthkarId) {
+      // ── Same athkarId, new track ──
+      if (isGroup && wasManualSkip && this.previousAthkarId) {
+        // Group manual skip: update count to rotate group UI
+        if (skipDirection === "next") {
+          this.athkarStore.incrementCount(this.previousAthkarId, true);
+        } else if (skipDirection === "previous") {
+          this.athkarStore.decrementCount(this.previousAthkarId);
+        }
+      } else if (!wasManualSkip && this.previousAthkarId) {
+        // Auto-advance: increment count as usual
         this.athkarStore.incrementCount(this.previousAthkarId, true);
       }
       this.athkarStore.setRepeatProgress({ current: repeatIndex, total: totalRepeats });
+      // Update current thikr so store reflects the active audio
+      this.athkarStore.setCurrentTrack(thikrId, athkarId);
     }
 
     this.previousAthkarId = athkarId;
@@ -599,7 +649,8 @@ class AthkarPlayer {
   }
 
   private getSessionTitle(): string {
-    return this.sessionType === "morning" ? "Morning Athkar" : "Evening Athkar";
+    const key = this.sessionType === "morning" ? "athkar.morning" : "athkar.evening";
+    return i18n.t(key);
   }
 
   private getReciterName(): string {

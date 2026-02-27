@@ -8,14 +8,11 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
-import { usePathname } from "expo-router";
-
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Play, Pause, X } from "lucide-react-native";
 
 import { useAthkarStore } from "@/stores/athkar";
@@ -28,7 +25,6 @@ const DISMISS_THRESHOLD = 60;
 
 const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
-  const pathname = usePathname();
 
   const playerState = useAthkarStore((s) => s.playerState);
   const sessionProgress = useAthkarStore((s) => s.sessionProgress);
@@ -36,30 +32,29 @@ const MiniPlayerBar: FC = () => {
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
 
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(1);
-
   const isActive =
     playerState === "playing" || playerState === "paused" || playerState === "loading";
+  const height = comfortMode ? AUDIO_UI.MINI_PLAYER_HEIGHT_COMFORT : AUDIO_UI.MINI_PLAYER_HEIGHT;
 
-  const isFocusScreen = pathname === "/athkar-focus";
+  const heightAnim = useSharedValue(isActive ? height : 0);
+  const opacity = useSharedValue(1);
 
   useEffect(() => {
     if (isActive) {
-      translateY.value = 0;
+      heightAnim.value = height;
       opacity.value = 1;
     }
-  }, [isActive, translateY, opacity]);
+  }, [isActive, height, heightAnim, opacity]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+  const containerStyle = useAnimatedStyle(() => ({
+    height: heightAnim.value,
+    overflow: "hidden" as const,
     opacity: opacity.value,
   }));
 
-  if (!isActive || isFocusScreen) return null;
+  if (!isActive) return null;
 
   const isPlaying = playerState === "playing";
-  const height = comfortMode ? AUDIO_UI.MINI_PLAYER_HEIGHT_COMFORT : AUDIO_UI.MINI_PLAYER_HEIGHT;
   const progressPercent = audioDuration > 0 ? (audioPosition / audioDuration) * 100 : 0;
 
   const handlePlayPause = (e: any) => {
@@ -84,54 +79,38 @@ const MiniPlayerBar: FC = () => {
     .failOffsetX([-30, 30])
     .onUpdate((e) => {
       const clamped = Math.max(0, e.translationY);
-      translateY.value = clamped;
-      opacity.value = 1 - clamped / (DISMISS_THRESHOLD * 2);
+      const progress = Math.min(clamped / DISMISS_THRESHOLD, 1);
+      heightAnim.value = height * (1 - progress);
+      opacity.value = 1 - progress;
     })
     .onEnd((e) => {
       if (e.translationY > DISMISS_THRESHOLD) {
-        translateY.value = withTiming(height, { duration: 150 });
+        heightAnim.value = withTiming(0, { duration: 150 });
         opacity.value = withTiming(0, { duration: 150 });
         runOnJS(handleDismiss)();
       } else {
-        translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
+        heightAnim.value = withSpring(height, { damping: 20, stiffness: 300 });
         opacity.value = withSpring(1);
       }
     });
 
   return (
     <GestureDetector gesture={swipeDismiss}>
-      <Animated.View style={animatedStyle}>
+      <Animated.View style={containerStyle}>
         <Pressable onPress={handleTap}>
           <Box
             height={height}
             backgroundColor="$backgroundSecondary"
             borderTopWidth={1}
             borderTopColor="$outline"
-            paddingHorizontal="$4">
-            {/* Drag handle hint */}
-            <Box
-              alignSelf="center"
-              width={32}
-              height={4}
-              borderRadius={2}
-              backgroundColor="$outline"
-              style={{ position: "absolute", top: 4 }}
-            />
-            {/* Mini progress bar at top */}
-            <Progress
-              value={progressPercent}
-              size="xs"
-              backgroundColor="$backgroundMuted"
-              style={{ position: "absolute", top: 10, left: 0, right: 0 }}>
-              <ProgressFilledTrack backgroundColor="$primary" />
-            </Progress>
-
-            <HStack flex={1} alignItems="center" gap="$3" paddingTop="$1">
+            paddingHorizontal="$4"
+            justifyContent="center">
+            <HStack alignItems="center" gap="$3">
               {/* Session progress badge */}
               <Box
-                width={40}
-                height={40}
-                borderRadius={20}
+                width={36}
+                height={36}
+                borderRadius={18}
                 backgroundColor="$primary"
                 alignItems="center"
                 justifyContent="center">
@@ -154,9 +133,9 @@ const MiniPlayerBar: FC = () => {
               {/* Play/Pause */}
               <Pressable
                 onPress={handlePlayPause}
-                width={44}
-                height={44}
-                borderRadius={22}
+                width={40}
+                height={40}
+                borderRadius={20}
                 backgroundColor="$primary"
                 alignItems="center"
                 justifyContent="center"
@@ -167,15 +146,29 @@ const MiniPlayerBar: FC = () => {
               {/* Close */}
               <Pressable
                 onPress={handleDismiss}
-                width={44}
-                height={44}
-                borderRadius={22}
+                width={32}
+                height={32}
+                borderRadius={16}
+                backgroundColor="$backgroundMuted"
                 alignItems="center"
                 justifyContent="center"
                 accessibilityLabel={t("athkar.audio.stop")}>
-                <Icon as={X} size="sm" color="$typographySecondary" />
+                <Icon as={X} size="xs" color="$typographySecondary" />
               </Pressable>
             </HStack>
+
+            {/* Progress bar at bottom edge */}
+            <Box
+              style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}
+              height={3}
+              backgroundColor="$backgroundMuted">
+              <Box
+                height={3}
+                backgroundColor="$primary"
+                borderRadius={2}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </Box>
           </Box>
         </Pressable>
       </Animated.View>
