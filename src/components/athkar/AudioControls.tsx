@@ -208,30 +208,25 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
       <Animated.View style={swipeAnimatedStyle}>
         <Box
           paddingHorizontal="$4"
-          paddingVertical="$3"
+          paddingTop="$2"
+          paddingBottom="$3"
           backgroundColor="$backgroundSecondary"
           borderTopStartRadius="$6"
           borderTopEndRadius="$6">
-          {/* Close button — tap to collapse, long-press to dismiss */}
-          <Pressable
-            onPress={onCollapse}
-            onLongPress={() => {
-              hapticSelection();
-              onDismiss();
-            }}
-            delayLongPress={500}
-            width={44}
-            height={44}
-            borderRadius={22}
-            alignItems="center"
-            justifyContent="center"
-            style={{ position: "absolute", top: 4, end: 4, zIndex: 1 }}
-            accessibilityLabel={t("athkar.audio.minimize", { defaultValue: "Minimize" })}
-            accessibilityHint={t("athkar.audio.minimizeHint", {
-              defaultValue: "Long press to stop",
-            })}>
-            <Icon as={X} size="sm" color="$typographySecondary" />
-          </Pressable>
+          {/* Close button row */}
+          <HStack justifyContent="flex-end">
+            <Pressable
+              onPress={onDismiss}
+              width={32}
+              height={32}
+              borderRadius={16}
+              backgroundColor="$backgroundMuted"
+              alignItems="center"
+              justifyContent="center"
+              accessibilityLabel={t("athkar.audio.stop")}>
+              <Icon as={X} size="xs" color="$typographySecondary" />
+            </Pressable>
+          </HStack>
 
           <VStack gap="$2">
             {/* Seekable progress bar */}
