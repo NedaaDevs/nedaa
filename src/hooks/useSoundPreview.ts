@@ -51,6 +51,7 @@ export const useSoundPreview = (): UseSoundPreviewReturn => {
     return () => {
       isMountedRef.current = false;
       unsubscribe();
+      soundPreviewManager.stopPreview();
     };
   }, []);
 
