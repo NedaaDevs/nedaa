@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "tamagui";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
@@ -32,6 +33,7 @@ import {
   ChevronUp,
   ChevronDown,
   HelpCircle,
+  Play,
 } from "lucide-react-native";
 import { Icon } from "@/components/ui/icon";
 
@@ -79,6 +81,7 @@ const AthkarFocusScreen = () => {
   const router = useRouter();
   const { isRTL } = useRTL();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -127,6 +130,7 @@ const AthkarFocusScreen = () => {
 
   // Audio controls expanded/collapsed
   const [audioControlsExpanded, setAudioControlsExpanded] = useState(true);
+  const [audioDismissed, setAudioDismissed] = useState(false);
 
   // State for showing instructions
   const [showInstructions, setShowInstructions] = useState(true);
@@ -662,9 +666,9 @@ const AthkarFocusScreen = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Box flex={1} backgroundColor="$background">
+      <Box flex={1} backgroundColor="$background" style={{ paddingBottom: insets.bottom }}>
         {/* Header */}
-        <HStack position="absolute" top={48} end={16} zIndex={20} gap="$2">
+        <HStack position="absolute" top={insets.top + 8} end={16} zIndex={20} gap="$2">
           {!showInstructions && (
             <Button
               size="md"
@@ -698,7 +702,7 @@ const AthkarFocusScreen = () => {
         </HStack>
 
         {/* Progress Indicator */}
-        <Box position="absolute" top={48} start={16} end={80} zIndex={5}>
+        <Box position="absolute" top={insets.top + 8} start={16} end={80} zIndex={5}>
           <Text size="sm" color="$typographySecondary" marginBottom="$2">
             {formatNumberToLocale(`${currentAthkarIndex + 1}`)} /
             {formatNumberToLocale(`${currentAthkarList.length}`)}
@@ -949,17 +953,39 @@ const AthkarFocusScreen = () => {
         </GestureDetector>
 
         {/* Audio Controls — bottom strip */}
-        {showAudioControls && audioControlsExpanded && (
+        {showAudioControls && !audioDismissed && audioControlsExpanded && (
           <AudioControls
             onPlayPause={handlePlayPause}
             onNext={handleAudioNext}
             onPrevious={handleAudioPrevious}
             onCollapse={handleCollapseControls}
-            onDismiss={() => athkarPlayer.stop()}
+            onDismiss={() => {
+              athkarPlayer.stop();
+              setAudioDismissed(true);
+            }}
           />
         )}
-        {showAudioControls && !audioControlsExpanded && (
+        {showAudioControls && !audioDismissed && !audioControlsExpanded && (
           <CollapsedAudioBar onExpand={handleExpandControls} onPlayPause={handlePlayPause} />
+        )}
+
+        {/* Restore audio button — shown after dismissing */}
+        {showAudioControls && audioDismissed && (
+          <Pressable
+            onPress={() => setAudioDismissed(false)}
+            position="absolute"
+            bottom={insets.bottom + 16}
+            alignSelf="center"
+            width={48}
+            height={48}
+            borderRadius={24}
+            backgroundColor="$backgroundSecondary"
+            alignItems="center"
+            justifyContent="center"
+            opacity={0.7}
+            accessibilityLabel={t("athkar.audio.expand", { defaultValue: "Show audio controls" })}>
+            <Icon as={Play} size="md" color="$primary" />
+          </Pressable>
         )}
       </Box>
 
