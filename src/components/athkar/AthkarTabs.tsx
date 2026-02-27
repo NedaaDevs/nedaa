@@ -16,14 +16,12 @@ import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
-import { useAthkarAudioStore } from "@/stores/athkar-audio";
 
 // Hooks
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { AUDIO_UI } from "@/constants/AthkarAudio";
 
 // Services
 import { athkarPlayer } from "@/services/athkar-player";
@@ -43,13 +41,6 @@ const AthkarTabs = () => {
 
   const { setCurrentType, validateDailyStreak } = useAthkarStore();
   const playerState = useAthkarStore((s) => s.playerState);
-  const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
-
-  const isPlayerActive =
-    playerState === "playing" || playerState === "paused" || playerState === "loading";
-  const miniPlayerHeight = comfortMode
-    ? AUDIO_UI.MINI_PLAYER_HEIGHT_COMFORT
-    : AUDIO_UI.MINI_PLAYER_HEIGHT;
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -171,7 +162,7 @@ const AthkarTabs = () => {
         onPress={() => router.push("/athkar-focus")}
         size="lg"
         placement="bottom right"
-        bottom={isPlayerActive ? 16 + miniPlayerHeight + 8 : 16}
+        bottom={16}
         accessibilityLabel={t("athkar.focus.title")}>
         <FabIcon as={Focus} color="$typographyContrast" />
       </Fab>

@@ -23,6 +23,7 @@ import { MessageToast } from "@/components/feedback/MessageToast";
 import ReportProblemModal from "@/components/ReportProblemModal";
 
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { athkarPlayer } from "@/services/athkar-player";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { AthkarDB } from "@/services/athkar-db";
@@ -97,22 +98,19 @@ const AudioSettings: FC = () => {
   useEffect(() => {
     return () => {
       if (playingSampleIdRef.current) {
-        try {
-          TrackPlayer.pause();
-        } catch {}
+        TrackPlayer.pause().catch(() => {});
       }
     };
   }, []);
 
   const stopSample = useCallback(() => {
-    try {
-      TrackPlayer.pause();
-    } catch {}
+    TrackPlayer.pause().catch(() => {});
     setPlayingSampleId(null);
   }, []);
 
   const playSample = useCallback(
     async (reciterId: string, url: string) => {
+      await athkarPlayer.initialize();
       stopSample();
       try {
         await TrackPlayer.load({ url, title: reciterId });
