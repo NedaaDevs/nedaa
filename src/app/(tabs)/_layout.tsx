@@ -1,11 +1,16 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 // Stores
 import { useAppStore } from "@/stores/app";
 
 // Icons
 import { Home, Settings, BookOpenText, Compass, CalendarCheck } from "lucide-react-native";
+
+// Components
+import { Box } from "@/components/ui/box";
+import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
@@ -21,6 +26,12 @@ const TabsLayout = () => {
   return (
     <Tabs
       key={`tabs-${mode}`}
+      tabBar={(props: BottomTabBarProps) => (
+        <Box backgroundColor="$backgroundSecondary">
+          <MiniPlayerBar />
+          <BottomTabBar {...props} />
+        </Box>
+      )}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary.val,
