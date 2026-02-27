@@ -496,22 +496,20 @@ const AthkarFocusScreen = () => {
   }, []);
 
   const handleSwipeToNext = useCallback(() => {
-    moveToNext();
     if (athkarPlayer.isActive()) {
-      const { currentAthkarIndex: idx } = useAthkarStore.getState();
-      const athkar = currentAthkarList[idx];
-      if (athkar) athkarPlayer.jumpTo(athkar.id);
+      athkarPlayer.next();
+    } else {
+      moveToNext();
     }
-  }, [moveToNext, currentAthkarList]);
+  }, [moveToNext]);
 
   const handleSwipeToPrevious = useCallback(() => {
-    moveToPrevious();
     if (athkarPlayer.isActive()) {
-      const { currentAthkarIndex: idx } = useAthkarStore.getState();
-      const athkar = currentAthkarList[idx];
-      if (athkar) athkarPlayer.jumpTo(athkar.id);
+      athkarPlayer.previous();
+    } else {
+      moveToPrevious();
     }
-  }, [moveToPrevious, currentAthkarList]);
+  }, [moveToPrevious]);
 
   // Handle horizontal swipe for decrement
   const horizontalSwipe = Gesture.Pan()
