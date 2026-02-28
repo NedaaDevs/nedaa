@@ -230,6 +230,8 @@ struct SmallPrayerTimesView: View {
                 Text(prayer.date, style: .time)
                     .font(WidgetTypography.smallCaption)
                     .foregroundStyle(NedaaColors.textSecondary(for: colorScheme))
+                    .fixedSize(horizontal: true, vertical: false)
+                    .minimumScaleFactor(0.7)
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
@@ -246,6 +248,8 @@ struct SmallPrayerTimesView: View {
                 Text(prayer.date, style: .time)
                     .font(showsBackground ? WidgetTypography.standByTime : WidgetTypography.smallTime)
                     .foregroundStyle(NedaaColors.text(for: colorScheme))
+                    .fixedSize(horizontal: true, vertical: false)
+                    .minimumScaleFactor(0.7)
                     .multilineTextAlignment(.center)
 
                 Text(prayer.date, style: .relative)
