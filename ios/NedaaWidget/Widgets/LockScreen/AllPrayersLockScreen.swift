@@ -164,42 +164,43 @@ struct PrayerView: View {
     var entry: AllPrayersEntry
     @Environment(\.widgetFamily) var family
 
-    func timeToNextPrayer(prayer: PrayerData) -> Int? {
-        if prayer.name == entry.nextPrayer?.name {
-            return Calendar.current.dateComponents(
-                [.minute], from: entry.date, to: prayer.date
-            ).minute
-        }
-        return nil
-    }
-
     var body: some View {
         if let prayers = entry.allPrayers {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(prayers, id: \.id) { prayer in
-                    let isNext = prayer.name == entry.nextPrayer?.name
-                    let minutesUntilPrayer = timeToNextPrayer(prayer: prayer)
-                    let showCountdown = isNext && (minutesUntilPrayer ?? 0) <= 60 && entry.showTimer
+                    let isNext = prayer.isSame(as: entry.nextPrayer)
+                    let isPast = prayer.isPast(at: entry.date)
+                    let minutesToPrayer = Calendar.current.dateComponents(
+                        [.minute], from: entry.date, to: prayer.date
+                    ).minute ?? 0
+                    let showCountdown = isNext && minutesToPrayer > 0 && minutesToPrayer <= 60 && entry.showTimer
+                    let minutesSincePrayer = Calendar.current.dateComponents(
+                        [.minute], from: prayer.date, to: entry.date
+                    ).minute ?? 0
+                    let isPreviousActive = prayer.isSame(as: entry.previousPrayer) && minutesSincePrayer >= 0 && minutesSincePrayer <= 30 && entry.showTimer
 
                     HStack(spacing: 8) {
-                        // Circle indicator
                         Circle()
                             .stroke(Color.white.opacity(0.6), lineWidth: 1)
                             .overlay(
                                 Circle()
-                                    .fill(isNext ? .white : .clear)
+                                    .fill(isNext || isPreviousActive ? .white : .clear)
                                     .frame(width: 6, height: 6)
                             )
                             .frame(width: 8, height: 8)
 
-                        // Prayer name
                         Text(NSLocalizedString(prayer.name, comment: ""))
                             .font(.system(size: 14, weight: .medium))
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .opacity(isPast && !isPreviousActive ? 0.6 : 1.0)
 
-                        // Time/Timer
-                        if showCountdown {
+                        if isPreviousActive {
+                            Text(prayer.date, style: .timer)
+                                .font(.system(size: 12, weight: .medium))
+                                .monospacedDigit()
+                                .contentTransition(.numericText())
+                        } else if showCountdown {
                             Text(prayer.date, style: .timer)
                                 .font(.system(size: 12, weight: .medium))
                                 .monospacedDigit()
@@ -208,6 +209,7 @@ struct PrayerView: View {
                             Text(prayer.date, format: .dateTime.hour().minute())
                                 .font(.system(size: 12, weight: .medium))
                                 .monospacedDigit()
+                                .opacity(isPast ? 0.6 : 1.0)
                         }
                     }
                 }

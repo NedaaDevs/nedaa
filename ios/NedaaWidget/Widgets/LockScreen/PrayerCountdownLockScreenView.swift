@@ -185,40 +185,49 @@ struct CircularView: View {
 @available(iOSApplicationExtension 17.0, *)
 func dataToShow(entry: PrayerCountdownEntry, geometry: GeometryProxy, widgetFamily: WidgetFamily) -> some View {
     let fontSize: Double = widgetFamily == WidgetFamily.accessoryCircular ? 0.25 : 0.18
+    let phase = PrayerTimelineUtils.timerPhase(
+        at: entry.date,
+        previousPrayer: entry.previousPrayer,
+        nextPrayer: entry.nextPrayer,
+        timerEnabled: entry.showTimer
+    )
     return Group {
-        if let nextPrayer = entry.nextPrayer, let previousPrayer = entry.previousPrayer {
-            // Check if the previous prayer was within the last 30 minutes
-            if Calendar.current.dateComponents([.minute], from: previousPrayer.date, to: entry.date).minute ?? 0 < 30 && entry.showTimer {
-                VStack {
-                    Text(NSLocalizedString(previousPrayer.name, comment: "Previous prayer"))
-                        .multilineTextAlignment(.center)
-                        .font(.system(size: geometry.size.width * fontSize))
-                    Text(previousPrayer.date, style: .timer)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(1)
-                        .font(.system(size: geometry.size.width * fontSize))
-                        .contentTransition(.numericText())
-                }
-            } else {
-                VStack {
-                    Text(NSLocalizedString(nextPrayer.name, comment: "Next prayer"))
-                        .font(.system(size: geometry.size.width * fontSize))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-
-                    if Calendar.current.dateComponents([.minute], from: entry.date, to: nextPrayer.date).minute ?? 0 <= 60 && entry.showTimer {
-                        Text(nextPrayer.date, style: .timer)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(1)
-                            .contentTransition(.numericText())
-                    } else {
-                        Text(nextPrayer.date, style: .time)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                            .font(.system(size: geometry.size.width * fontSize))
-                    }
-                }
+        switch phase {
+        case .countUp(let prayer):
+            VStack {
+                Text(NSLocalizedString(prayer.name, comment: "Previous prayer"))
+                    .multilineTextAlignment(.center)
+                    .font(.system(size: geometry.size.width * fontSize))
+                Text(prayer.date, style: .timer)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .font(.system(size: geometry.size.width * fontSize))
+                    .contentTransition(.numericText())
             }
+        case .countdown(let prayer):
+            VStack {
+                Text(NSLocalizedString(prayer.name, comment: "Next prayer"))
+                    .font(.system(size: geometry.size.width * fontSize))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text(prayer.date, style: .timer)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+            }
+        case .absoluteTime(let prayer):
+            VStack {
+                Text(NSLocalizedString(prayer.name, comment: "Next prayer"))
+                    .font(.system(size: geometry.size.width * fontSize))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text(prayer.date, style: .time)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .font(.system(size: geometry.size.width * fontSize))
+            }
+        case .none:
+            EmptyView()
         }
     }
 }
@@ -317,36 +326,56 @@ struct InlinePrayerProvider: TimelineProvider {
 struct InlinePrayerView: View {
     var entry: PrayerCountdownEntry
 
+    private var phase: PrayerTimelineUtils.TimerPhase {
+        PrayerTimelineUtils.timerPhase(
+            at: entry.date,
+            previousPrayer: entry.previousPrayer,
+            nextPrayer: entry.nextPrayer,
+            timerEnabled: true
+        )
+    }
+
     var body: some View {
-        if let nextPrayer = entry.nextPrayer {
-            let minutesToNext = Calendar.current.dateComponents([.minute], from: entry.date, to: nextPrayer.date).minute ?? 0
+        switch phase {
+        case .countUp(let prayer):
+            inlineContent(prayer: prayer, style: .timer)
+        case .countdown(let prayer):
+            inlineContent(prayer: prayer, style: .timer)
+        case .absoluteTime(let prayer):
+            inlineContent(prayer: prayer, style: .time)
+        case .none:
+            EmptyView()
+        }
+    }
 
-            ViewThatFits {
-                Label {
-                    if minutesToNext > 0 && minutesToNext <= 60 {
-                        Text(NSLocalizedString(nextPrayer.name, comment: ""))
-                        + Text(" ")
-                        + Text(nextPrayer.date, style: .timer)
-                    } else {
-                        Text(NSLocalizedString(nextPrayer.name, comment: ""))
-                        + Text(" ")
-                        + Text(nextPrayer.date, style: .time)
-                    }
-                } icon: {
-                    Image(systemName: "moon.stars")
-                }
+    private enum TimeStyle {
+        case timer, time
+    }
 
-                if minutesToNext > 0 && minutesToNext <= 60 {
-                    Text(NSLocalizedString(nextPrayer.name, comment: ""))
-                    + Text(" ")
-                    + Text(nextPrayer.date, style: .timer)
-                } else {
-                    Text(NSLocalizedString(nextPrayer.name, comment: ""))
-                    + Text(" ")
-                    + Text(nextPrayer.date, style: .time)
-                }
+    @ViewBuilder
+    private func inlineContent(prayer: PrayerData, style: TimeStyle) -> some View {
+        ViewThatFits {
+            Label {
+                Text(NSLocalizedString(prayer.name, comment: ""))
+                + Text(" ")
+                + timeText(for: prayer, style: style)
+            } icon: {
+                Image(systemName: "moon.stars")
             }
-            .widgetAccentable()
+
+            Text(NSLocalizedString(prayer.name, comment: ""))
+            + Text(" ")
+            + timeText(for: prayer, style: style)
+        }
+        .widgetAccentable()
+    }
+
+    private func timeText(for prayer: PrayerData, style: TimeStyle) -> Text {
+        switch style {
+        case .timer:
+            return Text(prayer.date, style: .timer)
+        case .time:
+            return Text(prayer.date, style: .time)
         }
     }
 }
