@@ -139,8 +139,7 @@
         }
       ],
       "expo-asset",
-      "@sentry/react-native",
-      "./plugins/withAthkarMediaControls"
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true
