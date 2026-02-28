@@ -219,6 +219,11 @@ class AthkarPlayer {
       total: this.getEffectiveRepeats(this.queue[0]),
     });
 
+    // Set initial group progress if first track is a group
+    if (this.queue.length > 0) {
+      this.computeGroupProgress(this.queue[0].athkarId, this.queue[0].thikrId);
+    }
+
     log.i(
       "Player",
       `Queue built: ${tracks.length} tracks (${this.uniqueThikrIds.length} thikrs) for ${sessionType}`
@@ -507,6 +512,9 @@ class AthkarPlayer {
 
     this.previousAthkarId = athkarId;
 
+    // Update group progress for UI
+    this.computeGroupProgress(athkarId, thikrId);
+
     // Prefetch upcoming audio files
     const jsQueueIdx = this.queue.findIndex((q) => q.athkarId === athkarId);
     if (jsQueueIdx !== -1) {
@@ -679,6 +687,37 @@ class AthkarPlayer {
       clearTimeout(this.smartPauseTimer);
       this.smartPauseTimer = null;
     }
+  }
+
+  // ─── Group Progress ──────────────────────────────────────────────
+
+  private computeGroupProgress(athkarId: string, thikrId: string): void {
+    const { currentType, morningAthkarList, eveningAthkarList, currentProgress } = this.athkarStore;
+    const list = currentType === "morning" ? morningAthkarList : eveningAthkarList;
+    const athkar = list.find((a) => a.id === athkarId);
+
+    if (!athkar?.group) {
+      this.athkarStore.setGroupProgress(null);
+      return;
+    }
+
+    const { group } = athkar;
+    const progressItem = currentProgress.find((p) => p.athkarId === athkarId);
+    const currentCount = progressItem?.currentCount ?? 0;
+    const totalCount = progressItem?.totalCount ?? athkar.count;
+
+    const groupIndex = group.audioIds.indexOf(thikrId);
+    const round = Math.floor(currentCount / group.itemsPerRound) + 1;
+    const totalRounds = Math.ceil(totalCount / group.itemsPerRound);
+
+    this.athkarStore.setGroupProgress({
+      groupIndex: groupIndex !== -1 ? groupIndex : 0,
+      itemsPerRound: group.itemsPerRound,
+      round,
+      totalRounds,
+      count: currentCount,
+      totalCount,
+    });
   }
 
   // ─── Getters ───────────────────────────────────────────────────────

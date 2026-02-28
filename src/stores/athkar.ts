@@ -109,6 +109,7 @@ export const useAthkarStore = create<AthkarStore>()(
         currentThikrId: null,
         repeatProgress: { current: 0, total: 0 },
         sessionProgress: { current: 0, total: 0 },
+        groupProgress: null,
 
         // Initialize DB and load data
         initializeStore: async () => {
@@ -311,6 +312,7 @@ export const useAthkarStore = create<AthkarStore>()(
           set({ currentThikrId: thikrId, currentAthkarId: athkarId }),
         setRepeatProgress: (repeatProgress) => set({ repeatProgress }),
         setSessionProgress: (sessionProgress) => set({ sessionProgress }),
+        setGroupProgress: (groupProgress) => set({ groupProgress }),
 
         transitionTrack: (params) => {
           const {
@@ -377,6 +379,7 @@ export const useAthkarStore = create<AthkarStore>()(
             currentThikrId: null,
             repeatProgress: { current: 0, total: 0 },
             sessionProgress: { current: 0, total: 0 },
+            groupProgress: null,
           }),
 
         toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
