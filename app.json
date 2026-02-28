@@ -131,12 +131,6 @@
       ],
       "expo-font",
       "react-native-email-link",
-      [
-        "expo-audio",
-        {
-          "microphonePermission": false
-        }
-      ],
       "expo-web-browser",
       [
         "expo-sensors",

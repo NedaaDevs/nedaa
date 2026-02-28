@@ -14,6 +14,6 @@ rm -rf "$PROJECT_DIR/node_modules"
 echo "Reinstalling dependencies..."
 cd "$PROJECT_DIR" && bun install
 
-"$SCRIPT_DIR/reinstall-ios.sh"
+# "$SCRIPT_DIR/reinstall-ios.sh"
 
 echo "Nuke complete! Fresh start ready."
