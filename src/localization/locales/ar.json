@@ -4,17 +4,21 @@
   "alarm.challenge.count": "التحديات",
   "alarm.challenge.difficulty": "الصعوبة",
   "alarm.challenge.dismiss": "إيقاف",
+  "alarm.challenge.dismissInstruction": "انقر الزر لإيقاف المنبه",
   "alarm.challenge.done": "تم!",
   "alarm.challenge.easy": "سهل",
   "alarm.challenge.enterAnswer": "أدخل الإجابة",
   "alarm.challenge.hard": "صعب",
   "alarm.challenge.math": "رياضيات",
+  "alarm.challenge.mathInstruction": "حل {{count}} مسألة رياضية للإيقاف",
   "alarm.challenge.medium": "متوسط",
   "alarm.challenge.none": "بدون",
   "alarm.challenge.progress": "التقدم",
   "alarm.challenge.solveMath": "حل للإيقاف",
+  "alarm.challenge.startSolving": "ابدأ الحل",
   "alarm.challenge.submit": "إرسال",
   "alarm.challenge.tap": "النقر",
+  "alarm.challenge.tapInstruction": "انقر الزر {{count}} مرة للإيقاف",
   "alarm.challenge.tapsRemaining": "نقرات متبقية",
   "alarm.challenge.tapToDismiss": "انقر للإيقاف",
   "alarm.challenge.tapToDismissInstruction": "انقر الزر لإيقاف المنبه",
@@ -105,11 +109,15 @@
   "alarm.vibration.default": "افتراضي",
   "alarm.vibration.gentle": "لطيف",
   "alarm.wakeUpMessage": "حان وقت الاستيقاظ للصلاة!",
+  "athkar.audio.audioSessionError": "فشل تشغيل الصوت، جارٍ التخطي...",
   "athkar.audio.downloaded": "تم التحميل",
   "athkar.audio.downloadFailed": "فشل تحميل {{count}} ملف(ات)",
   "athkar.audio.downloading": "جاري التحميل...",
   "athkar.audio.downloadRetrySuccess": "تم تحميل جميع الملفات بنجاح",
+  "athkar.audio.expand": "توسيع عناصر التحكم",
   "athkar.audio.loading": "جارٍ التحميل...",
+  "athkar.audio.minimize": "تصغير",
+  "athkar.audio.minimizeHint": "اضغط مطولًا لإيقاف الصوت",
   "athkar.audio.next": "التالي",
   "athkar.audio.nextThikr": "التالي...",
   "athkar.audio.nowPlaying": "يتم التشغيل الآن",
@@ -122,6 +130,7 @@
   "athkar.audio.seekBar": "شريط التقدم الصوتي",
   "athkar.audio.seekHint": "اضغط مع السحب للتقديم",
   "athkar.audio.stop": "إيقاف",
+  "athkar.audio.thikrProgress": "ذكر {{current}} من {{total}}",
   "athkar.audio.trackUnavailable": "المقطع غير متوفر، جارٍ التخطي...",
   "athkar.audio.unavailableOffline": "الصوت غير متوفر بدون اتصال",
   "athkar.dailyStreak": "التتابع اليومي",
@@ -367,6 +376,8 @@
   "notification.customSound.usage.preAthan": "إشعارات قبل أذان {{prayer}}",
   "notification.customSound.validationError": "يرجى ملء جميع الحقول واختيار نوع إشعار واحد على الأقل",
   "notification.enableAll": "تفعيل جميع الإشعارات",
+  "notification.fullAthanPlayback": "تشغيل الأذان الكامل",
+  "notification.fullAthanPlayback.description": "تشغيل الأذان كاملاً عبر مشغّل مستمر لا يتوقف بالضغط على زر الصوت الجانبي. عند الإيقاف، يُشغّل الأذان كصوت إشعار عادي.",
   "notification.iqama.body": "{{count}} minutes since {{prayerName}} Athan 🕌",
   "notification.iqama.body_one": "مضت دقيقة واحدة منذ أذان {{prayerName}} 🕌",
   "notification.iqama.body_other": "مضت {{count}} دقيقة منذ أذان {{prayerName}} 🕌",
@@ -777,5 +788,10 @@
   "settings.widgets.qadaDesc": "عداد الصيام المتبقي",
   "settings.widgets.qadaMedium": "تتبع القضاء (متوسط)",
   "settings.widgets.qadaMediumDesc": "تقدم القضاء مع إحصائيات الإتمام",
-  "settings.widgets.title": "تطبيقات مصغرة"
+  "settings.widgets.title": "تطبيقات مصغرة",
+  "widget_iftar": "إفطار",
+  "widget_imsak": "إمساك",
+  "widget_ramadan_day": "رمضان يوم %d",
+  "widget_show_ramadan_labels": "عرض تسميات رمضان",
+  "widget_suhoor": "سحور"
 }
