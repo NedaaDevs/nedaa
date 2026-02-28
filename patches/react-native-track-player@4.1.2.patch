@@ -414,8 +414,17 @@ diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicS
 index afa6b0f335714de0cc8741d5bbdd51b4e04bb3bb..c417e7b46c1286ccf4eecc0f0775676f297b66fe 100644
 --- a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
 +++ b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
-@@ -741,7 +741,7 @@ class MusicService : HeadlessJsTaskService() {
- 
+@@ -226,8 +226,5 @@ class MusicService : HeadlessJsTaskService() {
+         val openAppIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+-            // Add the Uri data so apps can identify that it was a notification click
+-            data = Uri.parse("trackplayer://notification.click")
+-            action = Intent.ACTION_VIEW
+         }
+
+         val accentColor = BundleUtils.getIntOrNull(options, "color")
+@@ -741,7 +738,7 @@ class MusicService : HeadlessJsTaskService() {
+
      @MainThread
      private fun emit(event: String, data: Bundle? = null) {
 -        reactNativeHost.reactInstanceManager.currentReactContext
@@ -423,10 +432,10 @@ index afa6b0f335714de0cc8741d5bbdd51b4e04bb3bb..c417e7b46c1286ccf4eecc0f0775676f
              ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
              ?.emit(event, data?.let { Arguments.fromBundle(it) })
      }
-@@ -751,7 +751,7 @@ class MusicService : HeadlessJsTaskService() {
+@@ -751,7 +748,7 @@ class MusicService : HeadlessJsTaskService() {
          val payload = Arguments.createArray()
          data.forEach { payload.pushMap(Arguments.fromBundle(it)) }
- 
+
 -        reactNativeHost.reactInstanceManager.currentReactContext
 +        reactContext
              ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
