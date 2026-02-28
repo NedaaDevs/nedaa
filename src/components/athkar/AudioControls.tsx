@@ -58,6 +58,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
 
   const playerState = useAthkarStore((s) => s.playerState);
   const repeatProgress = useAthkarStore((s) => s.repeatProgress);
+  const groupProgress = useAthkarStore((s) => s.groupProgress);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
@@ -402,14 +403,28 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
               </Pressable>
             </HStack>
 
-            {/* Repeat counter */}
-            {repeatProgress.total > 1 && (
-              <Text size="xs" color="$typographySecondary" textAlign="center">
-                {t("athkar.audio.repeatCount", {
-                  current: formatNumberToLocale(`${repeatProgress.current}`),
-                  total: formatNumberToLocale(`${repeatProgress.total}`),
-                })}
-              </Text>
+            {/* Group progress or repeat counter */}
+            {groupProgress ? (
+              <VStack alignItems="center" gap="$0.5">
+                <Text size="sm" fontWeight="500" color="$typography">
+                  {t(`athkar.group.labels.${groupProgress.groupIndex}`)}
+                </Text>
+                <Text size="xs" color="$typographySecondary">
+                  {t("athkar.focus.round", {
+                    current: formatNumberToLocale(`${groupProgress.round}`),
+                    total: formatNumberToLocale(`${groupProgress.totalRounds}`),
+                  })}
+                </Text>
+              </VStack>
+            ) : (
+              repeatProgress.total > 1 && (
+                <Text size="xs" color="$typographySecondary" textAlign="center">
+                  {t("athkar.audio.repeatCount", {
+                    current: formatNumberToLocale(`${repeatProgress.current}`),
+                    total: formatNumberToLocale(`${repeatProgress.total}`),
+                  })}
+                </Text>
+              )
             )}
           </VStack>
         </Box>

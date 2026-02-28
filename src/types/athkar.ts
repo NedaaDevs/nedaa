@@ -62,6 +62,14 @@ export type AthkarState = {
   currentThikrId: string | null;
   repeatProgress: { current: number; total: number };
   sessionProgress: { current: number; total: number };
+  groupProgress: {
+    groupIndex: number;
+    itemsPerRound: number;
+    round: number;
+    totalRounds: number;
+    count: number;
+    totalCount: number;
+  } | null;
 };
 
 export type TrackTransitionParams = {
@@ -80,6 +88,7 @@ export type AthkarActions = {
   setCurrentTrack: (thikrId: string | null, athkarId: string | null) => void;
   setRepeatProgress: (progress: { current: number; total: number }) => void;
   setSessionProgress: (progress: { current: number; total: number }) => void;
+  setGroupProgress: (progress: AthkarState["groupProgress"]) => void;
   transitionTrack: (params: TrackTransitionParams) => void;
   resetPlaybackState: () => void;
 

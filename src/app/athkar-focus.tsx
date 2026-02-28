@@ -105,8 +105,6 @@ const AthkarFocusScreen = () => {
 
   // Audio state (sync-critical fields moved to athkarStore)
   const playerState = useAthkarStore((s) => s.playerState);
-  const currentAthkarId = useAthkarStore((s) => s.currentAthkarId);
-
   // Audio preferences + high-frequency data (remain in audio store)
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
   const selectedReciterId = useAthkarAudioStore((s) => s.selectedReciterId);
@@ -452,6 +450,8 @@ const AthkarFocusScreen = () => {
       return;
     }
 
+    if (playerState === "loading") return;
+
     if (playerState === "playing") {
       athkarPlayer.pause();
     } else if (playerState === "paused") {
@@ -459,16 +459,21 @@ const AthkarFocusScreen = () => {
     } else {
       // First play — build queue and start
       if (!selectedReciterId) return;
-      const catalog = await reciterRegistry.fetchCatalog();
-      const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
-      if (!reciter) return;
-      const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
-      if (!manifest) return;
-      await athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, currentType);
-      if (currentAthkar) {
-        await athkarPlayer.jumpTo(currentAthkar.id);
+      useAthkarStore.getState().setPlayerState("loading");
+      try {
+        const catalog = await reciterRegistry.fetchCatalog();
+        const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
+        if (!reciter) return;
+        const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
+        if (!manifest) return;
+        await athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, currentType);
+        if (currentAthkar) {
+          await athkarPlayer.jumpTo(currentAthkar.id);
+        }
+        await athkarPlayer.play();
+      } catch {
+        useAthkarStore.getState().setPlayerState("idle");
       }
-      await athkarPlayer.play();
     }
   }, [
     playerState,
@@ -511,6 +516,17 @@ const AthkarFocusScreen = () => {
     }
   }, [moveToPrevious]);
 
+  const handleSwipeDecrement = useCallback(
+    (athkarId: string) => {
+      if (athkarPlayer.isActive()) {
+        athkarPlayer.previous();
+      } else {
+        decrementCount(athkarId);
+      }
+    },
+    [decrementCount]
+  );
+
   // Handle horizontal swipe for decrement
   const horizontalSwipe = Gesture.Pan()
     .activeOffsetX([-20, 20])
@@ -541,7 +557,7 @@ const AthkarFocusScreen = () => {
           countOpacity.value = withTiming(1, { duration: 100 });
         });
 
-        scheduleOnRN(decrementCount, currentAthkar.id);
+        scheduleOnRN(handleSwipeDecrement, currentAthkar.id);
       }
 
       // Hide swipe indicator
