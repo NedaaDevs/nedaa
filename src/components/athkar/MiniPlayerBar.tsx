@@ -28,6 +28,7 @@ const MiniPlayerBar: FC = () => {
 
   const playerState = useAthkarStore((s) => s.playerState);
   const sessionProgress = useAthkarStore((s) => s.sessionProgress);
+  const groupProgress = useAthkarStore((s) => s.groupProgress);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
@@ -106,7 +107,7 @@ const MiniPlayerBar: FC = () => {
             paddingHorizontal="$4"
             justifyContent="center">
             <HStack alignItems="center" gap="$3">
-              {/* Session progress badge */}
+              {/* Session/group progress badge */}
               <Box
                 width={36}
                 height={36}
@@ -115,18 +116,26 @@ const MiniPlayerBar: FC = () => {
                 alignItems="center"
                 justifyContent="center">
                 <Text size="xs" fontWeight="600" color="$typographyContrast">
-                  {formatNumberToLocale(`${sessionProgress.current}`)}
+                  {groupProgress
+                    ? formatNumberToLocale(`${groupProgress.count}`)
+                    : formatNumberToLocale(`${sessionProgress.current}`)}
                 </Text>
               </Box>
 
               {/* Info */}
               <Box flex={1}>
                 <Text size="sm" fontWeight="500" color="$typography" numberOfLines={1}>
-                  {t("athkar.audio.nowPlaying")}
+                  {groupProgress
+                    ? t(`athkar.group.labels.${groupProgress.groupIndex}`)
+                    : t("athkar.audio.nowPlaying")}
                 </Text>
                 <Text size="xs" color="$typographySecondary">
-                  {formatNumberToLocale(`${sessionProgress.current}`)}/
-                  {formatNumberToLocale(`${sessionProgress.total}`)}
+                  {groupProgress
+                    ? t("athkar.focus.round", {
+                        current: formatNumberToLocale(`${groupProgress.round}`),
+                        total: formatNumberToLocale(`${groupProgress.totalRounds}`),
+                      })
+                    : `${formatNumberToLocale(`${sessionProgress.current}`)}/${formatNumberToLocale(`${sessionProgress.total}`)}`}
                 </Text>
               </Box>
 
