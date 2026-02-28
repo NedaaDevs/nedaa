@@ -45,12 +45,9 @@ import { useCustomSoundsStore } from "@/stores/customSounds";
 import { scheduleAthan, cancelAllAthans } from "expo-alarm";
 
 // Utils
-import {
-  createNotificationChannels,
-  shouldUpdateChannels,
-  getNotificationChannelId,
-} from "@/utils/notificationChannels";
+import { createNotificationChannels, getNotificationChannelId } from "@/utils/notificationChannels";
 import { getNotificationSound } from "@/utils/sound";
+import { isCustomSoundKey } from "@/utils/customSoundHelpers";
 import { formatNumberToLocale } from "@/utils/number";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
@@ -73,7 +70,7 @@ type NotificationScheduleItem = {
   body: string;
   type: NotificationType;
   prayerId: PrayerName;
-  sound: string;
+  sound: string | false;
   soundKey?: string;
   vibration: boolean;
   categoryId: string;
@@ -185,6 +182,7 @@ export const scheduleAllNotifications = async (
   data: DayPrayerTimes[] | null,
   timezone: string,
   qadaSettings: { settings: any; remainingCount: number } | null = null,
+  androidOptions: { fullAthanPlayback?: boolean } = {},
   options: Partial<SchedulingOptions> = {}
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
@@ -208,8 +206,6 @@ export const scheduleAllNotifications = async (
 
   const { t } = i18next;
 
-  console.log("[NotificationScheduler] Starting notification scheduling...");
-
   if (!settings.enabled) {
     return { success: true, scheduledCount: 0 };
   }
@@ -220,35 +216,25 @@ export const scheduleAllNotifications = async (
     const customSounds = Platform.OS === PlatformType.ANDROID ? storeState.customSounds : [];
 
     if (Platform.OS === PlatformType.ANDROID) {
-      console.log("[NotificationScheduler] Store state:", {
-        isInitialized: storeState.isInitialized,
-        customSoundsCount: customSounds.length,
-        customSounds: customSounds.map((s) => ({ id: s.id, name: s.name })),
-      });
-
-      // Create/update notification channels before scheduling
-      const needsUpdate = await shouldUpdateChannels(settings, customSounds, athkarSettings);
-      if (needsUpdate) {
-        console.log("[NotificationScheduler] Updating notification channels...");
-        await createNotificationChannels(settings, customSounds, athkarSettings);
-      }
+      // Always recreate channels — Android caches deleted channel settings (zombie channels),
+      // and expo-notifications serializes all custom sounds as "custom" making diff unreliable.
+      const fullAthanPlayback = androidOptions.fullAthanPlayback ?? false;
+      await createNotificationChannels(settings, customSounds, athkarSettings, fullAthanPlayback);
     }
 
     // Cancel all pending athan service alarms (Android)
+    const fullAthanEnabled =
+      Platform.OS === PlatformType.ANDROID && (androidOptions.fullAthanPlayback ?? false);
     if (Platform.OS === PlatformType.ANDROID) {
       await cancelAllAthans([]);
     }
 
-    // Cancel all existing notifications
-    console.log("[NotificationScheduler] Cancelling existing notifications...");
     await cancelAllScheduledNotifications();
 
     // Determine scheduling period
     const daysToSchedule = options.daysToSchedule || DEFAULT_DAYS_TO_SCHEDULE;
     const now = timeZonedNow(timezone);
 
-    // Get prayer times for the date range
-    console.log(`[NotificationScheduler] Fetching prayer times for ${daysToSchedule} days...`);
     const daysPrayerTimes = data;
 
     if (!daysPrayerTimes || daysPrayerTimes.length === 0) {
@@ -276,19 +262,18 @@ export const scheduleAllNotifications = async (
           prayerDate,
           settings,
           now,
-          t
+          t,
+          false,
+          fullAthanEnabled
         );
 
         notificationsToSchedule.push(...prayerNotifications);
       }
     }
 
-    console.log("[NotificationScheduler] Scheduling Athkar notifications...");
     await scheduleAthkarNotifications(athkarSettings, timezone, t);
 
-    // Schedule Qada notifications
     if (qadaSettings && qadaSettings.settings) {
-      console.log("[NotificationScheduler] Scheduling Qada notifications...");
       await scheduleQadaNotifications(
         qadaSettings.settings,
         qadaSettings.remainingCount,
@@ -336,11 +321,6 @@ export const scheduleAllNotifications = async (
       });
     }
 
-    // Schedule all notifications
-    console.log(
-      `[NotificationScheduler] Scheduling ${notificationsToProcess.length} notifications...`
-    );
-
     let scheduledCount = 0;
     for (const notification of notificationsToProcess) {
       const notificationInput: NotificationContentInput = {
@@ -364,18 +344,31 @@ export const scheduleAllNotifications = async (
         scheduledCount++;
 
         // Schedule native athan service for prayer notifications with athan sounds (Android)
+        // Only when fullAthanPlayback is enabled — otherwise the channel plays the sound
         if (
-          Platform.OS === PlatformType.ANDROID &&
+          fullAthanEnabled &&
           notification.type === NOTIFICATION_TYPE.PRAYER &&
           notification.soundKey &&
           isAthanSound(notification.soundKey)
         ) {
           const athanId = `athan_${notification.prayerId}_${notification.time.getTime()}`;
+          // Resolve the actual sound file name for the native service.
+          // notification.sound is "default" for athan sounds (intended for the notification content),
+          // but the native AthanService needs the real resource name (e.g. "makkah_athan1.ogg")
+          // or a content:// URI for custom sounds.
+          const allCustomSounds = useCustomSoundsStore.getState().customSounds;
+          const isCustom = isCustomSoundKey(notification.soundKey);
+          const athanSoundName = isCustom
+            ? (allCustomSounds.find((s) => s.id === notification.soundKey)?.contentUri ??
+              notification.soundKey)
+            : (getNotificationSound(NOTIFICATION_TYPE.PRAYER, notification.soundKey) ??
+              notification.soundKey);
+
           await scheduleAthan({
             id: athanId,
             triggerDate: notification.time,
             prayerId: notification.prayerId,
-            soundName: notification.sound,
+            soundName: athanSoundName,
             title: notification.title,
             stopLabel: t("common.stop"),
           });
@@ -404,7 +397,8 @@ const generatePrayerNotifications = (
   settings: NotificationSettings,
   now: Date,
   t: typeof i18next.t,
-  testMode: boolean = false
+  testMode: boolean = false,
+  fullAthanEnabled: boolean = false
 ): NotificationScheduleItem[] => {
   const notifications: NotificationScheduleItem[] = [];
   const prayerName = t(`prayerTimes.${formatPrayerName(prayerId, prayerTime)}`);
@@ -473,16 +467,21 @@ const generatePrayerNotifications = (
     // Only schedule if interval is at least MIN_INTERVAL_SECONDS (skip in test mode)
     if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
       // Generate dynamic channel ID based on sound
+      // Pass silenced flag to match the channel ID created in notificationChannels.ts
+      const silenceChannel = isAthanSound(prayerConfig.sound) && fullAthanEnabled;
       const prayerChannelId = getNotificationChannelId(
         prayerId,
         NOTIFICATION_TYPE.PRAYER,
-        prayerConfig.sound
+        prayerConfig.sound,
+        silenceChannel
       );
 
-      // Athan sounds play via AthanService — notification itself should be silent
-      const prayerSound = isAthanSound(prayerConfig.sound)
-        ? "default"
-        : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default";
+      // When fullAthanPlayback is ON: athan sounds play via AthanService — notification must be silent
+      // When fullAthanPlayback is OFF (or iOS): pass the actual sound file to play with the notification
+      const prayerSound =
+        isAthanSound(prayerConfig.sound) && fullAthanEnabled
+          ? false
+          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default";
 
       notifications.push({
         id: `prayer_${prayerId}_${prayerTime.getTime()}`,

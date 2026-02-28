@@ -1,11 +1,10 @@
 import * as Notifications from "expo-notifications";
 import {
   PermissionStatus,
-  AndroidImportance,
   NotificationContentInput,
   AndroidNotificationPriority,
 } from "expo-notifications";
-import { Platform, AppState } from "react-native";
+import { Platform } from "react-native";
 import { useRouter } from "expo-router";
 
 // Services
@@ -19,10 +18,6 @@ import { stopAthan } from "expo-alarm";
 
 // Types
 import type { NotificationOptions } from "@/types/notification";
-
-// Constants
-const ANDROID_CHANNEL_ID = "prayer_times";
-const ANDROID_CHANNEL_NAME = "Prayer Time Alerts";
 
 export const scheduleNotification = async (
   date: Date,
@@ -196,7 +191,6 @@ export const scheduleRecurringNotification = async (
 // Store subscriptions for cleanup
 let notificationReceivedSubscription: Notifications.EventSubscription | null = null;
 let notificationResponseSubscription: Notifications.EventSubscription | null = null;
-let appStateSubscription: { remove: () => void } | null = null;
 
 // Configure base notification handler and setup listeners
 export const configureNotifications = () => {
@@ -253,20 +247,6 @@ export const configureNotifications = () => {
       }
     );
 
-    // Add app state change listener for Android channels
-    appStateSubscription = AppState.addEventListener("change", (state) => {
-      try {
-        if (state === "active") {
-          setupNotificationChannels();
-        }
-      } catch (error) {
-        console.error("[Notifications] Error handling app state change:", error);
-      }
-    });
-
-    // Setup channels on app start
-    setupNotificationChannels();
-
     // Register cleanup with the cleanup manager
     cleanupManager.register(
       "notification-listeners",
@@ -293,18 +273,12 @@ export const cleanupNotificationListeners = () => {
       notificationResponseSubscription = null;
     }
 
-    if (appStateSubscription) {
-      appStateSubscription.remove();
-      appStateSubscription = null;
-    }
-
     console.log("[Notifications] Cleaned up notification listeners successfully");
   } catch (error) {
     console.error("[Notifications] Error cleaning up notification listeners:", error);
     // Force reset subscriptions even if cleanup fails
     notificationReceivedSubscription = null;
     notificationResponseSubscription = null;
-    appStateSubscription = null;
   }
 };
 
@@ -315,21 +289,11 @@ export const areListenersActive = (): boolean => {
 
 export const checkPermissions = async () => {
   const { status } = await Notifications.getPermissionsAsync();
-
-  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
-    await setupNotificationChannels();
-  }
-
   return { status };
 };
 
 export const requestNotificationPermission = async () => {
   const { status } = await Notifications.requestPermissionsAsync();
-
-  if (status === PermissionStatus.GRANTED && Platform.OS === PlatformType.ANDROID) {
-    await setupNotificationChannels();
-  }
-
   return { status };
 };
 
@@ -343,34 +307,4 @@ export const listScheduledNotifications = async () => {
 export const cancelAllScheduledNotifications = async () => {
   console.log("Canceling all scheduled notification");
   await Notifications.cancelAllScheduledNotificationsAsync();
-};
-
-// Create notification channels for different types (Android)
-export const setupNotificationChannels = async () => {
-  if (Platform.OS !== PlatformType.ANDROID) return;
-
-  try {
-    // Main prayer channel
-    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: ANDROID_CHANNEL_NAME,
-      importance: AndroidImportance.MAX,
-      vibrationPattern: [0, 500, 200, 500],
-    });
-
-    // Iqama reminder channel
-    await Notifications.setNotificationChannelAsync("iqama_reminders", {
-      name: "Iqama Reminders",
-      importance: AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-    });
-
-    // Pre-Athan alert channel
-    await Notifications.setNotificationChannelAsync("preathan_alerts", {
-      name: "Pre-Athan Alerts",
-      importance: AndroidImportance.HIGH,
-      vibrationPattern: [0, 200],
-    });
-  } catch (error) {
-    console.error("Failed to create Android channels:", error);
-  }
 };

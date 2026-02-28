@@ -42,16 +42,58 @@ type ChannelMapping = {
 };
 
 /**
+ * Compare a channel's reported sound against the expected sound.
+ *
+ * expo-notifications' Android serializer returns "custom" for ALL non-default,
+ * non-null sound URIs (see ExpoNotificationsChannelSerializer.java:60-70).
+ * So we can't compare by exact filename — instead we compare by category:
+ *   null    ↔ null     (silent)
+ *   "default" ↔ "default"
+ *   "custom"  ↔ any non-null, non-default string (bundled sound file)
+ */
+const channelSoundMatches = (
+  existingSound: string | null | undefined,
+  expectedSound: string | null
+): boolean => {
+  if (expectedSound === null) {
+    return existingSound === null || existingSound === undefined;
+  }
+  if (expectedSound === "default") {
+    return existingSound === "default";
+  }
+  // Expected is a specific sound file (e.g. "makkah_athan1.ogg").
+  // The serializer will have reported it as "custom".
+  return existingSound === "custom" || existingSound === expectedSound;
+};
+
+/**
+ * Channel version — bump this to force fresh channel IDs for all users.
+ * Android caches deleted channel settings and restores them when recreated
+ * with the same ID, so the only way to fix a channel with wrong sound is
+ * to use a brand-new ID.
+ *
+ * History:
+ *   v2 — initial versioned IDs (silent/sound suffix)
+ *   v3 — fix: channels may have been created with wrong sound due to
+ *         fullAthanPlayback defaulting to true instead of false
+ */
+const CHANNEL_VERSION = 3;
+
+/**
  * Generate a unique channel ID based on prayer, notification type, and sound
  */
 const generateChannelId = (
   prayer: PrayerName,
   type: NotificationType,
-  soundKey: string
+  soundKey: string,
+  silenced: boolean = false
 ): string => {
   // Use sound key to make channel unique per sound
   const sanitizedSoundKey = soundKey.replace(/[^a-zA-Z0-9]/g, "_");
-  return `${type}_${prayer}_${sanitizedSoundKey}`;
+  // Include explicit suffix so that toggling fullAthanPlayback creates a NEW channel ID,
+  // bypassing Android's cache of deleted channel settings.
+  const modeSuffix = silenced ? "silent" : "sound";
+  return `${type}_${prayer}_${sanitizedSoundKey}_v${CHANNEL_VERSION}_${modeSuffix}`;
 };
 
 /**
@@ -68,100 +110,34 @@ const getChannelDisplayName = (
     [NOTIFICATION_TYPE.IQAMA]: "Iqama",
     [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
     [NOTIFICATION_TYPE.ATHKAR]: "Athkar",
+    [NOTIFICATION_TYPE.QADA]: "Qada",
   }[type];
 
   return `${prayerName} ${typeName} (${soundKey})`;
 };
 
 /**
- * Clean up old notification channels that are no longer needed
+ * Delete all managed notification channels so they can be recreated with correct settings.
+ * Android channels have immutable sound — delete + recreate is the only way to update.
+ * All user preferences live in the app store, so nothing is lost.
  */
-export const cleanupOldChannels = async (
-  currentSettings: NotificationSettings,
-  athkarSettings?: {
-    morningNotification: AthkarNotificationSettings;
-    eveningNotification: AthkarNotificationSettings;
-  }
-): Promise<void> => {
-  if (Platform.OS !== PlatformType.ANDROID) return;
-
+const deleteAllManagedChannels = async (): Promise<void> => {
   try {
     const existingChannels = await Notifications.getNotificationChannelsAsync();
-    const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-    const currentChannelIds = new Set<string>();
 
-    // Build set of current channel IDs that should exist
-    for (const prayer of prayers) {
-      const configs = [
-        {
-          type: NOTIFICATION_TYPE.PRAYER,
-          config: getEffectiveConfig(
-            prayer,
-            NOTIFICATION_TYPE.PRAYER,
-            currentSettings.defaults,
-            currentSettings.overrides
-          ),
-        },
-        {
-          type: NOTIFICATION_TYPE.IQAMA,
-          config: getEffectiveConfig(
-            prayer,
-            NOTIFICATION_TYPE.IQAMA,
-            currentSettings.defaults,
-            currentSettings.overrides
-          ),
-        },
-        {
-          type: NOTIFICATION_TYPE.PRE_ATHAN,
-          config: getEffectiveConfig(
-            prayer,
-            NOTIFICATION_TYPE.PRE_ATHAN,
-            currentSettings.defaults,
-            currentSettings.overrides
-          ),
-        },
-      ];
-
-      for (const { type, config } of configs) {
-        if (config.enabled) {
-          const channelId = generateChannelId(prayer, type, config.sound);
-          currentChannelIds.add(channelId);
-        }
-      }
-    }
-
-    // Add reminder channel
-    currentChannelIds.add("reminder");
-    // Add Athkar channel IDs if enabled
-    if (athkarSettings) {
-      if (athkarSettings.morningNotification.enabled) {
-        currentChannelIds.add("athkar_morning");
-      }
-      if (athkarSettings.eveningNotification.enabled) {
-        currentChannelIds.add("athkar_evening");
-      }
-    }
-
-    // Delete channels that are no longer needed
     for (const channel of existingChannels) {
-      // Only delete channels we manage (prayer-related and athkar channels)
       if (
-        (channel.id.startsWith("prayer_") ||
-          channel.id.startsWith("iqama_") ||
-          channel.id.startsWith("preathan_") ||
-          channel.id.startsWith("athkar_")) &&
-        !currentChannelIds.has(channel.id)
+        channel.id.startsWith("prayer_") ||
+        channel.id.startsWith("iqama_") ||
+        channel.id.startsWith("preathan_") ||
+        channel.id.startsWith("athkar_") ||
+        channel.id === "reminder"
       ) {
-        try {
-          await Notifications.deleteNotificationChannelAsync(channel.id);
-          console.log(`[NotificationChannels] Deleted old channel: ${channel.id}`);
-        } catch (error) {
-          console.error(`[NotificationChannels] Failed to delete channel ${channel.id}:`, error);
-        }
+        await Notifications.deleteNotificationChannelAsync(channel.id);
       }
     }
   } catch (error) {
-    console.error("[NotificationChannels] Failed to cleanup old channels:", error);
+    console.error("[NotificationChannels] Failed to delete managed channels:", error);
   }
 };
 
@@ -174,18 +150,17 @@ export const createNotificationChannels = async (
   athkarSettings?: {
     morningNotification: AthkarNotificationSettings;
     eveningNotification: AthkarNotificationSettings;
-  }
+  },
+  fullAthanPlayback: boolean = false
 ): Promise<void> => {
   if (Platform.OS !== PlatformType.ANDROID) return;
 
-  console.log("[NotificationChannels] Creating notification channels with custom sounds...");
-  console.log(
-    `[NotificationChannels] Available custom sounds: ${customSounds.length}`,
-    customSounds.map((s) => ({ id: s.id, name: s.name }))
-  );
+  console.log("[NotificationChannels] Creating channels, fullAthanPlayback:", fullAthanPlayback);
 
-  // First, cleanup old channels that are no longer needed
-  await cleanupOldChannels(settings, athkarSettings);
+  // Delete all managed channels and recreate from store settings.
+  // Android channels have immutable sound — the only way to update is delete + recreate.
+  // All user preferences live in the app store, so nothing is lost.
+  await deleteAllManagedChannels();
 
   const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
   const channels: ChannelConfig[] = [];
@@ -214,15 +189,24 @@ export const createNotificationChannels = async (
 
     // Prayer notification channel
     if (prayerConfig.enabled) {
-      // Athan sounds play via AthanService — set channel sound to null
-      const useServiceForSound = isAthanSound(prayerConfig.sound);
+      // When fullAthanPlayback is ON: athan sounds play via AthanService — set channel sound to null
+      // When OFF: channel plays the athan sound directly as a notification sound
+      const silenceChannel = fullAthanPlayback && isAthanSound(prayerConfig.sound);
+      const resolvedSound = silenceChannel
+        ? null
+        : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound);
+      const channelId = generateChannelId(
+        prayer,
+        NOTIFICATION_TYPE.PRAYER,
+        prayerConfig.sound,
+        silenceChannel
+      );
+
       channels.push({
-        id: generateChannelId(prayer, NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
+        id: channelId,
         name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
-        sound: useServiceForSound
-          ? null
-          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound),
+        sound: resolvedSound,
         vibrationPattern: prayerConfig.vibration ? [0, 250, 250, 250] : undefined,
         showBadge: true,
         prayerName: prayer,
@@ -308,20 +292,9 @@ export const createNotificationChannels = async (
       const isCustom = channel.soundKey && isCustomSoundKey(channel.soundKey);
 
       if (isCustom) {
-        // Handle custom sound channels using native module
-        console.log(`[NotificationChannels] Looking for custom sound: ${channel.soundKey}`);
         const customSound = customSounds.find((s) => s.id === channel.soundKey);
 
         if (customSound) {
-          // Check if channel already exists - custom sounds need to be recreated if changed
-          if (existingChannel) {
-            // For custom sounds, we can't easily compare URIs, so recreate if needed
-            console.log(
-              `[NotificationChannels] Channel ${channel.id} exists, will update if needed`
-            );
-          }
-
-          // Use custom sound manager to create channel with custom sound
           await createChannelWithCustomSound(
             channel.id,
             channel.name,
@@ -330,36 +303,26 @@ export const createNotificationChannels = async (
             channel.importance,
             !!channel.vibrationPattern
           );
-
-          console.log(
-            `[NotificationChannels] Created/Updated channel: ${channel.id} with custom sound: ${customSound.name}`
-          );
         } else {
-          console.error(
-            `[NotificationChannels] Custom sound not found for ${channel.soundKey}, skipping channel ${channel.id}`
+          console.warn(
+            `[NotificationChannels] Custom sound ${channel.soundKey} not found, skipping channel ${channel.id}`
           );
         }
       } else {
         // Handle bundled sound channels
-        if (existingChannel && existingChannel.sound === channel.sound) {
-          console.log(
-            `[NotificationChannels] Channel ${channel.id} already exists with correct sound`
-          );
+        if (existingChannel && channelSoundMatches(existingChannel.sound, channel.sound)) {
           continue;
         }
+
+        const soundToSet = channel.sound === null ? null : channel.sound || undefined;
 
         await Notifications.setNotificationChannelAsync(channel.id, {
           name: channel.name,
           importance: channel.importance,
-          // null = silent (athan sounds play via AthanService), undefined = default
-          sound: channel.sound === null ? null : channel.sound || undefined,
+          sound: soundToSet,
           vibrationPattern: channel.vibrationPattern,
           showBadge: channel.showBadge,
         });
-
-        console.log(
-          `[NotificationChannels] Created/Updated channel: ${channel.id} with sound: ${channel.sound}`
-        );
       }
     } catch (error) {
       console.error(`[NotificationChannels] Failed to create channel ${channel.id}:`, error);
@@ -373,9 +336,10 @@ export const createNotificationChannels = async (
 export const getNotificationChannelId = (
   prayer: PrayerName,
   type: NotificationType,
-  soundKey: string
+  soundKey: string,
+  silenced: boolean = false
 ): string => {
-  return generateChannelId(prayer, type, soundKey);
+  return generateChannelId(prayer, type, soundKey, silenced);
 };
 
 /**
@@ -387,7 +351,8 @@ export const shouldUpdateChannels = async (
   athkarSettings?: {
     morningNotification: AthkarNotificationSettings;
     eveningNotification: AthkarNotificationSettings;
-  }
+  },
+  fullAthanPlayback: boolean = false
 ): Promise<boolean> => {
   if (Platform.OS !== PlatformType.ANDROID) return false;
 
@@ -430,7 +395,10 @@ export const shouldUpdateChannels = async (
 
       for (const { type, config } of configs) {
         if (config.enabled) {
-          const channelId = generateChannelId(prayer, type, config.sound);
+          // For prayer type, compute whether the channel is silenced (fullAthan ON + athan sound)
+          const isSilenced =
+            type === NOTIFICATION_TYPE.PRAYER && fullAthanPlayback && isAthanSound(config.sound);
+          const channelId = generateChannelId(prayer, type, config.sound, isSilenced);
           requiredChannels.add(channelId);
 
           // Check if channel exists with correct sound
@@ -455,9 +423,14 @@ export const shouldUpdateChannels = async (
             continue;
           }
 
-          // For bundled sounds, check if the sound matches
-          const expectedSound = getNotificationSound(type, config.sound);
-          if (!existingChannel || existingChannel.sound !== expectedSound) {
+          // For bundled sounds, check if the sound matches.
+          // When fullAthanPlayback is ON, athan channels should be null (AthanService plays audio).
+          // When OFF, athan channels should have the actual sound.
+          const expectedSound =
+            fullAthanPlayback && isAthanSound(config.sound)
+              ? null
+              : getNotificationSound(type, config.sound);
+          if (!existingChannel || !channelSoundMatches(existingChannel.sound, expectedSound)) {
             return true;
           }
         }
@@ -483,13 +456,17 @@ export const shouldUpdateChannels = async (
       }
     }
 
+    // Reminder channel is always required
+    requiredChannels.add("reminder");
+
     // Check if there are old channels that need cleanup
     const managedChannels = existingChannels.filter(
       (ch) =>
         ch.id.startsWith("prayer_") ||
         ch.id.startsWith("iqama_") ||
         ch.id.startsWith("preathan_") ||
-        ch.id.startsWith("athkar_")
+        ch.id.startsWith("athkar_") ||
+        ch.id === "reminder"
     );
 
     for (const channel of managedChannels) {

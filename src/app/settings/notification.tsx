@@ -20,7 +20,7 @@ import NotificationQuickSetup from "@/components/NotificationQuickSetup";
 import NotificationTypePanel from "@/components/NotificationTypePanel";
 
 // Icons
-import { Bell, Volume1 } from "lucide-react-native";
+import { Bell, Volume1, Play } from "lucide-react-native";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -31,7 +31,11 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 // Utils
-import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
+import {
+  checkPermissions,
+  requestNotificationPermission,
+  scheduleNotification,
+} from "@/utils/notifications";
 
 // Types
 import { PermissionStatus } from "expo-notifications";
@@ -42,7 +46,8 @@ import { Background } from "@/components/ui/background";
 
 // Utils
 
-import { debugChannelInfo } from "@/utils/notificationChannels";
+import { debugChannelInfo, getNotificationChannelId } from "@/utils/notificationChannels";
+import { getNotificationSound } from "@/utils/sound";
 import { scheduleAthan, stopAthan, isAthanPlaying } from "expo-alarm";
 
 const NotificationSettings = () => {
@@ -54,9 +59,11 @@ const NotificationSettings = () => {
   const {
     settings,
     isScheduling,
+    fullAthanPlayback,
     features,
     totalOverrideCount,
     updateAllNotificationToggle,
+    updateFullAthanPlayback,
     updateQuickSetup,
     updateDefault,
     updateOverride,
@@ -275,6 +282,37 @@ const NotificationSettings = () => {
                 </Box>
               )}
 
+              {/* Full Athan Playback (Android Only) */}
+              {Platform.OS === PlatformType.ANDROID && (
+                <Box
+                  backgroundColor="$backgroundSecondary"
+                  marginHorizontal="$4"
+                  borderRadius="$4"
+                  padding="$4">
+                  <HStack justifyContent="space-between" alignItems="center">
+                    <HStack gap="$3" alignItems="center" flex={1}>
+                      <Icon color="$primary" size="lg" as={Play} />
+                      <VStack flex={1} gap="$1">
+                        <Text size="md" fontWeight="600" color="$typography">
+                          {t("notification.fullAthanPlayback")}
+                        </Text>
+                        <Text size="xs" color="$typographySecondary">
+                          {t("notification.fullAthanPlayback.description")}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    <Switch
+                      value={fullAthanPlayback}
+                      onValueChange={(value) => {
+                        hapticSelection();
+                        updateFullAthanPlayback(value);
+                      }}
+                      size="md"
+                    />
+                  </HStack>
+                </Box>
+              )}
+
               {/* Prayer Notifications */}
               <NotificationTypePanel
                 type={NOTIFICATION_TYPE.PRAYER}
@@ -348,7 +386,7 @@ const NotificationSettings = () => {
             </>
           )}
 
-          {/* Debug/Test Section */}
+          {/* Debug/Test Section (Dev Only) */}
           {__DEV__ && (
             <>
               <Box marginHorizontal="$4" marginTop="$4">
@@ -377,28 +415,50 @@ const NotificationSettings = () => {
                     size="sm"
                     onPress={async () => {
                       const triggerDate = new Date(Date.now() + 10_000);
-                      const ok = await scheduleAthan({
-                        id: `test_athan_${Date.now()}`,
-                        triggerDate,
-                        prayerId: "fajr",
-                        soundName: "makkah_athan1",
-                        title: t("prayerTimes.fajr"),
-                        stopLabel: t("common.stop"),
-                      });
-                      console.log(
-                        `[AthanTest] Scheduled test athan in 10s: ${ok ? "OK" : "FAILED"}`
-                      );
+                      if (fullAthanPlayback) {
+                        const soundKey = settings.defaults.prayer.sound;
+                        const sound =
+                          getNotificationSound(NOTIFICATION_TYPE.PRAYER, soundKey) || soundKey;
+                        await scheduleAthan({
+                          id: `test_athan_${Date.now()}`,
+                          triggerDate,
+                          prayerId: "fajr",
+                          soundName: sound,
+                          title: t("prayerTimes.fajr"),
+                          stopLabel: t("common.stop"),
+                        });
+                      } else {
+                        const soundKey = settings.defaults.prayer.sound;
+                        const sound =
+                          getNotificationSound(NOTIFICATION_TYPE.PRAYER, soundKey) || "default";
+                        const channelId = getNotificationChannelId(
+                          "fajr",
+                          NOTIFICATION_TYPE.PRAYER,
+                          soundKey
+                        );
+                        await scheduleNotification(
+                          triggerDate,
+                          {
+                            title: t("prayerTimes.fajr"),
+                            body: t("notification.prayer.body", {
+                              prayerName: t("prayerTimes.fajr"),
+                            }),
+                            sound,
+                          },
+                          { channelId }
+                        );
+                      }
                     }}>
-                    <Button.Text>Test Athan (10s)</Button.Text>
+                    <Button.Text>
+                      {fullAthanPlayback ? "Test Athan (10s)" : "Test Notification (10s)"}
+                    </Button.Text>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     action="negative"
                     onPress={() => {
-                      const playing = isAthanPlaying();
-                      console.log(`[AthanTest] isPlaying: ${playing}`);
-                      if (playing) stopAthan();
+                      if (isAthanPlaying()) stopAthan();
                     }}>
                     <Button.Text>Stop Athan</Button.Text>
                   </Button>

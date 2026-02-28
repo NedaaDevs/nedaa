@@ -1,4 +1,3 @@
-import { Image } from "react-native";
 import TrackPlayer from "react-native-track-player";
 
 // Constants
@@ -62,20 +61,6 @@ export const isSoundPreviewable = <T extends NotificationType>(
   return asset?.previewSource !== null;
 };
 
-// Resolve a preview source (require() number or URI string) to a TrackPlayer-compatible URL
-function resolveSourceUrl(source: string | number): string | null {
-  if (typeof source === "string") {
-    return source;
-  }
-  // require() returns a number — resolve via Image.resolveAssetSource
-  try {
-    const resolved = Image.resolveAssetSource(source);
-    return resolved?.uri ?? null;
-  } catch {
-    return null;
-  }
-}
-
 // Event emitter for state synchronization
 type SoundPreviewListener = () => void;
 
@@ -85,8 +70,34 @@ class SoundPreviewManager {
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
   private listeners: Set<SoundPreviewListener> = new Set();
+  private playerReady: boolean = false;
+  private setupPromise: Promise<void> | null = null;
 
   private constructor() {}
+
+  private async ensurePlayerReady(): Promise<void> {
+    if (this.playerReady) return;
+    if (this.setupPromise) return this.setupPromise;
+
+    this.setupPromise = (async () => {
+      try {
+        await TrackPlayer.setupPlayer({
+          autoHandleInterruptions: true,
+        });
+        this.playerReady = true;
+      } catch (error) {
+        if ((error as Error)?.message?.includes("already been initialized")) {
+          this.playerReady = true;
+        } else {
+          console.error("[SoundPreview] Setup failed:", error);
+          this.setupPromise = null;
+          throw error;
+        }
+      }
+    })();
+
+    return this.setupPromise;
+  }
 
   static getInstance(): SoundPreviewManager {
     if (!SoundPreviewManager.instance) {
@@ -114,6 +125,8 @@ class SoundPreviewManager {
     soundKey: string,
     customSounds?: import("@/types/customSound").CustomSound[]
   ): Promise<void> {
+    await this.ensurePlayerReady();
+
     // Guard: don't interrupt active athkar playback
     const athkarState = useAthkarStore.getState().playerState;
     if (athkarState === "playing" || athkarState === "loading") {
@@ -124,23 +137,13 @@ class SoundPreviewManager {
     const isCustom = isCustomSoundKey(soundKey);
 
     if (isCustom) {
-      // Handle custom sound
       const customSound = customSounds?.find((s) => s.id === soundKey);
-      if (!customSound) {
-        console.error(`Custom sound not found: ${soundKey}`);
-        return;
-      }
-
-      // Validate the custom sound is available for this type
-      if (!customSound.availableFor.includes(type)) {
-        console.error(`Custom sound ${soundKey} not available for type: ${type}`);
-        return;
-      }
+      if (!customSound) return;
+      if (!customSound.availableFor.includes(type)) return;
 
       const soundId = `${type}.${soundKey}`;
 
       try {
-        // Stop any currently playing sound first
         if (this.isPlaying) {
           this.isPlaying = false;
           this.currentSoundId = null;
@@ -151,10 +154,11 @@ class SoundPreviewManager {
         this.currentSoundId = soundId;
         this.notifyListeners();
 
-        await TrackPlayer.load({ url: customSound.contentUri, title: soundKey });
+        await TrackPlayer.reset();
+        await TrackPlayer.add({ url: customSound.contentUri, title: soundKey });
         await TrackPlayer.play();
       } catch (error) {
-        console.error("Error playing custom sound preview:", error);
+        console.error("[SoundPreview] Custom play failed:", error);
         this.isPlaying = false;
         this.currentSoundId = null;
         this.notifyListeners();
@@ -164,34 +168,15 @@ class SoundPreviewManager {
     }
 
     // Handle bundled sounds
-    // Type-safe validation
-    if (!isSoundKeyValid(type, soundKey)) {
-      console.error(`Invalid sound key: ${soundKey} for type: ${type}`);
-      return;
-    }
-
-    // Don't play if not previewable(silent)
-    if (!isSoundPreviewable(type, soundKey)) {
-      return;
-    }
+    if (!isSoundKeyValid(type, soundKey)) return;
+    if (!isSoundPreviewable(type, soundKey)) return;
 
     const soundSource = getPreviewSource(type, soundKey);
-
-    if (!soundSource) {
-      console.error(`Sound preview source not found: ${type}.${soundKey}`);
-      return;
-    }
-
-    const url = resolveSourceUrl(soundSource);
-    if (!url) {
-      console.error(`Could not resolve preview source URL: ${type}.${soundKey}`);
-      return;
-    }
+    if (!soundSource) return;
 
     const soundId = `${type}.${soundKey}`;
 
     try {
-      // Stop any currently playing sound first
       if (this.isPlaying) {
         this.isPlaying = false;
         this.currentSoundId = null;
@@ -202,10 +187,13 @@ class SoundPreviewManager {
       this.currentSoundId = soundId;
       this.notifyListeners();
 
-      await TrackPlayer.load({ url, title: soundKey });
+      await TrackPlayer.reset();
+      // TrackPlayer.add() accepts url: string | ResourceObject (number from require())
+      // This lets RNTP natively resolve bundled assets on both emulator and physical devices
+      await TrackPlayer.add({ url: soundSource as string, title: soundKey });
       await TrackPlayer.play();
     } catch (error) {
-      console.error("Error playing sound preview:", error);
+      console.error("[SoundPreview] Play failed:", error);
       this.isPlaying = false;
       this.currentSoundId = null;
       this.notifyListeners();
@@ -215,6 +203,7 @@ class SoundPreviewManager {
 
   async stopPreview(): Promise<void> {
     try {
+      if (!this.playerReady) return;
       await TrackPlayer.reset();
       this.isPlaying = false;
       this.currentSoundId = null;

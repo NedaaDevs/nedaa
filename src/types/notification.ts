@@ -52,6 +52,7 @@ export type NotificationState = {
   migrationVersion: number;
   morningNotification: AthkarNotificationSettings;
   eveningNotification: AthkarNotificationSettings;
+  fullAthanPlayback: boolean;
 };
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
@@ -61,6 +62,7 @@ export type PrayerNotificationType = Exclude<NotificationType, "athkar" | "qada"
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
   updateAllNotificationToggle: (enabled: boolean) => Promise<void>;
+  updateFullAthanPlayback: (enabled: boolean) => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
   updateDefault: <T extends Exclude<NotificationType, "athkar">>(
     type: T,

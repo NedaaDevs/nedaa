@@ -5,7 +5,7 @@ import { Platform } from "react-native";
 import { useNotificationStore } from "@/stores/notification";
 
 // Types
-import type { NotificationType, ConfigForType } from "@/types/notification";
+import type { NotificationType, ConfigForType, PrayerNotificationType } from "@/types/notification";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -16,7 +16,9 @@ export const useNotificationSettings = () => {
   const {
     settings,
     isScheduling,
+    fullAthanPlayback,
     updateAllNotificationToggle,
+    updateFullAthanPlayback,
     updateQuickSetup,
     updateDefault,
     updateOverride,
@@ -71,7 +73,7 @@ export const useNotificationSettings = () => {
 
   // Get formatted config for display
   const getFormattedConfig = useCallback(
-    <T extends NotificationType>(
+    <T extends PrayerNotificationType>(
       prayerId: string,
       type: T
     ): ConfigForType<T> & { hasOverride: boolean } => {
@@ -89,11 +91,13 @@ export const useNotificationSettings = () => {
   return {
     settings,
     isScheduling,
+    fullAthanPlayback,
     features,
     totalOverrideCount,
 
     // Actions
     updateAllNotificationToggle,
+    updateFullAthanPlayback,
     updateQuickSetup,
     updateDefault,
     updateOverride,
@@ -143,8 +147,10 @@ export const usePrayerNotificationSettings = (prayerId: string) => {
   return {
     config: prayerConfig,
     overrides,
-    updateOverride: <T extends NotificationType>(type: T, config: Partial<ConfigForType<T>>) =>
-      updateOverride(prayerId, type, config),
-    resetOverride: (type: NotificationType) => resetOverride(prayerId, type),
+    updateOverride: <T extends PrayerNotificationType>(
+      type: T,
+      config: Partial<ConfigForType<T>>
+    ) => updateOverride(prayerId, type, config),
+    resetOverride: (type: PrayerNotificationType) => resetOverride(prayerId, type),
   };
 };

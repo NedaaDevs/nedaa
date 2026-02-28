@@ -87,6 +87,12 @@ export const useNotificationStore = create<NotificationStore>()(
           hour: 12, // PM
           minute: 0,
         },
+        fullAthanPlayback: false,
+
+        updateFullAthanPlayback: async (enabled) => {
+          set({ fullAthanPlayback: enabled });
+          await get().scheduleAllNotifications();
+        },
 
         updateAllNotificationToggle: async (enabled) => {
           set((state) => ({
@@ -178,7 +184,7 @@ export const useNotificationStore = create<NotificationStore>()(
         },
 
         scheduleAllNotifications: async () => {
-          const { settings, morningNotification, eveningNotification } = get();
+          const { settings, morningNotification, eveningNotification, fullAthanPlayback } = get();
           if (!settings.enabled) return;
 
           set({ isScheduling: true });
@@ -212,7 +218,8 @@ export const useNotificationStore = create<NotificationStore>()(
               },
               prayersData,
               timezone,
-              qadaData
+              qadaData,
+              { fullAthanPlayback }
             );
 
             if (result.success) {
@@ -293,6 +300,15 @@ export const useNotificationStore = create<NotificationStore>()(
               console.log("[Notification Store] Migration v1: Added qada defaults");
             }
             state.migrationVersion = 1;
+          }
+
+          // Migration v2: Add fullAthanPlayback for existing users
+          if (state.migrationVersion < 2) {
+            if (state.fullAthanPlayback === undefined) {
+              state.fullAthanPlayback = false;
+              console.log("[Notification Store] Migration v2: Added fullAthanPlayback default");
+            }
+            state.migrationVersion = 2;
           }
         },
       }
