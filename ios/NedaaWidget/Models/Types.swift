@@ -118,6 +118,7 @@ struct DefaultPrayerTimes {
 
 /// Extension to handle timezone conversions
 extension Date {
+    @available(*, deprecated, message: "Use Date() directly with timezone-aware Calendar instead. This causes double-timezone conversion when used with Calendar.dateComponents.")
     func toLocalTime(timezone: TimeZone) -> Date {
         let timezoneOffset = TimeInterval(timezone.secondsFromGMT(for: self))
         return self.addingTimeInterval(timezoneOffset)
