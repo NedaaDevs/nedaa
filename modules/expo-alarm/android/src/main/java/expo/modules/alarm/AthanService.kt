@@ -121,7 +121,7 @@ class AthanService : Service() {
     private fun requestAudioFocus(): Boolean {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
 
@@ -148,10 +148,10 @@ class AthanService : Service() {
 
     private fun createAndStartPlayer(uri: Uri) {
         val focusGranted = requestAudioFocus()
-        Log.d(TAG, "Audio focus granted: $focusGranted, proceeding anyway with USAGE_ALARM")
+        Log.d(TAG, "Audio focus granted: $focusGranted, proceeding with USAGE_MEDIA")
 
         val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
 
