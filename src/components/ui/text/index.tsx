@@ -1,7 +1,8 @@
 import React from "react";
-import { I18nManager, Platform } from "react-native";
+import { Platform } from "react-native";
 import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
 import { PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
 
 // Font size + line height mapping (from tamagui.config.ts font definitions).
 // We resolve sizes to numeric values directly because Android's Fabric renderer
@@ -105,7 +106,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         // uses a more generous width calculation in StaticLayout.
         {...(IS_ANDROID && { textBreakStrategy: "simple", paddingEnd: 8 })}
         style={[
-          !IS_ANDROID && I18nManager.isRTL && { writingDirection: "rtl" as const },
+          !IS_ANDROID && i18n.language === "ar" && { writingDirection: "rtl" as const },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },
