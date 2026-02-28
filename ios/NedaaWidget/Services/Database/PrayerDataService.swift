@@ -24,9 +24,9 @@ struct PrayerDataService {
         
         prayerTimes = prayerTimes.sorted(by: { $0.date < $1.date })
         
-        let today = Date().toLocalTime(timezone: timeZoneObj)
-        // check if today is Friday and if so, rename Dhuhr to Jumuah
-        if Calendar.current.component(.weekday, from: today) == 6 {
+        var calendar = Calendar.current
+        calendar.timeZone = timeZoneObj
+        if calendar.component(.weekday, from: date) == 6 {
             prayerTimes[2].name = "jumuah"
         }
         
@@ -40,43 +40,26 @@ struct PrayerDataService {
     }
     
     func getTodaysPrayerTimes(showSunrise: Bool = true) -> [PrayerData]? {
-        if dbService.timeZone.isEmpty {
-            dbService.getTimezone()
-        }
-        
-        guard let timeZoneObj = TimeZone(identifier: dbService.timeZone) else {
-            debugPrint("Error: Could not retrieve timezone")
-            
-            return nil
-            
-        };
-        let today = Date().toLocalTime(timezone: timeZoneObj)
-        let prayers =   getDayPrayerTimes(for: today, showSunrise: showSunrise)
-        guard let prayerTimes = prayers else {
-            return nil
-        }
-        
-        return prayerTimes
-        
+        return getDayPrayerTimes(for: Date(), showSunrise: showSunrise)
     }
     
     func getTomorrowsPrayerTimes(showSunrise: Bool = true) -> [PrayerData]? {
         if dbService.timeZone.isEmpty {
             dbService.getTimezone()
         }
-        
+
         guard let timeZoneObj = TimeZone(identifier: dbService.timeZone) else {
             debugPrint("Error: Could not retrieve timezone")
-            
             return nil
-            
-        };
-        
-        guard let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date().toLocalTime(timezone: timeZoneObj)) else {
+        }
+
+        var calendar = Calendar.current
+        calendar.timeZone = timeZoneObj
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) else {
             print("Error: Could not calculate tomorrow's date")
             return nil
         }
-        
+
         return getDayPrayerTimes(for: tomorrow, showSunrise: showSunrise)
     }
     
@@ -84,18 +67,19 @@ struct PrayerDataService {
         if dbService.timeZone.isEmpty {
             dbService.getTimezone()
         }
-        
+
         guard let timeZoneObj = TimeZone(identifier: dbService.timeZone) else {
             debugPrint("Error: Could not retrieve timezone")
-            
             return nil
-            
-        };
-        
-        guard let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date().toLocalTime(timezone: timeZoneObj)) else {
+        }
+
+        var calendar = Calendar.current
+        calendar.timeZone = timeZoneObj
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) else {
             print("Error: Could not calculate yesterday's date")
             return nil
-        };
+        }
+
         return getDayPrayerTimes(for: yesterday)
     }
     
@@ -156,7 +140,7 @@ struct PrayerDataService {
             return nil
         }
 
-        let targetDate = date ?? Date().toLocalTime(timezone: timeZoneObj)
+        let targetDate = date ?? Date()
         let dateInt = getDateInt(for: targetDate, in: timeZoneObj)
 
         guard let imsakString = dbService.getImsakTime(dateInt: dateInt) else {
