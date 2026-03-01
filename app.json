@@ -71,7 +71,9 @@
         "com.apple.security.application-groups": ["group.dev.nedaa.app"]
       },
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "This app does not require microphone access."
+        "NSMicrophoneUsageDescription": "This app does not require microphone access.",
+        "UIBackgroundModes": ["fetch"],
+        "BGTaskSchedulerPermittedIdentifiers": ["dev.nedaa.app.background-refresh"]
       },
       "icon": {
         "light": "./assets/images/ios-light.png",
@@ -139,7 +141,8 @@
         }
       ],
       "expo-asset",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true
