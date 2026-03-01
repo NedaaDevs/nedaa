@@ -12,7 +12,6 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import { Divider } from "@/components/ui/divider";
 import TopBar from "@/components/TopBar";
 import SettingsItem from "@/components/SettingsItem";
 import SettingsFooter from "@/components/SettingsFooter";
@@ -96,7 +95,6 @@ const SettingsScreen = () => {
           icon={Languages}
           currentValue={t(`settings.languages.${locale}.nativeTitle`)}
         />
-        <Divider marginHorizontal="$4" />
         {/* Theme */}
         <SettingsItem
           name={t("settings.appearance")}
@@ -104,10 +102,8 @@ const SettingsScreen = () => {
           icon={Palette}
           currentValue={t(`settings.themes.${mode}.title`)}
         />
-        <Divider marginHorizontal="$4" />
         {/* Display */}
         <SettingsItem name={t("settings.display.title")} path="/settings/display" icon={Monitor} />
-        <Divider marginHorizontal="$4" />
 
         {/* Notification */}
         <SettingsItem
