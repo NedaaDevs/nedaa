@@ -75,6 +75,35 @@ class AthanService : Service() {
         return START_NOT_STICKY
     }
 
+    private fun getConfiguredAudioStream(): String {
+        val prefs = getSharedPreferences("nedaa_athan_prefs", Context.MODE_PRIVATE)
+        return prefs.getString("audio_stream", "media") ?: "media"
+    }
+
+    private fun buildAudioAttributes(): AudioAttributes {
+        val stream = getConfiguredAudioStream()
+        Log.d(TAG, "Building audio attributes for stream: $stream")
+        return if (stream == "ringer") {
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+        } else {
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+        }
+    }
+
+    private fun isDeviceSilenced(): Boolean {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        return when (audioManager.ringerMode) {
+            AudioManager.RINGER_MODE_SILENT, AudioManager.RINGER_MODE_VIBRATE -> true
+            else -> false
+        }
+    }
+
     private fun startAthan(athanId: String, soundName: String, title: String, stopLabel: String) {
         Log.d(TAG, "Starting athan: title=$title, sound=$soundName")
         if (isRunning) {
@@ -89,6 +118,13 @@ class AthanService : Service() {
         val notificationManager = AthanNotificationManager(this)
         val notification = notificationManager.buildAthanNotification(title, stopLabel)
         startForeground(AthanNotificationManager.NOTIFICATION_ID, notification.build())
+
+        val stream = getConfiguredAudioStream()
+        if (stream == "media" && isDeviceSilenced()) {
+            Log.d(TAG, "Device is silenced and stream is media, skipping audio playback")
+            stopAthan()
+            return
+        }
 
         try {
             if (soundName.startsWith("content://")) {
@@ -120,10 +156,7 @@ class AthanService : Service() {
 
     private fun requestAudioFocus(): Boolean {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-            .build()
+        val attrs = buildAudioAttributes()
 
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
             .setAudioAttributes(attrs)
@@ -148,12 +181,10 @@ class AthanService : Service() {
 
     private fun createAndStartPlayer(uri: Uri) {
         val focusGranted = requestAudioFocus()
-        Log.d(TAG, "Audio focus granted: $focusGranted, proceeding with USAGE_MEDIA")
+        val stream = getConfiguredAudioStream()
+        Log.d(TAG, "Audio focus granted: $focusGranted, proceeding with stream=$stream")
 
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-            .build()
+        val attrs = buildAudioAttributes()
 
         mediaPlayer = MediaPlayer().apply {
             setAudioAttributes(attrs)

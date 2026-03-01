@@ -25,9 +25,11 @@ import {
   type NotificationSettings,
   type NotificationState,
 } from "@/types/notification";
+import { Platform } from "react-native";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { PlatformType } from "@/enums/app";
 
 export type NotificationStore = NotificationState & NotificationAction;
 
@@ -88,10 +90,19 @@ export const useNotificationStore = create<NotificationStore>()(
           minute: 0,
         },
         fullAthanPlayback: false,
+        athanAudioStream: "media" as const,
 
         updateFullAthanPlayback: async (enabled) => {
           set({ fullAthanPlayback: enabled });
           await get().scheduleAllNotifications();
+        },
+
+        updateAthanAudioStream: async (stream) => {
+          set({ athanAudioStream: stream });
+          if (Platform.OS === PlatformType.ANDROID) {
+            const { setAthanAudioStream } = await import("expo-alarm");
+            setAthanAudioStream(stream);
+          }
         },
 
         updateAllNotificationToggle: async (enabled) => {
@@ -309,6 +320,24 @@ export const useNotificationStore = create<NotificationStore>()(
               console.log("[Notification Store] Migration v2: Added fullAthanPlayback default");
             }
             state.migrationVersion = 2;
+          }
+
+          // Migration v3: Add athanAudioStream for existing users
+          if (state.migrationVersion < 3) {
+            if (state.athanAudioStream === undefined) {
+              state.athanAudioStream = "media";
+              console.log("[Notification Store] Migration v3: Added athanAudioStream default");
+            }
+            state.migrationVersion = 3;
+          }
+
+          // Sync native preference on rehydration
+          if (Platform.OS === "android") {
+            import("expo-alarm")
+              .then(({ setAthanAudioStream }) => {
+                setAthanAudioStream(state.athanAudioStream ?? "media");
+              })
+              .catch(() => {});
           }
         },
       }

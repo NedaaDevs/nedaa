@@ -540,6 +540,15 @@ export function isAthanPlaying(): boolean {
   }
 }
 
+export function setAthanAudioStream(stream: "media" | "ringer"): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.setAthanAudioStream(stream);
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -598,4 +607,5 @@ export default {
   cancelAllAthans,
   stopAthan,
   isAthanPlaying,
+  setAthanAudioStream,
 };

@@ -53,8 +53,11 @@ modules/expo-alarm/android/.gradle/
 modules/expo-media-controls/android/build
 modules/expo-media-controls/android/.gradle
 
-
-
-
 # Tamagui
 .tamagui/
+
+
+.claude
+.agent*
+
+docs/plans*
