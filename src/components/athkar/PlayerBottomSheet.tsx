@@ -107,7 +107,9 @@ const PlayerBottomSheet: FC = () => {
               height={44}
               borderRadius={22}
               alignItems="center"
-              justifyContent="center">
+              justifyContent="center"
+              accessibilityLabel={t("common.close")}
+              accessibilityRole="button">
               <Icon as={ChevronDown} size="md" color="$typographySecondary" />
             </Pressable>
 
@@ -121,7 +123,9 @@ const PlayerBottomSheet: FC = () => {
               height={44}
               borderRadius={22}
               alignItems="center"
-              justifyContent="center">
+              justifyContent="center"
+              accessibilityLabel={t("common.stop")}
+              accessibilityRole="button">
               <Icon as={X} size="sm" color="$typographySecondary" />
             </Pressable>
           </HStack>
@@ -147,7 +151,12 @@ const PlayerBottomSheet: FC = () => {
 
             {/* Progress bar */}
             <VStack gap="$1">
-              <Box height={4} borderRadius={2} backgroundColor="$backgroundMuted">
+              <Box
+                height={4}
+                borderRadius={2}
+                backgroundColor="$backgroundMuted"
+                accessibilityRole="progressbar"
+                accessibilityValue={{ min: 0, max: 100, now: Math.round(progressPercent) }}>
                 <Box
                   height={4}
                   borderRadius={2}
