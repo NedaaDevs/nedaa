@@ -36,6 +36,8 @@ import { trackAppSession } from "@/utils/reviewPrompt";
 
 TrackPlayer.registerPlaybackService(() => PlaybackService);
 
+import "@/tasks/backgroundRefresh";
+
 /** For Viewing db in dev */
 // import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 // import * as SQLite from "expo-sqlite";

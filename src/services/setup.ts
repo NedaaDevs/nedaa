@@ -12,6 +12,10 @@ import { useQadaStore } from "@/stores/qada";
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 
+// Background task
+import { registerBackgroundRefresh } from "@/tasks/backgroundRefresh";
+import { BackgroundTaskLog } from "@/services/background-task-log";
+
 export const appSetup = async (
   prayerStore: PrayerTimesStore,
   notificationStore: NotificationStore
@@ -33,6 +37,9 @@ export const appSetup = async (
     await qadaStore.loadData();
 
     await notificationStore.scheduleAllNotifications();
+
+    await BackgroundTaskLog.initialize();
+    await registerBackgroundRefresh();
 
     reloadPrayerWidgets();
   } catch (error) {
