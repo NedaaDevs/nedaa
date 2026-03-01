@@ -1,6 +1,6 @@
-import { FC, useEffect, useRef } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Easing, Image, View } from "react-native";
+import { AccessibilityInfo, Animated, Easing, Image, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "tamagui";
 
@@ -49,10 +49,15 @@ const ReciterCard: FC<Props> = ({
   const theme = useTheme();
   const name = reciterRegistry.getLocalizedName(reciter.name, i18n.language);
 
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
   const spinAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (isDownloading) {
+    if (isDownloading && !reduceMotion) {
       const loop = Animated.loop(
         Animated.timing(spinAnim, {
           toValue: 1,
@@ -65,7 +70,7 @@ const ReciterCard: FC<Props> = ({
       return () => loop.stop();
     }
     spinAnim.setValue(0);
-  }, [isDownloading, spinAnim]);
+  }, [isDownloading, reduceMotion, spinAnim]);
 
   return (
     <Pressable

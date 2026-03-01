@@ -1,7 +1,7 @@
-import { FC, useCallback } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dimensions, StyleSheet } from "react-native";
-import Animated, { SlideInDown, SlideOutDown } from "react-native-reanimated";
+import { AccessibilityInfo, Dimensions, StyleSheet } from "react-native";
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -29,6 +29,11 @@ const formatTime = (seconds: number): string => {
 const PlayerBottomSheet: FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
+
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
 
   const playerState = useAthkarStore((s) => s.playerState);
   const repeatProgress = useAthkarStore((s) => s.repeatProgress);
@@ -82,8 +87,10 @@ const PlayerBottomSheet: FC = () => {
 
       {/* Sheet */}
       <Animated.View
-        entering={SlideInDown.springify().damping(20).stiffness(200)}
-        exiting={SlideOutDown.duration(200)}
+        entering={
+          reduceMotion ? FadeIn.duration(1) : SlideInDown.springify().damping(20).stiffness(200)
+        }
+        exiting={reduceMotion ? FadeOut.duration(1) : SlideOutDown.duration(200)}
         style={{
           position: "absolute",
           bottom: 0,
