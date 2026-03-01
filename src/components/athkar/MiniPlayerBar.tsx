@@ -1,5 +1,6 @@
-import { FC, useEffect } from "react";
+import { FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AccessibilityInfo } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -25,6 +26,16 @@ const DISMISS_THRESHOLD = 60;
 
 const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
+
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  const reduceMotionShared = useSharedValue(false);
+  useEffect(() => {
+    reduceMotionShared.value = reduceMotion;
+  }, [reduceMotion, reduceMotionShared]);
 
   const playerState = useAthkarStore((s) => s.playerState);
   const sessionProgress = useAthkarStore((s) => s.sessionProgress);
@@ -86,9 +97,12 @@ const MiniPlayerBar: FC = () => {
     })
     .onEnd((e) => {
       if (e.translationY > DISMISS_THRESHOLD) {
-        heightAnim.value = withTiming(0, { duration: 150 });
-        opacity.value = withTiming(0, { duration: 150 });
+        heightAnim.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
+        opacity.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
         runOnJS(handleDismiss)();
+      } else if (reduceMotionShared.value) {
+        heightAnim.value = withTiming(height, { duration: 0 });
+        opacity.value = withTiming(1, { duration: 0 });
       } else {
         heightAnim.value = withSpring(height, { damping: 20, stiffness: 300 });
         opacity.value = withSpring(1);

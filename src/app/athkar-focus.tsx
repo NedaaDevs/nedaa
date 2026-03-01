@@ -916,8 +916,8 @@ const AthkarFocusScreen = () => {
               {/* Instructions - auto hide after 5s, repositioned below progress bar */}
               {!isCompleted && showInstructions && (
                 <Animated.View
-                  entering={FadeIn}
-                  exiting={FadeOut}
+                  entering={reduceMotion ? undefined : FadeIn}
+                  exiting={reduceMotion ? undefined : FadeOut}
                   style={{
                     position: "absolute",
                     top: 100,
