@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ScrollView, Linking, Platform } from "react-native";
 import { useState, useEffect } from "react";
-import { router } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -18,9 +17,10 @@ import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationD
 import TopBar from "@/components/TopBar";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
 import NotificationTypePanel from "@/components/NotificationTypePanel";
+import SettingsItem from "@/components/SettingsItem";
 
 // Icons
-import { Bell, Volume1, Play } from "lucide-react-native";
+import { Bell, Play } from "lucide-react-native";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -63,7 +63,6 @@ const NotificationSettings = () => {
     features,
     totalOverrideCount,
     updateAllNotificationToggle,
-    updateFullAthanPlayback,
     updateQuickSetup,
     updateDefault,
     updateOverride,
@@ -264,55 +263,13 @@ const NotificationSettings = () => {
                 supportsVibration={features.supportsVibration}
               />
 
-              {/* Custom Sounds Button (Android Only) */}
+              {/* Athan Playback Settings (Android Only) */}
               {Platform.OS === PlatformType.ANDROID && (
-                <Box marginHorizontal="$4">
-                  <Button
-                    size="lg"
-                    backgroundColor="$accentPrimary"
-                    borderRadius="$6"
-                    onPress={() => {
-                      hapticMedium();
-                      router.push("/settings/customSounds");
-                    }}>
-                    <Icon as={Volume1} size="md" color="$typographyContrast" />
-                    <Button.Text color="$typographyContrast" fontWeight="600">
-                      {t("notification.customSound.manage")}
-                    </Button.Text>
-                  </Button>
-                </Box>
-              )}
-
-              {/* Full Athan Playback (Android Only) */}
-              {Platform.OS === PlatformType.ANDROID && (
-                <Box
-                  backgroundColor="$backgroundSecondary"
-                  marginHorizontal="$4"
-                  borderRadius="$4"
-                  padding="$4">
-                  <HStack justifyContent="space-between" alignItems="center">
-                    <HStack gap="$3" alignItems="center" flex={1}>
-                      <Icon color="$primary" size="lg" as={Play} />
-                      <VStack flex={1} gap="$1">
-                        <Text size="md" fontWeight="600" color="$typography">
-                          {t("notification.fullAthanPlayback")}
-                        </Text>
-                        <Text size="xs" color="$typographySecondary">
-                          {t("notification.fullAthanPlayback.description")}
-                        </Text>
-                      </VStack>
-                    </HStack>
-                    <Switch
-                      value={fullAthanPlayback}
-                      onValueChange={(value) => {
-                        hapticSelection();
-                        updateFullAthanPlayback(value);
-                      }}
-                      size="md"
-                      accessibilityLabel={t("notification.fullAthanPlayback")}
-                    />
-                  </HStack>
-                </Box>
+                <SettingsItem
+                  name={t("notification.athanPlayback.title")}
+                  path="/settings/athanPlayback"
+                  icon={Play}
+                />
               )}
 
               {/* Prayer Notifications */}
