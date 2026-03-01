@@ -63,7 +63,12 @@ const LanguageList = () => {
             flexDirection="row"
             alignItems="center"
             borderBottomWidth={index < localeData.length - 1 ? 1 : 0}
-            borderColor={index < localeData.length - 1 ? "$outline" : undefined}>
+            borderColor={index < localeData.length - 1 ? "$outline" : undefined}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: locale === item.id }}
+            accessibilityLabel={
+              locale === item.id ? t("a11y.languageSelected", { language: item.title }) : item.title
+            }>
             <HStack justifyContent="space-between" alignItems="center" width="100%">
               <Box>
                 <Text size="xl" fontWeight="600" color="$typography">
