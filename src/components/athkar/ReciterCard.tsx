@@ -68,7 +68,11 @@ const ReciterCard: FC<Props> = ({
   }, [isDownloading, spinAnim]);
 
   return (
-    <Pressable onPress={() => onSelect(reciter.id)}>
+    <Pressable
+      onPress={() => onSelect(reciter.id)}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={selected ? t("a11y.athkar.reciterSelected", { name }) : name}>
       <Box
         padding="$3"
         borderRadius="$6"
@@ -138,7 +142,11 @@ const ReciterCard: FC<Props> = ({
                 borderRadius={PLAY_BTN / 2}
                 backgroundColor={selected ? "$backgroundSecondary" : "$backgroundMuted"}
                 alignItems="center"
-                justifyContent="center">
+                justifyContent="center"
+                accessibilityLabel={
+                  isSamplePlaying ? t("a11y.athkar.stopSample") : t("a11y.athkar.playSample")
+                }
+                accessibilityRole="button">
                 <Icon as={isSamplePlaying ? Pause : Play} size="sm" color="$typography" />
               </Pressable>
             </View>

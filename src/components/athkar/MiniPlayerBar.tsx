@@ -98,7 +98,13 @@ const MiniPlayerBar: FC = () => {
   return (
     <GestureDetector gesture={swipeDismiss}>
       <Animated.View style={containerStyle}>
-        <Pressable onPress={handleTap}>
+        <Pressable
+          onPress={handleTap}
+          accessibilityLabel={t("a11y.athkar.nowPlaying", {
+            current: sessionProgress.current,
+            total: sessionProgress.total,
+          })}
+          accessibilityHint={t("athkar.audio.expand")}>
           <Box
             height={height}
             backgroundColor="$backgroundSecondary"

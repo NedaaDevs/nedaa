@@ -80,6 +80,7 @@ const AthkarTabs = () => {
             }}
             role="tab"
             accessibilityLabel={t("athkar.morning")}
+            accessibilityState={{ selected: activeTab === ATHKAR_TYPE.MORNING }}
             flex={1}
             minHeight={44}
             paddingVertical="$3"
@@ -120,6 +121,7 @@ const AthkarTabs = () => {
             }}
             role="tab"
             accessibilityLabel={t("athkar.evening")}
+            accessibilityState={{ selected: activeTab === ATHKAR_TYPE.EVENING }}
             flex={1}
             minHeight={44}
             paddingVertical="$3"
