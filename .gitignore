@@ -55,9 +55,3 @@ modules/expo-media-controls/android/.gradle
 
 # Tamagui
 .tamagui/
-
-
-.claude
-.agent*
-
-docs/plans*
