@@ -6,7 +6,7 @@ import { formatNumberToLocale } from "@/utils/number";
 import { getDateLocale, timeZonedNow } from "@/utils/date";
 
 // Stores
-import { useDisplayStore } from "@/stores/display";
+import { usePreferencesStore } from "@/stores/preferences";
 import { useAppStore } from "@/stores/app";
 
 // Types
@@ -29,7 +29,7 @@ export const useCountdownTimer = (
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { locale } = useAppStore();
   const { countdownEnabled, countdownMinutes, iqamaCountUpEnabled, iqamaCountUpMinutes } =
-    useDisplayStore();
+    usePreferencesStore();
 
   const timerMode = useMemo((): TimerMode => {
     if (iqamaCountUpEnabled && previousPrayer) {

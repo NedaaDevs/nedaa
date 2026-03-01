@@ -13,7 +13,7 @@ import { Pressable } from "@/components/ui/pressable";
 
 // Stores
 import { useAppStore } from "@/stores/app";
-import { useDisplayStore } from "@/stores/display";
+import { usePreferencesStore } from "@/stores/preferences";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -76,7 +76,7 @@ const DisplaySettings = () => {
     setIqamaCountUpEnabled,
     iqamaCountUpMinutes,
     setIqamaCountUpMinutes,
-  } = useDisplayStore();
+  } = usePreferencesStore();
 
   const isArabic = locale.startsWith("ar");
 
