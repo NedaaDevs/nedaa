@@ -45,6 +45,7 @@ const TimingsCarousel = (props: Props) => {
               onPress={() => handleTabPress(index)}
               paddingVertical="$2"
               accessibilityRole="tab"
+              accessibilityLabel={t(tab.labelKey)}
               accessibilityState={{ selected: isActive }}>
               <Text
                 size="md"
