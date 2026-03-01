@@ -7,8 +7,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
-  runOnJS,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
@@ -99,7 +99,7 @@ const MiniPlayerBar: FC = () => {
       if (e.translationY > DISMISS_THRESHOLD) {
         heightAnim.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
         opacity.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
-        runOnJS(handleDismiss)();
+        scheduleOnRN(handleDismiss);
       } else if (reduceMotionShared.value) {
         heightAnim.value = withTiming(height, { duration: 0 });
         opacity.value = withTiming(1, { duration: 0 });

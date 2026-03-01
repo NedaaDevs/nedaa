@@ -9,8 +9,8 @@ import Animated, {
   withTiming,
   interpolate,
   cancelAnimation,
-  runOnJS,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { useTheme } from "tamagui";
 
@@ -755,10 +755,10 @@ const QadaSettings = () => {
                 {(() => {
                   const longPressGesture = Gesture.Pan()
                     .onBegin(() => {
-                      runOnJS(handleResetPressStart)();
+                      scheduleOnRN(handleResetPressStart);
                     })
                     .onFinalize(() => {
-                      runOnJS(handleResetPressEnd)();
+                      scheduleOnRN(handleResetPressEnd);
                     });
 
                   return (

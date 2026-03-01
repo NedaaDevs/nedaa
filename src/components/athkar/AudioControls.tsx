@@ -6,9 +6,9 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  runOnJS,
   Easing,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 import { useTheme } from "tamagui";
 
@@ -133,22 +133,22 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
         easing: EASE_OUT,
       });
       thumbOpacity.value = withTiming(1, { duration: animDuration, easing: EASE_OUT });
-      runOnJS(enterSeekMode)();
-      runOnJS(updateSeekDisplay)(clamped);
+      scheduleOnRN(enterSeekMode);
+      scheduleOnRN(updateSeekDisplay, clamped);
     })
     .onUpdate((e) => {
       const x = isRTL ? trackWidth - e.x : e.x;
       const progress = trackWidth > 0 ? x / trackWidth : 0;
       const clamped = Math.max(0, Math.min(1, progress));
       seekProgress.value = clamped;
-      runOnJS(updateSeekDisplay)(clamped);
+      scheduleOnRN(updateSeekDisplay, clamped);
     })
     .onEnd(() => {
       const finalProgress = seekProgress.value;
       trackScale.value = withTiming(1, { duration: animDuration, easing: EASE_IN });
       thumbOpacity.value = withTiming(0, { duration: animDuration, easing: EASE_IN });
       isSeeking_.value = false;
-      runOnJS(commitSeek)(finalProgress);
+      scheduleOnRN(commitSeek, finalProgress);
     })
     .onFinalize(() => {
       trackScale.value = withTiming(1, { duration: animDuration, easing: EASE_IN });
@@ -173,7 +173,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
         return;
       }
       if (e.translationY > 50 && e.velocityY > 300) {
-        runOnJS(onCollapse)();
+        scheduleOnRN(onCollapse);
       }
       swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
     })
