@@ -320,6 +320,7 @@
   "compass.directions.W": "W",
   "compass.distance": "Distance to Mecca",
   "compass.facingQibla": "Facing Qibla",
+  "compass.km": "km",
   "compass.notAvailable": "Compass not available on this device",
   "compass.qiblaDirection": "Qibla Direction",
   "compass.sourceLocation": "Using device heading",

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useIsFocused } from "@react-navigation/native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -55,7 +56,8 @@ const tickMarks = Array.from({ length: 36 }, (_, i) => {
 });
 
 const Compass = () => {
-  const { heading, accuracy, isAvailable, isActive } = useCompass();
+  const isFocused = useIsFocused();
+  const { heading, accuracy, isAvailable, isActive, source } = useCompass(!isFocused);
   const { locationDetails } = useLocationStore();
   const theme = useTheme();
   const { t } = useTranslation();
@@ -87,7 +89,11 @@ const Compass = () => {
       : "searching";
 
   const distanceText = locationDetails.coords
-    ? formatDistanceToMecca(locationDetails.coords.latitude, locationDetails.coords.longitude)
+    ? formatDistanceToMecca(
+        locationDetails.coords.latitude,
+        locationDetails.coords.longitude,
+        t("compass.km")
+      )
     : null;
 
   // Reanimated shared values
@@ -363,9 +369,17 @@ const Compass = () => {
                     <Text color="$typography" fontWeight="500">
                       {t("compass.accuracy")}
                     </Text>
-                    <Text color="$typographySecondary" size="md">
-                      {formatNumberToLocale(`${Math.round(accuracy)}`)}%
-                    </Text>
+                    <HStack alignItems="center" gap="$1.5">
+                      <Text color="$typographySecondary" size="md">
+                        {formatNumberToLocale(`${Math.round(accuracy)}`)}%
+                      </Text>
+                      <Box
+                        width={6}
+                        height={6}
+                        borderRadius={3}
+                        backgroundColor={source === "fused" ? "$primary" : "$warning"}
+                      />
+                    </HStack>
                   </HStack>
                 </VStack>
               </Box>

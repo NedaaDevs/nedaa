@@ -327,6 +327,7 @@
   "compass.directions.W": "غرب",
   "compass.distance": "المسافة إلى مكة",
   "compass.facingQibla": "متجه للقبلة",
+  "compass.km": "كم",
   "compass.notAvailable": "البوصلة غير متاحة على هذا الجهاز",
   "compass.qiblaDirection": "اتجاه القبلة",
   "compass.sourceLocation": "استخدام توجيه الجهاز",

@@ -35,7 +35,7 @@ const smoothHeading = (newHeading: number, lastHeading: number): number => {
   return smoothed;
 };
 
-export const useCompass = () => {
+export const useCompass = (paused = false) => {
   const [compassData, setCompassData] = useState<CompassData>({
     heading: 0,
     accuracy: 0,
@@ -49,6 +49,13 @@ export const useCompass = () => {
   const lastSmoothedHeadingRef = useRef(0);
 
   useEffect(() => {
+    if (paused) {
+      subscriptionRef.current?.remove();
+      subscriptionRef.current = null;
+      setCompassData((prev) => ({ ...prev, isActive: false }));
+      return;
+    }
+
     let cancelled = false;
 
     const startFusedHeading = async () => {
@@ -57,7 +64,10 @@ export const useCompass = () => {
           if (cancelled) return;
           const heading =
             headingData.trueHeading >= 0 ? headingData.trueHeading : headingData.magHeading;
-          const accuracy = Math.min(100, Math.max(0, headingData.accuracy ?? 50));
+
+          // expo-location returns 0-3 on both platforms (0=unreliable, 3=high)
+          const level = headingData.accuracy ?? 0;
+          const accuracy = [0, 33, 67, 100][Math.min(3, Math.max(0, level))] ?? 0;
 
           setCompassData({
             heading,
@@ -124,7 +134,7 @@ export const useCompass = () => {
       subscriptionRef.current?.remove();
       subscriptionRef.current = null;
     };
-  }, [isLocationPermissionGranted]);
+  }, [isLocationPermissionGranted, paused]);
 
   return compassData;
 };

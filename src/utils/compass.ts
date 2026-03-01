@@ -96,10 +96,14 @@ export const getQiblaProximityState = (
   return "searching";
 };
 
-export const formatDistanceToMecca = (latitude: number, longitude: number): string => {
+export const formatDistanceToMecca = (
+  latitude: number,
+  longitude: number,
+  unit: string
+): string => {
   const distance = calculateDistanceToMecca(latitude, longitude);
   const rounded = Math.round(distance);
-  return `${rounded.toLocaleString()} km`;
+  return `${rounded.toLocaleString()} ${unit}`;
 };
 
 // Helper functions
