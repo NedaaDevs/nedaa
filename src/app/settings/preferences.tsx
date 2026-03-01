@@ -62,7 +62,7 @@ const DurationPicker = ({
   );
 };
 
-const DisplaySettings = () => {
+const PreferencesSettings = () => {
   const { t } = useTranslation();
   const { locale } = useAppStore();
   const {
@@ -76,13 +76,15 @@ const DisplaySettings = () => {
     setIqamaCountUpEnabled,
     iqamaCountUpMinutes,
     setIqamaCountUpMinutes,
+    hapticsEnabled,
+    setHapticsEnabled,
   } = usePreferencesStore();
 
   const isArabic = locale.startsWith("ar");
 
   return (
     <Background>
-      <TopBar title="settings.display.title" backOnClick />
+      <TopBar title="settings.preferences.title" backOnClick />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack padding="$4" gap="$4">
           {/* Western Numerals - only show for Arabic locale */}
@@ -96,16 +98,16 @@ const DisplaySettings = () => {
               <HStack justifyContent="space-between" alignItems="center" width="100%">
                 <VStack flexShrink={1} marginEnd="$4">
                   <Text fontWeight="500" color="$typography">
-                    {t("settings.display.westernNumerals.title")}
+                    {t("settings.preferences.westernNumerals.title")}
                   </Text>
                   <Text size="sm" color="$typographySecondary" marginTop="$1">
-                    {t("settings.display.westernNumerals.description")}
+                    {t("settings.preferences.westernNumerals.description")}
                   </Text>
                 </VStack>
                 <Switch
                   value={useWesternNumerals}
                   onValueChange={setUseWesternNumerals}
-                  accessibilityLabel={t("settings.display.westernNumerals.title")}
+                  accessibilityLabel={t("settings.preferences.westernNumerals.title")}
                 />
               </HStack>
             </Box>
@@ -118,16 +120,16 @@ const DisplaySettings = () => {
                 <HStack justifyContent="space-between" alignItems="center" width="100%">
                   <VStack flexShrink={1} marginEnd="$4">
                     <Text fontWeight="500" color="$typography">
-                      {t("settings.display.countdown.title")}
+                      {t("settings.preferences.countdown.title")}
                     </Text>
                     <Text size="sm" color="$typographySecondary" marginTop="$1">
-                      {t("settings.display.countdown.description")}
+                      {t("settings.preferences.countdown.description")}
                     </Text>
                   </VStack>
                   <Switch
                     value={countdownEnabled}
                     onValueChange={setCountdownEnabled}
-                    accessibilityLabel={t("settings.display.countdown.title")}
+                    accessibilityLabel={t("settings.preferences.countdown.title")}
                   />
                 </HStack>
               </Box>
@@ -137,7 +139,7 @@ const DisplaySettings = () => {
                   value={countdownMinutes}
                   onChange={setCountdownMinutes}
                   options={[15, 30, 45, 60]}
-                  labelKey="settings.display.countdown.minutes"
+                  labelKey="settings.preferences.countdown.minutes"
                 />
               )}
             </VStack>
@@ -150,16 +152,16 @@ const DisplaySettings = () => {
                 <HStack justifyContent="space-between" alignItems="center" width="100%">
                   <VStack flexShrink={1} marginEnd="$4">
                     <Text fontWeight="500" color="$typography">
-                      {t("settings.display.iqamaCountUp.title")}
+                      {t("settings.preferences.iqamaCountUp.title")}
                     </Text>
                     <Text size="sm" color="$typographySecondary" marginTop="$1">
-                      {t("settings.display.iqamaCountUp.description")}
+                      {t("settings.preferences.iqamaCountUp.description")}
                     </Text>
                   </VStack>
                   <Switch
                     value={iqamaCountUpEnabled}
                     onValueChange={setIqamaCountUpEnabled}
-                    accessibilityLabel={t("settings.display.iqamaCountUp.title")}
+                    accessibilityLabel={t("settings.preferences.iqamaCountUp.title")}
                   />
                 </HStack>
               </Box>
@@ -169,10 +171,34 @@ const DisplaySettings = () => {
                   value={iqamaCountUpMinutes}
                   onChange={setIqamaCountUpMinutes}
                   options={[10, 15, 20, 30]}
-                  labelKey="settings.display.iqamaCountUp.minutes"
+                  labelKey="settings.preferences.iqamaCountUp.minutes"
                 />
               )}
             </VStack>
+          </Box>
+
+          {/* Haptic Feedback */}
+          <Box
+            backgroundColor="$backgroundSecondary"
+            borderRadius="$6"
+            padding="$4"
+            flexDirection="row"
+            alignItems="center">
+            <HStack justifyContent="space-between" alignItems="center" width="100%">
+              <VStack flexShrink={1} marginEnd="$4">
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.preferences.haptics.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
+                  {t("settings.preferences.haptics.description")}
+                </Text>
+              </VStack>
+              <Switch
+                value={hapticsEnabled}
+                onValueChange={setHapticsEnabled}
+                accessibilityLabel={t("settings.preferences.haptics.title")}
+              />
+            </HStack>
           </Box>
         </VStack>
       </ScrollView>
@@ -180,4 +206,4 @@ const DisplaySettings = () => {
   );
 };
 
-export default DisplaySettings;
+export default PreferencesSettings;

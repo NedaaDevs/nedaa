@@ -103,7 +103,11 @@ const SettingsScreen = () => {
           currentValue={t(`settings.themes.${mode}.title`)}
         />
         {/* Display */}
-        <SettingsItem name={t("settings.display.title")} path="/settings/display" icon={Monitor} />
+        <SettingsItem
+          name={t("settings.preferences.title")}
+          path="/settings/preferences"
+          icon={Monitor}
+        />
 
         {/* Notification */}
         <SettingsItem
