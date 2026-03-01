@@ -156,7 +156,13 @@ const SettingsScreen = () => {
         {/* Rate & Share */}
         <HStack marginHorizontal="$2" marginTop="$2" gap="$2">
           <Box flex={1} padding="$4" borderRadius="$4" backgroundColor="$backgroundSecondary">
-            <Pressable onPress={handleRate} alignItems="center" justifyContent="center" gap="$2">
+            <Pressable
+              onPress={handleRate}
+              alignItems="center"
+              justifyContent="center"
+              gap="$2"
+              accessibilityRole="button"
+              accessibilityLabel={t("settings.rateApp")}>
               <Icon color="$warning" size="lg" as={Star} />
               <Text size="md" fontWeight="500" color="$typography">
                 {t("settings.rateApp")}
@@ -169,7 +175,9 @@ const SettingsScreen = () => {
               onLongPress={handleShareLongPress}
               alignItems="center"
               justifyContent="center"
-              gap="$2">
+              gap="$2"
+              accessibilityRole="button"
+              accessibilityLabel={t("settings.shareApp")}>
               <Icon color="$accentPrimary" size="lg" as={Share2} />
               <Text size="md" fontWeight="500" color="$typography">
                 {t("settings.shareApp")}

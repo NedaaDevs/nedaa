@@ -356,7 +356,14 @@ const AlarmSettings = () => {
             </VStack>
 
             {totalCount > 1 && (
-              <HStack gap="$1" alignItems="center">
+              <HStack
+                gap="$1"
+                alignItems="center"
+                accessible={true}
+                accessibilityLabel={t("a11y.stepProgress", {
+                  current: permissions.filter((p) => p.granted).length + 1,
+                  total: totalCount,
+                })}>
                 {permissions.map((p) => (
                   <Box
                     key={p.id}
@@ -414,6 +421,8 @@ const AlarmSettings = () => {
             {alarmTypes.map((alarm, index) => (
               <Box key={alarm.type}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={alarm.title}
                   padding="$4"
                   borderRadius="$6"
                   backgroundColor="$backgroundSecondary"
@@ -471,6 +480,8 @@ const AlarmSettings = () => {
           </VStack>
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("alarm.settings.reportProblem")}
             marginHorizontal="$4"
             marginTop="$8"
             marginBottom="$2"
@@ -514,6 +525,8 @@ const AlarmSettings = () => {
                   {issueOptions.map((option) => (
                     <Pressable
                       key={option.category}
+                      accessibilityRole="button"
+                      accessibilityLabel={t(option.labelKey)}
                       minHeight={44}
                       paddingHorizontal="$3"
                       borderRadius="$6"
@@ -529,6 +542,8 @@ const AlarmSettings = () => {
                 </VStack>
 
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("common.cancel")}
                   marginTop="$4"
                   minHeight={44}
                   justifyContent="center"

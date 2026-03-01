@@ -213,6 +213,8 @@ export default function AddCustomSoundModal({
               <Pressable
                 onPress={handlePickFile}
                 disabled={isProcessing}
+                accessibilityRole="button"
+                accessibilityLabel={t("a11y.customSound.pickFile")}
                 borderWidth={2}
                 borderStyle="dashed"
                 borderRadius="$6"
@@ -245,6 +247,7 @@ export default function AddCustomSoundModal({
                 {t("notification.customSound.name")}
               </Text>
               <TextInput
+                accessibilityLabel={t("a11y.customSound.soundName")}
                 value={soundName}
                 onChangeText={setSoundName}
                 placeholder={t("notification.customSound.namePlaceholder")}
@@ -278,6 +281,9 @@ export default function AddCustomSoundModal({
                 <Pressable
                   onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.PRAYER)}
                   disabled={isProcessing}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selectedTypes.includes(NOTIFICATION_TYPE.PRAYER) }}
+                  accessibilityLabel={t("notification.type.prayer")}
                   flexDirection="row"
                   alignItems="center"
                   padding="$3"
@@ -304,6 +310,9 @@ export default function AddCustomSoundModal({
                 <Pressable
                   onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.IQAMA)}
                   disabled={isProcessing}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selectedTypes.includes(NOTIFICATION_TYPE.IQAMA) }}
+                  accessibilityLabel={t("notification.type.iqama")}
                   flexDirection="row"
                   alignItems="center"
                   padding="$3"
@@ -330,6 +339,11 @@ export default function AddCustomSoundModal({
                 <Pressable
                   onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.PRE_ATHAN)}
                   disabled={isProcessing}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{
+                    checked: selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN),
+                  }}
+                  accessibilityLabel={t("notification.type.preAthan")}
                   flexDirection="row"
                   alignItems="center"
                   padding="$3"
@@ -356,6 +370,9 @@ export default function AddCustomSoundModal({
                 <Pressable
                   onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.QADA)}
                   disabled={isProcessing}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selectedTypes.includes(NOTIFICATION_TYPE.QADA) }}
+                  accessibilityLabel={t("notification.type.qada")}
                   flexDirection="row"
                   alignItems="center"
                   padding="$3"

@@ -298,7 +298,12 @@ const AudioSettings: FC = () => {
               {t("settings.athkarAudio.playbackMode")}
             </Text>
             {modeOptions.map((option) => (
-              <Pressable key={option.mode} onPress={() => setPlaybackMode(option.mode)}>
+              <Pressable
+                key={option.mode}
+                onPress={() => setPlaybackMode(option.mode)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: playbackMode === option.mode }}
+                accessibilityLabel={t(option.labelKey)}>
                 <Box
                   padding="$3"
                   borderRadius="$6"
@@ -391,6 +396,8 @@ const AudioSettings: FC = () => {
                           </Text>
                           <Pressable
                             onPress={() => handleDeletePack(item.reciterId)}
+                            accessibilityRole="button"
+                            accessibilityLabel={t("common.delete")}
                             width={36}
                             height={36}
                             borderRadius={18}
@@ -439,7 +446,9 @@ const AudioSettings: FC = () => {
             flexDirection="row"
             alignItems="center"
             justifyContent="center"
-            onPress={() => setReportModalOpen(true)}>
+            onPress={() => setReportModalOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.athkarAudio.reportProblem")}>
             <Icon as={MessageSquareWarning} size="sm" color="$typographySecondary" />
             <Text size="sm" color="$typographySecondary" marginStart="$2">
               {t("settings.athkarAudio.reportProblem")}

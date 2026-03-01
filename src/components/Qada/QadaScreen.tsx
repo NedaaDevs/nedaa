@@ -243,7 +243,9 @@ const QadaScreen = () => {
                   <Progress
                     value={completionPercentage}
                     size="md"
-                    backgroundColor="$backgroundMuted">
+                    backgroundColor="$backgroundMuted"
+                    accessibilityLabel={t("a11y.qada.progress")}
+                    accessibilityValue={{ min: 0, max: 100, now: completionPercentage }}>
                     <ProgressFilledTrack backgroundColor="$primary" />
                   </Progress>
                   <Text size="sm" textAlign="center" color="$typographySecondary">
@@ -448,6 +450,8 @@ const QadaScreen = () => {
                         onPressOut={stopDecrement}
                         onTouchEnd={stopDecrement}
                         disabled={isLoading}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("a11y.qada.decrement")}
                         width={56}
                         height={56}
                         backgroundColor="$background"
@@ -475,6 +479,8 @@ const QadaScreen = () => {
                         onPressOut={stopIncrement}
                         onTouchEnd={stopIncrement}
                         disabled={isLoading}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("a11y.qada.increment")}
                         width={56}
                         height={56}
                         backgroundColor="$primary"
@@ -494,6 +500,7 @@ const QadaScreen = () => {
                       {t("qada.notes")} ({t("common.optional")})
                     </Text>
                     <TextInput
+                      accessibilityLabel={t("qada.notes")}
                       placeholder={t("qada.notesPlaceholder")}
                       value={notes}
                       onChangeText={setNotes}

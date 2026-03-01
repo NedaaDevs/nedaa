@@ -32,7 +32,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const [isExporting, setIsExporting] = useState(false);
+  const [, setIsExporting] = useState(false);
 
   const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
   const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
@@ -94,7 +94,9 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
               minHeight={44}
               paddingHorizontal="$3"
               borderRadius="$6"
-              onPress={handleEmail}>
+              onPress={handleEmail}
+              accessibilityRole="button"
+              accessibilityLabel={t("alarm.report.email")}>
               <HStack alignItems="center" width="100%" gap="$3">
                 <Icon as={MailIcon} size="xl" color="$primary" />
                 <Text size="md" color="$typography">
@@ -108,7 +110,9 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
                 minHeight={44}
                 paddingHorizontal="$3"
                 borderRadius="$6"
-                onPress={handleWhatsApp}>
+                onPress={handleWhatsApp}
+                accessibilityRole="button"
+                accessibilityLabel={t("alarm.report.whatsapp")}>
                 <HStack alignItems="center" width="100%" gap="$3">
                   <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
                   <Text size="md" color="$typography">
@@ -123,7 +127,9 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
                 minHeight={44}
                 paddingHorizontal="$3"
                 borderRadius="$6"
-                onPress={handleTelegram}>
+                onPress={handleTelegram}
+                accessibilityRole="button"
+                accessibilityLabel={t("alarm.report.telegram")}>
                 <HStack alignItems="center" width="100%" gap="$3">
                   <FontAwesome5 name="telegram-plane" size={24} color={theme.typography.val} />
                   <Text size="md" color="$typography">
@@ -133,7 +139,13 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
               </Pressable>
             )}
 
-            <Pressable minHeight={44} paddingHorizontal="$3" borderRadius="$6" onPress={handleCopy}>
+            <Pressable
+              minHeight={44}
+              paddingHorizontal="$3"
+              borderRadius="$6"
+              onPress={handleCopy}
+              accessibilityRole="button"
+              accessibilityLabel={t("alarm.report.copyToClipboard")}>
               <HStack alignItems="center" width="100%" gap="$3">
                 <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
                 <Text size="md" color="$typography">
@@ -148,7 +160,9 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
             minHeight={44}
             justifyContent="center"
             alignItems="center"
-            onPress={onClose}>
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.cancel")}>
             <Text size="sm" color="$typographySecondary">
               {t("common.cancel")}
             </Text>

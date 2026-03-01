@@ -76,7 +76,10 @@ const Select: React.FC<SelectProps> = ({
         minHeight={44}
         paddingHorizontal="$3"
         justifyContent="center"
-        opacity={disabled ? 0.5 : 1}>
+        opacity={disabled ? 0.5 : 1}
+        accessibilityRole="combobox"
+        accessibilityLabel={selectedLabel ?? placeholder}
+        accessibilityState={{ expanded: open }}>
         <Text color={selectedLabel ? "$typography" : "$typographySecondary"}>
           {selectedLabel ?? placeholder}
         </Text>
@@ -155,7 +158,10 @@ const SelectOption: React.FC<{
     paddingHorizontal="$4"
     paddingVertical="$3"
     backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
-    minHeight={44}>
+    minHeight={44}
+    accessibilityRole="radio"
+    accessibilityState={{ selected: isSelected }}
+    accessibilityLabel={item.label}>
     <Text color="$typography" fontWeight={isSelected ? "600" : "400"}>
       {item.label}
     </Text>

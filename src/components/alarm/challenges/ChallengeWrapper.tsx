@@ -156,7 +156,11 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
               </Badge.Text>
             </Badge>
           </HStack>
-          <Progress value={progress} size="sm">
+          <Progress
+            value={progress}
+            size="sm"
+            accessibilityLabel={t("a11y.alarm.challengeProgress")}
+            accessibilityValue={{ min: 0, max: 100, now: progress }}>
             <ProgressFilledTrack />
           </Progress>
         </VStack>
@@ -164,7 +168,11 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
 
       {graceDuration > 0 && graceState !== "idle" && (
         <VStack gap="$1">
-          <Progress value={graceProgress} size="xs">
+          <Progress
+            value={graceProgress}
+            size="xs"
+            accessibilityLabel={t("a11y.alarm.graceTimer")}
+            accessibilityValue={{ min: 0, max: 100, now: graceProgress }}>
             <ProgressFilledTrack bg={graceColor} />
           </Progress>
           {graceState === "expired" && (

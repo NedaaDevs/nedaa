@@ -45,7 +45,10 @@ const DurationPicker = ({
             backgroundColor={isSelected ? "$primary" : "transparent"}
             alignItems="center"
             justifyContent="center"
-            minHeight={36}>
+            minHeight={36}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: isSelected }}
+            accessibilityLabel={formatNumberToLocale(t(labelKey, { count: option }))}>
             <Text
               size="sm"
               color={isSelected ? "$typographyContrast" : "$typography"}

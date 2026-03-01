@@ -140,7 +140,9 @@ const HijriSettings = () => {
           padding="$4"
           borderRadius="$4"
           flexDirection="row"
-          alignItems="center">
+          alignItems="center"
+          accessibilityRole="button"
+          accessibilityLabel={t("settings.hijri.date.selectAdjustment")}>
           <HStack justifyContent="space-between" alignItems="center" width="100%">
             <VStack>
               <Text size="sm" color="$typographySecondary" marginBottom="$1">

@@ -158,7 +158,9 @@ const MailClientsList = ({ onClose }: Props) => {
                 paddingVertical="$4"
                 paddingHorizontal="$3"
                 flexDirection="row"
-                alignItems="center">
+                alignItems="center"
+                accessibilityRole="button"
+                accessibilityLabel={item.title}>
                 <HStack alignItems="center" width="100%" gap="$4">
                   {renderClientIcon(item.icon)}
                   <Text size="lg" fontWeight="500" color="$typography">
@@ -189,7 +191,8 @@ const MailClientsList = ({ onClose }: Props) => {
           justifyContent="center"
           backgroundColor="$backgroundMuted"
           borderRadius="$4"
-          accessibilityRole="button">
+          accessibilityRole="button"
+          accessibilityLabel={t("common.cancel")}>
           <Text color="$typography" fontWeight="500">
             {t("cancel")}
           </Text>

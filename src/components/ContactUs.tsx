@@ -121,7 +121,9 @@ const ContactUs = () => {
                   paddingVertical="$5"
                   paddingHorizontal="$5"
                   flexDirection="row"
-                  alignItems="center">
+                  alignItems="center"
+                  accessibilityRole="button"
+                  accessibilityLabel={item.title}>
                   <HStack alignItems="center" width="100%" gap="$4">
                     {renderIcon(item.icon)}
                     <Text size="xl" fontWeight="600" color="$typography">

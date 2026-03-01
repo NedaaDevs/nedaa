@@ -55,7 +55,7 @@ const Compass = () => {
       <TopBar title="compass.title" />
       <Center flex={1} paddingHorizontal="$6">
         <Box alignItems="center">
-          <Box backgroundColor="$background" borderRadius={999} padding="$1">
+          <Box backgroundColor="$background" borderRadius={999} padding="$1" accessible={false}>
             <Svg width={compassSize} height={compassSize} fill={colors.background}>
               {/* Fixed reference line at top - doesn't rotate */}
               <Line
@@ -251,7 +251,11 @@ const Compass = () => {
 
           {/* Compass Information Card */}
           <Box marginTop="$6" width="100%" maxWidth={384}>
-            <Box padding="$4" borderRadius="$6" backgroundColor="$backgroundSecondary">
+            <Box
+              padding="$4"
+              borderRadius="$6"
+              backgroundColor="$backgroundSecondary"
+              accessibilityLiveRegion="polite">
               {!isAvailable ? (
                 <Text color="$error" textAlign="center" fontWeight="500">
                   {t("compass.notAvailable")}

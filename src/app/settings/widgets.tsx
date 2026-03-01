@@ -137,7 +137,12 @@ const WidgetCard = ({
       borderWidth={1}
       borderColor="$outline">
       {/* Header row - tappable */}
-      <Pressable onPress={toggleExpand} padding="$4">
+      <Pressable
+        onPress={toggleExpand}
+        padding="$4"
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        accessibilityLabel={t(widget.nameKey)}>
         <HStack alignItems="center">
           <Box
             width={40}
@@ -240,7 +245,9 @@ const WidgetSettings = () => {
               borderRadius="$7"
               borderWidth={1}
               borderColor="$warning"
-              backgroundColor="$warningSubtle">
+              backgroundColor="$warningSubtle"
+              accessibilityRole="button"
+              accessibilityLabel={t("settings.widgets.batteryOptTitle")}>
               <HStack gap="$3" alignItems="flex-start">
                 <Icon as={BatteryWarning} size="md" color="$warning" style={{ marginTop: 2 }} />
                 <VStack flex={1} gap="$1">
