@@ -115,7 +115,13 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
       <Box
         padding="$6"
         borderRadius="$6"
-        backgroundColor={isWrong ? "$backgroundError" : "$backgroundMuted"}>
+        backgroundColor={isWrong ? "$backgroundError" : "$backgroundMuted"}
+        accessibilityLabel={t("a11y.alarm.mathProblem", {
+          num1: problem.num1,
+          operation: operationSymbol,
+          num2: problem.num2,
+        })}
+        accessibilityLiveRegion="polite">
         <Text size="4xl" bold color="$typography" textAlign="center">
           {problem.num1} {operationSymbol} {problem.num2} = ?
         </Text>
@@ -130,6 +136,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
         keyboardType="numeric"
         placeholder={t("alarm.challenge.enterAnswer")}
         placeholderTextColor={theme.placeholderColor.val}
+        accessibilityLabel={t("alarm.challenge.enterAnswer")}
         autoFocus
         style={{
           width: "100%",
@@ -151,7 +158,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
       </Button>
 
       {isWrong && (
-        <Text color="$error" size="sm">
+        <Text color="$error" size="sm" accessibilityLiveRegion="assertive">
           {t("alarm.challenge.wrongAnswer")}
         </Text>
       )}

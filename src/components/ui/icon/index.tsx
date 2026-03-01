@@ -20,10 +20,14 @@ type IconProps = {
   color?: string;
   strokeWidth?: number;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 };
 
 const Icon = React.forwardRef<any, IconProps>(
-  ({ as: IconComponent, size = "md", color, strokeWidth, style, ...props }, _ref) => {
+  (
+    { as: IconComponent, size = "md", color, strokeWidth, style, accessibilityLabel, ...props },
+    _ref
+  ) => {
     const theme = useTheme();
 
     const resolvedSize = typeof size === "number" ? size : (SIZE_MAP[size] ?? 18);
@@ -34,6 +38,12 @@ const Icon = React.forwardRef<any, IconProps>(
         : color
       : theme.typography.val;
 
+    const isDecorative = !accessibilityLabel;
+
+    const a11yProps = isDecorative
+      ? { accessibilityElementsHidden: true, importantForAccessibility: "no" as const }
+      : { accessibilityLabel, accessibilityRole: "image" as const };
+
     const icon = (
       <IconComponent
         size={resolvedSize}
@@ -43,11 +53,15 @@ const Icon = React.forwardRef<any, IconProps>(
       />
     );
 
-    if (style) {
-      return <RNView style={style}>{icon}</RNView>;
+    if (style || !isDecorative) {
+      return (
+        <RNView style={style} {...a11yProps}>
+          {icon}
+        </RNView>
+      );
     }
 
-    return icon;
+    return <RNView {...a11yProps}>{icon}</RNView>;
   }
 );
 

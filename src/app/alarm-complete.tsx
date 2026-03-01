@@ -73,7 +73,12 @@ export default function AlarmCompleteScreen() {
             <VStack gap="$4" alignItems="center" width="100%">
               <Icon as={content.icon} size="xl" color={resolvedColor} />
 
-              <Text size="2xl" bold color="$typography" textAlign="center">
+              <Text
+                size="2xl"
+                bold
+                color="$typography"
+                textAlign="center"
+                accessibilityRole="header">
                 {t(content.titleKey)}
               </Text>
 
@@ -91,7 +96,12 @@ export default function AlarmCompleteScreen() {
                 {t("alarm.complete.encouragement")}
               </Text>
 
-              <Button size="lg" width="100%" marginTop="$4" onPress={handleGoHome}>
+              <Button
+                size="lg"
+                width="100%"
+                marginTop="$4"
+                onPress={handleGoHome}
+                accessibilityLabel={t("a11y.goHome")}>
                 <Button.Text>{t("alarm.complete.goHome")}</Button.Text>
               </Button>
             </VStack>

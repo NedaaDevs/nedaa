@@ -41,7 +41,12 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
 
   return (
     <VStack gap="$4" alignItems="center" width="100%">
-      <Text size="5xl" bold color="$typography">
+      <Text
+        size="5xl"
+        bold
+        color="$typography"
+        accessibilityLabel={t("a11y.alarm.tapsRemaining", { count: remainingTaps })}
+        accessibilityLiveRegion="polite">
         {remainingTaps}
       </Text>
       <Text size="sm" color="$typographySecondary">

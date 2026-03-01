@@ -1,5 +1,6 @@
 // Plugins
 import { Link } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
@@ -27,13 +28,20 @@ type Props = {
 
 const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
   const { isRTL } = useRTL();
+  const { t } = useTranslation();
   const effectiveRTL = rtl !== undefined ? rtl : isRTL;
   const ChevronIcon = effectiveRTL ? ChevronLeft : ChevronRight;
+
+  const a11yLabel = currentValue ? t("a11y.settingsItem", { name, value: currentValue }) : name;
 
   return (
     <Box margin="$2" padding="$5" borderRadius="$4" backgroundColor="$backgroundSecondary">
       <Link href={path} asChild>
-        <Pressable flexDirection="row" alignItems="center">
+        <Pressable
+          flexDirection="row"
+          alignItems="center"
+          accessibilityLabel={a11yLabel}
+          accessibilityHint={t("a11y.settingsItemNav", { name })}>
           <HStack
             justifyContent="space-between"
             alignItems="center"
