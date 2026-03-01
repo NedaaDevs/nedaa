@@ -32,6 +32,7 @@ import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 import TrackPlayer from "react-native-track-player";
 import { PlaybackService } from "@/services/playback-service";
 import { athkarPlayer } from "@/services/athkar-player";
+import { trackAppSession } from "@/utils/reviewPrompt";
 
 TrackPlayer.registerPlaybackService(() => PlaybackService);
 
@@ -108,6 +109,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     athkarPlayer.initialize();
+    trackAppSession();
   }, []);
 
   useEffect(() => {

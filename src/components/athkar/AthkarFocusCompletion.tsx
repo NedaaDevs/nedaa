@@ -1,6 +1,10 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
+
+// Utils
+import { promptReviewIfEligible } from "@/utils/reviewPrompt";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -34,6 +38,10 @@ export const AthkarFocusCompletion = ({
 }: AthkarFocusCompletionProps) => {
   const { t } = useTranslation();
   const router = useRouter();
+
+  useEffect(() => {
+    promptReviewIfEligible();
+  }, []);
 
   const handleFinish = () => {
     router.back();
