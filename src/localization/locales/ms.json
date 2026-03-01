@@ -320,6 +320,7 @@
   "compass.directions.W": "B",
   "compass.distance": "Jarak ke Mekah",
   "compass.facingQibla": "Menghadap Kiblat",
+  "compass.km": "km",
   "compass.notAvailable": "Kompas tidak tersedia pada peranti ini",
   "compass.qiblaDirection": "Arah Kiblat",
   "compass.sourceLocation": "Menggunakan hala tuju peranti",
