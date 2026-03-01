@@ -81,6 +81,27 @@ export const angleDifference = (angle1: number, angle2: number): number => {
   return diff;
 };
 
+export type QiblaProximityState = "searching" | "approaching" | "aligned";
+
+const ALIGNED_THRESHOLD = 5;
+const APPROACHING_THRESHOLD = 15;
+
+export const getQiblaProximityState = (
+  heading: number,
+  qiblaDirection: number
+): QiblaProximityState => {
+  const diff = Math.abs(angleDifference(heading, qiblaDirection));
+  if (diff <= ALIGNED_THRESHOLD) return "aligned";
+  if (diff <= APPROACHING_THRESHOLD) return "approaching";
+  return "searching";
+};
+
+export const formatDistanceToMecca = (latitude: number, longitude: number): string => {
+  const distance = calculateDistanceToMecca(latitude, longitude);
+  const rounded = Math.round(distance);
+  return `${rounded.toLocaleString()} km`;
+};
+
 // Helper functions
 const toRadians = (degrees: number): number => degrees * (Math.PI / 180);
 const toDegrees = (radians: number): number => radians * (180 / Math.PI);
