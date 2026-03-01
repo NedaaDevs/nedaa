@@ -1,12 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as Location from "expo-location";
 import { Magnetometer } from "expo-sensors";
-import type { EventSubscription } from "expo-notifications";
+import { useLocationStore } from "@/stores/location";
 
 export type CompassData = {
   heading: number;
   accuracy: number;
   isAvailable: boolean;
   isActive: boolean;
+  source: "fused" | "magnetometer";
+};
+
+const calculateHeading = (x: number, y: number): number => {
+  const heading = Math.atan2(y, x) * (180 / Math.PI);
+  return (270 + heading + 360) % 360;
+};
+
+const calculateAccuracy = (x: number, y: number, z: number): number => {
+  const magnitude = Math.sqrt(x * x + y * y + z * z);
+  const expectedRange = 50;
+  const accuracy = Math.max(0, 100 - Math.abs(magnitude - expectedRange) * 2);
+  return Math.min(100, accuracy);
+};
+
+const smoothHeading = (newHeading: number, lastHeading: number): number => {
+  let diff = newHeading - lastHeading;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  if (Math.abs(diff) < 0.5) return lastHeading;
+  const alpha = 0.4;
+  let smoothed = lastHeading + alpha * diff;
+  if (smoothed < 0) smoothed += 360;
+  if (smoothed >= 360) smoothed -= 360;
+  return smoothed;
 };
 
 export const useCompass = () => {
@@ -15,111 +41,90 @@ export const useCompass = () => {
     accuracy: 0,
     isAvailable: false,
     isActive: false,
+    source: "magnetometer",
   });
 
-  const [subscription, setSubscription] = useState<EventSubscription | null>(null);
+  const isLocationPermissionGranted = useLocationStore((s) => s.isLocationPermissionGranted);
+  const subscriptionRef = useRef<{ remove: () => void } | null>(null);
+  const lastSmoothedHeadingRef = useRef(0);
 
-  // Calculate heading from magnetometer data
-  const calculateHeading = (x: number, y: number, _: number): number => {
-    // Calculate heading (0-360 degrees)
-    const heading = Math.atan2(y, x) * (180 / Math.PI);
-
-    return (270 + heading + 360) % 360;
-  };
-
-  // Calculate accuracy based on magnetic field strength
-  const calculateAccuracy = (x: number, y: number, z: number): number => {
-    const magnitude = Math.sqrt(x * x + y * y + z * z);
-    // Typical Earth's magnetic field is around 25-65 microteslas
-    // Higher accuracy when closer to expected range
-    const expectedRange = 50;
-    const accuracy = Math.max(0, 100 - Math.abs(magnitude - expectedRange) * 2);
-    return Math.min(100, accuracy);
-  };
-
-  // Smooth heading to reduce jitter
-  const smoothHeading = (newHeading: number, lastHeading: number): number => {
-    // Handle 0/360 degree boundary
-    let diff = newHeading - lastHeading;
-    if (diff > 180) diff -= 360;
-    if (diff < -180) diff += 360;
-
-    if (Math.abs(diff) < 0.5) {
-      return lastHeading; // No significant change
-    }
-
-    // Less alpha means smoother but slower response
-    const alpha = 0.4;
-    let smoothed = lastHeading + alpha * diff;
-
-    // Normalize to 0-360
-    if (smoothed < 0) smoothed += 360;
-    if (smoothed >= 360) smoothed -= 360;
-
-    return smoothed;
-  };
-
-  const startCompass = async () => {
-    try {
-      const isAvailable = await Magnetometer.isAvailableAsync();
-
-      if (!isAvailable) {
-        setCompassData((prev) => ({ ...prev, isAvailable: false }));
-        return;
-      }
-
-      // Set update interval to 100ms for smooth compass movement
-      Magnetometer.setUpdateInterval(100);
-      let lastSmoothedHeading = 0;
-
-      const newSubscription = Magnetometer.addListener(({ x, y, z }) => {
-        const rawHeading = calculateHeading(x, y, z);
-        const accuracy = calculateAccuracy(x, y, z);
-
-        // Apply smoothing to reduce jitter
-        const smoothedHeading = smoothHeading(rawHeading, lastSmoothedHeading);
-        lastSmoothedHeading = smoothedHeading;
-
-        setCompassData({
-          heading: smoothedHeading,
-          accuracy,
-          isAvailable: true,
-          isActive: true,
-        });
-      });
-
-      setSubscription(newSubscription);
-    } catch (error) {
-      console.error("Error starting compass:", error);
-      setCompassData((prev) => ({
-        ...prev,
-        isAvailable: false,
-        isActive: false,
-      }));
-    }
-  };
-
-  const stopCompass = () => {
-    if (subscription) {
-      subscription.remove();
-      setSubscription(null);
-      setCompassData((prev) => ({ ...prev, isActive: false }));
-    }
-  };
-
-  // Auto-start compass when hook is mounted
   useEffect(() => {
-    startCompass();
+    let cancelled = false;
+
+    const startFusedHeading = async () => {
+      try {
+        const sub = await Location.watchHeadingAsync((headingData) => {
+          if (cancelled) return;
+          const heading =
+            headingData.trueHeading >= 0 ? headingData.trueHeading : headingData.magHeading;
+          const accuracy = Math.min(100, Math.max(0, headingData.accuracy ?? 50));
+
+          setCompassData({
+            heading,
+            accuracy,
+            isAvailable: true,
+            isActive: true,
+            source: "fused",
+          });
+        });
+        if (!cancelled) {
+          subscriptionRef.current = sub;
+        } else {
+          sub.remove();
+        }
+      } catch {
+        if (!cancelled) startMagnetometer();
+      }
+    };
+
+    const startMagnetometer = async () => {
+      try {
+        const isAvailable = await Magnetometer.isAvailableAsync();
+        if (!isAvailable || cancelled) {
+          if (!cancelled) setCompassData((prev) => ({ ...prev, isAvailable: false }));
+          return;
+        }
+
+        Magnetometer.setUpdateInterval(100);
+
+        const sub = Magnetometer.addListener(({ x, y, z }) => {
+          if (cancelled) return;
+          const rawHeading = calculateHeading(x, y);
+          const accuracy = calculateAccuracy(x, y, z);
+          const smoothedHeading = smoothHeading(rawHeading, lastSmoothedHeadingRef.current);
+          lastSmoothedHeadingRef.current = smoothedHeading;
+
+          setCompassData({
+            heading: smoothedHeading,
+            accuracy,
+            isAvailable: true,
+            isActive: true,
+            source: "magnetometer",
+          });
+        });
+        if (!cancelled) {
+          subscriptionRef.current = sub;
+        } else {
+          sub.remove();
+        }
+      } catch {
+        if (!cancelled)
+          setCompassData((prev) => ({ ...prev, isAvailable: false, isActive: false }));
+      }
+    };
+
+    if (isLocationPermissionGranted) {
+      startFusedHeading();
+    } else {
+      startMagnetometer();
+    }
 
     return () => {
-      stopCompass();
+      cancelled = true;
+      subscriptionRef.current?.remove();
+      subscriptionRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLocationPermissionGranted]);
 
-  return {
-    ...compassData,
-    startCompass,
-    stopCompass,
-  };
+  return compassData;
 };
