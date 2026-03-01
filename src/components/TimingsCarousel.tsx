@@ -1,18 +1,22 @@
 import * as React from "react";
-import PagerView from "react-native-pager-view";
+import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { Pressable } from "@/components/ui/pressable";
 import { Divider } from "@/components/ui/divider";
 import PrayerTimes from "@/components/PrayerTimesList";
 import OtherTimes from "@/components/OtherTimingsList";
-import CustomPagination from "@/components/CustomPagination";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
 import { AppMode } from "@/enums/app";
 
-const data = [PrayerTimes, OtherTimes];
+const tabs = [
+  { key: "prayer-times", labelKey: "prayerTimes.title" },
+  { key: "other-timings", labelKey: "otherTimings.title" },
+];
 
 type Props = {
   mode: AppMode;
@@ -20,46 +24,50 @@ type Props = {
 
 const TimingsCarousel = (props: Props) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const pagerRef = React.useRef<PagerView>(null);
   const selectionHaptic = useHaptic("selection");
+  const { t } = useTranslation();
 
   const handleTabPress = async (index: number) => {
+    if (index === currentIndex) return;
     await selectionHaptic();
-    pagerRef.current?.setPage(index);
     setCurrentIndex(index);
-  };
-
-  const handlePageSelected = async (event: any) => {
-    const newIndex = event.nativeEvent.position;
-    if (newIndex !== currentIndex) {
-      await selectionHaptic();
-      setCurrentIndex(newIndex);
-    }
   };
 
   return (
     <Box flex={1} flexDirection="column">
-      <Divider marginBottom="$2" />
-
-      <PagerView
-        ref={pagerRef}
-        style={{ flex: 1 }}
-        initialPage={0}
-        onPageSelected={handlePageSelected}
-        scrollEnabled={true}
-        overdrag={true}>
-        <Box key="prayer-times" flex={1}>
-          <PrayerTimes />
-        </Box>
-
-        <Box key="other-timings" flex={1}>
-          <OtherTimes />
-        </Box>
-      </PagerView>
-
-      <Box position="absolute" bottom={0} left={0} right={0} backgroundColor="$backgroundSecondary">
-        <CustomPagination data={data} onPress={handleTabPress} currentIndex={currentIndex} />
+      {/* Underline Tabs */}
+      <Box flexDirection="row" justifyContent="center" gap="$6">
+        {tabs.map((tab, index) => {
+          const isActive = currentIndex === index;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => handleTabPress(index)}
+              paddingVertical="$2"
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}>
+              <Text
+                size="md"
+                fontWeight={isActive ? "700" : "400"}
+                color={isActive ? "$typography" : "$typographySecondary"}>
+                {t(tab.labelKey)}
+              </Text>
+              {isActive && (
+                <Box
+                  height={2}
+                  marginTop="$1"
+                  borderRadius={999}
+                  backgroundColor="$accentPrimary"
+                />
+              )}
+            </Pressable>
+          );
+        })}
       </Box>
+
+      <Divider marginTop="$1" />
+
+      <Box flex={1}>{currentIndex === 0 ? <PrayerTimes /> : <OtherTimes />}</Box>
     </Box>
   );
 };

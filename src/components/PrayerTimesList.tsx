@@ -51,7 +51,7 @@ const PrayerTimesList = () => {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingBottom: 100,
+          paddingBottom: 16,
           paddingTop: 10,
         }}
         showsVerticalScrollIndicator={false}>
@@ -89,7 +89,7 @@ const PrayerTimesList = () => {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingBottom: 100,
+          paddingBottom: 16,
           paddingTop: 10,
         }}
         scrollEventThrottle={16}
