@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { useTranslation } from "react-i18next";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -20,6 +21,7 @@ import { useTheme } from "tamagui";
 
 const TabsLayout = () => {
   const { locale, mode } = useAppStore();
+  const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -47,7 +49,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="index"
         options={{
-          title: "",
+          title: t("a11y.tab.home"),
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
@@ -55,7 +57,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="athkar"
         options={{
-          title: "",
+          title: t("a11y.tab.athkar"),
           href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
           tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
         }}
@@ -64,7 +66,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="compass"
         options={{
-          title: "",
+          title: t("a11y.tab.compass"),
           tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
         }}
       />
@@ -72,7 +74,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="qada"
         options={{
-          title: "",
+          title: t("a11y.tab.qada"),
           tabBarIcon: ({ color, size }) => <CalendarCheck color={color} size={size} />,
         }}
       />
@@ -80,7 +82,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "",
+          title: t("a11y.tab.settings"),
           tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
         }}
       />

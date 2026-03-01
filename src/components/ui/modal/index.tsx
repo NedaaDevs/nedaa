@@ -2,6 +2,7 @@ import React from "react";
 import { styled, View, XStack, YStack, Dialog } from "tamagui";
 import type { GetProps } from "tamagui";
 import { ScrollView } from "react-native";
+import { useTranslation } from "react-i18next";
 
 // --- Modal size context ---
 
@@ -118,11 +119,12 @@ type ModalCloseButtonProps = {
 };
 
 const ModalCloseButton: React.FC<ModalCloseButtonProps> = ({ children, onPress, style }) => {
+  const { t } = useTranslation();
   return (
     <Dialog.Close asChild>
       <View
         role="button"
-        accessibilityLabel="Close"
+        accessibilityLabel={t("common.close")}
         position="absolute"
         top="$2"
         end={8}

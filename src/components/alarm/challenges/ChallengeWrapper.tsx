@@ -168,7 +168,7 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
             <ProgressFilledTrack bg={graceColor} />
           </Progress>
           {graceState === "expired" && (
-            <Text size="xs" color="$error" textAlign="center">
+            <Text size="xs" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
               {t("alarm.grace.expired")}
             </Text>
           )}

@@ -109,11 +109,18 @@ function SnoozedView({
     <VStack gap="$4" alignItems="center" width="100%">
       <Icon as={Clock} size="xl" color="$info" />
 
-      <Text size="2xl" bold color="$typography">
+      <Text size="2xl" bold color="$typography" accessibilityRole="header">
         {t("alarm.snoozed")}
       </Text>
 
-      <Text size="4xl" bold color="$info">
+      <Text
+        size="4xl"
+        bold
+        color="$info"
+        accessibilityLabel={t("a11y.alarm.countdown", {
+          time: formatTimeRemaining(snoozeTimeRemaining),
+        })}
+        accessibilityLiveRegion="polite">
         {formatTimeRemaining(snoozeTimeRemaining)}
       </Text>
       <Text size="sm" color="$typographySecondary">
@@ -164,7 +171,7 @@ function ActiveAlarmView({
     <VStack gap="$4" alignItems="center" width="100%">
       <Icon as={icon} size="xl" color={resolvedColor} />
 
-      <Text size="2xl" bold color="$typography">
+      <Text size="2xl" bold color="$typography" accessibilityRole="header">
         {title}
       </Text>
 
@@ -192,7 +199,8 @@ function ActiveAlarmView({
           action="default"
           width="100%"
           marginTop="$2"
-          onPress={onSnooze}>
+          onPress={onSnooze}
+          accessibilityLabel={t("a11y.alarm.snoozeButton", { count: remainingSnoozes })}>
           <HStack gap="$2" alignItems="center">
             <Icon as={Clock} size="sm" color="$typographySecondary" />
             <Button.Text color="$typographySecondary">
