@@ -11,7 +11,12 @@ type PaginationProps = {
 
 const CustomPagination: FC<PaginationProps> = ({ data, onPress, currentIndex }) => {
   return (
-    <Box flexDirection="row" justifyContent="center" gap="$2" paddingVertical="$1.5">
+    <Box
+      flexDirection="row"
+      justifyContent="center"
+      alignItems="center"
+      gap="$2"
+      paddingVertical="$3">
       {data.map((_, index) => (
         <Pressable
           key={index}
@@ -19,8 +24,8 @@ const CustomPagination: FC<PaginationProps> = ({ data, onPress, currentIndex }) 
           hitSlop={12}
           accessibilityRole="button">
           <Box
-            width={20}
-            height={2}
+            width={currentIndex === index ? 24 : 8}
+            height={6}
             backgroundColor={currentIndex === index ? "$accentPrimary" : "$outline"}
             borderRadius={999}
           />
