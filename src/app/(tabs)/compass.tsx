@@ -1,6 +1,15 @@
+import { useState, useEffect, useRef, useMemo } from "react";
+import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  FadeInDown,
+  FadeOutDown,
+} from "react-native-reanimated";
+import { Svg, Circle, Line, Text as SvgText, G, Rect } from "react-native-svg";
 
-// Components
 import { Background } from "@/components/ui/background";
 import { Center } from "@/components/ui/center";
 import { Box } from "@/components/ui/box";
@@ -9,18 +18,41 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import TopBar from "@/components/TopBar";
 
-// Icons
-import { Svg, Circle, Line, Text as SvgText, G } from "react-native-svg";
-
-// Stores
 import { useLocationStore } from "@/stores/location";
-
-// Hooks
 import { useCompass } from "@/hooks/useCompass";
+import { useHaptic } from "@/hooks/useHaptic";
 import { useTheme } from "tamagui";
-// Utils
-import { calculateQiblaDirection, getTranslatedCompassDirection } from "@/utils/compass";
+import {
+  calculateQiblaDirection,
+  getTranslatedCompassDirection,
+  getQiblaProximityState,
+  formatDistanceToMecca,
+  type QiblaProximityState,
+} from "@/utils/compass";
 import { reshapeArabic } from "@/utils/reshaper";
+import { formatNumberToLocale } from "@/utils/number";
+
+const compassSize = 300;
+const centerX = compassSize / 2;
+const centerY = compassSize / 2;
+const radius = 110;
+const letterDistance = radius - 20;
+
+const tickMarks = Array.from({ length: 36 }, (_, i) => {
+  const angleDeg = i * 10;
+  const angleRad = angleDeg * (Math.PI / 180);
+  const isLong = i % 3 === 0;
+  const outerR = radius;
+  const innerR = radius - (isLong ? 12 : 6);
+  return {
+    key: `tick-${i}`,
+    x1: centerX + Math.sin(angleRad) * innerR,
+    y1: centerY - Math.cos(angleRad) * innerR,
+    x2: centerX + Math.sin(angleRad) * outerR,
+    y2: centerY - Math.cos(angleRad) * outerR,
+    strokeWidth: isLong ? 2 : 1,
+  };
+});
 
 const Compass = () => {
   const { heading, accuracy, isAvailable, isActive } = useCompass();
@@ -28,270 +60,282 @@ const Compass = () => {
   const theme = useTheme();
   const { t } = useTranslation();
 
-  const compassSize = 300;
-  const centerX = compassSize / 2;
-  const centerY = compassSize / 2;
-  const radius = (compassSize - 80) / 2;
-  const letterDistance = radius - 15;
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
 
-  const colors = {
-    primary: theme.primary.val,
-    secondary: theme.typographySecondary.val,
-    text: theme.typography.val,
-    background: theme.backgroundSecondary.val,
-    north: theme.error.val,
-  };
+  const colors = useMemo(
+    () => ({
+      primary: theme.primary.val,
+      secondary: theme.typographySecondary.val,
+      text: theme.typography.val,
+      background: theme.backgroundSecondary.val,
+      contrast: theme.typographyContrast.val,
+      north: theme.error.val,
+    }),
+    [theme]
+  );
 
-  // Calculate Qibla direction if location is available
   const qiblaDirection = locationDetails.coords
     ? calculateQiblaDirection(locationDetails.coords.latitude, locationDetails.coords.longitude)
     : null;
 
-  // Calculate the angle for the compass needle (convert heading to SVG rotation)
-  const needleRotation = -heading; // Negative because we want compass to rotate opposite to device
+  const proximityState: QiblaProximityState =
+    qiblaDirection !== null && isActive
+      ? getQiblaProximityState(heading, qiblaDirection)
+      : "searching";
+
+  const distanceText = locationDetails.coords
+    ? formatDistanceToMecca(locationDetails.coords.latitude, locationDetails.coords.longitude)
+    : null;
+
+  // Reanimated shared values
+  const rotationValue = useSharedValue(0);
+
+  useEffect(() => {
+    rotationValue.value = withTiming(-heading, { duration: reduceMotion ? 0 : 150 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heading, reduceMotion]);
+
+  const compassRotationStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotationValue.value}deg` }],
+  }));
+
+  // Qibla dot radius scales with proximity state
+  const qiblaDotRadius =
+    proximityState === "aligned" ? 18 : proximityState === "approaching" ? 16 : 14;
+
+  // Haptic feedback on state transitions
+  const hapticMedium = useHaptic("medium");
+  const hapticLight = useHaptic("light");
+  const prevProximityRef = useRef<QiblaProximityState>("searching");
+  const lastHapticTimeRef = useRef(0);
+
+  useEffect(() => {
+    const prev = prevProximityRef.current;
+    prevProximityRef.current = proximityState;
+
+    const now = Date.now();
+    if (now - lastHapticTimeRef.current < 500) return;
+
+    if (proximityState === "aligned" && prev !== "aligned") {
+      hapticMedium();
+      lastHapticTimeRef.current = now;
+    } else if (prev === "aligned" && proximityState !== "aligned") {
+      hapticLight();
+      lastHapticTimeRef.current = now;
+    }
+  }, [proximityState, hapticMedium, hapticLight]);
+
+  // Ring color based on proximity state
+  const ringColor =
+    proximityState === "aligned"
+      ? colors.primary
+      : proximityState === "approaching"
+        ? colors.primary
+        : colors.secondary;
+
+  const ringOpacity = proximityState === "approaching" ? 0.6 : 1;
+
+  // Qibla indicator position on the ring
+  const qiblaX =
+    qiblaDirection !== null
+      ? centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 15)
+      : 0;
+  const qiblaY =
+    qiblaDirection !== null
+      ? centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 15)
+      : 0;
+
+  // Cardinal direction positions
+  const cardinals = useMemo(() => {
+    return [
+      {
+        key: "N",
+        x: centerX,
+        y: centerY - letterDistance,
+        anchor: "middle" as const,
+        color: colors.north,
+        fontSize: 18,
+      },
+      {
+        key: "S",
+        x: centerX,
+        y: centerY + letterDistance,
+        anchor: "middle" as const,
+        color: colors.secondary,
+        fontSize: 16,
+      },
+      {
+        key: "E",
+        x: centerX + letterDistance + 5,
+        y: centerY + 5,
+        anchor: "end" as const,
+        color: colors.secondary,
+        fontSize: 16,
+      },
+      {
+        key: "W",
+        x: centerX - letterDistance - 5,
+        y: centerY + 5,
+        anchor: "start" as const,
+        color: colors.secondary,
+        fontSize: 16,
+      },
+    ];
+  }, [colors.north, colors.secondary]);
+
+  const headingRounded = Math.round(heading);
+  const headingText = formatNumberToLocale(`${headingRounded}`);
+  const cardinalText = isActive ? getTranslatedCompassDirection(heading, t) : "";
+  const headingColor = proximityState === "aligned" ? "$primary" : "$typography";
+
+  const isAligned = proximityState === "aligned";
+  const lowAccuracy = accuracy < 50;
 
   return (
     <Background>
       <TopBar title="compass.title" />
+
       <Center flex={1} paddingHorizontal="$6">
-        <Box alignItems="center">
-          <Box backgroundColor="$background" borderRadius={999} padding="$1" accessible={false}>
-            <Svg width={compassSize} height={compassSize} fill={colors.background}>
-              {/* Fixed reference line at top - doesn't rotate */}
-              <Line
-                x1={centerX}
-                y1={0}
-                x2={centerX}
-                y2={20}
-                stroke={colors.primary}
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
+        {!isAvailable ? (
+          <Text color="$error" textAlign="center" fontWeight="500">
+            {t("compass.notAvailable")}
+          </Text>
+        ) : !isActive ? (
+          <Text color="$typographySecondary" textAlign="center">
+            {t("compass.starting")}
+          </Text>
+        ) : (
+          <VStack alignItems="center" gap="$4" width="100%">
+            {/* Heading number */}
+            <VStack alignItems="center" gap="$1">
+              <Text
+                color={headingColor}
+                size="4xl"
+                bold
+                accessibilityLabel={`${headingRounded} ${t("compass.currentDirection")}`}>
+                {headingText}°
+              </Text>
+              <Text color="$typographySecondary" size="md">
+                {cardinalText}
+              </Text>
+            </VStack>
 
-              {/* Rotating compass elements */}
-              <G rotation={needleRotation} origin={`${centerX}, ${centerY}`}>
-                {/* Outer circle */}
-                <Circle
-                  cx={centerX}
-                  cy={centerY}
-                  r={radius}
-                  stroke={colors.primary}
-                  strokeWidth="3"
-                  fill={colors.background}
-                />
+            {/* Compass visual */}
+            <Box alignItems="center" justifyContent="center">
+              {/* Fixed reference notch at top */}
+              <Box position="absolute" top={0} zIndex={10} alignItems="center">
+                <Svg width={20} height={14}>
+                  <Line
+                    x1={10}
+                    y1={0}
+                    x2={10}
+                    y2={14}
+                    stroke={colors.primary}
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </Box>
 
-                {/* Cardinal directions */}
-                <G>
-                  {/* North */}
-                  <SvgText
-                    x={centerX}
-                    y={centerY - letterDistance}
-                    textAnchor="middle"
-                    alignmentBaseline="middle"
-                    fontSize="18"
-                    fontWeight="bolder"
-                    fontFamily="IBMPlexSans-Regular"
-                    fill={colors.north}>
-                    {reshapeArabic(t("compass.directions.N"))}
-                  </SvgText>
+              {/* Rotating compass */}
+              <Animated.View style={[compassRotationStyle, { marginTop: 14 }]}>
+                <Svg width={compassSize} height={compassSize}>
+                  {/* Outer ring */}
+                  <Circle
+                    cx={centerX}
+                    cy={centerY}
+                    r={radius}
+                    stroke={ringColor}
+                    strokeWidth={2}
+                    fill="none"
+                    opacity={ringOpacity}
+                  />
 
-                  {/* South */}
-                  <SvgText
-                    x={centerX}
-                    y={centerY + letterDistance}
-                    fontWeight="bolder"
-                    textAnchor="middle"
-                    alignmentBaseline="middle"
-                    fontSize="16"
-                    fill={colors.secondary}>
-                    {reshapeArabic(t("compass.directions.S"))}
-                  </SvgText>
-
-                  {/* East */}
-                  <SvgText
-                    x={centerX + letterDistance + 5}
-                    y={centerY + 5}
-                    fontWeight="bolder"
-                    textAnchor="end"
-                    alignmentBaseline="middle"
-                    fontSize="16"
-                    fill={colors.secondary}>
-                    {reshapeArabic(t("compass.directions.E"))}
-                  </SvgText>
-
-                  {/* West */}
-                  <SvgText
-                    x={centerX - letterDistance - 5}
-                    y={centerY + 5}
-                    fontWeight="bolder"
-                    alignmentBaseline="middle"
-                    textAnchor="start"
-                    fontSize="16"
-                    fill={colors.secondary}>
-                    {reshapeArabic(t("compass.directions.W"))}
-                  </SvgText>
-                </G>
-
-                {/* Degree markings */}
-                <G>
-                  {Array.from({ length: 36 }, (_, i) => {
-                    const angle = i * 10 * (Math.PI / 180);
-                    const x1 = centerX + Math.sin(angle) * radius;
-                    const y1 = centerY - Math.cos(angle) * radius;
-                    const x2 = centerX + Math.sin(angle) * (radius + (i % 3 === 0 ? 10 : 5));
-                    const y2 = centerY - Math.cos(angle) * (radius + (i % 3 === 0 ? 10 : 5));
-
-                    return (
-                      <Line
-                        key={`mark-${i}`}
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
-                        stroke={colors.secondary}
-                        strokeWidth={i % 3 === 0 ? "2" : "1"}
-                      />
-                    );
-                  })}
-                </G>
-
-                {/* Kaaba symbol - positioned at edge of compass */}
-                {qiblaDirection !== null && (
-                  <G>
-                    {/* Circle background */}
-                    <Circle
-                      cx={centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20)}
-                      cy={centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20)}
-                      r="12"
-                      fill={colors.primary}
-                      stroke={theme.typographyContrast.val}
-                      strokeWidth="2"
+                  {/* Tick marks */}
+                  {tickMarks.map((tick) => (
+                    <Line
+                      key={tick.key}
+                      x1={tick.x1}
+                      y1={tick.y1}
+                      x2={tick.x2}
+                      y2={tick.y2}
+                      stroke={colors.secondary}
+                      strokeWidth={tick.strokeWidth}
                     />
+                  ))}
 
-                    {/* White arrow pointing outward */}
-                    <G
-                      rotation={qiblaDirection}
-                      origin={`${centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20)}, ${centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20)}`}>
-                      {/* Arrow shaft */}
-                      <Line
-                        x1={centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20)}
-                        y1={
-                          centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) + 6
-                        }
-                        x2={centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20)}
-                        y2={
-                          centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 6
-                        }
-                        stroke={theme.typographyContrast.val}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      {/* Arrow head */}
-                      <Line
-                        x1={centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20)}
-                        y1={
-                          centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 6
-                        }
-                        x2={
-                          centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20) - 3
-                        }
-                        y2={
-                          centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 3
-                        }
-                        stroke={theme.typographyContrast.val}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <Line
-                        x1={centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20)}
-                        y1={
-                          centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 6
-                        }
-                        x2={
-                          centerX + Math.sin((qiblaDirection * Math.PI) / 180) * (radius + 20) + 3
-                        }
-                        y2={
-                          centerY - Math.cos((qiblaDirection * Math.PI) / 180) * (radius + 20) - 3
-                        }
-                        stroke={theme.typographyContrast.val}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </G>
-                  </G>
-                )}
+                  {/* Cardinal direction letters */}
+                  {cardinals.map((dir) => (
+                    <SvgText
+                      key={dir.key}
+                      x={dir.x}
+                      y={dir.y}
+                      textAnchor={dir.anchor}
+                      alignmentBaseline="middle"
+                      fontSize={dir.fontSize}
+                      fontWeight="bold"
+                      fontFamily="IBMPlexSans-Regular"
+                      fill={dir.color}>
+                      {reshapeArabic(t(`compass.directions.${dir.key}`))}
+                    </SvgText>
+                  ))}
 
-                {/* Compass needle - rotates with device heading */}
-                <G origin={`${centerX}, ${centerY}`}>
-                  {/* North pointer (red) */}
+                  {/* Crosshair center */}
                   <Line
                     x1={centerX}
-                    y1={centerY + 40}
+                    y1={centerY - 20}
                     x2={centerX}
-                    y2={centerY - 40}
+                    y2={centerY + 20}
                     stroke={colors.secondary}
-                    strokeWidth="3"
+                    strokeWidth={1.5}
                     strokeLinecap="round"
+                    opacity={0.4}
                   />
-
-                  {/* South pointer (gray) */}
                   <Line
-                    x1={centerX + 40}
+                    x1={centerX - 20}
                     y1={centerY}
-                    x2={centerX - 40}
+                    x2={centerX + 20}
                     y2={centerY}
                     stroke={colors.secondary}
-                    strokeWidth="3"
+                    strokeWidth={1.5}
                     strokeLinecap="round"
+                    opacity={0.4}
                   />
-                </G>
-              </G>
-            </Svg>
-          </Box>
 
-          {/* Compass Information Card */}
-          <Box marginTop="$6" width="100%" maxWidth={384}>
-            <Box
-              padding="$4"
-              borderRadius="$6"
-              backgroundColor="$backgroundSecondary"
-              accessibilityLiveRegion="polite">
-              {!isAvailable ? (
-                <Text color="$error" textAlign="center" fontWeight="500">
-                  {t("compass.notAvailable")}
-                </Text>
-              ) : !isActive ? (
-                <Text color="$typographySecondary" textAlign="center">
-                  {t("compass.starting")}
-                </Text>
-              ) : (
+                  {/* Qibla indicator */}
+                  {qiblaDirection !== null && (
+                    <G>
+                      <Circle cx={qiblaX} cy={qiblaY} r={qiblaDotRadius} fill={colors.primary} />
+                      <G rotation={45} origin={`${qiblaX}, ${qiblaY}`}>
+                        <Rect x={qiblaX - 6} y={qiblaY - 6} width={12} height={12} fill="white" />
+                      </G>
+                    </G>
+                  )}
+                </Svg>
+              </Animated.View>
+            </Box>
+
+            {/* Info card */}
+            <Box width="100%" maxWidth={384}>
+              <Box
+                padding="$4"
+                borderRadius="$6"
+                backgroundColor="$backgroundSecondary"
+                accessibilityLiveRegion="polite"
+                accessibilityRole="summary">
                 <VStack gap="$3">
-                  {/* Current Direction */}
-                  <HStack justifyContent="space-between" alignItems="center">
-                    <Text color="$typography" fontWeight="500">
-                      {t("compass.currentDirection")}
-                    </Text>
-                    <HStack alignItems="center" gap="$2">
-                      <Text color="$typographySecondary" size="xl" bold>
-                        {Math.round(heading)}°
-                      </Text>
-                      <Box width={32}>
-                        <Text color="$typographySecondary" size="sm" textAlign="center">
-                          {getTranslatedCompassDirection(heading, t)}
-                        </Text>
-                      </Box>
-                    </HStack>
-                  </HStack>
-
-                  {/* Qibla Direction */}
+                  {/* Qibla direction row */}
                   {qiblaDirection !== null && (
                     <HStack justifyContent="space-between" alignItems="center">
                       <Text color="$typography" fontWeight="500">
                         {t("compass.qiblaDirection")}
                       </Text>
                       <HStack alignItems="center" gap="$2">
-                        <Text color="$success" size="xl" bold>
-                          {Math.round(qiblaDirection)}°
+                        <Text color="$primary" size="xl" bold>
+                          {formatNumberToLocale(`${Math.round(qiblaDirection)}`)}°
                         </Text>
                         <Box width={32}>
                           <Text color="$typographySecondary" size="sm" textAlign="center">
@@ -302,31 +346,58 @@ const Compass = () => {
                     </HStack>
                   )}
 
-                  {/* Accuracy */}
+                  {/* Distance to Mecca row */}
+                  {distanceText && (
+                    <HStack justifyContent="space-between" alignItems="center">
+                      <Text color="$typography" fontWeight="500">
+                        {t("compass.distance")}
+                      </Text>
+                      <Text color="$typographySecondary" size="md">
+                        {formatNumberToLocale(distanceText)}
+                      </Text>
+                    </HStack>
+                  )}
+
+                  {/* Accuracy row */}
                   <HStack justifyContent="space-between" alignItems="center">
                     <Text color="$typography" fontWeight="500">
                       {t("compass.accuracy")}
                     </Text>
                     <Text color="$typographySecondary" size="md">
-                      {Math.round(accuracy)}%
+                      {formatNumberToLocale(`${Math.round(accuracy)}`)}%
                     </Text>
                   </HStack>
-
-                  {/* Calibration Note */}
-                  <Box
-                    marginTop="$2"
-                    padding="$3"
-                    borderRadius="$4"
-                    backgroundColor="$backgroundMuted">
-                    <Text color="$info" size="xs" textAlign="center">
-                      {t("compass.calibrationNote")}
-                    </Text>
-                  </Box>
                 </VStack>
-              )}
+              </Box>
             </Box>
-          </Box>
-        </Box>
+
+            {/* Facing Qibla banner */}
+            {isAligned && (
+              <Animated.View
+                entering={reduceMotion ? undefined : FadeInDown.duration(250)}
+                exiting={reduceMotion ? undefined : FadeOutDown.duration(200)}>
+                <Box
+                  paddingHorizontal="$6"
+                  paddingVertical="$3"
+                  borderRadius="$6"
+                  backgroundColor="$primary">
+                  <Text color="$typographyContrast" size="lg" bold textAlign="center">
+                    {t("compass.facingQibla")}
+                  </Text>
+                </Box>
+              </Animated.View>
+            )}
+
+            {/* Calibration hint */}
+            {lowAccuracy && (
+              <Box paddingHorizontal="$4" paddingVertical="$2">
+                <Text color="$typographySecondary" size="xs" textAlign="center">
+                  {t("compass.calibrationNote")}
+                </Text>
+              </Box>
+            )}
+          </VStack>
+        )}
       </Center>
     </Background>
   );
