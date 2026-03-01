@@ -193,7 +193,12 @@ const AlarmTypeSettingsScreen = () => {
                     : t("alarm.settings.fridayEnableDescription")}
                 </Text>
               </VStack>
-              <Switch value={settings.enabled} onValueChange={handleEnabledToggle} size="md" />
+              <Switch
+                value={settings.enabled}
+                onValueChange={handleEnabledToggle}
+                size="md"
+                accessibilityLabel={t("alarm.settings.enableAlarm")}
+              />
             </HStack>
           </Card>
 

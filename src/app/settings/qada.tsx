@@ -556,7 +556,11 @@ const QadaSettings = () => {
                       </Text>
                     </VStack>
                   </HStack>
-                  <Switch value={tempPrivacyMode} onValueChange={setTempPrivacyMode} />
+                  <Switch
+                    value={tempPrivacyMode}
+                    onValueChange={setTempPrivacyMode}
+                    accessibilityLabel={t("qada.privacyMode")}
+                  />
                 </HStack>
               </Pressable>
 
@@ -639,7 +643,11 @@ const QadaSettings = () => {
                       {t("notification.vibration")}
                     </Text>
                   </HStack>
-                  <Switch value={tempQadaVibration} onValueChange={setTempQadaVibration} />
+                  <Switch
+                    value={tempQadaVibration}
+                    onValueChange={setTempQadaVibration}
+                    accessibilityLabel={t("notification.vibration")}
+                  />
                 </HStack>
               </Pressable>
             </VStack>

@@ -350,7 +350,11 @@ const AudioSettings: FC = () => {
                     {t("settings.athkarAudio.comfortModeDesc")}
                   </Text>
                 </VStack>
-                <Switch value={comfortMode} onValueChange={toggleComfortMode} />
+                <Switch
+                  value={comfortMode}
+                  onValueChange={toggleComfortMode}
+                  accessibilityLabel={t("settings.athkarAudio.comfortMode")}
+                />
               </HStack>
             </Box>
           </VStack>

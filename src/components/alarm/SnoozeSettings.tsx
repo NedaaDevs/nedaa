@@ -60,7 +60,12 @@ const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
         <Text size="sm" color="$typography">
           {t("common.enabled")}
         </Text>
-        <Switch value={value.enabled} onValueChange={handleToggle} size="sm" />
+        <Switch
+          value={value.enabled}
+          onValueChange={handleToggle}
+          size="sm"
+          accessibilityLabel={t("common.enabled")}
+        />
       </HStack>
 
       {value.enabled && (

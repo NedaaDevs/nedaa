@@ -99,7 +99,11 @@ const DisplaySettings = () => {
                     {t("settings.display.westernNumerals.description")}
                   </Text>
                 </VStack>
-                <Switch value={useWesternNumerals} onValueChange={setUseWesternNumerals} />
+                <Switch
+                  value={useWesternNumerals}
+                  onValueChange={setUseWesternNumerals}
+                  accessibilityLabel={t("settings.display.westernNumerals.title")}
+                />
               </HStack>
             </Box>
           )}
@@ -117,7 +121,11 @@ const DisplaySettings = () => {
                       {t("settings.display.countdown.description")}
                     </Text>
                   </VStack>
-                  <Switch value={countdownEnabled} onValueChange={setCountdownEnabled} />
+                  <Switch
+                    value={countdownEnabled}
+                    onValueChange={setCountdownEnabled}
+                    accessibilityLabel={t("settings.display.countdown.title")}
+                  />
                 </HStack>
               </Box>
 
@@ -145,7 +153,11 @@ const DisplaySettings = () => {
                       {t("settings.display.iqamaCountUp.description")}
                     </Text>
                   </VStack>
-                  <Switch value={iqamaCountUpEnabled} onValueChange={setIqamaCountUpEnabled} />
+                  <Switch
+                    value={iqamaCountUpEnabled}
+                    onValueChange={setIqamaCountUpEnabled}
+                    accessibilityLabel={t("settings.display.iqamaCountUp.title")}
+                  />
                 </HStack>
               </Box>
 

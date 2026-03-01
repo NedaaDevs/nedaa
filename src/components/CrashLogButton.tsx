@@ -83,7 +83,11 @@ const CrashLogButton = () => {
                 <Text fontWeight="500" color="$typography" flex={1}>
                   {t("settings.crashReporting.enableToggle")}
                 </Text>
-                <Switch value={sendCrashLogs} onValueChange={handleToggle} />
+                <Switch
+                  value={sendCrashLogs}
+                  onValueChange={handleToggle}
+                  accessibilityLabel={t("settings.crashReporting.enableToggle")}
+                />
               </HStack>
             </VStack>
           </ModalBody>

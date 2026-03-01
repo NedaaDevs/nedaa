@@ -294,7 +294,11 @@ const KeepLocationUpdated = () => {
                 <Icon as={Info} color="$typographySecondary" size="sm" />
               </Pressable>
             </HStack>
-            <Switch value={autoUpdateLocation} onValueChange={toggleAutoLocationUpdated} />
+            <Switch
+              value={autoUpdateLocation}
+              onValueChange={toggleAutoLocationUpdated}
+              accessibilityLabel={t("location.settings.keepLocationUpdated.title")}
+            />
           </HStack>
         </Box>
       </Box>

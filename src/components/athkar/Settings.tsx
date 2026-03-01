@@ -97,7 +97,11 @@ const Settings = () => {
                     {t("settings.athkar.notifications.morning.title")}
                   </Text>
                 </VStack>
-                <Switch value={morningNotification.enabled} onValueChange={handleMorningToggle} />
+                <Switch
+                  value={morningNotification.enabled}
+                  onValueChange={handleMorningToggle}
+                  accessibilityLabel={t("settings.athkar.notifications.morning.title")}
+                />
               </HStack>
 
               {morningNotification.enabled && (
@@ -143,7 +147,11 @@ const Settings = () => {
                     {t("settings.athkar.notifications.evening.title")}
                   </Text>
                 </VStack>
-                <Switch value={eveningNotification.enabled} onValueChange={handleEveningToggle} />
+                <Switch
+                  value={eveningNotification.enabled}
+                  onValueChange={handleEveningToggle}
+                  accessibilityLabel={t("settings.athkar.notifications.evening.title")}
+                />
               </HStack>
 
               {eveningNotification.enabled && (
@@ -214,7 +222,11 @@ const Settings = () => {
                   {t("settings.athkar.showStreak.description")}
                 </Text>
               </VStack>
-              <Switch value={settings.showStreak} onValueChange={toggleShowStreak} />
+              <Switch
+                value={settings.showStreak}
+                onValueChange={toggleShowStreak}
+                accessibilityLabel={t("settings.athkar.showStreak.title")}
+              />
             </HStack>
           </Box>
 
@@ -230,7 +242,11 @@ const Settings = () => {
                     {t("settings.athkar.showTranslation.description")}
                   </Text>
                 </VStack>
-                <Switch value={settings.showTranslation} onValueChange={toggleShowTranslation} />
+                <Switch
+                  value={settings.showTranslation}
+                  onValueChange={toggleShowTranslation}
+                  accessibilityLabel={t("settings.athkar.showTranslation.title")}
+                />
               </HStack>
             </Box>
           )}
@@ -250,7 +266,11 @@ const Settings = () => {
                   })}
                 </Text>
               </VStack>
-              <Switch value={shortVersion} onValueChange={toggleShortVersion} />
+              <Switch
+                value={shortVersion}
+                onValueChange={toggleShortVersion}
+                accessibilityLabel={t("settings.athkar.shortVersion.title")}
+              />
             </HStack>
           </Box>
         </VStack>
