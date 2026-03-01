@@ -87,7 +87,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   };
 
   return (
-    <VStack flex={1} alignItems="center" justifyContent="center" padding="$8" gap="$4">
+    <VStack
+      flex={1}
+      alignItems="center"
+      justifyContent="center"
+      padding="$8"
+      gap="$4"
+      accessible={true}
+      accessibilityLabel={t("a11y.emptyState", {
+        title: title || config.title,
+        description: description || config.description,
+      })}
+      accessibilityLiveRegion="polite">
       {/* Icon */}
       <Box
         width={80}

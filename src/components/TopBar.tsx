@@ -52,7 +52,7 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
               alignItems="center"
               justifyContent="center"
               accessibilityRole="button"
-              accessibilityLabel="Back">
+              accessibilityLabel={t("a11y.back")}>
               <Icon as={BackArrow} size="lg" color="$typographyContrast" />
             </Pressable>
           )}

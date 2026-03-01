@@ -80,7 +80,15 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   };
 
   return (
-    <Pressable onPress={handleIncrement} disabled={isCompleted}>
+    <Pressable
+      onPress={handleIncrement}
+      disabled={isCompleted}
+      accessibilityLabel={
+        isCompleted
+          ? t("a11y.athkar.cardComplete")
+          : t("a11y.athkar.cardProgress", { current: currentCount, total })
+      }
+      accessibilityHint={isCompleted ? undefined : t("a11y.athkar.tapToCount")}>
       <Box
         padding="$4"
         borderRadius="$6"
@@ -165,6 +173,10 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                         athkarPlayer.startAndJumpTo(athkar.id);
                       }
                     }}
+                    accessibilityLabel={
+                      isThisPlaying ? t("a11y.athkar.audioPause") : t("a11y.athkar.audioPlay")
+                    }
+                    accessibilityRole="button"
                     width={32}
                     height={32}
                     borderRadius={16}

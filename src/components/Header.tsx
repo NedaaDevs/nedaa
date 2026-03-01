@@ -172,7 +172,13 @@ const Header = () => {
         marginTop="$2"
         marginBottom="$2"
         onPress={handleBoxClick}
-        accessibilityRole="button">
+        accessibilityRole="button"
+        accessibilityLabel={t("a11y.header.nextPrayer", {
+          name: t(timingName),
+          time: showOtherTiming ? otherTimingDisplay : formattedPrayerTime(timing.time),
+          countdown: showOtherTiming ? otherTimingDisplay : timerDisplay,
+        })}
+        accessibilityHint={t("a11y.header.toggleTimings")}>
         <HStack justifyContent="space-between" alignItems="center" width="100%">
           <Box flexShrink={1}>
             <Text size="2xl" bold color="$accentPrimary">

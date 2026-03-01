@@ -42,7 +42,13 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
       margin="$2"
       padding="$4"
       borderRadius="$4"
-      backgroundColor={isNext ? "$primary" : "$backgroundSecondary"}>
+      backgroundColor={isNext ? "$primary" : "$backgroundSecondary"}
+      accessible={true}
+      accessibilityLabel={
+        isNext
+          ? t("a11y.prayerRowNext", { name: t(name), time: formattedPrayerTime(time) })
+          : t("a11y.prayerRow", { name: t(name), time: formattedPrayerTime(time) })
+      }>
       {isNext && (
         <Box
           position="absolute"
