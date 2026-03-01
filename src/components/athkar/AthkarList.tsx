@@ -331,7 +331,9 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
             value={overallProgress}
             size="md"
             backgroundColor="$backgroundMuted"
-            marginTop="$2">
+            marginTop="$2"
+            accessibilityLabel={t("a11y.athkar.overallProgress")}
+            accessibilityValue={{ min: 0, max: 100, now: overallProgress }}>
             <ProgressFilledTrack backgroundColor="$info" />
           </Progress>
           <Text size="xs" color="$typographySecondary" marginTop="$2">
@@ -378,7 +380,9 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
             width="100%"
             borderWidth={0}
             backgroundColor="transparent"
-            disabled={isResetting}>
+            disabled={isResetting}
+            accessibilityLabel={t("common.resetDailyProgress")}
+            accessibilityHint={t("a11y.athkar.holdToResetHint")}>
             {isResetting ? (
               <Spinner size="small" />
             ) : (

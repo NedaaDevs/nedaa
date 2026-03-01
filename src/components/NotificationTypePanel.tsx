@@ -120,7 +120,12 @@ const NotificationTypePanel: FC<Props> = ({
     <>
       <Box backgroundColor="$backgroundSecondary" marginHorizontal="$4" borderRadius="$4">
         {/* Header */}
-        <Pressable onPress={handleToggle} disabled={!defaults.enabled}>
+        <Pressable
+          onPress={handleToggle}
+          disabled={!defaults.enabled}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isExpanded }}
+          accessibilityLabel={title}>
           <HStack
             padding="$4"
             justifyContent="space-between"
@@ -187,6 +192,7 @@ const NotificationTypePanel: FC<Props> = ({
                       </HStack>
                       <Pressable
                         onPress={() => openCustomization(prayer.id)}
+                        accessibilityRole="button"
                         padding="$2"
                         accessibilityLabel={t(prayer.name)}>
                         <Icon color="$typographySecondary" size="md" as={Settings} />

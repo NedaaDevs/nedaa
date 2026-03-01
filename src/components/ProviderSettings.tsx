@@ -64,7 +64,8 @@ export const ProviderSettings: FC = () => {
           minWidth={44}
           alignItems="center"
           justifyContent="center"
-          accessibilityRole="button">
+          accessibilityRole="button"
+          accessibilityLabel={t("common.retry")}>
           <Text color="$typography">{t("common.retry")}</Text>
         </Pressable>
       </Box>

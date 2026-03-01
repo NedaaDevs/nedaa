@@ -57,7 +57,10 @@ const ThemeList = () => {
             flexDirection="row"
             alignItems="center"
             borderBottomWidth={index < modeData.length - 1 ? 1 : 0}
-            borderColor={index < modeData.length - 1 ? "$outline" : undefined}>
+            borderColor={index < modeData.length - 1 ? "$outline" : undefined}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: mode === item.id }}
+            accessibilityLabel={item.title}>
             <HStack justifyContent="space-between" alignItems="center" width="100%">
               <Box>
                 <Text size="xl" fontWeight="600" color="$typography">

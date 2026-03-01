@@ -281,6 +281,8 @@ const Settings = () => {
         <Divider />
         <Pressable
           onPress={() => router.push("/settings/athkar-audio" as any)}
+          accessibilityRole="button"
+          accessibilityLabel={t("settings.athkarAudio.title")}
           backgroundColor="$backgroundSecondary"
           borderRadius="$6"
           padding="$4">

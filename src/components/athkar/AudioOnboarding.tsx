@@ -238,7 +238,14 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
         <ModalBody>
           <VStack gap="$4" paddingVertical="$2">
             {/* Progress dots */}
-            <HStack justifyContent="center" gap="$2">
+            <HStack
+              justifyContent="center"
+              gap="$2"
+              accessible={true}
+              accessibilityLabel={t("a11y.athkar.onboardingStep", {
+                current: step,
+                total: TOTAL_STEPS,
+              })}>
               {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                 <Box
                   key={i}
@@ -301,7 +308,12 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
 
                 <VStack gap="$2">
                   {modeOptions.map((option) => (
-                    <Pressable key={option.mode} onPress={() => setSelectedMode(option.mode)}>
+                    <Pressable
+                      key={option.mode}
+                      onPress={() => setSelectedMode(option.mode)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: selectedMode === option.mode }}
+                      accessibilityLabel={t(option.titleKey)}>
                       <Box
                         padding="$3"
                         borderRadius="$6"
@@ -413,6 +425,8 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
 
               <Pressable
                 onPress={handleSkip}
+                accessibilityRole="button"
+                accessibilityLabel={t("athkar.onboarding.skip")}
                 minHeight={44}
                 justifyContent="center"
                 alignItems="center">

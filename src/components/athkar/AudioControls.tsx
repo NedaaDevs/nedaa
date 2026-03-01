@@ -481,7 +481,14 @@ export const CollapsedAudioBar: FC<CollapsedBarProps> = ({ onExpand, onPlayPause
         </Pressable>
 
         {/* Session progress bar */}
-        <Box flex={1} height={4} borderRadius={2} backgroundColor="$backgroundMuted">
+        <Box
+          flex={1}
+          height={4}
+          borderRadius={2}
+          backgroundColor="$backgroundMuted"
+          accessible={true}
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: 100, now: Math.round(progressPercent * 100) }}>
           <Box
             height={4}
             borderRadius={2}

@@ -1,4 +1,5 @@
 import { FC } from "react";
+import { useTranslation } from "react-i18next";
 
 // Components
 import { Pressable } from "@/components/ui/pressable";
@@ -22,6 +23,8 @@ const SoundPreviewButton: FC<Props> = ({
   color = "$typographySecondary",
   disabled = false,
 }) => {
+  const { t } = useTranslation();
+
   if (disabled) return null;
 
   return (
@@ -34,7 +37,7 @@ const SoundPreviewButton: FC<Props> = ({
       alignItems="center"
       justifyContent="center"
       accessibilityRole="button"
-      accessibilityLabel={isPlaying ? "Stop" : "Play"}>
+      accessibilityLabel={isPlaying ? t("common.stop") : t("common.play")}>
       {isPlaying ? (
         <Icon size={size} color={color} as={Square} />
       ) : (

@@ -26,7 +26,12 @@ const DownloadProgress: FC<Props> = ({ completed, total, label }) => {
           {completed}/{total}
         </Text>
       </HStack>
-      <Progress value={percentage} size="sm" backgroundColor="$backgroundMuted">
+      <Progress
+        value={percentage}
+        size="sm"
+        backgroundColor="$backgroundMuted"
+        accessibilityLabel={t("a11y.athkar.downloading")}
+        accessibilityValue={{ min: 0, max: 100, now: Math.round(percentage) }}>
         <ProgressFilledTrack backgroundColor="$primary" />
       </Progress>
     </VStack>

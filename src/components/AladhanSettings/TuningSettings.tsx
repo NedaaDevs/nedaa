@@ -171,6 +171,7 @@ export const TuningSettings: FC = () => {
             justifyContent="space-between"
             alignItems="center"
             minHeight={44}
+            accessibilityRole="button"
             accessibilityLabel={t("providers.aladhan.tuning.title")}>
             <VStack flex={1}>
               <Text fontSize="$2" color="$typographySecondary">

@@ -249,6 +249,7 @@ const NotificationSettings = () => {
                   updateAllNotificationToggle(value);
                 }}
                 size="lg"
+                accessibilityLabel={t("notification.enableAll")}
               />
             </HStack>
           </Box>
@@ -308,6 +309,7 @@ const NotificationSettings = () => {
                         updateFullAthanPlayback(value);
                       }}
                       size="md"
+                      accessibilityLabel={t("notification.fullAthanPlayback")}
                     />
                   </HStack>
                 </Box>

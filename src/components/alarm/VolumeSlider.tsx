@@ -64,6 +64,8 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
         />
         <HStack flex={1} justifyContent="space-between" alignItems="center" paddingHorizontal="$2">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("a11y.alarm.decreaseVolume")}
             onPress={handleDecrease}
             width={44}
             height={44}
@@ -78,6 +80,9 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
             {VOLUME_STEPS.map((step) => (
               <Pressable
                 key={step}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: value >= step }}
+                accessibilityLabel={`${Math.round(step * 100)}%`}
                 onPress={() => handleStepPress(step)}
                 minWidth={28}
                 minHeight={28}
@@ -94,6 +99,8 @@ const VolumeSlider: FC<Props> = ({ value, onChange }) => {
           </HStack>
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("a11y.alarm.increaseVolume")}
             onPress={handleIncrease}
             width={44}
             height={44}

@@ -333,6 +333,9 @@ const QadaSettings = () => {
                 <Pressable
                   key={option.value}
                   onPress={() => setTempReminderType(option.value as any)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: tempReminderType === option.value }}
+                  accessibilityLabel={option.label}
                   padding="$4"
                   borderRadius="$6"
                   borderWidth={1}
@@ -399,6 +402,7 @@ const QadaSettings = () => {
                 </Text>
               </HStack>
               <TextInput
+                accessibilityLabel={t("qada.daysBeforeRamadan")}
                 value={formatNumberToLocale(tempReminderDaysText)}
                 onChangeText={(text) => {
                   // Normalize the input first (convert Arabic digits to ASCII)
@@ -478,6 +482,8 @@ const QadaSettings = () => {
               </Text>
               <Pressable
                 onPress={() => setShowDatePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t("a11y.qada.selectDate")}
                 backgroundColor="$backgroundSecondary"
                 borderWidth={1}
                 borderColor="$outline"
@@ -535,6 +541,9 @@ const QadaSettings = () => {
             <VStack gap="$2">
               <Pressable
                 onPress={() => setTempPrivacyMode(!tempPrivacyMode)}
+                accessibilityRole="button"
+                accessibilityLabel={t("qada.privacyMode")}
+                accessibilityState={{ expanded: tempPrivacyMode }}
                 padding="$4"
                 borderRadius="$6"
                 borderWidth={1}
@@ -686,6 +695,9 @@ const QadaSettings = () => {
           <VStack gap="$3" paddingHorizontal="$4" paddingVertical="$4">
             <Pressable
               onPress={() => setDangerZoneExpanded(!dangerZoneExpanded)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: dangerZoneExpanded }}
+              accessibilityLabel={t("qada.dangerZone.title")}
               padding="$4"
               borderRadius="$6"
               borderWidth={1}

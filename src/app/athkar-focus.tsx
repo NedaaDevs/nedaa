@@ -721,7 +721,15 @@ const AthkarFocusScreen = () => {
             {formatNumberToLocale(`${currentAthkarIndex + 1}`)} /
             {formatNumberToLocale(`${currentAthkarList.length}`)}
           </Text>
-          <Progress value={((currentAthkarIndex + 1) / currentAthkarList.length) * 100} size="xs">
+          <Progress
+            value={((currentAthkarIndex + 1) / currentAthkarList.length) * 100}
+            size="xs"
+            accessibilityLabel={t("a11y.athkar.sessionProgress")}
+            accessibilityValue={{
+              min: 0,
+              max: 100,
+              now: Math.round(((currentAthkarIndex + 1) / currentAthkarList.length) * 100),
+            }}>
             <ProgressFilledTrack backgroundColor="$primary" />
           </Progress>
         </Box>

@@ -313,6 +313,8 @@ export default function CustomSoundsScreen() {
                   <HStack gap="$3" alignItems="flex-start">
                     <Pressable
                       onPress={() => handleSoundPreview(sound)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("a11y.customSound.previewSound", { name: sound.name })}
                       width={48}
                       height={48}
                       borderRadius="$6"
@@ -362,6 +364,7 @@ export default function CustomSoundsScreen() {
                       variant="outline"
                       borderColor="$error"
                       borderRadius="$4"
+                      accessibilityLabel={t("common.delete")}
                       onPress={() => handleDelete(sound.id)}>
                       <Icon as={Trash2} size="sm" color="$error" />
                     </Button>

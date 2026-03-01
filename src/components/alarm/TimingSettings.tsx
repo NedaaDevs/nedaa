@@ -79,6 +79,9 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
       {showAtPrayerTimeOption && (
         <HStack gap="$2">
           <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: timing.mode === "atPrayerTime" }}
+            accessibilityLabel={t("alarm.settings.atPrayerTime")}
             flex={1}
             padding="$3"
             borderRadius="$4"
@@ -98,6 +101,9 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
           </Pressable>
 
           <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: timing.mode === "beforePrayerTime" }}
+            accessibilityLabel={t("alarm.settings.beforePrayerTime")}
             flex={1}
             padding="$3"
             borderRadius="$4"
@@ -137,6 +143,8 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
           <HStack gap="$2" alignItems="center">
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.alarm.decreaseMinutes")}
               onPress={handleDecrease}
               width={44}
               height={44}
@@ -153,6 +161,9 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
                 .map((minutes) => (
                   <Pressable
                     key={minutes}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: (timing.minutesBefore || 0) >= minutes }}
+                    accessibilityLabel={`${minutes} ${t("common.minute", { count: minutes })}`}
                     onPress={() => handleStepPress(minutes)}
                     minWidth={28}
                     minHeight={28}
@@ -173,6 +184,8 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
             </HStack>
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.alarm.increaseMinutes")}
               onPress={handleIncrease}
               width={44}
               height={44}

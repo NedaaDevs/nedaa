@@ -31,7 +31,9 @@ const OnboardingScreen = () => {
 
   return (
     <Box flex={1} backgroundColor="$background">
-      <CurrentStep onNext={handleNext} />
+      <Box flex={1} accessibilityLiveRegion="polite">
+        <CurrentStep onNext={handleNext} />
+      </Box>
       <OnboardingDots total={steps.length} current={currentIndex} />
     </Box>
   );

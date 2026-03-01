@@ -75,7 +75,8 @@ const TimePicker = ({
       zIndex={50}
       justifyContent="center"
       alignItems="center"
-      accessibilityRole="none">
+      accessibilityRole="none"
+      accessibilityViewIsModal={true}>
       <Box
         backgroundColor="$backgroundSecondary"
         borderRadius="$8"
@@ -130,7 +131,12 @@ const TimePicker = ({
                     borderRadius="$3"
                     marginBottom="$2"
                     marginHorizontal="$1"
-                    minHeight={44}>
+                    minHeight={44}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: displayHour === hour }}
+                    accessibilityLabel={
+                      use12HourFormat ? hour.toString() : hour.toString().padStart(2, "0")
+                    }>
                     <Box
                       backgroundColor={displayHour === hour ? "$primary" : "$backgroundSecondary"}
                       borderWidth={displayHour === hour ? 0 : 1}
@@ -179,7 +185,10 @@ const TimePicker = ({
                     borderRadius="$3"
                     marginBottom="$2"
                     marginHorizontal="$1"
-                    minHeight={44}>
+                    minHeight={44}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: selectedMinute === minute }}
+                    accessibilityLabel={minute.toString().padStart(2, "0")}>
                     <Box
                       backgroundColor={
                         selectedMinute === minute ? "$primary" : "$backgroundSecondary"

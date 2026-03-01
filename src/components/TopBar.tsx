@@ -23,9 +23,10 @@ type Props = {
   title: string;
   icon?: any;
   backOnClick?: boolean;
+  rightIconLabel?: string;
 };
 
-const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
+const TopBar = ({ href, title, icon, backOnClick = false, rightIconLabel }: Props) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { isRTL } = useRTL();
@@ -71,7 +72,8 @@ const TopBar = ({ href, title, icon, backOnClick = false }: Props) => {
               minWidth={44}
               alignItems="center"
               justifyContent="center"
-              accessibilityRole="button">
+              accessibilityRole="button"
+              accessibilityLabel={rightIconLabel}>
               <Icon as={icon} size="lg" color="$typographyContrast" />
             </Pressable>
           </Link>
