@@ -194,7 +194,8 @@ const NotificationTypePanel: FC<Props> = ({
                         onPress={() => openCustomization(prayer.id)}
                         accessibilityRole="button"
                         padding="$2"
-                        accessibilityLabel={t(prayer.name)}>
+                        accessibilityLabel={t("a11y.notification.customize", { name: t(prayer.name) })}
+                        accessibilityHint={t("a11y.notification.customizeHint")}>
                         <Icon color="$typographySecondary" size="md" as={Settings} />
                       </Pressable>
                     </HStack>
