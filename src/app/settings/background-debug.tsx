@@ -124,7 +124,10 @@ const BackgroundDebugScreen = () => {
                 Background Task Status
               </Text>
 
-              <HStack justifyContent="space-between" alignItems="center">
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                accessibilityLabel={`Service availability: ${bgStatus ?? "checking"}`}>
                 <Text color="$typography">Service Availability</Text>
                 <Badge
                   action={
@@ -138,7 +141,10 @@ const BackgroundDebugScreen = () => {
                 </Badge>
               </HStack>
 
-              <HStack justifyContent="space-between" alignItems="center">
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                accessibilityLabel={`Task registered: ${isRegistered === null ? "checking" : isRegistered ? "yes" : "no"}`}>
                 <Text color="$typography">Task Registered</Text>
                 <Badge
                   action={isRegistered === null ? "info" : isRegistered ? "success" : "warning"}>
@@ -152,7 +158,10 @@ const BackgroundDebugScreen = () => {
                 </Badge>
               </HStack>
 
-              <HStack justifyContent="space-between" alignItems="center">
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                accessibilityLabel={`Task name: ${BACKGROUND_REFRESH_TASK}`}>
                 <Text color="$typography">Task Name</Text>
                 <Badge action="info">
                   <Badge.Text>{BACKGROUND_REFRESH_TASK.split(".").pop()}</Badge.Text>
@@ -172,15 +181,28 @@ const BackgroundDebugScreen = () => {
                 <Button
                   flex={1}
                   variant={isRegistered ? "outline" : "solid"}
-                  onPress={handleToggleRegistration}>
+                  onPress={handleToggleRegistration}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isRegistered ? "Unregister background task" : "Register background task"
+                  }>
                   <Button.Text>{isRegistered ? "Unregister" : "Register"}</Button.Text>
                 </Button>
-                <Button variant="outline" flex={1} onPress={handleClearLogs}>
+                <Button
+                  variant="outline"
+                  flex={1}
+                  onPress={handleClearLogs}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear all task logs">
                   <Button.Text>Clear Logs</Button.Text>
                 </Button>
               </HStack>
 
-              <Button variant="outline" onPress={handleRefresh}>
+              <Button
+                variant="outline"
+                onPress={handleRefresh}
+                accessibilityRole="button"
+                accessibilityLabel="Refresh status and logs">
                 <Button.Text>Refresh Status</Button.Text>
               </Button>
             </VStack>
@@ -203,7 +225,10 @@ const BackgroundDebugScreen = () => {
           {/* Log List */}
           <Card padding="$4">
             <VStack gap="$3">
-              <HStack justifyContent="space-between" alignItems="center">
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                accessibilityLabel={`Task logs: ${logs.length} entries`}>
                 <Text size="lg" fontWeight="600" color="$typography">
                   Task Logs
                 </Text>
@@ -220,7 +245,8 @@ const BackgroundDebugScreen = () => {
                       gap="$1"
                       padding="$2"
                       backgroundColor="$backgroundMuted"
-                      borderRadius="$2">
+                      borderRadius="$2"
+                      accessibilityLabel={`${entry.action}, ${entry.result}, ${formatTimestamp(entry.timestamp)}${entry.duration_ms != null ? `, ${entry.duration_ms}ms` : ""}`}>
                       <HStack justifyContent="space-between" alignItems="center">
                         <Text size="xs" color="$typographySecondary">
                           {formatTimestamp(entry.timestamp)}
