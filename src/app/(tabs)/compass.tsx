@@ -247,7 +247,11 @@ const Compass = () => {
               </Box>
 
               {/* Rotating compass */}
-              <Animated.View style={[compassRotationStyle, { marginTop: 14 }]}>
+              <Animated.View
+                style={[compassRotationStyle, { marginTop: 14 }]}
+                accessible={true}
+                accessibilityLabel={`${headingRounded}° ${cardinalText}`}
+                importantForAccessibility="no-hide-descendants">
                 <Svg width={compassSize} height={compassSize}>
                   {/* Outer ring */}
                   <Circle
