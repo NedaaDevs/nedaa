@@ -16,11 +16,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "privacyManifests": {
         "NSPrivacyCollectedDataTypes": [
@@ -96,10 +91,6 @@
       "package": "dev.nedaa.android",
       "blockedPermissions": ["ACTIVITY_RECOGNITION", "RECORD_AUDIO"],
       "permissions": ["READ_MEDIA_AUDIO", "READ_EXTERNAL_STORAGE"]
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static"
     },
     "plugins": [
       "expo-router",
