@@ -78,9 +78,9 @@ export const useSoundPreview = (): UseSoundPreviewReturn => {
 
   const isPlayingSound = useCallback(
     <T extends NotificationType>(type: T, soundKey: NotificationSoundKey<T>): boolean => {
-      return soundPreviewManager.isCurrentlyPlaying(`${type}.${soundKey}`);
+      return isPlaying && currentSound === `${type}.${soundKey}`;
     },
-    []
+    [isPlaying, currentSound]
   );
 
   return {
