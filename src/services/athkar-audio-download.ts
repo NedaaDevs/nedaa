@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import { File, Directory, Paths } from "expo-file-system";
 
 import { AthkarDB } from "@/services/athkar-db";
 import { AUDIO_STORAGE, getThikrId } from "@/constants/AthkarAudio";
@@ -7,13 +7,12 @@ import type { ReciterManifest } from "@/types/athkar-audio";
 
 const log = AppLogger.create("athkar-audio");
 
-const audioBaseDir = `${FileSystem.documentDirectory}${AUDIO_STORAGE.AUDIO_DIR}`;
+const audioBaseDir = new Directory(Paths.document, AUDIO_STORAGE.AUDIO_DIR);
 
-const ensureReciterDir = async (reciterId: string) => {
-  const dir = `${audioBaseDir}/${reciterId}`;
-  const info = await FileSystem.getInfoAsync(dir);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+const ensureReciterDir = (reciterId: string): Directory => {
+  const dir = new Directory(audioBaseDir, reciterId);
+  if (!dir.exists) {
+    dir.create({ intermediates: true });
   }
   return dir;
 };
@@ -25,28 +24,23 @@ const downloadFile = async (
   size: number
 ): Promise<string | null> => {
   try {
-    const dir = await ensureReciterDir(reciterId);
-    const localPath = `${dir}/${thikrId}.mp3`;
+    const dir = ensureReciterDir(reciterId);
+    const localFile = new File(dir, `${thikrId}.mp3`);
 
     // Check if already downloaded
     const existing = await AthkarDB.getAudioDownload(reciterId, thikrId);
     if (existing) {
-      const info = await FileSystem.getInfoAsync(existing.file_path);
-      if (info.exists) return existing.file_path;
+      const existingFile = new File(existing.file_path);
+      if (existingFile.exists) return existing.file_path;
     }
 
     // Download
-    const result = await FileSystem.downloadAsync(url, localPath);
-
-    if (result.status !== 200) {
-      log.e("Download", `Failed to download ${thikrId}: status ${result.status}`);
-      return null;
-    }
+    await File.downloadFileAsync(url, localFile);
 
     // Record in DB
-    await AthkarDB.insertAudioDownload(reciterId, thikrId, localPath, size);
+    await AthkarDB.insertAudioDownload(reciterId, thikrId, localFile.uri, size);
 
-    return localPath;
+    return localFile.uri;
   } catch (error) {
     log.e("Download", `Error downloading ${thikrId}`, error instanceof Error ? error : undefined);
     return null;
@@ -161,8 +155,8 @@ const getLocalPath = async (reciterId: string, thikrId: string): Promise<string 
   if (!download) return null;
 
   // Verify file still exists
-  const info = await FileSystem.getInfoAsync(download.file_path);
-  if (!info.exists) {
+  const file = new File(download.file_path);
+  if (!file.exists) {
     // File was deleted externally — clean up this specific DB record
     await AthkarDB.deleteAudioDownload(reciterId, thikrId);
     return null;
@@ -173,10 +167,13 @@ const getLocalPath = async (reciterId: string, thikrId: string): Promise<string 
 
 const deleteReciterPack = async (reciterId: string): Promise<boolean> => {
   try {
-    const dir = `${audioBaseDir}/${reciterId}`;
-    const info = await FileSystem.getInfoAsync(dir);
-    if (info.exists) {
-      await FileSystem.deleteAsync(dir, { idempotent: true });
+    const dir = new Directory(audioBaseDir, reciterId);
+    if (dir.exists) {
+      try {
+        dir.delete();
+      } catch {
+        // Already deleted
+      }
     }
 
     await AthkarDB.deleteReciterDownloads(reciterId);
@@ -190,16 +187,15 @@ const deleteReciterPack = async (reciterId: string): Promise<boolean> => {
 
 const getStorageBreakdown = async (): Promise<{ reciterId: string; size: number }[]> => {
   try {
-    const baseInfo = await FileSystem.getInfoAsync(audioBaseDir);
-    if (!baseInfo.exists) return [];
+    if (!audioBaseDir.exists) return [];
 
-    const entries = await FileSystem.readDirectoryAsync(audioBaseDir);
+    const entries = audioBaseDir.list();
     const breakdown: { reciterId: string; size: number }[] = [];
 
-    for (const reciterId of entries) {
-      const size = await AthkarDB.getAudioStorageUsed(reciterId);
+    for (const entry of entries) {
+      const size = await AthkarDB.getAudioStorageUsed(entry.name);
       if (size > 0) {
-        breakdown.push({ reciterId, size });
+        breakdown.push({ reciterId: entry.name, size });
       }
     }
 
