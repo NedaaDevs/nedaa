@@ -241,7 +241,14 @@ const KeepLocationUpdated = () => {
           paddingVertical="$5"
           paddingHorizontal="$5"
           flexDirection="row"
-          alignItems="center">
+          alignItems="center"
+          accessibilityRole="button"
+          accessibilityLabel={t("a11y.location.refresh", {
+            city: localizedLocation.city ?? locationDetails.address?.city,
+            country: localizedLocation.country ?? locationDetails.address?.country,
+          })}
+          accessibilityHint={t("a11y.location.refreshHint")}
+          accessibilityState={{ disabled: isGettingLocation || isFetchingPrayers }}>
           <HStack justifyContent="space-between" alignItems="center" width="100%">
             <HStack alignItems="center" flex={1} gap="$3">
               <Icon as={MapPin} color="$accentPrimary" size="md" />
