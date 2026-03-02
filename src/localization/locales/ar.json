@@ -798,6 +798,7 @@
   "settings.athkarAudio.storage": "التخزين",
   "settings.athkarAudio.title": "صوت الأذكار",
   "settings.athkarAudio.totalStorage": "الإجمالي",
+  "settings.backgroundDebug.title": "المهام الخلفية",
   "settings.crashLog.restartRequired": "الرجاء إعادة تشغيل التطبيق لتطبيق التغييرات",
   "settings.crashReporting.accessibilityHint": "يفتح نافذة للموافقة على تقارير الأعطال",
   "settings.crashReporting.accessibilityLabel": "إعدادات تقارير الأعطال",

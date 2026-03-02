@@ -38,6 +38,7 @@ import {
   Star,
   Share2,
   Heart,
+  Activity,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -240,6 +241,13 @@ const SettingsScreen = () => {
           name={t("settings.advance.title")}
           path="/settings/advance"
           icon={Settings2Icon}
+        />
+
+        {/* Background Debug */}
+        <SettingsItem
+          name={t("settings.backgroundDebug.title")}
+          path={"/settings/background-debug" as any}
+          icon={Activity}
         />
 
         {/* Help */}

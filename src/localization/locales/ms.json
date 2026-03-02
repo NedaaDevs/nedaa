@@ -455,6 +455,7 @@
   "settings.athkarAudio.storage": "Storan",
   "settings.athkarAudio.title": "Audio Azkar",
   "settings.athkarAudio.totalStorage": "Jumlah",
+  "settings.backgroundDebug.title": "Tugas Latar Belakang",
   "settings.crashLog.restartRequired": "Aplikasi perlu dimulakan semula untuk mengaktifkan perubahan ini.",
   "settings.crashReporting.accessibilityHint": "Membuka modal untuk kebenaran laporan kerosakan",
   "settings.crashReporting.accessibilityLabel": "Tetapan laporan kerosakan",

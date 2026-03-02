@@ -766,6 +766,7 @@
   "settings.athkarAudio.storage": "Storage",
   "settings.athkarAudio.title": "Athkar Audio",
   "settings.athkarAudio.totalStorage": "Total",
+  "settings.backgroundDebug.title": "Background Task",
   "settings.crashLog.restartRequired": "Please restart the app to apply the crash reporting settings.",
   "settings.crashReporting.accessibilityHint": "Opens modal for crash reporting consent",
   "settings.crashReporting.accessibilityLabel": "Crash reporting settings",
