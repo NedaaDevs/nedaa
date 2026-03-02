@@ -7,7 +7,7 @@
  */
 
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system/legacy";
+import { File, Paths } from "expo-file-system";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { PlatformType } from "@/enums/app";
@@ -49,12 +49,9 @@ export async function testPickAndRegisterSound() {
     // If it's a content:// URI, we need to copy it to a local file
     if (filePath.startsWith("content://")) {
       console.log("[Test] Converting content:// URI to local file...");
-      const tempFilePath = `${FileSystem.cacheDirectory}temp_sound_${Date.now()}.${getExtension(file.name)}`;
-      await FileSystem.copyAsync({
-        from: filePath,
-        to: tempFilePath,
-      });
-      filePath = tempFilePath;
+      const tempFile = new File(Paths.cache, `temp_sound_${Date.now()}.${getExtension(file.name)}`);
+      new File(filePath).copy(tempFile);
+      filePath = tempFile.uri;
     }
 
     // Remove file:// prefix if present

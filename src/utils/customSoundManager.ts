@@ -1,5 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system/legacy";
+import { File, Paths } from "expo-file-system";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -120,12 +120,12 @@ export async function addCustomSound(
 
     // If it's a content:// URI, copy to local file
     if (filePath.startsWith("content://")) {
-      const tempFilePath = `${FileSystem.cacheDirectory}temp_sound_${Date.now()}${getFileExtension(file.name)}`;
-      await FileSystem.copyAsync({
-        from: filePath,
-        to: tempFilePath,
-      });
-      filePath = tempFilePath;
+      const tempFile = new File(
+        Paths.cache,
+        `temp_sound_${Date.now()}${getFileExtension(file.name)}`
+      );
+      new File(filePath).copy(tempFile);
+      filePath = tempFile.uri;
     }
 
     // Remove file:// prefix if present
@@ -151,7 +151,8 @@ export async function addCustomSound(
     // Clean up temp file if we created one
     if (filePath.includes("temp_sound_")) {
       try {
-        await FileSystem.deleteAsync(filePath, { idempotent: true });
+        const tempFile = new File(filePath);
+        if (tempFile.exists) tempFile.delete();
       } catch (error) {
         console.warn("[CustomSoundManager] Failed to delete temp file:", error);
       }
