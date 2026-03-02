@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, use, useEffect, useState } from "react";
 
 // Enums
 import { AppLocale } from "@/enums/app";
@@ -64,14 +64,14 @@ export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
   };
 
   return (
-    <FontContext.Provider
+    <FontContext
       value={{
         fontFamily,
         locale,
         getFontFamily,
       }}>
       {children}
-    </FontContext.Provider>
+    </FontContext>
   );
 };
 
@@ -79,7 +79,7 @@ export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
  * Hook to access the current font family based on weight
  */
 export const useFontFamily = (weight: FontWeight = "regular"): string => {
-  const { getFontFamily } = useContext(FontContext);
+  const { getFontFamily } = use(FontContext);
 
   // Return the font family for the specified weight
   return getFontFamily(weight);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { use } from "react";
 import { styled, View, XStack, YStack, Dialog } from "tamagui";
 import type { GetProps } from "tamagui";
 import { ScrollView } from "react-native";
@@ -21,7 +21,7 @@ type ModalProps = {
 
 const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", children }) => {
   return (
-    <ModalSizeContext.Provider value={size}>
+    <ModalSizeContext value={size}>
       <Dialog
         modal
         open={isOpen}
@@ -30,7 +30,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", chi
         }}>
         {isOpen && <Dialog.Portal>{children}</Dialog.Portal>}
       </Dialog>
-    </ModalSizeContext.Provider>
+    </ModalSizeContext>
   );
 };
 Modal.displayName = "Modal";
@@ -57,7 +57,7 @@ type ModalContentProps = {
 };
 
 const ModalContent: React.FC<ModalContentProps> = ({ children }) => {
-  const size = React.useContext(ModalSizeContext);
+  const size = use(ModalSizeContext);
 
   return (
     <Dialog.Content
