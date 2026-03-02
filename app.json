@@ -16,7 +16,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -150,10 +149,12 @@
       ],
       "expo-asset",
       "@sentry/react-native",
-      "expo-background-task"
+      "expo-background-task",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "reactCompiler": true
     },
     "owner": "nedaadev"
   }

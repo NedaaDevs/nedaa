@@ -1,10 +1,9 @@
 diff --git a/ios/DeviceMotionModule.swift b/ios/DeviceMotionModule.swift
-index a21dc0fde9303e7ff178809ef0131b4bcf1af53b..da6416ef37a237650e6d41778d654fb6e004b7f8 100644
 --- a/ios/DeviceMotionModule.swift
 +++ b/ios/DeviceMotionModule.swift
 @@ -30,25 +30,17 @@ public final class DeviceMotionModule: Module {
      }
- 
+
      AsyncFunction("getPermissionsAsync") { (promise: Promise) in
 -      guard let permissionsManager = appContext?.permissions else {
 -        return
@@ -19,7 +18,7 @@ index a21dc0fde9303e7ff178809ef0131b4bcf1af53b..da6416ef37a237650e6d41778d654fb6
 +        "status": "granted"
 +      ])
      }
- 
+
      AsyncFunction("requestPermissionsAsync") { (promise: Promise) in
 -      guard let permissionsManager = appContext?.permissions else {
 -        return
@@ -34,11 +33,11 @@ index a21dc0fde9303e7ff178809ef0131b4bcf1af53b..da6416ef37a237650e6d41778d654fb6
 +        "status": "granted"
 +      ])
      }
- 
+
      OnStartObserving {
 @@ -64,10 +56,7 @@ public final class DeviceMotionModule: Module {
      }
- 
+
      OnCreate {
 -      guard let permissionsManager = appContext?.permissions else {
 -        return
@@ -47,4 +46,4 @@ index a21dc0fde9303e7ff178809ef0131b4bcf1af53b..da6416ef37a237650e6d41778d654fb6
 +      // No permission registration needed when motion permissions are disabled
      }
    }
- 
+
