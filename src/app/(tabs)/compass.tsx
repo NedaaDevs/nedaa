@@ -368,7 +368,8 @@ const Compass = () => {
                     </HStack>
                   )}
 
-                  {/* Accuracy row */}
+                  {/* Accuracy row — dot is a dev-only debug indicator, not user-facing.
+                     Keep it hidden from accessibility tree. */}
                   <HStack justifyContent="space-between" alignItems="center">
                     <Text color="$typography" fontWeight="500">
                       {t("compass.accuracy")}
@@ -382,6 +383,8 @@ const Compass = () => {
                         height={6}
                         borderRadius={3}
                         backgroundColor={source === "fused" ? "$primary" : "$warning"}
+                        accessibilityElementsHidden={true}
+                        importantForAccessibility="no"
                       />
                     </HStack>
                   </HStack>
