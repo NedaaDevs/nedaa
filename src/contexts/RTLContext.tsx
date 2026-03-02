@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useEffect } from "react";
+import React, { createContext, use, useMemo, useEffect } from "react";
 import { View, I18nManager } from "react-native";
 import { useAppStore, getDirection, isRTL as checkIsRTL } from "@/stores/app";
 
@@ -32,14 +32,14 @@ export const RTLProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [value.isRTL]);
 
   return (
-    <RTLContext.Provider value={value}>
+    <RTLContext value={value}>
       <View style={{ flex: 1, direction: value.direction }}>{children}</View>
-    </RTLContext.Provider>
+    </RTLContext>
   );
 };
 
 export const useRTL = (): RTLContextValue => {
-  const context = useContext(RTLContext);
+  const context = use(RTLContext);
   if (context === undefined) {
     throw new Error("useRTL must be used within RTLProvider");
   }
