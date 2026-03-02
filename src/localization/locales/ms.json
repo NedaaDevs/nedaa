@@ -42,7 +42,7 @@
   "a11y.settingsItemNav": "Opens {{name}} settings",
   "a11y.stepProgress": "Step {{current}} of {{total}}",
   "a11y.tab.athkar": "Athkar",
-  "a11y.tab.compass": "Qibla Compass",
+  "a11y.tab.compass": "Qibla",
   "a11y.tab.home": "Home",
   "a11y.tab.qada": "Qada",
   "a11y.tab.settings": "Tetapan",
