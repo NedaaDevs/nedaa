@@ -15,4 +15,6 @@ export type AppState = {
   setMode: (mode: AppMode) => void;
   setSendCrashLogs: (value: boolean) => void;
   setHijirOffset: (offset: number) => void;
+  dismissedFeatureCards: string[];
+  dismissFeatureCard: (id: string) => void;
 };
