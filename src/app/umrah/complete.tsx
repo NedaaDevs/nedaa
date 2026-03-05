@@ -30,6 +30,7 @@ export default function CompleteScreen() {
       setTimeout(() => successHaptic(), 300);
     };
     complete();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDone = () => {
