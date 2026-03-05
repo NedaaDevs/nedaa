@@ -8,7 +8,7 @@ import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import TopBar from "@/components/TopBar";
 import JourneyTimeline from "@/components/umrah/JourneyTimeline";
 
@@ -95,9 +95,9 @@ export default function UmrahOverviewScreen() {
               onPress={handleContinue}
               accessibilityRole="button"
               accessibilityLabel={t("umrah.continue")}>
-              <ButtonText>
+              <Button.Text>
                 {t("umrah.continue")} — {t(UMRAH_STAGES[activeProgress.currentStageIndex].titleKey)}
-              </ButtonText>
+              </Button.Text>
             </Button>
           </HStack>
         ) : (
@@ -106,7 +106,7 @@ export default function UmrahOverviewScreen() {
             onPress={handleStart}
             accessibilityRole="button"
             accessibilityLabel={t("umrah.startUmrah")}>
-            <ButtonText>{t("umrah.startUmrah")}</ButtonText>
+            <Button.Text>{t("umrah.startUmrah")}</Button.Text>
           </Button>
         )}
       </Box>
