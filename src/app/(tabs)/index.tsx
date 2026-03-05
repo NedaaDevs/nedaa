@@ -6,6 +6,8 @@ import { Background } from "@/components/ui/background";
 import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
+import FeatureDiscoveryCard from "@/components/tools/FeatureDiscoveryCard";
+import { BookOpenCheck } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -14,6 +16,14 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 // Hooks
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
+
+const UMRAH_GUIDE_CARD = {
+  id: "umrah-guide-v1",
+  titleKey: "umrah.featureCard.title",
+  descriptionKey: "umrah.featureCard.description",
+  icon: BookOpenCheck,
+  route: "/umrah",
+};
 
 export default function MainScreen() {
   const { mode } = useAppStore();
@@ -37,6 +47,8 @@ export default function MainScreen() {
         <Box>
           <Header />
         </Box>
+
+        <FeatureDiscoveryCard config={UMRAH_GUIDE_CARD} />
 
         <Box flex={1}>
           <TimingsCarousel mode={mode} />
