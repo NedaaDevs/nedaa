@@ -10,7 +10,7 @@ import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react-native";
 
 import StepProgress from "@/components/umrah/StepProgress";
@@ -188,13 +188,13 @@ export default function StepScreen() {
                   : t("umrah.nextStage", { name: t(UMRAH_STAGES[stageIndex + 1]?.titleKey || "") })
                 : t("a11y.umrah.progress", { current: currentStep + 2, total: totalSteps })
             }>
-            <ButtonText>
+            <Button.Text>
               {isLastStep
                 ? isLastStage
                   ? t("umrah.completeUmrah")
                   : t("umrah.nextStage", { name: t(UMRAH_STAGES[stageIndex + 1]?.titleKey || "") })
                 : t("umrah.continue")}
-            </ButtonText>
+            </Button.Text>
           </Button>
 
           {!isLastStep && (
