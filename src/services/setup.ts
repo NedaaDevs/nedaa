@@ -7,6 +7,7 @@ import type { NotificationStore } from "@/stores/notification";
 // Stores
 import { useLocationStore } from "@/stores/location";
 import { useQadaStore } from "@/stores/qada";
+import { useUmrahGuideStore } from "@/stores/umrahGuide";
 
 // Utils
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
@@ -35,6 +36,9 @@ export const appSetup = async (
     // Load qada data (needed for notification scheduling)
     const qadaStore = useQadaStore.getState();
     await qadaStore.loadData();
+
+    const umrahStore = useUmrahGuideStore.getState();
+    await umrahStore.initializeDb();
 
     await notificationStore.scheduleAllNotifications();
 
