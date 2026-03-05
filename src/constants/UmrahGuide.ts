@@ -156,16 +156,16 @@ export const UMRAH_STAGES: Stage[] = [
     ],
   },
   {
-    id: "halq",
-    titleKey: "umrah.stages.halq.title",
-    subtitleKey: "umrah.stages.halq.subtitle",
+    id: "tahallul",
+    titleKey: "umrah.stages.tahallul.title",
+    subtitleKey: "umrah.stages.tahallul.subtitle",
     iconName: "scissors",
     steps: [
       {
-        id: "halq-instruction",
+        id: "tahallul-instruction",
         type: "instruction",
-        titleKey: "umrah.steps.halq.instruction.title",
-        descriptionKey: "umrah.steps.halq.instruction.description",
+        titleKey: "umrah.steps.tahallul.instruction.title",
+        descriptionKey: "umrah.steps.tahallul.instruction.description",
       },
     ],
   },
