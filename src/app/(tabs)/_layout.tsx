@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/app";
 
 // Icons
-import { Home, Settings, BookOpenText, Compass, CalendarCheck } from "lucide-react-native";
+import { Home, Settings, BookOpenText, Wrench, CalendarCheck } from "lucide-react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -64,18 +64,25 @@ const TabsLayout = () => {
       />
 
       <Tabs.Screen
-        name="compass"
-        options={{
-          title: t("a11y.tab.compass"),
-          tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
         name="qada"
         options={{
           title: t("a11y.tab.qada"),
           tabBarIcon: ({ color, size }) => <CalendarCheck color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="tools"
+        options={{
+          title: t("a11y.tab.tools"),
+          tabBarIcon: ({ color, size }) => <Wrench color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="compass"
+        options={{
+          href: null,
         }}
       />
 
