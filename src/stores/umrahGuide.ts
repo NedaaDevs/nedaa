@@ -37,6 +37,7 @@ type UmrahGuideState = {
   getCurrentStep: () => (typeof UMRAH_STAGES)[number]["steps"][number] | null;
   isStageCompleted: (stageId: StageId) => boolean;
   getOverallProgress: () => { completed: number; total: number };
+  getProgressFraction: () => number;
 };
 
 export const useUmrahGuideStore = create<UmrahGuideState>()(
@@ -232,6 +233,21 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
             completed: activeProgress.completedStages.length,
             total: UMRAH_STAGES.length,
           };
+        },
+
+        getProgressFraction: () => {
+          const { activeProgress } = get();
+          if (!activeProgress) return 0;
+
+          const totalStages = UMRAH_STAGES.length;
+          const completedStages = activeProgress.completedStages.length;
+
+          const currentStage = UMRAH_STAGES[activeProgress.currentStageIndex];
+          const stagePartial = currentStage
+            ? activeProgress.currentStepIndex / currentStage.steps.length
+            : 0;
+
+          return (completedStages + stagePartial) / totalStages;
         },
       }),
       {
