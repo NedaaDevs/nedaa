@@ -7,11 +7,13 @@ import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import FeatureDiscoveryCard from "@/components/tools/FeatureDiscoveryCard";
+import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 import { BookOpenCheck } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useUmrahGuideStore } from "@/stores/umrahGuide";
 
 // Hooks
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -29,6 +31,7 @@ export default function MainScreen() {
   const { mode } = useAppStore();
   const { loadPrayerTimes } = usePrayerTimesStore();
   const { becameActiveAt } = useAppVisibility();
+  const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
   const isFirstMount = useRef(true);
 
   useEffect(() => {
@@ -48,7 +51,11 @@ export default function MainScreen() {
           <Header />
         </Box>
 
-        <FeatureDiscoveryCard config={UMRAH_GUIDE_CARD} />
+        {activeProgress ? (
+          <UmrahResumeBanner />
+        ) : (
+          <FeatureDiscoveryCard config={UMRAH_GUIDE_CARD} />
+        )}
 
         <Box flex={1}>
           <TimingsCarousel mode={mode} />
