@@ -14,6 +14,7 @@ import TopBar from "@/components/TopBar";
 import { Compass, BookOpenCheck } from "lucide-react-native";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
+import ProgressRing from "@/components/umrah/ProgressRing";
 
 type ToolItem = {
   id: string;
@@ -22,6 +23,7 @@ type ToolItem = {
   icon: React.ComponentType<any>;
   route: string;
   hasActiveBadge?: () => boolean;
+  getProgress?: () => number;
 };
 
 const TOOLS: ToolItem[] = [
@@ -32,6 +34,7 @@ const TOOLS: ToolItem[] = [
     icon: BookOpenCheck,
     route: "/umrah",
     hasActiveBadge: () => useUmrahGuideStore.getState().activeProgress !== null,
+    getProgress: () => useUmrahGuideStore.getState().getProgressFraction(),
   },
   {
     id: "compass",
@@ -89,15 +92,9 @@ export default function ToolsScreen() {
                     </Text>
                   </VStack>
                   {tool.hasActiveBadge?.() && (
-                    <Box
-                      position="absolute"
-                      top={12}
-                      right={12}
-                      width={8}
-                      height={8}
-                      borderRadius={4}
-                      backgroundColor="$accentPrimary"
-                    />
+                    <Box position="absolute" top={10} right={10}>
+                      <ProgressRing progress={tool.getProgress?.() ?? 0} size="sm" />
+                    </Box>
                   )}
                 </Pressable>
               </Box>
