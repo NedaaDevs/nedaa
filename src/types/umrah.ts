@@ -20,7 +20,7 @@ export type SubStep = {
   lapDirection?: "safaToMarwa" | "marwaToSafa";
 };
 
-export type StageId = "ihram" | "tawaf" | "sai" | "halq";
+export type StageId = "ihram" | "tawaf" | "sai" | "tahallul";
 
 export type Stage = {
   id: StageId;
