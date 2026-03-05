@@ -202,7 +202,7 @@ const Compass = () => {
 
   return (
     <Background>
-      <TopBar title="compass.title" />
+      <TopBar title="compass.title" backOnClick />
 
       <Center flex={1} paddingHorizontal="$6">
         {!isAvailable ? (
