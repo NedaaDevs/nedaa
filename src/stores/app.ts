@@ -51,6 +51,7 @@ export const useAppStore = create<AppState>()(
           loadingMessage: "",
           showLoadingOverlay: false,
           hijriDaysOffset: 0,
+          dismissedFeatureCards: [],
 
           setIsFirstRun(isFirstRun: boolean) {
             set({ isFirstRun });
@@ -79,6 +80,12 @@ export const useAppStore = create<AppState>()(
           setHijirOffset: (daysOffset) => {
             set({ hijriDaysOffset: daysOffset });
           },
+
+          dismissFeatureCard: (id: string) => {
+            set((state) => ({
+              dismissedFeatureCards: [...state.dismissedFeatureCards, id],
+            }));
+          },
         }),
         {
           name: "app-storage",
@@ -89,6 +96,7 @@ export const useAppStore = create<AppState>()(
             mode: state.mode,
             direction: state.direction,
             sendCrashLogs: state.sendCrashLogs,
+            dismissedFeatureCards: state.dismissedFeatureCards,
             // Exclude loading state from persistence
           }),
           onRehydrateStorage: () => (state) => {
