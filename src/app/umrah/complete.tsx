@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Background } from "@/components/ui/background";
 import { Box } from "@/components/ui/box";
@@ -18,6 +19,7 @@ export default function CompleteScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const successHaptic = useHaptic("success");
+  const insets = useSafeAreaInsets();
   const { completeUmrah, startUmrah } = useUmrahGuideStore();
   const [record, setRecord] = useState<UmrahRecord | null>(null);
 
@@ -58,7 +60,8 @@ export default function CompleteScreen() {
 
   return (
     <Background>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom, 40) }}>
         <Box flex={1} justifyContent="center" paddingTop="$8">
           <CompletionSummary record={record} />
         </Box>
