@@ -6,22 +6,32 @@ import { Background } from "@/components/ui/background";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import TopBar from "@/components/TopBar";
 import JourneyTimeline from "@/components/umrah/JourneyTimeline";
 
-import { RotateCcw } from "lucide-react-native";
+import { RotateCcw, Calendar, Clock } from "lucide-react-native";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
+
+const formatDuration = (minutes: number, t: (key: string) => string): string => {
+  if (minutes < 60) return `${minutes} ${t("umrah.history.min")}`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0
+    ? `${h} ${t("umrah.history.hr")} ${m} ${t("umrah.history.min")}`
+    : `${h} ${t("umrah.history.hr")}`;
+};
 
 export default function UmrahOverviewScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
-  const { activeProgress, startUmrah, resetProgress } = useUmrahGuideStore();
+  const { activeProgress, history, startUmrah, resetProgress } = useUmrahGuideStore();
 
   const handleStagePress = async (stageIndex: number) => {
     await selectionHaptic();
@@ -74,6 +84,36 @@ export default function UmrahOverviewScreen() {
               </Text>
             </Pressable>
           </Box>
+        )}
+
+        {history.length > 0 && (
+          <VStack paddingHorizontal="$4" paddingTop="$6" gap="$3">
+            <Text size="md" fontWeight="600" color="$typography">
+              {t("umrah.history.title")}
+            </Text>
+            {history.map((record) => (
+              <Box
+                key={record.id}
+                padding="$3"
+                borderRadius="$3"
+                backgroundColor="$backgroundSecondary">
+                <HStack justifyContent="space-between" alignItems="center">
+                  <HStack alignItems="center" gap="$2">
+                    <Icon as={Calendar} size="sm" color="$typographySecondary" />
+                    <Text size="sm" color="$typography">
+                      {record.hijriDate}
+                    </Text>
+                  </HStack>
+                  <HStack alignItems="center" gap="$2">
+                    <Icon as={Clock} size="sm" color="$typographySecondary" />
+                    <Text size="xs" color="$typographySecondary">
+                      {formatDuration(record.durationMinutes, t)}
+                    </Text>
+                  </HStack>
+                </HStack>
+              </Box>
+            ))}
+          </VStack>
         )}
       </ScrollView>
 
