@@ -45,7 +45,9 @@ export default function StepScreen() {
   const stageIndex = parseInt(stageIndexParam || "0", 10);
   const stage = UMRAH_STAGES[stageIndex];
 
-  if (!stage || !activeProgress) {
+  const step = stage?.steps[activeProgress?.currentStepIndex ?? 0];
+
+  if (!stage || !activeProgress || !step) {
     return (
       <Background>
         <Box flex={1} justifyContent="center" alignItems="center">
@@ -57,7 +59,6 @@ export default function StepScreen() {
 
   const currentStep = activeProgress.currentStepIndex;
   const totalSteps = stage.steps.length;
-  const step = stage.steps[currentStep];
   const isLastStep = currentStep === totalSteps - 1;
   const isLastStage = stageIndex === UMRAH_STAGES.length - 1;
   const isFirstStep = currentStep === 0;
