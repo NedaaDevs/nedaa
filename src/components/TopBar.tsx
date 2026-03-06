@@ -34,7 +34,9 @@ const TopBar = ({ href, title, icon, backOnClick = false, rightIconLabel }: Prop
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
   const handlePress = () => {
-    if (backOnClick) {
+    if (backOnClick && href) {
+      router.navigate(href);
+    } else if (backOnClick) {
       router.back();
     }
   };
