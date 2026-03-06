@@ -36,6 +36,7 @@ export default function StepScreen() {
     goToPreviousStep,
     completeStage,
     moveToNextStage,
+    returnToPreviousStage,
     toggleChecklistItem,
   } = useUmrahGuideStore();
 
@@ -80,10 +81,20 @@ export default function StepScreen() {
     }
   };
 
+  const isFirstStage = stageIndex === 0;
+
   const handlePrevious = async () => {
     await selectionHaptic();
     if (isFirstStep) {
-      router.back();
+      if (isFirstStage) {
+        router.back();
+      } else {
+        returnToPreviousStage();
+        router.replace({
+          pathname: "/umrah/step",
+          params: { stageIndex: String(stageIndex - 1) },
+        });
+      }
     } else {
       goToPreviousStep();
     }

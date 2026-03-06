@@ -167,6 +167,13 @@ export const UMRAH_STAGES: Stage[] = [
         titleKey: "umrah.steps.tahallul.instruction.title",
         descriptionKey: "umrah.steps.tahallul.instruction.description",
       },
+      {
+        id: "tahallul-checklist",
+        type: "checklist",
+        titleKey: "umrah.steps.tahallul.complete.title",
+        descriptionKey: "umrah.steps.tahallul.complete.description",
+        checklistItems: ["umrah.checklist.tahallul.haircut"],
+      },
     ],
   },
 ];

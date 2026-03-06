@@ -26,6 +26,7 @@ type UmrahGuideState = {
   goToPreviousStep: () => void;
   completeStage: () => void;
   moveToNextStage: () => void;
+  returnToPreviousStage: () => void;
   toggleChecklistItem: (item: string) => void;
   completeUmrah: () => Promise<UmrahRecord | null>;
   resetProgress: () => void;
@@ -137,6 +138,26 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
               },
             });
           }
+        },
+
+        returnToPreviousStage: () => {
+          const { activeProgress } = get();
+          if (!activeProgress || activeProgress.currentStageIndex === 0) return;
+
+          const prevStageIndex = activeProgress.currentStageIndex - 1;
+          const prevStage = UMRAH_STAGES[prevStageIndex];
+          if (!prevStage) return;
+
+          set({
+            activeProgress: {
+              ...activeProgress,
+              currentStageIndex: prevStageIndex,
+              currentStepIndex: prevStage.steps.length - 1,
+              completedStages: activeProgress.completedStages.filter((id) => id !== prevStage.id),
+              checklistState: {},
+              updatedAt: new Date().toISOString(),
+            },
+          });
         },
 
         toggleChecklistItem: (item: string) => {
