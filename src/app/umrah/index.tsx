@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Background } from "@/components/ui/background";
 import { Box } from "@/components/ui/box";
@@ -31,6 +32,7 @@ export default function UmrahOverviewScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
+  const insets = useSafeAreaInsets();
   const { activeProgress, history, startUmrah, resetProgress } = useUmrahGuideStore();
 
   const handleStagePress = async (stageIndex: number) => {
@@ -125,7 +127,7 @@ export default function UmrahOverviewScreen() {
         right={0}
         paddingHorizontal="$4"
         paddingVertical="$3"
-        paddingBottom="$6"
+        paddingBottom={Math.max(insets.bottom, 12)}
         backgroundColor="$backgroundElevated">
         {activeProgress ? (
           <HStack gap="$3">

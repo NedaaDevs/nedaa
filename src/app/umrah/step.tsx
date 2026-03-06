@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 
 import { Background } from "@/components/ui/background";
@@ -29,6 +30,7 @@ export default function StepScreen() {
   const { stageIndex: stageIndexParam } = useLocalSearchParams<{ stageIndex: string }>();
   const selectionHaptic = useHaptic("selection");
   const successHaptic = useHaptic("success");
+  const insets = useSafeAreaInsets();
 
   const {
     activeProgress,
@@ -170,7 +172,7 @@ export default function StepScreen() {
         right={0}
         paddingHorizontal="$4"
         paddingVertical="$3"
-        paddingBottom="$6"
+        paddingBottom={Math.max(insets.bottom, 12)}
         backgroundColor="$backgroundElevated">
         <HStack gap="$3" alignItems="center">
           <Pressable
