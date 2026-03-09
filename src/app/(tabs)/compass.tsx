@@ -6,8 +6,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  FadeInDown,
-  FadeOutDown,
+  withRepeat,
+  withSequence,
 } from "react-native-reanimated";
 import { Svg, Circle, Line, Text as SvgText, G, Rect } from "react-native-svg";
 
@@ -25,6 +25,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useTheme } from "tamagui";
 import {
   calculateQiblaDirection,
+  calculateDistanceToMecca,
   getTranslatedCompassDirection,
   getQiblaProximityState,
   formatDistanceToMecca,
@@ -57,7 +58,7 @@ const tickMarks = Array.from({ length: 36 }, (_, i) => {
 
 const Compass = () => {
   const isFocused = useIsFocused();
-  const { heading, accuracy, isAvailable, isActive, source } = useCompass(!isFocused);
+  const { heading, accuracy, isAvailable, isActive } = useCompass(!isFocused);
   const { locationDetails } = useLocationStore();
   const theme = useTheme();
   const { t } = useTranslation();
@@ -87,6 +88,12 @@ const Compass = () => {
     qiblaDirection !== null && isActive
       ? getQiblaProximityState(heading, qiblaDirection)
       : "searching";
+
+  const distanceKm = locationDetails.coords
+    ? calculateDistanceToMecca(locationDetails.coords.latitude, locationDetails.coords.longitude)
+    : null;
+
+  const isNearKaaba = distanceKm !== null && distanceKm < 1;
 
   const distanceText = locationDetails.coords
     ? formatDistanceToMecca(
@@ -194,11 +201,34 @@ const Compass = () => {
 
   const headingRounded = Math.round(heading);
   const headingText = formatNumberToLocale(`${headingRounded}`);
-  const cardinalText = isActive ? getTranslatedCompassDirection(heading, t) : "";
-  const headingColor = proximityState === "aligned" ? "$primary" : "$typography";
-
   const isAligned = proximityState === "aligned";
+  const cardinalText = isActive
+    ? isAligned
+      ? t("compass.facingQibla")
+      : getTranslatedCompassDirection(heading, t)
+    : "";
+  const headingColor = isAligned ? "$primary" : "$typography";
+  const subtitleColor = isAligned ? "$primary" : "$typographySecondary";
+
   const lowAccuracy = accuracy < 50;
+
+  // Ring pulse animation when aligned
+  const ringPulse = useSharedValue(1);
+  useEffect(() => {
+    if (isAligned && !reduceMotion) {
+      ringPulse.value = withRepeat(
+        withSequence(withTiming(0.5, { duration: 1000 }), withTiming(1, { duration: 1000 })),
+        -1,
+        true
+      );
+    } else {
+      ringPulse.value = withTiming(1, { duration: 300 });
+    }
+  }, [isAligned, reduceMotion, ringPulse]);
+
+  const ringPulseStyle = useAnimatedStyle(() => ({
+    opacity: ringPulse.value,
+  }));
 
   return (
     <Background>
@@ -224,13 +254,30 @@ const Compass = () => {
                 accessibilityLabel={`${headingRounded} ${t("compass.currentDirection")}`}>
                 {headingText}°
               </Text>
-              <Text color="$typographySecondary" size="md">
+              <Text color={subtitleColor} size="md" fontWeight={isAligned ? "600" : "400"}>
                 {cardinalText}
               </Text>
             </VStack>
 
             {/* Compass visual */}
             <Box alignItems="center" justifyContent="center">
+              {/* Pulse glow when aligned */}
+              {isAligned && (
+                <Animated.View
+                  style={[
+                    ringPulseStyle,
+                    {
+                      position: "absolute",
+                      top: 14,
+                      width: compassSize,
+                      height: compassSize,
+                      borderRadius: compassSize / 2,
+                      borderWidth: 3,
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                />
+              )}
               {/* Fixed reference notch at top */}
               <Box position="absolute" top={0} zIndex={10} alignItems="center">
                 <Svg width={20} height={14}>
@@ -368,45 +415,28 @@ const Compass = () => {
                     </HStack>
                   )}
 
-                  {/* Accuracy row — dot is a dev-only debug indicator, not user-facing.
-                     Keep it hidden from accessibility tree. */}
+                  {/* Accuracy row */}
                   <HStack justifyContent="space-between" alignItems="center">
                     <Text color="$typography" fontWeight="500">
                       {t("compass.accuracy")}
                     </Text>
-                    <HStack alignItems="center" gap="$1.5">
-                      <Text color="$typographySecondary" size="md">
-                        {formatNumberToLocale(`${Math.round(accuracy)}`)}%
-                      </Text>
-                      <Box
-                        width={6}
-                        height={6}
-                        borderRadius={3}
-                        backgroundColor={source === "fused" ? "$primary" : "$warning"}
-                        accessibilityElementsHidden={true}
-                        importantForAccessibility="no"
-                      />
-                    </HStack>
+                    <Text color="$typographySecondary" size="md">
+                      {accuracy > 0
+                        ? `±${formatNumberToLocale(`${Math.round(accuracy)}`)}°`
+                        : t("compass.starting")}
+                    </Text>
                   </HStack>
                 </VStack>
               </Box>
             </Box>
 
-            {/* Facing Qibla banner */}
-            {isAligned && (
-              <Animated.View
-                entering={reduceMotion ? undefined : FadeInDown.duration(250)}
-                exiting={reduceMotion ? undefined : FadeOutDown.duration(200)}>
-                <Box
-                  paddingHorizontal="$6"
-                  paddingVertical="$3"
-                  borderRadius="$6"
-                  backgroundColor="$primary">
-                  <Text color="$typographyContrast" size="lg" bold textAlign="center">
-                    {t("compass.facingQibla")}
-                  </Text>
-                </Box>
-              </Animated.View>
+            {/* Near Kaaba blessing */}
+            {isNearKaaba && (
+              <Box paddingHorizontal="$4" paddingVertical="$2">
+                <Text color="$primary" size="lg" bold textAlign="center">
+                  {t("compass.nearKaaba")}
+                </Text>
+              </Box>
             )}
 
             {/* Calibration hint */}
