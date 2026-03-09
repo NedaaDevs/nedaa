@@ -5,7 +5,7 @@ import { differenceInDays } from "date-fns";
 
 import { UmrahDB } from "@/services/umrah-db";
 import { UMRAH_STAGES, AUTO_RESET_DAYS } from "@/constants/UmrahGuide";
-import type { ActiveProgress, StageId, UmrahRecord } from "@/types/umrah";
+import type { ActiveProgress, Gender, StageId, UmrahRecord } from "@/types/umrah";
 
 const generateId = (): string => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -18,6 +18,9 @@ type UmrahGuideState = {
   activeProgress: ActiveProgress | null;
   history: UmrahRecord[];
   isDbInitialized: boolean;
+  selectedGender: Gender | null;
+  hasSeenFlipHint: boolean;
+  preChecklist: Record<string, boolean>;
 
   // Actions
   initializeDb: () => Promise<void>;
@@ -32,6 +35,10 @@ type UmrahGuideState = {
   resetProgress: () => void;
   checkAutoReset: () => void;
   loadHistory: () => Promise<void>;
+  setSelectedGender: (gender: Gender) => void;
+  markFlipHintSeen: () => void;
+  togglePreChecklistItem: (id: string) => void;
+  resetPreChecklist: () => void;
 
   // Computed helpers
   getCurrentStage: () => (typeof UMRAH_STAGES)[number] | null;
@@ -48,6 +55,9 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
         activeProgress: null,
         history: [],
         isDbInitialized: false,
+        selectedGender: null,
+        hasSeenFlipHint: false,
+        preChecklist: {},
 
         initializeDb: async () => {
           if (get().isDbInitialized) return;
@@ -128,13 +138,16 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
 
           const nextStageIndex = activeProgress.currentStageIndex + 1;
           if (nextStageIndex < UMRAH_STAGES.length) {
+            const now = new Date().toISOString();
+            const movingFromIhram = UMRAH_STAGES[activeProgress.currentStageIndex]?.id === "ihram";
             set({
               activeProgress: {
                 ...activeProgress,
                 currentStageIndex: nextStageIndex,
                 currentStepIndex: 0,
                 checklistState: {},
-                updatedAt: new Date().toISOString(),
+                startedAt: movingFromIhram ? now : activeProgress.startedAt,
+                updatedAt: now,
               },
             });
           }
@@ -227,6 +240,23 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
           set({ history });
         },
 
+        setSelectedGender: (gender: Gender) => {
+          set({ selectedGender: gender });
+        },
+
+        markFlipHintSeen: () => {
+          set({ hasSeenFlipHint: true });
+        },
+
+        togglePreChecklistItem: (id: string) => {
+          const { preChecklist } = get();
+          set({ preChecklist: { ...preChecklist, [id]: !preChecklist[id] } });
+        },
+
+        resetPreChecklist: () => {
+          set({ preChecklist: {} });
+        },
+
         getCurrentStage: () => {
           const { activeProgress } = get();
           if (!activeProgress) return null;
@@ -276,6 +306,9 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
         storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
           activeProgress: state.activeProgress,
+          selectedGender: state.selectedGender,
+          hasSeenFlipHint: state.hasSeenFlipHint,
+          preChecklist: state.preChecklist,
         }),
         onRehydrateStorage: () => (state) => {
           state?.checkAutoReset();
