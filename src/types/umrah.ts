@@ -5,9 +5,12 @@ export type DuaContent = {
   translation: Record<string, string>;
   audioKey?: string;
   source: string;
+  hadithSource?: string;
+  hadithTranslation?: string;
+  repeatCount?: number;
 };
 
-export type SubStepType = "instruction" | "dua" | "checklist" | "lap";
+export type SubStepType = "instruction" | "dua" | "checklist" | "lap" | "reference";
 
 export type SubStep = {
   id: string;
@@ -18,6 +21,7 @@ export type SubStep = {
   checklistItems?: string[];
   lapNumber?: number;
   lapDirection?: "safaToMarwa" | "marwaToSafa";
+  route?: string;
 };
 
 export type StageId = "ihram" | "tawaf" | "sai" | "tahallul";
@@ -46,4 +50,40 @@ export type ActiveProgress = {
   checklistState: Record<string, boolean>;
   startedAt: string;
   updatedAt: string;
+};
+
+export type Gender = "male" | "female";
+
+export type MiqatId =
+  | "dhul-hulayfah"
+  | "juhfah"
+  | "yalamlam"
+  | "qarn-al-manazil"
+  | "dhat-irq"
+  | "tanim";
+
+export type MiqatPoint = {
+  id: MiqatId;
+  nameAr: string;
+  nameEn: string;
+  alternateNameAr?: string;
+  alternateNameEn?: string;
+  distanceFromMakkahKm: number;
+  fromDirections: string[];
+  isInsideMakkah: boolean;
+};
+
+export type IhramProhibition = {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  appliesTo: "men" | "women" | "both";
+  icon: string;
+};
+
+export type PreChecklistItem = {
+  id: string;
+  titleKey: string;
 };
