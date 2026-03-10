@@ -80,7 +80,7 @@ const FeatureDiscoveryCard = ({ config }: Props) => {
             <Icon as={X} size="sm" color="$typographySecondary" />
           </Pressable>
         </HStack>
-        <Box marginTop="$2" alignItems="flex-end">
+        <Box marginTop="$2" alignItems="center">
           <Pressable
             onPress={handleExplore}
             paddingHorizontal="$3"
