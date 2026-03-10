@@ -11,7 +11,8 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import TopBar from "@/components/TopBar";
 
-import { Compass, BookOpenCheck } from "lucide-react-native";
+import { Compass, CalendarRange } from "lucide-react-native";
+import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 import ProgressRing from "@/components/umrah/ProgressRing";
@@ -31,10 +32,17 @@ const TOOLS: ToolItem[] = [
     id: "umrah-guide",
     titleKey: "tools.umrahGuide.title",
     subtitleKey: "tools.umrahGuide.subtitle",
-    icon: BookOpenCheck,
+    icon: KaabaIcon,
     route: "/umrah",
     hasActiveBadge: () => useUmrahGuideStore.getState().activeProgress !== null,
     getProgress: () => useUmrahGuideStore.getState().getProgressFraction(),
+  },
+  {
+    id: "hijri-converter",
+    titleKey: "tools.hijriConverter.title",
+    subtitleKey: "tools.hijriConverter.subtitle",
+    icon: CalendarRange,
+    route: "/hijri-converter",
   },
   {
     id: "compass",
@@ -69,7 +77,7 @@ export default function ToolsScreen() {
                   padding="$4"
                   borderRadius="$4"
                   backgroundColor="$backgroundSecondary"
-                  minHeight={120}
+                  height={150}
                   justifyContent="space-between"
                   accessibilityRole="button"
                   accessibilityLabel={t(tool.titleKey)}
@@ -92,7 +100,7 @@ export default function ToolsScreen() {
                     </Text>
                   </VStack>
                   {tool.hasActiveBadge?.() && (
-                    <Box position="absolute" top={10} right={10}>
+                    <Box position="absolute" top={10} style={{ end: 10 }}>
                       <ProgressRing progress={tool.getProgress?.() ?? 0} size="sm" />
                     </Box>
                   )}

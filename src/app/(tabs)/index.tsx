@@ -8,7 +8,7 @@ import TimingsCarousel from "@/components/TimingsCarousel";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import FeatureDiscoveryCard from "@/components/tools/FeatureDiscoveryCard";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
-import { BookOpenCheck } from "lucide-react-native";
+import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -23,7 +23,7 @@ const UMRAH_GUIDE_CARD = {
   id: "umrah-guide-v1",
   titleKey: "umrah.featureCard.title",
   descriptionKey: "umrah.featureCard.description",
-  icon: BookOpenCheck,
+  icon: KaabaIcon,
   route: "/umrah",
 };
 
