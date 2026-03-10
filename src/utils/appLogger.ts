@@ -268,4 +268,45 @@ export const AppLogger = {
       logger.flush();
     }
   },
+
+  async getAllLogsText(): Promise<string> {
+    AppLogger.flushAll();
+    const parts: string[] = [];
+
+    for (const [domain, logger] of registry) {
+      const text = await logger.getLogText();
+      if (text) {
+        parts.push(`\n====== ${domain.toUpperCase()} ======\n`);
+        parts.push(text);
+      }
+    }
+
+    return parts.join("\n");
+  },
+
+  async shareAllLogs(): Promise<void> {
+    try {
+      const report = await AppLogger.getAllLogsText();
+      if (!report) return;
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const fileName = `nedaa-logs-${timestamp}.txt`;
+      const file = new File(Paths.cache, fileName);
+
+      try {
+        file.create();
+      } catch {
+        // may already exist
+      }
+      file.write(report);
+
+      if (Platform.OS === "ios") {
+        await Share.share({ url: file.uri });
+      } else {
+        await Share.share({ message: report, title: fileName });
+      }
+    } catch (error) {
+      console.error("[AppLogger] Share all logs failed:", error);
+    }
+  },
 };
