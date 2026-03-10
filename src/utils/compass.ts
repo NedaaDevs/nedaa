@@ -1,7 +1,6 @@
-// Mecca coordinates (Kaaba)
-const KAABA_COORDINATES = {
-  latitude: 21.422528,
-  longitude: 39.826208,
+export const KAABA_COORDINATES = {
+  latitude: 21.422487,
+  longitude: 39.826206,
 };
 
 /**

@@ -2,6 +2,7 @@ import { LocationObjectCoords } from "expo-location";
 
 // Enum
 import { LocalPermissionStatus } from "@/enums/location";
+import { KAABA_COORDINATES } from "@/utils/compass";
 
 export type LocationPermissionsState = {
   status: LocalPermissionStatus;
@@ -22,8 +23,8 @@ export type LocationDetails = {
 };
 
 const MECCA_COORDS = {
-  latitude: 21.422487,
-  longitude: 39.826206,
+  latitude: KAABA_COORDINATES.latitude,
+  longitude: KAABA_COORDINATES.longitude,
   altitude: null,
   accuracy: null,
   altitudeAccuracy: null,
