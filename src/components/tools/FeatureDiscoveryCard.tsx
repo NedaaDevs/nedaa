@@ -80,20 +80,19 @@ const FeatureDiscoveryCard = ({ config }: Props) => {
             <Icon as={X} size="sm" color="$typographySecondary" />
           </Pressable>
         </HStack>
-        <Box marginTop="$2" alignItems="center">
-          <Pressable
-            onPress={handleExplore}
-            paddingHorizontal="$3"
-            paddingVertical="$1.5"
-            borderRadius="$3"
-            backgroundColor="$accentPrimary"
-            accessibilityRole="button"
-            accessibilityLabel={t("umrah.featureCard.explore")}>
-            <Text size="sm" fontWeight="600" color="white">
-              {t("umrah.featureCard.explore")}
-            </Text>
-          </Pressable>
-        </Box>
+        <Pressable
+          onPress={handleExplore}
+          marginTop="$2"
+          paddingVertical="$2"
+          borderRadius="$3"
+          backgroundColor="$accentPrimary"
+          alignItems="center"
+          accessibilityRole="button"
+          accessibilityLabel={t("umrah.featureCard.explore")}>
+          <Text size="sm" fontWeight="600" color="white" textAlign="center" width="100%">
+            {t("umrah.featureCard.explore")}
+          </Text>
+        </Pressable>
       </Box>
     </MotiView>
   );
