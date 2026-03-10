@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { ScrollView } from "react-native";
+import { Linking, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Background } from "@/components/ui/background";
@@ -14,10 +14,20 @@ import { Button } from "@/components/ui/button";
 import TopBar from "@/components/TopBar";
 import JourneyTimeline from "@/components/umrah/JourneyTimeline";
 
-import { RotateCcw, Calendar, Clock } from "lucide-react-native";
+import {
+  RotateCcw,
+  Calendar,
+  Clock,
+  Shirt,
+  MapPin,
+  ShieldAlert,
+  ExternalLink,
+} from "lucide-react-native";
+import PrepareCard from "@/components/umrah/PrepareCard";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
+import { getMinistryLink } from "@/constants/UmrahChecklist";
 
 const formatDuration = (minutes: number, t: (key: string) => string): string => {
   if (minutes < 60) return `${minutes} ${t("umrah.history.min")}`;
@@ -29,7 +39,7 @@ const formatDuration = (minutes: number, t: (key: string) => string): string => 
 };
 
 export default function UmrahOverviewScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
   const insets = useSafeAreaInsets();
@@ -68,6 +78,35 @@ export default function UmrahOverviewScreen() {
       <TopBar title="umrah.title" backOnClick />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: activeProgress ? 80 : 100 }}>
+        <VStack paddingHorizontal="$4" paddingTop="$4" gap="$2">
+          <Text size="md" fontWeight="600" color="$typography">
+            {t("umrah.prepare.title")}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12 }}>
+            <PrepareCard
+              titleKey="umrah.prepare.ihram"
+              subtitleKey="umrah.prepare.ihramSubtitle"
+              icon={Shirt}
+              href="/umrah/prepare/ihram"
+            />
+            <PrepareCard
+              titleKey="umrah.prepare.miqat"
+              subtitleKey="umrah.prepare.miqatSubtitle"
+              icon={MapPin}
+              href="/umrah/prepare/miqat"
+            />
+            <PrepareCard
+              titleKey="umrah.prepare.prohibitions"
+              subtitleKey="umrah.prepare.prohibitionsSubtitle"
+              icon={ShieldAlert}
+              href="/umrah/prepare/prohibitions"
+            />
+          </ScrollView>
+        </VStack>
+
         <JourneyTimeline onStagePress={handleStagePress} />
 
         {activeProgress && (
@@ -117,6 +156,19 @@ export default function UmrahOverviewScreen() {
             ))}
           </VStack>
         )}
+
+        <Pressable
+          onPress={() => Linking.openURL(getMinistryLink(i18n.language))}
+          accessibilityRole="link"
+          accessibilityLabel={t("umrah.prepare.source")}
+          style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>
+          <HStack alignItems="center" justifyContent="center" gap="$1.5">
+            <Icon as={ExternalLink} size="xs" color="$typographySecondary" />
+            <Text size="xs" color="$typographySecondary">
+              {t("umrah.prepare.source")}
+            </Text>
+          </HStack>
+        </Pressable>
       </ScrollView>
 
       {/* Bottom action bar */}

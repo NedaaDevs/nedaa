@@ -6,6 +6,7 @@ export default function UmrahLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="step" />
       <Stack.Screen name="complete" />
+      <Stack.Screen name="prepare" />
     </Stack>
   );
 }
