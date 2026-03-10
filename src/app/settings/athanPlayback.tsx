@@ -25,8 +25,16 @@ const AthanPlaybackSettings = () => {
   const hapticSelection = useHaptic("selection");
   const hapticMedium = useHaptic("medium");
 
-  const { fullAthanPlayback, athanAudioStream, updateFullAthanPlayback, updateAthanAudioStream } =
-    useNotificationSettings();
+  const {
+    fullAthanPlayback,
+    athanAudioStream,
+    updateFullAthanPlayback,
+    updateAthanAudioStream,
+    fullIqamaPlayback,
+    iqamaAudioStream,
+    updateFullIqamaPlayback,
+    updateIqamaAudioStream,
+  } = useNotificationSettings();
 
   return (
     <Background>
@@ -93,6 +101,68 @@ const AthanPlaybackSettings = () => {
                   }}
                   size="md"
                   accessibilityLabel={t("notification.respectSilentMode")}
+                />
+              </HStack>
+            </Box>
+          )}
+
+          {/* Full Iqama Playback */}
+          <Box
+            backgroundColor="$backgroundSecondary"
+            marginHorizontal="$4"
+            borderRadius="$4"
+            padding="$4">
+            <HStack justifyContent="space-between" alignItems="center">
+              <HStack gap="$3" alignItems="center" flex={1}>
+                <Icon color="$primary" size="lg" as={Play} />
+                <VStack flex={1} gap="$1">
+                  <Text size="md" fontWeight="600" color="$typography">
+                    {t("notification.fullIqamaPlayback")}
+                  </Text>
+                  <Text size="xs" color="$typographySecondary">
+                    {t("notification.fullIqamaPlayback.description")}
+                  </Text>
+                </VStack>
+              </HStack>
+              <Switch
+                value={fullIqamaPlayback}
+                onValueChange={(value) => {
+                  hapticSelection();
+                  updateFullIqamaPlayback(value);
+                }}
+                size="md"
+                accessibilityLabel={t("notification.fullIqamaPlayback")}
+              />
+            </HStack>
+          </Box>
+
+          {/* Iqama Respect Silent Mode */}
+          {fullIqamaPlayback && (
+            <Box
+              backgroundColor="$backgroundSecondary"
+              marginHorizontal="$4"
+              borderRadius="$4"
+              padding="$4">
+              <HStack justifyContent="space-between" alignItems="center">
+                <HStack gap="$3" alignItems="center" flex={1}>
+                  <Icon color="$primary" size="lg" as={VolumeX} />
+                  <VStack flex={1} gap="$1">
+                    <Text size="md" fontWeight="600" color="$typography">
+                      {t("notification.iqamaRespectSilentMode")}
+                    </Text>
+                    <Text size="xs" color="$typographySecondary">
+                      {t("notification.iqamaRespectSilentMode.description")}
+                    </Text>
+                  </VStack>
+                </HStack>
+                <Switch
+                  value={iqamaAudioStream === "ringer"}
+                  onValueChange={(value) => {
+                    hapticSelection();
+                    updateIqamaAudioStream(value ? "ringer" : "media");
+                  }}
+                  size="md"
+                  accessibilityLabel={t("notification.iqamaRespectSilentMode")}
                 />
               </HStack>
             </Box>
