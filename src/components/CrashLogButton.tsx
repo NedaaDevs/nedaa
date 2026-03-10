@@ -24,14 +24,19 @@ import { Bug, X } from "lucide-react-native";
 
 // Hooks
 import { useTranslation } from "react-i18next";
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Stores
 import { useAppStore } from "@/stores/app";
+
+// Utils
+import { AppLogger } from "@/utils/appLogger";
 
 const CrashLogButton = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const { sendCrashLogs, setSendCrashLogs } = useAppStore();
   const { t } = useTranslation();
+  const hapticMedium = useHaptic("medium");
 
   const handleToggle = (value: boolean) => {
     setSendCrashLogs(value);
@@ -48,6 +53,10 @@ const CrashLogButton = () => {
         minHeight={44}
         minWidth={44}
         onPress={() => setModalVisible(true)}
+        onLongPress={() => {
+          hapticMedium();
+          AppLogger.shareAllLogs();
+        }}
         accessibilityRole="button"
         accessibilityLabel={t("settings.crashReporting.accessibilityLabel")}
         accessibilityHint={t("settings.crashReporting.accessibilityHint")}>
