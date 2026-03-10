@@ -58,38 +58,48 @@ export const getDirectory = async (): Promise<string> => {
 };
 
 // Singleton database connection with auto-initialization
-let dbInstance: SQLite.SQLiteDatabase | null = null;
-let dbInitialized = false;
+// Caches the Promise itself (not the resolved value) to prevent concurrent callers
+// from opening duplicate connections during the async gap
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
-  if (!dbInstance) {
-    dbInstance = await SQLite.openDatabaseAsync(
-      DB_NAME,
-      { useNewConnection: true },
-      await getDirectory()
-    );
+export const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      try {
+        const db = await SQLite.openDatabaseAsync(
+          DB_NAME,
+          { useNewConnection: true },
+          await getDirectory()
+        );
+        await db.execAsync(
+          `PRAGMA journal_mode = WAL;
+          CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
+            date INTEGER PRIMARY KEY,
+            timezone TEXT NOT NULL,
+            timings TEXT NOT NULL,
+            other_timings TEXT NOT NULL
+          );`
+        );
+        return db;
+      } catch (error: unknown) {
+        dbPromise = null;
+        console.error("Error init db => ", error);
+        throw error;
+      }
+    })();
   }
-  if (!dbInitialized) {
-    await ensureSchema();
-  }
-  return dbInstance;
+  return dbPromise;
 };
 
-const ensureSchema = async () => {
-  if (dbInitialized || !dbInstance) return;
-  try {
-    await dbInstance.execAsync(
-      `PRAGMA journal_mode = WAL;
-      CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
-        date INTEGER PRIMARY KEY,
-        timezone TEXT NOT NULL,
-        timings TEXT NOT NULL,
-        other_timings TEXT NOT NULL
-      );`
-    );
-    dbInitialized = true;
-  } catch (error: unknown) {
-    console.error("Error init db => ", error);
+export const closeDatabase = async (): Promise<void> => {
+  if (dbPromise) {
+    try {
+      const db = await dbPromise;
+      dbPromise = null;
+      await db.closeAsync();
+    } catch (error) {
+      console.error("[DB] Error closing database:", error);
+    }
   }
 };
 

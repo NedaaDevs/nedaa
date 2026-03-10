@@ -15,39 +15,58 @@ export type TaskLogEntry = {
   duration_ms: number | null;
 };
 
-let dbInstance: SQLite.SQLiteDatabase | null = null;
-let dbInitialized = false;
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-const openLogDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
-  if (!dbInstance) {
-    dbInstance = await SQLite.openDatabaseAsync(
-      BG_LOG_DB_NAME,
-      { useNewConnection: true },
-      await getDirectory()
-    );
+const openLogDatabase = (): Promise<SQLite.SQLiteDatabase> => {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      try {
+        const db = await SQLite.openDatabaseAsync(
+          BG_LOG_DB_NAME,
+          { useNewConnection: true },
+          await getDirectory()
+        );
+        await db.execAsync(
+          `PRAGMA journal_mode = WAL;
+          CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+            task_name TEXT NOT NULL,
+            action TEXT NOT NULL,
+            result TEXT NOT NULL CHECK(result IN ('success', 'failed', 'skipped')),
+            details TEXT,
+            duration_ms INTEGER
+          );`
+        );
+        return db;
+      } catch (error) {
+        dbPromise = null;
+        console.error("[BackgroundTaskLog] Error init db:", error);
+        throw error;
+      }
+    })();
   }
-  if (!dbInitialized) {
-    await dbInstance.execAsync(
-      `PRAGMA journal_mode = WAL;
-      CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp TEXT NOT NULL DEFAULT (datetime('now')),
-        task_name TEXT NOT NULL,
-        action TEXT NOT NULL,
-        result TEXT NOT NULL CHECK(result IN ('success', 'failed', 'skipped')),
-        details TEXT,
-        duration_ms INTEGER
-      );`
-    );
-    dbInitialized = true;
+  return dbPromise;
+};
+
+const closeLogDatabase = async (): Promise<void> => {
+  if (dbPromise) {
+    try {
+      const db = await dbPromise;
+      dbPromise = null;
+      await db.closeAsync();
+    } catch (error) {
+      console.error("[BackgroundTaskLog] Error closing database:", error);
+    }
   }
-  return dbInstance;
 };
 
 export const BackgroundTaskLog = {
   initialize: async () => {
     await openLogDatabase();
   },
+
+  close: closeLogDatabase,
 
   log: async (
     taskName: string,

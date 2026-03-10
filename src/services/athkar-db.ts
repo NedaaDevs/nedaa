@@ -54,17 +54,38 @@ type AthkarDailyItem = z.infer<typeof AthkarDailyItemSchema>;
 type AthkarAudioDownload = z.infer<typeof AthkarAudioDownloadSchema>;
 
 // Singleton database connection
-let dbInstance: SQLite.SQLiteDatabase | null = null;
+// Caches the Promise itself to prevent concurrent callers from opening duplicate connections
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
-  if (!dbInstance) {
-    dbInstance = await SQLite.openDatabaseAsync(
-      ATHKAR_DB_NAME,
-      { useNewConnection: true },
-      await getDirectory()
-    );
+const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      try {
+        return await SQLite.openDatabaseAsync(
+          ATHKAR_DB_NAME,
+          { useNewConnection: true },
+          await getDirectory()
+        );
+      } catch (error) {
+        dbPromise = null;
+        console.error("[Athkar-DB] Error opening database:", error);
+        throw error;
+      }
+    })();
   }
-  return dbInstance;
+  return dbPromise;
+};
+
+const closeAthkarDatabase = async (): Promise<void> => {
+  if (dbPromise) {
+    try {
+      const db = await dbPromise;
+      dbPromise = null;
+      await db.closeAsync();
+    } catch (error) {
+      console.error("[Athkar-DB] Error closing database:", error);
+    }
+  }
 };
 
 // Migration helper for completed days table
@@ -622,16 +643,28 @@ const updateStreakForDay = async (
     let result = null;
 
     await db.withTransactionAsync(async () => {
-      // Check if both sessions are completed
-      const bothCompleted = await areBothSessionsCompleted(dateInt);
+      // Check if both sessions are completed (use db directly to avoid reentrant openDatabase call)
+      const completionResult = await db.getFirstAsync(
+        `SELECT morning_completed_at, evening_completed_at
+         FROM ${ATHKAR_COMPLETED_DAYS_TABLE}
+         WHERE date = ?;`,
+        [dateInt]
+      );
+      const bothCompleted =
+        completionResult &&
+        (completionResult as any).morning_completed_at !== null &&
+        (completionResult as any).evening_completed_at !== null;
 
       if (!bothCompleted) {
         result = { success: false, currentStreak: 0, longestStreak: 0 };
         return;
       }
 
-      // Get current streak data
-      const streakData = await getStreakData();
+      // Get current streak data (use db directly to avoid reentrant openDatabase call)
+      const streakResult = await db.getFirstAsync(
+        `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
+      );
+      const streakData = streakResult ? AthkarStreakSchema.parse(streakResult) : null;
       if (!streakData) throw new Error("No streak data found");
 
       // Determine new streak values
@@ -778,8 +811,11 @@ const validateStreakForToday = async (
     let result = null;
 
     await db.withTransactionAsync(async () => {
-      // Get current streak data
-      const streakData = await getStreakData();
+      // Get current streak data (use db directly to avoid reentrant openDatabase call)
+      const streakResult = await db.getFirstAsync(
+        `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
+      );
+      const streakData = streakResult ? AthkarStreakSchema.parse(streakResult) : null;
       if (!streakData) throw new Error("No streak data found");
 
       // If no previous streak or paused, nothing to validate
@@ -986,6 +1022,7 @@ const isThikrDownloaded = async (reciterId: string, thikrId: string): Promise<bo
 
 export const AthkarDB = {
   open: openDatabase,
+  close: closeAthkarDatabase,
   initialize: initializeDB,
 
   // Daily items operations
