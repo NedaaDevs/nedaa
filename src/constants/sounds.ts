@@ -148,6 +148,19 @@ export const isAthanSound = (soundKey: string): boolean => {
   return ATHAN_SOUND_KEYS.has(soundKey) || isCustomSoundKey(soundKey);
 };
 
+/**
+ * Sound keys that are full iqama recitations (long audio).
+ * These need the Android foreground service to avoid interruption.
+ */
+export const IQAMA_FULL_SOUND_KEYS = new Set(["iqama1"]);
+
+/**
+ * Check if a sound key is an iqama sound that needs the foreground service.
+ */
+export const isIqamaFullSound = (soundKey: string): boolean => {
+  return IQAMA_FULL_SOUND_KEYS.has(soundKey);
+};
+
 // Type guard to check if a key is valid for a notification type
 export function isSoundKeyValid<T extends NotificationType>(
   type: T,

@@ -32,7 +32,7 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
-import { isAthanSound } from "@/constants/sounds";
+import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
@@ -373,6 +373,28 @@ export const scheduleAllNotifications = async (
             stopLabel: t("common.stop"),
           });
         }
+
+        // Schedule native athan service for iqama notifications with full iqama sounds (Android)
+        if (
+          fullAthanEnabled &&
+          notification.type === NOTIFICATION_TYPE.IQAMA &&
+          notification.soundKey &&
+          isIqamaFullSound(notification.soundKey)
+        ) {
+          const iqamaServiceId = `iqama_svc_${notification.prayerId}_${notification.time.getTime()}`;
+          const iqamaSoundName =
+            getNotificationSound(NOTIFICATION_TYPE.IQAMA, notification.soundKey) ??
+            notification.soundKey;
+
+          await scheduleAthan({
+            id: iqamaServiceId,
+            triggerDate: notification.time,
+            prayerId: notification.prayerId,
+            soundName: iqamaSoundName,
+            title: notification.title,
+            stopLabel: t("common.stop"),
+          });
+        }
       }
     }
     scheduledCount = scheduledCount + athkarNotificationCount + qadaNotificationCount;
@@ -506,12 +528,19 @@ const generatePrayerNotifications = (
 
     // Only schedule if interval is at least MIN_INTERVAL_SECONDS and in the future (skip in test mode)
     if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
-      // Generate dynamic channel ID based on sound
+      // When fullAthanPlayback is ON: iqama full sounds play via AthanService — notification must be silent
+      const silenceChannel = isIqamaFullSound(iqamaConfig.sound) && fullAthanEnabled;
       const iqamaChannelId = getNotificationChannelId(
         prayerId,
         NOTIFICATION_TYPE.IQAMA,
-        iqamaConfig.sound
+        iqamaConfig.sound,
+        silenceChannel
       );
+
+      const iqamaSound =
+        isIqamaFullSound(iqamaConfig.sound) && fullAthanEnabled
+          ? false
+          : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default";
 
       notifications.push({
         id: `iqama_${prayerId}_${prayerTime.getTime()}`,
@@ -530,7 +559,8 @@ const generatePrayerNotifications = (
         categoryId: `iqama_${prayerId}`,
         channelId: iqamaChannelId,
         vibration: iqamaConfig.vibration,
-        sound: getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default",
+        sound: iqamaSound,
+        soundKey: iqamaConfig.sound,
       });
     }
   }
