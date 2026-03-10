@@ -15,9 +15,36 @@
     "production": {
       "autoIncrement": true,
       "environment": "production"
+    },
+    "production-hms": {
+      "extends": "production",
+      "env": {
+        "BUILD_VARIANT": "hms"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "production",
+        "releaseStatus": "inProgress",
+        "rollout": 0.2
+      }
+    },
+    "closed-testing": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
+    },
+    "internal": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal",
+        "releaseStatus": "completed"
+      }
+    }
   }
 }

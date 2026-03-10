@@ -250,11 +250,11 @@ PODS:
     - ReactCommon
   - ExpoNotifications (55.0.10):
     - ExpoModulesCore
+  - ExpoOrientation (1.0.0):
+    - ExpoModulesCore
   - ExpoRouter (55.0.3):
     - ExpoModulesCore
     - RNScreens
-  - ExpoSensors (55.0.8):
-    - ExpoModulesCore
   - ExpoSplashScreen (55.0.10):
     - ExpoModulesCore
   - ExpoSQLite (55.0.10):
@@ -2515,8 +2515,8 @@ DEPENDENCIES:
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-core`)
   - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
+  - ExpoOrientation (from `../modules/expo-orientation/ios`)
   - ExpoRouter (from `../node_modules/expo-router/ios`)
-  - ExpoSensors (from `../node_modules/expo-sensors/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
   - ExpoStoreReview (from `../node_modules/expo-store-review/ios`)
@@ -2682,10 +2682,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoNotifications:
     :path: "../node_modules/expo-notifications/ios"
+  ExpoOrientation:
+    :path: "../modules/expo-orientation/ios"
   ExpoRouter:
     :path: "../node_modules/expo-router/ios"
-  ExpoSensors:
-    :path: "../node_modules/expo-sensors/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSQLite:
@@ -2902,8 +2902,8 @@ SPEC CHECKSUMS:
   ExpoModulesCore: 8934d83ba557344022eff47658dd43d197cb481e
   ExpoModulesJSI: 59a126dc51164e603242ee9a38c19339c5c79da0
   ExpoNotifications: fa5cf77a46c8ea6bfc93bdbad9805c4f8d8a81fb
+  ExpoOrientation: 005e689b5624c013ec05db18f82d78695ba5ded6
   ExpoRouter: 9f071f8eb7b03e684302a845d78b1fb8e08118ed
-  ExpoSensors: 23d928987b066d7bcd295024d30d5aedb5ce7838
   ExpoSplashScreen: 6452aefb424acc76347d62482caef9b4e613e59e
   ExpoSQLite: 77506d3d056c57118280d1e2a2d76cc06e4926b3
   ExpoStoreReview: 9c2691ba892a818f17b80787c5b3163df0598e1b

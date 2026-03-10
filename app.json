@@ -132,12 +132,6 @@
       "expo-font",
       "react-native-email-link",
       "expo-web-browser",
-      [
-        "expo-sensors",
-        {
-          "motionPermission": false
-        }
-      ],
       "expo-asset",
       "@sentry/react-native",
       "expo-background-task",

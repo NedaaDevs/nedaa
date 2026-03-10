@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+group = 'expo.modules.hmslocation'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.hmslocation"
+  compileSdkVersion 35
+
+  defaultConfig {
+    minSdkVersion 24
+    targetSdkVersion 35
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+}
+
+repositories {
+  maven { url 'https://developer.huawei.com/repo/' }
+}
+
+dependencies {
+  implementation project(':expo-modules-core')
+  implementation 'com.huawei.hms:location:6.12.0.300'
+}

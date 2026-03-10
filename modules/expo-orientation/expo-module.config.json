@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["ExpoOrientationModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.orientation.ExpoOrientationModule"]
+  }
+}

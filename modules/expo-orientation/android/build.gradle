@@ -1,0 +1,46 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+group = 'expo.modules.orientation'
+version = '1.0.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+
+def buildVariant = System.getenv("BUILD_VARIANT") ?: "gms"
+def isGms = buildVariant != "hms"
+
+android {
+  namespace "expo.modules.orientation"
+  compileSdkVersion 35
+
+  defaultConfig {
+    minSdkVersion 24
+    targetSdkVersion 35
+    buildConfigField "boolean", "HAS_GMS", "${isGms}"
+  }
+
+  buildFeatures {
+    buildConfig true
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+
+  sourceSets {
+    main {
+      java.srcDirs += (buildVariant == "hms")
+        ? 'src/hms/java'
+        : 'src/gms/java'
+    }
+  }
+}
+
+dependencies {
+  implementation project(':expo-modules-core')
+  if (isGms) {
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+  }
+}
