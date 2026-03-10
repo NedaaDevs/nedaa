@@ -151,7 +151,8 @@ export const createNotificationChannels = async (
     morningNotification: AthkarNotificationSettings;
     eveningNotification: AthkarNotificationSettings;
   },
-  fullAthanPlayback: boolean = false
+  fullAthanPlayback: boolean = false,
+  fullIqamaPlayback: boolean = false
 ): Promise<void> => {
   if (Platform.OS !== PlatformType.ANDROID) return;
 
@@ -217,8 +218,8 @@ export const createNotificationChannels = async (
 
     // Iqama notification channel
     if (iqamaConfig.enabled) {
-      // When fullAthanPlayback is ON: iqama full sounds play via AthanService — set channel sound to null
-      const silenceIqamaChannel = fullAthanPlayback && isIqamaFullSound(iqamaConfig.sound);
+      // When fullIqamaPlayback is ON: iqama full sounds play via AthanService — set channel sound to null
+      const silenceIqamaChannel = fullIqamaPlayback && isIqamaFullSound(iqamaConfig.sound);
       const resolvedIqamaSound = silenceIqamaChannel
         ? null
         : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound);
@@ -360,7 +361,8 @@ export const shouldUpdateChannels = async (
     morningNotification: AthkarNotificationSettings;
     eveningNotification: AthkarNotificationSettings;
   },
-  fullAthanPlayback: boolean = false
+  fullAthanPlayback: boolean = false,
+  fullIqamaPlayback: boolean = false
 ): Promise<boolean> => {
   if (Platform.OS !== PlatformType.ANDROID) return false;
 
@@ -403,13 +405,13 @@ export const shouldUpdateChannels = async (
 
       for (const { type, config } of configs) {
         if (config.enabled) {
-          // Compute whether the channel is silenced (fullAthan ON + athan/iqama full sound)
+          // Compute whether the channel is silenced (foreground service plays audio instead)
           const isSilenced =
             (type === NOTIFICATION_TYPE.PRAYER &&
               fullAthanPlayback &&
               isAthanSound(config.sound)) ||
             (type === NOTIFICATION_TYPE.IQAMA &&
-              fullAthanPlayback &&
+              fullIqamaPlayback &&
               isIqamaFullSound(config.sound));
           const channelId = generateChannelId(prayer, type, config.sound, isSilenced);
           requiredChannels.add(channelId);
@@ -437,12 +439,15 @@ export const shouldUpdateChannels = async (
           }
 
           // For bundled sounds, check if the sound matches.
-          // When fullAthanPlayback is ON, athan/iqama full sound channels should be null (AthanService plays audio).
+          // When foreground playback is ON, athan/iqama full sound channels should be null (AthanService plays audio).
           // When OFF, channels should have the actual sound.
           const expectedSound =
-            fullAthanPlayback &&
-            (isAthanSound(config.sound) ||
-              (type === NOTIFICATION_TYPE.IQAMA && isIqamaFullSound(config.sound)))
+            (type === NOTIFICATION_TYPE.PRAYER &&
+              fullAthanPlayback &&
+              isAthanSound(config.sound)) ||
+            (type === NOTIFICATION_TYPE.IQAMA &&
+              fullIqamaPlayback &&
+              isIqamaFullSound(config.sound))
               ? null
               : getNotificationSound(type, config.sound);
           if (!existingChannel || !channelSoundMatches(existingChannel.sound, expectedSound)) {

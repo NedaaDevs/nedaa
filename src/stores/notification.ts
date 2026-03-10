@@ -91,6 +91,8 @@ export const useNotificationStore = create<NotificationStore>()(
         },
         fullAthanPlayback: false,
         athanAudioStream: "media" as const,
+        fullIqamaPlayback: false,
+        iqamaAudioStream: "media" as const,
 
         updateFullAthanPlayback: async (enabled) => {
           set({ fullAthanPlayback: enabled });
@@ -102,6 +104,19 @@ export const useNotificationStore = create<NotificationStore>()(
           if (Platform.OS === PlatformType.ANDROID) {
             const { setAthanAudioStream } = await import("expo-alarm");
             setAthanAudioStream(stream);
+          }
+        },
+
+        updateFullIqamaPlayback: async (enabled) => {
+          set({ fullIqamaPlayback: enabled });
+          await get().scheduleAllNotifications();
+        },
+
+        updateIqamaAudioStream: async (stream) => {
+          set({ iqamaAudioStream: stream });
+          if (Platform.OS === PlatformType.ANDROID) {
+            const { setIqamaAudioStream } = await import("expo-alarm");
+            setIqamaAudioStream(stream);
           }
         },
 
@@ -195,7 +210,13 @@ export const useNotificationStore = create<NotificationStore>()(
         },
 
         scheduleAllNotifications: async () => {
-          const { settings, morningNotification, eveningNotification, fullAthanPlayback } = get();
+          const {
+            settings,
+            morningNotification,
+            eveningNotification,
+            fullAthanPlayback,
+            fullIqamaPlayback,
+          } = get();
           if (!settings.enabled) return;
 
           set({ isScheduling: true });
@@ -230,7 +251,7 @@ export const useNotificationStore = create<NotificationStore>()(
               prayersData,
               timezone,
               qadaData,
-              { fullAthanPlayback }
+              { fullAthanPlayback, fullIqamaPlayback }
             );
 
             if (result.success) {
@@ -331,11 +352,25 @@ export const useNotificationStore = create<NotificationStore>()(
             state.migrationVersion = 3;
           }
 
-          // Sync native preference on rehydration
+          // Migration v4: Add fullIqamaPlayback and iqamaAudioStream for existing users
+          if (state.migrationVersion < 4) {
+            if (state.fullIqamaPlayback === undefined) {
+              state.fullIqamaPlayback = false;
+              console.log("[Notification Store] Migration v4: Added fullIqamaPlayback default");
+            }
+            if (state.iqamaAudioStream === undefined) {
+              state.iqamaAudioStream = "media";
+              console.log("[Notification Store] Migration v4: Added iqamaAudioStream default");
+            }
+            state.migrationVersion = 4;
+          }
+
+          // Sync native preferences on rehydration
           if (Platform.OS === "android") {
             import("expo-alarm")
-              .then(({ setAthanAudioStream }) => {
+              .then(({ setAthanAudioStream, setIqamaAudioStream }) => {
                 setAthanAudioStream(state.athanAudioStream ?? "media");
+                setIqamaAudioStream(state.iqamaAudioStream ?? "media");
               })
               .catch(() => {});
           }

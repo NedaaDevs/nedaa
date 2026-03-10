@@ -273,6 +273,14 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        Function("setIqamaAudioStream") { stream: String ->
+            context.getSharedPreferences("nedaa_athan_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putString("iqama_audio_stream", stream)
+                .apply()
+            true
+        }
+
         // -- iOS-only stubs --
 
         AsyncFunction("startLiveActivity") { _alarmId: String, _alarmType: String, _title: String, _triggerTimestamp: Double ->

@@ -549,6 +549,15 @@ export function setAthanAudioStream(stream: "media" | "ringer"): boolean {
   }
 }
 
+export function setIqamaAudioStream(stream: "media" | "ringer"): boolean {
+  if (!isAvailable) return false;
+  try {
+    return NativeModule.setIqamaAudioStream(stream);
+  } catch {
+    return false;
+  }
+}
+
 export default {
   isNativeModuleAvailable,
   isAlarmKitAvailable,
@@ -608,4 +617,5 @@ export default {
   stopAthan,
   isAthanPlaying,
   setAthanAudioStream,
+  setIqamaAudioStream,
 };

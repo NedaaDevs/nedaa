@@ -54,6 +54,8 @@ export type NotificationState = {
   eveningNotification: AthkarNotificationSettings;
   fullAthanPlayback: boolean;
   athanAudioStream: "media" | "ringer";
+  fullIqamaPlayback: boolean;
+  iqamaAudioStream: "media" | "ringer";
 };
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
@@ -65,6 +67,8 @@ export type NotificationAction = {
   updateAllNotificationToggle: (enabled: boolean) => Promise<void>;
   updateFullAthanPlayback: (enabled: boolean) => Promise<void>;
   updateAthanAudioStream: (stream: "media" | "ringer") => Promise<void>;
+  updateFullIqamaPlayback: (enabled: boolean) => Promise<void>;
+  updateIqamaAudioStream: (stream: "media" | "ringer") => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
   updateDefault: <T extends Exclude<NotificationType, "athkar">>(
     type: T,

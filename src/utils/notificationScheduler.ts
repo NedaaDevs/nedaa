@@ -182,7 +182,7 @@ export const scheduleAllNotifications = async (
   data: DayPrayerTimes[] | null,
   timezone: string,
   qadaSettings: { settings: any; remainingCount: number } | null = null,
-  androidOptions: { fullAthanPlayback?: boolean } = {},
+  androidOptions: { fullAthanPlayback?: boolean; fullIqamaPlayback?: boolean } = {},
   options: Partial<SchedulingOptions> = {}
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
@@ -219,12 +219,21 @@ export const scheduleAllNotifications = async (
       // Always recreate channels — Android caches deleted channel settings (zombie channels),
       // and expo-notifications serializes all custom sounds as "custom" making diff unreliable.
       const fullAthanPlayback = androidOptions.fullAthanPlayback ?? false;
-      await createNotificationChannels(settings, customSounds, athkarSettings, fullAthanPlayback);
+      const fullIqamaPlayback = androidOptions.fullIqamaPlayback ?? false;
+      await createNotificationChannels(
+        settings,
+        customSounds,
+        athkarSettings,
+        fullAthanPlayback,
+        fullIqamaPlayback
+      );
     }
 
     // Cancel all pending athan service alarms (Android)
     const fullAthanEnabled =
       Platform.OS === PlatformType.ANDROID && (androidOptions.fullAthanPlayback ?? false);
+    const fullIqamaEnabled =
+      Platform.OS === PlatformType.ANDROID && (androidOptions.fullIqamaPlayback ?? false);
     if (Platform.OS === PlatformType.ANDROID) {
       await cancelAllAthans([]);
     }
@@ -264,7 +273,8 @@ export const scheduleAllNotifications = async (
           now,
           t,
           false,
-          fullAthanEnabled
+          fullAthanEnabled,
+          fullIqamaEnabled
         );
 
         notificationsToSchedule.push(...prayerNotifications);
@@ -376,7 +386,7 @@ export const scheduleAllNotifications = async (
 
         // Schedule native athan service for iqama notifications with full iqama sounds (Android)
         if (
-          fullAthanEnabled &&
+          fullIqamaEnabled &&
           notification.type === NOTIFICATION_TYPE.IQAMA &&
           notification.soundKey &&
           isIqamaFullSound(notification.soundKey)
@@ -420,7 +430,8 @@ const generatePrayerNotifications = (
   now: Date,
   t: typeof i18next.t,
   testMode: boolean = false,
-  fullAthanEnabled: boolean = false
+  fullAthanEnabled: boolean = false,
+  fullIqamaEnabled: boolean = false
 ): NotificationScheduleItem[] => {
   const notifications: NotificationScheduleItem[] = [];
   const prayerName = t(`prayerTimes.${formatPrayerName(prayerId, prayerTime)}`);
@@ -528,8 +539,8 @@ const generatePrayerNotifications = (
 
     // Only schedule if interval is at least MIN_INTERVAL_SECONDS and in the future (skip in test mode)
     if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
-      // When fullAthanPlayback is ON: iqama full sounds play via AthanService — notification must be silent
-      const silenceChannel = isIqamaFullSound(iqamaConfig.sound) && fullAthanEnabled;
+      // When fullIqamaPlayback is ON: iqama full sounds play via AthanService — notification must be silent
+      const silenceChannel = isIqamaFullSound(iqamaConfig.sound) && fullIqamaEnabled;
       const iqamaChannelId = getNotificationChannelId(
         prayerId,
         NOTIFICATION_TYPE.IQAMA,
@@ -538,7 +549,7 @@ const generatePrayerNotifications = (
       );
 
       const iqamaSound =
-        isIqamaFullSound(iqamaConfig.sound) && fullAthanEnabled
+        isIqamaFullSound(iqamaConfig.sound) && fullIqamaEnabled
           ? false
           : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default";
 
