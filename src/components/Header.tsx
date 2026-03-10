@@ -5,13 +5,13 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useMemo } from "react";
 
 // Utils
-import { formatNumberToLocale } from "@/utils/number";
 import { getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { usePreferencesStore } from "@/stores/preferences";
 
 // Hooks
 import { useCountdownTimer } from "@/hooks/useCountdownTimer";
@@ -33,7 +33,9 @@ const Header = () => {
   const { t } = useTranslation();
   const { locale, hijriDaysOffset } = useAppStore();
   const { localizedLocation, locationDetails } = useLocationStore();
-  const { getNextPrayer, getNextOtherTiming, getPreviousPrayer } = usePrayerTimesStore();
+  const { todayTimings, getNextPrayer, getNextOtherTiming, getPreviousPrayer } =
+    usePrayerTimesStore();
+  const { useWesternNumerals } = usePreferencesStore();
 
   const [showOtherTiming, setShowOtherTiming] = useState(false);
 
@@ -51,9 +53,9 @@ const Header = () => {
     setShowOtherTiming((current) => !current);
   }, []);
 
-  const nextPrayer = getNextPrayer();
-  const nextOtherTiming = getNextOtherTiming();
-  const previousPrayer = getPreviousPrayer();
+  const nextPrayer = todayTimings ? getNextPrayer() : null;
+  const nextOtherTiming = todayTimings ? getNextOtherTiming() : null;
+  const previousPrayer = todayTimings ? getPreviousPrayer() : null;
   const now = timeZonedNow(locationDetails.timezone);
   const todayHijri = HijriNative.today(locationDetails.timezone);
   const hijriDate =
@@ -67,36 +69,46 @@ const Header = () => {
     iqamaPrayerName,
   } = useCountdownTimer(nextPrayer, previousPrayer, locationDetails.timezone);
 
+  // Local wrapper so React Compiler tracks locale + useWesternNumerals as dependencies
+  const formatNum = (str: string) => {
+    if (locale.startsWith("ar") && !useWesternNumerals) {
+      const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+      return str.replace(/[0-9]/g, (d: string) => arabicDigits[parseInt(d)]);
+    }
+    return str;
+  };
+
   const otherTimingDisplay = useMemo(() => {
     if (!nextOtherTiming) return "";
     const otherTime = parseISO(nextOtherTiming.time);
-    return formatNumberToLocale(
+    return formatNum(
       formatDistance(otherTime, now, {
         addSuffix: false,
         locale: getDateLocale(locale),
       })
     );
-  }, [nextOtherTiming, now, locale]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- formatNum is stable within same locale/useWesternNumerals values
+  }, [nextOtherTiming, now, locale, useWesternNumerals]);
 
   const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
 
   const hijriMonth = t(`hijriMonths.${hijriDate.month - 1}`);
 
-  const formattedDay = formatNumberToLocale(hijriDate.day.toString());
-  const formattedYear = formatNumberToLocale(hijriDate.year.toString());
+  const formattedDay = formatNum(hijriDate.day.toString());
+  const formattedYear = formatNum(hijriDate.year.toString());
 
   const formattedDateDetails = `${formattedDay} ${hijriMonth} ${formattedYear}`;
 
   const formattedPrayerTime = (date: string) => {
     const parsedDate = parseISO(date);
-    return formatNumberToLocale(
+    return formatNum(
       formatInTimeZone(parsedDate, locationDetails.timezone, "h:mm a", {
         locale: getDateLocale(locale),
       })
     );
   };
 
-  if (!timing) {
+  if (!todayTimings || !timing) {
     return (
       <Box margin="$1" borderRadius="$7">
         <Box

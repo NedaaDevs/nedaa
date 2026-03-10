@@ -22,11 +22,11 @@ const PreviousPrayer = () => {
   const { t } = useTranslation();
   const { locale } = useAppStore();
   const { locationDetails } = useLocationStore();
-  const { getPreviousPrayer } = usePrayerTimesStore();
+  const { todayTimings, getPreviousPrayer } = usePrayerTimesStore();
   const [timeElapsed, setTimeElapsed] = useState("");
   const [showPrevious, setShowPrevious] = useState(false);
 
-  const previousPrayer = getPreviousPrayer();
+  const previousPrayer = todayTimings ? getPreviousPrayer() : null;
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -69,7 +69,7 @@ const PreviousPrayer = () => {
     );
   };
 
-  if (!showPrevious || !previousPrayer) return null;
+  if (!todayTimings || !showPrevious || !previousPrayer) return null;
 
   const prayerName =
     previousPrayer.name === "dhuhr" && isFriday(locationDetails.timezone)

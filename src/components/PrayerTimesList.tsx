@@ -31,7 +31,7 @@ const prayerIcons: Record<PrayerName, React.ElementType> = {
 const PrayerTimesList = () => {
   const { todayTimings, hasError, isLoading, getNextPrayer, loadPrayerTimes, clearError } =
     usePrayerTimesStore();
-  const nextPrayer = getNextPrayer();
+  const nextPrayer = todayTimings ? getNextPrayer() : null;
 
   const handleRetry = async () => {
     clearError();
