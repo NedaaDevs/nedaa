@@ -211,17 +211,18 @@ export const UMRAH_STAGES: Stage[] = [
         descriptionKey: "umrah.steps.sai.safaStart.description",
         dua: {
           id: "sai-safa-dua",
-          arabic: "إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ",
+          arabic:
+            "إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ ۖ فَمَنْ حَجَّ الْبَيْتَ أَوِ اعْتَمَرَ فَلَا جُنَاحَ عَلَيْهِ أَنْ يَطَّوَّفَ بِهِمَا ۚ وَمَنْ تَطَوَّعَ خَيْرًا فَإِنَّ اللَّهَ شَاكِرٌ عَلِيمٌ",
           transliteration: {
-            en: "Innāṣ-ṣafā wal-marwata min sha'ā'irillāh",
-            ms: "Innāṣ-ṣafā wal-marwata min sha'ā'irillāh",
-            ur: "ان الصفا والمروۃ من شعائر اللہ",
+            en: "Innāṣ-ṣafā wal-marwata min sha'ā'irillāh, faman ḥajjal-bayta awi'tamara falā junāḥa 'alayhi an yaṭṭawwafa bihimā, wa man taṭawwa'a khayran fa innallāha shākirun 'alīm",
+            ms: "Innāṣ-ṣafā wal-marwata min sha'ā'irillāh, faman ḥajjal-bayta awi'tamara falā junāḥa 'alayhi an yaṭṭawwafa bihimā, wa man taṭawwa'a khayran fa innallāha shākirun 'alīm",
+            ur: "ان الصفا والمروۃ من شعائر اللہ فمن حج البیت او اعتمر فلا جناح علیہ ان یطوف بہما ومن تطوع خیرا فان اللہ شاکر علیم",
           },
           translation: {
-            en: "Indeed, Safa and Marwa are among the symbols of Allah.",
-            ar: "إن الصفا والمروة من شعائر الله — يقال عند بداية السعي",
-            ms: "Sesungguhnya Safa dan Marwah itu sebahagian daripada syiar (tanda kebesaran) Allah.",
-            ur: "بیشک صفا و مروہ اللہ کے شعائر میں سے ہے",
+            en: "Indeed, Safa and Marwa are among the symbols of Allah. So whoever makes Hajj to the House or performs Umrah, there is no blame upon him for walking between them. And whoever volunteers good, then indeed Allah is Appreciative and All-Knowing.",
+            ar: "إن الصفا والمروة من شعائر الله فمن حج البيت أو اعتمر فلا جناح عليه أن يطوف بهما ومن تطوع خيرًا فإن الله شاكر عليم",
+            ms: "Sesungguhnya Safa dan Marwah itu sebahagian daripada syiar Allah. Maka sesiapa yang mengerjakan haji ke Baitullah atau mengerjakan umrah, maka tidaklah salah dia bertawaf di antara keduanya. Dan sesiapa yang mengerjakan kebaikan dengan sukarela, maka sesungguhnya Allah Maha Mensyukuri lagi Maha Mengetahui.",
+            ur: "بیشک صفا و مروہ اللہ کے شعائر میں سے ہیں، پس جو شخص بیت اللہ کا حج یا عمرہ کرے تو اس پر کوئی گناہ نہیں کہ ان دونوں کے درمیان طواف کرے، اور جو شخص اپنی خوشی سے کوئی نیکی کرے تو اللہ قدردان اور جاننے والا ہے۔",
           },
           source: "umrah.sources.baqarahMuslim.safa",
           hadithSource: "سورة البقرة ٢:١٥٨، صحيح مسلم ١٢١٨",
