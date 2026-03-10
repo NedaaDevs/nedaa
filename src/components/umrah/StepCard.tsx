@@ -238,6 +238,9 @@ const StepCard = ({ step }: Props) => {
               {t(step.dua.source)}
             </Text>
           )}
+          <Text size="xs" color="$typographyTertiary" textAlign="center">
+            {t("umrah.duaNote")}
+          </Text>
         </VStack>
       </Box>
     );
@@ -333,6 +336,9 @@ const StepCard = ({ step }: Props) => {
               {t(step.dua.source)}
             </Text>
           )}
+          <Text size="xs" color="$typographyTertiary" textAlign="center">
+            {t("umrah.duaNote")}
+          </Text>
         </VStack>
       </Box>
     );
