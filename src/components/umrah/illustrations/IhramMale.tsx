@@ -1,6 +1,7 @@
 import Svg, { Path, Circle, Rect, Line, G } from "react-native-svg";
-import { View, Text as RNText } from "react-native";
+import { View } from "react-native";
 import { useTheme } from "tamagui";
+import NumberBadge from "@/components/umrah/illustrations/NumberBadge";
 
 type Props = {
   size?: number;
@@ -15,7 +16,7 @@ const IhramMale = ({ size = 200 }: Props) => {
   const scale = size / 200;
 
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={{ width: size, height: size, direction: "ltr" }}>
       <Svg width={size} height={size} viewBox="0 0 200 200">
         {/* Head — uncovered, no hat/cap */}
         <Circle cx="100" cy="40" r="18" fill={secondary} opacity={0.25} />
@@ -111,36 +112,5 @@ const IhramMale = ({ size = 200 }: Props) => {
     </View>
   );
 };
-
-const NumberBadge = ({
-  n,
-  x,
-  y,
-  color,
-  bg,
-}: {
-  n: number;
-  x: number;
-  y: number;
-  color: string;
-  bg: string;
-}) => (
-  <View
-    style={{
-      position: "absolute",
-      left: x,
-      top: y,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      borderWidth: 1.5,
-      borderColor: color,
-      backgroundColor: bg,
-      alignItems: "center",
-      justifyContent: "center",
-    }}>
-    <RNText style={{ fontSize: 11, fontWeight: "700", color }}>{n}</RNText>
-  </View>
-);
 
 export default IhramMale;

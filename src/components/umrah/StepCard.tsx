@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
+import { formatNumberToLocale } from "@/utils/number";
 import { useRouter } from "expo-router";
 import Animated, {
   useSharedValue,
@@ -151,12 +152,12 @@ const StepCard = ({ step }: Props) => {
             alignItems="center"
             justifyContent="center">
             <Text size="2xl" fontWeight="700" color="white">
-              {step.lapNumber}
+              {formatNumberToLocale(String(step.lapNumber ?? ""))}
             </Text>
           </Box>
 
           <Text size="lg" fontWeight="600" color="$typography" textAlign="center">
-            {t(step.titleKey, { number: step.lapNumber })}
+            {t(step.titleKey, { number: formatNumberToLocale(String(step.lapNumber ?? "")) })}
           </Text>
 
           {directionLabel && (
@@ -267,7 +268,7 @@ const StepCard = ({ step }: Props) => {
               color="$accentPrimary"
               fontWeight="600"
               accessibilityLabel={t("a11y.umrah.repeatCount", { count: step.dua.repeatCount })}>
-              ×{step.dua.repeatCount}
+              ×{formatNumberToLocale(step.dua.repeatCount.toString())}
             </Text>
           )}
 

@@ -233,7 +233,6 @@ export const UMRAH_STAGES: Stage[] = [
         id: `sai-lap-${i + 1}`,
         type: "lap" as const,
         titleKey: "umrah.steps.sai.lap.title",
-        descriptionKey: "umrah.steps.sai.lap.description",
         lapNumber: i + 1,
         lapDirection: (i % 2 === 0 ? "safaToMarwa" : "marwaToSafa") as
           | "safaToMarwa"
