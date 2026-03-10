@@ -35,6 +35,10 @@ const TimingsCarousel = (props: Props) => {
 
   return (
     <Box flex={1} flexDirection="column">
+      <Box flex={1}>{currentIndex === 0 ? <PrayerTimes /> : <OtherTimes />}</Box>
+
+      <Divider />
+
       {/* Underline Tabs */}
       <Box flexDirection="row" justifyContent="center" gap="$6">
         {tabs.map((tab, index) => {
@@ -47,28 +51,24 @@ const TimingsCarousel = (props: Props) => {
               accessibilityRole="tab"
               accessibilityLabel={t(tab.labelKey)}
               accessibilityState={{ selected: isActive }}>
+              {isActive && (
+                <Box
+                  height={2}
+                  marginBottom="$1"
+                  borderRadius={999}
+                  backgroundColor="$accentPrimary"
+                />
+              )}
               <Text
                 size="md"
                 fontWeight={isActive ? "700" : "400"}
                 color={isActive ? "$typography" : "$typographySecondary"}>
                 {t(tab.labelKey)}
               </Text>
-              {isActive && (
-                <Box
-                  height={2}
-                  marginTop="$1"
-                  borderRadius={999}
-                  backgroundColor="$accentPrimary"
-                />
-              )}
             </Pressable>
           );
         })}
       </Box>
-
-      <Divider marginTop="$1" />
-
-      <Box flex={1}>{currentIndex === 0 ? <PrayerTimes /> : <OtherTimes />}</Box>
     </Box>
   );
 };
