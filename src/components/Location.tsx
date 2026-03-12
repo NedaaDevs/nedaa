@@ -28,14 +28,17 @@ import { MapPin, RefreshCw, Info, X } from "lucide-react-native";
 
 // Stores
 import { useLocationStore } from "@/stores/location";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Utils
 import { checkLocationPermission, requestLocationPermission } from "@/utils/location";
 
 // Hooks
+import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
+
+// Components
+import LocationUpdateProgress from "@/components/LocationUpdateProgress";
 
 const LoadingView = () => (
   <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
@@ -146,16 +149,10 @@ const KeepLocationUpdated = () => {
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
 
-  const {
-    localizedLocation,
-    locationDetails,
-    isGettingLocation,
-    autoUpdateLocation,
-    setAutoUpdateLocation,
-    updateCurrentLocation,
-  } = useLocationStore();
+  const { localizedLocation, locationDetails, autoUpdateLocation, setAutoUpdateLocation } =
+    useLocationStore();
 
-  const { isLoading: isFetchingPrayers, loadPrayerTimes } = usePrayerTimesStore();
+  const { updateState, executeUpdate, retry } = useLocationUpdate();
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [canAskPermission, setCanAskPermission] = useState(true);
@@ -204,12 +201,7 @@ const KeepLocationUpdated = () => {
 
   const handleManualRefresh = async () => {
     hapticMedium();
-    try {
-      await updateCurrentLocation();
-      await loadPrayerTimes(true);
-    } catch (error) {
-      console.error(error);
-    }
+    await executeUpdate();
   };
 
   const toggleAutoLocationUpdated = (value: boolean) => {
@@ -237,7 +229,7 @@ const KeepLocationUpdated = () => {
       <Box backgroundColor="$backgroundSecondary" marginTop="$2" borderRadius="$4">
         <Pressable
           onPress={handleManualRefresh}
-          disabled={isGettingLocation || isFetchingPrayers}
+          disabled={updateState.isUpdating}
           paddingVertical="$5"
           paddingHorizontal="$5"
           flexDirection="row"
@@ -248,7 +240,7 @@ const KeepLocationUpdated = () => {
             country: localizedLocation.country ?? locationDetails.address?.country,
           })}
           accessibilityHint={t("a11y.location.refreshHint")}
-          accessibilityState={{ disabled: isGettingLocation || isFetchingPrayers }}>
+          accessibilityState={{ disabled: updateState.isUpdating }}>
           <HStack justifyContent="space-between" alignItems="center" width="100%">
             <HStack alignItems="center" flex={1} gap="$3">
               <Icon as={MapPin} color="$accentPrimary" size="md" />
@@ -263,13 +255,15 @@ const KeepLocationUpdated = () => {
               </VStack>
             </HStack>
 
-            {isGettingLocation || isFetchingPrayers ? (
+            {updateState.isUpdating ? (
               <Spinner size="small" />
             ) : (
               <Icon as={RefreshCw} color="$accentPrimary" size="md" />
             )}
           </HStack>
         </Pressable>
+
+        <LocationUpdateProgress state={updateState} onRetry={retry} />
 
         {locationDetails.error && (
           <Box paddingHorizontal="$5" paddingBottom="$3">
@@ -311,6 +305,27 @@ const KeepLocationUpdated = () => {
       </Box>
 
       <InfoModal isVisible={showInfoModal} onClose={() => setShowInfoModal(false)} />
+
+      {__DEV__ && (
+        <Box backgroundColor="$backgroundSecondary" borderRadius="$4" padding="$4">
+          <Button
+            size="sm"
+            variant="outline"
+            onPress={() => {
+              useLocationStore.setState({
+                pendingCityChange: {
+                  currentCity: locationDetails.address?.city || "Current",
+                  newCity: "Test City",
+                },
+                showCityChangeModal: true,
+                cityChangeDetected: true,
+              });
+            }}
+            accessibilityLabel="Simulate city change">
+            <Button.Text>DEV: Simulate City Change</Button.Text>
+          </Button>
+        </Box>
+      )}
     </VStack>
   );
 };

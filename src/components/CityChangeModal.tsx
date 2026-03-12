@@ -16,31 +16,42 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Icon } from "@/components/ui/icon";
 import { Box } from "@/components/ui/box";
+import LocationUpdateProgress from "@/components/LocationUpdateProgress";
 
 // Icons
 import { MapPin, X, ArrowDown } from "lucide-react-native";
+
+// Types
+import type { UpdateState } from "@/hooks/useLocationUpdate";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  onRetry: () => void;
   currentCity: string;
   newCity: string;
-  isUpdating?: boolean;
+  updateState: UpdateState;
 };
 
 const CityChangeModal: FC<Props> = ({
   isOpen,
   onClose,
   onUpdate,
+  onRetry,
   currentCity,
   newCity,
-  isUpdating = false,
+  updateState,
 }) => {
   const { t } = useTranslation();
+  const isBusy = updateState.isUpdating || updateState.currentStep === "done";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      accessibilityLabel={t("a11y.location.cityChangeModal")}>
       <ModalBackdrop />
       <ModalContent>
         <ModalCloseButton>
@@ -58,7 +69,7 @@ const CityChangeModal: FC<Props> = ({
               justifyContent="center">
               <Icon as={MapPin} color="$info" size="xl" />
             </Box>
-            <Text size="xl" bold color="$typography" textAlign="center">
+            <Text size="xl" bold color="$typography" textAlign="center" accessibilityRole="header">
               {t("location.cityChanged.title")}
             </Text>
           </VStack>
@@ -78,7 +89,8 @@ const CityChangeModal: FC<Props> = ({
                 borderWidth={1}
                 borderColor="$outline"
                 gap="$1"
-                width="100%">
+                width="100%"
+                accessibilityLabel={t("a11y.location.currentCity", { city: currentCity })}>
                 <Text size="sm" fontWeight="500" color="$typographySecondary" textAlign="center">
                   {t("location.cityChanged.currentCity")}
                 </Text>
@@ -96,7 +108,8 @@ const CityChangeModal: FC<Props> = ({
                 borderWidth={1}
                 borderColor="$success"
                 gap="$1"
-                width="100%">
+                width="100%"
+                accessibilityLabel={t("a11y.location.newCity", { city: newCity })}>
                 <Text size="sm" fontWeight="500" color="$typographySecondary" textAlign="center">
                   {t("location.cityChanged.newCity")}
                 </Text>
@@ -114,29 +127,33 @@ const CityChangeModal: FC<Props> = ({
 
         <ModalFooter>
           <VStack gap="$2" width="100%">
-            <Button
-              size="lg"
-              width="100%"
-              backgroundColor="$accentPrimary"
-              onPress={onUpdate}
-              disabled={isUpdating}>
-              {isUpdating ? (
-                <Button.Spinner />
-              ) : (
-                <Button.Text color="$typographyContrast" fontWeight="500">
-                  {t("location.cityChanged.updateLocation")}
-                </Button.Text>
-              )}
-            </Button>
+            {isBusy || updateState.error ? (
+              <LocationUpdateProgress state={updateState} onRetry={onRetry} />
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  width="100%"
+                  backgroundColor="$accentPrimary"
+                  onPress={onUpdate}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("a11y.location.updateButton")}>
+                  <Button.Text color="$typographyContrast" fontWeight="500">
+                    {t("location.cityChanged.updateLocation")}
+                  </Button.Text>
+                </Button>
 
-            <Button
-              size="lg"
-              variant="outline"
-              width="100%"
-              onPress={onClose}
-              disabled={isUpdating}>
-              <Button.Text color="$typography">{t("common.keepCurrent")}</Button.Text>
-            </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  width="100%"
+                  onPress={onClose}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("a11y.location.keepCurrentButton")}>
+                  <Button.Text color="$typography">{t("common.keepCurrent")}</Button.Text>
+                </Button>
+              </>
+            )}
           </VStack>
         </ModalFooter>
       </ModalContent>

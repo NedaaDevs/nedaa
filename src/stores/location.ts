@@ -37,9 +37,6 @@ export type LocationStore = {
     currentCity: string;
     newCity: string;
   } | null;
-  isUpdatingLocation: boolean;
-  lastCityChangeCheck: string | null;
-
   initializeLocation: () => Promise<void>;
   setAutoUpdateLocation: (value: boolean) => void;
   updateCurrentLocation: () => Promise<void>;
@@ -48,7 +45,6 @@ export type LocationStore = {
   updateAddressTranslation: () => Promise<boolean>;
   setTimezone: (tz: string) => Promise<void>;
   checkAndPromptCityChange: () => Promise<void>;
-  handleCityChangeUpdate: () => Promise<boolean>;
   dismissCityChangeModal: () => void;
 };
 
@@ -66,9 +62,6 @@ export const useLocationStore = create<LocationStore>()(
         autoUpdateLocation: true,
         showCityChangeModal: false,
         pendingCityChange: null,
-        isUpdatingLocation: false,
-        lastCityChangeCheck: null,
-
         // Initialize location when permission is granted
         initializeLocation: async () => {
           set({ isGettingLocation: true });
@@ -278,27 +271,10 @@ export const useLocationStore = create<LocationStore>()(
           const lastCoords = state.lastKnownCoords;
 
           if (!lastCoords || state.showCityChangeModal) {
-            return; // Skip if no previous coords or modal already showing
-          }
-
-          // Check if 12 hours have passed since last check (throttling)
-          if (state.lastCityChangeCheck) {
-            const lastCheck = new Date(state.lastCityChangeCheck);
-            const now = new Date();
-            const hoursSinceLastCheck = (now.getTime() - lastCheck.getTime()) / (1000 * 60 * 60);
-
-            if (hoursSinceLastCheck < 12) {
-              console.log(
-                `[Location] City change check throttled. Last check: ${hoursSinceLastCheck.toFixed(1)}h ago`
-              );
-              return;
-            }
+            return;
           }
 
           try {
-            // Update timestamp for this check
-            set({ lastCityChangeCheck: new Date().toISOString() });
-
             const currentLocation = await getLocationWithTimeout();
 
             // Calculate distance
@@ -344,20 +320,6 @@ export const useLocationStore = create<LocationStore>()(
           }
         },
 
-        handleCityChangeUpdate: async () => {
-          set({ isUpdatingLocation: true });
-
-          try {
-            await get().updateCurrentLocation();
-            return true;
-          } catch (error) {
-            console.error("Failed to update location:", error);
-            return false;
-          } finally {
-            set({ isUpdatingLocation: false });
-          }
-        },
-
         dismissCityChangeModal: () => {
           set({
             showCityChangeModal: false,
@@ -375,7 +337,6 @@ export const useLocationStore = create<LocationStore>()(
           lastKnownCoords: state.lastKnownCoords,
           isLocationPermissionGranted: state.isLocationPermissionGranted,
           autoUpdateLocation: state.autoUpdateLocation,
-          lastCityChangeCheck: state.lastCityChangeCheck,
         }),
       }
     ),

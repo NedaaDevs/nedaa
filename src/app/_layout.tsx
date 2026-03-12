@@ -58,9 +58,10 @@ function AppShell() {
   const {
     showCityChangeModal,
     pendingCityChange,
-    isUpdatingLocation,
+    updateState,
     handleCityChangeUpdate,
     dismissCityChangeModal,
+    retryUpdate,
   } = useCityChangeHandler();
 
   useNotificationListeners();
@@ -80,9 +81,10 @@ function AppShell() {
             isOpen={showCityChangeModal}
             onClose={dismissCityChangeModal}
             onUpdate={handleCityChangeUpdate}
+            onRetry={retryUpdate}
             currentCity={pendingCityChange.currentCity}
             newCity={pendingCityChange.newCity}
-            isUpdating={isUpdatingLocation}
+            updateState={updateState}
           />
         )}
 
