@@ -37,7 +37,7 @@ import { getDateLocale } from "@/utils/date";
 // Enums
 import { PlatformType } from "@/enums/app";
 
-const SWIPE_THRESHOLD = 40; // Swipe 40px to show buttons
+const SWIPE_THRESHOLD = 40;
 
 type Props = {
   entry: QadaHistory;
@@ -65,7 +65,6 @@ const ActionButtons = ({
   onDelete,
   swipeableRef,
 }: ActionButtonsProps) => {
-  const { isRTL } = useRTL();
   const theme = useTheme();
   const isAndroid = Platform.OS === PlatformType.ANDROID;
 
@@ -93,6 +92,20 @@ const ActionButtons = ({
 
   const androidStyle = isAndroid ? { elevation: 10, zIndex: 10 } : {};
 
+  const actionButtonStyle = (bgColor: string) => ({
+    flexDirection: "column" as const,
+    backgroundColor: bgColor,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    minWidth: 64,
+    minHeight: 56,
+    gap: 4,
+    ...androidStyle,
+  });
+
   return (
     <Animated.View
       collapsable={false}
@@ -100,7 +113,7 @@ const ActionButtons = ({
       style={[
         containerStyle,
         {
-          flexDirection: isRTL ? "row-reverse" : "row",
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-end",
           paddingHorizontal: 8,
@@ -108,26 +121,15 @@ const ActionButtons = ({
           ...androidStyle,
         },
       ]}>
-      {/* Complete Button(s) */}
       {entry.count > 1 ? (
         <>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleCompletePress}
+            accessibilityRole="button"
             accessibilityLabel={t("common.complete")}
-            style={{
-              flexDirection: "column",
-              backgroundColor: theme.success?.val,
-              borderRadius: 10,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 64,
-              minHeight: 56,
-              gap: 2,
-              ...androidStyle,
-            }}>
+            accessibilityHint={t("a11y.qada.completeOneHint")}
+            style={actionButtonStyle(theme.success?.val)}>
             <Icon as={Check} size="sm" color={theme.typographyContrast?.val} />
             <Text color="$typographyContrast" size="2xs" fontWeight="600" numberOfLines={1}>
               {t("common.complete")}
@@ -136,20 +138,10 @@ const ActionButtons = ({
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleCompleteAllPress}
+            accessibilityRole="button"
             accessibilityLabel={`${t("common.all")} (${formatNumberToLocale(entry.count.toString())})`}
-            style={{
-              flexDirection: "column",
-              backgroundColor: theme.info?.val,
-              borderRadius: 10,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 64,
-              minHeight: 56,
-              gap: 2,
-              ...androidStyle,
-            }}>
+            accessibilityHint={t("a11y.qada.completeAllHint")}
+            style={actionButtonStyle(theme.info?.val)}>
             <Icon as={CheckCheck} size="sm" color={theme.typographyContrast?.val} />
             <Text color="$typographyContrast" size="2xs" fontWeight="600" numberOfLines={1}>
               {t("common.all")} ({formatNumberToLocale(entry.count.toString())})
@@ -160,20 +152,10 @@ const ActionButtons = ({
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleCompletePress}
+          accessibilityRole="button"
           accessibilityLabel={t("common.complete")}
-          style={{
-            flexDirection: "column",
-            backgroundColor: theme.success?.val,
-            borderRadius: 10,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            alignItems: "center",
-            justifyContent: "center",
-            minWidth: 72,
-            minHeight: 56,
-            gap: 4,
-            ...androidStyle,
-          }}>
+          accessibilityHint={t("a11y.qada.completeOneHint")}
+          style={actionButtonStyle(theme.success?.val)}>
           <Icon as={Check} size="sm" color={theme.typographyContrast?.val} />
           <Text color="$typographyContrast" size="xs" fontWeight="600">
             {t("common.complete")}
@@ -184,20 +166,10 @@ const ActionButtons = ({
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handleDeletePress}
+        accessibilityRole="button"
         accessibilityLabel={t("common.delete")}
-        style={{
-          flexDirection: "column",
-          backgroundColor: theme.error?.val,
-          borderRadius: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          alignItems: "center",
-          justifyContent: "center",
-          minWidth: 72,
-          minHeight: 56,
-          gap: 4,
-          ...androidStyle,
-        }}>
+        accessibilityHint={t("a11y.qada.deleteHint")}
+        style={actionButtonStyle(theme.error?.val)}>
         <Icon as={Trash2} size="sm" color={theme.typographyContrast?.val} />
         <Text color="$typographyContrast" size="xs" fontWeight="600">
           {t("common.delete")}
@@ -209,6 +181,7 @@ const ActionButtons = ({
 
 export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: Props) => {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const locale = useAppStore((state) => state.locale);
   const swipeableRef = useRef<React.ComponentRef<typeof Swipeable>>(null);
 
@@ -238,20 +211,29 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
     );
   };
 
-  // Use fixed swipe direction (left) for both LTR and RTL to work around
-  // Android gesture handler bug where renderLeftActions doesn't receive touch events in RTL
   return (
     <Swipeable
       ref={swipeableRef}
-      renderRightActions={renderActions}
-      renderLeftActions={undefined}
-      overshootRight={true}
-      overshootLeft={false}
+      renderRightActions={isRTL ? undefined : renderActions}
+      renderLeftActions={isRTL ? renderActions : undefined}
+      overshootRight={!isRTL}
+      overshootLeft={isRTL}
       friction={2}
-      rightThreshold={SWIPE_THRESHOLD}
-      leftThreshold={undefined}
+      rightThreshold={isRTL ? undefined : SWIPE_THRESHOLD}
+      leftThreshold={isRTL ? SWIPE_THRESHOLD : undefined}
       enableTrackpadTwoFingerGesture={false}>
-      <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+      <Box
+        backgroundColor="$backgroundSecondary"
+        borderRadius="$6"
+        padding="$4"
+        accessibilityRole="button"
+        accessibilityLabel={t("a11y.qada.entry", {
+          count: entry.count,
+          date: format(new Date(entry.created_at), "MMM dd, yyyy", {
+            locale: getDateLocale(locale),
+          }),
+        })}
+        accessibilityHint={t("a11y.qada.swipeHint")}>
         <HStack justifyContent="space-between" alignItems="center">
           <HStack gap="$3" alignItems="center" flex={1}>
             <Box

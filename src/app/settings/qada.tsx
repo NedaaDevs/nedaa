@@ -329,57 +329,54 @@ const QadaSettings = () => {
                   icon: CalendarDays,
                 },
                 { value: "custom", label: t("qada.reminderCustom"), icon: Calendar },
-              ].map((option) => (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setTempReminderType(option.value as any)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: tempReminderType === option.value }}
-                  accessibilityLabel={option.label}
-                  padding="$4"
-                  borderRadius="$6"
-                  borderWidth={1}
-                  borderColor={tempReminderType === option.value ? "$primary" : "$outline"}
-                  backgroundColor={
-                    tempReminderType === option.value ? "$backgroundInfo" : "$background"
-                  }>
-                  <HStack alignItems="center" justifyContent="space-between">
-                    <HStack alignItems="center" flex={1} gap="$3">
-                      <Icon
-                        as={option.icon}
-                        size="md"
-                        color={
-                          tempReminderType === option.value ? "$primary" : "$typographySecondary"
-                        }
-                      />
-                      <Text
-                        fontWeight="500"
-                        color={tempReminderType === option.value ? "$primary" : "$typography"}>
-                        {option.label}
-                      </Text>
-                    </HStack>
-                    <Box
-                      width={20}
-                      height={20}
-                      borderRadius={999}
-                      borderWidth={2}
-                      borderColor={tempReminderType === option.value ? "$primary" : "$outline"}
-                      backgroundColor={
-                        tempReminderType === option.value ? "$primary" : "transparent"
-                      }>
-                      {tempReminderType === option.value && (
-                        <Box
-                          width={10}
-                          height={10}
-                          borderRadius={999}
-                          backgroundColor="$background"
-                          margin="auto"
+              ].map((option) => {
+                const isSelected = tempReminderType === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => setTempReminderType(option.value as any)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={option.label}
+                    padding="$4"
+                    borderRadius="$6"
+                    borderWidth={1}
+                    borderColor={isSelected ? "$primary" : "$outline"}
+                    backgroundColor="$backgroundSecondary">
+                    <HStack alignItems="center" justifyContent="space-between">
+                      <HStack alignItems="center" flex={1} gap="$3">
+                        <Icon
+                          as={option.icon}
+                          size="md"
+                          color={isSelected ? "$primary" : "$typographySecondary"}
                         />
-                      )}
-                    </Box>
-                  </HStack>
-                </Pressable>
-              ))}
+                        <Text
+                          fontWeight="500"
+                          color={isSelected ? "$typography" : "$typographySecondary"}>
+                          {option.label}
+                        </Text>
+                      </HStack>
+                      <Box
+                        width={20}
+                        height={20}
+                        borderRadius={999}
+                        borderWidth={2}
+                        borderColor={isSelected ? "$primary" : "$outline"}
+                        backgroundColor={isSelected ? "$primary" : "transparent"}>
+                        {isSelected && (
+                          <Box
+                            width={10}
+                            height={10}
+                            borderRadius={999}
+                            backgroundColor="$backgroundSecondary"
+                            margin="auto"
+                          />
+                        )}
+                      </Box>
+                    </HStack>
+                  </Pressable>
+                );
+              })}
             </VStack>
           </VStack>
 
@@ -446,13 +443,14 @@ const QadaSettings = () => {
                 keyboardType="numeric"
                 style={{
                   textAlign: "center",
-                  padding: 12,
-                  borderRadius: 8,
+                  padding: 16,
+                  borderRadius: 12,
                   fontSize: 18,
                   fontWeight: "600",
                   borderWidth: 1,
                   borderColor: daysError ? theme.error.val : theme.outline.val,
                   color: theme.typography.val,
+                  backgroundColor: theme.backgroundSecondary.val,
                 }}
                 maxLength={3}
                 placeholder="30"

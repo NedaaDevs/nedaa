@@ -509,12 +509,13 @@ const QadaScreen = () => {
                       maxLength={200}
                       textAlignVertical="top"
                       style={{
-                        padding: 12,
-                        borderRadius: 8,
+                        padding: 16,
+                        borderRadius: 12,
                         fontSize: 14,
                         borderWidth: 1,
                         borderColor: theme.outline?.val,
                         color: theme.typography?.val,
+                        backgroundColor: theme.backgroundSecondary?.val,
                         minHeight: 80,
                       }}
                       placeholderTextColor={theme.typographySecondary?.val}
