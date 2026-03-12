@@ -103,7 +103,7 @@ function AppShell() {
 }
 
 export default function RootLayout() {
-  const { mode, locale } = useAppStore();
+  const { mode, locale, hasHydrated } = useAppStore();
   const systemScheme = useColorScheme();
 
   const [fontsLoaded, fontError] = useLoadFonts();
@@ -114,13 +114,15 @@ export default function RootLayout() {
     trackAppSession();
   }, []);
 
+  const isReady = (fontsLoaded || fontError) && hasHydrated;
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (isReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [isReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if (!isReady) {
     return null;
   }
 

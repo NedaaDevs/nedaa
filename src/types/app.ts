@@ -2,6 +2,7 @@ import { AppDirection, AppLocale, AppMode } from "@/enums/app";
 
 export type AppState = {
   isFirstRun: boolean;
+  hasHydrated: boolean;
   locale: AppLocale;
   direction: AppDirection;
   mode: AppMode;

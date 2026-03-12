@@ -44,6 +44,7 @@ export const useAppStore = create<AppState>()(
       persist(
         (set) => ({
           isFirstRun: true,
+          hasHydrated: false,
           locale: initialLanguage,
           mode: Appearance.getColorScheme() as AppMode,
           direction: initialDirection,
@@ -103,6 +104,7 @@ export const useAppStore = create<AppState>()(
             if (state?.locale) {
               i18n.changeLanguage(state.locale);
             }
+            useAppStore.setState({ hasHydrated: true });
           },
         }
       )
