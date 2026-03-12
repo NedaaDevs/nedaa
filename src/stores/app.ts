@@ -100,7 +100,10 @@ export const useAppStore = create<AppState>()(
             dismissedFeatureCards: state.dismissedFeatureCards,
             // Exclude loading state from persistence
           }),
-          onRehydrateStorage: () => (state) => {
+          onRehydrateStorage: () => (state, error) => {
+            if (error) {
+              console.error("[AppStore] Rehydration error:", error);
+            }
             if (state?.locale) {
               i18n.changeLanguage(state.locale);
             }

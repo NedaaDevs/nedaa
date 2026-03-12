@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
 
 // Services
-import { appCleanup } from "@/services/setup";
 import { cleanupManager } from "@/services/cleanup";
 
 // Utils
@@ -41,11 +40,8 @@ export const useNotificationListeners = () => {
 
     const subscription = AppState.addEventListener("change", handleAppStateChange);
 
-    // Cleanup on unmount using cleanup manager
     return () => {
       subscription?.remove();
-      // Use cleanup manager for coordinated cleanup
-      appCleanup("component-unmount");
     };
   }, []);
 
@@ -57,5 +53,4 @@ export const useNotificationListeners = () => {
   };
 };
 
-export { appCleanup };
 export default useNotificationListeners;
