@@ -91,18 +91,6 @@ export const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   return dbPromise;
 };
 
-export const closeDatabase = async (): Promise<void> => {
-  if (dbPromise) {
-    try {
-      const db = await dbPromise;
-      dbPromise = null;
-      await db.closeAsync();
-    } catch (error) {
-      console.error("[DB] Error closing database:", error);
-    }
-  }
-};
-
 const initializeDB = async () => {
   await openDatabase();
 };

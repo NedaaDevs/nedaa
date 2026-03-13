@@ -49,24 +49,10 @@ const openLogDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   return dbPromise;
 };
 
-const closeLogDatabase = async (): Promise<void> => {
-  if (dbPromise) {
-    try {
-      const db = await dbPromise;
-      dbPromise = null;
-      await db.closeAsync();
-    } catch (error) {
-      console.error("[BackgroundTaskLog] Error closing database:", error);
-    }
-  }
-};
-
 export const BackgroundTaskLog = {
   initialize: async () => {
     await openLogDatabase();
   },
-
-  close: closeLogDatabase,
 
   log: async (
     taskName: string,

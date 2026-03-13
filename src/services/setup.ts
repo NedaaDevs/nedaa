@@ -18,8 +18,6 @@ import { registerBackgroundRefresh } from "@/tasks/backgroundRefresh";
 import { BackgroundTaskLog } from "@/services/background-task-log";
 
 // DB cleanup
-import { closeDatabase } from "@/services/db";
-import { AthkarDB } from "@/services/athkar-db";
 import { UmrahDB } from "@/services/umrah-db";
 import { cleanupManager } from "@/services/cleanup";
 
@@ -53,28 +51,10 @@ export const appSetup = async (
 
     // Register DB cleanup tasks for graceful shutdown
     cleanupManager.register("umrah-db-flush", () => UmrahDB.flush(), 10);
-    cleanupManager.register("close-prayer-db", closeDatabase, 5);
-    cleanupManager.register("close-athkar-db", AthkarDB.close, 5);
-    cleanupManager.register("close-bg-log-db", BackgroundTaskLog.close, 5);
 
     reloadPrayerWidgets();
   } catch (error) {
     console.error("App setup failed:", error);
-    Sentry.captureException(error);
-  }
-};
-
-/**
- * Cleanup function to be called when app is terminating
- * Should be called from app lifecycle handlers
- */
-export const appCleanup = async (reason: string = "app-termination") => {
-  try {
-    const { cleanupManager } = await import("@/services/cleanup");
-    await cleanupManager.executeAll(reason);
-    console.log("[Setup] App cleanup completed");
-  } catch (error) {
-    console.error("[Setup] App cleanup failed:", error);
     Sentry.captureException(error);
   }
 };

@@ -76,18 +76,6 @@ const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   return dbPromise;
 };
 
-const closeAthkarDatabase = async (): Promise<void> => {
-  if (dbPromise) {
-    try {
-      const db = await dbPromise;
-      dbPromise = null;
-      await db.closeAsync();
-    } catch (error) {
-      console.error("[Athkar-DB] Error closing database:", error);
-    }
-  }
-};
-
 // Migration helper for completed days table
 const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
   try {
@@ -1022,7 +1010,6 @@ const isThikrDownloaded = async (reciterId: string, thikrId: string): Promise<bo
 
 export const AthkarDB = {
   open: openDatabase,
-  close: closeAthkarDatabase,
   initialize: initializeDB,
 
   // Daily items operations
