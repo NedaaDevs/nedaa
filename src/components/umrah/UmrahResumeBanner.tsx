@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
+import { Alert } from "react-native";
 import { MotiView } from "moti";
 
 import { Text } from "@/components/ui/text";
@@ -7,7 +8,7 @@ import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { ChevronRight, ChevronLeft } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import ProgressRing from "@/components/umrah/ProgressRing";
 
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
@@ -15,10 +16,10 @@ import { UMRAH_STAGES } from "@/constants/UmrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 
 const UmrahResumeBanner = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
-  const { activeProgress, getProgressFraction } = useUmrahGuideStore();
+  const { activeProgress, getProgressFraction, resetProgress } = useUmrahGuideStore();
 
   if (!activeProgress) return null;
 
@@ -26,12 +27,21 @@ const UmrahResumeBanner = () => {
   if (!currentStage) return null;
 
   const progress = getProgressFraction();
-  const isRTL = i18n.dir() === "rtl";
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
-
   const handlePress = async () => {
     await selectionHaptic();
     router.push("/umrah" as any);
+  };
+
+  const handleDismiss = async () => {
+    await selectionHaptic();
+    Alert.alert(t("umrah.endUmrah.title"), t("umrah.endUmrah.message"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("umrah.endUmrah.confirm"),
+        style: "destructive",
+        onPress: resetProgress,
+      },
+    ]);
   };
 
   return (
@@ -61,7 +71,15 @@ const UmrahResumeBanner = () => {
               {t("umrah.resumeBanner.tapToContinue")}
             </Text>
           </VStack>
-          <Icon as={Chevron} size="sm" color="$typographySecondary" />
+          <Pressable
+            onPress={handleDismiss}
+            hitSlop={10}
+            padding="$1.5"
+            borderRadius="$10"
+            accessibilityRole="button"
+            accessibilityLabel={t("umrah.resumeBanner.dismissA11yLabel")}>
+            <Icon as={X} size="sm" color="$typographySecondary" />
+          </Pressable>
         </HStack>
       </Pressable>
     </MotiView>

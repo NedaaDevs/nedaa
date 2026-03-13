@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { Linking, ScrollView } from "react-native";
+import { Alert, Linking, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Background } from "@/components/ui/background";
@@ -70,7 +70,14 @@ export default function UmrahOverviewScreen() {
 
   const handleReset = async () => {
     await selectionHaptic();
-    resetProgress();
+    Alert.alert(t("umrah.endUmrah.title"), t("umrah.endUmrah.message"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("umrah.endUmrah.confirm"),
+        style: "destructive",
+        onPress: resetProgress,
+      },
+    ]);
   };
 
   return (
