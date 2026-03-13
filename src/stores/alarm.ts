@@ -2,14 +2,14 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import * as ExpoAlarm from "expo-alarm";
-import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
 import { generateDeterministicUUID, getSnoozeKey } from "@/utils/alarmId";
 import { alarmLog } from "@/utils/alarmReport";
 
 export interface ScheduledAlarm {
   alarmId: string;
-  alarmType: "fajr" | "jummah" | "custom";
+  alarmType: ScheduledAlarmType;
   title: string;
   triggerTime: number;
   liveActivityId: string | null;
@@ -29,17 +29,17 @@ interface AlarmState {
     id: string;
     triggerDate: Date;
     title: string;
-    alarmType: "fajr" | "jummah" | "custom";
+    alarmType: ScheduledAlarmType;
     snoozeCount?: number;
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
   snoozeAlarm: (alarmId: string, snoozeDurationMinutes?: number) => Promise<SnoozeResult | null>;
   cancelAlarm: (alarmId: string) => Promise<void>;
-  cancelAlarmsByType: (alarmType: "fajr" | "jummah" | "custom") => Promise<void>;
+  cancelAlarmsByType: (alarmType: ScheduledAlarmType) => Promise<void>;
   cancelAllAlarms: () => Promise<void>;
   getAlarm: (alarmId: string) => ScheduledAlarm | undefined;
-  getAlarmByType: (alarmType: "fajr" | "jummah" | "custom") => ScheduledAlarm | undefined;
+  getAlarmByType: (alarmType: ScheduledAlarmType) => ScheduledAlarm | undefined;
 }
 
 export const useAlarmStore = create<AlarmState>()(
@@ -91,20 +91,6 @@ export const useAlarmStore = create<AlarmState>()(
 
           if (!alarm) {
             alarmLog.w("Store", `completeAlarm: alarm ${alarmId} not found in store`);
-          }
-
-          try {
-            if (alarm?.alarmType === "fajr") {
-              await scheduleFajrAlarm();
-            } else if (alarm?.alarmType === "jummah") {
-              await scheduleFridayAlarm();
-            }
-          } catch (error) {
-            alarmLog.e(
-              "Store",
-              "Failed to reschedule after completing alarm",
-              error instanceof Error ? error : undefined
-            );
           }
 
           set((state) => {

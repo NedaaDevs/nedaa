@@ -8,8 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Sun, Building2, CheckCircle } from "lucide-react-native";
-
-type AlarmType = "fajr" | "jummah" | "custom";
+import { ScheduledAlarmType } from "@/enums/alarm";
 
 const COLOR_MAP: Record<string, string> = {
   "text-warning": "$warning",
@@ -18,7 +17,7 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 const SUCCESS_CONTENT: Record<
-  AlarmType,
+  ScheduledAlarmType,
   {
     icon: React.ComponentType;
     titleKey: string;
@@ -26,19 +25,19 @@ const SUCCESS_CONTENT: Record<
     colorClass: string;
   }
 > = {
-  fajr: {
+  [ScheduledAlarmType.FAJR]: {
     icon: Sun,
     titleKey: "alarm.complete.fajr.title",
     subtitleKey: "alarm.complete.fajr.subtitle",
     colorClass: "text-warning",
   },
-  jummah: {
+  [ScheduledAlarmType.JUMMAH]: {
     icon: Building2,
     titleKey: "alarm.complete.friday.title",
     subtitleKey: "alarm.complete.friday.subtitle",
     colorClass: "text-success",
   },
-  custom: {
+  [ScheduledAlarmType.CUSTOM]: {
     icon: CheckCircle,
     titleKey: "alarm.complete.custom.title",
     subtitleKey: "alarm.complete.custom.subtitle",
@@ -50,8 +49,8 @@ export default function AlarmCompleteScreen() {
   const { t } = useTranslation();
   const { alarmType } = useLocalSearchParams<{ alarmType: string }>();
 
-  const type: AlarmType = (alarmType as AlarmType) ?? "custom";
-  const content = SUCCESS_CONTENT[type] ?? SUCCESS_CONTENT.custom;
+  const type = (alarmType as ScheduledAlarmType) ?? ScheduledAlarmType.CUSTOM;
+  const content = SUCCESS_CONTENT[type] ?? SUCCESS_CONTENT[ScheduledAlarmType.CUSTOM];
   const resolvedColor = COLOR_MAP[content.colorClass] ?? "$typography";
 
   const handleGoHome = () => {

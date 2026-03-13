@@ -1,6 +1,6 @@
 import * as ExpoAlarm from "expo-alarm";
 import type { ScheduledAlarm } from "@/stores/alarm";
-import { useAlarmStore } from "@/stores/alarm";
+import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
 
 export interface ActiveAlarmInfo {
@@ -17,8 +17,7 @@ function normalizeTimestampToMs(timestamp: number): number {
 }
 
 async function autoCompleteStaleAlarm(alarmId: string): Promise<void> {
-  const { completeAlarm } = useAlarmStore.getState();
-  await completeAlarm(alarmId);
+  await completeAndRescheduleAlarm(alarmId);
   console.log(`[Alarm] Auto-completed stale alarm ${alarmId}`);
 }
 

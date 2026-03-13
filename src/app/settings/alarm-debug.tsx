@@ -16,6 +16,7 @@ import SoundPicker from "@/components/alarm/SoundPicker";
 
 import * as ExpoAlarm from "expo-alarm";
 
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
@@ -204,7 +205,7 @@ const AlarmDebugScreen = () => {
         id,
         triggerDate,
         title: `Test Alarm (${seconds}s)`,
-        alarmType: "fajr",
+        alarmType: ScheduledAlarmType.FAJR,
       });
 
       if (success) {

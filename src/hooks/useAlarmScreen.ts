@@ -3,8 +3,10 @@ import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
 
@@ -14,10 +16,10 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [snoozeEndTime, setSnoozeEndTime] = useState<Date | null>(null);
   const [snoozeTimeRemaining, setSnoozeTimeRemaining] = useState(0);
 
-  const { completeAlarm, snoozeAlarm, getAlarm } = useAlarmStore();
+  const { snoozeAlarm, getAlarm } = useAlarmStore();
   const alarm = useMemo(() => getAlarm(alarmId), [alarmId, getAlarm]);
 
-  const settingsType = alarmType === "jummah" ? "friday" : "fajr";
+  const settingsType = alarmType === ScheduledAlarmType.JUMMAH ? "friday" : "fajr";
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
   const snoozeCount = alarm?.snoozeCount ?? 0;
@@ -107,12 +109,12 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     ExpoAlarm.stopAllAlarmEffects();
     ExpoAlarm.restoreSystemVolume();
     markAlarmHandled(alarmId);
-    await completeAlarm(alarmId);
+    await completeAndRescheduleAlarm(alarmId);
     router.replace({
       pathname: "/alarm-complete",
       params: { alarmType },
     });
-  }, [alarmId, alarmType, completeAlarm]);
+  }, [alarmId, alarmType]);
 
   const handleGraceStart = useCallback(() => {
     if (dismissedRef.current) return;

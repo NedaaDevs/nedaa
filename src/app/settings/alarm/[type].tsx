@@ -27,6 +27,7 @@ import { Volume2, Brain, Vibrate, Clock, Timer } from "lucide-react-native";
 import * as ExpoAlarm from "expo-alarm";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
@@ -88,8 +89,8 @@ const AlarmTypeSettingsScreen = () => {
   const debouncedReschedule = useCallback(() => {
     if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
     rescheduleTimerRef.current = setTimeout(async () => {
-      const cancelType = alarmType === "fajr" ? "fajr" : "jummah";
-      await useAlarmStore.getState().cancelAlarmsByType(cancelType as "fajr" | "jummah");
+      const cancelType = alarmType === "fajr" ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
+      await useAlarmStore.getState().cancelAlarmsByType(cancelType as ScheduledAlarmType);
       if (alarmType === "fajr") {
         await scheduleFajrAlarm();
       } else {
@@ -154,7 +155,8 @@ const AlarmTypeSettingsScreen = () => {
           await scheduleFridayAlarm();
         }
       } else {
-        const cancelType = alarmType === "fajr" ? "fajr" : "jummah";
+        const cancelType =
+          alarmType === "fajr" ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
         await useAlarmStore.getState().cancelAlarmsByType(cancelType);
       }
     } catch {

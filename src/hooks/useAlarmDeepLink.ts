@@ -3,7 +3,9 @@ import { Linking, AppState, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 import { getSnoozeQueue, clearSnoozeQueue } from "expo-alarm";
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
+import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
 import { alarmLog } from "@/utils/alarmReport";
 
@@ -62,11 +64,9 @@ async function processCompletedQueue() {
     const queue = await ExpoAlarm.getCompletedQueue();
     if (queue.length === 0) return;
 
-    const { completeAlarm } = useAlarmStore.getState();
-
     for (const item of queue) {
       handledAlarmIds.set(item.alarmId, Date.now());
-      await completeAlarm(item.alarmId);
+      await completeAndRescheduleAlarm(item.alarmId);
     }
 
     await ExpoAlarm.clearCompletedQueue();
@@ -104,7 +104,7 @@ async function processSnoozeQueue() {
           ...state.scheduledAlarms,
           [item.snoozeAlarmId]: {
             alarmId: item.snoozeAlarmId,
-            alarmType: item.alarmType as "fajr" | "jummah" | "custom",
+            alarmType: item.alarmType as ScheduledAlarmType,
             title: item.title,
             triggerTime: item.snoozeEndTime,
             liveActivityId: null,
@@ -117,7 +117,7 @@ async function processSnoozeQueue() {
       await ExpoAlarm.endAllLiveActivities();
       await ExpoAlarm.startLiveActivity({
         alarmId: item.snoozeAlarmId,
-        alarmType: item.alarmType as "fajr" | "jummah" | "custom",
+        alarmType: item.alarmType as ScheduledAlarmType,
         title: item.title,
         triggerDate: new Date(item.snoozeEndTime),
       });
@@ -216,7 +216,7 @@ async function processAlarmUrl(url: string) {
 
     const urlObj = new URL(url);
     const alarmId = urlObj.searchParams.get("alarmId");
-    const alarmType = urlObj.searchParams.get("alarmType") ?? "custom";
+    const alarmType = urlObj.searchParams.get("alarmType") ?? ScheduledAlarmType.CUSTOM;
     const action = urlObj.searchParams.get("action");
 
     if (!alarmId) return;

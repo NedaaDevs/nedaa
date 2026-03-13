@@ -14,6 +14,7 @@ import { ALARM_TYPE_META } from "@/constants/Alarm";
 import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
 import { ChallengeWrapper } from "@/components/alarm/challenges";
 import { ChallengeConfig } from "@/types/alarm";
+import { ScheduledAlarmType } from "@/enums/alarm";
 
 const COLOR_MAP: Record<string, string> = {
   "text-warning": "$warning",
@@ -44,8 +45,8 @@ export default function AlarmTriggeredScreen() {
   } = useAlarmScreen(alarmId, alarmType);
 
   const meta =
-    ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? "custom"] ??
-    ALARM_TYPE_META.custom;
+    ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? ScheduledAlarmType.CUSTOM] ??
+    ALARM_TYPE_META[ScheduledAlarmType.CUSTOM];
 
   const title = t(`alarm.types.${alarmType}`, { defaultValue: meta.title });
 
@@ -179,7 +180,7 @@ function ActiveAlarmView({
         {t("alarm.wakeUpMessage")}
       </Text>
 
-      {alarmType === "fajr" && (
+      {alarmType === ScheduledAlarmType.FAJR && (
         <Text textAlign="center" size="lg" fontWeight="500" color="$warning" fontStyle="italic">
           {t("alarm.prayerBetterThanSleep")}
         </Text>

@@ -1,4 +1,5 @@
 import { Bell, Sun, Building2 } from "lucide-react-native";
+import { ScheduledAlarmType } from "@/enums/alarm";
 
 export const ALARM_DEFAULTS = {
   TAPS_REQUIRED: 5,
@@ -9,7 +10,11 @@ export const ALARM_DEFAULTS = {
 } as const;
 
 export const ALARM_TYPE_META = {
-  fajr: { icon: Sun, title: "Fajr Alarm", colorClass: "text-warning" },
-  jummah: { icon: Building2, title: "Jummah Alarm", colorClass: "text-success" },
-  custom: { icon: Bell, title: "Alarm", colorClass: "text-info" },
+  [ScheduledAlarmType.FAJR]: { icon: Sun, title: "Fajr Alarm", colorClass: "text-warning" },
+  [ScheduledAlarmType.JUMMAH]: {
+    icon: Building2,
+    title: "Jummah Alarm",
+    colorClass: "text-success",
+  },
+  [ScheduledAlarmType.CUSTOM]: { icon: Bell, title: "Alarm", colorClass: "text-info" },
 } as const;

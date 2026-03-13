@@ -35,6 +35,7 @@ import {
   CircleHelp,
 } from "lucide-react-native";
 
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStore } from "@/stores/alarm";
 import { useRTL } from "@/contexts/RTLContext";
@@ -135,8 +136,12 @@ const AlarmSettings = () => {
   const { t, i18n } = useTranslation();
   const { fajr, friday } = useAlarmSettingsStore();
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
-  const fajrAlarm = Object.values(scheduledAlarms).find((a) => a.alarmType === "fajr");
-  const jummahAlarm = Object.values(scheduledAlarms).find((a) => a.alarmType === "jummah");
+  const fajrAlarm = Object.values(scheduledAlarms).find(
+    (a) => a.alarmType === ScheduledAlarmType.FAJR
+  );
+  const jummahAlarm = Object.values(scheduledAlarms).find(
+    (a) => a.alarmType === ScheduledAlarmType.JUMMAH
+  );
   const { isRTL } = useRTL();
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
