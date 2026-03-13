@@ -6,11 +6,11 @@ const SESSIONS_KEY = "review_app_sessions";
 const LAST_VERSION_KEY = "review_last_version_prompted";
 const REQUIRED_SESSIONS = 5;
 
-export function trackAppSession(): void {
+export async function trackAppSession(): Promise<void> {
   try {
-    const raw = Storage.getItemSync(SESSIONS_KEY);
+    const raw = await Storage.getItemAsync(SESSIONS_KEY);
     const count = (raw ? parseInt(raw, 10) : 0) + 1;
-    Storage.setItemSync(SESSIONS_KEY, String(count));
+    await Storage.setItemAsync(SESSIONS_KEY, String(count));
   } catch {
     // Non-critical
   }
@@ -21,17 +21,17 @@ export async function promptReviewIfEligible(): Promise<void> {
     const hasAction = await StoreReview.hasAction();
     if (!hasAction) return;
 
-    const raw = Storage.getItemSync(SESSIONS_KEY);
+    const raw = await Storage.getItemAsync(SESSIONS_KEY);
     const sessions = raw ? parseInt(raw, 10) : 0;
     if (sessions < REQUIRED_SESSIONS) return;
 
     const currentVersion = Application.nativeApplicationVersion ?? "unknown";
-    const lastVersionPrompted = Storage.getItemSync(LAST_VERSION_KEY);
+    const lastVersionPrompted = await Storage.getItemAsync(LAST_VERSION_KEY);
     if (currentVersion === lastVersionPrompted) return;
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await StoreReview.requestReview();
-    Storage.setItemSync(LAST_VERSION_KEY, currentVersion);
+    await Storage.setItemAsync(LAST_VERSION_KEY, currentVersion);
   } catch {
     // Non-critical
   }

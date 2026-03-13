@@ -82,7 +82,6 @@ class AlarmDatabase {
                 sqlite3_free(err)
             }
 
-            sqlite3_exec(db, "ALTER TABLE alarms ADD COLUMN is_backup INTEGER DEFAULT 0", nil, nil, nil)
         }
     }
 
