@@ -30,6 +30,9 @@ import {
 // Stores
 import { useQadaStore } from "@/stores/qada";
 
+// Contexts
+import { useRTL } from "@/contexts/RTLContext";
+
 // Icons
 import { Plus, Check, X, CalendarDays, Settings } from "lucide-react-native";
 
@@ -64,6 +67,7 @@ const QadaScreen = () => {
   const incrementTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const decrementTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const { isRTL } = useRTL();
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
   const hapticLight = useHaptic("light");
@@ -320,7 +324,7 @@ const QadaScreen = () => {
               <VStack gap="$2">
                 {pendingEntries.map((entry) => (
                   <SwipeableEntry
-                    key={entry.id}
+                    key={`${entry.id}-${isRTL}`}
                     entry={entry}
                     onComplete={handleCompleteEntry}
                     onCompleteAll={handleCompleteAll}
