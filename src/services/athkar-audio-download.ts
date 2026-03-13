@@ -27,11 +27,21 @@ const downloadFile = async (
     const dir = ensureReciterDir(reciterId);
     const localFile = new File(dir, `${thikrId}.mp3`);
 
-    // Check if already downloaded
+    // Check if already downloaded (DB record + file on disk)
     const existing = await AthkarDB.getAudioDownload(reciterId, thikrId);
     if (existing) {
       const existingFile = new File(existing.file_path);
       if (existingFile.exists) return existing.file_path;
+    }
+
+    // File exists on disk but no DB record (e.g. interrupted previous download)
+    if (localFile.exists) {
+      if (localFile.size === size) {
+        await AthkarDB.insertAudioDownload(reciterId, thikrId, localFile.uri, size);
+        return localFile.uri;
+      }
+      // Partial/corrupt file — delete and re-download
+      localFile.delete();
     }
 
     // Download
