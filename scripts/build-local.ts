@@ -12,7 +12,9 @@ const version = appJson.expo.version;
 
 let buildNum = "0";
 try {
-  buildNum = (await $`eas build:version:get -p ${platform} --profile ${profile}`.text()).trim();
+  const raw = (await $`eas build:version:get -p ${platform} --profile ${profile}`.text()).trim();
+  const match = raw.match(/(\d+)\s*$/);
+  if (match) buildNum = match[1];
 } catch {}
 
 const suffix = profile.includes("hms") ? "-hms" : "";
