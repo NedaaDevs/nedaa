@@ -38,6 +38,7 @@ import {
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStore } from "@/stores/alarm";
+import { useDebugModeStore } from "@/stores/debugMode";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -143,6 +144,7 @@ const AlarmSettings = () => {
     (a) => a.alarmType === ScheduledAlarmType.JUMMAH
   );
   const { isRTL } = useRTL();
+  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
 
@@ -503,7 +505,7 @@ const AlarmSettings = () => {
             </HStack>
           </Pressable>
 
-          {__DEV__ && (
+          {isDebugMode && (
             <Box marginHorizontal="$4" marginTop="$2">
               <Button
                 variant="outline"

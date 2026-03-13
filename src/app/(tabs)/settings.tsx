@@ -50,6 +50,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { useToastStore } from "@/stores/toast";
+import { useDebugModeStore } from "@/stores/debugMode";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
@@ -69,6 +70,7 @@ const SettingsScreen = () => {
   const theme = useTheme();
   const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
+  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const [alarmAvailable, setAlarmAvailable] = useState(false);
   const hapticMedium = useHaptic("medium");
 
@@ -243,12 +245,14 @@ const SettingsScreen = () => {
           icon={Settings2Icon}
         />
 
-        {/* Background Debug */}
-        <SettingsItem
-          name={t("settings.backgroundDebug.title")}
-          path={"/settings/background-debug" as any}
-          icon={Activity}
-        />
+        {/* Debug (hidden behind 7-tap on version) */}
+        {isDebugMode && (
+          <SettingsItem
+            name={t("settings.backgroundDebug.title")}
+            path={"/settings/background-debug" as any}
+            icon={Activity}
+          />
+        )}
 
         {/* Help */}
         <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />

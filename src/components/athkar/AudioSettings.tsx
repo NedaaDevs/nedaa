@@ -23,6 +23,7 @@ import { MessageToast } from "@/components/feedback/MessageToast";
 import ReportProblemModal from "@/components/ReportProblemModal";
 
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { useDebugModeStore } from "@/stores/debugMode";
 import { athkarPlayer } from "@/services/athkar-player";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
@@ -37,6 +38,7 @@ const athkarLog = AppLogger.create("athkar-audio");
 
 const AudioSettings: FC = () => {
   const { t, i18n } = useTranslation();
+  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
 
   const {
     playbackMode,
@@ -455,7 +457,7 @@ const AudioSettings: FC = () => {
             </Text>
           </Pressable>
 
-          {__DEV__ && (
+          {isDebugMode && (
             <Button
               variant="outline"
               size="sm"
