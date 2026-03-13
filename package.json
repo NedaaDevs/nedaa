@@ -26,7 +26,8 @@
     "submit:android:production": "eas submit -p android --latest --profile production",
     "release:android:closed": "bun run build:android && bun run submit:android:closed",
     "release:android:internal": "bun run build:android && bun run submit:android:internal",
-    "release:android:production": "bun run build:android && bun run submit:android:production"
+    "release:android:production": "bun run build:android && bun run submit:android:production",
+    "eas-build-pre-install": "[ \"$BUILD_VARIANT\" = \"hms\" ] && [ -n \"$AGCONNECT_SERVICES_JSON\" ] && cp \"$AGCONNECT_SERVICES_JSON\" android/app/agconnect-services.json || true"
   },
   "jest": {
     "preset": "jest-expo"

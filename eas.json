@@ -20,9 +20,6 @@
       "extends": "production",
       "env": {
         "BUILD_VARIANT": "hms"
-      },
-      "android": {
-        "preInstall": "[ -n \"$AGCONNECT_SERVICES_JSON\" ] && cp \"$AGCONNECT_SERVICES_JSON\" android/app/agconnect-services.json"
       }
     }
   },
