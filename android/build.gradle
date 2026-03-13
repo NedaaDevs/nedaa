@@ -21,6 +21,9 @@ allprojects {
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
+    if (System.getenv("BUILD_VARIANT") == "hms") {
+      maven { url 'https://developer.huawei.com/repo/' }
+    }
   }
 }
 

@@ -3,6 +3,9 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "org.jetbrains.kotlin.plugin.compose"
 apply plugin: "com.facebook.react"
 
+def buildVariant = System.getenv("BUILD_VARIANT") ?: "gms"
+def isHms = buildVariant == "hms"
+
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 /**
@@ -201,4 +204,11 @@ dependencies {
 
     // Kotlin coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    // HMS Core (only for Huawei AppGallery builds)
+    if (isHms) {
+        implementation 'com.huawei.agconnect:agconnect-core:1.9.1.301'
+        implementation 'com.huawei.hms:base:6.12.0.300'
+        implementation 'com.huawei.hms:location:6.12.0.300'
+    }
 }
