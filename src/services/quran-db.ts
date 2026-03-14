@@ -46,7 +46,7 @@ const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> =>
           return await SQLite.openDatabaseAsync(
             `bounds-${version}.db`,
             { useNewConnection: true },
-            await getDirectory()
+            SQLite.defaultDatabaseDirectory
           );
         } catch (error) {
           boundsDbMap.delete(version);
@@ -107,6 +107,35 @@ const getMarkerBounds = async (version: MushafVersion, page: number): Promise<Gl
   }));
 };
 
+const getGlyphBounds = async (version: MushafVersion, page: number): Promise<GlyphBound[]> => {
+  const db = await openBoundsDb(version);
+  const rows = await db.getAllAsync<{
+    page: number;
+    line: number;
+    position: number;
+    surah_number: number;
+    ayah_number: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    is_marker: number;
+  }>("SELECT * FROM glyph_bounds WHERE page = ? ORDER BY line, position", [page]);
+
+  return rows.map((row) => ({
+    page: row.page,
+    line: row.line,
+    position: row.position,
+    surahNumber: row.surah_number,
+    ayahNumber: row.ayah_number,
+    x: row.x,
+    y: row.y,
+    width: row.width,
+    height: row.height,
+    isMarker: row.is_marker === 1,
+  }));
+};
+
 const getJuzForPage = async (page: number): Promise<number> => {
   const db = await openQuranDb();
   const result = await db.getFirstAsync<{ juz: number }>(
@@ -120,6 +149,7 @@ export const QuranDB = {
   openQuranDb,
   openBoundsDb,
   getLineMetadata,
+  getGlyphBounds,
   getMarkerBounds,
   getJuzForPage,
 };
