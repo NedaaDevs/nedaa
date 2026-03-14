@@ -14,3 +14,6 @@ export const MY_ATHKAR_DAILY_TABLE = "my_athkar_daily" as const;
 export const CUSTOM_ATHKAR_GROUPS_TABLE = "custom_athkar_groups" as const;
 export const CUSTOM_ATHKAR_ITEMS_TABLE = "custom_athkar_items" as const;
 export const CUSTOM_ATHKAR_DAILY_TABLE = "custom_athkar_daily" as const;
+
+export const QURAN_DB_NAME = "quran.db" as const;
+export const QURAN_BOUNDS_DB_NAME = "bounds.db" as const;
