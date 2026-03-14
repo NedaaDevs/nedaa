@@ -11,7 +11,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import TopBar from "@/components/TopBar";
 
-import { Compass, CalendarRange } from "lucide-react-native";
+import { Compass, CalendarRange, CalendarCheck } from "lucide-react-native";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -43,6 +43,13 @@ const TOOLS: ToolItem[] = [
     subtitleKey: "tools.hijriConverter.subtitle",
     icon: CalendarRange,
     route: "/hijri-converter",
+  },
+  {
+    id: "qada",
+    titleKey: "tools.qada.title",
+    subtitleKey: "tools.qada.subtitle",
+    icon: CalendarCheck,
+    route: "/(tabs)/qada",
   },
   {
     id: "compass",

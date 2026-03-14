@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/app";
 
 // Icons
-import { Home, Settings, BookOpenText, Wrench, CalendarCheck } from "lucide-react-native";
+import { Home, Settings, BookOpenText, BookOpen, Wrench, CalendarCheck } from "lucide-react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -64,10 +64,17 @@ const TabsLayout = () => {
       />
 
       <Tabs.Screen
+        name="quran"
+        options={{
+          title: t("a11y.tab.quran"),
+          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
         name="qada"
         options={{
-          title: t("a11y.tab.qada"),
-          tabBarIcon: ({ color, size }) => <CalendarCheck color={color} size={size} />,
+          href: null,
         }}
       />
 
