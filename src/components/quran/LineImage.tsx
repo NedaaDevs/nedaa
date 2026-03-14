@@ -17,7 +17,7 @@ interface LineImageProps {
 const getLineImageUri = (version: MushafVersion, page: number, line: number): string => {
   const pageStr = String(page).padStart(3, "0");
   const lineStr = String(line).padStart(3, "0");
-  return `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.png`;
+  return `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.webp`;
 };
 
 const LineImage = ({
@@ -40,7 +40,7 @@ const LineImage = ({
     [screenWidth, lineHeight, themeColors.textTint]
   );
 
-  return <Image source={{ uri }} style={imageStyle} resizeMode="contain" />;
+  return <Image source={{ uri }} style={imageStyle} resizeMode="stretch" />;
 };
 
 export default LineImage;

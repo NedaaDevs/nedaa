@@ -18,8 +18,8 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   return (
     <XStack
       justifyContent="space-between"
-      paddingHorizontal="$4"
-      paddingVertical="$2"
+      paddingHorizontal="$3"
+      paddingVertical="$1"
       accessibilityRole="header"
       accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz })}>
       <Text style={{ color: themeColors.headerColor }}>{surahName}</Text>
