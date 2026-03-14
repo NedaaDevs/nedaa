@@ -1,25 +1,54 @@
 import { Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { MushafVersion } from "@/enums/quran";
-import QuranPage from "@/components/quran/QuranPage";
+import QuranReader from "@/components/quran/QuranReader";
 
 const VERSIONS = [MushafVersion.V1, MushafVersion.V2, MushafVersion.V4];
 
 const QuranScreen = () => {
-  const { currentPage, currentVersion, quranTheme, setCurrentVersion } = useQuranStore();
+  const { currentPage, currentVersion, quranTheme, setCurrentVersion, setCurrentPage } =
+    useQuranStore();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <YStack flex={1} style={{ backgroundColor: themeColors.background }}>
-      <QuranPage page={currentPage} version={currentVersion} quranTheme={quranTheme} />
+      <QuranReader
+        currentPage={currentPage}
+        version={currentVersion}
+        quranTheme={quranTheme}
+        onPageChange={setCurrentPage}
+      />
+
+      <Pressable
+        onPress={() => router.navigate("/")}
+        accessibilityRole="button"
+        accessibilityLabel="Close reader"
+        style={{
+          position: "absolute",
+          top: insets.top + 8,
+          right: 16,
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: "rgba(0,0,0,0.15)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+        <X color={themeColors.headerColor} size={18} />
+      </Pressable>
 
       <XStack
         position="absolute"
-        bottom={100}
+        bottom={insets.bottom + 4}
         alignSelf="center"
         gap="$2"
         backgroundColor="$backgroundSecondary"
