@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-native";
+import {
+  LayoutChangeEvent,
+  Platform,
+  Pressable,
+  StatusBar,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import type { GestureResponderEvent } from "react-native";
 import { YStack } from "tamagui";
 
@@ -34,7 +41,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     null
   );
   const linesRef = useRef<View>(null);
-  const [linesPageY, setLinesPageY] = useState(0);
+  const pressableRef = useRef<View>(null);
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -60,52 +67,49 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
 
   const onLinesLayout = useCallback((event: LayoutChangeEvent) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
-    // Measure absolute position on screen
-    linesRef.current?.measureInWindow((_x, y) => {
-      setLinesPageY(y);
-    });
   }, []);
 
   const lineHeight = linesAreaHeight > 0 ? Math.floor(linesAreaHeight / LINES_PER_PAGE) : 0;
-  const xScale = width / IMAGE_SOURCE_WIDTH;
-  const yScale = lineHeight / IMAGE_SOURCE_LINE_HEIGHT;
+  // Cover mode scales image by xScale to fill width — same scale for both axes
+  const coverScale = width / IMAGE_SOURCE_WIDTH;
+  const scaledLineHeight = IMAGE_SOURCE_LINE_HEIGHT * coverScale;
+  // Cover clips excess height equally from top and bottom
+  const coverClipY = (scaledLineHeight - lineHeight) / 2;
 
   const handleLongPress = useCallback(
     (event: GestureResponderEvent) => {
       if (glyphBounds.length === 0 || lineHeight === 0) return;
 
-      const touchX = event.nativeEvent.pageX;
-      const touchY = event.nativeEvent.pageY - linesPageY;
+      // Use locationX/Y relative to the Pressable itself
+      pressableRef.current?.measureInWindow((px, py) => {
+        // Android pageY includes status bar but measureInWindow doesn't
+        const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
+        const touchX = event.nativeEvent.pageX - px;
+        const touchY = event.nativeEvent.pageY - py - statusBarOffset;
 
-      const sourceX = touchX / xScale;
-      const sourceLine = Math.floor(touchY / lineHeight) + 1;
-      const sourceY = (touchY - (sourceLine - 1) * lineHeight) / yScale;
+        const sourceX = touchX / coverScale;
+        const sourceLine = Math.floor(touchY / lineHeight) + 1;
+        const sourceY = (touchY - (sourceLine - 1) * lineHeight + coverClipY) / coverScale;
 
-      const hit = glyphBounds.find(
-        (g) =>
-          g.line === sourceLine &&
-          sourceX >= g.x &&
-          sourceX <= g.x + g.width &&
-          sourceY >= g.y &&
-          sourceY <= g.y + g.height &&
-          !g.isMarker
-      );
-
-      if (hit) {
-        setHighlightedAyah({ surah: hit.surahNumber, ayah: hit.ayahNumber });
-        const ayahGlyphs = glyphBounds.filter(
-          (g) => g.surahNumber === hit.surahNumber && g.ayahNumber === hit.ayahNumber && !g.isMarker
+        const hit = glyphBounds.find(
+          (g) =>
+            g.line === sourceLine &&
+            sourceX >= g.x &&
+            sourceX <= g.x + g.width &&
+            sourceY >= g.y &&
+            sourceY <= g.y + g.height &&
+            !g.isMarker
         );
-        const startLine = Math.min(...ayahGlyphs.map((g) => g.line));
-        const endLine = Math.max(...ayahGlyphs.map((g) => g.line));
-        console.log(
-          `[Quran] Ayah ${hit.surahNumber}:${hit.ayahNumber} | Page ${page} Lines ${startLine}-${endLine} (${ayahGlyphs.length} glyphs)`
-        );
-      } else {
-        setHighlightedAyah(null);
-      }
+
+        if (hit) {
+          setHighlightedAyah({ surah: hit.surahNumber, ayah: hit.ayahNumber });
+          console.log(`[Quran] Ayah ${hit.surahNumber}:${hit.ayahNumber} | Page ${page}`);
+        } else {
+          setHighlightedAyah(null);
+        }
+      });
     },
-    [glyphBounds, lineHeight, xScale, yScale, page, linesPageY]
+    [glyphBounds, lineHeight, coverScale, coverClipY, page]
   );
 
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
@@ -131,9 +135,9 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     }
 
     return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
-      left: minX * xScale,
+      left: minX * coverScale,
       top: (line - 1) * lineHeight,
-      width: (maxX - minX) * xScale,
+      width: (maxX - minX) * coverScale,
       height: lineHeight,
     }));
   })();
@@ -147,6 +151,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
 
       <View ref={linesRef} style={{ flex: 1, alignItems: "center" }} onLayout={onLinesLayout}>
         <Pressable
+          ref={pressableRef}
           style={{ position: "relative", direction: "ltr" }}
           onLongPress={handleLongPress}
           delayLongPress={LONG_PRESS_MS}
@@ -173,7 +178,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
                 top: rect.top,
                 width: rect.width,
                 height: rect.height,
-                backgroundColor: "rgba(255, 180, 100, 0.25)",
+                backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
                 borderRadius: 2,
               }}
             />
