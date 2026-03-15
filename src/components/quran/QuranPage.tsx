@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import type { GestureResponderEvent } from "react-native";
 import { YStack } from "tamagui";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MushafVersion, QuranTheme, LineType } from "@/enums/quran";
 import {
@@ -32,10 +33,13 @@ interface QuranPageProps {
 }
 
 const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
-  const { width } = useWindowDimensions();
+  const { width, height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Estimate initial height to prevent layout flash on mount
+  const estimatedHeight = screenHeight - insets.top - 60;
   const [surahName, setSurahName] = useState("");
   const [juz, setJuz] = useState(1);
-  const [linesAreaHeight, setLinesAreaHeight] = useState(0);
+  const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
   const [glyphBounds, setGlyphBounds] = useState<GlyphBound[]>([]);
   const [highlightedAyah, setHighlightedAyah] = useState<{ surah: number; ayah: number } | null>(
     null
