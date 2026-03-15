@@ -4,14 +4,18 @@ import type { GestureResponderEvent } from "react-native";
 import { YStack } from "tamagui";
 
 import { MushafVersion, QuranTheme, LineType } from "@/enums/quran";
-import { LINES_PER_PAGE, QURAN_THEME_COLORS, IMAGE_SOURCE_WIDTH } from "@/constants/Quran";
+import {
+  LINES_PER_PAGE,
+  QURAN_THEME_COLORS,
+  IMAGE_SOURCE_WIDTH,
+  IMAGE_SOURCE_LINE_HEIGHT,
+} from "@/constants/Quran";
 import { GlyphBound } from "@/types/quran";
 import { QuranDB } from "@/services/quran-db";
 import LineImage from "@/components/quran/LineImage";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 
-const SIDE_PADDING = 8;
 const LONG_PRESS_MS = 400;
 
 interface QuranPageProps {
@@ -62,18 +66,15 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     });
   }, []);
 
-  const contentWidth = width - SIDE_PADDING * 2;
-  const SOURCE_LINE_HEIGHT = 232;
   const lineHeight = linesAreaHeight > 0 ? Math.floor(linesAreaHeight / LINES_PER_PAGE) : 0;
-  const xScale = contentWidth / IMAGE_SOURCE_WIDTH;
-  const yScale = lineHeight / SOURCE_LINE_HEIGHT;
+  const xScale = width / IMAGE_SOURCE_WIDTH;
+  const yScale = lineHeight / IMAGE_SOURCE_LINE_HEIGHT;
 
   const handleLongPress = useCallback(
     (event: GestureResponderEvent) => {
       if (glyphBounds.length === 0 || lineHeight === 0) return;
 
-      const offsetX = (width - contentWidth) / 2;
-      const touchX = event.nativeEvent.pageX - offsetX;
+      const touchX = event.nativeEvent.pageX;
       const touchY = event.nativeEvent.pageY - linesPageY;
 
       const sourceX = touchX / xScale;
@@ -104,7 +105,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         setHighlightedAyah(null);
       }
     },
-    [glyphBounds, lineHeight, xScale, yScale, page, linesPageY, width, contentWidth]
+    [glyphBounds, lineHeight, xScale, yScale, page, linesPageY]
   );
 
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
@@ -157,7 +158,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
                 version={version}
                 page={page}
                 line={line}
-                screenWidth={contentWidth}
+                screenWidth={width}
                 lineHeight={lineHeight}
                 quranTheme={quranTheme}
               />
