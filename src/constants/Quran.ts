@@ -34,10 +34,10 @@ export const QURAN_THEME_COLORS: Record<
   },
   [QuranTheme.DARK]: {
     background: "#121212",
-    textTint: "#B0B0B0",
+    textTint: "#E0D6C8",
     markerColor: "#C4A265",
-    headerColor: "#B0B0B0",
-    pageNumberColor: "#777777",
+    headerColor: "#E0D6C8",
+    pageNumberColor: "#888888",
     highlightColor: "rgba(255, 255, 255, 0.12)",
   },
 } as const;
