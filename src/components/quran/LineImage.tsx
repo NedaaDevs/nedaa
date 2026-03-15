@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Image, ImageStyle } from "react-native";
+import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
@@ -17,7 +17,7 @@ interface LineImageProps {
 const getLineImageUri = (version: MushafVersion, page: number, line: number): string => {
   const pageStr = String(page).padStart(3, "0");
   const lineStr = String(line).padStart(3, "0");
-  return `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.webp`;
+  return `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.png`;
 };
 
 const LineImage = ({
@@ -31,6 +31,15 @@ const LineImage = ({
   const uri = getLineImageUri(version, page, line);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
+  const containerStyle = useMemo(
+    () => ({
+      width: screenWidth,
+      height: lineHeight,
+      overflow: "hidden" as const,
+    }),
+    [screenWidth, lineHeight]
+  );
+
   const imageStyle: ImageStyle = useMemo(
     () => ({
       width: screenWidth,
@@ -40,7 +49,11 @@ const LineImage = ({
     [screenWidth, lineHeight, themeColors.textTint]
   );
 
-  return <Image source={{ uri }} style={imageStyle} resizeMode="stretch" />;
+  return (
+    <View style={containerStyle}>
+      <Image source={{ uri }} style={imageStyle} resizeMode="cover" />
+    </View>
+  );
 };
 
 export default LineImage;

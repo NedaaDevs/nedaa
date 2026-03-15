@@ -3,6 +3,7 @@ import { MushafVersion, QuranTheme } from "@/enums/quran";
 export const TOTAL_PAGES = 604;
 export const LINES_PER_PAGE = 15;
 export const IMAGE_SOURCE_WIDTH = 1440;
+export const IMAGE_SOURCE_LINE_HEIGHT = 232;
 
 export const QURAN_THEME_COLORS: Record<
   QuranTheme,
