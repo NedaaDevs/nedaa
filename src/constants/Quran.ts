@@ -13,6 +13,7 @@ export const QURAN_THEME_COLORS: Record<
     markerColor: string;
     headerColor: string;
     pageNumberColor: string;
+    highlightColor: string;
   }
 > = {
   [QuranTheme.LIGHT]: {
@@ -21,21 +22,33 @@ export const QURAN_THEME_COLORS: Record<
     markerColor: "#B8860B",
     headerColor: "#2C1810",
     pageNumberColor: "#8B7355",
-  },
-  [QuranTheme.DARK]: {
-    background: "#1A1A2E",
-    textTint: "#E8E0D4",
-    markerColor: "#C4A265",
-    headerColor: "#E8E0D4",
-    pageNumberColor: "#A89880",
+    highlightColor: "rgba(255, 180, 100, 0.25)",
   },
   [QuranTheme.SEPIA]: {
-    background: "#F4E8D1",
-    textTint: "#3E2723",
+    background: "#F8F1E3",
+    textTint: "#5C3A1E",
     markerColor: "#8B6914",
-    headerColor: "#3E2723",
+    headerColor: "#5C3A1E",
     pageNumberColor: "#6D4C41",
+    highlightColor: "rgba(180, 130, 60, 0.2)",
   },
+  [QuranTheme.DARK]: {
+    background: "#121212",
+    textTint: "#B0B0B0",
+    markerColor: "#C4A265",
+    headerColor: "#B0B0B0",
+    pageNumberColor: "#777777",
+    highlightColor: "rgba(255, 255, 255, 0.12)",
+  },
+} as const;
+
+export const MARKER_ADJUSTMENTS: Record<
+  MushafVersion,
+  { scaleMultiplier: number; offsetX: number; offsetY: number; fontSizeMultiplier: number }
+> = {
+  [MushafVersion.V1]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.85 },
+  [MushafVersion.V2]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.85 },
+  [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.85 },
 } as const;
 
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;

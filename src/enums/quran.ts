@@ -6,8 +6,8 @@ export enum MushafVersion {
 
 export enum QuranTheme {
   LIGHT = "light",
-  DARK = "dark",
   SEPIA = "sepia",
+  DARK = "dark",
 }
 
 export enum LineType {
