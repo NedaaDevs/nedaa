@@ -9,6 +9,7 @@ export const QURAN_THEME_COLORS: Record<
   QuranTheme,
   {
     background: string;
+    innerBackground: string;
     textTint: string | undefined;
     markerColor: string;
     headerColor: string;
@@ -20,6 +21,7 @@ export const QURAN_THEME_COLORS: Record<
 > = {
   [QuranTheme.LIGHT]: {
     background: "#FFFDF7",
+    innerBackground: "#FFFDF7",
     textTint: undefined,
     markerColor: "#B8860B",
     headerColor: "#2C1810",
@@ -30,6 +32,7 @@ export const QURAN_THEME_COLORS: Record<
   },
   [QuranTheme.SEPIA]: {
     background: "#F8F1E3",
+    innerBackground: "#F8F1E3",
     textTint: "#5C3A1E",
     markerColor: "#8B6914",
     headerColor: "#5C3A1E",
@@ -40,6 +43,7 @@ export const QURAN_THEME_COLORS: Record<
   },
   [QuranTheme.DARK]: {
     background: "#121212",
+    innerBackground: "#121212",
     textTint: "#E0D6C8",
     markerColor: "#C4A265",
     headerColor: "#E0D6C8",
@@ -50,33 +54,36 @@ export const QURAN_THEME_COLORS: Record<
   },
   [QuranTheme.CLASSIC]: {
     background: "#D8E8D0",
+    innerBackground: "#F8F8F0",
     textTint: undefined,
     markerColor: "#40A060",
     headerColor: "#000000",
     pageNumberColor: "#40A060",
     highlightColor: "rgba(240, 120, 184, 0.2)",
-    shimmerBase: "#D8E8D0",
-    shimmerHighlight: "#C8D8C0",
+    shimmerBase: "#F8F8F0",
+    shimmerHighlight: "#E8E8E0",
   },
   [QuranTheme.TINTED]: {
     background: "#F0E0D0",
+    innerBackground: "#F8F8F0",
     textTint: "#885820",
     markerColor: "#B89870",
     headerColor: "#885820",
     pageNumberColor: "#B89870",
     highlightColor: "rgba(184, 152, 112, 0.2)",
-    shimmerBase: "#F0E0D0",
-    shimmerHighlight: "#E0D0C0",
+    shimmerBase: "#F8F8F0",
+    shimmerHighlight: "#E8E0D0",
   },
   [QuranTheme.TINTED_DARK]: {
     background: "#181818",
+    innerBackground: "#282830",
     textTint: "#707080",
     markerColor: "#303038",
     headerColor: "#707080",
     pageNumberColor: "#505060",
     highlightColor: "rgba(112, 112, 128, 0.15)",
-    shimmerBase: "#181818",
-    shimmerHighlight: "#282830",
+    shimmerBase: "#282830",
+    shimmerHighlight: "#383840",
   },
 } as const;
 
