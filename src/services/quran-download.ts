@@ -205,6 +205,8 @@ const start = async (version: MushafVersion): Promise<void> => {
   const store = useQuranStore.getState();
   store.updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
 
+  log.i("Download", `start() called for ${version}, manifest baseUrl: ${manifestVersion.baseUrl}`);
+
   // Download bounds.db first — needed for the reader to function
   await downloadBoundsDb(version, manifestVersion);
 
@@ -230,7 +232,11 @@ const start = async (version: MushafVersion): Promise<void> => {
 
   await emitProgress(version);
 
-  log.i("Download", `Starting download for ${version}`);
+  const pendingCounts = await QuranDB.getDownloadCounts(version);
+  log.i(
+    "Download",
+    `Starting download loop for ${version}: ${pendingCounts.completed} complete, ${pendingCounts.pending} pending, ${pendingCounts.failed} failed`
+  );
 
   try {
     await downloadLoop(version, manifestVersion);

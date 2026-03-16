@@ -51,11 +51,15 @@ const QuranScreen = () => {
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
       const version = manifestVersion.id as MushafVersion;
+      console.log(
+        `[QuranScreen] Selected version: ${version}, size: ${manifestVersion.totalSizeMB}MB`
+      );
       selectedManifestRef.current = manifestVersion;
       setSelectedVersion(version);
       setOnboardingComplete();
 
       const spaceCheck = QuranDownload.checkDiskSpace(manifestVersion.totalSizeMB);
+      console.log(`[QuranScreen] Disk space check:`, JSON.stringify(spaceCheck));
       if (!spaceCheck.available) {
         Alert.alert(
           t("quran.download.noSpace", {
@@ -66,6 +70,7 @@ const QuranScreen = () => {
         return;
       }
 
+      console.log(`[QuranScreen] Setting DOWNLOADING status and starting download`);
       updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
       QuranDownload.start(version);
     },
@@ -81,6 +86,9 @@ const QuranScreen = () => {
   }, []);
 
   // Route: onboarding → progress → reader
+  console.log(
+    `[QuranScreen] Route: onboarding=${onboardingComplete}, status=${downloadStatus}, version=${selectedVersion}, forceReader=${forceReader}`
+  );
   if (!onboardingComplete) {
     return (
       <VersionSelectionScreen
