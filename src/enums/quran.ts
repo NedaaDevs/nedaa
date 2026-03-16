@@ -16,3 +16,18 @@ export enum LineType {
   BASMALA = "basmala",
   EMPTY = "empty",
 }
+
+export enum DownloadStatus {
+  IDLE = "idle",
+  DOWNLOADING = "downloading",
+  PAUSED = "paused",
+  COMPLETE = "complete",
+  ERROR = "error",
+}
+
+export enum PageDownloadStatus {
+  PENDING = "pending",
+  DOWNLOADING = "downloading",
+  COMPLETE = "complete",
+  FAILED = "failed",
+}
