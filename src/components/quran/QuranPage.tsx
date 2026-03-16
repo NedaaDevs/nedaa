@@ -20,7 +20,9 @@ import {
 } from "@/constants/Quran";
 import { GlyphBound } from "@/types/quran";
 import { QuranDB } from "@/services/quran-db";
+import { QuranDownload } from "@/services/quran-download";
 import LineImage from "@/components/quran/LineImage";
+import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 
@@ -44,10 +46,18 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const [highlightedAyah, setHighlightedAyah] = useState<{ surah: number; ayah: number } | null>(
     null
   );
+  const [pageAvailable, setPageAvailable] = useState<boolean | null>(null);
   const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
   useEffect(() => {
+    const available = QuranDownload.isPageAvailable(version, page);
+    setPageAvailable(available);
+
+    if (!available) {
+      QuranDownload.prioritizePage(page);
+    }
+
     const loadPageData = async () => {
       const [lineMetadata, juzNumber, bounds] = await Promise.all([
         QuranDB.getLineMetadata(version, page),
@@ -68,6 +78,20 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     loadPageData();
     setHighlightedAyah(null);
   }, [page, version]);
+
+  // Poll for page availability when downloading
+  useEffect(() => {
+    if (pageAvailable !== false) return;
+
+    const interval = setInterval(() => {
+      if (QuranDownload.isPageAvailable(version, page)) {
+        setPageAvailable(true);
+        clearInterval(interval);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [pageAvailable, version, page]);
 
   const onLinesLayout = useCallback((event: LayoutChangeEvent) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
@@ -161,17 +185,26 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           delayLongPress={LONG_PRESS_MS}
           onPress={() => setHighlightedAyah(null)}>
           {lineHeight > 0 &&
-            lines.map((line) => (
-              <LineImage
-                key={`${page}-${line}`}
-                version={version}
-                page={page}
-                line={line}
-                screenWidth={width}
-                lineHeight={lineHeight}
-                quranTheme={quranTheme}
-              />
-            ))}
+            lines.map((line) =>
+              pageAvailable ? (
+                <LineImage
+                  key={`${page}-${line}`}
+                  version={version}
+                  page={page}
+                  line={line}
+                  screenWidth={width}
+                  lineHeight={lineHeight}
+                  quranTheme={quranTheme}
+                />
+              ) : (
+                <LineShimmer
+                  key={`shimmer-${page}-${line}`}
+                  screenWidth={width}
+                  lineHeight={lineHeight}
+                  quranTheme={quranTheme}
+                />
+              )
+            )}
 
           {highlightRects.map((rect, i) => (
             <View
