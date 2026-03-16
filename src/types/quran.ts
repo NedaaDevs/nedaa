@@ -1,4 +1,10 @@
-import { MushafVersion, QuranTheme, LineType, DownloadStatus } from "@/enums/quran";
+import {
+  MushafVersion,
+  MushafImageType,
+  QuranTheme,
+  LineType,
+  DownloadStatus,
+} from "@/enums/quran";
 
 export type GlyphBound = {
   page: number;
@@ -37,7 +43,8 @@ export type VersionDownloadState = {
 };
 
 export type QuranVersionPaths = {
-  lines: string;
+  lines?: string;
+  pages?: string;
   boundsDb: string;
   markers: string;
 };
@@ -53,6 +60,7 @@ export type QuranManifestVersion = {
   yearHijri: number;
   yearGregorian: number;
   totalPages: number;
+  type: MushafImageType;
   linesPerPage: number;
   imageWidth: number;
   imageHeight: number;
