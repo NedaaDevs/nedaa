@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { X, Download, Check } from "lucide-react-native";
+import { X, Download, Check, Loader } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
@@ -28,19 +28,25 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const { currentVersion, versionDownloads, setCurrentVersion } = useQuranStore();
 
-  const downloadedVersions = Object.entries(versionDownloads)
-    .filter(([, state]) => state?.status === DownloadStatus.COMPLETE)
-    .map(([v]) => v as MushafVersion);
-
   const isDark = quranTheme === QuranTheme.DARK;
   const bgColor = isDark ? "#1E1E1E" : "#FFFFFF";
   const textColor = isDark ? "#E0D6C8" : "#2C1810";
   const subtleColor = isDark ? "#888" : QURAN_UI_COLORS.subtleText;
   const borderColor = isDark ? "#333" : QURAN_UI_COLORS.cardBorder;
 
+  // All versions that are downloaded or downloading
+  const allVersions = Object.entries(versionDownloads)
+    .filter(
+      ([, state]) =>
+        state?.status === DownloadStatus.COMPLETE ||
+        state?.status === DownloadStatus.DOWNLOADING ||
+        state?.status === DownloadStatus.PAUSED ||
+        state?.status === DownloadStatus.ERROR
+    )
+    .map(([v, state]) => ({ version: v as MushafVersion, state: state! }));
+
   return (
     <>
-      {/* Backdrop */}
       <Animated.View
         entering={FadeIn.duration(200)}
         exiting={FadeOut.duration(200)}
@@ -48,17 +54,10 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
-      {/* Sheet */}
       <Animated.View
         entering={SlideInDown.springify().damping(20).stiffness(200)}
         exiting={SlideOutDown.duration(200)}
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: bgColor,
-            paddingBottom: insets.bottom + 16,
-          },
-        ]}>
+        style={[styles.sheet, { backgroundColor: bgColor, paddingBottom: insets.bottom + 16 }]}>
         {/* Header */}
         <XStack justifyContent="space-between" alignItems="center" paddingBottom="$3">
           <Text fontSize={18} fontWeight="700" color={textColor}>
@@ -86,19 +85,32 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
             {t("quran.settings.version")}
           </Text>
 
-          {downloadedVersions.map((version) => {
+          {allVersions.map(({ version, state }) => {
             const isActive = version === currentVersion;
+            const isComplete = state.status === DownloadStatus.COMPLETE;
+            const isDownloading =
+              state.status === DownloadStatus.DOWNLOADING || state.status === DownloadStatus.PAUSED;
+            const isError = state.status === DownloadStatus.ERROR;
+            const progress = state.progress;
+            const percent =
+              progress && progress.totalPages > 0
+                ? Math.round((progress.completedPages / progress.totalPages) * 100)
+                : 0;
+
             return (
               <Pressable
                 key={version}
                 onPress={() => {
-                  setCurrentVersion(version);
-                  onClose();
+                  if (isComplete) {
+                    setCurrentVersion(version);
+                    onClose();
+                  }
                 }}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: isActive }}
-                accessibilityLabel={`${VERSION_LABELS[version]}${isActive ? ", active" : ""}`}>
-                <XStack
+                disabled={!isComplete}
+                accessibilityRole={isComplete ? "radio" : "none"}
+                accessibilityState={isComplete ? { selected: isActive } : undefined}
+                accessibilityLabel={`${VERSION_LABELS[version]}${isActive ? ", active" : ""}${isDownloading ? `, downloading ${percent}%` : ""}`}>
+                <YStack
                   paddingVertical="$3"
                   paddingHorizontal="$3"
                   borderRadius="$3"
@@ -109,13 +121,47 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                         : "rgba(0,0,0,0.04)"
                       : "transparent"
                   }
-                  justifyContent="space-between"
-                  alignItems="center">
-                  <Text fontSize={15} fontWeight={isActive ? "600" : "400"} color={textColor}>
-                    {VERSION_LABELS[version]}
-                  </Text>
-                  {isActive && <Check size={18} color={themeColors.markerColor} />}
-                </XStack>
+                  gap="$1.5">
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <XStack alignItems="center" gap="$2">
+                      <Text fontSize={15} fontWeight={isActive ? "600" : "400"} color={textColor}>
+                        {VERSION_LABELS[version]}
+                      </Text>
+                      {isDownloading && <Loader size={14} color={subtleColor} />}
+                    </XStack>
+                    {isActive && isComplete && <Check size={18} color={themeColors.markerColor} />}
+                    {isDownloading && (
+                      <Text fontSize={12} color={subtleColor}>
+                        {percent}%
+                      </Text>
+                    )}
+                    {isError && (
+                      <Text fontSize={12} color={QURAN_UI_COLORS.accentWarning}>
+                        {t("quran.download.retry")}
+                      </Text>
+                    )}
+                  </XStack>
+
+                  {/* Progress bar for downloading versions */}
+                  {isDownloading && (
+                    <View
+                      style={{
+                        height: 3,
+                        backgroundColor: borderColor,
+                        borderRadius: 2,
+                        overflow: "hidden",
+                      }}>
+                      <View
+                        style={{
+                          height: 3,
+                          width: `${percent}%`,
+                          backgroundColor: themeColors.markerColor,
+                          borderRadius: 2,
+                        }}
+                      />
+                    </View>
+                  )}
+                </YStack>
               </Pressable>
             );
           })}
