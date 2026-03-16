@@ -49,7 +49,7 @@ const LineImage = ({
     [screenWidth, lineHeight]
   );
 
-  const image = <Image source={{ uri }} style={imageStyle} resizeMode="cover" />;
+  const image = <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />;
 
   if (!themeColors.textTint) {
     return <View style={containerStyle}>{image}</View>;
