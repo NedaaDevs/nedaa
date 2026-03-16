@@ -65,3 +65,5 @@ fastlane/AuthKey_*.p8
 
 # App Store / Play Store credentials
 google-service-account.json
+
+docs/changelogs
