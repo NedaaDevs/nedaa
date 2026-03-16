@@ -8,6 +8,8 @@ import {
   MAX_RETRY_ATTEMPTS,
   RETRY_DELAYS_MS,
 } from "@/constants/Quran";
+import * as SQLite from "expo-sqlite";
+
 import { QuranDB } from "@/services/quran-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { useQuranStore } from "@/stores/quran";
@@ -31,6 +33,26 @@ const getLineFile = (version: MushafVersion, page: number, line: number): File =
   const pageStr = String(page).padStart(3, "0");
   const lineStr = String(line).padStart(3, "0");
   return new File(Paths.document, `quran/${version}/lines/${pageStr}/${lineStr}.png`);
+};
+
+const getBoundsDbFile = (version: MushafVersion): File => {
+  return new File(SQLite.defaultDatabaseDirectory, `bounds-${version}.db`);
+};
+
+const downloadBoundsDb = async (
+  version: MushafVersion,
+  manifestVersion: QuranManifestVersion
+): Promise<void> => {
+  const boundsFile = getBoundsDbFile(version);
+  if (boundsFile.exists) {
+    log.i("Download", `bounds-${version}.db already exists`);
+    return;
+  }
+
+  const url = QuranManifestService.getBoundsDbUrl(manifestVersion);
+  log.i("Download", `Downloading bounds-${version}.db from ${url}`);
+  await File.downloadFileAsync(url, boundsFile);
+  log.i("Download", `bounds-${version}.db downloaded (${boundsFile.size} bytes)`);
 };
 
 const verifyPageOnDisk = (version: MushafVersion, page: number): boolean => {
@@ -182,6 +204,9 @@ const start = async (version: MushafVersion): Promise<void> => {
 
   const store = useQuranStore.getState();
   store.updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
+
+  // Download bounds.db first — needed for the reader to function
+  await downloadBoundsDb(version, manifestVersion);
 
   await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
 
