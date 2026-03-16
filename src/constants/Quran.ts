@@ -104,7 +104,7 @@ export const QURAN_UI_COLORS = {
   progressTrack: "#E8E0D0",
 } as const;
 
-export const DOWNLOAD_CONCURRENCY = 4;
+export const DOWNLOAD_CONCURRENCY = 6;
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_DELAYS_MS = [1000, 3000, 10000];
 export const MIN_PAGES_BEFORE_READING = 5;

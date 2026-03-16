@@ -75,23 +75,27 @@ const downloadPage = async (
 
   let totalBytes = 0;
 
+  if (isPaused || isCancelled) {
+    return { success: false, totalBytes: 0 };
+  }
+
   await QuranDB.updatePageStatus(version, page, PageDownloadStatus.DOWNLOADING);
 
-  for (let line = 1; line <= LINES_PER_PAGE; line++) {
-    if (isPaused || isCancelled) {
-      await QuranDB.updatePageStatus(version, page, PageDownloadStatus.PENDING);
-      return { success: false, totalBytes: 0 };
+  const lineDownloads = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1).map(
+    async (line) => {
+      const file = getLineFile(version, page, line);
+      if (file.exists) {
+        return file.size ?? 0;
+      }
+      const url = QuranManifestService.getLineImageUrl(manifestVersion, page, line);
+      await File.downloadFileAsync(url, file);
+      return file.size ?? 0;
     }
+  );
 
-    const file = getLineFile(version, page, line);
-    if (file.exists) {
-      totalBytes += file.size ?? 0;
-      continue;
-    }
-
-    const url = QuranManifestService.getLineImageUrl(manifestVersion, page, line);
-    await File.downloadFileAsync(url, file);
-    totalBytes += file.size ?? 0;
+  const sizes = await Promise.all(lineDownloads);
+  for (const size of sizes) {
+    totalBytes += size;
   }
 
   await QuranDB.updatePageStatus(version, page, PageDownloadStatus.COMPLETE, totalBytes);
