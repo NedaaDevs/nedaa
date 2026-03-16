@@ -385,6 +385,7 @@ export const QuranDownload = {
   cancel,
   prioritizePage,
   isPageAvailable,
+  getImageType: detectImageType,
   verifyIntegrity,
   getStorageUsage,
   deleteVersion,
