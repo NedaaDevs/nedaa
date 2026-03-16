@@ -2,10 +2,10 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { QURAN_DB_NAME } from "@/constants/DB";
+import { QURAN_DB_NAME, QURAN_DOWNLOADS_DB_NAME } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
-import { MushafVersion, LineType } from "@/enums/quran";
+import { MushafVersion, LineType, PageDownloadStatus } from "@/enums/quran";
 import { GlyphBound, LineMetadata } from "@/types/quran";
 
 let quranDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -145,6 +145,149 @@ const getJuzForPage = async (page: number): Promise<number> => {
   return result?.juz ?? 1;
 };
 
+// --- Download tracking ---
+
+let downloadDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
+const openDownloadDb = (): Promise<SQLite.SQLiteDatabase> => {
+  if (!downloadDbPromise) {
+    downloadDbPromise = (async () => {
+      try {
+        const db = await SQLite.openDatabaseAsync(
+          QURAN_DOWNLOADS_DB_NAME,
+          { useNewConnection: true },
+          SQLite.defaultDatabaseDirectory
+        );
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS quran_downloads (
+            version TEXT NOT NULL,
+            page INTEGER NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            size_bytes INTEGER DEFAULT 0,
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY (version, page)
+          );
+        `);
+        return db;
+      } catch (error) {
+        downloadDbPromise = null;
+        console.error("[QuranDB] Error opening quran-downloads.db:", error);
+        throw error;
+      }
+    })();
+  }
+  return downloadDbPromise;
+};
+
+const initializeDownloadPages = async (
+  version: MushafVersion,
+  totalPages: number
+): Promise<void> => {
+  const db = await openDownloadDb();
+  const now = Date.now();
+  await db.withTransactionAsync(async () => {
+    for (let i = 1; i <= totalPages; i++) {
+      await db.runAsync(
+        "INSERT OR IGNORE INTO quran_downloads (version, page, status, size_bytes, updated_at) VALUES (?, ?, ?, 0, ?)",
+        [version, i, PageDownloadStatus.PENDING, now]
+      );
+    }
+  });
+};
+
+const updatePageStatus = async (
+  version: MushafVersion,
+  page: number,
+  status: string,
+  sizeBytes?: number
+): Promise<void> => {
+  const db = await openDownloadDb();
+  if (sizeBytes !== undefined) {
+    await db.runAsync(
+      "UPDATE quran_downloads SET status = ?, size_bytes = ?, updated_at = ? WHERE version = ? AND page = ?",
+      [status, sizeBytes, Date.now(), version, page]
+    );
+  } else {
+    await db.runAsync(
+      "UPDATE quran_downloads SET status = ?, updated_at = ? WHERE version = ? AND page = ?",
+      [status, Date.now(), version, page]
+    );
+  }
+};
+
+const getPendingPages = async (version: MushafVersion, limit: number): Promise<number[]> => {
+  const db = await openDownloadDb();
+  const rows = await db.getAllAsync<{ page: number }>(
+    `SELECT page FROM quran_downloads WHERE version = ? AND status IN ('${PageDownloadStatus.PENDING}', '${PageDownloadStatus.FAILED}') ORDER BY page LIMIT ?`,
+    [version, limit]
+  );
+  return rows.map((r) => r.page);
+};
+
+const getDownloadCounts = async (
+  version: MushafVersion
+): Promise<{
+  total: number;
+  completed: number;
+  failed: number;
+  pending: number;
+}> => {
+  const db = await openDownloadDb();
+  const rows = await db.getAllAsync<{ status: string; count: number }>(
+    "SELECT status, COUNT(*) as count FROM quran_downloads WHERE version = ? GROUP BY status",
+    [version]
+  );
+  const counts = { total: 0, completed: 0, failed: 0, pending: 0 };
+  for (const row of rows) {
+    counts.total += row.count;
+    if (row.status === PageDownloadStatus.COMPLETE) counts.completed = row.count;
+    else if (row.status === PageDownloadStatus.FAILED) counts.failed = row.count;
+    else counts.pending += row.count;
+  }
+  return counts;
+};
+
+const getTotalDownloadedBytes = async (version: MushafVersion): Promise<number> => {
+  const db = await openDownloadDb();
+  const result = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(size_bytes), 0) as total FROM quran_downloads WHERE version = ? AND status = '${PageDownloadStatus.COMPLETE}'`,
+    [version]
+  );
+  return result?.total ?? 0;
+};
+
+const isPageComplete = async (version: MushafVersion, page: number): Promise<boolean> => {
+  const db = await openDownloadDb();
+  const result = await db.getFirstAsync<{ status: string }>(
+    "SELECT status FROM quran_downloads WHERE version = ? AND page = ?",
+    [version, page]
+  );
+  return result?.status === PageDownloadStatus.COMPLETE;
+};
+
+const deleteVersionDownloads = async (version: MushafVersion): Promise<void> => {
+  const db = await openDownloadDb();
+  await db.runAsync("DELETE FROM quran_downloads WHERE version = ?", [version]);
+};
+
+const resetFailedPages = async (version: MushafVersion): Promise<number> => {
+  const db = await openDownloadDb();
+  const result = await db.runAsync(
+    `UPDATE quran_downloads SET status = '${PageDownloadStatus.PENDING}', updated_at = ? WHERE version = ? AND status = '${PageDownloadStatus.FAILED}'`,
+    [Date.now(), version]
+  );
+  return result.changes;
+};
+
+const getSurahForPage = async (version: MushafVersion, page: number): Promise<string> => {
+  const db = await openBoundsDb(version);
+  const result = await db.getFirstAsync<{ surah_name: string }>(
+    "SELECT surah_name FROM line_metadata WHERE page = ? AND surah_name IS NOT NULL LIMIT 1",
+    [page]
+  );
+  return result?.surah_name ?? "";
+};
+
 export const QuranDB = {
   openQuranDb,
   openBoundsDb,
@@ -152,4 +295,14 @@ export const QuranDB = {
   getGlyphBounds,
   getMarkerBounds,
   getJuzForPage,
+  openDownloadDb,
+  initializeDownloadPages,
+  updatePageStatus,
+  getPendingPages,
+  getDownloadCounts,
+  getTotalDownloadedBytes,
+  isPageComplete,
+  deleteVersionDownloads,
+  resetFailedPages,
+  getSurahForPage,
 };

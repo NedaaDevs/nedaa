@@ -53,3 +53,10 @@ export const MARKER_ADJUSTMENTS: Record<
 
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;
 export const DEFAULT_QURAN_THEME = QuranTheme.LIGHT;
+
+export const RECOMMENDED_VERSION = MushafVersion.V2;
+
+export const DOWNLOAD_CONCURRENCY = 4;
+export const MAX_RETRY_ATTEMPTS = 3;
+export const RETRY_DELAYS_MS = [1000, 3000, 10000];
+export const MIN_PAGES_BEFORE_READING = 5;
