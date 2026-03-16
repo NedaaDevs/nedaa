@@ -50,34 +50,43 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
+  // Check page availability on mount / page change
   useEffect(() => {
     const available = QuranDownload.isPageAvailable(version, page);
     setPageAvailable(available);
-
     if (!available) {
       QuranDownload.prioritizePage(page);
     }
+    setHighlightedAyah(null);
+  }, [page, version]);
+
+  // Load page data when available
+  useEffect(() => {
+    if (!pageAvailable) return;
 
     const loadPageData = async () => {
-      const [lineMetadata, juzNumber, bounds] = await Promise.all([
-        QuranDB.getLineMetadata(version, page),
-        QuranDB.getJuzForPage(page),
-        QuranDB.getGlyphBounds(version, page),
-      ]);
+      try {
+        const [lineMetadata, juzNumber, bounds] = await Promise.all([
+          QuranDB.getLineMetadata(version, page),
+          QuranDB.getJuzForPage(page),
+          QuranDB.getGlyphBounds(version, page),
+        ]);
 
-      const surahHeader = lineMetadata.find(
-        (lm) => lm.type === LineType.SURAH_HEADER && lm.surahName
-      );
-      if (surahHeader?.surahName) {
-        setSurahName(surahHeader.surahName);
+        const surahHeader = lineMetadata.find(
+          (lm) => lm.type === LineType.SURAH_HEADER && lm.surahName
+        );
+        if (surahHeader?.surahName) {
+          setSurahName(surahHeader.surahName);
+        }
+        setJuz(juzNumber);
+        setGlyphBounds(bounds);
+      } catch (error) {
+        console.warn(`[QuranPage] Failed to load data for page ${page}:`, error);
       }
-      setJuz(juzNumber);
-      setGlyphBounds(bounds);
     };
 
     loadPageData();
-    setHighlightedAyah(null);
-  }, [page, version]);
+  }, [page, version, pageAvailable]);
 
   // Poll for page availability when downloading
   useEffect(() => {
