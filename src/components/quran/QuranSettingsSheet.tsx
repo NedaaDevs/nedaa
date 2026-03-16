@@ -98,18 +98,22 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                 ? Math.round((progress.completedPages / progress.totalPages) * 100)
                 : 0;
 
+            const canSwitch = isComplete || percent > 0;
+
             return (
               <Pressable
                 key={version}
                 onPress={() => {
-                  if (isComplete) {
+                  if (canSwitch) {
                     setCurrentVersion(version);
                     onClose();
                   }
+                  if (isDownloading || isError) {
+                    QuranDownload.start(version);
+                  }
                 }}
-                disabled={!isComplete}
-                accessibilityRole={isComplete ? "radio" : "none"}
-                accessibilityState={isComplete ? { selected: isActive } : undefined}
+                accessibilityRole={canSwitch ? "radio" : "none"}
+                accessibilityState={canSwitch ? { selected: isActive } : undefined}
                 accessibilityLabel={`${VERSION_LABELS[version]}${isActive ? ", active" : ""}${isDownloading ? `, downloading ${percent}%` : ""}`}>
                 <YStack
                   paddingVertical="$3"
