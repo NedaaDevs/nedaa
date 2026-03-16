@@ -46,11 +46,13 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const [highlightedAyah, setHighlightedAyah] = useState<{ surah: number; ayah: number } | null>(
     null
   );
-  const [pageAvailable, setPageAvailable] = useState<boolean | null>(null);
+  const [pageAvailable, setPageAvailable] = useState(() =>
+    QuranDownload.isPageAvailable(version, page)
+  );
   const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
-  // Check page availability on mount / page change
+  // Re-check page availability on page/version change
   useEffect(() => {
     const available = QuranDownload.isPageAvailable(version, page);
     setPageAvailable(available);
