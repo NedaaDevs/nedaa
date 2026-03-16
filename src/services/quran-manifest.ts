@@ -46,6 +46,12 @@ const getLineImageUrl = (version: QuranManifestVersion, page: number, line: numb
     .replace("{line}", lineStr)}`;
 };
 
+const getPageImageUrl = (version: QuranManifestVersion, page: number): string => {
+  const pageStr = String(page).padStart(3, "0");
+  const pathTemplate = version.paths.pages ?? "/pages/{page}.png";
+  return `${version.baseUrl}${pathTemplate.replace("{page}", pageStr)}`;
+};
+
 const getBoundsDbUrl = (version: QuranManifestVersion): string => {
   return `${version.baseUrl}${version.paths.boundsDb}`;
 };
@@ -64,6 +70,7 @@ export const QuranManifestService = {
   getVersionInfo,
   getVersions,
   getLineImageUrl,
+  getPageImageUrl,
   getBoundsDbUrl,
   getMarkerUrl,
   clearCache,

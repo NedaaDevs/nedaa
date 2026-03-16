@@ -1,6 +1,6 @@
 import { File, Directory, Paths } from "expo-file-system";
 
-import { MushafVersion, DownloadStatus, PageDownloadStatus } from "@/enums/quran";
+import { MushafVersion, MushafImageType, DownloadStatus, PageDownloadStatus } from "@/enums/quran";
 import {
   TOTAL_PAGES,
   LINES_PER_PAGE,
@@ -24,7 +24,7 @@ let isCancelled = false;
 const priorityPages = new Set<number>();
 let lastSurahName = "";
 
-const getPageDir = (version: MushafVersion, page: number): Directory => {
+const getLinePageDir = (version: MushafVersion, page: number): Directory => {
   const pageStr = String(page).padStart(3, "0");
   return new Directory(Paths.document, `quran/${version}/lines/${pageStr}`);
 };
@@ -33,6 +33,15 @@ const getLineFile = (version: MushafVersion, page: number, line: number): File =
   const pageStr = String(page).padStart(3, "0");
   const lineStr = String(line).padStart(3, "0");
   return new File(Paths.document, `quran/${version}/lines/${pageStr}/${lineStr}.png`);
+};
+
+const getPageFile = (version: MushafVersion, page: number): File => {
+  const pageStr = String(page).padStart(3, "0");
+  return new File(Paths.document, `quran/${version}/pages/${pageStr}.png`);
+};
+
+const getPagesDir = (version: MushafVersion): Directory => {
+  return new Directory(Paths.document, `quran/${version}/pages`);
 };
 
 const getBoundsDbFile = (version: MushafVersion): File => {
@@ -55,10 +64,16 @@ const downloadBoundsDb = async (
   log.i("Download", `bounds-${version}.db downloaded (${boundsFile.size} bytes)`);
 };
 
-const verifyPageOnDisk = (version: MushafVersion, page: number): boolean => {
+const verifyPageOnDisk = (
+  version: MushafVersion,
+  page: number,
+  imageType: MushafImageType = MushafImageType.LINE
+): boolean => {
+  if (imageType === MushafImageType.PAGE) {
+    return getPageFile(version, page).exists;
+  }
   for (let line = 1; line <= LINES_PER_PAGE; line++) {
-    const file = getLineFile(version, page, line);
-    if (!file.exists) return false;
+    if (!getLineFile(version, page, line).exists) return false;
   }
   return true;
 };
@@ -68,34 +83,44 @@ const downloadPage = async (
   manifestVersion: QuranManifestVersion,
   page: number
 ): Promise<{ success: boolean; totalBytes: number }> => {
-  const pageDir = getPageDir(version, page);
-  if (!pageDir.exists) {
-    pageDir.create({ intermediates: true });
-  }
-
-  let totalBytes = 0;
-
   if (isPaused || isCancelled) {
     return { success: false, totalBytes: 0 };
   }
 
   await QuranDB.updatePageStatus(version, page, PageDownloadStatus.DOWNLOADING);
 
-  const lineDownloads = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1).map(
-    async (line) => {
-      const file = getLineFile(version, page, line);
-      if (file.exists) {
+  let totalBytes = 0;
+
+  if (manifestVersion.type === MushafImageType.PAGE) {
+    // Single image per page
+    const dir = getPagesDir(version);
+    if (!dir.exists) dir.create({ intermediates: true });
+
+    const file = getPageFile(version, page);
+    if (file.exists) {
+      totalBytes = file.size ?? 0;
+    } else {
+      const url = QuranManifestService.getPageImageUrl(manifestVersion, page);
+      await File.downloadFileAsync(url, file);
+      totalBytes = file.size ?? 0;
+    }
+  } else {
+    // 15 line images per page (parallel)
+    const dir = getLinePageDir(version, page);
+    if (!dir.exists) dir.create({ intermediates: true });
+
+    const lineDownloads = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1).map(
+      async (line) => {
+        const file = getLineFile(version, page, line);
+        if (file.exists) return file.size ?? 0;
+        const url = QuranManifestService.getLineImageUrl(manifestVersion, page, line);
+        await File.downloadFileAsync(url, file);
         return file.size ?? 0;
       }
-      const url = QuranManifestService.getLineImageUrl(manifestVersion, page, line);
-      await File.downloadFileAsync(url, file);
-      return file.size ?? 0;
-    }
-  );
+    );
 
-  const sizes = await Promise.all(lineDownloads);
-  for (const size of sizes) {
-    totalBytes += size;
+    const sizes = await Promise.all(lineDownloads);
+    for (const size of sizes) totalBytes += size;
   }
 
   await QuranDB.updatePageStatus(version, page, PageDownloadStatus.COMPLETE, totalBytes);
@@ -227,7 +252,7 @@ const start = async (version: MushafVersion): Promise<void> => {
       [version, sampleSize]
     );
     for (const { page } of completedPages) {
-      if (!verifyPageOnDisk(version, page)) {
+      if (!verifyPageOnDisk(version, page, manifestVersion.type)) {
         await QuranDB.updatePageStatus(version, page, PageDownloadStatus.PENDING);
         log.i("Download", `Page ${page} missing from disk, reset to pending`);
       }
@@ -292,16 +317,23 @@ const prioritizePage = (page: number): void => {
   if (page < TOTAL_PAGES - 1) priorityPages.add(page + 2);
 };
 
+const detectImageType = (version: MushafVersion): MushafImageType => {
+  const pagesDir = getPagesDir(version);
+  if (pagesDir.exists) return MushafImageType.PAGE;
+  return MushafImageType.LINE;
+};
+
 const isPageAvailable = (version: MushafVersion, page: number): boolean => {
-  return verifyPageOnDisk(version, page);
+  return verifyPageOnDisk(version, page, detectImageType(version));
 };
 
 const verifyIntegrity = async (
   version: MushafVersion
 ): Promise<{ total: number; missing: number }> => {
+  const imageType = detectImageType(version);
   let missing = 0;
   for (let page = 1; page <= TOTAL_PAGES; page++) {
-    if (!verifyPageOnDisk(version, page)) missing++;
+    if (!verifyPageOnDisk(version, page, imageType)) missing++;
   }
   return { total: TOTAL_PAGES, missing };
 };

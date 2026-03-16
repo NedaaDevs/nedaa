@@ -13,6 +13,11 @@ export enum QuranTheme {
   TINTED_DARK = "tinted-dark",
 }
 
+export enum MushafImageType {
+  LINE = "line",
+  PAGE = "page",
+}
+
 export enum LineType {
   TEXT = "text",
   SURAH_HEADER = "surah-header",
