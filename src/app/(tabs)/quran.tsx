@@ -3,15 +3,16 @@ import { Alert, Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { X, Sun, Moon, BookOpen } from "lucide-react-native";
+import { X, Sun, Moon, BookOpen, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
-import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
+import PageSlider from "@/components/quran/PageSlider";
+import QuranSettingsSheet from "@/components/quran/QuranSettingsSheet";
 import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import type { QuranManifestVersion } from "@/types/quran";
@@ -30,7 +31,6 @@ const QuranScreen = () => {
     onboardingComplete,
     selectedVersion,
     versionDownloads,
-    setCurrentVersion,
     setCurrentPage,
     setQuranTheme,
     setOnboardingComplete,
@@ -42,6 +42,8 @@ const QuranScreen = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [forceReader, setForceReader] = useState(false);
   const selectedManifestRef = useRef<QuranManifestVersion | null>(null);
 
@@ -51,15 +53,11 @@ const QuranScreen = () => {
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
       const version = manifestVersion.id as MushafVersion;
-      console.log(
-        `[QuranScreen] Selected version: ${version}, size: ${manifestVersion.totalSizeMB}MB`
-      );
       selectedManifestRef.current = manifestVersion;
       setSelectedVersion(version);
       setOnboardingComplete();
 
       const spaceCheck = QuranDownload.checkDiskSpace(manifestVersion.totalSizeMB);
-      console.log(`[QuranScreen] Disk space check:`, JSON.stringify(spaceCheck));
       if (!spaceCheck.available) {
         Alert.alert(
           t("quran.download.noSpace", {
@@ -70,7 +68,6 @@ const QuranScreen = () => {
         return;
       }
 
-      console.log(`[QuranScreen] Setting DOWNLOADING status and starting download`);
       updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
       QuranDownload.start(version);
     },
@@ -85,15 +82,42 @@ const QuranScreen = () => {
     setForceReader(true);
   }, []);
 
+  const handleDownloadMore = useCallback(() => {
+    setShowSettings(false);
+    setShowVersionPicker(true);
+  }, []);
+
   // Route: onboarding → progress → reader
-  console.log(
-    `[QuranScreen] Route: onboarding=${onboardingComplete}, status=${downloadStatus}, version=${selectedVersion}, forceReader=${forceReader}`
-  );
   if (!onboardingComplete) {
     return (
       <VersionSelectionScreen
         onSelectVersion={handleSelectVersion}
         onSelectTextMode={handleSelectTextMode}
+      />
+    );
+  }
+
+  // "Download more" version picker — download in background, don't switch
+  if (showVersionPicker) {
+    return (
+      <VersionSelectionScreen
+        onSelectVersion={(manifest) => {
+          setShowVersionPicker(false);
+          const version = manifest.id as MushafVersion;
+          const spaceCheck = QuranDownload.checkDiskSpace(manifest.totalSizeMB);
+          if (!spaceCheck.available) {
+            Alert.alert(
+              t("quran.download.noSpace", {
+                required: manifest.totalSizeMB,
+                available: spaceCheck.availableMB,
+              })
+            );
+            return;
+          }
+          updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
+          QuranDownload.start(version);
+        }}
+        onSelectTextMode={() => setShowVersionPicker(false)}
       />
     );
   }
@@ -113,11 +137,6 @@ const QuranScreen = () => {
     );
   }
 
-  // Version toggle: only show downloaded versions
-  const downloadedVersions = Object.entries(versionDownloads)
-    .filter(([, state]) => state?.status === DownloadStatus.COMPLETE)
-    .map(([v]) => v as MushafVersion);
-
   return (
     <YStack flex={1} style={{ backgroundColor: themeColors.background }}>
       <QuranReader
@@ -128,29 +147,62 @@ const QuranScreen = () => {
         onTap={() => setShowOverlay((prev) => !prev)}
       />
 
+      {/* Page slider — always visible at bottom, zIndex above reader */}
+      <YStack position="absolute" bottom={insets.bottom + 8} left={0} right={0} zIndex={5}>
+        <PageSlider
+          currentPage={currentPage}
+          quranTheme={quranTheme}
+          onPageChange={setCurrentPage}
+        />
+      </YStack>
+
       {showOverlay && (
         <>
-          <Pressable
-            onPress={() => router.navigate("/")}
-            accessibilityRole="button"
-            accessibilityLabel="Close reader"
-            style={{
-              position: "absolute",
-              top: insets.top + 8,
-              right: 16,
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: "rgba(0,0,0,0.3)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-            <X color="white" size={18} />
-          </Pressable>
-
+          {/* Top bar: settings (left) + close (right) */}
           <XStack
             position="absolute"
-            bottom={insets.bottom + 44}
+            top={insets.top + 8}
+            left={16}
+            right={16}
+            justifyContent="space-between">
+            <Pressable
+              onPress={() => {
+                setShowOverlay(false);
+                setShowSettings(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t("quran.settings.title")}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "rgba(0,0,0,0.3)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+              <Settings color="white" size={18} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.navigate("/")}
+              accessibilityRole="button"
+              accessibilityLabel="Close reader"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "rgba(0,0,0,0.3)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+              <X color="white" size={18} />
+            </Pressable>
+          </XStack>
+
+          {/* Theme picker */}
+          <XStack
+            position="absolute"
+            bottom={insets.bottom + 60}
             alignSelf="center"
             gap="$1.5"
             backgroundColor="rgba(0,0,0,0.5)"
@@ -171,39 +223,16 @@ const QuranScreen = () => {
               </Pressable>
             ))}
           </XStack>
-
-          {downloadedVersions.length > 0 && (
-            <XStack
-              position="absolute"
-              bottom={insets.bottom + 4}
-              alignSelf="center"
-              gap="$2"
-              backgroundColor="rgba(0,0,0,0.5)"
-              borderRadius="$4"
-              padding="$2">
-              {downloadedVersions.map((v) => (
-                <Pressable
-                  key={v}
-                  onPress={() => setCurrentVersion(v)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Switch to ${v}`}>
-                  <XStack
-                    paddingHorizontal="$3"
-                    paddingVertical="$1.5"
-                    borderRadius="$3"
-                    backgroundColor={currentVersion === v ? "$primary" : "transparent"}>
-                    <Text
-                      size="sm"
-                      fontWeight={currentVersion === v ? "700" : "400"}
-                      color={currentVersion === v ? "white" : "#ccc"}>
-                      {v.toUpperCase()}
-                    </Text>
-                  </XStack>
-                </Pressable>
-              ))}
-            </XStack>
-          )}
         </>
+      )}
+
+      {/* Settings bottom sheet */}
+      {showSettings && (
+        <QuranSettingsSheet
+          quranTheme={quranTheme}
+          onClose={() => setShowSettings(false)}
+          onDownloadMore={handleDownloadMore}
+        />
       )}
     </YStack>
   );
