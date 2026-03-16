@@ -224,7 +224,6 @@ const start = async (version: MushafVersion): Promise<void> => {
     store.updateDownloadState(version, { status: DownloadStatus.ERROR });
   } finally {
     activeVersion = null;
-    activeManifestVersion = null;
   }
 };
 
