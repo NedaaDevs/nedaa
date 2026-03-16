@@ -15,6 +15,7 @@ import PageSlider from "@/components/quran/PageSlider";
 import QuranSettingsSheet from "@/components/quran/QuranSettingsSheet";
 import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
+import DownloadBanner from "@/components/quran/DownloadBanner";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const THEMES = [
@@ -45,6 +46,7 @@ const QuranScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [forceReader, setForceReader] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const selectedManifestRef = useRef<QuranManifestVersion | null>(null);
 
   const downloadState = selectedVersion ? versionDownloads[selectedVersion] : undefined;
@@ -146,6 +148,13 @@ const QuranScreen = () => {
         onPageChange={setCurrentPage}
         onTap={() => setShowOverlay((prev) => !prev)}
       />
+
+      {/* Download banner — shows when a background download is active */}
+      {!bannerDismissed && (
+        <YStack position="absolute" top={insets.top + 8} left={0} right={0} zIndex={5}>
+          <DownloadBanner quranTheme={quranTheme} onDismiss={() => setBannerDismissed(true)} />
+        </YStack>
+      )}
 
       {/* Page slider — always visible at bottom, zIndex above reader */}
       <YStack position="absolute" bottom={insets.bottom + 8} left={0} right={0} zIndex={5}>
