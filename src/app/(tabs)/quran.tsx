@@ -35,6 +35,7 @@ const QuranScreen = () => {
     setQuranTheme,
     setOnboardingComplete,
     setSelectedVersion,
+    updateDownloadState,
   } = useQuranStore();
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
@@ -65,9 +66,10 @@ const QuranScreen = () => {
         return;
       }
 
+      updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
       QuranDownload.start(version);
     },
-    [setSelectedVersion, setOnboardingComplete, t]
+    [setSelectedVersion, setOnboardingComplete, updateDownloadState, t]
   );
 
   const handleSelectTextMode = useCallback(() => {
