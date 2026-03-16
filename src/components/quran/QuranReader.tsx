@@ -1,5 +1,6 @@
-import { useCallback } from "react";
-import { useWindowDimensions, StyleSheet } from "react-native";
+import { useCallback, useEffect } from "react";
+import { Image, useWindowDimensions, StyleSheet } from "react-native";
+import { Paths } from "expo-file-system";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -10,8 +11,17 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
-import { TOTAL_PAGES } from "@/constants/Quran";
+import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import QuranPage from "@/components/quran/QuranPage";
+
+const prefetchPage = (version: MushafVersion, page: number) => {
+  for (let line = 1; line <= LINES_PER_PAGE; line++) {
+    const pageStr = String(page).padStart(3, "0");
+    const lineStr = String(line).padStart(3, "0");
+    const uri = `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.png`;
+    Image.prefetch(uri);
+  }
+};
 
 interface QuranReaderProps {
   currentPage: number;
@@ -36,6 +46,15 @@ const QuranReader = ({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const isHorizontal = useSharedValue<boolean | null>(null);
+
+  // Prefetch adjacent pages into image cache to prevent flash on navigation
+  useEffect(() => {
+    if (currentPage > 1) prefetchPage(version, currentPage - 1);
+    if (currentPage < TOTAL_PAGES) prefetchPage(version, currentPage + 1);
+    // Also prefetch ±2 for smoother fast swiping
+    if (currentPage > 2) prefetchPage(version, currentPage - 2);
+    if (currentPage < TOTAL_PAGES - 1) prefetchPage(version, currentPage + 2);
+  }, [currentPage, version]);
 
   const changePage = useCallback(
     (direction: number) => {
