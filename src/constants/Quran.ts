@@ -48,6 +48,36 @@ export const QURAN_THEME_COLORS: Record<
     shimmerBase: "#1A1A1A",
     shimmerHighlight: "#2A2A2A",
   },
+  [QuranTheme.CLASSIC]: {
+    background: "#D8E8D0",
+    textTint: undefined,
+    markerColor: "#40A060",
+    headerColor: "#000000",
+    pageNumberColor: "#40A060",
+    highlightColor: "rgba(240, 120, 184, 0.2)",
+    shimmerBase: "#D8E8D0",
+    shimmerHighlight: "#C8D8C0",
+  },
+  [QuranTheme.TINTED]: {
+    background: "#F0E0D0",
+    textTint: "#885820",
+    markerColor: "#B89870",
+    headerColor: "#885820",
+    pageNumberColor: "#B89870",
+    highlightColor: "rgba(184, 152, 112, 0.2)",
+    shimmerBase: "#F0E0D0",
+    shimmerHighlight: "#E0D0C0",
+  },
+  [QuranTheme.TINTED_DARK]: {
+    background: "#181818",
+    textTint: "#707080",
+    markerColor: "#303038",
+    headerColor: "#707080",
+    pageNumberColor: "#505060",
+    highlightColor: "rgba(112, 112, 128, 0.15)",
+    shimmerBase: "#181818",
+    shimmerHighlight: "#282830",
+  },
 } as const;
 
 export const MARKER_ADJUSTMENTS: Record<

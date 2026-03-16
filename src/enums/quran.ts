@@ -8,6 +8,9 @@ export enum QuranTheme {
   LIGHT = "light",
   SEPIA = "sepia",
   DARK = "dark",
+  CLASSIC = "classic",
+  TINTED = "tinted",
+  TINTED_DARK = "tinted-dark",
 }
 
 export enum LineType {
