@@ -1,14 +1,15 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { X, Download, Check, Loader } from "lucide-react-native";
+import { X, Download, Check, Loader, Trash2 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
 import { QURAN_UI_COLORS, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
+import { QuranDownload } from "@/services/quran-download";
 
 interface QuranSettingsSheetProps {
   quranTheme: QuranTheme;
@@ -129,17 +130,47 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                       </Text>
                       {isDownloading && <Loader size={14} color={subtleColor} />}
                     </XStack>
-                    {isActive && isComplete && <Check size={18} color={themeColors.markerColor} />}
-                    {isDownloading && (
-                      <Text fontSize={12} color={subtleColor}>
-                        {percent}%
-                      </Text>
-                    )}
-                    {isError && (
-                      <Text fontSize={12} color={QURAN_UI_COLORS.accentWarning}>
-                        {t("quran.download.retry")}
-                      </Text>
-                    )}
+                    <XStack alignItems="center" gap="$2">
+                      {isActive && isComplete && (
+                        <Check size={18} color={themeColors.markerColor} />
+                      )}
+                      {isDownloading && (
+                        <Text fontSize={12} color={subtleColor}>
+                          {percent}%
+                        </Text>
+                      )}
+                      {isError && (
+                        <Text fontSize={12} color={QURAN_UI_COLORS.accentWarning}>
+                          {t("quran.download.retry")}
+                        </Text>
+                      )}
+                      {isComplete && !isActive && (
+                        <Pressable
+                          onPress={() => {
+                            Alert.alert(
+                              t("quran.settings.deleteTitle"),
+                              t("quran.settings.deleteMessage", {
+                                name: VERSION_LABELS[version],
+                              }),
+                              [
+                                { text: t("common.cancel"), style: "cancel" },
+                                {
+                                  text: t("common.delete"),
+                                  style: "destructive",
+                                  onPress: () => QuranDownload.deleteVersion(version),
+                                },
+                              ]
+                            );
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={t("quran.settings.deleteVersion", {
+                            name: VERSION_LABELS[version],
+                          })}
+                          hitSlop={8}>
+                          <Trash2 size={16} color={subtleColor} />
+                        </Pressable>
+                      )}
+                    </XStack>
                   </XStack>
 
                   {/* Progress bar for downloading versions */}
