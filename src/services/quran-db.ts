@@ -1,8 +1,9 @@
 import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
-import { Paths } from "expo-file-system";
+import { File, Directory, Paths } from "expo-file-system";
+import { Asset } from "expo-asset";
 
-import { QURAN_DB_NAME, QURAN_DOWNLOADS_DB_NAME } from "@/constants/DB";
+import { QURAN_DB_NAME, QURAN_DB_VERSION, QURAN_DOWNLOADS_DB_NAME } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 import { MushafVersion, LineType, PageDownloadStatus } from "@/enums/quran";
@@ -18,10 +19,49 @@ const getDirectory = async (): Promise<string> => {
   return SQLite.defaultDatabaseDirectory;
 };
 
+const ensureQuranDbCopied = async (): Promise<void> => {
+  const dir = await getDirectory();
+  const targetDir = new Directory(dir);
+  if (!targetDir.exists) {
+    targetDir.create({ intermediates: true });
+  }
+
+  const targetFile = new File(targetDir, QURAN_DB_NAME);
+  const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
+
+  const installedVersion = versionFile.exists ? versionFile.textSync() : null;
+  const needsCopy = !targetFile.exists || installedVersion !== String(QURAN_DB_VERSION);
+
+  if (!needsCopy) return;
+
+  const [asset] = await Asset.loadAsync(require("../../assets/db/quran.db"));
+  if (!asset.localUri) {
+    throw new Error("[QuranDB] Failed to load quran.db asset");
+  }
+
+  // Remove old DB + WAL/SHM before copying new version
+  if (targetFile.exists) targetFile.delete();
+  const walFile = new File(targetDir, `${QURAN_DB_NAME}-wal`);
+  const shmFile = new File(targetDir, `${QURAN_DB_NAME}-shm`);
+  if (walFile.exists) walFile.delete();
+  if (shmFile.exists) shmFile.delete();
+
+  const sourceFile = new File(asset.localUri);
+  sourceFile.copy(targetFile);
+
+  // Write version marker
+  if (versionFile.exists) versionFile.delete();
+  versionFile.create();
+  versionFile.write(String(QURAN_DB_VERSION));
+
+  console.log(`[QuranDB] Copied quran.db v${QURAN_DB_VERSION} to ${dir}`);
+};
+
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   if (!quranDbPromise) {
     quranDbPromise = (async () => {
       try {
+        await ensureQuranDbCopied();
         return await SQLite.openDatabaseAsync(
           QURAN_DB_NAME,
           { useNewConnection: true },
