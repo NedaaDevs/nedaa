@@ -188,7 +188,14 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
       <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
 
-      <View ref={linesRef} style={{ flex: 1, alignItems: "center" }} onLayout={onLinesLayout}>
+      <View
+        ref={linesRef}
+        style={{
+          flex: 1,
+          alignItems: "center",
+          backgroundColor: QURAN_THEME_COLORS[quranTheme].innerBackground,
+        }}
+        onLayout={onLinesLayout}>
         <Pressable
           ref={pressableRef}
           style={{ position: "relative", direction: "ltr" }}
