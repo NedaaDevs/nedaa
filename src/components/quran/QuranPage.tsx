@@ -11,7 +11,7 @@ import type { GestureResponderEvent } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MushafVersion, QuranTheme, LineType } from "@/enums/quran";
+import { MushafVersion, MushafImageType, QuranTheme, LineType } from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
@@ -22,6 +22,7 @@ import { GlyphBound } from "@/types/quran";
 import { QuranDB } from "@/services/quran-db";
 import { QuranDownload } from "@/services/quran-download";
 import LineImage from "@/components/quran/LineImage";
+import PageImage from "@/components/quran/PageImage";
 import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
@@ -49,6 +50,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const [pageAvailable, setPageAvailable] = useState(() =>
     QuranDownload.isPageAvailable(version, page)
   );
+  const isPageMode = QuranDownload.getImageType(version) === MushafImageType.PAGE;
   const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
@@ -202,7 +204,20 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           onLongPress={handleLongPress}
           delayLongPress={LONG_PRESS_MS}
           onPress={() => setHighlightedAyah(null)}>
+          {lineHeight > 0 && pageAvailable && isPageMode && (
+            <PageImage
+              version={version}
+              page={page}
+              screenWidth={width}
+              pageHeight={linesAreaHeight}
+              quranTheme={quranTheme}
+            />
+          )}
+          {lineHeight > 0 && !pageAvailable && isPageMode && (
+            <LineShimmer screenWidth={width} lineHeight={linesAreaHeight} quranTheme={quranTheme} />
+          )}
           {lineHeight > 0 &&
+            !isPageMode &&
             lines.map((line) =>
               pageAvailable ? (
                 <LineImage
