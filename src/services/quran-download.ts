@@ -326,6 +326,9 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
 const checkDiskSpace = (requiredMB: number): { available: boolean; availableMB: number } => {
   try {
     const availableBytes = File.availableDiskSpace;
+    if (!availableBytes || !Number.isFinite(availableBytes)) {
+      return { available: true, availableMB: -1 };
+    }
     const availableMB = Math.floor(availableBytes / (1024 * 1024));
     return { available: availableMB >= requiredMB, availableMB };
   } catch {
