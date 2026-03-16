@@ -148,7 +148,7 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                           {t("quran.download.retry")}
                         </Text>
                       )}
-                      {isComplete && !isActive && (
+                      {isComplete && (
                         <Pressable
                           onPress={() => {
                             Alert.alert(
@@ -161,7 +161,10 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                                 {
                                   text: t("common.delete"),
                                   style: "destructive",
-                                  onPress: () => QuranDownload.deleteVersion(version),
+                                  onPress: () => {
+                                    QuranDownload.deleteVersion(version);
+                                    onClose();
+                                  },
                                 },
                               ]
                             );
