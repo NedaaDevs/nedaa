@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import type { GestureResponderEvent } from "react-native";
+import { Paths } from "expo-file-system";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -50,6 +51,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     QuranDownload.isPageAvailable(version, page)
   );
   const isPageMode = QuranDownload.getImageType(version) === MushafImageType.PAGE;
+  const [sourcePageHeight, setSourcePageHeight] = useState(0);
   const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
@@ -61,6 +63,14 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     }
     setHighlightedAyah(null);
   }, [page, version]);
+
+  // Get source image height for page mode highlight math
+  useEffect(() => {
+    if (!pageAvailable || !isPageMode) return;
+    const pageStr = String(page).padStart(3, "0");
+    const imgUri = `${Paths.document.uri}quran/${version}/pages/${pageStr}.png`;
+    Image.getSize(imgUri, (_w, h) => setSourcePageHeight(h));
+  }, [page, version, pageAvailable, isPageMode]);
 
   useEffect(() => {
     if (!pageAvailable) return;
@@ -118,10 +128,11 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
 
   // For PAGE mode: image scaled by width then compressed vertically via scaleY
   const pageScaleX = width / IMAGE_SOURCE_WIDTH;
-  const scaledPageHeight = IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE * pageScaleX;
-  const pageScaleY = linesAreaHeight / scaledPageHeight;
-  // Combined: source Y → screen Y = srcY * pageScaleX * pageScaleY
-  // Combined: source X → screen X = srcX * pageScaleX
+  const srcLineHeight =
+    sourcePageHeight > 0 ? sourcePageHeight / LINES_PER_PAGE : IMAGE_SOURCE_LINE_HEIGHT;
+  const scaledPageHeight =
+    sourcePageHeight > 0 ? Math.round(sourcePageHeight * pageScaleX) : linesAreaHeight;
+  const pageScaleY = scaledPageHeight > 0 ? linesAreaHeight / scaledPageHeight : 1;
 
   const handleLongPress = useCallback(
     (event: GestureResponderEvent) => {
@@ -140,9 +151,9 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           // Convert screen coords to source image coords accounting for cover offset
           const srcX = touchX / pageScaleX;
           const srcY = touchY / (pageScaleX * pageScaleY);
-          sourceLine = Math.floor(srcY / IMAGE_SOURCE_LINE_HEIGHT) + 1;
+          sourceLine = Math.floor(srcY / srcLineHeight) + 1;
           sourceX = srcX;
-          sourceY = srcY - (sourceLine - 1) * IMAGE_SOURCE_LINE_HEIGHT;
+          sourceY = srcY - (sourceLine - 1) * srcLineHeight;
         } else {
           sourceX = touchX / coverScale;
           sourceLine = Math.floor(touchY / lineHeight) + 1;
@@ -166,7 +177,16 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         }
       });
     },
-    [glyphBounds, lineHeight, coverScale, lineCoverClipY, isPageMode, pageScaleX, pageScaleY]
+    [
+      glyphBounds,
+      lineHeight,
+      coverScale,
+      lineCoverClipY,
+      isPageMode,
+      pageScaleX,
+      pageScaleY,
+      srcLineHeight,
+    ]
   );
 
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
@@ -194,9 +214,9 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       // Convert source coords to screen coords for page mode
       return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
         left: minX * pageScaleX,
-        top: (line - 1) * IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY,
+        top: (line - 1) * srcLineHeight * pageScaleX * pageScaleY,
         width: (maxX - minX) * pageScaleX,
-        height: IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY,
+        height: srcLineHeight * pageScaleX * pageScaleY,
       }));
     }
 
@@ -267,7 +287,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           {/* Debug: line boundaries */}
           {isPageMode &&
             lines.map((line) => {
-              const y = (line - 1) * IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY;
+              const y = (line - 1) * srcLineHeight * pageScaleX * pageScaleY;
               return (
                 <View
                   key={`dbg-${line}`}
