@@ -357,6 +357,17 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     }
   }
 
+  await QuranDB.closeBoundsDb(version);
+
+  const boundsFile = getBoundsDbFile(version);
+  if (boundsFile.exists) {
+    try {
+      boundsFile.delete();
+    } catch {
+      log.e("Download", `Error deleting bounds-${version}.db`);
+    }
+  }
+
   await QuranDB.deleteVersionDownloads(version);
   useQuranStore.getState().updateDownloadState(version, {
     status: DownloadStatus.IDLE,
