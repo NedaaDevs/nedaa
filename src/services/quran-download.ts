@@ -1,4 +1,5 @@
 import { File, Directory, Paths } from "expo-file-system";
+import * as LegacyFS from "expo-file-system/legacy";
 import { unzip } from "react-native-zip-archive";
 import * as SQLite from "expo-sqlite";
 
@@ -8,10 +9,23 @@ import { QuranDB } from "@/services/quran-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
+import type { DownloadPhase } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
 
 let activeVersion: MushafVersion | null = null;
+
+const emitProgress = (
+  version: MushafVersion,
+  phase: DownloadPhase,
+  bytesDownloaded: number,
+  totalBytes: number
+) => {
+  const percent = totalBytes > 0 ? Math.round((bytesDownloaded / totalBytes) * 100) : 0;
+  useQuranStore.getState().updateDownloadState(version, {
+    progress: { phase, bytesDownloaded, totalBytes, percent },
+  });
+};
 
 const getVersionDir = (version: MushafVersion): Directory => {
   return new Directory(Paths.document, `quran/${version}`);
@@ -89,22 +103,44 @@ const start = async (version: MushafVersion): Promise<void> => {
     }
 
     if (!allPresent) {
-      // Download bundle ZIP
+      // Phase 1: Download bundle ZIP with progress
       const bundleUrl = `${manifestVersion.baseUrl}${manifestVersion.paths.bundle}`;
-      const zipFile = new File(Paths.cache, `quran-${version}-bundle.zip`);
+      const zipPath = `${Paths.cache.uri}quran-${version}-bundle.zip`;
+      const totalBytes = (manifestVersion.bundleSizeMB || 100) * 1024 * 1024;
 
+      emitProgress(version, "downloading", 0, totalBytes);
       log.i("Download", `Downloading bundle from ${bundleUrl}`);
-      await File.downloadFileAsync(bundleUrl, zipFile);
-      log.i("Download", `Bundle downloaded (${zipFile.size} bytes)`);
 
-      // Extract to version directory
+      const downloadResumable = LegacyFS.createDownloadResumable(
+        bundleUrl,
+        zipPath,
+        {},
+        (progress) => {
+          emitProgress(
+            version,
+            "downloading",
+            progress.totalBytesWritten,
+            progress.totalBytesExpectedToWrite
+          );
+        }
+      );
+
+      const result = await downloadResumable.downloadAsync();
+      if (!result) throw new Error("Download returned no result");
+      log.i("Download", `Bundle downloaded (${result.uri})`);
+
+      // Phase 2: Extract
+      emitProgress(version, "extracting", 0, 0);
       if (!versionDir.exists) {
         versionDir.create({ intermediates: true });
       }
 
       log.i("Download", `Extracting to ${versionDir.uri}`);
-      await unzip(zipFile.uri, versionDir.uri);
+      await unzip(result.uri, versionDir.uri);
       log.i("Download", "Extraction complete");
+
+      // Phase 3: Finalize
+      emitProgress(version, "finalizing", 0, 0);
 
       // Move bounds.db to SQLite directory if it was in the bundle
       const extractedBoundsDb = new File(versionDir, "bounds.db");
@@ -116,6 +152,7 @@ const start = async (version: MushafVersion): Promise<void> => {
       }
 
       // Clean up ZIP
+      const zipFile = new File(zipPath);
       if (zipFile.exists) zipFile.delete();
     }
 

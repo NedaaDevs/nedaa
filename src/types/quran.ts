@@ -21,14 +21,13 @@ export type LineMetadata = {
   surahName: string | null;
 };
 
+export type DownloadPhase = "downloading" | "extracting" | "finalizing";
+
 export type DownloadProgress = {
-  currentPage: number;
-  totalPages: number;
-  completedPages: number;
-  failedPages: number;
+  phase: DownloadPhase;
   bytesDownloaded: number;
   totalBytes: number;
-  currentSurahName: string;
+  percent: number;
 };
 
 export type VersionDownloadState = {
