@@ -28,6 +28,7 @@ import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 
 const LONG_PRESS_MS = 400;
+const IMAGE_SOURCE_PAGE_HEIGHT = IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE;
 
 interface QuranPageProps {
   page: number;
@@ -38,15 +39,15 @@ interface QuranPageProps {
 const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const { width, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  // Estimate initial height to prevent layout flash on mount
   const estimatedHeight = screenHeight - insets.top - 60;
   const [surahName, setSurahName] = useState("");
   const [juz, setJuz] = useState(1);
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
   const [glyphBounds, setGlyphBounds] = useState<GlyphBound[]>([]);
-  const [highlightedAyah, setHighlightedAyah] = useState<{ surah: number; ayah: number } | null>(
-    null
-  );
+  const [highlightedAyah, setHighlightedAyah] = useState<{
+    surah: number;
+    ayah: number;
+  } | null>(null);
   const [pageAvailable, setPageAvailable] = useState(() =>
     QuranDownload.isPageAvailable(version, page)
   );
@@ -54,7 +55,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
-  // Re-check page availability on page/version change
   useEffect(() => {
     const available = QuranDownload.isPageAvailable(version, page);
     setPageAvailable(available);
@@ -64,7 +64,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     setHighlightedAyah(null);
   }, [page, version]);
 
-  // Load page data when available
   useEffect(() => {
     if (!pageAvailable) return;
 
@@ -92,7 +91,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     loadPageData();
   }, [page, version, pageAvailable]);
 
-  // Poll for page availability when downloading
   useEffect(() => {
     if (pageAvailable !== false) return;
 
@@ -110,27 +108,52 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
   }, []);
 
-  const lineHeight = linesAreaHeight > 0 ? Math.floor(linesAreaHeight / LINES_PER_PAGE) : 0;
-  // Cover mode scales image by xScale to fill width — same scale for both axes
+  // --- Scaling math ---
+  // coverScale: how the source image width maps to screen width
   const coverScale = width / IMAGE_SOURCE_WIDTH;
+  // lineHeight: screen height allocated per line slot
+  const lineHeight = linesAreaHeight > 0 ? Math.floor(linesAreaHeight / LINES_PER_PAGE) : 0;
+
+  // For LINE mode: each line image scales independently
   const scaledLineHeight = IMAGE_SOURCE_LINE_HEIGHT * coverScale;
-  // Cover clips excess height equally from top and bottom
-  const coverClipY = (scaledLineHeight - lineHeight) / 2;
+  const lineCoverClipY = (scaledLineHeight - lineHeight) / 2;
+
+  // For PAGE mode: the full page image uses cover mode
+  // cover picks the larger scale to fill both dimensions
+  const pageScaleByWidth = width / IMAGE_SOURCE_WIDTH;
+  const pageScaleByHeight = linesAreaHeight / IMAGE_SOURCE_PAGE_HEIGHT;
+  const pageCoverScale = Math.max(pageScaleByWidth, pageScaleByHeight);
+  const pageRenderedHeight = IMAGE_SOURCE_PAGE_HEIGHT * pageCoverScale;
+  const pageRenderedWidth = IMAGE_SOURCE_WIDTH * pageCoverScale;
+  // How much the image is offset (cover centers the image)
+  const pageClipY = (pageRenderedHeight - linesAreaHeight) / 2;
+  const pageClipX = (pageRenderedWidth - width) / 2;
 
   const handleLongPress = useCallback(
     (event: GestureResponderEvent) => {
       if (glyphBounds.length === 0 || lineHeight === 0) return;
 
-      // Use locationX/Y relative to the Pressable itself
       pressableRef.current?.measureInWindow((px, py) => {
-        // Android pageY includes status bar but measureInWindow doesn't
         const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
         const touchX = event.nativeEvent.pageX - px;
         const touchY = event.nativeEvent.pageY - py - statusBarOffset;
 
-        const sourceX = touchX / coverScale;
-        const sourceLine = Math.floor(touchY / lineHeight) + 1;
-        const sourceY = (touchY - (sourceLine - 1) * lineHeight + coverClipY) / coverScale;
+        let sourceX: number;
+        let sourceLine: number;
+        let sourceY: number;
+
+        if (isPageMode) {
+          // Convert screen coords to source image coords accounting for cover offset
+          const srcX = (touchX + pageClipX) / pageCoverScale;
+          const srcY = (touchY + pageClipY) / pageCoverScale;
+          sourceLine = Math.floor(srcY / IMAGE_SOURCE_LINE_HEIGHT) + 1;
+          sourceX = srcX;
+          sourceY = srcY - (sourceLine - 1) * IMAGE_SOURCE_LINE_HEIGHT;
+        } else {
+          sourceX = touchX / coverScale;
+          sourceLine = Math.floor(touchY / lineHeight) + 1;
+          sourceY = (touchY - (sourceLine - 1) * lineHeight + lineCoverClipY) / coverScale;
+        }
 
         const hit = glyphBounds.find(
           (g) =>
@@ -144,13 +167,21 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
 
         if (hit) {
           setHighlightedAyah({ surah: hit.surahNumber, ayah: hit.ayahNumber });
-          console.log(`[Quran] Ayah ${hit.surahNumber}:${hit.ayahNumber} | Page ${page}`);
         } else {
           setHighlightedAyah(null);
         }
       });
     },
-    [glyphBounds, lineHeight, coverScale, coverClipY, page]
+    [
+      glyphBounds,
+      lineHeight,
+      coverScale,
+      lineCoverClipY,
+      isPageMode,
+      pageCoverScale,
+      pageClipX,
+      pageClipY,
+    ]
   );
 
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
@@ -162,7 +193,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       (g) => g.surahNumber === highlightedAyah.surah && g.ayahNumber === highlightedAyah.ayah
     );
 
-    // Group by line, get bounding box per line
     const lineMap = new Map<number, { minX: number; maxX: number }>();
     for (const g of ayahGlyphs) {
       const existing = lineMap.get(g.line);
@@ -173,6 +203,16 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       } else {
         lineMap.set(g.line, { minX: g.x, maxX: gRight });
       }
+    }
+
+    if (isPageMode) {
+      // Convert source coords to screen coords for page mode
+      return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
+        left: minX * pageCoverScale - pageClipX,
+        top: (line - 1) * IMAGE_SOURCE_LINE_HEIGHT * pageCoverScale - pageClipY,
+        width: (maxX - minX) * pageCoverScale,
+        height: IMAGE_SOURCE_LINE_HEIGHT * pageCoverScale,
+      }));
     }
 
     return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
