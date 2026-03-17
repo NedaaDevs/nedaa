@@ -1,32 +1,20 @@
 import { File, Directory, Paths } from "expo-file-system";
-
-import { MushafVersion, MushafImageType, DownloadStatus, PageDownloadStatus } from "@/enums/quran";
-import {
-  TOTAL_PAGES,
-  LINES_PER_PAGE,
-  DOWNLOAD_CONCURRENCY,
-  MAX_RETRY_ATTEMPTS,
-  RETRY_DELAYS_MS,
-} from "@/constants/Quran";
+import { unzip } from "react-native-zip-archive";
 import * as SQLite from "expo-sqlite";
 
+import { MushafVersion, MushafImageType, DownloadStatus, PageDownloadStatus } from "@/enums/quran";
+import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import { QuranDB } from "@/services/quran-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
-import type { DownloadProgress, QuranManifestVersion } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
 
 let activeVersion: MushafVersion | null = null;
-let isPaused = false;
-let isCancelled = false;
-const priorityPages = new Set<number>();
-let lastSurahName = "";
 
-const getLinePageDir = (version: MushafVersion, page: number): Directory => {
-  const pageStr = String(page).padStart(3, "0");
-  return new Directory(Paths.document, `quran/${version}/lines/${pageStr}`);
+const getVersionDir = (version: MushafVersion): Directory => {
+  return new Directory(Paths.document, `quran/${version}`);
 };
 
 const getLineFile = (version: MushafVersion, page: number, line: number): File => {
@@ -48,22 +36,6 @@ const getBoundsDbFile = (version: MushafVersion): File => {
   return new File(SQLite.defaultDatabaseDirectory, `bounds-${version}.db`);
 };
 
-const downloadBoundsDb = async (
-  version: MushafVersion,
-  manifestVersion: QuranManifestVersion
-): Promise<void> => {
-  const boundsFile = getBoundsDbFile(version);
-  if (boundsFile.exists) {
-    log.i("Download", `bounds-${version}.db already exists`);
-    return;
-  }
-
-  const url = QuranManifestService.getBoundsDbUrl(manifestVersion);
-  log.i("Download", `Downloading bounds-${version}.db from ${url}`);
-  await File.downloadFileAsync(url, boundsFile);
-  log.i("Download", `bounds-${version}.db downloaded (${boundsFile.size} bytes)`);
-};
-
 const verifyPageOnDisk = (
   version: MushafVersion,
   page: number,
@@ -78,138 +50,10 @@ const verifyPageOnDisk = (
   return true;
 };
 
-const downloadPage = async (
-  version: MushafVersion,
-  manifestVersion: QuranManifestVersion,
-  page: number
-): Promise<{ success: boolean; totalBytes: number }> => {
-  if (isPaused || isCancelled) {
-    return { success: false, totalBytes: 0 };
-  }
-
-  await QuranDB.updatePageStatus(version, page, PageDownloadStatus.DOWNLOADING);
-
-  let totalBytes = 0;
-
-  if (manifestVersion.type === MushafImageType.PAGE) {
-    // Single image per page
-    const dir = getPagesDir(version);
-    if (!dir.exists) dir.create({ intermediates: true });
-
-    const file = getPageFile(version, page);
-    if (file.exists) {
-      totalBytes = file.size ?? 0;
-    } else {
-      const url = QuranManifestService.getPageImageUrl(manifestVersion, page);
-      await File.downloadFileAsync(url, file);
-      totalBytes = file.size ?? 0;
-    }
-  } else {
-    // 15 line images per page (parallel)
-    const dir = getLinePageDir(version, page);
-    if (!dir.exists) dir.create({ intermediates: true });
-
-    const lineDownloads = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1).map(
-      async (line) => {
-        const file = getLineFile(version, page, line);
-        if (file.exists) return file.size ?? 0;
-        const url = QuranManifestService.getLineImageUrl(manifestVersion, page, line);
-        await File.downloadFileAsync(url, file);
-        return file.size ?? 0;
-      }
-    );
-
-    const sizes = await Promise.all(lineDownloads);
-    for (const size of sizes) totalBytes += size;
-  }
-
-  await QuranDB.updatePageStatus(version, page, PageDownloadStatus.COMPLETE, totalBytes);
-  return { success: true, totalBytes };
-};
-
-const downloadPageWithRetry = async (
-  version: MushafVersion,
-  manifestVersion: QuranManifestVersion,
-  page: number
-): Promise<{ success: boolean; totalBytes: number }> => {
-  for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
-    try {
-      return await downloadPage(version, manifestVersion, page);
-    } catch (error) {
-      log.e(
-        "Download",
-        `Page ${page} attempt ${attempt + 1} failed`,
-        error instanceof Error ? error : undefined
-      );
-
-      if (attempt < MAX_RETRY_ATTEMPTS - 1) {
-        const delay = RETRY_DELAYS_MS[attempt] ?? 10000;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
-  }
-
-  await QuranDB.updatePageStatus(version, page, PageDownloadStatus.FAILED);
-  return { success: false, totalBytes: 0 };
-};
-
-const getNextPages = async (version: MushafVersion, limit: number): Promise<number[]> => {
-  const prioritized: number[] = [];
-  for (const p of priorityPages) {
-    const isComplete = await QuranDB.isPageComplete(version, p);
-    if (!isComplete) prioritized.push(p);
-    if (prioritized.length >= limit) break;
-  }
-
-  if (prioritized.length >= limit) return prioritized;
-
-  const remaining = limit - prioritized.length;
-  const pending = await QuranDB.getPendingPages(version, remaining + prioritized.length);
-  const filtered = pending.filter((p) => !prioritized.includes(p));
-
-  return [...prioritized, ...filtered.slice(0, remaining)];
-};
-
-const emitProgress = async (version: MushafVersion): Promise<void> => {
-  const counts = await QuranDB.getDownloadCounts(version);
-  const bytes = await QuranDB.getTotalDownloadedBytes(version);
-
-  const progress: DownloadProgress = {
-    currentPage: counts.completed,
-    totalPages: counts.total,
-    completedPages: counts.completed,
-    failedPages: counts.failed,
-    bytesDownloaded: bytes,
-    totalBytes: counts.total * LINES_PER_PAGE * 15000,
-    currentSurahName: lastSurahName,
-  };
-
-  useQuranStore.getState().updateDownloadState(version, { progress });
-};
-
-const downloadLoop = async (
-  version: MushafVersion,
-  manifestVersion: QuranManifestVersion
-): Promise<void> => {
-  while (!isPaused && !isCancelled) {
-    const pages = await getNextPages(version, DOWNLOAD_CONCURRENCY);
-    if (pages.length === 0) break;
-
-    const surahName = await QuranDB.getSurahForPage(version, pages[0]);
-    if (surahName) lastSurahName = surahName;
-
-    await Promise.all(pages.map((page) => downloadPageWithRetry(version, manifestVersion, page)));
-
-    for (const page of pages) {
-      priorityPages.delete(page);
-    }
-
-    await emitProgress(version);
-
-    const counts = await QuranDB.getDownloadCounts(version);
-    if (counts.completed === counts.total) break;
-    if (counts.pending === 0 && priorityPages.size === 0) break;
-  }
+const detectImageType = (version: MushafVersion): MushafImageType => {
+  const pagesDir = getPagesDir(version);
+  if (pagesDir.exists) return MushafImageType.PAGE;
+  return MushafImageType.LINE;
 };
 
 const start = async (version: MushafVersion): Promise<void> => {
@@ -226,73 +70,76 @@ const start = async (version: MushafVersion): Promise<void> => {
   }
 
   activeVersion = version;
-
-  isPaused = false;
-  isCancelled = false;
-  priorityPages.clear();
-
   const store = useQuranStore.getState();
   store.updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
 
-  log.i("Download", `start() called for ${version}, manifest baseUrl: ${manifestVersion.baseUrl}`);
-
-  // Download bounds.db first — needed for the reader to function
-  await downloadBoundsDb(version, manifestVersion);
-
-  await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
-
-  // Verify all completed pages still have files on disk
-  const counts = await QuranDB.getDownloadCounts(version);
-  if (counts.completed > 0) {
-    log.i("Download", `Verifying ${counts.completed} previously completed pages`);
-    const db = await QuranDB.openDownloadDb();
-    const completedPages = await db.getAllAsync<{ page: number }>(
-      `SELECT page FROM quran_downloads WHERE version = ? AND status = '${PageDownloadStatus.COMPLETE}'`,
-      [version]
-    );
-    let resetCount = 0;
-    for (const { page } of completedPages) {
-      if (!verifyPageOnDisk(version, page, manifestVersion.type)) {
-        await QuranDB.updatePageStatus(version, page, PageDownloadStatus.PENDING);
-        resetCount++;
-      }
-    }
-    if (resetCount > 0) {
-      log.i("Download", `Reset ${resetCount} pages to pending (missing from disk)`);
-    }
-  }
-
-  await emitProgress(version);
-
-  const pendingCounts = await QuranDB.getDownloadCounts(version);
-  log.i(
-    "Download",
-    `Starting download loop for ${version}: ${pendingCounts.completed} complete, ${pendingCounts.pending} pending, ${pendingCounts.failed} failed`
-  );
+  log.i("Download", `start() for ${version}, baseUrl: ${manifestVersion.baseUrl}`);
 
   try {
-    await downloadLoop(version, manifestVersion);
+    const versionDir = getVersionDir(version);
 
-    const finalCounts = await QuranDB.getDownloadCounts(version);
-    if (finalCounts.completed === finalCounts.total) {
-      store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
-      log.i("Download", `${version} download complete`);
-    } else if (isPaused) {
-      store.updateDownloadState(version, { status: DownloadStatus.PAUSED });
-    } else if (finalCounts.failed > 0) {
-      store.updateDownloadState(version, { status: DownloadStatus.ERROR });
+    // Check if already fully extracted
+    const imageType = manifestVersion.type;
+    let allPresent = true;
+    for (let p = 1; p <= 5; p++) {
+      if (!verifyPageOnDisk(version, p, imageType)) {
+        allPresent = false;
+        break;
+      }
     }
+
+    if (!allPresent) {
+      // Download bundle ZIP
+      const bundleUrl = `${manifestVersion.baseUrl}${manifestVersion.paths.bundle}`;
+      const zipFile = new File(Paths.cache, `quran-${version}-bundle.zip`);
+
+      log.i("Download", `Downloading bundle from ${bundleUrl}`);
+      await File.downloadFileAsync(bundleUrl, zipFile);
+      log.i("Download", `Bundle downloaded (${zipFile.size} bytes)`);
+
+      // Extract to version directory
+      if (!versionDir.exists) {
+        versionDir.create({ intermediates: true });
+      }
+
+      log.i("Download", `Extracting to ${versionDir.uri}`);
+      await unzip(zipFile.uri, versionDir.uri);
+      log.i("Download", "Extraction complete");
+
+      // Move bounds.db to SQLite directory if it was in the bundle
+      const extractedBoundsDb = new File(versionDir, "bounds.db");
+      if (extractedBoundsDb.exists) {
+        const targetBoundsDb = getBoundsDbFile(version);
+        if (targetBoundsDb.exists) targetBoundsDb.delete();
+        extractedBoundsDb.move(targetBoundsDb);
+        log.i("Download", `Moved bounds.db to ${targetBoundsDb.uri}`);
+      }
+
+      // Clean up ZIP
+      if (zipFile.exists) zipFile.delete();
+    }
+
+    // Mark all pages as complete in the download tracking DB
+    await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
+    const db = await QuranDB.openDownloadDb();
+    await db.runAsync(`UPDATE quran_downloads SET status = ?, updated_at = ? WHERE version = ?`, [
+      PageDownloadStatus.COMPLETE,
+      Date.now(),
+      version,
+    ]);
+
+    store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
+    log.i("Download", `${version} complete`);
   } catch (error) {
-    log.e("Download", "Download loop error", error instanceof Error ? error : undefined);
-    store.updateDownloadState(version, { status: DownloadStatus.ERROR });
+    log.e("Download", "Download failed", error instanceof Error ? error : undefined);
+    useQuranStore.getState().updateDownloadState(version, { status: DownloadStatus.ERROR });
   } finally {
     activeVersion = null;
   }
 };
 
 const pause = (): void => {
-  isPaused = true;
-  log.i("Download", "Download paused");
+  log.i("Download", "Pause not supported for bundle downloads");
 };
 
 const resume = async (): Promise<void> => {
@@ -303,31 +150,23 @@ const resume = async (): Promise<void> => {
 };
 
 const cancel = async (): Promise<void> => {
-  isCancelled = true;
   if (activeVersion) {
     useQuranStore.getState().updateDownloadState(activeVersion, { status: DownloadStatus.IDLE });
   }
   activeVersion = null;
-  activeManifestVersion = null;
   log.i("Download", "Download cancelled");
 };
 
-const prioritizePage = (page: number): void => {
-  priorityPages.add(page);
-  if (page > 2) priorityPages.add(page - 2);
-  if (page > 1) priorityPages.add(page - 1);
-  if (page < TOTAL_PAGES) priorityPages.add(page + 1);
-  if (page < TOTAL_PAGES - 1) priorityPages.add(page + 2);
-};
-
-const detectImageType = (version: MushafVersion): MushafImageType => {
-  const pagesDir = getPagesDir(version);
-  if (pagesDir.exists) return MushafImageType.PAGE;
-  return MushafImageType.LINE;
+const prioritizePage = (_page: number): void => {
+  // No-op for bundle downloads — all pages arrive at once
 };
 
 const isPageAvailable = (version: MushafVersion, page: number): boolean => {
   return verifyPageOnDisk(version, page, detectImageType(version));
+};
+
+const getImageType = (version: MushafVersion): MushafImageType => {
+  return detectImageType(version);
 };
 
 const verifyIntegrity = async (
@@ -351,7 +190,7 @@ const getStorageUsage = async (): Promise<Partial<Record<MushafVersion, number>>
 };
 
 const deleteVersion = async (version: MushafVersion): Promise<void> => {
-  const versionDir = new Directory(Paths.document, `quran/${version}`);
+  const versionDir = getVersionDir(version);
   if (versionDir.exists) {
     try {
       versionDir.delete();
@@ -399,7 +238,7 @@ export const QuranDownload = {
   cancel,
   prioritizePage,
   isPageAvailable,
-  getImageType: detectImageType,
+  getImageType,
   verifyIntegrity,
   getStorageUsage,
   deleteVersion,
