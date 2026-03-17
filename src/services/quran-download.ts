@@ -55,18 +55,26 @@ const verifyPageOnDisk = (
   page: number,
   imageType: MushafImageType = MushafImageType.LINE
 ): boolean => {
-  if (imageType === MushafImageType.PAGE) {
-    return getPageFile(version, page).exists;
+  try {
+    if (imageType === MushafImageType.PAGE) {
+      return getPageFile(version, page).exists;
+    }
+    for (let line = 1; line <= LINES_PER_PAGE; line++) {
+      if (!getLineFile(version, page, line).exists) return false;
+    }
+    return true;
+  } catch {
+    return false;
   }
-  for (let line = 1; line <= LINES_PER_PAGE; line++) {
-    if (!getLineFile(version, page, line).exists) return false;
-  }
-  return true;
 };
 
 const detectImageType = (version: MushafVersion): MushafImageType => {
-  const pagesDir = getPagesDir(version);
-  if (pagesDir.exists) return MushafImageType.PAGE;
+  try {
+    const pagesDir = getPagesDir(version);
+    if (pagesDir.exists) return MushafImageType.PAGE;
+  } catch {
+    // Directory check failed (e.g. Android URI issue) — default to LINE
+  }
   return MushafImageType.LINE;
 };
 
