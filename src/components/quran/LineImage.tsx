@@ -5,6 +5,7 @@ import { ColorMatrix } from "react-native-color-matrix-image-filters";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { useQuranStore } from "@/stores/quran";
 
 interface LineImageProps {
   version: MushafVersion;
@@ -38,6 +39,7 @@ const LineImage = ({
 }: LineImageProps) => {
   const uri = getLineImageUri(version, page, line);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
+  const colorMatrixEnabled = useQuranStore((s) => s.colorMatrixEnabled);
 
   const containerStyle = useMemo(
     () => ({ width: screenWidth, height: lineHeight, overflow: "hidden" as const }),
@@ -51,7 +53,7 @@ const LineImage = ({
 
   const image = <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />;
 
-  if (!themeColors.textTint) {
+  if (!themeColors.textTint || !colorMatrixEnabled) {
     return <View style={containerStyle}>{image}</View>;
   }
 
