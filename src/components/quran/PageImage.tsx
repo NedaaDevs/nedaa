@@ -4,12 +4,7 @@ import { Paths } from "expo-file-system";
 import { ColorMatrix } from "react-native-color-matrix-image-filters";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
-import {
-  QURAN_THEME_COLORS,
-  IMAGE_SOURCE_WIDTH,
-  IMAGE_SOURCE_LINE_HEIGHT,
-  LINES_PER_PAGE,
-} from "@/constants/Quran";
+import { QURAN_THEME_COLORS } from "@/constants/Quran";
 
 interface PageImageProps {
   version: MushafVersion;
@@ -18,8 +13,6 @@ interface PageImageProps {
   availableHeight: number;
   quranTheme: QuranTheme;
 }
-
-const IMAGE_SOURCE_PAGE_HEIGHT = IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE;
 
 const getPageImageUri = (version: MushafVersion, page: number): string => {
   const pageStr = String(page).padStart(3, "0");
@@ -37,31 +30,17 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
   const uri = getPageImageUri(version, page);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
-  const scale = screenWidth / IMAGE_SOURCE_WIDTH;
-  const displayWidth = screenWidth;
-  const displayHeight = Math.round(IMAGE_SOURCE_PAGE_HEIGHT * scale);
-  const containerHeight = Math.min(displayHeight, availableHeight);
-  const offsetY = displayHeight > availableHeight ? -(displayHeight - availableHeight) / 2 : 0;
-
   const containerStyle = useMemo(
-    () => ({
-      width: displayWidth,
-      height: containerHeight,
-      overflow: "hidden" as const,
-    }),
-    [displayWidth, containerHeight]
+    () => ({ width: screenWidth, height: availableHeight, overflow: "hidden" as const }),
+    [screenWidth, availableHeight]
   );
 
   const imageStyle: ImageStyle = useMemo(
-    () => ({
-      width: displayWidth,
-      height: displayHeight,
-      marginTop: offsetY,
-    }),
-    [displayWidth, displayHeight, offsetY]
+    () => ({ width: screenWidth, height: availableHeight }),
+    [screenWidth, availableHeight]
   );
 
-  const image = <Image source={{ uri }} style={imageStyle} fadeDuration={0} />;
+  const image = <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />;
 
   if (!themeColors.textTint) {
     return <View style={containerStyle}>{image}</View>;
