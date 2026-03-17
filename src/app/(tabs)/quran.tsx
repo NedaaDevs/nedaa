@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { X, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
+import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
@@ -28,8 +29,10 @@ const QuranScreen = () => {
     onboardingComplete,
     selectedVersion,
     versionDownloads,
+    renderMode,
     setCurrentPage,
     setQuranTheme,
+    setRenderMode,
     setOnboardingComplete,
     setSelectedVersion,
     updateDownloadState,
@@ -203,6 +206,36 @@ const QuranScreen = () => {
               onPageChange={setCurrentPage}
             />
           </YStack>
+
+          {/* Render mode toggle */}
+          <XStack
+            position="absolute"
+            bottom={insets.bottom + 104}
+            alignSelf="center"
+            backgroundColor="rgba(0,0,0,0.5)"
+            borderRadius="$3"
+            padding={2}>
+            {(["tint", "skia"] as const).map((mode) => (
+              <Pressable
+                key={mode}
+                onPress={() => setRenderMode(mode)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: renderMode === mode }}>
+                <XStack
+                  paddingHorizontal="$2.5"
+                  paddingVertical="$1"
+                  borderRadius="$2"
+                  backgroundColor={renderMode === mode ? "rgba(255,255,255,0.2)" : "transparent"}>
+                  <Text
+                    fontSize={12}
+                    fontWeight={renderMode === mode ? "600" : "400"}
+                    color={renderMode === mode ? "white" : "#999"}>
+                    {mode === "tint" ? "Tint" : "Skia"}
+                  </Text>
+                </XStack>
+              </Pressable>
+            ))}
+          </XStack>
 
           {/* Theme picker */}
           <XStack
