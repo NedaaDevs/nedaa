@@ -40,7 +40,7 @@ const PageImage = ({ version, page, screenWidth, pageHeight, quranTheme }: PageI
     [screenWidth, pageHeight]
   );
 
-  const image = <Image source={{ uri }} style={imageStyle} resizeMode="contain" fadeDuration={0} />;
+  const image = <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />;
 
   if (!themeColors.textTint) {
     return <View style={containerStyle}>{image}</View>;
