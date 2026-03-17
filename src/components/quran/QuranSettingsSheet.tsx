@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,7 +27,13 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
-  const { currentVersion, versionDownloads, setCurrentVersion } = useQuranStore();
+  const {
+    currentVersion,
+    versionDownloads,
+    colorMatrixEnabled,
+    setCurrentVersion,
+    setColorMatrixEnabled,
+  } = useQuranStore();
 
   const isDark = quranTheme === QuranTheme.DARK;
   const bgColor = isDark ? "#1E1E1E" : "#FFFFFF";
@@ -203,6 +209,25 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
               </Pressable>
             );
           })}
+
+          {/* Color tinting toggle */}
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            paddingVertical="$3"
+            paddingHorizontal="$3">
+            <Text fontSize={15} color={textColor}>
+              {t("quran.settings.colorTinting")}
+            </Text>
+            <Switch
+              value={colorMatrixEnabled}
+              onValueChange={setColorMatrixEnabled}
+              trackColor={{ false: borderColor, true: themeColors.markerColor }}
+              accessibilityRole="switch"
+              accessibilityLabel={t("quran.settings.colorTinting")}
+              accessibilityState={{ checked: colorMatrixEnabled }}
+            />
+          </XStack>
 
           {/* Download more */}
           <Pressable

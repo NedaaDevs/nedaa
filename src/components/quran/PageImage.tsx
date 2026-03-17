@@ -10,6 +10,7 @@ import {
   IMAGE_SOURCE_LINE_HEIGHT,
   LINES_PER_PAGE,
 } from "@/constants/Quran";
+import { useQuranStore } from "@/stores/quran";
 
 interface PageImageProps {
   version: MushafVersion;
@@ -36,6 +37,7 @@ const getColorMatrixValues = (hexColor: string): number[] => {
 const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: PageImageProps) => {
   const uri = getPageImageUri(version, page);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
+  const colorMatrixEnabled = useQuranStore((s) => s.colorMatrixEnabled);
 
   // Scale image to fill width
   const scale = screenWidth / IMAGE_SOURCE_WIDTH;
@@ -63,7 +65,7 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
 
   const image = <Image source={{ uri }} style={imageStyle} fadeDuration={0} />;
 
-  if (!themeColors.textTint) {
+  if (!themeColors.textTint || !colorMatrixEnabled) {
     return <View style={containerStyle}>{image}</View>;
   }
 
