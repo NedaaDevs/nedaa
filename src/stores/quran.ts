@@ -13,6 +13,7 @@ export const useQuranStore = create<QuranState>()(
       currentVersion: DEFAULT_MUSHAF_VERSION,
       quranTheme: DEFAULT_QURAN_THEME,
       colorMatrixEnabled: true,
+      renderMode: "tint" as const,
       lastReadPage: 1,
 
       onboardingComplete: false,
@@ -23,6 +24,7 @@ export const useQuranStore = create<QuranState>()(
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme }),
       setColorMatrixEnabled: (enabled) => set({ colorMatrixEnabled: enabled }),
+      setRenderMode: (mode) => set({ renderMode: mode }),
 
       setOnboardingComplete: () => set({ onboardingComplete: true }),
       setSelectedVersion: (version) => set({ selectedVersion: version, currentVersion: version }),
@@ -50,6 +52,7 @@ export const useQuranStore = create<QuranState>()(
         currentVersion: state.currentVersion,
         quranTheme: state.quranTheme,
         colorMatrixEnabled: state.colorMatrixEnabled,
+        renderMode: state.renderMode,
         lastReadPage: state.lastReadPage,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,

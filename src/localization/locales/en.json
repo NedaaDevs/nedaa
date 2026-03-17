@@ -850,6 +850,7 @@
   "quran.settings.version": "MUSHAF VERSION",
   "quran.settings.downloadMore": "Download another version",
   "quran.settings.colorTinting": "Color tinting",
+  "quran.settings.renderMode": "Render mode",
   "quran.settings.deleteTitle": "Delete Mushaf",
   "quran.settings.deleteMessage": "Delete {{name}}? This will free storage space.",
   "quran.settings.deleteVersion": "Delete {{name}}",

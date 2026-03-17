@@ -31,8 +31,10 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
     currentVersion,
     versionDownloads,
     colorMatrixEnabled,
+    renderMode,
     setCurrentVersion,
     setColorMatrixEnabled,
+    setRenderMode,
   } = useQuranStore();
 
   const isDark = quranTheme === QuranTheme.DARK;
@@ -227,6 +229,39 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
               accessibilityLabel={t("quran.settings.colorTinting")}
               accessibilityState={{ checked: colorMatrixEnabled }}
             />
+          </XStack>
+
+          {/* Render mode toggle */}
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            paddingVertical="$3"
+            paddingHorizontal="$3">
+            <Text fontSize={15} color={textColor}>
+              {t("quran.settings.renderMode")}
+            </Text>
+            <XStack gap="$1.5" backgroundColor={borderColor} borderRadius="$3" padding={2}>
+              {(["tint", "skia"] as const).map((mode) => (
+                <Pressable
+                  key={mode}
+                  onPress={() => setRenderMode(mode)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: renderMode === mode }}>
+                  <XStack
+                    paddingHorizontal="$2.5"
+                    paddingVertical="$1"
+                    borderRadius="$2"
+                    backgroundColor={renderMode === mode ? themeColors.markerColor : "transparent"}>
+                    <Text
+                      fontSize={12}
+                      fontWeight={renderMode === mode ? "600" : "400"}
+                      color={renderMode === mode ? "#fff" : subtleColor}>
+                      {mode === "tint" ? "Tint" : "Skia"}
+                    </Text>
+                  </XStack>
+                </Pressable>
+              ))}
+            </XStack>
           </XStack>
 
           {/* Download more */}
