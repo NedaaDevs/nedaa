@@ -75,6 +75,7 @@ export type QuranState = {
   currentVersion: MushafVersion;
   quranTheme: QuranTheme;
   colorMatrixEnabled: boolean;
+  renderMode: "tint" | "skia";
   lastReadPage: number;
 
   onboardingComplete: boolean;
@@ -85,6 +86,7 @@ export type QuranState = {
   setCurrentVersion: (version: MushafVersion) => void;
   setQuranTheme: (theme: QuranTheme) => void;
   setColorMatrixEnabled: (enabled: boolean) => void;
+  setRenderMode: (mode: "tint" | "skia") => void;
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;

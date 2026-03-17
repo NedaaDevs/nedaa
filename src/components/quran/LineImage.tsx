@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
-import { ColorMatrix } from "react-native-color-matrix-image-filters";
+import { Canvas, Image as SkiaImage, Rect, Group, useImage } from "@shopify/react-native-skia";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
@@ -22,13 +22,6 @@ const getLineImageUri = (version: MushafVersion, page: number, line: number): st
   return `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.png`;
 };
 
-const getColorMatrixValues = (hexColor: string): number[] => {
-  const r = parseInt(hexColor.slice(1, 3), 16) / 255;
-  const g = parseInt(hexColor.slice(3, 5), 16) / 255;
-  const b = parseInt(hexColor.slice(5, 7), 16) / 255;
-  return [0, 0, 0, r, 0, 0, 0, 0, g, 0, 0, 0, 0, b, 0, 0, 0, 0, 1, 0];
-};
-
 const LineImage = ({
   version,
   page,
@@ -40,6 +33,9 @@ const LineImage = ({
   const uri = getLineImageUri(version, page, line);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const colorMatrixEnabled = useQuranStore((s) => s.colorMatrixEnabled);
+  const renderMode = useQuranStore((s) => s.renderMode);
+
+  const tintColor = colorMatrixEnabled ? themeColors.textTint : undefined;
 
   const containerStyle = useMemo(
     () => ({ width: screenWidth, height: lineHeight, overflow: "hidden" as const }),
@@ -47,20 +43,56 @@ const LineImage = ({
   );
 
   const imageStyle: ImageStyle = useMemo(
-    () => ({ width: screenWidth, height: lineHeight }),
-    [screenWidth, lineHeight]
+    () => ({
+      width: screenWidth,
+      height: lineHeight,
+      tintColor,
+    }),
+    [screenWidth, lineHeight, tintColor]
   );
 
-  const image = <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />;
-
-  if (!themeColors.textTint || !colorMatrixEnabled) {
-    return <View style={containerStyle}>{image}</View>;
+  // Skia mode: multiply blend
+  if (renderMode === "skia" && colorMatrixEnabled) {
+    return (
+      <SkiaLineImage
+        uri={uri}
+        width={screenWidth}
+        height={lineHeight}
+        backgroundColor={themeColors.innerBackground}
+      />
+    );
   }
 
+  // tintColor mode (default)
   return (
     <View style={containerStyle}>
-      <ColorMatrix matrix={getColorMatrixValues(themeColors.textTint)}>{image}</ColorMatrix>
+      <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />
     </View>
+  );
+};
+
+const SkiaLineImage = ({
+  uri,
+  width,
+  height,
+  backgroundColor,
+}: {
+  uri: string;
+  width: number;
+  height: number;
+  backgroundColor: string;
+}) => {
+  const image = useImage(uri);
+
+  if (!image) return <View style={{ width, height }} />;
+
+  return (
+    <Canvas style={{ width, height }}>
+      <Rect x={0} y={0} width={width} height={height} color={backgroundColor} />
+      <Group blendMode="multiply">
+        <SkiaImage image={image} x={0} y={0} width={width} height={height} fit="cover" />
+      </Group>
+    </Canvas>
   );
 };
 
