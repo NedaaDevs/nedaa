@@ -195,7 +195,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         style={{
           flex: 1,
           alignItems: "center",
-          overflow: "hidden",
           backgroundColor: QURAN_THEME_COLORS[quranTheme].innerBackground,
         }}
         onLayout={onLinesLayout}>
@@ -206,13 +205,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           delayLongPress={LONG_PRESS_MS}
           onPress={() => setHighlightedAyah(null)}>
           {lineHeight > 0 && pageAvailable && isPageMode && (
-            <PageImage
-              version={version}
-              page={page}
-              screenWidth={width}
-              pageHeight={linesAreaHeight}
-              quranTheme={quranTheme}
-            />
+            <PageImage version={version} page={page} screenWidth={width} quranTheme={quranTheme} />
           )}
           {lineHeight > 0 && !pageAvailable && isPageMode && (
             <LineShimmer screenWidth={width} lineHeight={linesAreaHeight} quranTheme={quranTheme} />
