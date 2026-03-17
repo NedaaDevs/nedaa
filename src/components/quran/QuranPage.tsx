@@ -205,7 +205,13 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           delayLongPress={LONG_PRESS_MS}
           onPress={() => setHighlightedAyah(null)}>
           {lineHeight > 0 && pageAvailable && isPageMode && (
-            <PageImage version={version} page={page} screenWidth={width} quranTheme={quranTheme} />
+            <PageImage
+              version={version}
+              page={page}
+              screenWidth={width}
+              availableHeight={linesAreaHeight}
+              quranTheme={quranTheme}
+            />
           )}
           {lineHeight > 0 && !pageAvailable && isPageMode && (
             <LineShimmer screenWidth={width} lineHeight={linesAreaHeight} quranTheme={quranTheme} />

@@ -15,6 +15,7 @@ interface PageImageProps {
   version: MushafVersion;
   page: number;
   screenWidth: number;
+  availableHeight: number;
   quranTheme: QuranTheme;
 }
 
@@ -32,20 +33,24 @@ const getColorMatrixValues = (hexColor: string): number[] => {
   return [0, 0, 0, r, 0, 0, 0, 0, g, 0, 0, 0, 0, b, 0, 0, 0, 0, 1, 0];
 };
 
-const PageImage = ({ version, page, screenWidth, quranTheme }: PageImageProps) => {
+const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: PageImageProps) => {
   const uri = getPageImageUri(version, page);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
-  const scaledHeight = Math.round(screenWidth * (IMAGE_SOURCE_PAGE_HEIGHT / IMAGE_SOURCE_WIDTH));
+  const scaleByWidth = screenWidth / IMAGE_SOURCE_WIDTH;
+  const scaleByHeight = availableHeight / IMAGE_SOURCE_PAGE_HEIGHT;
+  const scale = Math.min(scaleByWidth, scaleByHeight);
+  const displayWidth = Math.round(IMAGE_SOURCE_WIDTH * scale);
+  const displayHeight = Math.round(IMAGE_SOURCE_PAGE_HEIGHT * scale);
 
   const containerStyle = useMemo(
-    () => ({ width: screenWidth, height: scaledHeight }),
-    [screenWidth, scaledHeight]
+    () => ({ width: displayWidth, height: displayHeight }),
+    [displayWidth, displayHeight]
   );
 
   const imageStyle: ImageStyle = useMemo(
-    () => ({ width: screenWidth, height: scaledHeight }),
-    [screenWidth, scaledHeight]
+    () => ({ width: displayWidth, height: displayHeight }),
+    [displayWidth, displayHeight]
   );
 
   const image = <Image source={{ uri }} style={imageStyle} fadeDuration={0} />;
