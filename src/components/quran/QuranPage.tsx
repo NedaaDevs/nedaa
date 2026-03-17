@@ -125,7 +125,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const pageCoverScale = Math.max(pageScaleByWidth, pageScaleByHeight);
   const pageRenderedHeight = IMAGE_SOURCE_PAGE_HEIGHT * pageCoverScale;
   const pageRenderedWidth = IMAGE_SOURCE_WIDTH * pageCoverScale;
-  // How much the image is offset (cover centers the image)
   const pageClipY = (pageRenderedHeight - linesAreaHeight) / 2;
   const pageClipX = (pageRenderedWidth - width) / 2;
 
