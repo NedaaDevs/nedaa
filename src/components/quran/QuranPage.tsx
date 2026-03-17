@@ -195,6 +195,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         style={{
           flex: 1,
           alignItems: "center",
+          overflow: "hidden",
           backgroundColor: QURAN_THEME_COLORS[quranTheme].innerBackground,
         }}
         onLayout={onLinesLayout}>
