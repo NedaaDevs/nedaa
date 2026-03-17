@@ -3,11 +3,11 @@ import { Alert, Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { X, Sun, Moon, BookOpen, Settings } from "lucide-react-native";
+import { X, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
@@ -18,11 +18,7 @@ import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import type { QuranManifestVersion } from "@/types/quran";
 
-const THEMES = [
-  { key: QuranTheme.LIGHT, icon: Sun },
-  { key: QuranTheme.SEPIA, icon: BookOpen },
-  { key: QuranTheme.DARK, icon: Moon },
-];
+const ALL_THEMES = Object.values(QuranTheme);
 
 const QuranScreen = () => {
   const {
@@ -156,15 +152,6 @@ const QuranScreen = () => {
         </YStack>
       )}
 
-      {/* Page slider — always visible at bottom, zIndex above reader */}
-      <YStack position="absolute" bottom={insets.bottom + 8} left={0} right={0} zIndex={5}>
-        <PageSlider
-          currentPage={currentPage}
-          quranTheme={quranTheme}
-          onPageChange={setCurrentPage}
-        />
-      </YStack>
-
       {showOverlay && (
         <>
           {/* Top bar: settings (left) + close (right) */}
@@ -208,6 +195,15 @@ const QuranScreen = () => {
             </Pressable>
           </XStack>
 
+          {/* Page slider */}
+          <YStack position="absolute" bottom={insets.bottom + 8} left={0} right={0}>
+            <PageSlider
+              currentPage={currentPage}
+              quranTheme={quranTheme}
+              onPageChange={setCurrentPage}
+            />
+          </YStack>
+
           {/* Theme picker */}
           <XStack
             position="absolute"
@@ -217,20 +213,28 @@ const QuranScreen = () => {
             backgroundColor="rgba(0,0,0,0.5)"
             borderRadius="$4"
             padding="$1.5">
-            {THEMES.map(({ key, icon: Icon }) => (
-              <Pressable
-                key={key}
-                onPress={() => setQuranTheme(key)}
-                accessibilityRole="button"
-                accessibilityLabel={`${key} theme`}>
-                <XStack
-                  padding="$2"
-                  borderRadius="$3"
-                  backgroundColor={quranTheme === key ? "$primary" : "transparent"}>
-                  <Icon color={quranTheme === key ? "white" : "#ccc"} size={16} />
-                </XStack>
-              </Pressable>
-            ))}
+            {ALL_THEMES.map((key) => {
+              const colors = QURAN_THEME_COLORS[key];
+              const isSelected = quranTheme === key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setQuranTheme(key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${key} theme`}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: colors.background,
+                    borderWidth: isSelected ? 2.5 : 1,
+                    borderColor: isSelected ? QURAN_UI_COLORS.accent : "rgba(255,255,255,0.3)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                />
+              );
+            })}
           </XStack>
         </>
       )}
