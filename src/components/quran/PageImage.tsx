@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
-import { Canvas, Image as SkiaImage, Rect, Group, useImage } from "@shopify/react-native-skia";
+import {
+  Canvas,
+  Image as SkiaImage,
+  Rect,
+  Group,
+  Mask,
+  useImage,
+} from "@shopify/react-native-skia";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, IMAGE_SOURCE_WIDTH } from "@/constants/Quran";
@@ -44,8 +51,8 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
 
   if (sourceHeight === 0) return <View style={containerStyle} />;
 
-  // Skia mode: multiply blend
-  if (renderMode === "skia" && colorMatrixEnabled) {
+  // Skia mode: alpha mask tinting
+  if (renderMode === "skia" && colorMatrixEnabled && themeColors.textTint) {
     return (
       <SkiaPageImage
         uri={uri}
@@ -53,7 +60,7 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
         height={availableHeight}
         scaledHeight={scaledPageHeight}
         scaleY={scaleY}
-        backgroundColor={themeColors.innerBackground}
+        textColor={themeColors.textTint}
       />
     );
   }
@@ -80,14 +87,14 @@ const SkiaPageImage = ({
   height,
   scaledHeight,
   scaleY,
-  backgroundColor,
+  textColor,
 }: {
   uri: string;
   width: number;
   height: number;
   scaledHeight: number;
   scaleY: number;
-  backgroundColor: string;
+  textColor: string;
 }) => {
   const image = useImage(uri);
 
@@ -95,9 +102,14 @@ const SkiaPageImage = ({
 
   return (
     <Canvas style={{ width, height }}>
-      <Rect x={0} y={0} width={width} height={height} color={backgroundColor} />
-      <Group blendMode="multiply" transform={[{ scaleY }]} origin={{ x: 0, y: 0 }}>
-        <SkiaImage image={image} x={0} y={0} width={width} height={scaledHeight} fit="fill" />
+      <Group transform={[{ scaleY }]} origin={{ x: 0, y: 0 }}>
+        <Mask
+          mode="alpha"
+          mask={
+            <SkiaImage image={image} x={0} y={0} width={width} height={scaledHeight} fit="fill" />
+          }>
+          <Rect x={0} y={0} width={width} height={scaledHeight} color={textColor} />
+        </Mask>
       </Group>
     </Canvas>
   );

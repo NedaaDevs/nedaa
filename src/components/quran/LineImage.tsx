@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
-import { Canvas, Image as SkiaImage, Rect, Group, useImage } from "@shopify/react-native-skia";
+import { Canvas, Image as SkiaImage, Rect, Mask, useImage } from "@shopify/react-native-skia";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
@@ -51,14 +51,14 @@ const LineImage = ({
     [screenWidth, lineHeight, tintColor]
   );
 
-  // Skia mode: multiply blend
-  if (renderMode === "skia" && colorMatrixEnabled) {
+  // Skia mode: alpha mask tinting
+  if (renderMode === "skia" && colorMatrixEnabled && themeColors.textTint) {
     return (
       <SkiaLineImage
         uri={uri}
         width={screenWidth}
         height={lineHeight}
-        backgroundColor={themeColors.innerBackground}
+        textColor={themeColors.textTint}
       />
     );
   }
@@ -75,12 +75,12 @@ const SkiaLineImage = ({
   uri,
   width,
   height,
-  backgroundColor,
+  textColor,
 }: {
   uri: string;
   width: number;
   height: number;
-  backgroundColor: string;
+  textColor: string;
 }) => {
   const image = useImage(uri);
 
@@ -88,10 +88,11 @@ const SkiaLineImage = ({
 
   return (
     <Canvas style={{ width, height }}>
-      <Rect x={0} y={0} width={width} height={height} color={backgroundColor} />
-      <Group blendMode="multiply">
-        <SkiaImage image={image} x={0} y={0} width={width} height={height} fit="cover" />
-      </Group>
+      <Mask
+        mode="alpha"
+        mask={<SkiaImage image={image} x={0} y={0} width={width} height={height} fit="cover" />}>
+        <Rect x={0} y={0} width={width} height={height} color={textColor} />
+      </Mask>
     </Canvas>
   );
 };
