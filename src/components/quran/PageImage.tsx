@@ -37,20 +37,28 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
   const uri = getPageImageUri(version, page);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
-  const scaleByWidth = screenWidth / IMAGE_SOURCE_WIDTH;
-  const scaleByHeight = availableHeight / IMAGE_SOURCE_PAGE_HEIGHT;
-  const scale = Math.min(scaleByWidth, scaleByHeight);
-  const displayWidth = Math.round(IMAGE_SOURCE_WIDTH * scale);
+  const scale = screenWidth / IMAGE_SOURCE_WIDTH;
+  const displayWidth = screenWidth;
   const displayHeight = Math.round(IMAGE_SOURCE_PAGE_HEIGHT * scale);
+  const containerHeight = Math.min(displayHeight, availableHeight);
+  const offsetY = displayHeight > availableHeight ? -(displayHeight - availableHeight) / 2 : 0;
 
   const containerStyle = useMemo(
-    () => ({ width: displayWidth, height: displayHeight }),
-    [displayWidth, displayHeight]
+    () => ({
+      width: displayWidth,
+      height: containerHeight,
+      overflow: "hidden" as const,
+    }),
+    [displayWidth, containerHeight]
   );
 
   const imageStyle: ImageStyle = useMemo(
-    () => ({ width: displayWidth, height: displayHeight }),
-    [displayWidth, displayHeight]
+    () => ({
+      width: displayWidth,
+      height: displayHeight,
+      marginTop: offsetY,
+    }),
+    [displayWidth, displayHeight, offsetY]
   );
 
   const image = <Image source={{ uri }} style={imageStyle} fadeDuration={0} />;
