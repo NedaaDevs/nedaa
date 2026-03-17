@@ -28,8 +28,6 @@ import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 
 const LONG_PRESS_MS = 400;
-const IMAGE_SOURCE_PAGE_HEIGHT = IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE;
-
 interface QuranPageProps {
   page: number;
   version: MushafVersion;
@@ -118,15 +116,12 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const scaledLineHeight = IMAGE_SOURCE_LINE_HEIGHT * coverScale;
   const lineCoverClipY = (scaledLineHeight - lineHeight) / 2;
 
-  // For PAGE mode: the full page image uses cover mode
-  // cover picks the larger scale to fill both dimensions
-  const pageScaleByWidth = width / IMAGE_SOURCE_WIDTH;
-  const pageScaleByHeight = linesAreaHeight / IMAGE_SOURCE_PAGE_HEIGHT;
-  const pageCoverScale = Math.max(pageScaleByWidth, pageScaleByHeight);
-  const pageRenderedHeight = IMAGE_SOURCE_PAGE_HEIGHT * pageCoverScale;
-  const pageRenderedWidth = IMAGE_SOURCE_WIDTH * pageCoverScale;
-  const pageClipY = (pageRenderedHeight - linesAreaHeight) / 2;
-  const pageClipX = (pageRenderedWidth - width) / 2;
+  // For PAGE mode: image scaled by width then compressed vertically via scaleY
+  const pageScaleX = width / IMAGE_SOURCE_WIDTH;
+  const scaledPageHeight = IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE * pageScaleX;
+  const pageScaleY = linesAreaHeight / scaledPageHeight;
+  // Combined: source Y → screen Y = srcY * pageScaleX * pageScaleY
+  // Combined: source X → screen X = srcX * pageScaleX
 
   const handleLongPress = useCallback(
     (event: GestureResponderEvent) => {
@@ -143,8 +138,8 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
 
         if (isPageMode) {
           // Convert screen coords to source image coords accounting for cover offset
-          const srcX = (touchX + pageClipX) / pageCoverScale;
-          const srcY = (touchY + pageClipY) / pageCoverScale;
+          const srcX = touchX / pageScaleX;
+          const srcY = touchY / (pageScaleX * pageScaleY);
           sourceLine = Math.floor(srcY / IMAGE_SOURCE_LINE_HEIGHT) + 1;
           sourceX = srcX;
           sourceY = srcY - (sourceLine - 1) * IMAGE_SOURCE_LINE_HEIGHT;
@@ -171,16 +166,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         }
       });
     },
-    [
-      glyphBounds,
-      lineHeight,
-      coverScale,
-      lineCoverClipY,
-      isPageMode,
-      pageCoverScale,
-      pageClipX,
-      pageClipY,
-    ]
+    [glyphBounds, lineHeight, coverScale, lineCoverClipY, isPageMode, pageScaleX, pageScaleY]
   );
 
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
@@ -207,10 +193,10 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     if (isPageMode) {
       // Convert source coords to screen coords for page mode
       return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
-        left: minX * pageCoverScale - pageClipX,
-        top: (line - 1) * IMAGE_SOURCE_LINE_HEIGHT * pageCoverScale - pageClipY,
-        width: (maxX - minX) * pageCoverScale,
-        height: IMAGE_SOURCE_LINE_HEIGHT * pageCoverScale,
+        left: minX * pageScaleX,
+        top: (line - 1) * IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY,
+        width: (maxX - minX) * pageScaleX,
+        height: IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY,
       }));
     }
 
@@ -277,6 +263,25 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
                 />
               )
             )}
+
+          {/* Debug: line boundaries */}
+          {isPageMode &&
+            lines.map((line) => {
+              const y = (line - 1) * IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY;
+              return (
+                <View
+                  key={`dbg-${line}`}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: y,
+                    width: width,
+                    height: 1,
+                    backgroundColor: "rgba(255,0,0,0.5)",
+                  }}
+                />
+              );
+            })}
 
           {highlightRects.map((rect, i) => (
             <View
