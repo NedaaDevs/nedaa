@@ -5,6 +5,7 @@ import {
   Platform,
   Pressable,
   StatusBar,
+  Text,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -41,12 +42,15 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const insets = useSafeAreaInsets();
   const estimatedHeight = screenHeight - insets.top - 60;
   const [surahName, setSurahName] = useState("");
+  const [surahNames, setSurahNames] = useState<Record<number, string>>({});
   const [juz, setJuz] = useState(1);
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
   const [glyphBounds, setGlyphBounds] = useState<GlyphBound[]>([]);
   const [highlightedAyah, setHighlightedAyah] = useState<{
     surah: number;
     ayah: number;
+    touchX: number;
+    touchY: number;
   } | null>(null);
   const [pageAvailable, setPageAvailable] = useState(() =>
     QuranDownload.isPageAvailable(version, page)
@@ -90,6 +94,13 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         if (surahHeader?.surahName) {
           setSurahName(surahHeader.surahName);
         }
+        const names: Record<number, string> = {};
+        for (const lm of lineMetadata) {
+          if (lm.surahNumber && lm.surahName) {
+            names[lm.surahNumber] = lm.surahName;
+          }
+        }
+        setSurahNames(names);
         setJuz(juzNumber);
         setGlyphBounds(bounds);
       } catch (error) {
@@ -172,7 +183,12 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         );
 
         if (hit) {
-          setHighlightedAyah({ surah: hit.surahNumber, ayah: hit.ayahNumber });
+          setHighlightedAyah({
+            surah: hit.surahNumber,
+            ayah: hit.ayahNumber,
+            touchX,
+            touchY,
+          });
         } else {
           setHighlightedAyah(null);
         }
@@ -318,6 +334,37 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
               }}
             />
           ))}
+
+          {/* Ayah tooltip */}
+          {highlightedAyah && (
+            <View
+              style={{
+                position: "absolute",
+                left: Math.min(Math.max(highlightedAyah.touchX - 60, 8), width - 128),
+                top: highlightedAyah.touchY - 44,
+                backgroundColor: QURAN_THEME_COLORS[quranTheme].headerColor,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 8,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              }}>
+              <Text
+                style={{
+                  color: QURAN_THEME_COLORS[quranTheme].innerBackground,
+                  fontSize: 13,
+                  fontWeight: "600",
+                  textAlign: "center",
+                }}>
+                {surahNames[highlightedAyah.surah] ?? `${highlightedAyah.surah}`}
+                {" : "}
+                {highlightedAyah.ayah}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
