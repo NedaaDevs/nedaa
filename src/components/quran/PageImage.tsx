@@ -1,15 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 import { ColorMatrix } from "react-native-color-matrix-image-filters";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
-import {
-  QURAN_THEME_COLORS,
-  IMAGE_SOURCE_WIDTH,
-  IMAGE_SOURCE_LINE_HEIGHT,
-  LINES_PER_PAGE,
-} from "@/constants/Quran";
+import { QURAN_THEME_COLORS, IMAGE_SOURCE_WIDTH } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 
 interface PageImageProps {
@@ -19,8 +14,6 @@ interface PageImageProps {
   availableHeight: number;
   quranTheme: QuranTheme;
 }
-
-const IMAGE_SOURCE_PAGE_HEIGHT = IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE;
 
 const getPageImageUri = (version: MushafVersion, page: number): string => {
   const pageStr = String(page).padStart(3, "0");
@@ -38,15 +31,15 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
   const uri = getPageImageUri(version, page);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const colorMatrixEnabled = useQuranStore((s) => s.colorMatrixEnabled);
+  const [sourceHeight, setSourceHeight] = useState(0);
 
-  // Scale image to fill width
+  useEffect(() => {
+    Image.getSize(uri, (_w, h) => setSourceHeight(h));
+  }, [uri]);
+
   const scale = screenWidth / IMAGE_SOURCE_WIDTH;
-  const scaledPageHeight = Math.round(IMAGE_SOURCE_PAGE_HEIGHT * scale);
-
-  // The excess height that needs to be "removed" — same as what per-line cover clipped
-  // Distribute it as a uniform vertical squeeze via scaleY
-  // This matches the visual result of 15 individual cover-clipped lines
-  const scaleY = availableHeight / scaledPageHeight;
+  const scaledPageHeight = sourceHeight > 0 ? Math.round(sourceHeight * scale) : availableHeight;
+  const scaleY = scaledPageHeight > 0 ? availableHeight / scaledPageHeight : 1;
 
   const containerStyle = useMemo(
     () => ({ width: screenWidth, height: availableHeight }),
@@ -62,6 +55,8 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
     }),
     [screenWidth, scaledPageHeight, scaleY]
   );
+
+  if (sourceHeight === 0) return <View style={containerStyle} />;
 
   const image = <Image source={{ uri }} style={imageStyle} fadeDuration={0} />;
 
