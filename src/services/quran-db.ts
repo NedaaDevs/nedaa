@@ -21,7 +21,11 @@ const getDirectory = async (): Promise<string> => {
 
 const ensureQuranDbCopied = async (): Promise<void> => {
   const dir = await getDirectory();
-  const targetDir = new Directory(dir);
+
+  // On Android, defaultDatabaseDirectory is a plain path, not a file:// URI.
+  // Convert to URI for expo-file-system compatibility.
+  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
+  const targetDir = new Directory(dirUri);
   if (!targetDir.exists) {
     targetDir.create({ intermediates: true });
   }
