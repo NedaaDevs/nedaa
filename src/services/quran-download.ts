@@ -241,21 +241,24 @@ const start = async (version: MushafVersion): Promise<void> => {
 
   await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
 
-  // Spot-check previously completed pages still have files on disk
+  // Verify all completed pages still have files on disk
   const counts = await QuranDB.getDownloadCounts(version);
   if (counts.completed > 0) {
     log.i("Download", `Verifying ${counts.completed} previously completed pages`);
-    const sampleSize = Math.min(counts.completed, 20);
     const db = await QuranDB.openDownloadDb();
     const completedPages = await db.getAllAsync<{ page: number }>(
-      "SELECT page FROM quran_downloads WHERE version = ? AND status = 'complete' ORDER BY RANDOM() LIMIT ?",
-      [version, sampleSize]
+      `SELECT page FROM quran_downloads WHERE version = ? AND status = '${PageDownloadStatus.COMPLETE}'`,
+      [version]
     );
+    let resetCount = 0;
     for (const { page } of completedPages) {
       if (!verifyPageOnDisk(version, page, manifestVersion.type)) {
         await QuranDB.updatePageStatus(version, page, PageDownloadStatus.PENDING);
-        log.i("Download", `Page ${page} missing from disk, reset to pending`);
+        resetCount++;
       }
+    }
+    if (resetCount > 0) {
+      log.i("Download", `Reset ${resetCount} pages to pending (missing from disk)`);
     }
   }
 
