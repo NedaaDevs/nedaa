@@ -47,7 +47,9 @@ const getPagesDir = (version: MushafVersion): Directory => {
 };
 
 const getBoundsDbFile = (version: MushafVersion): File => {
-  return new File(SQLite.defaultDatabaseDirectory, `bounds-${version}.db`);
+  const dir = SQLite.defaultDatabaseDirectory;
+  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
+  return new File(dirUri, `bounds-${version}.db`);
 };
 
 const verifyPageOnDisk = (

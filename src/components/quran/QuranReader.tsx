@@ -75,6 +75,7 @@ const QuranReader = ({
 
   const panGesture = Gesture.Pan()
     .minDistance(15)
+    .cancelsTouchesInView(false)
     .onUpdate((event) => {
       "worklet";
       if (isHorizontal.value === null) {
