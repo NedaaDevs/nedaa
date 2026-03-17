@@ -328,9 +328,23 @@ const getSurahForPage = async (version: MushafVersion, page: number): Promise<st
   return result?.surah_name ?? "";
 };
 
+const closeBoundsDb = async (version: MushafVersion): Promise<void> => {
+  const promise = boundsDbMap.get(version);
+  if (promise) {
+    try {
+      const db = await promise;
+      await db.closeAsync();
+    } catch {
+      // Already closed or failed
+    }
+    boundsDbMap.delete(version);
+  }
+};
+
 export const QuranDB = {
   openQuranDb,
   openBoundsDb,
+  closeBoundsDb,
   getLineMetadata,
   getGlyphBounds,
   getMarkerBounds,
