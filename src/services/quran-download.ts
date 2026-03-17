@@ -79,7 +79,7 @@ const start = async (version: MushafVersion): Promise<void> => {
     const versionDir = getVersionDir(version);
 
     // Check if already fully extracted
-    const imageType = manifestVersion.type;
+    const imageType = detectImageType(version);
     let allPresent = true;
     for (let p = 1; p <= 5; p++) {
       if (!verifyPageOnDisk(version, p, imageType)) {
