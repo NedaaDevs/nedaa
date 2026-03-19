@@ -15,11 +15,12 @@ interface AyahMarkerProps {
   quranTheme: QuranTheme;
 }
 
-const toArabicIndic = (n: number): string =>
-  String(n).replace(
-    /\d/g,
-    (d) => "\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669"[+d]
-  );
+const toHafsDigits = (n: number): string =>
+  String(n)
+    .split("")
+    .reverse()
+    .map((d) => String.fromCharCode(0xfd50 + +d))
+    .join("");
 
 const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: AyahMarkerProps) => {
   const themeColors = QURAN_THEME_COLORS[quranTheme];
@@ -62,11 +63,11 @@ const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: Ay
         style={{
           fontSize,
           color: themeColors.markerColor,
-          fontFamily: "IBMPlexSansArabic",
+          fontFamily: "UthmanicHafs",
           textAlign: "center",
           includeFontPadding: false,
         }}>
-        {toArabicIndic(ayahNumber)}
+        {toHafsDigits(ayahNumber)}
       </Text>
     </View>
   );
