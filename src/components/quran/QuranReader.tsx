@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useWindowDimensions, StyleSheet } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -46,7 +46,9 @@ const QuranReader = ({
   const isHorizontal = useSharedValue<boolean | null>(null);
   const pinchBaseFontSize = useSharedValue(fontSize);
 
-  pinchBaseFontSize.value = fontSize;
+  useEffect(() => {
+    pinchBaseFontSize.value = fontSize;
+  }, [fontSize, pinchBaseFontSize]);
 
   const pageWindow = useMemo(() => {
     const pages: number[] = [];
