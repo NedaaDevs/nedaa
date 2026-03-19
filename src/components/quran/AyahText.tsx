@@ -66,10 +66,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingVertical: 2,
     direction: "rtl",
+    alignSelf: "stretch",
   },
   ayahText: {
     writingDirection: "rtl",
-    textAlign: "right",
+    textAlign: "justify",
   },
 });
 
