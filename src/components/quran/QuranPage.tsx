@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   LayoutChangeEvent,
@@ -29,6 +29,7 @@ import PageImage from "@/components/quran/PageImage";
 import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
+import AyahMarker from "@/components/quran/AyahMarker";
 
 const LONG_PRESS_MS = 400;
 interface QuranPageProps {
@@ -146,6 +147,29 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     sourcePageHeight > 0 ? Math.round(sourcePageHeight * pageScaleX) : linesAreaHeight;
   const pageScaleY = scaledPageHeight > 0 ? linesAreaHeight / scaledPageHeight : 1;
 
+  const hitTestAtCoords = useCallback(
+    (touchX: number, touchY: number) => {
+      let sourceX: number;
+      let sourceLine: number;
+      let sourceY: number;
+
+      if (isPageMode) {
+        const srcX = touchX / pageScaleX;
+        const srcY = touchY / (pageScaleX * pageScaleY);
+        sourceLine = Math.floor(srcY / srcLineHeight) + 1;
+        sourceX = srcX;
+        sourceY = srcY - (sourceLine - 1) * srcLineHeight;
+      } else {
+        sourceX = touchX / coverScale;
+        sourceLine = Math.floor(touchY / lineHeight) + 1;
+        sourceY = (touchY - (sourceLine - 1) * lineHeight + lineCoverClipY) / coverScale;
+      }
+
+      return { sourceX, sourceY, sourceLine };
+    },
+    [isPageMode, pageScaleX, pageScaleY, srcLineHeight, coverScale, lineHeight, lineCoverClipY]
+  );
+
   const handleLongPress = useCallback(
     (event: GestureResponderEvent) => {
       if (glyphBounds.length === 0 || lineHeight === 0) return;
@@ -155,22 +179,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         const touchX = event.nativeEvent.pageX - px;
         const touchY = event.nativeEvent.pageY - py - statusBarOffset;
 
-        let sourceX: number;
-        let sourceLine: number;
-        let sourceY: number;
-
-        if (isPageMode) {
-          // Convert screen coords to source image coords accounting for cover offset
-          const srcX = touchX / pageScaleX;
-          const srcY = touchY / (pageScaleX * pageScaleY);
-          sourceLine = Math.floor(srcY / srcLineHeight) + 1;
-          sourceX = srcX;
-          sourceY = srcY - (sourceLine - 1) * srcLineHeight;
-        } else {
-          sourceX = touchX / coverScale;
-          sourceLine = Math.floor(touchY / lineHeight) + 1;
-          sourceY = (touchY - (sourceLine - 1) * lineHeight + lineCoverClipY) / coverScale;
-        }
+        const { sourceX, sourceY, sourceLine } = hitTestAtCoords(touchX, touchY);
 
         const hit = glyphBounds.find(
           (g) =>
@@ -194,16 +203,46 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
         }
       });
     },
-    [
-      glyphBounds,
-      lineHeight,
-      coverScale,
-      lineCoverClipY,
-      isPageMode,
-      pageScaleX,
-      pageScaleY,
-      srcLineHeight,
-    ]
+    [glyphBounds, lineHeight, hitTestAtCoords]
+  );
+
+  const handlePress = useCallback(
+    (event: GestureResponderEvent) => {
+      if (glyphBounds.length === 0 || lineHeight === 0) {
+        setHighlightedAyah(null);
+        return;
+      }
+
+      pressableRef.current?.measureInWindow((px, py) => {
+        const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
+        const touchX = event.nativeEvent.pageX - px;
+        const touchY = event.nativeEvent.pageY - py - statusBarOffset;
+
+        const { sourceX, sourceY, sourceLine } = hitTestAtCoords(touchX, touchY);
+
+        const markerHit = glyphBounds.find(
+          (g) =>
+            g.isMarker &&
+            g.line === sourceLine &&
+            sourceX >= g.x &&
+            sourceX <= g.x + g.width &&
+            sourceY >= g.y &&
+            sourceY <= g.y + g.height
+        );
+
+        if (markerHit) {
+          setHighlightedAyah({
+            surah: markerHit.surahNumber,
+            ayah: markerHit.ayahNumber,
+            touchX,
+            touchY,
+          });
+        } else {
+          setHighlightedAyah(null);
+        }
+      });
+    },
+    [glyphBounds, lineHeight, hitTestAtCoords]
   );
 
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
@@ -245,6 +284,38 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     }));
   })();
 
+  const markerPositions = useMemo(() => {
+    if (lineHeight === 0) return [];
+    const markers = glyphBounds.filter((g) => g.isMarker);
+    return markers.map((g) => {
+      if (isPageMode) {
+        return {
+          x: g.x * pageScaleX,
+          y: (g.line - 1) * srcLineHeight * pageScaleX * pageScaleY + g.y * pageScaleX * pageScaleY,
+          width: g.width * pageScaleX,
+          height: g.height * pageScaleX * pageScaleY,
+          ayahNumber: g.ayahNumber,
+        };
+      }
+      return {
+        x: g.x * coverScale,
+        y: (g.line - 1) * lineHeight + g.y * coverScale - lineCoverClipY,
+        width: g.width * coverScale,
+        height: g.height * coverScale,
+        ayahNumber: g.ayahNumber,
+      };
+    });
+  }, [
+    glyphBounds,
+    lineHeight,
+    isPageMode,
+    coverScale,
+    lineCoverClipY,
+    pageScaleX,
+    pageScaleY,
+    srcLineHeight,
+  ]);
+
   return (
     <YStack
       flex={1}
@@ -265,7 +336,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           style={{ position: "relative", direction: "ltr" }}
           onLongPress={handleLongPress}
           delayLongPress={LONG_PRESS_MS}
-          onPress={() => setHighlightedAyah(null)}>
+          onPress={handlePress}>
           {lineHeight > 0 && pageAvailable && isPageMode && (
             <PageImage
               version={version}
@@ -301,24 +372,19 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
               )
             )}
 
-          {/* Debug: line boundaries */}
-          {isPageMode &&
-            lines.map((line) => {
-              const y = (line - 1) * srcLineHeight * pageScaleX * pageScaleY;
-              return (
-                <View
-                  key={`dbg-${line}`}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: y,
-                    width: width,
-                    height: 1,
-                    backgroundColor: "rgba(255,0,0,0.5)",
-                  }}
-                />
-              );
-            })}
+          {pageAvailable &&
+            markerPositions.map((m, i) => (
+              <AyahMarker
+                key={`marker-${i}`}
+                x={m.x}
+                y={m.y}
+                width={m.width}
+                height={m.height}
+                ayahNumber={m.ayahNumber}
+                version={version}
+                quranTheme={quranTheme}
+              />
+            ))}
 
           {highlightRects.map((rect, i) => (
             <View
