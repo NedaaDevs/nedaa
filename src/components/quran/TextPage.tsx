@@ -11,7 +11,7 @@ import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, SURAH_NAMES } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranDB } from "@/services/quran-db";
 import AyahText from "@/components/quran/AyahText";
@@ -52,7 +52,7 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
       AccessibilityInfo.announceForAccessibility(`Page ${page}, Juz ${juzNumber}`);
 
       if (pageAyahs.length > 0) {
-        setSurahName(String(pageAyahs[0].surahNumber));
+        setSurahName(SURAH_NAMES[pageAyahs[0].surahNumber] ?? String(pageAyahs[0].surahNumber));
       }
     };
     loadData();
@@ -85,7 +85,7 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
                 },
               ]}
               accessibilityRole="header">
-              سورة {ayah.surahNumber}
+              سورة {SURAH_NAMES[ayah.surahNumber] ?? ayah.surahNumber}
             </Text>
             {!NO_BASMALA_SURAHS.includes(ayah.surahNumber) && (
               <Text
