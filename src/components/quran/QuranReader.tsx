@@ -9,14 +9,18 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { MushafVersion, QuranTheme } from "@/enums/quran";
+import { MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
 import { TOTAL_PAGES } from "@/constants/Quran";
 import QuranPage from "@/components/quran/QuranPage";
+import TextPage from "@/components/quran/TextPage";
 
 interface QuranReaderProps {
   currentPage: number;
   version: MushafVersion;
   quranTheme: QuranTheme;
+  readerMode: ReaderViewMode;
+  fontSize: number;
+  onFontSizeChange: (size: number) => void;
   onPageChange: (page: number) => void;
   onTap?: () => void;
 }
@@ -30,6 +34,9 @@ const QuranReader = ({
   currentPage,
   version,
   quranTheme,
+  readerMode,
+  fontSize,
+  onFontSizeChange,
   onPageChange,
   onTap,
 }: QuranReaderProps) => {
@@ -85,6 +92,10 @@ const QuranReader = ({
         return;
       }
 
+      if (!isHorizontal.value && readerMode === ReaderViewMode.TEXT) {
+        return;
+      }
+
       // Normalize drag to a page fraction
       // RTL: positive translationX = next page (direction +1)
       // Vertical: negative translationY = next page (direction +1)
@@ -105,6 +116,10 @@ const QuranReader = ({
       "worklet";
       const horizontal = isHorizontal.value;
       isHorizontal.value = null;
+
+      if (!horizontal && readerMode === ReaderViewMode.TEXT) {
+        return;
+      }
 
       const dimension = horizontal ? width : height;
       const translation = horizontal ? event.translationX : -event.translationY;
@@ -137,6 +152,8 @@ const QuranReader = ({
             currentPage={currentPage}
             version={version}
             quranTheme={quranTheme}
+            readerMode={readerMode}
+            fontSize={fontSize}
             dragOffset={dragOffset}
             width={width}
           />
@@ -151,11 +168,22 @@ interface PageSlotProps {
   currentPage: number;
   version: MushafVersion;
   quranTheme: QuranTheme;
+  readerMode: ReaderViewMode;
+  fontSize: number;
   dragOffset: Animated.SharedValue<number>;
   width: number;
 }
 
-const PageSlot = ({ page, currentPage, version, quranTheme, dragOffset, width }: PageSlotProps) => {
+const PageSlot = ({
+  page,
+  currentPage,
+  version,
+  quranTheme,
+  readerMode,
+  fontSize,
+  dragOffset,
+  width,
+}: PageSlotProps) => {
   // RTL layout: next page (higher number) is to the LEFT
   // pageOffset: 0 = current, -1 = next (left), +1 = prev (right)
   const pageOffset = -(page - currentPage);
@@ -169,7 +197,11 @@ const PageSlot = ({ page, currentPage, version, quranTheme, dragOffset, width }:
 
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
-      <QuranPage page={page} version={version} quranTheme={quranTheme} />
+      {readerMode === ReaderViewMode.TEXT ? (
+        <TextPage page={page} quranTheme={quranTheme} fontSize={fontSize} />
+      ) : (
+        <QuranPage page={page} version={version} quranTheme={quranTheme} />
+      )}
     </Animated.View>
   );
 };
