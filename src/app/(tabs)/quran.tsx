@@ -9,7 +9,8 @@ import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
 import { QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
-import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
+import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
+import FontSizeControls from "@/components/quran/FontSizeControls";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
 import PageSlider from "@/components/quran/PageSlider";
@@ -29,10 +30,14 @@ const QuranScreen = () => {
     onboardingComplete,
     selectedVersion,
     versionDownloads,
+    readerMode,
+    fontSize,
     setCurrentPage,
     setQuranTheme,
     setOnboardingComplete,
     setSelectedVersion,
+    setReaderMode,
+    setFontSize,
     updateDownloadState,
   } = useQuranStore();
   const { t } = useTranslation();
@@ -74,8 +79,9 @@ const QuranScreen = () => {
   );
 
   const handleSelectTextMode = useCallback(() => {
+    setReaderMode(ReaderViewMode.TEXT);
     setOnboardingComplete();
-  }, [setOnboardingComplete]);
+  }, [setReaderMode, setOnboardingComplete]);
 
   const handleStartReading = useCallback(() => {
     setForceReader(true);
@@ -126,7 +132,7 @@ const QuranScreen = () => {
     downloadStatus === DownloadStatus.PAUSED ||
     downloadStatus === DownloadStatus.ERROR;
 
-  if (selectedVersion && isDownloading && !forceReader) {
+  if (selectedVersion && isDownloading && !forceReader && readerMode !== ReaderViewMode.TEXT) {
     return (
       <DownloadProgressScreen
         version={selectedVersion}
@@ -147,7 +153,10 @@ const QuranScreen = () => {
         currentPage={currentPage}
         version={currentVersion}
         quranTheme={quranTheme}
+        readerMode={readerMode}
+        fontSize={fontSize}
         onPageChange={setCurrentPage}
+        onFontSizeChange={setFontSize}
         onTap={() => setShowOverlay((prev) => !prev)}
       />
 
@@ -184,6 +193,10 @@ const QuranScreen = () => {
               }}>
               <Settings color="white" size={18} />
             </Pressable>
+
+            {readerMode === ReaderViewMode.TEXT && (
+              <FontSizeControls fontSize={fontSize} onFontSizeChange={setFontSize} />
+            )}
 
             <Pressable
               onPress={() => router.navigate("/")}
