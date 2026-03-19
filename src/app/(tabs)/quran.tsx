@@ -138,6 +138,11 @@ const QuranScreen = () => {
 
   return (
     <YStack flex={1} style={{ backgroundColor: themeColors.background }}>
+      <StatusBar
+        hidden={!showOverlay}
+        animated
+        style={quranTheme === QuranTheme.DARK ? "light" : "dark"}
+      />
       <QuranReader
         currentPage={currentPage}
         version={currentVersion}
