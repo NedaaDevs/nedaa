@@ -3,7 +3,7 @@ import "@/localization/i18n";
 import "@tamagui/linear-gradient";
 
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +16,8 @@ import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
 import { useAppStore } from "@/stores/app";
+import { useQuranStore } from "@/stores/quran";
+import { QURAN_THEME_COLORS } from "@/constants/Quran";
 
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
@@ -67,6 +69,13 @@ function AppShell() {
     retryUpdate,
   } = useCityChangeHandler();
 
+  const segments = useSegments();
+  const isQuranScreen = segments[0] === "(tabs)" && segments[1] === "quran";
+  const quranTheme = useQuranStore((s) => s.quranTheme);
+  const safeAreaBg = isQuranScreen
+    ? QURAN_THEME_COLORS[quranTheme].background
+    : theme.background.val;
+
   useNotificationListeners();
   useAlarmDeepLink();
 
@@ -74,7 +83,7 @@ function AppShell() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
         edges={["top", "right", "left"]}
-        style={{ flex: 1, backgroundColor: theme.background.val }}>
+        style={{ flex: 1, backgroundColor: safeAreaBg }}>
         <StatusBar style={themeName === "dark" ? "light" : "dark"} />
         <ToastProvider />
         <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
