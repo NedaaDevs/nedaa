@@ -4,6 +4,11 @@ export enum MushafVersion {
   V4 = "v4",
 }
 
+export enum ReaderViewMode {
+  MADINAH = "madinah",
+  TEXT = "text",
+}
+
 export enum QuranTheme {
   SEPIA = "sepia",
   DARK = "dark",
