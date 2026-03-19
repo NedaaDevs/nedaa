@@ -345,6 +345,34 @@ const closeBoundsDb = async (version: MushafVersion): Promise<void> => {
   }
 };
 
+const getAyahsForPage = async (
+  page: number
+): Promise<Array<{ surahNumber: number; ayahNumber: number; text: string }>> => {
+  const db = await openQuranDb();
+  const rows = await db.getAllAsync<{
+    surah_number: number;
+    ayah_number: number;
+    text: string;
+  }>(
+    "SELECT surah_number, ayah_number, text FROM ayahs WHERE page = ? ORDER BY surah_number, ayah_number",
+    [page]
+  );
+  return rows.map((row) => ({
+    surahNumber: row.surah_number,
+    ayahNumber: row.ayah_number,
+    text: row.text,
+  }));
+};
+
+const getSurahNameForPageFromContent = async (page: number): Promise<number> => {
+  const db = await openQuranDb();
+  const result = await db.getFirstAsync<{ surah_number: number }>(
+    "SELECT surah_number FROM ayahs WHERE page = ? LIMIT 1",
+    [page]
+  );
+  return result?.surah_number ?? 1;
+};
+
 export const QuranDB = {
   openQuranDb,
   openBoundsDb,
@@ -363,4 +391,6 @@ export const QuranDB = {
   deleteVersionDownloads,
   resetFailedPages,
   getSurahForPage,
+  getAyahsForPage,
+  getSurahNameForPageFromContent,
 };
