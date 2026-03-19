@@ -6,8 +6,11 @@ import {
   DEFAULT_MUSHAF_VERSION,
   DEFAULT_QURAN_THEME,
   DEFAULT_SURAH_FRAME_STYLE,
+  FONT_SIZE_DEFAULT,
+  FONT_SIZE_MIN,
+  FONT_SIZE_MAX,
 } from "@/constants/Quran";
-import { DownloadStatus, MushafVersion, QuranTheme } from "@/enums/quran";
+import { DownloadStatus, MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
 export const useQuranStore = create<QuranState>()(
@@ -18,6 +21,8 @@ export const useQuranStore = create<QuranState>()(
       quranTheme: DEFAULT_QURAN_THEME,
       surahFrameStyle: DEFAULT_SURAH_FRAME_STYLE,
       lastReadPage: 1,
+      readerMode: ReaderViewMode.MADINAH,
+      fontSize: FONT_SIZE_DEFAULT,
 
       onboardingComplete: false,
       selectedVersion: null,
@@ -27,6 +32,9 @@ export const useQuranStore = create<QuranState>()(
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme }),
       setSurahFrameStyle: (style) => set({ surahFrameStyle: style }),
+      setReaderMode: (mode: ReaderViewMode) => set({ readerMode: mode }),
+      setFontSize: (size: number) =>
+        set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
 
       setOnboardingComplete: () => set({ onboardingComplete: true }),
       setSelectedVersion: (version) => set({ selectedVersion: version, currentVersion: version }),
@@ -55,6 +63,8 @@ export const useQuranStore = create<QuranState>()(
         quranTheme: state.quranTheme,
         surahFrameStyle: state.surahFrameStyle,
         lastReadPage: state.lastReadPage,
+        readerMode: state.readerMode,
+        fontSize: state.fontSize,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
         versionDownloads: Object.fromEntries(
@@ -72,6 +82,17 @@ export const useQuranStore = create<QuranState>()(
         const validThemes = Object.values(QuranTheme) as string[];
         if (!validThemes.includes(merged.quranTheme)) {
           merged.quranTheme = DEFAULT_QURAN_THEME;
+        }
+        const validModes = Object.values(ReaderViewMode) as string[];
+        if (!validModes.includes(merged.readerMode)) {
+          merged.readerMode = ReaderViewMode.MADINAH;
+        }
+        if (
+          typeof merged.fontSize !== "number" ||
+          merged.fontSize < FONT_SIZE_MIN ||
+          merged.fontSize > FONT_SIZE_MAX
+        ) {
+          merged.fontSize = FONT_SIZE_DEFAULT;
         }
         return merged;
       },
