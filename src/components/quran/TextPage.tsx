@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { ScrollView, Text, View, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  AccessibilityInfo,
+  ScrollView,
+  Text,
+  View,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -42,6 +49,7 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
       ]);
       setAyahs(pageAyahs);
       setJuz(juzNumber);
+      AccessibilityInfo.announceForAccessibility(`Page ${page}, Juz ${juzNumber}`);
 
       if (pageAyahs.length > 0) {
         setSurahName(String(pageAyahs[0].surahNumber));
