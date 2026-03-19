@@ -132,7 +132,7 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingHorizontal: 16, paddingBottom: insets.bottom + 48 },
+          { paddingLeft: 12, paddingRight: 8, paddingBottom: insets.bottom + 48 },
         ]}
         showsVerticalScrollIndicator={false}>
         {renderContent()}
