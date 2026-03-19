@@ -9,16 +9,13 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { QuranTheme } from "@/enums/quran";
-import {
-  TOTAL_PAGES,
-  QURAN_THEME_COLORS,
-  QURAN_FONT_FAMILY,
-  toHafsDigits,
-  SURAH_NAMES,
-} from "@/constants/Quran";
+import { TOTAL_PAGES, QURAN_THEME_COLORS, SURAH_NAMES } from "@/constants/Quran";
 import { QuranDB } from "@/services/quran-db";
 import { useHaptic } from "@/hooks/useHaptic";
 import { Text } from "@/components/ui/text";
+
+const toArabicDigits = (n: number): string =>
+  String(n).replace(/\d/g, (d) => String.fromCharCode(0x0660 + +d));
 
 interface PageSliderProps {
   currentPage: number;
@@ -81,6 +78,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
       thumbX.value = withTiming(pageToX(currentPage), { duration: 150 });
       setDraggingPage(currentPage);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, slidableWidth]);
 
   const updateDraggingPage = useCallback((page: number) => {
@@ -184,12 +182,8 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
             ]}>
             {surahName}
           </Text>
-          <Text
-            style={[
-              styles.tooltipPage,
-              { color: themeColors.pageNumberColor, fontFamily: QURAN_FONT_FAMILY },
-            ]}>
-            {"الصفحة " + toHafsDigits(draggingPage)}
+          <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
+            {"الصفحة " + toArabicDigits(draggingPage)}
           </Text>
         </Animated.View>
       )}
@@ -212,6 +206,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
 const styles = StyleSheet.create({
   container: {
     position: "relative",
+    direction: "ltr",
   },
   tooltip: {
     position: "absolute",
