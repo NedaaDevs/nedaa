@@ -110,14 +110,19 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   });
 
   const panGesture = Gesture.Pan()
-    .onStart(() => {
+    .minDistance(0)
+    .onStart((event) => {
       "worklet";
       isDragging.value = true;
+      const newX = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
+      thumbX.value = newX;
+      const page = xToPage(newX);
+      runOnJS(updateDraggingPage)(page);
       runOnJS(showTooltipFn)();
     })
     .onUpdate((event) => {
       "worklet";
-      const newX = Math.max(0, Math.min(slidableWidth, thumbX.value + event.changeX));
+      const newX = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
       thumbX.value = newX;
       const page = xToPage(newX);
       runOnJS(updateDraggingPage)(page);
