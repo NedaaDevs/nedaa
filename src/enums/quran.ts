@@ -5,12 +5,8 @@ export enum MushafVersion {
 }
 
 export enum QuranTheme {
-  LIGHT = "light",
   SEPIA = "sepia",
   DARK = "dark",
-  CLASSIC = "classic",
-  TINTED = "tinted",
-  TINTED_DARK = "tinted-dark",
 }
 
 export enum MushafImageType {
@@ -23,6 +19,12 @@ export enum LineType {
   SURAH_HEADER = "surah-header",
   BASMALA = "basmala",
   EMPTY = "empty",
+}
+
+export enum SurahFrameStyle {
+  CARTOUCHE = "cartouche",
+  CLASSIC = "classic",
+  GEOMETRIC = "geometric",
 }
 
 export enum DownloadStatus {
