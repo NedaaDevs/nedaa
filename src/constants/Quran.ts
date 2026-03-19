@@ -5,6 +5,11 @@ export const LINES_PER_PAGE = 15;
 export const IMAGE_SOURCE_WIDTH = 1440;
 export const IMAGE_SOURCE_LINE_HEIGHT = 232;
 
+export const FONT_SIZE_MIN = 20;
+export const FONT_SIZE_MAX = 48;
+export const FONT_SIZE_DEFAULT = 28;
+export const FONT_SIZE_STEP = 2;
+
 export const QURAN_THEME_COLORS: Record<
   QuranTheme,
   {

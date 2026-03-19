@@ -4,6 +4,7 @@ import {
   LineType,
   DownloadStatus,
   SurahFrameStyle,
+  ReaderViewMode,
 } from "@/enums/quran";
 
 export type GlyphBound = {
@@ -17,6 +18,12 @@ export type GlyphBound = {
   width: number;
   height: number;
   isMarker: boolean;
+};
+
+export type AyahTextData = {
+  surahNumber: number;
+  ayahNumber: number;
+  text: string;
 };
 
 export type LineMetadata = {
@@ -82,6 +89,8 @@ export type QuranState = {
   quranTheme: QuranTheme;
   surahFrameStyle: SurahFrameStyle;
   lastReadPage: number;
+  readerMode: ReaderViewMode;
+  fontSize: number;
 
   onboardingComplete: boolean;
   selectedVersion: MushafVersion | null;
@@ -91,6 +100,8 @@ export type QuranState = {
   setCurrentVersion: (version: MushafVersion) => void;
   setQuranTheme: (theme: QuranTheme) => void;
   setSurahFrameStyle: (style: SurahFrameStyle) => void;
+  setReaderMode: (mode: ReaderViewMode) => void;
+  setFontSize: (size: number) => void;
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;
