@@ -10,7 +10,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 
 import { MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
-import { TOTAL_PAGES } from "@/constants/Quran";
+import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX } from "@/constants/Quran";
 import QuranPage from "@/components/quran/QuranPage";
 import TextPage from "@/components/quran/TextPage";
 
@@ -44,6 +44,9 @@ const QuranReader = ({
   // Single shared value for page offset (normalized: 0 = current, 1 = one page forward)
   const dragOffset = useSharedValue(0);
   const isHorizontal = useSharedValue<boolean | null>(null);
+  const pinchBaseFontSize = useSharedValue(fontSize);
+
+  pinchBaseFontSize.value = fontSize;
 
   const pageWindow = useMemo(() => {
     const pages: number[] = [];
@@ -142,8 +145,25 @@ const QuranReader = ({
       }
     });
 
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      "worklet";
+      pinchBaseFontSize.value = fontSize;
+    })
+    .onEnd((event) => {
+      "worklet";
+      const newSize = Math.round(pinchBaseFontSize.value * event.scale);
+      const clamped = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, newSize));
+      scheduleOnRN(onFontSizeChange, clamped);
+    });
+
+  const composedGesture =
+    readerMode === ReaderViewMode.TEXT
+      ? Gesture.Simultaneous(pinchGesture, Gesture.Exclusive(panGesture, tapGesture))
+      : Gesture.Exclusive(panGesture, tapGesture);
+
   return (
-    <GestureDetector gesture={Gesture.Exclusive(panGesture, tapGesture)}>
+    <GestureDetector gesture={composedGesture}>
       <Animated.View style={styles.container}>
         {pageWindow.map((page) => (
           <PageSlot
