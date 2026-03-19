@@ -22,6 +22,7 @@
   "a11y.location.updateProgress": "{{step}}",
   "a11y.notification.customize": "Sesuaikan pemberitahuan {{name}}",
   "a11y.notification.customizeHint": "Buka tetapan pemberitahuan untuk solat ini",
+  "a11y.quran.ayahMarker": "Ayat {{number}}",
   "a11y.quran.downloadProgress": "Memuat turun {{surah}}, halaman {{current}} daripada {{total}}",
   "a11y.quran.pauseDownload": "Jeda muat turun",
   "a11y.quran.resumeDownload": "Sambung muat turun",

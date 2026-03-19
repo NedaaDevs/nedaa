@@ -44,9 +44,9 @@ export const QURAN_THEME_COLORS: Record<
   [QuranTheme.DARK]: {
     background: "#121212",
     innerBackground: "#121212",
-    textTint: "#D4CAB8",
+    textTint: "#F0ECE4",
     markerColor: "#C4A265",
-    headerColor: "#D4CAB8",
+    headerColor: "#F0ECE4",
     pageNumberColor: "#888888",
     highlightColor: "rgba(255, 255, 255, 0.12)",
     shimmerBase: "#1A1A1A",
@@ -91,10 +91,19 @@ export const MARKER_ADJUSTMENTS: Record<
   MushafVersion,
   { scaleMultiplier: number; offsetX: number; offsetY: number; fontSizeMultiplier: number }
 > = {
-  [MushafVersion.V1]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.85 },
-  [MushafVersion.V2]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.85 },
-  [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.85 },
+  [MushafVersion.V1]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
+  [MushafVersion.V2]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
+  [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
 } as const;
+
+export const QURAN_MARKER_FRAME: Record<QuranTheme, string> = {
+  [QuranTheme.LIGHT]: "marker-light.png",
+  [QuranTheme.SEPIA]: "marker-sepia.png",
+  [QuranTheme.DARK]: "marker-dark.png",
+  [QuranTheme.CLASSIC]: "marker-light.png",
+  [QuranTheme.TINTED]: "marker-sepia.png",
+  [QuranTheme.TINTED_DARK]: "marker-dark.png",
+};
 
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;
 export const DEFAULT_QURAN_THEME = QuranTheme.LIGHT;
