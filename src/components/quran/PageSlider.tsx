@@ -9,7 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { QuranTheme } from "@/enums/quran";
-import { TOTAL_PAGES, QURAN_THEME_COLORS, SURAH_NAMES } from "@/constants/Quran";
+import { TOTAL_PAGES, QURAN_THEME_COLORS, QURAN_FONT_FAMILY, SURAH_NAMES } from "@/constants/Quran";
 import { QuranDB } from "@/services/quran-db";
 import { useHaptic } from "@/hooks/useHaptic";
 import { Text } from "@/components/ui/text";
