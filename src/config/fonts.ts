@@ -47,5 +47,8 @@ export const useLoadFonts = () => {
     "Asap-Medium": Asap_500Medium,
     "Asap-SemiBold": Asap_600SemiBold,
     "Asap-Bold": Asap_700Bold,
+
+    // Uthmanic Hafs (Quran markers)
+    UthmanicHafs: require("@/../assets/fonts/UthmanicHafs_V22.ttf"),
   });
 };
