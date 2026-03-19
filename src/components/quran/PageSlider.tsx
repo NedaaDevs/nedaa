@@ -4,7 +4,13 @@ import { Slider } from "@tamagui/slider";
 
 import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
-import { TOTAL_PAGES, QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
+import {
+  TOTAL_PAGES,
+  QURAN_THEME_COLORS,
+  QURAN_UI_COLORS,
+  QURAN_FONT_FAMILY,
+  toHafsDigits,
+} from "@/constants/Quran";
 
 interface PageSliderProps {
   currentPage: number;
@@ -56,9 +62,10 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
         color={themeColors.pageNumberColor}
         fontSize={13}
         fontWeight="600"
-        width={30}
-        textAlign="center">
-        {String(currentPage)}
+        width={36}
+        textAlign="center"
+        style={{ fontFamily: QURAN_FONT_FAMILY }}>
+        {toHafsDigits(currentPage)}
       </Text>
     </XStack>
   );

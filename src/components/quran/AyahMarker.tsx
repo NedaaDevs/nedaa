@@ -3,7 +3,13 @@ import { Image, Text, View } from "react-native";
 import { Paths } from "expo-file-system";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_MARKER_FRAME, MARKER_ADJUSTMENTS } from "@/constants/Quran";
+import {
+  QURAN_THEME_COLORS,
+  QURAN_MARKER_FRAME,
+  MARKER_ADJUSTMENTS,
+  QURAN_FONT_FAMILY,
+  toHafsDigits,
+} from "@/constants/Quran";
 
 interface AyahMarkerProps {
   x: number;
@@ -14,13 +20,6 @@ interface AyahMarkerProps {
   version: MushafVersion;
   quranTheme: QuranTheme;
 }
-
-const toHafsDigits = (n: number): string =>
-  String(n)
-    .split("")
-    .reverse()
-    .map((d) => String.fromCharCode(0xfd50 + +d))
-    .join("");
 
 const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: AyahMarkerProps) => {
   const themeColors = QURAN_THEME_COLORS[quranTheme];
@@ -63,7 +62,7 @@ const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: Ay
         style={{
           fontSize,
           color: themeColors.markerColor,
-          fontFamily: "UthmanicHafs",
+          fontFamily: QURAN_FONT_FAMILY,
           textAlign: "center",
           includeFontPadding: false,
         }}>

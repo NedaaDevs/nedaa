@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { X, Download, Check, Loader, Trash2 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { MushafVersion, QuranTheme, DownloadStatus } from "@/enums/quran";
+import { MushafVersion, QuranTheme, DownloadStatus, SurahFrameStyle } from "@/enums/quran";
 import { QURAN_UI_COLORS, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { QuranDownload } from "@/services/quran-download";
@@ -30,11 +30,9 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
   const {
     currentVersion,
     versionDownloads,
-    colorMatrixEnabled,
-    renderMode,
+    surahFrameStyle,
     setCurrentVersion,
-    setColorMatrixEnabled,
-    setRenderMode,
+    setSurahFrameStyle,
   } = useQuranStore();
 
   const isDark = quranTheme === QuranTheme.DARK;
@@ -212,51 +210,34 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
             );
           })}
 
-          {/* Color tinting toggle */}
+          {/* Surah frame style */}
           <XStack
             justifyContent="space-between"
             alignItems="center"
             paddingVertical="$3"
             paddingHorizontal="$3">
             <Text fontSize={15} color={textColor}>
-              {t("quran.settings.colorTinting")}
-            </Text>
-            <Switch
-              value={colorMatrixEnabled}
-              onValueChange={setColorMatrixEnabled}
-              trackColor={{ false: borderColor, true: themeColors.markerColor }}
-              accessibilityRole="switch"
-              accessibilityLabel={t("quran.settings.colorTinting")}
-              accessibilityState={{ checked: colorMatrixEnabled }}
-            />
-          </XStack>
-
-          {/* Render mode toggle */}
-          <XStack
-            justifyContent="space-between"
-            alignItems="center"
-            paddingVertical="$3"
-            paddingHorizontal="$3">
-            <Text fontSize={15} color={textColor}>
-              {t("quran.settings.renderMode")}
+              {t("quran.settings.surahFrame")}
             </Text>
             <XStack gap="$1.5" backgroundColor={borderColor} borderRadius="$3" padding={2}>
-              {(["tint", "skia"] as const).map((mode) => (
+              {Object.values(SurahFrameStyle).map((style) => (
                 <Pressable
-                  key={mode}
-                  onPress={() => setRenderMode(mode)}
+                  key={style}
+                  onPress={() => setSurahFrameStyle(style)}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: renderMode === mode }}>
+                  accessibilityState={{ selected: surahFrameStyle === style }}>
                   <XStack
                     paddingHorizontal="$2.5"
                     paddingVertical="$1"
                     borderRadius="$2"
-                    backgroundColor={renderMode === mode ? themeColors.markerColor : "transparent"}>
+                    backgroundColor={
+                      surahFrameStyle === style ? themeColors.markerColor : "transparent"
+                    }>
                     <Text
-                      fontSize={12}
-                      fontWeight={renderMode === mode ? "600" : "400"}
-                      color={renderMode === mode ? "#fff" : subtleColor}>
-                      {mode === "tint" ? "Tint" : "Skia"}
+                      fontSize={11}
+                      fontWeight={surahFrameStyle === style ? "600" : "400"}
+                      color={surahFrameStyle === style ? "#fff" : subtleColor}>
+                      {style.charAt(0).toUpperCase() + style.slice(1)}
                     </Text>
                   </XStack>
                 </Pressable>

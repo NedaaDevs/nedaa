@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, toHafsDigits } from "@/constants/Quran";
 
 interface PageNumberProps {
   page: number;
@@ -17,9 +17,9 @@ const PageNumber = ({ page, quranTheme }: PageNumberProps) => {
   return (
     <YStack alignItems="center" paddingVertical="$2">
       <Text
-        style={{ color: themeColors.pageNumberColor }}
+        style={{ color: themeColors.pageNumberColor, fontFamily: QURAN_FONT_FAMILY }}
         accessibilityLabel={t("a11y.quran.page", { page })}>
-        {String(page)}
+        {toHafsDigits(page)}
       </Text>
     </YStack>
   );

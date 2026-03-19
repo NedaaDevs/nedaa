@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
-import { Canvas, Image as SkiaImage, Rect, Mask, useImage } from "@shopify/react-native-skia";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
-import { useQuranStore } from "@/stores/quran";
 
 interface LineImageProps {
   version: MushafVersion;
@@ -32,10 +30,6 @@ const LineImage = ({
 }: LineImageProps) => {
   const uri = getLineImageUri(version, page, line);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
-  const colorMatrixEnabled = useQuranStore((s) => s.colorMatrixEnabled);
-  const renderMode = useQuranStore((s) => s.renderMode);
-
-  const tintColor = colorMatrixEnabled ? themeColors.textTint : undefined;
 
   const containerStyle = useMemo(
     () => ({ width: screenWidth, height: lineHeight, overflow: "hidden" as const }),
@@ -46,54 +40,15 @@ const LineImage = ({
     () => ({
       width: screenWidth,
       height: lineHeight,
-      tintColor,
+      tintColor: themeColors.textTint,
     }),
-    [screenWidth, lineHeight, tintColor]
+    [screenWidth, lineHeight, themeColors.textTint]
   );
 
-  // Skia mode: alpha mask tinting
-  if (renderMode === "skia" && colorMatrixEnabled && themeColors.textTint) {
-    return (
-      <SkiaLineImage
-        uri={uri}
-        width={screenWidth}
-        height={lineHeight}
-        textColor={themeColors.textTint}
-      />
-    );
-  }
-
-  // tintColor mode (default)
   return (
     <View style={containerStyle}>
       <Image source={{ uri }} style={imageStyle} resizeMode="cover" fadeDuration={0} />
     </View>
-  );
-};
-
-const SkiaLineImage = ({
-  uri,
-  width,
-  height,
-  textColor,
-}: {
-  uri: string;
-  width: number;
-  height: number;
-  textColor: string;
-}) => {
-  const image = useImage(uri);
-
-  if (!image) return <View style={{ width, height }} />;
-
-  return (
-    <Canvas style={{ width, height }}>
-      <Mask
-        mode="alpha"
-        mask={<SkiaImage image={image} x={0} y={0} width={width} height={height} fit="cover" />}>
-        <Rect x={0} y={0} width={width} height={height} color={textColor} />
-      </Mask>
-    </Canvas>
   );
 };
 

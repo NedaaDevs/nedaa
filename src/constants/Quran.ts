@@ -1,4 +1,4 @@
-import { MushafVersion, QuranTheme } from "@/enums/quran";
+import { MushafVersion, QuranTheme, SurahFrameStyle } from "@/enums/quran";
 
 export const TOTAL_PAGES = 604;
 export const LINES_PER_PAGE = 15;
@@ -19,71 +19,27 @@ export const QURAN_THEME_COLORS: Record<
     shimmerHighlight: string;
   }
 > = {
-  [QuranTheme.LIGHT]: {
-    background: "#FFFDF7",
-    innerBackground: "#FFFDF7",
-    textTint: "#1C1C1E",
-    markerColor: "#B8860B",
-    headerColor: "#2C1810",
-    pageNumberColor: "#8B7355",
-    highlightColor: "rgba(255, 180, 100, 0.25)",
-    shimmerBase: "#FFFDF7",
-    shimmerHighlight: "#F0EDE6",
-  },
   [QuranTheme.SEPIA]: {
-    background: "#F8F1E3",
-    innerBackground: "#F8F1E3",
-    textTint: "#3E2C1A",
-    markerColor: "#8B6914",
-    headerColor: "#3E2C1A",
-    pageNumberColor: "#6D4C41",
-    highlightColor: "rgba(180, 130, 60, 0.2)",
-    shimmerBase: "#F8F1E3",
-    shimmerHighlight: "#EDE5D3",
+    background: "#F5EDDB",
+    innerBackground: "#F5EDDB",
+    textTint: "#2C1810",
+    markerColor: "#7A5C12",
+    headerColor: "#4A3520",
+    pageNumberColor: "#8B7355",
+    highlightColor: "rgba(170, 130, 50, 0.18)",
+    shimmerBase: "#F5EDDB",
+    shimmerHighlight: "#EBE3D1",
   },
   [QuranTheme.DARK]: {
-    background: "#121212",
-    innerBackground: "#121212",
-    textTint: "#F0ECE4",
-    markerColor: "#C4A265",
-    headerColor: "#F0ECE4",
-    pageNumberColor: "#888888",
-    highlightColor: "rgba(255, 255, 255, 0.12)",
-    shimmerBase: "#1A1A1A",
-    shimmerHighlight: "#2A2A2A",
-  },
-  [QuranTheme.CLASSIC]: {
-    background: "#D8E8D0",
-    innerBackground: "#F8F8F0",
-    textTint: "#000000",
-    markerColor: "#40A060",
-    headerColor: "#000000",
-    pageNumberColor: "#40A060",
-    highlightColor: "rgba(240, 120, 184, 0.25)",
-    shimmerBase: "#F8F8F0",
-    shimmerHighlight: "#E8E8E0",
-  },
-  [QuranTheme.TINTED]: {
-    background: "#F0E0D0",
-    innerBackground: "#F8F8F0",
-    textTint: "#885820",
-    markerColor: "#D8C8B0",
-    headerColor: "#885820",
-    pageNumberColor: "#B89870",
-    highlightColor: "rgba(184, 152, 112, 0.25)",
-    shimmerBase: "#F8F8F0",
-    shimmerHighlight: "#E8E0D0",
-  },
-  [QuranTheme.TINTED_DARK]: {
-    background: "#181818",
-    innerBackground: "#282830",
-    textTint: "#707080",
-    markerColor: "#303038",
-    headerColor: "#707080",
-    pageNumberColor: "#505060",
-    highlightColor: "rgba(112, 112, 128, 0.15)",
-    shimmerBase: "#282830",
-    shimmerHighlight: "#383840",
+    background: "#0E0E0E",
+    innerBackground: "#0E0E0E",
+    textTint: "#E8E0D4",
+    markerColor: "#D4A84B",
+    headerColor: "#E8E0D4",
+    pageNumberColor: "#6B6B6B",
+    highlightColor: "rgba(212, 168, 75, 0.15)",
+    shimmerBase: "#181818",
+    shimmerHighlight: "#282828",
   },
 } as const;
 
@@ -97,16 +53,14 @@ export const MARKER_ADJUSTMENTS: Record<
 } as const;
 
 export const QURAN_MARKER_FRAME: Record<QuranTheme, string> = {
-  [QuranTheme.LIGHT]: "marker-light.png",
   [QuranTheme.SEPIA]: "marker-sepia.png",
   [QuranTheme.DARK]: "marker-dark.png",
-  [QuranTheme.CLASSIC]: "marker-light.png",
-  [QuranTheme.TINTED]: "marker-sepia.png",
-  [QuranTheme.TINTED_DARK]: "marker-dark.png",
 };
 
+export const DEFAULT_SURAH_FRAME_STYLE = SurahFrameStyle.CLASSIC;
+
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;
-export const DEFAULT_QURAN_THEME = QuranTheme.LIGHT;
+export const DEFAULT_QURAN_THEME = QuranTheme.SEPIA;
 
 export const RECOMMENDED_VERSION = MushafVersion.V2;
 
@@ -119,6 +73,15 @@ export const QURAN_UI_COLORS = {
   subtleText: "#8B7355",
   progressTrack: "#E8E0D0",
 } as const;
+
+export const QURAN_FONT_FAMILY = "UthmanicHafs";
+
+export const toHafsDigits = (n: number): string =>
+  String(n)
+    .split("")
+    .reverse()
+    .map((d) => String.fromCharCode(0xfd50 + +d))
+    .join("");
 
 export const DOWNLOAD_CONCURRENCY = 6;
 export const MAX_RETRY_ATTEMPTS = 3;

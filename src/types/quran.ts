@@ -1,4 +1,10 @@
-import { MushafVersion, QuranTheme, LineType, DownloadStatus } from "@/enums/quran";
+import {
+  MushafVersion,
+  QuranTheme,
+  LineType,
+  DownloadStatus,
+  SurahFrameStyle,
+} from "@/enums/quran";
 
 export type GlyphBound = {
   page: number;
@@ -74,8 +80,7 @@ export type QuranState = {
   currentPage: number;
   currentVersion: MushafVersion;
   quranTheme: QuranTheme;
-  colorMatrixEnabled: boolean;
-  renderMode: "tint" | "skia";
+  surahFrameStyle: SurahFrameStyle;
   lastReadPage: number;
 
   onboardingComplete: boolean;
@@ -85,8 +90,7 @@ export type QuranState = {
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
   setQuranTheme: (theme: QuranTheme) => void;
-  setColorMatrixEnabled: (enabled: boolean) => void;
-  setRenderMode: (mode: "tint" | "skia") => void;
+  setSurahFrameStyle: (style: SurahFrameStyle) => void;
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;

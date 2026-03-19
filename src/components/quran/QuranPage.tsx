@@ -30,6 +30,8 @@ import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
+import SurahFrame from "@/components/quran/SurahFrame";
+import { useQuranStore } from "@/stores/quran";
 
 const LONG_PRESS_MS = 400;
 interface QuranPageProps {
@@ -47,6 +49,8 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const [juz, setJuz] = useState(1);
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
   const [glyphBounds, setGlyphBounds] = useState<GlyphBound[]>([]);
+  const [headerLines, setHeaderLines] = useState<number[]>([]);
+  const surahFrameStyle = useQuranStore((s) => s.surahFrameStyle);
   const [highlightedAyah, setHighlightedAyah] = useState<{
     surah: number;
     ayah: number;
@@ -101,6 +105,9 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
             names[lm.surahNumber] = lm.surahName;
           }
         }
+        setHeaderLines(
+          lineMetadata.filter((lm) => lm.type === LineType.SURAH_HEADER).map((lm) => lm.line)
+        );
         setSurahNames(names);
         setJuz(juzNumber);
         setGlyphBounds(bounds);
@@ -371,6 +378,27 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
                 />
               )
             )}
+
+          {pageAvailable &&
+            !isPageMode &&
+            headerLines.map((line) => (
+              <View
+                key={`surah-frame-${line}`}
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: (line - 1) * lineHeight,
+                  width,
+                  height: lineHeight,
+                }}>
+                <SurahFrame
+                  quranTheme={quranTheme}
+                  frameStyle={surahFrameStyle}
+                  width={width}
+                  height={lineHeight}
+                />
+              </View>
+            ))}
 
           {pageAvailable &&
             markerPositions.map((m, i) => (

@@ -2,8 +2,12 @@ import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { DEFAULT_MUSHAF_VERSION, DEFAULT_QURAN_THEME } from "@/constants/Quran";
-import { DownloadStatus, MushafVersion } from "@/enums/quran";
+import {
+  DEFAULT_MUSHAF_VERSION,
+  DEFAULT_QURAN_THEME,
+  DEFAULT_SURAH_FRAME_STYLE,
+} from "@/constants/Quran";
+import { DownloadStatus, MushafVersion, QuranTheme } from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
 export const useQuranStore = create<QuranState>()(
@@ -12,8 +16,7 @@ export const useQuranStore = create<QuranState>()(
       currentPage: 1,
       currentVersion: DEFAULT_MUSHAF_VERSION,
       quranTheme: DEFAULT_QURAN_THEME,
-      colorMatrixEnabled: true,
-      renderMode: "tint" as const,
+      surahFrameStyle: DEFAULT_SURAH_FRAME_STYLE,
       lastReadPage: 1,
 
       onboardingComplete: false,
@@ -23,8 +26,7 @@ export const useQuranStore = create<QuranState>()(
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme }),
-      setColorMatrixEnabled: (enabled) => set({ colorMatrixEnabled: enabled }),
-      setRenderMode: (mode) => set({ renderMode: mode }),
+      setSurahFrameStyle: (style) => set({ surahFrameStyle: style }),
 
       setOnboardingComplete: () => set({ onboardingComplete: true }),
       setSelectedVersion: (version) => set({ selectedVersion: version, currentVersion: version }),
@@ -51,8 +53,7 @@ export const useQuranStore = create<QuranState>()(
         currentPage: state.currentPage,
         currentVersion: state.currentVersion,
         quranTheme: state.quranTheme,
-        colorMatrixEnabled: state.colorMatrixEnabled,
-        renderMode: state.renderMode,
+        surahFrameStyle: state.surahFrameStyle,
         lastReadPage: state.lastReadPage,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
@@ -66,6 +67,14 @@ export const useQuranStore = create<QuranState>()(
           ])
         ) as Partial<Record<MushafVersion, VersionDownloadState>>,
       }),
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted as object) };
+        const validThemes = Object.values(QuranTheme) as string[];
+        if (!validThemes.includes(merged.quranTheme)) {
+          merged.quranTheme = DEFAULT_QURAN_THEME;
+        }
+        return merged;
+      },
     }
   )
 );

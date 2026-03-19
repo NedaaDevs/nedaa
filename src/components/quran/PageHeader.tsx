@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, toHafsDigits } from "@/constants/Quran";
 
 interface PageHeaderProps {
   surahName: string;
@@ -22,8 +22,12 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
       paddingVertical="$1"
       accessibilityRole="header"
       accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz })}>
-      <Text style={{ color: themeColors.headerColor }}>{surahName}</Text>
-      <Text style={{ color: themeColors.headerColor }}>{t("a11y.quran.juz", { number: juz })}</Text>
+      <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
+        {surahName}
+      </Text>
+      <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
+        {t("a11y.quran.juz", { number: toHafsDigits(juz) })}
+      </Text>
     </XStack>
   );
 };
