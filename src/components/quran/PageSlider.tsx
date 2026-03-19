@@ -59,22 +59,16 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     loadMapping();
   }, []);
 
-  const pageToX = useCallback(
-    (page: number): number => {
-      const progress = (page - 1) / (TOTAL_PAGES - 1);
-      // RTL: page 1 = right end (slidableWidth), page 604 = left end (0)
-      return slidableWidth * (1 - progress);
-    },
-    [slidableWidth]
-  );
+  const pageToX = (page: number): number => {
+    const progress = (page - 1) / (TOTAL_PAGES - 1);
+    return slidableWidth * (1 - progress);
+  };
 
-  const xToPage = useCallback(
-    (x: number): number => {
-      const progress = 1 - x / slidableWidth;
-      return Math.max(1, Math.min(TOTAL_PAGES, Math.round(progress * (TOTAL_PAGES - 1) + 1)));
-    },
-    [slidableWidth]
-  );
+  const xToPage = (x: number): number => {
+    "worklet";
+    const progress = 1 - x / slidableWidth;
+    return Math.max(1, Math.min(TOTAL_PAGES, Math.round(progress * (TOTAL_PAGES - 1) + 1)));
+  };
 
   const thumbX = useSharedValue(pageToX(currentPage));
   const isDragging = useSharedValue(false);
@@ -87,7 +81,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
       thumbX.value = withTiming(pageToX(currentPage), { duration: 150 });
       setDraggingPage(currentPage);
     }
-  }, [currentPage, pageToX]);
+  }, [currentPage, slidableWidth]);
 
   const updateDraggingPage = useCallback((page: number) => {
     setDraggingPage(page);
