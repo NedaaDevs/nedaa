@@ -83,9 +83,14 @@ const QuranReader = ({
   const hasPrevPage = currentPage > 1;
   const hasNextPage = currentPage < TOTAL_PAGES;
 
-  const panGesture = Gesture.Pan()
-    .minDistance(15)
-    .cancelsTouchesInView(false)
+  const panGestureBase = Gesture.Pan().minDistance(15).cancelsTouchesInView(false);
+
+  // In text mode, only activate on horizontal swipes so ScrollView handles vertical
+  if (readerMode === ReaderViewMode.TEXT) {
+    panGestureBase.activeOffsetX([-20, 20]).failOffsetY([-15, 15]);
+  }
+
+  const panGesture = panGestureBase
     .onUpdate((event) => {
       "worklet";
       if (isHorizontal.value === null) {
@@ -145,17 +150,12 @@ const QuranReader = ({
       }
     });
 
-  const pinchGesture = Gesture.Pinch()
-    .onStart(() => {
-      "worklet";
-      pinchBaseFontSize.value = fontSize;
-    })
-    .onEnd((event) => {
-      "worklet";
-      const newSize = Math.round(pinchBaseFontSize.value * event.scale);
-      const clamped = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, newSize));
-      scheduleOnRN(onFontSizeChange, clamped);
-    });
+  const pinchGesture = Gesture.Pinch().onEnd((event) => {
+    "worklet";
+    const newSize = Math.round(pinchBaseFontSize.value * event.scale);
+    const clamped = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, newSize));
+    scheduleOnRN(onFontSizeChange, clamped);
+  });
 
   const composedGesture =
     readerMode === ReaderViewMode.TEXT

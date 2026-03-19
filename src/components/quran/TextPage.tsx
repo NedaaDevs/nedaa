@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
   surahHeaderText: {
     textAlign: "center",
     fontWeight: "600",
+    writingDirection: "rtl",
   },
   basmala: {
     textAlign: "center",
