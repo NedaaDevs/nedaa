@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 4,
     paddingVertical: 2,
+    direction: "rtl",
   },
   ayahText: {
     writingDirection: "rtl",
