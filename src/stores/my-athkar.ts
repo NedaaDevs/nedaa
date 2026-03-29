@@ -64,11 +64,56 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
       isInitialized: false,
 
       initialize: async () => {
-        await get().loadItems();
-        await get().loadDisplayData();
-        await get().initializeDailyProgress();
-        await get().loadDailyProgress();
-        set({ isInitialized: true });
+        // Fetch all data first, then set state once to avoid multiple re-renders
+        const rows = await AthkarDB.getMyAthkar();
+        const items: MyAthkarItem[] = rows.map((r) => ({
+          id: r.id,
+          sourceAthkarId: r.source_athkar_id,
+          sourceCategoryId: r.source_category_id,
+          userCount: r.user_count,
+          sortOrder: r.sort_order,
+        }));
+
+        // Load display data
+        let displayData = new Map<number, DisplayEntry>();
+        if (items.length > 0) {
+          const sourceIds = items.map((i) => i.sourceAthkarId);
+          const [athkarRows, categoryMap] = await Promise.all([
+            HisnMuslimDB.getAthkarByIds(sourceIds),
+            HisnMuslimDB.getCategoryForAthkar(sourceIds),
+          ]);
+
+          for (const a of athkarRows) {
+            const cat = categoryMap.get(a.id);
+            displayData.set(a.id, {
+              ...a,
+              categoryTitleAr: cat?.titleAr ?? "",
+              categoryTitleEn: cat?.titleEn ?? "",
+            });
+          }
+
+          // Initialize daily progress in DB
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
+          await AthkarDB.initializeMyAthkarDaily(
+            todayInt,
+            items.map((i) => ({ id: i.id, userCount: i.userCount }))
+          );
+        }
+
+        // Load daily progress
+        const tz = locationStore.getState().locationDetails.timezone;
+        const todayInt = getTodayInt(tz);
+        const progressRows = await AthkarDB.getMyAthkarDailyProgress(todayInt);
+        const progress: MyAthkarProgress[] = progressRows.map((r) => ({
+          myAthkarId: r.my_athkar_id,
+          currentCount: r.current_count,
+          totalCount: r.total_count,
+          completed: r.current_count >= r.total_count,
+        }));
+
+        // Single state update
+        set({ items, displayData, progress, isInitialized: true });
       },
 
       loadItems: async () => {
