@@ -35,7 +35,7 @@ const MyAthkarEmpty: FC<Props> = ({ onOpenSearch }) => {
         accessibilityRole="button"
         accessibilityLabel={t("athkar.myAthkar.add")}>
         <ButtonIcon as={Search} />
-        <Text color="$typographyContrast">{t("athkar.myAthkar.add")}</Text>
+        <Button.Text>{t("athkar.myAthkar.add")}</Button.Text>
       </Button>
     </VStack>
   );
