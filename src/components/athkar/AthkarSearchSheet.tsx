@@ -180,7 +180,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
             {isArabic ? (
               <Text
                 size="md"
-                style={{ writingDirection: "rtl" }}
+                style={{ writingDirection: "rtl", lineHeight: 30 }}
                 textAlign="right"
                 color="$typography"
                 numberOfLines={3}>
@@ -195,7 +195,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                 ) : (
                   <Text
                     size="md"
-                    style={{ writingDirection: "rtl" }}
+                    style={{ writingDirection: "rtl", lineHeight: 30 }}
                     textAlign="right"
                     color="$typography"
                     numberOfLines={3}>

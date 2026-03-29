@@ -93,7 +93,7 @@ const MyAthkarCard: FC<Props> = ({
             }>
             <Text
               size="xl"
-              style={{ writingDirection: "rtl" }}
+              style={{ writingDirection: "rtl", lineHeight: 34 }}
               textAlign="right"
               color={completed ? "$typographySecondary" : "$typography"}
               numberOfLines={3}>
