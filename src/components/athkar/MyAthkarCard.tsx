@@ -95,8 +95,7 @@ const MyAthkarCard: FC<Props> = ({
               size="xl"
               style={{ writingDirection: "rtl", lineHeight: 34 }}
               textAlign="right"
-              color={completed ? "$typographySecondary" : "$typography"}
-              numberOfLines={3}>
+              color={completed ? "$typographySecondary" : "$typography"}>
               {arabicText}
             </Text>
           </Pressable>
