@@ -36,14 +36,17 @@ import { AthkarType } from "@/types/athkar";
 // Utils
 import { getCurrentAthkarPeriod } from "@/utils/athkar";
 
+const MY_ATHKAR_SUPPORTED_LANGUAGES = ["ar", "en"];
+
 const AthkarTabs = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
 
   const { setCurrentType, validateDailyStreak } = useAthkarStore();
   const playerState = useAthkarStore((s) => s.playerState);
 
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const showMyAthkarTab = MY_ATHKAR_SUPPORTED_LANGUAGES.includes(i18n.language);
 
   type activeTabType = Exclude<AthkarType, "all"> | "my-athkar";
 
@@ -154,39 +157,43 @@ const AthkarTabs = () => {
             </HStack>
           </Pressable>
 
-          {/* My Athkar Tab */}
-          <Pressable
-            onPress={() => {
-              if (activeTab !== "my-athkar" && playerState !== "idle") {
-                athkarPlayer.stop();
-              }
-              setActiveTab("my-athkar");
-            }}
-            role="tab"
-            accessibilityLabel={t("athkar.myAthkar")}
-            accessibilityState={{ selected: activeTab === "my-athkar" }}
-            flex={1}
-            minHeight={44}
-            paddingVertical="$3"
-            paddingHorizontal="$4"
-            marginHorizontal="$2"
-            borderRadius={999}
-            alignItems="center"
-            justifyContent="center"
-            backgroundColor={activeTab === "my-athkar" ? "$primary" : "$backgroundSecondary"}>
-            <HStack gap="$2" alignItems="center">
-              <Icon
-                as={BookOpen}
-                size="md"
-                color={activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"}
-              />
-              <Text
-                fontWeight="500"
-                color={activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"}>
-                {t("athkar.myAthkar")}
-              </Text>
-            </HStack>
-          </Pressable>
+          {/* My Athkar Tab — only for ar/en */}
+          {showMyAthkarTab && (
+            <Pressable
+              onPress={() => {
+                if (activeTab !== "my-athkar" && playerState !== "idle") {
+                  athkarPlayer.stop();
+                }
+                setActiveTab("my-athkar");
+              }}
+              role="tab"
+              accessibilityLabel={t("athkar.myAthkar")}
+              accessibilityState={{ selected: activeTab === "my-athkar" }}
+              flex={1}
+              minHeight={44}
+              paddingVertical="$3"
+              paddingHorizontal="$4"
+              marginHorizontal="$2"
+              borderRadius={999}
+              alignItems="center"
+              justifyContent="center"
+              backgroundColor={activeTab === "my-athkar" ? "$primary" : "$backgroundSecondary"}>
+              <HStack gap="$2" alignItems="center">
+                <Icon
+                  as={BookOpen}
+                  size="md"
+                  color={activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"}
+                />
+                <Text
+                  fontWeight="500"
+                  color={
+                    activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"
+                  }>
+                  {t("athkar.myAthkar")}
+                </Text>
+              </HStack>
+            </Pressable>
+          )}
         </HStack>
       </Box>
 

@@ -6,10 +6,12 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
+import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonIcon } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Plus } from "lucide-react-native";
+import { Plus, ChevronRight, ChevronLeft } from "lucide-react-native";
 
 // Stores
 import { useMyAthkarStore } from "@/stores/my-athkar";
@@ -18,36 +20,33 @@ import { useMyAthkarStore } from "@/stores/my-athkar";
 import { useInitializeMyAthkar } from "@/hooks/useInitializeMyAthkar";
 
 // Components
-import MyAthkarCard from "@/components/athkar/MyAthkarCard";
 import MyAthkarEmpty from "@/components/athkar/MyAthkarEmpty";
+import MyAthkarCategoryDetail from "@/components/athkar/MyAthkarCategoryDetail";
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
-import AthkarDetailSheet from "@/components/athkar/AthkarDetailSheet";
+
+// Types
+import type { MyAthkarCategoryGroup } from "@/types/hisnMuslim";
 
 const MyAthkarList: FC = () => {
   const { t, i18n } = useTranslation();
   const { isInitialized } = useInitializeMyAthkar();
+  const getGroupedByCategory = useMyAthkarStore((s) => s.getGroupedByCategory);
   const items = useMyAthkarStore((s) => s.items);
-  const displayData = useMyAthkarStore((s) => s.displayData);
   const progress = useMyAthkarStore((s) => s.progress);
-  const removeItem = useMyAthkarStore((s) => s.removeItem);
 
   const [showSearch, setShowSearch] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<MyAthkarCategoryGroup | null>(null);
 
   const isArabic = i18n.language === "ar";
+  const isRTL = i18n.dir() === "rtl";
 
-  const handleCardPress = useCallback((myAthkarId: number) => {
-    setSelectedItemId(myAthkarId);
-    setShowDetail(true);
+  const handleCategoryPress = useCallback((group: MyAthkarCategoryGroup) => {
+    setSelectedGroup(group);
   }, []);
 
-  const handleRemove = useCallback(
-    async (myAthkarId: number) => {
-      await removeItem(myAthkarId);
-    },
-    [removeItem]
-  );
+  const handleBack = useCallback(() => {
+    setSelectedGroup(null);
+  }, []);
 
   if (!isInitialized) {
     return (
@@ -57,7 +56,7 @@ const MyAthkarList: FC = () => {
     );
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !selectedGroup) {
     return (
       <>
         <MyAthkarEmpty onOpenSearch={() => setShowSearch(true)} />
@@ -66,15 +65,25 @@ const MyAthkarList: FC = () => {
     );
   }
 
-  const selectedItem = selectedItemId ? items.find((i) => i.id === selectedItemId) : null;
-  const selectedDisplay = selectedItem ? displayData.get(selectedItem.sourceAthkarId) : null;
-  const selectedProgress = selectedItemId
-    ? (progress.find((p) => p.myAthkarId === selectedItemId) ?? null)
-    : null;
+  // Category detail view
+  if (selectedGroup) {
+    return (
+      <MyAthkarCategoryDetail
+        group={selectedGroup}
+        onBack={handleBack}
+        onOpenSearch={() => setShowSearch(true)}
+        showSearch={showSearch}
+        onCloseSearch={() => setShowSearch(false)}
+      />
+    );
+  }
+
+  // Category cards view
+  const groups = getGroupedByCategory();
 
   return (
     <>
-      {/* Header — just the add button */}
+      {/* Header */}
       <HStack justifyContent="flex-end" alignItems="center" marginBottom="$3">
         <Button
           size="sm"
@@ -88,47 +97,44 @@ const MyAthkarList: FC = () => {
         </Button>
       </HStack>
 
-      {/* List — swipeable cards */}
+      {/* Category Cards */}
       <VStack gap="$3">
-        {items.map((item) => {
-          const display = displayData.get(item.sourceAthkarId);
-          const prog = progress.find((p) => p.myAthkarId === item.id);
-
-          if (!display || !prog) return null;
+        {groups.map((group) => {
+          const completedCount = group.items.filter((item) => {
+            const prog = progress.find((p) => p.myAthkarId === item.id);
+            return prog?.completed;
+          }).length;
 
           return (
-            <MyAthkarCard
-              key={item.id}
-              myAthkarId={item.id}
-              arabicText={display.arabicText}
-              categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
-              progress={prog}
-              onPress={() => handleCardPress(item.id)}
-            />
+            <Pressable
+              key={group.categoryId}
+              onPress={() => handleCategoryPress(group)}
+              accessibilityRole="button"
+              accessibilityLabel={isArabic ? group.titleAr : group.titleEn}>
+              <Box padding="$4" borderRadius="$6" backgroundColor="$backgroundSecondary">
+                <HStack justifyContent="space-between" alignItems="center">
+                  <VStack flex={1} gap="$1">
+                    <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>
+                      {isArabic ? group.titleAr : group.titleEn}
+                    </Text>
+                    <Text size="sm" color="$typographySecondary">
+                      {completedCount}/{group.items.length} {t("athkar.todayProgress")}
+                    </Text>
+                  </VStack>
+                  <Icon
+                    as={isRTL ? ChevronLeft : ChevronRight}
+                    size="md"
+                    color="$typographySecondary"
+                  />
+                </HStack>
+              </Box>
+            </Pressable>
           );
         })}
       </VStack>
 
-      {/* Sheets */}
+      {/* Search Sheet */}
       <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
-
-      <AthkarDetailSheet
-        isOpen={showDetail}
-        onClose={() => setShowDetail(false)}
-        myAthkarId={selectedItemId}
-        arabicText={selectedDisplay?.arabicText ?? ""}
-        transliteration={selectedDisplay?.transliteration ?? ""}
-        translation={selectedDisplay?.translation ?? ""}
-        categoryTitle={
-          selectedDisplay
-            ? isArabic
-              ? selectedDisplay.categoryTitleAr
-              : selectedDisplay.categoryTitleEn
-            : ""
-        }
-        progress={selectedProgress}
-        onRemove={handleRemove}
-      />
     </>
   );
 };

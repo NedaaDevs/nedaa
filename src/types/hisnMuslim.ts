@@ -38,6 +38,13 @@ export type MyAthkarDisplayItem = MyAthkarItem & {
   audioUrl: string | null;
 };
 
+export type MyAthkarCategoryGroup = {
+  categoryId: number;
+  titleAr: string;
+  titleEn: string;
+  items: MyAthkarItem[];
+};
+
 export type MyAthkarProgress = {
   myAthkarId: number;
   currentCount: number;
