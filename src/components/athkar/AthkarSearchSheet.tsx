@@ -188,24 +188,22 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
               <Text
                 size="md"
                 style={{ writingDirection: "rtl", lineHeight: 30 }}
-                textAlign="right"
-                color="$typography"
-                numberOfLines={3}>
+                textAlign="left"
+                color="$typography">
                 {item.arabicText}
               </Text>
             ) : (
               <>
                 {item.translation !== "" ? (
-                  <Text size="md" color="$typography" numberOfLines={3}>
+                  <Text size="md" color="$typography">
                     {item.translation}
                   </Text>
                 ) : (
                   <Text
                     size="md"
                     style={{ writingDirection: "rtl", lineHeight: 30 }}
-                    textAlign="right"
-                    color="$typography"
-                    numberOfLines={3}>
+                    textAlign="left"
+                    color="$typography">
                     {item.arabicText}
                   </Text>
                 )}
