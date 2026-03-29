@@ -42,7 +42,7 @@ type Props = {
 
 const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
-  const { addItem, isSourceAdded } = useMyAthkarStore();
+  const { addItem, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
   const hapticSuccess = useHaptic("success");
   const hapticSelection = useHaptic("selection");
 
@@ -102,21 +102,28 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
 
   const handleToggleItem = useCallback(
     async (item: HisnAthkar) => {
-      if (isSourceAdded(item.id)) return;
-
       setAddingIds((prev) => new Set(prev).add(item.id));
       hapticSelection();
-      const success = await addItem(item.id, item.categoryId, item.repeatCount);
-      if (success) {
-        hapticSuccess();
+
+      if (isSourceAdded(item.id)) {
+        const existing = getItemBySourceId(item.id);
+        if (existing) {
+          await removeItem(existing.id);
+        }
+      } else {
+        const success = await addItem(item.id, item.categoryId, item.repeatCount);
+        if (success) {
+          hapticSuccess();
+        }
       }
+
       setAddingIds((prev) => {
         const next = new Set(prev);
         next.delete(item.id);
         return next;
       });
     },
-    [addItem, isSourceAdded, hapticSelection, hapticSuccess]
+    [addItem, removeItem, isSourceAdded, getItemBySourceId, hapticSelection, hapticSuccess]
   );
 
   // Group search results by category

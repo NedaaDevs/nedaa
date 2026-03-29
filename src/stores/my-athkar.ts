@@ -50,6 +50,7 @@ type MyAthkarActions = {
   decrementCount: (myAthkarId: number) => void;
   resetDaily: () => Promise<void>;
   isSourceAdded: (sourceAthkarId: number) => boolean;
+  getItemBySourceId: (sourceAthkarId: number) => MyAthkarItem | null;
 };
 
 type MyAthkarStore = MyAthkarState & MyAthkarActions;
@@ -287,6 +288,10 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
 
       isSourceAdded: (sourceAthkarId) => {
         return get().items.some((i) => i.sourceAthkarId === sourceAthkarId);
+      },
+
+      getItemBySourceId: (sourceAthkarId) => {
+        return get().items.find((i) => i.sourceAthkarId === sourceAthkarId) ?? null;
       },
     }),
     { name: "my-athkar-store" }
