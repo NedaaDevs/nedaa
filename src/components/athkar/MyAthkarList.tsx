@@ -19,7 +19,6 @@ import { useInitializeMyAthkar } from "@/hooks/useInitializeMyAthkar";
 
 // Components
 import MyAthkarCard from "@/components/athkar/MyAthkarCard";
-import SwipeableMyAthkarCard from "@/components/athkar/SwipeableMyAthkarCard";
 import MyAthkarEmpty from "@/components/athkar/MyAthkarEmpty";
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
 import AthkarDetailSheet from "@/components/athkar/AthkarDetailSheet";
@@ -98,15 +97,14 @@ const MyAthkarList: FC = () => {
           if (!display || !prog) return null;
 
           return (
-            <SwipeableMyAthkarCard key={item.id} onDelete={() => handleRemove(item.id)}>
-              <MyAthkarCard
-                myAthkarId={item.id}
-                arabicText={display.arabicText}
-                categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
-                progress={prog}
-                onPress={() => handleCardPress(item.id)}
-              />
-            </SwipeableMyAthkarCard>
+            <MyAthkarCard
+              key={item.id}
+              myAthkarId={item.id}
+              arabicText={display.arabicText}
+              categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
+              progress={prog}
+              onPress={() => handleCardPress(item.id)}
+            />
           );
         })}
       </VStack>
