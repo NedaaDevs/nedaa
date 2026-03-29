@@ -9,7 +9,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Button, ButtonIcon } from "@/components/ui/button";
 
 // Icons
-import { Plus, RotateCcw } from "lucide-react-native";
+import { Plus } from "lucide-react-native";
 
 // Stores
 import { useMyAthkarStore } from "@/stores/my-athkar";
@@ -19,6 +19,7 @@ import { useInitializeMyAthkar } from "@/hooks/useInitializeMyAthkar";
 
 // Components
 import MyAthkarCard from "@/components/athkar/MyAthkarCard";
+import SwipeableMyAthkarCard from "@/components/athkar/SwipeableMyAthkarCard";
 import MyAthkarEmpty from "@/components/athkar/MyAthkarEmpty";
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
 import AthkarDetailSheet from "@/components/athkar/AthkarDetailSheet";
@@ -30,7 +31,6 @@ const MyAthkarList: FC = () => {
   const displayData = useMyAthkarStore((s) => s.displayData);
   const progress = useMyAthkarStore((s) => s.progress);
   const removeItem = useMyAthkarStore((s) => s.removeItem);
-  const resetDaily = useMyAthkarStore((s) => s.resetDaily);
 
   const [showSearch, setShowSearch] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -75,19 +75,8 @@ const MyAthkarList: FC = () => {
 
   return (
     <>
-      {/* Header */}
-      <HStack justifyContent="space-between" alignItems="center" marginBottom="$3">
-        <Button
-          size="sm"
-          variant="outline"
-          action="default"
-          onPress={resetDaily}
-          accessibilityRole="button"
-          accessibilityLabel={t("athkar.myAthkar.reset")}>
-          <ButtonIcon as={RotateCcw} />
-          <Button.Text>{t("athkar.myAthkar.reset")}</Button.Text>
-        </Button>
-
+      {/* Header — just the add button */}
+      <HStack justifyContent="flex-end" alignItems="center" marginBottom="$3">
         <Button
           size="sm"
           variant="solid"
@@ -100,7 +89,7 @@ const MyAthkarList: FC = () => {
         </Button>
       </HStack>
 
-      {/* List */}
+      {/* List — swipeable cards */}
       <VStack gap="$3">
         {items.map((item) => {
           const display = displayData.get(item.sourceAthkarId);
@@ -109,14 +98,15 @@ const MyAthkarList: FC = () => {
           if (!display || !prog) return null;
 
           return (
-            <MyAthkarCard
-              key={item.id}
-              myAthkarId={item.id}
-              arabicText={display.arabicText}
-              categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
-              progress={prog}
-              onPress={() => handleCardPress(item.id)}
-            />
+            <SwipeableMyAthkarCard key={item.id} onDelete={() => handleRemove(item.id)}>
+              <MyAthkarCard
+                myAthkarId={item.id}
+                arabicText={display.arabicText}
+                categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
+                progress={prog}
+                onPress={() => handleCardPress(item.id)}
+              />
+            </SwipeableMyAthkarCard>
           );
         })}
       </VStack>
