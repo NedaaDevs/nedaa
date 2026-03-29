@@ -239,6 +239,8 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
               autoCapitalize="none"
               borderWidth={0}
               backgroundColor="transparent"
+              color="$typography"
+              placeholderTextColor="$typographySecondary"
               paddingHorizontal="$0"
               accessibilityLabel={t("athkar.myAthkar.search")}
             />
