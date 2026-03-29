@@ -86,7 +86,7 @@ const MyAthkarList: FC = () => {
   return (
     <>
       {/* Header */}
-      <HStack justifyContent="flex-end" alignItems="center" marginBottom="$3">
+      <HStack justifyContent="flex-start" alignItems="center" marginBottom="$3">
         <Button
           size="sm"
           variant="solid"
