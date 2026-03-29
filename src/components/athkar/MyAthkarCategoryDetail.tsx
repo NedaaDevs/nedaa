@@ -101,7 +101,7 @@ const MyAthkarCategoryDetail: FC<Props> = ({
             </Text>
           </HStack>
         </Pressable>
-        <Text size="xl" fontWeight="700" color="$typography" textAlign={isRTL ? "right" : "left"}>
+        <Text size="xl" fontWeight="700" color="$typography" textAlign="left">
           {isArabic ? group.titleAr : group.titleEn}
         </Text>
       </VStack>
