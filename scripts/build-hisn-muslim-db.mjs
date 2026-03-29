@@ -146,6 +146,8 @@ function main() {
   const catResults = ftsTest.all("morning");
   console.log(`FTS "morning": ${catResults.length} results`);
 
+  // Checkpoint WAL into main file so the .db is self-contained for bundling
+  db.run("PRAGMA wal_checkpoint(TRUNCATE)");
   db.close();
 
   const fileSize = statSync(OUTPUT_PATH).size;
