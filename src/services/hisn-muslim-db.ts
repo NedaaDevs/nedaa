@@ -22,6 +22,16 @@ const ensureDbCopied = async (): Promise<void> => {
   }
 
   const targetFile = new File(targetDir, HISN_MUSLIM_DB_NAME);
+
+  // If file exists but is empty/corrupt (e.g. from a failed prior attempt), remove it
+  if (targetFile.exists && targetFile.size < 1024) {
+    targetFile.delete();
+    const walFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}-wal`);
+    const shmFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}-shm`);
+    if (walFile.exists) walFile.delete();
+    if (shmFile.exists) shmFile.delete();
+  }
+
   if (targetFile.exists) return;
 
   const [asset] = await Asset.loadAsync(require("../../assets/db/hisn-muslim.db"));
