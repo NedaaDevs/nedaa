@@ -39,6 +39,10 @@ export type AthkarNotificationSettings = {
   minute: number;
 };
 
+export type OtherTimingId = "ishraq" | "duha" | "midnight" | "firstthird" | "lastthird" | "imsak";
+
+export type OtherTimingNotifications = Record<OtherTimingId, boolean>;
+
 export type NotificationOptions = {
   vibrate?: boolean;
   categoryId?: string;
@@ -56,6 +60,7 @@ export type NotificationState = {
   athanAudioStream: "media" | "ringer";
   fullIqamaPlayback: boolean;
   iqamaAudioStream: "media" | "ringer";
+  otherTimingNotifications: OtherTimingNotifications;
 };
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
@@ -89,6 +94,7 @@ export type NotificationAction = {
   scheduleAllNotifications: () => Promise<void>;
   rescheduleIfNeeded: (force: boolean) => Promise<void>;
   updateAthkarNotificationSetting: (option: AthkarNotificationSettings) => Promise<void>;
+  updateOtherTimingNotification: (id: OtherTimingId, enabled: boolean) => Promise<void>;
   updateSettings: (newSettings: NotificationSettings) => Promise<void>;
   getUsedCustomSounds: () => Set<string>;
 };

@@ -4,4 +4,5 @@ export const NOTIFICATION_TYPE = {
   PRE_ATHAN: "preAthan",
   ATHKAR: "athkar",
   QADA: "qada",
+  OTHER_TIMING: "otherTiming",
 } as const;
