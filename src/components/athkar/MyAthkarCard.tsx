@@ -77,13 +77,8 @@ const MyAthkarCard: FC<Props> = ({
         backgroundColor={completed ? "$backgroundSuccess" : "$backgroundSecondary"}
         borderWidth={completed ? 2 : 0}
         borderColor={completed ? "$success" : "transparent"}>
-        <VStack gap="$3">
-          {/* Category Label */}
-          <Text size="xs" color="$typographySecondary" numberOfLines={1} textAlign="left">
-            {categoryTitle}
-          </Text>
-
-          {/* Arabic Text — tap to increment */}
+        <VStack gap="$4">
+          {/* Arabic Text — main content, tap to increment */}
           <Pressable
             onPress={handleIncrement}
             disabled={completed}
@@ -93,8 +88,8 @@ const MyAthkarCard: FC<Props> = ({
             }>
             <Text
               size="xl"
-              style={{ writingDirection: "rtl", lineHeight: 34 }}
-              textAlign="right"
+              style={{ writingDirection: "rtl", lineHeight: 36 }}
+              textAlign="left"
               color={completed ? "$typographySecondary" : "$typography"}>
               {arabicText}
             </Text>
@@ -143,22 +138,22 @@ const MyAthkarCard: FC<Props> = ({
               />
             </Progress>
           </VStack>
-
-          {completed && (
-            <Box
-              position="absolute"
-              top={-8}
-              end={-8}
-              width={40}
-              height={40}
-              borderRadius={999}
-              backgroundColor="$success"
-              alignItems="center"
-              justifyContent="center">
-              <Icon as={Check} color="$typographyContrast" />
-            </Box>
-          )}
         </VStack>
+
+        {completed && (
+          <Box
+            position="absolute"
+            top={-8}
+            end={-8}
+            width={40}
+            height={40}
+            borderRadius={999}
+            backgroundColor="$success"
+            alignItems="center"
+            justifyContent="center">
+            <Icon as={Check} color="$typographyContrast" />
+          </Box>
+        )}
       </Box>
     </Pressable>
   );
