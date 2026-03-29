@@ -1,4 +1,5 @@
 import { FC, useState, useCallback } from "react";
+import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 // Components
@@ -14,6 +15,9 @@ import { ChevronRight, ChevronLeft } from "lucide-react-native";
 
 // Stores
 import { useMyAthkarStore } from "@/stores/my-athkar";
+
+// Hooks
+import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import MyAthkarCard from "@/components/athkar/MyAthkarCard";
@@ -42,6 +46,7 @@ const MyAthkarCategoryDetail: FC<Props> = ({
   const displayData = useMyAthkarStore((s) => s.displayData);
   const progress = useMyAthkarStore((s) => s.progress);
   const removeItem = useMyAthkarStore((s) => s.removeItem);
+  const hapticWarning = useHaptic("warning");
 
   const [showDetail, setShowDetail] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -54,10 +59,29 @@ const MyAthkarCategoryDetail: FC<Props> = ({
     setShowDetail(true);
   }, []);
 
+  const handleLongPress = useCallback(
+    (myAthkarId: number) => {
+      hapticWarning();
+      Alert.alert(t("athkar.myAthkar.remove"), t("athkar.myAthkar.removeConfirm"), [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("athkar.myAthkar.remove"),
+          style: "destructive",
+          onPress: async () => {
+            await removeItem(myAthkarId);
+            if (group.items.length <= 1) {
+              onBack();
+            }
+          },
+        },
+      ]);
+    },
+    [removeItem, group.items.length, onBack, hapticWarning, t]
+  );
+
   const handleRemove = useCallback(
     async (myAthkarId: number) => {
       await removeItem(myAthkarId);
-      // If this was the last item in the group, go back
       if (group.items.length <= 1) {
         onBack();
       }
@@ -80,7 +104,7 @@ const MyAthkarCategoryDetail: FC<Props> = ({
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
-          accessibilityLabel={t("athkar.myAthkar.categories")}>
+          accessibilityLabel={t("athkar.myAthkar")}>
           <HStack gap="$1" alignItems="center">
             <Icon as={BackIcon} size="sm" color="$primary" />
             <Text size="sm" color="$primary" fontWeight="600">
@@ -109,32 +133,35 @@ const MyAthkarCategoryDetail: FC<Props> = ({
               categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
               progress={prog}
               onPress={() => handleCardPress(item.id)}
+              onLongPress={() => handleLongPress(item.id)}
             />
           );
         })}
       </VStack>
 
-      {/* Detail Sheet */}
-      <AthkarDetailSheet
-        isOpen={showDetail}
-        onClose={() => setShowDetail(false)}
-        myAthkarId={selectedItemId}
-        arabicText={selectedDisplay?.arabicText ?? ""}
-        transliteration={selectedDisplay?.transliteration ?? ""}
-        translation={selectedDisplay?.translation ?? ""}
-        categoryTitle={
-          selectedDisplay
-            ? isArabic
-              ? selectedDisplay.categoryTitleAr
-              : selectedDisplay.categoryTitleEn
-            : ""
-        }
-        progress={selectedProgress}
-        onRemove={handleRemove}
-      />
+      {/* Detail Sheet — only mount when open */}
+      {showDetail && (
+        <AthkarDetailSheet
+          isOpen={showDetail}
+          onClose={() => setShowDetail(false)}
+          myAthkarId={selectedItemId}
+          arabicText={selectedDisplay?.arabicText ?? ""}
+          transliteration={selectedDisplay?.transliteration ?? ""}
+          translation={selectedDisplay?.translation ?? ""}
+          categoryTitle={
+            selectedDisplay
+              ? isArabic
+                ? selectedDisplay.categoryTitleAr
+                : selectedDisplay.categoryTitleEn
+              : ""
+          }
+          progress={selectedProgress}
+          onRemove={handleRemove}
+        />
+      )}
 
-      {/* Search Sheet */}
-      <AthkarSearchSheet isOpen={showSearch} onClose={onCloseSearch} />
+      {/* Search Sheet — only mount when open */}
+      {showSearch && <AthkarSearchSheet isOpen={showSearch} onClose={onCloseSearch} />}
     </>
   );
 };

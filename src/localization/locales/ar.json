@@ -308,6 +308,7 @@
   "athkar.myAthkar.search": "ابحث عن ذكر...",
   "athkar.myAthkar.add": "إضافة ذكر",
   "athkar.myAthkar.remove": "إزالة",
+  "athkar.myAthkar.removeConfirm": "إزالة هذا الذكر من مجموعتك؟",
   "athkar.myAthkar.reset": "إعادة تعيين",
   "athkar.myAthkar.resetConfirm": "إعادة تعيين جميع العدادات؟",
   "athkar.myAthkar.repeatCount": "عدد التكرار",

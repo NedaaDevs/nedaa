@@ -304,6 +304,7 @@
   "athkar.myAthkar.search": "Search athkar...",
   "athkar.myAthkar.add": "Add Athkar",
   "athkar.myAthkar.remove": "Remove",
+  "athkar.myAthkar.removeConfirm": "Remove this thikr from your collection?",
   "athkar.myAthkar.reset": "Reset",
   "athkar.myAthkar.resetConfirm": "Reset all counters?",
   "athkar.myAthkar.repeatCount": "Repeat count",

@@ -32,9 +32,17 @@ type Props = {
   categoryTitle: string;
   progress: MyAthkarProgress;
   onPress: () => void;
+  onLongPress?: () => void;
 };
 
-const MyAthkarCard: FC<Props> = ({ myAthkarId, arabicText, categoryTitle, progress, onPress }) => {
+const MyAthkarCard: FC<Props> = ({
+  myAthkarId,
+  arabicText,
+  categoryTitle,
+  progress,
+  onPress,
+  onLongPress,
+}) => {
   const { i18n } = useTranslation();
   const { incrementCount, decrementCount } = useMyAthkarStore();
   const hapticSelection = useHaptic("selection");
@@ -57,6 +65,8 @@ const MyAthkarCard: FC<Props> = ({ myAthkarId, arabicText, categoryTitle, progre
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={500}
       accessibilityRole="button"
       accessibilityLabel={`${categoryTitle}. ${arabicText.substring(0, 50)}`}
       accessibilityHint="Double tap to view full athkar">
