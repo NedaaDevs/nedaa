@@ -3,7 +3,6 @@ import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 // Components
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -79,16 +78,6 @@ const MyAthkarCategoryDetail: FC<Props> = ({
     [removeItem, group.items.length, onBack, hapticWarning, t]
   );
 
-  const handleRemove = useCallback(
-    async (myAthkarId: number) => {
-      await removeItem(myAthkarId);
-      if (group.items.length <= 1) {
-        onBack();
-      }
-    },
-    [removeItem, group.items.length, onBack]
-  );
-
   const selectedItem = selectedItemId ? group.items.find((i) => i.id === selectedItemId) : null;
   const selectedDisplay = selectedItem ? displayData.get(selectedItem.sourceAthkarId) : null;
   const selectedProgress = selectedItemId
@@ -112,7 +101,7 @@ const MyAthkarCategoryDetail: FC<Props> = ({
             </Text>
           </HStack>
         </Pressable>
-        <Text size="xl" fontWeight="700" color="$typography">
+        <Text size="xl" fontWeight="700" color="$typography" textAlign={isRTL ? "right" : "left"}>
           {isArabic ? group.titleAr : group.titleEn}
         </Text>
       </VStack>
@@ -156,7 +145,6 @@ const MyAthkarCategoryDetail: FC<Props> = ({
               : ""
           }
           progress={selectedProgress}
-          onRemove={handleRemove}
         />
       )}
 
