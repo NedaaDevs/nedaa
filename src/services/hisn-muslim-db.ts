@@ -1,6 +1,6 @@
 import * as SQLite from "expo-sqlite";
+import { File, Directory } from "expo-file-system";
 import { Asset } from "expo-asset";
-import { File } from "expo-file-system";
 
 // Constants
 import { HISN_MUSLIM_DB_NAME } from "@/constants/DB";
@@ -14,37 +14,37 @@ import type { HisnCategory, HisnAthkar, HisnSearchResult } from "@/types/hisnMus
 // Utils
 import { stripTashkeel } from "@/utils/tashkeel";
 
-let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+const ensureDbCopied = async (): Promise<void> => {
+  const dir = await getDirectory();
+  const targetDir = new Directory(dir);
+  if (!targetDir.exists) {
+    targetDir.create({ intermediates: true });
+  }
 
-const copyAssetIfNeeded = async (directory: string): Promise<void> => {
-  const dbPath = `${directory}/${HISN_MUSLIM_DB_NAME}`;
-  const dbFile = new File(dbPath);
+  const targetFile = new File(targetDir, HISN_MUSLIM_DB_NAME);
+  if (targetFile.exists) return;
 
-  if (dbFile.exists) return;
-
-  const asset = Asset.fromModule(require("../../assets/db/hisn-muslim.db"));
-  await asset.downloadAsync();
-
+  const [asset] = await Asset.loadAsync(require("../../assets/db/hisn-muslim.db"));
   if (!asset.localUri) {
-    throw new Error("Failed to download hisn-muslim.db asset");
+    throw new Error("[HisnMuslim-DB] Failed to load hisn-muslim.db asset");
   }
 
   const sourceFile = new File(asset.localUri);
-  sourceFile.copy(dbFile);
+  sourceFile.copy(targetFile);
+  console.log(`[HisnMuslim-DB] Copied hisn-muslim.db to ${dir}`);
 };
+
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   if (!dbPromise) {
     dbPromise = (async () => {
       try {
+        await ensureDbCopied();
         const directory = await getDirectory();
-        await copyAssetIfNeeded(directory);
-
         return await SQLite.openDatabaseAsync(
           HISN_MUSLIM_DB_NAME,
-          {
-            useNewConnection: true,
-          },
+          { useNewConnection: true },
           directory
         );
       } catch (error) {
