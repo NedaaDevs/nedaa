@@ -193,7 +193,7 @@ const AthkarDetailSheet: FC<Props> = ({
               accessibilityRole="button"
               accessibilityLabel={t("athkar.myAthkar.remove")}>
               <ButtonIcon as={Trash2} />
-              <Text>{t("athkar.myAthkar.remove")}</Text>
+              <Button.Text>{t("athkar.myAthkar.remove")}</Button.Text>
             </Button>
           </VStack>
         </ActionsheetScrollView>

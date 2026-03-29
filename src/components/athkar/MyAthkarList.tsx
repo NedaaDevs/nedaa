@@ -85,7 +85,7 @@ const MyAthkarList: FC = () => {
           accessibilityRole="button"
           accessibilityLabel={t("athkar.myAthkar.reset")}>
           <ButtonIcon as={RotateCcw} />
-          <Text>{t("athkar.myAthkar.reset")}</Text>
+          <Button.Text>{t("athkar.myAthkar.reset")}</Button.Text>
         </Button>
 
         <Button
@@ -96,7 +96,7 @@ const MyAthkarList: FC = () => {
           accessibilityRole="button"
           accessibilityLabel={t("athkar.myAthkar.add")}>
           <ButtonIcon as={Plus} />
-          <Text>{t("athkar.myAthkar.add")}</Text>
+          <Button.Text>{t("athkar.myAthkar.add")}</Button.Text>
         </Button>
       </HStack>
 

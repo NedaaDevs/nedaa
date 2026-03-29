@@ -171,12 +171,14 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
               {isAdded ? (
                 <>
                   <Icon as={Check} size="sm" color="$typographySecondary" />
-                  <Text color="$typographySecondary">{t("athkar.myAthkar.alreadyAdded")}</Text>
+                  <Button.Text color="$typographySecondary">
+                    {t("athkar.myAthkar.alreadyAdded")}
+                  </Button.Text>
                 </>
               ) : (
                 <>
                   <Icon as={Plus} size="sm" color="$typographyContrast" />
-                  <Text>{t("athkar.myAthkar.add")}</Text>
+                  <Button.Text>{t("athkar.myAthkar.add")}</Button.Text>
                 </>
               )}
             </Button>
