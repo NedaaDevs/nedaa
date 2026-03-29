@@ -19,7 +19,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Search, ChevronRight, ChevronLeft, Check, Square, CheckSquare } from "lucide-react-native";
+import { Search, ChevronRight, ChevronLeft, Square, CheckSquare } from "lucide-react-native";
 
 // Services
 import { HisnMuslimDB } from "@/services/hisn-muslim-db";
@@ -324,7 +324,12 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
             {/* Category Detail — individual athkar with checkboxes */}
             {viewMode === "category-detail" && selectedCategory && (
               <>
-                <Text size="lg" fontWeight="600" color="$typography" marginBottom="$2">
+                <Text
+                  size="lg"
+                  fontWeight="600"
+                  color="$typography"
+                  marginBottom="$2"
+                  textAlign={isRTL ? "right" : "left"}>
                   {isArabic ? selectedCategory.titleAr : selectedCategory.titleEn}
                 </Text>
                 {categoryAthkar.map((item) => renderAthkarCheckItem(item))}

@@ -15,11 +15,10 @@ import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
-import { Button, ButtonIcon } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Minus, Plus, Trash2 } from "lucide-react-native";
+import { Minus, Plus } from "lucide-react-native";
 
 // Stores
 import { useMyAthkarStore } from "@/stores/my-athkar";
@@ -42,7 +41,6 @@ type Props = {
   translation: string;
   categoryTitle: string;
   progress: MyAthkarProgress | null;
-  onRemove: (id: number) => void;
 };
 
 const AthkarDetailSheet: FC<Props> = ({
@@ -54,7 +52,6 @@ const AthkarDetailSheet: FC<Props> = ({
   translation,
   categoryTitle,
   progress,
-  onRemove,
 }) => {
   const { t } = useTranslation();
   const { incrementCount, decrementCount } = useMyAthkarStore();
@@ -72,11 +69,6 @@ const AthkarDetailSheet: FC<Props> = ({
     if (currentCount + 1 >= totalCount) {
       hapticSuccess();
     }
-  };
-
-  const handleRemove = () => {
-    onRemove(myAthkarId);
-    onClose();
   };
 
   return (
@@ -184,17 +176,6 @@ const AthkarDetailSheet: FC<Props> = ({
                 </Pressable>
               </HStack>
             </Box>
-
-            {/* Remove Button */}
-            <Button
-              variant="outline"
-              action="negative"
-              onPress={handleRemove}
-              accessibilityRole="button"
-              accessibilityLabel={t("athkar.myAthkar.remove")}>
-              <ButtonIcon as={Trash2} />
-              <Button.Text>{t("athkar.myAthkar.remove")}</Button.Text>
-            </Button>
           </VStack>
         </ActionsheetScrollView>
       </ActionsheetContent>
