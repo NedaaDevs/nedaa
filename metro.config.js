@@ -14,6 +14,8 @@ const config = getSentryExpoConfig(__dirname);
 //   };
 // };
 
+config.resolver.assetExts.push("db");
+
 const configWithMinifier = {
   ...config,
   transformer: {
