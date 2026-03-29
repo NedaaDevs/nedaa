@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useRef, useEffect } from "react";
+import { FC, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "tamagui";
 
@@ -102,8 +102,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
 
   const handleToggleItem = useCallback(
     async (item: HisnAthkar) => {
-      const isAdded = isSourceAdded(item.id);
-      if (isAdded) return;
+      if (isSourceAdded(item.id)) return;
 
       setAddingIds((prev) => new Set(prev).add(item.id));
       hapticSelection();
@@ -120,9 +119,32 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
     [addItem, isSourceAdded, hapticSelection, hapticSuccess]
   );
 
+  // Group search results by category
+  const groupedSearchResults = useMemo(() => {
+    const groups = new Map<
+      number,
+      { titleAr: string; titleEn: string; items: HisnSearchResult[] }
+    >();
+
+    for (const item of searchResults) {
+      let group = groups.get(item.categoryId);
+      if (!group) {
+        group = {
+          titleAr: item.categoryTitleAr,
+          titleEn: item.categoryTitleEn,
+          items: [],
+        };
+        groups.set(item.categoryId, group);
+      }
+      group.items.push(item);
+    }
+
+    return Array.from(groups.values());
+  }, [searchResults]);
+
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
 
-  const renderAthkarCheckItem = (item: HisnAthkar) => {
+  const renderAthkarCheckItem = (item: HisnAthkar | HisnSearchResult) => {
     const isAdded = isSourceAdded(item.id);
     const isAdding = addingIds.has(item.id);
 
@@ -153,76 +175,38 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
             />
           </Box>
 
-          {/* Content */}
+          {/* Content — language aware */}
           <VStack flex={1} gap="$1">
-            <Text
-              size="md"
-              style={{ writingDirection: "rtl" }}
-              textAlign="right"
-              color="$typography"
-              numberOfLines={3}>
-              {item.arabicText}
-            </Text>
-            {item.translation !== "" && (
-              <Text size="xs" color="$typographySecondary" numberOfLines={2}>
-                {item.translation}
+            {isArabic ? (
+              <Text
+                size="md"
+                style={{ writingDirection: "rtl" }}
+                textAlign="right"
+                color="$typography"
+                numberOfLines={3}>
+                {item.arabicText}
               </Text>
+            ) : (
+              <>
+                {item.translation !== "" ? (
+                  <Text size="md" color="$typography" numberOfLines={3}>
+                    {item.translation}
+                  </Text>
+                ) : (
+                  <Text
+                    size="md"
+                    style={{ writingDirection: "rtl" }}
+                    textAlign="right"
+                    color="$typography"
+                    numberOfLines={3}>
+                    {item.arabicText}
+                  </Text>
+                )}
+              </>
             )}
             <Text size="xs" color="$typographySecondary">
               {t("athkar.myAthkar.repeatCount")}: {item.repeatCount}
             </Text>
-          </VStack>
-        </HStack>
-      </Pressable>
-    );
-  };
-
-  const renderSearchResultItem = (item: HisnSearchResult) => {
-    const categoryTitle = isArabic ? item.categoryTitleAr : item.categoryTitleEn;
-    const isAdded = isSourceAdded(item.id);
-    const isAdding = addingIds.has(item.id);
-
-    return (
-      <Pressable
-        key={item.id}
-        onPress={() => handleToggleItem(item)}
-        disabled={isAdding}
-        opacity={isAdding ? 0.5 : 1}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: isAdded }}>
-        <HStack
-          padding="$3"
-          borderRadius="$4"
-          backgroundColor={isAdded ? "$backgroundSuccess" : "$backgroundSecondary"}
-          borderWidth={isAdded ? 1 : 0}
-          borderColor={isAdded ? "$success" : "transparent"}
-          alignItems="flex-start"
-          gap="$3"
-          marginBottom="$2">
-          <Box paddingTop="$1">
-            <Icon
-              as={isAdded ? CheckSquare : Square}
-              size="md"
-              color={isAdded ? "$success" : "$typographySecondary"}
-            />
-          </Box>
-          <VStack flex={1} gap="$1">
-            <Text size="xs" color="$typographySecondary" numberOfLines={1}>
-              {categoryTitle}
-            </Text>
-            <Text
-              size="md"
-              style={{ writingDirection: "rtl" }}
-              textAlign="right"
-              color="$typography"
-              numberOfLines={3}>
-              {item.arabicText}
-            </Text>
-            {item.translation !== "" && (
-              <Text size="xs" color="$typographySecondary" numberOfLines={2}>
-                {item.translation}
-              </Text>
-            )}
           </VStack>
         </HStack>
       </Pressable>
@@ -293,7 +277,13 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                     justifyContent="space-between"
                     alignItems="center"
                     marginBottom="$2">
-                    <Text size="md" fontWeight="500" color="$typography" flex={1} numberOfLines={2}>
+                    <Text
+                      size="md"
+                      fontWeight="500"
+                      color="$typography"
+                      flex={1}
+                      numberOfLines={2}
+                      textAlign={isRTL ? "right" : "left"}>
                       {isArabic ? cat.titleAr : cat.titleEn}
                     </Text>
                     <Icon
@@ -305,7 +295,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                 </Pressable>
               ))}
 
-            {/* Search Results */}
+            {/* Search Results — grouped by category */}
             {viewMode === "search" && (
               <>
                 {searchResults.length === 0 && searchQuery.trim() !== "" && (
@@ -317,7 +307,18 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                     {t("athkar.myAthkar.noResults")}
                   </Text>
                 )}
-                {searchResults.map((item) => renderSearchResultItem(item))}
+                {groupedSearchResults.map((group) => (
+                  <VStack key={group.titleAr} gap="$2" marginBottom="$3">
+                    <Text
+                      size="sm"
+                      fontWeight="600"
+                      color="$typographySecondary"
+                      textAlign={isRTL ? "right" : "left"}>
+                      {isArabic ? group.titleAr : group.titleEn}
+                    </Text>
+                    {group.items.map((item) => renderAthkarCheckItem(item))}
+                  </VStack>
+                ))}
               </>
             )}
 
