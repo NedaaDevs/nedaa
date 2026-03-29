@@ -283,7 +283,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                       color="$typography"
                       flex={1}
                       numberOfLines={2}
-                      textAlign={isRTL ? "right" : "left"}>
+                      textAlign="left">
                       {isArabic ? cat.titleAr : cat.titleEn}
                     </Text>
                     <Icon
@@ -309,11 +309,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                 )}
                 {groupedSearchResults.map((group) => (
                   <VStack key={group.titleAr} gap="$2" marginBottom="$3">
-                    <Text
-                      size="sm"
-                      fontWeight="600"
-                      color="$typographySecondary"
-                      textAlign={isRTL ? "right" : "left"}>
+                    <Text size="sm" fontWeight="600" color="$typographySecondary" textAlign="left">
                       {isArabic ? group.titleAr : group.titleEn}
                     </Text>
                     {group.items.map((item) => renderAthkarCheckItem(item))}
@@ -330,7 +326,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                   fontWeight="600"
                   color="$typography"
                   marginBottom="$2"
-                  textAlign={isRTL ? "right" : "left"}>
+                  textAlign="left">
                   {isArabic ? selectedCategory.titleAr : selectedCategory.titleEn}
                 </Text>
                 {categoryAthkar.map((item) => renderAthkarCheckItem(item))}

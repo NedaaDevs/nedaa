@@ -79,11 +79,7 @@ const MyAthkarCard: FC<Props> = ({
         borderColor={completed ? "$success" : "transparent"}>
         <VStack gap="$3">
           {/* Category Label */}
-          <Text
-            size="xs"
-            color="$typographySecondary"
-            numberOfLines={1}
-            textAlign={isRTL ? "right" : "left"}>
+          <Text size="xs" color="$typographySecondary" numberOfLines={1} textAlign="left">
             {categoryTitle}
           </Text>
 
