@@ -6,3 +6,7 @@ export const ATHKAR_STREAK_TABLE = "athkar_streak" as const;
 export const ATHKAR_COMPLETED_DAYS_TABLE = "athkar_completed_days" as const;
 export const ATHKAR_DAILY_ITEMS_TABLE = "athkar_daily_items" as const;
 export const ATHKAR_AUDIO_DOWNLOADS_TABLE = "athkar_audio_downloads" as const;
+
+export const HISN_MUSLIM_DB_NAME = "hisn-muslim.db" as const;
+export const MY_ATHKAR_TABLE = "my_athkar" as const;
+export const MY_ATHKAR_DAILY_TABLE = "my_athkar_daily" as const;

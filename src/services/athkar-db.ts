@@ -14,6 +14,8 @@ import {
   ATHKAR_DAILY_ITEMS_TABLE,
   ATHKAR_AUDIO_DOWNLOADS_TABLE,
   ATHKAR_DB_NAME,
+  MY_ATHKAR_TABLE,
+  MY_ATHKAR_DAILY_TABLE,
 } from "@/constants/DB";
 
 // Stores
@@ -251,6 +253,36 @@ const initializeDB = async () => {
     await db.execAsync(
       `CREATE INDEX IF NOT EXISTS idx_audio_downloads_reciter
        ON ${ATHKAR_AUDIO_DOWNLOADS_TABLE}(reciter_id);`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${MY_ATHKAR_TABLE} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_athkar_id INTEGER NOT NULL,
+        source_category_id INTEGER NOT NULL,
+        user_count INTEGER NOT NULL,
+        sort_order INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(source_athkar_id)
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${MY_ATHKAR_DAILY_TABLE} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date INTEGER NOT NULL,
+        my_athkar_id INTEGER NOT NULL,
+        current_count INTEGER NOT NULL DEFAULT 0,
+        total_count INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(date, my_athkar_id)
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE INDEX IF NOT EXISTS idx_my_athkar_daily_date
+       ON ${MY_ATHKAR_DAILY_TABLE}(date);`
     );
 
     // Insert default streak entry if none exists
@@ -1008,6 +1040,161 @@ const isThikrDownloaded = async (reciterId: string, thikrId: string): Promise<bo
   }
 };
 
+/** MY ATHKAR OPERATIONS */
+
+const getMyAthkar = async (): Promise<
+  {
+    id: number;
+    source_athkar_id: number;
+    source_category_id: number;
+    user_count: number;
+    sort_order: number;
+  }[]
+> => {
+  const db = await openDatabase();
+  return db.getAllAsync(`SELECT * FROM ${MY_ATHKAR_TABLE} ORDER BY sort_order ASC`);
+};
+
+const addToMyAthkar = async (
+  sourceAthkarId: number,
+  sourceCategoryId: number,
+  userCount: number
+): Promise<number | null> => {
+  const db = await openDatabase();
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    const last = await db.getFirstAsync<{ max_order: number | null }>(
+      `SELECT MAX(sort_order) as max_order FROM ${MY_ATHKAR_TABLE}`
+    );
+    const nextOrder = (last?.max_order ?? 0) + 1;
+
+    const result = await db.runAsync(
+      `INSERT OR IGNORE INTO ${MY_ATHKAR_TABLE}
+       (source_athkar_id, source_category_id, user_count, sort_order, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [sourceAthkarId, sourceCategoryId, userCount, nextOrder, now]
+    );
+
+    return result.changes > 0 ? result.lastInsertRowId : null;
+  } catch (error) {
+    console.error("[Athkar-DB] Error adding to my athkar:", error);
+    return null;
+  }
+};
+
+const removeFromMyAthkar = async (id: number): Promise<boolean> => {
+  const db = await openDatabase();
+  try {
+    await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
+    await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
+    return true;
+  } catch (error) {
+    console.error("[Athkar-DB] Error removing from my athkar:", error);
+    return false;
+  }
+};
+
+const updateMyAthkarUserCount = async (id: number, userCount: number): Promise<boolean> => {
+  const db = await openDatabase();
+  try {
+    const result = await db.runAsync(`UPDATE ${MY_ATHKAR_TABLE} SET user_count = ? WHERE id = ?`, [
+      userCount,
+      id,
+    ]);
+    return result.changes > 0;
+  } catch (error) {
+    console.error("[Athkar-DB] Error updating my athkar count:", error);
+    return false;
+  }
+};
+
+/** MY ATHKAR DAILY OPERATIONS */
+
+const initializeMyAthkarDaily = async (
+  dateInt: number,
+  items: { id: number; userCount: number }[]
+): Promise<boolean> => {
+  if (items.length === 0) return true;
+  const db = await openDatabase();
+
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    await db.withTransactionAsync(async () => {
+      for (const item of items) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO ${MY_ATHKAR_DAILY_TABLE}
+           (date, my_athkar_id, current_count, total_count, created_at, updated_at)
+           VALUES (?, ?, 0, ?, ?, ?)`,
+          [dateInt, item.id, item.userCount, now, now]
+        );
+      }
+    });
+
+    return true;
+  } catch (error) {
+    console.error("[Athkar-DB] Error initializing my athkar daily:", error);
+    return false;
+  }
+};
+
+const getMyAthkarDailyProgress = async (
+  dateInt: number
+): Promise<{ my_athkar_id: number; current_count: number; total_count: number }[]> => {
+  const db = await openDatabase();
+  return db.getAllAsync(
+    `SELECT my_athkar_id, current_count, total_count
+     FROM ${MY_ATHKAR_DAILY_TABLE}
+     WHERE date = ?`,
+    [dateInt]
+  );
+};
+
+const updateMyAthkarDailyCount = async (
+  dateInt: number,
+  myAthkarId: number,
+  currentCount: number
+): Promise<boolean> => {
+  const db = await openDatabase();
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    const result = await db.runAsync(
+      `UPDATE ${MY_ATHKAR_DAILY_TABLE}
+       SET current_count = ?, updated_at = ?
+       WHERE date = ? AND my_athkar_id = ?`,
+      [currentCount, now, dateInt, myAthkarId]
+    );
+    return result.changes > 0;
+  } catch (error) {
+    console.error("[Athkar-DB] Error updating my athkar daily count:", error);
+    return false;
+  }
+};
+
+const resetMyAthkarDaily = async (dateInt: number): Promise<boolean> => {
+  const db = await openDatabase();
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+
+    await db.runAsync(
+      `UPDATE ${MY_ATHKAR_DAILY_TABLE}
+       SET current_count = 0, updated_at = ?
+       WHERE date = ?`,
+      [now, dateInt]
+    );
+    return true;
+  } catch (error) {
+    console.error("[Athkar-DB] Error resetting my athkar daily:", error);
+    return false;
+  }
+};
+
 export const AthkarDB = {
   open: openDatabase,
   initialize: initializeDB,
@@ -1040,4 +1227,14 @@ export const AthkarDB = {
 
   // Utility
   cleanOldData,
+
+  // My Athkar
+  getMyAthkar,
+  addToMyAthkar,
+  removeFromMyAthkar,
+  updateMyAthkarUserCount,
+  initializeMyAthkarDaily,
+  getMyAthkarDailyProgress,
+  updateMyAthkarDailyCount,
+  resetMyAthkarDaily,
 };
