@@ -12,6 +12,7 @@ import { Fab, FabIcon } from "@/components/ui/fab";
 import { Icon } from "@/components/ui/icon";
 
 import AthkarList from "@/components/athkar/AthkarList";
+import MyAthkarList from "@/components/athkar/MyAthkarList";
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 
 // Stores
@@ -27,7 +28,7 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { athkarPlayer } from "@/services/athkar-player";
 
 // Icons
-import { Sun, Moon, Focus } from "lucide-react-native";
+import { Sun, Moon, Focus, BookOpen } from "lucide-react-native";
 
 // Types
 import { AthkarType } from "@/types/athkar";
@@ -44,7 +45,7 @@ const AthkarTabs = () => {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  type activeTabType = Exclude<AthkarType, "all">;
+  type activeTabType = Exclude<AthkarType, "all"> | "my-athkar";
 
   const [activeTab, setActiveTab] = useState<activeTabType>(() => {
     return getCurrentAthkarPeriod();
@@ -55,7 +56,9 @@ const AthkarTabs = () => {
 
   // Check for daily reset and validate streak on mount
   useEffect(() => {
-    setCurrentType(activeTab);
+    if (activeTab !== "my-athkar") {
+      setCurrentType(activeTab);
+    }
     validateDailyStreak();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -150,24 +153,64 @@ const AthkarTabs = () => {
               </Text>
             </HStack>
           </Pressable>
+
+          {/* My Athkar Tab */}
+          <Pressable
+            onPress={() => {
+              if (activeTab !== "my-athkar" && playerState !== "idle") {
+                athkarPlayer.stop();
+              }
+              setActiveTab("my-athkar");
+            }}
+            role="tab"
+            accessibilityLabel={t("athkar.myAthkar")}
+            accessibilityState={{ selected: activeTab === "my-athkar" }}
+            flex={1}
+            minHeight={44}
+            paddingVertical="$3"
+            paddingHorizontal="$4"
+            marginHorizontal="$2"
+            borderRadius={999}
+            alignItems="center"
+            justifyContent="center"
+            backgroundColor={activeTab === "my-athkar" ? "$primary" : "$backgroundSecondary"}>
+            <HStack gap="$2" alignItems="center">
+              <Icon
+                as={BookOpen}
+                size="md"
+                color={activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"}
+              />
+              <Text
+                fontWeight="500"
+                color={activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"}>
+                {t("athkar.myAthkar")}
+              </Text>
+            </HStack>
+          </Pressable>
         </HStack>
       </Box>
 
       {/* Content Area */}
       <ScrollView style={{ flex: 1, backgroundColor: "transparent" }}>
         <Box padding="$4">
-          <AthkarList type={activeTab} onRequestOnboarding={handleRequestOnboarding} />
+          {activeTab === "my-athkar" ? (
+            <MyAthkarList />
+          ) : (
+            <AthkarList type={activeTab} onRequestOnboarding={handleRequestOnboarding} />
+          )}
         </Box>
       </ScrollView>
 
-      <Fab
-        onPress={() => router.push("/athkar-focus")}
-        size="lg"
-        placement="bottom right"
-        bottom={16}
-        accessibilityLabel={t("athkar.focus.title")}>
-        <FabIcon as={Focus} color="$typographyContrast" />
-      </Fab>
+      {activeTab !== "my-athkar" && (
+        <Fab
+          onPress={() => router.push("/athkar-focus")}
+          size="lg"
+          placement="bottom right"
+          bottom={16}
+          accessibilityLabel={t("athkar.focus.title")}>
+          <FabIcon as={Focus} color="$typographyContrast" />
+        </Fab>
+      )}
 
       <AudioOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </Box>
