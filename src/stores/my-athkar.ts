@@ -13,7 +13,12 @@ import { getTodayInt } from "@/utils/athkar";
 import { createDebouncedQueue } from "@/utils/debounce";
 
 // Types
-import type { MyAthkarItem, MyAthkarProgress, HisnAthkar } from "@/types/hisnMuslim";
+import type {
+  MyAthkarItem,
+  MyAthkarProgress,
+  MyAthkarCategoryGroup,
+  HisnAthkar,
+} from "@/types/hisnMuslim";
 
 type DisplayEntry = HisnAthkar & {
   categoryTitleAr: string;
@@ -40,6 +45,7 @@ type MyAthkarActions = {
   ) => Promise<boolean>;
   removeItem: (id: number) => Promise<void>;
   updateUserCount: (id: number, userCount: number) => Promise<void>;
+  getGroupedByCategory: () => MyAthkarCategoryGroup[];
   incrementCount: (myAthkarId: number) => void;
   decrementCount: (myAthkarId: number) => void;
   resetDaily: () => Promise<void>;
@@ -204,6 +210,30 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
       updateUserCount: async (id, userCount) => {
         await AthkarDB.updateMyAthkarUserCount(id, userCount);
         await get().loadItems();
+      },
+
+      getGroupedByCategory: () => {
+        const { items, displayData } = get();
+        const groupMap = new Map<number, MyAthkarCategoryGroup>();
+
+        for (const item of items) {
+          const display = displayData.get(item.sourceAthkarId);
+          if (!display) continue;
+
+          let group = groupMap.get(item.sourceCategoryId);
+          if (!group) {
+            group = {
+              categoryId: item.sourceCategoryId,
+              titleAr: display.categoryTitleAr,
+              titleEn: display.categoryTitleEn,
+              items: [],
+            };
+            groupMap.set(item.sourceCategoryId, group);
+          }
+          group.items.push(item);
+        }
+
+        return Array.from(groupMap.values());
       },
 
       incrementCount: (myAthkarId) => {
