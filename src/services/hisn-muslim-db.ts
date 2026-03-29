@@ -14,6 +14,8 @@ import type { HisnCategory, HisnAthkar, HisnSearchResult } from "@/types/hisnMus
 // Utils
 import { stripTashkeel } from "@/utils/tashkeel";
 
+const HISN_MUSLIM_DB_VERSION = 1;
+
 const ensureDbCopied = async (): Promise<void> => {
   const dir = await getDirectory();
   const targetDir = new Directory(dir);
@@ -22,17 +24,19 @@ const ensureDbCopied = async (): Promise<void> => {
   }
 
   const targetFile = new File(targetDir, HISN_MUSLIM_DB_NAME);
+  const versionFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}.version`);
 
-  // If file exists but is empty/corrupt (e.g. from a failed prior attempt), remove it
-  if (targetFile.exists && targetFile.size < 1024) {
-    targetFile.delete();
-    const walFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}-wal`);
-    const shmFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}-shm`);
-    if (walFile.exists) walFile.delete();
-    if (shmFile.exists) shmFile.delete();
-  }
+  const installedVersion = versionFile.exists ? versionFile.textSync() : null;
+  const needsCopy = !targetFile.exists || installedVersion !== String(HISN_MUSLIM_DB_VERSION);
 
-  if (targetFile.exists) return;
+  if (!needsCopy) return;
+
+  // Remove stale DB + WAL/SHM before copying
+  if (targetFile.exists) targetFile.delete();
+  const walFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}-wal`);
+  const shmFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}-shm`);
+  if (walFile.exists) walFile.delete();
+  if (shmFile.exists) shmFile.delete();
 
   const [asset] = await Asset.loadAsync(require("../../assets/db/hisn-muslim.db"));
   if (!asset.localUri) {
@@ -41,7 +45,13 @@ const ensureDbCopied = async (): Promise<void> => {
 
   const sourceFile = new File(asset.localUri);
   sourceFile.copy(targetFile);
-  console.log(`[HisnMuslim-DB] Copied hisn-muslim.db to ${dir}`);
+
+  // Write version marker
+  if (versionFile.exists) versionFile.delete();
+  versionFile.create();
+  versionFile.write(String(HISN_MUSLIM_DB_VERSION));
+
+  console.log(`[HisnMuslim-DB] Copied hisn-muslim.db v${HISN_MUSLIM_DB_VERSION} to ${dir}`);
 };
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
