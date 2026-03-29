@@ -60,7 +60,9 @@ const MyAthkarList: FC = () => {
     return (
       <>
         <MyAthkarEmpty onOpenSearch={() => setShowSearch(true)} />
-        <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
+        {showSearch && (
+          <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
+        )}
       </>
     );
   }
@@ -133,8 +135,8 @@ const MyAthkarList: FC = () => {
         })}
       </VStack>
 
-      {/* Search Sheet */}
-      <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      {/* Search Sheet — only mount when open */}
+      {showSearch && <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />}
     </>
   );
 };
