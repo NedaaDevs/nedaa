@@ -182,17 +182,29 @@ const scheduleAthkarNotifications = async (
 
 const getOtherTimingTime = (
   timingId: OtherTimingId,
-  dayPrayerTimes: DayPrayerTimes
+  dayPrayerTimes: DayPrayerTimes,
+  userDuhaTime: { hour: number; minute: number } | null = null
 ): Date | null => {
   switch (timingId) {
     case "ishraq":
       return dayPrayerTimes.otherTimings.sunrise
         ? calculateIshraq(dayPrayerTimes.otherTimings.sunrise)
         : null;
-    case "duha":
-      return dayPrayerTimes.otherTimings.sunrise && dayPrayerTimes.timings.dhuhr
-        ? calculateDuha(dayPrayerTimes.otherTimings.sunrise, dayPrayerTimes.timings.dhuhr)
-        : null;
+    case "duha": {
+      if (!dayPrayerTimes.otherTimings.sunrise || !dayPrayerTimes.timings.dhuhr) return null;
+      const windowStart = calculateIshraq(dayPrayerTimes.otherTimings.sunrise);
+      const windowEnd = parseISO(dayPrayerTimes.timings.dhuhr);
+      if (userDuhaTime) {
+        // Build a Date from the user's chosen hour:minute on the same day
+        const chosen = new Date(windowStart);
+        chosen.setHours(userDuhaTime.hour, userDuhaTime.minute, 0, 0);
+        // Clamp to the valid Duha window
+        if (chosen < windowStart) return windowStart;
+        if (chosen > windowEnd) return windowEnd;
+        return chosen;
+      }
+      return calculateDuha(dayPrayerTimes.otherTimings.sunrise, dayPrayerTimes.timings.dhuhr);
+    }
     case "midnight":
     case "firstthird":
     case "lastthird":
@@ -243,7 +255,8 @@ export const scheduleAllNotifications = async (
   qadaSettings: { settings: any; remainingCount: number } | null = null,
   androidOptions: { fullAthanPlayback?: boolean; fullIqamaPlayback?: boolean } = {},
   options: Partial<SchedulingOptions> = {},
-  otherTimingNotifications: OtherTimingNotifications | null = null
+  otherTimingNotifications: OtherTimingNotifications | null = null,
+  duhaTime: { hour: number; minute: number } | null = null
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
     console.warn(
@@ -347,7 +360,7 @@ export const scheduleAllNotifications = async (
         for (const timingId of OTHER_TIMING_IDS) {
           if (!otherTimingNotifications[timingId]) continue;
 
-          const time = getOtherTimingTime(timingId, dayPrayerTimes);
+          const time = getOtherTimingTime(timingId, dayPrayerTimes, duhaTime);
           if (!time) continue;
 
           const notification = generateOtherTimingNotification(timingId, time, now, t);

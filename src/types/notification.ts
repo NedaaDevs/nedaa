@@ -43,6 +43,11 @@ export type OtherTimingId = "ishraq" | "duha" | "midnight" | "firstthird" | "las
 
 export type OtherTimingNotifications = Record<OtherTimingId, boolean>;
 
+export type DuhaTimePreference = {
+  hour: number;
+  minute: number;
+};
+
 export type NotificationOptions = {
   vibrate?: boolean;
   categoryId?: string;
@@ -61,6 +66,7 @@ export type NotificationState = {
   fullIqamaPlayback: boolean;
   iqamaAudioStream: "media" | "ringer";
   otherTimingNotifications: OtherTimingNotifications;
+  duhaTime: DuhaTimePreference;
 };
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
@@ -95,6 +101,7 @@ export type NotificationAction = {
   rescheduleIfNeeded: (force: boolean) => Promise<void>;
   updateAthkarNotificationSetting: (option: AthkarNotificationSettings) => Promise<void>;
   updateOtherTimingNotification: (id: OtherTimingId, enabled: boolean) => Promise<void>;
+  updateDuhaTime: (hour: number, minute: number) => Promise<void>;
   updateSettings: (newSettings: NotificationSettings) => Promise<void>;
   getUsedCustomSounds: () => Set<string>;
 };
