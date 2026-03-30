@@ -28,7 +28,9 @@ import {
   NotificationType,
   getEffectiveConfig,
 } from "@/types/notification";
+import type { OtherTimingNotifications, OtherTimingId } from "@/types/notification";
 import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
+import { calculateIshraq, calculateDuha } from "@/utils/otherTimingCalculations";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
@@ -78,6 +80,14 @@ type NotificationScheduleItem = {
 };
 
 const PRAYER_IDS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+const OTHER_TIMING_IDS: OtherTimingId[] = [
+  "ishraq",
+  "duha",
+  "midnight",
+  "firstthird",
+  "lastthird",
+  "imsak",
+];
 const MAX_IOS_NOTIFICATIONS = 63;
 const DEFAULT_DAYS_TO_SCHEDULE = 10;
 const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
@@ -170,6 +180,55 @@ const scheduleAthkarNotifications = async (
   }
 };
 
+const getOtherTimingTime = (
+  timingId: OtherTimingId,
+  dayPrayerTimes: DayPrayerTimes
+): Date | null => {
+  switch (timingId) {
+    case "ishraq":
+      return dayPrayerTimes.otherTimings.sunrise
+        ? calculateIshraq(dayPrayerTimes.otherTimings.sunrise)
+        : null;
+    case "duha":
+      return dayPrayerTimes.otherTimings.sunrise && dayPrayerTimes.timings.dhuhr
+        ? calculateDuha(dayPrayerTimes.otherTimings.sunrise, dayPrayerTimes.timings.dhuhr)
+        : null;
+    case "midnight":
+    case "firstthird":
+    case "lastthird":
+    case "imsak":
+      return dayPrayerTimes.otherTimings[timingId]
+        ? parseISO(dayPrayerTimes.otherTimings[timingId])
+        : null;
+    default:
+      return null;
+  }
+};
+
+const generateOtherTimingNotification = (
+  timingId: OtherTimingId,
+  time: Date,
+  now: Date,
+  t: (key: string, options?: Record<string, string>) => string
+): NotificationScheduleItem | null => {
+  if (!isAfter(time, now)) return null;
+
+  const timestamp = time.getTime();
+
+  return {
+    id: `otherTiming_${timingId}_${timestamp}`,
+    time,
+    title: t(`notification.otherTiming.${timingId}.title`),
+    body: t(`notification.otherTiming.${timingId}.body`),
+    type: NOTIFICATION_TYPE.OTHER_TIMING,
+    prayerId: timingId as unknown as PrayerName,
+    sound: "tasbih",
+    soundKey: "tasbih",
+    vibration: true,
+    categoryId: "otherTiming",
+  };
+};
+
 /**
  * Schedule all notifications based on settings and prayer times
  */
@@ -183,7 +242,8 @@ export const scheduleAllNotifications = async (
   timezone: string,
   qadaSettings: { settings: any; remainingCount: number } | null = null,
   androidOptions: { fullAthanPlayback?: boolean; fullIqamaPlayback?: boolean } = {},
-  options: Partial<SchedulingOptions> = {}
+  options: Partial<SchedulingOptions> = {},
+  otherTimingNotifications: OtherTimingNotifications | null = null
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
     console.warn(
@@ -278,6 +338,23 @@ export const scheduleAllNotifications = async (
         );
 
         notificationsToSchedule.push(...prayerNotifications);
+      }
+    }
+
+    // Generate other timing notifications
+    if (otherTimingNotifications) {
+      for (const dayPrayerTimes of daysPrayerTimes) {
+        for (const timingId of OTHER_TIMING_IDS) {
+          if (!otherTimingNotifications[timingId]) continue;
+
+          const time = getOtherTimingTime(timingId, dayPrayerTimes);
+          if (!time) continue;
+
+          const notification = generateOtherTimingNotification(timingId, time, now, t);
+          if (notification) {
+            notificationsToSchedule.push(notification);
+          }
+        }
       }
     }
 
