@@ -1,27 +1,34 @@
 import * as SQLite from "expo-sqlite";
-import { File, Directory } from "expo-file-system";
+import { File, Paths } from "expo-file-system";
+import { Platform } from "react-native";
 import { Asset } from "expo-asset";
 
 // Constants
 import { HISN_MUSLIM_DB_NAME } from "@/constants/DB";
-
-// Services
-import { getDirectory } from "@/services/db";
+import { appGroupId } from "@/constants/App";
 
 // Types
 import type { HisnCategory, HisnAthkar, HisnSearchResult } from "@/types/hisnMuslim";
+
+// Enums
+import { PlatformType } from "@/enums/app";
 
 // Utils
 import { stripTashkeel } from "@/utils/tashkeel";
 
 const HISN_MUSLIM_DB_VERSION = 1;
 
-const ensureDbCopied = async (): Promise<void> => {
-  const dir = await getDirectory();
-  const targetDir = new Directory(dir);
-  if (!targetDir.exists) {
-    targetDir.create({ intermediates: true });
+// Use Paths objects directly — they provide proper file:// URIs on all platforms.
+// iOS: app group container (shared with widgets). Android: document directory.
+const getDbDirectory = () => {
+  if (Platform.OS === PlatformType.IOS) {
+    return Paths.appleSharedContainers?.[appGroupId] ?? Paths.document;
   }
+  return Paths.document;
+};
+
+const ensureDbCopied = async (): Promise<void> => {
+  const targetDir = getDbDirectory();
 
   const targetFile = new File(targetDir, HISN_MUSLIM_DB_NAME);
   const versionFile = new File(targetDir, `${HISN_MUSLIM_DB_NAME}.version`);
@@ -51,7 +58,9 @@ const ensureDbCopied = async (): Promise<void> => {
   versionFile.create();
   versionFile.write(String(HISN_MUSLIM_DB_VERSION));
 
-  console.log(`[HisnMuslim-DB] Copied hisn-muslim.db v${HISN_MUSLIM_DB_VERSION} to ${dir}`);
+  console.log(
+    `[HisnMuslim-DB] Copied hisn-muslim.db v${HISN_MUSLIM_DB_VERSION} to ${targetDir.uri}`
+  );
 };
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -61,11 +70,10 @@ const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
     dbPromise = (async () => {
       try {
         await ensureDbCopied();
-        const directory = await getDirectory();
         return await SQLite.openDatabaseAsync(
           HISN_MUSLIM_DB_NAME,
           { useNewConnection: true },
-          directory
+          getDbDirectory().uri
         );
       } catch (error) {
         dbPromise = null;
