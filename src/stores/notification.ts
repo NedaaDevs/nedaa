@@ -26,6 +26,7 @@ import {
   type NotificationState,
   type OtherTimingId,
   type OtherTimingNotifications,
+  type DuhaTimePreference,
 } from "@/types/notification";
 import { Platform } from "react-native";
 
@@ -80,6 +81,11 @@ const defaultOtherTimingNotifications: OtherTimingNotifications = {
   imsak: false,
 };
 
+const defaultDuhaTime: DuhaTimePreference = {
+  hour: 9,
+  minute: 0,
+};
+
 export const useNotificationStore = create<NotificationStore>()(
   devtools(
     persist(
@@ -105,6 +111,7 @@ export const useNotificationStore = create<NotificationStore>()(
         fullIqamaPlayback: false,
         iqamaAudioStream: "media" as const,
         otherTimingNotifications: defaultOtherTimingNotifications,
+        duhaTime: defaultDuhaTime,
 
         updateOtherTimingNotification: async (id: OtherTimingId, enabled: boolean) => {
           set((state) => ({
@@ -114,6 +121,13 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
           await get().scheduleAllNotifications();
+        },
+
+        updateDuhaTime: async (hour: number, minute: number) => {
+          set({ duhaTime: { hour, minute } });
+          if (get().otherTimingNotifications.duha) {
+            await get().scheduleAllNotifications();
+          }
         },
 
         updateFullAthanPlayback: async (enabled) => {
@@ -239,6 +253,7 @@ export const useNotificationStore = create<NotificationStore>()(
             fullAthanPlayback,
             fullIqamaPlayback,
             otherTimingNotifications,
+            duhaTime,
           } = get();
           if (!settings.enabled) return;
 
@@ -276,7 +291,8 @@ export const useNotificationStore = create<NotificationStore>()(
               qadaData,
               { fullAthanPlayback, fullIqamaPlayback },
               {},
-              otherTimingNotifications
+              otherTimingNotifications,
+              duhaTime
             );
 
             if (result.success) {
@@ -400,6 +416,14 @@ export const useNotificationStore = create<NotificationStore>()(
               );
             }
             state.migrationVersion = 5;
+          }
+
+          if (state.migrationVersion < 6) {
+            if (!state.duhaTime) {
+              state.duhaTime = defaultDuhaTime;
+              console.log("[Notification Store] Migration v6: Added duhaTime defaults");
+            }
+            state.migrationVersion = 6;
           }
 
           // Sync native preferences on rehydration
