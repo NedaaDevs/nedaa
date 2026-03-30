@@ -24,6 +24,8 @@ import {
   type NotificationAction,
   type NotificationSettings,
   type NotificationState,
+  type OtherTimingId,
+  type OtherTimingNotifications,
 } from "@/types/notification";
 import { Platform } from "react-native";
 
@@ -69,6 +71,15 @@ const defaultSettings: NotificationSettings = {
   },
 };
 
+const defaultOtherTimingNotifications: OtherTimingNotifications = {
+  ishraq: false,
+  duha: false,
+  midnight: false,
+  firstthird: false,
+  lastthird: false,
+  imsak: false,
+};
+
 export const useNotificationStore = create<NotificationStore>()(
   devtools(
     persist(
@@ -93,6 +104,17 @@ export const useNotificationStore = create<NotificationStore>()(
         athanAudioStream: "media" as const,
         fullIqamaPlayback: false,
         iqamaAudioStream: "media" as const,
+        otherTimingNotifications: defaultOtherTimingNotifications,
+
+        updateOtherTimingNotification: async (id: OtherTimingId, enabled: boolean) => {
+          set((state) => ({
+            otherTimingNotifications: {
+              ...state.otherTimingNotifications,
+              [id]: enabled,
+            },
+          }));
+          await get().scheduleAllNotifications();
+        },
 
         updateFullAthanPlayback: async (enabled) => {
           set({ fullAthanPlayback: enabled });
@@ -216,6 +238,7 @@ export const useNotificationStore = create<NotificationStore>()(
             eveningNotification,
             fullAthanPlayback,
             fullIqamaPlayback,
+            otherTimingNotifications,
           } = get();
           if (!settings.enabled) return;
 
@@ -251,7 +274,9 @@ export const useNotificationStore = create<NotificationStore>()(
               prayersData,
               timezone,
               qadaData,
-              { fullAthanPlayback, fullIqamaPlayback }
+              { fullAthanPlayback, fullIqamaPlayback },
+              {},
+              otherTimingNotifications
             );
 
             if (result.success) {
@@ -363,6 +388,16 @@ export const useNotificationStore = create<NotificationStore>()(
               console.log("[Notification Store] Migration v4: Added iqamaAudioStream default");
             }
             state.migrationVersion = 4;
+          }
+
+          if (state.migrationVersion < 5) {
+            if (!state.otherTimingNotifications) {
+              state.otherTimingNotifications = defaultOtherTimingNotifications;
+              console.log(
+                "[Notification Store] Migration v5: Added otherTimingNotifications defaults"
+              );
+            }
+            state.migrationVersion = 5;
           }
 
           // Sync native preferences on rehydration
