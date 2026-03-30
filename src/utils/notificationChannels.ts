@@ -111,6 +111,7 @@ const getChannelDisplayName = (
     [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
     [NOTIFICATION_TYPE.ATHKAR]: "Athkar",
     [NOTIFICATION_TYPE.QADA]: "Qada",
+    [NOTIFICATION_TYPE.OTHER_TIMING]: "Other Timing",
   }[type];
 
   return `${prayerName} ${typeName} (${soundKey})`;

@@ -366,7 +366,6 @@ const NotificationSettings = () => {
                           hapticSelection();
                           updateOtherTimingNotification(timingId, value);
                         }}
-                        accessibilityRole="switch"
                         accessibilityLabel={t(`notification.otherTiming.${timingId}.label`)}
                       />
                     </HStack>

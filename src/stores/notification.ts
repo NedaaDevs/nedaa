@@ -313,7 +313,9 @@ export const useNotificationStore = create<NotificationStore>()(
           await get().scheduleAllNotifications();
         },
 
-        getEffectiveConfigForPrayer: <T extends Exclude<NotificationType, "athkar">>(
+        getEffectiveConfigForPrayer: <
+          T extends Exclude<NotificationType, "athkar" | "otherTiming">,
+        >(
           prayerId: string,
           type: T
         ): ConfigForType<T> => {
