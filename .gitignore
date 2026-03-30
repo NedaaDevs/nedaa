@@ -47,11 +47,9 @@ yarn-error.*
 .env
 .env.local
 
-# modules
-modules/expo-alarm/android/build
-modules/expo-alarm/android/.gradle/
-modules/expo-media-controls/android/build
-modules/expo-media-controls/android/.gradle
+# modules — Android build artifacts
+modules/*/android/build/
+modules/*/android/.gradle/
 
 # Tamagui
 .tamagui/
