@@ -59,6 +59,10 @@ type AthkarAudioDownload = z.infer<typeof AthkarAudioDownloadSchema>;
 // Caches the Promise itself to prevent concurrent callers from opening duplicate connections
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
+// Singleton DB initialization promise — prevents race between
+// onRehydrateStorage (creates tables) and component effects (query tables)
+let initPromise: Promise<void> | null = null;
+
 const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   if (!dbPromise) {
     dbPromise = (async () => {
@@ -1195,9 +1199,18 @@ const resetMyAthkarDaily = async (dateInt: number): Promise<boolean> => {
   }
 };
 
+// Cached wrapper — ensures initializeDB runs exactly once, all callers share the same promise.
+// Prevents race between onRehydrateStorage (creates tables) and component useEffects (query tables).
+const ensureInitialized = (): Promise<void> => {
+  if (!initPromise) {
+    initPromise = initializeDB();
+  }
+  return initPromise;
+};
+
 export const AthkarDB = {
   open: openDatabase,
-  initialize: initializeDB,
+  initialize: ensureInitialized,
 
   // Daily items operations
   initializeDailyItems,
