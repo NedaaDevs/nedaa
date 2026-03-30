@@ -222,8 +222,8 @@ const generateOtherTimingNotification = (
     body: t(`notification.otherTiming.${timingId}.body`),
     type: NOTIFICATION_TYPE.OTHER_TIMING,
     prayerId: timingId as unknown as PrayerName,
-    sound: "tasbih",
-    soundKey: "tasbih",
+    sound: false,
+    soundKey: undefined,
     vibration: true,
     categoryId: "otherTiming",
   };
