@@ -65,7 +65,7 @@ export type NotificationState = {
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
-export type PrayerNotificationType = Exclude<NotificationType, "athkar" | "qada">;
+export type PrayerNotificationType = Exclude<NotificationType, "athkar" | "qada" | "otherTiming">;
 
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
@@ -75,7 +75,7 @@ export type NotificationAction = {
   updateFullIqamaPlayback: (enabled: boolean) => Promise<void>;
   updateIqamaAudioStream: (stream: "media" | "ringer") => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
-  updateDefault: <T extends Exclude<NotificationType, "athkar">>(
+  updateDefault: <T extends Exclude<NotificationType, "athkar" | "otherTiming">>(
     type: T,
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
@@ -126,7 +126,7 @@ export type NotificationSettings = {
   overrides: Record<string, NotificationOverride>; // keyed by prayer ID
 };
 
-export function getEffectiveConfig<T extends Exclude<NotificationType, "athkar">>(
+export function getEffectiveConfig<T extends Exclude<NotificationType, "athkar" | "otherTiming">>(
   prayerId: string,
   type: T,
   defaults: NotificationDefaults,
