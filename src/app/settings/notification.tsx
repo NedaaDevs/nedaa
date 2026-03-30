@@ -39,7 +39,6 @@ import {
 
 // Types
 import { PermissionStatus } from "expo-notifications";
-import type { OtherTimingId } from "@/types/notification";
 
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
@@ -69,8 +68,6 @@ const NotificationSettings = () => {
     updateOverride,
     resetOverride,
     scheduleAllNotifications,
-    otherTimingNotifications,
-    updateOtherTimingNotification,
   } = useNotificationSettings();
 
   // Permission state
@@ -332,46 +329,11 @@ const NotificationSettings = () => {
               />
 
               {/* Other Reminders */}
-              <Box marginTop="$4">
-                <Text
-                  size="md"
-                  fontWeight="600"
-                  color="$typography"
-                  paddingHorizontal="$4"
-                  marginBottom="$2">
-                  {t("notification.otherReminders")}
-                </Text>
-                <VStack gap="$1" paddingHorizontal="$4">
-                  {(
-                    [
-                      "ishraq",
-                      "duha",
-                      "midnight",
-                      "firstthird",
-                      "lastthird",
-                      "imsak",
-                    ] as OtherTimingId[]
-                  ).map((timingId) => (
-                    <HStack
-                      key={timingId}
-                      justifyContent="space-between"
-                      alignItems="center"
-                      paddingVertical="$3">
-                      <Text size="md" color="$typography">
-                        {t(`notification.otherTiming.${timingId}.label`)}
-                      </Text>
-                      <Switch
-                        value={otherTimingNotifications[timingId]}
-                        onValueChange={(value: boolean) => {
-                          hapticSelection();
-                          updateOtherTimingNotification(timingId, value);
-                        }}
-                        accessibilityLabel={t(`notification.otherTiming.${timingId}.label`)}
-                      />
-                    </HStack>
-                  ))}
-                </VStack>
-              </Box>
+              <SettingsItem
+                name={t("notification.otherReminders")}
+                path="/settings/otherReminders"
+                icon={Bell}
+              />
 
               {/* Sync Status */}
               {isScheduling && (
