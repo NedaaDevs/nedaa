@@ -29,7 +29,8 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       }}
       snapPoints={snapPoints}
       dismissOnSnapToBottom
-      dismissOnOverlayPress>
+      dismissOnOverlayPress
+      animation={null}>
       {children}
     </Sheet>
   );

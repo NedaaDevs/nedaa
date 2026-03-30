@@ -16,10 +16,11 @@ import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Search, ChevronRight, ChevronLeft, Square, CheckSquare } from "lucide-react-native";
+import { Search, ChevronRight, ChevronLeft, Square, CheckSquare, Plus } from "lucide-react-native";
 
 // Services
 import { HisnMuslimDB } from "@/services/hisn-muslim-db";
@@ -42,7 +43,7 @@ type Props = {
 
 const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
-  const { addItem, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
+  const { batchAddItems, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
   const hapticSuccess = useHaptic("success");
   const hapticSelection = useHaptic("selection");
 
@@ -52,7 +53,10 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
   const [categories, setCategories] = useState<HisnCategory[]>([]);
   const [categoryAthkar, setCategoryAthkar] = useState<HisnAthkar[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<HisnCategory | null>(null);
-  const [addingIds, setAddingIds] = useState<Set<number>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Map<number, HisnAthkar | HisnSearchResult>>(
+    new Map()
+  );
+  const [isAdding, setIsAdding] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isArabic = i18n.language === "ar";
@@ -70,6 +74,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
       setSearchQuery("");
       setSearchResults([]);
       setSelectedCategory(null);
+      setSelectedItems(new Map());
     }
   }, [isOpen]);
 
@@ -100,31 +105,50 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
     setCategoryAthkar(athkar);
   }, []);
 
-  const handleToggleItem = useCallback(
-    async (item: HisnAthkar) => {
-      setAddingIds((prev) => new Set(prev).add(item.id));
-      hapticSelection();
-
+  const handleToggleSelect = useCallback(
+    (item: HisnAthkar | HisnSearchResult) => {
       if (isSourceAdded(item.id)) {
+        // Already added — toggle remove immediately
+        hapticSelection();
         const existing = getItemBySourceId(item.id);
         if (existing) {
-          await removeItem(existing.id);
+          removeItem(existing.id);
         }
-      } else {
-        const success = await addItem(item.id, item.categoryId, item.repeatCount);
-        if (success) {
-          hapticSuccess();
-        }
+        return;
       }
 
-      setAddingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(item.id);
+      hapticSelection();
+      setSelectedItems((prev) => {
+        const next = new Map(prev);
+        if (next.has(item.id)) {
+          next.delete(item.id);
+        } else {
+          next.set(item.id, item);
+        }
         return next;
       });
     },
-    [addItem, removeItem, isSourceAdded, getItemBySourceId, hapticSelection, hapticSuccess]
+    [isSourceAdded, getItemBySourceId, removeItem, hapticSelection]
   );
+
+  const handleBatchAdd = useCallback(async () => {
+    if (selectedItems.size === 0) return;
+    setIsAdding(true);
+
+    const items = Array.from(selectedItems.values()).map((item) => ({
+      sourceAthkarId: item.id,
+      sourceCategoryId: item.categoryId,
+      repeatCount: item.repeatCount,
+    }));
+
+    const success = await batchAddItems(items);
+    if (success) {
+      hapticSuccess();
+      setSelectedItems(new Map());
+    }
+
+    setIsAdding(false);
+  }, [selectedItems, batchAddItems, hapticSuccess]);
 
   // Group search results by category
   const groupedSearchResults = useMemo(() => {
@@ -153,32 +177,33 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
 
   const renderAthkarCheckItem = (item: HisnAthkar | HisnSearchResult) => {
     const isAdded = isSourceAdded(item.id);
-    const isAdding = addingIds.has(item.id);
+    const isSelected = selectedItems.has(item.id);
+    const checked = isAdded || isSelected;
 
     return (
       <Pressable
         key={item.id}
-        onPress={() => handleToggleItem(item)}
-        disabled={isAdding}
-        opacity={isAdding ? 0.5 : 1}
+        onPress={() => handleToggleSelect(item)}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: isAdded }}
+        accessibilityState={{ checked }}
         accessibilityLabel={item.arabicText.substring(0, 60)}>
         <HStack
           padding="$3"
           borderRadius="$4"
-          backgroundColor={isAdded ? "$backgroundSuccess" : "$backgroundSecondary"}
-          borderWidth={isAdded ? 1 : 0}
-          borderColor={isAdded ? "$success" : "transparent"}
+          backgroundColor={
+            isAdded ? "$backgroundSuccess" : isSelected ? "$backgroundInfo" : "$backgroundSecondary"
+          }
+          borderWidth={checked ? 1 : 0}
+          borderColor={isAdded ? "$success" : isSelected ? "$info" : "transparent"}
           alignItems="flex-start"
           gap="$3"
           marginBottom="$2">
           {/* Checkbox */}
           <Box paddingTop="$1">
             <Icon
-              as={isAdded ? CheckSquare : Square}
+              as={checked ? CheckSquare : Square}
               size="md"
-              color={isAdded ? "$success" : "$typographySecondary"}
+              color={isAdded ? "$success" : isSelected ? "$info" : "$typographySecondary"}
             />
           </Box>
 
@@ -268,7 +293,10 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
         </VStack>
 
         <ActionsheetScrollView>
-          <VStack gap="$2" paddingHorizontal="$4" paddingBottom="$6">
+          <VStack
+            gap="$2"
+            paddingHorizontal="$4"
+            paddingBottom={selectedItems.size > 0 ? "$20" : "$6"}>
             {/* Categories View */}
             {viewMode === "categories" &&
               categories.map((cat) => (
@@ -341,6 +369,33 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
             )}
           </VStack>
         </ActionsheetScrollView>
+
+        {/* Batch Add Button */}
+        {selectedItems.size > 0 && (
+          <Box
+            position="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            padding="$4"
+            paddingBottom="$6"
+            backgroundColor="$backgroundSecondary"
+            borderTopWidth={1}
+            borderTopColor="$outline">
+            <Button
+              size="lg"
+              onPress={handleBatchAdd}
+              disabled={isAdding}
+              opacity={isAdding ? 0.6 : 1}
+              accessibilityRole="button"
+              accessibilityLabel={t("athkar.myAthkar.add")}>
+              <Button.Icon as={Plus} />
+              <Button.Text>
+                {t("athkar.myAthkar.add")} ({selectedItems.size})
+              </Button.Text>
+            </Button>
+          </Box>
+        )}
       </ActionsheetContent>
     </Actionsheet>
   );

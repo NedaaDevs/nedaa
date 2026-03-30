@@ -43,6 +43,9 @@ type MyAthkarActions = {
     sourceCategoryId: number,
     repeatCount: number
   ) => Promise<boolean>;
+  batchAddItems: (
+    items: { sourceAthkarId: number; sourceCategoryId: number; repeatCount: number }[]
+  ) => Promise<boolean>;
   removeItem: (id: number) => Promise<void>;
   updateUserCount: (id: number, userCount: number) => Promise<void>;
   getGroupedByCategory: () => MyAthkarCategoryGroup[];
@@ -193,6 +196,23 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
       addItem: async (sourceAthkarId, sourceCategoryId, repeatCount) => {
         const newId = await AthkarDB.addToMyAthkar(sourceAthkarId, sourceCategoryId, repeatCount);
         if (newId === null) return false;
+
+        await get().loadItems();
+        await get().loadDisplayData();
+        await get().initializeDailyProgress();
+        await get().loadDailyProgress();
+        return true;
+      },
+
+      batchAddItems: async (items) => {
+        const ids = await AthkarDB.batchAddToMyAthkar(
+          items.map((i) => ({
+            sourceAthkarId: i.sourceAthkarId,
+            sourceCategoryId: i.sourceCategoryId,
+            userCount: i.repeatCount,
+          }))
+        );
+        if (ids.length === 0) return false;
 
         await get().loadItems();
         await get().loadDisplayData();

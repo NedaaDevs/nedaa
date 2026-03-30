@@ -1088,6 +1088,44 @@ const addToMyAthkar = async (
   }
 };
 
+const batchAddToMyAthkar = async (
+  items: { sourceAthkarId: number; sourceCategoryId: number; userCount: number }[]
+): Promise<number[]> => {
+  if (items.length === 0) return [];
+  const db = await openDatabase();
+
+  try {
+    const tz = locationStore.getState().locationDetails.timezone;
+    const now = timeZonedNow(tz).toISOString();
+    const insertedIds: number[] = [];
+
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      const last = await txn.getFirstAsync<{ max_order: number | null }>(
+        `SELECT MAX(sort_order) as max_order FROM ${MY_ATHKAR_TABLE}`
+      );
+      let nextOrder = (last?.max_order ?? 0) + 1;
+
+      for (const item of items) {
+        const result = await txn.runAsync(
+          `INSERT OR IGNORE INTO ${MY_ATHKAR_TABLE}
+           (source_athkar_id, source_category_id, user_count, sort_order, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [item.sourceAthkarId, item.sourceCategoryId, item.userCount, nextOrder, now]
+        );
+        if (result.changes > 0) {
+          insertedIds.push(result.lastInsertRowId);
+          nextOrder++;
+        }
+      }
+    });
+
+    return insertedIds;
+  } catch (error) {
+    console.error("[Athkar-DB] Error batch adding to my athkar:", error);
+    return [];
+  }
+};
+
 const removeFromMyAthkar = async (id: number): Promise<boolean> => {
   const db = await openDatabase();
   try {
@@ -1244,6 +1282,7 @@ export const AthkarDB = {
   // My Athkar
   getMyAthkar,
   addToMyAthkar,
+  batchAddToMyAthkar,
   removeFromMyAthkar,
   updateMyAthkarUserCount,
   initializeMyAthkarDaily,
