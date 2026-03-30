@@ -74,7 +74,12 @@ const AthkarTabs = () => {
     <Box flex={1}>
       {/* Tab Header */}
       <Box backgroundColor="$background">
-        <HStack justifyContent="center" alignItems="center" paddingVertical="$2">
+        <HStack
+          justifyContent="center"
+          alignItems="center"
+          paddingVertical="$2"
+          paddingHorizontal="$3"
+          gap="$2">
           {/* Morning Tab */}
           <Pressable
             onPress={() => {
@@ -91,7 +96,6 @@ const AthkarTabs = () => {
             minHeight={44}
             paddingVertical="$3"
             paddingHorizontal="$4"
-            marginHorizontal="$2"
             borderRadius={999}
             alignItems="center"
             justifyContent="center"
@@ -132,7 +136,6 @@ const AthkarTabs = () => {
             minHeight={44}
             paddingVertical="$3"
             paddingHorizontal="$4"
-            marginHorizontal="$2"
             borderRadius={999}
             alignItems="center"
             justifyContent="center"
@@ -173,7 +176,6 @@ const AthkarTabs = () => {
               minHeight={44}
               paddingVertical="$3"
               paddingHorizontal="$4"
-              marginHorizontal="$2"
               borderRadius={999}
               alignItems="center"
               justifyContent="center"
