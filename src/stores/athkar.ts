@@ -149,6 +149,10 @@ export const useAthkarStore = create<AthkarStore>()(
 
         // Auto-initialize today's data if needed
         initializeTodayData: async () => {
+          // Ensure DB tables exist before any queries — prevents race where
+          // component effects query before onRehydrateStorage finishes table creation
+          await AthkarDB.initialize();
+
           const tz = locationStore.getState().locationDetails.timezone;
           const todayInt = getTodayInt(tz);
           const state = get();
