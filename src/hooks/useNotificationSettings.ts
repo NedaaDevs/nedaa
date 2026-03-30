@@ -20,6 +20,7 @@ export const useNotificationSettings = () => {
     athanAudioStream,
     fullIqamaPlayback,
     iqamaAudioStream,
+    otherTimingNotifications,
     updateAllNotificationToggle,
     updateFullAthanPlayback,
     updateAthanAudioStream,
@@ -31,6 +32,7 @@ export const useNotificationSettings = () => {
     resetOverride,
     resetAllOverrides,
     scheduleAllNotifications,
+    updateOtherTimingNotification,
     getEffectiveConfigForPrayer,
   } = useNotificationStore();
 
@@ -101,6 +103,7 @@ export const useNotificationSettings = () => {
     athanAudioStream,
     fullIqamaPlayback,
     iqamaAudioStream,
+    otherTimingNotifications,
     features,
     totalOverrideCount,
 
@@ -116,6 +119,7 @@ export const useNotificationSettings = () => {
     resetOverride,
     resetAllOverrides,
     scheduleAllNotifications,
+    updateOtherTimingNotification,
 
     // Utilities
     prayerHasOverrides,
