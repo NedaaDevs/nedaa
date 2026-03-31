@@ -121,7 +121,7 @@ const MyAthkarCategoryDetail: FC<Props> = ({
               arabicText={display.arabicText}
               categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
               progress={prog}
-              onPress={() => handleCardPress(item.id)}
+              onInfoPress={() => handleCardPress(item.id)}
               onLongPress={() => handleLongPress(item.id)}
             />
           );

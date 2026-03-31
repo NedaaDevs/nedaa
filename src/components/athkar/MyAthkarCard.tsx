@@ -12,7 +12,7 @@ import { Icon } from "@/components/ui/icon";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 
 // Icons
-import { Minus, Check } from "lucide-react-native";
+import { Minus, Check, Info } from "lucide-react-native";
 
 // Stores
 import { useMyAthkarStore } from "@/stores/my-athkar";
@@ -31,7 +31,7 @@ type Props = {
   arabicText: string;
   categoryTitle: string;
   progress: MyAthkarProgress;
-  onPress: () => void;
+  onInfoPress: () => void;
   onLongPress?: () => void;
 };
 
@@ -40,10 +40,10 @@ const MyAthkarCard: FC<Props> = ({
   arabicText,
   categoryTitle,
   progress,
-  onPress,
+  onInfoPress,
   onLongPress,
 }) => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { incrementCount, decrementCount } = useMyAthkarStore();
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -64,12 +64,17 @@ const MyAthkarCard: FC<Props> = ({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handleIncrement}
       onLongPress={onLongPress}
       delayLongPress={500}
+      disabled={completed}
       accessibilityRole="button"
-      accessibilityLabel={`${categoryTitle}. ${arabicText.substring(0, 50)}`}
-      accessibilityHint="Double tap to view full athkar">
+      accessibilityLabel={
+        completed
+          ? t("a11y.athkar.cardComplete")
+          : t("a11y.athkar.cardProgress", { current: currentCount, total: totalCount })
+      }
+      accessibilityHint={completed ? undefined : t("a11y.athkar.tapToCount")}>
       <Box
         padding="$4"
         borderRadius="$6"
@@ -77,23 +82,15 @@ const MyAthkarCard: FC<Props> = ({
         backgroundColor={completed ? "$backgroundSuccess" : "$backgroundSecondary"}
         borderWidth={completed ? 2 : 0}
         borderColor={completed ? "$success" : "transparent"}>
-        <VStack gap="$4">
-          {/* Arabic Text — main content, tap to increment */}
-          <Pressable
-            onPress={handleIncrement}
-            disabled={completed}
-            accessibilityRole="button"
-            accessibilityLabel={
-              completed ? "Completed" : `Tap to count. ${currentCount} of ${totalCount}`
-            }>
-            <Text
-              size="xl"
-              style={{ writingDirection: "rtl", lineHeight: 36 }}
-              textAlign="left"
-              color={completed ? "$typographySecondary" : "$typography"}>
-              {arabicText}
-            </Text>
-          </Pressable>
+        <VStack gap="$3">
+          {/* Arabic Text */}
+          <Text
+            size="xl"
+            style={{ writingDirection: "rtl", lineHeight: 36 }}
+            textAlign="left"
+            color={completed ? "$typographySecondary" : "$typography"}>
+            {arabicText}
+          </Text>
 
           {/* Progress Section */}
           <VStack gap="$2">
@@ -120,6 +117,21 @@ const MyAthkarCard: FC<Props> = ({
                     <Icon as={Minus} color="$info" />
                   </Button>
                 )}
+                <Pressable
+                  onPress={(e: any) => {
+                    e.stopPropagation();
+                    onInfoPress();
+                  }}
+                  width={44}
+                  height={44}
+                  borderRadius={999}
+                  alignItems="center"
+                  justifyContent="center"
+                  accessibilityRole="button"
+                  accessibilityLabel={t("a11y.athkar.viewDetail")}
+                  accessibilityHint="Double tap to view full athkar">
+                  <Icon as={Info} size="sm" color="$typographySecondary" />
+                </Pressable>
               </HStack>
 
               <Text
