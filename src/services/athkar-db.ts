@@ -16,6 +16,9 @@ import {
   ATHKAR_DB_NAME,
   MY_ATHKAR_TABLE,
   MY_ATHKAR_DAILY_TABLE,
+  CUSTOM_ATHKAR_GROUPS_TABLE,
+  CUSTOM_ATHKAR_ITEMS_TABLE,
+  CUSTOM_ATHKAR_DAILY_TABLE,
 } from "@/constants/DB";
 
 // Stores
@@ -287,6 +290,44 @@ const initializeDB = async () => {
     await db.execAsync(
       `CREATE INDEX IF NOT EXISTS idx_my_athkar_daily_date
        ON ${MY_ATHKAR_DAILY_TABLE}(date);`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${CUSTOM_ATHKAR_GROUPS_TABLE} (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        title      TEXT    NOT NULL,
+        sort_order INTEGER NOT NULL,
+        created_at TEXT    NOT NULL
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${CUSTOM_ATHKAR_ITEMS_TABLE} (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id    INTEGER NOT NULL REFERENCES ${CUSTOM_ATHKAR_GROUPS_TABLE}(id),
+        arabic_text TEXT    NOT NULL,
+        user_count  INTEGER NOT NULL DEFAULT 1,
+        sort_order  INTEGER NOT NULL,
+        created_at  TEXT    NOT NULL
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${CUSTOM_ATHKAR_DAILY_TABLE} (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        date           INTEGER NOT NULL,
+        custom_item_id INTEGER NOT NULL,
+        current_count  INTEGER NOT NULL DEFAULT 0,
+        total_count    INTEGER NOT NULL,
+        created_at     TEXT    NOT NULL,
+        updated_at     TEXT    NOT NULL,
+        UNIQUE(date, custom_item_id)
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE INDEX IF NOT EXISTS idx_custom_athkar_daily_date
+       ON ${CUSTOM_ATHKAR_DAILY_TABLE}(date);`
     );
 
     // Insert default streak entry if none exists
@@ -1289,4 +1330,169 @@ export const AthkarDB = {
   getMyAthkarDailyProgress,
   updateMyAthkarDailyCount,
   resetMyAthkarDaily,
+
+  // Custom Athkar
+  createCustomAthkarGroup: async (
+    title: string,
+    items: { arabicText: string; userCount: number }[]
+  ): Promise<number | null> => {
+    const db = await openDatabase();
+    const now = new Date().toISOString();
+    try {
+      let groupId: number | null = null;
+      await db.withExclusiveTransactionAsync(async (txn) => {
+        const countResult = await txn.getFirstAsync<{ count: number }>(
+          `SELECT COUNT(*) as count FROM ${CUSTOM_ATHKAR_GROUPS_TABLE}`
+        );
+        const nextGroupOrder = (countResult?.count ?? 0) + 1;
+        const groupResult = await txn.runAsync(
+          `INSERT INTO ${CUSTOM_ATHKAR_GROUPS_TABLE} (title, sort_order, created_at) VALUES (?, ?, ?)`,
+          [title, nextGroupOrder, now]
+        );
+        groupId = groupResult.lastInsertRowId;
+        for (let i = 0; i < items.length; i++) {
+          await txn.runAsync(
+            `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
+            [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+          );
+        }
+      });
+      return groupId;
+    } catch (error) {
+      console.error("[Athkar-DB] createCustomAthkarGroup error:", error);
+      return null;
+    }
+  },
+
+  updateCustomAthkarGroup: async (
+    groupId: number,
+    title: string,
+    items: { arabicText: string; userCount: number }[]
+  ): Promise<boolean> => {
+    const db = await openDatabase();
+    const now = new Date().toISOString();
+    try {
+      await db.withExclusiveTransactionAsync(async (txn) => {
+        await txn.runAsync(`UPDATE ${CUSTOM_ATHKAR_GROUPS_TABLE} SET title = ? WHERE id = ?`, [
+          title,
+          groupId,
+        ]);
+        const oldItems = await txn.getAllAsync<{ id: number }>(
+          `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
+          [groupId]
+        );
+        for (const item of oldItems) {
+          await txn.runAsync(
+            `DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`,
+            [item.id]
+          );
+        }
+        await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
+          groupId,
+        ]);
+        for (let i = 0; i < items.length; i++) {
+          await txn.runAsync(
+            `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
+            [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+          );
+        }
+      });
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] updateCustomAthkarGroup error:", error);
+      return false;
+    }
+  },
+
+  deleteCustomAthkarGroup: async (groupId: number): Promise<void> => {
+    const db = await openDatabase();
+    try {
+      await db.withExclusiveTransactionAsync(async (txn) => {
+        const items = await txn.getAllAsync<{ id: number }>(
+          `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
+          [groupId]
+        );
+        for (const item of items) {
+          await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
+            item.id,
+          ]);
+        }
+        await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
+          groupId,
+        ]);
+        await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} WHERE id = ?`, [groupId]);
+      });
+    } catch (error) {
+      console.error("[Athkar-DB] deleteCustomAthkarGroup error:", error);
+    }
+  },
+
+  getCustomAthkarGroups: async (): Promise<
+    { id: number; title: string; sort_order: number; created_at: string }[]
+  > => {
+    const db = await openDatabase();
+    return db.getAllAsync(
+      `SELECT id, title, sort_order, created_at FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} ORDER BY sort_order ASC`
+    );
+  },
+
+  getCustomAthkarItems: async (): Promise<
+    {
+      id: number;
+      group_id: number;
+      arabic_text: string;
+      user_count: number;
+      sort_order: number;
+    }[]
+  > => {
+    const db = await openDatabase();
+    return db.getAllAsync(
+      `SELECT id, group_id, arabic_text, user_count, sort_order FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} ORDER BY group_id ASC, sort_order ASC`
+    );
+  },
+
+  initializeCustomAthkarDaily: async (
+    dateInt: number,
+    items: { id: number; userCount: number }[]
+  ): Promise<void> => {
+    const db = await openDatabase();
+    const now = new Date().toISOString();
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      for (const item of items) {
+        await txn.runAsync(
+          `INSERT OR IGNORE INTO ${CUSTOM_ATHKAR_DAILY_TABLE}
+           (date, custom_item_id, current_count, total_count, created_at, updated_at)
+           VALUES (?, ?, 0, ?, ?, ?)`,
+          [dateInt, item.id, item.userCount, now, now]
+        );
+      }
+    });
+  },
+
+  getCustomAthkarDailyProgress: async (
+    dateInt: number
+  ): Promise<{ custom_item_id: number; current_count: number; total_count: number }[]> => {
+    const db = await openDatabase();
+    return db.getAllAsync(
+      `SELECT custom_item_id, current_count, total_count
+       FROM ${CUSTOM_ATHKAR_DAILY_TABLE}
+       WHERE date = ?`,
+      [dateInt]
+    );
+  },
+
+  updateCustomAthkarDailyCount: async (
+    dateInt: number,
+    customItemId: number,
+    currentCount: number
+  ): Promise<void> => {
+    const db = await openDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE ${CUSTOM_ATHKAR_DAILY_TABLE}
+       SET current_count = ?, updated_at = ?
+       WHERE date = ? AND custom_item_id = ?`,
+      [currentCount, now, dateInt, customItemId]
+    );
+  },
 };
