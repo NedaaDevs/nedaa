@@ -125,3 +125,30 @@ export type AthkarActions = {
   validateDailyStreak: () => Promise<void>;
   cleanUpOldData: () => Promise<void>;
 };
+
+// Custom Athkar
+export type CustomAthkarGroup = {
+  id: number;
+  title: string;
+  sortOrder: number;
+};
+
+export type CustomAthkarItem = {
+  id: number;
+  groupId: number;
+  arabicText: string;
+  userCount: number;
+  sortOrder: number;
+};
+
+export type CustomAthkarProgress = {
+  customItemId: number;
+  currentCount: number;
+  totalCount: number;
+  completed: boolean;
+};
+
+export type CustomAthkarItemDraft = {
+  arabicText: string;
+  userCount: number;
+};
