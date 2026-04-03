@@ -42,8 +42,8 @@ const MyAthkarList: FC = () => {
   const hisnProgress = useMyAthkarStore((s) => s.progress);
 
   const customGroups = useCustomAthkarStore((s) => s.groups);
-  const getGroupItems = useCustomAthkarStore((s) => s.getGroupItems);
-  const getGroupProgress = useCustomAthkarStore((s) => s.getGroupProgress);
+  const customItems = useCustomAthkarStore((s) => s.items);
+  const customProgress = useCustomAthkarStore((s) => s.progress);
 
   const [showSearch, setShowSearch] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SelectedGroup>(null);
@@ -110,7 +110,7 @@ const MyAthkarList: FC = () => {
 
         <Button
           size="sm"
-          variant="outline"
+          variant="solid"
           action="primary"
           onPress={() => router.push("/custom-athkar/new")}
           accessibilityRole="button"
@@ -157,8 +157,9 @@ const MyAthkarList: FC = () => {
 
         {/* Custom Groups */}
         {customGroups.map((group) => {
-          const items = getGroupItems(group.id);
-          const progressList = getGroupProgress(group.id);
+          const items = customItems.filter((i) => i.groupId === group.id);
+          const itemIds = new Set(items.map((i) => i.id));
+          const progressList = customProgress.filter((p) => itemIds.has(p.customItemId));
           const completedCount = progressList.filter((p) => p.completed).length;
 
           return (

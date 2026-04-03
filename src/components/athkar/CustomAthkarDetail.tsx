@@ -1,4 +1,4 @@
-import { FC, useCallback } from "react";
+import { FC, useCallback, useMemo } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -25,15 +25,18 @@ type Props = {
 const CustomAthkarDetail: FC<Props> = ({ group, onBack }) => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const getGroupItems = useCustomAthkarStore((s) => s.getGroupItems);
-  const getGroupProgress = useCustomAthkarStore((s) => s.getGroupProgress);
+  const allItems = useCustomAthkarStore((s) => s.items);
+  const allProgress = useCustomAthkarStore((s) => s.progress);
   const deleteGroup = useCustomAthkarStore((s) => s.deleteGroup);
   const hapticWarning = useHaptic("warning");
 
   const isRTL = i18n.dir() === "rtl";
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
-  const items = getGroupItems(group.id);
-  const progressList = getGroupProgress(group.id);
+  const items = useMemo(() => allItems.filter((i) => i.groupId === group.id), [allItems, group.id]);
+  const progressList = useMemo(() => {
+    const itemIds = new Set(items.map((i) => i.id));
+    return allProgress.filter((p) => itemIds.has(p.customItemId));
+  }, [items, allProgress]);
 
   const handleLongPress = useCallback(() => {
     hapticWarning();

@@ -43,7 +43,6 @@ const MyAthkarEmpty: FC<Props> = ({ onOpenSearch }) => {
         </Button>
         <Button
           size="lg"
-          variant="outline"
           action="primary"
           onPress={() => router.push("/custom-athkar/new")}
           accessibilityRole="button"
