@@ -10,3 +10,7 @@ export const ATHKAR_AUDIO_DOWNLOADS_TABLE = "athkar_audio_downloads" as const;
 export const HISN_MUSLIM_DB_NAME = "hisn-muslim.db" as const;
 export const MY_ATHKAR_TABLE = "my_athkar" as const;
 export const MY_ATHKAR_DAILY_TABLE = "my_athkar_daily" as const;
+
+export const CUSTOM_ATHKAR_GROUPS_TABLE = "custom_athkar_groups" as const;
+export const CUSTOM_ATHKAR_ITEMS_TABLE = "custom_athkar_items" as const;
+export const CUSTOM_ATHKAR_DAILY_TABLE = "custom_athkar_daily" as const;
