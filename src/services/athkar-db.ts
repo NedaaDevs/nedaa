@@ -16,6 +16,9 @@ import {
   ATHKAR_DB_NAME,
   MY_ATHKAR_TABLE,
   MY_ATHKAR_DAILY_TABLE,
+  CUSTOM_ATHKAR_GROUPS_TABLE,
+  CUSTOM_ATHKAR_ITEMS_TABLE,
+  CUSTOM_ATHKAR_DAILY_TABLE,
 } from "@/constants/DB";
 
 // Stores
@@ -287,6 +290,44 @@ const initializeDB = async () => {
     await db.execAsync(
       `CREATE INDEX IF NOT EXISTS idx_my_athkar_daily_date
        ON ${MY_ATHKAR_DAILY_TABLE}(date);`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${CUSTOM_ATHKAR_GROUPS_TABLE} (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        title      TEXT    NOT NULL,
+        sort_order INTEGER NOT NULL,
+        created_at TEXT    NOT NULL
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${CUSTOM_ATHKAR_ITEMS_TABLE} (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id    INTEGER NOT NULL REFERENCES ${CUSTOM_ATHKAR_GROUPS_TABLE}(id),
+        arabic_text TEXT    NOT NULL,
+        user_count  INTEGER NOT NULL DEFAULT 1,
+        sort_order  INTEGER NOT NULL,
+        created_at  TEXT    NOT NULL
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS ${CUSTOM_ATHKAR_DAILY_TABLE} (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        date           INTEGER NOT NULL,
+        custom_item_id INTEGER NOT NULL,
+        current_count  INTEGER NOT NULL DEFAULT 0,
+        total_count    INTEGER NOT NULL,
+        created_at     TEXT    NOT NULL,
+        updated_at     TEXT    NOT NULL,
+        UNIQUE(date, custom_item_id)
+      );`
+    );
+
+    await db.execAsync(
+      `CREATE INDEX IF NOT EXISTS idx_custom_athkar_daily_date
+       ON ${CUSTOM_ATHKAR_DAILY_TABLE}(date);`
     );
 
     // Insert default streak entry if none exists
