@@ -53,6 +53,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
       isInitialized: false,
 
       initialize: async () => {
+        if (get().isInitialized) return;
         const [groupRows, itemRows] = await Promise.all([
           AthkarDB.getCustomAthkarGroups(),
           AthkarDB.getCustomAthkarItems(),

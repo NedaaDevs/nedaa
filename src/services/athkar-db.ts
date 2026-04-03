@@ -1377,6 +1377,16 @@ export const AthkarDB = {
           title,
           groupId,
         ]);
+        const oldItems = await txn.getAllAsync<{ id: number }>(
+          `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
+          [groupId]
+        );
+        for (const item of oldItems) {
+          await txn.runAsync(
+            `DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`,
+            [item.id]
+          );
+        }
         await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
           groupId,
         ]);
