@@ -50,6 +50,7 @@ type MyAthkarActions = {
   updateUserCount: (id: number, userCount: number) => Promise<void>;
   getGroupedByCategory: () => MyAthkarCategoryGroup[];
   incrementCount: (myAthkarId: number) => void;
+  incrementCountBy: (myAthkarId: number, by: number) => void;
   decrementCount: (myAthkarId: number) => void;
   resetDaily: () => Promise<void>;
   isSourceAdded: (sourceAthkarId: number) => boolean;
@@ -74,6 +75,7 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
       isInitialized: false,
 
       initialize: async () => {
+        if (get().isInitialized) return;
         // Fetch all data first, then set state once to avoid multiple re-renders
         const rows = await AthkarDB.getMyAthkar();
         const items: MyAthkarItem[] = rows.map((r) => ({
@@ -272,6 +274,26 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
                   currentCount: newCount,
                   completed: newCount >= p.totalCount,
                 }
+              : p
+          ),
+        }));
+
+        const tz = locationStore.getState().locationDetails.timezone;
+        const todayInt = getTodayInt(tz);
+        debouncedDailyUpdate.add(String(myAthkarId), todayInt, myAthkarId, newCount);
+      },
+
+      incrementCountBy: (myAthkarId, by) => {
+        const { progress } = get();
+        const item = progress.find((p) => p.myAthkarId === myAthkarId);
+        if (!item || item.completed || by <= 0) return;
+
+        const newCount = Math.min(item.currentCount + by, item.totalCount);
+
+        set((state) => ({
+          progress: state.progress.map((p) =>
+            p.myAthkarId === myAthkarId
+              ? { ...p, currentCount: newCount, completed: newCount >= p.totalCount }
               : p
           ),
         }));
