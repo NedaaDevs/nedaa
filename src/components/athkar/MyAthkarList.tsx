@@ -14,8 +14,7 @@ import { Plus, ChevronRight, ChevronLeft } from "lucide-react-native";
 
 import { useMyAthkarStore } from "@/stores/my-athkar";
 import { useCustomAthkarStore } from "@/stores/custom-athkar";
-import { useInitializeMyAthkar } from "@/hooks/useInitializeMyAthkar";
-import { useInitializeCustomAthkar } from "@/hooks/useInitializeCustomAthkar";
+import { useInitializeAthkarStores } from "@/hooks/useInitializeAthkarStores";
 
 import MyAthkarEmpty from "@/components/athkar/MyAthkarEmpty";
 import MyAthkarCategoryDetail from "@/components/athkar/MyAthkarCategoryDetail";
@@ -34,8 +33,8 @@ const MyAthkarList: FC = () => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
 
-  const { isInitialized: hisnInitialized } = useInitializeMyAthkar();
-  const { isInitialized: customInitialized } = useInitializeCustomAthkar();
+  const { isMyAthkarInit: hisnInitialized, isCustomInit: customInitialized } =
+    useInitializeAthkarStores();
 
   const getGroupedByCategory = useMyAthkarStore((s) => s.getGroupedByCategory);
   const hisnItems = useMyAthkarStore((s) => s.items);
