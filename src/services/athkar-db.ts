@@ -186,6 +186,7 @@ const initializeDB = async () => {
 
   try {
     await db.execAsync(`PRAGMA journal_mode = WAL;`);
+    await db.execAsync(`PRAGMA busy_timeout = 3000;`);
     // Create streak table - stores calculated streak values
     await db.execAsync(
       `CREATE TABLE IF NOT EXISTS ${ATHKAR_STREAK_TABLE} (
