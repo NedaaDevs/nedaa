@@ -30,6 +30,7 @@ type CustomAthkarActions = {
   updateGroup: (id: number, title: string, drafts: CustomAthkarItemDraft[]) => Promise<boolean>;
   deleteGroup: (id: number) => Promise<void>;
   incrementCount: (customItemId: number) => void;
+  incrementCountBy: (customItemId: number, by: number) => void;
   decrementCount: (customItemId: number) => void;
   getGroupItems: (groupId: number) => CustomAthkarItem[];
   getGroupProgress: (groupId: number) => CustomAthkarProgress[];
@@ -173,6 +174,23 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
         const item = progress.find((p) => p.customItemId === customItemId);
         if (!item || item.completed) return;
         const newCount = Math.min(item.currentCount + 1, item.totalCount);
+        set((state) => ({
+          progress: state.progress.map((p) =>
+            p.customItemId === customItemId
+              ? { ...p, currentCount: newCount, completed: newCount >= p.totalCount }
+              : p
+          ),
+        }));
+        const tz = locationStore.getState().locationDetails.timezone;
+        const todayInt = getTodayInt(tz);
+        debouncedDailyUpdate.add(String(customItemId), todayInt, customItemId, newCount);
+      },
+
+      incrementCountBy: (customItemId, by) => {
+        const { progress } = get();
+        const item = progress.find((p) => p.customItemId === customItemId);
+        if (!item || item.completed || by <= 0) return;
+        const newCount = Math.min(item.currentCount + by, item.totalCount);
         set((state) => ({
           progress: state.progress.map((p) =>
             p.customItemId === customItemId

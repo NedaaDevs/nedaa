@@ -551,6 +551,51 @@ export const useAthkarStore = create<AthkarStore>()(
           }
         },
 
+        incrementCountBy: (athkarId, by) => {
+          const state = get();
+
+          // Audio guard: block batched taps on the currently-playing thikr.
+          if (state.playerState === "playing" && state.currentAthkarId === athkarId) return;
+
+          const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
+          if (!progressItem || progressItem.completed) return;
+          if (by <= 0) return;
+
+          const tz = locationStore.getState().locationDetails.timezone;
+          const todayInt = getTodayInt(tz);
+
+          // Clamp so we never overshoot the remaining count.
+          const newCount = Math.min(progressItem.currentCount + by, progressItem.totalCount);
+
+          set((currentState) => ({
+            currentProgress: currentState.currentProgress.map((p) =>
+              p.athkarId === athkarId
+                ? { ...p, currentCount: newCount, completed: newCount >= p.totalCount }
+                : p
+            ),
+          }));
+
+          // Keep lastIndex in sync so focus mode resumes where the user was.
+          const athkarList =
+            state.currentType === ATHKAR_TYPE.MORNING
+              ? state.morningAthkarList
+              : state.eveningAthkarList;
+          const tappedIndex = athkarList.findIndex((a) => a.id === athkarId);
+          if (tappedIndex !== -1) {
+            get().updateLastIndex(state.currentType, tappedIndex);
+          }
+
+          // Single debounced DB write with the final count.
+          debouncedDBUpdate.add(athkarId, todayInt, athkarId, newCount);
+
+          // Fire completion side-effects only once if we just finished.
+          if (newCount >= progressItem.totalCount) {
+            setTimeout(async () => {
+              await get().checkAndUpdateSessionCompletion(athkarId);
+            }, 400);
+          }
+        },
+
         decrementCount: (athkarId) => {
           const state = get();
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);

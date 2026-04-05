@@ -1,5 +1,4 @@
-import { FC, useCallback, useMemo } from "react";
-import { Alert } from "react-native";
+import { FC, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -12,8 +11,8 @@ import { Icon } from "@/components/ui/icon";
 import { ChevronRight, ChevronLeft, Pencil } from "lucide-react-native";
 
 import { useCustomAthkarStore } from "@/stores/custom-athkar";
-import { useHaptic } from "@/hooks/useHaptic";
 import CustomAthkarCard from "@/components/athkar/CustomAthkarCard";
+import LongPressHint from "@/components/athkar/LongPressHint";
 
 import type { CustomAthkarGroup } from "@/types/athkar";
 
@@ -27,8 +26,6 @@ const CustomAthkarDetail: FC<Props> = ({ group, onBack }) => {
   const router = useRouter();
   const allItems = useCustomAthkarStore((s) => s.items);
   const allProgress = useCustomAthkarStore((s) => s.progress);
-  const deleteGroup = useCustomAthkarStore((s) => s.deleteGroup);
-  const hapticWarning = useHaptic("warning");
 
   const isRTL = i18n.dir() === "rtl";
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
@@ -37,25 +34,6 @@ const CustomAthkarDetail: FC<Props> = ({ group, onBack }) => {
     const itemIds = new Set(items.map((i) => i.id));
     return allProgress.filter((p) => itemIds.has(p.customItemId));
   }, [items, allProgress]);
-
-  const handleLongPress = useCallback(() => {
-    hapticWarning();
-    Alert.alert(
-      t("athkar.customAthkar.deleteConfirm"),
-      t("athkar.customAthkar.deleteWarning"),
-      [
-        { text: t("athkar.customAthkar.cancel"), style: "cancel" },
-        {
-          text: t("athkar.customAthkar.delete"),
-          style: "destructive",
-          onPress: async () => {
-            await deleteGroup(group.id);
-            onBack();
-          },
-        },
-      ]
-    );
-  }, [deleteGroup, group.id, onBack, hapticWarning, t]);
 
   return (
     <>
@@ -93,6 +71,11 @@ const CustomAthkarDetail: FC<Props> = ({ group, onBack }) => {
         </Text>
       </VStack>
 
+      {/* Long-press hint */}
+      <VStack marginBottom="$3">
+        <LongPressHint />
+      </VStack>
+
       {/* Thikir Cards */}
       <VStack gap="$3">
         {items.map((item) => {
@@ -104,7 +87,6 @@ const CustomAthkarDetail: FC<Props> = ({ group, onBack }) => {
               customItemId={item.id}
               arabicText={item.arabicText}
               progress={prog}
-              onLongPress={handleLongPress}
             />
           );
         })}

@@ -22,13 +22,13 @@ type Props = {
   customItemId: number;
   arabicText: string;
   progress: CustomAthkarProgress;
-  onLongPress?: () => void;
 };
 
-const CustomAthkarCard: FC<Props> = ({ customItemId, arabicText, progress, onLongPress }) => {
+const CustomAthkarCard: FC<Props> = ({ customItemId, arabicText, progress }) => {
   const { t, i18n } = useTranslation();
-  const { incrementCount, decrementCount } = useCustomAthkarStore();
+  const { incrementCount, incrementCountBy, decrementCount } = useCustomAthkarStore();
   const hapticSelection = useHaptic("selection");
+  const hapticMedium = useHaptic("medium");
   const hapticSuccess = useHaptic("success");
   const hapticWarning = useHaptic("warning");
 
@@ -45,11 +45,20 @@ const CustomAthkarCard: FC<Props> = ({ customItemId, arabicText, progress, onLon
     }
   };
 
+  const handleLongPress = () => {
+    if (completed) return;
+    hapticMedium();
+    incrementCountBy(customItemId, 10);
+    if (currentCount + 10 >= totalCount) {
+      hapticSuccess();
+    }
+  };
+
   return (
     <Pressable
       onPress={handleIncrement}
-      onLongPress={onLongPress}
-      delayLongPress={500}
+      onLongPress={handleLongPress}
+      delayLongPress={400}
       disabled={completed}
       accessibilityRole="button"
       accessibilityLabel={

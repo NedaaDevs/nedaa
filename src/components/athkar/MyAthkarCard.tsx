@@ -32,7 +32,6 @@ type Props = {
   categoryTitle: string;
   progress: MyAthkarProgress;
   onInfoPress: () => void;
-  onLongPress?: () => void;
 };
 
 const MyAthkarCard: FC<Props> = ({
@@ -41,11 +40,11 @@ const MyAthkarCard: FC<Props> = ({
   categoryTitle,
   progress,
   onInfoPress,
-  onLongPress,
 }) => {
   const { t, i18n } = useTranslation();
-  const { incrementCount, decrementCount } = useMyAthkarStore();
+  const { incrementCount, incrementCountBy, decrementCount } = useMyAthkarStore();
   const hapticSelection = useHaptic("selection");
+  const hapticMedium = useHaptic("medium");
   const hapticSuccess = useHaptic("success");
   const hapticWarning = useHaptic("warning");
 
@@ -62,11 +61,20 @@ const MyAthkarCard: FC<Props> = ({
     }
   };
 
+  const handleLongPress = () => {
+    if (completed) return;
+    hapticMedium();
+    incrementCountBy(myAthkarId, 10);
+    if (currentCount + 10 >= totalCount) {
+      hapticSuccess();
+    }
+  };
+
   return (
     <Pressable
       onPress={handleIncrement}
-      onLongPress={onLongPress}
-      delayLongPress={500}
+      onLongPress={handleLongPress}
+      delayLongPress={400}
       disabled={completed}
       accessibilityRole="button"
       accessibilityLabel={

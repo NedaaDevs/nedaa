@@ -31,7 +31,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-const SwipeableMyAthkarCard: FC<Props> = ({ onDelete, children }) => {
+const SwipeableAthkarCard: FC<Props> = ({ onDelete, children }) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const theme = useTheme();
@@ -159,4 +159,4 @@ const SwipeableMyAthkarCard: FC<Props> = ({ onDelete, children }) => {
   );
 };
 
-export default SwipeableMyAthkarCard;
+export default SwipeableAthkarCard;

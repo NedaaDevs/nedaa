@@ -42,7 +42,7 @@ type Props = {
 
 const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const { t, i18n } = useTranslation();
-  const { incrementCount, decrementCount } = useAthkarStore();
+  const { incrementCount, incrementCountBy, decrementCount } = useAthkarStore();
   const playerState = useAthkarStore((s) => s.playerState);
   const currentAthkarId = useAthkarStore((s) => s.currentAthkarId);
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
@@ -53,6 +53,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const isThisPaused = currentAthkarId === athkar.id && playerState === "paused";
 
   const hapticSelection = useHaptic("selection");
+  const hapticMedium = useHaptic("medium");
   const hapticSuccess = useHaptic("success");
   const hapticWarning = useHaptic("warning");
 
@@ -64,6 +65,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const isGrouped = !!athkar.group;
   const groupInfo = athkar.group;
   const currentGroupIndex = isGrouped ? currentCount % groupInfo!.itemsPerRound : 0;
+  const displayTextKey = isGrouped ? groupInfo!.texts[currentGroupIndex] : athkar.text;
 
   const handleIncrement = () => {
     hapticSelection();
@@ -79,9 +81,20 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
     }
   };
 
+  const handleLongPress = () => {
+    if (isCompleted) return;
+    hapticMedium();
+    incrementCountBy(athkar.id, 10);
+    if (currentCount + 10 >= total) {
+      hapticSuccess();
+    }
+  };
+
   return (
     <Pressable
       onPress={handleIncrement}
+      onLongPress={handleLongPress}
+      delayLongPress={400}
       disabled={isCompleted}
       accessibilityLabel={
         isCompleted
@@ -99,7 +112,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
         <VStack gap="$3">
           {/* Athkar Text */}
           <AthkarTextDisplay
-            textKey={athkar.text}
+            textKey={displayTextKey}
             size="xl"
             textAlign="left"
             color={isCompleted ? "$typographySecondary" : "$typography"}

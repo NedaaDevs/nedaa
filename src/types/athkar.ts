@@ -96,6 +96,7 @@ export type AthkarActions = {
   setMorningAthkarList: (list: Athkar[]) => void;
   setEveningAthkarList: (list: Athkar[]) => void;
   incrementCount: (athkarId: string, skipAutoMove?: boolean) => void;
+  incrementCountBy: (athkarId: string, by: number) => void;
   decrementCount: (athkarId: string) => void;
   toggleFocusMode: () => void;
   findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => number;

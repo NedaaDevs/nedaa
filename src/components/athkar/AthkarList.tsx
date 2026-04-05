@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 import AthkarCard from "@/components/athkar/AthkarCard";
+import LongPressHint from "@/components/athkar/LongPressHint";
 
 // Store
 import { useAthkarStore } from "@/stores/athkar";
@@ -341,6 +342,8 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
           </Text>
         </Card>
       )}
+      {/* Long-press hint */}
+      {currentAthkarList.length > 0 && <LongPressHint />}
       {/* Athkar Cards */}
       {currentAthkarList.map((athkar) => {
         // Find progress using the athkar ID

@@ -1,5 +1,4 @@
 import { FC, useState, useCallback } from "react";
-import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 // Components
@@ -20,6 +19,8 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import MyAthkarCard from "@/components/athkar/MyAthkarCard";
+import SwipeableAthkarCard from "@/components/athkar/SwipeableAthkarCard";
+import LongPressHint from "@/components/athkar/LongPressHint";
 import AthkarDetailSheet from "@/components/athkar/AthkarDetailSheet";
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
 
@@ -58,24 +59,15 @@ const MyAthkarCategoryDetail: FC<Props> = ({
     setShowDetail(true);
   }, []);
 
-  const handleLongPress = useCallback(
-    (myAthkarId: number) => {
+  const handleDelete = useCallback(
+    async (myAthkarId: number) => {
       hapticWarning();
-      Alert.alert(t("athkar.myAthkar.remove"), t("athkar.myAthkar.removeConfirm"), [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("athkar.myAthkar.remove"),
-          style: "destructive",
-          onPress: async () => {
-            await removeItem(myAthkarId);
-            if (group.items.length <= 1) {
-              onBack();
-            }
-          },
-        },
-      ]);
+      await removeItem(myAthkarId);
+      if (group.items.length <= 1) {
+        onBack();
+      }
     },
-    [removeItem, group.items.length, onBack, hapticWarning, t]
+    [removeItem, group.items.length, onBack, hapticWarning]
   );
 
   const selectedItem = selectedItemId ? group.items.find((i) => i.id === selectedItemId) : null;
@@ -106,6 +98,11 @@ const MyAthkarCategoryDetail: FC<Props> = ({
         </Text>
       </VStack>
 
+      {/* Long-press hint */}
+      <VStack marginBottom="$3">
+        <LongPressHint />
+      </VStack>
+
       {/* Athkar Cards */}
       <VStack gap="$3">
         {group.items.map((item) => {
@@ -115,15 +112,15 @@ const MyAthkarCategoryDetail: FC<Props> = ({
           if (!display || !prog) return null;
 
           return (
-            <MyAthkarCard
-              key={item.id}
-              myAthkarId={item.id}
-              arabicText={display.arabicText}
-              categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
-              progress={prog}
-              onInfoPress={() => handleCardPress(item.id)}
-              onLongPress={() => handleLongPress(item.id)}
-            />
+            <SwipeableAthkarCard key={item.id} onDelete={() => handleDelete(item.id)}>
+              <MyAthkarCard
+                myAthkarId={item.id}
+                arabicText={display.arabicText}
+                categoryTitle={isArabic ? display.categoryTitleAr : display.categoryTitleEn}
+                progress={prog}
+                onInfoPress={() => handleCardPress(item.id)}
+              />
+            </SwipeableAthkarCard>
           );
         })}
       </VStack>
