@@ -219,6 +219,8 @@
   "athkar.audio.nowPlaying": "Sedang Dimainkan",
   "athkar.audio.pause": "Jeda",
   "athkar.audio.play": "Main",
+  "athkar.audio.playbackRate": "Kelajuan {{rate}} kali",
+  "athkar.audio.playbackRateHint": "Ketik untuk menukar kelajuan main",
   "athkar.audio.previous": "Sebelumnya",
   "athkar.audio.repeatCount": "{{current}} / {{total}} ulangan",
   "athkar.audio.retry": "Cuba semula",
