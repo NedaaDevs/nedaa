@@ -1,7 +1,13 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Dimensions, StyleSheet } from "react-native";
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown,
+} from "react-native-reanimated";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -104,7 +110,9 @@ const PlayerBottomSheet: FC = () => {
       {/* Sheet */}
       <Animated.View
         entering={
-          reduceMotion ? FadeIn.duration(1) : SlideInDown.springify().damping(20).stiffness(200)
+          reduceMotion
+            ? FadeIn.duration(1)
+            : SlideInDown.duration(220).easing(Easing.out(Easing.cubic))
         }
         exiting={reduceMotion ? FadeOut.duration(1) : SlideOutDown.duration(200)}
         style={{

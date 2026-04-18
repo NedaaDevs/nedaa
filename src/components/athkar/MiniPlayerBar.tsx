@@ -19,8 +19,9 @@ import { Play, Pause, X } from "lucide-react-native";
 import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
-import { AUDIO_UI } from "@/constants/AthkarAudio";
+import { AUDIO_UI, DEFAULT_PLAYBACK_RATE, PLAYBACK_RATE_OPTIONS } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
+import { useHaptic } from "@/hooks/useHaptic";
 
 const DISMISS_THRESHOLD = 60;
 
@@ -43,6 +44,8 @@ const MiniPlayerBar: FC = () => {
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
+  const playbackRate = useAthkarAudioStore((s) => s.playbackRate);
+  const hapticSelection = useHaptic("selection");
 
   const isActive =
     playerState === "playing" || playerState === "paused" || playerState === "loading";
@@ -85,6 +88,19 @@ const MiniPlayerBar: FC = () => {
   const handleTap = () => {
     useAthkarAudioStore.getState().setShowBottomSheet(true);
   };
+
+  const handleSpeedCycle = (e: any) => {
+    e.stopPropagation();
+    const idx = PLAYBACK_RATE_OPTIONS.indexOf(
+      playbackRate as (typeof PLAYBACK_RATE_OPTIONS)[number]
+    );
+    const safeIdx = idx === -1 ? PLAYBACK_RATE_OPTIONS.indexOf(DEFAULT_PLAYBACK_RATE) : idx;
+    const next = PLAYBACK_RATE_OPTIONS[(safeIdx + 1) % PLAYBACK_RATE_OPTIONS.length];
+    athkarPlayer.setPlaybackRate(next);
+    hapticSelection();
+  };
+
+  const rateLabel = formatNumberToLocale(String(playbackRate));
 
   const swipeDismiss = Gesture.Pan()
     .activeOffsetY([10, 100])
@@ -158,6 +174,26 @@ const MiniPlayerBar: FC = () => {
                     : `${formatNumberToLocale(`${sessionProgress.current}`)}/${formatNumberToLocale(`${sessionProgress.total}`)}`}
                 </Text>
               </Box>
+
+              {/* Speed pill (quick access) */}
+              <Pressable
+                onPress={handleSpeedCycle}
+                minWidth={44}
+                height={32}
+                paddingHorizontal="$2"
+                borderRadius={16}
+                backgroundColor="$backgroundMuted"
+                alignItems="center"
+                justifyContent="center"
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel={t("athkar.audio.playbackRate", { rate: rateLabel })}
+                accessibilityHint={t("athkar.audio.playbackRateHint")}
+                accessibilityValue={{ text: `${rateLabel}x` }}>
+                <Text size="xs" fontWeight="600" color="$primary">
+                  {rateLabel}×
+                </Text>
+              </Pressable>
 
               {/* Play/Pause */}
               <Pressable
