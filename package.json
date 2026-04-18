@@ -128,5 +128,10 @@
   "private": true,
   "patchedDependencies": {
     "react-native-track-player@4.1.2": "patches/react-native-track-player@4.1.2.patch"
+  },
+  "overrides": {
+    "@react-navigation/native": "7.1.31",
+    "@react-navigation/bottom-tabs": "7.15.2",
+    "@react-navigation/native-stack": "7.14.2"
   }
 }
