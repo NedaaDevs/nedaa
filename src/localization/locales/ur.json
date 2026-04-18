@@ -219,6 +219,8 @@
   "athkar.audio.nowPlaying": "ابھی چل رہا ہے",
   "athkar.audio.pause": "روکیں",
   "athkar.audio.play": "چلائیں",
+  "athkar.audio.playbackRate": "رفتار {{rate}} گنا",
+  "athkar.audio.playbackRateHint": "رفتار تبدیل کرنے کے لیے دبائیں",
   "athkar.audio.previous": "پچھلا",
   "athkar.audio.repeatCount": "{{current}} / {{total}} تکرار",
   "athkar.audio.retry": "دوبارہ کوشش",
