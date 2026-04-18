@@ -4,6 +4,10 @@ export const PLAYBACK_MODE = {
   OFF: "off",
 } as const;
 
+export const PLAYBACK_RATE_OPTIONS = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0] as const;
+
+export const DEFAULT_PLAYBACK_RATE = 1.0;
+
 export const REPEAT_LIMIT_OPTIONS = [
   {
     value: "all",

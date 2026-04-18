@@ -24,7 +24,11 @@ import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
-import { AUDIO_UI } from "@/constants/AthkarAudio";
+import {
+  AUDIO_UI,
+  PLAYBACK_RATE_OPTIONS,
+  DEFAULT_PLAYBACK_RATE,
+} from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
 
@@ -62,6 +66,19 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
+  const playbackRate = useAthkarAudioStore((s) => s.playbackRate);
+
+  const cycleRate = useCallback(() => {
+    const idx = PLAYBACK_RATE_OPTIONS.indexOf(
+      playbackRate as (typeof PLAYBACK_RATE_OPTIONS)[number]
+    );
+    const safeIdx = idx === -1 ? PLAYBACK_RATE_OPTIONS.indexOf(DEFAULT_PLAYBACK_RATE) : idx;
+    const next = PLAYBACK_RATE_OPTIONS[(safeIdx + 1) % PLAYBACK_RATE_OPTIONS.length];
+    athkarPlayer.setPlaybackRate(next);
+    hapticSelection();
+  }, [playbackRate, hapticSelection]);
+
+  const rateLabel = formatNumberToLocale(String(playbackRate));
 
   const isPlaying = playerState === "playing";
   const isLoading = playerState === "loading";
@@ -214,8 +231,27 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
           backgroundColor="$backgroundSecondary"
           borderTopStartRadius="$6"
           borderTopEndRadius="$6">
-          {/* Close button row */}
-          <HStack justifyContent="flex-end">
+          {/* Top row: speed pill + close */}
+          <HStack justifyContent="space-between" alignItems="center">
+            <Pressable
+              onPress={cycleRate}
+              minWidth={48}
+              height={32}
+              paddingHorizontal="$3"
+              borderRadius={16}
+              backgroundColor="$backgroundMuted"
+              alignItems="center"
+              justifyContent="center"
+              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t("athkar.audio.playbackRate", { rate: rateLabel })}
+              accessibilityHint={t("athkar.audio.playbackRateHint")}
+              accessibilityValue={{ text: `${rateLabel}x` }}>
+              <Text size="xs" fontWeight="600" color="$primary">
+                {rateLabel}×
+              </Text>
+            </Pressable>
+
             <Pressable
               onPress={onDismiss}
               width={32}

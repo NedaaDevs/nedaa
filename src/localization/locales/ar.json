@@ -219,6 +219,8 @@
   "athkar.audio.nowPlaying": "يتم التشغيل الآن",
   "athkar.audio.pause": "إيقاف مؤقت",
   "athkar.audio.play": "تشغيل",
+  "athkar.audio.playbackRate": "السرعة {{rate}} أضعاف",
+  "athkar.audio.playbackRateHint": "اضغط لتغيير سرعة التشغيل",
   "athkar.audio.previous": "السابق",
   "athkar.audio.repeatCount": "{{current}} / {{total}} تكرار",
   "athkar.audio.retry": "إعادة المحاولة",

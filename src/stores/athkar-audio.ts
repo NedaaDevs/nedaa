@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage, devtools } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 
-import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
+import { PLAYBACK_MODE, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
 
 import type {
   AthkarAudioState,
@@ -30,6 +30,7 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         repeatLimit: "all" as RepeatLimit,
         comfortMode: false,
         onboardingCompleted: false,
+        playbackRate: DEFAULT_PLAYBACK_RATE,
 
         // Runtime playback state
         ...initialPlaybackState,
@@ -54,6 +55,7 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
         setRepeatLimit: (limit: RepeatLimit) => set({ repeatLimit: limit }),
         toggleComfortMode: () => set((state) => ({ comfortMode: !state.comfortMode })),
         setOnboardingCompleted: (completed: boolean) => set({ onboardingCompleted: completed }),
+        setPlaybackRate: (rate: number) => set({ playbackRate: rate }),
 
         // --- Download actions ---
         setDownloadStatus: (thikrId: string, status: DownloadStatus) =>
@@ -79,6 +81,7 @@ export const useAthkarAudioStore = create<AthkarAudioStore>()(
           repeatLimit: state.repeatLimit,
           comfortMode: state.comfortMode,
           onboardingCompleted: state.onboardingCompleted,
+          playbackRate: state.playbackRate,
         }),
       }
     ),

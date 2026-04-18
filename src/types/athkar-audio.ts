@@ -80,6 +80,7 @@ export type AthkarAudioState = {
   repeatLimit: RepeatLimit;
   comfortMode: boolean;
   onboardingCompleted: boolean;
+  playbackRate: number;
 
   // High-frequency playback data (stays separate to avoid excessive re-renders)
   position: number;
@@ -107,6 +108,7 @@ export type AthkarAudioActions = {
   setRepeatLimit: (limit: RepeatLimit) => void;
   toggleComfortMode: () => void;
   setOnboardingCompleted: (completed: boolean) => void;
+  setPlaybackRate: (rate: number) => void;
 
   // Downloads
   setDownloadStatus: (thikrId: string, status: DownloadStatus) => void;

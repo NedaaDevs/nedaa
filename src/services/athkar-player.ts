@@ -85,6 +85,7 @@ class AthkarPlayer {
         compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
       });
       this.initialized = true;
+      await this.syncRate();
       log.i("Player", "TrackPlayer initialized");
     } catch (error) {
       if ((error as Error)?.message?.includes("already been initialized")) {
@@ -207,6 +208,7 @@ class AthkarPlayer {
     await TrackPlayer.reset();
     await TrackPlayer.add(tracks);
     await TrackPlayer.setRepeatMode(RepeatMode.Off);
+    await this.syncRate();
 
     // Update athkar store (sync-critical state)
     this.athkarStore.setSessionProgress({ current: 1, total: this.uniqueThikrIds.length });
@@ -369,6 +371,24 @@ class AthkarPlayer {
   async seekTo(seconds: number): Promise<void> {
     await TrackPlayer.seekTo(seconds);
     this.store.setPosition(seconds);
+  }
+
+  async setPlaybackRate(rate: number): Promise<void> {
+    this.store.setPlaybackRate(rate);
+    if (!this.initialized) return;
+    try {
+      await TrackPlayer.setRate(rate);
+    } catch (error) {
+      log.w("Player", `setRate failed: ${(error as Error)?.message}`);
+    }
+  }
+
+  private async syncRate(): Promise<void> {
+    try {
+      await TrackPlayer.setRate(this.store.playbackRate);
+    } catch (error) {
+      log.w("Player", `syncRate failed: ${(error as Error)?.message}`);
+    }
   }
 
   async jumpTo(athkarId: string): Promise<void> {

@@ -219,6 +219,8 @@
   "athkar.audio.nowPlaying": "Now Playing",
   "athkar.audio.pause": "Pause",
   "athkar.audio.play": "Play",
+  "athkar.audio.playbackRate": "Speed, {{rate}} times",
+  "athkar.audio.playbackRateHint": "Tap to change playback speed",
   "athkar.audio.previous": "Previous",
   "athkar.audio.repeatCount": "{{current}} / {{total}} repeats",
   "athkar.audio.retry": "Retry",
