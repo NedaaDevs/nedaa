@@ -212,21 +212,21 @@ export const UMRAH_STAGES: Stage[] = [
         dua: {
           id: "sai-safa-dua",
           arabic:
-            "إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ ۖ فَمَنْ حَجَّ الْبَيْتَ أَوِ اعْتَمَرَ فَلَا جُنَاحَ عَلَيْهِ أَنْ يَطَّوَّفَ بِهِمَا ۚ وَمَنْ تَطَوَّعَ خَيْرًا فَإِنَّ اللَّهَ شَاكِرٌ عَلِيمٌ",
+            "اللهُ أَكْبَرُ، اللهُ أَكْبَرُ، اللهُ أَكْبَرُ، لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ، أَنْجَزَ وَعْدَهُ، وَنَصَرَ عَبْدَهُ، وَهَزَمَ الْأَحْزَابَ وَحْدَهُ",
           transliteration: {
-            en: "Innāṣ-ṣafā wal-marwata min sha'ā'irillāh, faman ḥajjal-bayta awi'tamara falā junāḥa 'alayhi an yaṭṭawwafa bihimā, wa man taṭawwa'a khayran fa innallāha shākirun 'alīm",
-            ms: "Innāṣ-ṣafā wal-marwata min sha'ā'irillāh, faman ḥajjal-bayta awi'tamara falā junāḥa 'alayhi an yaṭṭawwafa bihimā, wa man taṭawwa'a khayran fa innallāha shākirun 'alīm",
-            ur: "ان الصفا والمروۃ من شعائر اللہ فمن حج البیت او اعتمر فلا جناح علیہ ان یطوف بہما ومن تطوع خیرا فان اللہ شاکر علیم",
+            en: "Allaahu akbar, Allaahu akbar, Allaahu akbar, laa ilaaha il-Allaah, wahdahu, laa shareeka lahu, lahul mulku wa lahul-hamdu wa huwa 'aala kulli shay'in qadeer. Laa ilaaha il-Allaahu wahdahu. Anjaza wa'dahu, wa nasara 'abdahu, wa hazamal-ahzaaba wahdahu.",
+            ms: "Allahu akbar, Allahu akbar, Allahu akbar, laa ilaha illallah wahdahu laa syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir. Laa ilaaha illallahu wahdah, anjaza wa'dah, wa nashara 'abdah, wa hazamal ahzaba wahdah.",
+            ur: "اللہ اکبر، اللہ اکبر، اللہ اکبر، لا الہ الا اللہ وحدہ لا شریک لہ، لہ الملک ولہ الحمد، وہو علی کل شیء قدیر، لا الہ الا اللہ وحدہ، انجز وعدہ، ونصر عبدہ، وہزم الاحزاب وحدہ",
           },
           translation: {
-            en: "Indeed, Safa and Marwa are among the symbols of Allah. So whoever makes Hajj to the House or performs Umrah, there is no blame upon him for walking between them. And whoever volunteers good, then indeed Allah is Appreciative and All-Knowing.",
-            ar: "إن الصفا والمروة من شعائر الله فمن حج البيت أو اعتمر فلا جناح عليه أن يطوف بهما ومن تطوع خيرًا فإن الله شاكر عليم",
-            ms: "Sesungguhnya Safa dan Marwah itu sebahagian daripada syiar Allah. Maka sesiapa yang mengerjakan haji ke Baitullah atau mengerjakan umrah, maka tidaklah salah dia bertawaf di antara keduanya. Dan sesiapa yang mengerjakan kebaikan dengan sukarela, maka sesungguhnya Allah Maha Mensyukuri lagi Maha Mengetahui.",
-            ur: "بیشک صفا و مروہ اللہ کے شعائر میں سے ہیں، پس جو شخص بیت اللہ کا حج یا عمرہ کرے تو اس پر کوئی گناہ نہیں کہ ان دونوں کے درمیان طواف کرے، اور جو شخص اپنی خوشی سے کوئی نیکی کرے تو اللہ قدردان اور جاننے والا ہے۔",
+            en: "Allah is the greatest; Allah is the greatest; Allah is the greatest. There is no deity except Allah, alone, without any partners. To Him belongs the dominion and all praise, and He is over all things omnipotent. There is no deity except Allah alone; He fulfilled His promise, gave victory to His servant, and defeated the confederates alone.",
+            ar: "الله أكبر، الله أكبر، الله أكبر، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير، لا إله إلا الله وحده، أنجز وعده، ونصر عبده، وهزم الأحزاب وحده",
+            ms: "Ketika Rasulullah s.a.w. mendaki Safa atau Marwah, baginda menghadap ke kiblat dan berkata: \"Allahu akbar, Allahu akbar, Allahu akbar, laa ilaha illallah wahdahu laa syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir. Laa ilaaha illallahu wahdah, anjaza wa'dah, wa nashara 'abdah, wa hazamal ahzaba wahdah.\" Kemudian baginda berdoa apa yang dikehendaki, mengulanginya, berdoa, mengulanginya kemudian melaksanakan sai.",
+            ur: 'جب آپ صفا یا مروہ پر چڑھتے تو قبلہ رو ہو کر فرماتے: "الله أكبر الله أكبر الله أكبر، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كلِّ شيء قدير، لا إله إلا الله وحده، أنجز وعده، ونصر عبده، وهزم الأحزاب وحده" پھر اپنے رب سے جو چاہتے دعا کرتے۔ اس کو پھر دہراتے اور جو چاہتے دعا کرتے، اس کو پھر دہراتے اور پھر سعی کے لیے چل پڑتے۔',
           },
-          source: "umrah.sources.baqarahMuslim.safa",
-          hadithSource: "سورة البقرة ٢:١٥٨، صحيح مسلم ١٢١٨",
-          hadithTranslation: "Surah Al-Baqarah 2:158, Sahih Muslim 1218",
+          source: "umrah.sources.muslim.safa",
+          hadithSource: "صحيح مسلم ١٢١٨",
+          hadithTranslation: "Sahih Muslim 1218",
         },
       },
       ...Array.from({ length: 7 }, (_, i) => ({
@@ -240,17 +240,17 @@ export const UMRAH_STAGES: Stage[] = [
         dua: {
           id: "sai-general-dua",
           arabic:
-            "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
+            "اللهُ أَكْبَرُ، اللهُ أَكْبَرُ، اللهُ أَكْبَرُ، لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ، أَنْجَزَ وَعْدَهُ، وَنَصَرَ عَبْدَهُ، وَهَزَمَ الْأَحْزَابَ وَحْدَهُ",
           transliteration: {
-            en: "Lā ilāha illallāhu waḥdahu lā sharīka lah, lahul-mulku wa lahul-ḥamdu wa huwa 'alā kulli shay'in qadīr",
-            ms: "Lā ilāha illallāhu waḥdahu lā sharīka lah, lahul-mulku wa lahul-ḥamdu wa huwa 'alā kulli shay'in qadīr",
-            ur: "لا الہ الا اللہ وحدہ لا شریک لہ، لہ الملک ولہ الحمد وہو علی کل شیء قدیر",
+            en: "Allaahu akbar, Allaahu akbar, Allaahu akbar, laa ilaaha il-Allaah, wahdahu, laa shareeka lahu, lahul mulku wa lahul-hamdu wa huwa 'aala kulli shay'in qadeer. Laa ilaaha il-Allaahu wahdahu. Anjaza wa'dahu, wa nasara 'abdahu, wa hazamal-ahzaaba wahdahu.",
+            ms: "Allahu akbar, Allahu akbar, Allahu akbar, laa ilaha illallah wahdahu laa syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir. Laa ilaaha illallahu wahdah, anjaza wa'dah, wa nashara 'abdah, wa hazamal ahzaba wahdah.",
+            ur: "اللہ اکبر، اللہ اکبر، اللہ اکبر، لا الہ الا اللہ وحدہ لا شریک لہ، لہ الملک ولہ الحمد، وہو علی کل شیء قدیر، لا الہ الا اللہ وحدہ، انجز وعدہ، ونصر عبدہ، وہزم الاحزاب وحدہ",
           },
           translation: {
-            en: "There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things.",
-            ar: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير",
-            ms: "Tiada tuhan melainkan Allah, Yang Maha Esa, tiada sekutu bagi-Nya. Bagi-Nya kerajaan dan bagi-Nya segala puji, dan Dia Maha Berkuasa atas segala sesuatu.",
-            ur: "اللہ کے سوا کوئی معبود نہیں، وہ اکیلا ہے، اس کا کوئی شریک نہیں، بادشاہی اسی کی ہے اور تعریف اسی کی ہے اور وہ ہر چیز پر قادر ہے۔",
+            en: "Allah is the greatest; Allah is the greatest; Allah is the greatest. There is no deity except Allah, alone, without any partners. To Him belongs the dominion and all praise, and He is over all things omnipotent. There is no deity except Allah alone; He fulfilled His promise, gave victory to His servant, and defeated the confederates alone.",
+            ar: "الله أكبر، الله أكبر، الله أكبر، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير، لا إله إلا الله وحده، أنجز وعده، ونصر عبده، وهزم الأحزاب وحده",
+            ms: "Ketika Rasulullah s.a.w. mendaki Safa atau Marwah, baginda menghadap ke kiblat dan berkata: \"Allahu akbar, Allahu akbar, Allahu akbar, laa ilaha illallah wahdahu laa syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir. Laa ilaaha illallahu wahdah, anjaza wa'dah, wa nashara 'abdah, wa hazamal ahzaba wahdah.\" Kemudian baginda berdoa apa yang dikehendaki, mengulanginya, berdoa, mengulanginya kemudian melaksanakan sai.",
+            ur: 'جب آپ صفا یا مروہ پر چڑھتے تو قبلہ رو ہو کر فرماتے: "الله أكبر الله أكبر الله أكبر، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كلِّ شيء قدير، لا إله إلا الله وحده، أنجز وعده، ونصر عبده، وهزم الأحزاب وحده" پھر اپنے رب سے جو چاہتے دعا کرتے۔ اس کو پھر دہراتے اور جو چاہتے دعا کرتے، اس کو پھر دہراتے اور پھر سعی کے لیے چل پڑتے۔',
           },
           source: "umrah.sources.muslim.sai",
           hadithSource: "صحيح مسلم ١٢١٨",
