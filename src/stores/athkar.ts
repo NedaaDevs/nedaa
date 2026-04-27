@@ -17,6 +17,9 @@ import locationStore from "@/stores/location";
 // Utils
 import { dateIntToString, getTodayInt } from "@/utils/athkar";
 import { createDebouncedQueue } from "@/utils/debounce";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("athkar");
 
 type AthkarStore = AthkarState & AthkarActions;
 
@@ -175,6 +178,8 @@ export const useAthkarStore = create<AthkarStore>()(
           if (morningList.length > 0 || eveningList.length > 0) {
             // Initialize daily items in DB (will only run once per day)
             await AthkarDB.initializeDailyItems(todayInt, morningList, eveningList);
+          } else {
+            log.w("Store", "initializeTodayData: both lists empty — DB rows NOT initialized");
           }
 
           // Load today's progress
@@ -238,6 +243,24 @@ export const useAthkarStore = create<AthkarStore>()(
               })),
             ];
 
+            const completedCount = currentProgress.filter((p) => p.completed).length;
+            if (completedCount === currentProgress.length && currentProgress.length > 0) {
+              log.w(
+                "Store",
+                `loadTodayProgress: all ${currentProgress.length} items are completed on load — focus mode will show done screen`
+              );
+            }
+
+            // Warn on suspicious per-item states
+            currentProgress.forEach((p) => {
+              if (p.completed && p.currentCount === 0) {
+                log.w(
+                  "Store",
+                  `loadTodayProgress: ${p.athkarId} is completed with count=0 (total=${p.totalCount})`
+                );
+              }
+            });
+
             // Check completion status
             const morningCompleted = await AthkarDB.isSessionCompleted(todayInt, "morning");
             const eveningCompleted = await AthkarDB.isSessionCompleted(todayInt, "evening");
@@ -251,6 +274,11 @@ export const useAthkarStore = create<AthkarStore>()(
             });
           } catch (error) {
             console.error("Error loading today's progress:", error);
+            log.e(
+              "Store",
+              "loadTodayProgress failed",
+              error instanceof Error ? error : new Error(String(error))
+            );
             // Start with empty progress if loading fails
             set({
               currentProgress: [],
@@ -492,7 +520,13 @@ export const useAthkarStore = create<AthkarStore>()(
 
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
-          if (!progressItem) return;
+          if (!progressItem) {
+            log.w(
+              "Store",
+              `incrementCount: no progressItem for ${athkarId} — currentProgress has ${state.currentProgress.length} items: [${state.currentProgress.map((p) => p.athkarId).join(", ")}]`
+            );
+            return;
+          }
 
           const tz = locationStore.getState().locationDetails.timezone;
           const todayInt = getTodayInt(tz);

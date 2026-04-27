@@ -6,6 +6,7 @@ import { getDirectory } from "@/services/db";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
+import { AppLogger } from "@/utils/appLogger";
 
 // Constants
 import {
@@ -23,6 +24,8 @@ import {
 
 // Stores
 import locationStore from "@/stores/location";
+
+const log = AppLogger.create("athkar-db");
 
 // Schemas
 const AthkarStreakSchema = z.object({
@@ -372,13 +375,17 @@ const initializeDailyItems = async (
     );
 
     if (existingItems && (existingItems as any).count > 0) {
-      console.log(`[Athkar-DB] Daily items already initialized for date ${dateInt}, skipping...`);
+      log.i(
+        "DB",
+        `initializeDailyItems: date=${dateInt} already has ${(existingItems as any).count} rows, skipping`
+      );
       return true; // Already initialized
     }
 
     const totalItems = morningList.length + eveningList.length;
-    console.log(
-      `[Athkar-DB] Initializing daily items for date ${dateInt} with ${morningList.length} morning and ${eveningList.length} evening athkar (${totalItems} total)`
+    log.i(
+      "DB",
+      `initializeDailyItems: date=${dateInt} morning=${morningList.length} evening=${eveningList.length} total=${totalItems}`
     );
 
     await db.withTransactionAsync(async () => {
@@ -411,12 +418,17 @@ const initializeDailyItems = async (
       );
     });
 
-    console.log(
-      `[Athkar-DB] Successfully initialized ${totalItems} daily items for date ${dateInt} (${morningList.length} morning, ${eveningList.length} evening)`
+    log.i(
+      "DB",
+      `initializeDailyItems: successfully inserted ${totalItems} rows for date=${dateInt}`
     );
     return true;
   } catch (error) {
-    console.error(`[Athkar-DB] Error initializing daily items for date ${dateInt}:`, error);
+    log.e(
+      "DB",
+      `initializeDailyItems failed for date=${dateInt}`,
+      error instanceof Error ? error : new Error(String(error))
+    );
     return false;
   }
 };
@@ -438,17 +450,31 @@ const getSessionItems = async (
 
     if (!results) return [];
 
-    return results
-      .map((r) => {
-        try {
-          return AthkarDailyItemSchema.parse(r);
-        } catch {
-          return null;
-        }
-      })
-      .filter((item): item is AthkarDailyItem => item !== null);
+    const parsed = results.map((r) => {
+      try {
+        return AthkarDailyItemSchema.parse(r);
+      } catch (err) {
+        log.w("DB", `getSessionItems: Zod rejected row ${JSON.stringify(r)} — ${err}`);
+        return null;
+      }
+    });
+
+    const valid = parsed.filter((item): item is AthkarDailyItem => item !== null);
+    const dropped = results.length - valid.length;
+    if (dropped > 0) {
+      log.w(
+        "DB",
+        `getSessionItems: date=${dateInt} session=${session} — ${dropped}/${results.length} rows dropped by Zod`
+      );
+    }
+
+    return valid;
   } catch (error) {
-    console.error("Error getting session items:", error);
+    log.e(
+      "DB",
+      "getSessionItems failed",
+      error instanceof Error ? error : new Error(String(error))
+    );
     return [];
   }
 };
@@ -466,15 +492,26 @@ const updateAthkarCount = async (
     const now = timeZonedNow(tz).toISOString();
 
     const result = await db.runAsync(
-      `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
+      `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
        SET current_count = ?, updated_at = ?
        WHERE date = ? AND thikr_id = ?;`,
       [currentCount, now, dateInt, thikrId]
     );
 
+    if (result.changes === 0) {
+      log.w(
+        "DB",
+        `updateAthkarCount: 0 rows changed for thikrId=${thikrId} date=${dateInt} count=${currentCount} — row may not exist`
+      );
+    }
+
     return result.changes > 0;
   } catch (error) {
-    console.error("Error updating athkar count:", error);
+    log.e(
+      "DB",
+      "updateAthkarCount failed",
+      error instanceof Error ? error : new Error(String(error))
+    );
     return false;
   }
 };
@@ -1383,10 +1420,9 @@ export const AthkarDB = {
           [groupId]
         );
         for (const item of oldItems) {
-          await txn.runAsync(
-            `DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`,
-            [item.id]
-          );
+          await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
+            item.id,
+          ]);
         }
         await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
           groupId,
