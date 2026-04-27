@@ -59,8 +59,12 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+import { AppLogger } from "@/utils/appLogger";
+
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
+
+const log = AppLogger.create("athkar");
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -312,9 +316,26 @@ const AthkarFocusScreen = () => {
   const isCompleted = progressItem?.completed ?? false;
 
   // Check if all athkars in current session are completed
-  const allCompleted =
-    currentProgress.length > 0 &&
-    currentProgress.filter((p) => p.athkarId.includes(`-${currentType}`)).every((p) => p.completed);
+  const filteredProgress = currentProgress.filter((p) => p.athkarId.includes(`-${currentType}`));
+  const allCompleted = currentProgress.length > 0 && filteredProgress.every((p) => p.completed);
+
+  // Log allCompleted state for diagnostics
+  useEffect(() => {
+    const completedIds = filteredProgress.filter((p) => p.completed).map((p) => p.athkarId);
+    const incompleteIds = filteredProgress.filter((p) => !p.completed).map((p) => p.athkarId);
+    log.i(
+      "Focus",
+      `allCompleted=${allCompleted} type=${currentType} totalProgress=${currentProgress.length}` +
+        ` filtered=${filteredProgress.length} completed=${completedIds.length}` +
+        ` incomplete=${incompleteIds.length}` +
+        (incompleteIds.length > 0 ? ` incompleteIds=[${incompleteIds.join(",")}]` : "") +
+        (allCompleted && filteredProgress.length === 0 ? " WARN: filtered list is empty" : "")
+    );
+    if (allCompleted) {
+      log.i("Focus", `Done screen triggered — completedIds=[${completedIds.join(",")}]`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCompleted, currentType]);
 
   // Stop audio when all athkar completed
   useEffect(() => {
@@ -618,8 +639,16 @@ const AthkarFocusScreen = () => {
       scheduleOnRN(setShowNavigationIndicator, false);
     });
 
+  // Tap gesture — handles increment via RNGH on Android where Pressable.onPress
+  // can be blocked by simultaneous Pan gesture recognizers (New Architecture)
+  const tapGesture = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd((_, success) => {
+      if (success) handleTap();
+    });
+
   // Combine gestures
-  const combinedGestures = Gesture.Simultaneous(horizontalSwipe, verticalSwipe);
+  const combinedGestures = Gesture.Simultaneous(horizontalSwipe, verticalSwipe, tapGesture);
 
   const swipeIndicatorStyle = useAnimatedStyle(() => {
     return {
@@ -737,7 +766,6 @@ const AthkarFocusScreen = () => {
         {/* Main content area — tap zone (flex fills remaining space above audio controls) */}
         <GestureDetector gesture={combinedGestures}>
           <Pressable
-            onPress={handleTap}
             flex={1}
             accessibilityRole="button"
             accessibilityLabel={t("athkar.focus.tapToIncrement")}>

@@ -9,7 +9,6 @@ import Animated, {
   cancelAnimation,
   useAnimatedReaction,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 
 // Components
@@ -226,15 +225,6 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
     };
   }, [progress, backgroundProgress, scaleValue]);
 
-  // Gesture handler
-  const longPressGesture = Gesture.Pan()
-    .onBegin(() => {
-      scheduleOnRN(handlePressStart);
-    })
-    .onFinalize(() => {
-      scheduleOnRN(handlePressEnd);
-    });
-
   // Animated styles
   const resetButtonColor = theme.info.val;
   const buttonAnimatedStyle = useAnimatedStyle(() => {
@@ -367,47 +357,47 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
         );
       })}
       {/* Press and Hold Reset Button */}
-      <GestureDetector gesture={longPressGesture}>
-        <Animated.View
-          style={[
-            {
-              borderRadius: 8,
-              position: "relative",
-            },
-            buttonAnimatedStyle,
-          ]}>
-          <Button
-            size="md"
-            variant="outline"
-            action="default"
-            width="100%"
-            borderWidth={0}
-            backgroundColor="transparent"
-            disabled={isResetting}
-            accessibilityLabel={t("common.resetDailyProgress")}
-            accessibilityHint={t("a11y.athkar.holdToResetHint")}>
-            {isResetting ? (
-              <Spinner size="small" />
-            ) : (
-              <Icon as={RotateCcw} size="md" color="$typographyContrast" />
-            )}
-            <Button.Text color="$typographyContrast" fontWeight="500">
-              {isResetting
-                ? t("athkar.loading.resetting")
-                : isPressing
-                  ? t("common.holdToReset", {
-                      progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
-                    })
-                  : t("common.resetDailyProgress")}
-            </Button.Text>
-          </Button>
-
-          {/* Progress overlay */}
-          {isPressing && !isResetting && (
-            <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+      <Animated.View
+        style={[
+          {
+            borderRadius: 8,
+            position: "relative",
+          },
+          buttonAnimatedStyle,
+        ]}>
+        <Button
+          size="md"
+          variant="outline"
+          action="default"
+          width="100%"
+          borderWidth={0}
+          backgroundColor="transparent"
+          disabled={isResetting}
+          onPressIn={handlePressStart}
+          onPressOut={handlePressEnd}
+          accessibilityLabel={t("common.resetDailyProgress")}
+          accessibilityHint={t("a11y.athkar.holdToResetHint")}>
+          {isResetting ? (
+            <Spinner size="small" />
+          ) : (
+            <Icon as={RotateCcw} size="md" color="$typographyContrast" />
           )}
-        </Animated.View>
-      </GestureDetector>
+          <Button.Text color="$typographyContrast" fontWeight="500">
+            {isResetting
+              ? t("athkar.loading.resetting")
+              : isPressing
+                ? t("common.holdToReset", {
+                    progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
+                  })
+                : t("common.resetDailyProgress")}
+          </Button.Text>
+        </Button>
+
+        {/* Progress overlay */}
+        {isPressing && !isResetting && (
+          <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+        )}
+      </Animated.View>
     </VStack>
   );
 };
