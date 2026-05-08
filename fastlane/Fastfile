@@ -1,0 +1,131 @@
+platform :android do
+  desc "Validate metadata with Google Play without publishing (dry run)"
+  lane :validate_metadata do
+    supply(
+      package_name: "dev.nedaa.android",
+      json_key: "./google-service-account.json",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+      metadata_path: "./fastlane/metadata/android",
+      validate_only: true,
+      changes_not_sent_for_review: true
+    )
+  end
+
+  desc "Upload metadata to Google Play Store (no binary upload)"
+  lane :update_metadata do
+    supply(
+      package_name: "dev.nedaa.android",
+      json_key: "./google-service-account.json",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+      metadata_path: "./fastlane/metadata/android",
+      changes_not_sent_for_review: true
+    )
+  end
+
+  desc "Upload metadata + screenshots to Google Play Store"
+  lane :update_listing do
+    supply(
+      package_name: "dev.nedaa.android",
+      json_key: "./google-service-account.json",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true,
+      metadata_path: "./fastlane/metadata/android",
+      changes_not_sent_for_review: true
+    )
+  end
+
+  desc "Upload changelogs only"
+  lane :update_changelogs do
+    supply(
+      package_name: "dev.nedaa.android",
+      json_key: "./google-service-account.json",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      metadata_path: "./fastlane/metadata/android",
+      changes_not_sent_for_review: true
+    )
+  end
+end
+
+platform :ios do
+  # Binary builds + uploads are owned by EAS (`eas build` / `eas submit`).
+  # Fastlane on iOS handles only metadata + screenshots via `deliver`.
+
+  before_all do
+    ensure_env_vars(env_vars: %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH])
+  end
+
+  def asc_api_key
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_PATH"],
+      in_house: false
+    )
+  end
+
+  desc "Run App Store metadata pre-submission checks (no upload)"
+  lane :validate_metadata do
+    precheck(
+      api_key: asc_api_key,
+      app_identifier: "dev.nedaa.app",
+      default_rule_level: :error
+    )
+  end
+
+  desc "Upload metadata only to App Store Connect"
+  lane :update_metadata do
+    deliver(
+      api_key: asc_api_key,
+      metadata_path: "./fastlane/metadata/ios",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      force: true,
+      run_precheck_before_submit: false
+    )
+  end
+
+  desc "Render screenshots via Playwright + upload to App Store Connect"
+  lane :update_screenshots do
+    sh("cd .. && bun run screenshots:full && bun run screenshots:post")
+    deliver(
+      api_key: asc_api_key,
+      screenshots_path: "./fastlane/screenshots/ios",
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      skip_metadata: true,
+      overwrite_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false
+    )
+  end
+
+  desc "Upload metadata + screenshots to App Store Connect"
+  lane :update_listing do
+    sh("cd .. && bun run screenshots:full && bun run screenshots:post")
+    deliver(
+      api_key: asc_api_key,
+      metadata_path: "./fastlane/metadata/ios",
+      screenshots_path: "./fastlane/screenshots/ios",
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      skip_metadata: false,
+      overwrite_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false
+    )
+  end
+end

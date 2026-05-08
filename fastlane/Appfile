@@ -1,0 +1,11 @@
+for_platform :android do
+  json_key_file("./google-service-account.json")
+  package_name("dev.nedaa.android")
+end
+
+for_platform :ios do
+  app_identifier("dev.nedaa.app")
+  apple_id(ENV["APPLE_ID"]) # set in fastlane/.env or shell
+  team_id("TAC8TU62HY")
+  itc_team_id(ENV["ITC_TEAM_ID"]) # App Store Connect team id (numeric); see fastlane/.env.example
+end

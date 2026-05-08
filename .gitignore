@@ -57,4 +57,11 @@ modules/*/android/.gradle/
 # Tamagui
 .tamagui/
 
-metadata
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/staging/
+fastlane/AuthKey_*.p8
+
+# App Store / Play Store credentials
+google-service-account.json

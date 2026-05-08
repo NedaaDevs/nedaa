@@ -1,0 +1,53 @@
+Nedaa is a free, open-source, privacy-first prayer-times and Islamic-companion app. No data collection. No ads. No accounts. No paywalls. No premium tier.
+
+Nedaa (Arabic: نداء, "the call" — a reference to the Adhan) is built around accurate prayer times, real OS-level Fajr alarms, daily Athkar, Qibla, Hijri tools, an Umrah guide, a Qada (fasting) tracker, and a Quran reader in active development.
+
+ACCURATE PRAYER TIMES — ANYWHERE
+• 22 calculation methods (Muslim World League, ISNA, Umm al-Qura, Karachi, Egyptian, Diyanet, JAKIM, Kemenag, Singapore MUIS, and more)
+• Both Hanafi and standard Asr juristic schools
+• High-latitude adjustment
+• Works offline after first sync — no internet needed afterwards
+• Provider-abstracted at the API layer, currently powered by the Aladhan API
+
+A PRAYER ALARM THAT ACTUALLY WAKES YOU
+• Real OS-level alarms — not notifications
+• Apple AlarmKit on iOS 26+ (alarm feature requires iOS 26)
+• Three first-class alarm types: Fajr, Jummah, and custom
+• Bypasses Do Not Disturb and silent mode
+• Optional wake-up challenges (tap or math)
+• Custom Athan sound per alarm type
+
+DAILY ATHKAR
+• Morning and evening remembrances from the Hisn al-Muslim dataset (Sa'id ibn Ali ibn Wahaf al-Qahtani)
+• Multiple reciter audio voices
+• Focus-mode reader
+• Custom user-added athkar
+• Gentle, non-gamified habit tracking with pause/resume
+
+UMRAH GUIDE
+• Step-by-step guide for every ritual
+• Full Prophetic dua at Safa and Marwa
+• Everything you need offline, in one place
+
+QADA FASTING TRACKER
+• Counts down missed Ramadan fasts
+• Ramadan-anchored reminder for the canonical "make up before next Ramadan" deadline
+• Privacy-mode hide
+
+WIDGETS
+• Home Screen widgets for all prayers or just the next one
+• Lock Screen widgets with countdown timers
+• Ramadan-ready: Suhoor and Iftar widgets
+
+PRIVACY-FIRST BY DESIGN
+• Low-accuracy location, used only to compute prayer times — stays on device
+• No advertising ID, no install graph, no contacts access, no profile across devices
+• Open source — audit how your data is handled at github.com/NedaaDevs/nedaa
+• Source transparency: Tanzil Project (Quran text, CC-BY 3.0), Hisn al-Muslim (athkar), Aladhan (prayer times) — all credited in the app
+
+LANGUAGES
+• English, Arabic, Malay, Urdu — RTL-first design
+
+Nedaa is open source under its license at github.com/NedaaDevs/nedaa. Translation contributions welcome at crowdin.com/project/nedaa-v2.
+
+Download Nedaa and simplify your daily worship.

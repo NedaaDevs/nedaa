@@ -1,0 +1,42 @@
+Accurate prayer times with beautiful widgets, smart Fajr alarm, daily Athkar, and a step-by-step Umrah guide — completely free, no ads, and open source.
+
+Nedaa (meaning "calling" in Arabic) gives you precise salah times that match your community's practice, with 20+ trusted calculation methods. Whether you follow Muslim World League, ISNA, Umm al-Qura, or your local Islamic authority — Nedaa has you covered.
+
+🕌 ACCURATE PRAYER TIMES
+• Prayer times for Fajr, Dhuhr, Asr, Maghrib, and Isha based on your location
+• 20+ calculation methods from major Islamic authorities worldwide
+• Automatic location detection or manual city selection
+• Download a full year of prayer times for offline access — no internet needed
+
+⏰ NEVER MISS FAJR AGAIN
+• Smart Fajr alarm with wake-up challenges to make sure you're up
+• Jumu'ah prayer alarm for Friday prayers
+• Custom Athan notifications for each salah with multiple authentic Athan sounds
+• Pre-prayer reminders and Iqama time notifications
+
+📱 HANDY WIDGETS
+• Home screen widgets showing all prayer times or just the next prayer
+• Countdown timers to the next salah
+• Quick access to prayer times without opening the app
+
+📿 DAILY ATHKAR
+• Morning and evening Athkar (remembrances)
+• Audio recitations for each dhikr
+• Track your daily Athkar practice
+
+🕋 UMRAH GUIDE
+• Step-by-step guide for your Umrah journey
+• Clear instructions for every ritual
+• Everything you need for Umrah in one place
+
+🔒 WHY NEDAA?
+• Completely free — no ads, no paywalls, no subscriptions, forever
+• Open source — full transparency in how your data is handled
+• Privacy-first — approximate location only, no tracking
+• Community-driven — available in English, Arabic, Malay, and Urdu
+• Offline prayer times — download once, use anywhere
+• Modern design — clean interface focused on what matters
+
+Nedaa is built by Muslims, for Muslims. Whether you're praying at home, traveling, or looking to match your local mosque timing — Nedaa provides accurate prayer times and Athan notifications without the clutter.
+
+Download Nedaa and simplify your daily salah routine.

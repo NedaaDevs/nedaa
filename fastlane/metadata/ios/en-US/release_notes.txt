@@ -1,0 +1,8 @@
+Reliability and polish across the app:
+
+• Fixed Android tap-blocking gesture on Athkar cards and focus mode
+• Diagnostic logging for Athkar pipeline (exportable from settings)
+• Umrah Sa'i guide now uses the full Prophetic dua at Safa and Marwa
+• Performance and stability improvements
+
+Thank you for using Nedaa. If you find it useful, please consider leaving a review.
