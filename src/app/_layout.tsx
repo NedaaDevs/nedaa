@@ -28,6 +28,8 @@ import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
+import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
+import { installScreenshotRouter } from "@/screenshot-mode/router";
 
 import TrackPlayer from "react-native-track-player";
 import { PlaybackService } from "@/services/playback-service";
@@ -116,6 +118,10 @@ export default function RootLayout() {
     trackAppSession();
   }, []);
 
+  useEffect(() => {
+    return installScreenshotRouter();
+  }, []);
+
   const isReady = (fontsLoaded || fontError) && hasHydrated;
 
   useEffect(() => {
@@ -140,16 +146,18 @@ export default function RootLayout() {
   const isArabicScript = locale === "ar" || locale === "ur";
 
   return (
-    <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
-      <FontLanguage
-        body={isArabicScript ? "ar" : "default"}
-        heading={isArabicScript ? "ar" : "default"}>
-        <RTLProvider>
-          <FontProvider>
-            <AppShell />
-          </FontProvider>
-        </RTLProvider>
-      </FontLanguage>
-    </TamaguiProvider>
+    <ScreenshotModeWrapper>
+      <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
+        <FontLanguage
+          body={isArabicScript ? "ar" : "default"}
+          heading={isArabicScript ? "ar" : "default"}>
+          <RTLProvider>
+            <FontProvider>
+              <AppShell />
+            </FontProvider>
+          </RTLProvider>
+        </FontLanguage>
+      </TamaguiProvider>
+    </ScreenshotModeWrapper>
   );
 }
