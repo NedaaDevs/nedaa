@@ -8,12 +8,12 @@ import { useAppStore } from "@/stores/app";
 import { AppLocale } from "@/enums/app";
 
 const SCREEN_TO_PATH: Record<ScreenshotScreenKey, string> = {
-  "prayer-times": "/",
+  "prayer-times": "/(tabs)/",
   "reliable-alarms": "/alarm",
-  athkar: "/athkar",
-  qibla: "/compass",
+  athkar: "/(tabs)/athkar",
+  qibla: "/(tabs)/compass",
   privacy: "/privacy",
-  qada: "/qada",
+  qada: "/(tabs)/qada",
   quran: "/quran",
   "athkar-with-audio": "/athkar-focus",
 };

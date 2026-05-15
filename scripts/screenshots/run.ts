@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEVICE_MATRIX } from "./device-matrix.ts";
-import { composite } from "./compositor.ts";
+import { renderVariant, closeBrowser } from "./render-variant.ts";
 import { HEADLINE_KEYS } from "./headlines.schema.ts";
 
 type ScreenKey = (typeof HEADLINE_KEYS)[number];
@@ -108,12 +108,14 @@ async function verifyCell(opts: {
   }
   console.log(`[verify] raw captured: ${rawPath}`);
 
-  const out = await composite({
+  const out = await renderVariant({
     rawPng: readFileSync(rawPath),
     screen,
     device,
     locale,
+    variant: "hero",
   });
+  await closeBrowser();
 
   const localeFull = locale === "en" ? "en-US" : "ar-SA";
   const outDir = path.join(OUT_DIR, platform, localeFull, device.id);
