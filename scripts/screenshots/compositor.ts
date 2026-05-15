@@ -95,10 +95,18 @@ export async function composite(input: {
     locale,
   });
 
-  const innerTop = Math.round(device.height * 0.18);
-  const innerLeft = Math.round(device.width * 0.05);
-  const innerWidth = device.width - innerLeft * 2;
-  const innerHeight = Math.round(innerWidth * (device.capturedRawHeight / device.capturedRawWidth));
+  const headlineBottom = Math.round(device.height * 0.18);
+  const bottomMargin = Math.round(device.height * 0.04);
+  const sideMargin = Math.round(device.width * 0.05);
+  const aspect = device.capturedRawHeight / device.capturedRawWidth;
+  const maxWidth = device.width - sideMargin * 2;
+  const maxHeight = device.height - headlineBottom - bottomMargin;
+  // Fit inner content in available area while preserving aspect ratio.
+  const widthFromHeight = Math.round(maxHeight / aspect);
+  const innerWidth = Math.min(maxWidth, widthFromHeight);
+  const innerHeight = Math.round(innerWidth * aspect);
+  const innerLeft = Math.round((device.width - innerWidth) / 2);
+  const innerTop = headlineBottom + Math.round((maxHeight - innerHeight) / 2);
 
   const shadowLayer = await sharp(
     Buffer.from(
