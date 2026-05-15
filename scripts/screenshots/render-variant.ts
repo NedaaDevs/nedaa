@@ -44,8 +44,8 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
   },
   ar: {
     "prayer-times": {
-      headlineLine1: "الأذان،",
-      headlineLine2Italic: "بكرامة من التصميم.",
+      headlineLine1: "نداء الصلاة،",
+      headlineLine2Italic: "بتصميمٍ يليق به.",
     },
   },
 };
@@ -67,8 +67,9 @@ function heroHtml(opts: {
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
-  // Frame dimensions copied from the design.
-  const FRAME_W = 820;
+  // Frame dimensions. Slightly smaller than the editorial mock (820) so the phone
+  // sits inside the canvas with breathing room at the bottom.
+  const FRAME_W = 760;
   const FRAME_ASPECT = 19.5 / 9;
   const FRAME_H = FRAME_W * FRAME_ASPECT;
   const FRAME_RADIUS = FRAME_W * 0.13;
@@ -126,11 +127,11 @@ function heroHtml(opts: {
   .phone-wrap {
     position: absolute;
     left: 50%;
-    bottom: 0;
-    transform: translateX(-50%) translateY(180px);
+    bottom: 140px;
+    transform: translateX(-50%);
     width: ${FRAME_W}px;
     height: ${FRAME_H}px;
-    filter: drop-shadow(0 80px 90px rgba(15,44,68,0.22));
+    filter: drop-shadow(0 60px 80px rgba(15,44,68,0.22));
   }
   .phone {
     width: 100%;
