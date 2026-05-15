@@ -20,6 +20,9 @@ import { PrayerName } from "@/types/prayerTimes";
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
+// Screenshot mode
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
+
 const prayerIcons: Record<PrayerName, React.ElementType> = {
   fajr: Sunrise,
   dhuhr: Sun,
@@ -32,6 +35,10 @@ const PrayerTimesList = () => {
   const { todayTimings, hasError, isLoading, getNextPrayer, loadPrayerTimes, clearError } =
     usePrayerTimesStore();
   const nextPrayer = todayTimings ? getNextPrayer() : null;
+  const screenshotSeed = useScreenshotSeed("prayer-times");
+  const displayNextPrayerName: string | null = screenshotSeed?.nextPrayer
+    ? screenshotSeed.nextPrayer.toLowerCase()
+    : (nextPrayer?.name ?? null);
 
   const handleRetry = async () => {
     clearError();
@@ -100,7 +107,7 @@ const PrayerTimesList = () => {
         scrollEnabled={true}>
         {Object.entries(todayTimings.timings).map(([prayer, time]) => {
           const prayerName = prayer as PrayerName;
-          const isNext = nextPrayer?.name === prayer;
+          const isNext = displayNextPrayerName === prayer;
           const name =
             prayerName === "dhuhr" && isFriday(todayTimings.timezone)
               ? "prayerTimes.jumuah"
