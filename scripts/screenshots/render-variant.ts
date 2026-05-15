@@ -31,9 +31,6 @@ export type RenderInput = {
 };
 
 type HeroCopy = {
-  marginaliaLeft: string;
-  marginaliaRight: string;
-  eyebrow: string;
   headlineLine1: string;
   headlineLine2Italic: string;
 };
@@ -41,18 +38,12 @@ type HeroCopy = {
 const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
   en: {
     "prayer-times": {
-      marginaliaLeft: "Nedaa · نداء",
-      marginaliaRight: "v3.4 · For practicing Muslims",
-      eyebrow: "Plate I · Home",
       headlineLine1: "The call to prayer,",
       headlineLine2Italic: "dignified by design.",
     },
   },
   ar: {
     "prayer-times": {
-      marginaliaLeft: "Nedaa · نداء",
-      marginaliaRight: "v3.4 · للمسلمين الملتزمين",
-      eyebrow: "اللوحة الأولى · الرئيسية",
       headlineLine1: "الأذان،",
       headlineLine2Italic: "بكرامة من التصميم.",
     },
@@ -111,49 +102,10 @@ function heroHtml(opts: {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
   }
-  .dateline {
-    padding: 120px 100px 0;
-    position: relative;
-  }
-  .dateline-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-  }
-  .marginalia {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 22px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #6B7280;
-    font-weight: 500;
-  }
-  hr.rule-strong {
-    border: 0;
-    border-top: 2px solid rgba(15,44,68,0.32);
-    margin: 24px 0 0;
-  }
   .headline-block {
-    padding: 80px 100px 60px;
+    padding: 200px 100px 60px;
     position: relative;
     text-align: center;
-  }
-  .eyebrow {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 24px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #1C5D85;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .eyebrow::before {
-    content: "";
-    width: 10px; height: 10px;
-    background: #1C5D85;
-    border-radius: 999px;
   }
   .headline {
     font-family: '${fontFamily}', system-ui, sans-serif;
@@ -226,16 +178,7 @@ function heroHtml(opts: {
 <body>
   <div aria-hidden="true" class="ruled"></div>
 
-  <div class="dateline">
-    <div class="dateline-inner">
-      <span class="marginalia">${escapeHtml(copy.marginaliaLeft)}</span>
-      <span class="marginalia">${escapeHtml(copy.marginaliaRight)}</span>
-    </div>
-    <hr class="rule-strong"/>
-  </div>
-
   <div class="headline-block">
-    <span class="eyebrow">${escapeHtml(copy.eyebrow)}</span>
     <h1 class="headline">
       ${escapeHtml(copy.headlineLine1)}<br/>
       <span class="italic-accent">${escapeHtml(copy.headlineLine2Italic)}</span>
