@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEVICE_MATRIX } from "./device-matrix.ts";
 import { composite } from "./compositor.ts";
-import { loadHeadlines, HEADLINE_KEYS } from "./headlines.schema.ts";
+import { HEADLINE_KEYS } from "./headlines.schema.ts";
 
 type ScreenKey = (typeof HEADLINE_KEYS)[number];
 
@@ -108,12 +108,9 @@ async function verifyCell(opts: {
   }
   console.log(`[verify] raw captured: ${rawPath}`);
 
-  const headlines = loadHeadlines(locale);
-  const entry = headlines[screen];
   const out = await composite({
     rawPng: readFileSync(rawPath),
-    headline: entry.headline,
-    subhead: entry.subhead,
+    screen,
     device,
     locale,
   });

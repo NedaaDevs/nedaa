@@ -15,8 +15,7 @@ describe("compositor", () => {
     const raw = readFileSync(path.join(FIXTURE_DIR, "raw-prayer-times-en-iphone69.png"));
     const out = await composite({
       rawPng: raw,
-      headline: "Never miss a prayer",
-      subhead: "Accurate times, beautifully shown",
+      screen: "prayer-times",
       device,
       locale: "en",
     });
@@ -30,8 +29,7 @@ describe("compositor", () => {
     const raw = readFileSync(path.join(FIXTURE_DIR, "raw-prayer-times-en-iphone69.png"));
     const out = await composite({
       rawPng: raw,
-      headline: "Never miss a prayer",
-      subhead: "Accurate times, beautifully shown",
+      screen: "prayer-times",
       device,
       locale: "en",
     });
