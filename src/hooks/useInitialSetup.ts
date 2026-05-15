@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import * as Sentry from "@sentry/react-native";
 
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
+
 // Stores
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -13,7 +15,7 @@ import { PrayerTimesDB } from "@/services/db";
 import { QadaDB } from "@/services/qada-db";
 
 const initSentry = (consent: boolean) => {
-  if (!__DEV__ && consent) {
+  if (!IS_SCREENSHOT_MODE && !__DEV__ && consent) {
     Sentry.init({
       dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       enabled: !__DEV__,
