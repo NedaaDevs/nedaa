@@ -23,7 +23,8 @@ export type ScreenshotDeepLink = z.infer<typeof schema>;
 export function parseScreenshotDeepLink(url: string): ScreenshotDeepLink | null {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "nedaa:") return null;
+    const ACCEPTED_PROTOCOLS = new Set(["myapp:", "nedaa:", "dev.nedaa.app:"]);
+    if (!ACCEPTED_PROTOCOLS.has(parsed.protocol)) return null;
     if (parsed.hostname !== "screenshot") return null;
     const screen = parsed.pathname.replace(/^\//, "");
     const locale = parsed.searchParams.get("locale");

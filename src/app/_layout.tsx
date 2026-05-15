@@ -30,6 +30,7 @@ import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
 import { installScreenshotRouter } from "@/screenshot-mode/router";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 import TrackPlayer from "react-native-track-player";
 import { PlaybackService } from "@/services/playback-service";
@@ -90,7 +91,7 @@ function AppShell() {
           />
         )}
 
-        {isFirstRun ? (
+        {isFirstRun && !IS_SCREENSHOT_MODE ? (
           <OnboardingScreen />
         ) : (
           <Stack
