@@ -1,0 +1,15 @@
+{
+  "prayer-times": { "headline": "لا تفوتك صلاة", "subhead": "أوقات دقيقة بعرض جميل" },
+  "reliable-alarms": {
+    "headline": "يوقظك. دون استثناء.",
+    "subhead": "يعمل حين تخفق التطبيقات الأخرى"
+  },
+  "athkar": { "headline": "أذكار الصباح والمساء", "subhead": "أذكار صحيحة بإرشاد لطيف" },
+  "qibla": { "headline": "اعرف القبلة", "subhead": "أينما كنت على الأرض" },
+  "privacy": { "headline": "بياناتك لك", "subhead": "بلا تتبع وبلا تحليلات" },
+  "qada": { "headline": "اقضِ ما فاتك بهدوء", "subhead": "تتبّع الصلوات الفائتة" },
+  "quran": { "headline": "القرآن كما هو", "subhead": "مصحف المدينة بدقة عالية" },
+  "athkar-with-audio": { "headline": "استمع وردِّد", "subhead": "تلاوات لكل ذكر" },
+  "widgets-1": { "headline": "في كل لمحة", "subhead": "الصلاة القادمة على شاشتك" },
+  "widgets-2": { "headline": "بنقرة واحدة", "subhead": "وصول سريع من أي مكان" }
+}
