@@ -14,6 +14,9 @@ import { appSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 import { QadaDB } from "@/services/qada-db";
 
+// Screenshot mode
+import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
+
 const initSentry = (consent: boolean) => {
   if (!IS_SCREENSHOT_MODE && !__DEV__ && consent) {
     Sentry.init({
@@ -35,9 +38,12 @@ export const useInitialSetup = () => {
   const customSoundsStore = useCustomSoundsStore();
 
   useEffect(() => {
-    if (appStore.isFirstRun) return;
+    if (!IS_SCREENSHOT_MODE && appStore.isFirstRun) return;
 
     const initializeApp = async () => {
+      if (IS_SCREENSHOT_MODE) {
+        seedScreenshotState();
+      }
       initSentry(appStore.sendCrashLogs);
       await initDB();
 
