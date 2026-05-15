@@ -18,6 +18,7 @@ import { useUmrahGuideStore } from "@/stores/umrahGuide";
 // Hooks
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 const UMRAH_GUIDE_CARD = {
   id: "umrah-guide-v1",
@@ -33,6 +34,17 @@ export default function MainScreen() {
   const { becameActiveAt } = useAppVisibility();
   const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
   const isFirstMount = useRef(true);
+
+  // Screenshot mode: read seed for this screen. In production builds
+  // (EXPO_PUBLIC_SCREENSHOT_MODE unset) this always returns null and behavior is unchanged.
+  // display* values are prop-drilled into Header / TimingsCarousel.
+  const screenshotSeed = useScreenshotSeed("prayer-times");
+  const displayLocation = screenshotSeed?.location ?? null;
+  const displayNow = screenshotSeed?.frozenNow ?? Date.now();
+  const displayNextPrayer = screenshotSeed?.nextPrayer ?? null;
+  void displayLocation;
+  void displayNow;
+  void displayNextPrayer;
 
   useEffect(() => {
     if (isFirstMount.current) {
