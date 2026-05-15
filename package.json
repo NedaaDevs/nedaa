@@ -27,7 +27,7 @@
     "release:android:closed": "bun run build:android && bun run submit:android:closed",
     "release:android:internal": "bun run build:android && bun run submit:android:internal",
     "release:android:production": "bun run build:android && bun run submit:android:production",
-    "screenshots:verify": "cd scripts/screenshots && bun run.ts verify",
+    "screenshots:verify": "cd scripts/screenshots && PATH=\"$HOME/.maestro/bin:$PATH\" bun run.ts verify",
     "eas-build-pre-install": "[ \"$BUILD_VARIANT\" = \"hms\" ] && [ -n \"$AGCONNECT_SERVICES_JSON\" ] && cp \"$AGCONNECT_SERVICES_JSON\" android/app/agconnect-services.json || true"
   },
   "jest": {
