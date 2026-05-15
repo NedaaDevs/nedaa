@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2064 2752">
+  <defs>
+    <mask id="cutout">
+      <rect width="2064" height="2752" fill="white"/>
+      <rect x="90" y="420" width="1884" height="2210" rx="60" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="2064" height="2752" fill="#1d2027" mask="url(#cutout)"/>
+</svg>
