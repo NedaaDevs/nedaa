@@ -15,6 +15,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 
 // Hooks
 import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -27,7 +28,7 @@ import PreviousPrayer from "@/components/PreviousPrayer";
 import { SkeletonText } from "@/components/ui/skeleton";
 
 // Types
-import { OtherTimingName } from "@/types/prayerTimes";
+import { OtherTimingName, PrayerName } from "@/types/prayerTimes";
 
 const Header = () => {
   const { t } = useTranslation();
@@ -53,21 +54,35 @@ const Header = () => {
     setShowOtherTiming((current) => !current);
   }, []);
 
+  const screenshotSeed = useScreenshotSeed("prayer-times");
+
   const nextPrayer = todayTimings ? getNextPrayer() : null;
   const nextOtherTiming = todayTimings ? getNextOtherTiming() : null;
   const previousPrayer = todayTimings ? getPreviousPrayer() : null;
   const now = timeZonedNow(locationDetails.timezone);
   const todayHijri = HijriNative.today(locationDetails.timezone);
+
+  const displayCity =
+    screenshotSeed?.location.city ?? localizedLocation.city ?? locationDetails.address?.city;
+
+  const displayNextPrayer = (() => {
+    if (!screenshotSeed || !todayTimings) return nextPrayer;
+    const seedName = screenshotSeed.nextPrayer.toLowerCase() as PrayerName;
+    const seedTime = todayTimings.timings[seedName];
+    if (!seedTime) return nextPrayer;
+    return { name: seedName, time: seedTime, date: todayTimings.date };
+  })();
+
   const hijriDate =
     hijriDaysOffset !== 0 ? HijriNative.addDays(todayHijri, hijriDaysOffset) : todayHijri;
 
-  const timing = showOtherTiming ? nextOtherTiming : nextPrayer;
+  const timing = showOtherTiming ? nextOtherTiming : displayNextPrayer;
 
   const {
     mode: timerMode,
     display: timerDisplay,
     iqamaPrayerName,
-  } = useCountdownTimer(nextPrayer, previousPrayer, locationDetails.timezone);
+  } = useCountdownTimer(displayNextPrayer, previousPrayer, locationDetails.timezone);
 
   // Local wrapper so React Compiler tracks locale + useWesternNumerals as dependencies
   const formatNum = (str: string) => {
@@ -162,7 +177,7 @@ const Header = () => {
           textAlign="center"
           paddingHorizontal="$2"
           numberOfLines={1}>
-          {localizedLocation.city ?? locationDetails.address?.city}
+          {displayCity}
         </Text>
         <Text
           size="sm"
