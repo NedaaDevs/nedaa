@@ -1,0 +1,10 @@
+appId: dev.nedaa.app
+---
+- launchApp:
+    clearState: false
+- openLink: ${SCREENSHOT_URL}
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: "screenshot-ready"
+- takeScreenshot: ${OUT_PATH}
