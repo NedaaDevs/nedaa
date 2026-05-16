@@ -23,7 +23,7 @@ const FONT_FACES = `
 export type Variant = "hero" | "fajr" | "athkar" | "honest" | "plate";
 
 export type RenderInput = {
-  rawPng: Buffer;
+  rawPng?: Buffer;
   screen: string;
   locale: "en" | "ar";
   device: DeviceSpec;
@@ -217,21 +217,174 @@ export async function closeBrowser(): Promise<void> {
   }
 }
 
+type PromiseRow = { key: string; body: string };
+
+const PROMISES_COPY: Record<
+  "en" | "ar",
+  { headlineLine1: string; headlineLine1Italic: string; headlineLine2: string; rows: PromiseRow[] }
+> = {
+  en: {
+    headlineLine1: "What we",
+    headlineLine1Italic: "don't",
+    headlineLine2: "take from you.",
+    rows: [
+      { key: "Free", body: "Forever. Not free-as-in-trial." },
+      { key: "No ads", body: "Worship is not a billboard." },
+      { key: "No accounts", body: "No sign-up. No email. No password." },
+      { key: "No tracking", body: "No third-party SDKs. We don’t know who you are." },
+      { key: "Open source", body: "github.com/NedaaDevs/nedaa. Read every line." },
+    ],
+  },
+  ar: {
+    headlineLine1: "ما",
+    headlineLine1Italic: "لا",
+    headlineLine2: "نأخذه منك.",
+    rows: [
+      { key: "مجاني", body: "إلى الأبد. ليس مجرّد فترة تجريبية." },
+      { key: "بلا إعلانات", body: "العبادة ليست لوحة إعلانات." },
+      { key: "بلا حسابات", body: "بلا تسجيل، ولا بريد، ولا كلمة مرور." },
+      { key: "بلا تتبّع", body: "لا أنظمة تتبّع خارجية. لا نعرف من أنت." },
+      { key: "مفتوح المصدر", body: "github.com/NedaaDevs/nedaa. اقرأ كلّ سطر." },
+    ],
+  },
+};
+
+function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string {
+  const { device, locale } = opts;
+  const copy = PROMISES_COPY[locale];
+  const isAr = locale === "ar";
+  const dir = isAr ? "rtl" : "ltr";
+  const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
+
+  const rows = copy.rows
+    .map(
+      (r, i) => `
+    <div class="promise">
+      <span class="num">0${i + 1}</span>
+      <div class="text">
+        <div class="key">${escapeHtml(r.key)}</div>
+        <div class="body">${escapeHtml(r.body)}</div>
+      </div>
+    </div>`
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="${locale}" dir="${dir}">
+<head>
+<meta charset="utf-8"/>
+<style>
+  ${FONT_FACES}
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: ${device.width}px;
+    height: ${device.height}px;
+    background: #F5F1E6;
+    color: #1C5D85;
+    font-family: '${fontFamily}', system-ui, sans-serif;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+  }
+  .ruled {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 119px, rgba(15,44,68,0.10) 119px, rgba(15,44,68,0.10) 120px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+  }
+  .headline-block {
+    padding: 200px 100px 60px;
+    text-align: center;
+    position: relative;
+  }
+  .headline {
+    font-family: '${fontFamily}', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: ${isAr ? 148 : 160}px;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+    color: #0F2C44;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .italic-accent {
+    font-style: italic;
+    font-weight: 700;
+    color: #1C5D85;
+  }
+  .promises {
+    padding: 80px 110px 0;
+    position: relative;
+  }
+  .promise {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 48px;
+    align-items: baseline;
+    padding: 42px 0;
+    border-top: 1px solid rgba(15,44,68,0.22);
+  }
+  .promise:last-child { border-bottom: 1px solid rgba(15,44,68,0.22); }
+  .num {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 36px;
+    color: #1C5D85;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .key {
+    font-family: '${fontFamily}', system-ui, sans-serif;
+    font-size: 80px;
+    font-weight: 700;
+    color: #0F2C44;
+    letter-spacing: -0.015em;
+    line-height: 1.0;
+  }
+  .body {
+    font-family: '${fontFamily}', system-ui, sans-serif;
+    font-size: 34px;
+    color: #4B5563;
+    margin-top: 16px;
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+  <div aria-hidden="true" class="ruled"></div>
+
+  <div class="headline-block">
+    <h1 class="headline">
+      ${escapeHtml(copy.headlineLine1)} <span class="italic-accent">${escapeHtml(copy.headlineLine1Italic)}</span><br/>
+      ${escapeHtml(copy.headlineLine2)}
+    </h1>
+  </div>
+
+  <div class="promises">${rows}
+  </div>
+</body>
+</html>`;
+}
+
 export async function renderVariant(input: RenderInput): Promise<Buffer> {
-  if (input.variant !== "hero") {
-    throw new Error(`Variant ${input.variant} not yet implemented. Only "hero" is wired.`);
+  let html: string;
+  if (input.variant === "hero") {
+    if (!input.rawPng) throw new Error('Variant "hero" requires rawPng.');
+    const copy = HERO_COPY[input.locale][input.screen];
+    if (!copy) {
+      throw new Error(`No hero copy for ${input.locale}/${input.screen}. Add it to HERO_COPY.`);
+    }
+    html = heroHtml({
+      rawPngBase64: input.rawPng.toString("base64"),
+      copy,
+      device: input.device,
+      locale: input.locale,
+    });
+  } else if (input.variant === "honest") {
+    html = promisesHtml({ device: input.device, locale: input.locale });
+  } else {
+    throw new Error(`Variant ${input.variant} not yet implemented.`);
   }
-  const copy = HERO_COPY[input.locale][input.screen];
-  if (!copy) {
-    throw new Error(`No hero copy for ${input.locale}/${input.screen}. Add it to HERO_COPY.`);
-  }
-  const rawPngBase64 = input.rawPng.toString("base64");
-  const html = heroHtml({
-    rawPngBase64,
-    copy,
-    device: input.device,
-    locale: input.locale,
-  });
 
   const browser = await getBrowser();
   const ctx = await browser.newContext({
