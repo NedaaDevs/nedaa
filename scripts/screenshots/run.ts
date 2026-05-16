@@ -65,23 +65,15 @@ function getBootedDeviceId(): string {
   );
 }
 
-async function verifyCell(opts: {
+function captureRaw(opts: {
   screen: ScreenKey;
   locale: "en" | "ar";
-  seed?: string;
-  device?: string;
-}) {
-  const { screen, locale } = opts;
-  const seed = opts.seed ?? DEFAULT_SEED[screen];
-  const deviceId = opts.device ?? "iphone-6.9";
-
-  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
-  if (!device) throw new Error(`Unknown device: ${deviceId}`);
-
-  const bootedUdid = getBootedDeviceId();
-
-  const platform = "ios";
-  const rawDir = path.join(RAW_DIR, platform, locale, device.id);
+  seed: string;
+  deviceId: string;
+  bootedUdid: string;
+}): Buffer {
+  const { screen, locale, seed, deviceId, bootedUdid } = opts;
+  const rawDir = path.join(RAW_DIR, "ios", locale, deviceId);
   mkdirSync(rawDir, { recursive: true });
   const idx = String(SCREEN_INDEX[screen]).padStart(2, "0");
   // Maestro appends `.png` to whatever path it gets. Pass the stem; read back with extension.
@@ -91,7 +83,7 @@ async function verifyCell(opts: {
   const url = `myapp://screenshot/${screen}?locale=${locale}&seed=${seed}`;
   const flowPath = path.join(SCRIPT_DIR, "flows", "single-screen.yaml");
 
-  console.log(`[verify] firing Maestro flow → ${url}`);
+  console.log(`[capture] ${locale} → ${url}`);
   sh("maestro", [
     "--device",
     bootedUdid,
@@ -106,21 +98,51 @@ async function verifyCell(opts: {
   if (!existsSync(rawPath)) {
     throw new Error(`Maestro did not produce ${rawPath} — check the flow output above`);
   }
-  console.log(`[verify] raw captured: ${rawPath}`);
+  console.log(`[capture] raw captured: ${rawPath}`);
+  return readFileSync(rawPath);
+}
 
-  const out = await renderVariant({
-    rawPng: readFileSync(rawPath),
-    screen,
-    device,
-    locale,
-    variant: "hero",
-  });
+async function verifyCell(opts: {
+  screen: ScreenKey;
+  locale: "en" | "ar";
+  seed?: string;
+  device?: string;
+  variant?: "hero" | "athkar";
+}) {
+  const { screen, locale } = opts;
+  const variant = opts.variant ?? "hero";
+  const seed = opts.seed ?? DEFAULT_SEED[screen];
+  const deviceId = opts.device ?? "iphone-6.9";
+
+  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
+  if (!device) throw new Error(`Unknown device: ${deviceId}`);
+
+  const bootedUdid = getBootedDeviceId();
+  const idx = String(SCREEN_INDEX[screen]).padStart(2, "0");
+
+  let out: Buffer;
+  if (variant === "athkar") {
+    // Bilingual variant: capture en + ar then composite both into one canvas.
+    const enRaw = captureRaw({ screen, locale: "en", seed, deviceId, bootedUdid });
+    const arRaw = captureRaw({ screen, locale: "ar", seed, deviceId, bootedUdid });
+    out = await renderVariant({
+      rawPngs: { en: enRaw, ar: arRaw },
+      screen,
+      device,
+      locale,
+      variant: "athkar",
+    });
+  } else {
+    const raw = captureRaw({ screen, locale, seed, deviceId, bootedUdid });
+    out = await renderVariant({ rawPng: raw, screen, device, locale, variant: "hero" });
+  }
   await closeBrowser();
 
   const localeFull = locale === "en" ? "en-US" : "ar-SA";
-  const outDir = path.join(OUT_DIR, platform, localeFull, device.id);
+  const outDir = path.join(OUT_DIR, "ios", localeFull, device.id);
   mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, `${idx}-${screen}.png`);
+  const outName = variant === "athkar" ? `03-athkar-bilingual.png` : `${idx}-${screen}.png`;
+  const outPath = path.join(outDir, outName);
   writeFileSync(outPath, out);
 
   console.log(`\n✓ Verification cell produced:\n  ${outPath}\n`);
@@ -146,12 +168,19 @@ if (import.meta.main) {
       console.error(`Unknown screen: ${screen}. Valid: ${HEADLINE_KEYS.join(", ")}`);
       process.exit(2);
     }
-    verifyCell({ screen, locale, seed: flags.seed, device: flags.device }).catch((e) => {
+    const variant = (flags.variant ?? "hero") as "hero" | "athkar";
+    if (variant !== "hero" && variant !== "athkar") {
+      console.error(`Unknown variant: ${variant}. Valid: hero, athkar`);
+      process.exit(2);
+    }
+    verifyCell({ screen, locale, seed: flags.seed, device: flags.device, variant }).catch((e) => {
       console.error(e);
       process.exit(1);
     });
   } else {
-    console.log("Usage: bun run.ts verify [--screen=<key>] [--locale=en|ar] [--seed=<key>]");
+    console.log(
+      "Usage: bun run.ts verify [--screen=<key>] [--locale=en|ar] [--variant=hero|athkar] [--seed=<key>]"
+    );
     process.exit(2);
   }
 }
