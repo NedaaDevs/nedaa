@@ -61,11 +61,67 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine1: "The call to prayer,",
       headlineLine2Italic: "dignified by design.",
     },
+    athkar: {
+      headlineLine1: "Morning and evening,",
+      headlineLine2Italic: "remembered out loud.",
+    },
+    qibla: {
+      headlineLine1: "Where to face,",
+      headlineLine2Italic: "no doubt about it.",
+    },
+    qada: {
+      headlineLine1: "The fasts you owe,",
+      headlineLine2Italic: "counted, not forgotten.",
+    },
+    privacy: {
+      headlineLine1: "Your data,",
+      headlineLine2Italic: "stays on your phone.",
+    },
+    quran: {
+      headlineLine1: "The mushaf,",
+      headlineLine2Italic: "page by page.",
+    },
+    "athkar-with-audio": {
+      headlineLine1: "Read along,",
+      headlineLine2Italic: "in the reciter's voice.",
+    },
+    "reliable-alarms": {
+      headlineLine1: "A Fajr alarm that rings,",
+      headlineLine2Italic: "not just notifies.",
+    },
   },
   ar: {
     "prayer-times": {
       headlineLine1: "نداء الصلاة،",
       headlineLine2Italic: "بتصميمٍ يليق به.",
+    },
+    athkar: {
+      headlineLine1: "أذكار الصباح والمساء،",
+      headlineLine2Italic: "تُتلى بصوتٍ مسموع.",
+    },
+    qibla: {
+      headlineLine1: "إلى أين تتّجه،",
+      headlineLine2Italic: "بيقينٍ تامّ.",
+    },
+    qada: {
+      headlineLine1: "ما عليك من صيام،",
+      headlineLine2Italic: "محفوظٌ لا يُنسى.",
+    },
+    privacy: {
+      headlineLine1: "بياناتك،",
+      headlineLine2Italic: "تبقى على جهازك.",
+    },
+    quran: {
+      headlineLine1: "المصحف،",
+      headlineLine2Italic: "صفحةً صفحة.",
+    },
+    "athkar-with-audio": {
+      headlineLine1: "اقرأ معه،",
+      headlineLine2Italic: "بصوت القارئ.",
+    },
+    "reliable-alarms": {
+      headlineLine1: "منبّه فجرٍ يرنّ،",
+      headlineLine2Italic: "لا مجرّد تنبيه.",
     },
   },
 };
