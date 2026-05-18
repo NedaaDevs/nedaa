@@ -1,0 +1,14 @@
+appId: dev.nedaa.android
+---
+# Stop, then open the link cold so the app launches *with* the deep link as
+# its initial URL — the only point Expo Router reliably navigates from.
+# Android shows no SpringBoard scheme prompt, so there is no dialog to dismiss.
+- stopApp
+- openLink: ${SCREENSHOT_URL}
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: ${READY_ID}
+    timeout: 20000
+- takeScreenshot: ${OUT_PATH}
