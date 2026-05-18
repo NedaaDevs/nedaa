@@ -33,6 +33,7 @@ import {
 } from "@/utils/compass";
 import { reshapeArabic } from "@/utils/reshaper";
 import { formatNumberToLocale } from "@/utils/number";
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 const compassSize = 300;
 const centerX = compassSize / 2;
@@ -58,8 +59,23 @@ const tickMarks = Array.from({ length: 36 }, (_, i) => {
 
 const Compass = () => {
   const isFocused = useIsFocused();
-  const { heading, accuracy, isAvailable, isActive } = useCompass(!isFocused);
+  const compass = useCompass(!isFocused);
+  const qiblaSeed = useScreenshotSeed("qibla");
   const { locationDetails } = useLocationStore();
+
+  // Screenshot mode: bypass the hardware gate (no magnetometer on simulators) and
+  // feed seeded values so the full compass UI renders for App Store captures.
+  // Production behaviour is untouched when qiblaSeed is null.
+  const heading = qiblaSeed ? qiblaSeed.heading : compass.heading;
+  const accuracy = qiblaSeed ? 3 : compass.accuracy;
+  const isAvailable = qiblaSeed ? true : compass.isAvailable;
+  const isActive = qiblaSeed ? true : compass.isActive;
+
+  // Real users use the live location store. Screenshots override the coords with
+  // the seeded city so qibla bearing/distance are meaningful (Makkah is too close).
+  const qiblaCoords = qiblaSeed
+    ? { latitude: qiblaSeed.lat, longitude: qiblaSeed.lng }
+    : locationDetails.coords;
   const theme = useTheme();
   const { t } = useTranslation();
 
@@ -80,8 +96,8 @@ const Compass = () => {
     [theme]
   );
 
-  const qiblaDirection = locationDetails.coords
-    ? calculateQiblaDirection(locationDetails.coords.latitude, locationDetails.coords.longitude)
+  const qiblaDirection = qiblaCoords
+    ? calculateQiblaDirection(qiblaCoords.latitude, qiblaCoords.longitude)
     : null;
 
   const proximityState: QiblaProximityState =
@@ -89,18 +105,14 @@ const Compass = () => {
       ? getQiblaProximityState(heading, qiblaDirection)
       : "searching";
 
-  const distanceKm = locationDetails.coords
-    ? calculateDistanceToMecca(locationDetails.coords.latitude, locationDetails.coords.longitude)
+  const distanceKm = qiblaCoords
+    ? calculateDistanceToMecca(qiblaCoords.latitude, qiblaCoords.longitude)
     : null;
 
   const isNearKaaba = distanceKm !== null && distanceKm < 1;
 
-  const distanceText = locationDetails.coords
-    ? formatDistanceToMecca(
-        locationDetails.coords.latitude,
-        locationDetails.coords.longitude,
-        t("compass.km")
-      )
+  const distanceText = qiblaCoords
+    ? formatDistanceToMecca(qiblaCoords.latitude, qiblaCoords.longitude, t("compass.km"))
     : null;
 
   // Reanimated shared values

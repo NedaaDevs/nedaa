@@ -38,6 +38,7 @@ import { Plus, Check, X, CalendarDays, Settings } from "lucide-react-native";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -57,7 +58,20 @@ const QadaScreen = () => {
     deleteEntry,
     getRemaining,
     getCompletionPercentage,
+    seedScreenshotState,
   } = useQadaStore();
+
+  const screenshotSeed = useScreenshotSeed("qada");
+
+  // In screenshot mode the qada SQLite store is empty, so the screen would
+  // render zeros and the "no entries yet" empty state. Derive a believable
+  // populated dashboard from the active preset. Runs after app setup's
+  // loadData() (which clears state from the empty DB), keeping production
+  // behavior untouched when no seed is active.
+  useEffect(() => {
+    if (!screenshotSeed) return;
+    seedScreenshotState(screenshotSeed);
+  }, [screenshotSeed, seedScreenshotState]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [amount, setAmount] = useState(1);

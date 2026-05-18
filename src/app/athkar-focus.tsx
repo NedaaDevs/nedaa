@@ -56,6 +56,7 @@ import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { useAthkarFocusScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -117,6 +118,11 @@ const AthkarFocusScreen = () => {
   const audioPosition = useAthkarAudioStore((s) => s.position);
 
   const shortVersion = useAthkarStore((s) => s.shortVersion);
+
+  // Screenshot mode: ensures the morning list, a selected reciter, and a
+  // paused mid-playback audio state so the reader renders populated. No-op
+  // (returns false) outside screenshot mode — production behavior unchanged.
+  useAthkarFocusScreenshotSeed();
 
   const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF;
   const isAutopilot = playbackMode === PLAYBACK_MODE.AUTOPILOT;

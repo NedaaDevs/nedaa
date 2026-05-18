@@ -20,6 +20,7 @@ import { useAthkarStore } from "@/stores/athkar";
 
 // Hooks
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
+import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -57,6 +58,10 @@ const AthkarTabs = () => {
   // Initialize athkar data
   useInitializeAthkar();
 
+  // Screenshot mode: seeds morning progress + streak and forces the period.
+  // Returns null outside screenshot mode so production behavior is unchanged.
+  const screenshotPeriod = useAthkarLandingScreenshotSeed();
+
   // Check for daily reset and validate streak on mount
   useEffect(() => {
     if (activeTab !== "my-athkar") {
@@ -65,6 +70,14 @@ const AthkarTabs = () => {
     validateDailyStreak();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Force the seeded period (e.g. Morning) for the screenshot capture.
+  useEffect(() => {
+    if (!screenshotPeriod) return;
+    const period = screenshotPeriod === "evening" ? ATHKAR_TYPE.EVENING : ATHKAR_TYPE.MORNING;
+    setActiveTab(period);
+    setCurrentType(period);
+  }, [screenshotPeriod, setCurrentType]);
 
   const handleRequestOnboarding = useCallback(() => {
     setShowOnboarding(true);

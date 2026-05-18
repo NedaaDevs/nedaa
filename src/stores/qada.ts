@@ -15,6 +15,10 @@ import i18next from "@/localization/i18n";
 // Stores
 import { useNotificationStore } from "@/stores/notification";
 import { useCustomSoundsStore } from "@/stores/customSounds";
+import { useScreenshotStore } from "@/stores/screenshotStore";
+
+// Screenshot mode
+import { selectScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 // Types
 import type { QadaHistory, QadaSettings } from "@/services/qada-db";
@@ -84,6 +88,13 @@ export type QadaState = {
   deleteEntry: (id: number) => Promise<boolean>;
   resetAll: () => Promise<boolean>;
   clearError: () => void;
+  seedScreenshotState: (counts: {
+    fajr: number;
+    dhuhr: number;
+    asr: number;
+    maghrib: number;
+    isha: number;
+  }) => void;
 
   // Computed
   getRemaining: () => number;
@@ -114,6 +125,13 @@ export const useQadaStore = create<QadaState>()(
          * Load Qada data from database
          */
         loadData: async () => {
+          // In screenshot mode the qada SQLite store is empty; reading from it
+          // would clobber the seeded dashboard set by seedScreenshotState().
+          // The screen owns seeding, so skip the DB read entirely here.
+          if (selectScreenshotSeed(useScreenshotStore.getState(), "qada")) {
+            return;
+          }
+
           try {
             set({ isLoading: true, hasError: false, errorMessage: "" });
 
@@ -420,9 +438,8 @@ export const useQadaStore = create<QadaState>()(
               });
 
               // Cancel notifications since all data is reset
-              const { cancelAllQadaNotifications } = await import(
-                "@/utils/qadaNotificationScheduler"
-              );
+              const { cancelAllQadaNotifications } =
+                await import("@/utils/qadaNotificationScheduler");
               await cancelAllQadaNotifications();
             }
 
@@ -444,6 +461,55 @@ export const useQadaStore = create<QadaState>()(
          */
         clearError: () => {
           set({ hasError: false, errorMessage: "" });
+        },
+
+        /**
+         * Populate in-memory state for App Store screenshots. Screenshot mode
+         * runs against an empty SQLite store, so the screen would otherwise
+         * render zeros and the "no entries yet" empty state. This derives a
+         * believable populated dashboard from the preset's per-prayer missed
+         * counts without touching the database or scheduling notifications.
+         */
+        seedScreenshotState: (counts) => {
+          const perEntry = [
+            counts.fajr,
+            counts.dhuhr,
+            counts.asr,
+            counts.maghrib,
+            counts.isha,
+          ].filter((count) => count > 0);
+
+          const totalMissed = perEntry.reduce((sum, count) => sum + count, 0);
+          // A believable history: the user has already completed some days,
+          // so the progress bar and "Completed" stat are non-zero.
+          const totalCompleted = Math.round(totalMissed * 0.6);
+          const totalOriginal = totalMissed + totalCompleted;
+
+          const baseTime = Date.UTC(2025, 4, 1, 9, 0, 0);
+          const pendingEntries: QadaHistory[] = perEntry.map((count, index) => {
+            // Space entries a few days apart so the list reads as real history.
+            const createdAt = new Date(baseTime - index * 3 * 86_400_000).toISOString();
+            return {
+              id: index + 1,
+              count,
+              type: "added",
+              status: "pending",
+              notes: null,
+              created_at: createdAt,
+              updated_at: createdAt,
+            };
+          });
+
+          set({
+            totalMissed,
+            totalCompleted,
+            totalOriginal,
+            pendingEntries,
+            history: pendingEntries,
+            isLoading: false,
+            hasError: false,
+            errorMessage: "",
+          });
         },
 
         /**
