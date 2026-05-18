@@ -1,0 +1,11 @@
+appId: dev.nedaa.app
+---
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible:
+        text: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"

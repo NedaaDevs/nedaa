@@ -4,8 +4,14 @@ import { useScreenshotStore, type ScreenshotScreenKey } from "@/stores/screensho
 import { getPreset } from "@/screenshot-mode/presets";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { parseScreenshotDeepLink } from "@/screenshot-mode/parseScreenshotDeepLink";
+import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
 import { useAppStore } from "@/stores/app";
 import { AppLocale } from "@/enums/app";
+
+// How long to let the target screen mount and settle before re-arming the
+// readiness marker. Keeps a single long-lived app session from letting the
+// capture fire against the previous screen during an in-place navigation.
+const SETTLE_MS = 900;
 
 const SCREEN_TO_PATH: Record<ScreenshotScreenKey, string> = {
   "prayer-times": "/(tabs)/",
@@ -31,12 +37,13 @@ function handleUrl(url: string | null | undefined) {
     console.error(`[screenshot] no preset for ${link.screen}/${link.seed}`);
     return;
   }
-  useScreenshotStore.getState().setShot({
-    screen: link.screen,
-    locale: link.locale,
-    seed: link.seed,
-    payload: payload as Record<string, unknown>,
-  });
+  // Clear the readiness marker first so a single long-lived app session can
+  // never let the capture fire against the previous screen mid-navigation.
+  useScreenshotStore.getState().reset();
+
+  // Location is seeded with city/country localized for the target locale.
+  seedScreenshotState(link.locale);
+
   const targetLocale = link.locale === "ar" ? AppLocale.AR : AppLocale.EN;
   if (useAppStore.getState().locale !== targetLocale) {
     console.log(`[screenshot] switching i18n locale to ${targetLocale}`);
@@ -44,6 +51,18 @@ function handleUrl(url: string | null | undefined) {
   }
   console.log(`[screenshot] navigating to ${SCREEN_TO_PATH[link.screen]}`);
   expoRouter.replace(SCREEN_TO_PATH[link.screen] as never);
+
+  // Re-arm the readiness marker only after the target screen has had time to
+  // mount. The marker is keyed by screen+locale so the Maestro flow waits for
+  // *this* capture specifically, even across an in-place navigation.
+  setTimeout(() => {
+    useScreenshotStore.getState().setShot({
+      screen: link.screen,
+      locale: link.locale,
+      seed: link.seed,
+      payload: payload as Record<string, unknown>,
+    });
+  }, SETTLE_MS);
 }
 
 export function installScreenshotRouter(): (() => void) | undefined {

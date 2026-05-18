@@ -8,17 +8,27 @@ export function ScreenshotModeWrapper({ children }: { children: ReactNode }) {
   return <ScreenshotModeWrapperInner>{children}</ScreenshotModeWrapperInner>;
 }
 
+const MARKER_STYLE = { position: "absolute", width: 1, height: 1, opacity: 0.01 } as const;
+
 function ScreenshotModeWrapperInner({ children }: { children: ReactNode }) {
   const screen = useScreenshotStore((s) => s.screen);
+  const locale = useScreenshotStore((s) => s.locale);
   return (
     <>
       {children}
       {screen !== null ? (
-        <View
-          testID="screenshot-ready"
-          accessibilityLabel="screenshot-ready"
-          style={{ position: "absolute", width: 1, height: 1, opacity: 0.01 }}
-        />
+        <>
+          <View
+            testID="screenshot-ready"
+            accessibilityLabel="screenshot-ready"
+            style={MARKER_STYLE}
+          />
+          <View
+            testID={`shot-ready-${screen}-${locale}`}
+            accessibilityLabel={`shot-ready-${screen}-${locale}`}
+            style={MARKER_STYLE}
+          />
+        </>
       ) : null}
     </>
   );

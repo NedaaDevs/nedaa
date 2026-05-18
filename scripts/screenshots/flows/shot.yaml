@@ -1,0 +1,24 @@
+appId: dev.nedaa.app
+---
+# Stop, then open the link cold: the app launches *with* the deep link as its
+# initial URL (Linking.getInitialURL), which is the only point Expo Router
+# reliably navigates from. Onboarding is already cleared by boot.yaml (state
+# persists across stopApp), so no Continue tap is needed here.
+- stopApp
+- openLink: ${SCREENSHOT_URL}
+# iOS 17+ shows a SpringBoard confirmation ("Open in <App>?") for custom-scheme
+# links opened from outside the app. Dismiss it so the URL reaches the router.
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: ${READY_ID}
+    timeout: 20000
+- takeScreenshot: ${OUT_PATH}
