@@ -3,12 +3,12 @@ import { parseScreenshotDeepLink } from "@/screenshot-mode/parseScreenshotDeepLi
 describe("parseScreenshotDeepLink", () => {
   test("parses a valid deep link", () => {
     const result = parseScreenshotDeepLink(
-      "nedaa://screenshot/prayer-times?locale=en&seed=madinah-dhuhr-2h14m"
+      "nedaa://screenshot/prayer-times?locale=en&seed=makkah-dhuhr-2h14m"
     );
     expect(result).toEqual({
       screen: "prayer-times",
       locale: "en",
-      seed: "madinah-dhuhr-2h14m",
+      seed: "makkah-dhuhr-2h14m",
     });
   });
 

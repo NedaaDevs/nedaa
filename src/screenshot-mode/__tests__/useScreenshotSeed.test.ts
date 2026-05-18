@@ -22,7 +22,7 @@ describe("selectScreenshotSeed", () => {
     useScreenshotStore.getState().setShot({
       screen: "prayer-times",
       locale: "en",
-      seed: "madinah-dhuhr-2h14m",
+      seed: "makkah-dhuhr-2h14m",
       payload: { city: "Madinah" },
     });
     expect(selectScreenshotSeed(useScreenshotStore.getState(), "prayer-times")).toEqual({

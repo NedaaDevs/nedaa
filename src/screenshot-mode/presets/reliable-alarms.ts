@@ -12,7 +12,7 @@ const raw = {
   "fajr-madinah-ringing": {
     ringingPrayer: "Fajr",
     ringingAt: Date.parse("2026-05-13T04:23:00+03:00"),
-    city: "Madinah",
+    city: "Makkah",
   },
 } as const;
 

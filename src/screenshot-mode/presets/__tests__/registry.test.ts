@@ -1,10 +1,10 @@
 import { presets, getPreset } from "@/screenshot-mode/presets";
 
 describe("preset registry", () => {
-  test("prayer-times has the madinah-dhuhr-2h14m preset", () => {
-    const preset = getPreset("prayer-times", "madinah-dhuhr-2h14m");
+  test("prayer-times has the makkah-dhuhr-2h14m preset", () => {
+    const preset = getPreset("prayer-times", "makkah-dhuhr-2h14m");
     expect(preset).not.toBeNull();
-    expect(preset?.location.city).toBe("Madinah");
+    expect(preset?.location.city).toBe("Makkah");
   });
 
   test("getPreset returns null for unknown seed", () => {

@@ -62,8 +62,10 @@ const Header = () => {
   const now = timeZonedNow(locationDetails.timezone);
   const todayHijri = HijriNative.today(locationDetails.timezone);
 
-  const displayCity =
-    screenshotSeed?.location.city ?? localizedLocation.city ?? locationDetails.address?.city;
+  // localizedLocation is the locale-aware source (in screenshot mode it is
+  // seeded per-locale); the preset's plain-string city would render English
+  // under an Arabic UI, so it is intentionally not used for display.
+  const displayCity = localizedLocation.city ?? locationDetails.address?.city;
 
   const displayNextPrayer = (() => {
     if (!screenshotSeed || !todayTimings) return nextPrayer;

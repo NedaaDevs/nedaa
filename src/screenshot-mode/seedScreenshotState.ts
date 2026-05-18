@@ -1,11 +1,17 @@
 import { useLocationStore } from "@/stores/location";
 
-export function seedScreenshotState() {
+const LOCALIZED_MAKKAH: Record<"en" | "ar", { city: string; country: string }> = {
+  en: { city: "Makkah", country: "Saudi Arabia" },
+  ar: { city: "مكة المكرمة", country: "المملكة العربية السعودية" },
+};
+
+export function seedScreenshotState(locale: "en" | "ar" = "en") {
+  const place = LOCALIZED_MAKKAH[locale];
   useLocationStore.setState({
     locationDetails: {
       coords: {
-        latitude: 24.4673,
-        longitude: 39.6112,
+        latitude: 21.4225,
+        longitude: 39.8262,
         altitude: null,
         accuracy: null,
         altitudeAccuracy: null,
@@ -13,23 +19,23 @@ export function seedScreenshotState() {
         speed: null,
       },
       address: {
-        city: "Madinah",
-        country: "Saudi Arabia",
+        city: place.city,
+        country: place.country,
       },
       timezone: "Asia/Riyadh",
       error: null,
       isLoading: false,
     },
     localizedLocation: {
-      country: "Saudi Arabia",
-      city: "Madinah",
+      country: place.country,
+      city: place.city,
     },
     timezone: "Asia/Riyadh",
     isLocationPermissionGranted: true,
     isGettingLocation: false,
     lastKnownCoords: {
-      latitude: 24.4673,
-      longitude: 39.6112,
+      latitude: 21.4225,
+      longitude: 39.8262,
     },
     cityChangeDetected: false,
   });
