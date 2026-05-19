@@ -22,6 +22,8 @@ const SCREEN_TO_PATH: Record<ScreenshotScreenKey, string> = {
   qada: "/(tabs)/qada",
   quran: "/quran",
   "athkar-with-audio": "/athkar-focus",
+  tools: "/(tabs)/tools",
+  umrah: "/umrah",
 };
 
 function handleUrl(url: string | null | undefined) {

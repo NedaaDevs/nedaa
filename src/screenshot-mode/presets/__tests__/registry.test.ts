@@ -14,4 +14,13 @@ describe("preset registry", () => {
   test("every preset zod-validates at module load", () => {
     expect(Object.keys(presets["prayer-times"]).length).toBeGreaterThan(0);
   });
+
+  test("tools has the navigate-only default preset", () => {
+    expect(getPreset("tools", "default")).toEqual({ focus: "overview" });
+  });
+
+  test("umrah seeds a mid-journey position (2 of 4 stages)", () => {
+    const preset = getPreset("umrah", "sai-2-of-4");
+    expect(preset).toEqual({ stageIndex: 2, stepIndex: 1 });
+  });
 });

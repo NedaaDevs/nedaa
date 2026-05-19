@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { Alert, Linking, ScrollView } from "react-native";
@@ -25,6 +26,7 @@ import {
 } from "lucide-react-native";
 import PrepareCard from "@/components/umrah/PrepareCard";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
 import { getMinistryLink } from "@/constants/UmrahChecklist";
@@ -43,7 +45,14 @@ export default function UmrahOverviewScreen() {
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
   const insets = useSafeAreaInsets();
-  const { activeProgress, history, startUmrah, resetProgress } = useUmrahGuideStore();
+  const { activeProgress, history, startUmrah, resetProgress, seedScreenshotProgress } =
+    useUmrahGuideStore();
+
+  const screenshotSeed = useScreenshotSeed("umrah");
+  useEffect(() => {
+    if (!screenshotSeed) return;
+    seedScreenshotProgress(screenshotSeed);
+  }, [screenshotSeed, seedScreenshotProgress]);
 
   const handleStagePress = async (stageIndex: number) => {
     await selectionHaptic();

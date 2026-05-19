@@ -8,7 +8,9 @@ export type ScreenshotScreenKey =
   | "privacy"
   | "qada"
   | "quran"
-  | "athkar-with-audio";
+  | "athkar-with-audio"
+  | "tools"
+  | "umrah";
 
 export type ScreenshotState = {
   screen: ScreenshotScreenKey | null;

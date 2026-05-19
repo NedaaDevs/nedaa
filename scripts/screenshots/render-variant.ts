@@ -94,6 +94,14 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine1: "A Fajr alarm that rings,",
       headlineLine2Italic: "not just notifies.",
     },
+    tools: {
+      headlineLine1: "More than prayer times.",
+      headlineLine2Italic: "Your full toolkit.",
+    },
+    umrah: {
+      headlineLine1: "Your Umrah,",
+      headlineLine2Italic: "step by step.",
+    },
   },
   ar: {
     "prayer-times": {
@@ -128,6 +136,14 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
     "reliable-alarms": {
       headlineLine1: "منبّه فجرٍ يرنّ،",
       headlineLine2Italic: "لا مجرّد تنبيه.",
+    },
+    tools: {
+      headlineLine1: "أكثر من مواقيت الصلاة.",
+      headlineLine2Italic: "عُدّتك الكاملة.",
+    },
+    umrah: {
+      headlineLine1: "عمرتك،",
+      headlineLine2Italic: "خطوةً بخطوة.",
     },
   },
 };

@@ -13,6 +13,14 @@
     "headline": "Listen and follow",
     "subhead": "Recitations for every dhikr"
   },
+  "tools": {
+    "headline": "More than prayer times",
+    "subhead": "Umrah, Hijri, qibla — all in one"
+  },
+  "umrah": {
+    "headline": "Your Umrah, step by step",
+    "subhead": "A guided journey, stage by stage"
+  },
   "widgets-1": { "headline": "Always at a glance", "subhead": "Next prayer on your home screen" },
   "widgets-2": { "headline": "One tap away", "subhead": "Quick access from anywhere" }
 }

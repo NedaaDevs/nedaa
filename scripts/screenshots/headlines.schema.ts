@@ -12,6 +12,8 @@ export const HEADLINE_KEYS = [
   "qada",
   "quran",
   "athkar-with-audio",
+  "tools",
+  "umrah",
   "widgets-1",
   "widgets-2",
 ] as const;

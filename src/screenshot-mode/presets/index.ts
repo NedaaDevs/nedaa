@@ -7,6 +7,8 @@ import { privacyPresets, type PrivacySeed } from "./privacy";
 import { qadaPresets, type QadaSeed } from "./qada";
 import { quranPresets, type QuranSeed } from "./quran";
 import { athkarWithAudioPresets, type AthkarWithAudioSeed } from "./athkar-with-audio";
+import { toolsPresets, type ToolsSeed } from "./tools";
+import { umrahPresets, type UmrahSeed } from "./umrah";
 
 export type PresetMap = {
   "prayer-times": PrayerTimesSeed;
@@ -17,6 +19,8 @@ export type PresetMap = {
   qada: QadaSeed;
   quran: QuranSeed;
   "athkar-with-audio": AthkarWithAudioSeed;
+  tools: ToolsSeed;
+  umrah: UmrahSeed;
 };
 
 export const presets: { [K in ScreenshotScreenKey]: Record<string, PresetMap[K]> } = {
@@ -28,6 +32,8 @@ export const presets: { [K in ScreenshotScreenKey]: Record<string, PresetMap[K]>
   qada: qadaPresets,
   quran: quranPresets,
   "athkar-with-audio": athkarWithAudioPresets,
+  tools: toolsPresets,
+  umrah: umrahPresets,
 };
 
 export function getPreset<K extends ScreenshotScreenKey>(

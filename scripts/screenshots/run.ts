@@ -34,6 +34,8 @@ const DEFAULT_SEED: Record<ScreenKey, string> = {
   qada: "missed-3-2-4-1-2",
   quran: "al-fatiha-page-1",
   "athkar-with-audio": "track-2-at-1m14s",
+  tools: "default",
+  umrah: "sai-2-of-4",
   "widgets-1": "default",
   "widgets-2": "default",
 };
@@ -47,6 +49,8 @@ const SCREEN_INDEX: Record<ScreenKey, number> = {
   qada: 6,
   quran: 7,
   "athkar-with-audio": 8,
+  tools: 11,
+  umrah: 12,
   "widgets-1": 9,
   "widgets-2": 10,
 };
@@ -313,6 +317,10 @@ const ALL_CELLS: { screen: ScreenKey; locale: "en" | "ar"; variant: "hero" | "at
   { screen: "qada", locale: "ar", variant: "hero" },
   { screen: "athkar-with-audio", locale: "en", variant: "hero" },
   { screen: "athkar-with-audio", locale: "ar", variant: "hero" },
+  { screen: "tools", locale: "en", variant: "hero" },
+  { screen: "tools", locale: "ar", variant: "hero" },
+  { screen: "umrah", locale: "en", variant: "hero" },
+  { screen: "umrah", locale: "ar", variant: "hero" },
 ];
 
 // Template cells are pure HTML (no device capture), so they render directly

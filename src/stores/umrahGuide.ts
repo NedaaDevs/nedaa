@@ -6,6 +6,7 @@ import { differenceInDays } from "date-fns";
 import { UmrahDB } from "@/services/umrah-db";
 import { UMRAH_STAGES, AUTO_RESET_DAYS } from "@/constants/UmrahGuide";
 import type { ActiveProgress, Gender, StageId, UmrahRecord } from "@/types/umrah";
+import type { UmrahSeed } from "@/screenshot-mode/presets/umrah";
 
 const generateId = (): string => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -39,6 +40,7 @@ type UmrahGuideState = {
   markFlipHintSeen: () => void;
   togglePreChecklistItem: (id: string) => void;
   resetPreChecklist: () => void;
+  seedScreenshotProgress: (seed: UmrahSeed) => void;
 
   // Computed helpers
   getCurrentStage: () => (typeof UMRAH_STAGES)[number] | null;
@@ -255,6 +257,25 @@ export const useUmrahGuideStore = create<UmrahGuideState>()(
 
         resetPreChecklist: () => {
           set({ preChecklist: {} });
+        },
+
+        // Populate a synthetic mid-journey ActiveProgress for App Store
+        // screenshots. completedStages is derived as every stage before the
+        // seeded one so the completed set always matches the position.
+        // Fresh timestamps keep checkAutoReset() from wiping it on rehydrate.
+        seedScreenshotProgress: ({ stageIndex, stepIndex }: UmrahSeed) => {
+          const now = new Date().toISOString();
+          const completedStages = UMRAH_STAGES.slice(0, stageIndex).map((s) => s.id);
+          set({
+            activeProgress: {
+              currentStageIndex: stageIndex,
+              currentStepIndex: stepIndex,
+              completedStages,
+              checklistState: {},
+              startedAt: now,
+              updatedAt: now,
+            },
+          });
         },
 
         getCurrentStage: () => {

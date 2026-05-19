@@ -10,6 +10,8 @@ const SCREEN_KEYS: readonly ScreenshotScreenKey[] = [
   "qada",
   "quran",
   "athkar-with-audio",
+  "tools",
+  "umrah",
 ] as const;
 
 const schema = z.object({
