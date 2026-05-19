@@ -21,7 +21,7 @@ type PlatformConfig = {
     deviceId: string;
     idx: string;
     screen: ScreenKey;
-    variant: "hero" | "athkar";
+    variant: "hero" | "athkar" | "honest";
   }) => string;
 };
 
@@ -120,7 +120,12 @@ function platformConfig(platform: TargetPlatform): PlatformConfig {
           "images",
           "phoneScreenshots"
         );
-        const name = variant === "athkar" ? "03-athkar-bilingual.png" : `${idx}-${screen}.png`;
+        const name =
+          variant === "honest"
+            ? "02-promises.png"
+            : variant === "athkar"
+              ? "03-athkar-bilingual.png"
+              : `${idx}-${screen}.png`;
         return path.join(dir, name);
       },
     };
@@ -132,7 +137,12 @@ function platformConfig(platform: TargetPlatform): PlatformConfig {
     resolveTarget: getBootedDeviceId,
     outPath: ({ locale, deviceId, idx, screen, variant }) => {
       const dir = path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], deviceId);
-      const name = variant === "athkar" ? "03-athkar-bilingual.png" : `${idx}-${screen}.png`;
+      const name =
+        variant === "honest"
+          ? "02-promises.png"
+          : variant === "athkar"
+            ? "03-athkar-bilingual.png"
+            : `${idx}-${screen}.png`;
       return path.join(dir, name);
     },
   };
@@ -234,6 +244,56 @@ async function captureCell(opts: {
   console.log(`Open it (\`open ${outPath}\`) and approve visually before proceeding.\n`);
 }
 
+// Re-composite one cell from the cached raw capture(s) in tmp/screenshots-raw —
+// no device, no app, no Maestro. For fast layout/compositor iteration.
+async function recompositeCell(opts: {
+  screen: ScreenKey;
+  locale: "en" | "ar";
+  variant?: "hero" | "athkar";
+  device?: string;
+  platform: TargetPlatform;
+}) {
+  const { screen, locale, platform } = opts;
+  const cfg = platformConfig(platform);
+  const variant = opts.variant ?? "hero";
+  const deviceId = opts.device ?? cfg.deviceId;
+  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
+  if (!device) throw new Error(`Unknown device: ${deviceId}`);
+  const idx = String(SCREEN_INDEX[screen]).padStart(2, "0");
+  const rawFile = (loc: "en" | "ar") =>
+    path.join(RAW_DIR, platform, loc, deviceId, `${idx}-${screen}.png`);
+
+  let out: Buffer;
+  if (variant === "athkar") {
+    const en = rawFile("en");
+    const ar = rawFile("ar");
+    if (!existsSync(en) || !existsSync(ar))
+      throw new Error(`Missing cached raw for ${screen} (need en+ar): ${en} / ${ar}`);
+    out = await renderVariant({
+      rawPngs: { en: readFileSync(en), ar: readFileSync(ar) },
+      screen,
+      device,
+      locale,
+      variant: "athkar",
+    });
+  } else {
+    const raw = rawFile(locale);
+    if (!existsSync(raw)) throw new Error(`Missing cached raw: ${raw} — run a capture first`);
+    out = await renderVariant({
+      rawPng: readFileSync(raw),
+      screen,
+      device,
+      locale,
+      variant: "hero",
+    });
+  }
+
+  const outPath = cfg.outPath({ locale, deviceId: device.id, idx, screen, variant });
+  mkdirSync(path.dirname(outPath), { recursive: true });
+  writeFileSync(outPath, out);
+  console.log(`✓ recomposited ${platform}/${locale}/${screen} → ${outPath}`);
+}
+
 function parseFlags(): Record<string, string> {
   const out: Record<string, string> = {};
   for (let i = 3; i < process.argv.length; i++) {
@@ -247,8 +307,6 @@ function parseFlags(): Record<string, string> {
 const ALL_CELLS: { screen: ScreenKey; locale: "en" | "ar"; variant: "hero" | "athkar" }[] = [
   { screen: "prayer-times", locale: "en", variant: "hero" },
   { screen: "prayer-times", locale: "ar", variant: "hero" },
-  { screen: "athkar", locale: "en", variant: "athkar" },
-  { screen: "athkar", locale: "ar", variant: "athkar" },
   { screen: "qibla", locale: "en", variant: "hero" },
   { screen: "qibla", locale: "ar", variant: "hero" },
   { screen: "qada", locale: "en", variant: "hero" },
@@ -256,6 +314,33 @@ const ALL_CELLS: { screen: ScreenKey; locale: "en" | "ar"; variant: "hero" | "at
   { screen: "athkar-with-audio", locale: "en", variant: "hero" },
   { screen: "athkar-with-audio", locale: "ar", variant: "hero" },
 ];
+
+// Template cells are pure HTML (no device capture), so they render directly
+// and belong to every set regardless of capture.
+const TEMPLATE_CELLS: { locale: "en" | "ar" }[] = [{ locale: "en" }, { locale: "ar" }];
+
+async function renderTemplateCell(opts: {
+  locale: "en" | "ar";
+  device?: string;
+  platform: TargetPlatform;
+}) {
+  const { locale, platform } = opts;
+  const cfg = platformConfig(platform);
+  const deviceId = opts.device ?? cfg.deviceId;
+  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
+  if (!device) throw new Error(`Unknown device: ${deviceId}`);
+  const out = await renderVariant({ screen: "privacy", device, locale, variant: "honest" });
+  const outPath = cfg.outPath({
+    locale,
+    deviceId: device.id,
+    idx: "02",
+    screen: "privacy",
+    variant: "honest",
+  });
+  mkdirSync(path.dirname(outPath), { recursive: true });
+  writeFileSync(outPath, out);
+  console.log(`✓ template ${platform}/${locale}/promises → ${outPath}`);
+}
 
 if (import.meta.main) {
   const cmd = process.argv[2];
@@ -307,12 +392,49 @@ if (import.meta.main) {
           failures.push(`${cell.screen}/${cell.locale}`);
         }
       }
+      for (const t of TEMPLATE_CELLS) {
+        try {
+          await renderTemplateCell({ ...t, device: flags.device, platform });
+        } catch (e) {
+          console.error(`[all] FAILED promises/${t.locale}:`, e);
+          failures.push(`promises/${t.locale}`);
+        }
+      }
       await closeBrowser();
       if (failures.length) {
         console.error(`\n[all] ${failures.length} cell(s) failed: ${failures.join(", ")}`);
         process.exit(1);
       }
       console.log(`\n[all] ${ALL_CELLS.length} cells composited successfully.`);
+    })().catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+  } else if (cmd === "recomposite") {
+    (async () => {
+      const failures: string[] = [];
+      for (const cell of ALL_CELLS) {
+        try {
+          await recompositeCell({ ...cell, device: flags.device, platform });
+        } catch (e) {
+          console.error(`[recomposite] FAILED ${cell.screen}/${cell.locale}:`, e);
+          failures.push(`${cell.screen}/${cell.locale}`);
+        }
+      }
+      for (const t of TEMPLATE_CELLS) {
+        try {
+          await renderTemplateCell({ ...t, device: flags.device, platform });
+        } catch (e) {
+          console.error(`[recomposite] FAILED promises/${t.locale}:`, e);
+          failures.push(`promises/${t.locale}`);
+        }
+      }
+      await closeBrowser();
+      if (failures.length) {
+        console.error(`\n[recomposite] ${failures.length} failed: ${failures.join(", ")}`);
+        process.exit(1);
+      }
+      console.log(`\n[recomposite] ${ALL_CELLS.length} cells re-rendered from cached raws.`);
     })().catch((e) => {
       console.error(e);
       process.exit(1);

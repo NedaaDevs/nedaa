@@ -143,17 +143,30 @@ function heroHtml(opts: {
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
-  // Frame dimensions. Slightly smaller than the editorial mock (820) so the phone
-  // sits inside the canvas with breathing room at the bottom.
-  const FRAME_W = 760;
-  const FRAME_ASPECT = 19.5 / 9;
-  const FRAME_H = FRAME_W * FRAME_ASPECT;
-  const FRAME_RADIUS = FRAME_W * 0.13;
-  const FRAME_BORDER = FRAME_W * 0.012;
-  const FRAME_PADDING = FRAME_W * 0.018;
-  const ISLAND_W = FRAME_W * 0.3;
-  const ISLAND_H = FRAME_W * 0.078;
-  const INNER_RADIUS = FRAME_RADIUS - FRAME_W * 0.02;
+  const W = device.width;
+  const H = device.height;
+  const ASPECT = 19.5 / 9;
+
+  // Responsive: a headline band is always kept; the phone is then made as large
+  // as possible, bounded by EITHER a width cap OR the height left under the
+  // band — whichever binds — so it never clips on a short canvas (Android
+  // 1080x1920) yet fills a tall one (iOS 1290x2796).
+  const HEADLINE_BAND = Math.round(H * 0.26);
+  const BOTTOM_MARGIN = Math.round(H * 0.05);
+  const SIDE = Math.round(W * 0.08);
+  const availH = H - HEADLINE_BAND - BOTTOM_MARGIN;
+  const FRAME_H = Math.round(Math.min(availH, 0.74 * W * ASPECT));
+  const FRAME_W = Math.round(FRAME_H / ASPECT);
+  const FRAME_RADIUS = Math.round(FRAME_W * 0.13);
+  const FRAME_BORDER = Math.max(2, Math.round(FRAME_W * 0.012));
+  const FRAME_PADDING = Math.round(FRAME_W * 0.018);
+  const ISLAND_W = Math.round(FRAME_W * 0.3);
+  const ISLAND_H = Math.round(FRAME_W * 0.078);
+  const INNER_RADIUS = FRAME_RADIUS - Math.round(FRAME_W * 0.02);
+  const headlineSize = Math.round(W * (isAr ? 0.092 : 0.105));
+  const ruleGap = Math.round(H * 0.0425);
+  const shadowY = Math.round(FRAME_W * 0.08);
+  const shadowBlur = Math.round(FRAME_W * 0.1);
 
   return `<!doctype html>
 <html lang="${locale}" dir="${dir}">
@@ -163,8 +176,8 @@ function heroHtml(opts: {
   ${FONT_FACES}
   html, body { margin: 0; padding: 0; }
   body {
-    width: ${device.width}px;
-    height: ${device.height}px;
+    width: ${W}px;
+    height: ${H}px;
     background: #F5F1E6;
     color: #1C5D85;
     font-family: '${fontFamily}', system-ui, sans-serif;
@@ -172,42 +185,50 @@ function heroHtml(opts: {
     overflow: hidden;
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   .ruled {
     position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 119px, rgba(15,44,68,0.10) 119px, rgba(15,44,68,0.10) 120px);
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent ${ruleGap}px, rgba(15,44,68,0.10) ${ruleGap}px, rgba(15,44,68,0.10) ${ruleGap + 1}px);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
   }
   .headline-block {
-    padding: 200px 100px 60px;
-    position: relative;
+    height: ${HEADLINE_BAND}px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
     text-align: center;
+    padding: 0 ${SIDE}px;
+    box-sizing: border-box;
+    position: relative;
   }
   .headline {
     font-family: '${fontFamily}', system-ui, sans-serif;
     font-weight: 700;
-    font-size: ${isAr ? 148 : 168}px;
+    font-size: ${headlineSize}px;
     letter-spacing: -0.03em;
-    line-height: 0.96;
+    line-height: 1.0;
     color: #0F2C44;
-    margin: 36px 0 0;
+    margin: 0;
     text-wrap: balance;
   }
-  .italic-accent {
-    font-style: italic;
-    font-weight: 700;
-    color: #1C5D85;
+  .italic-accent { font-style: italic; font-weight: 700; color: #1C5D85; }
+  .stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding-bottom: ${BOTTOM_MARGIN}px;
+    box-sizing: border-box;
+    position: relative;
   }
-  /* Phone */
   .phone-wrap {
-    position: absolute;
-    left: 50%;
-    bottom: 140px;
-    transform: translateX(-50%);
     width: ${FRAME_W}px;
     height: ${FRAME_H}px;
-    filter: drop-shadow(0 60px 80px rgba(15,44,68,0.22));
+    filter: drop-shadow(0 ${shadowY}px ${shadowBlur}px rgba(15,44,68,0.22));
   }
   .phone {
     width: 100%;
@@ -222,7 +243,7 @@ function heroHtml(opts: {
   }
   .island {
     position: absolute;
-    top: ${FRAME_W * 0.028}px;
+    top: ${Math.round(FRAME_W * 0.028)}px;
     left: 50%;
     transform: translateX(-50%);
     width: ${ISLAND_W}px;
@@ -262,15 +283,17 @@ function heroHtml(opts: {
     </h1>
   </div>
 
-  <div class="phone-wrap">
-    <div class="phone">
-      <div aria-hidden="true" class="island"></div>
-      <div class="btn l1"></div>
-      <div class="btn l2"></div>
-      <div class="btn l3"></div>
-      <div class="btn r1"></div>
-      <div class="screen">
-        <img src="data:image/png;base64,${rawPngBase64}" alt=""/>
+  <div class="stage">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div aria-hidden="true" class="island"></div>
+        <div class="btn l1"></div>
+        <div class="btn l2"></div>
+        <div class="btn l3"></div>
+        <div class="btn r1"></div>
+        <div class="screen">
+          <img src="data:image/png;base64,${rawPngBase64}" alt=""/>
+        </div>
       </div>
     </div>
   </div>
@@ -331,6 +354,21 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
+  const W = device.width;
+  const H = device.height;
+
+  // Responsive, no phone: a headline band on top, then the five rows are
+  // distributed to fill the remaining height so there is no dead space at the
+  // bottom on either canvas (iOS 1290x2796 / Android 1080x1920).
+  const HEADLINE_BAND = Math.round(H * 0.22);
+  const SIDE = Math.round(W * 0.085);
+  const headlineSize = Math.round(W * (isAr ? 0.092 : 0.1));
+  const numSize = Math.round(W * 0.028);
+  const keySize = Math.round(W * 0.06);
+  const bodySize = Math.round(W * 0.026);
+  const numCol = Math.round(W * 0.1);
+  const colGap = Math.round(W * 0.04);
+  const ruleGap = Math.round(H * 0.0425);
 
   const rows = copy.rows
     .map(
@@ -353,8 +391,8 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
   ${FONT_FACES}
   html, body { margin: 0; padding: 0; }
   body {
-    width: ${device.width}px;
-    height: ${device.height}px;
+    width: ${W}px;
+    height: ${H}px;
     background: #F5F1E6;
     color: #1C5D85;
     font-family: '${fontFamily}', system-ui, sans-serif;
@@ -362,56 +400,62 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
     overflow: hidden;
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
   }
   .ruled {
     position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 119px, rgba(15,44,68,0.10) 119px, rgba(15,44,68,0.10) 120px);
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent ${ruleGap}px, rgba(15,44,68,0.10) ${ruleGap}px, rgba(15,44,68,0.10) ${ruleGap + 1}px);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
   }
   .headline-block {
-    padding: 200px 100px 60px;
+    height: ${HEADLINE_BAND}px;
+    display: flex; align-items: center; justify-content: center;
     text-align: center;
+    padding: 0 ${SIDE}px;
+    box-sizing: border-box;
     position: relative;
   }
   .headline {
     font-family: '${fontFamily}', system-ui, sans-serif;
     font-weight: 700;
-    font-size: ${isAr ? 148 : 160}px;
+    font-size: ${headlineSize}px;
     letter-spacing: -0.03em;
     line-height: 1.0;
     color: #0F2C44;
     margin: 0;
     text-wrap: balance;
   }
-  .italic-accent {
-    font-style: italic;
-    font-weight: 700;
-    color: #1C5D85;
-  }
+  .italic-accent { font-style: italic; font-weight: 700; color: #1C5D85; }
   .promises {
-    padding: 80px 110px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    padding: 0 ${SIDE}px ${Math.round(H * 0.04)}px;
+    box-sizing: border-box;
     position: relative;
   }
   .promise {
     display: grid;
-    grid-template-columns: 130px 1fr;
-    gap: 48px;
+    grid-template-columns: ${numCol}px 1fr;
+    gap: ${colGap}px;
     align-items: baseline;
-    padding: 42px 0;
+    padding: ${Math.round(H * 0.018)}px 0;
     border-top: 1px solid rgba(15,44,68,0.22);
   }
   .promise:last-child { border-bottom: 1px solid rgba(15,44,68,0.22); }
   .num {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 36px;
+    font-size: ${numSize}px;
     color: #1C5D85;
     letter-spacing: 0.06em;
     font-weight: 500;
   }
   .key {
     font-family: '${fontFamily}', system-ui, sans-serif;
-    font-size: 80px;
+    font-size: ${keySize}px;
     font-weight: 700;
     color: #0F2C44;
     letter-spacing: -0.015em;
@@ -419,9 +463,9 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
   }
   .body {
     font-family: '${fontFamily}', system-ui, sans-serif;
-    font-size: 34px;
+    font-size: ${bodySize}px;
     color: #4B5563;
-    margin-top: 16px;
+    margin-top: ${Math.round(H * 0.006)}px;
     line-height: 1.3;
   }
 </style>
