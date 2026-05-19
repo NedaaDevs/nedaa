@@ -25,15 +25,15 @@ export const QURAN_THEME_COLORS: Record<
   }
 > = {
   [QuranTheme.SEPIA]: {
-    background: "#F5EDDB",
-    innerBackground: "#F5EDDB",
+    background: "#FAF4E5",
+    innerBackground: "#FAF4E5",
     textTint: "#2C1810",
     markerColor: "#7A5C12",
     headerColor: "#4A3520",
     pageNumberColor: "#8B7355",
     highlightColor: "rgba(170, 130, 50, 0.18)",
-    shimmerBase: "#F5EDDB",
-    shimmerHighlight: "#EBE3D1",
+    shimmerBase: "#FAF4E5",
+    shimmerHighlight: "#F0EADB",
   },
   [QuranTheme.DARK]: {
     background: "#0E0E0E",
