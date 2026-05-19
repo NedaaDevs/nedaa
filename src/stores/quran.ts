@@ -19,6 +19,7 @@ export const useQuranStore = create<QuranState>()(
       currentPage: 1,
       currentVersion: DEFAULT_MUSHAF_VERSION,
       quranTheme: DEFAULT_QURAN_THEME,
+      quranThemeOverride: false,
       surahFrameStyle: DEFAULT_SURAH_FRAME_STYLE,
       lastReadPage: 1,
       readerMode: ReaderViewMode.MADINAH,
@@ -30,7 +31,8 @@ export const useQuranStore = create<QuranState>()(
 
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
-      setQuranTheme: (theme) => set({ quranTheme: theme }),
+      setQuranTheme: (theme) => set({ quranTheme: theme, quranThemeOverride: true }),
+      setQuranThemeAuto: () => set({ quranThemeOverride: false }),
       setSurahFrameStyle: (style) => set({ surahFrameStyle: style }),
       setReaderMode: (mode: ReaderViewMode) => set({ readerMode: mode }),
       setFontSize: (size: number) =>
@@ -61,6 +63,7 @@ export const useQuranStore = create<QuranState>()(
         currentPage: state.currentPage,
         currentVersion: state.currentVersion,
         quranTheme: state.quranTheme,
+        quranThemeOverride: state.quranThemeOverride,
         surahFrameStyle: state.surahFrameStyle,
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,

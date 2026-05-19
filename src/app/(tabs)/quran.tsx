@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Alert, Pressable } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { X, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import FontSizeControls from "@/components/quran/FontSizeControls";
@@ -26,7 +27,7 @@ const QuranScreen = () => {
   const {
     currentPage,
     currentVersion,
-    quranTheme,
+    quranThemeOverride,
     onboardingComplete,
     selectedVersion,
     versionDownloads,
@@ -34,12 +35,14 @@ const QuranScreen = () => {
     fontSize,
     setCurrentPage,
     setQuranTheme,
+    setQuranThemeAuto,
     setOnboardingComplete,
     setSelectedVersion,
     setReaderMode,
     setFontSize,
     updateDownloadState,
   } = useQuranStore();
+  const quranTheme = useResolvedQuranTheme();
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
@@ -232,9 +235,42 @@ const QuranScreen = () => {
             backgroundColor="rgba(0,0,0,0.5)"
             borderRadius="$4"
             padding="$1.5">
+            <Pressable
+              onPress={() => setQuranThemeAuto()}
+              accessibilityRole="button"
+              accessibilityLabel="Match app theme"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                overflow: "hidden",
+                borderWidth: !quranThemeOverride ? 2.5 : 1,
+                borderColor: !quranThemeOverride ? QURAN_UI_COLORS.accent : "rgba(255,255,255,0.3)",
+              }}>
+              <View
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: "50%",
+                  height: "100%",
+                  backgroundColor: QURAN_THEME_COLORS[QuranTheme.SEPIA].background,
+                }}
+              />
+              <View
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: 0,
+                  width: "50%",
+                  height: "100%",
+                  backgroundColor: QURAN_THEME_COLORS[QuranTheme.DARK].background,
+                }}
+              />
+            </Pressable>
             {ALL_THEMES.map((key) => {
               const colors = QURAN_THEME_COLORS[key];
-              const isSelected = quranTheme === key;
+              const isSelected = quranThemeOverride && quranTheme === key;
               return (
                 <Pressable
                   key={key}
