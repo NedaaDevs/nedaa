@@ -53,6 +53,10 @@ const BILINGUAL_COPY: Record<"en" | "ar", BilingualCopy> = {
 type HeroCopy = {
   headlineLine1: string;
   headlineLine2Italic: string;
+  // When true, the italic line is rendered as a caption beneath the phone
+  // instead of stacked under line 1 in the top band. Use only when line 2 is a
+  // standalone qualifier (not a sentence continuation that would dangle a comma).
+  line2Below?: boolean;
 };
 
 const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
@@ -144,6 +148,7 @@ function heroHtml(opts: {
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
   const isAndroid = device.platform === "android";
+  const line2Below = copy.line2Below === true;
   const W = device.width;
   const H = device.height;
   const ASPECT = 19.5 / 9;
@@ -155,7 +160,10 @@ function heroHtml(opts: {
   const HEADLINE_BAND = Math.round(H * 0.26);
   const BOTTOM_MARGIN = Math.round(H * 0.05);
   const SIDE = Math.round(W * 0.08);
-  const availH = H - HEADLINE_BAND - BOTTOM_MARGIN;
+  // A below-phone caption needs its own reserved strip so the phone shrinks to
+  // make room rather than overflowing the canvas.
+  const CAPTION_BAND = line2Below ? Math.round(H * 0.09) : 0;
+  const availH = H - HEADLINE_BAND - BOTTOM_MARGIN - CAPTION_BAND;
   const FRAME_H = Math.round(Math.min(availH, 0.74 * W * ASPECT));
   const FRAME_W = Math.round(FRAME_H / ASPECT);
   const FRAME_RADIUS = Math.round(FRAME_W * 0.13);
@@ -166,6 +174,7 @@ function heroHtml(opts: {
   const PUNCH_D = Math.round(FRAME_W * 0.052);
   const INNER_RADIUS = FRAME_RADIUS - Math.round(FRAME_W * 0.02);
   const headlineSize = Math.round(W * (isAr ? 0.092 : 0.105));
+  const captionSize = Math.round(W * (isAr ? 0.06 : 0.066));
   const ruleGap = Math.round(H * 0.0425);
   const shadowY = Math.round(FRAME_W * 0.08);
   const shadowBlur = Math.round(FRAME_W * 0.1);
@@ -181,6 +190,13 @@ function heroHtml(opts: {
         <div class="btn l2"></div>
         <div class="btn l3"></div>
         <div class="btn r1"></div>`;
+  const headlineInner = line2Below
+    ? escapeHtml(copy.headlineLine1)
+    : `${escapeHtml(copy.headlineLine1)}<br/>
+      <span class="italic-accent">${escapeHtml(copy.headlineLine2Italic)}</span>`;
+  const captionHtml = line2Below
+    ? `<div class="caption">${escapeHtml(copy.headlineLine2Italic)}</div>`
+    : "";
 
   return `<!doctype html>
 <html lang="${locale}" dir="${dir}">
@@ -238,6 +254,25 @@ function heroHtml(opts: {
     padding-bottom: ${BOTTOM_MARGIN}px;
     box-sizing: border-box;
     position: relative;
+  }
+  .stage-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+  .caption {
+    font-family: '${fontFamily}', system-ui, sans-serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: ${captionSize}px;
+    color: #1C5D85;
+    text-align: center;
+    margin-top: ${Math.round(H * 0.03)}px;
+    padding: 0 ${SIDE}px;
+    line-height: 1.1;
+    box-sizing: border-box;
   }
   .phone-wrap {
     width: ${FRAME_W}px;
@@ -305,19 +340,21 @@ function heroHtml(opts: {
 
   <div class="headline-block">
     <h1 class="headline">
-      ${escapeHtml(copy.headlineLine1)}<br/>
-      <span class="italic-accent">${escapeHtml(copy.headlineLine2Italic)}</span>
+      ${headlineInner}
     </h1>
   </div>
 
   <div class="stage">
-    <div class="phone-wrap">
-      <div class="phone">
-        ${deviceChrome}
-        <div class="screen">
-          <img src="data:image/png;base64,${rawPngBase64}" alt=""/>
+    <div class="stage-col">
+      <div class="phone-wrap">
+        <div class="phone">
+          ${deviceChrome}
+          <div class="screen">
+            <img src="data:image/png;base64,${rawPngBase64}" alt=""/>
+          </div>
         </div>
       </div>
+      ${captionHtml}
     </div>
   </div>
 </body>
