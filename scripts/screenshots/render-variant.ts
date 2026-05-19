@@ -143,6 +143,7 @@ function heroHtml(opts: {
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
+  const isAndroid = device.platform === "android";
   const W = device.width;
   const H = device.height;
   const ASPECT = 19.5 / 9;
@@ -162,11 +163,24 @@ function heroHtml(opts: {
   const FRAME_PADDING = Math.round(FRAME_W * 0.018);
   const ISLAND_W = Math.round(FRAME_W * 0.3);
   const ISLAND_H = Math.round(FRAME_W * 0.078);
+  const PUNCH_D = Math.round(FRAME_W * 0.052);
   const INNER_RADIUS = FRAME_RADIUS - Math.round(FRAME_W * 0.02);
   const headlineSize = Math.round(W * (isAr ? 0.092 : 0.105));
   const ruleGap = Math.round(H * 0.0425);
   const shadowY = Math.round(FRAME_W * 0.08);
   const shadowBlur = Math.round(FRAME_W * 0.1);
+  // Platform-correct device chrome: iPhone Dynamic Island + iOS button layout,
+  // or Android punch-hole + side-mounted volume/power. The captured screen
+  // already carries the right OS status bar and nav, so only the bezel differs.
+  const deviceChrome = isAndroid
+    ? `<div aria-hidden="true" class="punch"></div>
+        <div class="btn ar1"></div>
+        <div class="btn ar2"></div>`
+    : `<div aria-hidden="true" class="island"></div>
+        <div class="btn l1"></div>
+        <div class="btn l2"></div>
+        <div class="btn l3"></div>
+        <div class="btn r1"></div>`;
 
   return `<!doctype html>
 <html lang="${locale}" dir="${dir}">
@@ -252,11 +266,24 @@ function heroHtml(opts: {
     border-radius: 9999px;
     z-index: 20;
   }
+  .punch {
+    position: absolute;
+    top: ${Math.round(FRAME_W * 0.034)}px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: ${PUNCH_D}px;
+    height: ${PUNCH_D}px;
+    background: #000;
+    border-radius: 9999px;
+    z-index: 20;
+  }
   .btn { position: absolute; background: #1A1A1F; }
   .btn.l1 { left: -4px; top: 14%; width: 4px; height: 5%; border-radius: 2px 0 0 2px; }
   .btn.l2 { left: -4px; top: 22%; width: 4px; height: 8%; border-radius: 2px 0 0 2px; }
   .btn.l3 { left: -4px; top: 32%; width: 4px; height: 8%; border-radius: 2px 0 0 2px; }
   .btn.r1 { right: -4px; top: 24%; width: 4px; height: 12%; border-radius: 0 2px 2px 0; }
+  .btn.ar1 { right: -4px; top: 18%; width: 4px; height: 8%; border-radius: 0 2px 2px 0; }
+  .btn.ar2 { right: -4px; top: 29%; width: 4px; height: 13%; border-radius: 0 2px 2px 0; }
   .screen {
     width: 100%;
     height: 100%;
@@ -286,11 +313,7 @@ function heroHtml(opts: {
   <div class="stage">
     <div class="phone-wrap">
       <div class="phone">
-        <div aria-hidden="true" class="island"></div>
-        <div class="btn l1"></div>
-        <div class="btn l2"></div>
-        <div class="btn l3"></div>
-        <div class="btn r1"></div>
+        ${deviceChrome}
         <div class="screen">
           <img src="data:image/png;base64,${rawPngBase64}" alt=""/>
         </div>
