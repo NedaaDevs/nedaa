@@ -74,8 +74,8 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine2Italic: "no doubt about it.",
     },
     qada: {
-      headlineLine1: "The fasts you owe,",
-      headlineLine2Italic: "counted, not forgotten.",
+      headlineLine1: "Qada fasting,",
+      headlineLine2Italic: "tracked to the day.",
     },
     privacy: {
       headlineLine1: "Your data,",
@@ -86,8 +86,9 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine2Italic: "page by page.",
     },
     "athkar-with-audio": {
-      headlineLine1: "Read along,",
-      headlineLine2Italic: "in the reciter's voice.",
+      headlineLine1: "Morning & evening athkar, with sound.",
+      headlineLine2Italic: "Hisn al-Muslim or your own.",
+      line2Below: true,
     },
     "reliable-alarms": {
       headlineLine1: "A Fajr alarm that rings,",
@@ -108,8 +109,8 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine2Italic: "بيقينٍ تامّ.",
     },
     qada: {
-      headlineLine1: "ما عليك من صيام،",
-      headlineLine2Italic: "محفوظٌ لا يُنسى.",
+      headlineLine1: "صيام القضاء،",
+      headlineLine2Italic: "محسوبٌ يومًا بيوم.",
     },
     privacy: {
       headlineLine1: "بياناتك،",
@@ -120,8 +121,9 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine2Italic: "صفحةً صفحة.",
     },
     "athkar-with-audio": {
-      headlineLine1: "اقرأ معه،",
-      headlineLine2Italic: "بصوت القارئ.",
+      headlineLine1: "أذكار الصباح والمساء، بالصوت.",
+      headlineLine2Italic: "حصن المسلم أو أذكارك.",
+      line2Below: true,
     },
     "reliable-alarms": {
       headlineLine1: "منبّه فجرٍ يرنّ،",
