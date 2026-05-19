@@ -87,6 +87,11 @@ export type QuranState = {
   currentPage: number;
   currentVersion: MushafVersion;
   quranTheme: QuranTheme;
+  // When true, `quranTheme` is the user's explicit choice. When false, the
+  // resolved theme follows the app's color scheme (light → SEPIA, dark → DARK).
+  // Set by `setQuranTheme`; cleared by `setQuranThemeAuto`. Read effective
+  // theme via the `useResolvedQuranTheme` hook, not `quranTheme` directly.
+  quranThemeOverride: boolean;
   surahFrameStyle: SurahFrameStyle;
   lastReadPage: number;
   readerMode: ReaderViewMode;
@@ -99,6 +104,7 @@ export type QuranState = {
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
   setQuranTheme: (theme: QuranTheme) => void;
+  setQuranThemeAuto: () => void;
   setSurahFrameStyle: (style: SurahFrameStyle) => void;
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;

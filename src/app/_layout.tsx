@@ -16,7 +16,7 @@ import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
 import { useAppStore } from "@/stores/app";
-import { useQuranStore } from "@/stores/quran";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 
 import { ToastProvider } from "@/components/ToastContainer";
@@ -71,7 +71,7 @@ function AppShell() {
 
   const segments = useSegments();
   const isQuranScreen = segments[0] === "(tabs)" && segments[1] === "quran";
-  const quranTheme = useQuranStore((s) => s.quranTheme);
+  const quranTheme = useResolvedQuranTheme();
   const safeAreaBg = isQuranScreen
     ? QURAN_THEME_COLORS[quranTheme].background
     : theme.background.val;
