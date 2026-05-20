@@ -258,10 +258,7 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
   }
 
   await QuranDB.deleteVersionDownloads(version);
-  useQuranStore.getState().updateDownloadState(version, {
-    status: DownloadStatus.IDLE,
-    progress: null,
-  });
+  useQuranStore.getState().removeVersion(version);
   log.i("Download", `Deleted version ${version}`);
 };
 

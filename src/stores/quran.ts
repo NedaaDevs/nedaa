@@ -53,6 +53,33 @@ export const useQuranStore = create<QuranState>()(
             },
           },
         })),
+      removeVersion: (version) =>
+        set((prev) => {
+          // Drop the key entirely — an IDLE entry would leave the version
+          // visible in download listings as if it were still installable in
+          // place, which is the bug this action fixes.
+          const { [version]: _removed, ...remainingDownloads } = prev.versionDownloads;
+          const remainingComplete = Object.entries(remainingDownloads).filter(
+            ([, v]) => v?.status === DownloadStatus.COMPLETE
+          );
+          const hasRemainingComplete = remainingComplete.length > 0;
+          return {
+            versionDownloads: remainingDownloads,
+            selectedVersion: prev.selectedVersion === version ? null : prev.selectedVersion,
+            // If the reader was on the deleted version, fall back to any other
+            // complete one (so the reader keeps working) or to the default
+            // sentinel (which the version picker will overwrite anyway).
+            currentVersion:
+              prev.currentVersion === version
+                ? hasRemainingComplete
+                  ? (remainingComplete[0][0] as MushafVersion)
+                  : DEFAULT_MUSHAF_VERSION
+                : prev.currentVersion,
+            // No complete versions left → send the user back to the picker
+            // on next mount of the Quran tab.
+            onboardingComplete: hasRemainingComplete ? prev.onboardingComplete : false,
+          };
+        }),
       isVersionComplete: (version) =>
         get().versionDownloads[version]?.status === DownloadStatus.COMPLETE,
     }),

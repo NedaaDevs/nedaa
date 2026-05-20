@@ -112,5 +112,6 @@ export type QuranState = {
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
+  removeVersion: (version: MushafVersion) => void;
   isVersionComplete: (version: MushafVersion) => boolean;
 };
