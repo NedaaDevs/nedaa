@@ -381,7 +381,107 @@ const doInitializeDailyItems = async (
   const db = await openDatabase();
   const tz = locationStore.getState().locationDetails.timezone;
   const now = timeZonedNow(tz).toISOString();
-  return initializeDailyItemsCore(db, dateInt, morningList, eveningList, now, log);
+  const result = await initializeDailyItemsCore(db, dateInt, morningList, eveningList, now, log);
+
+  // Dev-only tripwire: if a "successful" init left the row count short of the
+  // expected total, the race-fix has regressed. Never runs in production
+  // builds — see __DEV__ below.
+  if (__DEV__ && result) {
+    const expected = morningList.length + eveningList.length;
+    const row = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
+      [dateInt]
+    );
+    const actual = row?.count ?? 0;
+    if (actual < expected) {
+      log.e(
+        "DB",
+        `[TRIPWIRE] initializeDailyItems regressed: date=${dateInt} expected>=${expected} got=${actual}`,
+        new Error("daily-items post-condition violated")
+      );
+    }
+  }
+
+  return result;
+};
+
+// Dev-only verification probe for the race-fix. Uses a synthetic far-future
+// date so it can't damage real user data. Seeds a partial 3-row set (the
+// exact state the production bug left behind), invokes the public path the
+// app uses, and reports whether the back-fill brought it to the expected
+// total. Always cleans up its synthetic rows.
+const verifyDailyInitRecovery = async (
+  morningList: { id: string; order: number; count: number; type: string }[],
+  eveningList: { id: string; order: number; count: number; type: string }[]
+): Promise<{
+  expected: number;
+  seeded: number;
+  afterInit: number;
+  passed: boolean;
+  message: string;
+}> => {
+  const PROBE_DATE = 99990101;
+  const db = await openDatabase();
+  const expected = morningList.length + eveningList.length;
+
+  try {
+    const seedTs = new Date().toISOString();
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      await txn.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+      for (const id of ["1-evening", "2-evening", "3-evening"]) {
+        await txn.runAsync(
+          `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE}
+           (date, thikr_id, current_count, total_count, created_at, updated_at)
+           VALUES (?, ?, 0, 1, ?, ?);`,
+          [PROBE_DATE, id, seedTs, seedTs]
+        );
+      }
+    });
+
+    const seededRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
+      [PROBE_DATE]
+    );
+    const seeded = seededRow?.count ?? 0;
+
+    const ok = await initializeDailyItems(PROBE_DATE, morningList, eveningList);
+
+    const afterRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
+      [PROBE_DATE]
+    );
+    const afterInit = afterRow?.count ?? 0;
+
+    // Clean up — never leave probe rows behind.
+    await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+    await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+
+    const passed = ok && afterInit >= expected;
+    return {
+      expected,
+      seeded,
+      afterInit,
+      passed,
+      message: passed
+        ? `self-heal OK: ${seeded} → ${afterInit} (expected ≥ ${expected})`
+        : `self-heal FAILED: ${seeded} → ${afterInit} (expected ≥ ${expected})`,
+    };
+  } catch (error) {
+    // Best-effort cleanup before reporting.
+    try {
+      await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+      await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+    } catch {
+      /* ignore cleanup error so the original error is what surfaces */
+    }
+    return {
+      expected,
+      seeded: -1,
+      afterInit: -1,
+      passed: false,
+      message: `error: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
 };
 
 // Public entry point: serializes every call through initDailyItemsLock so
@@ -1292,6 +1392,7 @@ export const AthkarDB = {
 
   // Daily items operations
   initializeDailyItems,
+  verifyDailyInitRecovery,
   updateTotalCounts,
   getSessionItems,
   updateAthkarCount,

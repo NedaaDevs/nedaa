@@ -26,12 +26,17 @@ const AthkarAudioDebugScreen = () => {
   const { playerState, currentThikrId, repeatProgress, sessionProgress } = useAthkarStore();
   const { playbackMode, selectedReciterId } = useAthkarAudioStore();
 
+  const morningAthkarList = useAthkarStore((s) => s.morningAthkarList);
+  const eveningAthkarList = useAthkarStore((s) => s.eveningAthkarList);
+
   const [logText, setLogText] = useState("");
   const [storageBreakdown, setStorageBreakdown] = useState<{ reciterId: string; size: number }[]>(
     []
   );
   const [totalStorage, setTotalStorage] = useState(0);
   const [lastAction, setLastAction] = useState<string | null>(null);
+  const [raceProbeResult, setRaceProbeResult] = useState<string | null>(null);
+  const [raceProbeRunning, setRaceProbeRunning] = useState(false);
 
   const refresh = useCallback(async () => {
     const text = await log.getLogText();
@@ -56,6 +61,40 @@ const AthkarAudioDebugScreen = () => {
     setLogText("");
     setLastAction(t("settings.athkarAudio.debug.logCleared"));
   };
+
+  // Runs the daily-init race-fix probe: seeds a partial 3-row state on a
+  // synthetic far-future date, invokes the public initializeDailyItems, and
+  // reports whether the self-heal back-filled to the expected total.
+  const handleVerifyRaceFix = useCallback(async () => {
+    setRaceProbeRunning(true);
+    setRaceProbeResult(null);
+    try {
+      const morning = morningAthkarList.map((a) => ({
+        id: a.id,
+        order: a.order,
+        count: a.count,
+        type: a.type,
+      }));
+      const evening = eveningAthkarList.map((a) => ({
+        id: a.id,
+        order: a.order,
+        count: a.count,
+        type: a.type,
+      }));
+
+      if (morning.length === 0 || evening.length === 0) {
+        setRaceProbeResult("skipped: athkar lists not loaded yet (open the athkar tab first)");
+        return;
+      }
+
+      const result = await AthkarDB.verifyDailyInitRecovery(morning, evening);
+      setRaceProbeResult(`${result.passed ? "PASS" : "FAIL"} — ${result.message}`);
+    } catch (err) {
+      setRaceProbeResult(`error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setRaceProbeRunning(false);
+    }
+  }, [morningAthkarList, eveningAthkarList]);
 
   return (
     <Background>
@@ -176,6 +215,33 @@ const AthkarAudioDebugScreen = () => {
                     {formatFileSize(totalStorage)}
                   </Text>
                 </HStack>
+              )}
+            </VStack>
+          </Card>
+
+          {/* Daily-init race-fix probe (dev-only). Seeds a partial 3-row state
+              on a synthetic future date, runs initializeDailyItems, asserts
+              back-fill brought it to the expected total, cleans up. */}
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Daily-init race fix
+              </Text>
+              <Text size="sm" color="$typographySecondary">
+                Verifies the self-heal back-fill against the real expo-sqlite driver. Uses a
+                synthetic date — no real data is touched.
+              </Text>
+              <Button
+                variant="solid"
+                onPress={handleVerifyRaceFix}
+                disabled={raceProbeRunning}
+                accessibilityLabel="Run daily-init race-fix self-heal probe">
+                <Button.Text>{raceProbeRunning ? "Running…" : "Run self-heal probe"}</Button.Text>
+              </Button>
+              {raceProbeResult && (
+                <Badge action={raceProbeResult.startsWith("PASS") ? "success" : "error"}>
+                  <Badge.Text>{raceProbeResult}</Badge.Text>
+                </Badge>
               )}
             </VStack>
           </Card>
