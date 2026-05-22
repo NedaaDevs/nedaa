@@ -7,6 +7,10 @@ import { getDirectory } from "@/services/db";
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
 import { AppLogger } from "@/utils/appLogger";
+import { createAsyncLock } from "@/utils/asyncLock";
+
+// Services
+import { initializeDailyItemsCore } from "@/services/athkar-daily-init";
 
 // Constants
 import {
@@ -68,6 +72,14 @@ let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 // Singleton DB initialization promise — prevents race between
 // onRehydrateStorage (creates tables) and component effects (query tables)
 let initPromise: Promise<void> | null = null;
+
+// Serializes initializeDailyItems across concurrent callers. initializeStore
+// (rehydrate), validateDailyStreak (app-active) and initializeSession (screen
+// mount) can all invoke it within milliseconds of each other. Without this
+// lock two callers pass the existence guard while count=0 and both open a
+// transaction on the shared connection → "cannot start a transaction within a
+// transaction", leaving a partial row set behind.
+const initDailyItemsLock = createAsyncLock();
 
 const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   if (!dbPromise) {
@@ -356,82 +368,31 @@ const initializeDB = async () => {
 
 /** DAILY ITEMS OPERATIONS */
 
-// Initialize all athkar items for a specific date (batch insert)
-const initializeDailyItems = async (
+// Initialize all athkar items for a specific date. The guard + inserts run as
+// a single exclusive transaction so a partial row set can never be observed as
+// "already initialized"; the guard compares against the expected total so a
+// day left partial by an earlier failure self-heals on the next call (the
+// inserts are INSERT OR IGNORE so re-running back-fills the gaps).
+const doInitializeDailyItems = async (
   dateInt: number,
   morningList: { id: string; order: number; count: number; type: string }[],
   eveningList: { id: string; order: number; count: number; type: string }[]
 ): Promise<boolean> => {
   const db = await openDatabase();
-
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
-
-    // Check if already initialized by checking if ANY items exist for this date
-    const existingItems = await db.getFirstAsync(
-      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
-      [dateInt]
-    );
-
-    if (existingItems && (existingItems as any).count > 0) {
-      log.i(
-        "DB",
-        `initializeDailyItems: date=${dateInt} already has ${(existingItems as any).count} rows, skipping`
-      );
-      return true; // Already initialized
-    }
-
-    const totalItems = morningList.length + eveningList.length;
-    log.i(
-      "DB",
-      `initializeDailyItems: date=${dateInt} morning=${morningList.length} evening=${eveningList.length} total=${totalItems}`
-    );
-
-    await db.withTransactionAsync(async () => {
-      // Insert morning items
-      for (const athkar of morningList) {
-        await db.runAsync(
-          `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE} 
-           (date, thikr_id, current_count, total_count, created_at, updated_at)
-           VALUES (?, ?, 0, ?, ?, ?);`,
-          [dateInt, athkar.id, athkar.count, now, now]
-        );
-      }
-
-      // Insert evening items
-      for (const athkar of eveningList) {
-        await db.runAsync(
-          `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE} 
-           (date, thikr_id, current_count, total_count, created_at, updated_at)
-           VALUES (?, ?, 0, ?, ?, ?);`,
-          [dateInt, athkar.id, athkar.count, now, now]
-        );
-      }
-
-      // Initialize completed_days entry (also use INSERT OR IGNORE)
-      await db.runAsync(
-        `INSERT OR IGNORE INTO ${ATHKAR_COMPLETED_DAYS_TABLE} 
-         (date, morning_completed_at, evening_completed_at, created_at, updated_at)
-         VALUES (?, NULL, NULL, ?, ?);`,
-        [dateInt, now, now]
-      );
-    });
-
-    log.i(
-      "DB",
-      `initializeDailyItems: successfully inserted ${totalItems} rows for date=${dateInt}`
-    );
-    return true;
-  } catch (error) {
-    log.e(
-      "DB",
-      `initializeDailyItems failed for date=${dateInt}`,
-      error instanceof Error ? error : new Error(String(error))
-    );
-    return false;
-  }
+  const tz = locationStore.getState().locationDetails.timezone;
+  const now = timeZonedNow(tz).toISOString();
+  return initializeDailyItemsCore(db, dateInt, morningList, eveningList, now, log);
 };
+
+// Public entry point: serializes every call through initDailyItemsLock so
+// concurrent invocations execute sequentially instead of colliding on the
+// shared connection's transaction.
+const initializeDailyItems = (
+  dateInt: number,
+  morningList: { id: string; order: number; count: number; type: string }[],
+  eveningList: { id: string; order: number; count: number; type: string }[]
+): Promise<boolean> =>
+  initDailyItemsLock(() => doInitializeDailyItems(dateInt, morningList, eveningList));
 
 // Get all morning or evening items for a specific date
 const getSessionItems = async (
