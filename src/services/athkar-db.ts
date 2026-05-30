@@ -7,7 +7,7 @@ import { getDirectory } from "@/services/db";
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
 import { AppLogger } from "@/utils/appLogger";
-import { createAsyncLock } from "@/utils/asyncLock";
+import { createSerializedDatabase } from "@/utils/serializedDatabase";
 
 // Services
 import { initializeDailyItemsCore } from "@/services/athkar-daily-init";
@@ -65,41 +65,6 @@ type AthkarStreak = z.infer<typeof AthkarStreakSchema>;
 type AthkarDailyItem = z.infer<typeof AthkarDailyItemSchema>;
 type AthkarAudioDownload = z.infer<typeof AthkarAudioDownloadSchema>;
 
-// Singleton database connection
-// Caches the Promise itself to prevent concurrent callers from opening duplicate connections
-let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
-// Singleton DB initialization promise — prevents race between
-// onRehydrateStorage (creates tables) and component effects (query tables)
-let initPromise: Promise<void> | null = null;
-
-// Serializes initializeDailyItems across concurrent callers. initializeStore
-// (rehydrate), validateDailyStreak (app-active) and initializeSession (screen
-// mount) can all invoke it within milliseconds of each other. Without this
-// lock two callers pass the existence guard while count=0 and both open a
-// transaction on the shared connection → "cannot start a transaction within a
-// transaction", leaving a partial row set behind.
-const initDailyItemsLock = createAsyncLock();
-
-const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
-  if (!dbPromise) {
-    dbPromise = (async () => {
-      try {
-        return await SQLite.openDatabaseAsync(
-          ATHKAR_DB_NAME,
-          { useNewConnection: true },
-          await getDirectory()
-        );
-      } catch (error) {
-        dbPromise = null;
-        console.error("[Athkar-DB] Error opening database:", error);
-        throw error;
-      }
-    })();
-  }
-  return dbPromise;
-};
-
 // Migration helper for completed days table
 const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
   try {
@@ -149,7 +114,7 @@ const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
 
     try {
       await db.runAsync(
-        `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+        `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE}
          SET created_at = ?, updated_at = ?
          WHERE created_at = '' OR created_at IS NULL OR updated_at = '' OR updated_at IS NULL;`,
         [now, now]
@@ -163,7 +128,7 @@ const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
       console.log("[Athkar-DB] Migrating from completed_at to new schema...");
       try {
         await db.runAsync(
-          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE}
            SET morning_completed_at = completed_at,
                evening_completed_at = completed_at
            WHERE completed_at IS NOT NULL AND morning_completed_at IS NULL;`
@@ -178,7 +143,7 @@ const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
       console.log("[Athkar-DB] Migrating from is_completed to new schema...");
       try {
         await db.runAsync(
-          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
+          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE}
            SET morning_completed_at = ?,
                evening_completed_at = ?
            WHERE is_completed = 1 AND morning_completed_at IS NULL;`,
@@ -196,9 +161,9 @@ const migrateCompletedDaysTable = async (db: SQLite.SQLiteDatabase) => {
   }
 };
 
-const initializeDB = async () => {
-  const db = await openDatabase();
-
+// Builds the schema on a freshly opened connection. Receives db so it can be
+// run inside the serialized-database open() callback (never opens its own).
+const setupSchema = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   try {
     await db.execAsync(`PRAGMA journal_mode = WAL;`);
     await db.execAsync(`PRAGMA busy_timeout = 3000;`);
@@ -246,12 +211,12 @@ const initializeDB = async () => {
 
     // Create indexes for faster queries
     await db.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_daily_items_date 
+      `CREATE INDEX IF NOT EXISTS idx_daily_items_date
        ON ${ATHKAR_DAILY_ITEMS_TABLE}(date DESC);`
     );
 
     await db.execAsync(
-      `CREATE INDEX IF NOT EXISTS idx_daily_items_type 
+      `CREATE INDEX IF NOT EXISTS idx_daily_items_type
        ON ${ATHKAR_DAILY_ITEMS_TABLE}(date, thikr_id);`
     );
 
@@ -354,8 +319,8 @@ const initializeDB = async () => {
     if (!existingStreak) {
       const now = new Date().toISOString();
       await db.runAsync(
-        `INSERT INTO ${ATHKAR_STREAK_TABLE} 
-         (id, current_streak, longest_streak, last_streak_date, is_paused, tolerance_days, created_at, updated_at) 
+        `INSERT INTO ${ATHKAR_STREAK_TABLE}
+         (id, current_streak, longest_streak, last_streak_date, is_paused, tolerance_days, created_at, updated_at)
          VALUES (1, 0, 0, NULL, 0, 0, ?, ?);`,
         [now, now]
       );
@@ -366,6 +331,19 @@ const initializeDB = async () => {
   }
 };
 
+// Serialized single-connection wrapper. Every logical operation runs through
+// sdb.run(db => ...) under a shared lock, so multi-statement operations are
+// atomic against each other and only one physical connection ever touches the file.
+const sdb = createSerializedDatabase(async () => {
+  const db = await SQLite.openDatabaseAsync(
+    ATHKAR_DB_NAME,
+    { useNewConnection: true },
+    await getDirectory()
+  );
+  await setupSchema(db);
+  return db;
+});
+
 /** DAILY ITEMS OPERATIONS */
 
 // Initialize all athkar items for a specific date. The guard + inserts run as
@@ -374,11 +352,11 @@ const initializeDB = async () => {
 // day left partial by an earlier failure self-heals on the next call (the
 // inserts are INSERT OR IGNORE so re-running back-fills the gaps).
 const doInitializeDailyItems = async (
+  db: SQLite.SQLiteDatabase,
   dateInt: number,
   morningList: { id: string; order: number; count: number; type: string }[],
   eveningList: { id: string; order: number; count: number; type: string }[]
 ): Promise<boolean> => {
-  const db = await openDatabase();
   const tz = locationStore.getState().locationDetails.timezone;
   const now = timeZonedNow(tz).toISOString();
   const result = await initializeDailyItemsCore(db, dateInt, morningList, eveningList, now, log);
@@ -421,40 +399,48 @@ const verifyDailyInitRecovery = async (
   message: string;
 }> => {
   const PROBE_DATE = 99990101;
-  const db = await openDatabase();
   const expected = morningList.length + eveningList.length;
 
   try {
-    const seedTs = new Date().toISOString();
-    await db.withExclusiveTransactionAsync(async (txn) => {
-      await txn.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
-      for (const id of ["1-evening", "2-evening", "3-evening"]) {
-        await txn.runAsync(
-          `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE}
-           (date, thikr_id, current_count, total_count, created_at, updated_at)
-           VALUES (?, ?, 0, 1, ?, ?);`,
-          [PROBE_DATE, id, seedTs, seedTs]
-        );
-      }
+    // Seed a partial set and count it — one serialized operation.
+    const seeded = await sdb.run(async (db) => {
+      const seedTs = new Date().toISOString();
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+        for (const id of ["1-evening", "2-evening", "3-evening"]) {
+          await db.runAsync(
+            `INSERT OR IGNORE INTO ${ATHKAR_DAILY_ITEMS_TABLE}
+             (date, thikr_id, current_count, total_count, created_at, updated_at)
+             VALUES (?, ?, 0, 1, ?, ?);`,
+            [PROBE_DATE, id, seedTs, seedTs]
+          );
+        }
+      });
+
+      const seededRow = await db.getFirstAsync<{ count: number }>(
+        `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
+        [PROBE_DATE]
+      );
+      return seededRow?.count ?? 0;
     });
 
-    const seededRow = await db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
-      [PROBE_DATE]
-    );
-    const seeded = seededRow?.count ?? 0;
-
+    // Invoke the public path — it acquires the lock itself, so it must run
+    // OUTSIDE the run() blocks (the lock is non-reentrant).
     const ok = await initializeDailyItems(PROBE_DATE, morningList, eveningList);
 
-    const afterRow = await db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
-      [PROBE_DATE]
-    );
-    const afterInit = afterRow?.count ?? 0;
+    // Count the result and clean up — one more serialized operation.
+    const afterInit = await sdb.run(async (db) => {
+      const afterRow = await db.getFirstAsync<{ count: number }>(
+        `SELECT COUNT(*) as count FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`,
+        [PROBE_DATE]
+      );
+      const count = afterRow?.count ?? 0;
 
-    // Clean up — never leave probe rows behind.
-    await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
-    await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+      // Clean up — never leave probe rows behind.
+      await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+      await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+      return count;
+    });
 
     const passed = ok && afterInit >= expected;
     return {
@@ -469,8 +455,12 @@ const verifyDailyInitRecovery = async (
   } catch (error) {
     // Best-effort cleanup before reporting.
     try {
-      await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
-      await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+      await sdb.run(async (db) => {
+        await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date = ?;`, [PROBE_DATE]);
+        await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`, [
+          PROBE_DATE,
+        ]);
+      });
     } catch {
       /* ignore cleanup error so the original error is what surfaces */
     }
@@ -484,7 +474,7 @@ const verifyDailyInitRecovery = async (
   }
 };
 
-// Public entry point: serializes every call through initDailyItemsLock so
+// Public entry point: serializes every call through the shared lock so
 // concurrent invocations execute sequentially instead of colliding on the
 // shared connection's transaction.
 const initializeDailyItems = (
@@ -492,18 +482,19 @@ const initializeDailyItems = (
   morningList: { id: string; order: number; count: number; type: string }[],
   eveningList: { id: string; order: number; count: number; type: string }[]
 ): Promise<boolean> =>
-  initDailyItemsLock(() => doInitializeDailyItems(dateInt, morningList, eveningList));
+  sdb.run((db) => doInitializeDailyItems(db, dateInt, morningList, eveningList));
 
-// Get all morning or evening items for a specific date
-const getSessionItems = async (
+// Get all morning or evening items for a specific date. Takes db so it can be
+// reused inside another run() callback (e.g. checkAndMarkSessionComplete)
+// without nesting run() and deadlocking the non-reentrant lock.
+const getSessionItemsWith = async (
+  db: SQLite.SQLiteDatabase,
   dateInt: number,
   session: "morning" | "evening"
 ): Promise<AthkarDailyItem[]> => {
-  const db = await openDatabase();
-
   try {
     const results = await db.getAllAsync(
-      `SELECT * FROM ${ATHKAR_DAILY_ITEMS_TABLE} 
+      `SELECT * FROM ${ATHKAR_DAILY_ITEMS_TABLE}
        WHERE date = ? AND thikr_id LIKE ?
        ORDER BY thikr_id;`,
       [dateInt, `%-${session}`]
@@ -540,653 +531,638 @@ const getSessionItems = async (
   }
 };
 
+const getSessionItems = (
+  dateInt: number,
+  session: "morning" | "evening"
+): Promise<AthkarDailyItem[]> => sdb.run((db) => getSessionItemsWith(db, dateInt, session));
+
 // Update a single athkar item count
-const updateAthkarCount = async (
+const updateAthkarCount = (
   dateInt: number,
   thikrId: string,
   currentCount: number
-): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
-
-    const result = await db.runAsync(
-      `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
-       SET current_count = ?, updated_at = ?
-       WHERE date = ? AND thikr_id = ?;`,
-      [currentCount, now, dateInt, thikrId]
-    );
-
-    if (result.changes === 0) {
-      log.w(
-        "DB",
-        `updateAthkarCount: 0 rows changed for thikrId=${thikrId} date=${dateInt} count=${currentCount} — row may not exist`
-      );
-    }
-
-    return result.changes > 0;
-  } catch (error) {
-    log.e(
-      "DB",
-      "updateAthkarCount failed",
-      error instanceof Error ? error : new Error(String(error))
-    );
-    return false;
-  }
-};
-
-// Reset all counts for a specific session (morning/evening)
-const resetSessionCounts = async (
-  dateInt: number,
-  session: "morning" | "evening"
-): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
-
-    await db.runAsync(
-      `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
-       SET current_count = 0, updated_at = ?
-       WHERE date = ? AND thikr_id LIKE ?;`,
-      [now, dateInt, `%-${session}`]
-    );
-
-    // Also reset completion status
-    const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
-    await db.runAsync(
-      `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
-       SET ${columnName} = NULL, updated_at = ?
-       WHERE date = ?;`,
-      [now, dateInt]
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Error resetting session counts:", error);
-    return false;
-  }
-};
-
-// Check if a session is completed and mark it
-const checkAndMarkSessionComplete = async (
-  dateInt: number,
-  session: "morning" | "evening"
-): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    // Get all items for this session
-    const items = await getSessionItems(dateInt, session);
-
-    // Check if all items are completed (current_count >= total_count)
-    const allCompleted =
-      items.length > 0 && items.every((item) => item.current_count >= item.total_count);
-
-    if (allCompleted) {
+): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
       const tz = locationStore.getState().locationDetails.timezone;
       const now = timeZonedNow(tz).toISOString();
-      const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
 
-      // Check if already marked as completed
-      const completedDay = await db.getFirstAsync(
+      const result = await db.runAsync(
+        `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
+         SET current_count = ?, updated_at = ?
+         WHERE date = ? AND thikr_id = ?;`,
+        [currentCount, now, dateInt, thikrId]
+      );
+
+      if (result.changes === 0) {
+        log.w(
+          "DB",
+          `updateAthkarCount: 0 rows changed for thikrId=${thikrId} date=${dateInt} count=${currentCount} — row may not exist`
+        );
+      }
+
+      return result.changes > 0;
+    } catch (error) {
+      log.e(
+        "DB",
+        "updateAthkarCount failed",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      return false;
+    }
+  });
+
+// Reset all counts for a specific session (morning/evening)
+const resetSessionCounts = (dateInt: number, session: "morning" | "evening"): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
+
+      await db.runAsync(
+        `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
+         SET current_count = 0, updated_at = ?
+         WHERE date = ? AND thikr_id LIKE ?;`,
+        [now, dateInt, `%-${session}`]
+      );
+
+      // Also reset completion status
+      const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
+      await db.runAsync(
+        `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE}
+         SET ${columnName} = NULL, updated_at = ?
+         WHERE date = ?;`,
+        [now, dateInt]
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Error resetting session counts:", error);
+      return false;
+    }
+  });
+
+// Check if a session is completed and mark it
+const checkAndMarkSessionComplete = (
+  dateInt: number,
+  session: "morning" | "evening"
+): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      // Get all items for this session (use the helper with the same db so we
+      // don't nest run() — the lock is non-reentrant).
+      const items = await getSessionItemsWith(db, dateInt, session);
+
+      // Check if all items are completed (current_count >= total_count)
+      const allCompleted =
+        items.length > 0 && items.every((item) => item.current_count >= item.total_count);
+
+      if (allCompleted) {
+        const tz = locationStore.getState().locationDetails.timezone;
+        const now = timeZonedNow(tz).toISOString();
+        const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
+
+        // Check if already marked as completed
+        const completedDay = await db.getFirstAsync(
+          `SELECT ${columnName} FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
+          [dateInt]
+        );
+
+        if (completedDay && (completedDay as any)[columnName] === null) {
+          // Mark as completed
+          await db.runAsync(
+            `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE}
+             SET ${columnName} = ?, updated_at = ?
+             WHERE date = ?;`,
+            [now, now, dateInt]
+          );
+        }
+      }
+
+      return allCompleted;
+    } catch (error) {
+      console.error("Error checking session completion:", error);
+      return false;
+    }
+  });
+
+// Check if morning/evening is completed for a day
+const isSessionCompleted = (dateInt: number, session: "morning" | "evening"): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
+      const result: any = await db.getFirstAsync(
         `SELECT ${columnName} FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
         [dateInt]
       );
 
-      if (completedDay && (completedDay as any)[columnName] === null) {
-        // Mark as completed
-        await db.runAsync(
-          `UPDATE ${ATHKAR_COMPLETED_DAYS_TABLE} 
-           SET ${columnName} = ?, updated_at = ?
-           WHERE date = ?;`,
-          [now, now, dateInt]
-        );
-      }
+      return result && result[columnName] !== null;
+    } catch (error) {
+      console.error("Error checking session completion:", error);
+      return false;
     }
-
-    return allCompleted;
-  } catch (error) {
-    console.error("Error checking session completion:", error);
-    return false;
-  }
-};
-
-// Check if morning/evening is completed for a day
-const isSessionCompleted = async (
-  dateInt: number,
-  session: "morning" | "evening"
-): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const columnName = session === "morning" ? "morning_completed_at" : "evening_completed_at";
-    const result: any = await db.getFirstAsync(
-      `SELECT ${columnName} FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date = ?;`,
-      [dateInt]
-    );
-
-    return result && result[columnName] !== null;
-  } catch (error) {
-    console.error("Error checking session completion:", error);
-    return false;
-  }
-};
+  });
 
 // Check if both sessions are completed for streak calculation
-const areBothSessionsCompleted = async (dateInt: number): Promise<boolean> => {
-  const db = await openDatabase();
+const areBothSessionsCompleted = (dateInt: number): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const result = await db.getFirstAsync(
+        `SELECT morning_completed_at, evening_completed_at
+         FROM ${ATHKAR_COMPLETED_DAYS_TABLE}
+         WHERE date = ?;`,
+        [dateInt]
+      );
 
-  try {
-    const result = await db.getFirstAsync(
-      `SELECT morning_completed_at, evening_completed_at 
-       FROM ${ATHKAR_COMPLETED_DAYS_TABLE} 
-       WHERE date = ?;`,
-      [dateInt]
-    );
+      if (!result) return false;
 
-    if (!result) return false;
-
-    const completedDay = result as any;
-    return completedDay.morning_completed_at !== null && completedDay.evening_completed_at !== null;
-  } catch (error) {
-    console.error("Error checking both sessions completion:", error);
-    return false;
-  }
-};
+      const completedDay = result as any;
+      return (
+        completedDay.morning_completed_at !== null && completedDay.evening_completed_at !== null
+      );
+    } catch (error) {
+      console.error("Error checking both sessions completion:", error);
+      return false;
+    }
+  });
 
 // Update total counts for existing items (used when shortVersion changes)
-const updateTotalCounts = async (
+const updateTotalCounts = (
   dateInt: number,
   morningList: { order: number; count: number }[],
   eveningList: { order: number; count: number }[]
-): Promise<boolean> => {
-  const db = await openDatabase();
+): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
 
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
+      console.log(
+        `[Athkar-DB] Updating total counts for date ${dateInt} - Morning: ${morningList.length}, Evening: ${eveningList.length}`
+      );
 
-    console.log(
-      `[Athkar-DB] Updating total counts for date ${dateInt} - Morning: ${morningList.length}, Evening: ${eveningList.length}`
-    );
+      await db.withTransactionAsync(async () => {
+        // Update morning items
+        for (const athkar of morningList) {
+          const thikrId = `${athkar.order}-morning`;
+          await db.runAsync(
+            `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
+             SET total_count = ?, updated_at = ?
+             WHERE date = ? AND thikr_id = ?;`,
+            [athkar.count, now, dateInt, thikrId]
+          );
+        }
 
-    await db.withTransactionAsync(async () => {
-      // Update morning items
-      for (const athkar of morningList) {
-        const thikrId = `${athkar.order}-morning`;
-        await db.runAsync(
-          `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
-           SET total_count = ?, updated_at = ?
-           WHERE date = ? AND thikr_id = ?;`,
-          [athkar.count, now, dateInt, thikrId]
-        );
-      }
+        // Update evening items
+        for (const athkar of eveningList) {
+          const thikrId = `${athkar.order}-evening`;
+          await db.runAsync(
+            `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
+             SET total_count = ?, updated_at = ?
+             WHERE date = ? AND thikr_id = ?;`,
+            [athkar.count, now, dateInt, thikrId]
+          );
+        }
+      });
 
-      // Update evening items
-      for (const athkar of eveningList) {
-        const thikrId = `${athkar.order}-evening`;
-        await db.runAsync(
-          `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE} 
-           SET total_count = ?, updated_at = ?
-           WHERE date = ? AND thikr_id = ?;`,
-          [athkar.count, now, dateInt, thikrId]
-        );
-      }
-    });
+      console.log(
+        `[Athkar-DB] Successfully updated total counts for ${morningList.length} morning and ${eveningList.length} evening athkar`
+      );
+      return true;
+    } catch (error) {
+      console.error("Error updating total counts:", error);
+      return false;
+    }
+  });
 
-    console.log(
-      `[Athkar-DB] Successfully updated total counts for ${morningList.length} morning and ${eveningList.length} evening athkar`
-    );
-    return true;
-  } catch (error) {
-    console.error("Error updating total counts:", error);
-    return false;
-  }
-};
+const cleanOldData = (daysToKeep: number = 5): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const cutoffDate = timeZonedNow(tz);
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+      const cutoffDateInt = dateToInt(cutoffDate);
 
-const cleanOldData = async (daysToKeep: number = 5): Promise<boolean> => {
-  const db = await openDatabase();
+      await db.withTransactionAsync(async () => {
+        // Clean daily items
+        await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date < ?;`, [
+          cutoffDateInt,
+        ]);
 
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const cutoffDate = timeZonedNow(tz);
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    const cutoffDateInt = dateToInt(cutoffDate);
+        // Clean completed days
+        await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date < ?;`, [
+          cutoffDateInt,
+        ]);
+      });
 
-    await db.withTransactionAsync(async () => {
-      // Clean daily items
-      await db.runAsync(`DELETE FROM ${ATHKAR_DAILY_ITEMS_TABLE} WHERE date < ?;`, [cutoffDateInt]);
-
-      // Clean completed days
-      await db.runAsync(`DELETE FROM ${ATHKAR_COMPLETED_DAYS_TABLE} WHERE date < ?;`, [
-        cutoffDateInt,
-      ]);
-    });
-
-    console.log(`[Athkar-DB] Cleaned data older than ${cutoffDate.toDateString()}`);
-    return true;
-  } catch (error) {
-    console.error("Error cleaning old data:", error);
-    return false;
-  }
-};
+      console.log(`[Athkar-DB] Cleaned data older than ${cutoffDate.toDateString()}`);
+      return true;
+    } catch (error) {
+      console.error("Error cleaning old data:", error);
+      return false;
+    }
+  });
 
 /** STREAK OPERATIONS */
 
-const getStreakData = async (): Promise<AthkarStreak | null> => {
-  const db = await openDatabase();
+const getStreakData = (): Promise<AthkarStreak | null> =>
+  sdb.run(async (db) => {
+    try {
+      const result = await db.getFirstAsync(`SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`);
 
-  try {
-    const result = await db.getFirstAsync(`SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`);
+      if (!result) return null;
 
-    if (!result) return null;
-
-    return AthkarStreakSchema.parse(result);
-  } catch (error) {
-    console.error("Error getting streak data:", error);
-    return null;
-  }
-};
+      return AthkarStreakSchema.parse(result);
+    } catch (error) {
+      console.error("Error getting streak data:", error);
+      return null;
+    }
+  });
 
 // Update streak when both sessions are completed
-const updateStreakForDay = async (
+const updateStreakForDay = (
   dateInt: number
 ): Promise<{
   success: boolean;
   currentStreak: number;
   longestStreak: number;
   alreadyCompleted?: boolean;
-} | null> => {
-  const db = await openDatabase();
+} | null> =>
+  sdb.run(async (db) => {
+    try {
+      let result = null;
 
-  try {
-    let result = null;
+      await db.withTransactionAsync(async () => {
+        // Check if both sessions are completed (use db directly to avoid reentrant openDatabase call)
+        const completionResult = await db.getFirstAsync(
+          `SELECT morning_completed_at, evening_completed_at
+           FROM ${ATHKAR_COMPLETED_DAYS_TABLE}
+           WHERE date = ?;`,
+          [dateInt]
+        );
+        const bothCompleted =
+          completionResult &&
+          (completionResult as any).morning_completed_at !== null &&
+          (completionResult as any).evening_completed_at !== null;
 
-    await db.withTransactionAsync(async () => {
-      // Check if both sessions are completed (use db directly to avoid reentrant openDatabase call)
-      const completionResult = await db.getFirstAsync(
-        `SELECT morning_completed_at, evening_completed_at
-         FROM ${ATHKAR_COMPLETED_DAYS_TABLE}
-         WHERE date = ?;`,
-        [dateInt]
-      );
-      const bothCompleted =
-        completionResult &&
-        (completionResult as any).morning_completed_at !== null &&
-        (completionResult as any).evening_completed_at !== null;
-
-      if (!bothCompleted) {
-        result = { success: false, currentStreak: 0, longestStreak: 0 };
-        return;
-      }
-
-      // Get current streak data (use db directly to avoid reentrant openDatabase call)
-      const streakResult = await db.getFirstAsync(
-        `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
-      );
-      const streakData = streakResult ? AthkarStreakSchema.parse(streakResult) : null;
-      if (!streakData) throw new Error("No streak data found");
-
-      // Determine new streak values
-      let newCurrentStreak = 1;
-      let shouldUpdate = false;
-
-      if (!streakData.last_streak_date) {
-        // First ever completion
-        shouldUpdate = true;
-      } else {
-        const daysSinceLastStreak = dateInt - streakData.last_streak_date;
-
-        if (daysSinceLastStreak === 1) {
-          // Consecutive day
-          newCurrentStreak = streakData.current_streak + 1;
-          shouldUpdate = true;
-        } else if (daysSinceLastStreak === 0) {
-          // Same day - already completed
-          result = {
-            success: true,
-            currentStreak: streakData.current_streak,
-            longestStreak: streakData.longest_streak,
-            alreadyCompleted: true,
-          };
+        if (!bothCompleted) {
+          result = { success: false, currentStreak: 0, longestStreak: 0 };
           return;
-        } else if (
-          streakData.tolerance_days > 0 &&
-          daysSinceLastStreak <= streakData.tolerance_days + 1 &&
-          !streakData.is_paused
-        ) {
-          // Within tolerance
-          newCurrentStreak = streakData.current_streak + 1;
+        }
+
+        // Get current streak data (use db directly to avoid reentrant openDatabase call)
+        const streakResult = await db.getFirstAsync(
+          `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
+        );
+        const streakData = streakResult ? AthkarStreakSchema.parse(streakResult) : null;
+        if (!streakData) throw new Error("No streak data found");
+
+        // Determine new streak values
+        let newCurrentStreak = 1;
+        let shouldUpdate = false;
+
+        if (!streakData.last_streak_date) {
+          // First ever completion
           shouldUpdate = true;
         } else {
-          // Streak broken - reset to 1
-          newCurrentStreak = 1;
-          shouldUpdate = true;
+          const daysSinceLastStreak = dateInt - streakData.last_streak_date;
+
+          if (daysSinceLastStreak === 1) {
+            // Consecutive day
+            newCurrentStreak = streakData.current_streak + 1;
+            shouldUpdate = true;
+          } else if (daysSinceLastStreak === 0) {
+            // Same day - already completed
+            result = {
+              success: true,
+              currentStreak: streakData.current_streak,
+              longestStreak: streakData.longest_streak,
+              alreadyCompleted: true,
+            };
+            return;
+          } else if (
+            streakData.tolerance_days > 0 &&
+            daysSinceLastStreak <= streakData.tolerance_days + 1 &&
+            !streakData.is_paused
+          ) {
+            // Within tolerance
+            newCurrentStreak = streakData.current_streak + 1;
+            shouldUpdate = true;
+          } else {
+            // Streak broken - reset to 1
+            newCurrentStreak = 1;
+            shouldUpdate = true;
+          }
         }
-      }
 
-      if (shouldUpdate) {
-        const newLongestStreak = Math.max(newCurrentStreak, streakData.longest_streak);
-        const now = new Date().toISOString();
+        if (shouldUpdate) {
+          const newLongestStreak = Math.max(newCurrentStreak, streakData.longest_streak);
+          const now = new Date().toISOString();
 
-        await db.runAsync(
-          `UPDATE ${ATHKAR_STREAK_TABLE} 
-           SET current_streak = ?, 
-               longest_streak = ?, 
-               last_streak_date = ?,
-               updated_at = ?
-           WHERE id = 1;`,
-          [newCurrentStreak, newLongestStreak, dateInt, now]
-        );
+          await db.runAsync(
+            `UPDATE ${ATHKAR_STREAK_TABLE}
+             SET current_streak = ?,
+                 longest_streak = ?,
+                 last_streak_date = ?,
+                 updated_at = ?
+             WHERE id = 1;`,
+            [newCurrentStreak, newLongestStreak, dateInt, now]
+          );
 
-        result = {
-          success: true,
-          currentStreak: newCurrentStreak,
-          longestStreak: newLongestStreak,
-          alreadyCompleted: false,
-        };
-      }
-    });
+          result = {
+            success: true,
+            currentStreak: newCurrentStreak,
+            longestStreak: newLongestStreak,
+            alreadyCompleted: false,
+          };
+        }
+      });
 
-    return result;
-  } catch (error) {
-    console.error("Error updating streak for day:", error);
-    return null;
-  }
-};
+      return result;
+    } catch (error) {
+      console.error("Error updating streak for day:", error);
+      return null;
+    }
+  });
 
 // Reset current streak
-const resetCurrentStreak = async (): Promise<boolean> => {
-  const db = await openDatabase();
+const resetCurrentStreak = (): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      await db.runAsync(
+        `UPDATE ${ATHKAR_STREAK_TABLE}
+         SET current_streak = 0,
+             last_streak_date = NULL,
+             updated_at = ?
+         WHERE id = 1;`,
+        [new Date().toISOString()]
+      );
 
-  try {
-    await db.runAsync(
-      `UPDATE ${ATHKAR_STREAK_TABLE} 
-       SET current_streak = 0, 
-           last_streak_date = NULL,
-           updated_at = ?
-       WHERE id = 1;`,
-      [new Date().toISOString()]
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Error resetting streak:", error);
-    return false;
-  }
-};
+      return true;
+    } catch (error) {
+      console.error("Error resetting streak:", error);
+      return false;
+    }
+  });
 
 // Update streak settings
-const updateStreakSettings = async (settings: {
+const updateStreakSettings = (settings: {
   isPaused?: boolean;
   toleranceDays?: number;
-}): Promise<boolean> => {
-  const db = await openDatabase();
+}): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const updates: string[] = [];
+      const values: any[] = [];
 
-  try {
-    const updates: string[] = [];
-    const values: any[] = [];
+      if (settings.isPaused !== undefined) {
+        updates.push("is_paused = ?");
+        values.push(settings.isPaused ? 1 : 0);
+      }
 
-    if (settings.isPaused !== undefined) {
-      updates.push("is_paused = ?");
-      values.push(settings.isPaused ? 1 : 0);
+      if (settings.toleranceDays !== undefined) {
+        updates.push("tolerance_days = ?");
+        values.push(settings.toleranceDays);
+      }
+
+      if (updates.length === 0) return true;
+
+      updates.push("updated_at = ?");
+      values.push(new Date().toISOString());
+
+      await db.runAsync(
+        `UPDATE ${ATHKAR_STREAK_TABLE}
+         SET ${updates.join(", ")}
+         WHERE id = 1;`,
+        values
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Error updating streak settings:", error);
+      return false;
     }
-
-    if (settings.toleranceDays !== undefined) {
-      updates.push("tolerance_days = ?");
-      values.push(settings.toleranceDays);
-    }
-
-    if (updates.length === 0) return true;
-
-    updates.push("updated_at = ?");
-    values.push(new Date().toISOString());
-
-    await db.runAsync(
-      `UPDATE ${ATHKAR_STREAK_TABLE} 
-       SET ${updates.join(", ")}
-       WHERE id = 1;`,
-      values
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Error updating streak settings:", error);
-    return false;
-  }
-};
+  });
 
 // Validate streak by checking for missed days between last completed and today
-const validateStreakForToday = async (
+const validateStreakForToday = (
   todayInt: number
 ): Promise<{
   success: boolean;
   streakBroken: boolean;
   currentStreak: number;
   longestStreak: number;
-} | null> => {
-  const db = await openDatabase();
+} | null> =>
+  sdb.run(async (db) => {
+    try {
+      let result = null;
 
-  try {
-    let result = null;
-
-    await db.withTransactionAsync(async () => {
-      // Get current streak data (use db directly to avoid reentrant openDatabase call)
-      const streakResult = await db.getFirstAsync(
-        `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
-      );
-      const streakData = streakResult ? AthkarStreakSchema.parse(streakResult) : null;
-      if (!streakData) throw new Error("No streak data found");
-
-      // If no previous streak or paused, nothing to validate
-      if (!streakData.last_streak_date || streakData.is_paused) {
-        result = {
-          success: true,
-          streakBroken: false,
-          currentStreak: streakData.current_streak,
-          longestStreak: streakData.longest_streak,
-        };
-        return;
-      }
-
-      const daysSinceLastStreak = todayInt - streakData.last_streak_date;
-
-      // If it's the same day or consecutive day, no action needed
-      if (daysSinceLastStreak <= 1) {
-        result = {
-          success: true,
-          streakBroken: false,
-          currentStreak: streakData.current_streak,
-          longestStreak: streakData.longest_streak,
-        };
-        return;
-      }
-
-      // Check if gap is within tolerance
-      const withinTolerance =
-        streakData.tolerance_days > 0 && daysSinceLastStreak <= streakData.tolerance_days + 1;
-
-      if (!withinTolerance) {
-        // Streak is broken - reset to 0
-        const tz = locationStore.getState().locationDetails.timezone;
-        const now = timeZonedNow(tz).toISOString();
-
-        await db.runAsync(
-          `UPDATE ${ATHKAR_STREAK_TABLE} 
-           SET current_streak = 0,
-               updated_at = ?
-           WHERE id = 1;`,
-          [now]
+      await db.withTransactionAsync(async () => {
+        // Get current streak data (use db directly to avoid reentrant openDatabase call)
+        const streakResult = await db.getFirstAsync(
+          `SELECT * FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
         );
+        const streakData = streakResult ? AthkarStreakSchema.parse(streakResult) : null;
+        if (!streakData) throw new Error("No streak data found");
 
-        result = {
-          success: true,
-          streakBroken: true,
-          currentStreak: 0,
-          longestStreak: streakData.longest_streak,
-        };
-      } else {
-        // Within tolerance, keep current streak
-        result = {
-          success: true,
-          streakBroken: false,
-          currentStreak: streakData.current_streak,
-          longestStreak: streakData.longest_streak,
-        };
-      }
-    });
+        // If no previous streak or paused, nothing to validate
+        if (!streakData.last_streak_date || streakData.is_paused) {
+          result = {
+            success: true,
+            streakBroken: false,
+            currentStreak: streakData.current_streak,
+            longestStreak: streakData.longest_streak,
+          };
+          return;
+        }
 
-    return result;
-  } catch (error) {
-    console.error("Error validating streak for today:", error);
-    return null;
-  }
-};
+        const daysSinceLastStreak = todayInt - streakData.last_streak_date;
+
+        // If it's the same day or consecutive day, no action needed
+        if (daysSinceLastStreak <= 1) {
+          result = {
+            success: true,
+            streakBroken: false,
+            currentStreak: streakData.current_streak,
+            longestStreak: streakData.longest_streak,
+          };
+          return;
+        }
+
+        // Check if gap is within tolerance
+        const withinTolerance =
+          streakData.tolerance_days > 0 && daysSinceLastStreak <= streakData.tolerance_days + 1;
+
+        if (!withinTolerance) {
+          // Streak is broken - reset to 0
+          const tz = locationStore.getState().locationDetails.timezone;
+          const now = timeZonedNow(tz).toISOString();
+
+          await db.runAsync(
+            `UPDATE ${ATHKAR_STREAK_TABLE}
+             SET current_streak = 0,
+                 updated_at = ?
+             WHERE id = 1;`,
+            [now]
+          );
+
+          result = {
+            success: true,
+            streakBroken: true,
+            currentStreak: 0,
+            longestStreak: streakData.longest_streak,
+          };
+        } else {
+          // Within tolerance, keep current streak
+          result = {
+            success: true,
+            streakBroken: false,
+            currentStreak: streakData.current_streak,
+            longestStreak: streakData.longest_streak,
+          };
+        }
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Error validating streak for today:", error);
+      return null;
+    }
+  });
 
 /** AUDIO DOWNLOAD OPERATIONS */
 
-const insertAudioDownload = async (
+const insertAudioDownload = (
   reciterId: string,
   thikrId: string,
   filePath: string,
   fileSize: number
-): Promise<boolean> => {
-  const db = await openDatabase();
+): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const now = new Date().toISOString();
+      await db.runAsync(
+        `INSERT OR REPLACE INTO ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+         (reciter_id, thikr_id, file_path, file_size, downloaded_at)
+         VALUES (?, ?, ?, ?, ?);`,
+        [reciterId, thikrId, filePath, fileSize, now]
+      );
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] Error inserting audio download:", error);
+      return false;
+    }
+  });
 
-  try {
-    const now = new Date().toISOString();
-    await db.runAsync(
-      `INSERT OR REPLACE INTO ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
-       (reciter_id, thikr_id, file_path, file_size, downloaded_at)
-       VALUES (?, ?, ?, ?, ?);`,
-      [reciterId, thikrId, filePath, fileSize, now]
-    );
-    return true;
-  } catch (error) {
-    console.error("[Athkar-DB] Error inserting audio download:", error);
-    return false;
-  }
-};
-
-const getAudioDownload = async (
+const getAudioDownload = (
   reciterId: string,
   thikrId: string
-): Promise<AthkarAudioDownload | null> => {
-  const db = await openDatabase();
+): Promise<AthkarAudioDownload | null> =>
+  sdb.run(async (db) => {
+    try {
+      const result = await db.getFirstAsync(
+        `SELECT * FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+         WHERE reciter_id = ? AND thikr_id = ?;`,
+        [reciterId, thikrId]
+      );
 
-  try {
-    const result = await db.getFirstAsync(
-      `SELECT * FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
-       WHERE reciter_id = ? AND thikr_id = ?;`,
-      [reciterId, thikrId]
-    );
+      if (!result) return null;
+      return AthkarAudioDownloadSchema.parse(result);
+    } catch (error) {
+      console.error("[Athkar-DB] Error getting audio download:", error);
+      return null;
+    }
+  });
 
-    if (!result) return null;
-    return AthkarAudioDownloadSchema.parse(result);
-  } catch (error) {
-    console.error("[Athkar-DB] Error getting audio download:", error);
-    return null;
-  }
-};
+const getReciterDownloads = (reciterId: string): Promise<AthkarAudioDownload[]> =>
+  sdb.run(async (db) => {
+    try {
+      const results = await db.getAllAsync(
+        `SELECT * FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+         WHERE reciter_id = ?
+         ORDER BY thikr_id;`,
+        [reciterId]
+      );
 
-const getReciterDownloads = async (reciterId: string): Promise<AthkarAudioDownload[]> => {
-  const db = await openDatabase();
+      if (!results) return [];
 
-  try {
-    const results = await db.getAllAsync(
-      `SELECT * FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
-       WHERE reciter_id = ?
-       ORDER BY thikr_id;`,
-      [reciterId]
-    );
+      return results
+        .map((r) => {
+          try {
+            return AthkarAudioDownloadSchema.parse(r);
+          } catch {
+            return null;
+          }
+        })
+        .filter((item): item is AthkarAudioDownload => item !== null);
+    } catch (error) {
+      console.error("[Athkar-DB] Error getting reciter downloads:", error);
+      return [];
+    }
+  });
 
-    if (!results) return [];
+const deleteReciterDownloads = (reciterId: string): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      await db.runAsync(`DELETE FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ?;`, [
+        reciterId,
+      ]);
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] Error deleting reciter downloads:", error);
+      return false;
+    }
+  });
 
-    return results
-      .map((r) => {
-        try {
-          return AthkarAudioDownloadSchema.parse(r);
-        } catch {
-          return null;
-        }
-      })
-      .filter((item): item is AthkarAudioDownload => item !== null);
-  } catch (error) {
-    console.error("[Athkar-DB] Error getting reciter downloads:", error);
-    return [];
-  }
-};
+const deleteAudioDownload = (reciterId: string, thikrId: string): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      await db.runAsync(
+        `DELETE FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ? AND thikr_id = ?;`,
+        [reciterId, thikrId]
+      );
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] Error deleting audio download:", error);
+      return false;
+    }
+  });
 
-const deleteReciterDownloads = async (reciterId: string): Promise<boolean> => {
-  const db = await openDatabase();
+const getAudioStorageUsed = (reciterId?: string): Promise<number> =>
+  sdb.run(async (db) => {
+    try {
+      const query = reciterId
+        ? `SELECT COALESCE(SUM(file_size), 0) as total FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ?;`
+        : `SELECT COALESCE(SUM(file_size), 0) as total FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE};`;
 
-  try {
-    await db.runAsync(`DELETE FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ?;`, [
-      reciterId,
-    ]);
-    return true;
-  } catch (error) {
-    console.error("[Athkar-DB] Error deleting reciter downloads:", error);
-    return false;
-  }
-};
+      const params = reciterId ? [reciterId] : [];
+      const result: any = await db.getFirstAsync(query, params);
 
-const deleteAudioDownload = async (reciterId: string, thikrId: string): Promise<boolean> => {
-  const db = await openDatabase();
+      return result?.total ?? 0;
+    } catch (error) {
+      console.error("[Athkar-DB] Error getting audio storage used:", error);
+      return 0;
+    }
+  });
 
-  try {
-    await db.runAsync(
-      `DELETE FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ? AND thikr_id = ?;`,
-      [reciterId, thikrId]
-    );
-    return true;
-  } catch (error) {
-    console.error("[Athkar-DB] Error deleting audio download:", error);
-    return false;
-  }
-};
-
-const getAudioStorageUsed = async (reciterId?: string): Promise<number> => {
-  const db = await openDatabase();
-
-  try {
-    const query = reciterId
-      ? `SELECT COALESCE(SUM(file_size), 0) as total FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE} WHERE reciter_id = ?;`
-      : `SELECT COALESCE(SUM(file_size), 0) as total FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE};`;
-
-    const params = reciterId ? [reciterId] : [];
-    const result: any = await db.getFirstAsync(query, params);
-
-    return result?.total ?? 0;
-  } catch (error) {
-    console.error("[Athkar-DB] Error getting audio storage used:", error);
-    return 0;
-  }
-};
-
-const isThikrDownloaded = async (reciterId: string, thikrId: string): Promise<boolean> => {
-  const db = await openDatabase();
-
-  try {
-    const result = await db.getFirstAsync(
-      `SELECT id FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
-       WHERE reciter_id = ? AND thikr_id = ?;`,
-      [reciterId, thikrId]
-    );
-    return result !== null;
-  } catch (error) {
-    console.error("[Athkar-DB] Error checking thikr download:", error);
-    return false;
-  }
-};
+const isThikrDownloaded = (reciterId: string, thikrId: string): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const result = await db.getFirstAsync(
+        `SELECT id FROM ${ATHKAR_AUDIO_DOWNLOADS_TABLE}
+         WHERE reciter_id = ? AND thikr_id = ?;`,
+        [reciterId, thikrId]
+      );
+      return result !== null;
+    } catch (error) {
+      console.error("[Athkar-DB] Error checking thikr download:", error);
+      return false;
+    }
+  });
 
 /** MY ATHKAR OPERATIONS */
 
-const getMyAthkar = async (): Promise<
+const getMyAthkar = (): Promise<
   {
     id: number;
     source_athkar_id: number;
@@ -1194,201 +1170,191 @@ const getMyAthkar = async (): Promise<
     user_count: number;
     sort_order: number;
   }[]
-> => {
-  const db = await openDatabase();
-  return db.getAllAsync(`SELECT * FROM ${MY_ATHKAR_TABLE} ORDER BY sort_order ASC`);
-};
+> => sdb.run((db) => db.getAllAsync(`SELECT * FROM ${MY_ATHKAR_TABLE} ORDER BY sort_order ASC`));
 
-const addToMyAthkar = async (
+const addToMyAthkar = (
   sourceAthkarId: number,
   sourceCategoryId: number,
   userCount: number
-): Promise<number | null> => {
-  const db = await openDatabase();
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
+): Promise<number | null> =>
+  sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
 
-    const last = await db.getFirstAsync<{ max_order: number | null }>(
-      `SELECT MAX(sort_order) as max_order FROM ${MY_ATHKAR_TABLE}`
-    );
-    const nextOrder = (last?.max_order ?? 0) + 1;
-
-    const result = await db.runAsync(
-      `INSERT OR IGNORE INTO ${MY_ATHKAR_TABLE}
-       (source_athkar_id, source_category_id, user_count, sort_order, created_at)
-       VALUES (?, ?, ?, ?, ?)`,
-      [sourceAthkarId, sourceCategoryId, userCount, nextOrder, now]
-    );
-
-    return result.changes > 0 ? result.lastInsertRowId : null;
-  } catch (error) {
-    console.error("[Athkar-DB] Error adding to my athkar:", error);
-    return null;
-  }
-};
-
-const batchAddToMyAthkar = async (
-  items: { sourceAthkarId: number; sourceCategoryId: number; userCount: number }[]
-): Promise<number[]> => {
-  if (items.length === 0) return [];
-  const db = await openDatabase();
-
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
-    const insertedIds: number[] = [];
-
-    await db.withExclusiveTransactionAsync(async (txn) => {
-      const last = await txn.getFirstAsync<{ max_order: number | null }>(
+      const last = await db.getFirstAsync<{ max_order: number | null }>(
         `SELECT MAX(sort_order) as max_order FROM ${MY_ATHKAR_TABLE}`
       );
-      let nextOrder = (last?.max_order ?? 0) + 1;
+      const nextOrder = (last?.max_order ?? 0) + 1;
 
-      for (const item of items) {
-        const result = await txn.runAsync(
-          `INSERT OR IGNORE INTO ${MY_ATHKAR_TABLE}
-           (source_athkar_id, source_category_id, user_count, sort_order, created_at)
-           VALUES (?, ?, ?, ?, ?)`,
-          [item.sourceAthkarId, item.sourceCategoryId, item.userCount, nextOrder, now]
+      const result = await db.runAsync(
+        `INSERT OR IGNORE INTO ${MY_ATHKAR_TABLE}
+         (source_athkar_id, source_category_id, user_count, sort_order, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [sourceAthkarId, sourceCategoryId, userCount, nextOrder, now]
+      );
+
+      return result.changes > 0 ? result.lastInsertRowId : null;
+    } catch (error) {
+      console.error("[Athkar-DB] Error adding to my athkar:", error);
+      return null;
+    }
+  });
+
+const batchAddToMyAthkar = (
+  items: { sourceAthkarId: number; sourceCategoryId: number; userCount: number }[]
+): Promise<number[]> => {
+  if (items.length === 0) return Promise.resolve([]);
+
+  return sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
+      const insertedIds: number[] = [];
+
+      await db.withTransactionAsync(async () => {
+        const last = await db.getFirstAsync<{ max_order: number | null }>(
+          `SELECT MAX(sort_order) as max_order FROM ${MY_ATHKAR_TABLE}`
         );
-        if (result.changes > 0) {
-          insertedIds.push(result.lastInsertRowId);
-          nextOrder++;
+        let nextOrder = (last?.max_order ?? 0) + 1;
+
+        for (const item of items) {
+          const result = await db.runAsync(
+            `INSERT OR IGNORE INTO ${MY_ATHKAR_TABLE}
+             (source_athkar_id, source_category_id, user_count, sort_order, created_at)
+             VALUES (?, ?, ?, ?, ?)`,
+            [item.sourceAthkarId, item.sourceCategoryId, item.userCount, nextOrder, now]
+          );
+          if (result.changes > 0) {
+            insertedIds.push(result.lastInsertRowId);
+            nextOrder++;
+          }
         }
-      }
-    });
+      });
 
-    return insertedIds;
-  } catch (error) {
-    console.error("[Athkar-DB] Error batch adding to my athkar:", error);
-    return [];
-  }
+      return insertedIds;
+    } catch (error) {
+      console.error("[Athkar-DB] Error batch adding to my athkar:", error);
+      return [];
+    }
+  });
 };
 
-const removeFromMyAthkar = async (id: number): Promise<boolean> => {
-  const db = await openDatabase();
-  try {
-    await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
-    await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
-    return true;
-  } catch (error) {
-    console.error("[Athkar-DB] Error removing from my athkar:", error);
-    return false;
-  }
-};
+const removeFromMyAthkar = (id: number): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
+      await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] Error removing from my athkar:", error);
+      return false;
+    }
+  });
 
-const updateMyAthkarUserCount = async (id: number, userCount: number): Promise<boolean> => {
-  const db = await openDatabase();
-  try {
-    const result = await db.runAsync(`UPDATE ${MY_ATHKAR_TABLE} SET user_count = ? WHERE id = ?`, [
-      userCount,
-      id,
-    ]);
-    return result.changes > 0;
-  } catch (error) {
-    console.error("[Athkar-DB] Error updating my athkar count:", error);
-    return false;
-  }
-};
+const updateMyAthkarUserCount = (id: number, userCount: number): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const result = await db.runAsync(
+        `UPDATE ${MY_ATHKAR_TABLE} SET user_count = ? WHERE id = ?`,
+        [userCount, id]
+      );
+      return result.changes > 0;
+    } catch (error) {
+      console.error("[Athkar-DB] Error updating my athkar count:", error);
+      return false;
+    }
+  });
 
 /** MY ATHKAR DAILY OPERATIONS */
 
-const initializeMyAthkarDaily = async (
+const initializeMyAthkarDaily = (
   dateInt: number,
   items: { id: number; userCount: number }[]
 ): Promise<boolean> => {
-  if (items.length === 0) return true;
-  const db = await openDatabase();
+  if (items.length === 0) return Promise.resolve(true);
 
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
+  return sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
 
-    await db.withTransactionAsync(async () => {
-      for (const item of items) {
-        await db.runAsync(
-          `INSERT OR IGNORE INTO ${MY_ATHKAR_DAILY_TABLE}
-           (date, my_athkar_id, current_count, total_count, created_at, updated_at)
-           VALUES (?, ?, 0, ?, ?, ?)`,
-          [dateInt, item.id, item.userCount, now, now]
-        );
-      }
-    });
+      await db.withTransactionAsync(async () => {
+        for (const item of items) {
+          await db.runAsync(
+            `INSERT OR IGNORE INTO ${MY_ATHKAR_DAILY_TABLE}
+             (date, my_athkar_id, current_count, total_count, created_at, updated_at)
+             VALUES (?, ?, 0, ?, ?, ?)`,
+            [dateInt, item.id, item.userCount, now, now]
+          );
+        }
+      });
 
-    return true;
-  } catch (error) {
-    console.error("[Athkar-DB] Error initializing my athkar daily:", error);
-    return false;
-  }
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] Error initializing my athkar daily:", error);
+      return false;
+    }
+  });
 };
 
-const getMyAthkarDailyProgress = async (
+const getMyAthkarDailyProgress = (
   dateInt: number
-): Promise<{ my_athkar_id: number; current_count: number; total_count: number }[]> => {
-  const db = await openDatabase();
-  return db.getAllAsync(
-    `SELECT my_athkar_id, current_count, total_count
-     FROM ${MY_ATHKAR_DAILY_TABLE}
-     WHERE date = ?`,
-    [dateInt]
+): Promise<{ my_athkar_id: number; current_count: number; total_count: number }[]> =>
+  sdb.run((db) =>
+    db.getAllAsync(
+      `SELECT my_athkar_id, current_count, total_count
+       FROM ${MY_ATHKAR_DAILY_TABLE}
+       WHERE date = ?`,
+      [dateInt]
+    )
   );
-};
 
-const updateMyAthkarDailyCount = async (
+const updateMyAthkarDailyCount = (
   dateInt: number,
   myAthkarId: number,
   currentCount: number
-): Promise<boolean> => {
-  const db = await openDatabase();
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
+): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
 
-    const result = await db.runAsync(
-      `UPDATE ${MY_ATHKAR_DAILY_TABLE}
-       SET current_count = ?, updated_at = ?
-       WHERE date = ? AND my_athkar_id = ?`,
-      [currentCount, now, dateInt, myAthkarId]
-    );
-    return result.changes > 0;
-  } catch (error) {
-    console.error("[Athkar-DB] Error updating my athkar daily count:", error);
-    return false;
-  }
-};
+      const result = await db.runAsync(
+        `UPDATE ${MY_ATHKAR_DAILY_TABLE}
+         SET current_count = ?, updated_at = ?
+         WHERE date = ? AND my_athkar_id = ?`,
+        [currentCount, now, dateInt, myAthkarId]
+      );
+      return result.changes > 0;
+    } catch (error) {
+      console.error("[Athkar-DB] Error updating my athkar daily count:", error);
+      return false;
+    }
+  });
 
-const resetMyAthkarDaily = async (dateInt: number): Promise<boolean> => {
-  const db = await openDatabase();
-  try {
-    const tz = locationStore.getState().locationDetails.timezone;
-    const now = timeZonedNow(tz).toISOString();
+const resetMyAthkarDaily = (dateInt: number): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      const tz = locationStore.getState().locationDetails.timezone;
+      const now = timeZonedNow(tz).toISOString();
 
-    await db.runAsync(
-      `UPDATE ${MY_ATHKAR_DAILY_TABLE}
-       SET current_count = 0, updated_at = ?
-       WHERE date = ?`,
-      [now, dateInt]
-    );
-    return true;
-  } catch (error) {
-    console.error("[Athkar-DB] Error resetting my athkar daily:", error);
-    return false;
-  }
-};
-
-// Cached wrapper — ensures initializeDB runs exactly once, all callers share the same promise.
-// Prevents race between onRehydrateStorage (creates tables) and component useEffects (query tables).
-const ensureInitialized = (): Promise<void> => {
-  if (!initPromise) {
-    initPromise = initializeDB();
-  }
-  return initPromise;
-};
+      await db.runAsync(
+        `UPDATE ${MY_ATHKAR_DAILY_TABLE}
+         SET current_count = 0, updated_at = ?
+         WHERE date = ?`,
+        [now, dateInt]
+      );
+      return true;
+    } catch (error) {
+      console.error("[Athkar-DB] Error resetting my athkar daily:", error);
+      return false;
+    }
+  });
 
 export const AthkarDB = {
-  open: openDatabase,
-  initialize: ensureInitialized,
+  run: sdb.run,
+  initialize: () => sdb.run(async () => {}),
 
   // Daily items operations
   initializeDailyItems,
@@ -1432,110 +1398,110 @@ export const AthkarDB = {
   resetMyAthkarDaily,
 
   // Custom Athkar
-  createCustomAthkarGroup: async (
+  createCustomAthkarGroup: (
     title: string,
     items: { arabicText: string; userCount: number }[]
-  ): Promise<number | null> => {
-    const db = await openDatabase();
-    const now = new Date().toISOString();
-    try {
-      let groupId: number | null = null;
-      await db.withExclusiveTransactionAsync(async (txn) => {
-        const countResult = await txn.getFirstAsync<{ count: number }>(
-          `SELECT COUNT(*) as count FROM ${CUSTOM_ATHKAR_GROUPS_TABLE}`
-        );
-        const nextGroupOrder = (countResult?.count ?? 0) + 1;
-        const groupResult = await txn.runAsync(
-          `INSERT INTO ${CUSTOM_ATHKAR_GROUPS_TABLE} (title, sort_order, created_at) VALUES (?, ?, ?)`,
-          [title, nextGroupOrder, now]
-        );
-        groupId = groupResult.lastInsertRowId;
-        for (let i = 0; i < items.length; i++) {
-          await txn.runAsync(
-            `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
-            [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+  ): Promise<number | null> =>
+    sdb.run(async (db) => {
+      const now = new Date().toISOString();
+      try {
+        let groupId: number | null = null;
+        await db.withTransactionAsync(async () => {
+          const countResult = await db.getFirstAsync<{ count: number }>(
+            `SELECT COUNT(*) as count FROM ${CUSTOM_ATHKAR_GROUPS_TABLE}`
           );
-        }
-      });
-      return groupId;
-    } catch (error) {
-      console.error("[Athkar-DB] createCustomAthkarGroup error:", error);
-      return null;
-    }
-  },
+          const nextGroupOrder = (countResult?.count ?? 0) + 1;
+          const groupResult = await db.runAsync(
+            `INSERT INTO ${CUSTOM_ATHKAR_GROUPS_TABLE} (title, sort_order, created_at) VALUES (?, ?, ?)`,
+            [title, nextGroupOrder, now]
+          );
+          groupId = groupResult.lastInsertRowId;
+          for (let i = 0; i < items.length; i++) {
+            await db.runAsync(
+              `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
+              [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+            );
+          }
+        });
+        return groupId;
+      } catch (error) {
+        console.error("[Athkar-DB] createCustomAthkarGroup error:", error);
+        return null;
+      }
+    }),
 
-  updateCustomAthkarGroup: async (
+  updateCustomAthkarGroup: (
     groupId: number,
     title: string,
     items: { arabicText: string; userCount: number }[]
-  ): Promise<boolean> => {
-    const db = await openDatabase();
-    const now = new Date().toISOString();
-    try {
-      await db.withExclusiveTransactionAsync(async (txn) => {
-        await txn.runAsync(`UPDATE ${CUSTOM_ATHKAR_GROUPS_TABLE} SET title = ? WHERE id = ?`, [
-          title,
-          groupId,
-        ]);
-        const oldItems = await txn.getAllAsync<{ id: number }>(
-          `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
-          [groupId]
-        );
-        for (const item of oldItems) {
-          await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
-            item.id,
+  ): Promise<boolean> =>
+    sdb.run(async (db) => {
+      const now = new Date().toISOString();
+      try {
+        await db.withTransactionAsync(async () => {
+          await db.runAsync(`UPDATE ${CUSTOM_ATHKAR_GROUPS_TABLE} SET title = ? WHERE id = ?`, [
+            title,
+            groupId,
           ]);
-        }
-        await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
-          groupId,
-        ]);
-        for (let i = 0; i < items.length; i++) {
-          await txn.runAsync(
-            `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
-            [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+          const oldItems = await db.getAllAsync<{ id: number }>(
+            `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
+            [groupId]
           );
-        }
-      });
-      return true;
-    } catch (error) {
-      console.error("[Athkar-DB] updateCustomAthkarGroup error:", error);
-      return false;
-    }
-  },
-
-  deleteCustomAthkarGroup: async (groupId: number): Promise<void> => {
-    const db = await openDatabase();
-    try {
-      await db.withExclusiveTransactionAsync(async (txn) => {
-        const items = await txn.getAllAsync<{ id: number }>(
-          `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
-          [groupId]
-        );
-        for (const item of items) {
-          await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
-            item.id,
+          for (const item of oldItems) {
+            await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
+              item.id,
+            ]);
+          }
+          await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
+            groupId,
           ]);
-        }
-        await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
-          groupId,
-        ]);
-        await txn.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} WHERE id = ?`, [groupId]);
-      });
-    } catch (error) {
-      console.error("[Athkar-DB] deleteCustomAthkarGroup error:", error);
-    }
-  },
+          for (let i = 0; i < items.length; i++) {
+            await db.runAsync(
+              `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
+              [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+            );
+          }
+        });
+        return true;
+      } catch (error) {
+        console.error("[Athkar-DB] updateCustomAthkarGroup error:", error);
+        return false;
+      }
+    }),
 
-  getCustomAthkarGroups: async (): Promise<
+  deleteCustomAthkarGroup: (groupId: number): Promise<void> =>
+    sdb.run(async (db) => {
+      try {
+        await db.withTransactionAsync(async () => {
+          const items = await db.getAllAsync<{ id: number }>(
+            `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
+            [groupId]
+          );
+          for (const item of items) {
+            await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
+              item.id,
+            ]);
+          }
+          await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
+            groupId,
+          ]);
+          await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} WHERE id = ?`, [groupId]);
+        });
+      } catch (error) {
+        console.error("[Athkar-DB] deleteCustomAthkarGroup error:", error);
+      }
+    }),
+
+  getCustomAthkarGroups: (): Promise<
     { id: number; title: string; sort_order: number; created_at: string }[]
-  > => {
-    const db = await openDatabase();
-    return db.getAllAsync(
-      `SELECT id, title, sort_order, created_at FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} ORDER BY sort_order ASC`
-    );
-  },
+  > =>
+    sdb.run((db) =>
+      db.getAllAsync(
+        `SELECT id, title, sort_order, created_at FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} ORDER BY sort_order ASC`
+      )
+    ),
 
-  getCustomAthkarItems: async (): Promise<
+  getCustomAthkarItems: (): Promise<
     {
       id: number;
       group_id: number;
@@ -1543,55 +1509,55 @@ export const AthkarDB = {
       user_count: number;
       sort_order: number;
     }[]
-  > => {
-    const db = await openDatabase();
-    return db.getAllAsync(
-      `SELECT id, group_id, arabic_text, user_count, sort_order FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} ORDER BY group_id ASC, sort_order ASC`
-    );
-  },
+  > =>
+    sdb.run((db) =>
+      db.getAllAsync(
+        `SELECT id, group_id, arabic_text, user_count, sort_order FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} ORDER BY group_id ASC, sort_order ASC`
+      )
+    ),
 
-  initializeCustomAthkarDaily: async (
+  initializeCustomAthkarDaily: (
     dateInt: number,
     items: { id: number; userCount: number }[]
-  ): Promise<void> => {
-    const db = await openDatabase();
-    const now = new Date().toISOString();
-    await db.withExclusiveTransactionAsync(async (txn) => {
-      for (const item of items) {
-        await txn.runAsync(
-          `INSERT OR IGNORE INTO ${CUSTOM_ATHKAR_DAILY_TABLE}
-           (date, custom_item_id, current_count, total_count, created_at, updated_at)
-           VALUES (?, ?, 0, ?, ?, ?)`,
-          [dateInt, item.id, item.userCount, now, now]
-        );
-      }
-    });
-  },
+  ): Promise<void> =>
+    sdb.run(async (db) => {
+      const now = new Date().toISOString();
+      await db.withTransactionAsync(async () => {
+        for (const item of items) {
+          await db.runAsync(
+            `INSERT OR IGNORE INTO ${CUSTOM_ATHKAR_DAILY_TABLE}
+             (date, custom_item_id, current_count, total_count, created_at, updated_at)
+             VALUES (?, ?, 0, ?, ?, ?)`,
+            [dateInt, item.id, item.userCount, now, now]
+          );
+        }
+      });
+    }),
 
-  getCustomAthkarDailyProgress: async (
+  getCustomAthkarDailyProgress: (
     dateInt: number
-  ): Promise<{ custom_item_id: number; current_count: number; total_count: number }[]> => {
-    const db = await openDatabase();
-    return db.getAllAsync(
-      `SELECT custom_item_id, current_count, total_count
-       FROM ${CUSTOM_ATHKAR_DAILY_TABLE}
-       WHERE date = ?`,
-      [dateInt]
-    );
-  },
+  ): Promise<{ custom_item_id: number; current_count: number; total_count: number }[]> =>
+    sdb.run((db) =>
+      db.getAllAsync(
+        `SELECT custom_item_id, current_count, total_count
+         FROM ${CUSTOM_ATHKAR_DAILY_TABLE}
+         WHERE date = ?`,
+        [dateInt]
+      )
+    ),
 
-  updateCustomAthkarDailyCount: async (
+  updateCustomAthkarDailyCount: (
     dateInt: number,
     customItemId: number,
     currentCount: number
-  ): Promise<void> => {
-    const db = await openDatabase();
-    const now = new Date().toISOString();
-    await db.runAsync(
-      `UPDATE ${CUSTOM_ATHKAR_DAILY_TABLE}
-       SET current_count = ?, updated_at = ?
-       WHERE date = ? AND custom_item_id = ?`,
-      [currentCount, now, dateInt, customItemId]
-    );
-  },
+  ): Promise<void> =>
+    sdb.run(async (db) => {
+      const now = new Date().toISOString();
+      await db.runAsync(
+        `UPDATE ${CUSTOM_ATHKAR_DAILY_TABLE}
+         SET current_count = ?, updated_at = ?
+         WHERE date = ? AND custom_item_id = ?`,
+        [currentCount, now, dateInt, customItemId]
+      );
+    }),
 };
