@@ -232,12 +232,12 @@ export const configureNotifications = () => {
           console.log("[Notifications] Action:", response.actionIdentifier);
 
           // Stop athan playback if user taps a prayer notification
-          if (Platform.OS === PlatformType.ANDROID && data.type === "prayer") {
+          if (Platform.OS === PlatformType.ANDROID && data?.type === "prayer") {
             stopAthan();
           }
 
           // Navigate to screen specified in notification data
-          if (data.screen) {
+          if (data?.screen) {
             const router = useRouter();
             router.navigate(data.screen as any);
           }

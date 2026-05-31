@@ -123,12 +123,12 @@ const QadaScreen = () => {
       // Speed up after 5 increments by clearing and creating new interval
       if (count === 5) {
         if (incrementTimer.current) clearInterval(incrementTimer.current);
-        incrementTimer.current = window.setInterval(runIncrement, 100);
+        incrementTimer.current = setInterval(runIncrement, 100);
       }
     };
 
     // Start with slower interval (200ms)
-    incrementTimer.current = window.setInterval(runIncrement, 200);
+    incrementTimer.current = setInterval(runIncrement, 200);
   };
 
   const startDecrement = () => {
@@ -143,12 +143,12 @@ const QadaScreen = () => {
       // Speed up after 5 decrements by clearing and creating new interval
       if (count === 5) {
         if (decrementTimer.current) clearInterval(decrementTimer.current);
-        decrementTimer.current = window.setInterval(runDecrement, 100);
+        decrementTimer.current = setInterval(runDecrement, 100);
       }
     };
 
     // Start with slower interval (200ms)
-    decrementTimer.current = window.setInterval(runDecrement, 200);
+    decrementTimer.current = setInterval(runDecrement, 200);
   };
 
   // Cleanup timers on unmount

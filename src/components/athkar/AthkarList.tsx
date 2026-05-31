@@ -93,8 +93,8 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
   const [isPressing, setIsPressing] = useState(false);
   const [pressProgress, setPressProgress] = useState(0);
 
-  const hapticTimer = useRef<number | null>(null);
-  const resetTimer = useRef<number | null>(null);
+  const hapticTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animationControl = useRef<{ value: boolean }>({ value: false });
 
   // Reanimated shared values

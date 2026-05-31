@@ -2,7 +2,7 @@ export const createDebouncedQueue = <T extends (...args: any[]) => Promise<any>>
   fn: T,
   delay: number = 300
 ) => {
-  let timeoutId: number | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let pendingUpdates: Map<string, Parameters<T>> = new Map();
 
   const flush = async () => {

@@ -263,6 +263,7 @@ export const createNotificationChannels = async (
   channels.push({
     id: "reminder",
     name: "Prayer Reminders",
+    sound: null,
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     showBadge: true,
@@ -274,6 +275,7 @@ export const createNotificationChannels = async (
       channels.push({
         id: "athkar_morning",
         name: "Morning Athkar",
+        sound: null,
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         showBadge: true,
@@ -284,6 +286,7 @@ export const createNotificationChannels = async (
       channels.push({
         id: "athkar_evening",
         name: "Evening Athkar",
+        sound: null,
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         showBadge: true,
