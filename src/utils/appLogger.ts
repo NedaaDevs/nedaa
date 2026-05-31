@@ -103,24 +103,33 @@ class DomainLogger {
   }
 
   private append(level: LogLevel, tag: string, msg: string) {
+    // DEBUG is a development-only level: never persisted to the shareable log
+    // file nor printed in production builds, keeping prod diagnostics clean.
+    if (level === "DEBUG" && !__DEV__) return;
+
     const time = formatTime(new Date());
     const line = `${time} [${level}] ${tag}: ${msg}`;
     this.buffer.push(line);
 
-    const prefix = `[${tag}]`;
-    switch (level) {
-      case "DEBUG":
-        console.debug(prefix, msg);
-        break;
-      case "INFO":
-        console.info(prefix, msg);
-        break;
-      case "WARN":
-        console.warn(prefix, msg);
-        break;
-      case "ERROR":
-        console.error(prefix, msg);
-        break;
+    // Console output is dev-only. In production we still persist INFO/WARN/
+    // ERROR to file (for the in-app "share log" diagnostic) but emit nothing
+    // to the native console.
+    if (__DEV__) {
+      const prefix = `[${tag}]`;
+      switch (level) {
+        case "DEBUG":
+          console.debug(prefix, msg);
+          break;
+        case "INFO":
+          console.info(prefix, msg);
+          break;
+        case "WARN":
+          console.warn(prefix, msg);
+          break;
+        case "ERROR":
+          console.error(prefix, msg);
+          break;
+      }
     }
 
     if (this.buffer.length >= FLUSH_THRESHOLD) {
