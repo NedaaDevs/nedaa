@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 
 // Icons
-import { RefreshCw, MapPin, Wifi, AlertCircle } from "lucide-react-native";
+import { RefreshCw, MapPin, Wifi, CircleAlert } from "lucide-react-native";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
@@ -30,7 +30,7 @@ const getEmptyStateConfig = (type: EmptyStateType, t: any) => {
   switch (type) {
     case "error":
       return {
-        icon: AlertCircle,
+        icon: CircleAlert,
         iconColor: "$error",
         bgColor: "$backgroundError",
         title: t("errors.prayerTimes.fetchFailed"),

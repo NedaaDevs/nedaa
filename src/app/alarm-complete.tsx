@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
-import { Sun, Building2, CheckCircle } from "lucide-react-native";
+import { Sun, Building2, CircleCheck } from "lucide-react-native";
 import { ScheduledAlarmType } from "@/enums/alarm";
 
 const COLOR_MAP: Record<string, string> = {
@@ -38,7 +38,7 @@ const SUCCESS_CONTENT: Record<
     colorClass: "text-success",
   },
   [ScheduledAlarmType.CUSTOM]: {
-    icon: CheckCircle,
+    icon: CircleCheck,
     titleKey: "alarm.complete.custom.title",
     subtitleKey: "alarm.complete.custom.subtitle",
     colorClass: "text-info",

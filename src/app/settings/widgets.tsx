@@ -23,7 +23,7 @@ import {
   Layers,
   Info,
   BatteryWarning,
-  CheckCircle,
+  CircleCheck,
   ChevronDown,
 } from "lucide-react-native";
 
@@ -272,7 +272,7 @@ const WidgetSettings = () => {
               borderWidth={1}
               borderColor="$outline"
               alignItems="center">
-              <Icon as={CheckCircle} size="sm" color="$success" />
+              <Icon as={CircleCheck} size="sm" color="$success" />
               <Text size="xs" color="$typographySecondary" flex={1}>
                 {t("settings.widgets.batteryOptDone")}
               </Text>

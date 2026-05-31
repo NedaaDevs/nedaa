@@ -54,7 +54,7 @@ import {
   Volume2,
   Vibrate,
   ChevronDown,
-  AlertTriangle,
+  TriangleAlert,
   RotateCcw,
 } from "lucide-react-native";
 
@@ -703,7 +703,7 @@ const QadaSettings = () => {
               backgroundColor="$background">
               <HStack alignItems="center" justifyContent="space-between">
                 <HStack alignItems="center" flex={1} gap="$3">
-                  <Icon as={AlertTriangle} size="md" color="$error" />
+                  <Icon as={TriangleAlert} size="md" color="$error" />
                   <Text fontWeight="600" color="$error">
                     {t("qada.dangerZone.title")}
                   </Text>
