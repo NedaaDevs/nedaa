@@ -77,7 +77,7 @@
     "expo-system-ui": "~56.0.5",
     "expo-task-manager": "~56.0.16",
     "expo-web-browser": "~56.0.5",
-    "expo-widgets": "~56.0.16",
+    "expo-widgets": "file:./modules/expo-widgets",
     "hijri-native": "0.1.2",
     "i18next": "^25.10.10",
     "intl-pluralrules": "^2.0.1",
