@@ -130,17 +130,29 @@ const QuranScreen = () => {
     );
   }
 
-  const isDownloading =
-    downloadStatus === DownloadStatus.DOWNLOADING ||
-    downloadStatus === DownloadStatus.PAUSED ||
-    downloadStatus === DownloadStatus.ERROR;
+  const isActiveDownload = downloadStatus === DownloadStatus.DOWNLOADING;
+  // A mushaf version is selected but its images aren't fully on disk.
+  const needsMushaf =
+    readerMode !== ReaderViewMode.TEXT && downloadStatus !== DownloadStatus.COMPLETE;
 
-  if (selectedVersion && isDownloading && !forceReader && readerMode !== ReaderViewMode.TEXT) {
+  if (selectedVersion && needsMushaf && !forceReader) {
+    // An active download → live progress screen. Otherwise the version isn't
+    // downloaded (interrupted, errored, or cleared on a previous launch) and
+    // nothing is running → show the version picker so the user can choose or
+    // re-download, instead of being trapped on a frozen progress screen.
+    if (isActiveDownload) {
+      return (
+        <DownloadProgressScreen
+          version={selectedVersion}
+          versionName={t(`quran.version.${selectedVersion}`)}
+          onStartReading={handleStartReading}
+        />
+      );
+    }
     return (
-      <DownloadProgressScreen
-        version={selectedVersion}
-        versionName={selectedManifestRef.current?.name ?? selectedVersion.toUpperCase()}
-        onStartReading={handleStartReading}
+      <VersionSelectionScreen
+        onSelectVersion={handleSelectVersion}
+        onSelectTextMode={handleSelectTextMode}
       />
     );
   }
