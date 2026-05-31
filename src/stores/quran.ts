@@ -60,7 +60,7 @@ export const useQuranStore = create<QuranState>()(
           // place, which is the bug this action fixes.
           const { [version]: _removed, ...remainingDownloads } = prev.versionDownloads;
           const remainingComplete = Object.entries(remainingDownloads).filter(
-            ([, v]) => v?.status === DownloadStatus.COMPLETE
+            ([, v]) => (v as VersionDownloadState | undefined)?.status === DownloadStatus.COMPLETE
           );
           const hasRemainingComplete = remainingComplete.length > 0;
           return {
@@ -123,6 +123,22 @@ export const useQuranStore = create<QuranState>()(
           merged.fontSize > FONT_SIZE_MAX
         ) {
           merged.fontSize = FONT_SIZE_DEFAULT;
+        }
+        // A DOWNLOADING/PAUSED status can't survive a process restart — the
+        // in-flight transfer is gone. Reset to IDLE on load so the app never
+        // reopens trapped on a frozen download screen; the router then shows
+        // the version picker for any non-complete version.
+        if (merged.versionDownloads) {
+          merged.versionDownloads = Object.fromEntries(
+            Object.entries(merged.versionDownloads).map(([k, v]) => {
+              const status = (v as VersionDownloadState | undefined)?.status ?? DownloadStatus.IDLE;
+              const reset =
+                status === DownloadStatus.DOWNLOADING || status === DownloadStatus.PAUSED
+                  ? DownloadStatus.IDLE
+                  : status;
+              return [k, { status: reset, progress: null }];
+            })
+          ) as Partial<Record<MushafVersion, VersionDownloadState>>;
         }
         return merged;
       },
