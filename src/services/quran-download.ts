@@ -3,7 +3,7 @@ import * as LegacyFS from "expo-file-system/legacy";
 import { unzip } from "react-native-zip-archive";
 import * as SQLite from "expo-sqlite";
 
-import { MushafVersion, MushafImageType, DownloadStatus, PageDownloadStatus } from "@/enums/quran";
+import { MushafVersion, MushafImageType, DownloadStatus } from "@/enums/quran";
 import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import { QuranDB } from "@/services/quran-db";
 import { QuranManifestService } from "@/services/quran-manifest";
@@ -168,12 +168,7 @@ const start = async (version: MushafVersion): Promise<void> => {
 
     // Mark all pages as complete in the download tracking DB
     await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
-    const db = await QuranDB.openDownloadDb();
-    await db.runAsync(`UPDATE quran_downloads SET status = ?, updated_at = ? WHERE version = ?`, [
-      PageDownloadStatus.COMPLETE,
-      Date.now(),
-      version,
-    ]);
+    await QuranDB.markVersionComplete(version);
 
     store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
     log.i("Download", `${version} complete`);
