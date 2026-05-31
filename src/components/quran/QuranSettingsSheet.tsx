@@ -23,14 +23,9 @@ interface QuranSettingsSheetProps {
   onDownloadMore: () => void;
 }
 
-const VERSION_LABELS: Record<MushafVersion, string> = {
-  [MushafVersion.V1]: "Madinah V1",
-  [MushafVersion.V2]: "Madinah V2",
-  [MushafVersion.V4]: "Madinah V4",
-};
-
 const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettingsSheetProps) => {
   const { t } = useTranslation();
+  const versionLabel = (v: MushafVersion) => t(`quran.version.${v}`);
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const {
@@ -150,11 +145,7 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                 state.status === DownloadStatus.DOWNLOADING ||
                 state.status === DownloadStatus.PAUSED;
               const isError = state.status === DownloadStatus.ERROR;
-              const progress = state.progress;
-              const percent =
-                progress && progress.totalPages > 0
-                  ? Math.round((progress.completedPages / progress.totalPages) * 100)
-                  : 0;
+              const percent = state.progress?.percent ?? 0;
 
               const canSwitch = isComplete || percent > 0;
 
@@ -172,7 +163,7 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                   }}
                   accessibilityRole={canSwitch ? "radio" : "none"}
                   accessibilityState={canSwitch ? { selected: isActive } : undefined}
-                  accessibilityLabel={`${VERSION_LABELS[version]}${isActive ? ", active" : ""}${isDownloading ? `, downloading ${percent}%` : ""}`}>
+                  accessibilityLabel={`${versionLabel(version)}${isActive ? ", active" : ""}${isDownloading ? `, downloading ${percent}%` : ""}`}>
                   <YStack
                     paddingVertical="$3"
                     paddingHorizontal="$3"
@@ -188,7 +179,7 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                     <XStack justifyContent="space-between" alignItems="center">
                       <XStack alignItems="center" gap="$2">
                         <Text fontSize={15} fontWeight={isActive ? "600" : "400"} color={textColor}>
-                          {VERSION_LABELS[version]}
+                          {versionLabel(version)}
                         </Text>
                         {isDownloading && <Loader size={14} color={subtleColor} />}
                       </XStack>
@@ -212,7 +203,7 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                               Alert.alert(
                                 t("quran.settings.deleteTitle"),
                                 t("quran.settings.deleteMessage", {
-                                  name: VERSION_LABELS[version],
+                                  name: versionLabel(version),
                                 }),
                                 [
                                   { text: t("common.cancel"), style: "cancel" },
@@ -229,7 +220,7 @@ const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettin
                             }}
                             accessibilityRole="button"
                             accessibilityLabel={t("quran.settings.deleteVersion", {
-                              name: VERSION_LABELS[version],
+                              name: versionLabel(version),
                             })}
                             hitSlop={8}>
                             <Trash2 size={16} color={subtleColor} />

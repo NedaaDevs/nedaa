@@ -91,9 +91,7 @@ const DownloadProgressScreen = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 200 }}>
           <XStack alignItems="center" gap="$2">
-            {phase !== "downloading" && (
-              <ActivityIndicator size="small" color={QURAN_UI_COLORS.accent} />
-            )}
+            <ActivityIndicator size="small" color={QURAN_UI_COLORS.accent} />
             <Text fontSize={16} color={QURAN_UI_COLORS.subtleText}>
               {phaseLabel}
             </Text>
@@ -101,8 +99,9 @@ const DownloadProgressScreen = ({
         </MotiView>
       </AnimatePresence>
 
-      {/* Progress bar — only during download phase */}
-      {phase === "downloading" && (
+      {/* Determinate bar only when we actually have progress; the native
+          downloader reports none, so the spinner above conveys activity. */}
+      {phase === "downloading" && percent > 0 && (
         <YStack width="100%" gap="$2">
           <YStack
             width="100%"

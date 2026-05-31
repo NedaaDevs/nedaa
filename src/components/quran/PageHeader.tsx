@@ -7,7 +7,8 @@ import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, toHafsDigits } from "@/constants
 
 interface PageHeaderProps {
   surahName: string;
-  juz: number;
+  // null while the page is still downloading — header stays blank, not stale.
+  juz: number | null;
   quranTheme: QuranTheme;
 }
 
@@ -15,18 +16,20 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
+  const juzText = juz ? t("a11y.quran.juz", { number: toHafsDigits(juz) }) : "";
+
   return (
     <XStack
       justifyContent="space-between"
       paddingHorizontal="$3"
       paddingVertical="$1"
       accessibilityRole="header"
-      accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz })}>
+      accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz: juz ?? "" })}>
       <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
         {surahName}
       </Text>
       <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
-        {t("a11y.quran.juz", { number: toHafsDigits(juz) })}
+        {juzText}
       </Text>
     </XStack>
   );

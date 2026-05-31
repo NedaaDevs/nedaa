@@ -14,12 +14,13 @@ import { Paths } from "expo-file-system";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MushafVersion, MushafImageType, QuranTheme, LineType } from "@/enums/quran";
+import { MushafVersion, MushafImageType, QuranTheme } from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
   IMAGE_SOURCE_WIDTH,
   IMAGE_SOURCE_LINE_HEIGHT,
+  SURAH_NAMES,
 } from "@/constants/Quran";
 import { GlyphBound } from "@/types/quran";
 import { QuranDB } from "@/services/quran-db";
@@ -42,7 +43,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const { width, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const estimatedHeight = screenHeight - insets.top - 60;
-  const [surahName, setSurahName] = useState("");
   const [surahNames, setSurahNames] = useState<Record<number, string>>({});
   const [juz, setJuz] = useState(1);
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
@@ -89,12 +89,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           QuranDB.getGlyphBounds(version, page),
         ]);
 
-        const surahHeader = lineMetadata.find(
-          (lm) => lm.type === LineType.SURAH_HEADER && lm.surahName
-        );
-        if (surahHeader?.surahName) {
-          setSurahName(surahHeader.surahName);
-        }
         const names: Record<number, string> = {};
         for (const lm of lineMetadata) {
           if (lm.surahNumber && lm.surahName) {
@@ -245,6 +239,15 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     [glyphBounds, lineHeight, hitTestAtCoords]
   );
 
+  // Header surah is derived from the page's own glyphs (each carries its
+  // surahNumber), so continuation pages show the running surah — and it's
+  // naturally blank while the page is still downloading (no glyphs yet).
+  const headerSurah = useMemo(() => {
+    if (!pageAvailable || glyphBounds.length === 0) return "";
+    const topSurah = glyphBounds.reduce((min, g) => Math.min(min, g.surahNumber), Infinity);
+    return SURAH_NAMES[topSurah] ?? "";
+  }, [pageAvailable, glyphBounds]);
+
   const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
 
   const highlightRects = (() => {
@@ -321,7 +324,11 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       flex={1}
       width={width}
       style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
-      <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
+      <PageHeader
+        surahName={headerSurah}
+        juz={pageAvailable ? juz : null}
+        quranTheme={quranTheme}
+      />
 
       <View
         ref={linesRef}
