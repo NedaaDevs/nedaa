@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useIsFocused } from "@react-navigation/native";
+import { useIsFocused } from "expo-router/react-navigation";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

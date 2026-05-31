@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BottomTabBar, BottomTabBarProps } from "expo-router/js-tabs";
 import { useTranslation } from "react-i18next";
 
 // Stores
