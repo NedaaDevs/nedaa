@@ -32,7 +32,7 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronDown,
-  HelpCircle,
+  CircleHelp,
   Play,
 } from "lucide-react-native";
 import { Icon } from "@/components/ui/icon";
@@ -731,7 +731,7 @@ const AthkarFocusScreen = () => {
               borderRadius={999}
               backgroundColor="$backgroundSecondary"
               opacity={0.6}>
-              <Icon size="sm" color="$typographySecondary" as={HelpCircle} />
+              <Icon size="sm" color="$typographySecondary" as={CircleHelp} />
             </Button>
           )}
           <Button

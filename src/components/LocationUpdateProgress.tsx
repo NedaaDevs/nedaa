@@ -5,7 +5,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { Check, AlertCircle } from "lucide-react-native";
+import { Check, CircleAlert } from "lucide-react-native";
 
 import type { UpdateState, UpdateStep } from "@/hooks/useLocationUpdate";
 
@@ -37,7 +37,7 @@ const LocationUpdateProgress = ({ state, onRetry }: Props) => {
         accessibilityLabel={t("location.update.error")}
         minHeight={44}>
         <HStack alignItems="center" gap="$2" paddingVertical="$2" paddingHorizontal="$3">
-          <Icon as={AlertCircle} size="sm" color="$error" />
+          <Icon as={CircleAlert} size="sm" color="$error" />
           <Text size="sm" color="$error">
             {t("location.update.error")}
           </Text>

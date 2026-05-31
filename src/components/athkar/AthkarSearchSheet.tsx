@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 // Icons
-import { Search, ChevronRight, ChevronLeft, Square, CheckSquare, Plus } from "lucide-react-native";
+import { Search, ChevronRight, ChevronLeft, Square, SquareCheck, Plus } from "lucide-react-native";
 
 // Services
 import { HisnMuslimDB } from "@/services/hisn-muslim-db";
@@ -201,7 +201,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
           {/* Checkbox */}
           <Box paddingTop="$1">
             <Icon
-              as={checked ? CheckSquare : Square}
+              as={checked ? SquareCheck : Square}
               size="md"
               color={isAdded ? "$success" : isSelected ? "$info" : "$typographySecondary"}
             />

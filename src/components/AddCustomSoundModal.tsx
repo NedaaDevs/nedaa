@@ -22,7 +22,7 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 
 // Icons
-import { X, Check, Upload, Square, CheckSquare, Speaker, AlertTriangle } from "lucide-react-native";
+import { X, Check, Upload, Square, SquareCheck, Speaker, TriangleAlert } from "lucide-react-native";
 
 // Types
 import type { NotificationType } from "@/types/notification";
@@ -294,7 +294,7 @@ export default function AddCustomSoundModal({
                       : "transparent"
                   }>
                   <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.PRAYER) ? CheckSquare : Square}
+                    as={selectedTypes.includes(NOTIFICATION_TYPE.PRAYER) ? SquareCheck : Square}
                     size="lg"
                     color={
                       selectedTypes.includes(NOTIFICATION_TYPE.PRAYER)
@@ -323,7 +323,7 @@ export default function AddCustomSoundModal({
                       : "transparent"
                   }>
                   <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.IQAMA) ? CheckSquare : Square}
+                    as={selectedTypes.includes(NOTIFICATION_TYPE.IQAMA) ? SquareCheck : Square}
                     size="lg"
                     color={
                       selectedTypes.includes(NOTIFICATION_TYPE.IQAMA)
@@ -354,7 +354,7 @@ export default function AddCustomSoundModal({
                       : "transparent"
                   }>
                   <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN) ? CheckSquare : Square}
+                    as={selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN) ? SquareCheck : Square}
                     size="lg"
                     color={
                       selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN)
@@ -383,7 +383,7 @@ export default function AddCustomSoundModal({
                       : "transparent"
                   }>
                   <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.QADA) ? CheckSquare : Square}
+                    as={selectedTypes.includes(NOTIFICATION_TYPE.QADA) ? SquareCheck : Square}
                     size="lg"
                     color={
                       selectedTypes.includes(NOTIFICATION_TYPE.QADA)
@@ -407,7 +407,7 @@ export default function AddCustomSoundModal({
                 borderColor="$borderWarning"
                 borderRadius="$6"
                 padding="$4">
-                <Icon as={AlertTriangle} size="sm" color="$warning" />
+                <Icon as={TriangleAlert} size="sm" color="$warning" />
                 <Text size="sm" color="$warning" flex={1} fontWeight="500">
                   {duplicateWarning}
                 </Text>

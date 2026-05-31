@@ -19,7 +19,7 @@ import {
   Minus,
   Target,
   Heart,
-  XCircle,
+  CircleX,
   TreePine,
 } from "lucide-react-native";
 import { IHRAM_PROHIBITIONS } from "@/constants/UmrahProhibitions";
@@ -35,7 +35,7 @@ const ICON_MAP: Record<string, any> = {
   minus: Minus,
   target: Target,
   heart: Heart,
-  "x-circle": XCircle,
+  "x-circle": CircleX,
   "tree-pine": TreePine,
 };
 
@@ -91,7 +91,7 @@ export default function ProhibitionsScreen() {
 }
 
 const ProhibitionItem = ({ item, isArabic }: { item: IhramProhibition; isArabic: boolean }) => {
-  const IconComponent = ICON_MAP[item.icon] ?? XCircle;
+  const IconComponent = ICON_MAP[item.icon] ?? CircleX;
   const title = isArabic ? item.titleAr : item.titleEn;
   const description = isArabic ? item.descriptionAr : item.descriptionEn;
 
