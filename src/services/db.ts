@@ -81,6 +81,11 @@ const sdb = createSerializedDatabase(async () => {
 
 const initializeDB = () => sdb.run(async () => {});
 
+// qada-db and umrah-db persist into THIS same database file. They route through
+// the same serialized wrapper so every access to DB_NAME shares one connection
+// and one lock — no second connection, no interleaving on the shared handle.
+export const sharedDb = sdb;
+
 const batchInsertPrayerTimesEntries = async (
   entries: PrayerTimesDBEntry[]
 ): Promise<InsertResult> => {
