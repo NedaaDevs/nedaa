@@ -3,7 +3,7 @@ import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
 
 interface LineImageProps {
   version: MushafVersion;
@@ -40,9 +40,10 @@ const LineImage = ({
     () => ({
       width: screenWidth,
       height: lineHeight,
-      tintColor: themeColors.textTint,
+      // Colored mushafs keep their own ink; only monochrome ones are tinted.
+      tintColor: isColoredVersion(version) ? undefined : themeColors.textTint,
     }),
-    [screenWidth, lineHeight, themeColors.textTint]
+    [screenWidth, lineHeight, themeColors.textTint, version]
   );
 
   return (

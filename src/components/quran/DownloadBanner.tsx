@@ -1,6 +1,7 @@
 import { Pressable, View, StyleSheet } from "react-native";
 import { XStack } from "tamagui";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
@@ -13,13 +14,8 @@ interface DownloadBannerProps {
   onDismiss: () => void;
 }
 
-const VERSION_LABELS: Record<MushafVersion, string> = {
-  [MushafVersion.V1]: "V1",
-  [MushafVersion.V2]: "V2",
-  [MushafVersion.V4]: "V4",
-};
-
 const DownloadBanner = ({ quranTheme, onDismiss }: DownloadBannerProps) => {
+  const { t } = useTranslation();
   const versionDownloads = useQuranStore((s) => s.versionDownloads);
   const selectedVersion = useQuranStore((s) => s.selectedVersion);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
@@ -36,11 +32,7 @@ const DownloadBanner = ({ quranTheme, onDismiss }: DownloadBannerProps) => {
   if (!downloading) return null;
 
   const [version, state] = downloading;
-  const progress = state?.progress;
-  const percent =
-    progress && progress.totalPages > 0
-      ? Math.round((progress.completedPages / progress.totalPages) * 100)
-      : 0;
+  const percent = state?.progress?.percent ?? 0;
 
   const bgColor = isDark ? "rgba(30,30,30,0.95)" : "rgba(255,253,247,0.95)";
   const textColor = isDark ? "#E0D6C8" : "#2C1810";
@@ -60,7 +52,7 @@ const DownloadBanner = ({ quranTheme, onDismiss }: DownloadBannerProps) => {
       <XStack alignItems="center" justifyContent="space-between" gap="$2">
         <XStack alignItems="center" gap="$2" flex={1}>
           <Text fontSize={13} color={textColor}>
-            {VERSION_LABELS[version as MushafVersion]} — {percent}%
+            {t(`quran.version.${version as MushafVersion}`)} — {percent}%
           </Text>
           <View style={{ flex: 1, height: 3, backgroundColor: borderClr, borderRadius: 2 }}>
             <View

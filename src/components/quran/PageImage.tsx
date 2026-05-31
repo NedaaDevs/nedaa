@@ -3,7 +3,7 @@ import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, IMAGE_SOURCE_WIDTH } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, IMAGE_SOURCE_WIDTH, isColoredVersion } from "@/constants/Quran";
 
 interface PageImageProps {
   version: MushafVersion;
@@ -43,7 +43,8 @@ const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: 
     height: scaledPageHeight,
     transform: [{ scaleY }],
     transformOrigin: "top",
-    tintColor: themeColors.textTint,
+    // Colored mushafs keep their own ink; only monochrome ones are tinted.
+    tintColor: isColoredVersion(version) ? undefined : themeColors.textTint,
   };
 
   return (

@@ -69,6 +69,13 @@ export const DEFAULT_QURAN_THEME = QuranTheme.SEPIA;
 
 export const RECOMMENDED_VERSION = MushafVersion.V2;
 
+// Versions whose page images are full-colour (e.g. tajweed-coloured). Their
+// PNGs must NOT be tinted — a tintColor flattens every pixel to one colour.
+export const COLORED_MUSHAF_VERSIONS = new Set<MushafVersion>([MushafVersion.V4]);
+
+export const isColoredVersion = (version: MushafVersion): boolean =>
+  COLORED_MUSHAF_VERSIONS.has(version);
+
 export const QURAN_UI_COLORS = {
   accent: "#B8860B",
   accentWarning: "#D4A017",
