@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
+  type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
@@ -192,7 +193,7 @@ interface PageSlotProps {
   quranTheme: QuranTheme;
   readerMode: ReaderViewMode;
   fontSize: number;
-  dragOffset: Animated.SharedValue<number>;
+  dragOffset: SharedValue<number>;
   width: number;
 }
 
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   page: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });
 
