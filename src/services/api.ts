@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from "axios";
+import { File } from "expo-file-system";
 
 // Types
 import type { TData, RequestMethod, Response } from "@/types/api";
@@ -105,3 +106,51 @@ const makeApiRequest = (
 
 export const apiGet = <T = any>(url: string, params: TData = {}): Promise<Response<T>> =>
   makeApiRequest("GET", url, params);
+
+// ─── Reusable file download ─────────────────────────────────────────────────
+
+export type DownloadFileOptions = {
+  signal?: AbortSignal;
+  headers?: Record<string, string>;
+};
+
+export type DownloadFileResult = {
+  success: boolean;
+  uri?: string;
+  /** True when the download was skipped because the signal was already aborted. */
+  cancelled?: boolean;
+  message?: string;
+};
+
+/**
+ * Downloads a remote file to disk via the native downloader (handles binary and
+ * the full response without buffering in JS). The download itself reports no
+ * incremental progress, so callers show an indeterminate indicator while it
+ * runs. The destination's directory must already exist.
+ */
+export const downloadFile = async (
+  url: string,
+  destination: File,
+  options: DownloadFileOptions = {}
+): Promise<DownloadFileResult> => {
+  const { signal, headers } = options;
+
+  if (signal?.aborted) {
+    return { success: false, cancelled: true, message: "cancelled" };
+  }
+
+  try {
+    await File.downloadFileAsync(url, destination, { idempotent: true, headers });
+    return { success: true, uri: destination.uri };
+  } catch (error) {
+    try {
+      if (destination.exists) destination.delete();
+    } catch {
+      // ignore — partial-file cleanup is best-effort
+    }
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
