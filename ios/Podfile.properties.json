@@ -1,5 +1,10 @@
 {
   "expo.jsEngine": "hermes",
   "EX_DEV_CLIENT_NETWORK_INSPECTOR": "true",
-  "MOTION_PERMISSION": "false"
+  "MOTION_PERMISSION": "false",
+  "expo.inlineModules.watchedDirectories": "[]",
+  "ios.deploymentTarget": "16.4",
+  "ios.forceStaticLinking": "[]",
+  "apple.privacyManifestAggregationEnabled": "true",
+  "EXPO_USE_PRECOMPILED_MODULES": "true"
 }

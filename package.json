@@ -54,6 +54,7 @@
     "expo-application": "~56.0.3",
     "expo-asset": "~56.0.15",
     "expo-background-task": "~56.0.16",
+    "expo-build-properties": "^56.0.16",
     "expo-clipboard": "~56.0.3",
     "expo-constants": "~56.0.16",
     "expo-custom-notification-sound": "file:./modules/expo-custom-notification-sound",
