@@ -137,17 +137,22 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
     }
 
     if (!allPresent) {
-      const bundleUrl = `${manifestVersion.baseUrl}${manifestVersion.paths.bundle}`;
+      const bundleUrl = QuranManifestService.getBundleUrl(manifestVersion);
+      const manifestSizeBytes = QuranManifestService.getBundleSizeBytes(manifestVersion);
       const zipFile = new File(Paths.cache, `quran-${version}-bundle.zip`);
 
       try {
-        // Native download reports no incremental progress — the UI shows an
-        // indeterminate indicator for this phase.
-        emitProgress(version, "downloading", 0, 0);
+        emitProgress(version, "downloading", 0, manifestSizeBytes);
         log.d("Download", `Downloading bundle from ${bundleUrl}`);
 
         const result = await downloadFile(bundleUrl, zipFile, {
           signal: active.controller.signal,
+          onProgress: ({ bytesWritten, totalBytes }) => {
+            // Server may omit Content-Length (totalBytes === -1); fall back to
+            // the size declared in the manifest so the bar still advances.
+            const total = totalBytes > 0 ? totalBytes : manifestSizeBytes;
+            emitProgress(version, "downloading", bytesWritten, total);
+          },
         });
 
         if (active.cancelled || result.cancelled) return;
