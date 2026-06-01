@@ -3,9 +3,12 @@ import {
   QuranTheme,
   LineType,
   DownloadStatus,
+  DownloadPhase,
   SurahFrameStyle,
   ReaderViewMode,
 } from "@/enums/quran";
+
+export type { DownloadPhase };
 
 export type GlyphBound = {
   page: number;
@@ -33,8 +36,6 @@ export type LineMetadata = {
   surahNumber: number | null;
   surahName: string | null;
 };
-
-export type DownloadPhase = "downloading" | "extracting" | "finalizing";
 
 export type DownloadProgress = {
   phase: DownloadPhase;

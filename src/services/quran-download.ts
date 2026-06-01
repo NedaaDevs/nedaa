@@ -2,14 +2,13 @@ import { File, Directory, Paths } from "expo-file-system";
 import { unzip } from "react-native-zip-archive";
 import * as SQLite from "expo-sqlite";
 
-import { MushafVersion, MushafImageType, DownloadStatus } from "@/enums/quran";
+import { MushafVersion, MushafImageType, DownloadStatus, DownloadPhase } from "@/enums/quran";
 import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import { QuranDB } from "@/services/quran-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { downloadFile } from "@/services/api";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
-import type { DownloadPhase } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
 
@@ -175,7 +174,7 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       const zipFile = new File(Paths.cache, `quran-${version}-bundle.zip`);
 
       try {
-        emitProgress(version, "downloading", 0, manifestSizeBytes);
+        emitProgress(version, DownloadPhase.DOWNLOADING, 0, manifestSizeBytes);
         log.d("Download", `Downloading bundle from ${bundleUrl}`);
 
         const result = await downloadFile(bundleUrl, zipFile, {
@@ -184,7 +183,7 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
             // Server may omit Content-Length (totalBytes === -1); fall back to
             // the size declared in the manifest so the bar still advances.
             const total = totalBytes > 0 ? totalBytes : manifestSizeBytes;
-            emitProgress(version, "downloading", bytesWritten, total);
+            emitProgress(version, DownloadPhase.DOWNLOADING, bytesWritten, total);
           },
         });
 
@@ -192,13 +191,13 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         if (!result.success) throw new Error(result.message ?? "Download failed");
         log.d("Download", "Bundle downloaded");
 
-        emitProgress(version, "extracting", 0, 0);
+        emitProgress(version, DownloadPhase.EXTRACTING, 0, 0);
         if (!versionDir.exists) versionDir.create({ intermediates: true });
         await unzip(zipFile.uri, versionDir.uri);
         log.d("Download", "Extraction complete");
         if (active.cancelled) return;
 
-        emitProgress(version, "finalizing", 0, 0);
+        emitProgress(version, DownloadPhase.FINALIZING, 0, 0);
 
         // Move bounds.db to the SQLite directory if it shipped in the bundle.
         const extractedBoundsDb = new File(versionDir, "bounds.db");
@@ -280,21 +279,21 @@ const doStartDark = async (version: MushafVersion, active: ActiveDownload): Prom
       const zipFile = new File(Paths.cache, `quran-${version}-dark-bundle.zip`);
 
       try {
-        emitDarkProgress(version, "downloading", 0, darkSizeBytes);
+        emitDarkProgress(version, DownloadPhase.DOWNLOADING, 0, darkSizeBytes);
         log.d("Download", `Downloading dark bundle from ${darkUrl}`);
 
         const result = await downloadFile(darkUrl, zipFile, {
           signal: active.controller.signal,
           onProgress: ({ bytesWritten, totalBytes }) => {
             const total = totalBytes > 0 ? totalBytes : darkSizeBytes;
-            emitDarkProgress(version, "downloading", bytesWritten, total);
+            emitDarkProgress(version, DownloadPhase.DOWNLOADING, bytesWritten, total);
           },
         });
 
         if (active.cancelled || result.cancelled) return;
         if (!result.success) throw new Error(result.message ?? "Dark download failed");
 
-        emitDarkProgress(version, "extracting", 0, 0);
+        emitDarkProgress(version, DownloadPhase.EXTRACTING, 0, 0);
         if (!darkDir.exists) darkDir.create({ intermediates: true });
         await unzip(zipFile.uri, darkDir.uri);
         log.d("Download", "Dark extraction complete");

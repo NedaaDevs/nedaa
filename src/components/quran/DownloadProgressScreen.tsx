@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
-import { MushafVersion, DownloadStatus } from "@/enums/quran";
+import { MushafVersion, DownloadStatus, DownloadPhase } from "@/enums/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 
 interface DownloadProgressScreenProps {
@@ -32,7 +32,7 @@ const DownloadProgressScreen = ({
   const progress = downloadState?.progress;
   const status = downloadState?.status ?? DownloadStatus.IDLE;
 
-  const phase = progress?.phase ?? "downloading";
+  const phase = progress?.phase ?? DownloadPhase.DOWNLOADING;
   const percent = progress?.percent ?? 0;
   const downloadedMB = progress ? Math.round(progress.bytesDownloaded / (1024 * 1024)) : 0;
   const totalMB = progress ? Math.round(progress.totalBytes / (1024 * 1024)) : 0;
@@ -57,9 +57,9 @@ const DownloadProgressScreen = ({
   const isError = status === DownloadStatus.ERROR;
 
   const phaseLabel =
-    phase === "downloading"
+    phase === DownloadPhase.DOWNLOADING
       ? t("quran.download.phaseDownloading")
-      : phase === "extracting"
+      : phase === DownloadPhase.EXTRACTING
         ? t("quran.download.phaseExtracting")
         : t("quran.download.phaseFinalizing");
 
@@ -102,7 +102,7 @@ const DownloadProgressScreen = ({
 
       {/* Determinate bar only when we actually have progress; the native
           downloader reports none, so the spinner above conveys activity. */}
-      {phase === "downloading" && percent > 0 && (
+      {phase === DownloadPhase.DOWNLOADING && percent > 0 && (
         <YStack width="100%" gap="$2">
           <YStack
             width="100%"
