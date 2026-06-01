@@ -67,8 +67,6 @@ export const DEFAULT_SURAH_FRAME_STYLE = SurahFrameStyle.CLASSIC;
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;
 export const DEFAULT_QURAN_THEME = QuranTheme.SEPIA;
 
-export const RECOMMENDED_VERSION = MushafVersion.V2;
-
 // Versions whose page images are full-colour (e.g. tajweed-coloured). Their
 // PNGs must NOT be tinted — a tintColor flattens every pixel to one colour.
 export const COLORED_MUSHAF_VERSIONS = new Set<MushafVersion>([MushafVersion.V4]);
