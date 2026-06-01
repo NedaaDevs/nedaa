@@ -43,9 +43,15 @@ export type DownloadProgress = {
   percent: number;
 };
 
-export type VersionDownloadState = {
+export type BundleDownloadState = {
   status: DownloadStatus;
   progress: DownloadProgress | null;
+};
+
+// `dark` tracks the optional dark-theme bundle (V4) independently of the main
+// (light) bundle, so it can be downloaded later or deleted on its own.
+export type VersionDownloadState = BundleDownloadState & {
+  dark?: BundleDownloadState;
 };
 
 export type QuranBundle = {
@@ -105,6 +111,9 @@ export type QuranState = {
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
+  updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;
+  removeDark: (version: MushafVersion) => void;
   isVersionComplete: (version: MushafVersion) => boolean;
+  isDarkComplete: (version: MushafVersion) => boolean;
 };

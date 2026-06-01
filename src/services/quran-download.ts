@@ -23,6 +23,9 @@ type ActiveDownload = {
 // "already downloading?" guard and holds the AbortController for cancellation.
 const activeDownloads = new Map<MushafVersion, ActiveDownload>();
 
+// Independent in-flight guard for the optional dark-theme bundle.
+const activeDarkDownloads = new Map<MushafVersion, ActiveDownload>();
+
 const emitProgress = (
   version: MushafVersion,
   phase: DownloadPhase,
@@ -36,8 +39,38 @@ const emitProgress = (
   });
 };
 
+const emitDarkProgress = (
+  version: MushafVersion,
+  phase: DownloadPhase,
+  bytesDownloaded: number,
+  totalBytes: number
+) => {
+  const percent =
+    totalBytes > 0 ? Math.min(100, Math.round((bytesDownloaded / totalBytes) * 100)) : 0;
+  useQuranStore.getState().updateDarkDownloadState(version, {
+    progress: { phase, bytesDownloaded, totalBytes, percent },
+  });
+};
+
 const getVersionDir = (version: MushafVersion): Directory => {
   return new Directory(Paths.document, `quran/${version}`);
+};
+
+// Dark-theme images live in a sibling directory so they can be downloaded and
+// deleted independently of the main (light) bundle.
+const getDarkVersionDir = (version: MushafVersion): Directory => {
+  return new Directory(Paths.document, `quran/${version}-dark`);
+};
+
+const darkFirstPagePresent = (version: MushafVersion, imageType: MushafImageType): boolean => {
+  try {
+    if (imageType === MushafImageType.PAGE) {
+      return new File(Paths.document, `quran/${version}-dark/pages/001.png`).exists;
+    }
+    return new File(Paths.document, `quran/${version}-dark/lines/001/001.png`).exists;
+  } catch {
+    return false;
+  }
 };
 
 const getLineFile = (version: MushafVersion, page: number, line: number): File => {
@@ -205,6 +238,111 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
   }
 };
 
+// Independent entry point for the optional dark bundle (mirrors `start`).
+const startDark = (version: MushafVersion): Promise<void> => {
+  const existing = activeDarkDownloads.get(version);
+  if (existing) {
+    log.d("Download", `Already downloading dark ${version}`);
+    return existing.promise;
+  }
+
+  const active: ActiveDownload = {
+    controller: new AbortController(),
+    cancelled: false,
+    promise: Promise.resolve(),
+  };
+  activeDarkDownloads.set(version, active);
+  const run = doStartDark(version, active);
+  active.promise = run;
+  return run;
+};
+
+const doStartDark = async (version: MushafVersion, active: ActiveDownload): Promise<void> => {
+  const store = useQuranStore.getState();
+  store.updateDarkDownloadState(version, { status: DownloadStatus.DOWNLOADING });
+
+  try {
+    const manifestVersion = await QuranManifestService.getVersionInfo(version);
+    if (active.cancelled) return;
+    const darkUrl = manifestVersion ? QuranManifestService.getDarkBundleUrl(manifestVersion) : null;
+    if (!manifestVersion || !darkUrl) {
+      log.e("Download", `No dark bundle for ${version}`);
+      store.updateDarkDownloadState(version, { status: DownloadStatus.ERROR });
+      return;
+    }
+
+    const darkSizeBytes = QuranManifestService.getDarkBundleSizeBytes(manifestVersion);
+    const imageType = detectImageType(version);
+    const darkDir = getDarkVersionDir(version);
+
+    // Skip the transfer if the dark images are already extracted on disk.
+    if (!darkFirstPagePresent(version, imageType)) {
+      const zipFile = new File(Paths.cache, `quran-${version}-dark-bundle.zip`);
+
+      try {
+        emitDarkProgress(version, "downloading", 0, darkSizeBytes);
+        log.d("Download", `Downloading dark bundle from ${darkUrl}`);
+
+        const result = await downloadFile(darkUrl, zipFile, {
+          signal: active.controller.signal,
+          onProgress: ({ bytesWritten, totalBytes }) => {
+            const total = totalBytes > 0 ? totalBytes : darkSizeBytes;
+            emitDarkProgress(version, "downloading", bytesWritten, total);
+          },
+        });
+
+        if (active.cancelled || result.cancelled) return;
+        if (!result.success) throw new Error(result.message ?? "Dark download failed");
+
+        emitDarkProgress(version, "extracting", 0, 0);
+        if (!darkDir.exists) darkDir.create({ intermediates: true });
+        await unzip(zipFile.uri, darkDir.uri);
+        log.d("Download", "Dark extraction complete");
+        if (active.cancelled) return;
+      } finally {
+        if (zipFile.exists) zipFile.delete();
+      }
+    }
+
+    if (active.cancelled) return;
+    store.updateDarkDownloadState(version, { status: DownloadStatus.COMPLETE, progress: null });
+    log.i("Download", `${version} dark complete`);
+  } catch (error) {
+    if (active.cancelled) {
+      log.i("Download", `${version} dark download cancelled`);
+    } else {
+      log.e(
+        "Download",
+        `Dark download failed for ${version}`,
+        error instanceof Error ? error : undefined
+      );
+      useQuranStore.getState().updateDarkDownloadState(version, { status: DownloadStatus.ERROR });
+    }
+  } finally {
+    activeDarkDownloads.delete(version);
+  }
+};
+
+const deleteDark = (version: MushafVersion): void => {
+  const active = activeDarkDownloads.get(version);
+  if (active) {
+    active.cancelled = true;
+    active.controller.abort();
+  }
+
+  const darkDir = getDarkVersionDir(version);
+  if (darkDir.exists) {
+    try {
+      darkDir.delete();
+    } catch {
+      log.e("Download", `Error deleting ${version} dark directory`);
+    }
+  }
+
+  useQuranStore.getState().removeDark(version);
+  log.i("Download", `Deleted dark bundle for ${version}`);
+};
+
 const pause = (): void => {
   log.d("Download", "Pause not supported for bundle downloads");
 };
@@ -270,12 +408,28 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     active.controller.abort();
   }
 
+  const darkActive = activeDarkDownloads.get(version);
+  if (darkActive) {
+    darkActive.cancelled = true;
+    darkActive.controller.abort();
+  }
+
   const versionDir = getVersionDir(version);
   if (versionDir.exists) {
     try {
       versionDir.delete();
     } catch {
       log.e("Download", `Error deleting ${version} directory`);
+    }
+  }
+
+  // Remove the dark sibling directory too — deleting a version drops both bundles.
+  const darkDir = getDarkVersionDir(version);
+  if (darkDir.exists) {
+    try {
+      darkDir.delete();
+    } catch {
+      log.e("Download", `Error deleting ${version} dark directory`);
     }
   }
 
@@ -310,6 +464,8 @@ const checkDiskSpace = (requiredMB: number): { available: boolean; availableMB: 
 
 export const QuranDownload = {
   start,
+  startDark,
+  deleteDark,
   pause,
   resume,
   cancel,

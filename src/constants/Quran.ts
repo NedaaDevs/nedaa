@@ -76,6 +76,18 @@ export const COLORED_MUSHAF_VERSIONS = new Set<MushafVersion>([MushafVersion.V4]
 export const isColoredVersion = (version: MushafVersion): boolean =>
   COLORED_MUSHAF_VERSIONS.has(version);
 
+// Path segment for a version's images. Colored versions in dark theme read
+// from the separate dark bundle when it's downloaded; everything else (and the
+// fallback when dark isn't downloaded) reads the main directory.
+export const quranImageDirSegment = (
+  version: MushafVersion,
+  quranTheme: QuranTheme,
+  darkAvailable: boolean
+): string =>
+  quranTheme === QuranTheme.DARK && isColoredVersion(version) && darkAvailable
+    ? `${version}-dark`
+    : `${version}`;
+
 export const QURAN_UI_COLORS = {
   accent: "#B8860B",
   accentWarning: "#D4A017",

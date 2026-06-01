@@ -2,8 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { MushafVersion, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, IMAGE_SOURCE_WIDTH, isColoredVersion } from "@/constants/Quran";
+import { DownloadStatus, MushafVersion, QuranTheme } from "@/enums/quran";
+import {
+  QURAN_THEME_COLORS,
+  IMAGE_SOURCE_WIDTH,
+  isColoredVersion,
+  quranImageDirSegment,
+} from "@/constants/Quran";
+import { useQuranStore } from "@/stores/quran";
 
 interface PageImageProps {
   version: MushafVersion;
@@ -13,13 +19,16 @@ interface PageImageProps {
   quranTheme: QuranTheme;
 }
 
-const getPageImageUri = (version: MushafVersion, page: number): string => {
+const getPageImageUri = (dirSegment: string, page: number): string => {
   const pageStr = String(page).padStart(3, "0");
-  return `${Paths.document.uri}quran/${version}/pages/${pageStr}.png`;
+  return `${Paths.document.uri}quran/${dirSegment}/pages/${pageStr}.png`;
 };
 
 const PageImage = ({ version, page, screenWidth, availableHeight, quranTheme }: PageImageProps) => {
-  const uri = getPageImageUri(version, page);
+  const darkAvailable = useQuranStore(
+    (s) => s.versionDownloads[version]?.dark?.status === DownloadStatus.COMPLETE
+  );
+  const uri = getPageImageUri(quranImageDirSegment(version, quranTheme, darkAvailable), page);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const [sourceHeight, setSourceHeight] = useState(0);
 

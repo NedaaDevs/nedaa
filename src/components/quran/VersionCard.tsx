@@ -27,6 +27,16 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
   const isError = status === DownloadStatus.ERROR;
   const percent = state?.progress?.percent ?? 0;
 
+  // Optional dark-theme bundle (V4), managed independently of the light bundle.
+  const hasDark = !!version.darkBundle;
+  const darkSizeMB = version.darkBundle ? Math.round(version.darkBundle.sizeMB) : 0;
+  const darkStatus = state?.dark?.status ?? DownloadStatus.IDLE;
+  const darkComplete = darkStatus === DownloadStatus.COMPLETE;
+  const darkDownloading =
+    darkStatus === DownloadStatus.DOWNLOADING || darkStatus === DownloadStatus.PAUSED;
+  const darkError = darkStatus === DownloadStatus.ERROR;
+  const darkPercent = state?.dark?.progress?.percent ?? 0;
+
   const isRecommended = version.id === RECOMMENDED_VERSION;
   const versionLabel = t(`quran.version.${versionId}`);
 
@@ -45,10 +55,49 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
     );
   };
 
+  // Versions with a dark bundle ask, at download time, whether to fetch dark too.
+  const promptDarkAtDownload = () => {
+    Alert.alert(
+      t("quran.download.darkPromptTitle"),
+      t("quran.download.darkPromptMessage", { size: darkSizeMB }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("quran.download.justLight"), onPress: () => onDownload(version) },
+        {
+          text: t("quran.download.lightAndDark"),
+          onPress: () => {
+            onDownload(version);
+            QuranDownload.startDark(versionId);
+          },
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteDark = () => {
+    Alert.alert(
+      t("quran.settings.deleteTitle"),
+      t("quran.settings.deleteMessage", { name: t("quran.settings.darkMode") }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: () => QuranDownload.deleteDark(versionId),
+        },
+      ]
+    );
+  };
+
   // Card-level press: download when not yet installed (or retry on error);
   // a downloaded version is read by selecting it; a downloading one is inert.
+  // Versions with a dark bundle prompt for the dark add-on before downloading.
   const handleCardPress = () => {
     if (disabled || isDownloading) return;
+    if (!isComplete && hasDark) {
+      promptDarkAtDownload();
+      return;
+    }
     onDownload(version);
   };
 
@@ -158,6 +207,68 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
             </YStack>
           )}
         </XStack>
+
+        {/* Independent dark-bundle row (V4): download later or delete on its own. */}
+        {hasDark && (isComplete || !!state?.dark) && (
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            borderTopWidth={1}
+            borderTopColor={QURAN_UI_COLORS.cardBorder}
+            paddingTop="$2"
+            marginTop="$1">
+            <Text color={QURAN_UI_COLORS.subtleText} fontSize={13}>
+              {t("quran.settings.darkMode")} · {darkSizeMB} MB
+            </Text>
+
+            {darkComplete ? (
+              <Pressable
+                onPress={confirmDeleteDark}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.settings.deleteVersion", {
+                  name: t("quran.settings.darkMode"),
+                })}
+                hitSlop={8}>
+                <XStack
+                  alignItems="center"
+                  gap="$1.5"
+                  paddingHorizontal="$3"
+                  paddingVertical="$1.5"
+                  borderRadius="$3"
+                  borderWidth={1}
+                  borderColor={QURAN_UI_COLORS.cardBorder}>
+                  <Trash2 size={14} color={QURAN_UI_COLORS.subtleText} />
+                  <Text color={QURAN_UI_COLORS.subtleText} fontWeight="600" fontSize={13}>
+                    {t("common.delete")}
+                  </Text>
+                </XStack>
+              </Pressable>
+            ) : darkDownloading ? (
+              <XStack alignItems="center" gap="$1.5">
+                <Loader size={14} color={QURAN_UI_COLORS.subtleText} />
+                <Text color={QURAN_UI_COLORS.subtleText} fontSize={13} fontWeight="600">
+                  {darkPercent}%
+                </Text>
+              </XStack>
+            ) : (
+              <Pressable
+                onPress={() => QuranDownload.startDark(versionId)}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.settings.darkMode")}
+                hitSlop={8}>
+                <YStack
+                  backgroundColor={QURAN_UI_COLORS.accent}
+                  paddingHorizontal="$3"
+                  paddingVertical="$1.5"
+                  borderRadius="$3">
+                  <Text color="#fff" fontWeight="600" fontSize={13}>
+                    {darkError ? t("quran.download.retry") : t("quran.onboarding.download")}
+                  </Text>
+                </YStack>
+              </Pressable>
+            )}
+          </XStack>
+        )}
       </YStack>
     </Pressable>
   );
