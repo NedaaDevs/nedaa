@@ -68,6 +68,7 @@
         "CFBundleDisplayName": "Nedaa",
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "This app does not require microphone access.",
+        "NSMotionUsageDescription": "$(PRODUCT_NAME) does not require motion access.",
         "NSLocationWhenInUseUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only while you are using the app and will not be shared with any third parties.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used while you are using the app and may also be used in the background to send you notifications about upcoming prayers. Your location data will not be shared with any third parties.",
         "NSLocationAlwaysUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only for this purpose and will not be shared with any third parties.",
