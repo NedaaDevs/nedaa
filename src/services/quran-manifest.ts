@@ -38,26 +38,12 @@ const getVersions = async (): Promise<QuranManifestVersion[]> => {
   return manifest?.versions ?? [];
 };
 
-const getLineImageUrl = (version: QuranManifestVersion, page: number, line: number): string => {
-  const pageStr = String(page).padStart(3, "0");
-  const lineStr = String(line).padStart(3, "0");
-  return `${version.baseUrl}${version.paths.lines
-    .replace("{page}", pageStr)
-    .replace("{line}", lineStr)}`;
+const getBundleUrl = (version: QuranManifestVersion): string => {
+  return `${version.baseUrl}${version.bundle.path}`;
 };
 
-const getPageImageUrl = (version: QuranManifestVersion, page: number): string => {
-  const pageStr = String(page).padStart(3, "0");
-  const pathTemplate = version.paths.pages ?? "/pages/{page}.png";
-  return `${version.baseUrl}${pathTemplate.replace("{page}", pageStr)}`;
-};
-
-const getBoundsDbUrl = (version: QuranManifestVersion): string => {
-  return `${version.baseUrl}${version.paths.boundsDb}`;
-};
-
-const getMarkerUrl = (version: QuranManifestVersion, name: string): string => {
-  return `${version.baseUrl}${version.paths.markers.replace("{name}", name)}`;
+const getBundleSizeBytes = (version: QuranManifestVersion): number => {
+  return Math.round(version.bundle.sizeMB * 1024 * 1024);
 };
 
 const clearCache = (): void => {
@@ -69,9 +55,7 @@ export const QuranManifestService = {
   fetchManifest,
   getVersionInfo,
   getVersions,
-  getLineImageUrl,
-  getPageImageUrl,
-  getBoundsDbUrl,
-  getMarkerUrl,
+  getBundleUrl,
+  getBundleSizeBytes,
   clearCache,
 };

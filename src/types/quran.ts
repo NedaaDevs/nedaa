@@ -48,17 +48,10 @@ export type VersionDownloadState = {
   progress: DownloadProgress | null;
 };
 
-export type QuranVersionPaths = {
-  bundle: string;
-  lines?: string;
-  pages?: string;
-  boundsDb?: string;
-  markers?: string;
-};
-
-export type QuranVersionChecksums = {
-  bundle: string;
-  manifest: string;
+export type QuranBundle = {
+  path: string;
+  sizeMB: number;
+  checksum: string;
 };
 
 export type QuranManifestVersion = {
@@ -71,11 +64,11 @@ export type QuranManifestVersion = {
   imageWidth: number;
   imageHeight: number;
   totalSizeMB: number;
-  bundleSizeMB: number;
   baseUrl: string;
-  paths: QuranVersionPaths;
+  bundle: QuranBundle;
+  darkBundle?: QuranBundle;
   markers: string[];
-  checksums: QuranVersionChecksums;
+  manifestChecksum: string;
 };
 
 export type QuranManifest = {

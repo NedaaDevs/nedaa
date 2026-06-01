@@ -109,44 +109,55 @@ export const apiGet = <T = any>(url: string, params: TData = {}): Promise<Respon
 
 // ─── Reusable file download ─────────────────────────────────────────────────
 
+export type DownloadFileProgress = {
+  bytesWritten: number;
+  /** Total expected bytes, or -1 when the server omits the Content-Length header. */
+  totalBytes: number;
+};
+
 export type DownloadFileOptions = {
   signal?: AbortSignal;
   headers?: Record<string, string>;
+  onProgress?: (data: DownloadFileProgress) => void;
 };
 
 export type DownloadFileResult = {
   success: boolean;
   uri?: string;
-  /** True when the download was skipped because the signal was already aborted. */
+  /** True when the download was skipped or aborted via the signal. */
   cancelled?: boolean;
   message?: string;
 };
 
 /**
  * Downloads a remote file to disk via the native downloader (handles binary and
- * the full response without buffering in JS). The download itself reports no
- * incremental progress, so callers show an indeterminate indicator while it
- * runs. The destination's directory must already exist.
+ * the full response without buffering in JS). Reports incremental progress via
+ * onProgress and supports cancellation via signal. The destination's directory
+ * must already exist.
  */
 export const downloadFile = async (
   url: string,
   destination: File,
   options: DownloadFileOptions = {}
 ): Promise<DownloadFileResult> => {
-  const { signal, headers } = options;
+  const { signal, headers, onProgress } = options;
 
   if (signal?.aborted) {
     return { success: false, cancelled: true, message: "cancelled" };
   }
 
   try {
-    await File.downloadFileAsync(url, destination, { idempotent: true, headers });
+    await File.downloadFileAsync(url, destination, { idempotent: true, headers, signal, onProgress });
     return { success: true, uri: destination.uri };
   } catch (error) {
     try {
       if (destination.exists) destination.delete();
     } catch {
       // ignore — partial-file cleanup is best-effort
+    }
+    // An aborted signal surfaces as a rejection; report it as a cancel.
+    if (signal?.aborted) {
+      return { success: false, cancelled: true, message: "cancelled" };
     }
     return {
       success: false,
