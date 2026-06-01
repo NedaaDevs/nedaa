@@ -46,6 +46,14 @@ const getBundleSizeBytes = (version: QuranManifestVersion): number => {
   return Math.round(version.bundle.sizeMB * 1024 * 1024);
 };
 
+const getDarkBundleUrl = (version: QuranManifestVersion): string | null => {
+  return version.darkBundle ? `${version.baseUrl}${version.darkBundle.path}` : null;
+};
+
+const getDarkBundleSizeBytes = (version: QuranManifestVersion): number => {
+  return version.darkBundle ? Math.round(version.darkBundle.sizeMB * 1024 * 1024) : 0;
+};
+
 const clearCache = (): void => {
   cachedManifest = null;
   cachedAt = 0;
@@ -57,5 +65,7 @@ export const QuranManifestService = {
   getVersions,
   getBundleUrl,
   getBundleSizeBytes,
+  getDarkBundleUrl,
+  getDarkBundleSizeBytes,
   clearCache,
 };

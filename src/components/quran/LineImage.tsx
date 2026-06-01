@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { MushafVersion, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
+import { DownloadStatus, MushafVersion, QuranTheme } from "@/enums/quran";
+import { QURAN_THEME_COLORS, isColoredVersion, quranImageDirSegment } from "@/constants/Quran";
+import { useQuranStore } from "@/stores/quran";
 
 interface LineImageProps {
   version: MushafVersion;
@@ -14,10 +15,10 @@ interface LineImageProps {
   quranTheme: QuranTheme;
 }
 
-const getLineImageUri = (version: MushafVersion, page: number, line: number): string => {
+const getLineImageUri = (dirSegment: string, page: number, line: number): string => {
   const pageStr = String(page).padStart(3, "0");
   const lineStr = String(line).padStart(3, "0");
-  return `${Paths.document.uri}quran/${version}/lines/${pageStr}/${lineStr}.png`;
+  return `${Paths.document.uri}quran/${dirSegment}/lines/${pageStr}/${lineStr}.png`;
 };
 
 const LineImage = ({
@@ -28,7 +29,10 @@ const LineImage = ({
   lineHeight,
   quranTheme,
 }: LineImageProps) => {
-  const uri = getLineImageUri(version, page, line);
+  const darkAvailable = useQuranStore(
+    (s) => s.versionDownloads[version]?.dark?.status === DownloadStatus.COMPLETE
+  );
+  const uri = getLineImageUri(quranImageDirSegment(version, quranTheme, darkAvailable), page, line);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
   const containerStyle = useMemo(

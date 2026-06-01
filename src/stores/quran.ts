@@ -45,6 +45,9 @@ export const useQuranStore = create<QuranState>()(
           versionDownloads: {
             ...prev.versionDownloads,
             [version]: {
+              // Spread the previous entry so the independent `dark` sub-state
+              // survives light-bundle status changes.
+              ...prev.versionDownloads[version],
               status: state.status ?? prev.versionDownloads[version]?.status ?? DownloadStatus.IDLE,
               progress:
                 state.progress !== undefined
@@ -53,6 +56,34 @@ export const useQuranStore = create<QuranState>()(
             },
           },
         })),
+      updateDarkDownloadState: (version, state) =>
+        set((prev) => {
+          const current = prev.versionDownloads[version] ?? {
+            status: DownloadStatus.IDLE,
+            progress: null,
+          };
+          const prevDark = current.dark;
+          return {
+            versionDownloads: {
+              ...prev.versionDownloads,
+              [version]: {
+                ...current,
+                dark: {
+                  status: state.status ?? prevDark?.status ?? DownloadStatus.IDLE,
+                  progress:
+                    state.progress !== undefined ? state.progress : (prevDark?.progress ?? null),
+                },
+              },
+            },
+          };
+        }),
+      removeDark: (version) =>
+        set((prev) => {
+          const current = prev.versionDownloads[version];
+          if (!current?.dark) return {};
+          const { dark: _dark, ...rest } = current;
+          return { versionDownloads: { ...prev.versionDownloads, [version]: rest } };
+        }),
       removeVersion: (version) =>
         set((prev) => {
           // Drop the key entirely — an IDLE entry would leave the version
@@ -82,6 +113,8 @@ export const useQuranStore = create<QuranState>()(
         }),
       isVersionComplete: (version) =>
         get().versionDownloads[version]?.status === DownloadStatus.COMPLETE,
+      isDarkComplete: (version) =>
+        get().versionDownloads[version]?.dark?.status === DownloadStatus.COMPLETE,
     }),
     {
       name: "quran-storage",
@@ -103,6 +136,7 @@ export const useQuranStore = create<QuranState>()(
             {
               status: v?.status ?? DownloadStatus.IDLE,
               progress: null,
+              ...(v?.dark ? { dark: { status: v.dark.status, progress: null } } : {}),
             } satisfies VersionDownloadState,
           ])
         ) as Partial<Record<MushafVersion, VersionDownloadState>>,
@@ -129,14 +163,20 @@ export const useQuranStore = create<QuranState>()(
         // reopens trapped on a frozen download screen; the router then shows
         // the version picker for any non-complete version.
         if (merged.versionDownloads) {
+          const resetStatus = (s: DownloadStatus | undefined) => {
+            const status = s ?? DownloadStatus.IDLE;
+            return status === DownloadStatus.DOWNLOADING || status === DownloadStatus.PAUSED
+              ? DownloadStatus.IDLE
+              : status;
+          };
           merged.versionDownloads = Object.fromEntries(
             Object.entries(merged.versionDownloads).map(([k, v]) => {
-              const status = (v as VersionDownloadState | undefined)?.status ?? DownloadStatus.IDLE;
-              const reset =
-                status === DownloadStatus.DOWNLOADING || status === DownloadStatus.PAUSED
-                  ? DownloadStatus.IDLE
-                  : status;
-              return [k, { status: reset, progress: null }];
+              const vs = v as VersionDownloadState | undefined;
+              const entry: VersionDownloadState = { status: resetStatus(vs?.status), progress: null };
+              if (vs?.dark) {
+                entry.dark = { status: resetStatus(vs.dark.status), progress: null };
+              }
+              return [k, entry];
             })
           ) as Partial<Record<MushafVersion, VersionDownloadState>>;
         }
