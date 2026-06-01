@@ -39,6 +39,9 @@ interface QuranPageProps {
   quranTheme: QuranTheme;
 }
 
+// Constant 1..15 line numbers — hoisted so it isn't reallocated every render.
+const PAGE_LINE_NUMBERS = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
+
 const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const { width, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -248,9 +251,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     return SURAH_NAMES[topSurah] ?? "";
   }, [pageAvailable, glyphBounds]);
 
-  const lines = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
-
-  const highlightRects = (() => {
+  const highlightRects = useMemo(() => {
     if (!highlightedAyah || lineHeight === 0) return [];
 
     const ayahGlyphs = glyphBounds.filter(
@@ -285,7 +286,16 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       width: (maxX - minX) * coverScale,
       height: lineHeight,
     }));
-  })();
+  }, [
+    highlightedAyah,
+    lineHeight,
+    glyphBounds,
+    isPageMode,
+    pageScaleX,
+    pageScaleY,
+    srcLineHeight,
+    coverScale,
+  ]);
 
   const markerPositions = useMemo(() => {
     if (lineHeight === 0) return [];
@@ -358,7 +368,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
           )}
           {lineHeight > 0 &&
             !isPageMode &&
-            lines.map((line) =>
+            PAGE_LINE_NUMBERS.map((line) =>
               pageAvailable ? (
                 <LineImage
                   key={`${page}-${line}`}

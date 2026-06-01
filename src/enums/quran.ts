@@ -46,3 +46,9 @@ export enum PageDownloadStatus {
   COMPLETE = "complete",
   FAILED = "failed",
 }
+
+export enum DownloadPhase {
+  DOWNLOADING = "downloading",
+  EXTRACTING = "extracting",
+  FINALIZING = "finalizing",
+}
