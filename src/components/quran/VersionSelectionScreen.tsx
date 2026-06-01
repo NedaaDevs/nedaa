@@ -8,8 +8,8 @@ import { Type } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion } from "@/enums/quran";
-import { QURAN_UI_COLORS } from "@/constants/Quran";
 import { QuranManifestService } from "@/services/quran-manifest";
+import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import VersionCard from "@/components/quran/VersionCard";
 import type { QuranManifestVersion } from "@/types/quran";
 
@@ -28,6 +28,7 @@ const VersionSelectionScreen = ({
   const insets = useSafeAreaInsets();
   const [versions, setVersions] = useState<QuranManifestVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const chrome = useQuranChromeColors();
 
   useEffect(() => {
     const loadManifest = async () => {
@@ -47,8 +48,8 @@ const VersionSelectionScreen = ({
         flex={1}
         alignItems="center"
         justifyContent="center"
-        backgroundColor={QURAN_UI_COLORS.background}>
-        <ActivityIndicator size="large" color={QURAN_UI_COLORS.accent} />
+        backgroundColor={chrome.background}>
+        <ActivityIndicator size="large" color={chrome.accent} />
       </YStack>
     );
   }
@@ -60,7 +61,7 @@ const VersionSelectionScreen = ({
         paddingBottom: insets.bottom + 24,
         paddingHorizontal: 20,
       }}
-      style={{ backgroundColor: QURAN_UI_COLORS.background }}>
+      style={{ backgroundColor: chrome.background }}>
       <YStack gap="$4" alignItems="center">
         {/* Bismillah */}
         <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0 }}>
@@ -78,7 +79,7 @@ const VersionSelectionScreen = ({
             <Text fontSize={22} fontWeight="700" textAlign="center">
               {t("quran.onboarding.title")}
             </Text>
-            <Text fontSize={14} color={QURAN_UI_COLORS.subtleText} textAlign="center">
+            <Text fontSize={14} color={chrome.subtleText} textAlign="center">
               {t("quran.onboarding.subtitle")}
             </Text>
           </YStack>
@@ -108,10 +109,10 @@ const VersionSelectionScreen = ({
             accessibilityLabel={t("quran.onboarding.textMode")}
             style={{
               borderWidth: 1,
-              borderColor: QURAN_UI_COLORS.cardBorder,
+              borderColor: chrome.cardBorder,
               borderRadius: 16,
               padding: 16,
-              backgroundColor: QURAN_UI_COLORS.cardBackground,
+              backgroundColor: chrome.cardBackground,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.06,
@@ -120,20 +121,20 @@ const VersionSelectionScreen = ({
             }}>
             <YStack gap="$2">
               <XStack alignItems="center" gap="$2">
-                <Type size={20} color={QURAN_UI_COLORS.subtleText} />
+                <Type size={20} color={chrome.subtleText} />
                 <Text fontWeight="600" fontSize={16}>
                   {t("quran.onboarding.textMode")}
                 </Text>
               </XStack>
-              <Text color={QURAN_UI_COLORS.subtleText} fontSize={13}>
+              <Text color={chrome.subtleText} fontSize={13}>
                 {t("quran.onboarding.textModeDesc")}
               </Text>
               <XStack justifyContent="space-between" alignItems="center">
-                <Text color={QURAN_UI_COLORS.subtleText} fontSize={12}>
+                <Text color={chrome.subtleText} fontSize={12}>
                   {t("quran.onboarding.noDownload")}
                 </Text>
                 <YStack
-                  backgroundColor={QURAN_UI_COLORS.accent}
+                  backgroundColor={chrome.accent}
                   paddingHorizontal="$3"
                   paddingVertical="$1.5"
                   borderRadius="$3">

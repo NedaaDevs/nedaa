@@ -10,7 +10,7 @@ import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
 import { MushafVersion, DownloadStatus } from "@/enums/quran";
-import { QURAN_UI_COLORS } from "@/constants/Quran";
+import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 
 interface DownloadProgressScreenProps {
   version: MushafVersion;
@@ -26,6 +26,7 @@ const DownloadProgressScreen = ({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const hapticSuccess = useHaptic("success");
+  const chrome = useQuranChromeColors();
 
   const downloadState = useQuranStore((s) => s.versionDownloads[version]);
   const progress = downloadState?.progress;
@@ -65,7 +66,7 @@ const DownloadProgressScreen = ({
   return (
     <YStack
       flex={1}
-      backgroundColor={QURAN_UI_COLORS.background}
+      backgroundColor={chrome.background}
       paddingTop={insets.top + 24}
       paddingBottom={insets.bottom + 24}
       paddingHorizontal={20}
@@ -91,8 +92,8 @@ const DownloadProgressScreen = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 200 }}>
           <XStack alignItems="center" gap="$2">
-            <ActivityIndicator size="small" color={QURAN_UI_COLORS.accent} />
-            <Text fontSize={16} color={QURAN_UI_COLORS.subtleText}>
+            <ActivityIndicator size="small" color={chrome.accent} />
+            <Text fontSize={16} color={chrome.subtleText}>
               {phaseLabel}
             </Text>
           </XStack>
@@ -106,14 +107,14 @@ const DownloadProgressScreen = ({
           <YStack
             width="100%"
             height={8}
-            backgroundColor={QURAN_UI_COLORS.progressTrack}
+            backgroundColor={chrome.progressTrack}
             borderRadius={4}
             overflow="hidden">
             <Animated.View
               style={[
                 {
                   height: 8,
-                  backgroundColor: isError ? QURAN_UI_COLORS.accentWarning : QURAN_UI_COLORS.accent,
+                  backgroundColor: isError ? chrome.accentWarning : chrome.accent,
                   borderRadius: 4,
                 },
                 progressBarStyle,
@@ -124,11 +125,11 @@ const DownloadProgressScreen = ({
           </YStack>
 
           <XStack justifyContent="space-between">
-            <Text fontSize={12} color={QURAN_UI_COLORS.subtleText}>
+            <Text fontSize={12} color={chrome.subtleText}>
               {percent}%
             </Text>
             {totalMB > 0 && (
-              <Text fontSize={12} color={QURAN_UI_COLORS.subtleText}>
+              <Text fontSize={12} color={chrome.subtleText}>
                 {downloadedMB} / {totalMB} MB
               </Text>
             )}
@@ -147,7 +148,7 @@ const DownloadProgressScreen = ({
           accessibilityRole="button"
           accessibilityLabel={t("quran.download.retry")}>
           <XStack
-            backgroundColor={QURAN_UI_COLORS.accent}
+            backgroundColor={chrome.accent}
             paddingHorizontal="$4"
             paddingVertical="$2.5"
             borderRadius="$3"

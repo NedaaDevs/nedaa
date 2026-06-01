@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Check, Loader, Trash2 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { RECOMMENDED_VERSION, QURAN_UI_COLORS } from "@/constants/Quran";
 import { MushafVersion, DownloadStatus } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
+import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { QuranDownload } from "@/services/quran-download";
 import type { QuranManifestVersion } from "@/types/quran";
 
@@ -37,7 +37,7 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
   const darkError = darkStatus === DownloadStatus.ERROR;
   const darkPercent = state?.dark?.progress?.percent ?? 0;
 
-  const isRecommended = version.id === RECOMMENDED_VERSION;
+  const chrome = useQuranChromeColors();
   const versionLabel = t(`quran.version.${versionId}`);
 
   const confirmDelete = () => {
@@ -101,17 +101,11 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
     onDownload(version);
   };
 
-  const a11yLabel = isRecommended
-    ? t("a11y.quran.versionCardRecommended", {
-        name: version.name,
-        size: version.totalSizeMB,
-        year: version.yearGregorian,
-      })
-    : t("a11y.quran.versionCard", {
-        name: version.name,
-        size: version.totalSizeMB,
-        year: version.yearGregorian,
-      });
+  const a11yLabel = t("a11y.quran.versionCard", {
+    name: version.name,
+    size: version.totalSizeMB,
+    year: version.yearGregorian,
+  });
 
   return (
     <Pressable
@@ -121,10 +115,10 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
       accessibilityState={{ disabled: !!disabled || isDownloading }}
       style={{
         borderWidth: 1,
-        borderColor: QURAN_UI_COLORS.cardBorder,
+        borderColor: chrome.cardBorder,
         borderRadius: 16,
         padding: 16,
-        backgroundColor: QURAN_UI_COLORS.cardBackground,
+        backgroundColor: chrome.cardBackground,
         opacity: disabled ? 0.5 : 1,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -137,25 +131,14 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
           <Text fontWeight="600" fontSize={16}>
             {version.name}
           </Text>
-          {isRecommended && (
-            <YStack
-              backgroundColor={QURAN_UI_COLORS.accent}
-              paddingHorizontal="$1.5"
-              paddingVertical={2}
-              borderRadius={99}>
-              <Text color="#fff" fontSize={10} fontWeight="700">
-                {t("quran.onboarding.recommended")}
-              </Text>
-            </YStack>
-          )}
         </XStack>
 
-        <Text color={QURAN_UI_COLORS.subtleText} fontSize={13}>
+        <Text color={chrome.subtleText} fontSize={13}>
           {version.yearHijri} AH · {version.yearGregorian}
         </Text>
 
         <XStack justifyContent="space-between" alignItems="center">
-          <Text color={QURAN_UI_COLORS.subtleText} fontSize={12}>
+          <Text color={chrome.subtleText} fontSize={12}>
             {version.totalSizeMB} MB
           </Text>
 
@@ -163,8 +146,8 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
           {isComplete ? (
             <XStack alignItems="center" gap="$3">
               <XStack alignItems="center" gap="$1">
-                <Check size={16} color={QURAN_UI_COLORS.accent} />
-                <Text color={QURAN_UI_COLORS.accent} fontSize={12} fontWeight="600">
+                <Check size={16} color={chrome.accent} />
+                <Text color={chrome.accent} fontSize={12} fontWeight="600">
                   {t("quran.onboarding.downloaded")}
                 </Text>
               </XStack>
@@ -180,9 +163,9 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
                   paddingVertical="$1.5"
                   borderRadius="$3"
                   borderWidth={1}
-                  borderColor={QURAN_UI_COLORS.cardBorder}>
-                  <Trash2 size={14} color={QURAN_UI_COLORS.subtleText} />
-                  <Text color={QURAN_UI_COLORS.subtleText} fontWeight="600" fontSize={13}>
+                  borderColor={chrome.cardBorder}>
+                  <Trash2 size={14} color={chrome.subtleText} />
+                  <Text color={chrome.subtleText} fontWeight="600" fontSize={13}>
                     {t("common.delete")}
                   </Text>
                 </XStack>
@@ -190,14 +173,14 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
             </XStack>
           ) : isDownloading ? (
             <XStack alignItems="center" gap="$1.5">
-              <Loader size={14} color={QURAN_UI_COLORS.subtleText} />
-              <Text color={QURAN_UI_COLORS.subtleText} fontSize={13} fontWeight="600">
+              <Loader size={14} color={chrome.subtleText} />
+              <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
                 {percent}%
               </Text>
             </XStack>
           ) : (
             <YStack
-              backgroundColor={QURAN_UI_COLORS.accent}
+              backgroundColor={chrome.accent}
               paddingHorizontal="$3"
               paddingVertical="$1.5"
               borderRadius="$3">
@@ -214,10 +197,10 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
             justifyContent="space-between"
             alignItems="center"
             borderTopWidth={1}
-            borderTopColor={QURAN_UI_COLORS.cardBorder}
+            borderTopColor={chrome.cardBorder}
             paddingTop="$2"
             marginTop="$1">
-            <Text color={QURAN_UI_COLORS.subtleText} fontSize={13}>
+            <Text color={chrome.subtleText} fontSize={13}>
               {t("quran.settings.darkMode")} · {darkSizeMB} MB
             </Text>
 
@@ -236,17 +219,17 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
                   paddingVertical="$1.5"
                   borderRadius="$3"
                   borderWidth={1}
-                  borderColor={QURAN_UI_COLORS.cardBorder}>
-                  <Trash2 size={14} color={QURAN_UI_COLORS.subtleText} />
-                  <Text color={QURAN_UI_COLORS.subtleText} fontWeight="600" fontSize={13}>
+                  borderColor={chrome.cardBorder}>
+                  <Trash2 size={14} color={chrome.subtleText} />
+                  <Text color={chrome.subtleText} fontWeight="600" fontSize={13}>
                     {t("common.delete")}
                   </Text>
                 </XStack>
               </Pressable>
             ) : darkDownloading ? (
               <XStack alignItems="center" gap="$1.5">
-                <Loader size={14} color={QURAN_UI_COLORS.subtleText} />
-                <Text color={QURAN_UI_COLORS.subtleText} fontSize={13} fontWeight="600">
+                <Loader size={14} color={chrome.subtleText} />
+                <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
                   {darkPercent}%
                 </Text>
               </XStack>
@@ -257,7 +240,7 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
                 accessibilityLabel={t("quran.settings.darkMode")}
                 hitSlop={8}>
                 <YStack
-                  backgroundColor={QURAN_UI_COLORS.accent}
+                  backgroundColor={chrome.accent}
                   paddingHorizontal="$3"
                   paddingVertical="$1.5"
                   borderRadius="$3">
