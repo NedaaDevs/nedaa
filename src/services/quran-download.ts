@@ -9,6 +9,7 @@ import { QuranManifestService } from "@/services/quran-manifest";
 import { downloadFile } from "@/services/api";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
+import type { DownloadProgress } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
 
@@ -25,30 +26,14 @@ const activeDownloads = new Map<MushafVersion, ActiveDownload>();
 // Independent in-flight guard for the optional dark-theme bundle.
 const activeDarkDownloads = new Map<MushafVersion, ActiveDownload>();
 
-const emitProgress = (
-  version: MushafVersion,
+const buildProgress = (
   phase: DownloadPhase,
   bytesDownloaded: number,
   totalBytes: number
-) => {
+): DownloadProgress => {
   const percent =
     totalBytes > 0 ? Math.min(100, Math.round((bytesDownloaded / totalBytes) * 100)) : 0;
-  useQuranStore.getState().updateDownloadState(version, {
-    progress: { phase, bytesDownloaded, totalBytes, percent },
-  });
-};
-
-const emitDarkProgress = (
-  version: MushafVersion,
-  phase: DownloadPhase,
-  bytesDownloaded: number,
-  totalBytes: number
-) => {
-  const percent =
-    totalBytes > 0 ? Math.min(100, Math.round((bytesDownloaded / totalBytes) * 100)) : 0;
-  useQuranStore.getState().updateDarkDownloadState(version, {
-    progress: { phase, bytesDownloaded, totalBytes, percent },
-  });
+  return { phase, bytesDownloaded, totalBytes, percent };
 };
 
 const getVersionDir = (version: MushafVersion): Directory => {
@@ -121,11 +106,14 @@ const detectImageType = (version: MushafVersion): MushafImageType => {
   return MushafImageType.LINE;
 };
 
-// Synchronous entry point. Registers the in-flight download before any await
-// so two rapid calls for the same version can't both pass the guard, then
-// delegates the work to doStart.
-const start = (version: MushafVersion): Promise<void> => {
-  const existing = activeDownloads.get(version);
+// Registers an in-flight download in `map` before any await so two rapid calls
+// for the same version can't both pass the guard, then runs `run`.
+const beginDownload = (
+  map: Map<MushafVersion, ActiveDownload>,
+  version: MushafVersion,
+  run: (version: MushafVersion, active: ActiveDownload) => Promise<void>
+): Promise<void> => {
+  const existing = map.get(version);
   if (existing) {
     log.d("Download", `Already downloading ${version}`);
     return existing.promise;
@@ -136,11 +124,72 @@ const start = (version: MushafVersion): Promise<void> => {
     cancelled: false,
     promise: Promise.resolve(),
   };
-  activeDownloads.set(version, active);
-  const run = doStart(version, active);
-  active.promise = run;
-  return run;
+  map.set(version, active);
+  const promise = run(version, active);
+  active.promise = promise;
+  return promise;
 };
+
+type BundleDownloadOptions = {
+  url: string;
+  sizeBytes: number;
+  dir: Directory;
+  zipName: string;
+  alreadyOnDisk: boolean;
+  emit: (phase: DownloadPhase, bytesDownloaded: number, totalBytes: number) => void;
+  // Light-only: runs under the FINALIZING phase after extraction (e.g. move bounds.db).
+  onExtracted?: () => Promise<void> | void;
+};
+
+// Shared download → extract → zip-cleanup, used for both the light and dark
+// bundles. Returns false if cancelled mid-flight, true if extracted (or already
+// on disk); throws on a real download/extract error so the caller sets ERROR.
+const downloadAndExtractBundle = async (
+  active: ActiveDownload,
+  opts: BundleDownloadOptions
+): Promise<boolean> => {
+  if (opts.alreadyOnDisk) return true;
+
+  const zipFile = new File(Paths.cache, opts.zipName);
+  try {
+    opts.emit(DownloadPhase.DOWNLOADING, 0, opts.sizeBytes);
+    log.d("Download", `Downloading bundle from ${opts.url}`);
+
+    const result = await downloadFile(opts.url, zipFile, {
+      signal: active.controller.signal,
+      onProgress: ({ bytesWritten, totalBytes }) => {
+        // Server may omit Content-Length (totalBytes === -1); fall back to the
+        // size declared in the manifest so the bar still advances.
+        const total = totalBytes > 0 ? totalBytes : opts.sizeBytes;
+        opts.emit(DownloadPhase.DOWNLOADING, bytesWritten, total);
+      },
+    });
+
+    if (active.cancelled || result.cancelled) return false;
+    if (!result.success) throw new Error(result.message ?? "Download failed");
+
+    opts.emit(DownloadPhase.EXTRACTING, 0, 0);
+    if (!opts.dir.exists) opts.dir.create({ intermediates: true });
+    await unzip(zipFile.uri, opts.dir.uri);
+    log.d("Download", "Extraction complete");
+    if (active.cancelled) return false;
+
+    if (opts.onExtracted) {
+      opts.emit(DownloadPhase.FINALIZING, 0, 0);
+      await opts.onExtracted();
+    }
+    return true;
+  } finally {
+    // Always remove the transient zip — success, cancel, or error.
+    if (zipFile.exists) zipFile.delete();
+  }
+};
+
+const start = (version: MushafVersion): Promise<void> =>
+  beginDownload(activeDownloads, version, doStart);
+
+const startDark = (version: MushafVersion): Promise<void> =>
+  beginDownload(activeDarkDownloads, version, doStartDark);
 
 const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<void> => {
   const store = useQuranStore.getState();
@@ -168,37 +217,15 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       }
     }
 
-    if (!allPresent) {
-      const bundleUrl = QuranManifestService.getBundleUrl(manifestVersion);
-      const manifestSizeBytes = QuranManifestService.getBundleSizeBytes(manifestVersion);
-      const zipFile = new File(Paths.cache, `quran-${version}-bundle.zip`);
-
-      try {
-        emitProgress(version, DownloadPhase.DOWNLOADING, 0, manifestSizeBytes);
-        log.d("Download", `Downloading bundle from ${bundleUrl}`);
-
-        const result = await downloadFile(bundleUrl, zipFile, {
-          signal: active.controller.signal,
-          onProgress: ({ bytesWritten, totalBytes }) => {
-            // Server may omit Content-Length (totalBytes === -1); fall back to
-            // the size declared in the manifest so the bar still advances.
-            const total = totalBytes > 0 ? totalBytes : manifestSizeBytes;
-            emitProgress(version, DownloadPhase.DOWNLOADING, bytesWritten, total);
-          },
-        });
-
-        if (active.cancelled || result.cancelled) return;
-        if (!result.success) throw new Error(result.message ?? "Download failed");
-        log.d("Download", "Bundle downloaded");
-
-        emitProgress(version, DownloadPhase.EXTRACTING, 0, 0);
-        if (!versionDir.exists) versionDir.create({ intermediates: true });
-        await unzip(zipFile.uri, versionDir.uri);
-        log.d("Download", "Extraction complete");
-        if (active.cancelled) return;
-
-        emitProgress(version, DownloadPhase.FINALIZING, 0, 0);
-
+    const extracted = await downloadAndExtractBundle(active, {
+      url: QuranManifestService.getBundleUrl(manifestVersion),
+      sizeBytes: QuranManifestService.getBundleSizeBytes(manifestVersion),
+      dir: versionDir,
+      zipName: `quran-${version}-bundle.zip`,
+      alreadyOnDisk: allPresent,
+      emit: (phase, bytes, total) =>
+        store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
+      onExtracted: () => {
         // Move bounds.db to the SQLite directory if it shipped in the bundle.
         const extractedBoundsDb = new File(versionDir, "bounds.db");
         if (extractedBoundsDb.exists) {
@@ -207,13 +234,9 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
           extractedBoundsDb.move(targetBoundsDb);
           log.d("Download", "Moved bounds.db into place");
         }
-      } finally {
-        // Always remove the transient zip — success, cancel, or error.
-        if (zipFile.exists) zipFile.delete();
-      }
-    }
-
-    if (active.cancelled) return;
+      },
+    });
+    if (!extracted || active.cancelled) return;
 
     await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
     await QuranDB.markVersionComplete(version);
@@ -237,25 +260,6 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
   }
 };
 
-// Independent entry point for the optional dark bundle (mirrors `start`).
-const startDark = (version: MushafVersion): Promise<void> => {
-  const existing = activeDarkDownloads.get(version);
-  if (existing) {
-    log.d("Download", `Already downloading dark ${version}`);
-    return existing.promise;
-  }
-
-  const active: ActiveDownload = {
-    controller: new AbortController(),
-    cancelled: false,
-    promise: Promise.resolve(),
-  };
-  activeDarkDownloads.set(version, active);
-  const run = doStartDark(version, active);
-  active.promise = run;
-  return run;
-};
-
 const doStartDark = async (version: MushafVersion, active: ActiveDownload): Promise<void> => {
   const store = useQuranStore.getState();
   store.updateDarkDownloadState(version, { status: DownloadStatus.DOWNLOADING });
@@ -270,40 +274,18 @@ const doStartDark = async (version: MushafVersion, active: ActiveDownload): Prom
       return;
     }
 
-    const darkSizeBytes = QuranManifestService.getDarkBundleSizeBytes(manifestVersion);
     const imageType = detectImageType(version);
-    const darkDir = getDarkVersionDir(version);
+    const extracted = await downloadAndExtractBundle(active, {
+      url: darkUrl,
+      sizeBytes: QuranManifestService.getDarkBundleSizeBytes(manifestVersion),
+      dir: getDarkVersionDir(version),
+      zipName: `quran-${version}-dark-bundle.zip`,
+      alreadyOnDisk: darkFirstPagePresent(version, imageType),
+      emit: (phase, bytes, total) =>
+        store.updateDarkDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
+    });
+    if (!extracted || active.cancelled) return;
 
-    // Skip the transfer if the dark images are already extracted on disk.
-    if (!darkFirstPagePresent(version, imageType)) {
-      const zipFile = new File(Paths.cache, `quran-${version}-dark-bundle.zip`);
-
-      try {
-        emitDarkProgress(version, DownloadPhase.DOWNLOADING, 0, darkSizeBytes);
-        log.d("Download", `Downloading dark bundle from ${darkUrl}`);
-
-        const result = await downloadFile(darkUrl, zipFile, {
-          signal: active.controller.signal,
-          onProgress: ({ bytesWritten, totalBytes }) => {
-            const total = totalBytes > 0 ? totalBytes : darkSizeBytes;
-            emitDarkProgress(version, DownloadPhase.DOWNLOADING, bytesWritten, total);
-          },
-        });
-
-        if (active.cancelled || result.cancelled) return;
-        if (!result.success) throw new Error(result.message ?? "Dark download failed");
-
-        emitDarkProgress(version, DownloadPhase.EXTRACTING, 0, 0);
-        if (!darkDir.exists) darkDir.create({ intermediates: true });
-        await unzip(zipFile.uri, darkDir.uri);
-        log.d("Download", "Dark extraction complete");
-        if (active.cancelled) return;
-      } finally {
-        if (zipFile.exists) zipFile.delete();
-      }
-    }
-
-    if (active.cancelled) return;
     store.updateDarkDownloadState(version, { status: DownloadStatus.COMPLETE, progress: null });
     log.i("Download", `${version} dark complete`);
   } catch (error) {
