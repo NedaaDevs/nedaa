@@ -1232,5 +1232,9 @@
   "widget_ramadan_day": "Ramadan Day %d",
   "widget_show_ramadan_labels": "Show Ramadan Labels",
   "widget_suhoor": "Suhoor",
-  "quran.download.paused": "Download paused"
+  "quran.download.paused": "Download paused",
+  "quran.surah.makki": "Meccan",
+  "quran.surah.madani": "Medinan",
+  "quran.surah.ayahCount": "{{count}} ayahs",
+  "quran.surah.pages": "Pages {{start}}–{{end}}"
 }

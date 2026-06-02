@@ -1177,5 +1177,9 @@
   "widget_suhoor": "سحری",
   "quran.download.paused": "ڈاؤن لوڈ روک دیا گیا",
   "quran.settings.deleteMessage": "{{name}} کو حذف کریں؟ اس سے اسٹوریج کی جگہ خالی ہو جائے گی۔",
-  "quran.settings.deleteVersion": "{{name}} حذف کریں"
+  "quran.settings.deleteVersion": "{{name}} حذف کریں",
+  "quran.surah.makki": "مکی",
+  "quran.surah.madani": "مدنی",
+  "quran.surah.ayahCount": "{{count}} آیات",
+  "quran.surah.pages": "صفحات {{start}}–{{end}}"
 }

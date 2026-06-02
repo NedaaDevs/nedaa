@@ -28,19 +28,34 @@ type Params = {
   version: MushafVersion;
   page: number;
   glyphBounds: GlyphBound[];
+  surahHeaderLines: Record<number, number>;
   geometry: PageGeometry;
   pressableRef: RefObject<View | null>;
 };
 
 // Tap-to-select on the mushaf page: maps a touch to source coordinates, finds
 // the glyph under it, and tracks the highlighted ayah. A long-press selects the
-// word under the finger (a text glyph); a tap selects an ayah-end marker.
-export const useAyahHitTest = ({ version, page, glyphBounds, geometry, pressableRef }: Params) => {
+// word under the finger (a text glyph); a tap selects an ayah-end marker. A
+// long-press on a surah-header line resolves to that surah instead (the header
+// has no glyphs).
+export const useAyahHitTest = ({
+  version,
+  page,
+  glyphBounds,
+  surahHeaderLines,
+  geometry,
+  pressableRef,
+}: Params) => {
   const [highlightedAyah, setHighlightedAyah] = useState<HighlightedAyah | null>(null);
+  const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
 
-  // A fresh page starts with nothing highlighted.
+  // A fresh page starts with nothing selected. Deferred to the react-compiler
+  // migration (set-state-in-effect backlog).
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setHighlightedAyah(null);
+    setSelectedSurah(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [page, version]);
 
   const {
@@ -75,15 +90,27 @@ export const useAyahHitTest = ({ version, page, glyphBounds, geometry, pressable
   // glyph kind they match — a tap matches an ayah-end marker, a long-press a word.
   const resolveHit = useCallback(
     (event: GestureResponderEvent, wantMarker: boolean) => {
-      if (glyphBounds.length === 0 || lineHeight === 0) {
-        setHighlightedAyah(null);
-        return;
-      }
+      if (lineHeight === 0) return;
       pressableRef.current?.measureInWindow((px, py) => {
         const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
         const touchX = event.nativeEvent.pageX - px;
         const touchY = event.nativeEvent.pageY - py - statusBarOffset;
         const { sourceX, sourceY, sourceLine } = toSourceCoords(touchX, touchY);
+
+        // Long-press on a surah-header line resolves to that surah (the header
+        // band has no glyphs to hit-test).
+        const headerSurah = surahHeaderLines[sourceLine];
+        if (!wantMarker && headerSurah) {
+          setHighlightedAyah(null);
+          setSelectedSurah(headerSurah);
+          return;
+        }
+        setSelectedSurah(null);
+
+        if (glyphBounds.length === 0) {
+          setHighlightedAyah(null);
+          return;
+        }
 
         const hit = glyphBounds.find(
           (g) =>
@@ -100,7 +127,7 @@ export const useAyahHitTest = ({ version, page, glyphBounds, geometry, pressable
         );
       });
     },
-    [glyphBounds, lineHeight, toSourceCoords, pressableRef]
+    [glyphBounds, lineHeight, toSourceCoords, pressableRef, surahHeaderLines]
   );
 
   const handleLongPress = useCallback(
@@ -112,5 +139,7 @@ export const useAyahHitTest = ({ version, page, glyphBounds, geometry, pressable
     [resolveHit]
   );
 
-  return { highlightedAyah, handlePress, handleLongPress };
+  const clearSurah = useCallback(() => setSelectedSurah(null), []);
+
+  return { highlightedAyah, selectedSurah, clearSurah, handlePress, handleLongPress };
 };

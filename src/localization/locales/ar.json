@@ -1261,5 +1261,9 @@
   "widget_suhoor": "سحور",
   "quran.download.paused": "تم إيقاف التنزيل مؤقتًا",
   "quran.settings.deleteMessage": "حذف {{name}}؟ سيؤدي ذلك إلى تحرير مساحة التخزين.",
-  "quran.settings.deleteVersion": "حذف {{name}}"
+  "quran.settings.deleteVersion": "حذف {{name}}",
+  "quran.surah.makki": "مكية",
+  "quran.surah.madani": "مدنية",
+  "quran.surah.ayahCount": "{{count}} آية",
+  "quran.surah.pages": "الصفحات {{start}}–{{end}}"
 }
