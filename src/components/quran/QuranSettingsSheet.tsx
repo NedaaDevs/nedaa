@@ -1,312 +1,212 @@
-import { Alert, Pressable, StyleSheet, View } from "react-native";
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown,
+  useReducedMotion,
+} from "react-native-reanimated";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { X, Download, Check, Loader, Trash2 } from "lucide-react-native";
+import { Bookmark, ChevronDown, ChevronUp, Download, Minus, Plus, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import {
-  MushafVersion,
-  QuranTheme,
-  DownloadStatus,
-  SurahFrameStyle,
-  ReaderViewMode,
-} from "@/enums/quran";
-import { QURAN_UI_COLORS, QURAN_THEME_COLORS } from "@/constants/Quran";
+import { MushafVersion, DownloadStatus, SurahFrameStyle, ReaderViewMode } from "@/enums/quran";
+import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
-import { QuranDownload } from "@/services/quran-download";
+import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
+import {
+  Section,
+  SettingRow,
+  Segmented,
+  Stepper,
+} from "@/components/quran/settings/SettingsControls";
+import ReadingThemeSwatches from "@/components/quran/settings/ReadingThemeSwatches";
+import LibraryRow from "@/components/quran/settings/LibraryRow";
 
 interface QuranSettingsSheetProps {
-  quranTheme: QuranTheme;
   onClose: () => void;
   onDownloadMore: () => void;
 }
 
-const QuranSettingsSheet = ({ quranTheme, onClose, onDownloadMore }: QuranSettingsSheetProps) => {
+const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps) => {
   const { t } = useTranslation();
-  const versionLabel = (v: MushafVersion) => t(`quran.version.${v}`);
   const insets = useSafeAreaInsets();
-  const themeColors = QURAN_THEME_COLORS[quranTheme];
+  const chrome = useQuranChromeColors();
+  const reduceMotion = useReducedMotion();
+
   const {
-    currentVersion,
     versionDownloads,
     surahFrameStyle,
     readerMode,
-    setCurrentVersion,
+    fontSize,
     setSurahFrameStyle,
     setReaderMode,
+    setFontSize,
   } = useQuranStore();
 
-  const isDark = quranTheme === QuranTheme.DARK;
-  const bgColor = isDark ? "#1E1E1E" : "#FFFFFF";
-  const textColor = isDark ? "#E0D6C8" : "#2C1810";
-  const subtleColor = isDark ? "#888" : QURAN_UI_COLORS.subtleText;
-  const borderColor = isDark ? "#333" : QURAN_UI_COLORS.cardBorder;
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // All versions that are downloaded or downloading
-  const allVersions = Object.entries(versionDownloads)
-    .filter(
-      ([, state]) =>
-        state?.status === DownloadStatus.COMPLETE ||
-        state?.status === DownloadStatus.DOWNLOADING ||
-        state?.status === DownloadStatus.PAUSED ||
-        state?.status === DownloadStatus.ERROR
-    )
-    .map(([v, state]) => ({ version: v as MushafVersion, state: state! }));
+  const libraryVersions = Object.entries(versionDownloads)
+    .filter(([, s]) => s?.status && s.status !== DownloadStatus.IDLE)
+    .map(([v, s]) => ({ version: v as MushafVersion, state: s! }));
 
   return (
     <>
       <Animated.View
-        entering={FadeIn.duration(200)}
+        entering={FadeIn.duration(reduceMotion ? 150 : 200)}
         exiting={FadeOut.duration(200)}
         style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
       </Animated.View>
 
       <Animated.View
-        entering={SlideInDown.springify().damping(20).stiffness(200)}
-        exiting={SlideOutDown.duration(200)}
-        style={[styles.sheet, { backgroundColor: bgColor, paddingBottom: insets.bottom + 16 }]}>
-        {/* Header */}
+        entering={
+          reduceMotion ? FadeIn.duration(150) : SlideInDown.springify().damping(20).stiffness(200)
+        }
+        exiting={reduceMotion ? FadeOut.duration(150) : SlideOutDown.duration(200)}
+        style={[
+          styles.sheet,
+          { backgroundColor: chrome.background, paddingBottom: insets.bottom + 8 },
+        ]}>
         <XStack justifyContent="space-between" alignItems="center" paddingBottom="$3">
-          <Text fontSize={18} fontWeight="700" color={textColor}>
+          <Text fontSize={18} fontWeight="700">
             {t("quran.settings.title")}
           </Text>
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel={t("common.close")}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              backgroundColor: borderColor,
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-            <X color={subtleColor} size={16} />
+            hitSlop={8}>
+            <YStack
+              width={32}
+              height={32}
+              borderRadius={16}
+              backgroundColor={chrome.cardBorder}
+              alignItems="center"
+              justifyContent="center">
+              <X color={chrome.subtleText} size={16} />
+            </YStack>
           </Pressable>
         </XStack>
 
-        {/* Reader mode toggle */}
-        <XStack
-          justifyContent="space-between"
-          alignItems="center"
-          paddingVertical="$2"
-          paddingBottom="$3">
-          <Text fontSize={13} fontWeight="600" color={subtleColor}>
-            {t("quran.settings.readerMode", { defaultValue: "Reader Mode" })}
-          </Text>
-          <XStack gap="$1.5" backgroundColor={borderColor} borderRadius="$3" padding={2}>
-            {[
-              {
-                mode: ReaderViewMode.MADINAH,
-                label: t("quran.settings.modeMadinah", { defaultValue: "Mushaf" }),
-              },
-              {
-                mode: ReaderViewMode.TEXT,
-                label: t("quran.settings.modeText", { defaultValue: "Text" }),
-              },
-            ].map(({ mode, label }) => (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <YStack gap="$5">
+            <Section title={t("quran.settings.display")} chrome={chrome}>
+              <SettingRow label={t("quran.settings.readerMode")} chrome={chrome}>
+                <Segmented
+                  chrome={chrome}
+                  options={[
+                    { value: ReaderViewMode.MADINAH, label: t("quran.settings.modeMushaf") },
+                    { value: ReaderViewMode.TEXT, label: t("quran.settings.modeText") },
+                  ]}
+                  selected={readerMode}
+                  onSelect={setReaderMode}
+                />
+              </SettingRow>
+
+              {readerMode === ReaderViewMode.TEXT && (
+                <SettingRow label={t("quran.settings.fontSize")} chrome={chrome}>
+                  <XStack
+                    alignItems="center"
+                    gap="$3"
+                    backgroundColor={chrome.cardBorder}
+                    borderRadius={10}
+                    paddingHorizontal="$2"
+                    paddingVertical="$1">
+                    <Stepper
+                      icon={Minus}
+                      disabled={fontSize <= FONT_SIZE_MIN}
+                      onPress={() => setFontSize(fontSize - FONT_SIZE_STEP)}
+                      chrome={chrome}
+                      label={t("a11y.decrease", { defaultValue: "Decrease" })}
+                    />
+                    <Text fontSize={14} fontWeight="600" minWidth={28} textAlign="center">
+                      {fontSize}
+                    </Text>
+                    <Stepper
+                      icon={Plus}
+                      disabled={fontSize >= FONT_SIZE_MAX}
+                      onPress={() => setFontSize(fontSize + FONT_SIZE_STEP)}
+                      chrome={chrome}
+                      label={t("a11y.increase", { defaultValue: "Increase" })}
+                    />
+                  </XStack>
+                </SettingRow>
+              )}
+            </Section>
+
+            <ReadingThemeSwatches />
+
+            {readerMode === ReaderViewMode.MADINAH && (
+              <YStack>
+                <Pressable
+                  onPress={() => setAdvancedOpen((o) => !o)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: advancedOpen }}>
+                  <XStack alignItems="center" justifyContent="space-between" paddingVertical="$2">
+                    <Text fontSize={13} fontWeight="700" color={chrome.subtleText}>
+                      {t("quran.settings.advanced")}
+                    </Text>
+                    {advancedOpen ? (
+                      <ChevronUp size={16} color={chrome.subtleText} />
+                    ) : (
+                      <ChevronDown size={16} color={chrome.subtleText} />
+                    )}
+                  </XStack>
+                </Pressable>
+                {advancedOpen && (
+                  <SettingRow label={t("quran.settings.surahFrame")} chrome={chrome}>
+                    <Segmented
+                      chrome={chrome}
+                      options={Object.values(SurahFrameStyle).map((style) => ({
+                        value: style,
+                        label: style.charAt(0).toUpperCase() + style.slice(1),
+                      }))}
+                      selected={surahFrameStyle}
+                      onSelect={setSurahFrameStyle}
+                      compact
+                    />
+                  </SettingRow>
+                )}
+              </YStack>
+            )}
+
+            <Section title={t("quran.settings.library")} chrome={chrome}>
+              {libraryVersions.map(({ version, state }) => (
+                <LibraryRow key={version} version={version} state={state} onClose={onClose} />
+              ))}
+
               <Pressable
-                key={mode}
-                onPress={() => setReaderMode(mode)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: readerMode === mode }}>
-                <XStack
-                  paddingHorizontal="$3"
-                  paddingVertical="$1.5"
-                  borderRadius="$2"
-                  backgroundColor={readerMode === mode ? themeColors.markerColor : "transparent"}>
-                  <Text
-                    fontSize={13}
-                    fontWeight={readerMode === mode ? "600" : "400"}
-                    color={readerMode === mode ? "#fff" : subtleColor}>
-                    {label}
+                onPress={onDownloadMore}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.settings.downloadMore")}>
+                <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
+                  <Download size={16} color={chrome.accent} />
+                  <Text fontSize={15} color={chrome.accent} fontWeight="600">
+                    {t("quran.settings.downloadMore")}
                   </Text>
                 </XStack>
               </Pressable>
-            ))}
-          </XStack>
-        </XStack>
+            </Section>
 
-        {/* Version list — only for image mode */}
-        {readerMode === ReaderViewMode.MADINAH && (
-          <YStack gap="$2">
-            <Text fontSize={13} fontWeight="600" color={subtleColor}>
-              {t("quran.settings.version")}
-            </Text>
-
-            {allVersions.map(({ version, state }) => {
-              const isActive = version === currentVersion;
-              const isComplete = state.status === DownloadStatus.COMPLETE;
-              const isDownloading =
-                state.status === DownloadStatus.DOWNLOADING ||
-                state.status === DownloadStatus.PAUSED;
-              const isError = state.status === DownloadStatus.ERROR;
-              const percent = state.progress?.percent ?? 0;
-
-              const canSwitch = isComplete || percent > 0;
-
-              return (
-                <Pressable
-                  key={version}
-                  onPress={() => {
-                    if (canSwitch) {
-                      setCurrentVersion(version);
-                      onClose();
-                    }
-                    if (isDownloading || isError) {
-                      QuranDownload.start(version);
-                    }
-                  }}
-                  accessibilityRole={canSwitch ? "radio" : "none"}
-                  accessibilityState={canSwitch ? { selected: isActive } : undefined}
-                  accessibilityLabel={`${versionLabel(version)}${isActive ? ", active" : ""}${isDownloading ? `, downloading ${percent}%` : ""}`}>
-                  <YStack
-                    paddingVertical="$3"
-                    paddingHorizontal="$3"
-                    borderRadius="$3"
-                    backgroundColor={
-                      isActive
-                        ? isDark
-                          ? "rgba(255,255,255,0.08)"
-                          : "rgba(0,0,0,0.04)"
-                        : "transparent"
-                    }
-                    gap="$1.5">
-                    <XStack justifyContent="space-between" alignItems="center">
-                      <XStack alignItems="center" gap="$2">
-                        <Text fontSize={15} fontWeight={isActive ? "600" : "400"} color={textColor}>
-                          {versionLabel(version)}
-                        </Text>
-                        {isDownloading && <Loader size={14} color={subtleColor} />}
-                      </XStack>
-                      <XStack alignItems="center" gap="$2">
-                        {isActive && isComplete && (
-                          <Check size={18} color={themeColors.markerColor} />
-                        )}
-                        {isDownloading && (
-                          <Text fontSize={12} color={subtleColor}>
-                            {percent}%
-                          </Text>
-                        )}
-                        {isError && (
-                          <Text fontSize={12} color={QURAN_UI_COLORS.accentWarning}>
-                            {t("quran.download.retry")}
-                          </Text>
-                        )}
-                        {isComplete && (
-                          <Pressable
-                            onPress={() => {
-                              Alert.alert(
-                                t("quran.settings.deleteTitle"),
-                                t("quran.settings.deleteMessage", {
-                                  name: versionLabel(version),
-                                }),
-                                [
-                                  { text: t("common.cancel"), style: "cancel" },
-                                  {
-                                    text: t("common.delete"),
-                                    style: "destructive",
-                                    onPress: () => {
-                                      QuranDownload.deleteVersion(version);
-                                      onClose();
-                                    },
-                                  },
-                                ]
-                              );
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={t("quran.settings.deleteVersion", {
-                              name: versionLabel(version),
-                            })}
-                            hitSlop={8}>
-                            <Trash2 size={16} color={subtleColor} />
-                          </Pressable>
-                        )}
-                      </XStack>
-                    </XStack>
-
-                    {/* Progress bar for downloading versions */}
-                    {isDownloading && (
-                      <View
-                        style={{
-                          height: 3,
-                          backgroundColor: borderColor,
-                          borderRadius: 2,
-                          overflow: "hidden",
-                        }}>
-                        <View
-                          style={{
-                            height: 3,
-                            width: `${percent}%`,
-                            backgroundColor: themeColors.markerColor,
-                            borderRadius: 2,
-                          }}
-                        />
-                      </View>
-                    )}
-                  </YStack>
-                </Pressable>
-              );
-            })}
-
-            {/* Surah frame style */}
-            <XStack
-              justifyContent="space-between"
-              alignItems="center"
-              paddingVertical="$3"
-              paddingHorizontal="$3">
-              <Text fontSize={15} color={textColor}>
-                {t("quran.settings.surahFrame")}
-              </Text>
-              <XStack gap="$1.5" backgroundColor={borderColor} borderRadius="$3" padding={2}>
-                {Object.values(SurahFrameStyle).map((style) => (
-                  <Pressable
-                    key={style}
-                    onPress={() => setSurahFrameStyle(style)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: surahFrameStyle === style }}>
-                    <XStack
-                      paddingHorizontal="$2.5"
-                      paddingVertical="$1"
-                      borderRadius="$2"
-                      backgroundColor={
-                        surahFrameStyle === style ? themeColors.markerColor : "transparent"
-                      }>
-                      <Text
-                        fontSize={11}
-                        fontWeight={surahFrameStyle === style ? "600" : "400"}
-                        color={surahFrameStyle === style ? "#fff" : subtleColor}>
-                        {style.charAt(0).toUpperCase() + style.slice(1)}
-                      </Text>
-                    </XStack>
-                  </Pressable>
-                ))}
-              </XStack>
-            </XStack>
-
-            {/* Download more */}
-            <Pressable
-              onPress={onDownloadMore}
-              accessibilityRole="button"
-              accessibilityLabel={t("quran.settings.downloadMore")}>
+            <Section title={t("quran.settings.saved")} chrome={chrome}>
               <XStack
-                paddingVertical="$3"
-                paddingHorizontal="$3"
-                borderRadius="$3"
+                alignItems="center"
                 gap="$2"
-                alignItems="center">
-                <Download size={16} color={QURAN_UI_COLORS.accent} />
-                <Text fontSize={15} color={QURAN_UI_COLORS.accent} fontWeight="500">
-                  {t("quran.settings.downloadMore")}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+                opacity={0.6}>
+                <Bookmark size={16} color={chrome.subtleText} />
+                <Text fontSize={14} color={chrome.subtleText}>
+                  {t("quran.settings.savedSoon")}
                 </Text>
               </XStack>
-            </Pressable>
+            </Section>
           </YStack>
-        )}
+        </ScrollView>
       </Animated.View>
     </>
   );
@@ -323,6 +223,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    maxHeight: "85%",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,

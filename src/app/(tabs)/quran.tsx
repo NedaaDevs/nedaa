@@ -362,7 +362,6 @@ const QuranScreen = () => {
       {/* Settings bottom sheet */}
       {showSettings && (
         <QuranSettingsSheet
-          quranTheme={quranTheme}
           onClose={() => setShowSettings(false)}
           onDownloadMore={handleDownloadMore}
         />
