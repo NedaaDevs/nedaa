@@ -53,6 +53,15 @@ export enum DownloadPhase {
   FINALIZING = "finalizing",
 }
 
+// Result of a single bundle download attempt (download → extract).
+export const BundleOutcome = {
+  EXTRACTED: "extracted",
+  CANCELLED: "cancelled",
+  PAUSED: "paused",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type BundleOutcome = (typeof BundleOutcome)[keyof typeof BundleOutcome];
+
 export enum SajdaType {
   REQUIRED = "required",
   OPTIONAL = "optional",
