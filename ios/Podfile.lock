@@ -250,6 +250,8 @@ PODS:
     - ExpoModulesJSI
     - ExpoModulesWorklets
     - RNWorklets
+  - ExpoNetwork (56.0.4):
+    - ExpoModulesCore
   - ExpoNotifications (56.0.15):
     - ExpoModulesCore
   - ExpoOrientation (1.0.0):
@@ -2569,6 +2571,7 @@ DEPENDENCIES:
   - ExpoModulesJSI (from `../node_modules/expo-modules-jsi/apple`)
   - ExpoModulesWorklets (from `../node_modules/expo-modules-core`)
   - ExpoModulesWorkletsAdapter (from `../node_modules/expo-modules-core`)
+  - ExpoNetwork (from `../node_modules/expo-network/ios`)
   - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
   - ExpoOrientation (from `../modules/expo-orientation/ios`)
   - ExpoRouter (from `../node_modules/expo-router/ios`)
@@ -2738,6 +2741,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoModulesWorkletsAdapter:
     :path: "../node_modules/expo-modules-core"
+  ExpoNetwork:
+    :path: "../node_modules/expo-network/ios"
   ExpoNotifications:
     :path: "../node_modules/expo-notifications/ios"
   ExpoOrientation:
@@ -2971,6 +2976,7 @@ SPEC CHECKSUMS:
   ExpoModulesJSI: f25a013ea9a79904bdd535e4bea0872e155cde09
   ExpoModulesWorklets: 3f847eb6ba544bd4b55d585f89b3b18f8cd73a72
   ExpoModulesWorkletsAdapter: a538403990508224d8401ff2ac544ca83df52eb6
+  ExpoNetwork: c9651806f67c5fe93d221f9b4533c98ae6833bb9
   ExpoNotifications: 22f9caefdb674598ee2d11dfe06eebab7a7cc155
   ExpoOrientation: 005e689b5624c013ec05db18f82d78695ba5ded6
   ExpoRouter: 806ab2bc2124594c624ffe6fde15c28e4c4f0b03
