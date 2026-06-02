@@ -29,6 +29,13 @@ export const useQuranStore = create<QuranState>()(
       selectedVersion: null,
       versionDownloads: {},
 
+      // Transient: true only while the immersive reader is the visible surface
+      // (not the version-picker / download chrome). Lets the app shell paint the
+      // status-bar safe area with the reader theme for the reader, app theme for
+      // chrome. Not persisted.
+      readerActive: false,
+
+      setReaderActive: (active) => set({ readerActive: active }),
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme, quranThemeOverride: true }),

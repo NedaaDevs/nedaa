@@ -16,6 +16,7 @@ import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
 import { useAppStore } from "@/stores/app";
+import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 
@@ -72,9 +73,11 @@ function AppShell() {
   const segments = useSegments();
   const isQuranScreen = segments[0] === "(tabs)" && segments[1] === "quran";
   const quranTheme = useResolvedQuranTheme();
-  const safeAreaBg = isQuranScreen
-    ? QURAN_THEME_COLORS[quranTheme].background
-    : theme.background.val;
+  const readerActive = useQuranStore((s) => s.readerActive);
+  // Reader-theme safe area ONLY when the immersive reader is the visible Quran
+  // surface; the version/download chrome follows the app theme like everything else.
+  const safeAreaBg =
+    isQuranScreen && readerActive ? QURAN_THEME_COLORS[quranTheme].background : theme.background.val;
 
   useNotificationListeners();
   useAlarmDeepLink();

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
@@ -40,6 +40,7 @@ const QuranScreen = () => {
     setSelectedVersion,
     setReaderMode,
     setFontSize,
+    setReaderActive,
     updateDownloadState,
   } = useQuranStore();
   const quranTheme = useResolvedQuranTheme();
@@ -56,6 +57,19 @@ const QuranScreen = () => {
 
   const downloadState = selectedVersion ? versionDownloads[selectedVersion] : undefined;
   const downloadStatus = downloadState?.status ?? DownloadStatus.IDLE;
+
+  const isActiveDownload = downloadStatus === DownloadStatus.DOWNLOADING;
+  // A mushaf version is selected but its images aren't fully on disk.
+  const needsMushaf =
+    readerMode !== ReaderViewMode.TEXT && downloadStatus !== DownloadStatus.COMPLETE;
+  // The immersive reader is the visible surface only when no chrome screen wins
+  // (mirrors the render branches below). Drives the status-bar safe-area theme.
+  const showReader =
+    onboardingComplete && !showVersionPicker && !(selectedVersion && needsMushaf && !forceReader);
+
+  useEffect(() => {
+    setReaderActive(showReader);
+  }, [showReader, setReaderActive]);
 
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
@@ -129,11 +143,6 @@ const QuranScreen = () => {
       />
     );
   }
-
-  const isActiveDownload = downloadStatus === DownloadStatus.DOWNLOADING;
-  // A mushaf version is selected but its images aren't fully on disk.
-  const needsMushaf =
-    readerMode !== ReaderViewMode.TEXT && downloadStatus !== DownloadStatus.COMPLETE;
 
   if (selectedVersion && needsMushaf && !forceReader) {
     // An active download → live progress screen. Otherwise the version isn't
