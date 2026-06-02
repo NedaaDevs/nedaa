@@ -141,6 +141,9 @@ export type QuranState = {
   onboardingComplete: boolean;
   selectedVersion: MushafVersion | null;
   versionDownloads: Partial<Record<MushafVersion, VersionDownloadState>>;
+  // Per-version: the user dismissed the "download dark pages" offer, so it is
+  // not shown again for that edition (they can still add it from settings).
+  darkOfferDismissed: Partial<Record<MushafVersion, boolean>>;
   // Transient — true only while the immersive reader (not chrome) is visible.
   readerActive: boolean;
 
@@ -159,6 +162,7 @@ export type QuranState = {
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;
   removeDark: (version: MushafVersion) => void;
+  dismissDarkOffer: (version: MushafVersion) => void;
   isVersionComplete: (version: MushafVersion) => boolean;
   isDarkComplete: (version: MushafVersion) => boolean;
 };

@@ -28,6 +28,7 @@ export const useQuranStore = create<QuranState>()(
       onboardingComplete: false,
       selectedVersion: null,
       versionDownloads: {},
+      darkOfferDismissed: {},
 
       // Transient: true only while the immersive reader is the visible surface
       // (not the version-picker / download chrome). Lets the app shell paint the
@@ -122,6 +123,10 @@ export const useQuranStore = create<QuranState>()(
         get().versionDownloads[version]?.status === DownloadStatus.COMPLETE,
       isDarkComplete: (version) =>
         get().versionDownloads[version]?.dark?.status === DownloadStatus.COMPLETE,
+      dismissDarkOffer: (version) =>
+        set((prev) => ({
+          darkOfferDismissed: { ...prev.darkOfferDismissed, [version]: true },
+        })),
     }),
     {
       name: "quran-storage",
@@ -137,6 +142,7 @@ export const useQuranStore = create<QuranState>()(
         fontSize: state.fontSize,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
+        darkOfferDismissed: state.darkOfferDismissed,
         versionDownloads: Object.fromEntries(
           Object.entries(state.versionDownloads).map(([k, v]) => [
             k,
@@ -179,7 +185,10 @@ export const useQuranStore = create<QuranState>()(
           merged.versionDownloads = Object.fromEntries(
             Object.entries(merged.versionDownloads).map(([k, v]) => {
               const vs = v as VersionDownloadState | undefined;
-              const entry: VersionDownloadState = { status: resetStatus(vs?.status), progress: null };
+              const entry: VersionDownloadState = {
+                status: resetStatus(vs?.status),
+                progress: null,
+              };
               if (vs?.dark) {
                 entry.dark = { status: resetStatus(vs.dark.status), progress: null };
               }

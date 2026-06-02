@@ -8,8 +8,8 @@ import { X, Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
-import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
-import { QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
+import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
+import { QURAN_THEME_COLORS, QURAN_UI_COLORS, isColoredVersion } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import { QuranDownload } from "@/services/quran-download";
@@ -19,6 +19,7 @@ import QuranSettingsSheet from "@/components/quran/QuranSettingsSheet";
 import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
+import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const ALL_THEMES = Object.values(QuranTheme);
@@ -31,6 +32,7 @@ const QuranScreen = () => {
     onboardingComplete,
     selectedVersion,
     versionDownloads,
+    darkOfferDismissed,
     readerMode,
     fontSize,
     setCurrentPage,
@@ -42,8 +44,10 @@ const QuranScreen = () => {
     setFontSize,
     setReaderActive,
     updateDownloadState,
+    dismissDarkOffer,
   } = useQuranStore();
   const quranTheme = useResolvedQuranTheme();
+  const prefersDark = usePrefersDarkReader();
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
@@ -86,6 +90,12 @@ const QuranScreen = () => {
       setSelectedVersion(version);
       setOnboardingComplete();
 
+      // Already installed → switch and read, no download or progress screen.
+      if (versionDownloads[version]?.status === DownloadStatus.COMPLETE) {
+        setDownloadFlowVersion(null);
+        return;
+      }
+
       const spaceCheck = QuranDownload.checkDiskSpace(manifestVersion.totalSizeMB);
       if (!spaceCheck.available) {
         Alert.alert(
@@ -97,11 +107,13 @@ const QuranScreen = () => {
         return;
       }
 
+      // Switch to the new edition and show its download progress screen; it
+      // opens in the reader when the user taps Start reading.
       updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
       setDownloadFlowVersion(version);
       QuranDownload.start(version);
     },
-    [setSelectedVersion, setOnboardingComplete, updateDownloadState, t]
+    [versionDownloads, setSelectedVersion, setOnboardingComplete, updateDownloadState, t]
   );
 
   const handleSelectTextMode = useCallback(() => {
@@ -137,34 +149,25 @@ const QuranScreen = () => {
     );
   }
 
-  // "Download more" version picker — download in background, don't switch
+  // "Download more" version picker — selecting an edition switches to it and
+  // shows its download progress screen (or opens it if already installed).
   if (showVersionPicker) {
     return (
       <VersionSelectionScreen
         onSelectVersion={(manifest) => {
           setShowVersionPicker(false);
-          const version = manifest.id as MushafVersion;
-          const spaceCheck = QuranDownload.checkDiskSpace(manifest.totalSizeMB);
-          if (!spaceCheck.available) {
-            Alert.alert(
-              t("quran.download.noSpace", {
-                required: manifest.totalSizeMB,
-                available: spaceCheck.availableMB,
-              })
-            );
-            return;
-          }
-          updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
-          QuranDownload.start(version);
+          handleSelectVersion(manifest);
         }}
         onSelectTextMode={() => setShowVersionPicker(false)}
       />
     );
   }
 
-  // Active download the user is watching → live progress screen, kept up
-  // through completion so they can tap "Start reading".
-  if (selectedVersion && inDownloadFlow) {
+  // Active download → live progress screen. Shown for any in-progress download
+  // of the selected edition (so it survives a remount that drops the ephemeral
+  // flow flag), and kept up through completion via the flow so the user can tap
+  // "Start reading".
+  if (selectedVersion && (inDownloadFlow || downloadStatus === DownloadStatus.DOWNLOADING)) {
     return (
       <DownloadProgressScreen
         version={selectedVersion}
@@ -187,6 +190,16 @@ const QuranScreen = () => {
     );
   }
 
+  // Offer the dark page bundle only while reading a colored edition in dark
+  // mode without it — and only until downloaded or dismissed (persisted).
+  const darkStatus = versionDownloads[currentVersion]?.dark?.status;
+  const showDarkOffer =
+    isColoredVersion(currentVersion) &&
+    prefersDark &&
+    darkStatus !== DownloadStatus.COMPLETE &&
+    darkStatus !== DownloadStatus.DOWNLOADING &&
+    !darkOfferDismissed[currentVersion];
+
   return (
     <YStack flex={1} style={{ backgroundColor: themeColors.background }}>
       <StatusBar
@@ -205,10 +218,20 @@ const QuranScreen = () => {
         onTap={() => setShowOverlay((prev) => !prev)}
       />
 
-      {/* Download banner — shows when a background download is active */}
-      {!bannerDismissed && (
-        <YStack position="absolute" top={insets.top + 8} left={0} right={0} zIndex={5}>
-          <DownloadBanner quranTheme={quranTheme} onDismiss={() => setBannerDismissed(true)} />
+      {/* Top banners: an active background download, and/or the one-time dark
+          page offer for a colored edition. */}
+      {(!bannerDismissed || showDarkOffer) && (
+        <YStack position="absolute" top={insets.top + 8} left={0} right={0} zIndex={5} gap="$2">
+          {!bannerDismissed && (
+            <DownloadBanner quranTheme={quranTheme} onDismiss={() => setBannerDismissed(true)} />
+          )}
+          {showDarkOffer && (
+            <DarkOfferBanner
+              version={currentVersion}
+              quranTheme={quranTheme}
+              onDismiss={() => dismissDarkOffer(currentVersion)}
+            />
+          )}
         </YStack>
       )}
 
