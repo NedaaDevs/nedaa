@@ -35,6 +35,18 @@ const PAPER = QURAN_THEME_COLORS[QuranTheme.SEPIA];
 const PAGE_WIDTH = 168;
 const DEFAULT_ASPECT = 1.45; // page is taller than wide; refined from the preview
 
+const PHASE_LABEL_KEYS: Record<DownloadPhase, string> = {
+  [DownloadPhase.DOWNLOADING]: "quran.download.phaseDownloading",
+  [DownloadPhase.EXTRACTING]: "quran.download.phaseExtracting",
+  [DownloadPhase.FINALIZING]: "quran.download.phaseFinalizing",
+};
+
+const PHASE_ICONS: Record<DownloadPhase, typeof Download> = {
+  [DownloadPhase.DOWNLOADING]: Download,
+  [DownloadPhase.EXTRACTING]: Loader,
+  [DownloadPhase.FINALIZING]: Loader,
+};
+
 const DownloadProgressScreen = ({
   version,
   versionName,
@@ -103,19 +115,9 @@ const DownloadProgressScreen = ({
     ? t("quran.download.complete")
     : isPaused
       ? t("quran.download.paused")
-      : phase === DownloadPhase.DOWNLOADING
-        ? t("quran.download.phaseDownloading")
-        : phase === DownloadPhase.EXTRACTING
-          ? t("quran.download.phaseExtracting")
-          : t("quran.download.phaseFinalizing");
+      : t(PHASE_LABEL_KEYS[phase]);
 
-  const PhaseIcon = isComplete
-    ? FileCheck
-    : isPaused
-      ? Pause
-      : phase === DownloadPhase.DOWNLOADING
-        ? Download
-        : Loader;
+  const PhaseIcon = isComplete ? FileCheck : isPaused ? Pause : PHASE_ICONS[phase];
 
   const labelColor = isComplete
     ? chrome.accent

@@ -14,7 +14,7 @@ interface SurahInfoCardProps {
 }
 
 // Interim surah info shown on a long-press of the surah header, until the full
-// per-ayah/surah action sheet (release 2.11) replaces it.
+// per-ayah/surah action sheet replaces it.
 const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps) => {
   const { t } = useTranslation();
   const [meta, setMeta] = useState<SurahMeta | null>(null);
