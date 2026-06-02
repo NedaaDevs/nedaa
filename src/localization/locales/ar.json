@@ -1265,5 +1265,11 @@
   "quran.surah.makki": "مكية",
   "quran.surah.madani": "مدنية",
   "quran.surah.ayahCount": "{{count}} آية",
-  "quran.surah.pages": "الصفحات {{start}}–{{end}}"
+  "quran.surah.pages": "الصفحات {{start}}–{{end}}",
+  "quran.settings.title": "إعدادات القرآن",
+  "quran.settings.surahFrame": "إطار السورة",
+  "quran.settings.downloadMore": "تنزيل نسخة أخرى",
+  "quran.settings.deleteTitle": "حذف المصحف",
+  "a11y.decrease": "إنقاص",
+  "a11y.increase": "زيادة"
 }
