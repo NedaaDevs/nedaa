@@ -1,12 +1,18 @@
-import { File, Directory, Paths } from "expo-file-system";
+import { Directory, DownloadTask, File, Paths } from "expo-file-system";
+import type { DownloadPauseState, DownloadTaskOptions } from "expo-file-system";
 import { unzip } from "react-native-zip-archive";
 import * as SQLite from "expo-sqlite";
 
-import { MushafVersion, MushafImageType, DownloadStatus, DownloadPhase } from "@/enums/quran";
+import {
+  MushafVersion,
+  MushafImageType,
+  DownloadStatus,
+  DownloadPhase,
+  BundleOutcome,
+} from "@/enums/quran";
 import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranManifestService } from "@/services/quran-manifest";
-import { downloadFile } from "@/services/api";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
 import type { DownloadProgress } from "@/types/quran";
@@ -16,7 +22,51 @@ const log = AppLogger.create("quran-download");
 type ActiveDownload = {
   controller: AbortController;
   cancelled: boolean;
+  task?: DownloadTask;
   promise: Promise<void>;
+};
+
+// Resume state for a paused/interrupted light-bundle download. Held in memory
+// for in-session resume and mirrored to a small file so a re-download after the
+// app is killed continues from the byte offset (R2 honors HTTP Range) instead
+// of restarting — important on cellular.
+const pausedStates = new Map<MushafVersion, DownloadPauseState>();
+
+const resumeFile = (version: MushafVersion): File =>
+  new File(Paths.document, `quran-${version}-resume.json`);
+
+const persistResume = (version: MushafVersion, state: DownloadPauseState): void => {
+  pausedStates.set(version, state);
+  try {
+    const file = resumeFile(version);
+    if (file.exists) file.delete();
+    file.create();
+    file.write(JSON.stringify(state));
+  } catch {
+    log.e("Download", `Failed to persist resume state for ${version}`);
+  }
+};
+
+const readResume = (version: MushafVersion): DownloadPauseState | undefined => {
+  const cached = pausedStates.get(version);
+  if (cached) return cached;
+  try {
+    const file = resumeFile(version);
+    if (file.exists) return JSON.parse(file.textSync()) as DownloadPauseState;
+  } catch {
+    log.e("Download", `Failed to read resume state for ${version}`);
+  }
+  return undefined;
+};
+
+const clearResume = (version: MushafVersion): void => {
+  pausedStates.delete(version);
+  try {
+    const file = resumeFile(version);
+    if (file.exists) file.delete();
+  } catch {
+    // best effort
+  }
 };
 
 // In-flight downloads keyed by version: the entry is the synchronous
@@ -139,23 +189,32 @@ type BundleDownloadOptions = {
   emit: (phase: DownloadPhase, bytesDownloaded: number, totalBytes: number) => void;
   // Light-only: runs under the FINALIZING phase after extraction (e.g. move bounds.db).
   onExtracted?: () => Promise<void> | void;
+  // Light-only: a resumable download captured its pause state (persist it so the
+  // transfer continues from the byte offset). Absent → not resumable (dark).
+  resumeState?: DownloadPauseState;
+  onPaused?: (state: DownloadPauseState) => void;
+  // Called when a stored resume state turned out to be unusable and the download
+  // restarted fresh, so the caller can drop the persisted state.
+  onResumeInvalid?: () => void;
 };
 
-// Shared download → extract → zip-cleanup, used for both the light and dark
-// bundles. Returns false if cancelled mid-flight, true if extracted (or already
-// on disk); throws on a real download/extract error so the caller sets ERROR.
+// Shared download → extract → zip-cleanup for both the light and dark bundles,
+// via a resumable DownloadTask. Returns "extracted" (or already on disk),
+// "cancelled", or "paused"; throws on a real download/extract error so the
+// caller sets ERROR. The temp zip is kept on pause (resume needs it).
 const downloadAndExtractBundle = async (
   active: ActiveDownload,
   opts: BundleDownloadOptions
-): Promise<boolean> => {
-  if (opts.alreadyOnDisk) return true;
+): Promise<BundleOutcome> => {
+  if (opts.alreadyOnDisk) return BundleOutcome.EXTRACTED;
 
   const zipFile = new File(Paths.cache, opts.zipName);
+  let paused = false;
   try {
     opts.emit(DownloadPhase.DOWNLOADING, 0, opts.sizeBytes);
     log.d("Download", `Downloading bundle from ${opts.url}`);
 
-    const result = await downloadFile(opts.url, zipFile, {
+    const taskOptions: DownloadTaskOptions = {
       signal: active.controller.signal,
       onProgress: ({ bytesWritten, totalBytes }) => {
         // Server may omit Content-Length (totalBytes === -1); fall back to the
@@ -163,25 +222,61 @@ const downloadAndExtractBundle = async (
         const total = totalBytes > 0 ? totalBytes : opts.sizeBytes;
         opts.emit(DownloadPhase.DOWNLOADING, bytesWritten, total);
       },
-    });
+    };
 
-    if (active.cancelled || result.cancelled) return false;
-    if (!result.success) throw new Error(result.message ?? "Download failed");
+    // Resolves to the file on completion, or null when pause() was requested.
+    // A stored resume state may be stale (its partial gone, or it expired): if
+    // resuming throws, fall back to a fresh download rather than failing.
+    let file: File | null;
+    if (opts.resumeState) {
+      try {
+        const task = DownloadTask.fromSavable(opts.resumeState, taskOptions);
+        active.task = task;
+        file = await task.resumeAsync();
+      } catch (resumeError) {
+        if (active.cancelled) return BundleOutcome.CANCELLED;
+        log.e(
+          "Download",
+          "Resume failed; restarting from scratch",
+          resumeError instanceof Error ? resumeError : undefined
+        );
+        opts.onResumeInvalid?.();
+        const task = new DownloadTask(opts.url, zipFile, taskOptions);
+        active.task = task;
+        file = await task.downloadAsync();
+      }
+    } else {
+      const task = new DownloadTask(opts.url, zipFile, taskOptions);
+      active.task = task;
+      file = await task.downloadAsync();
+    }
+
+    if (active.cancelled) return BundleOutcome.CANCELLED;
+    if (file === null) {
+      // pause() was requested → capture the resume state before the task is
+      // released, keep the partial zip, and report paused.
+      paused = true;
+      if (active.task) opts.onPaused?.(active.task.savable());
+      log.i("Download", "Download paused");
+      return BundleOutcome.PAUSED;
+    }
 
     opts.emit(DownloadPhase.EXTRACTING, 0, 0);
     if (!opts.dir.exists) opts.dir.create({ intermediates: true });
     await unzip(zipFile.uri, opts.dir.uri);
     log.d("Download", "Extraction complete");
-    if (active.cancelled) return false;
+    if (active.cancelled) return BundleOutcome.CANCELLED;
 
     if (opts.onExtracted) {
       opts.emit(DownloadPhase.FINALIZING, 0, 0);
       await opts.onExtracted();
     }
-    return true;
+    return BundleOutcome.EXTRACTED;
   } finally {
-    // Always remove the transient zip — success, cancel, or error.
-    if (zipFile.exists) zipFile.delete();
+    active.task = undefined;
+    // Keep the partial zip when paused (resume continues into it); otherwise
+    // remove the transient zip on success, cancel, or error.
+    if (!paused && zipFile.exists) zipFile.delete();
   }
 };
 
@@ -206,6 +301,7 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
 
     log.i("Download", `Starting download for ${version}`);
     const versionDir = getVersionDir(version);
+    const bundleUrl = QuranManifestService.getBundleUrl(manifestVersion);
 
     // Skip the download if the version is already fully extracted on disk.
     const imageType = detectImageType(version);
@@ -216,15 +312,26 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         break;
       }
     }
+    // Already installed → a leftover resume state is meaningless; drop it.
+    if (allPresent) clearResume(version);
 
-    const extracted = await downloadAndExtractBundle(active, {
-      url: QuranManifestService.getBundleUrl(manifestVersion),
+    // Only resume against the SAME bundle URL — a manifest update invalidates a
+    // partial, and resuming it would append mismatched bytes (a broken zip).
+    const saved = readResume(version);
+    const resumeState = saved && saved.url === bundleUrl ? saved : undefined;
+    if (saved && !resumeState) clearResume(version);
+
+    const outcome = await downloadAndExtractBundle(active, {
+      url: bundleUrl,
       sizeBytes: QuranManifestService.getBundleSizeBytes(manifestVersion),
       dir: versionDir,
       zipName: `quran-${version}-bundle.zip`,
       alreadyOnDisk: allPresent,
+      resumeState,
       emit: (phase, bytes, total) =>
         store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
+      onPaused: (state) => persistResume(version, state),
+      onResumeInvalid: () => clearResume(version),
       onExtracted: () => {
         // Move bounds.db to the SQLite directory if it shipped in the bundle.
         const extractedBoundsDb = new File(versionDir, "bounds.db");
@@ -236,16 +343,25 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         }
       },
     });
-    if (!extracted || active.cancelled) return;
+
+    if (active.cancelled || outcome === BundleOutcome.CANCELLED) return;
+    if (outcome === BundleOutcome.PAUSED) {
+      store.updateDownloadState(version, { status: DownloadStatus.PAUSED });
+      return;
+    }
 
     // Bundle downloads are all-or-nothing: a successful extract is completion.
     // The kv-persisted store status and the extracted files on disk are the record.
+    clearResume(version);
     store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
     log.i("Download", `${version} complete`);
   } catch (error) {
     if (active.cancelled) {
       log.i("Download", `${version} download cancelled`);
     } else {
+      // A failed transfer/extract leaves no trustworthy partial — drop the
+      // resume state so a retry starts fresh rather than resuming a bad zip.
+      clearResume(version);
       log.e(
         "Download",
         `Download failed for ${version}`,
@@ -273,7 +389,9 @@ const doStartDark = async (version: MushafVersion, active: ActiveDownload): Prom
     }
 
     const imageType = detectImageType(version);
-    const extracted = await downloadAndExtractBundle(active, {
+    // The dark add-on downloads in the background without a pause/resume UI, so
+    // it has no resumeState/onPaused — only EXTRACTED counts as done.
+    const outcome = await downloadAndExtractBundle(active, {
       url: darkUrl,
       sizeBytes: QuranManifestService.getDarkBundleSizeBytes(manifestVersion),
       dir: getDarkVersionDir(version),
@@ -282,7 +400,7 @@ const doStartDark = async (version: MushafVersion, active: ActiveDownload): Prom
       emit: (phase, bytes, total) =>
         store.updateDarkDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
     });
-    if (!extracted || active.cancelled) return;
+    if (active.cancelled || outcome !== BundleOutcome.EXTRACTED) return;
 
     store.updateDarkDownloadState(version, { status: DownloadStatus.COMPLETE, progress: null });
     log.i("Download", `${version} dark complete`);
@@ -322,24 +440,33 @@ const deleteDark = (version: MushafVersion): void => {
   log.i("Download", `Deleted dark bundle for ${version}`);
 };
 
-const pause = (): void => {
-  log.d("Download", "Pause not supported for bundle downloads");
+const pause = (version: MushafVersion): void => {
+  const active = activeDownloads.get(version);
+  if (!active?.task) {
+    log.d("Download", `No active download to pause for ${version}`);
+    return;
+  }
+  // The active downloadAsync resolves null → doStart records PAUSED and persists
+  // the resume state, so the transfer can continue from the byte offset later.
+  active.task.pause();
 };
 
-const resume = async (): Promise<void> => {
-  const selectedVersion = useQuranStore.getState().selectedVersion;
-  if (activeDownloads.size === 0 && selectedVersion) {
-    await start(selectedVersion);
-  }
-};
+// Resume a paused or interrupted download. start() picks up the persisted resume
+// state (continuing from the byte offset) or downloads fresh when there is none.
+const resume = (version: MushafVersion): Promise<void> => start(version);
 
 const cancel = async (version?: MushafVersion): Promise<void> => {
   const targets = version ? [version] : [...activeDownloads.keys()];
   for (const v of targets) {
     const active = activeDownloads.get(v);
-    if (!active) continue;
-    active.cancelled = true;
-    active.controller.abort();
+    if (active) {
+      active.cancelled = true;
+      active.controller.abort();
+    }
+    // Drop the partial and resume state too — cancel means start over.
+    clearResume(v);
+    const zip = new File(Paths.cache, `quran-${v}-bundle.zip`);
+    if (zip.exists) zip.delete();
     useQuranStore.getState().updateDownloadState(v, { status: DownloadStatus.IDLE });
     log.i("Download", `Cancelled download for ${v}`);
   }
@@ -383,6 +510,9 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     darkActive.cancelled = true;
     darkActive.controller.abort();
   }
+
+  // Drop any persisted resume state so it can't resurrect a deleted version.
+  clearResume(version);
 
   const versionDir = getVersionDir(version);
   if (versionDir.exists) {
