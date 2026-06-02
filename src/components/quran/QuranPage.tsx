@@ -19,6 +19,7 @@ import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
+import SurahInfoCard from "@/components/quran/SurahInfoCard";
 
 const LONG_PRESS_MS = 400;
 
@@ -38,10 +39,15 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
   const pressableRef = useRef<View>(null);
 
-  const { pageAvailable, isPageMode, surahNames, juz, glyphBounds, sourcePageHeight } = usePageData(
-    version,
-    page
-  );
+  const {
+    pageAvailable,
+    isPageMode,
+    surahNames,
+    surahHeaderLines,
+    juz,
+    glyphBounds,
+    sourcePageHeight,
+  } = usePageData(version, page);
 
   const onLinesLayout = useCallback((event: LayoutChangeEvent) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
@@ -78,13 +84,15 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     [isPageMode, coverScale, lineHeight, lineCoverClipY, pageScaleX, pageScaleY, srcLineHeight]
   );
 
-  const { highlightedAyah, handlePress, handleLongPress } = useAyahHitTest({
-    version,
-    page,
-    glyphBounds,
-    geometry,
-    pressableRef,
-  });
+  const { highlightedAyah, selectedSurah, clearSurah, handlePress, handleLongPress } =
+    useAyahHitTest({
+      version,
+      page,
+      glyphBounds,
+      surahHeaderLines,
+      geometry,
+      pressableRef,
+    });
 
   // Header surah is derived from the page's own glyphs (each carries its
   // surahNumber), so continuation pages show the running surah — and it's
@@ -178,7 +186,11 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       flex={1}
       width={width}
       style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
-      <PageHeader surahName={headerSurah} juz={pageAvailable ? juz : null} quranTheme={quranTheme} />
+      <PageHeader
+        surahName={headerSurah}
+        juz={pageAvailable ? juz : null}
+        quranTheme={quranTheme}
+      />
 
       <View
         style={{
@@ -291,6 +303,10 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       </View>
 
       <PageNumber page={page} quranTheme={quranTheme} />
+
+      {selectedSurah !== null && (
+        <SurahInfoCard surahNumber={selectedSurah} quranTheme={quranTheme} onClose={clearSurah} />
+      )}
     </YStack>
   );
 };

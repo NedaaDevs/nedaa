@@ -841,5 +841,9 @@
   "quran.download.paused": "Muat turun dijeda",
   "common.delete": "Padam",
   "quran.settings.deleteMessage": "Padam {{name}}? Ini akan membebaskan ruang storan.",
-  "quran.settings.deleteVersion": "Padam {{name}}"
+  "quran.settings.deleteVersion": "Padam {{name}}",
+  "quran.surah.makki": "Makkiyah",
+  "quran.surah.madani": "Madaniyah",
+  "quran.surah.ayahCount": "{{count}} ayat",
+  "quran.surah.pages": "Halaman {{start}}–{{end}}"
 }
