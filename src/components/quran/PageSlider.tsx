@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -71,19 +71,32 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   const isDragging = useSharedValue(false);
   const [draggingPage, setDraggingPage] = useState(currentPage);
   const [showTooltip, setShowTooltip] = useState(false);
+  // Last page a scrub haptic fired for, so each page the thumb crosses ticks once.
+  const lastTickPageRef = useRef(currentPage);
 
   // Sync thumb when currentPage changes externally (e.g. swiping pages)
   useEffect(() => {
-    if (!isDragging.value) {
-      thumbX.value = withTiming(pageToX(currentPage), { duration: 150 });
+    if (!isDragging.get()) {
+      thumbX.set(withTiming(pageToX(currentPage), { duration: 150 }));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraggingPage(currentPage);
+      lastTickPageRef.current = currentPage;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, slidableWidth]);
 
-  const updateDraggingPage = useCallback((page: number) => {
-    setDraggingPage(page);
-  }, []);
+  const updateDraggingPage = useCallback(
+    (page: number) => {
+      setDraggingPage(page);
+      // Tick once per page the scrub crosses (frame-rate bounded, so a fast
+      // flick ticks per frame rather than per intermediate page).
+      if (page !== lastTickPageRef.current) {
+        lastTickPageRef.current = page;
+        haptic();
+      }
+    },
+    [haptic]
+  );
 
   const showTooltipFn = useCallback(() => setShowTooltip(true), []);
   const hideTooltipFn = useCallback(() => setShowTooltip(false), []);
@@ -102,33 +115,35 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   const tapGesture = Gesture.Tap().onEnd((event) => {
     "worklet";
     const x = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
-    thumbX.value = withTiming(x, { duration: 150 });
+    thumbX.set(withTiming(x, { duration: 150 }));
     const page = xToPage(x);
     runOnJS(handlePageCommit)(page);
   });
 
   const panGesture = Gesture.Pan()
     .minDistance(0)
+    // eslint-disable-next-line react-hooks/refs
     .onStart((event) => {
       "worklet";
-      isDragging.value = true;
+      isDragging.set(true);
       const newX = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
-      thumbX.value = newX;
+      thumbX.set(newX);
       const page = xToPage(newX);
       runOnJS(updateDraggingPage)(page);
       runOnJS(showTooltipFn)();
     })
+    // eslint-disable-next-line react-hooks/refs
     .onUpdate((event) => {
       "worklet";
       const newX = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
-      thumbX.value = newX;
+      thumbX.set(newX);
       const page = xToPage(newX);
       runOnJS(updateDraggingPage)(page);
     })
     .onEnd(() => {
       "worklet";
-      isDragging.value = false;
-      const page = xToPage(thumbX.value);
+      isDragging.set(false);
+      const page = xToPage(thumbX.get());
       runOnJS(handlePageCommit)(page);
     });
 
@@ -145,15 +160,15 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   );
 
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.value }],
+    transform: [{ translateX: thumbX.get() }],
   }));
 
   const tooltipStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.value + THUMB_WIDTH / 2 - 70 }],
+    transform: [{ translateX: thumbX.get() + THUMB_WIDTH / 2 - 70 }],
   }));
 
   const trackActiveStyle = useAnimatedStyle(() => ({
-    width: trackWidth - thumbX.value - THUMB_WIDTH / 2,
+    width: trackWidth - thumbX.get() - THUMB_WIDTH / 2,
     right: 0,
     backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
   }));
