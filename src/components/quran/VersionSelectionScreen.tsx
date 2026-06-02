@@ -4,7 +4,7 @@ import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { useTranslation } from "react-i18next";
-import { Type } from "lucide-react-native";
+import { Signal, Type } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion, DownloadStatus } from "@/enums/quran";
@@ -12,6 +12,7 @@ import { QuranManifestService } from "@/services/quran-manifest";
 import { QuranDownload } from "@/services/quran-download";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
+import { useIsCellular } from "@/hooks/useIsCellular";
 import VersionCard from "@/components/quran/VersionCard";
 import type { QuranManifestVersion } from "@/types/quran";
 
@@ -29,6 +30,7 @@ const VersionSelectionScreen = ({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const chrome = useQuranChromeColors();
+  const isCellular = useIsCellular();
   const downloads = useQuranStore((s) => s.versionDownloads);
   const [versions, setVersions] = useState<QuranManifestVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +177,16 @@ const VersionSelectionScreen = ({
         backgroundColor={chrome.background}
         borderTopWidth={1}
         borderTopColor={chrome.cardBorder}>
+        {selected && !selectedInstalled && isCellular && (
+          <XStack alignItems="center" justifyContent="center" gap="$1.5" paddingBottom="$2">
+            <Signal size={13} color={chrome.subtleText} />
+            <Text fontSize={12.5} color={chrome.subtleText}>
+              {t("quran.download.cellularWarning", {
+                size: t("quran.download.sizeMB", { size: ctaSizeMB }),
+              })}
+            </Text>
+          </XStack>
+        )}
         <Pressable
           onPress={handleCta}
           disabled={!selected}

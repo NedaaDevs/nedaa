@@ -68,6 +68,7 @@
     "expo-linking": "~56.0.13",
     "expo-localization": "~56.0.6",
     "expo-location": "~56.0.15",
+    "expo-network": "~56.0.4",
     "expo-notifications": "~56.0.15",
     "expo-orientation": "file:./modules/expo-orientation",
     "expo-router": "~56.2.8",
@@ -141,7 +142,9 @@
   },
   "expo": {
     "install": {
-      "exclude": ["expo-widgets"]
+      "exclude": [
+        "expo-widgets"
+      ]
     }
   }
 }
