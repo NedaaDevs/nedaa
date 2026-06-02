@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useWindowDimensions, StyleSheet } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -46,10 +46,20 @@ const QuranReader = ({
   const dragOffset = useSharedValue(0);
   const isHorizontal = useSharedValue<boolean | null>(null);
   const pinchBaseFontSize = useSharedValue(fontSize);
+  // The committed page, held on the UI thread so a swipe commit can advance it
+  // and reset dragOffset in the same frame — slot positions read this, not the
+  // React `currentPage`, which lags by a frame and would otherwise flash the
+  // wrong page on each turn.
+  const pageIndex = useSharedValue(currentPage);
 
   useEffect(() => {
     pinchBaseFontSize.value = fontSize;
   }, [fontSize, pinchBaseFontSize]);
+
+  // Mirror external page changes (e.g. the page slider) onto the UI-thread index.
+  useEffect(() => {
+    pageIndex.value = currentPage;
+  }, [currentPage, pageIndex]);
 
   const pageWindow = useMemo(() => {
     const pages: number[] = [];
@@ -63,28 +73,12 @@ const QuranReader = ({
     return pages;
   }, [currentPage]);
 
-  const changePage = useCallback(
-    (direction: number) => {
-      const newPage = currentPage + direction;
-      if (newPage >= 1 && newPage <= TOTAL_PAGES) {
-        onPageChange(newPage);
-        requestAnimationFrame(() => {
-          dragOffset.value = 0;
-        });
-      }
-    },
-    [currentPage, onPageChange, dragOffset]
-  );
-
   const tapGesture = Gesture.Tap().onEnd(() => {
     "worklet";
     if (onTap) {
       scheduleOnRN(onTap);
     }
   });
-
-  const hasPrevPage = currentPage > 1;
-  const hasNextPage = currentPage < TOTAL_PAGES;
 
   const panGestureBase = Gesture.Pan().minDistance(15).cancelsTouchesInView(false);
 
@@ -118,8 +112,8 @@ const QuranReader = ({
       }
 
       // Clamp at boundaries
-      if (normalized > 0 && !hasNextPage) return;
-      if (normalized < 0 && !hasPrevPage) return;
+      if (normalized > 0 && pageIndex.value >= TOTAL_PAGES) return;
+      if (normalized < 0 && pageIndex.value <= 1) return;
 
       dragOffset.value = normalized;
     })
@@ -140,13 +134,21 @@ const QuranReader = ({
       const shouldAdvance =
         Math.abs(translation) > thresholdPx || Math.abs(velocity) > VELOCITY_THRESHOLD;
 
-      if (shouldAdvance && translation > 0 && hasNextPage) {
-        dragOffset.value = withTiming(1, { duration: 200 }, () => {
-          scheduleOnRN(changePage, 1);
+      if (shouldAdvance && translation > 0 && pageIndex.value < TOTAL_PAGES) {
+        dragOffset.value = withTiming(1, { duration: 200 }, (finished) => {
+          if (!finished) return;
+          // Advance the index and zero the drag in the same UI frame so the turn
+          // is seamless; React syncs afterward for windowing + persistence.
+          pageIndex.value = pageIndex.value + 1;
+          dragOffset.value = 0;
+          scheduleOnRN(onPageChange, pageIndex.value);
         });
-      } else if (shouldAdvance && translation < 0 && hasPrevPage) {
-        dragOffset.value = withTiming(-1, { duration: 200 }, () => {
-          scheduleOnRN(changePage, -1);
+      } else if (shouldAdvance && translation < 0 && pageIndex.value > 1) {
+        dragOffset.value = withTiming(-1, { duration: 200 }, (finished) => {
+          if (!finished) return;
+          pageIndex.value = pageIndex.value - 1;
+          dragOffset.value = 0;
+          scheduleOnRN(onPageChange, pageIndex.value);
         });
       } else {
         dragOffset.value = withSpring(0, SPRING_CONFIG);
@@ -172,7 +174,7 @@ const QuranReader = ({
           <PageSlot
             key={page}
             page={page}
-            currentPage={currentPage}
+            pageIndex={pageIndex}
             version={version}
             quranTheme={quranTheme}
             readerMode={readerMode}
@@ -188,7 +190,7 @@ const QuranReader = ({
 
 interface PageSlotProps {
   page: number;
-  currentPage: number;
+  pageIndex: SharedValue<number>;
   version: MushafVersion;
   quranTheme: QuranTheme;
   readerMode: ReaderViewMode;
@@ -199,7 +201,7 @@ interface PageSlotProps {
 
 const PageSlot = ({
   page,
-  currentPage,
+  pageIndex,
   version,
   quranTheme,
   readerMode,
@@ -207,13 +209,12 @@ const PageSlot = ({
   dragOffset,
   width,
 }: PageSlotProps) => {
-  // RTL layout: next page (higher number) is to the LEFT
-  // pageOffset: 0 = current, -1 = next (left), +1 = prev (right)
-  const pageOffset = -(page - currentPage);
-
   const animatedStyle = useAnimatedStyle(() => {
-    // dragOffset: 0 = rest, +1 = swiped to next, -1 = swiped to prev
-    // Translate combines static page position + drag gesture
+    // pageOffset: 0 = current, -1 = next (left in RTL), +1 = prev (right).
+    // dragOffset: 0 = rest, +1 = swiped to next, -1 = swiped to prev.
+    // Position is driven entirely by the UI-thread index + drag, so a page turn
+    // moves both in one frame with no intermediate mismatch.
+    const pageOffset = -(page - pageIndex.value);
     const translateX = (pageOffset + dragOffset.value) * width;
     return { transform: [{ translateX }] };
   });
