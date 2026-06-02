@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, SURAH_NAMES } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
-import { QuranDB } from "@/services/quran-db";
+import { QuranContentDB } from "@/services/quran-content-db";
 import AyahText from "@/components/quran/AyahText";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
@@ -44,8 +44,8 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
   useEffect(() => {
     const loadData = async () => {
       const [pageAyahs, juzNumber] = await Promise.all([
-        QuranDB.getAyahsForPage(page),
-        QuranDB.getJuzForPage(page),
+        QuranContentDB.getAyahsForPage(page),
+        QuranContentDB.getJuzForPage(page),
       ]);
       setAyahs(pageAyahs);
       setJuz(juzNumber);

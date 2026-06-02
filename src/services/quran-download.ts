@@ -4,7 +4,7 @@ import * as SQLite from "expo-sqlite";
 
 import { MushafVersion, MushafImageType, DownloadStatus, DownloadPhase } from "@/enums/quran";
 import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
-import { QuranDB } from "@/services/quran-db";
+import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { downloadFile } from "@/services/api";
 import { useQuranStore } from "@/stores/quran";
@@ -238,10 +238,8 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
     });
     if (!extracted || active.cancelled) return;
 
-    await QuranDB.initializeDownloadPages(version, TOTAL_PAGES);
-    await QuranDB.markVersionComplete(version);
-
-    if (active.cancelled) return;
+    // Bundle downloads are all-or-nothing: a successful extract is completion.
+    // The kv-persisted store status and the extracted files on disk are the record.
     store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
     log.i("Download", `${version} complete`);
   } catch (error) {
@@ -370,15 +368,6 @@ const verifyIntegrity = async (
   return { total: TOTAL_PAGES, missing };
 };
 
-const getStorageUsage = async (): Promise<Partial<Record<MushafVersion, number>>> => {
-  const usage: Partial<Record<MushafVersion, number>> = {};
-  for (const version of Object.values(MushafVersion)) {
-    const bytes = await QuranDB.getTotalDownloadedBytes(version);
-    if (bytes > 0) usage[version] = bytes;
-  }
-  return usage;
-};
-
 const deleteVersion = async (version: MushafVersion): Promise<void> => {
   // Cancel any in-flight download for this version. The native transfer can't
   // be aborted mid-flight, but the cancelled flag makes doStart bail before it
@@ -414,7 +403,7 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     }
   }
 
-  await QuranDB.closeBoundsDb(version);
+  await QuranContentDB.closeBoundsDb(version);
 
   const boundsFile = getBoundsDbFile(version);
   if (boundsFile.exists) {
@@ -425,7 +414,6 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     }
   }
 
-  await QuranDB.deleteVersionDownloads(version);
   useQuranStore.getState().removeVersion(version);
   log.i("Download", `Deleted version ${version}`);
 };
@@ -454,7 +442,6 @@ export const QuranDownload = {
   isPageAvailable,
   getImageType,
   verifyIntegrity,
-  getStorageUsage,
   deleteVersion,
   checkDiskSpace,
 };
