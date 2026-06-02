@@ -78,7 +78,11 @@ const SettingsScreen = () => {
   const [shareThanked, setShareThanked] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const reduceMotionRef = useRef(false);
-  reduceMotionRef.current = reduceMotion;
+  // Mirror into a ref for the animation callbacks; writing in an effect (not
+  // during render) keeps it React-compiler safe.
+  useEffect(() => {
+    reduceMotionRef.current = reduceMotion;
+  }, [reduceMotion]);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const rateOpacity = useSharedValue(1);
@@ -247,11 +251,18 @@ const SettingsScreen = () => {
 
         {/* Debug (hidden behind 7-tap on version) */}
         {isDebugMode && (
-          <SettingsItem
-            name={t("settings.backgroundDebug.title")}
-            path={"/settings/background-debug" as any}
-            icon={Activity}
-          />
+          <>
+            <SettingsItem
+              name={t("settings.backgroundDebug.title")}
+              path={"/settings/background-debug" as any}
+              icon={Activity}
+            />
+            <SettingsItem
+              name="Quran Debug"
+              path={"/settings/quran-debug" as any}
+              icon={Activity}
+            />
+          </>
         )}
 
         {/* Help */}
