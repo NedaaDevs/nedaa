@@ -1236,5 +1236,7 @@
   "quran.surah.makki": "Meccan",
   "quran.surah.madani": "Medinan",
   "quran.surah.ayahCount": "{{count}} ayahs",
-  "quran.surah.pages": "Pages {{start}}–{{end}}"
+  "quran.surah.pages": "Pages {{start}}–{{end}}",
+  "a11y.decrease": "Decrease",
+  "a11y.increase": "Increase"
 }

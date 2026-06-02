@@ -845,5 +845,11 @@
   "quran.surah.makki": "Makkiyah",
   "quran.surah.madani": "Madaniyah",
   "quran.surah.ayahCount": "{{count}} ayat",
-  "quran.surah.pages": "Halaman {{start}}–{{end}}"
+  "quran.surah.pages": "Halaman {{start}}–{{end}}",
+  "quran.settings.title": "Tetapan Quran",
+  "quran.settings.surahFrame": "Bingkai surah",
+  "quran.settings.downloadMore": "Muat turun versi lain",
+  "quran.settings.deleteTitle": "Padam Mushaf",
+  "a11y.decrease": "Kurangkan",
+  "a11y.increase": "Tambah"
 }
