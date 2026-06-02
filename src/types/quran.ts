@@ -6,6 +6,8 @@ import {
   DownloadPhase,
   SurahFrameStyle,
   ReaderViewMode,
+  RevelationPlace,
+  SajdaType,
 } from "@/enums/quran";
 
 export type { DownloadPhase };
@@ -27,6 +29,35 @@ export type AyahTextData = {
   surahNumber: number;
   ayahNumber: number;
   text: string;
+};
+
+// Surah reference data (from the `surahs` metadata table).
+export type SurahMeta = {
+  number: number;
+  nameArabic: string;
+  nameTransliterated: string;
+  revelationPlace: RevelationPlace;
+  revelationOrder: number;
+  ayahCount: number;
+  bismillahPre: boolean;
+  pageStart: number;
+  pageEnd: number;
+};
+
+// Full per-ayah metadata for the press-to-highlight info sheet
+// (divisions resolved via the `ayah_divisions` view + surah/page facts).
+export type AyahMetadata = {
+  surahNumber: number;
+  ayahNumber: number;
+  juz: number;
+  hizb: number;
+  rub: number;
+  manzil: number;
+  ruku: number;
+  sajdaType: SajdaType | null;
+  page: number;
+  surahNameArabic: string;
+  surahNameTransliterated: string;
 };
 
 export type LineMetadata = {

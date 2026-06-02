@@ -6,8 +6,14 @@ import { Asset } from "expo-asset";
 import { QURAN_DB_NAME, QURAN_DB_VERSION, QURAN_DOWNLOADS_DB_NAME } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
-import { MushafVersion, LineType, PageDownloadStatus } from "@/enums/quran";
-import { GlyphBound, LineMetadata } from "@/types/quran";
+import {
+  MushafVersion,
+  LineType,
+  PageDownloadStatus,
+  SajdaType,
+  RevelationPlace,
+} from "@/enums/quran";
+import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
 import { createSerializedDatabase } from "@/utils/serializedDatabase";
 
 let quranDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -19,6 +25,13 @@ const getDirectory = async (): Promise<string> => {
   }
   return SQLite.defaultDatabaseDirectory;
 };
+
+// TODO(quran-metadata): TEMPORARY one-time force re-copy of the bundled quran.db.
+// The metadata layer (surahs/divisions/sajdas + ayah_divisions view) was added without a
+// QURAN_DB_VERSION bump because only the dev device has the old v1 on disk. Flip this true
+// once on that device to replace the stale copy, then REMOVE this flag and the `|| FORCE_...`
+// guard below. Production installs are unaffected (they copy fresh on first launch).
+const FORCE_QURAN_DB_RECOPY = true;
 
 const ensureQuranDbCopied = async (): Promise<void> => {
   const dir = await getDirectory();
@@ -35,7 +48,8 @@ const ensureQuranDbCopied = async (): Promise<void> => {
   const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
 
   const installedVersion = versionFile.exists ? versionFile.textSync() : null;
-  const needsCopy = !targetFile.exists || installedVersion !== String(QURAN_DB_VERSION);
+  const needsCopy =
+    FORCE_QURAN_DB_RECOPY || !targetFile.exists || installedVersion !== String(QURAN_DB_VERSION);
 
   if (!needsCopy) return;
 
@@ -183,11 +197,96 @@ const getGlyphBounds = async (version: MushafVersion, page: number): Promise<Gly
 
 const getJuzForPage = async (page: number): Promise<number> => {
   const db = await openQuranDb();
+  // Divisions are stored as boundary tables and resolved per-ayah through the
+  // ayah_divisions view. Read the juz off the first ayah on the page.
   const result = await db.getFirstAsync<{ juz: number }>(
-    "SELECT juz FROM ayahs WHERE page = ? LIMIT 1",
+    `SELECT d.juz FROM ayahs a
+     JOIN ayah_divisions d ON d.surah = a.surah_number AND d.ayah = a.ayah_number
+     WHERE a.page = ? LIMIT 1`,
     [page]
   );
   return result?.juz ?? 1;
+};
+
+// --- Metadata (surahs + per-ayah divisions) ---
+
+type SurahRow = {
+  number: number;
+  name_arabic: string;
+  name_transliterated: string;
+  revelation_place: string;
+  revelation_order: number;
+  ayah_count: number;
+  bismillah_pre: number;
+  page_start: number;
+  page_end: number;
+};
+
+const mapSurah = (row: SurahRow): SurahMeta => ({
+  number: row.number,
+  nameArabic: row.name_arabic,
+  nameTransliterated: row.name_transliterated,
+  revelationPlace: row.revelation_place as RevelationPlace,
+  revelationOrder: row.revelation_order,
+  ayahCount: row.ayah_count,
+  bismillahPre: row.bismillah_pre === 1,
+  pageStart: row.page_start,
+  pageEnd: row.page_end,
+});
+
+const getSurah = async (number: number): Promise<SurahMeta | null> => {
+  const db = await openQuranDb();
+  const row = await db.getFirstAsync<SurahRow>("SELECT * FROM surahs WHERE number = ?", [number]);
+  return row ? mapSurah(row) : null;
+};
+
+const getAllSurahs = async (): Promise<SurahMeta[]> => {
+  const db = await openQuranDb();
+  const rows = await db.getAllAsync<SurahRow>("SELECT * FROM surahs ORDER BY number");
+  return rows.map(mapSurah);
+};
+
+// Full metadata for one ayah — powers the press-to-highlight info sheet.
+const getAyahMetadata = async (
+  surahNumber: number,
+  ayahNumber: number
+): Promise<AyahMetadata | null> => {
+  const db = await openQuranDb();
+  const row = await db.getFirstAsync<{
+    surah: number;
+    ayah: number;
+    juz: number;
+    hizb: number;
+    rub: number;
+    manzil: number;
+    ruku: number;
+    sajda_type: string | null;
+    page: number;
+    name_arabic: string;
+    name_transliterated: string;
+  }>(
+    `SELECT d.surah, d.ayah, d.juz, d.hizb, d.rub, d.manzil, d.ruku, d.sajda_type,
+            a.page, s.name_arabic, s.name_transliterated
+     FROM ayah_divisions d
+     JOIN surahs s ON s.number = d.surah
+     JOIN ayahs  a ON a.surah_number = d.surah AND a.ayah_number = d.ayah
+     WHERE d.surah = ? AND d.ayah = ?`,
+    [surahNumber, ayahNumber]
+  );
+  if (!row) return null;
+  return {
+    surahNumber: row.surah,
+    ayahNumber: row.ayah,
+    juz: row.juz,
+    hizb: row.hizb,
+    rub: row.rub,
+    manzil: row.manzil,
+    ruku: row.ruku,
+    sajdaType: (row.sajda_type as SajdaType | null) ?? null,
+    page: row.page,
+    surahNameArabic: row.name_arabic,
+    surahNameTransliterated: row.name_transliterated,
+  };
 };
 
 // --- Download tracking ---
@@ -391,4 +490,7 @@ export const QuranDB = {
   getSurahForPage,
   getAyahsForPage,
   getSurahNameForPageFromContent,
+  getSurah,
+  getAllSurahs,
+  getAyahMetadata,
 };
