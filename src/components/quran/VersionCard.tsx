@@ -1,31 +1,44 @@
+import { useState } from "react";
 import { Alert, Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
-import { Check, Loader, Trash2 } from "lucide-react-native";
+import { Check, Eye, Loader, Trash2 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion, DownloadStatus } from "@/enums/quran";
+import { isColoredVersion } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
-import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
+import { useQuranChromeColors, type QuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { QuranDownload } from "@/services/quran-download";
+import { QuranManifestService } from "@/services/quran-manifest";
+import MushafThumbnail from "@/components/quran/MushafThumbnail";
+import MushafPreviewModal from "@/components/quran/MushafPreviewModal";
 import type { QuranManifestVersion } from "@/types/quran";
 
 interface VersionCardProps {
   version: QuranManifestVersion;
-  onDownload: (version: QuranManifestVersion) => void;
-  disabled?: boolean;
+  selected: boolean;
+  onSelect: (version: QuranManifestVersion) => void;
+  // V4 only: whether the download should include the dark-page bundle.
+  v4Dark: boolean;
+  setV4Dark: (dark: boolean) => void;
 }
 
-const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
+const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: VersionCardProps) => {
   const { t } = useTranslation();
+  const chrome = useQuranChromeColors();
   const versionId = version.id as MushafVersion;
   const state = useQuranStore((s) => s.versionDownloads[versionId]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const status = state?.status ?? DownloadStatus.IDLE;
   const isComplete = status === DownloadStatus.COMPLETE;
   const isDownloading = status === DownloadStatus.DOWNLOADING || status === DownloadStatus.PAUSED;
-  const isError = status === DownloadStatus.ERROR;
   const percent = state?.progress?.percent ?? 0;
+
+  const colored = isColoredVersion(versionId);
+  const previews = QuranManifestService.getPreviews(version);
+  const versionLabel = t(`quran.version.${versionId}`);
 
   // Optional dark-theme bundle (V4), managed independently of the light bundle.
   const hasDark = !!version.darkBundle;
@@ -37,10 +50,7 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
   const darkError = darkStatus === DownloadStatus.ERROR;
   const darkPercent = state?.dark?.progress?.percent ?? 0;
 
-  const chrome = useQuranChromeColors();
-  const versionLabel = t(`quran.version.${versionId}`);
-
-  const confirmDelete = () => {
+  const confirmDeleteVersion = () => {
     Alert.alert(
       t("quran.settings.deleteTitle"),
       t("quran.settings.deleteMessage", { name: versionLabel }),
@@ -50,25 +60,6 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
           text: t("common.delete"),
           style: "destructive",
           onPress: () => QuranDownload.deleteVersion(versionId),
-        },
-      ]
-    );
-  };
-
-  // Versions with a dark bundle ask, at download time, whether to fetch dark too.
-  const promptDarkAtDownload = () => {
-    Alert.alert(
-      t("quran.download.darkPromptTitle"),
-      t("quran.download.darkPromptMessage", { size: darkSizeMB }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        { text: t("quran.download.justLight"), onPress: () => onDownload(version) },
-        {
-          text: t("quran.download.lightAndDark"),
-          onPress: () => {
-            onDownload(version);
-            QuranDownload.startDark(versionId);
-          },
         },
       ]
     );
@@ -89,121 +80,157 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
     );
   };
 
-  // Card-level press: download when not yet installed (or retry on error);
-  // a downloaded version is read by selecting it; a downloading one is inert.
-  // Versions with a dark bundle prompt for the dark add-on before downloading.
-  const handleCardPress = () => {
-    if (disabled || isDownloading) return;
-    if (!isComplete && hasDark) {
-      promptDarkAtDownload();
-      return;
-    }
-    onDownload(version);
-  };
-
-  const a11yLabel = t("a11y.quran.versionCard", {
-    name: version.name,
-    size: version.totalSizeMB,
-    year: version.yearGregorian,
-  });
+  const showV4Segment = hasDark && selected && !isComplete && !isDownloading;
+  const showDarkRow = hasDark && (isComplete || !!state?.dark);
 
   return (
-    <Pressable
-      onPress={handleCardPress}
-      accessibilityRole="button"
-      accessibilityLabel={a11yLabel}
-      accessibilityState={{ disabled: !!disabled || isDownloading }}
-      style={{
-        borderWidth: 1,
-        borderColor: chrome.cardBorder,
-        borderRadius: 16,
-        padding: 16,
-        backgroundColor: chrome.cardBackground,
-        opacity: disabled ? 0.5 : 1,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 2,
-      }}>
-      <YStack gap="$2">
-        <XStack alignItems="center" gap="$2">
-          <Text fontWeight="600" fontSize={16}>
-            {version.name}
-          </Text>
-        </XStack>
+    <>
+      <Pressable
+        onPress={() => onSelect(version)}
+        disabled={isDownloading}
+        accessibilityRole="radio"
+        accessibilityState={{ selected, disabled: isDownloading }}
+        accessibilityLabel={t("a11y.quran.versionCard", {
+          name: version.name,
+          size: version.totalSizeMB,
+          year: version.yearGregorian,
+        })}
+        style={{
+          borderWidth: 2,
+          borderColor: selected ? chrome.accent : chrome.cardBorder,
+          borderRadius: 18,
+          backgroundColor: chrome.cardBackground,
+          overflow: "hidden",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 2,
+        }}>
+        <XStack padding={16} gap={14}>
+          {previews.length > 0 && (
+            <MushafThumbnail preview={previews[0]} version={versionId} width={54} radius={9} />
+          )}
 
-        <Text color={chrome.subtleText} fontSize={13}>
-          {version.yearHijri} AH · {version.yearGregorian}
-        </Text>
-
-        <XStack justifyContent="space-between" alignItems="center">
-          <Text color={chrome.subtleText} fontSize={12}>
-            {version.totalSizeMB} MB
-          </Text>
-
-          {/* Action area reflects the version's download status */}
-          {isComplete ? (
-            <XStack alignItems="center" gap="$3">
-              <XStack alignItems="center" gap="$1">
-                <Check size={16} color={chrome.accent} />
-                <Text color={chrome.accent} fontSize={12} fontWeight="600">
-                  {t("quran.onboarding.downloaded")}
+          <YStack flex={1} gap="$1.5">
+            <XStack alignItems="flex-start" gap="$2">
+              <YStack flex={1}>
+                <Text fontSize={17} fontWeight="700">
+                  {version.name}
                 </Text>
-              </XStack>
-              <Pressable
-                onPress={confirmDelete}
-                accessibilityRole="button"
-                accessibilityLabel={t("quran.settings.deleteVersion", { name: versionLabel })}
-                hitSlop={8}>
-                <XStack
-                  alignItems="center"
-                  gap="$1.5"
-                  paddingHorizontal="$3"
-                  paddingVertical="$1.5"
-                  borderRadius="$3"
-                  borderWidth={1}
-                  borderColor={chrome.cardBorder}>
-                  <Trash2 size={14} color={chrome.subtleText} />
-                  <Text color={chrome.subtleText} fontWeight="600" fontSize={13}>
-                    {t("common.delete")}
+                <Text color={chrome.subtleText} fontSize={12} fontWeight="500">
+                  {version.yearHijri} AH · {version.yearGregorian}
+                </Text>
+              </YStack>
+              {isComplete ? (
+                <Check size={20} color={chrome.accent} />
+              ) : (
+                <Radio on={selected} accent={chrome.accent} border={chrome.cardBorder} />
+              )}
+            </XStack>
+
+            <Text color={chrome.subtleText} fontSize={12.5} lineHeight={17}>
+              {t(`quran.versionBlurb.${versionId}`)}
+            </Text>
+
+            <XStack alignItems="center" gap="$2.5" flexWrap="wrap">
+              <Text color={chrome.subtleText} fontSize={12} fontWeight="600">
+                {version.totalSizeMB} MB
+              </Text>
+              {colored && (
+                <XStack alignItems="center" gap="$1.5">
+                  <XStack gap={2}>
+                    {(["#B91C1C", "#15803D", "#1C5D7D"] as const).map((c) => (
+                      <YStack key={c} width={7} height={7} borderRadius={99} backgroundColor={c} />
+                    ))}
+                  </XStack>
+                  <Text color={chrome.accent} fontSize={11.5} fontWeight="600">
+                    {t("quran.version.tajweed")}
                   </Text>
                 </XStack>
-              </Pressable>
+              )}
+              {previews.length > 0 && (
+                <Pressable
+                  onPress={() => setShowPreview(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("quran.preview.show")}
+                  accessibilityHint={t("quran.preview.hint")}
+                  hitSlop={8}
+                  style={{
+                    marginStart: "auto",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                  }}>
+                  <Eye size={14} color={chrome.accent} />
+                  <Text color={chrome.accent} fontSize={12} fontWeight="600">
+                    {t("quran.preview.show")}
+                  </Text>
+                </Pressable>
+              )}
             </XStack>
-          ) : isDownloading ? (
-            <XStack alignItems="center" gap="$1.5">
-              <Loader size={14} color={chrome.subtleText} />
-              <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
-                {percent}%
-              </Text>
-            </XStack>
-          ) : (
-            <YStack
-              backgroundColor={chrome.accent}
-              paddingHorizontal="$3"
-              paddingVertical="$1.5"
-              borderRadius="$3">
-              <Text color="#fff" fontWeight="600" fontSize={13}>
-                {isError ? t("quran.download.retry") : t("quran.onboarding.download")}
-              </Text>
-            </YStack>
-          )}
+          </YStack>
         </XStack>
 
-        {/* Independent dark-bundle row (V4): download later or delete on its own. */}
-        {hasDark && (isComplete || !!state?.dark) && (
+        {/* Inline progress while this version downloads */}
+        {isDownloading && (
+          <XStack
+            alignItems="center"
+            gap="$1.5"
+            paddingHorizontal={16}
+            paddingBottom={14}
+            marginTop={-6}>
+            <Loader size={14} color={chrome.subtleText} />
+            <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
+              {percent}%
+            </Text>
+          </XStack>
+        )}
+
+        {/* V4 light/dark choice, shown when V4 is selected for download */}
+        {showV4Segment && (
+          <YStack
+            paddingHorizontal={16}
+            paddingBottom={14}
+            gap="$2"
+            borderTopWidth={1}
+            borderTopColor={chrome.cardBorder}
+            paddingTop="$2.5">
+            <Text color={chrome.subtleText} fontSize={11.5} fontWeight="600">
+              {t("quran.settings.darkMode")}
+            </Text>
+            <XStack gap="$2">
+              <SegButton
+                label={t("quran.download.justLight")}
+                sub={`${version.bundle.sizeMB} MB`}
+                active={!v4Dark}
+                onPress={() => setV4Dark(false)}
+                chrome={chrome}
+              />
+              <SegButton
+                label={t("quran.download.lightAndDark")}
+                sub={`${Math.round(version.bundle.sizeMB + darkSizeMB)} MB`}
+                active={v4Dark}
+                onPress={() => setV4Dark(true)}
+                chrome={chrome}
+              />
+            </XStack>
+          </YStack>
+        )}
+
+        {/* Installed: independent dark-bundle management row */}
+        {showDarkRow && (
           <XStack
             justifyContent="space-between"
             alignItems="center"
-            borderTopWidth={1}
-            borderTopColor={chrome.cardBorder}
+            paddingHorizontal={16}
+            paddingBottom={14}
             paddingTop="$2"
-            marginTop="$1">
+            borderTopWidth={1}
+            borderTopColor={chrome.cardBorder}>
             <Text color={chrome.subtleText} fontSize={13}>
               {t("quran.settings.darkMode")} · {darkSizeMB} MB
             </Text>
-
             {darkComplete ? (
               <Pressable
                 onPress={confirmDeleteDark}
@@ -212,19 +239,7 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
                   name: t("quran.settings.darkMode"),
                 })}
                 hitSlop={8}>
-                <XStack
-                  alignItems="center"
-                  gap="$1.5"
-                  paddingHorizontal="$3"
-                  paddingVertical="$1.5"
-                  borderRadius="$3"
-                  borderWidth={1}
-                  borderColor={chrome.cardBorder}>
-                  <Trash2 size={14} color={chrome.subtleText} />
-                  <Text color={chrome.subtleText} fontWeight="600" fontSize={13}>
-                    {t("common.delete")}
-                  </Text>
-                </XStack>
+                <Trash2 size={18} color={chrome.subtleText} />
               </Pressable>
             ) : darkDownloading ? (
               <XStack alignItems="center" gap="$1.5">
@@ -252,9 +267,98 @@ const VersionCard = ({ version, onDownload, disabled }: VersionCardProps) => {
             )}
           </XStack>
         )}
-      </YStack>
-    </Pressable>
+
+        {/* Installed badge + delete */}
+        {isComplete && (
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            paddingHorizontal={16}
+            paddingBottom={14}>
+            <Text color={chrome.accent} fontSize={12} fontWeight="600">
+              {t("quran.onboarding.downloaded")}
+            </Text>
+            <Pressable
+              onPress={confirmDeleteVersion}
+              accessibilityRole="button"
+              accessibilityLabel={t("quran.settings.deleteVersion", { name: versionLabel })}
+              hitSlop={8}>
+              <XStack alignItems="center" gap="$1.5">
+                <Trash2 size={14} color={chrome.subtleText} />
+                <Text color={chrome.subtleText} fontWeight="600" fontSize={13}>
+                  {t("common.delete")}
+                </Text>
+              </XStack>
+            </Pressable>
+          </XStack>
+        )}
+      </Pressable>
+
+      <MushafPreviewModal
+        version={version}
+        visible={showPreview}
+        onClose={() => setShowPreview(false)}
+      />
+    </>
   );
 };
+
+const Radio = ({
+  on,
+  accent,
+  border,
+}: {
+  on: boolean;
+  accent: `#${string}`;
+  border: `#${string}`;
+}) => (
+  <YStack
+    width={22}
+    height={22}
+    borderRadius={99}
+    borderWidth={2}
+    borderColor={on ? accent : border}
+    backgroundColor={on ? accent : "transparent"}
+    alignItems="center"
+    justifyContent="center">
+    {on && <Check size={12} color="#fff" />}
+  </YStack>
+);
+
+const SegButton = ({
+  label,
+  sub,
+  active,
+  onPress,
+  chrome,
+}: {
+  label: string;
+  sub: string;
+  active: boolean;
+  onPress: () => void;
+  chrome: QuranChromeColors;
+}) => (
+  <Pressable
+    onPress={onPress}
+    accessibilityRole="radio"
+    accessibilityState={{ selected: active }}
+    style={{ flex: 1 }}>
+    <YStack
+      alignItems="center"
+      gap={2}
+      paddingVertical="$2"
+      borderRadius={10}
+      borderWidth={1.5}
+      borderColor={active ? chrome.accent : chrome.cardBorder}
+      backgroundColor={active ? chrome.background : "transparent"}>
+      <Text fontSize={12.5} fontWeight="600" color={active ? chrome.accent : chrome.subtleText}>
+        {label}
+      </Text>
+      <Text fontSize={10.5} fontWeight="500" color={chrome.subtleText}>
+        {sub}
+      </Text>
+    </YStack>
+  </Pressable>
+);
 
 export default VersionCard;
