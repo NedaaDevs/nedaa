@@ -79,7 +79,10 @@ const VersionSelectionScreen = ({
     ? t("quran.download.selectEdition")
     : selectedInstalled
       ? t("quran.onboarding.startReading")
-      : t("quran.download.cta", { name: selected.name, size: `${ctaSizeMB} MB` });
+      : t("quran.download.cta", {
+          name: t(`quran.version.${selected.id}`),
+          size: t("quran.download.sizeMB", { size: ctaSizeMB }),
+        });
 
   return (
     <YStack flex={1} backgroundColor={chrome.background}>

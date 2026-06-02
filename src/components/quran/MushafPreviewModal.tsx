@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Image, Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -30,10 +38,18 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
   const colored = isColoredVersion(versionId);
   const hasDark = !!version.darkPreviews?.length;
   const [dark, setDark] = useState(false);
+  const [loadedPages, setLoadedPages] = useState<Record<string, boolean>>({});
 
   const previews = QuranManifestService.getPreviews(version, { dark });
   const paper = QURAN_THEME_COLORS[dark ? QuranTheme.DARK : QuranTheme.SEPIA];
   const headerColor = paper.headerColor as `#${string}`;
+
+  // Toggling light/dark swaps to a different page set; clear the loaded flags in
+  // the handler so each new page shows its loader until it has decoded.
+  const toggleDark = () => {
+    setDark((d) => !d);
+    setLoadedPages({});
+  };
 
   const availableHeight = height - insets.top - insets.bottom - HEADER_HEIGHT - 24;
 
@@ -62,11 +78,11 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
             <X size={24} color={paper.headerColor} />
           </Pressable>
           <Text flex={1} fontSize={16} fontWeight="700" color={headerColor} numberOfLines={1}>
-            {version.name}
+            {t(`quran.version.${versionId}`)}
           </Text>
           {hasDark && (
             <Pressable
-              onPress={() => setDark((d) => !d)}
+              onPress={toggleDark}
               hitSlop={10}
               accessibilityRole="switch"
               accessibilityState={{ checked: dark }}
@@ -89,6 +105,7 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
             const aspect = p.height / p.width;
             const pageWidth = Math.min(width - 32, availableHeight / aspect);
             const pageHeight = Math.round(pageWidth * aspect);
+            const loaded = loadedPages[p.url];
             return (
               <View
                 key={p.page}
@@ -98,16 +115,30 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
                   alignItems: "center",
                   justifyContent: "center",
                 }}>
-                <Image
-                  source={{ uri: p.url }}
+                <View
                   style={{
                     width: pageWidth,
                     height: pageHeight,
-                    tintColor: colored ? undefined : paper.textTint,
-                  }}
-                  resizeMode="contain"
-                  fadeDuration={0}
-                />
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                  <Image
+                    key={p.url}
+                    source={{ uri: p.url }}
+                    onLoad={() => setLoadedPages((s) => ({ ...s, [p.url]: true }))}
+                    style={{
+                      width: pageWidth,
+                      height: pageHeight,
+                      tintColor: colored ? undefined : paper.textTint,
+                      opacity: loaded ? 1 : 0,
+                    }}
+                    resizeMode="contain"
+                    fadeDuration={0}
+                  />
+                  {!loaded && (
+                    <ActivityIndicator style={{ position: "absolute" }} color={headerColor} />
+                  )}
+                </View>
               </View>
             );
           })}

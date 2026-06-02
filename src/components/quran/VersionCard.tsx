@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Eye, Loader, Trash2 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { MushafVersion, DownloadStatus } from "@/enums/quran";
+import { MushafVersion, DownloadStatus, DownloadPhase } from "@/enums/quran";
 import { isColoredVersion } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors, type QuranChromeColors } from "@/hooks/useQuranChromeColors";
@@ -50,6 +50,15 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
   const darkError = darkStatus === DownloadStatus.ERROR;
   const darkPercent = state?.dark?.progress?.percent ?? 0;
 
+  // Downloading has byte progress shown as a percentage; extract and finalize
+  // have none, so they show the phase name.
+  const progressLabel = (phase: DownloadPhase | undefined, pct: number) =>
+    phase === DownloadPhase.EXTRACTING
+      ? t("quran.download.phaseExtracting")
+      : phase === DownloadPhase.FINALIZING
+        ? t("quran.download.phaseFinalizing")
+        : `${pct}%`;
+
   const confirmDeleteVersion = () => {
     Alert.alert(
       t("quran.settings.deleteTitle"),
@@ -91,7 +100,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
         accessibilityRole="radio"
         accessibilityState={{ selected, disabled: isDownloading }}
         accessibilityLabel={t("a11y.quran.versionCard", {
-          name: version.name,
+          name: versionLabel,
           size: version.totalSizeMB,
           year: version.yearGregorian,
         })}
@@ -116,7 +125,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
             <XStack alignItems="flex-start" gap="$2">
               <YStack flex={1}>
                 <Text fontSize={17} fontWeight="700">
-                  {version.name}
+                  {versionLabel}
                 </Text>
                 <Text color={chrome.subtleText} fontSize={12} fontWeight="500">
                   {version.yearHijri} AH · {version.yearGregorian}
@@ -135,7 +144,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
 
             <XStack alignItems="center" gap="$2.5" flexWrap="wrap">
               <Text color={chrome.subtleText} fontSize={12} fontWeight="600">
-                {version.totalSizeMB} MB
+                {t("quran.download.sizeMB", { size: version.totalSizeMB })}
               </Text>
               {colored && (
                 <XStack alignItems="center" gap="$1.5">
@@ -182,7 +191,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
             marginTop={-6}>
             <Loader size={14} color={chrome.subtleText} />
             <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
-              {percent}%
+              {progressLabel(state?.progress?.phase, percent)}
             </Text>
           </XStack>
         )}
@@ -202,14 +211,16 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
             <XStack gap="$2">
               <SegButton
                 label={t("quran.download.justLight")}
-                sub={`${version.bundle.sizeMB} MB`}
+                sub={t("quran.download.sizeMB", { size: version.bundle.sizeMB })}
                 active={!v4Dark}
                 onPress={() => setV4Dark(false)}
                 chrome={chrome}
               />
               <SegButton
                 label={t("quran.download.lightAndDark")}
-                sub={`${Math.round(version.bundle.sizeMB + darkSizeMB)} MB`}
+                sub={t("quran.download.sizeMB", {
+                  size: Math.round(version.bundle.sizeMB + darkSizeMB),
+                })}
                 active={v4Dark}
                 onPress={() => setV4Dark(true)}
                 chrome={chrome}
@@ -229,7 +240,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
             borderTopWidth={1}
             borderTopColor={chrome.cardBorder}>
             <Text color={chrome.subtleText} fontSize={13}>
-              {t("quran.settings.darkMode")} · {darkSizeMB} MB
+              {t("quran.settings.darkMode")} · {t("quran.download.sizeMB", { size: darkSizeMB })}
             </Text>
             {darkComplete ? (
               <Pressable
@@ -245,7 +256,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
               <XStack alignItems="center" gap="$1.5">
                 <Loader size={14} color={chrome.subtleText} />
                 <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
-                  {darkPercent}%
+                  {progressLabel(state?.dark?.progress?.phase, darkPercent)}
                 </Text>
               </XStack>
             ) : (

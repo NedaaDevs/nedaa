@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { QuranTheme, MushafVersion, DownloadStatus } from "@/enums/quran";
+import { QuranTheme, MushafVersion, DownloadStatus, DownloadPhase } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_UI_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 
@@ -33,6 +33,17 @@ const DownloadBanner = ({ quranTheme, onDismiss }: DownloadBannerProps) => {
 
   const [version, state] = downloading;
   const percent = state?.progress?.percent ?? 0;
+  const phase = state?.progress?.phase;
+
+  // Downloading shows the live percentage; extract and finalize have no byte
+  // progress, so they show the phase name and hold the bar full.
+  const statusLabel =
+    phase === DownloadPhase.EXTRACTING
+      ? t("quran.download.phaseExtracting")
+      : phase === DownloadPhase.FINALIZING
+        ? t("quran.download.phaseFinalizing")
+        : `${percent}%`;
+  const barWidth = phase && phase !== DownloadPhase.DOWNLOADING ? 100 : percent;
 
   const bgColor = isDark ? "rgba(30,30,30,0.95)" : "rgba(255,253,247,0.95)";
   const textColor = isDark ? "#E0D6C8" : "#2C1810";
@@ -52,13 +63,13 @@ const DownloadBanner = ({ quranTheme, onDismiss }: DownloadBannerProps) => {
       <XStack alignItems="center" justifyContent="space-between" gap="$2">
         <XStack alignItems="center" gap="$2" flex={1}>
           <Text fontSize={13} color={textColor}>
-            {t(`quran.version.${version as MushafVersion}`)} — {percent}%
+            {t(`quran.version.${version as MushafVersion}`)} — {statusLabel}
           </Text>
           <View style={{ flex: 1, height: 3, backgroundColor: borderClr, borderRadius: 2 }}>
             <View
               style={{
                 height: 3,
-                width: `${percent}%`,
+                width: `${barWidth}%`,
                 backgroundColor: themeColors.markerColor,
                 borderRadius: 2,
               }}
