@@ -332,7 +332,13 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
       onPaused: (state) => persistResume(version, state),
       onResumeInvalid: () => clearResume(version),
-      onExtracted: () => {
+      onExtracted: async () => {
+        // Drop any cached bounds connection before swapping the file, so the
+        // reader opens the freshly installed geometry. A stale connection (held
+        // across the file replacement) reads no glyph bounds — markers don't
+        // render and long-press finds nothing — until the app restarts.
+        await QuranContentDB.closeBoundsDb(version);
+
         // Move bounds.db to the SQLite directory if it shipped in the bundle.
         const extractedBoundsDb = new File(versionDir, "bounds.db");
         if (extractedBoundsDb.exists) {
