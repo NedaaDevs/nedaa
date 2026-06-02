@@ -838,5 +838,8 @@
   "umrah.steps.tawaf.start.description": "Menghadap Hajar Aswad dan mulakan",
   "umrah.steps.tawaf.start.title": "Mulakan Tawaf",
   "umrah.title": "Panduan Umrah",
-  "quran.download.paused": "Muat turun dijeda"
+  "quran.download.paused": "Muat turun dijeda",
+  "common.delete": "Padam",
+  "quran.settings.deleteMessage": "Padam {{name}}? Ini akan membebaskan ruang storan.",
+  "quran.settings.deleteVersion": "Padam {{name}}"
 }
