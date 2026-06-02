@@ -51,21 +51,29 @@ const QuranScreen = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
-  const [forceReader, setForceReader] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  // The version whose download the user is actively watching on the progress
+  // screen this session. Keeps that screen up through completion (so they can
+  // tap "Start reading") and distinguishes it from an already-installed version
+  // entered on launch. Not persisted — a killed/relaunched app shows the picker.
+  const [downloadFlowVersion, setDownloadFlowVersion] = useState<MushafVersion | null>(null);
   const selectedManifestRef = useRef<QuranManifestVersion | null>(null);
 
   const downloadState = selectedVersion ? versionDownloads[selectedVersion] : undefined;
   const downloadStatus = downloadState?.status ?? DownloadStatus.IDLE;
 
-  const isActiveDownload = downloadStatus === DownloadStatus.DOWNLOADING;
   // A mushaf version is selected but its images aren't fully on disk.
   const needsMushaf =
     readerMode !== ReaderViewMode.TEXT && downloadStatus !== DownloadStatus.COMPLETE;
+  // The user is watching this version's download on the progress screen.
+  const inDownloadFlow = !!selectedVersion && downloadFlowVersion === selectedVersion;
   // The immersive reader is the visible surface only when no chrome screen wins
   // (mirrors the render branches below). Drives the status-bar safe-area theme.
   const showReader =
-    onboardingComplete && !showVersionPicker && !(selectedVersion && needsMushaf && !forceReader);
+    onboardingComplete &&
+    !showVersionPicker &&
+    !inDownloadFlow &&
+    !(selectedVersion && needsMushaf);
 
   useEffect(() => {
     setReaderActive(showReader);
@@ -90,6 +98,7 @@ const QuranScreen = () => {
       }
 
       updateDownloadState(version, { status: DownloadStatus.DOWNLOADING });
+      setDownloadFlowVersion(version);
       QuranDownload.start(version);
     },
     [setSelectedVersion, setOnboardingComplete, updateDownloadState, t]
@@ -100,9 +109,18 @@ const QuranScreen = () => {
     setOnboardingComplete();
   }, [setReaderMode, setOnboardingComplete]);
 
+  // Leaving the progress screen for the reader: clear the flow so routing falls
+  // through to the reader (the version is already COMPLETE at this point).
   const handleStartReading = useCallback(() => {
-    setForceReader(true);
+    setDownloadFlowVersion(null);
   }, []);
+
+  // Cancel mid-download: abort the transfer and drop the flow, returning to the
+  // picker so the user can choose again or re-download.
+  const handleCancelDownload = useCallback(() => {
+    if (selectedVersion) QuranDownload.cancel(selectedVersion);
+    setDownloadFlowVersion(null);
+  }, [selectedVersion]);
 
   const handleDownloadMore = useCallback(() => {
     setShowSettings(false);
@@ -144,20 +162,23 @@ const QuranScreen = () => {
     );
   }
 
-  if (selectedVersion && needsMushaf && !forceReader) {
-    // An active download → live progress screen. Otherwise the version isn't
-    // downloaded (interrupted, errored, or cleared on a previous launch) and
-    // nothing is running → show the version picker so the user can choose or
-    // re-download, instead of being trapped on a frozen progress screen.
-    if (isActiveDownload) {
-      return (
-        <DownloadProgressScreen
-          version={selectedVersion}
-          versionName={t(`quran.version.${selectedVersion}`)}
-          onStartReading={handleStartReading}
-        />
-      );
-    }
+  // Active download the user is watching → live progress screen, kept up
+  // through completion so they can tap "Start reading".
+  if (selectedVersion && inDownloadFlow) {
+    return (
+      <DownloadProgressScreen
+        version={selectedVersion}
+        versionName={t(`quran.version.${selectedVersion}`)}
+        onStartReading={handleStartReading}
+        onCancel={handleCancelDownload}
+      />
+    );
+  }
+
+  // Selected version isn't on disk and no download is running (interrupted,
+  // errored, or cleared on a previous launch) → picker, so the user can choose
+  // or re-download instead of being trapped on a frozen progress screen.
+  if (selectedVersion && needsMushaf) {
     return (
       <VersionSelectionScreen
         onSelectVersion={handleSelectVersion}

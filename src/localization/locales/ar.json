@@ -901,6 +901,7 @@
   "quran.download.resume": "استئناف",
   "quran.download.retry": "إعادة المحاولة",
   "quran.download.sizeProgress": "{{downloaded}} من {{total}} م.ب",
+  "quran.download.sizeMB": "{{size}} م.ب",
   "quran.settings.darkMode": "الوضع الداكن",
   "quran.onboarding.download": "تحميل",
   "quran.onboarding.downloaded": "تم التنزيل",
