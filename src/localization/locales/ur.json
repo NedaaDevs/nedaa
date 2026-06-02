@@ -1175,5 +1175,7 @@
   "widget_ramadan_day": "رمضان کا %d واں دن",
   "widget_show_ramadan_labels": "رمضان لیبل دکھائیں",
   "widget_suhoor": "سحری",
-  "quran.download.paused": "ڈاؤن لوڈ روک دیا گیا"
+  "quran.download.paused": "ڈاؤن لوڈ روک دیا گیا",
+  "quran.settings.deleteMessage": "{{name}} کو حذف کریں؟ اس سے اسٹوریج کی جگہ خالی ہو جائے گی۔",
+  "quran.settings.deleteVersion": "{{name}} حذف کریں"
 }

@@ -1259,5 +1259,7 @@
   "widget_ramadan_day": "رمضان يوم %d",
   "widget_show_ramadan_labels": "عرض تسميات رمضان",
   "widget_suhoor": "سحور",
-  "quran.download.paused": "تم إيقاف التنزيل مؤقتًا"
+  "quran.download.paused": "تم إيقاف التنزيل مؤقتًا",
+  "quran.settings.deleteMessage": "حذف {{name}}؟ سيؤدي ذلك إلى تحرير مساحة التخزين.",
+  "quran.settings.deleteVersion": "حذف {{name}}"
 }
