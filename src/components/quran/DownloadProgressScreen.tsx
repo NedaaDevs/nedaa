@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Download, FileCheck, Loader, X } from "lucide-react-native";
+import { BookOpen, Download, FileCheck, Loader, Pause, Play, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
@@ -58,6 +58,9 @@ const DownloadProgressScreen = ({
 
   const isError = status === DownloadStatus.ERROR;
   const isComplete = status === DownloadStatus.COMPLETE;
+  const isPaused = status === DownloadStatus.PAUSED;
+  // Pause only applies to the byte transfer, not extract/finalize.
+  const canPause = !isComplete && !isError && !isPaused && phase === DownloadPhase.DOWNLOADING;
   const colored = isColoredVersion(version);
 
   const [preview, setPreview] = useState<QuranPreviewImage | null>(null);
@@ -98,17 +101,27 @@ const DownloadProgressScreen = ({
 
   const phaseLabel = isComplete
     ? t("quran.download.complete")
-    : phase === DownloadPhase.DOWNLOADING
-      ? t("quran.download.phaseDownloading")
-      : phase === DownloadPhase.EXTRACTING
-        ? t("quran.download.phaseExtracting")
-        : t("quran.download.phaseFinalizing");
+    : isPaused
+      ? t("quran.download.paused")
+      : phase === DownloadPhase.DOWNLOADING
+        ? t("quran.download.phaseDownloading")
+        : phase === DownloadPhase.EXTRACTING
+          ? t("quran.download.phaseExtracting")
+          : t("quran.download.phaseFinalizing");
 
   const PhaseIcon = isComplete
     ? FileCheck
-    : phase === DownloadPhase.DOWNLOADING
-      ? Download
-      : Loader;
+    : isPaused
+      ? Pause
+      : phase === DownloadPhase.DOWNLOADING
+        ? Download
+        : Loader;
+
+  const labelColor = isComplete
+    ? chrome.accent
+    : isPaused
+      ? chrome.accentWarning
+      : chrome.subtleText;
 
   // The fully-inked page, drawn full size; the clip/opacity styles above reveal
   // it as progress arrives. Absent until the preview image resolves.
@@ -199,8 +212,8 @@ const DownloadProgressScreen = ({
           transition={{ duration: 200 }}>
           <YStack alignItems="center" gap="$1.5">
             <XStack alignItems="center" gap="$2">
-              <PhaseIcon size={16} color={isComplete ? chrome.accent : chrome.subtleText} />
-              <Text fontSize={16} color={isComplete ? chrome.accent : chrome.subtleText}>
+              <PhaseIcon size={16} color={labelColor} />
+              <Text fontSize={16} color={labelColor}>
                 {phaseLabel}
               </Text>
             </XStack>
@@ -250,22 +263,67 @@ const DownloadProgressScreen = ({
             </Text>
           </XStack>
         </Pressable>
+      ) : isPaused ? (
+        <XStack alignItems="center" gap="$4">
+          <Pressable
+            onPress={() => QuranDownload.resume(version)}
+            accessibilityRole="button"
+            accessibilityLabel={t("quran.download.resume")}>
+            <XStack
+              backgroundColor={chrome.accent}
+              paddingHorizontal="$5"
+              paddingVertical="$3"
+              borderRadius={14}
+              alignItems="center"
+              gap="$2">
+              <Play size={18} color="#fff" />
+              <Text color="#fff" fontWeight="700" fontSize={15}>
+                {t("quran.download.resume")}
+              </Text>
+            </XStack>
+          </Pressable>
+          <CancelControl onCancel={onCancel} color={chrome.subtleText} label={t("common.cancel")} />
+        </XStack>
       ) : (
-        <Pressable
-          onPress={onCancel}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.cancel")}
-          hitSlop={8}>
-          <XStack alignItems="center" gap="$1.5">
-            <X size={15} color={chrome.subtleText} />
-            <Text color={chrome.subtleText} fontSize={14} fontWeight="600">
-              {t("common.cancel")}
-            </Text>
-          </XStack>
-        </Pressable>
+        <XStack alignItems="center" gap="$4">
+          {canPause && (
+            <Pressable
+              onPress={() => QuranDownload.pause(version)}
+              accessibilityRole="button"
+              accessibilityLabel={t("quran.download.pause")}
+              hitSlop={8}>
+              <XStack alignItems="center" gap="$1.5">
+                <Pause size={15} color={chrome.subtleText} />
+                <Text color={chrome.subtleText} fontSize={14} fontWeight="600">
+                  {t("quran.download.pause")}
+                </Text>
+              </XStack>
+            </Pressable>
+          )}
+          <CancelControl onCancel={onCancel} color={chrome.subtleText} label={t("common.cancel")} />
+        </XStack>
       )}
     </YStack>
   );
 };
+
+const CancelControl = ({
+  onCancel,
+  color,
+  label,
+}: {
+  onCancel: () => void;
+  color: `#${string}`;
+  label: string;
+}) => (
+  <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel={label} hitSlop={8}>
+    <XStack alignItems="center" gap="$1.5">
+      <X size={15} color={color} />
+      <Text color={color} fontSize={14} fontWeight="600">
+        {label}
+      </Text>
+    </XStack>
+  </Pressable>
+);
 
 export default DownloadProgressScreen;

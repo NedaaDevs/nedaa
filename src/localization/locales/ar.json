@@ -1258,5 +1258,6 @@
   "widget_imsak": "إمساك",
   "widget_ramadan_day": "رمضان يوم %d",
   "widget_show_ramadan_labels": "عرض تسميات رمضان",
-  "widget_suhoor": "سحور"
+  "widget_suhoor": "سحور",
+  "quran.download.paused": "تم إيقاف التنزيل مؤقتًا"
 }

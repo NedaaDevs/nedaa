@@ -1174,5 +1174,6 @@
   "widget_imsak": "امساک",
   "widget_ramadan_day": "رمضان کا %d واں دن",
   "widget_show_ramadan_labels": "رمضان لیبل دکھائیں",
-  "widget_suhoor": "سحری"
+  "widget_suhoor": "سحری",
+  "quran.download.paused": "ڈاؤن لوڈ روک دیا گیا"
 }
