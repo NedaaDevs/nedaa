@@ -9,16 +9,35 @@ import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors, type QuranChromeColors } from "@/hooks/useQuranChromeColors";
 
-// `light` and `amoled` are shown as "Soon" until those reader papers exist
-// (the QuranTheme enum is SEPIA/DARK today).
-type SwatchKey = QuranTheme | "auto" | "light" | "amoled";
+// "auto" follows the app's color scheme; the rest pick a specific reader paper.
+type SwatchKey = QuranTheme | "auto";
 
-const SWATCHES: { theme: SwatchKey; bg: `#${string}`; soon?: boolean }[] = [
-  { theme: "auto", bg: QURAN_THEME_COLORS[QuranTheme.SEPIA].background as `#${string}` },
-  { theme: QuranTheme.SEPIA, bg: QURAN_THEME_COLORS[QuranTheme.SEPIA].background as `#${string}` },
-  { theme: QuranTheme.DARK, bg: QURAN_THEME_COLORS[QuranTheme.DARK].background as `#${string}` },
-  { theme: "light", bg: "#FFFDF7", soon: true },
-  { theme: "amoled", bg: "#000000", soon: true },
+const SWATCHES: { theme: SwatchKey; bg: `#${string}`; labelKey: string }[] = [
+  {
+    theme: "auto",
+    bg: QURAN_THEME_COLORS[QuranTheme.SEPIA].background,
+    labelKey: "quran.settings.themeAuto",
+  },
+  {
+    theme: QuranTheme.SEPIA,
+    bg: QURAN_THEME_COLORS[QuranTheme.SEPIA].background,
+    labelKey: "quran.settings.themeSepia",
+  },
+  {
+    theme: QuranTheme.LIGHT,
+    bg: QURAN_THEME_COLORS[QuranTheme.LIGHT].background,
+    labelKey: "quran.settings.themeLight",
+  },
+  {
+    theme: QuranTheme.DARK,
+    bg: QURAN_THEME_COLORS[QuranTheme.DARK].background,
+    labelKey: "quran.settings.themeDark",
+  },
+  {
+    theme: QuranTheme.AMOLED,
+    bg: QURAN_THEME_COLORS[QuranTheme.AMOLED].background,
+    labelKey: "quran.settings.themeAmoled",
+  },
 ];
 
 const ReadingThemeSwatches = () => {
@@ -28,17 +47,6 @@ const ReadingThemeSwatches = () => {
   const override = useQuranStore((s) => s.quranThemeOverride);
   const setQuranTheme = useQuranStore((s) => s.setQuranTheme);
   const setQuranThemeAuto = useQuranStore((s) => s.setQuranThemeAuto);
-
-  const label = (theme: SwatchKey) =>
-    theme === "auto"
-      ? t("quran.settings.themeAuto")
-      : theme === QuranTheme.SEPIA
-        ? t("quran.settings.themeSepia")
-        : theme === QuranTheme.DARK
-          ? t("quran.settings.themeDark")
-          : theme === "light"
-            ? t("quran.settings.themeLight")
-            : t("quran.settings.themeAmoled");
 
   // Auto is active when the user hasn't overridden the theme.
   const active = (theme: SwatchKey) =>
@@ -54,15 +62,12 @@ const ReadingThemeSwatches = () => {
           <Swatch
             key={String(s.theme)}
             bg={s.bg}
-            label={label(s.theme)}
+            label={t(s.labelKey)}
             active={active(s.theme)}
-            soon={s.soon}
-            soonLabel={t("quran.settings.soon")}
             chrome={chrome}
             onPress={() => {
-              if (s.soon) return;
               if (s.theme === "auto") setQuranThemeAuto();
-              else setQuranTheme(s.theme as QuranTheme);
+              else setQuranTheme(s.theme);
             }}
           />
         ))}
@@ -78,26 +83,21 @@ const Swatch = ({
   bg,
   label,
   active,
-  soon,
-  soonLabel,
   chrome,
   onPress,
 }: {
   bg: `#${string}`;
   label: string;
   active: boolean;
-  soon?: boolean;
-  soonLabel: string;
   chrome: QuranChromeColors;
   onPress: () => void;
 }) => (
   <Pressable
     onPress={onPress}
-    disabled={soon}
     accessibilityRole="radio"
-    accessibilityState={{ selected: active, disabled: soon }}
-    accessibilityLabel={`${label}${soon ? ` (${soonLabel})` : ""}`}>
-    <YStack alignItems="center" gap="$1" opacity={soon ? 0.45 : 1}>
+    accessibilityState={{ selected: active }}
+    accessibilityLabel={label}>
+    <YStack alignItems="center" gap="$1">
       <View
         width={48}
         height={48}
@@ -110,7 +110,7 @@ const Swatch = ({
         {active && <Check size={18} color={chrome.accent} />}
       </View>
       <Text fontSize={11} fontWeight="600" color={active ? chrome.accent : chrome.subtleText}>
-        {soon ? soonLabel : label}
+        {label}
       </Text>
     </YStack>
   </Pressable>

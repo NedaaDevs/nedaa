@@ -50,6 +50,30 @@ export const QURAN_THEME_COLORS: Record<
     shimmerBase: "#181818",
     shimmerHighlight: "#282828",
   },
+  // Crisp white paper with near-black ink — brighter than sepia.
+  [QuranTheme.LIGHT]: {
+    background: "#FFFDF7",
+    innerBackground: "#FFFDF7",
+    textTint: "#1C1C1C",
+    markerColor: "#7A5C12",
+    headerColor: "#3A2E1F",
+    pageNumberColor: "#9A8A70",
+    highlightColor: "rgba(170, 130, 50, 0.15)",
+    shimmerBase: "#FFFDF7",
+    shimmerHighlight: "#F0ECE2",
+  },
+  // Pure black for OLED battery savings; same ink/markers as dark.
+  [QuranTheme.AMOLED]: {
+    background: "#000000",
+    innerBackground: "#000000",
+    textTint: "#E8E0D4",
+    markerColor: "#D4A84B",
+    headerColor: "#E8E0D4",
+    pageNumberColor: "#5A5A5A",
+    highlightColor: "rgba(212, 168, 75, 0.15)",
+    shimmerBase: "#0A0A0A",
+    shimmerHighlight: "#1A1A1A",
+  },
 } as const;
 
 export const MARKER_ADJUSTMENTS: Record<
@@ -64,6 +88,9 @@ export const MARKER_ADJUSTMENTS: Record<
 export const QURAN_MARKER_FRAME: Record<QuranTheme, string> = {
   [QuranTheme.SEPIA]: "marker-sepia.png",
   [QuranTheme.DARK]: "marker-dark.png",
+  // Light reuses the sepia (dark-ink) frame; AMOLED reuses the dark (light-ink) one.
+  [QuranTheme.LIGHT]: "marker-sepia.png",
+  [QuranTheme.AMOLED]: "marker-dark.png",
 };
 
 export const DEFAULT_SURAH_FRAME_STYLE = SurahFrameStyle.CLASSIC;
@@ -78,15 +105,20 @@ export const COLORED_MUSHAF_VERSIONS = new Set<MushafVersion>([MushafVersion.V4]
 export const isColoredVersion = (version: MushafVersion): boolean =>
   COLORED_MUSHAF_VERSIONS.has(version);
 
-// Path segment for a version's images. Colored versions in dark theme read
-// from the separate dark bundle when it's downloaded; everything else (and the
-// fallback when dark isn't downloaded) reads the main directory.
+// A dark paper background (DARK or AMOLED) where coloured pages would be
+// unreadable, so colored editions read their dark bundle on those themes.
+export const isDarkPaper = (quranTheme: QuranTheme): boolean =>
+  quranTheme === QuranTheme.DARK || quranTheme === QuranTheme.AMOLED;
+
+// Path segment for a version's images. A colored edition on a dark paper reads
+// the separate dark bundle when downloaded; everything else (and the fallback
+// when the dark bundle isn't downloaded) reads the main directory.
 export const quranImageDirSegment = (
   version: MushafVersion,
   quranTheme: QuranTheme,
   darkAvailable: boolean
 ): string =>
-  quranTheme === QuranTheme.DARK && isColoredVersion(version) && darkAvailable
+  isDarkPaper(quranTheme) && isColoredVersion(version) && darkAvailable
     ? `${version}-dark`
     : `${version}`;
 

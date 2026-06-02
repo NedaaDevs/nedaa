@@ -12,6 +12,8 @@ export enum ReaderViewMode {
 export enum QuranTheme {
   SEPIA = "sepia",
   DARK = "dark",
+  LIGHT = "light",
+  AMOLED = "amoled",
 }
 
 export enum MushafImageType {
