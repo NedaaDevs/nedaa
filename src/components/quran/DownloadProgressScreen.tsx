@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Image, Pressable, View } from "react-native";
-import { YStack, XStack } from "tamagui";
+import { Image, Pressable } from "react-native";
+import { View, XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView, AnimatePresence } from "moti";
 import Animated, {
@@ -145,20 +145,18 @@ const DownloadProgressScreen = ({
 
       {/* Filling mushaf page */}
       <View
-        style={{
-          width: PAGE_WIDTH,
-          height: pageHeight,
-          borderRadius: 12,
-          overflow: "hidden",
-          backgroundColor: PAPER.background,
-          borderWidth: 1,
-          borderColor: chrome.cardBorder,
-        }}
+        width={PAGE_WIDTH}
+        height={pageHeight}
+        borderRadius={12}
+        overflow="hidden"
+        backgroundColor={PAPER.background}
+        borderWidth={1}
+        borderColor={chrome.cardBorder}
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: Math.round(fillTarget) }}>
         {/* Faint base layer (the not-yet-downloaded page) */}
         {preview && (
-          <View style={{ position: "absolute", opacity: 0.16 }}>
+          <View position="absolute" opacity={0.16}>
             <Image
               source={{ uri: preview.url }}
               style={{
@@ -184,8 +182,7 @@ const DownloadProgressScreen = ({
               { position: "absolute", bottom: 0, left: 0, right: 0, overflow: "hidden" },
               clipStyle,
             ]}>
-            <View
-              style={{ position: "absolute", bottom: 0, width: PAGE_WIDTH, height: pageHeight }}>
+            <View position="absolute" bottom={0} width={PAGE_WIDTH} height={pageHeight}>
               {fillContent}
             </View>
           </Animated.View>

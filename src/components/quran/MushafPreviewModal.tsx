@@ -5,10 +5,9 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  View,
   useWindowDimensions,
 } from "react-native";
-import { XStack, YStack } from "tamagui";
+import { View, XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Moon, Sun, X } from "lucide-react-native";
@@ -68,7 +67,7 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <YStack flex={1} style={{ backgroundColor: paper.background, paddingTop: insets.top }}>
+      <YStack flex={1} backgroundColor={paper.background} paddingTop={insets.top}>
         <XStack height={HEADER_HEIGHT} alignItems="center" paddingHorizontal={16} gap="$2">
           <Pressable
             onPress={onClose}
@@ -109,19 +108,15 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
             return (
               <View
                 key={p.page}
-                style={{
-                  width,
-                  height: availableHeight,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}>
+                width={width}
+                height={availableHeight}
+                alignItems="center"
+                justifyContent="center">
                 <View
-                  style={{
-                    width: pageWidth,
-                    height: pageHeight,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}>
+                  width={pageWidth}
+                  height={pageHeight}
+                  alignItems="center"
+                  justifyContent="center">
                   <Image
                     key={p.url}
                     source={{ uri: p.url }}

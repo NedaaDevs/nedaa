@@ -222,13 +222,10 @@ const QuranScreen = () => {
           page offer for a colored edition. */}
       {(!bannerDismissed || showDarkOffer) && (
         <YStack position="absolute" top={insets.top + 8} left={0} right={0} zIndex={5} gap="$2">
-          {!bannerDismissed && (
-            <DownloadBanner quranTheme={quranTheme} onDismiss={() => setBannerDismissed(true)} />
-          )}
+          {!bannerDismissed && <DownloadBanner onDismiss={() => setBannerDismissed(true)} />}
           {showDarkOffer && (
             <DarkOfferBanner
               version={currentVersion}
-              quranTheme={quranTheme}
               onDismiss={() => dismissDarkOffer(currentVersion)}
             />
           )}

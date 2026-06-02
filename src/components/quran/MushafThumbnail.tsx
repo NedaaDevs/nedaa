@@ -1,4 +1,5 @@
-import { Image, View } from "react-native";
+import { Image } from "react-native";
+import { View } from "tamagui";
 
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
@@ -22,13 +23,11 @@ const MushafThumbnail = ({ preview, version, width, radius = 8 }: MushafThumbnai
 
   return (
     <View
-      style={{
-        width,
-        height,
-        borderRadius: radius,
-        overflow: "hidden",
-        backgroundColor: PAPER.background,
-      }}>
+      width={width}
+      height={height}
+      borderRadius={radius}
+      overflow="hidden"
+      backgroundColor={PAPER.background}>
       <Image
         source={{ uri: preview.url }}
         style={{ width, height, tintColor: colored ? undefined : PAPER.textTint }}
