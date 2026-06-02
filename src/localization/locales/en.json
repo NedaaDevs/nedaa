@@ -1231,5 +1231,6 @@
   "widget_imsak": "Imsak",
   "widget_ramadan_day": "Ramadan Day %d",
   "widget_show_ramadan_labels": "Show Ramadan Labels",
-  "widget_suhoor": "Suhoor"
+  "widget_suhoor": "Suhoor",
+  "quran.download.paused": "Download paused"
 }

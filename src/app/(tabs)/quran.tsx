@@ -167,7 +167,12 @@ const QuranScreen = () => {
   // of the selected edition (so it survives a remount that drops the ephemeral
   // flow flag), and kept up through completion via the flow so the user can tap
   // "Start reading".
-  if (selectedVersion && (inDownloadFlow || downloadStatus === DownloadStatus.DOWNLOADING)) {
+  if (
+    selectedVersion &&
+    (inDownloadFlow ||
+      downloadStatus === DownloadStatus.DOWNLOADING ||
+      downloadStatus === DownloadStatus.PAUSED)
+  ) {
     return (
       <DownloadProgressScreen
         version={selectedVersion}
