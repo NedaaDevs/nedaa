@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
+  Easing,
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -134,8 +135,18 @@ const QuranReader = ({
       const shouldAdvance =
         Math.abs(translation) > thresholdPx || Math.abs(velocity) > VELOCITY_THRESHOLD;
 
+      // Settle time scales with fling speed — a fast flick resolves quicker than
+      // a lazy drag — and eases out so the page decelerates into place.
+      const speed = Math.abs(velocity);
+      const remainingFraction = 1 - Math.abs(dragOffset.value);
+      const turnDuration =
+        speed > 50
+          ? Math.max(140, Math.min(280, ((remainingFraction * dimension) / speed) * 1000))
+          : 240;
+      const turnTiming = { duration: turnDuration, easing: Easing.out(Easing.cubic) };
+
       if (shouldAdvance && translation > 0 && pageIndex.value < TOTAL_PAGES) {
-        dragOffset.value = withTiming(1, { duration: 200 }, (finished) => {
+        dragOffset.value = withTiming(1, turnTiming, (finished) => {
           if (!finished) return;
           // Advance the index and zero the drag in the same UI frame so the turn
           // is seamless; React syncs afterward for windowing + persistence.
@@ -144,7 +155,7 @@ const QuranReader = ({
           scheduleOnRN(onPageChange, pageIndex.value);
         });
       } else if (shouldAdvance && translation < 0 && pageIndex.value > 1) {
-        dragOffset.value = withTiming(-1, { duration: 200 }, (finished) => {
+        dragOffset.value = withTiming(-1, turnTiming, (finished) => {
           if (!finished) return;
           pageIndex.value = pageIndex.value - 1;
           dragOffset.value = 0;
