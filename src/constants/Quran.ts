@@ -13,8 +13,11 @@ export const FONT_SIZE_STEP = 2;
 export const QURAN_THEME_COLORS: Record<
   QuranTheme,
   {
-    background: string;
-    innerBackground: string;
+    // Paper backgrounds flow into Tamagui `backgroundColor` props, which accept
+    // `#${string}` but not bare `string`; the rest go to RN consumers (Image
+    // tintColor, icons) or rgba overlays.
+    background: `#${string}`;
+    innerBackground: `#${string}`;
     textTint: string | undefined;
     markerColor: string;
     headerColor: string;
