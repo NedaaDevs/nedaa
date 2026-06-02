@@ -1271,5 +1271,7 @@
   "quran.settings.downloadMore": "تنزيل نسخة أخرى",
   "quran.settings.deleteTitle": "حذف المصحف",
   "a11y.decrease": "إنقاص",
-  "a11y.increase": "زيادة"
+  "a11y.increase": "زيادة",
+  "quran.reader.resumedAt": "استؤنف عند الصفحة {{page}}",
+  "quran.reader.goToStart": "العودة إلى البداية"
 }

@@ -1187,5 +1187,7 @@
   "quran.settings.downloadMore": "ایک اور نسخہ ڈاؤن لوڈ کریں",
   "quran.settings.deleteTitle": "مصحف حذف کریں",
   "a11y.decrease": "کم کریں",
-  "a11y.increase": "بڑھائیں"
+  "a11y.increase": "بڑھائیں",
+  "quran.reader.resumedAt": "صفحہ {{page}} سے دوبارہ شروع",
+  "quran.reader.goToStart": "شروع پر جائیں"
 }

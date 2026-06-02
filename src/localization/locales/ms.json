@@ -851,5 +851,7 @@
   "quran.settings.downloadMore": "Muat turun versi lain",
   "quran.settings.deleteTitle": "Padam Mushaf",
   "a11y.decrease": "Kurangkan",
-  "a11y.increase": "Tambah"
+  "a11y.increase": "Tambah",
+  "quran.reader.resumedAt": "Disambung di halaman {{page}}",
+  "quran.reader.goToStart": "Ke permulaan"
 }

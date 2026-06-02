@@ -13,18 +13,19 @@ export const FONT_SIZE_STEP = 2;
 export const QURAN_THEME_COLORS: Record<
   QuranTheme,
   {
-    // Paper backgrounds flow into Tamagui `backgroundColor` props, which accept
-    // `#${string}` but not bare `string`; the rest go to RN consumers (Image
-    // tintColor, icons) or rgba overlays.
+    // Hex colors are typed `#${string}` so they satisfy Tamagui color props
+    // directly (Tamagui rejects bare `string`); they remain assignable to the RN
+    // consumers (Image tintColor, icons) too. textTint stays nullable for Image,
+    // and highlightColor is an rgba overlay string.
     background: `#${string}`;
     innerBackground: `#${string}`;
-    textTint: string | undefined;
-    markerColor: string;
-    headerColor: string;
-    pageNumberColor: string;
+    textTint: `#${string}` | undefined;
+    markerColor: `#${string}`;
+    headerColor: `#${string}`;
+    pageNumberColor: `#${string}`;
     highlightColor: string;
-    shimmerBase: string;
-    shimmerHighlight: string;
+    shimmerBase: `#${string}`;
+    shimmerHighlight: `#${string}`;
   }
 > = {
   [QuranTheme.SEPIA]: {

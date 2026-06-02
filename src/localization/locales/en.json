@@ -1235,5 +1235,7 @@
   "quran.surah.ayahCount": "{{count}} ayahs",
   "quran.surah.pages": "Pages {{start}}–{{end}}",
   "a11y.decrease": "Decrease",
-  "a11y.increase": "Increase"
+  "a11y.increase": "Increase",
+  "quran.reader.resumedAt": "Resumed at page {{page}}",
+  "quran.reader.goToStart": "Go to start"
 }
