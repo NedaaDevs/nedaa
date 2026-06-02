@@ -35,10 +35,6 @@ const PAPER = QURAN_THEME_COLORS[QuranTheme.SEPIA];
 const PAGE_WIDTH = 168;
 const DEFAULT_ASPECT = 1.45; // page is taller than wide; refined from the preview
 
-// TEMP: two candidate fill visuals to compare on-device. Remove the loser and
-// this toggle once a direction is chosen.
-type FillMode = "preview" | "silhouette";
-
 const DownloadProgressScreen = ({
   version,
   versionName,
@@ -64,7 +60,6 @@ const DownloadProgressScreen = ({
   const isComplete = status === DownloadStatus.COMPLETE;
   const colored = isColoredVersion(version);
 
-  const [fillMode, setFillMode] = useState<FillMode>("preview");
   const [preview, setPreview] = useState<QuranPreviewImage | null>(null);
 
   useEffect(() => {
@@ -115,23 +110,20 @@ const DownloadProgressScreen = ({
       ? Download
       : Loader;
 
-  // The fully-inked page content, drawn full size; the clip/opacity styles
-  // above reveal it as progress arrives.
-  const fillContent =
-    fillMode === "preview" && preview ? (
-      <Image
-        source={{ uri: preview.url }}
-        style={{
-          width: PAGE_WIDTH,
-          height: pageHeight,
-          tintColor: colored ? undefined : PAPER.textTint,
-        }}
-        resizeMode="cover"
-        fadeDuration={0}
-      />
-    ) : (
-      <PageLines width={PAGE_WIDTH} height={pageHeight} color={chrome.accent} />
-    );
+  // The fully-inked page, drawn full size; the clip/opacity styles above reveal
+  // it as progress arrives. Absent until the preview image resolves.
+  const fillContent = preview ? (
+    <Image
+      source={{ uri: preview.url }}
+      style={{
+        width: PAGE_WIDTH,
+        height: pageHeight,
+        tintColor: colored ? undefined : PAPER.textTint,
+      }}
+      resizeMode="cover"
+      fadeDuration={0}
+    />
+  ) : null;
 
   return (
     <YStack
@@ -165,8 +157,8 @@ const DownloadProgressScreen = ({
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: Math.round(fillTarget) }}>
         {/* Faint base layer (the not-yet-downloaded page) */}
-        <View style={{ position: "absolute", opacity: 0.16 }}>
-          {fillMode === "preview" && preview ? (
+        {preview && (
+          <View style={{ position: "absolute", opacity: 0.16 }}>
             <Image
               source={{ uri: preview.url }}
               style={{
@@ -177,10 +169,8 @@ const DownloadProgressScreen = ({
               resizeMode="cover"
               fadeDuration={0}
             />
-          ) : (
-            <PageLines width={PAGE_WIDTH} height={pageHeight} color={chrome.subtleText} />
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Fill layer — bottom-anchored reveal (or opacity for reduced motion) */}
         {reduceMotion ? (
@@ -277,57 +267,7 @@ const DownloadProgressScreen = ({
           </XStack>
         </Pressable>
       )}
-
-      {/* TEMP: compare the two fill visuals on-device, then keep one. */}
-      <XStack
-        position="absolute"
-        bottom={insets.bottom + 12}
-        gap="$2"
-        opacity={0.8}
-        borderWidth={1}
-        borderColor={chrome.cardBorder}
-        borderRadius={8}
-        padding={4}>
-        {(["preview", "silhouette"] as const).map((m) => (
-          <Pressable key={m} onPress={() => setFillMode(m)} accessibilityRole="button">
-            <YStack
-              paddingHorizontal="$2.5"
-              paddingVertical="$1"
-              borderRadius={6}
-              backgroundColor={fillMode === m ? chrome.accent : "transparent"}>
-              <Text fontSize={11} color={fillMode === m ? "#fff" : chrome.subtleText}>
-                {m}
-              </Text>
-            </YStack>
-          </Pressable>
-        ))}
-      </XStack>
     </YStack>
-  );
-};
-
-// A neutral mushaf-page silhouette: evenly spaced text-line bars. Used as the
-// generic fill candidate (no tie to the chosen edition's actual page).
-const PageLines = ({ width, height, color }: { width: number; height: number; color: string }) => {
-  const lineCount = 9;
-  const margin = width * 0.12;
-  const gap = (height - margin * 2) / lineCount;
-  return (
-    <View style={{ width, height, paddingHorizontal: margin, paddingVertical: margin }}>
-      {Array.from({ length: lineCount }).map((_, i) => (
-        <View
-          key={i}
-          style={{
-            height: 3,
-            borderRadius: 2,
-            backgroundColor: color,
-            marginBottom: gap - 3,
-            // Vary line length slightly to suggest justified text.
-            width: i % 4 === 3 ? "62%" : "100%",
-          }}
-        />
-      ))}
-    </View>
   );
 };
 
