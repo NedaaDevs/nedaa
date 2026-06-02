@@ -92,6 +92,14 @@ export type QuranBundle = {
   checksum: string;
 };
 
+// A single preview page (a concatenated full-page image) for the version picker.
+export type QuranPreview = {
+  page: number;
+  path: string;
+  width: number;
+  height: number;
+};
+
 export type QuranManifestVersion = {
   id: string;
   name: string;
@@ -105,6 +113,8 @@ export type QuranManifestVersion = {
   baseUrl: string;
   bundle: QuranBundle;
   darkBundle?: QuranBundle;
+  previews: QuranPreview[];
+  darkPreviews?: QuranPreview[];
   markers: string[];
   manifestChecksum: string;
 };

@@ -54,6 +54,28 @@ const getDarkBundleSizeBytes = (version: QuranManifestVersion): number => {
   return version.darkBundle ? Math.round(version.darkBundle.sizeMB * 1024 * 1024) : 0;
 };
 
+export type QuranPreviewImage = {
+  page: number;
+  url: string;
+  width: number;
+  height: number;
+};
+
+// Preview page images for the version picker, with absolute URLs. Pass
+// `{ dark: true }` for the V4 dark-theme set (empty when a version has none).
+const getPreviews = (
+  version: QuranManifestVersion,
+  options?: { dark?: boolean }
+): QuranPreviewImage[] => {
+  const list = options?.dark ? version.darkPreviews : version.previews;
+  return (list ?? []).map((p) => ({
+    page: p.page,
+    url: `${version.baseUrl}${p.path}`,
+    width: p.width,
+    height: p.height,
+  }));
+};
+
 const clearCache = (): void => {
   cachedManifest = null;
   cachedAt = 0;
@@ -67,5 +89,6 @@ export const QuranManifestService = {
   getBundleSizeBytes,
   getDarkBundleUrl,
   getDarkBundleSizeBytes,
+  getPreviews,
   clearCache,
 };
