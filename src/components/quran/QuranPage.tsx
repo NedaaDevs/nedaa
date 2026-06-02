@@ -23,7 +23,7 @@ import {
   SURAH_NAMES,
 } from "@/constants/Quran";
 import { GlyphBound } from "@/types/quran";
-import { QuranDB } from "@/services/quran-db";
+import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
@@ -87,9 +87,9 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     const loadPageData = async () => {
       try {
         const [lineMetadata, juzNumber, bounds] = await Promise.all([
-          QuranDB.getLineMetadata(version, page),
-          QuranDB.getJuzForPage(page),
-          QuranDB.getGlyphBounds(version, page),
+          QuranContentDB.getLineMetadata(version, page),
+          QuranContentDB.getJuzForPage(page),
+          QuranContentDB.getGlyphBounds(version, page),
         ]);
 
         const names: Record<number, string> = {};

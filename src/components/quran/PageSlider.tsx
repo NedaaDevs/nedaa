@@ -10,7 +10,7 @@ import Animated, {
 
 import { QuranTheme } from "@/enums/quran";
 import { TOTAL_PAGES, QURAN_THEME_COLORS, QURAN_FONT_FAMILY, SURAH_NAMES } from "@/constants/Quran";
-import { QuranDB } from "@/services/quran-db";
+import { QuranContentDB } from "@/services/quran-content-db";
 import { useHaptic } from "@/hooks/useHaptic";
 import { Text } from "@/components/ui/text";
 
@@ -43,7 +43,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
 
   useEffect(() => {
     const loadMapping = async () => {
-      const db = await QuranDB.openQuranDb();
+      const db = await QuranContentDB.openQuranDb();
       const rows = await db.getAllAsync<{ page: number; surah_number: number }>(
         "SELECT page, MIN(surah_number) as surah_number FROM ayahs GROUP BY page ORDER BY page"
       );

@@ -3,18 +3,16 @@ import { Platform } from "react-native";
 import { File, Directory, Paths } from "expo-file-system";
 import { Asset } from "expo-asset";
 
-import { QURAN_DB_NAME, QURAN_DB_VERSION, QURAN_DOWNLOADS_DB_NAME } from "@/constants/DB";
+import { QURAN_DB_NAME, QURAN_DB_VERSION } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
-import {
-  MushafVersion,
-  LineType,
-  PageDownloadStatus,
-  SajdaType,
-  RevelationPlace,
-} from "@/enums/quran";
+import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/quran";
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
-import { createSerializedDatabase } from "@/utils/serializedDatabase";
+
+// Read-only Quran content: the bundled `quran.db` (ayah text + surah/division
+// metadata) and the per-version `bounds-*.db` (glyph geometry + line metadata).
+// These connections only read; the transactional download-tracking DB lives in
+// `quran-download-db.ts`.
 
 let quranDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 const boundsDbMap = new Map<MushafVersion, Promise<SQLite.SQLiteDatabase>>();
@@ -55,7 +53,7 @@ const ensureQuranDbCopied = async (): Promise<void> => {
 
   const [asset] = await Asset.loadAsync(require("../../assets/db/quran.db"));
   if (!asset.localUri) {
-    throw new Error("[QuranDB] Failed to load quran.db asset");
+    throw new Error("[QuranContentDB] Failed to load quran.db asset");
   }
 
   // Remove old DB + WAL/SHM before copying new version
@@ -73,7 +71,7 @@ const ensureQuranDbCopied = async (): Promise<void> => {
   versionFile.create();
   versionFile.write(String(QURAN_DB_VERSION));
 
-  console.log(`[QuranDB] Copied quran.db v${QURAN_DB_VERSION} to ${dir}`);
+  console.log(`[QuranContentDB] Copied quran.db v${QURAN_DB_VERSION} to ${dir}`);
 };
 
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
@@ -88,7 +86,7 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         );
       } catch (error) {
         quranDbPromise = null;
-        console.error("[QuranDB] Error opening quran.db:", error);
+        console.error("[QuranContentDB] Error opening quran.db:", error);
         throw error;
       }
     })();
@@ -109,13 +107,26 @@ const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> =>
           );
         } catch (error) {
           boundsDbMap.delete(version);
-          console.error(`[QuranDB] Error opening bounds-${version}.db:`, error);
+          console.error(`[QuranContentDB] Error opening bounds-${version}.db:`, error);
           throw error;
         }
       })()
     );
   }
   return boundsDbMap.get(version)!;
+};
+
+const closeBoundsDb = async (version: MushafVersion): Promise<void> => {
+  const promise = boundsDbMap.get(version);
+  if (promise) {
+    try {
+      const db = await promise;
+      await db.closeAsync();
+    } catch {
+      // Already closed or failed
+    }
+    boundsDbMap.delete(version);
+  }
 };
 
 const getLineMetadata = async (version: MushafVersion, page: number): Promise<LineMetadata[]> => {
@@ -195,6 +206,15 @@ const getGlyphBounds = async (version: MushafVersion, page: number): Promise<Gly
   }));
 };
 
+const getSurahForPage = async (version: MushafVersion, page: number): Promise<string> => {
+  const db = await openBoundsDb(version);
+  const result = await db.getFirstAsync<{ surah_name: string }>(
+    "SELECT surah_name FROM line_metadata WHERE page = ? AND surah_name IS NOT NULL LIMIT 1",
+    [page]
+  );
+  return result?.surah_name ?? "";
+};
+
 const getJuzForPage = async (page: number): Promise<number> => {
   const db = await openQuranDb();
   // Divisions are stored as boundary tables and resolved per-ayah through the
@@ -206,6 +226,34 @@ const getJuzForPage = async (page: number): Promise<number> => {
     [page]
   );
   return result?.juz ?? 1;
+};
+
+const getAyahsForPage = async (
+  page: number
+): Promise<Array<{ surahNumber: number; ayahNumber: number; text: string }>> => {
+  const db = await openQuranDb();
+  const rows = await db.getAllAsync<{
+    surah_number: number;
+    ayah_number: number;
+    text: string;
+  }>(
+    "SELECT surah_number, ayah_number, text FROM ayahs WHERE page = ? ORDER BY surah_number, ayah_number",
+    [page]
+  );
+  return rows.map((row) => ({
+    surahNumber: row.surah_number,
+    ayahNumber: row.ayah_number,
+    text: row.text,
+  }));
+};
+
+const getSurahNameForPageFromContent = async (page: number): Promise<number> => {
+  const db = await openQuranDb();
+  const result = await db.getFirstAsync<{ surah_number: number }>(
+    "SELECT surah_number FROM ayahs WHERE page = ? LIMIT 1",
+    [page]
+  );
+  return result?.surah_number ?? 1;
 };
 
 // --- Metadata (surahs + per-ayah divisions) ---
@@ -289,205 +337,15 @@ const getAyahMetadata = async (
   };
 };
 
-// --- Download tracking ---
-
-// Unlike the read-only quran.db / bounds DBs, this one takes writes and a
-// transaction and is polled concurrently while downloading — serialize it.
-const downloadSdb = createSerializedDatabase(async () => {
-  const db = await SQLite.openDatabaseAsync(
-    QURAN_DOWNLOADS_DB_NAME,
-    { useNewConnection: true },
-    SQLite.defaultDatabaseDirectory
-  );
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS quran_downloads (
-      version TEXT NOT NULL,
-      page INTEGER NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
-      size_bytes INTEGER DEFAULT 0,
-      updated_at INTEGER NOT NULL,
-      PRIMARY KEY (version, page)
-    );
-  `);
-  return db;
-});
-
-const initializeDownloadPages = (version: MushafVersion, totalPages: number): Promise<void> =>
-  downloadSdb.run(async (db) => {
-    const now = Date.now();
-    await db.withTransactionAsync(async () => {
-      for (let i = 1; i <= totalPages; i++) {
-        await db.runAsync(
-          "INSERT OR IGNORE INTO quran_downloads (version, page, status, size_bytes, updated_at) VALUES (?, ?, ?, 0, ?)",
-          [version, i, PageDownloadStatus.PENDING, now]
-        );
-      }
-    });
-  });
-
-const updatePageStatus = (
-  version: MushafVersion,
-  page: number,
-  status: string,
-  sizeBytes?: number
-): Promise<void> =>
-  downloadSdb.run(async (db) => {
-    if (sizeBytes !== undefined) {
-      await db.runAsync(
-        "UPDATE quran_downloads SET status = ?, size_bytes = ?, updated_at = ? WHERE version = ? AND page = ?",
-        [status, sizeBytes, Date.now(), version, page]
-      );
-    } else {
-      await db.runAsync(
-        "UPDATE quran_downloads SET status = ?, updated_at = ? WHERE version = ? AND page = ?",
-        [status, Date.now(), version, page]
-      );
-    }
-  });
-
-const getPendingPages = (version: MushafVersion, limit: number): Promise<number[]> =>
-  downloadSdb.run(async (db) => {
-    const rows = await db.getAllAsync<{ page: number }>(
-      `SELECT page FROM quran_downloads WHERE version = ? AND status IN ('${PageDownloadStatus.PENDING}', '${PageDownloadStatus.FAILED}') ORDER BY page LIMIT ?`,
-      [version, limit]
-    );
-    return rows.map((r) => r.page);
-  });
-
-const getDownloadCounts = (
-  version: MushafVersion
-): Promise<{
-  total: number;
-  completed: number;
-  failed: number;
-  pending: number;
-}> =>
-  downloadSdb.run(async (db) => {
-    const rows = await db.getAllAsync<{ status: string; count: number }>(
-      "SELECT status, COUNT(*) as count FROM quran_downloads WHERE version = ? GROUP BY status",
-      [version]
-    );
-    const counts = { total: 0, completed: 0, failed: 0, pending: 0 };
-    for (const row of rows) {
-      counts.total += row.count;
-      if (row.status === PageDownloadStatus.COMPLETE) counts.completed = row.count;
-      else if (row.status === PageDownloadStatus.FAILED) counts.failed = row.count;
-      else counts.pending += row.count;
-    }
-    return counts;
-  });
-
-const getTotalDownloadedBytes = (version: MushafVersion): Promise<number> =>
-  downloadSdb.run(async (db) => {
-    const result = await db.getFirstAsync<{ total: number }>(
-      `SELECT COALESCE(SUM(size_bytes), 0) as total FROM quran_downloads WHERE version = ? AND status = '${PageDownloadStatus.COMPLETE}'`,
-      [version]
-    );
-    return result?.total ?? 0;
-  });
-
-const isPageComplete = (version: MushafVersion, page: number): Promise<boolean> =>
-  downloadSdb.run(async (db) => {
-    const result = await db.getFirstAsync<{ status: string }>(
-      "SELECT status FROM quran_downloads WHERE version = ? AND page = ?",
-      [version, page]
-    );
-    return result?.status === PageDownloadStatus.COMPLETE;
-  });
-
-const deleteVersionDownloads = (version: MushafVersion): Promise<void> =>
-  downloadSdb.run(async (db) => {
-    await db.runAsync("DELETE FROM quran_downloads WHERE version = ?", [version]);
-  });
-
-const resetFailedPages = (version: MushafVersion): Promise<number> =>
-  downloadSdb.run(async (db) => {
-    const result = await db.runAsync(
-      `UPDATE quran_downloads SET status = '${PageDownloadStatus.PENDING}', updated_at = ? WHERE version = ? AND status = '${PageDownloadStatus.FAILED}'`,
-      [Date.now(), version]
-    );
-    return result.changes;
-  });
-
-// Bundle download lands the whole DB at once, so flip every page of a version
-// to complete in one write (the only download-DB access that lived outside this module).
-const markVersionComplete = (version: MushafVersion): Promise<void> =>
-  downloadSdb.run(async (db) => {
-    await db.runAsync(`UPDATE quran_downloads SET status = ?, updated_at = ? WHERE version = ?`, [
-      PageDownloadStatus.COMPLETE,
-      Date.now(),
-      version,
-    ]);
-  });
-
-const getSurahForPage = async (version: MushafVersion, page: number): Promise<string> => {
-  const db = await openBoundsDb(version);
-  const result = await db.getFirstAsync<{ surah_name: string }>(
-    "SELECT surah_name FROM line_metadata WHERE page = ? AND surah_name IS NOT NULL LIMIT 1",
-    [page]
-  );
-  return result?.surah_name ?? "";
-};
-
-const closeBoundsDb = async (version: MushafVersion): Promise<void> => {
-  const promise = boundsDbMap.get(version);
-  if (promise) {
-    try {
-      const db = await promise;
-      await db.closeAsync();
-    } catch {
-      // Already closed or failed
-    }
-    boundsDbMap.delete(version);
-  }
-};
-
-const getAyahsForPage = async (
-  page: number
-): Promise<Array<{ surahNumber: number; ayahNumber: number; text: string }>> => {
-  const db = await openQuranDb();
-  const rows = await db.getAllAsync<{
-    surah_number: number;
-    ayah_number: number;
-    text: string;
-  }>(
-    "SELECT surah_number, ayah_number, text FROM ayahs WHERE page = ? ORDER BY surah_number, ayah_number",
-    [page]
-  );
-  return rows.map((row) => ({
-    surahNumber: row.surah_number,
-    ayahNumber: row.ayah_number,
-    text: row.text,
-  }));
-};
-
-const getSurahNameForPageFromContent = async (page: number): Promise<number> => {
-  const db = await openQuranDb();
-  const result = await db.getFirstAsync<{ surah_number: number }>(
-    "SELECT surah_number FROM ayahs WHERE page = ? LIMIT 1",
-    [page]
-  );
-  return result?.surah_number ?? 1;
-};
-
-export const QuranDB = {
+export const QuranContentDB = {
   openQuranDb,
   openBoundsDb,
   closeBoundsDb,
   getLineMetadata,
   getGlyphBounds,
   getMarkerBounds,
-  getJuzForPage,
-  initializeDownloadPages,
-  updatePageStatus,
-  getPendingPages,
-  getDownloadCounts,
-  getTotalDownloadedBytes,
-  isPageComplete,
-  deleteVersionDownloads,
-  resetFailedPages,
-  markVersionComplete,
   getSurahForPage,
+  getJuzForPage,
   getAyahsForPage,
   getSurahNameForPageFromContent,
   getSurah,
