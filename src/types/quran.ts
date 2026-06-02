@@ -100,6 +100,8 @@ export type QuranState = {
   onboardingComplete: boolean;
   selectedVersion: MushafVersion | null;
   versionDownloads: Partial<Record<MushafVersion, VersionDownloadState>>;
+  // Transient — true only while the immersive reader (not chrome) is visible.
+  readerActive: boolean;
 
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
@@ -111,6 +113,7 @@ export type QuranState = {
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;
+  setReaderActive: (active: boolean) => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;
