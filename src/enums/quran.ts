@@ -52,3 +52,13 @@ export enum DownloadPhase {
   EXTRACTING = "extracting",
   FINALIZING = "finalizing",
 }
+
+export enum SajdaType {
+  REQUIRED = "required",
+  OPTIONAL = "optional",
+}
+
+export enum RevelationPlace {
+  MAKKAH = "makkah",
+  MADINAH = "madinah",
+}
