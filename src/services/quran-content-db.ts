@@ -94,6 +94,35 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   return quranDbPromise;
 };
 
+// Debug: close the connection and delete the copied quran.db (+ marker / WAL /
+// SHM) so the next open re-copies the bundled asset. Lets a tester force a fresh
+// copy from the debug menu — e.g. to confirm a corrected DB ships in TestFlight.
+const resetQuranDb = async (): Promise<void> => {
+  if (quranDbPromise) {
+    try {
+      await (await quranDbPromise).closeAsync();
+    } catch {
+      // already closed / failed to open
+    }
+    quranDbPromise = null;
+  }
+
+  const dir = await getDirectory();
+  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
+  const targetDir = new Directory(dirUri);
+  const names = [
+    QURAN_DB_NAME,
+    `${QURAN_DB_NAME}-wal`,
+    `${QURAN_DB_NAME}-shm`,
+    `${QURAN_DB_NAME}.version`,
+  ];
+  for (const name of names) {
+    const file = new File(targetDir, name);
+    if (file.exists) file.delete();
+  }
+  console.log("[QuranContentDB] Reset quran.db — will re-copy on next open");
+};
+
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
   if (!boundsDbMap.has(version)) {
     boundsDbMap.set(
@@ -230,7 +259,7 @@ const getJuzForPage = async (page: number): Promise<number> => {
 
 const getAyahsForPage = async (
   page: number
-): Promise<Array<{ surahNumber: number; ayahNumber: number; text: string }>> => {
+): Promise<{ surahNumber: number; ayahNumber: number; text: string }[]> => {
   const db = await openQuranDb();
   const rows = await db.getAllAsync<{
     surah_number: number;
@@ -339,6 +368,7 @@ const getAyahMetadata = async (
 
 export const QuranContentDB = {
   openQuranDb,
+  resetQuranDb,
   openBoundsDb,
   closeBoundsDb,
   getLineMetadata,
