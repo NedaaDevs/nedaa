@@ -323,6 +323,28 @@ const getAllSurahs = async (): Promise<SurahMeta[]> => {
   return rows.map(mapSurah);
 };
 
+// Start page of each juz / hizb — the first page any ayah of that division
+// appears on. Powers the go-to navigation sheet.
+const getJuzStartPages = async (): Promise<{ division: number; page: number }[]> => {
+  const db = await openQuranDb();
+  return db.getAllAsync<{ division: number; page: number }>(
+    `SELECT d.juz AS division, MIN(a.page) AS page
+     FROM ayah_divisions d
+     JOIN ayahs a ON a.surah_number = d.surah AND a.ayah_number = d.ayah
+     GROUP BY d.juz ORDER BY d.juz`
+  );
+};
+
+const getHizbStartPages = async (): Promise<{ division: number; page: number }[]> => {
+  const db = await openQuranDb();
+  return db.getAllAsync<{ division: number; page: number }>(
+    `SELECT d.hizb AS division, MIN(a.page) AS page
+     FROM ayah_divisions d
+     JOIN ayahs a ON a.surah_number = d.surah AND a.ayah_number = d.ayah
+     GROUP BY d.hizb ORDER BY d.hizb`
+  );
+};
+
 // Full metadata for one ayah — powers the press-to-highlight info sheet.
 const getAyahMetadata = async (
   surahNumber: number,
@@ -380,5 +402,7 @@ export const QuranContentDB = {
   getSurahNameForPageFromContent,
   getSurah,
   getAllSurahs,
+  getJuzStartPages,
+  getHizbStartPages,
   getAyahMetadata,
 };

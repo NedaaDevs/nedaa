@@ -5,7 +5,7 @@ import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
-import { X, Settings } from "lucide-react-native";
+import { X, Settings, List } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
@@ -21,6 +21,7 @@ import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
+import GoToSheet from "@/components/quran/GoToSheet";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const ALL_THEMES = Object.values(QuranTheme);
@@ -59,6 +60,7 @@ const QuranScreen = () => {
   const router = useRouter();
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showGoTo, setShowGoTo] = useState(false);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showResumeHint, setShowResumeHint] = useState(false);
@@ -302,23 +304,42 @@ const QuranScreen = () => {
             left={16}
             right={16}
             justifyContent="space-between">
-            <Pressable
-              onPress={() => {
-                setShowOverlay(false);
-                setShowSettings(true);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t("quran.settings.title")}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: "rgba(0,0,0,0.3)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-              <Settings color="white" size={18} />
-            </Pressable>
+            <XStack gap="$2">
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  setShowSettings(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.settings.title")}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(0,0,0,0.3)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                <Settings color="white" size={18} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  setShowGoTo(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.goto.title")}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(0,0,0,0.3)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                <List color="white" size={18} />
+              </Pressable>
+            </XStack>
 
             {readerMode === ReaderViewMode.TEXT && (
               <FontSizeControls fontSize={fontSize} onFontSizeChange={setFontSize} />
@@ -424,6 +445,9 @@ const QuranScreen = () => {
           onDownloadMore={handleDownloadMore}
         />
       )}
+
+      {/* Go-to navigation sheet */}
+      {showGoTo && <GoToSheet onGoTo={setCurrentPage} onClose={() => setShowGoTo(false)} />}
     </YStack>
   );
 };

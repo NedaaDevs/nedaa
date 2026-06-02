@@ -1189,5 +1189,14 @@
   "a11y.decrease": "کم کریں",
   "a11y.increase": "بڑھائیں",
   "quran.reader.resumedAt": "صفحہ {{page}} سے دوبارہ شروع",
-  "quran.reader.goToStart": "شروع پر جائیں"
+  "quran.reader.goToStart": "شروع پر جائیں",
+  "quran.goto.title": "یہاں جائیں",
+  "quran.goto.surah": "سورہ",
+  "quran.goto.juz": "پارہ",
+  "quran.goto.hizb": "حزب",
+  "quran.goto.page": "صفحہ",
+  "quran.goto.juzLabel": "پارہ {{n}}",
+  "quran.goto.hizbLabel": "حزب {{n}}",
+  "quran.goto.pagePrompt": "صفحہ (1–{{total}})",
+  "quran.goto.go": "جائیں"
 }

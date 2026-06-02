@@ -853,5 +853,14 @@
   "a11y.decrease": "Kurangkan",
   "a11y.increase": "Tambah",
   "quran.reader.resumedAt": "Disambung di halaman {{page}}",
-  "quran.reader.goToStart": "Ke permulaan"
+  "quran.reader.goToStart": "Ke permulaan",
+  "quran.goto.title": "Pergi ke",
+  "quran.goto.surah": "Surah",
+  "quran.goto.juz": "Juzuk",
+  "quran.goto.hizb": "Hizib",
+  "quran.goto.page": "Halaman",
+  "quran.goto.juzLabel": "Juzuk {{n}}",
+  "quran.goto.hizbLabel": "Hizib {{n}}",
+  "quran.goto.pagePrompt": "Halaman (1–{{total}})",
+  "quran.goto.go": "Pergi"
 }

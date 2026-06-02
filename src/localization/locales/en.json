@@ -1237,5 +1237,14 @@
   "a11y.decrease": "Decrease",
   "a11y.increase": "Increase",
   "quran.reader.resumedAt": "Resumed at page {{page}}",
-  "quran.reader.goToStart": "Go to start"
+  "quran.reader.goToStart": "Go to start",
+  "quran.goto.title": "Go to",
+  "quran.goto.surah": "Surah",
+  "quran.goto.juz": "Juz",
+  "quran.goto.hizb": "Hizb",
+  "quran.goto.page": "Page",
+  "quran.goto.juzLabel": "Juz {{n}}",
+  "quran.goto.hizbLabel": "Hizb {{n}}",
+  "quran.goto.pagePrompt": "Page (1–{{total}})",
+  "quran.goto.go": "Go"
 }

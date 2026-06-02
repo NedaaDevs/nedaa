@@ -1273,5 +1273,14 @@
   "a11y.decrease": "إنقاص",
   "a11y.increase": "زيادة",
   "quran.reader.resumedAt": "استؤنف عند الصفحة {{page}}",
-  "quran.reader.goToStart": "العودة إلى البداية"
+  "quran.reader.goToStart": "العودة إلى البداية",
+  "quran.goto.title": "الانتقال إلى",
+  "quran.goto.surah": "سورة",
+  "quran.goto.juz": "جزء",
+  "quran.goto.hizb": "حزب",
+  "quran.goto.page": "صفحة",
+  "quran.goto.juzLabel": "الجزء {{n}}",
+  "quran.goto.hizbLabel": "الحزب {{n}}",
+  "quran.goto.pagePrompt": "الصفحة (1–{{total}})",
+  "quran.goto.go": "انتقال"
 }
