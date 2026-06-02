@@ -1,20 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Image,
-  LayoutChangeEvent,
-  Platform,
-  Pressable,
-  StatusBar,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import type { GestureResponderEvent } from "react-native";
-import { Paths } from "expo-file-system";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { LayoutChangeEvent, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MushafVersion, MushafImageType, QuranTheme } from "@/enums/quran";
+import { MushafVersion, QuranTheme } from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
@@ -22,9 +11,8 @@ import {
   IMAGE_SOURCE_LINE_HEIGHT,
   SURAH_NAMES,
 } from "@/constants/Quran";
-import { GlyphBound } from "@/types/quran";
-import { QuranContentDB } from "@/services/quran-content-db";
-import { QuranDownload } from "@/services/quran-download";
+import { usePageData } from "@/hooks/usePageData";
+import { useAyahHitTest } from "@/hooks/useAyahHitTest";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
 import LineShimmer from "@/components/quran/LineShimmer";
@@ -33,6 +21,7 @@ import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
 
 const LONG_PRESS_MS = 400;
+
 interface QuranPageProps {
   page: number;
   version: MushafVersion;
@@ -46,81 +35,13 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const { width, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const estimatedHeight = screenHeight - insets.top - 60;
-  const [surahNames, setSurahNames] = useState<Record<number, string>>({});
-  const [juz, setJuz] = useState(1);
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
-  const [glyphBounds, setGlyphBounds] = useState<GlyphBound[]>([]);
-  const [highlightedAyah, setHighlightedAyah] = useState<{
-    surah: number;
-    ayah: number;
-    touchX: number;
-    touchY: number;
-  } | null>(null);
-  const [pageAvailable, setPageAvailable] = useState(() =>
-    QuranDownload.isPageAvailable(version, page)
-  );
-  const isPageMode = QuranDownload.getImageType(version) === MushafImageType.PAGE;
-  const [sourcePageHeight, setSourcePageHeight] = useState(0);
-  const linesRef = useRef<View>(null);
   const pressableRef = useRef<View>(null);
 
-  useEffect(() => {
-    const available = QuranDownload.isPageAvailable(version, page);
-    setPageAvailable(available);
-    if (!available) {
-      QuranDownload.prioritizePage(page);
-    }
-    setHighlightedAyah(null);
-  }, [page, version]);
-
-  // Get source image height for page mode highlight math
-  useEffect(() => {
-    if (!pageAvailable || !isPageMode) return;
-    const pageStr = String(page).padStart(3, "0");
-    const imgUri = `${Paths.document.uri}quran/${version}/pages/${pageStr}.png`;
-    Image.getSize(imgUri, (_w, h) => setSourcePageHeight(h));
-  }, [page, version, pageAvailable, isPageMode]);
-
-  useEffect(() => {
-    if (!pageAvailable) return;
-
-    const loadPageData = async () => {
-      try {
-        const [lineMetadata, juzNumber, bounds] = await Promise.all([
-          QuranContentDB.getLineMetadata(version, page),
-          QuranContentDB.getJuzForPage(page),
-          QuranContentDB.getGlyphBounds(version, page),
-        ]);
-
-        const names: Record<number, string> = {};
-        for (const lm of lineMetadata) {
-          if (lm.surahNumber && lm.surahName) {
-            names[lm.surahNumber] = lm.surahName;
-          }
-        }
-        setSurahNames(names);
-        setJuz(juzNumber);
-        setGlyphBounds(bounds);
-      } catch (error) {
-        console.warn(`[QuranPage] Failed to load data for page ${page}:`, error);
-      }
-    };
-
-    loadPageData();
-  }, [page, version, pageAvailable]);
-
-  useEffect(() => {
-    if (pageAvailable !== false) return;
-
-    const interval = setInterval(() => {
-      if (QuranDownload.isPageAvailable(version, page)) {
-        setPageAvailable(true);
-        clearInterval(interval);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [pageAvailable, version, page]);
+  const { pageAvailable, isPageMode, surahNames, juz, glyphBounds, sourcePageHeight } = usePageData(
+    version,
+    page
+  );
 
   const onLinesLayout = useCallback((event: LayoutChangeEvent) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
@@ -144,103 +65,26 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     sourcePageHeight > 0 ? Math.round(sourcePageHeight * pageScaleX) : linesAreaHeight;
   const pageScaleY = scaledPageHeight > 0 ? linesAreaHeight / scaledPageHeight : 1;
 
-  const hitTestAtCoords = useCallback(
-    (touchX: number, touchY: number) => {
-      let sourceX: number;
-      let sourceLine: number;
-      let sourceY: number;
-
-      if (isPageMode) {
-        const srcX = touchX / pageScaleX;
-        const srcY = touchY / (pageScaleX * pageScaleY);
-        sourceLine = Math.floor(srcY / srcLineHeight) + 1;
-        sourceX = srcX;
-        sourceY = srcY - (sourceLine - 1) * srcLineHeight;
-      } else {
-        sourceX = touchX / coverScale;
-        sourceLine = Math.floor(touchY / lineHeight) + 1;
-        sourceY = (touchY - (sourceLine - 1) * lineHeight + lineCoverClipY) / coverScale;
-      }
-
-      return { sourceX, sourceY, sourceLine };
-    },
-    [isPageMode, pageScaleX, pageScaleY, srcLineHeight, coverScale, lineHeight, lineCoverClipY]
+  const geometry = useMemo(
+    () => ({
+      isPageMode,
+      coverScale,
+      lineHeight,
+      lineCoverClipY,
+      pageScaleX,
+      pageScaleY,
+      srcLineHeight,
+    }),
+    [isPageMode, coverScale, lineHeight, lineCoverClipY, pageScaleX, pageScaleY, srcLineHeight]
   );
 
-  const handleLongPress = useCallback(
-    (event: GestureResponderEvent) => {
-      if (glyphBounds.length === 0 || lineHeight === 0) return;
-
-      pressableRef.current?.measureInWindow((px, py) => {
-        const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
-        const touchX = event.nativeEvent.pageX - px;
-        const touchY = event.nativeEvent.pageY - py - statusBarOffset;
-
-        const { sourceX, sourceY, sourceLine } = hitTestAtCoords(touchX, touchY);
-
-        const hit = glyphBounds.find(
-          (g) =>
-            g.line === sourceLine &&
-            sourceX >= g.x &&
-            sourceX <= g.x + g.width &&
-            sourceY >= g.y &&
-            sourceY <= g.y + g.height &&
-            !g.isMarker
-        );
-
-        if (hit) {
-          setHighlightedAyah({
-            surah: hit.surahNumber,
-            ayah: hit.ayahNumber,
-            touchX,
-            touchY,
-          });
-        } else {
-          setHighlightedAyah(null);
-        }
-      });
-    },
-    [glyphBounds, lineHeight, hitTestAtCoords]
-  );
-
-  const handlePress = useCallback(
-    (event: GestureResponderEvent) => {
-      if (glyphBounds.length === 0 || lineHeight === 0) {
-        setHighlightedAyah(null);
-        return;
-      }
-
-      pressableRef.current?.measureInWindow((px, py) => {
-        const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
-        const touchX = event.nativeEvent.pageX - px;
-        const touchY = event.nativeEvent.pageY - py - statusBarOffset;
-
-        const { sourceX, sourceY, sourceLine } = hitTestAtCoords(touchX, touchY);
-
-        const markerHit = glyphBounds.find(
-          (g) =>
-            g.isMarker &&
-            g.line === sourceLine &&
-            sourceX >= g.x &&
-            sourceX <= g.x + g.width &&
-            sourceY >= g.y &&
-            sourceY <= g.y + g.height
-        );
-
-        if (markerHit) {
-          setHighlightedAyah({
-            surah: markerHit.surahNumber,
-            ayah: markerHit.ayahNumber,
-            touchX,
-            touchY,
-          });
-        } else {
-          setHighlightedAyah(null);
-        }
-      });
-    },
-    [glyphBounds, lineHeight, hitTestAtCoords]
-  );
+  const { highlightedAyah, handlePress, handleLongPress } = useAyahHitTest({
+    version,
+    page,
+    glyphBounds,
+    geometry,
+    pressableRef,
+  });
 
   // Header surah is derived from the page's own glyphs (each carries its
   // surahNumber), so continuation pages show the running surah — and it's
@@ -334,14 +178,9 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
       flex={1}
       width={width}
       style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
-      <PageHeader
-        surahName={headerSurah}
-        juz={pageAvailable ? juz : null}
-        quranTheme={quranTheme}
-      />
+      <PageHeader surahName={headerSurah} juz={pageAvailable ? juz : null} quranTheme={quranTheme} />
 
       <View
-        ref={linesRef}
         style={{
           flex: 1,
           alignItems: "center",
