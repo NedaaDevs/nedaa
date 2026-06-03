@@ -1236,8 +1236,6 @@
   "quran.surah.pages": "Pages {{start}}–{{end}}",
   "a11y.decrease": "Decrease",
   "a11y.increase": "Increase",
-  "quran.reader.resumedAt": "Resumed at page {{page}}",
-  "quran.reader.goToStart": "Go to start",
   "quran.goto.title": "Go to",
   "quran.goto.surah": "Surah",
   "quran.goto.juz": "Juz",

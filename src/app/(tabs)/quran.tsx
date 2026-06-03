@@ -3,7 +3,6 @@ import { Alert, Pressable, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
 import { X, Settings, List } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -25,10 +24,6 @@ import GoToSheet from "@/components/quran/GoToSheet";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const ALL_THEMES = Object.values(QuranTheme);
-
-// Show the "resumed at page X" hint at most once per app launch, not on every
-// remount of the reader (e.g. returning from settings).
-let resumeHintConsumed = false;
 
 const QuranScreen = () => {
   const {
@@ -63,7 +58,6 @@ const QuranScreen = () => {
   const [showGoTo, setShowGoTo] = useState(false);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [showResumeHint, setShowResumeHint] = useState(false);
   // The version whose download the user is actively watching on the progress
   // screen this session. Keeps that screen up through completion (so they can
   // tap "Start reading") and distinguishes it from an already-installed version
@@ -90,17 +84,6 @@ const QuranScreen = () => {
   useEffect(() => {
     setReaderActive(showReader);
   }, [showReader, setReaderActive]);
-
-  // Once per launch, if the reader opened mid-mushaf (resumed from the persisted
-  // page), offer a one-tap jump back to the start. Auto-dismisses.
-  useEffect(() => {
-    if (resumeHintConsumed || !showReader || useQuranStore.getState().currentPage <= 1) return;
-    resumeHintConsumed = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowResumeHint(true);
-    const timer = setTimeout(() => setShowResumeHint(false), 6000);
-    return () => clearTimeout(timer);
-  }, [showReader]);
 
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
@@ -253,45 +236,6 @@ const QuranScreen = () => {
               onDismiss={() => dismissDarkOffer(currentVersion)}
             />
           )}
-        </YStack>
-      )}
-
-      {/* One-time "resumed mid-mushaf" hint with a jump back to the start. */}
-      {showResumeHint && (
-        <YStack
-          position="absolute"
-          bottom={insets.bottom + 24}
-          left={0}
-          right={0}
-          alignItems="center"
-          zIndex={6}
-          pointerEvents="box-none">
-          <XStack
-            alignItems="center"
-            gap="$3"
-            paddingVertical="$2.5"
-            paddingHorizontal="$4"
-            borderRadius={999}
-            backgroundColor={themeColors.headerColor}>
-            <Text fontSize={13} color={themeColors.background}>
-              {t("quran.reader.resumedAt", { page: currentPage })}
-            </Text>
-            <Pressable
-              onPress={() => {
-                setCurrentPage(1);
-                setShowResumeHint(false);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t("quran.reader.goToStart")}>
-              <Text
-                fontSize={13}
-                fontWeight="700"
-                textDecorationLine="underline"
-                color={themeColors.background}>
-                {t("quran.reader.goToStart")}
-              </Text>
-            </Pressable>
-          </XStack>
         </YStack>
       )}
 

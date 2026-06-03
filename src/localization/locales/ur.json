@@ -1188,8 +1188,6 @@
   "quran.settings.deleteTitle": "مصحف حذف کریں",
   "a11y.decrease": "کم کریں",
   "a11y.increase": "بڑھائیں",
-  "quran.reader.resumedAt": "صفحہ {{page}} سے دوبارہ شروع",
-  "quran.reader.goToStart": "شروع پر جائیں",
   "quran.goto.title": "یہاں جائیں",
   "quran.goto.surah": "سورہ",
   "quran.goto.juz": "پارہ",

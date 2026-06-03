@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useWindowDimensions, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -43,9 +44,16 @@ const QuranReader = ({
   onTap,
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Swipes starting inside this bottom strip belong to the system home-indicator
+  // gesture (swipe up to close/background the app); a vertical drag there must
+  // not also turn a page. Horizontal turns from the same strip stay allowed.
+  const bottomDeadZone = insets.bottom + 24;
   // Single shared value for page offset (normalized: 0 = current, 1 = one page forward)
   const dragOffset = useSharedValue(0);
   const isHorizontal = useSharedValue<boolean | null>(null);
+  // True when the active gesture began in the bottom home-indicator strip.
+  const startedInBottomEdge = useSharedValue(false);
   const pinchBaseFontSize = useSharedValue(fontSize);
   // The committed page, held on the UI thread so a swipe commit can advance it
   // and reset dragOffset in the same frame — slot positions read this, not the
@@ -89,12 +97,22 @@ const QuranReader = ({
   }
 
   const panGesture = panGestureBase
+    .onBegin((event) => {
+      "worklet";
+      startedInBottomEdge.value = event.absoluteY > height - bottomDeadZone;
+    })
     .onUpdate((event) => {
       "worklet";
       if (isHorizontal.value === null) {
         if (Math.abs(event.translationX) > 10 || Math.abs(event.translationY) > 10) {
           isHorizontal.value = Math.abs(event.translationX) > Math.abs(event.translationY);
         }
+        return;
+      }
+
+      // A vertical drag from the bottom edge is the system close gesture, not a
+      // page turn; let it pass through without moving the page.
+      if (!isHorizontal.value && startedInBottomEdge.value) {
         return;
       }
 
@@ -122,6 +140,12 @@ const QuranReader = ({
       "worklet";
       const horizontal = isHorizontal.value;
       isHorizontal.value = null;
+
+      // Vertical drag from the bottom edge never moved the page (see onUpdate);
+      // nothing to settle.
+      if (!horizontal && startedInBottomEdge.value) {
+        return;
+      }
 
       if (!horizontal && readerMode === ReaderViewMode.TEXT) {
         return;
