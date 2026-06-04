@@ -83,12 +83,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Alarm.m4a"; sourceTree = "<group>"; };
-		07DD26D53B684119BBB6CDA6 /* Asap_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/asap/600SemiBold/Asap_600SemiBold.ttf"; sourceTree = "<group>"; };
+		04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Alarm.m4a"; sourceTree = "<group>"; };
+		07DD26D53B684119BBB6CDA6 /* Asap_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/asap/600SemiBold/Asap_600SemiBold.ttf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* nedaa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nedaa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = nedaa/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = nedaa/Info.plist; sourceTree = "<group>"; };
-		1F3087B62D4D4E6293EBFAB8 /* IBMPlexSansArabic_400Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_400Regular.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/400Regular/IBMPlexSansArabic_400Regular.ttf"; sourceTree = "<group>"; };
+		1F3087B62D4D4E6293EBFAB8 /* IBMPlexSansArabic_400Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_400Regular.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/400Regular/IBMPlexSansArabic_400Regular.ttf"; sourceTree = "<group>"; };
 		27F7C1C7F7A666F19C7D0FC5 /* Pods-nedaa.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.release.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.release.xcconfig"; sourceTree = "<group>"; };
 		353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = makkah_athan1.caf; sourceTree = "<group>"; };
 		3571E56E2F12BEBF00DABED1 /* AlarmActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmActivityAttributes.swift; sourceTree = "<group>"; };
@@ -102,40 +102,40 @@
 		35C11B362E03326600EC4249 /* knock.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = knock.caf; sourceTree = "<group>"; };
 		35C11B372E03326600EC4249 /* medina_athan.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = medina_athan.caf; sourceTree = "<group>"; };
 		35C11B382E03326600EC4249 /* takbir.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = takbir.caf; sourceTree = "<group>"; };
-		35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_400Regular.ttf; path = "../node_modules/@expo-google-fonts/asap/400Regular/Asap_400Regular.ttf"; sourceTree = "<group>"; };
+		35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_400Regular.ttf; path = "../node_modules/@expo-google-fonts/asap/400Regular/Asap_400Regular.ttf"; sourceTree = "<group>"; };
 		35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		35F778B42E05B032009C55CF /* NedaaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NedaaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		35F778B52E05B032009C55CF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		35F778B72E05B032009C55CF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		35F778CB2E05B08B009C55CF /* NedaaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NedaaWidgetExtension.entitlements; sourceTree = "<group>"; };
-		38317CD359AE2453AE848ED7 /* iOS-Uplift.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Uplift.m4a"; sourceTree = "<group>"; };
+		38317CD359AE2453AE848ED7 /* iOS-Uplift.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Uplift.m4a"; sourceTree = "<group>"; };
 		395E89B8D23B35426704FAA8 /* libPods-nedaa.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-nedaa.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Signal.m4a"; sourceTree = "<group>"; };
-		3B6CFF15E63924F40D01DEC8 /* iOS-Ripples.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Ripples.m4a"; sourceTree = "<group>"; };
-		462CD69125344516968C89B4 /* IBMPlexSansArabic_500Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_500Medium.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/500Medium/IBMPlexSansArabic_500Medium.ttf"; sourceTree = "<group>"; };
-		4F965BC8BA398FA918782408 /* iOS-Sencha.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Sencha.m4a"; sourceTree = "<group>"; };
-		7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Stargaze.m4a"; sourceTree = "<group>"; };
-		7FEA9357ECA69F397F59F024 /* iOS-Radial-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Radial-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
-		8F365AD51C0F4E16A97E648A /* Asap_500Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_500Medium.ttf; path = "../node_modules/@expo-google-fonts/asap/500Medium/Asap_500Medium.ttf"; sourceTree = "<group>"; };
-		91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Radar.m4a"; sourceTree = "<group>"; };
-		A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Ascending.m4a"; sourceTree = "<group>"; };
+		3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Signal.m4a"; sourceTree = "<group>"; };
+		3B6CFF15E63924F40D01DEC8 /* iOS-Ripples.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Ripples.m4a"; sourceTree = "<group>"; };
+		462CD69125344516968C89B4 /* IBMPlexSansArabic_500Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_500Medium.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/500Medium/IBMPlexSansArabic_500Medium.ttf"; sourceTree = "<group>"; };
+		4F965BC8BA398FA918782408 /* iOS-Sencha.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Sencha.m4a"; sourceTree = "<group>"; };
+		7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Stargaze.m4a"; sourceTree = "<group>"; };
+		7FEA9357ECA69F397F59F024 /* iOS-Radial-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Radial-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
+		8F365AD51C0F4E16A97E648A /* Asap_500Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_500Medium.ttf; path = "../node_modules/@expo-google-fonts/asap/500Medium/Asap_500Medium.ttf"; sourceTree = "<group>"; };
+		91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Radar.m4a"; sourceTree = "<group>"; };
+		A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Ascending.m4a"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = nedaa/SplashScreen.storyboard; sourceTree = "<group>"; };
-		BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Chimes.m4a"; sourceTree = "<group>"; };
+		BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Chimes.m4a"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Reflection-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
-		C7947A41E2F14420B203A5EB /* IBMPlexSansArabic_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_700Bold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/700Bold/IBMPlexSansArabic_700Bold.ttf"; sourceTree = "<group>"; };
-		CB31401727F611561E0B3393 /* iOS-Beacon.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Beacon.m4a"; sourceTree = "<group>"; };
-		D8229BED42F148008205B852 /* IBMPlexSansArabic_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold/IBMPlexSansArabic_600SemiBold.ttf"; sourceTree = "<group>"; };
+		BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Reflection-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
+		C7947A41E2F14420B203A5EB /* IBMPlexSansArabic_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_700Bold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/700Bold/IBMPlexSansArabic_700Bold.ttf"; sourceTree = "<group>"; };
+		CB31401727F611561E0B3393 /* iOS-Beacon.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Beacon.m4a"; sourceTree = "<group>"; };
+		D8229BED42F148008205B852 /* IBMPlexSansArabic_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold/IBMPlexSansArabic_600SemiBold.ttf"; sourceTree = "<group>"; };
 		DA08ED9376A040CA976C4F84 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = PrivacyInfo.xcprivacy; path = nedaa/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E535398133B6C0CA3A79FCE0 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-nedaa/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		E56D427AB1225CD998955D09 /* iOS-Presto.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Presto.m4a"; sourceTree = "<group>"; };
-		E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Marimba.m4a"; sourceTree = "<group>"; };
+		E56D427AB1225CD998955D09 /* iOS-Presto.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Presto.m4a"; sourceTree = "<group>"; };
+		E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Marimba.m4a"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = nedaa/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* nedaa-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "nedaa-Bridging-Header.h"; path = "nedaa/nedaa-Bridging-Header.h"; sourceTree = "<group>"; };
-		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
+		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
 		FDE52688DF5F5110C0D947CA /* Pods-nedaa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.debug.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.debug.xcconfig"; sourceTree = "<group>"; };
-		FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_700Bold.ttf; path = "../node_modules/@expo-google-fonts/asap/700Bold/Asap_700Bold.ttf"; sourceTree = "<group>"; };
+		FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_700Bold.ttf; path = "../node_modules/@expo-google-fonts/asap/700Bold/Asap_700Bold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -199,7 +199,6 @@
 				38317CD359AE2453AE848ED7 /* iOS-Uplift.m4a */,
 				E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */,
 			);
-			name = sounds;
 			path = sounds;
 			sourceTree = "<group>";
 		};
@@ -314,7 +313,6 @@
 				FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */,
 			);
 			name = Resources;
-			path = "";
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -525,9 +523,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-nedaa/Pods-nedaa-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-nedaa/Pods-nedaa-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -556,9 +558,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-nedaa/Pods-nedaa-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-nedaa/Pods-nedaa-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -750,11 +756,13 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nedaa.app.NedaaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -795,10 +803,12 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nedaa.app.NedaaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -867,10 +877,7 @@
 					"$(inherited)",
 					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -937,10 +944,7 @@
 					"$(inherited)",
 					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
