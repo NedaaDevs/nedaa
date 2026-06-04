@@ -47,7 +47,9 @@ const AyahText = ({
           styles.ayahText,
           {
             fontSize,
-            lineHeight: fontSize * 1.8,
+            // Hafs carries tall vowel marks; generous leading keeps lines from
+            // crowding and reads calmer.
+            lineHeight: fontSize * 2.05,
             color: themeColors.textTint ?? "#000",
             fontFamily: QURAN_FONT_FAMILY,
           },
@@ -63,14 +65,18 @@ const AyahText = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 4,
-    paddingVertical: 2,
-    direction: "rtl",
+    borderRadius: 6,
+    paddingVertical: 4,
     alignSelf: "stretch",
   },
   ayahText: {
+    // `writingDirection` (not the `direction` layout prop) drives RTL bidi; with
+    // the layout prop gone, physical `textAlign: "right"` aligns every line —
+    // including each ayah's short last line — to the right. NOT justify, which
+    // stretched short verses edge-to-edge ("rivers").
     writingDirection: "rtl",
-    textAlign: "justify",
+    textAlign: "right",
+    width: "100%",
   },
 });
 
