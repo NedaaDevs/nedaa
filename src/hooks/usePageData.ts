@@ -7,6 +7,9 @@ import { GlyphBound } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import { useQuranStore } from "@/stores/quran";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("quran-content-db");
 
 export type PageData = {
   pageAvailable: boolean;
@@ -90,7 +93,7 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
         setJuz(juzNumber);
         setGlyphBounds(bounds);
       } catch (error) {
-        console.warn(`[usePageData] Failed to load data for page ${page}:`, error);
+        log.e("Page", `Failed to load data for page ${page}`, error as Error);
       }
     };
 

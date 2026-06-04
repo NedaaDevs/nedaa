@@ -8,6 +8,9 @@ import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/quran";
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("quran-content-db");
 
 // Read-only Quran content: the bundled `quran.db` (ayah text + surah/division
 // metadata) and the per-version `bounds-*.db` (glyph geometry + line metadata).
@@ -24,13 +27,6 @@ const getDirectory = async (): Promise<string> => {
   return SQLite.defaultDatabaseDirectory;
 };
 
-// TODO(quran-metadata): TEMPORARY one-time force re-copy of the bundled quran.db.
-// The metadata layer (surahs/divisions/sajdas + ayah_divisions view) was added without a
-// QURAN_DB_VERSION bump because only the dev device has the old v1 on disk. Flip this true
-// once on that device to replace the stale copy, then REMOVE this flag and the `|| FORCE_...`
-// guard below. Production installs are unaffected (they copy fresh on first launch).
-const FORCE_QURAN_DB_RECOPY = true;
-
 const ensureQuranDbCopied = async (): Promise<void> => {
   const dir = await getDirectory();
 
@@ -46,10 +42,12 @@ const ensureQuranDbCopied = async (): Promise<void> => {
   const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
 
   const installedVersion = versionFile.exists ? versionFile.textSync() : null;
-  const needsCopy =
-    FORCE_QURAN_DB_RECOPY || !targetFile.exists || installedVersion !== String(QURAN_DB_VERSION);
+  const needsCopy = !targetFile.exists || installedVersion !== String(QURAN_DB_VERSION);
 
-  if (!needsCopy) return;
+  if (!needsCopy) {
+    log.d("Copy", `quran.db v${installedVersion} present`);
+    return;
+  }
 
   const [asset] = await Asset.loadAsync(require("../../assets/db/quran.db"));
   if (!asset.localUri) {
@@ -71,7 +69,7 @@ const ensureQuranDbCopied = async (): Promise<void> => {
   versionFile.create();
   versionFile.write(String(QURAN_DB_VERSION));
 
-  console.log(`[QuranContentDB] Copied quran.db v${QURAN_DB_VERSION} to ${dir}`);
+  log.i("Copy", `Copied quran.db v${QURAN_DB_VERSION} (${targetFile.size}B)`);
 };
 
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
@@ -86,7 +84,7 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         );
       } catch (error) {
         quranDbPromise = null;
-        console.error("[QuranContentDB] Error opening quran.db:", error);
+        log.e("Open", "Error opening quran.db", error as Error);
         throw error;
       }
     })();
@@ -120,7 +118,7 @@ const resetQuranDb = async (): Promise<void> => {
     const file = new File(targetDir, name);
     if (file.exists) file.delete();
   }
-  console.log("[QuranContentDB] Reset quran.db — will re-copy on next open");
+  log.i("Reset", "Reset quran.db — will re-copy on next open");
 };
 
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
@@ -136,7 +134,7 @@ const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> =>
           );
         } catch (error) {
           boundsDbMap.delete(version);
-          console.error(`[QuranContentDB] Error opening bounds-${version}.db:`, error);
+          log.e("Bounds", `Error opening bounds-${version}.db`, error as Error);
           throw error;
         }
       })()
