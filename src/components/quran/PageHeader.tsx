@@ -5,6 +5,7 @@ import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { juzLabel } from "@/utils/juz";
+import { useQuranStore } from "@/stores/quran";
 
 interface PageHeaderProps {
   surahName: string;
@@ -18,6 +19,7 @@ interface PageHeaderProps {
 const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
+  const showOrnament = useQuranStore((s) => s.showHeaderOrnament);
 
   const juzText = juz ? juzLabel(juz) : "";
 
@@ -37,19 +39,21 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
           </Text>
         </XStack>
         {/* Centered ornament, independent of the surah/juz text widths. */}
-        <View
-          position="absolute"
-          top={0}
-          bottom={0}
-          left={0}
-          right={0}
-          alignItems="center"
-          justifyContent="center"
-          pointerEvents="none">
-          <Text style={{ color: themeColors.frameColor, fontSize: 11, letterSpacing: 3 }}>
-            ◆ ◆ ◆
-          </Text>
-        </View>
+        {showOrnament && (
+          <View
+            position="absolute"
+            top={0}
+            bottom={0}
+            left={0}
+            right={0}
+            alignItems="center"
+            justifyContent="center"
+            pointerEvents="none">
+            <Text style={{ color: themeColors.frameColor, fontSize: 11, letterSpacing: 3 }}>
+              ◆ ◆ ◆
+            </Text>
+          </View>
+        )}
       </View>
       <View height={1} marginTop="$1.5" backgroundColor={themeColors.frameColor} opacity={0.28} />
     </YStack>

@@ -24,6 +24,7 @@ export const useQuranStore = create<QuranState>()(
       lastReadPage: 1,
       readerMode: ReaderViewMode.MADINAH,
       fontSize: FONT_SIZE_DEFAULT,
+      showHeaderOrnament: false,
 
       onboardingComplete: false,
       selectedVersion: null,
@@ -45,6 +46,7 @@ export const useQuranStore = create<QuranState>()(
       setReaderMode: (mode: ReaderViewMode) => set({ readerMode: mode }),
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
+      setShowHeaderOrnament: (show: boolean) => set({ showHeaderOrnament: show }),
 
       setOnboardingComplete: () => set({ onboardingComplete: true }),
       setSelectedVersion: (version) => set({ selectedVersion: version, currentVersion: version }),
@@ -140,6 +142,7 @@ export const useQuranStore = create<QuranState>()(
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,
         fontSize: state.fontSize,
+        showHeaderOrnament: state.showHeaderOrnament,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
         darkOfferDismissed: state.darkOfferDismissed,

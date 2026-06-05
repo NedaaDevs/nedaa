@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { Bookmark, ChevronDown, ChevronUp, Download, Minus, Plus, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import { Switch } from "@/components/ui/switch";
 import { MushafVersion, DownloadStatus, SurahFrameStyle, ReaderViewMode } from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
@@ -42,9 +43,11 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
     surahFrameStyle,
     readerMode,
     fontSize,
+    showHeaderOrnament,
     setSurahFrameStyle,
     setReaderMode,
     setFontSize,
+    setShowHeaderOrnament,
   } = useQuranStore();
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -136,6 +139,14 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                   </XStack>
                 </SettingRow>
               )}
+
+              <SettingRow label={t("quran.settings.headerOrnament")} chrome={chrome}>
+                <Switch
+                  value={showHeaderOrnament}
+                  onValueChange={setShowHeaderOrnament}
+                  accessibilityLabel={t("quran.settings.headerOrnament")}
+                />
+              </SettingRow>
             </Section>
 
             <ReadingThemeSwatches />

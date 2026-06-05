@@ -137,6 +137,8 @@ export type QuranState = {
   lastReadPage: number;
   readerMode: ReaderViewMode;
   fontSize: number;
+  // Decorative diamond ornament in the page header. Off by default.
+  showHeaderOrnament: boolean;
 
   onboardingComplete: boolean;
   selectedVersion: MushafVersion | null;
@@ -154,6 +156,7 @@ export type QuranState = {
   setSurahFrameStyle: (style: SurahFrameStyle) => void;
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
+  setShowHeaderOrnament: (show: boolean) => void;
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;
