@@ -14,6 +14,7 @@ import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enu
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
+import QuranDbGate from "@/components/quran/QuranDbGate";
 import PageSlider from "@/components/quran/PageSlider";
 import QuranSettingsSheet from "@/components/quran/QuranSettingsSheet";
 import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
@@ -21,6 +22,7 @@ import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import GoToSheet from "@/components/quran/GoToSheet";
+import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const ALL_THEMES = Object.values(QuranTheme);
@@ -49,6 +51,7 @@ const QuranScreen = () => {
   } = useQuranStore();
   const quranTheme = useResolvedQuranTheme();
   const prefersDark = usePrefersDarkReader();
+  const { state: dbState, retry: retryDb } = useQuranContentDbReady();
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
@@ -195,6 +198,13 @@ const QuranScreen = () => {
         onSelectTextMode={handleSelectTextMode}
       />
     );
+  }
+
+  // The reader reads from the bundled quran.db (ayah text + surah metadata), so
+  // hold it behind the copy/open gate: a loader while that completes, a retry if
+  // it fails — instead of rendering an empty page on a not-yet-ready DB.
+  if (dbState !== "ready") {
+    return <QuranDbGate state={dbState} quranTheme={quranTheme} onRetry={retryDb} />;
   }
 
   // Offer the dark page bundle only while reading a colored edition in dark

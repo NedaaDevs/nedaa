@@ -51,9 +51,14 @@ const ensureDbCopied = async (): Promise<void> => {
   }
 
   const sourceFile = new File(asset.localUri);
-  sourceFile.copy(targetFile);
+  await sourceFile.copy(targetFile);
+  if (targetFile.size === 0) {
+    throw new Error("[HisnMuslim-DB] hisn-muslim.db copy produced an empty file");
+  }
 
-  // Write version marker
+  // Version marker is written only after a verified, non-empty copy, so an
+  // interrupted copy is never stamped "installed" — leaving needsCopy true so
+  // the next open re-copies instead of opening an empty DB forever.
   if (versionFile.exists) versionFile.delete();
   versionFile.create();
   versionFile.write(String(HISN_MUSLIM_DB_VERSION));
