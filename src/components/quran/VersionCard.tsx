@@ -123,10 +123,24 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
 
           <YStack flex={1} gap="$1.5">
             <XStack alignItems="flex-start" gap="$2">
-              <YStack flex={1}>
-                <Text fontSize={17} fontWeight="700">
-                  {versionLabel}
-                </Text>
+              <YStack flex={1} gap="$1">
+                <XStack alignItems="center" gap="$2">
+                  <Text fontSize={17} fontWeight="700">
+                    {versionLabel}
+                  </Text>
+                  {/* Dev-only: prod filters unpublished versions out before here. */}
+                  {!version.published && (
+                    <XStack
+                      paddingHorizontal="$1.5"
+                      paddingVertical="$0.5"
+                      borderRadius="$2"
+                      backgroundColor={chrome.cardBorder}>
+                      <Text fontSize={10} fontWeight="700" color={chrome.subtleText}>
+                        Unpublished
+                      </Text>
+                    </XStack>
+                  )}
+                </XStack>
                 <Text color={chrome.subtleText} fontSize={12} fontWeight="500">
                   {version.yearHijri} AH · {version.yearGregorian}
                 </Text>

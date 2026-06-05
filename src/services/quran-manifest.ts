@@ -35,7 +35,10 @@ const getVersionInfo = async (versionId: string): Promise<QuranManifestVersion |
 
 const getVersions = async (): Promise<QuranManifestVersion[]> => {
   const manifest = await fetchManifest();
-  return manifest?.versions ?? [];
+  const versions = manifest?.versions ?? [];
+  // Hide unpublished versions in production; show them all in dev (the version
+  // card badges them) so we can test before publishing.
+  return __DEV__ ? versions : versions.filter((v) => v.published);
 };
 
 const getBundleUrl = (version: QuranManifestVersion): string => {

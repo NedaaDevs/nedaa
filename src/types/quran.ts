@@ -102,6 +102,7 @@ export type QuranPreview = {
 
 export type QuranManifestVersion = {
   id: string;
+  published: boolean;
   name: string;
   yearHijri: number;
   yearGregorian: number;
