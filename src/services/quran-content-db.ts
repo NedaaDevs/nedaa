@@ -20,6 +20,31 @@ const log = AppLogger.create("quran-content-db");
 let quranDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 const boundsDbMap = new Map<MushafVersion, Promise<SQLite.SQLiteDatabase>>();
 
+// Bounded in-memory cache for per-page reads, so turning or scrubbing back to a
+// recently-seen page is instant without re-querying. Keyed by version+page so it
+// survives the reader's page-window mount/unmount churn (a per-component cache
+// would not). Invalidated when a bounds DB is swapped (closeBoundsDb) or the
+// content DB is re-copied (resetQuranDb); quran.db is otherwise read-only.
+const PAGE_CACHE_LIMIT = 60;
+const pageReadCache = new Map<string, unknown>();
+
+const cachedRead = async <T>(key: string, read: () => Promise<T>): Promise<T> => {
+  const cached = pageReadCache.get(key);
+  if (cached !== undefined) return cached as T;
+  const value = await read();
+  if (pageReadCache.size >= PAGE_CACHE_LIMIT) {
+    // Map preserves insertion order — evict the oldest entry.
+    const oldest = pageReadCache.keys().next().value;
+    if (oldest !== undefined) pageReadCache.delete(oldest);
+  }
+  pageReadCache.set(key, value);
+  return value;
+};
+
+const clearPageReadCache = (): void => {
+  pageReadCache.clear();
+};
+
 const getDirectory = async (): Promise<string> => {
   if (Platform.OS === PlatformType.IOS) {
     return Paths.appleSharedContainers?.[appGroupId]?.uri;
@@ -118,6 +143,7 @@ const resetQuranDb = async (): Promise<void> => {
     const file = new File(targetDir, name);
     if (file.exists) file.delete();
   }
+  clearPageReadCache();
   log.i("Reset", "Reset quran.db — will re-copy on next open");
 };
 
@@ -154,84 +180,91 @@ const closeBoundsDb = async (version: MushafVersion): Promise<void> => {
     }
     boundsDbMap.delete(version);
   }
+  // A bounds DB swap (re-download) can change page geometry — drop cached pages.
+  clearPageReadCache();
 };
 
-const getLineMetadata = async (version: MushafVersion, page: number): Promise<LineMetadata[]> => {
-  const db = await openBoundsDb(version);
-  const rows = await db.getAllAsync<{
-    page: number;
-    line: number;
-    type: string;
-    surah_number: number | null;
-    surah_name: string | null;
-  }>("SELECT * FROM line_metadata WHERE page = ? ORDER BY line", [page]);
+const getLineMetadata = (version: MushafVersion, page: number): Promise<LineMetadata[]> =>
+  cachedRead(`lm:${version}:${page}`, async () => {
+    const db = await openBoundsDb(version);
+    const rows = await db.getAllAsync<{
+      page: number;
+      line: number;
+      type: string;
+      surah_number: number | null;
+      surah_name: string | null;
+    }>("SELECT * FROM line_metadata WHERE page = ? ORDER BY line", [page]);
 
-  return rows.map((row) => ({
-    page: row.page,
-    line: row.line,
-    type: row.type as LineType,
-    surahNumber: row.surah_number,
-    surahName: row.surah_name,
-  }));
-};
+    return rows.map((row) => ({
+      page: row.page,
+      line: row.line,
+      type: row.type as LineType,
+      surahNumber: row.surah_number,
+      surahName: row.surah_name,
+    }));
+  });
 
-const getMarkerBounds = async (version: MushafVersion, page: number): Promise<GlyphBound[]> => {
-  const db = await openBoundsDb(version);
-  const rows = await db.getAllAsync<{
-    page: number;
-    line: number;
-    position: number;
-    surah_number: number;
-    ayah_number: number;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    is_marker: number;
-  }>("SELECT * FROM glyph_bounds WHERE page = ? AND is_marker = 1 ORDER BY line, position", [page]);
+const getMarkerBounds = (version: MushafVersion, page: number): Promise<GlyphBound[]> =>
+  cachedRead(`mb:${version}:${page}`, async () => {
+    const db = await openBoundsDb(version);
+    const rows = await db.getAllAsync<{
+      page: number;
+      line: number;
+      position: number;
+      surah_number: number;
+      ayah_number: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      is_marker: number;
+    }>("SELECT * FROM glyph_bounds WHERE page = ? AND is_marker = 1 ORDER BY line, position", [
+      page,
+    ]);
 
-  return rows.map((row) => ({
-    page: row.page,
-    line: row.line,
-    position: row.position,
-    surahNumber: row.surah_number,
-    ayahNumber: row.ayah_number,
-    x: row.x,
-    y: row.y,
-    width: row.width,
-    height: row.height,
-    isMarker: true,
-  }));
-};
+    return rows.map((row) => ({
+      page: row.page,
+      line: row.line,
+      position: row.position,
+      surahNumber: row.surah_number,
+      ayahNumber: row.ayah_number,
+      x: row.x,
+      y: row.y,
+      width: row.width,
+      height: row.height,
+      isMarker: true,
+    }));
+  });
 
-const getGlyphBounds = async (version: MushafVersion, page: number): Promise<GlyphBound[]> => {
-  const db = await openBoundsDb(version);
-  const rows = await db.getAllAsync<{
-    page: number;
-    line: number;
-    position: number;
-    surah_number: number;
-    ayah_number: number;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    is_marker: number;
-  }>("SELECT * FROM glyph_bounds WHERE page = ? ORDER BY line, position", [page]);
+const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBound[]> =>
+  cachedRead(`gb:${version}:${page}`, async () => {
+    const db = await openBoundsDb(version);
+    const rows = await db.getAllAsync<{
+      page: number;
+      line: number;
+      position: number;
+      surah_number: number;
+      ayah_number: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      is_marker: number;
+    }>("SELECT * FROM glyph_bounds WHERE page = ? ORDER BY line, position", [page]);
 
-  return rows.map((row) => ({
-    page: row.page,
-    line: row.line,
-    position: row.position,
-    surahNumber: row.surah_number,
-    ayahNumber: row.ayah_number,
-    x: row.x,
-    y: row.y,
-    width: row.width,
-    height: row.height,
-    isMarker: row.is_marker === 1,
-  }));
-};
+    return rows.map((row) => ({
+      page: row.page,
+      line: row.line,
+      position: row.position,
+      surahNumber: row.surah_number,
+      ayahNumber: row.ayah_number,
+      x: row.x,
+      y: row.y,
+      width: row.width,
+      height: row.height,
+      isMarker: row.is_marker === 1,
+    }));
+  });
 
 const getSurahForPage = async (version: MushafVersion, page: number): Promise<string> => {
   const db = await openBoundsDb(version);
@@ -242,37 +275,25 @@ const getSurahForPage = async (version: MushafVersion, page: number): Promise<st
   return result?.surah_name ?? "";
 };
 
-const getJuzForPage = async (page: number): Promise<number> => {
-  const db = await openQuranDb();
-  // Divisions are stored as boundary tables and resolved per-ayah through the
-  // ayah_divisions view. Read the juz off the first ayah on the page.
-  const result = await db.getFirstAsync<{ juz: number }>(
-    `SELECT d.juz FROM ayahs a
-     JOIN ayah_divisions d ON d.surah = a.surah_number AND d.ayah = a.ayah_number
-     WHERE a.page = ? LIMIT 1`,
-    [page]
-  );
-  return result?.juz ?? 1;
-};
-
-const getAyahsForPage = async (
+const getAyahsForPage = (
   page: number
-): Promise<{ surahNumber: number; ayahNumber: number; text: string }[]> => {
-  const db = await openQuranDb();
-  const rows = await db.getAllAsync<{
-    surah_number: number;
-    ayah_number: number;
-    text: string;
-  }>(
-    "SELECT surah_number, ayah_number, text FROM ayahs WHERE page = ? ORDER BY surah_number, ayah_number",
-    [page]
-  );
-  return rows.map((row) => ({
-    surahNumber: row.surah_number,
-    ayahNumber: row.ayah_number,
-    text: row.text,
-  }));
-};
+): Promise<{ surahNumber: number; ayahNumber: number; text: string }[]> =>
+  cachedRead(`ay:${page}`, async () => {
+    const db = await openQuranDb();
+    const rows = await db.getAllAsync<{
+      surah_number: number;
+      ayah_number: number;
+      text: string;
+    }>(
+      "SELECT surah_number, ayah_number, text FROM ayahs WHERE page = ? ORDER BY surah_number, ayah_number",
+      [page]
+    );
+    return rows.map((row) => ({
+      surahNumber: row.surah_number,
+      ayahNumber: row.ayah_number,
+      text: row.text,
+    }));
+  });
 
 const getSurahNameForPageFromContent = async (page: number): Promise<number> => {
   const db = await openQuranDb();
@@ -395,7 +416,6 @@ export const QuranContentDB = {
   getGlyphBounds,
   getMarkerBounds,
   getSurahForPage,
-  getJuzForPage,
   getAyahsForPage,
   getSurahNameForPageFromContent,
   getSurah,

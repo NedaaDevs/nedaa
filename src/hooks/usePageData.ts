@@ -5,6 +5,7 @@ import { Paths } from "expo-file-system";
 import { LineType, MushafImageType, MushafVersion } from "@/enums/quran";
 import { GlyphBound } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { juzForPage } from "@/utils/juz";
 import { QuranDownload } from "@/services/quran-download";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
@@ -72,9 +73,8 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
 
     const loadPageData = async () => {
       try {
-        const [lineMetadata, juzNumber, bounds] = await Promise.all([
+        const [lineMetadata, bounds] = await Promise.all([
           QuranContentDB.getLineMetadata(version, page),
-          QuranContentDB.getJuzForPage(page),
           QuranContentDB.getGlyphBounds(version, page),
         ]);
 
@@ -90,7 +90,7 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
         }
         setSurahNames(names);
         setSurahHeaderLines(headers);
-        setJuz(juzNumber);
+        setJuz(juzForPage(page));
         setGlyphBounds(bounds);
       } catch (error) {
         log.e("Page", `Failed to load data for page ${page}`, error as Error);

@@ -1,9 +1,10 @@
-import { XStack } from "tamagui";
+import { View, XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, toHafsDigits } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import { juzLabel } from "@/utils/juz";
 
 interface PageHeaderProps {
   surahName: string;
@@ -12,26 +13,46 @@ interface PageHeaderProps {
   quranTheme: QuranTheme;
 }
 
+// Mushaf-authentic running header: surah and juz at the outer edges with the
+// Mihrab diamond ornament centered, over a hairline rule.
 const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
-  const juzText = juz ? t("a11y.quran.juz", { number: toHafsDigits(juz) }) : "";
+  const juzText = juz ? juzLabel(juz) : "";
 
   return (
-    <XStack
-      justifyContent="space-between"
+    <YStack
       paddingHorizontal="$3"
-      paddingVertical="$1"
+      paddingTop="$1"
       accessibilityRole="header"
       accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz: juz ?? "" })}>
-      <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
-        {surahName}
-      </Text>
-      <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
-        {juzText}
-      </Text>
-    </XStack>
+      <View position="relative" justifyContent="center">
+        <XStack alignItems="center" justifyContent="space-between">
+          <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
+            {surahName}
+          </Text>
+          <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
+            {juzText}
+          </Text>
+        </XStack>
+        {/* Centered ornament, independent of the surah/juz text widths. */}
+        <View
+          position="absolute"
+          top={0}
+          bottom={0}
+          left={0}
+          right={0}
+          alignItems="center"
+          justifyContent="center"
+          pointerEvents="none">
+          <Text style={{ color: themeColors.frameColor, fontSize: 11, letterSpacing: 3 }}>
+            ◆ ◆ ◆
+          </Text>
+        </View>
+      </View>
+      <View height={1} marginTop="$1.5" backgroundColor={themeColors.frameColor} opacity={0.28} />
+    </YStack>
   );
 };
 
