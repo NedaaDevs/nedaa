@@ -4,7 +4,7 @@ import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { useTranslation } from "react-i18next";
-import { Signal, Type } from "lucide-react-native";
+import { Signal } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion, DownloadStatus } from "@/enums/quran";
@@ -14,9 +14,12 @@ import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useIsCellular } from "@/hooks/useIsCellular";
 import VersionCard from "@/components/quran/VersionCard";
+import TextModeCard from "@/components/quran/TextModeCard";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const VERSION_ORDER = [MushafVersion.V2, MushafVersion.V4, MushafVersion.V1];
+// Sentinel selection id for the no-download Text option (not a manifest version).
+const TEXT_MODE_ID = "text";
 
 interface VersionSelectionScreenProps {
   onSelectVersion: (version: QuranManifestVersion) => void;
@@ -61,7 +64,9 @@ const VersionSelectionScreen = ({
     );
   }
 
+  const textSelected = selectedId === TEXT_MODE_ID;
   const selected = versions.find((v) => v.id === selectedId) ?? null;
+  const hasSelection = textSelected || selected !== null;
   const selectedInstalled = selectedId
     ? downloads[selectedId as MushafVersion]?.status === DownloadStatus.COMPLETE
     : false;
@@ -72,19 +77,27 @@ const VersionSelectionScreen = ({
       : (selected?.totalSizeMB ?? 0);
 
   const handleCta = () => {
+    if (textSelected) {
+      onSelectTextMode();
+      return;
+    }
     if (!selected) return;
     onSelectVersion(selected);
     if (wantsDark) QuranDownload.startDark(selected.id as MushafVersion);
   };
 
-  const ctaLabel = !selected
-    ? t("quran.download.selectEdition")
-    : selectedInstalled
-      ? t("quran.onboarding.startReading")
-      : t("quran.download.cta", {
-          name: t(`quran.version.${selected.id}`),
-          size: t("quran.download.sizeMB", { size: ctaSizeMB }),
-        });
+  // Both the Text option and an already-installed edition just open the reader;
+  // an un-installed edition shows its download size; nothing selected prompts a
+  // choice.
+  const resolveCtaLabel = (): string => {
+    if (textSelected || selectedInstalled) return t("quran.onboarding.startReading");
+    if (!selected) return t("quran.download.selectEdition");
+    return t("quran.download.cta", {
+      name: t(`quran.version.${selected.id}`),
+      size: t("quran.download.sizeMB", { size: ctaSizeMB }),
+    });
+  };
+  const ctaLabel = resolveCtaLabel();
 
   return (
     <YStack flex={1} backgroundColor={chrome.background}>
@@ -132,35 +145,13 @@ const VersionSelectionScreen = ({
             </MotiView>
           ))}
 
-          {/* Text mode — no download */}
+          {/* Text mode — no download, a peer to the editions */}
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ delay: 300 + versions.length * 100 }}
             style={{ width: "100%" }}>
-            <Pressable
-              onPress={onSelectTextMode}
-              accessibilityRole="button"
-              accessibilityLabel={t("quran.onboarding.textMode")}
-              style={{
-                borderWidth: 1,
-                borderColor: chrome.cardBorder,
-                borderRadius: 18,
-                padding: 16,
-                backgroundColor: chrome.cardBackground,
-              }}>
-              <XStack alignItems="center" gap="$2.5">
-                <Type size={20} color={chrome.subtleText} />
-                <YStack flex={1}>
-                  <Text fontWeight="600" fontSize={16}>
-                    {t("quran.onboarding.textMode")}
-                  </Text>
-                  <Text color={chrome.subtleText} fontSize={13}>
-                    {t("quran.onboarding.textModeDesc")} · {t("quran.onboarding.noDownload")}
-                  </Text>
-                </YStack>
-              </XStack>
-            </Pressable>
+            <TextModeCard selected={textSelected} onSelect={() => setSelectedId(TEXT_MODE_ID)} />
           </MotiView>
         </YStack>
       </ScrollView>
@@ -189,13 +180,13 @@ const VersionSelectionScreen = ({
         )}
         <Pressable
           onPress={handleCta}
-          disabled={!selected}
+          disabled={!hasSelection}
           accessibilityRole="button"
           accessibilityLabel={ctaLabel}
-          accessibilityState={{ disabled: !selected }}>
+          accessibilityState={{ disabled: !hasSelection }}>
           <YStack
             backgroundColor={chrome.accent}
-            opacity={selected ? 1 : 0.45}
+            opacity={hasSelection ? 1 : 0.45}
             borderRadius={14}
             paddingVertical="$3.5"
             alignItems="center">
