@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { juzLabel } from "@/utils/juz";
+import { metadataFontFamily } from "@/utils/surahName";
 import { useQuranStore } from "@/stores/quran";
 
 interface PageHeaderProps {
@@ -20,6 +21,7 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const showOrnament = useQuranStore((s) => s.showHeaderOrnament);
+  const fontFamily = metadataFontFamily();
 
   const juzText = juz ? juzLabel(juz) : "";
 
@@ -31,12 +33,8 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
       accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz: juz ?? "" })}>
       <View position="relative" justifyContent="center">
         <XStack alignItems="center" justifyContent="space-between">
-          <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
-            {surahName}
-          </Text>
-          <Text style={{ color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY }}>
-            {juzText}
-          </Text>
+          <Text style={{ color: themeColors.headerColor, fontFamily }}>{surahName}</Text>
+          <Text style={{ color: themeColors.headerColor, fontFamily }}>{juzText}</Text>
         </XStack>
         {/* Centered ornament, independent of the surah/juz text widths. */}
         {showOrnament && (

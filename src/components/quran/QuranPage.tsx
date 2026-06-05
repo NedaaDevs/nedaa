@@ -9,8 +9,8 @@ import {
   QURAN_THEME_COLORS,
   IMAGE_SOURCE_WIDTH,
   IMAGE_SOURCE_LINE_HEIGHT,
-  SURAH_NAMES,
 } from "@/constants/Quran";
+import { localizedSurahName } from "@/utils/surahName";
 import { usePageData } from "@/hooks/usePageData";
 import { useAyahHitTest } from "@/hooks/useAyahHitTest";
 import LineImage from "@/components/quran/LineImage";
@@ -100,7 +100,7 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
   const headerSurah = useMemo(() => {
     if (!pageAvailable || glyphBounds.length === 0) return "";
     const topSurah = glyphBounds.reduce((min, g) => Math.min(min, g.surahNumber), Infinity);
-    return SURAH_NAMES[topSurah] ?? "";
+    return localizedSurahName(topSurah);
   }, [pageAvailable, glyphBounds]);
 
   const highlightRects = useMemo(() => {

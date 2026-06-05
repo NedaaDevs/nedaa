@@ -1,3 +1,5 @@
+import i18n from "@/localization/i18n";
+
 // Juz furniture for the reader, computed without a DB call. Juz boundaries are
 // fixed across the Madinah 604-page mushaf, so the juz for a page is a pure
 // lookup against its start pages (verified against quran.db's divisions).
@@ -52,8 +54,12 @@ export const juzForPage = (page: number): number => {
   return juz;
 };
 
-// Mushaf-authentic running-header label, e.g. "الجزء الأول".
+// Localized running-header juz label. Arabic keeps the mushaf-authentic ordinal
+// ("الجزء الأول"); other locales use their word + number ("Juz 5", "پارہ 5").
 export const juzLabel = (juz: number): string => {
-  const ordinal = JUZ_ORDINALS[juz - 1];
-  return ordinal ? `الجزء ${ordinal}` : "";
+  if (i18n.language === "ar") {
+    const ordinal = JUZ_ORDINALS[juz - 1];
+    return ordinal ? `الجزء ${ordinal}` : "";
+  }
+  return juz >= 1 && juz <= 30 ? i18n.t("quran.goto.juzLabel", { n: juz }) : "";
 };

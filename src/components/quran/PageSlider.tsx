@@ -9,7 +9,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { QuranTheme } from "@/enums/quran";
-import { TOTAL_PAGES, QURAN_THEME_COLORS, QURAN_FONT_FAMILY, SURAH_NAMES } from "@/constants/Quran";
+import { TOTAL_PAGES, QURAN_THEME_COLORS } from "@/constants/Quran";
+import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHaptic } from "@/hooks/useHaptic";
 import { Text } from "@/components/ui/text";
@@ -174,7 +175,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   }));
 
   const surahNumber = pageToSurah.get(draggingPage) ?? 1;
-  const surahName = SURAH_NAMES[surahNumber] ?? "";
+  const surahName = localizedSurahName(surahNumber);
 
   const trackColor = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
 
@@ -193,7 +194,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
           <Text
             style={[
               styles.tooltipSurah,
-              { color: themeColors.headerColor, fontFamily: QURAN_FONT_FAMILY },
+              { color: themeColors.headerColor, fontFamily: metadataFontFamily() },
             ]}>
             {surahName}
           </Text>

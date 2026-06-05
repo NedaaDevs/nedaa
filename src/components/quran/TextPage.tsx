@@ -9,12 +9,14 @@ import {
 } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, SURAH_NAMES } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { juzForPage } from "@/utils/juz";
+import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import AyahText from "@/components/quran/AyahText";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
@@ -31,6 +33,7 @@ const BASMALA =
 const NO_BASMALA_SURAHS = [1, 9];
 
 const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
@@ -51,7 +54,7 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
       AccessibilityInfo.announceForAccessibility(`Page ${page}, Juz ${juzNumber}`);
 
       if (pageAyahs.length > 0) {
-        setSurahName(SURAH_NAMES[pageAyahs[0].surahNumber] ?? String(pageAyahs[0].surahNumber));
+        setSurahName(localizedSurahName(pageAyahs[0].surahNumber));
       }
     };
     loadData();
@@ -80,11 +83,11 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
                 {
                   color: themeColors.headerColor,
                   fontSize: fontSize * 0.9,
-                  fontFamily: QURAN_FONT_FAMILY,
+                  fontFamily: metadataFontFamily(),
                 },
               ]}
               accessibilityRole="header">
-              سورة {SURAH_NAMES[ayah.surahNumber] ?? ayah.surahNumber}
+              {t("quran.goto.surah")} {localizedSurahName(ayah.surahNumber)}
             </Text>
             {!NO_BASMALA_SURAHS.includes(ayah.surahNumber) && (
               <Text
