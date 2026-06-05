@@ -21,6 +21,9 @@ export const QURAN_THEME_COLORS: Record<
     innerBackground: `#${string}`;
     textTint: `#${string}` | undefined;
     markerColor: `#${string}`;
+    // Lighter ornamental gold for the Mihrab frame / cartouche / rosette ink,
+    // distinct from the heavier markerColor baked into the page images.
+    frameColor: `#${string}`;
     headerColor: `#${string}`;
     pageNumberColor: `#${string}`;
     highlightColor: string;
@@ -33,6 +36,7 @@ export const QURAN_THEME_COLORS: Record<
     innerBackground: "#F3F0E9",
     textTint: "#2C1810",
     markerColor: "#7A5C12",
+    frameColor: "#B1933F",
     headerColor: "#4A3520",
     pageNumberColor: "#8B7355",
     highlightColor: "rgba(170, 130, 50, 0.18)",
@@ -44,6 +48,7 @@ export const QURAN_THEME_COLORS: Record<
     innerBackground: "#0E0E0E",
     textTint: "#E8E0D4",
     markerColor: "#D4A84B",
+    frameColor: "#8A7438",
     headerColor: "#E8E0D4",
     pageNumberColor: "#6B6B6B",
     highlightColor: "rgba(212, 168, 75, 0.15)",
@@ -56,6 +61,7 @@ export const QURAN_THEME_COLORS: Record<
     innerBackground: "#FFFDF7",
     textTint: "#1C1C1C",
     markerColor: "#7A5C12",
+    frameColor: "#9A8030",
     headerColor: "#3A2E1F",
     pageNumberColor: "#9A8A70",
     highlightColor: "rgba(170, 130, 50, 0.15)",
@@ -68,6 +74,7 @@ export const QURAN_THEME_COLORS: Record<
     innerBackground: "#000000",
     textTint: "#E8E0D4",
     markerColor: "#D4A84B",
+    frameColor: "#7D6A36",
     headerColor: "#E8E0D4",
     pageNumberColor: "#5A5A5A",
     highlightColor: "rgba(212, 168, 75, 0.15)",
