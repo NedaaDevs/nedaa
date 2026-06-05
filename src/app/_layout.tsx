@@ -5,7 +5,7 @@ import "@tamagui/linear-gradient";
 import { useEffect } from "react";
 import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
 
@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
+import { PlatformType } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
@@ -74,19 +75,28 @@ function AppShell() {
   const isQuranScreen = segments[0] === "(tabs)" && segments[1] === "quran";
   const quranTheme = useResolvedQuranTheme();
   const readerActive = useQuranStore((s) => s.readerActive);
-  // Reader-theme safe area ONLY when the immersive reader is the visible Quran
-  // surface; the version/download chrome follows the app theme like everything else.
-  const safeAreaBg =
-    isQuranScreen && readerActive ? QURAN_THEME_COLORS[quranTheme].background : theme.background.val;
+  // The immersive reader is the visible Quran surface (vs. the version/download
+  // chrome, which follows the app theme like everything else).
+  const readerImmersive = isQuranScreen && readerActive;
+  const safeAreaBg = readerImmersive
+    ? QURAN_THEME_COLORS[quranTheme].background
+    : theme.background.val;
+  // Android: make the immersive reader full-bleed by dropping the top safe-area
+  // edge, so the status bar overlays the page. Otherwise hiding the bar collapses
+  // the top inset and showing it again re-pads, shoving the page down on every
+  // chrome toggle. iOS keeps the top edge — its inset is the physical notch, which
+  // persists regardless of status-bar visibility, so there's no reflow to fix.
+  const safeAreaEdges: ("top" | "right" | "left")[] =
+    readerImmersive && Platform.OS === PlatformType.ANDROID
+      ? ["right", "left"]
+      : ["top", "right", "left"];
 
   useNotificationListeners();
   useAlarmDeepLink();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView
-        edges={["top", "right", "left"]}
-        style={{ flex: 1, backgroundColor: safeAreaBg }}>
+      <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
         <StatusBar style={themeName === "dark" ? "light" : "dark"} />
         <ToastProvider />
         <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
