@@ -22,6 +22,7 @@ import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import GoToSheet from "@/components/quran/GoToSheet";
+import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import type { QuranManifestVersion } from "@/types/quran";
 
@@ -59,6 +60,7 @@ const QuranScreen = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showGoTo, setShowGoTo] = useState(false);
+  const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   // The version whose download the user is actively watching on the progress
@@ -233,6 +235,8 @@ const QuranScreen = () => {
         onPageChange={setCurrentPage}
         onFontSizeChange={setFontSize}
         onTap={() => setShowOverlay((prev) => !prev)}
+        onAyahLongPress={(surah, ayah) => setActionAyah({ surah, ayah })}
+        selectedAyah={actionAyah}
       />
 
       {/* Top banners: an active background download, and/or the one-time dark
@@ -402,6 +406,13 @@ const QuranScreen = () => {
 
       {/* Go-to navigation sheet */}
       {showGoTo && <GoToSheet onGoTo={setCurrentPage} onClose={() => setShowGoTo(false)} />}
+
+      {/* Long-press ayah action sheet */}
+      <AyahActionSheet
+        target={actionAyah}
+        quranTheme={quranTheme}
+        onClose={() => setActionAyah(null)}
+      />
     </YStack>
   );
 };

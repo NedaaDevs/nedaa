@@ -25,6 +25,8 @@ interface TextPageProps {
   page: number;
   quranTheme: QuranTheme;
   fontSize: number;
+  onAyahLongPress?: (surah: number, ayah: number) => void;
+  selectedAyah?: { surah: number; ayah: number } | null;
 }
 
 const BASMALA =
@@ -32,7 +34,7 @@ const BASMALA =
 
 const NO_BASMALA_SURAHS = [1, 9];
 
-const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
+const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }: TextPageProps) => {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -58,16 +60,23 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
       }
     };
     loadData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHighlightedAyah(null);
   }, [page]);
 
-  const handleLongPress = useCallback((surahNumber: number, ayahNumber: number) => {
-    setHighlightedAyah((prev) =>
-      prev?.surah === surahNumber && prev?.ayah === ayahNumber
-        ? null
-        : { surah: surahNumber, ayah: ayahNumber }
-    );
-  }, []);
+  const handleLongPress = useCallback(
+    (surahNumber: number, ayahNumber: number) => {
+      setHighlightedAyah({ surah: surahNumber, ayah: ayahNumber });
+      onAyahLongPress?.(surahNumber, ayahNumber);
+    },
+    [onAyahLongPress]
+  );
+
+  // Drop the highlight when the ayah's action sheet closes (selection cleared).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!selectedAyah) setHighlightedAyah(null);
+  }, [selectedAyah]);
 
   const renderContent = () => {
     const elements: React.ReactNode[] = [];
@@ -138,14 +147,6 @@ const TextPage = ({ page, quranTheme, fontSize }: TextPageProps) => {
         ]}
         showsVerticalScrollIndicator={false}>
         {renderContent()}
-
-        {highlightedAyah && (
-          <View style={[styles.tooltip, { backgroundColor: themeColors.headerColor }]}>
-            <Text style={[styles.tooltipText, { color: themeColors.background }]}>
-              {highlightedAyah.surah}:{highlightedAyah.ayah}
-            </Text>
-          </View>
-        )}
       </ScrollView>
 
       <PageNumber page={page} quranTheme={quranTheme} />

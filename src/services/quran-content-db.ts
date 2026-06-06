@@ -300,6 +300,19 @@ const getAyahsForPage = (
     }));
   });
 
+// One ayah's text + page — powers the long-press action sheet.
+const getAyah = async (
+  surah: number,
+  ayah: number
+): Promise<{ text: string; page: number } | null> => {
+  const db = await openQuranDb();
+  const row = await db.getFirstAsync<{ text: string; page: number }>(
+    "SELECT text, page FROM ayahs WHERE surah_number = ? AND ayah_number = ?",
+    [surah, ayah]
+  );
+  return row ?? null;
+};
+
 const getSurahNameForPageFromContent = async (page: number): Promise<number> => {
   const db = await openQuranDb();
   const result = await db.getFirstAsync<{ surah_number: number }>(
@@ -422,6 +435,7 @@ export const QuranContentDB = {
   getMarkerBounds,
   getSurahForPage,
   getAyahsForPage,
+  getAyah,
   getSurahNameForPageFromContent,
   getSurah,
   getAllSurahs,

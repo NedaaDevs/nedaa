@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { LayoutChangeEvent, Pressable, Text, View, useWindowDimensions } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,27 +27,28 @@ interface QuranPageProps {
   page: number;
   version: MushafVersion;
   quranTheme: QuranTheme;
+  onAyahLongPress?: (surah: number, ayah: number) => void;
+  selectedAyah?: { surah: number; ayah: number } | null;
 }
 
 // Constant 1..15 line numbers — hoisted so it isn't reallocated every render.
 const PAGE_LINE_NUMBERS = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
 
-const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
+const QuranPage = ({
+  page,
+  version,
+  quranTheme,
+  onAyahLongPress,
+  selectedAyah,
+}: QuranPageProps) => {
   const { width, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const estimatedHeight = screenHeight - insets.top - 60;
   const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
   const pressableRef = useRef<View>(null);
 
-  const {
-    pageAvailable,
-    isPageMode,
-    surahNames,
-    surahHeaderLines,
-    juz,
-    glyphBounds,
-    sourcePageHeight,
-  } = usePageData(version, page);
+  const { pageAvailable, isPageMode, surahHeaderLines, juz, glyphBounds, sourcePageHeight } =
+    usePageData(version, page);
 
   const onLinesLayout = useCallback((event: LayoutChangeEvent) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
@@ -84,15 +85,27 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
     [isPageMode, coverScale, lineHeight, lineCoverClipY, pageScaleX, pageScaleY, srcLineHeight]
   );
 
-  const { highlightedAyah, selectedSurah, clearSurah, handlePress, handleLongPress } =
-    useAyahHitTest({
-      version,
-      page,
-      glyphBounds,
-      surahHeaderLines,
-      geometry,
-      pressableRef,
-    });
+  const {
+    highlightedAyah,
+    selectedSurah,
+    clearSurah,
+    clearHighlight,
+    handlePress,
+    handleLongPress,
+  } = useAyahHitTest({
+    version,
+    page,
+    glyphBounds,
+    surahHeaderLines,
+    geometry,
+    pressableRef,
+    onAyahLongPress,
+  });
+
+  // Drop the highlight when the ayah's action sheet closes (selection cleared).
+  useEffect(() => {
+    if (!selectedAyah) clearHighlight();
+  }, [selectedAyah, clearHighlight]);
 
   // Header surah is derived from the page's own glyphs (each carries its
   // surahNumber), so continuation pages show the running surah — and it's
@@ -268,37 +281,6 @@ const QuranPage = ({ page, version, quranTheme }: QuranPageProps) => {
               }}
             />
           ))}
-
-          {/* Ayah tooltip */}
-          {highlightedAyah && (
-            <View
-              style={{
-                position: "absolute",
-                left: Math.min(Math.max(highlightedAyah.touchX - 60, 8), width - 128),
-                top: highlightedAyah.touchY - 44,
-                backgroundColor: QURAN_THEME_COLORS[quranTheme].headerColor,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 4,
-              }}>
-              <Text
-                style={{
-                  color: QURAN_THEME_COLORS[quranTheme].innerBackground,
-                  fontSize: 13,
-                  fontWeight: "600",
-                  textAlign: "center",
-                }}>
-                {surahNames[highlightedAyah.surah] ?? `${highlightedAyah.surah}`}
-                {" : "}
-                {highlightedAyah.ayah}
-              </Text>
-            </View>
-          )}
         </Pressable>
       </View>
 

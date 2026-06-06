@@ -31,6 +31,8 @@ type Params = {
   surahHeaderLines: Record<number, number>;
   geometry: PageGeometry;
   pressableRef: RefObject<View | null>;
+  // Long-pressing an ayah opens its action sheet (in addition to highlighting it).
+  onAyahLongPress?: (surah: number, ayah: number) => void;
 };
 
 // Tap-to-select on the mushaf page: maps a touch to source coordinates, finds
@@ -45,6 +47,7 @@ export const useAyahHitTest = ({
   surahHeaderLines,
   geometry,
   pressableRef,
+  onAyahLongPress,
 }: Params) => {
   const [highlightedAyah, setHighlightedAyah] = useState<HighlightedAyah | null>(null);
   const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
@@ -125,9 +128,10 @@ export const useAyahHitTest = ({
         setHighlightedAyah(
           hit ? { surah: hit.surahNumber, ayah: hit.ayahNumber, touchX, touchY } : null
         );
+        if (hit && !wantMarker) onAyahLongPress?.(hit.surahNumber, hit.ayahNumber);
       });
     },
-    [glyphBounds, lineHeight, toSourceCoords, pressableRef, surahHeaderLines]
+    [glyphBounds, lineHeight, toSourceCoords, pressableRef, surahHeaderLines, onAyahLongPress]
   );
 
   const handleLongPress = useCallback(
@@ -140,6 +144,14 @@ export const useAyahHitTest = ({
   );
 
   const clearSurah = useCallback(() => setSelectedSurah(null), []);
+  const clearHighlight = useCallback(() => setHighlightedAyah(null), []);
 
-  return { highlightedAyah, selectedSurah, clearSurah, handlePress, handleLongPress };
+  return {
+    highlightedAyah,
+    selectedSurah,
+    clearSurah,
+    clearHighlight,
+    handlePress,
+    handleLongPress,
+  };
 };

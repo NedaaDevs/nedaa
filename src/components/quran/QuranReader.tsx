@@ -26,6 +26,9 @@ interface QuranReaderProps {
   onFontSizeChange: (size: number) => void;
   onPageChange: (page: number) => void;
   onTap?: () => void;
+  onAyahLongPress?: (surah: number, ayah: number) => void;
+  // The selected ayah (drives the highlight; cleared when its action sheet closes).
+  selectedAyah?: { surah: number; ayah: number } | null;
 }
 
 const SWIPE_THRESHOLD = 0.25;
@@ -42,6 +45,8 @@ const QuranReader = ({
   onFontSizeChange,
   onPageChange,
   onTap,
+  onAyahLongPress,
+  selectedAyah,
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -216,6 +221,8 @@ const QuranReader = ({
             fontSize={fontSize}
             dragOffset={dragOffset}
             width={width}
+            onAyahLongPress={onAyahLongPress}
+            selectedAyah={selectedAyah}
           />
         ))}
       </Animated.View>
@@ -232,6 +239,8 @@ interface PageSlotProps {
   fontSize: number;
   dragOffset: SharedValue<number>;
   width: number;
+  onAyahLongPress?: (surah: number, ayah: number) => void;
+  selectedAyah?: { surah: number; ayah: number } | null;
 }
 
 const PageSlot = ({
@@ -243,6 +252,8 @@ const PageSlot = ({
   fontSize,
   dragOffset,
   width,
+  onAyahLongPress,
+  selectedAyah,
 }: PageSlotProps) => {
   const animatedStyle = useAnimatedStyle(() => {
     // pageOffset: 0 = current, -1 = next (left in RTL), +1 = prev (right).
@@ -257,9 +268,21 @@ const PageSlot = ({
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
       {readerMode === ReaderViewMode.TEXT ? (
-        <TextPage page={page} quranTheme={quranTheme} fontSize={fontSize} />
+        <TextPage
+          page={page}
+          quranTheme={quranTheme}
+          fontSize={fontSize}
+          onAyahLongPress={onAyahLongPress}
+          selectedAyah={selectedAyah}
+        />
       ) : (
-        <QuranPage page={page} version={version} quranTheme={quranTheme} />
+        <QuranPage
+          page={page}
+          version={version}
+          quranTheme={quranTheme}
+          onAyahLongPress={onAyahLongPress}
+          selectedAyah={selectedAyah}
+        />
       )}
     </Animated.View>
   );
