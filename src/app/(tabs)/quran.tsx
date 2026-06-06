@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, List, SlidersHorizontal } from "lucide-react-nat
 import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
+import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
@@ -57,6 +58,9 @@ const QuranScreen = () => {
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isRTL } = useRTL();
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const BrowseIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showGoTo, setShowGoTo] = useState(false);
@@ -289,7 +293,7 @@ const QuranScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={t("common.back")}
               style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-              <ArrowLeft color={themeColors.headerColor} size={22} />
+              <BackIcon color={themeColors.headerColor} size={22} />
             </Pressable>
             <Pressable
               onPress={() => currentSurah && setInfoSurah(currentSurah)}
@@ -381,7 +385,7 @@ const QuranScreen = () => {
                 <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
                   {t("quran.goto.title")}
                 </Text>
-                <ArrowRight color={themeColors.headerColor} size={16} />
+                <BrowseIcon color={themeColors.headerColor} size={16} />
               </Pressable>
             </XStack>
           </YStack>
