@@ -22,6 +22,7 @@ export type PageData = {
   juz: number;
   glyphBounds: GlyphBound[];
   sourcePageHeight: number;
+  pageDataLoaded: boolean;
 };
 
 // Everything the reader needs for one page, sourced from the content DB and the
@@ -42,6 +43,10 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
   const [juz, setJuz] = useState(1);
   const [glyphBounds, setGlyphBounds] = useState<GlyphBound[]>([]);
   const [sourcePageHeight, setSourcePageHeight] = useState(0);
+  // True once the page's glyph/metadata load attempt has finished (success or
+  // failure). Lets the page render its image and ayah markers together rather
+  // than showing the image first and popping the markers in when glyphs resolve.
+  const [pageDataLoaded, setPageDataLoaded] = useState(false);
 
   // A page-mode version reports LINE until its bundle has extracted and the
   // pages directory exists, so recompute the mode when availability flips.
@@ -70,6 +75,8 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
 
   useEffect(() => {
     if (!pageAvailable) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPageDataLoaded(false);
 
     const loadPageData = async () => {
       try {
@@ -94,6 +101,8 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
         setGlyphBounds(bounds);
       } catch (error) {
         log.e("Page", `Failed to load data for page ${page}`, error as Error);
+      } finally {
+        setPageDataLoaded(true);
       }
     };
 
@@ -108,5 +117,6 @@ export const usePageData = (version: MushafVersion, page: number): PageData => {
     juz,
     glyphBounds,
     sourcePageHeight,
+    pageDataLoaded,
   };
 };

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-native";
 import { YStack } from "tamagui";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BookmarkColor, HighlightColor, MushafVersion, QuranTheme } from "@/enums/quran";
 import {
@@ -45,14 +44,26 @@ const QuranPage = ({
   onAyahLongPress,
   selectedAyah,
 }: QuranPageProps) => {
-  const { width, height: screenHeight } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const estimatedHeight = screenHeight - insets.top - 60;
-  const [linesAreaHeight, setLinesAreaHeight] = useState(estimatedHeight);
+  const { width } = useWindowDimensions();
+  // Start at 0 so every line image + overlay (markers, tints, ribbons) waits for
+  // the real onLayout height — they're all guarded by `lineHeight > 0`. Seeding an
+  // estimate here made them render once at the wrong position then snap on measure.
+  const [linesAreaHeight, setLinesAreaHeight] = useState(0);
   const pressableRef = useRef<View>(null);
 
-  const { pageAvailable, isPageMode, surahHeaderLines, juz, glyphBounds, sourcePageHeight } =
-    usePageData(version, page);
+  const {
+    pageAvailable,
+    isPageMode,
+    surahHeaderLines,
+    juz,
+    glyphBounds,
+    sourcePageHeight,
+    pageDataLoaded,
+  } = usePageData(version, page);
+
+  // The page image and its ayah markers render together only once glyph data has
+  // loaded — otherwise the image shows first and markers pop in a beat later.
+  const ready = pageAvailable && pageDataLoaded;
 
   const onLinesLayout = useCallback((event: LayoutChangeEvent) => {
     setLinesAreaHeight(event.nativeEvent.layout.height);
@@ -266,7 +277,7 @@ const QuranPage = ({
           onLongPress={handleLongPress}
           delayLongPress={LONG_PRESS_MS}
           onPress={handlePress}>
-          {lineHeight > 0 && pageAvailable && isPageMode && (
+          {lineHeight > 0 && ready && isPageMode && (
             <PageImage
               version={version}
               page={page}
@@ -275,13 +286,13 @@ const QuranPage = ({
               quranTheme={quranTheme}
             />
           )}
-          {lineHeight > 0 && !pageAvailable && isPageMode && (
+          {lineHeight > 0 && !ready && isPageMode && (
             <LineShimmer screenWidth={width} lineHeight={linesAreaHeight} quranTheme={quranTheme} />
           )}
           {lineHeight > 0 &&
             !isPageMode &&
             PAGE_LINE_NUMBERS.map((line) =>
-              pageAvailable ? (
+              ready ? (
                 <LineImage
                   key={`${page}-${line}`}
                   version={version}
@@ -316,7 +327,7 @@ const QuranPage = ({
             />
           ))}
 
-          {pageAvailable &&
+          {ready &&
             markerPositions.map((m, i) => {
               const bmColor = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
               return bmColor ? (
