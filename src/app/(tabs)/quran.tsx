@@ -58,7 +58,6 @@ const QuranScreen = () => {
   const router = useRouter();
   const { isRTL } = useRTL();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
-  const BrowseIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
@@ -354,43 +353,6 @@ const QuranScreen = () => {
               quranTheme={quranTheme}
               onPageChange={setCurrentPage}
             />
-            <XStack alignItems="center" justifyContent="space-between" paddingHorizontal="$1">
-              <Pressable
-                onPress={() => {
-                  setShowOverlay(false);
-                  router.push("/quran-library");
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t("quran.library.title")}
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: 6,
-                  paddingHorizontal: 4,
-                  minWidth: 40,
-                }}>
-                <List color={themeColors.headerColor} size={18} />
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  setShowOverlay(false);
-                  router.push("/quran-library");
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t("quran.browse.title")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 7,
-                  paddingVertical: 6,
-                  paddingHorizontal: 4,
-                }}>
-                <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
-                  {t("quran.browse.title")}
-                </Text>
-                <BrowseIcon color={themeColors.headerColor} size={16} />
-              </Pressable>
-            </XStack>
           </YStack>
         </>
       )}
