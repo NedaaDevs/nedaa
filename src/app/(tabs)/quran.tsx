@@ -24,7 +24,6 @@ import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
-import GoToSheet from "@/components/quran/GoToSheet";
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
@@ -63,7 +62,6 @@ const QuranScreen = () => {
   const BrowseIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showGoTo, setShowGoTo] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [currentSurah, setCurrentSurah] = useState<number | null>(null);
@@ -352,7 +350,7 @@ const QuranScreen = () => {
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
-                  setShowGoTo(true);
+                  router.push("/quran-browse");
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t("quran.goto.surah")}
@@ -371,10 +369,10 @@ const QuranScreen = () => {
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
-                  setShowGoTo(true);
+                  router.push("/quran-browse");
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={t("quran.goto.title")}
+                accessibilityLabel={t("quran.browse.title")}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -383,7 +381,7 @@ const QuranScreen = () => {
                   paddingHorizontal: 4,
                 }}>
                 <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
-                  {t("quran.goto.title")}
+                  {t("quran.browse.title")}
                 </Text>
                 <BrowseIcon color={themeColors.headerColor} size={16} />
               </Pressable>
@@ -403,9 +401,6 @@ const QuranScreen = () => {
           }}
         />
       )}
-
-      {/* Go-to navigation sheet */}
-      {showGoTo && <GoToSheet onGoTo={setCurrentPage} onClose={() => setShowGoTo(false)} />}
 
       {/* Bookmarks list sheet */}
       {showBookmarks && (

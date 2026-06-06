@@ -60,11 +60,13 @@ export const Segmented = <T extends string>({
           key={value}
           onPress={() => onSelect(value)}
           accessibilityRole="radio"
-          accessibilityState={{ selected: active }}>
+          accessibilityState={{ selected: active }}
+          style={{ flex: 1 }}>
           <YStack
             paddingHorizontal={compact ? "$2.5" : "$3.5"}
             paddingVertical="$1.5"
             borderRadius={8}
+            alignItems="center"
             backgroundColor={active ? chrome.accent : "transparent"}>
             <Text
               fontSize={compact ? 12 : 13}

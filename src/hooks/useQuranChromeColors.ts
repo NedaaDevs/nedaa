@@ -17,6 +17,7 @@ export type QuranChromeColors = {
   background: ThemeColor;
   cardBackground: ThemeColor;
   cardBorder: ThemeColor;
+  text: ThemeColor;
   subtleText: ThemeColor;
   progressTrack: ThemeColor;
 };
@@ -29,6 +30,7 @@ export const useQuranChromeColors = (): QuranChromeColors => {
     background: theme.background.val as ThemeColor,
     cardBackground: theme.backgroundSecondary.val as ThemeColor,
     cardBorder: theme.borderColor.val as ThemeColor,
+    text: theme.color.val as ThemeColor,
     subtleText: theme.typographySecondary.val as ThemeColor,
     progressTrack: theme.backgroundMuted.val as ThemeColor,
   };
