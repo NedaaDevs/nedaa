@@ -2,12 +2,13 @@ import { useCallback } from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { BookmarkColor, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
 import {
   QURAN_THEME_COLORS,
   QURAN_FONT_FAMILY,
+  HIGHLIGHT_COLORS,
   BOOKMARK_COLORS,
-  bookmarkTint,
+  highlightTint,
   toHafsDigits,
 } from "@/constants/Quran";
 
@@ -18,6 +19,7 @@ interface AyahTextProps {
   fontSize: number;
   quranTheme: QuranTheme;
   isHighlighted: boolean;
+  highlightColor?: HighlightColor | null;
   bookmarkColor?: BookmarkColor | null;
   onLongPress: (surahNumber: number, ayahNumber: number) => void;
 }
@@ -29,6 +31,7 @@ const AyahText = ({
   fontSize,
   quranTheme,
   isHighlighted,
+  highlightColor,
   bookmarkColor,
   onLongPress,
 }: AyahTextProps) => {
@@ -39,18 +42,18 @@ const AyahText = ({
     onLongPress(surahNumber, ayahNumber);
   }, [surahNumber, ayahNumber, onLongPress]);
 
-  // Ornamental parentheses + Hafs-style ayah number
-  const markerText = ` \uFD3F${toHafsDigits(ayahNumber)}\uFD3E `;
+  const hafs = toHafsDigits(ayahNumber);
 
-  // A bookmark's colour tint takes precedence over the transient highlight; the
-  // inline marker picks up the bookmark colour so the verse reads as flagged.
-  const background = bookmarkColor
-    ? bookmarkTint(bookmarkColor, quranTheme)
+  // Two planes, no conflict: the highlight is an interior wash across the verse;
+  // the bookmark turns the inline end-marker into a coloured ribbon-pill bearing
+  // the number (a verse can carry both — wash inside, ribbon at the marker).
+  const background = highlightColor
+    ? highlightTint(highlightColor, quranTheme)
     : isHighlighted
       ? themeColors.highlightColor
       : undefined;
-  const markerColor = bookmarkColor
-    ? BOOKMARK_COLORS[bookmarkColor].solid
+  const markerColor = highlightColor
+    ? HIGHLIGHT_COLORS[highlightColor].solid
     : themeColors.markerColor;
 
   return (
@@ -59,7 +62,7 @@ const AyahText = ({
       delayLongPress={400}
       accessibilityRole="text"
       accessibilityLabel={t("a11y.quran.ayahText", { surah: surahNumber, ayah: ayahNumber })}
-      accessibilityState={{ selected: isHighlighted || !!bookmarkColor }}
+      accessibilityState={{ selected: isHighlighted || !!highlightColor || !!bookmarkColor }}
       style={[styles.container, background ? { backgroundColor: background } : null]}>
       <Text
         style={[
@@ -73,8 +76,20 @@ const AyahText = ({
             fontFamily: QURAN_FONT_FAMILY,
           },
         ]}>
-        {text}
-        <Text style={{ color: markerColor, fontSize: fontSize * 0.85 }}>{markerText}</Text>
+        {text}{" "}
+        {bookmarkColor ? (
+          <Text
+            style={{
+              color: "#FFF8EE",
+              backgroundColor: BOOKMARK_COLORS[bookmarkColor].solid,
+              fontSize: fontSize * 0.78,
+              fontFamily: QURAN_FONT_FAMILY,
+            }}>
+            {` ${hafs} `}
+          </Text>
+        ) : (
+          <Text style={{ color: markerColor, fontSize: fontSize * 0.85 }}>{`﴿${hafs}﴾ `}</Text>
+        )}
       </Text>
     </Pressable>
   );

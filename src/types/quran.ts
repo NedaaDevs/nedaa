@@ -125,6 +125,8 @@ export type QuranManifest = {
   versions: QuranManifestVersion[];
 };
 
+export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah";
+
 export type QuranState = {
   currentPage: number;
   currentVersion: MushafVersion;
@@ -140,6 +142,8 @@ export type QuranState = {
   fontSize: number;
   // Decorative diamond ornament in the page header. Off by default.
   showHeaderOrnament: boolean;
+  // The Library hub's last-viewed tab, so reopening lands where the user left.
+  libraryTab: QuranLibraryTab;
 
   onboardingComplete: boolean;
   selectedVersion: MushafVersion | null;
@@ -158,6 +162,7 @@ export type QuranState = {
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
   setShowHeaderOrnament: (show: boolean) => void;
+  setLibraryTab: (tab: QuranLibraryTab) => void;
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;

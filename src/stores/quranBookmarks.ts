@@ -14,8 +14,9 @@ export interface Bookmark {
 
 interface BookmarkState {
   bookmarks: Bookmark[];
-  // Assign a colour to an ayah. Each colour is a single mushaf-wide slot, so this
-  // moves the colour off any other ayah and replaces any colour already on this one.
+  // Each of the 4 ribbon colours is a single mushaf-wide slot, and an ayah holds
+  // at most one ribbon. Setting a colour moves that ribbon off any other ayah and
+  // replaces whatever ribbon was on this one — the palette itself is the cap.
   setBookmark: (surah: number, ayah: number, page: number, color: BookmarkColor) => void;
   removeBookmark: (surah: number, ayah: number) => void;
 }

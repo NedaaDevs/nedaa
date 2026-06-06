@@ -1,4 +1,5 @@
 import i18n from "@/localization/i18n";
+import { formatNumberToLocale } from "@/utils/number";
 
 // Juz furniture for the reader, computed without a DB call. Juz boundaries are
 // fixed across the Madinah 604-page mushaf, so the juz for a page is a pure
@@ -61,5 +62,7 @@ export const juzLabel = (juz: number): string => {
     const ordinal = JUZ_ORDINALS[juz - 1];
     return ordinal ? `الجزء ${ordinal}` : "";
   }
-  return juz >= 1 && juz <= 30 ? i18n.t("quran.goto.juzLabel", { n: juz }) : "";
+  return juz >= 1 && juz <= 30
+    ? i18n.t("quran.goto.juzLabel", { n: formatNumberToLocale(String(juz)) })
+    : "";
 };

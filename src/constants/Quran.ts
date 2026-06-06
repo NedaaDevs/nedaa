@@ -1,4 +1,10 @@
-import { BookmarkColor, MushafVersion, QuranTheme, SurahFrameStyle } from "@/enums/quran";
+import {
+  BookmarkColor,
+  HighlightColor,
+  MushafVersion,
+  QuranTheme,
+  SurahFrameStyle,
+} from "@/enums/quran";
 
 export const TOTAL_PAGES = 604;
 export const LINES_PER_PAGE = 15;
@@ -118,44 +124,78 @@ export const isDarkPaper = (quranTheme: QuranTheme): boolean =>
   quranTheme === QuranTheme.DARK || quranTheme === QuranTheme.AMOLED;
 
 // solid = dot/ribbon ink; tint = highlight overlay, lightened for dark paper.
-export const BOOKMARK_COLORS: Record<
-  BookmarkColor,
+export const HIGHLIGHT_COLORS: Record<
+  HighlightColor,
   { solid: `#${string}`; tintLight: string; tintDark: string }
 > = {
-  [BookmarkColor.RED]: {
+  [HighlightColor.RED]: {
     solid: "#C0453E",
     tintLight: "rgba(192,69,62,0.20)",
     tintDark: "rgba(240,120,112,0.26)",
   },
-  [BookmarkColor.ORANGE]: {
+  [HighlightColor.ORANGE]: {
     solid: "#D2772F",
     tintLight: "rgba(210,119,47,0.20)",
     tintDark: "rgba(250,160,90,0.26)",
   },
-  [BookmarkColor.AMBER]: {
+  [HighlightColor.AMBER]: {
     solid: "#C99A24",
     tintLight: "rgba(201,154,36,0.22)",
     tintDark: "rgba(240,200,80,0.26)",
   },
-  [BookmarkColor.GREEN]: {
+  [HighlightColor.GREEN]: {
     solid: "#3E9A59",
     tintLight: "rgba(62,154,89,0.20)",
     tintDark: "rgba(110,210,140,0.24)",
   },
-  [BookmarkColor.TEAL]: {
+  [HighlightColor.TEAL]: {
     solid: "#2E9AA0",
     tintLight: "rgba(46,154,160,0.20)",
     tintDark: "rgba(90,205,210,0.24)",
   },
-  [BookmarkColor.BLUE]: {
+  [HighlightColor.BLUE]: {
     solid: "#3B79C9",
     tintLight: "rgba(59,121,201,0.20)",
     tintDark: "rgba(110,170,255,0.26)",
   },
-  [BookmarkColor.PURPLE]: {
+  [HighlightColor.PURPLE]: {
     solid: "#8C53B8",
     tintLight: "rgba(140,83,184,0.20)",
     tintDark: "rgba(200,140,245,0.26)",
+  },
+} as const;
+
+export const HIGHLIGHT_COLOR_ORDER = Object.values(HighlightColor);
+
+export const highlightTint = (color: HighlightColor, quranTheme: QuranTheme): string =>
+  isDarkPaper(quranTheme) ? HIGHLIGHT_COLORS[color].tintDark : HIGHLIGHT_COLORS[color].tintLight;
+
+// Bookmark ribbon colours — solid jewel tones, kept off the highlight hues so the
+// edge ribbon never reads as a highlight wash. `solid` fills the ribbon glyph;
+// the tints back the confirm card, lightened for dark paper so it stays visible.
+export const BOOKMARK_COLORS: Record<
+  BookmarkColor,
+  { solid: `#${string}`; tintLight: string; tintDark: string }
+> = {
+  [BookmarkColor.GARNET]: {
+    solid: "#9E3B4E",
+    tintLight: "rgba(158,59,78,0.16)",
+    tintDark: "rgba(200,100,120,0.24)",
+  },
+  [BookmarkColor.BRASS]: {
+    solid: "#9A7327",
+    tintLight: "rgba(154,115,39,0.18)",
+    tintDark: "rgba(205,165,85,0.24)",
+  },
+  [BookmarkColor.PINE]: {
+    solid: "#2F6B57",
+    tintLight: "rgba(47,107,87,0.16)",
+    tintDark: "rgba(95,175,145,0.24)",
+  },
+  [BookmarkColor.INDIGO]: {
+    solid: "#3C4E8C",
+    tintLight: "rgba(60,78,140,0.16)",
+    tintDark: "rgba(120,140,215,0.24)",
   },
 } as const;
 

@@ -64,8 +64,8 @@ export const BundleOutcome = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type BundleOutcome = (typeof BundleOutcome)[keyof typeof BundleOutcome];
 
-// Bookmark tag colours.
-export const BookmarkColor = {
+// Highlight tag colours — each can be relabelled by the user (e.g. "Memorization").
+export const HighlightColor = {
   RED: "red",
   ORANGE: "orange",
   AMBER: "amber",
@@ -73,6 +73,18 @@ export const BookmarkColor = {
   TEAL: "teal",
   BLUE: "blue",
   PURPLE: "purple",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type HighlightColor = (typeof HighlightColor)[keyof typeof HighlightColor];
+
+// Bookmark ribbon colours — a separate 4-colour jewel palette, deliberately off
+// the highlight hues. Each colour is one mushaf-wide ribbon "slot"; the palette
+// itself is the cap (4 places). Tapping an in-use colour moves its ribbon.
+export const BookmarkColor = {
+  GARNET: "garnet",
+  BRASS: "brass",
+  PINE: "pine",
+  INDIGO: "indigo",
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type BookmarkColor = (typeof BookmarkColor)[keyof typeof BookmarkColor];

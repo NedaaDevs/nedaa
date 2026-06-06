@@ -27,7 +27,6 @@ import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
-import BookmarksSheet from "@/components/quran/sheets/BookmarksSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import type { QuranManifestVersion } from "@/types/quran";
 
@@ -62,7 +61,6 @@ const QuranScreen = () => {
   const BrowseIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showBookmarks, setShowBookmarks] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [currentSurah, setCurrentSurah] = useState<number | null>(null);
   const [infoSurah, setInfoSurah] = useState<number | null>(null);
@@ -318,6 +316,16 @@ const QuranScreen = () => {
             <Pressable
               onPress={() => {
                 setShowOverlay(false);
+                router.push("/quran-library");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t("quran.library.title")}
+              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+              <List color={themeColors.headerColor} size={20} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowOverlay(false);
                 setShowSettings(true);
               }}
               accessibilityRole="button"
@@ -350,26 +358,23 @@ const QuranScreen = () => {
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
-                  router.push("/quran-browse");
+                  router.push("/quran-library");
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={t("quran.goto.surah")}
+                accessibilityLabel={t("quran.library.title")}
                 style={{
-                  flexDirection: "row",
                   alignItems: "center",
-                  gap: 7,
+                  justifyContent: "center",
                   paddingVertical: 6,
                   paddingHorizontal: 4,
+                  minWidth: 40,
                 }}>
-                <List color={themeColors.headerColor} size={16} />
-                <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
-                  {t("quran.goto.surah")}
-                </Text>
+                <List color={themeColors.headerColor} size={18} />
               </Pressable>
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
-                  router.push("/quran-browse");
+                  router.push("/quran-library");
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t("quran.browse.title")}
@@ -395,19 +400,6 @@ const QuranScreen = () => {
         <QuranSettingsSheet
           onClose={() => setShowSettings(false)}
           onDownloadMore={handleDownloadMore}
-          onOpenBookmarks={() => {
-            setShowSettings(false);
-            setShowBookmarks(true);
-          }}
-        />
-      )}
-
-      {/* Bookmarks list sheet */}
-      {showBookmarks && (
-        <BookmarksSheet
-          quranTheme={quranTheme}
-          onNavigate={setCurrentPage}
-          onClose={() => setShowBookmarks(false)}
         />
       )}
 

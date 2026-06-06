@@ -11,10 +11,11 @@ import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
-import { BookmarkColor, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { juzForPage } from "@/utils/juz";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
@@ -47,6 +48,13 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
     surah: number;
     ayah: number;
   } | null>(null);
+
+  const highlights = useHighlightStore((s) => s.highlights);
+  const highlightMap = useMemo(() => {
+    const map = new Map<string, HighlightColor>();
+    for (const h of highlights) map.set(`${h.surah}:${h.ayah}`, h.color);
+    return map;
+  }, [highlights]);
 
   const bookmarks = useBookmarkStore((s) => s.bookmarks);
   const bookmarkMap = useMemo(() => {
@@ -135,6 +143,7 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
           isHighlighted={
             highlightedAyah?.surah === ayah.surahNumber && highlightedAyah?.ayah === ayah.ayahNumber
           }
+          highlightColor={highlightMap.get(`${ayah.surahNumber}:${ayah.ayahNumber}`) ?? null}
           bookmarkColor={bookmarkMap.get(`${ayah.surahNumber}:${ayah.ayahNumber}`) ?? null}
           onLongPress={handleLongPress}
         />

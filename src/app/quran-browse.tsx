@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView } from "react-native";
-import { Input, XStack, YStack } from "tamagui";
+import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, ArrowRight, Search, X } from "lucide-react-native";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Search, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import { Input } from "@/components/ui/input";
 import { TOTAL_PAGES, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
@@ -22,14 +23,13 @@ import type { SurahMeta } from "@/types/quran";
 type BrowseTab = "surah" | "juz" | "hizb" | "page";
 
 // Full-page browse + search: surah / juz / hizb / page navigation plus general
-// search (surah names + verse full-text via FTS).
-const QuranBrowseScreen = () => {
+// search (surah names + verse full-text via FTS). Embeddable content (no frame)
+// so it can be a standalone route and a tab inside the Library hub.
+export const BrowseIndex = ({ onNavigate }: { onNavigate: (page: number) => void }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const chrome = useQuranChromeColors();
   const { isRTL } = useRTL();
-  const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
 
   const [tab, setTab] = useState<BrowseTab>("surah");
   const [query, setQuery] = useState("");
@@ -65,10 +65,7 @@ const QuranBrowseScreen = () => {
     };
   }, [query]);
 
-  const go = (page: number) => {
-    setCurrentPage(page);
-    router.back();
-  };
+  const go = onNavigate;
 
   const submitPage = () => {
     const n = parseInt(pageInput, 10);
@@ -86,32 +83,28 @@ const QuranBrowseScreen = () => {
     );
   }, [q, query, surahs]);
 
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  // The surah a division (juz/hizb) opens into — the last surah starting at or
+  // before its page — for the "Begins {surah} · page N" subtitle.
+  const surahAtPage = (page: number) =>
+    surahs.filter((s) => s.pageStart <= page).slice(-1)[0] ?? surahs[0];
+  const divisionSubtitle = (page: number) => {
+    const s = surahAtPage(page);
+    return s
+      ? t("quran.browse.beginsAt", {
+          surah: localizedSurahName(s.number),
+          page: formatNumberToLocale(String(page)),
+        })
+      : "";
+  };
 
   return (
-    <YStack flex={1} backgroundColor="$background" paddingTop={insets.top}>
-      <StatusBar style="auto" />
-
-      {/* Header: back + search */}
-      <XStack
-        alignItems="center"
-        gap="$2"
-        paddingHorizontal="$3"
-        paddingVertical="$2"
-        flexDirection={isRTL ? "row-reverse" : "row"}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
-          hitSlop={8}
-          style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-          <BackIcon color={chrome.accent} size={24} />
-        </Pressable>
+    <YStack flex={1}>
+      {/* Search */}
+      <XStack alignItems="center" gap="$2" paddingHorizontal="$3" paddingVertical="$2">
         <XStack
           flex={1}
           alignItems="center"
           gap="$2"
-          flexDirection={isRTL ? "row-reverse" : "row"}
           backgroundColor="$backgroundSecondary"
           borderWidth={1}
           borderColor="$borderColor"
@@ -124,13 +117,10 @@ const QuranBrowseScreen = () => {
             value={query}
             onChangeText={setQuery}
             placeholder={t("quran.browse.searchPlaceholder")}
-            placeholderTextColor="$typographySecondary"
-            color="$typography"
             borderWidth={0}
             backgroundColor="transparent"
             paddingHorizontal="$0"
             autoCapitalize="none"
-            textAlign={isRTL ? "right" : "left"}
           />
           {query.length > 0 && (
             <Pressable
@@ -168,10 +158,6 @@ const QuranBrowseScreen = () => {
                 keyboardType="number-pad"
                 returnKeyType="go"
                 placeholder={t("quran.goto.pagePrompt", { total: TOTAL_PAGES })}
-                placeholderTextColor="$typographySecondary"
-                color="$typography"
-                backgroundColor="$backgroundSecondary"
-                borderColor="$borderColor"
               />
               <Pressable
                 onPress={submitPage}
@@ -262,9 +248,10 @@ const QuranBrowseScreen = () => {
                 <DivisionRow
                   key={j.division}
                   chrome={chrome}
+                  isRTL={isRTL}
                   leading={j.division}
                   title={t("quran.goto.juzLabel", { n: j.division })}
-                  page={j.page}
+                  subtitle={divisionSubtitle(j.page)}
                   onPress={() => go(j.page)}
                 />
               ))}
@@ -273,9 +260,10 @@ const QuranBrowseScreen = () => {
                 <DivisionRow
                   key={h.division}
                   chrome={chrome}
+                  isRTL={isRTL}
                   leading={h.division}
                   title={t("quran.goto.hizbLabel", { n: h.division })}
-                  page={h.page}
+                  subtitle={divisionSubtitle(h.page)}
                   onPress={() => go(h.page)}
                 />
               ))}
@@ -363,41 +351,62 @@ const SurahRow = ({
 
 const DivisionRow = ({
   chrome,
+  isRTL,
   leading,
   title,
-  page,
+  subtitle,
   onPress,
 }: {
   chrome: ReturnType<typeof useQuranChromeColors>;
+  isRTL: boolean;
   leading: number;
   title: string;
-  page: number;
+  subtitle: string;
   onPress: () => void;
-}) => (
-  <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title} · ${page}`}>
-    <XStack
-      alignItems="center"
-      gap="$3"
-      paddingVertical="$3"
-      borderBottomWidth={1}
-      borderColor="$borderColor">
-      <Text fontSize={14} color={chrome.subtleText} minWidth={30} textAlign="center">
-        {formatNumberToLocale(String(leading))}
-      </Text>
-      <Text
-        flex={1}
-        fontSize={15}
-        fontWeight="500"
-        color={chrome.text}
-        style={{ fontFamily: metadataFontFamily() }}>
-        {title}
-      </Text>
-      <Text fontSize={12} color={chrome.subtleText}>
-        {formatNumberToLocale(String(page))}
-      </Text>
-    </XStack>
-  </Pressable>
-);
+}) => {
+  const Chevron = isRTL ? ChevronLeft : ChevronRight;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title} · ${subtitle}`}>
+      <XStack
+        alignItems="center"
+        gap="$3"
+        padding="$3"
+        marginBottom="$2"
+        borderWidth={1}
+        borderColor="$borderColor"
+        borderRadius={14}
+        backgroundColor="$backgroundSecondary">
+        <YStack
+          width={40}
+          height={40}
+          borderRadius={12}
+          alignItems="center"
+          justifyContent="center"
+          style={{ backgroundColor: `${chrome.accent}14` }}>
+          <Text fontSize={15} fontWeight="700" color={chrome.accent}>
+            {formatNumberToLocale(String(leading))}
+          </Text>
+        </YStack>
+        <YStack flex={1} gap="$1">
+          <Text
+            fontSize={15}
+            fontWeight="600"
+            color={chrome.text}
+            style={{ fontFamily: metadataFontFamily() }}>
+            {title}
+          </Text>
+          <Text fontSize={12} color={chrome.subtleText}>
+            {subtitle}
+          </Text>
+        </YStack>
+        <Chevron color={chrome.subtleText} size={18} />
+      </XStack>
+    </Pressable>
+  );
+};
 
 const VerseRow = ({
   chrome,
@@ -440,5 +449,37 @@ const VerseRow = ({
     </YStack>
   </Pressable>
 );
+
+// Standalone route wrapper — frames BrowseIndex with a back header.
+const QuranBrowseScreen = () => {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const chrome = useQuranChromeColors();
+  const { isRTL } = useRTL();
+  const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  return (
+    <YStack flex={1} backgroundColor="$background" paddingTop={insets.top}>
+      <StatusBar style="auto" />
+      <XStack alignItems="center" paddingHorizontal="$3" paddingVertical="$2">
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel={t("common.back")}
+          hitSlop={8}
+          style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+          <BackIcon color={chrome.accent} size={24} />
+        </Pressable>
+      </XStack>
+      <BrowseIndex
+        onNavigate={(page) => {
+          setCurrentPage(page);
+          router.back();
+        }}
+      />
+    </YStack>
+  );
+};
 
 export default QuranBrowseScreen;

@@ -10,13 +10,13 @@ import Animated, {
 
 import { QuranTheme } from "@/enums/quran";
 import { TOTAL_PAGES, QURAN_THEME_COLORS } from "@/constants/Quran";
+import { useTranslation } from "react-i18next";
+
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
+import { formatNumberToLocale } from "@/utils/number";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHaptic } from "@/hooks/useHaptic";
 import { Text } from "@/components/ui/text";
-
-const toArabicDigits = (n: number): string =>
-  String(n).replace(/\d/g, (d) => String.fromCharCode(0x0660 + +d));
 
 interface PageSliderProps {
   currentPage: number;
@@ -32,6 +32,7 @@ const THUMB_RADIUS = 15;
 const HORIZONTAL_PADDING = 16;
 
 const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) => {
+  const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const isDark = quranTheme === QuranTheme.DARK;
@@ -199,7 +200,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
             {surahName}
           </Text>
           <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
-            {"الصفحة " + toArabicDigits(draggingPage)}
+            {`${t("quran.goto.page")} ${formatNumberToLocale(String(draggingPage))}`}
           </Text>
         </Animated.View>
       )}

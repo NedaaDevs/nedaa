@@ -1,15 +1,16 @@
-import { Pressable, StyleSheet } from "react-native";
+import { useEffect } from "react";
+import { Keyboard, Platform, Pressable, StyleSheet } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
   SlideInDown,
   SlideOutDown,
-  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,24 +34,43 @@ const ReaderSheet = ({ onClose, quranTheme, children }: ReaderSheetProps) => {
   const reduceMotion = useReducedMotion();
   const c = QURAN_THEME_COLORS[quranTheme];
   const translateY = useSharedValue(0);
+  // Lift the bottom-anchored sheet above the keyboard (e.g. the highlight-rename
+  // input) — RN doesn't reposition absolute views for the keyboard on its own.
+  // Driven from the core Keyboard API rather than reanimated's deprecated
+  // useAnimatedKeyboard.
+  const keyboardOffset = useSharedValue(0);
 
-  const dragStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvent, (e) => {
+      keyboardOffset.value = withTiming(e.endCoordinates.height, { duration: 220 });
+    });
+    const hide = Keyboard.addListener(hideEvent, () => {
+      keyboardOffset.value = withTiming(0, { duration: 220 });
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [keyboardOffset]);
 
-  // Swipe down past a threshold to dismiss. The worklet shared-value mutations
-  // trip react-compiler's immutability rule (false positive for reanimated).
+  const dragStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value - keyboardOffset.value }],
+  }));
+
+  // Swipe down past a threshold to dismiss.
   const pan = Gesture.Pan()
     .onUpdate((e) => {
       "worklet";
-      // eslint-disable-next-line react-hooks/immutability
       translateY.value = Math.max(0, e.translationY);
     })
     .onEnd((e) => {
       "worklet";
       if (e.translationY > 120) {
-        runOnJS(onClose)();
+        scheduleOnRN(onClose);
         return;
       }
-      // eslint-disable-next-line react-hooks/immutability
       translateY.value = withTiming(0, { duration: 180 });
     });
 
@@ -74,7 +94,9 @@ const ReaderSheet = ({ onClose, quranTheme, children }: ReaderSheetProps) => {
         style={[
           styles.sheet,
           dragStyle,
-          { backgroundColor: c.background, paddingBottom: insets.bottom + 16 },
+          // Floor the inset: Android gesture-nav can report a tiny/zero bottom
+          // inset, which left the last row under the home indicator.
+          { backgroundColor: c.background, paddingBottom: Math.max(insets.bottom, 16) + 16 },
         ]}>
         <GestureDetector gesture={pan}>
           <YStack alignItems="center" paddingTop="$2.5" paddingBottom="$1.5">

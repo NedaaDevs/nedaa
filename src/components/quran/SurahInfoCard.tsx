@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { QuranTheme, RevelationPlace } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { formatNumberToLocale } from "@/utils/number";
 import type { SurahMeta } from "@/types/quran";
 
 interface SurahInfoCardProps {
@@ -55,10 +56,14 @@ const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps)
           {meta.nameTransliterated}
         </Text>
         <Text style={[styles.meta, { color: colors.pageNumberColor }]}>
-          {place} · {t("quran.surah.ayahCount", { count: meta.ayahCount })}
+          {place} ·{" "}
+          {t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta.ayahCount)) })}
         </Text>
         <Text style={[styles.meta, { color: colors.pageNumberColor }]}>
-          {t("quran.surah.pages", { start: meta.pageStart, end: meta.pageEnd })}
+          {t("quran.surah.pages", {
+            start: formatNumberToLocale(String(meta.pageStart)),
+            end: formatNumberToLocale(String(meta.pageEnd)),
+          })}
         </Text>
       </View>
     </Pressable>

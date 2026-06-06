@@ -3,17 +3,18 @@ import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-n
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BookmarkColor, MushafVersion, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, MushafVersion, QuranTheme } from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
   IMAGE_SOURCE_WIDTH,
   IMAGE_SOURCE_LINE_HEIGHT,
-  bookmarkTint,
+  highlightTint,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { usePageData } from "@/hooks/usePageData";
 import { useAyahHitTest } from "@/hooks/useAyahHitTest";
+import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
@@ -119,9 +120,22 @@ const QuranPage = ({
     return localizedSurahName(topSurah);
   }, [pageAvailable, glyphBounds]);
 
-  // Bookmarked ayahs present on this page, keyed "surah:ayah" → colour. Matched
+  // Highlighted ayahs present on this page, keyed "surah:ayah" → colour. Matched
   // by glyph membership (not the stored page) so an ayah that spills across a
   // page boundary still tints on both pages.
+  const highlights = useHighlightStore((s) => s.highlights);
+  const pageHighlights = useMemo(() => {
+    const map = new Map<string, HighlightColor>();
+    if (glyphBounds.length === 0 || highlights.length === 0) return map;
+    const present = new Set(glyphBounds.map((g) => `${g.surahNumber}:${g.ayahNumber}`));
+    for (const h of highlights) {
+      const key = `${h.surah}:${h.ayah}`;
+      if (present.has(key)) map.set(key, h.color);
+    }
+    return map;
+  }, [highlights, glyphBounds]);
+
+  // Bookmarked ayahs present on this page, keyed "surah:ayah" → ribbon colour.
   const bookmarks = useBookmarkStore((s) => s.bookmarks);
   const pageBookmarks = useMemo(() => {
     const map = new Map<string, BookmarkColor>();
@@ -174,25 +188,25 @@ const QuranPage = ({
     [glyphBounds, lineHeight, isPageMode, pageScaleX, pageScaleY, srcLineHeight, coverScale]
   );
 
-  // Transient long-press highlight; skipped when the ayah is bookmarked (its
+  // Transient long-press highlight; skipped when the ayah is highlighted (its
   // persistent colour tint already covers it).
   const highlightRects = useMemo(() => {
     if (!highlightedAyah) return [];
-    if (pageBookmarks.has(`${highlightedAyah.surah}:${highlightedAyah.ayah}`)) return [];
+    if (pageHighlights.has(`${highlightedAyah.surah}:${highlightedAyah.ayah}`)) return [];
     return rectsForAyah(highlightedAyah.surah, highlightedAyah.ayah);
-  }, [highlightedAyah, pageBookmarks, rectsForAyah]);
+  }, [highlightedAyah, pageHighlights, rectsForAyah]);
 
-  // Persistent per-bookmark tints.
-  const bookmarkRects = useMemo(() => {
+  // Persistent per-highlight colour tints.
+  const highlightTintRects = useMemo(() => {
     const out: { left: number; top: number; width: number; height: number; tint: string }[] = [];
-    for (const [key, color] of pageBookmarks) {
+    for (const [key, color] of pageHighlights) {
       const [surah, ayah] = key.split(":").map(Number);
       for (const r of rectsForAyah(surah, ayah)) {
-        out.push({ ...r, tint: bookmarkTint(color, quranTheme) });
+        out.push({ ...r, tint: highlightTint(color, quranTheme) });
       }
     }
     return out;
-  }, [pageBookmarks, rectsForAyah, quranTheme]);
+  }, [pageHighlights, rectsForAyah, quranTheme]);
 
   const markerPositions = useMemo(() => {
     if (lineHeight === 0) return [];
@@ -287,9 +301,9 @@ const QuranPage = ({
               )
             )}
 
-          {bookmarkRects.map((rect, i) => (
+          {highlightTintRects.map((rect, i) => (
             <View
-              key={`bm-${i}`}
+              key={`hl-tint-${i}`}
               style={{
                 position: "absolute",
                 left: rect.left,
@@ -304,15 +318,15 @@ const QuranPage = ({
 
           {pageAvailable &&
             markerPositions.map((m, i) => {
-              const color = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
-              return color ? (
+              const bmColor = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
+              return bmColor ? (
                 <AyahBookmarkRibbon
                   key={`marker-${i}`}
                   x={m.x}
                   y={m.y}
                   width={m.width}
                   height={m.height}
-                  color={color}
+                  color={bmColor}
                   surahNumber={m.surahNumber}
                   ayahNumber={m.ayahNumber}
                 />

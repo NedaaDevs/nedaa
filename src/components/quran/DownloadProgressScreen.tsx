@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { BookOpen, Download, FileCheck, Loader, Pause, Play, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import { formatNumberToLocale } from "@/utils/number";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
 import { MushafVersion, QuranTheme, DownloadStatus, DownloadPhase } from "@/enums/quran";
@@ -222,7 +223,10 @@ const DownloadProgressScreen = ({
             {!isComplete && phase === DownloadPhase.DOWNLOADING && totalMB > 0 && (
               <Text fontSize={12.5} color={chrome.subtleText}>
                 {percent}% ·{" "}
-                {t("quran.download.sizeProgress", { downloaded: downloadedMB, total: totalMB })}
+                {t("quran.download.sizeProgress", {
+                  downloaded: formatNumberToLocale(String(downloadedMB)),
+                  total: formatNumberToLocale(String(totalMB)),
+                })}
               </Text>
             )}
           </YStack>
