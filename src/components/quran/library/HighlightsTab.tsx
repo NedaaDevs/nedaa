@@ -1,48 +1,100 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { HIGHLIGHT_COLORS } from "@/constants/Quran";
+import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { HighlightColor } from "@/enums/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useRTL } from "@/contexts/RTLContext";
+import { QuranContentDB } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import { Segmented } from "@/components/quran/settings/SettingsControls";
-import { HighlightColors } from "@/app/quran-highlights";
 
-type View = "surah" | "colors";
+type View = "colors" | "surah";
 
-interface SurahGroup {
+interface HlItem {
   surah: number;
-  items: { ayah: number; page: number; color: HighlightColor }[];
+  ayah: number;
+  page: number;
+  color: HighlightColor;
 }
+interface Group {
+  key: string;
+  title: string;
+  color?: HighlightColor;
+  items: HlItem[];
+}
+
+const sortItems = (a: HlItem, b: HlItem) => a.surah - b.surah || a.ayah - b.ayah;
 
 export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => void }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const chrome = useQuranChromeColors();
   const { isRTL } = useRTL();
-  const [view, setView] = useState<View>("surah");
   const highlights = useHighlightStore((s) => s.highlights);
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
+  const labels = useHighlightStore((s) => s.labels);
 
-  const groups = useMemo<SurahGroup[]>(() => {
-    const map = new Map<number, SurahGroup["items"]>();
-    for (const h of highlights) {
-      const list = map.get(h.surah) ?? [];
-      list.push({ ayah: h.ayah, page: h.page, color: h.color });
-      map.set(h.surah, list);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([surah, items]) => ({ surah, items: items.sort((a, b) => a.ayah - b.ayah) }));
+  const [view, setView] = useState<View>("colors");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [texts, setTexts] = useState<Map<string, string>>(new Map());
+
+  // Load each highlighted verse's text for the cards.
+  useEffect(() => {
+    let active = true;
+    Promise.all(
+      highlights.map((h) =>
+        QuranContentDB.getAyah(h.surah, h.ayah).then(
+          (d) => [`${h.surah}:${h.ayah}`, d?.text ?? ""] as const
+        )
+      )
+    ).then((entries) => {
+      if (active) setTexts(new Map(entries));
+    });
+    return () => {
+      active = false;
+    };
   }, [highlights]);
+
+  const groups = useMemo<Group[]>(() => {
+    if (view === "colors") {
+      return HIGHLIGHT_COLOR_ORDER.map((color) => ({
+        key: `c:${color}`,
+        title: labels[color] ?? t(`quran.highlight.color.${color}`),
+        color,
+        items: highlights.filter((h) => h.color === color).sort(sortItems),
+      })).filter((g) => g.items.length > 0);
+    }
+    const bySurah = new Map<number, HlItem[]>();
+    for (const h of highlights) {
+      const list = bySurah.get(h.surah) ?? [];
+      list.push(h);
+      bySurah.set(h.surah, list);
+    }
+    return [...bySurah.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([surah, items]) => ({
+        key: `s:${surah}`,
+        title: localizedSurahName(surah),
+        items: items.sort(sortItems),
+      }));
+  }, [view, highlights, labels, t]);
+
+  const toggle = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const CollapsedChevron = isRTL ? ChevronLeft : ChevronRight;
 
   return (
     <YStack flex={1}>
@@ -53,15 +105,13 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
           selected={view}
           onSelect={setView}
           options={[
-            { value: "surah", label: t("quran.browse.surahs") },
             { value: "colors", label: t("quran.highlight.colorsTab") },
+            { value: "surah", label: t("quran.browse.surahs") },
           ]}
         />
       </YStack>
 
-      {view === "colors" ? (
-        <HighlightColors />
-      ) : groups.length === 0 ? (
+      {groups.length === 0 ? (
         <YStack paddingVertical="$10" alignItems="center">
           <Text fontSize={14} fontWeight="600" color={chrome.subtleText}>
             {t("quran.highlight.emptyList")}
@@ -69,44 +119,90 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
         </YStack>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: insets.bottom + 24 }}>
-          {groups.map((g) => (
-            <YStack key={g.surah} paddingBottom="$3">
-              <Text
-                fontSize={15}
-                fontWeight="700"
-                color={chrome.text}
-                paddingVertical="$2"
-                style={{ fontFamily: metadataFontFamily() }}>
-                {localizedSurahName(g.surah)}
-              </Text>
-              {g.items.map((it) => (
+          {groups.map((g) => {
+            const isCollapsed = collapsed.has(g.key);
+            return (
+              <YStack key={g.key} paddingBottom="$3">
+                {/* Group header — tap to collapse/expand */}
                 <Pressable
-                  key={`${g.surah}:${it.ayah}`}
-                  onPress={() => onNavigate(it.page)}
+                  onPress={() => toggle(g.key)}
                   accessibilityRole="button"
-                  accessibilityLabel={t("a11y.quran.ayahText", { surah: g.surah, ayah: it.ayah })}>
-                  <XStack
-                    alignItems="center"
-                    gap="$3"
-                    paddingVertical="$3"
-                    paddingHorizontal="$2"
-                    borderBottomWidth={1}
-                    borderBottomColor="$borderColor">
-                    <YStack
-                      width={14}
-                      height={14}
-                      borderRadius={7}
-                      backgroundColor={HIGHLIGHT_COLORS[it.color].solid}
-                    />
-                    <Text flex={1} fontSize={14} color={chrome.text}>
-                      {`${localizedSurahName(g.surah)} ${formatNumberToLocale(String(it.ayah))}`}
+                  accessibilityState={{ expanded: !isCollapsed }}
+                  accessibilityLabel={g.title}>
+                  <XStack alignItems="center" gap="$2" paddingVertical="$2" paddingHorizontal="$1">
+                    {g.color && (
+                      <YStack
+                        width={12}
+                        height={12}
+                        borderRadius={6}
+                        backgroundColor={HIGHLIGHT_COLORS[g.color].solid}
+                      />
+                    )}
+                    <Text
+                      fontSize={16}
+                      fontWeight="700"
+                      color={chrome.text}
+                      style={{ fontFamily: metadataFontFamily() }}>
+                      {g.title}
                     </Text>
-                    <Chevron color={chrome.subtleText} size={18} />
+                    <Text fontSize={12} color={chrome.subtleText}>
+                      {formatNumberToLocale(String(g.items.length))}
+                    </Text>
+                    <YStack flex={1} />
+                    {isCollapsed ? (
+                      <CollapsedChevron color={chrome.accent} size={20} />
+                    ) : (
+                      <ChevronDown color={chrome.accent} size={20} />
+                    )}
                   </XStack>
                 </Pressable>
-              ))}
-            </YStack>
-          ))}
+
+                {!isCollapsed &&
+                  g.items.map((it) => (
+                    <Pressable
+                      key={`${it.surah}:${it.ayah}`}
+                      onPress={() => onNavigate(it.page)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("a11y.quran.ayahText", {
+                        surah: it.surah,
+                        ayah: it.ayah,
+                      })}>
+                      <YStack
+                        backgroundColor="$backgroundSecondary"
+                        borderRadius={14}
+                        borderWidth={1}
+                        borderColor="$borderColor"
+                        padding="$3"
+                        marginBottom="$2"
+                        gap="$2">
+                        <Text
+                          style={{
+                            fontSize: 19,
+                            lineHeight: 38,
+                            writingDirection: "rtl",
+                            textAlign: "center",
+                            fontFamily: QURAN_FONT_FAMILY,
+                            color: chrome.text,
+                          }}>
+                          {texts.get(`${it.surah}:${it.ayah}`) ?? ""}
+                        </Text>
+                        <XStack alignItems="center" gap="$2">
+                          <YStack
+                            width={10}
+                            height={10}
+                            borderRadius={5}
+                            backgroundColor={HIGHLIGHT_COLORS[it.color].solid}
+                          />
+                          <Text fontSize={12} color={chrome.subtleText}>
+                            {`${localizedSurahName(it.surah)}: ${formatNumberToLocale(String(it.ayah))}`}
+                          </Text>
+                        </XStack>
+                      </YStack>
+                    </Pressable>
+                  ))}
+              </YStack>
+            );
+          })}
         </ScrollView>
       )}
     </YStack>
