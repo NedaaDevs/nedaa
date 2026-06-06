@@ -1,4 +1,4 @@
-import { MushafVersion, QuranTheme, SurahFrameStyle } from "@/enums/quran";
+import { BookmarkColor, MushafVersion, QuranTheme, SurahFrameStyle } from "@/enums/quran";
 
 export const TOTAL_PAGES = 604;
 export const LINES_PER_PAGE = 15;
@@ -116,6 +116,53 @@ export const isColoredVersion = (version: MushafVersion): boolean =>
 // unreadable, so colored editions read their dark bundle on those themes.
 export const isDarkPaper = (quranTheme: QuranTheme): boolean =>
   quranTheme === QuranTheme.DARK || quranTheme === QuranTheme.AMOLED;
+
+// solid = dot/ribbon ink; tint = highlight overlay, lightened for dark paper.
+export const BOOKMARK_COLORS: Record<
+  BookmarkColor,
+  { solid: `#${string}`; tintLight: string; tintDark: string }
+> = {
+  [BookmarkColor.RED]: {
+    solid: "#C0453E",
+    tintLight: "rgba(192,69,62,0.20)",
+    tintDark: "rgba(240,120,112,0.26)",
+  },
+  [BookmarkColor.ORANGE]: {
+    solid: "#D2772F",
+    tintLight: "rgba(210,119,47,0.20)",
+    tintDark: "rgba(250,160,90,0.26)",
+  },
+  [BookmarkColor.AMBER]: {
+    solid: "#C99A24",
+    tintLight: "rgba(201,154,36,0.22)",
+    tintDark: "rgba(240,200,80,0.26)",
+  },
+  [BookmarkColor.GREEN]: {
+    solid: "#3E9A59",
+    tintLight: "rgba(62,154,89,0.20)",
+    tintDark: "rgba(110,210,140,0.24)",
+  },
+  [BookmarkColor.TEAL]: {
+    solid: "#2E9AA0",
+    tintLight: "rgba(46,154,160,0.20)",
+    tintDark: "rgba(90,205,210,0.24)",
+  },
+  [BookmarkColor.BLUE]: {
+    solid: "#3B79C9",
+    tintLight: "rgba(59,121,201,0.20)",
+    tintDark: "rgba(110,170,255,0.26)",
+  },
+  [BookmarkColor.PURPLE]: {
+    solid: "#8C53B8",
+    tintLight: "rgba(140,83,184,0.20)",
+    tintDark: "rgba(200,140,245,0.26)",
+  },
+} as const;
+
+export const BOOKMARK_COLOR_ORDER = Object.values(BookmarkColor);
+
+export const bookmarkTint = (color: BookmarkColor, quranTheme: QuranTheme): string =>
+  isDarkPaper(quranTheme) ? BOOKMARK_COLORS[color].tintDark : BOOKMARK_COLORS[color].tintLight;
 
 // Path segment for a version's images. A colored edition on a dark paper reads
 // the separate dark bundle when downloaded; everything else (and the fallback

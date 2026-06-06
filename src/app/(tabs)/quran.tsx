@@ -23,6 +23,7 @@ import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import GoToSheet from "@/components/quran/GoToSheet";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
+import BookmarksSheet from "@/components/quran/sheets/BookmarksSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import type { QuranManifestVersion } from "@/types/quran";
 
@@ -60,6 +61,7 @@ const QuranScreen = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showGoTo, setShowGoTo] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -401,11 +403,24 @@ const QuranScreen = () => {
         <QuranSettingsSheet
           onClose={() => setShowSettings(false)}
           onDownloadMore={handleDownloadMore}
+          onOpenBookmarks={() => {
+            setShowSettings(false);
+            setShowBookmarks(true);
+          }}
         />
       )}
 
       {/* Go-to navigation sheet */}
       {showGoTo && <GoToSheet onGoTo={setCurrentPage} onClose={() => setShowGoTo(false)} />}
+
+      {/* Bookmarks list sheet */}
+      {showBookmarks && (
+        <BookmarksSheet
+          quranTheme={quranTheme}
+          onNavigate={setCurrentPage}
+          onClose={() => setShowBookmarks(false)}
+        />
+      )}
 
       {/* Long-press ayah action sheet */}
       <AyahActionSheet

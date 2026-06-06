@@ -6,9 +6,15 @@ import * as Clipboard from "expo-clipboard";
 import { Copy, Share2, Bookmark, Check } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { QURAN_FONT_FAMILY, QURAN_THEME_COLORS } from "@/constants/Quran";
-import { QuranTheme } from "@/enums/quran";
+import {
+  BOOKMARK_COLORS,
+  BOOKMARK_COLOR_ORDER,
+  QURAN_FONT_FAMILY,
+  QURAN_THEME_COLORS,
+} from "@/constants/Quran";
+import { BookmarkColor, QuranTheme } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
@@ -27,6 +33,10 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
   // Brief success feedback on a button after copy/share; the sheet stays open.
   const [done, setDone] = useState<"copy" | "share" | null>(null);
+
+  const bookmarks = useBookmarkStore((s) => s.bookmarks);
+  const setBookmark = useBookmarkStore((s) => s.setBookmark);
+  const removeBookmark = useBookmarkStore((s) => s.removeBookmark);
 
   useEffect(() => {
     if (!target) return;
@@ -47,6 +57,11 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const surahName = localizedSurahName(target.surah);
   const shareBody = data ? `${data.text}\n${surahName} ${ref}` : "";
 
+  // This ayah's colour (if any) and the colours already used by other ayahs —
+  // each colour is a single mushaf-wide slot.
+  const bookmark = bookmarks.find((b) => b.surah === target.surah && b.ayah === target.ayah);
+  const usedColors = new Set(bookmarks.map((b) => b.color));
+
   const flash = (which: "copy" | "share") => {
     setDone(which);
     setTimeout(() => setDone(null), 1600);
@@ -63,6 +78,14 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
       if (res.action === Share.sharedAction) flash("share");
     } catch {
       // share cancelled / failed — no feedback
+    }
+  };
+  const toggleColor = (color: BookmarkColor) => {
+    if (!data) return;
+    if (bookmark?.color === color) {
+      removeBookmark(target.surah, target.ayah);
+    } else {
+      setBookmark(target.surah, target.ayah, data.page, color);
     }
   };
 
@@ -109,28 +132,36 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
         />
       </XStack>
 
-      {/* Reserved — wired with bookmarks (Step 2). */}
-      <Pressable
-        disabled
-        accessibilityRole="button"
-        accessibilityLabel={t("quran.action.bookmark")}
-        style={{
-          marginTop: 14,
-          paddingVertical: 14,
-          borderRadius: 14,
-          borderWidth: 1.5,
-          borderColor: c.frameColor,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          opacity: 0.45,
-        }}>
-        <Bookmark size={18} color={ink} />
-        <Text fontSize={14} fontWeight="600" color={ink}>
+      {/* Bookmark — tap a free colour to mark this ayah; tap a used one to move it
+          here; tap this ayah's own colour to remove it. A dot marks colours in use. */}
+      <XStack alignItems="center" gap="$2" paddingTop="$4" paddingBottom="$1">
+        <Bookmark
+          size={16}
+          color={ink}
+          fill={bookmark ? BOOKMARK_COLORS[bookmark.color].solid : "transparent"}
+        />
+        <Text fontSize={13} fontWeight="600" color={ink}>
           {t("quran.action.bookmark")}
         </Text>
-      </Pressable>
+      </XStack>
+      <XStack justifyContent="space-between" paddingTop="$2">
+        {BOOKMARK_COLOR_ORDER.map((color) => {
+          const selected = bookmark?.color === color;
+          const taken = usedColors.has(color) && !selected;
+          const name = t(`quran.bookmark.color.${color}`);
+          return (
+            <ColorSwatch
+              key={color}
+              color={color}
+              selected={selected}
+              taken={taken}
+              label={taken ? `${name} — ${t("quran.bookmark.inUse")}` : name}
+              ink={ink}
+              onPress={() => toggleColor(color)}
+            />
+          );
+        })}
+      </XStack>
     </ReaderSheet>
   );
 };
@@ -164,6 +195,53 @@ const ActionButton = ({
       <Text fontSize={12} fontWeight="600" color={ink}>
         {label}
       </Text>
+    </YStack>
+  </Pressable>
+);
+
+const ColorSwatch = ({
+  color,
+  selected,
+  taken,
+  label,
+  ink,
+  onPress,
+}: {
+  color: BookmarkColor;
+  selected: boolean;
+  taken: boolean;
+  label: string;
+  ink: `#${string}`;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={onPress}
+    hitSlop={7}
+    accessibilityRole="button"
+    accessibilityLabel={label}
+    accessibilityState={{ selected }}
+    style={{ width: 38, height: 38, alignItems: "center", justifyContent: "center" }}>
+    <YStack
+      width={36}
+      height={36}
+      borderRadius={18}
+      borderWidth={selected ? 2.5 : 0}
+      borderColor={ink}
+      alignItems="center"
+      justifyContent="center">
+      <YStack
+        width={26}
+        height={26}
+        borderRadius={13}
+        backgroundColor={BOOKMARK_COLORS[color].solid}
+        alignItems="center"
+        justifyContent="center">
+        {selected ? (
+          <Check size={14} color="#fff" />
+        ) : taken ? (
+          <YStack width={8} height={8} borderRadius={4} backgroundColor="rgba(255,255,255,0.92)" />
+        ) : null}
+      </YStack>
     </YStack>
   </Pressable>
 );

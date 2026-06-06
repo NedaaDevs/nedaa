@@ -3,22 +3,25 @@ import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-n
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MushafVersion, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, MushafVersion, QuranTheme } from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
   IMAGE_SOURCE_WIDTH,
   IMAGE_SOURCE_LINE_HEIGHT,
+  bookmarkTint,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { usePageData } from "@/hooks/usePageData";
 import { useAyahHitTest } from "@/hooks/useAyahHitTest";
+import { useBookmarkStore } from "@/stores/quranBookmarks";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
 import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
+import AyahBookmarkRibbon from "@/components/quran/AyahBookmarkRibbon";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
 
 const LONG_PRESS_MS = 400;
@@ -116,51 +119,80 @@ const QuranPage = ({
     return localizedSurahName(topSurah);
   }, [pageAvailable, glyphBounds]);
 
+  // Bookmarked ayahs present on this page, keyed "surah:ayah" → colour. Matched
+  // by glyph membership (not the stored page) so an ayah that spills across a
+  // page boundary still tints on both pages.
+  const bookmarks = useBookmarkStore((s) => s.bookmarks);
+  const pageBookmarks = useMemo(() => {
+    const map = new Map<string, BookmarkColor>();
+    if (glyphBounds.length === 0 || bookmarks.length === 0) return map;
+    const present = new Set(glyphBounds.map((g) => `${g.surahNumber}:${g.ayahNumber}`));
+    for (const b of bookmarks) {
+      const key = `${b.surah}:${b.ayah}`;
+      if (present.has(key)) map.set(key, b.color);
+    }
+    return map;
+  }, [bookmarks, glyphBounds]);
+
+  // Screen-space rects covering an ayah's glyphs, one per line it occupies.
+  const rectsForAyah = useCallback(
+    (surah: number, ayah: number) => {
+      if (lineHeight === 0) return [];
+      const ayahGlyphs = glyphBounds.filter(
+        (g) => g.surahNumber === surah && g.ayahNumber === ayah
+      );
+      if (ayahGlyphs.length === 0) return [];
+
+      const lineMap = new Map<number, { minX: number; maxX: number }>();
+      for (const g of ayahGlyphs) {
+        const existing = lineMap.get(g.line);
+        const gRight = g.x + g.width;
+        if (existing) {
+          existing.minX = Math.min(existing.minX, g.x);
+          existing.maxX = Math.max(existing.maxX, gRight);
+        } else {
+          lineMap.set(g.line, { minX: g.x, maxX: gRight });
+        }
+      }
+
+      if (isPageMode) {
+        return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
+          left: minX * pageScaleX,
+          top: (line - 1) * srcLineHeight * pageScaleX * pageScaleY,
+          width: (maxX - minX) * pageScaleX,
+          height: srcLineHeight * pageScaleX * pageScaleY,
+        }));
+      }
+
+      return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
+        left: minX * coverScale,
+        top: (line - 1) * lineHeight,
+        width: (maxX - minX) * coverScale,
+        height: lineHeight,
+      }));
+    },
+    [glyphBounds, lineHeight, isPageMode, pageScaleX, pageScaleY, srcLineHeight, coverScale]
+  );
+
+  // Transient long-press highlight; skipped when the ayah is bookmarked (its
+  // persistent colour tint already covers it).
   const highlightRects = useMemo(() => {
-    if (!highlightedAyah || lineHeight === 0) return [];
+    if (!highlightedAyah) return [];
+    if (pageBookmarks.has(`${highlightedAyah.surah}:${highlightedAyah.ayah}`)) return [];
+    return rectsForAyah(highlightedAyah.surah, highlightedAyah.ayah);
+  }, [highlightedAyah, pageBookmarks, rectsForAyah]);
 
-    const ayahGlyphs = glyphBounds.filter(
-      (g) => g.surahNumber === highlightedAyah.surah && g.ayahNumber === highlightedAyah.ayah
-    );
-
-    const lineMap = new Map<number, { minX: number; maxX: number }>();
-    for (const g of ayahGlyphs) {
-      const existing = lineMap.get(g.line);
-      const gRight = g.x + g.width;
-      if (existing) {
-        existing.minX = Math.min(existing.minX, g.x);
-        existing.maxX = Math.max(existing.maxX, gRight);
-      } else {
-        lineMap.set(g.line, { minX: g.x, maxX: gRight });
+  // Persistent per-bookmark tints.
+  const bookmarkRects = useMemo(() => {
+    const out: { left: number; top: number; width: number; height: number; tint: string }[] = [];
+    for (const [key, color] of pageBookmarks) {
+      const [surah, ayah] = key.split(":").map(Number);
+      for (const r of rectsForAyah(surah, ayah)) {
+        out.push({ ...r, tint: bookmarkTint(color, quranTheme) });
       }
     }
-
-    if (isPageMode) {
-      // Convert source coords to screen coords for page mode
-      return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
-        left: minX * pageScaleX,
-        top: (line - 1) * srcLineHeight * pageScaleX * pageScaleY,
-        width: (maxX - minX) * pageScaleX,
-        height: srcLineHeight * pageScaleX * pageScaleY,
-      }));
-    }
-
-    return Array.from(lineMap.entries()).map(([line, { minX, maxX }]) => ({
-      left: minX * coverScale,
-      top: (line - 1) * lineHeight,
-      width: (maxX - minX) * coverScale,
-      height: lineHeight,
-    }));
-  }, [
-    highlightedAyah,
-    lineHeight,
-    glyphBounds,
-    isPageMode,
-    pageScaleX,
-    pageScaleY,
-    srcLineHeight,
-    coverScale,
-  ]);
+    return out;
+  }, [pageBookmarks, rectsForAyah, quranTheme]);
 
   const markerPositions = useMemo(() => {
     if (lineHeight === 0) return [];
@@ -172,6 +204,7 @@ const QuranPage = ({
           y: (g.line - 1) * srcLineHeight * pageScaleX * pageScaleY + g.y * pageScaleX * pageScaleY,
           width: g.width * pageScaleX,
           height: g.height * pageScaleX * pageScaleY,
+          surahNumber: g.surahNumber,
           ayahNumber: g.ayahNumber,
         };
       }
@@ -180,6 +213,7 @@ const QuranPage = ({
         y: (g.line - 1) * lineHeight + g.y * coverScale - lineCoverClipY,
         width: g.width * coverScale,
         height: g.height * coverScale,
+        surahNumber: g.surahNumber,
         ayahNumber: g.ayahNumber,
       };
     });
@@ -253,19 +287,48 @@ const QuranPage = ({
               )
             )}
 
+          {bookmarkRects.map((rect, i) => (
+            <View
+              key={`bm-${i}`}
+              style={{
+                position: "absolute",
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                backgroundColor: rect.tint,
+                borderRadius: 2,
+              }}
+            />
+          ))}
+
           {pageAvailable &&
-            markerPositions.map((m, i) => (
-              <AyahMarker
-                key={`marker-${i}`}
-                x={m.x}
-                y={m.y}
-                width={m.width}
-                height={m.height}
-                ayahNumber={m.ayahNumber}
-                version={version}
-                quranTheme={quranTheme}
-              />
-            ))}
+            markerPositions.map((m, i) => {
+              const color = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
+              return color ? (
+                <AyahBookmarkRibbon
+                  key={`marker-${i}`}
+                  x={m.x}
+                  y={m.y}
+                  width={m.width}
+                  height={m.height}
+                  color={color}
+                  surahNumber={m.surahNumber}
+                  ayahNumber={m.ayahNumber}
+                />
+              ) : (
+                <AyahMarker
+                  key={`marker-${i}`}
+                  x={m.x}
+                  y={m.y}
+                  width={m.width}
+                  height={m.height}
+                  ayahNumber={m.ayahNumber}
+                  version={version}
+                  quranTheme={quranTheme}
+                />
+              );
+            })}
 
           {highlightRects.map((rect, i) => (
             <View

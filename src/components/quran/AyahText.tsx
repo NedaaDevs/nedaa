@@ -2,8 +2,14 @@ import { useCallback } from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, toHafsDigits } from "@/constants/Quran";
+import { BookmarkColor, QuranTheme } from "@/enums/quran";
+import {
+  QURAN_THEME_COLORS,
+  QURAN_FONT_FAMILY,
+  BOOKMARK_COLORS,
+  bookmarkTint,
+  toHafsDigits,
+} from "@/constants/Quran";
 
 interface AyahTextProps {
   surahNumber: number;
@@ -12,6 +18,7 @@ interface AyahTextProps {
   fontSize: number;
   quranTheme: QuranTheme;
   isHighlighted: boolean;
+  bookmarkColor?: BookmarkColor | null;
   onLongPress: (surahNumber: number, ayahNumber: number) => void;
 }
 
@@ -22,6 +29,7 @@ const AyahText = ({
   fontSize,
   quranTheme,
   isHighlighted,
+  bookmarkColor,
   onLongPress,
 }: AyahTextProps) => {
   const { t } = useTranslation();
@@ -34,14 +42,25 @@ const AyahText = ({
   // Ornamental parentheses + Hafs-style ayah number
   const markerText = ` \uFD3F${toHafsDigits(ayahNumber)}\uFD3E `;
 
+  // A bookmark's colour tint takes precedence over the transient highlight; the
+  // inline marker picks up the bookmark colour so the verse reads as flagged.
+  const background = bookmarkColor
+    ? bookmarkTint(bookmarkColor, quranTheme)
+    : isHighlighted
+      ? themeColors.highlightColor
+      : undefined;
+  const markerColor = bookmarkColor
+    ? BOOKMARK_COLORS[bookmarkColor].solid
+    : themeColors.markerColor;
+
   return (
     <Pressable
       onLongPress={handleLongPress}
       delayLongPress={400}
       accessibilityRole="text"
       accessibilityLabel={t("a11y.quran.ayahText", { surah: surahNumber, ayah: ayahNumber })}
-      accessibilityState={{ selected: isHighlighted }}
-      style={[styles.container, isHighlighted && { backgroundColor: themeColors.highlightColor }]}>
+      accessibilityState={{ selected: isHighlighted || !!bookmarkColor }}
+      style={[styles.container, background ? { backgroundColor: background } : null]}>
       <Text
         style={[
           styles.ayahText,
@@ -55,9 +74,7 @@ const AyahText = ({
           },
         ]}>
         {text}
-        <Text style={{ color: themeColors.markerColor, fontSize: fontSize * 0.85 }}>
-          {markerText}
-        </Text>
+        <Text style={{ color: markerColor, fontSize: fontSize * 0.85 }}>{markerText}</Text>
       </Text>
     </Pressable>
   );

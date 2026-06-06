@@ -64,6 +64,19 @@ export const BundleOutcome = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type BundleOutcome = (typeof BundleOutcome)[keyof typeof BundleOutcome];
 
+// Bookmark tag colours.
+export const BookmarkColor = {
+  RED: "red",
+  ORANGE: "orange",
+  AMBER: "amber",
+  GREEN: "green",
+  TEAL: "teal",
+  BLUE: "blue",
+  PURPLE: "purple",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type BookmarkColor = (typeof BookmarkColor)[keyof typeof BookmarkColor];
+
 export enum SajdaType {
   REQUIRED = "required",
   OPTIONAL = "optional",

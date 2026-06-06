@@ -16,7 +16,9 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { MushafVersion, DownloadStatus, SurahFrameStyle, ReaderViewMode } from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
+import { formatNumberToLocale } from "@/utils/number";
 import { useQuranStore } from "@/stores/quran";
+import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import {
   Section,
@@ -30,13 +32,19 @@ import LibraryRow from "@/components/quran/settings/LibraryRow";
 interface QuranSettingsSheetProps {
   onClose: () => void;
   onDownloadMore: () => void;
+  onOpenBookmarks: () => void;
 }
 
-const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps) => {
+const QuranSettingsSheet = ({
+  onClose,
+  onDownloadMore,
+  onOpenBookmarks,
+}: QuranSettingsSheetProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const chrome = useQuranChromeColors();
   const reduceMotion = useReducedMotion();
+  const bookmarkCount = useBookmarkStore((s) => s.bookmarks.length);
 
   const {
     versionDownloads,
@@ -204,17 +212,21 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
             </Section>
 
             <Section title={t("quran.settings.saved")} chrome={chrome}>
-              <XStack
-                alignItems="center"
-                gap="$2"
-                paddingHorizontal="$3"
-                paddingVertical="$2"
-                opacity={0.6}>
-                <Bookmark size={16} color={chrome.subtleText} />
-                <Text fontSize={14} color={chrome.subtleText}>
-                  {t("quran.settings.savedSoon")}
-                </Text>
-              </XStack>
+              <Pressable
+                onPress={onOpenBookmarks}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.bookmark.title")}
+                accessibilityHint={t("quran.bookmark.openHint")}>
+                <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
+                  <Bookmark size={16} color={chrome.accent} />
+                  <Text fontSize={15} color={chrome.accent} fontWeight="600">
+                    {t("quran.bookmark.title")}
+                  </Text>
+                  <Text fontSize={14} color={chrome.subtleText} marginLeft="auto">
+                    {formatNumberToLocale(String(bookmarkCount))}
+                  </Text>
+                </XStack>
+              </Pressable>
             </Section>
           </YStack>
         </ScrollView>

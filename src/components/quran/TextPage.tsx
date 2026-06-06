@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AccessibilityInfo,
   ScrollView,
@@ -11,10 +11,11 @@ import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
-import { QuranTheme } from "@/enums/quran";
+import { BookmarkColor, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { juzForPage } from "@/utils/juz";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import AyahText from "@/components/quran/AyahText";
@@ -46,6 +47,13 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
     surah: number;
     ayah: number;
   } | null>(null);
+
+  const bookmarks = useBookmarkStore((s) => s.bookmarks);
+  const bookmarkMap = useMemo(() => {
+    const map = new Map<string, BookmarkColor>();
+    for (const b of bookmarks) map.set(`${b.surah}:${b.ayah}`, b.color);
+    return map;
+  }, [bookmarks]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -127,6 +135,7 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
           isHighlighted={
             highlightedAyah?.surah === ayah.surahNumber && highlightedAyah?.ayah === ayah.ayahNumber
           }
+          bookmarkColor={bookmarkMap.get(`${ayah.surahNumber}:${ayah.ayahNumber}`) ?? null}
           onLongPress={handleLongPress}
         />
       );
