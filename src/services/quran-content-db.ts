@@ -8,6 +8,7 @@ import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/quran";
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
+import { stripTashkeel } from "@/utils/tashkeel";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("quran-content-db");
@@ -313,6 +314,51 @@ const getAyah = async (
   return row ?? null;
 };
 
+export type AyahSearchHit = {
+  surahNumber: number;
+  ayahNumber: number;
+  page: number;
+  text: string;
+};
+
+// Build a safe FTS5 MATCH string from raw input: strip tashkeel, fold alef +
+// tatweel to match the indexed `text_normalized`, drop anything outside the
+// Arabic block / digits (which also strips FTS operators like " * ( OR), then
+// quote each token and prefix-match the last.
+const buildAyahMatch = (query: string): string | null => {
+  const normalized = stripTashkeel(query)
+    .replace(/[آأإٱ]/g, "ا") // آأإٱ → ا
+    .replace(/ـ/g, "") // tatweel
+    .replace(/[^؀-ۿ0-9 ]/g, " ");
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+  return tokens.map((tok, i) => (i === tokens.length - 1 ? `"${tok}"*` : `"${tok}"`)).join(" ");
+};
+
+// Full-text verse search over the bundled ayahs_fts (FTS5) index, ranked.
+const searchAyahs = async (query: string, limit = 50): Promise<AyahSearchHit[]> => {
+  const match = buildAyahMatch(query);
+  if (!match) return [];
+  const db = await openQuranDb();
+  const rows = await db.getAllAsync<{
+    surah_number: number;
+    ayah_number: number;
+    page: number;
+    text: string;
+  }>(
+    `SELECT a.surah_number, a.ayah_number, a.page, a.text
+     FROM ayahs_fts f JOIN ayahs a ON a.rowid = f.rowid
+     WHERE ayahs_fts MATCH ? ORDER BY rank LIMIT ?`,
+    [match, limit]
+  );
+  return rows.map((r) => ({
+    surahNumber: r.surah_number,
+    ayahNumber: r.ayah_number,
+    page: r.page,
+    text: r.text,
+  }));
+};
+
 const getSurahNameForPageFromContent = async (page: number): Promise<number> => {
   const db = await openQuranDb();
   const result = await db.getFirstAsync<{ surah_number: number }>(
@@ -436,6 +482,7 @@ export const QuranContentDB = {
   getSurahForPage,
   getAyahsForPage,
   getAyah,
+  searchAyahs,
   getSurahNameForPageFromContent,
   getSurah,
   getAllSurahs,
