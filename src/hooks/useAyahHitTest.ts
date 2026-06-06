@@ -92,12 +92,12 @@ export const useAyahHitTest = ({
   // Both gestures resolve the glyph under the touch; they differ only in which
   // glyph kind they match — a tap matches an ayah-end marker, a long-press a word.
   const resolveHit = useCallback(
-    (event: GestureResponderEvent, wantMarker: boolean) => {
+    (absoluteX: number, absoluteY: number, wantMarker: boolean) => {
       if (lineHeight === 0) return;
       pressableRef.current?.measureInWindow((px, py) => {
         const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
-        const touchX = event.nativeEvent.pageX - px;
-        const touchY = event.nativeEvent.pageY - py - statusBarOffset;
+        const touchX = absoluteX - px;
+        const touchY = absoluteY - py - statusBarOffset;
         const { sourceX, sourceY, sourceLine } = toSourceCoords(touchX, touchY);
 
         // Long-press on a surah-header line resolves to that surah (the header
@@ -134,12 +134,16 @@ export const useAyahHitTest = ({
     [glyphBounds, lineHeight, toSourceCoords, pressableRef, surahHeaderLines, onAyahLongPress]
   );
 
+  // Long-press is driven by an RNGH LongPress gesture (coordinates natively with
+  // the page-swipe pan), which reports screen coords directly.
   const handleLongPress = useCallback(
-    (event: GestureResponderEvent) => resolveHit(event, false),
+    (absoluteX: number, absoluteY: number) => resolveHit(absoluteX, absoluteY, false),
     [resolveHit]
   );
+  // Tap stays on the RN Pressable, which reports coords via the touch event.
   const handlePress = useCallback(
-    (event: GestureResponderEvent) => resolveHit(event, true),
+    (event: GestureResponderEvent) =>
+      resolveHit(event.nativeEvent.pageX, event.nativeEvent.pageY, true),
     [resolveHit]
   );
 

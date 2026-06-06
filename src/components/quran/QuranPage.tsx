@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { scheduleOnRN } from "react-native-worklets";
 import { YStack } from "tamagui";
 
 import { BookmarkColor, HighlightColor, MushafVersion, QuranTheme } from "@/enums/quran";
@@ -116,6 +118,17 @@ const QuranPage = ({
     pressableRef,
     onAyahLongPress,
   });
+
+  // Long-press as a native RNGH gesture so it coordinates with the page-swipe pan
+  // instead of a JS Pressable, whose long-press the pan could cancel on Android.
+  const longPressGesture = useMemo(
+    () =>
+      Gesture.LongPress()
+        .minDuration(LONG_PRESS_MS)
+        // onStart runs as a worklet on the UI thread; hop to JS for the hit-test.
+        .onStart((e) => scheduleOnRN(handleLongPress, e.absoluteX, e.absoluteY)),
+    [handleLongPress]
+  );
 
   // Drop the highlight when the ayah's action sheet closes (selection cleared).
   useEffect(() => {
@@ -271,105 +284,109 @@ const QuranPage = ({
           backgroundColor: QURAN_THEME_COLORS[quranTheme].innerBackground,
         }}
         onLayout={onLinesLayout}>
-        <Pressable
-          ref={pressableRef}
-          style={{ position: "relative", direction: "ltr" }}
-          onLongPress={handleLongPress}
-          delayLongPress={LONG_PRESS_MS}
-          onPress={handlePress}>
-          {lineHeight > 0 && ready && isPageMode && (
-            <PageImage
-              version={version}
-              page={page}
-              screenWidth={width}
-              availableHeight={linesAreaHeight}
-              quranTheme={quranTheme}
-            />
-          )}
-          {lineHeight > 0 && !ready && isPageMode && (
-            <LineShimmer screenWidth={width} lineHeight={linesAreaHeight} quranTheme={quranTheme} />
-          )}
-          {lineHeight > 0 &&
-            !isPageMode &&
-            PAGE_LINE_NUMBERS.map((line) =>
-              ready ? (
-                <LineImage
-                  key={`${page}-${line}`}
-                  version={version}
-                  page={page}
-                  line={line}
-                  screenWidth={width}
-                  lineHeight={lineHeight}
-                  quranTheme={quranTheme}
-                />
-              ) : (
-                <LineShimmer
-                  key={`shimmer-${page}-${line}`}
-                  screenWidth={width}
-                  lineHeight={lineHeight}
-                  quranTheme={quranTheme}
-                />
-              )
+        <GestureDetector gesture={longPressGesture}>
+          <Pressable
+            ref={pressableRef}
+            style={{ position: "relative", direction: "ltr" }}
+            onPress={handlePress}>
+            {lineHeight > 0 && ready && isPageMode && (
+              <PageImage
+                version={version}
+                page={page}
+                screenWidth={width}
+                availableHeight={linesAreaHeight}
+                quranTheme={quranTheme}
+              />
             )}
+            {lineHeight > 0 && !ready && isPageMode && (
+              <LineShimmer
+                screenWidth={width}
+                lineHeight={linesAreaHeight}
+                quranTheme={quranTheme}
+              />
+            )}
+            {lineHeight > 0 &&
+              !isPageMode &&
+              PAGE_LINE_NUMBERS.map((line) =>
+                ready ? (
+                  <LineImage
+                    key={`${page}-${line}`}
+                    version={version}
+                    page={page}
+                    line={line}
+                    screenWidth={width}
+                    lineHeight={lineHeight}
+                    quranTheme={quranTheme}
+                  />
+                ) : (
+                  <LineShimmer
+                    key={`shimmer-${page}-${line}`}
+                    screenWidth={width}
+                    lineHeight={lineHeight}
+                    quranTheme={quranTheme}
+                  />
+                )
+              )}
 
-          {highlightTintRects.map((rect, i) => (
-            <View
-              key={`hl-tint-${i}`}
-              style={{
-                position: "absolute",
-                left: rect.left,
-                top: rect.top,
-                width: rect.width,
-                height: rect.height,
-                backgroundColor: rect.tint,
-                borderRadius: 2,
-              }}
-            />
-          ))}
+            {highlightTintRects.map((rect, i) => (
+              <View
+                key={`hl-tint-${i}`}
+                style={{
+                  position: "absolute",
+                  left: rect.left,
+                  top: rect.top,
+                  width: rect.width,
+                  height: rect.height,
+                  backgroundColor: rect.tint,
+                  borderRadius: 2,
+                }}
+              />
+            ))}
 
-          {ready &&
-            markerPositions.map((m, i) => {
-              const bmColor = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
-              return bmColor ? (
-                <AyahBookmarkRibbon
-                  key={`marker-${i}`}
-                  x={m.x}
-                  y={m.y}
-                  width={m.width}
-                  height={m.height}
-                  color={bmColor}
-                  surahNumber={m.surahNumber}
-                  ayahNumber={m.ayahNumber}
-                />
-              ) : (
-                <AyahMarker
-                  key={`marker-${i}`}
-                  x={m.x}
-                  y={m.y}
-                  width={m.width}
-                  height={m.height}
-                  ayahNumber={m.ayahNumber}
-                  version={version}
-                  quranTheme={quranTheme}
-                />
-              );
-            })}
+            {ready &&
+              markerPositions.map((m, i) => {
+                const bmColor = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
+                return bmColor ? (
+                  <AyahBookmarkRibbon
+                    key={`marker-${i}`}
+                    x={m.x}
+                    y={m.y}
+                    width={m.width}
+                    height={m.height}
+                    color={bmColor}
+                    surahNumber={m.surahNumber}
+                    ayahNumber={m.ayahNumber}
+                  />
+                ) : (
+                  <AyahMarker
+                    key={`marker-${i}`}
+                    x={m.x}
+                    y={m.y}
+                    width={m.width}
+                    height={m.height}
+                    ayahNumber={m.ayahNumber}
+                    version={version}
+                    quranTheme={quranTheme}
+                  />
+                );
+              })}
 
-          {highlightRects.map((rect, i) => (
-            <View
-              key={`hl-${i}`}
-              style={{
-                position: "absolute",
-                left: rect.left,
-                top: rect.top,
-                width: rect.width,
-                height: rect.height,
-                backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
-                borderRadius: 2,
-              }}
-            />
-          ))}
-        </Pressable>
+            {highlightRects.map((rect, i) => (
+              <View
+                key={`hl-${i}`}
+                style={{
+                  position: "absolute",
+                  left: rect.left,
+                  top: rect.top,
+                  width: rect.width,
+                  height: rect.height,
+                  backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
+                  borderRadius: 2,
+                }}
+              />
+            ))}
+          </Pressable>
+        </GestureDetector>
       </View>
 
       <PageNumber page={page} quranTheme={quranTheme} />
