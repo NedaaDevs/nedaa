@@ -1222,5 +1222,7 @@
   "quran.bookmark.color.teal": "فیروزی",
   "quran.bookmark.color.blue": "نیلا",
   "quran.bookmark.color.purple": "ارغوانی",
-  "quran.bookmark.inUse": "زیرِ استعمال"
+  "quran.bookmark.inUse": "زیرِ استعمال",
+  "common.back": "واپس",
+  "a11y.quran.surahInfo": "سورہ کی معلومات"
 }

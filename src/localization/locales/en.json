@@ -1270,5 +1270,7 @@
   "quran.bookmark.color.teal": "Teal",
   "quran.bookmark.color.blue": "Blue",
   "quran.bookmark.color.purple": "Purple",
-  "quran.bookmark.inUse": "in use"
+  "quran.bookmark.inUse": "in use",
+  "common.back": "Back",
+  "a11y.quran.surahInfo": "Surah information"
 }

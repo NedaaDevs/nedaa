@@ -886,5 +886,7 @@
   "quran.bookmark.color.teal": "Teal",
   "quran.bookmark.color.blue": "Biru",
   "quran.bookmark.color.purple": "Ungu",
-  "quran.bookmark.inUse": "digunakan"
+  "quran.bookmark.inUse": "digunakan",
+  "common.back": "Kembali",
+  "a11y.quran.surahInfo": "Maklumat surah"
 }

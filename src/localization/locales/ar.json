@@ -1306,5 +1306,7 @@
   "quran.bookmark.color.teal": "فيروزي",
   "quran.bookmark.color.blue": "أزرق",
   "quran.bookmark.color.purple": "بنفسجي",
-  "quran.bookmark.inUse": "مستخدم"
+  "quran.bookmark.inUse": "مستخدم",
+  "common.back": "رجوع",
+  "a11y.quran.surahInfo": "معلومات السورة"
 }

@@ -10,9 +10,15 @@ import { useHaptic } from "@/hooks/useHaptic";
 interface FontSizeControlsProps {
   fontSize: number;
   onFontSizeChange: (size: number) => void;
+  // Ink colour for icons/label; defaults to white for dark surfaces.
+  color?: `#${string}`;
 }
 
-const FontSizeControls = ({ fontSize, onFontSizeChange }: FontSizeControlsProps) => {
+const FontSizeControls = ({
+  fontSize,
+  onFontSizeChange,
+  color = "#fff",
+}: FontSizeControlsProps) => {
   const { t } = useTranslation();
   const haptic = useHaptic("light");
 
@@ -32,27 +38,21 @@ const FontSizeControls = ({ fontSize, onFontSizeChange }: FontSizeControlsProps)
   };
 
   return (
-    <XStack
-      alignItems="center"
-      gap="$2"
-      backgroundColor="rgba(0,0,0,0.3)"
-      borderRadius="$4"
-      paddingHorizontal="$2"
-      paddingVertical="$1">
+    <XStack alignItems="center">
       <Pressable
         onPress={decrease}
         disabled={!canDecrease}
         accessibilityRole="button"
         accessibilityLabel={t("a11y.quran.decreaseFontSize")}
         style={[styles.button, !canDecrease && styles.disabled]}>
-        <Minus color="white" size={16} />
+        <Minus color={color} size={16} />
       </Pressable>
 
       <Text
-        color="white"
+        color={color}
         fontSize={12}
         fontWeight="600"
-        minWidth={24}
+        minWidth={22}
         textAlign="center"
         accessibilityLabel={t("a11y.quran.fontSize", { size: fontSize })}>
         {fontSize}
@@ -64,7 +64,7 @@ const FontSizeControls = ({ fontSize, onFontSizeChange }: FontSizeControlsProps)
         accessibilityRole="button"
         accessibilityLabel={t("a11y.quran.increaseFontSize")}
         style={[styles.button, !canIncrease && styles.disabled]}>
-        <Plus color="white" size={16} />
+        <Plus color={color} size={16} />
       </Pressable>
     </XStack>
   );
