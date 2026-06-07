@@ -481,11 +481,7 @@ const BookmarkPanel = ({
                 }
                 style={{ minHeight: 44, alignItems: "center", justifyContent: "center" }}>
                 <YStack padding={4} borderRadius={9} borderWidth={here ? 1.5 : 0} borderColor={ink}>
-                  <RibbonGlyph
-                    size={32}
-                    color={free ? chrome.pageNumberColor : BOOKMARK_COLORS[color].solid}
-                    outlined={free}
-                  />
+                  <RibbonGlyph size={32} color={BOOKMARK_COLORS[color].solid} outlined={free} />
                 </YStack>
               </Pressable>
               {!free && (
