@@ -221,13 +221,31 @@ const DownloadProgressScreen = ({
               </Text>
             </XStack>
             {!isComplete && phase === DownloadPhase.DOWNLOADING && totalMB > 0 && (
-              <Text fontSize={12.5} color={chrome.subtleText}>
-                {percent}% ·{" "}
-                {t("quran.download.sizeProgress", {
-                  downloaded: formatNumberToLocale(String(downloadedMB)),
-                  total: formatNumberToLocale(String(totalMB)),
-                })}
-              </Text>
+              <YStack width={PAGE_WIDTH} alignItems="center" gap="$2" paddingTop="$1">
+                <Text fontSize={14} fontWeight="700" color={chrome.text}>
+                  {formatNumberToLocale(String(percent))}%
+                </Text>
+                {/* Linear progress line */}
+                <View
+                  width="100%"
+                  height={4}
+                  borderRadius={2}
+                  overflow="hidden"
+                  backgroundColor={chrome.progressTrack}>
+                  <View
+                    height={4}
+                    borderRadius={2}
+                    backgroundColor={chrome.accent}
+                    style={{ width: `${percent}%` }}
+                  />
+                </View>
+                <Text fontSize={12.5} color={chrome.subtleText}>
+                  {t("quran.download.sizeProgress", {
+                    downloaded: formatNumberToLocale(String(downloadedMB)),
+                    total: formatNumberToLocale(String(totalMB)),
+                  })}
+                </Text>
+              </YStack>
             )}
           </YStack>
         </MotiView>
