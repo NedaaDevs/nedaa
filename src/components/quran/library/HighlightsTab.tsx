@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView } from "react-native";
+import { Pressable, ScrollView, useWindowDimensions } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,12 +9,15 @@ import { Text } from "@/components/ui/text";
 import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { HighlightColor } from "@/enums/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
+import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { useRTL } from "@/contexts/RTLContext";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import { Segmented } from "@/components/quran/settings/SettingsControls";
+import AyahImage from "@/components/quran/AyahImage";
 
 type View = "colors" | "surah";
 
@@ -36,8 +39,11 @@ const sortItems = (a: HlItem, b: HlItem) => a.surah - b.surah || a.ayah - b.ayah
 export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => void }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const chrome = useQuranChromeColors();
+  const paperTheme = useResolvedQuranTheme();
   const { isRTL } = useRTL();
+  const version = useQuranStore((s) => s.currentVersion);
   const highlights = useHighlightStore((s) => s.highlights);
   const labels = useHighlightStore((s) => s.labels);
 
@@ -175,17 +181,27 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
                         padding="$3"
                         marginBottom="$2"
                         gap="$2">
-                        <Text
-                          style={{
-                            fontSize: 19,
-                            lineHeight: 38,
-                            writingDirection: "rtl",
-                            textAlign: "center",
-                            fontFamily: QURAN_FONT_FAMILY,
-                            color: chrome.text,
-                          }}>
-                          {texts.get(`${it.surah}:${it.ayah}`) ?? ""}
-                        </Text>
+                        <AyahImage
+                          version={version}
+                          page={it.page}
+                          surah={it.surah}
+                          ayah={it.ayah}
+                          quranTheme={paperTheme}
+                          maxWidth={width - 80}
+                          fallback={
+                            <Text
+                              style={{
+                                fontSize: 19,
+                                lineHeight: 38,
+                                writingDirection: "rtl",
+                                textAlign: "center",
+                                fontFamily: QURAN_FONT_FAMILY,
+                                color: chrome.text,
+                              }}>
+                              {texts.get(`${it.surah}:${it.ayah}`) ?? ""}
+                            </Text>
+                          }
+                        />
                         <XStack alignItems="center" gap="$2">
                           <YStack
                             width={10}

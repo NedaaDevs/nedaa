@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, Share } from "react-native";
+import { Pressable, Share, useWindowDimensions } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
@@ -25,15 +25,18 @@ import {
   highlightTint,
   bookmarkTint,
 } from "@/constants/Quran";
-import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranTheme, ReaderViewMode } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { QuranDownload } from "@/services/quran-download";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
+import { useQuranStore } from "@/stores/quran";
 import { useRTL } from "@/contexts/RTLContext";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
+import AyahImage from "@/components/quran/AyahImage";
 
 type Tab = "hl" | "bmk";
 
@@ -47,6 +50,9 @@ interface AyahActionSheetProps {
 const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) => {
   const { t } = useTranslation();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const version = useQuranStore((s) => s.currentVersion);
+  const readerMode = useQuranStore((s) => s.readerMode);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
@@ -118,6 +124,26 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     { id: "hl", label: t("quran.highlight.title") },
   ];
 
+  const versePreview = (
+    <Text
+      style={{
+        fontSize: 21,
+        lineHeight: 42,
+        textAlign: "center",
+        writingDirection: "rtl",
+        fontFamily: QURAN_FONT_FAMILY,
+        color: ink,
+      }}>
+      {data?.text ?? ""}
+    </Text>
+  );
+  // Colour/image editions: show the verse as it's rendered in the edition (keeps
+  // tajweed colour) instead of monochrome DB text; text mode / undownloaded fall back.
+  const showImageVerse =
+    !!data &&
+    readerMode !== ReaderViewMode.TEXT &&
+    QuranDownload.isPageAvailable(version, data.page);
+
   return (
     <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
       {/* Preview */}
@@ -130,17 +156,19 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
             {ref}
           </Text>
         </XStack>
-        <Text
-          style={{
-            fontSize: 21,
-            lineHeight: 42,
-            textAlign: "center",
-            writingDirection: "rtl",
-            fontFamily: QURAN_FONT_FAMILY,
-            color: ink,
-          }}>
-          {data?.text ?? ""}
-        </Text>
+        {showImageVerse && data ? (
+          <AyahImage
+            version={version}
+            page={data.page}
+            surah={target.surah}
+            ayah={target.ayah}
+            quranTheme={quranTheme}
+            maxWidth={width - 56}
+            fallback={versePreview}
+          />
+        ) : (
+          versePreview
+        )}
       </YStack>
 
       {/* Quiet utility strip — demoted secondary actions */}
