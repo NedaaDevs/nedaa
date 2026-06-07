@@ -13,6 +13,7 @@ import { TOTAL_PAGES, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
+import { juzLabel } from "@/utils/juz";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useRTL } from "@/contexts/RTLContext";
@@ -157,7 +158,10 @@ export const BrowseIndex = ({ onNavigate }: { onNavigate: (page: number) => void
                 onSubmitEditing={submitPage}
                 keyboardType="number-pad"
                 returnKeyType="go"
-                placeholder={t("quran.goto.pagePrompt", { total: TOTAL_PAGES })}
+                placeholder={t("quran.goto.pagePrompt", {
+                  from: formatNumberToLocale("1"),
+                  total: formatNumberToLocale(String(TOTAL_PAGES)),
+                })}
               />
               <Pressable
                 onPress={submitPage}
@@ -250,7 +254,7 @@ export const BrowseIndex = ({ onNavigate }: { onNavigate: (page: number) => void
                   chrome={chrome}
                   isRTL={isRTL}
                   leading={j.division}
-                  title={t("quran.goto.juzLabel", { n: j.division })}
+                  title={juzLabel(j.division)}
                   subtitle={divisionSubtitle(j.page)}
                   onPress={() => go(j.page)}
                 />
@@ -262,7 +266,9 @@ export const BrowseIndex = ({ onNavigate }: { onNavigate: (page: number) => void
                   chrome={chrome}
                   isRTL={isRTL}
                   leading={h.division}
-                  title={t("quran.goto.hizbLabel", { n: h.division })}
+                  title={t("quran.goto.hizbLabel", {
+                    n: formatNumberToLocale(String(h.division)),
+                  })}
                   subtitle={divisionSubtitle(h.page)}
                   onPress={() => go(h.page)}
                 />
@@ -341,7 +347,8 @@ const SurahRow = ({
           </Text>
           <Text fontSize={12} color={chrome.subtleText}>
             {t("quran.goto.page")} {formatNumberToLocale(String(surah.pageStart))} ·{" "}
-            {t("quran.surah.ayahCount", { count: surah.ayahCount })} · {place}
+            {t("quran.surah.ayahCount", { n: formatNumberToLocale(String(surah.ayahCount)) })} ·{" "}
+            {place}
           </Text>
         </YStack>
       </XStack>
