@@ -12,10 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, QURAN_TEXT_FONT } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
-import { useQuranStore } from "@/stores/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { juzForPage } from "@/utils/juz";
@@ -41,7 +40,6 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const textFont = useQuranStore((s) => s.textFont);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const [ayahs, setAyahs] = useState<AyahTextData[]>([]);
   const [surahName, setSurahName] = useState("");
@@ -131,7 +129,7 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
                   {
                     color: themeColors.textTint ?? "#000",
                     fontSize: fontSize * 0.85,
-                    fontFamily: textFont,
+                    fontFamily: QURAN_TEXT_FONT,
                   },
                 ]}>
                 {BASMALA}
@@ -148,7 +146,7 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
             fontSize,
             lineHeight: fontSize * 2,
             color: themeColors.textTint ?? "#000",
-            fontFamily: textFont,
+            fontFamily: QURAN_TEXT_FONT,
             textAlign: "justify",
             writingDirection: "rtl",
             marginBottom: 14,

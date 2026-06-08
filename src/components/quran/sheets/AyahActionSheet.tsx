@@ -21,6 +21,7 @@ import {
   BOOKMARK_COLORS,
   BOOKMARK_COLOR_ORDER,
   QURAN_THEME_COLORS,
+  QURAN_TEXT_FONT,
   highlightTint,
   bookmarkTint,
 } from "@/constants/Quran";
@@ -52,7 +53,6 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const { width } = useWindowDimensions();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
-  const textFont = useQuranStore((s) => s.textFont);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
@@ -131,7 +131,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
         lineHeight: 42,
         textAlign: "center",
         writingDirection: "rtl",
-        fontFamily: textFont,
+        fontFamily: QURAN_TEXT_FONT,
         color: ink,
       }}>
       {data?.text ?? ""}

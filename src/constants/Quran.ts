@@ -2,7 +2,6 @@ import {
   BookmarkColor,
   HighlightColor,
   MushafVersion,
-  QuranFont,
   QuranTheme,
   SurahFrameStyle,
 } from "@/enums/quran";
@@ -230,15 +229,9 @@ export const QURAN_UI_COLORS = {
 // Ornamental ayah/page-number font (FD50 digit glyphs).
 export const QURAN_FONT_FAMILY = "UthmanicHafs";
 
-// Text-reader font default + the picker's options. The flowing KFGQPC Hafs build
-// is the default: authentic Uthmani letterforms with small combining marks.
-export const DEFAULT_QURAN_FONT: QuranFont = QuranFont.UTHMANI_HAFS;
-
-export const QURAN_FONTS: { id: QuranFont; labelKey: string }[] = [
-  { id: QuranFont.AMIRI_QURAN, labelKey: "quran.font.amiri" },
-  { id: QuranFont.UTHMANI_HAFS, labelKey: "quran.font.uthmani" },
-  { id: QuranFont.SCHEHERAZADE, labelKey: "quran.font.scheherazade" },
-];
+// Text-reader body font: the flowing KFGQPC Hafs build — authentic Uthmani
+// letterforms with small combining marks.
+export const QURAN_TEXT_FONT = "Hafs";
 
 // Ornamental ayah/page digits (FD50 glyphs in UthmanicHafs). These are symbol
 // glyphs, so the source string is pre-reversed to lay out right-to-left.
