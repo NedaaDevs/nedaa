@@ -15,7 +15,7 @@ import { ChevronDown, ChevronUp, Download, Minus, Plus, X } from "lucide-react-n
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { MushafVersion, DownloadStatus, SurahFrameStyle, ReaderViewMode } from "@/enums/quran";
-import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
+import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP, QURAN_FONTS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import {
@@ -43,10 +43,12 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
     surahFrameStyle,
     readerMode,
     fontSize,
+    textFont,
     showHeaderOrnament,
     setSurahFrameStyle,
     setReaderMode,
     setFontSize,
+    setTextFont,
     setShowHeaderOrnament,
   } = useQuranStore();
 
@@ -138,6 +140,48 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                     />
                   </XStack>
                 </SettingRow>
+              )}
+
+              {readerMode === ReaderViewMode.TEXT && (
+                <YStack gap="$2" paddingVertical="$2">
+                  <Text fontSize={13} fontWeight="600" color={chrome.subtleText}>
+                    {t("quran.settings.font")}
+                  </Text>
+                  {QURAN_FONTS.map((f) => {
+                    const on = textFont === f.id;
+                    return (
+                      <Pressable
+                        key={f.id}
+                        onPress={() => setTextFont(f.id)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: on }}
+                        accessibilityLabel={t(f.labelKey)}>
+                        <XStack
+                          alignItems="center"
+                          justifyContent="space-between"
+                          paddingVertical="$2.5"
+                          paddingHorizontal="$3"
+                          borderRadius={10}
+                          borderWidth={1}
+                          borderColor={on ? chrome.accent : chrome.cardBorder}
+                          backgroundColor={on ? chrome.cardBorder : "transparent"}>
+                          <Text fontSize={14} fontWeight={on ? "700" : "500"} color={chrome.text}>
+                            {t(f.labelKey)}
+                          </Text>
+                          <Text
+                            style={{
+                              fontFamily: f.id,
+                              fontSize: 22,
+                              color: chrome.text,
+                              writingDirection: "rtl",
+                            }}>
+                            {"قُلِ ٱدْعُوا۟"}
+                          </Text>
+                        </XStack>
+                      </Pressable>
+                    );
+                  })}
+                </YStack>
               )}
 
               <SettingRow label={t("quran.settings.headerOrnament")} chrome={chrome}>

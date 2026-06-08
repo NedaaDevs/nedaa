@@ -2,6 +2,7 @@ import {
   BookmarkColor,
   HighlightColor,
   MushafVersion,
+  QuranFont,
   QuranTheme,
   SurahFrameStyle,
 } from "@/enums/quran";
@@ -226,13 +227,34 @@ export const QURAN_UI_COLORS = {
   progressTrack: "#E8E0D0",
 } as const;
 
+// Ornamental ayah/page-number font (FD50 digit glyphs).
 export const QURAN_FONT_FAMILY = "UthmanicHafs";
 
+// Text-reader font default + the picker's options. The flowing KFGQPC Hafs build
+// is the default: authentic Uthmani letterforms with small combining marks.
+export const DEFAULT_QURAN_FONT: QuranFont = QuranFont.UTHMANI_HAFS;
+
+export const QURAN_FONTS: { id: QuranFont; labelKey: string }[] = [
+  { id: QuranFont.AMIRI_QURAN, labelKey: "quran.font.amiri" },
+  { id: QuranFont.UTHMANI_HAFS, labelKey: "quran.font.uthmani" },
+  { id: QuranFont.SCHEHERAZADE, labelKey: "quran.font.scheherazade" },
+];
+
+// Ornamental ayah/page digits (FD50 glyphs in UthmanicHafs). These are symbol
+// glyphs, so the source string is pre-reversed to lay out right-to-left.
 export const toHafsDigits = (n: number): string =>
   String(n)
     .split("")
     .reverse()
     .map((d) => String.fromCharCode(0xfd50 + +d))
+    .join("");
+
+// Standard Arabic-Indic digits (U+0660–9). These are bidi numbers, so they lay
+// out correctly without reversing — used for in-flow ayah markers.
+export const toArabicDigits = (n: number): string =>
+  String(n)
+    .split("")
+    .map((d) => String.fromCharCode(0x0660 + +d))
     .join("");
 
 export const SURAH_NAMES: readonly string[] = [

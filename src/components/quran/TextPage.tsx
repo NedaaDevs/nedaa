@@ -12,9 +12,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { useQuranStore } from "@/stores/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { juzForPage } from "@/utils/juz";
@@ -40,6 +41,7 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const textFont = useQuranStore((s) => s.textFont);
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const [ayahs, setAyahs] = useState<AyahTextData[]>([]);
   const [surahName, setSurahName] = useState("");
@@ -94,14 +96,22 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
     if (!selectedAyah) setHighlightedAyah(null);
   }, [selectedAyah]);
 
+  // Group consecutive ayahs by surah and flow each group as one justified block
+  // so verses run continuously.
   const renderContent = () => {
-    const elements: React.ReactNode[] = [];
-    let lastSurah = 0;
+    const blocks: React.ReactNode[] = [];
+    let i = 0;
+    while (i < ayahs.length) {
+      const surah = ayahs[i].surahNumber;
+      const group: AyahTextData[] = [];
+      while (i < ayahs.length && ayahs[i].surahNumber === surah) {
+        group.push(ayahs[i]);
+        i++;
+      }
 
-    for (const ayah of ayahs) {
-      if (ayah.surahNumber !== lastSurah && ayah.ayahNumber === 1) {
-        elements.push(
-          <View key={`surah-header-${ayah.surahNumber}`} style={styles.surahHeader}>
+      if (group[0].ayahNumber === 1) {
+        blocks.push(
+          <View key={`surah-header-${surah}`} style={styles.surahHeader}>
             <Text
               style={[
                 styles.surahHeaderText,
@@ -112,16 +122,16 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
                 },
               ]}
               accessibilityRole="header">
-              {t("quran.goto.surah")} {localizedSurahName(ayah.surahNumber)}
+              {t("quran.goto.surah")} {localizedSurahName(surah)}
             </Text>
-            {!NO_BASMALA_SURAHS.includes(ayah.surahNumber) && (
+            {!NO_BASMALA_SURAHS.includes(surah) && (
               <Text
                 style={[
                   styles.basmala,
                   {
                     color: themeColors.textTint ?? "#000",
                     fontSize: fontSize * 0.85,
-                    fontFamily: QURAN_FONT_FAMILY,
+                    fontFamily: textFont,
                   },
                 ]}>
                 {BASMALA}
@@ -130,27 +140,39 @@ const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }:
           </View>
         );
       }
-      lastSurah = ayah.surahNumber;
 
-      elements.push(
-        <AyahText
-          key={`${ayah.surahNumber}-${ayah.ayahNumber}`}
-          surahNumber={ayah.surahNumber}
-          ayahNumber={ayah.ayahNumber}
-          text={ayah.text}
-          fontSize={fontSize}
-          quranTheme={quranTheme}
-          isHighlighted={
-            highlightedAyah?.surah === ayah.surahNumber && highlightedAyah?.ayah === ayah.ayahNumber
-          }
-          highlightColor={highlightMap.get(`${ayah.surahNumber}:${ayah.ayahNumber}`) ?? null}
-          bookmarkColor={bookmarkMap.get(`${ayah.surahNumber}:${ayah.ayahNumber}`) ?? null}
-          onLongPress={handleLongPress}
-        />
+      blocks.push(
+        <Text
+          key={`surah-flow-${surah}`}
+          style={{
+            fontSize,
+            lineHeight: fontSize * 2,
+            color: themeColors.textTint ?? "#000",
+            fontFamily: textFont,
+            textAlign: "justify",
+            writingDirection: "rtl",
+            marginBottom: 14,
+          }}>
+          {group.map((ayah) => (
+            <AyahText
+              key={`${surah}-${ayah.ayahNumber}`}
+              surahNumber={surah}
+              ayahNumber={ayah.ayahNumber}
+              text={ayah.text}
+              quranTheme={quranTheme}
+              isHighlighted={
+                highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
+              }
+              highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+              bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+              onLongPress={handleLongPress}
+            />
+          ))}
+        </Text>
       );
     }
 
-    return elements;
+    return blocks;
   };
 
   return (

@@ -48,7 +48,12 @@ export const useLoadFonts = () => {
     "Asap-SemiBold": Asap_600SemiBold,
     "Asap-Bold": Asap_700Bold,
 
-    // Uthmanic Hafs (Quran markers)
+    // Ornamental ayah/page markers + image-mushaf overlays (FD50 digit glyphs).
     UthmanicHafs: require("@/../assets/fonts/UthmanicHafs_V22.ttf"),
+    // Quran body-text fonts selectable in the text reader. Hafs is the flowing
+    // KFGQPC build (combining marks); the others are lighter alternatives.
+    Hafs: require("@/../assets/fonts/KFGQPC-HafsUthmanic.otf"),
+    AmiriQuran: require("@/../assets/fonts/AmiriQuran-Regular.ttf"),
+    ScheherazadeNew: require("@/../assets/fonts/ScheherazadeNew-Regular.ttf"),
   });
 };

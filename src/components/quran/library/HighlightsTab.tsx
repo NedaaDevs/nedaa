@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER } from "@/constants/Quran";
 import { HighlightColor } from "@/enums/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useQuranStore } from "@/stores/quran";
@@ -44,6 +44,7 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
   const paperTheme = useResolvedQuranTheme();
   const { isRTL } = useRTL();
   const version = useQuranStore((s) => s.currentVersion);
+  const textFont = useQuranStore((s) => s.textFont);
   const highlights = useHighlightStore((s) => s.highlights);
   const labels = useHighlightStore((s) => s.labels);
 
@@ -195,7 +196,7 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
                                 lineHeight: 38,
                                 writingDirection: "rtl",
                                 textAlign: "center",
-                                fontFamily: QURAN_FONT_FAMILY,
+                                fontFamily: textFont,
                                 color: chrome.text,
                               }}>
                               {texts.get(`${it.surah}:${it.ayah}`) ?? ""}

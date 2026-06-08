@@ -6,11 +6,18 @@ import {
   DEFAULT_MUSHAF_VERSION,
   DEFAULT_QURAN_THEME,
   DEFAULT_SURAH_FRAME_STYLE,
+  DEFAULT_QURAN_FONT,
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MIN,
   FONT_SIZE_MAX,
 } from "@/constants/Quran";
-import { DownloadStatus, MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
+import {
+  DownloadStatus,
+  MushafVersion,
+  QuranFont,
+  QuranTheme,
+  ReaderViewMode,
+} from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
 export const useQuranStore = create<QuranState>()(
@@ -24,6 +31,7 @@ export const useQuranStore = create<QuranState>()(
       lastReadPage: 1,
       readerMode: ReaderViewMode.MADINAH,
       fontSize: FONT_SIZE_DEFAULT,
+      textFont: DEFAULT_QURAN_FONT,
       showHeaderOrnament: false,
       libraryTab: "index",
 
@@ -47,6 +55,7 @@ export const useQuranStore = create<QuranState>()(
       setReaderMode: (mode: ReaderViewMode) => set({ readerMode: mode }),
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
+      setTextFont: (font: QuranFont) => set({ textFont: font }),
       setShowHeaderOrnament: (show: boolean) => set({ showHeaderOrnament: show }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
 
@@ -144,6 +153,7 @@ export const useQuranStore = create<QuranState>()(
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,
         fontSize: state.fontSize,
+        textFont: state.textFont,
         showHeaderOrnament: state.showHeaderOrnament,
         libraryTab: state.libraryTab,
         onboardingComplete: state.onboardingComplete,
@@ -176,6 +186,10 @@ export const useQuranStore = create<QuranState>()(
           merged.fontSize > FONT_SIZE_MAX
         ) {
           merged.fontSize = FONT_SIZE_DEFAULT;
+        }
+        const validFonts = Object.values(QuranFont) as string[];
+        if (!validFonts.includes(merged.textFont)) {
+          merged.textFont = DEFAULT_QURAN_FONT;
         }
         // A DOWNLOADING/PAUSED status can't survive a process restart — the
         // in-flight transfer is gone. Reset to IDLE on load so the app never

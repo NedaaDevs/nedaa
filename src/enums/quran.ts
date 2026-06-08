@@ -89,6 +89,17 @@ export const BookmarkColor = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type BookmarkColor = (typeof BookmarkColor)[keyof typeof BookmarkColor];
 
+// Selectable text-reader body fonts. Values are the family names registered in
+// src/config/fonts.ts. Hafs is the flowing KFGQPC Uthmani build (marks render as
+// small combining glyphs); Amiri/Scheherazade are lighter Naskh alternatives.
+export const QuranFont = {
+  UTHMANI_HAFS: "Hafs",
+  AMIRI_QURAN: "AmiriQuran",
+  SCHEHERAZADE: "ScheherazadeNew",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type QuranFont = (typeof QuranFont)[keyof typeof QuranFont];
+
 export enum SajdaType {
   REQUIRED = "required",
   OPTIONAL = "optional",
