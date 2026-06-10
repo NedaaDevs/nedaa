@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LayoutChangeEvent, Pressable, View, useWindowDimensions } from "react-native";
+import { LayoutChangeEvent, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 import { YStack } from "tamagui";
@@ -32,6 +32,7 @@ interface QuranPageProps {
   page: number;
   version: MushafVersion;
   quranTheme: QuranTheme;
+  width: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
@@ -43,10 +44,10 @@ const QuranPage = ({
   page,
   version,
   quranTheme,
+  width,
   onAyahLongPress,
   selectedAyah,
 }: QuranPageProps) => {
-  const { width } = useWindowDimensions();
   // Start at 0 so every line image + overlay (markers, tints, ribbons) waits for
   // the real onLayout height — they're all guarded by `lineHeight > 0`. Seeding an
   // estimate here made them render once at the wrong position then snap on measure.

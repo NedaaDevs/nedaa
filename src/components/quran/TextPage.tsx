@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AccessibilityInfo,
-  ScrollView,
-  Text,
-  View,
-  StyleSheet,
-  useWindowDimensions,
-} from "react-native";
+import { AccessibilityInfo, ScrollView, Text, View, StyleSheet } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -26,6 +19,7 @@ import PageNumber from "@/components/quran/PageNumber";
 interface TextPageProps {
   page: number;
   quranTheme: QuranTheme;
+  width: number;
   fontSize: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
@@ -36,9 +30,15 @@ const BASMALA =
 
 const NO_BASMALA_SURAHS = [1, 9];
 
-const TextPage = ({ page, quranTheme, fontSize, onAyahLongPress, selectedAyah }: TextPageProps) => {
+const TextPage = ({
+  page,
+  quranTheme,
+  width,
+  fontSize,
+  onAyahLongPress,
+  selectedAyah,
+}: TextPageProps) => {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const [ayahs, setAyahs] = useState<AyahTextData[]>([]);

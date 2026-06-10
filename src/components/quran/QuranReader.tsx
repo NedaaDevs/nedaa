@@ -271,6 +271,7 @@ const PageSlot = ({
         <TextPage
           page={page}
           quranTheme={quranTheme}
+          width={width}
           fontSize={fontSize}
           onAyahLongPress={onAyahLongPress}
           selectedAyah={selectedAyah}
@@ -280,6 +281,7 @@ const PageSlot = ({
           page={page}
           version={version}
           quranTheme={quranTheme}
+          width={width}
           onAyahLongPress={onAyahLongPress}
           selectedAyah={selectedAyah}
         />
