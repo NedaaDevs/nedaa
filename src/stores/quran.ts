@@ -24,6 +24,7 @@ export const useQuranStore = create<QuranState>()(
       lastReadPage: 1,
       readerMode: ReaderViewMode.MADINAH,
       fontSize: FONT_SIZE_DEFAULT,
+      twoPageSpread: true,
       showHeaderOrnament: false,
       libraryTab: "index",
 
@@ -47,6 +48,7 @@ export const useQuranStore = create<QuranState>()(
       setReaderMode: (mode: ReaderViewMode) => set({ readerMode: mode }),
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
+      setTwoPageSpread: (on: boolean) => set({ twoPageSpread: on }),
       setShowHeaderOrnament: (show: boolean) => set({ showHeaderOrnament: show }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
 
@@ -144,6 +146,7 @@ export const useQuranStore = create<QuranState>()(
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,
         fontSize: state.fontSize,
+        twoPageSpread: state.twoPageSpread,
         showHeaderOrnament: state.showHeaderOrnament,
         libraryTab: state.libraryTab,
         onboardingComplete: state.onboardingComplete,
@@ -176,6 +179,9 @@ export const useQuranStore = create<QuranState>()(
           merged.fontSize > FONT_SIZE_MAX
         ) {
           merged.fontSize = FONT_SIZE_DEFAULT;
+        }
+        if (typeof merged.twoPageSpread !== "boolean") {
+          merged.twoPageSpread = true;
         }
         // A DOWNLOADING/PAUSED status can't survive a process restart — the
         // in-flight transfer is gone. Reset to IDLE on load so the app never

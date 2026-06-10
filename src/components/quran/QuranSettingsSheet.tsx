@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -16,6 +16,7 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { MushafVersion, DownloadStatus, SurahFrameStyle, ReaderViewMode } from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
+import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import {
@@ -43,12 +44,17 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
     surahFrameStyle,
     readerMode,
     fontSize,
+    twoPageSpread,
     showHeaderOrnament,
     setSurahFrameStyle,
     setReaderMode,
     setFontSize,
+    setTwoPageSpread,
     setShowHeaderOrnament,
   } = useQuranStore();
+
+  const { width, height } = useWindowDimensions();
+  const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
@@ -137,6 +143,16 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                       label={t("a11y.increase", { defaultValue: "Increase" })}
                     />
                   </XStack>
+                </SettingRow>
+              )}
+
+              {isLargeDevice && (
+                <SettingRow label={t("quran.settings.twoPageSpread")} chrome={chrome}>
+                  <Switch
+                    value={twoPageSpread}
+                    onValueChange={setTwoPageSpread}
+                    accessibilityLabel={t("quran.settings.twoPageSpread")}
+                  />
                 </SettingRow>
               )}
 

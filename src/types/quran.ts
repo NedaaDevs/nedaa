@@ -140,6 +140,8 @@ export type QuranState = {
   lastReadPage: number;
   readerMode: ReaderViewMode;
   fontSize: number;
+  // Two-page spread on large screens in landscape. On by default.
+  twoPageSpread: boolean;
   // Decorative diamond ornament in the page header. Off by default.
   showHeaderOrnament: boolean;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
@@ -161,6 +163,7 @@ export type QuranState = {
   setSurahFrameStyle: (style: SurahFrameStyle) => void;
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
+  setTwoPageSpread: (on: boolean) => void;
   setShowHeaderOrnament: (show: boolean) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
 
