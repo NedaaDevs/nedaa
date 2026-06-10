@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useWindowDimensions, StyleSheet } from "react-native";
+import { useCallback, useEffect, useMemo } from "react";
+import { useWindowDimensions, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -14,6 +14,8 @@ import { scheduleOnRN } from "react-native-worklets";
 
 import { MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
 import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX } from "@/constants/Quran";
+import { TOTAL_SPREADS, spreadOf, pagesOfSpread } from "@/utils/readerSpread";
+import { useReaderLayout } from "@/hooks/useReaderLayout";
 import QuranPage from "@/components/quran/QuranPage";
 import TextPage from "@/components/quran/TextPage";
 
@@ -49,43 +51,55 @@ const QuranReader = ({
   selectedAyah,
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
+  const layout = useReaderLayout();
+  const isSpread = layout.mode === "spread";
+  const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
+  const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
+
   const insets = useSafeAreaInsets();
   // Swipes starting inside this bottom strip belong to the system home-indicator
   // gesture (swipe up to close/background the app); a vertical drag there must
   // not also turn a page. Horizontal turns from the same strip stay allowed.
   const bottomDeadZone = insets.bottom + 24;
-  // Single shared value for page offset (normalized: 0 = current, 1 = one page forward)
+  // Single shared value for the page-turn drag offset (normalized: 0 = rest, 1 = one unit forward)
   const dragOffset = useSharedValue(0);
   const isHorizontal = useSharedValue<boolean | null>(null);
   // True when the active gesture began in the bottom home-indicator strip.
   const startedInBottomEdge = useSharedValue(false);
   const pinchBaseFontSize = useSharedValue(fontSize);
-  // The committed page, held on the UI thread so a swipe commit can advance it
+  // The committed unit index, held on the UI thread so a swipe commit can advance it
   // and reset dragOffset in the same frame — slot positions read this, not the
-  // React `currentPage`, which lags by a frame and would otherwise flash the
-  // wrong page on each turn.
-  const pageIndex = useSharedValue(currentPage);
+  // React `currentUnit`, which lags by a frame and would otherwise flash the
+  // wrong unit on each turn.
+  const unitIndex = useSharedValue(currentUnit);
 
   useEffect(() => {
     pinchBaseFontSize.value = fontSize;
   }, [fontSize, pinchBaseFontSize]);
 
-  // Mirror external page changes (e.g. the page slider) onto the UI-thread index.
+  // Mirror external unit changes (e.g. the page slider) onto the UI-thread index.
   useEffect(() => {
-    pageIndex.value = currentPage;
-  }, [currentPage, pageIndex]);
+    unitIndex.value = currentUnit;
+  }, [currentUnit, unitIndex]);
 
-  const pageWindow = useMemo(() => {
-    const pages: number[] = [];
+  const unitWindow = useMemo(() => {
+    const units: number[] = [];
     for (
-      let p = Math.max(1, currentPage - PAGE_WINDOW);
-      p <= Math.min(TOTAL_PAGES, currentPage + PAGE_WINDOW);
-      p++
+      let u = Math.max(1, currentUnit - PAGE_WINDOW);
+      u <= Math.min(totalUnits, currentUnit + PAGE_WINDOW);
+      u++
     ) {
-      pages.push(p);
+      units.push(u);
     }
-    return pages;
-  }, [currentPage]);
+    return units;
+  }, [currentUnit, totalUnits]);
+
+  // Map a committed unit back to a page number for the store.
+  // In spread mode, report the right/earlier page of the spread.
+  const commitUnit = useCallback(
+    (unit: number) => onPageChange(isSpread ? pagesOfSpread(unit)[0] : unit),
+    [isSpread, onPageChange]
+  );
 
   const tapGesture = Gesture.Tap().onEnd(() => {
     "worklet";
@@ -125,9 +139,9 @@ const QuranReader = ({
         return;
       }
 
-      // Normalize drag to a page fraction
-      // RTL: positive translationX = next page (direction +1)
-      // Vertical: negative translationY = next page (direction +1)
+      // Normalize drag to a unit fraction
+      // RTL: positive translationX = next unit (direction +1)
+      // Vertical: negative translationY = next unit (direction +1)
       let normalized: number;
       if (isHorizontal.value) {
         normalized = event.translationX / width;
@@ -136,8 +150,8 @@ const QuranReader = ({
       }
 
       // Clamp at boundaries
-      if (normalized > 0 && pageIndex.value >= TOTAL_PAGES) return;
-      if (normalized < 0 && pageIndex.value <= 1) return;
+      if (normalized > 0 && unitIndex.value >= totalUnits) return;
+      if (normalized < 0 && unitIndex.value <= 1) return;
 
       dragOffset.value = normalized;
     })
@@ -174,21 +188,21 @@ const QuranReader = ({
           : 240;
       const turnTiming = { duration: turnDuration, easing: Easing.out(Easing.cubic) };
 
-      if (shouldAdvance && translation > 0 && pageIndex.value < TOTAL_PAGES) {
+      if (shouldAdvance && translation > 0 && unitIndex.value < totalUnits) {
         dragOffset.value = withTiming(1, turnTiming, (finished) => {
           if (!finished) return;
           // Advance the index and zero the drag in the same UI frame so the turn
           // is seamless; React syncs afterward for windowing + persistence.
-          pageIndex.value = pageIndex.value + 1;
+          unitIndex.value = unitIndex.value + 1;
           dragOffset.value = 0;
-          scheduleOnRN(onPageChange, pageIndex.value);
+          scheduleOnRN(commitUnit, unitIndex.value);
         });
-      } else if (shouldAdvance && translation < 0 && pageIndex.value > 1) {
+      } else if (shouldAdvance && translation < 0 && unitIndex.value > 1) {
         dragOffset.value = withTiming(-1, turnTiming, (finished) => {
           if (!finished) return;
-          pageIndex.value = pageIndex.value - 1;
+          unitIndex.value = unitIndex.value - 1;
           dragOffset.value = 0;
-          scheduleOnRN(onPageChange, pageIndex.value);
+          scheduleOnRN(commitUnit, unitIndex.value);
         });
       } else {
         dragOffset.value = withSpring(0, SPRING_CONFIG);
@@ -210,11 +224,12 @@ const QuranReader = ({
   return (
     <GestureDetector gesture={composedGesture}>
       <Animated.View style={styles.container}>
-        {pageWindow.map((page) => (
+        {unitWindow.map((unit) => (
           <PageSlot
-            key={page}
-            page={page}
-            pageIndex={pageIndex}
+            key={unit}
+            unit={unit}
+            isSpread={isSpread}
+            unitIndex={unitIndex}
             version={version}
             quranTheme={quranTheme}
             readerMode={readerMode}
@@ -231,8 +246,9 @@ const QuranReader = ({
 };
 
 interface PageSlotProps {
-  page: number;
-  pageIndex: SharedValue<number>;
+  unit: number;
+  isSpread: boolean;
+  unitIndex: SharedValue<number>;
   version: MushafVersion;
   quranTheme: QuranTheme;
   readerMode: ReaderViewMode;
@@ -244,8 +260,9 @@ interface PageSlotProps {
 }
 
 const PageSlot = ({
-  page,
-  pageIndex,
+  unit,
+  isSpread,
+  unitIndex,
   version,
   quranTheme,
   readerMode,
@@ -256,36 +273,74 @@ const PageSlot = ({
   selectedAyah,
 }: PageSlotProps) => {
   const animatedStyle = useAnimatedStyle(() => {
-    // pageOffset: 0 = current, -1 = next (left in RTL), +1 = prev (right).
+    // unitOffset: 0 = current, -1 = next (left in RTL), +1 = prev (right).
     // dragOffset: 0 = rest, +1 = swiped to next, -1 = swiped to prev.
-    // Position is driven entirely by the UI-thread index + drag, so a page turn
+    // Position is driven entirely by the UI-thread index + drag, so a unit turn
     // moves both in one frame with no intermediate mismatch.
-    const pageOffset = -(page - pageIndex.value);
-    const translateX = (pageOffset + dragOffset.value) * width;
+    const unitOffset = -(unit - unitIndex.value);
+    const translateX = (unitOffset + dragOffset.value) * width;
     return { transform: [{ translateX }] };
   });
 
+  if (!isSpread) {
+    return (
+      <Animated.View style={[styles.page, animatedStyle]}>
+        {readerMode === ReaderViewMode.TEXT ? (
+          <TextPage
+            page={unit}
+            quranTheme={quranTheme}
+            width={width}
+            fontSize={fontSize}
+            onAyahLongPress={onAyahLongPress}
+            selectedAyah={selectedAyah}
+          />
+        ) : (
+          <QuranPage
+            page={unit}
+            version={version}
+            quranTheme={quranTheme}
+            width={width}
+            onAyahLongPress={onAyahLongPress}
+            selectedAyah={selectedAyah}
+          />
+        )}
+      </Animated.View>
+    );
+  }
+
+  // Spread: pagesOfSpread(unit) === [right/earlier, left/later].
+  const pages = pagesOfSpread(unit);
+  const halfWidth = width / 2;
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
-      {readerMode === ReaderViewMode.TEXT ? (
-        <TextPage
-          page={page}
-          quranTheme={quranTheme}
-          width={width}
-          fontSize={fontSize}
-          onAyahLongPress={onAyahLongPress}
-          selectedAyah={selectedAyah}
-        />
-      ) : (
-        <QuranPage
-          page={page}
-          version={version}
-          quranTheme={quranTheme}
-          width={width}
-          onAyahLongPress={onAyahLongPress}
-          selectedAyah={selectedAyah}
-        />
-      )}
+      {/* RTL: earlier page should sit on the RIGHT. flexDirection "row" places
+          pages[0] first; on device, if the order is reversed, flip this single
+          line (reverse `pages` OR use "row-reverse"). */}
+      <View style={styles.spreadRow}>
+        {pages.map((p) => (
+          <View key={p} style={{ width: halfWidth, height: "100%" }}>
+            {readerMode === ReaderViewMode.TEXT ? (
+              <TextPage
+                page={p}
+                width={halfWidth}
+                quranTheme={quranTheme}
+                fontSize={fontSize}
+                onAyahLongPress={onAyahLongPress}
+                selectedAyah={selectedAyah}
+              />
+            ) : (
+              <QuranPage
+                page={p}
+                width={halfWidth}
+                version={version}
+                quranTheme={quranTheme}
+                onAyahLongPress={onAyahLongPress}
+                selectedAyah={selectedAyah}
+              />
+            )}
+          </View>
+        ))}
+      </View>
     </Animated.View>
   );
 };
@@ -297,6 +352,10 @@ const styles = StyleSheet.create({
   },
   page: {
     ...StyleSheet.absoluteFill,
+  },
+  spreadRow: {
+    flex: 1,
+    flexDirection: "row",
   },
 });
 
