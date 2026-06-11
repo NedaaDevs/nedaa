@@ -13,7 +13,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 
 import { MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
-import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX } from "@/constants/Quran";
+import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { TOTAL_SPREADS, spreadOf, pagesOfSpread } from "@/utils/readerSpread";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
 import QuranPage from "@/components/quran/QuranPage";
@@ -37,6 +37,11 @@ const SWIPE_THRESHOLD = 0.25;
 const VELOCITY_THRESHOLD = 500;
 const SPRING_CONFIG = { damping: 22, stiffness: 200, mass: 0.8 };
 const PAGE_WINDOW = 2;
+// Breathing room for the two-page spread: outer margins + a center gutter so
+// pages don't butt against the seam/edges (tighter editions like V2 need it).
+const SPREAD_OUTER_PAD = 24;
+const SPREAD_GUTTER = 24;
+const SPREAD_TOP_PAD = 16;
 
 const QuranReader = ({
   currentPage,
@@ -52,7 +57,10 @@ const QuranReader = ({
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
   const layout = useReaderLayout();
-  const isSpread = layout.mode === "spread";
+  // Only the image mushaf spreads. Text reflows, so a spread would be two
+  // independently-scrolling columns of unequal length — a single capped column
+  // reads better.
+  const isSpread = layout.mode === "spread" && readerMode !== ReaderViewMode.TEXT;
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
 
@@ -308,36 +316,26 @@ const PageSlot = ({
     );
   }
 
-  // Spread: pagesOfSpread(unit) === [right/earlier, left/later].
+  // Spread (image only — text never spreads). pagesOfSpread === [right, left].
   const pages = pagesOfSpread(unit);
-  const halfWidth = width / 2;
+  const halfWidth = (width - SPREAD_OUTER_PAD * 2 - SPREAD_GUTTER) / 2;
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
       {/* RTL: earlier page should sit on the RIGHT. flexDirection "row" places
           pages[0] first; on device, if the order is reversed, flip this single
           line (reverse `pages` OR use "row-reverse"). */}
-      <View style={styles.spreadRow}>
+      <View
+        style={[styles.spreadRow, { backgroundColor: QURAN_THEME_COLORS[quranTheme].background }]}>
         {pages.map((p) => (
           <View key={p} style={{ width: halfWidth, height: "100%" }}>
-            {readerMode === ReaderViewMode.TEXT ? (
-              <TextPage
-                page={p}
-                width={halfWidth}
-                quranTheme={quranTheme}
-                fontSize={fontSize}
-                onAyahLongPress={onAyahLongPress}
-                selectedAyah={selectedAyah}
-              />
-            ) : (
-              <QuranPage
-                page={p}
-                width={halfWidth}
-                version={version}
-                quranTheme={quranTheme}
-                onAyahLongPress={onAyahLongPress}
-                selectedAyah={selectedAyah}
-              />
-            )}
+            <QuranPage
+              page={p}
+              width={halfWidth}
+              version={version}
+              quranTheme={quranTheme}
+              onAyahLongPress={onAyahLongPress}
+              selectedAyah={selectedAyah}
+            />
           </View>
         ))}
       </View>
@@ -356,6 +354,9 @@ const styles = StyleSheet.create({
   spreadRow: {
     flex: 1,
     flexDirection: "row",
+    paddingHorizontal: SPREAD_OUTER_PAD,
+    paddingTop: SPREAD_TOP_PAD,
+    gap: SPREAD_GUTTER,
   },
 });
 

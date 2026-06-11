@@ -184,7 +184,9 @@ const TextPage = ({
           { paddingHorizontal: 18, paddingBottom: insets.bottom + 48 },
         ]}
         showsVerticalScrollIndicator={false}>
-        {renderContent()}
+        {/* Cap the reading column so lines stay a comfortable length on wide
+            screens; phones (narrower than the cap) are unaffected. */}
+        <View style={styles.column}>{renderContent()}</View>
       </ScrollView>
 
       <PageNumber page={page} quranTheme={quranTheme} />
@@ -198,6 +200,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 8,
+  },
+  column: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
   },
   surahHeader: {
     alignItems: "center",
