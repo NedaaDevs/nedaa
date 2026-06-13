@@ -24,7 +24,6 @@ import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
 import AyahBookmarkRibbon from "@/components/quran/AyahBookmarkRibbon";
-import SurahInfoCard from "@/components/quran/SurahInfoCard";
 
 const LONG_PRESS_MS = 400;
 
@@ -36,6 +35,7 @@ interface QuranPageProps {
   // Spread page side for the running header (surah → outer edge). Default single.
   side?: "left" | "right" | "single";
   onAyahLongPress?: (surah: number, ayah: number) => void;
+  onSurahLongPress?: (surah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
 
@@ -49,6 +49,7 @@ const QuranPage = ({
   width,
   side,
   onAyahLongPress,
+  onSurahLongPress,
   selectedAyah,
 }: QuranPageProps) => {
   // Start at 0 so every line image + overlay (markers, tints, ribbons) waits for
@@ -106,14 +107,7 @@ const QuranPage = ({
     [isPageMode, coverScale, lineHeight, lineCoverClipY, pageScaleX, pageScaleY, srcLineHeight]
   );
 
-  const {
-    highlightedAyah,
-    selectedSurah,
-    clearSurah,
-    clearHighlight,
-    handlePress,
-    handleLongPress,
-  } = useAyahHitTest({
+  const { highlightedAyah, clearHighlight, handlePress, handleLongPress } = useAyahHitTest({
     version,
     page,
     glyphBounds,
@@ -121,6 +115,7 @@ const QuranPage = ({
     geometry,
     pressableRef,
     onAyahLongPress,
+    onSurahLongPress,
   });
 
   // Long-press as a native RNGH gesture so it coordinates with the page-swipe pan
@@ -398,10 +393,6 @@ const QuranPage = ({
       </View>
 
       <PageNumber page={page} quranTheme={quranTheme} />
-
-      {selectedSurah !== null && (
-        <SurahInfoCard surahNumber={selectedSurah} quranTheme={quranTheme} onClose={clearSurah} />
-      )}
     </YStack>
   );
 };

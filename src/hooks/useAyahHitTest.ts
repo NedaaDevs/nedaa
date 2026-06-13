@@ -33,6 +33,8 @@ type Params = {
   pressableRef: RefObject<View | null>;
   // Long-pressing an ayah opens its action sheet (in addition to highlighting it).
   onAyahLongPress?: (surah: number, ayah: number) => void;
+  // Long-pressing a surah header opens its info sheet.
+  onSurahLongPress?: (surah: number) => void;
 };
 
 // Tap-to-select on the mushaf page: maps a touch to source coordinates, finds
@@ -48,16 +50,15 @@ export const useAyahHitTest = ({
   geometry,
   pressableRef,
   onAyahLongPress,
+  onSurahLongPress,
 }: Params) => {
   const [highlightedAyah, setHighlightedAyah] = useState<HighlightedAyah | null>(null);
-  const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
 
   // A fresh page starts with nothing selected. Deferred to the react-compiler
   // migration (set-state-in-effect backlog).
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     setHighlightedAyah(null);
-    setSelectedSurah(null);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [page, version]);
 
@@ -105,10 +106,9 @@ export const useAyahHitTest = ({
         const headerSurah = surahHeaderLines[sourceLine];
         if (!wantMarker && headerSurah) {
           setHighlightedAyah(null);
-          setSelectedSurah(headerSurah);
+          onSurahLongPress?.(headerSurah);
           return;
         }
-        setSelectedSurah(null);
 
         if (glyphBounds.length === 0) {
           setHighlightedAyah(null);
@@ -131,7 +131,15 @@ export const useAyahHitTest = ({
         if (hit && !wantMarker) onAyahLongPress?.(hit.surahNumber, hit.ayahNumber);
       });
     },
-    [glyphBounds, lineHeight, toSourceCoords, pressableRef, surahHeaderLines, onAyahLongPress]
+    [
+      glyphBounds,
+      lineHeight,
+      toSourceCoords,
+      pressableRef,
+      surahHeaderLines,
+      onAyahLongPress,
+      onSurahLongPress,
+    ]
   );
 
   // Long-press is driven by an RNGH LongPress gesture (coordinates natively with
@@ -147,13 +155,10 @@ export const useAyahHitTest = ({
     [resolveHit]
   );
 
-  const clearSurah = useCallback(() => setSelectedSurah(null), []);
   const clearHighlight = useCallback(() => setHighlightedAyah(null), []);
 
   return {
     highlightedAyah,
-    selectedSurah,
-    clearSurah,
     clearHighlight,
     handlePress,
     handleLongPress,

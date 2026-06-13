@@ -31,6 +31,7 @@ import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import HighlightLegend from "@/components/quran/HighlightLegend";
+import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
@@ -67,6 +68,7 @@ const QuranScreen = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
+  const [infoSurah, setInfoSurah] = useState<number | null>(null);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   // The version whose download the user is actively watching on the progress
@@ -246,6 +248,10 @@ const QuranScreen = () => {
           setShowOverlay(false);
           setActionAyah({ surah, ayah });
         }}
+        onSurahLongPress={(surah) => {
+          setShowOverlay(false);
+          setInfoSurah(surah);
+        }}
         selectedAyah={actionAyah}
       />
 
@@ -412,6 +418,13 @@ const QuranScreen = () => {
         target={actionAyah}
         quranTheme={quranTheme}
         onClose={() => setActionAyah(null)}
+      />
+
+      {/* Long-press surah header → surah info sheet (controlled; stays mounted) */}
+      <SurahInfoCard
+        surahNumber={infoSurah}
+        quranTheme={quranTheme}
+        onClose={() => setInfoSurah(null)}
       />
     </YStack>
   );

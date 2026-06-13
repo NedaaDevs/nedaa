@@ -418,6 +418,11 @@ const animations = createAnimations({
     mass: 0.9,
     stiffness: 100,
   },
+  // Timing curve (no spring) — guaranteed non-bouncy; used for the reader sheet.
+  smooth: {
+    type: "timing",
+    duration: 280,
+  },
 });
 
 const config = createTamagui({

@@ -38,6 +38,7 @@ interface QuranReaderProps {
   onPageChange: (page: number) => void;
   onTap?: () => void;
   onAyahLongPress?: (surah: number, ayah: number) => void;
+  onSurahLongPress?: (surah: number) => void;
   // The selected ayah (drives the highlight; cleared when its action sheet closes).
   selectedAyah?: { surah: number; ayah: number } | null;
 }
@@ -79,6 +80,7 @@ const QuranReader = ({
   onPageChange,
   onTap,
   onAyahLongPress,
+  onSurahLongPress,
   selectedAyah,
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
@@ -283,6 +285,7 @@ const QuranReader = ({
             dragOffset={dragOffset}
             width={width}
             onAyahLongPress={onAyahLongPress}
+            onSurahLongPress={onSurahLongPress}
             selectedAyah={selectedAyah}
           />
         ))}
@@ -305,6 +308,7 @@ interface PageSlotProps {
   dragOffset: SharedValue<number>;
   width: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
+  onSurahLongPress?: (surah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
 
@@ -322,6 +326,7 @@ const PageSlot = ({
   dragOffset,
   width,
   onAyahLongPress,
+  onSurahLongPress,
   selectedAyah,
 }: PageSlotProps) => {
   const animatedStyle = useAnimatedStyle(() => {
@@ -354,6 +359,7 @@ const PageSlot = ({
               width={width}
               fontSize={fontSize}
               onAyahLongPress={onAyahLongPress}
+              onSurahLongPress={onSurahLongPress}
               selectedAyah={selectedAyah}
             />
           ) : (
@@ -363,6 +369,7 @@ const PageSlot = ({
               quranTheme={quranTheme}
               width={width}
               onAyahLongPress={onAyahLongPress}
+              onSurahLongPress={onSurahLongPress}
               selectedAyah={selectedAyah}
             />
           )}
@@ -385,6 +392,7 @@ const PageSlot = ({
               quranTheme={quranTheme}
               width={single.w}
               onAyahLongPress={onAyahLongPress}
+              onSurahLongPress={onSurahLongPress}
               selectedAyah={selectedAyah}
             />
           </View>
@@ -427,6 +435,7 @@ const PageSlot = ({
                 // when the layout is RTL. Match the header's outer edge to that.
                 side={(i === 0) === I18nManager.isRTL ? "right" : "left"}
                 onAyahLongPress={onAyahLongPress}
+                onSurahLongPress={onSurahLongPress}
                 selectedAyah={selectedAyah}
               />
             </View>

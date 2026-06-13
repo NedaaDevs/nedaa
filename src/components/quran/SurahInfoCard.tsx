@@ -1,100 +1,86 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { YStack } from "tamagui";
 
+import { Text } from "@/components/ui/text";
 import { QuranTheme, RevelationPlace } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { formatNumberToLocale } from "@/utils/number";
+import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import type { SurahMeta } from "@/types/quran";
+import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
 
 interface SurahInfoCardProps {
-  surahNumber: number;
+  // Null when closed; the sheet stays mounted and animates out.
+  surahNumber: number | null;
   quranTheme: QuranTheme;
   onClose: () => void;
 }
 
-// Interim surah info shown on a long-press of the surah header, until the full
-// per-ayah/surah action sheet replaces it.
+// Surah info on a long-press of the surah header — the reader-themed sheet
+// (bottom sheet on phones, dialog on large), showing the surah name in the
+// current locale plus its revelation place, verse count, and page range.
 const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps) => {
   const { t } = useTranslation();
+  const c = QURAN_THEME_COLORS[quranTheme];
+  // Retain the last surah while the sheet animates closed (surahNumber → null).
+  const [shown, setShown] = useState<number | null>(surahNumber);
   const [meta, setMeta] = useState<SurahMeta | null>(null);
-  const colors = QURAN_THEME_COLORS[quranTheme];
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (surahNumber !== null) setShown(surahNumber);
+  }, [surahNumber]);
+
+  useEffect(() => {
+    if (shown === null) return;
     let active = true;
-    QuranContentDB.getSurah(surahNumber).then((m) => {
+    QuranContentDB.getSurah(shown).then((m) => {
       if (active) setMeta(m);
     });
     return () => {
       active = false;
     };
-  }, [surahNumber]);
+  }, [shown]);
 
-  if (!meta) return null;
-
+  const ready = meta !== null && shown !== null;
   const place =
-    meta.revelationPlace === RevelationPlace.MAKKAH
+    meta?.revelationPlace === RevelationPlace.MAKKAH
       ? t("quran.surah.makki")
       : t("quran.surah.madani");
+  const metaLine = ready
+    ? [
+        place,
+        t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta!.ayahCount)) }),
+        t("quran.surah.pages", {
+          start: formatNumberToLocale(String(meta!.pageStart)),
+          end: formatNumberToLocale(String(meta!.pageEnd)),
+        }),
+      ].join("  ·  ")
+    : "";
 
   return (
-    <Pressable
-      style={[StyleSheet.absoluteFill, styles.backdrop]}
-      onPress={onClose}
-      accessibilityRole="button"
-      accessibilityLabel={t("common.close")}>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.background, borderColor: colors.markerColor },
-        ]}>
-        <Text style={[styles.name, { color: colors.headerColor, fontFamily: QURAN_FONT_FAMILY }]}>
-          {meta.nameArabic}
-        </Text>
-        <Text style={[styles.translit, { color: colors.headerColor }]}>
-          {meta.nameTransliterated}
-        </Text>
-        <Text style={[styles.meta, { color: colors.pageNumberColor }]}>
-          {place} ·{" "}
-          {t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta.ayahCount)) })}
-        </Text>
-        <Text style={[styles.meta, { color: colors.pageNumberColor }]}>
-          {t("quran.surah.pages", {
-            start: formatNumberToLocale(String(meta.pageStart)),
-            end: formatNumberToLocale(String(meta.pageEnd)),
-          })}
-        </Text>
-      </View>
-    </Pressable>
+    <ReaderSheet open={surahNumber !== null} onClose={onClose} quranTheme={quranTheme}>
+      {ready && (
+        <YStack gap="$2" paddingBottom="$2">
+          <Text
+            style={{
+              fontSize: 22,
+              lineHeight: 36,
+              fontWeight: "700",
+              color: c.headerColor,
+              fontFamily: metadataFontFamily(),
+            }}>
+            {localizedSurahName(shown!)}
+          </Text>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: c.pageNumberColor }}>
+            {metaLine}
+          </Text>
+        </YStack>
+      )}
+    </ReaderSheet>
   );
 };
-
-const styles = StyleSheet.create({
-  backdrop: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
-    zIndex: 20,
-  },
-  card: {
-    minWidth: 220,
-    maxWidth: "80%",
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: "center",
-    gap: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  name: { fontSize: 28, textAlign: "center" },
-  translit: { fontSize: 16, fontWeight: "600", textAlign: "center" },
-  meta: { fontSize: 13, textAlign: "center" },
-});
 
 export default SurahInfoCard;

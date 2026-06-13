@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AccessibilityInfo, ScrollView, Text, View, StyleSheet } from "react-native";
+import { AccessibilityInfo, Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,7 @@ interface TextPageProps {
   width: number;
   fontSize: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
+  onSurahLongPress?: (surah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
 
@@ -36,6 +37,7 @@ const TextPage = ({
   width,
   fontSize,
   onAyahLongPress,
+  onSurahLongPress,
   selectedAyah,
 }: TextPageProps) => {
   const { t } = useTranslation();
@@ -109,7 +111,13 @@ const TextPage = ({
 
       if (group[0].ayahNumber === 1) {
         blocks.push(
-          <View key={`surah-header-${surah}`} style={styles.surahHeader}>
+          <Pressable
+            key={`surah-header-${surah}`}
+            style={styles.surahHeader}
+            onLongPress={() => onSurahLongPress?.(surah)}
+            delayLongPress={400}
+            accessibilityRole="header"
+            accessibilityHint={t("a11y.quran.surahInfo")}>
             <Text
               style={[
                 styles.surahHeaderText,
@@ -135,7 +143,7 @@ const TextPage = ({
                 {BASMALA}
               </Text>
             )}
-          </View>
+          </Pressable>
         );
       }
 
