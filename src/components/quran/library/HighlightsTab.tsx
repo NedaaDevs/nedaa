@@ -11,7 +11,7 @@ import { HighlightColor } from "@/enums/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
-import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
+import { usePreviewQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { useRTL } from "@/contexts/RTLContext";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
@@ -41,7 +41,7 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const chrome = useQuranChromeColors();
-  const paperTheme = useResolvedQuranTheme();
+  const previewTheme = usePreviewQuranTheme();
   const { isRTL } = useRTL();
   const version = useQuranStore((s) => s.currentVersion);
   const highlights = useHighlightStore((s) => s.highlights);
@@ -186,7 +186,7 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
                           page={it.page}
                           surah={it.surah}
                           ayah={it.ayah}
-                          quranTheme={paperTheme}
+                          quranTheme={previewTheme}
                           maxWidth={width - 80}
                           fallback={
                             <Text

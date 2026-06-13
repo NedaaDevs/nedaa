@@ -32,6 +32,27 @@ export const useResolvedQuranTheme = (): QuranTheme => {
   return resolved;
 };
 
+// Quran theme for verse previews OUTSIDE the reader (library, index): always
+// follows the app color scheme, ignoring the in-reader theme override, so a
+// sepia/AMOLED reader choice doesn't bleed onto app-themed surfaces. Keeps the
+// V4-on-dark fallback so coloured pages stay readable.
+export const usePreviewQuranTheme = (): QuranTheme => {
+  const currentVersion = useQuranStore((s) => s.currentVersion);
+  const darkInstalled = useQuranStore(
+    (s) => s.versionDownloads[s.currentVersion]?.dark?.status === DownloadStatus.COMPLETE
+  );
+  const mode = useAppStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+
+  const appIsDark = mode === "system" ? systemScheme === "dark" : mode === "dark";
+  const resolved = appIsDark ? QuranTheme.DARK : QuranTheme.SEPIA;
+
+  if (isDarkPaper(resolved) && isColoredVersion(currentVersion) && !darkInstalled) {
+    return QuranTheme.SEPIA;
+  }
+  return resolved;
+};
+
 // The user's effective dark preference *before* the colored-edition fallback —
 // i.e. "they want a dark reader." Used to decide whether to offer the V4 dark
 // page bundle (the resolved theme alone can't tell, since it falls back).

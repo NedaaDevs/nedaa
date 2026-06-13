@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { Fragment, useCallback, useEffect, useMemo } from "react";
 import { useWindowDimensions, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -394,19 +394,31 @@ const PageSlot = ({
           line (reverse `pages` OR use "row-reverse"). */}
       <View
         style={[styles.spreadRow, { backgroundColor: QURAN_THEME_COLORS[quranTheme].background }]}>
-        {pages.map((p) => (
-          <View key={p} style={styles.centerBox}>
-            <View style={{ width: box.w, height: box.h }}>
-              <QuranPage
-                page={p}
-                width={box.w}
-                version={version}
-                quranTheme={quranTheme}
-                onAyahLongPress={onAyahLongPress}
-                selectedAyah={selectedAyah}
+        {pages.map((p, i) => (
+          <Fragment key={p}>
+            {i > 0 && (
+              // Fold seam between the two pages — a faint vertical rule, like the
+              // spine of an open mushaf.
+              <View
+                style={[
+                  styles.spine,
+                  { height: box.h, backgroundColor: QURAN_THEME_COLORS[quranTheme].frameColor },
+                ]}
               />
+            )}
+            <View style={styles.centerBox}>
+              <View style={{ width: box.w, height: box.h }}>
+                <QuranPage
+                  page={p}
+                  width={box.w}
+                  version={version}
+                  quranTheme={quranTheme}
+                  onAyahLongPress={onAyahLongPress}
+                  selectedAyah={selectedAyah}
+                />
+              </View>
             </View>
-          </View>
+          </Fragment>
         ))}
       </View>
     </Animated.View>
@@ -432,6 +444,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPREAD_OUTER_PAD,
     paddingTop: SPREAD_TOP_PAD,
     gap: SPREAD_GUTTER,
+  },
+  spine: {
+    width: 1.5,
+    alignSelf: "center",
+    borderRadius: 1,
+    opacity: 0.3,
   },
 });
 
