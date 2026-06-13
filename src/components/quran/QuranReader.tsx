@@ -25,7 +25,6 @@ import {
 import { TOTAL_SPREADS, spreadOf, pagesOfSpread, ReaderLayoutMode } from "@/utils/readerSpread";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
 import { useQuranStore } from "@/stores/quran";
-import { useDebugModeStore } from "@/stores/debugMode";
 import QuranPage from "@/components/quran/QuranPage";
 import TextPage from "@/components/quran/TextPage";
 
@@ -95,9 +94,6 @@ const QuranReader = ({
   // Frame each page like a physical sheet (large devices only — phones fill the
   // width, where a border would just hug the screen edge).
   const framed = useQuranStore((s) => s.pageFit) === ReaderPageFit.PAGE;
-  // Dev-only layout debug borders — toggle by tapping the version number ×7 in
-  // settings. Red = centering wrapper, lime = page box, cyan/magenta = inner areas.
-  const debug = useDebugModeStore((s) => s.isEnabled);
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
 
@@ -278,7 +274,6 @@ const QuranReader = ({
             isSpread={isSpread}
             isLargeSingle={isLargeSingle}
             framed={framed}
-            debug={debug}
             availPageHeight={availPageHeight}
             unitIndex={unitIndex}
             version={version}
@@ -301,7 +296,6 @@ interface PageSlotProps {
   isSpread: boolean;
   isLargeSingle: boolean;
   framed: boolean;
-  debug: boolean;
   availPageHeight: number;
   unitIndex: SharedValue<number>;
   version: MushafVersion;
@@ -319,7 +313,6 @@ const PageSlot = ({
   isSpread,
   isLargeSingle,
   framed,
-  debug,
   availPageHeight,
   unitIndex,
   version,
@@ -347,7 +340,6 @@ const PageSlot = ({
   const pageBoxStyle = (w: number, h: number) => [
     { width: w, height: h },
     framed ? [styles.framedPage, { borderColor: frameColor }] : null,
-    debug ? styles.debugLime : null,
   ];
 
   if (!isSpread) {
@@ -370,7 +362,6 @@ const PageSlot = ({
               version={version}
               quranTheme={quranTheme}
               width={width}
-              debug={debug}
               onAyahLongPress={onAyahLongPress}
               selectedAyah={selectedAyah}
             />
@@ -386,7 +377,6 @@ const PageSlot = ({
           style={[
             styles.centerBox,
             { backgroundColor: QURAN_THEME_COLORS[quranTheme].background },
-            debug ? styles.debugRed : null,
           ]}>
           <View style={pageBoxStyle(single.w, single.h)}>
             <QuranPage
@@ -394,7 +384,6 @@ const PageSlot = ({
               version={version}
               quranTheme={quranTheme}
               width={single.w}
-              debug={debug}
               onAyahLongPress={onAyahLongPress}
               selectedAyah={selectedAyah}
             />
@@ -433,7 +422,6 @@ const PageSlot = ({
                 width={box.w}
                 version={version}
                 quranTheme={quranTheme}
-                debug={debug}
                 onAyahLongPress={onAyahLongPress}
                 selectedAyah={selectedAyah}
               />
@@ -479,9 +467,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
   },
-  // Dev-only layout-debug borders (gated by the debug-mode toggle).
-  debugRed: { borderWidth: 2, borderColor: "#FF0000" },
-  debugLime: { borderWidth: 2, borderColor: "#00E000" },
 });
 
 export default QuranReader;

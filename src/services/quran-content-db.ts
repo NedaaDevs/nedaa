@@ -24,8 +24,8 @@ const boundsDbMap = new Map<MushafVersion, Promise<SQLite.SQLiteDatabase>>();
 // Bounded in-memory cache for per-page reads, so turning or scrubbing back to a
 // recently-seen page is instant without re-querying. Keyed by version+page so it
 // survives the reader's page-window mount/unmount churn (a per-component cache
-// would not). Invalidated when a bounds DB is swapped (closeBoundsDb) or the
-// content DB is re-copied (resetQuranDb); quran.db is otherwise read-only.
+// would not). Invalidated when a bounds DB is swapped (closeBoundsDb); quran.db
+// is read-only after the one-time copy.
 const PAGE_CACHE_LIMIT = 60;
 const pageReadCache = new Map<string, unknown>();
 
@@ -121,36 +121,6 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
     })();
   }
   return quranDbPromise;
-};
-
-// Debug: close the connection and delete the copied quran.db (+ marker / WAL /
-// SHM) so the next open re-copies the bundled asset. Lets a tester force a fresh
-// copy from the debug menu — e.g. to confirm a corrected DB ships in TestFlight.
-const resetQuranDb = async (): Promise<void> => {
-  if (quranDbPromise) {
-    try {
-      await (await quranDbPromise).closeAsync();
-    } catch {
-      // already closed / failed to open
-    }
-    quranDbPromise = null;
-  }
-
-  const dir = await getDirectory();
-  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
-  const targetDir = new Directory(dirUri);
-  const names = [
-    QURAN_DB_NAME,
-    `${QURAN_DB_NAME}-wal`,
-    `${QURAN_DB_NAME}-shm`,
-    `${QURAN_DB_NAME}.version`,
-  ];
-  for (const name of names) {
-    const file = new File(targetDir, name);
-    if (file.exists) file.delete();
-  }
-  clearPageReadCache();
-  log.i("Reset", "Reset quran.db — will re-copy on next open");
 };
 
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
@@ -473,7 +443,6 @@ const getAyahMetadata = async (
 
 export const QuranContentDB = {
   openQuranDb,
-  resetQuranDb,
   openBoundsDb,
   closeBoundsDb,
   getLineMetadata,
