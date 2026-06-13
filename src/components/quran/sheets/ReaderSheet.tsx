@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { QuranTheme } from "@/enums/quran";
-import { useRTL } from "@/contexts/RTLContext";
+import { RTLContext, useRTL } from "@/contexts/RTLContext";
 
 interface ReaderSheetProps {
   // Controlled visibility. Keep the component mounted and toggle `open` so the
@@ -22,9 +22,7 @@ interface ReaderSheetProps {
 const ReaderSheet = ({ open = true, onClose, quranTheme, children }: ReaderSheetProps) => {
   const c = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
-  // The Sheet renders in a portal outside the app's RTL wrapper, so re-apply the
-  // layout direction here or the content falls back to LTR.
-  const { direction } = useRTL();
+  const rtl = useRTL();
 
   return (
     <Sheet
@@ -53,7 +51,9 @@ const ReaderSheet = ({ open = true, onClose, quranTheme, children }: ReaderSheet
         paddingHorizontal="$4"
         paddingTop="$3"
         paddingBottom={Math.max(insets.bottom, 16) + 16}>
-        <View style={{ direction }}>{children}</View>
+        <RTLContext value={rtl}>
+          <View style={{ direction: rtl.direction }}>{children}</View>
+        </RTLContext>
       </Sheet.Frame>
     </Sheet>
   );

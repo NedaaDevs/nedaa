@@ -9,7 +9,8 @@ type RTLContextValue = {
   direction: Direction;
 };
 
-const RTLContext = createContext<RTLContextValue | undefined>(undefined);
+// Exported so portaled surfaces (e.g. Tamagui Sheet) can re-provide the value.
+export const RTLContext = createContext<RTLContextValue | undefined>(undefined);
 
 export const RTLProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const locale = useAppStore((state) => state.locale);
