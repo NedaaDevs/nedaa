@@ -32,6 +32,9 @@ const LINE_HEIGHT = 4;
 const HANDLE = 16;
 const HANDLE_DRAG = 22;
 const LABEL_WIDTH = 34;
+const TOOLTIP_WIDTH = 168;
+// Decorative ink-line widths (%) for the mini mushaf-page thumbnail in the card.
+const THUMB_LINES = [82, 68, 78, 60, 74];
 
 const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) => {
   const { t } = useTranslation();
@@ -175,9 +178,13 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     };
   });
 
-  const tooltipStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.get() + HANDLE / 2 - 70 }],
-  }));
+  const tooltipStyle = useAnimatedStyle(() => {
+    // Centre the card on the handle, but clamp it inside the track so it never
+    // spills past the screen edge near page 1 (right) or 604 (left).
+    const centered = thumbX.get() + HANDLE / 2 - TOOLTIP_WIDTH / 2;
+    const max = Math.max(0, trackWidth - TOOLTIP_WIDTH);
+    return { transform: [{ translateX: Math.min(Math.max(centered, 0), max) }] };
+  });
 
   // Filled portion runs from the right end (page 1) to the handle.
   const trackActiveStyle = useAnimatedStyle(() => ({
@@ -207,19 +214,38 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
                 tooltipStyle,
                 {
                   backgroundColor: isDark ? "#2A2A2A" : "#F5F0E8",
-                  borderColor: isDark ? "#444" : "#D4C5A9",
+                  borderColor: themeColors.frameColor,
                 },
               ]}>
-              <Text
-                style={[
-                  styles.tooltipSurah,
-                  { color: themeColors.headerColor, fontFamily: metadataFontFamily() },
-                ]}>
-                {surahName}
-              </Text>
-              <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
-                {`${t("quran.goto.page")} ${formatNumberToLocale(String(draggingPage))}`}
-              </Text>
+              {/* Mini mushaf page — decorative ink lines on paper. */}
+              <View style={[styles.thumb, { backgroundColor: themeColors.innerBackground }]}>
+                {THUMB_LINES.map((w, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      height: 2,
+                      borderRadius: 1,
+                      width: `${w}%`,
+                      alignSelf: "flex-end",
+                      backgroundColor: themeColors.headerColor,
+                      opacity: 0.45,
+                    }}
+                  />
+                ))}
+              </View>
+              <View style={styles.tooltipText}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.tooltipSurah,
+                    { color: themeColors.headerColor, fontFamily: metadataFontFamily() },
+                  ]}>
+                  {surahName}
+                </Text>
+                <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
+                  {`${t("quran.goto.page")} ${formatNumberToLocale(String(draggingPage))}`}
+                </Text>
+              </View>
             </Animated.View>
           )}
           <View style={[styles.line, { backgroundColor: trackColor }]}>
@@ -279,27 +305,42 @@ const styles = StyleSheet.create({
   tooltip: {
     position: "absolute",
     bottom: TOUCH_HEIGHT - 2,
-    width: 140,
+    width: TOOLTIP_WIDTH,
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
+    gap: 10,
+    paddingVertical: 9,
     paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
+  thumb: {
+    width: 28,
+    height: 36,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 5,
+    justifyContent: "center",
+    gap: 3,
+    overflow: "hidden",
+  },
+  tooltipText: {
+    flex: 1,
+  },
   tooltipSurah: {
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "right",
     writingDirection: "rtl",
   },
   tooltipPage: {
-    fontSize: 13,
-    textAlign: "center",
+    fontSize: 12,
+    textAlign: "right",
     writingDirection: "rtl",
     marginTop: 2,
   },
