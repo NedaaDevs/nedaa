@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowRight,
   List,
+  Bookmark,
   Highlighter,
   SlidersHorizontal,
   LocateFixed,
@@ -337,6 +338,16 @@ const QuranScreen = () => {
                   color={themeColors.headerColor}
                 />
               )}
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  router.push("/quran-library?tab=bookmarks");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.library.bookmarks")}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                <Bookmark color={themeColors.headerColor} size={20} />
+              </Pressable>
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
