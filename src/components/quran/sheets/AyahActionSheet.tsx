@@ -163,7 +163,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
             surah={target.surah}
             ayah={target.ayah}
             quranTheme={quranTheme}
-            maxWidth={width - 56}
+            maxWidth={Math.min(width - 56, 440)}
             fallback={versePreview}
           />
         ) : (

@@ -1,10 +1,12 @@
 import { useEffect } from "react";
-import { Keyboard, Platform, Pressable, StyleSheet } from "react-native";
+import { Keyboard, Platform, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
   SlideInDown,
   SlideOutDown,
+  ZoomIn,
+  ZoomOut,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -18,6 +20,7 @@ import { useTranslation } from "react-i18next";
 
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { QuranTheme } from "@/enums/quran";
+import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 
 interface ReaderSheetProps {
   onClose: () => void;
@@ -25,19 +28,17 @@ interface ReaderSheetProps {
   children: React.ReactNode;
 }
 
-// Reusable bottom sheet for the reader: paper-themed, fade backdrop, swipe-down to
-// dismiss, and a plain timing slide (no spring — the springified bounce looks bad
-// on Android). The parent mounts/unmounts it; reanimated plays enter/exit.
+// Paper-themed reader surface: bottom sheet on phones, centered popover on large devices.
 const ReaderSheet = ({ onClose, quranTheme, children }: ReaderSheetProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
+  const { width, height } = useWindowDimensions();
+  const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
   const c = QURAN_THEME_COLORS[quranTheme];
   const translateY = useSharedValue(0);
   // Lift the bottom-anchored sheet above the keyboard (e.g. the highlight-rename
   // input) — RN doesn't reposition absolute views for the keyboard on its own.
-  // Driven from the core Keyboard API rather than reanimated's deprecated
-  // useAnimatedKeyboard.
   const keyboardOffset = useSharedValue(0);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ const ReaderSheet = ({ onClose, quranTheme, children }: ReaderSheetProps) => {
     transform: [{ translateY: translateY.value - keyboardOffset.value }],
   }));
 
-  // Swipe down past a threshold to dismiss.
+  // Swipe down past a threshold to dismiss (bottom sheet only).
   const pan = Gesture.Pan()
     .onUpdate((e) => {
       "worklet";
@@ -74,20 +75,39 @@ const ReaderSheet = ({ onClose, quranTheme, children }: ReaderSheetProps) => {
       translateY.value = withTiming(0, { duration: 180 });
     });
 
+  const backdrop = (
+    <Animated.View
+      entering={FadeIn.duration(180)}
+      exiting={FadeOut.duration(160)}
+      style={styles.backdrop}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel={t("common.close")}
+      />
+    </Animated.View>
+  );
+
+  if (isLarge) {
+    return (
+      <>
+        {backdrop}
+        <Animated.View style={styles.centerWrap} pointerEvents="box-none">
+          <Animated.View
+            entering={reduceMotion ? FadeIn.duration(150) : ZoomIn.duration(200)}
+            exiting={reduceMotion ? FadeOut.duration(150) : ZoomOut.duration(160)}
+            style={[styles.popover, { backgroundColor: c.background }]}>
+            {children}
+          </Animated.View>
+        </Animated.View>
+      </>
+    );
+  }
+
   return (
     <>
-      <Animated.View
-        entering={FadeIn.duration(180)}
-        exiting={FadeOut.duration(160)}
-        style={styles.backdrop}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.close")}
-        />
-      </Animated.View>
-
+      {backdrop}
       <Animated.View
         entering={reduceMotion ? FadeIn.duration(150) : SlideInDown.duration(260)}
         exiting={reduceMotion ? FadeOut.duration(150) : SlideOutDown.duration(220)}
@@ -132,6 +152,20 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 18,
+  },
+  centerWrap: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  popover: {
+    width: "90%",
+    maxWidth: 480,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
   },
 });
 
