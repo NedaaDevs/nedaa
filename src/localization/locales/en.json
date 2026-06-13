@@ -958,6 +958,8 @@
   "quran.settings.pageFit": "Page style",
   "quran.settings.pageFitFill": "Fill",
   "quran.settings.pageFitPage": "Page",
+  "quran.reader.twoPages": "Two pages",
+  "quran.reader.onePage": "One page",
   "quran.settings.headerOrnament": "Header ornament",
   "quran.settings.library": "Library",
   "quran.settings.modeMushaf": "Mushaf",

@@ -5,6 +5,7 @@ import {
   anchorPage,
   TOTAL_SPREADS,
   LARGE_DEVICE_MIN_DP,
+  ReaderLayoutMode,
 } from "@/utils/readerSpread";
 
 describe("page <-> spread mapping (RTL: right=earlier/odd, left=later/even)", () => {
@@ -30,19 +31,19 @@ describe("resolveReaderLayout device matrix", () => {
   const layout = (w: number, h: number, spreadEnabled = true) =>
     resolveReaderLayout({ width: w, height: h, spreadEnabled });
   it("phone stays 'phone' in both orientations", () => {
-    expect(layout(390, 844).mode).toBe("phone");
-    expect(layout(844, 390).mode).toBe("phone");
+    expect(layout(390, 844).mode).toBe(ReaderLayoutMode.PHONE);
+    expect(layout(844, 390).mode).toBe(ReaderLayoutMode.PHONE);
   });
   it("large portrait => single; large landscape => spread", () => {
-    expect(layout(834, 1112).mode).toBe("single");
-    expect(layout(1194, 834).mode).toBe("spread");
+    expect(layout(834, 1112).mode).toBe(ReaderLayoutMode.SINGLE);
+    expect(layout(1194, 834).mode).toBe(ReaderLayoutMode.SPREAD);
   });
   it("large landscape with spread disabled => single", () => {
-    expect(layout(1194, 834, false).mode).toBe("single");
+    expect(layout(1194, 834, false).mode).toBe(ReaderLayoutMode.SINGLE);
   });
   it("threshold is shortest-side >= LARGE_DEVICE_MIN_DP", () => {
     expect(LARGE_DEVICE_MIN_DP).toBe(600);
-    expect(layout(599, 900).mode).toBe("phone");
-    expect(layout(600, 900).mode).toBe("single");
+    expect(layout(599, 900).mode).toBe(ReaderLayoutMode.PHONE);
+    expect(layout(600, 900).mode).toBe(ReaderLayoutMode.SINGLE);
   });
 });

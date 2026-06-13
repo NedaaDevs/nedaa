@@ -33,6 +33,8 @@ interface QuranPageProps {
   version: MushafVersion;
   quranTheme: QuranTheme;
   width: number;
+  // Dev-only: outlines the lines area (cyan) + content (magenta) for layout debugging.
+  debug?: boolean;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
@@ -45,6 +47,7 @@ const QuranPage = ({
   version,
   quranTheme,
   width,
+  debug,
   onAyahLongPress,
   selectedAyah,
 }: QuranPageProps) => {
@@ -283,12 +286,19 @@ const QuranPage = ({
           flex: 1,
           alignItems: "center",
           backgroundColor: QURAN_THEME_COLORS[quranTheme].innerBackground,
+          borderWidth: debug ? 2 : 0,
+          borderColor: "#00FFFF",
         }}
         onLayout={onLinesLayout}>
         <GestureDetector gesture={longPressGesture}>
           <Pressable
             ref={pressableRef}
-            style={{ position: "relative", direction: "ltr" }}
+            style={{
+              position: "relative",
+              direction: "ltr",
+              borderWidth: debug ? 2 : 0,
+              borderColor: "#FF00FF",
+            }}
             onPress={handlePress}>
             {lineHeight > 0 && ready && isPageMode && (
               <PageImage

@@ -4,7 +4,14 @@ import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ArrowLeft, ArrowRight, List, SlidersHorizontal } from "lucide-react-native";
+import {
+  ArrowLeft,
+  ArrowRight,
+  List,
+  SlidersHorizontal,
+  Columns2,
+  RectangleVertical,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { useQuranStore } from "@/stores/quran";
@@ -28,6 +35,8 @@ import FontSizeControls from "@/components/quran/FontSizeControls";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
+import { useReaderLayout } from "@/hooks/useReaderLayout";
+import { ReaderLayoutMode } from "@/utils/readerSpread";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const QuranScreen = () => {
@@ -58,6 +67,8 @@ const QuranScreen = () => {
   const router = useRouter();
   const { isRTL } = useRTL();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const layout = useReaderLayout();
+  const spreading = layout.mode === ReaderLayoutMode.SPREAD && readerMode !== ReaderViewMode.TEXT;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
@@ -280,7 +291,7 @@ const QuranScreen = () => {
             paddingTop={insets.top + 6}
             paddingBottom="$2.5"
             paddingHorizontal="$3"
-            backgroundColor={themeColors.background}
+            backgroundColor={`${themeColors.background}F0`}
             borderBottomWidth={1}
             borderBottomColor={themeColors.frameColor}>
             <Pressable
@@ -345,9 +356,21 @@ const QuranScreen = () => {
             paddingTop="$3"
             paddingBottom={insets.bottom + 12}
             paddingHorizontal="$3"
-            backgroundColor={themeColors.background}
+            backgroundColor={`${themeColors.background}F0`}
             borderTopWidth={1}
             borderTopColor={themeColors.frameColor}>
+            {layout.isLarge && readerMode !== ReaderViewMode.TEXT && (
+              <XStack alignItems="center" justifyContent="center" gap="$1.5">
+                {spreading ? (
+                  <Columns2 color={themeColors.pageNumberColor} size={15} />
+                ) : (
+                  <RectangleVertical color={themeColors.pageNumberColor} size={15} />
+                )}
+                <Text fontSize={12} fontWeight="600" color={themeColors.pageNumberColor}>
+                  {t(spreading ? "quran.reader.twoPages" : "quran.reader.onePage")}
+                </Text>
+              </XStack>
+            )}
             <PageSlider
               currentPage={currentPage}
               quranTheme={quranTheme}

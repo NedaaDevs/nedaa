@@ -22,9 +22,10 @@ import {
   IMAGE_SOURCE_LINE_HEIGHT,
   LINES_PER_PAGE,
 } from "@/constants/Quran";
-import { TOTAL_SPREADS, spreadOf, pagesOfSpread } from "@/utils/readerSpread";
+import { TOTAL_SPREADS, spreadOf, pagesOfSpread, ReaderLayoutMode } from "@/utils/readerSpread";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
 import { useQuranStore } from "@/stores/quran";
+import { useDebugModeStore } from "@/stores/debugMode";
 import QuranPage from "@/components/quran/QuranPage";
 import TextPage from "@/components/quran/TextPage";
 
@@ -46,17 +47,13 @@ const SWIPE_THRESHOLD = 0.25;
 const VELOCITY_THRESHOLD = 500;
 const SPRING_CONFIG = { damping: 22, stiffness: 200, mass: 0.8 };
 const PAGE_WINDOW = 2;
-// Breathing room for the two-page spread: outer margins + a center gutter so
-// pages don't butt against the seam/edges (tighter editions like V2 need it).
-const SPREAD_OUTER_PAD = 24;
-const SPREAD_GUTTER = 24;
+// Gap between the two spread pages at the spine, and top breathing room.
+const SPREAD_GUTTER = 10;
 const SPREAD_TOP_PAD = 16;
-// Each line strip carries ~19% transparent padding above and below the glyphs, so
-// the ink fills only ~76% of its height. Packing lines to that ink band (the line
-// image clips the padding for us) gives tight, authentic spacing instead of a page
-// ~30% too tall with a visible gap between every line. Lower = tighter; raise toward
-// 1.0 if any glyph tops/bottoms ever clip.
-const LINE_INK_RATIO = 0.78;
+// Fraction of each line strip kept when packing lines (strips carry ~19% transparent
+// padding top/bottom, so the ink fills ~76% of the height). Lower = tighter; raise
+// toward 1.0 for the strip's full authentic gaps. 0.81 = comfortable line spacing.
+const LINE_INK_RATIO = 0.81;
 // A page's height:width ratio: 15 ink-packed lines over the source width.
 // Large-device pages are scaled to preserve this — never stretched to the screen.
 const PAGE_ASPECT =
@@ -90,14 +87,17 @@ const QuranReader = ({
   // Only the image mushaf spreads. Text reflows, so a spread would be two
   // independently-scrolling columns of unequal length — a single capped column
   // reads better.
-  const isSpread = layout.mode === "spread" && readerMode !== ReaderViewMode.TEXT;
+  const isSpread = layout.mode === ReaderLayoutMode.SPREAD && readerMode !== ReaderViewMode.TEXT;
   // Large device showing one image page (portrait, or landscape with the spread
   // off): aspect-fit it like the spread halves so it isn't stretched.
   const isLargeSingle =
-    layout.mode === "single" && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
+    layout.mode === ReaderLayoutMode.SINGLE && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
   // Frame each page like a physical sheet (large devices only — phones fill the
   // width, where a border would just hug the screen edge).
   const framed = useQuranStore((s) => s.pageFit) === ReaderPageFit.PAGE;
+  // Dev-only layout debug borders — toggle by tapping the version number ×7 in
+  // settings. Red = centering wrapper, lime = page box, cyan/magenta = inner areas.
+  const debug = useDebugModeStore((s) => s.isEnabled);
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
 
@@ -278,6 +278,7 @@ const QuranReader = ({
             isSpread={isSpread}
             isLargeSingle={isLargeSingle}
             framed={framed}
+            debug={debug}
             availPageHeight={availPageHeight}
             unitIndex={unitIndex}
             version={version}
@@ -300,6 +301,7 @@ interface PageSlotProps {
   isSpread: boolean;
   isLargeSingle: boolean;
   framed: boolean;
+  debug: boolean;
   availPageHeight: number;
   unitIndex: SharedValue<number>;
   version: MushafVersion;
@@ -317,6 +319,7 @@ const PageSlot = ({
   isSpread,
   isLargeSingle,
   framed,
+  debug,
   availPageHeight,
   unitIndex,
   version,
@@ -341,10 +344,11 @@ const PageSlot = ({
   // When the "Page" fit is on, a page box is framed like a physical sheet (border +
   // rounded corners). Only the large-device paths use this — phones fill the width.
   const frameColor = QURAN_THEME_COLORS[quranTheme].frameColor;
-  const pageBoxStyle = (w: number, h: number) =>
-    framed
-      ? [styles.framedPage, { width: w, height: h, borderColor: frameColor }]
-      : { width: w, height: h };
+  const pageBoxStyle = (w: number, h: number) => [
+    { width: w, height: h },
+    framed ? [styles.framedPage, { borderColor: frameColor }] : null,
+    debug ? styles.debugLime : null,
+  ];
 
   if (!isSpread) {
     // Text mode (any device) and phone image mode fill the full width.
@@ -366,6 +370,7 @@ const PageSlot = ({
               version={version}
               quranTheme={quranTheme}
               width={width}
+              debug={debug}
               onAyahLongPress={onAyahLongPress}
               selectedAyah={selectedAyah}
             />
@@ -381,6 +386,7 @@ const PageSlot = ({
           style={[
             styles.centerBox,
             { backgroundColor: QURAN_THEME_COLORS[quranTheme].background },
+            debug ? styles.debugRed : null,
           ]}>
           <View style={pageBoxStyle(single.w, single.h)}>
             <QuranPage
@@ -388,6 +394,7 @@ const PageSlot = ({
               version={version}
               quranTheme={quranTheme}
               width={single.w}
+              debug={debug}
               onAyahLongPress={onAyahLongPress}
               selectedAyah={selectedAyah}
             />
@@ -397,16 +404,15 @@ const PageSlot = ({
     );
   }
 
-  // Spread (image only — text never spreads). pagesOfSpread === [right, left].
-  // Each half aspect-fits its column so the pages keep their true shape.
+  // Open-book spread: the two undistorted pages sit adjacent at the spine, centred
+  // as a pair, so the inherent fit-to-height margin falls on the outer edges as
+  // balanced book margins instead of scattered gaps. pagesOfSpread === [right,
+  // left]; RTL flips the row on device.
   const pages = pagesOfSpread(unit);
-  const halfWidth = (width - SPREAD_OUTER_PAD * 2 - SPREAD_GUTTER) / 2;
+  const halfWidth = (width - SPREAD_GUTTER) / 2;
   const box = fitPageBox(halfWidth, availPageHeight);
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
-      {/* RTL: earlier page should sit on the RIGHT. flexDirection "row" places
-          pages[0] first; on device, if the order is reversed, flip this single
-          line (reverse `pages` OR use "row-reverse"). */}
       <View
         style={[styles.spreadRow, { backgroundColor: QURAN_THEME_COLORS[quranTheme].background }]}>
         {pages.map((p, i) => (
@@ -421,17 +427,16 @@ const PageSlot = ({
                 ]}
               />
             )}
-            <View style={styles.centerBox}>
-              <View style={pageBoxStyle(box.w, box.h)}>
-                <QuranPage
-                  page={p}
-                  width={box.w}
-                  version={version}
-                  quranTheme={quranTheme}
-                  onAyahLongPress={onAyahLongPress}
-                  selectedAyah={selectedAyah}
-                />
-              </View>
+            <View style={pageBoxStyle(box.w, box.h)}>
+              <QuranPage
+                page={p}
+                width={box.w}
+                version={version}
+                quranTheme={quranTheme}
+                debug={debug}
+                onAyahLongPress={onAyahLongPress}
+                selectedAyah={selectedAyah}
+              />
             </View>
           </Fragment>
         ))}
@@ -456,7 +461,8 @@ const styles = StyleSheet.create({
   spreadRow: {
     flex: 1,
     flexDirection: "row",
-    paddingHorizontal: SPREAD_OUTER_PAD,
+    alignItems: "center",
+    justifyContent: "center",
     paddingTop: SPREAD_TOP_PAD,
     gap: SPREAD_GUTTER,
   },
@@ -473,6 +479,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
   },
+  // Dev-only layout-debug borders (gated by the debug-mode toggle).
+  debugRed: { borderWidth: 2, borderColor: "#FF0000" },
+  debugLime: { borderWidth: 2, borderColor: "#00E000" },
 });
 
 export default QuranReader;

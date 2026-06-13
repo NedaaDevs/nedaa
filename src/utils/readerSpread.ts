@@ -4,7 +4,13 @@ import { TOTAL_PAGES } from "@/constants/Quran";
 // breakpoint. Using the live window means fold/unfold and Split View just work.
 export const LARGE_DEVICE_MIN_DP = 600;
 
-export type ReaderLayoutMode = "phone" | "single" | "spread";
+export const ReaderLayoutMode = {
+  PHONE: "phone",
+  SINGLE: "single",
+  SPREAD: "spread",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type ReaderLayoutMode = (typeof ReaderLayoutMode)[keyof typeof ReaderLayoutMode];
 
 export interface ReaderLayout {
   mode: ReaderLayoutMode;
@@ -21,10 +27,10 @@ export const resolveReaderLayout = (args: {
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
   const isLandscape = width > height;
   const mode: ReaderLayoutMode = !isLarge
-    ? "phone"
+    ? ReaderLayoutMode.PHONE
     : isLandscape && spreadEnabled
-      ? "spread"
-      : "single";
+      ? ReaderLayoutMode.SPREAD
+      : ReaderLayoutMode.SINGLE;
   return { mode, isLarge, isLandscape };
 };
 
