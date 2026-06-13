@@ -15,11 +15,14 @@ interface PageHeaderProps {
   // null while the page is still downloading — header stays blank, not stale.
   juz: number | null;
   quranTheme: QuranTheme;
+  // Spread page side: the surah sits on the OUTER screen edge, juz toward the
+  // spine. "single" (default) keeps the phone/single arrangement (surah leading).
+  side?: "left" | "right" | "single";
 }
 
-// Mushaf-authentic running header: surah and juz at the outer edges with the
-// Mihrab diamond ornament centered, over a hairline rule (phones only).
-const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
+// Mushaf-authentic running header: surah on the outer edge, juz toward the spine,
+// with the Mihrab diamond ornament centered, over a hairline rule (phones only).
+const PageHeader = ({ surahName, juz, quranTheme, side = "single" }: PageHeaderProps) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
@@ -29,6 +32,20 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
 
   const juzText = juz ? juzLabel(juz) : "";
 
+  const surahEl = (
+    <Text key="surah" style={{ color: themeColors.headerColor, fontFamily }}>
+      {surahName}
+    </Text>
+  );
+  const juzEl = (
+    <Text key="juz" style={{ color: themeColors.headerColor, fontFamily }}>
+      {juzText}
+    </Text>
+  );
+  // Right page's outer edge is the right → surah trailing, juz toward the spine
+  // (left). Left page and single keep surah leading on the outer/left edge.
+  const headerOrder = side === "right" ? [juzEl, surahEl] : [surahEl, juzEl];
+
   return (
     <YStack
       paddingHorizontal="$3"
@@ -37,8 +54,7 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
       accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz: juz ?? "" })}>
       <View position="relative" justifyContent="center">
         <XStack alignItems="center" justifyContent="space-between">
-          <Text style={{ color: themeColors.headerColor, fontFamily }}>{surahName}</Text>
-          <Text style={{ color: themeColors.headerColor, fontFamily }}>{juzText}</Text>
+          {headerOrder}
         </XStack>
         {/* Centered ornament, independent of the surah/juz text widths. */}
         {showOrnament && (

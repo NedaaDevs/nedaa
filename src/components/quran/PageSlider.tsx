@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, useWindowDimensions } from "react-native";
+import { View, StyleSheet, LayoutChangeEvent } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -24,22 +24,23 @@ interface PageSliderProps {
   onPageChange: (page: number) => void;
 }
 
-const TRACK_HEIGHT = 36;
-const TRACK_RADIUS = 18;
-const THUMB_WIDTH = 60;
-const THUMB_HEIGHT = 30;
-const THUMB_RADIUS = 15;
-const HORIZONTAL_PADDING = 16;
+// Thin track with a small circular handle, flanked by the current page and the
+// total. The track grows with `flex`, so its width is measured (not derived from
+// the screen) — robust to the labels and any container padding.
+const TOUCH_HEIGHT = 40;
+const LINE_HEIGHT = 4;
+const HANDLE = 16;
+const HANDLE_DRAG = 22;
+const LABEL_WIDTH = 34;
 
 const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) => {
   const { t } = useTranslation();
-  const { width: screenWidth } = useWindowDimensions();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const isDark = quranTheme === QuranTheme.DARK;
   const haptic = useHaptic("light");
 
-  const trackWidth = screenWidth - HORIZONTAL_PADDING * 2;
-  const slidableWidth = trackWidth - THUMB_WIDTH;
+  const [trackWidth, setTrackWidth] = useState(0);
+  const slidableWidth = Math.max(0, trackWidth - HANDLE);
 
   const [pageToSurah, setPageToSurah] = useState<Map<number, number>>(new Map());
 
@@ -58,6 +59,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     loadMapping();
   }, []);
 
+  // RTL track: page 1 sits at the right end, page 604 at the left.
   const pageToX = (page: number): number => {
     const progress = (page - 1) / (TOTAL_PAGES - 1);
     return slidableWidth * (1 - progress);
@@ -65,6 +67,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
 
   const xToPage = (x: number): number => {
     "worklet";
+    if (slidableWidth <= 0) return 1;
     const progress = 1 - x / slidableWidth;
     return Math.max(1, Math.min(TOTAL_PAGES, Math.round(progress * (TOTAL_PAGES - 1) + 1)));
   };
@@ -76,7 +79,8 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   // Last page a scrub haptic fired for, so each page the thumb crosses ticks once.
   const lastTickPageRef = useRef(currentPage);
 
-  // Sync thumb when currentPage changes externally (e.g. swiping pages)
+  // Sync thumb when currentPage changes externally (swiping) or the track is
+  // (re)measured.
   useEffect(() => {
     if (!isDragging.get()) {
       thumbX.set(withTiming(pageToX(currentPage), { duration: 150 }));
@@ -90,8 +94,6 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   const updateDraggingPage = useCallback(
     (page: number) => {
       setDraggingPage(page);
-      // Tick once per page the scrub crosses (frame-rate bounded, so a fast
-      // flick ticks per frame rather than per intermediate page).
       if (page !== lastTickPageRef.current) {
         lastTickPageRef.current = page;
         haptic();
@@ -116,7 +118,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
 
   const tapGesture = Gesture.Tap().onEnd((event) => {
     "worklet";
-    const x = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
+    const x = Math.max(0, Math.min(slidableWidth, event.x - HANDLE / 2));
     thumbX.set(withTiming(x, { duration: 150 }));
     const page = xToPage(x);
     runOnJS(handlePageCommit)(page);
@@ -128,7 +130,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     .onStart((event) => {
       "worklet";
       isDragging.set(true);
-      const newX = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
+      const newX = Math.max(0, Math.min(slidableWidth, event.x - HANDLE / 2));
       thumbX.set(newX);
       const page = xToPage(newX);
       runOnJS(updateDraggingPage)(page);
@@ -137,7 +139,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     // eslint-disable-next-line react-hooks/refs
     .onUpdate((event) => {
       "worklet";
-      const newX = Math.max(0, Math.min(slidableWidth, event.x - THUMB_WIDTH / 2));
+      const newX = Math.max(0, Math.min(slidableWidth, event.x - HANDLE / 2));
       thumbX.set(newX);
       const page = xToPage(newX);
       runOnJS(updateDraggingPage)(page);
@@ -161,73 +163,122 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     Gesture.Race(panGesture, tapGesture)
   );
 
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.get() }],
-  }));
+  const handleStyle = useAnimatedStyle(() => {
+    const size = isDragging.get() ? HANDLE_DRAG : HANDLE;
+    return {
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      top: (TOUCH_HEIGHT - size) / 2,
+      // Keep the handle centred on the page position as it grows on drag.
+      transform: [{ translateX: thumbX.get() + HANDLE / 2 - size / 2 }],
+    };
+  });
 
   const tooltipStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.get() + THUMB_WIDTH / 2 - 70 }],
+    transform: [{ translateX: thumbX.get() + HANDLE / 2 - 70 }],
   }));
 
+  // Filled portion runs from the right end (page 1) to the handle.
   const trackActiveStyle = useAnimatedStyle(() => ({
-    width: trackWidth - thumbX.get() - THUMB_WIDTH / 2,
-    right: 0,
-    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
+    width: Math.max(0, trackWidth - thumbX.get() - HANDLE / 2),
   }));
+
+  const onTrackLayout = (e: LayoutChangeEvent) => setTrackWidth(e.nativeEvent.layout.width);
 
   const surahNumber = pageToSurah.get(draggingPage) ?? 1;
   const surahName = localizedSurahName(surahNumber);
 
-  const trackColor = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+  const trackColor = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)";
+  const accent = themeColors.frameColor;
 
   return (
-    <View style={[styles.container, { paddingHorizontal: HORIZONTAL_PADDING }]}>
-      {showTooltip && (
-        <Animated.View
-          style={[
-            styles.tooltip,
-            tooltipStyle,
-            {
-              backgroundColor: isDark ? "#2A2A2A" : "#F5F0E8",
-              borderColor: isDark ? "#444" : "#D4C5A9",
-            },
-          ]}>
-          <Text
-            style={[
-              styles.tooltipSurah,
-              { color: themeColors.headerColor, fontFamily: metadataFontFamily() },
-            ]}>
-            {surahName}
-          </Text>
-          <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
-            {`${t("quran.goto.page")} ${formatNumberToLocale(String(draggingPage))}`}
-          </Text>
-        </Animated.View>
-      )}
+    <View style={styles.row}>
+      <Text style={[styles.endLabel, { color: themeColors.pageNumberColor }]}>
+        {formatNumberToLocale(String(TOTAL_PAGES))}
+      </Text>
 
       <GestureDetector gesture={composedGesture}>
-        <Animated.View
-          style={[styles.track, { backgroundColor: trackColor, width: trackWidth }]}
-          accessibilityRole="adjustable"
-          accessibilityLabel={`Page ${draggingPage} of ${TOTAL_PAGES}`}>
-          <Animated.View style={[styles.trackActive, trackActiveStyle]} />
-          <Animated.View
-            style={[styles.thumb, thumbStyle, { backgroundColor: themeColors.markerColor }]}
-          />
-        </Animated.View>
+        <View style={styles.touch} onLayout={onTrackLayout}>
+          {showTooltip && (
+            <Animated.View
+              style={[
+                styles.tooltip,
+                tooltipStyle,
+                {
+                  backgroundColor: isDark ? "#2A2A2A" : "#F5F0E8",
+                  borderColor: isDark ? "#444" : "#D4C5A9",
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.tooltipSurah,
+                  { color: themeColors.headerColor, fontFamily: metadataFontFamily() },
+                ]}>
+                {surahName}
+              </Text>
+              <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
+                {`${t("quran.goto.page")} ${formatNumberToLocale(String(draggingPage))}`}
+              </Text>
+            </Animated.View>
+          )}
+          <View style={[styles.line, { backgroundColor: trackColor }]}>
+            <Animated.View
+              style={[styles.lineActive, trackActiveStyle, { backgroundColor: accent }]}
+            />
+          </View>
+          <Animated.View style={[styles.handle, handleStyle, { backgroundColor: accent }]} />
+        </View>
       </GestureDetector>
+
+      <Text style={[styles.endLabel, { color: themeColors.pageNumberColor }]}>
+        {formatNumberToLocale(String(draggingPage))}
+      </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: "relative",
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
     direction: "ltr",
+    gap: 12,
+  },
+  endLabel: {
+    width: LABEL_WIDTH,
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+  touch: {
+    flex: 1,
+    height: TOUCH_HEIGHT,
+    justifyContent: "center",
+  },
+  line: {
+    height: LINE_HEIGHT,
+    borderRadius: LINE_HEIGHT / 2,
+    overflow: "hidden",
+  },
+  lineActive: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  handle: {
+    position: "absolute",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.32,
+    shadowRadius: 5,
+    elevation: 3,
   },
   tooltip: {
     position: "absolute",
-    bottom: TRACK_HEIGHT + 12,
+    bottom: TOUCH_HEIGHT - 2,
     width: 140,
     alignItems: "center",
     paddingVertical: 8,
@@ -251,24 +302,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     writingDirection: "rtl",
     marginTop: 2,
-  },
-  track: {
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_RADIUS,
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  trackActive: {
-    position: "absolute",
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_RADIUS,
-  },
-  thumb: {
-    position: "absolute",
-    width: THUMB_WIDTH,
-    height: THUMB_HEIGHT,
-    borderRadius: THUMB_RADIUS,
-    top: (TRACK_HEIGHT - THUMB_HEIGHT) / 2,
   },
 });
 

@@ -33,6 +33,8 @@ interface QuranPageProps {
   version: MushafVersion;
   quranTheme: QuranTheme;
   width: number;
+  // Spread page side for the running header (surah → outer edge). Default single.
+  side?: "left" | "right" | "single";
   onAyahLongPress?: (surah: number, ayah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
@@ -45,6 +47,7 @@ const QuranPage = ({
   version,
   quranTheme,
   width,
+  side,
   onAyahLongPress,
   selectedAyah,
 }: QuranPageProps) => {
@@ -276,6 +279,7 @@ const QuranPage = ({
         surahName={headerSurah}
         juz={pageAvailable ? juz : null}
         quranTheme={quranTheme}
+        side={side}
       />
 
       <View

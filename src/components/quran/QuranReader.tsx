@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo } from "react";
-import { useWindowDimensions, StyleSheet, View } from "react-native";
+import { useWindowDimensions, StyleSheet, View, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -422,6 +422,10 @@ const PageSlot = ({
                 width={box.w}
                 version={version}
                 quranTheme={quranTheme}
+                // pagesOfSpread is [earlier, later]; RN flips flexDirection:row
+                // under RTL, so the earlier page sits on the visual right only
+                // when the layout is RTL. Match the header's outer edge to that.
+                side={(i === 0) === I18nManager.isRTL ? "right" : "left"}
                 onAyahLongPress={onAyahLongPress}
                 selectedAyah={selectedAyah}
               />

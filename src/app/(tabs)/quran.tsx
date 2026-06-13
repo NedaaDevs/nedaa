@@ -8,9 +8,9 @@ import {
   ArrowLeft,
   ArrowRight,
   List,
+  Highlighter,
   SlidersHorizontal,
-  Columns2,
-  RectangleVertical,
+  LocateFixed,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -21,6 +21,7 @@ import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import { Text } from "@/components/ui/text";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
+import { juzForPage, juzLabel } from "@/utils/juz";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
@@ -33,6 +34,7 @@ import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
+import HighlightLegend from "@/components/quran/HighlightLegend";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
@@ -279,14 +281,14 @@ const QuranScreen = () => {
 
       {showOverlay && (
         <>
-          {/* Top chrome bar — back · surah title (→ info) · settings */}
-          <XStack
+          {/* Top chrome bar — icon row plus the highlight legend, both on the bar
+              so the chips sit on the chrome rather than over the page. */}
+          <YStack
             position="absolute"
             top={0}
             left={0}
             right={0}
             zIndex={15}
-            alignItems="center"
             gap="$2"
             paddingTop={insets.top + 6}
             paddingBottom="$2.5"
@@ -294,58 +296,81 @@ const QuranScreen = () => {
             backgroundColor={`${themeColors.background}F0`}
             borderBottomWidth={1}
             borderBottomColor={themeColors.frameColor}>
-            <Pressable
-              onPress={() => router.navigate("/")}
-              accessibilityRole="button"
-              accessibilityLabel={t("common.back")}
-              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-              <BackIcon color={themeColors.headerColor} size={22} />
-            </Pressable>
-            <Pressable
-              onPress={() => currentSurah && setInfoSurah(currentSurah)}
-              accessibilityRole="button"
-              accessibilityLabel={t("a11y.quran.surahInfo")}
-              style={{ flex: 1, alignItems: "center" }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: themeColors.headerColor,
-                  fontFamily: metadataFontFamily(),
-                }}>
-                {currentSurah ? localizedSurahName(currentSurah) : ""}
-              </Text>
-            </Pressable>
-            {readerMode === ReaderViewMode.TEXT && (
-              <FontSizeControls
-                fontSize={fontSize}
-                onFontSizeChange={setFontSize}
-                color={themeColors.headerColor}
-              />
-            )}
-            <Pressable
-              onPress={() => {
-                setShowOverlay(false);
-                router.push("/quran-library");
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t("quran.library.title")}
-              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-              <List color={themeColors.headerColor} size={20} />
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setShowOverlay(false);
-                setShowSettings(true);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t("quran.settings.title")}
-              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-              <SlidersHorizontal color={themeColors.headerColor} size={20} />
-            </Pressable>
-          </XStack>
+            <XStack alignItems="center" gap="$2">
+              <Pressable
+                onPress={() => router.navigate("/")}
+                accessibilityRole="button"
+                accessibilityLabel={t("common.back")}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                <BackIcon color={themeColors.headerColor} size={22} />
+              </Pressable>
+              <Pressable
+                onPress={() => currentSurah && setInfoSurah(currentSurah)}
+                accessibilityRole="button"
+                accessibilityLabel={t("a11y.quran.surahInfo")}
+                style={{ flex: 1, alignItems: "center" }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: themeColors.headerColor,
+                    fontFamily: metadataFontFamily(),
+                  }}>
+                  {currentSurah ? localizedSurahName(currentSurah) : ""}
+                </Text>
+                <Text
+                  fontSize={11}
+                  fontWeight="600"
+                  color={themeColors.pageNumberColor}
+                  marginTop={1}>
+                  {layout.isLarge
+                    ? `${juzLabel(juzForPage(currentPage))} · ${t(
+                        spreading ? "quran.reader.twoPages" : "quran.reader.onePage"
+                      )}`
+                    : juzLabel(juzForPage(currentPage))}
+                </Text>
+              </Pressable>
+              {readerMode === ReaderViewMode.TEXT && (
+                <FontSizeControls
+                  fontSize={fontSize}
+                  onFontSizeChange={setFontSize}
+                  color={themeColors.headerColor}
+                />
+              )}
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  router.push("/quran-highlights");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.library.highlights")}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                <Highlighter color={themeColors.headerColor} size={20} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  setShowSettings(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.settings.title")}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                <SlidersHorizontal color={themeColors.headerColor} size={20} />
+              </Pressable>
+            </XStack>
 
-          {/* Bottom chrome bar — scrubber + surahs · go-to */}
+            {/* Highlight legend — colours/labels/counts; renders only when ayahs
+                are highlighted. Tap a chip to open the highlights list. */}
+            <HighlightLegend
+              quranTheme={quranTheme}
+              onPress={() => {
+                setShowOverlay(false);
+                router.push("/quran-highlights");
+              }}
+            />
+          </YStack>
+
+          {/* Bottom chrome bar — Surahs · scrubber · Go-to. */}
           <YStack
             position="absolute"
             bottom={0}
@@ -359,18 +384,46 @@ const QuranScreen = () => {
             backgroundColor={`${themeColors.background}F0`}
             borderTopWidth={1}
             borderTopColor={themeColors.frameColor}>
-            {layout.isLarge && readerMode !== ReaderViewMode.TEXT && (
-              <XStack alignItems="center" justifyContent="center" gap="$1.5">
-                {spreading ? (
-                  <Columns2 color={themeColors.pageNumberColor} size={15} />
-                ) : (
-                  <RectangleVertical color={themeColors.pageNumberColor} size={15} />
-                )}
-                <Text fontSize={12} fontWeight="600" color={themeColors.pageNumberColor}>
-                  {t(spreading ? "quran.reader.twoPages" : "quran.reader.onePage")}
+            <XStack alignItems="center" justifyContent="space-between">
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  router.push("/quran-browse");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.browse.surahs")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 7,
+                  minHeight: 44,
+                  paddingHorizontal: 8,
+                }}>
+                <List color={themeColors.headerColor} size={17} />
+                <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
+                  {t("quran.browse.surahs")}
                 </Text>
-              </XStack>
-            )}
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  router.push("/quran-browse?tab=page");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.goto.title")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 7,
+                  minHeight: 44,
+                  paddingHorizontal: 8,
+                }}>
+                <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
+                  {t("quran.goto.title")}
+                </Text>
+                <LocateFixed color={themeColors.headerColor} size={17} />
+              </Pressable>
+            </XStack>
             <PageSlider
               currentPage={currentPage}
               quranTheme={quranTheme}

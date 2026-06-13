@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Search, X } from "lucide-react-native";
@@ -26,13 +26,19 @@ type BrowseTab = "surah" | "juz" | "hizb" | "page";
 // Full-page browse + search: surah / juz / hizb / page navigation plus general
 // search (surah names + verse full-text via FTS). Embeddable content (no frame)
 // so it can be a standalone route and a tab inside the Library hub.
-export const BrowseIndex = ({ onNavigate }: { onNavigate: (page: number) => void }) => {
+export const BrowseIndex = ({
+  onNavigate,
+  initialTab = "surah",
+}: {
+  onNavigate: (page: number) => void;
+  initialTab?: BrowseTab;
+}) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const chrome = useQuranChromeColors();
   const { isRTL } = useRTL();
 
-  const [tab, setTab] = useState<BrowseTab>("surah");
+  const [tab, setTab] = useState<BrowseTab>(initialTab);
   const [query, setQuery] = useState("");
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [juz, setJuz] = useState<{ division: number; page: number }[]>([]);
@@ -464,6 +470,12 @@ const QuranBrowseScreen = () => {
   const router = useRouter();
   const chrome = useQuranChromeColors();
   const { isRTL } = useRTL();
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const initialTab: BrowseTab = (["surah", "juz", "hizb", "page"] as const).includes(
+    params.tab as BrowseTab
+  )
+    ? (params.tab as BrowseTab)
+    : "surah";
   const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   return (
@@ -480,6 +492,7 @@ const QuranBrowseScreen = () => {
         </Pressable>
       </XStack>
       <BrowseIndex
+        initialTab={initialTab}
         onNavigate={(page) => {
           setCurrentPage(page);
           router.back();
