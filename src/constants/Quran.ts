@@ -50,8 +50,8 @@ export const QURAN_THEME_COLORS: Record<
     shimmerHighlight: "#EAE6DC",
   },
   [QuranTheme.DARK]: {
-    background: "#0E0E0E",
-    innerBackground: "#0E0E0E",
+    background: "#1A1917",
+    innerBackground: "#1A1917",
     textTint: "#E8E0D4",
     markerColor: "#D4A84B",
     frameColor: "#8A7438",

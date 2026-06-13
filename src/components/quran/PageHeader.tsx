@@ -1,9 +1,11 @@
+import { useWindowDimensions } from "react-native";
 import { View, XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { juzLabel } from "@/utils/juz";
 import { metadataFontFamily } from "@/utils/surahName";
 import { useQuranStore } from "@/stores/quran";
@@ -16,9 +18,11 @@ interface PageHeaderProps {
 }
 
 // Mushaf-authentic running header: surah and juz at the outer edges with the
-// Mihrab diamond ornament centered, over a hairline rule.
+// Mihrab diamond ornament centered, over a hairline rule (phones only).
 const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
+  const { width, height } = useWindowDimensions();
+  const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const showOrnament = useQuranStore((s) => s.showHeaderOrnament);
   const fontFamily = metadataFontFamily();
@@ -53,7 +57,10 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
           </View>
         )}
       </View>
-      <View height={1} marginTop="$1.5" backgroundColor={themeColors.frameColor} opacity={0.28} />
+      {/* Hairline rule under the header — dropped on tablets/foldables. */}
+      {!isLarge && (
+        <View height={1} marginTop="$1.5" backgroundColor={themeColors.frameColor} opacity={0.28} />
+      )}
     </YStack>
   );
 };

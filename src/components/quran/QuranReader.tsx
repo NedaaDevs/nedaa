@@ -13,7 +13,15 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 
 import { MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
-import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX, QURAN_THEME_COLORS } from "@/constants/Quran";
+import {
+  TOTAL_PAGES,
+  FONT_SIZE_MIN,
+  FONT_SIZE_MAX,
+  QURAN_THEME_COLORS,
+  IMAGE_SOURCE_WIDTH,
+  IMAGE_SOURCE_LINE_HEIGHT,
+  LINES_PER_PAGE,
+} from "@/constants/Quran";
 import { TOTAL_SPREADS, spreadOf, pagesOfSpread } from "@/utils/readerSpread";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
 import QuranPage from "@/components/quran/QuranPage";
@@ -42,6 +50,27 @@ const PAGE_WINDOW = 2;
 const SPREAD_OUTER_PAD = 24;
 const SPREAD_GUTTER = 24;
 const SPREAD_TOP_PAD = 16;
+// Each line strip carries ~19% transparent padding above and below the glyphs, so
+// the ink fills only ~76% of its height. Packing lines to that ink band (the line
+// image clips the padding for us) gives tight, authentic spacing instead of a page
+// ~30% too tall with a visible gap between every line. Lower = tighter; raise toward
+// 1.0 if any glyph tops/bottoms ever clip.
+const LINE_INK_RATIO = 0.78;
+// A page's height:width ratio: 15 ink-packed lines over the source width.
+// Large-device pages are scaled to preserve this — never stretched to the screen.
+const PAGE_ASPECT =
+  (IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE * LINE_INK_RATIO) / IMAGE_SOURCE_WIDTH;
+// Header (surah/juz) + page-number height inside a page, added to the aspect-fit
+// box so the line area keeps the true ratio (tune if lines look slightly off).
+const LARGE_PAGE_CHROME = 80;
+
+// The largest undistorted page that fits a slot: width is capped by the slot AND
+// by the available height (height / aspect); the box height follows the width so
+// the ratio is preserved. Centre the result in the slot.
+const fitPageBox = (slotWidth: number, availHeight: number) => {
+  const w = Math.min(slotWidth, Math.floor((availHeight - LARGE_PAGE_CHROME) / PAGE_ASPECT));
+  return { w, h: Math.round(w * PAGE_ASPECT + LARGE_PAGE_CHROME) };
+};
 
 const QuranReader = ({
   currentPage,
@@ -61,10 +90,16 @@ const QuranReader = ({
   // independently-scrolling columns of unequal length — a single capped column
   // reads better.
   const isSpread = layout.mode === "spread" && readerMode !== ReaderViewMode.TEXT;
+  // Large device showing one image page (portrait, or landscape with the spread
+  // off): aspect-fit it like the spread halves so it isn't stretched.
+  const isLargeSingle =
+    layout.mode === "single" && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
 
   const insets = useSafeAreaInsets();
+  // Vertical space a page can occupy on a large device (used by the aspect fit).
+  const availPageHeight = height - SPREAD_TOP_PAD - insets.bottom;
   // Swipes starting inside this bottom strip belong to the system home-indicator
   // gesture (swipe up to close/background the app); a vertical drag there must
   // not also turn a page. Horizontal turns from the same strip stay allowed.
@@ -237,6 +272,8 @@ const QuranReader = ({
             key={unit}
             unit={unit}
             isSpread={isSpread}
+            isLargeSingle={isLargeSingle}
+            availPageHeight={availPageHeight}
             unitIndex={unitIndex}
             version={version}
             quranTheme={quranTheme}
@@ -256,6 +293,8 @@ const QuranReader = ({
 interface PageSlotProps {
   unit: number;
   isSpread: boolean;
+  isLargeSingle: boolean;
+  availPageHeight: number;
   unitIndex: SharedValue<number>;
   version: MushafVersion;
   quranTheme: QuranTheme;
@@ -270,6 +309,8 @@ interface PageSlotProps {
 const PageSlot = ({
   unit,
   isSpread,
+  isLargeSingle,
+  availPageHeight,
   unitIndex,
   version,
   quranTheme,
@@ -291,34 +332,61 @@ const PageSlot = ({
   });
 
   if (!isSpread) {
+    // Text mode (any device) and phone image mode fill the full width.
+    if (readerMode === ReaderViewMode.TEXT || !isLargeSingle) {
+      return (
+        <Animated.View style={[styles.page, animatedStyle]}>
+          {readerMode === ReaderViewMode.TEXT ? (
+            <TextPage
+              page={unit}
+              quranTheme={quranTheme}
+              width={width}
+              fontSize={fontSize}
+              onAyahLongPress={onAyahLongPress}
+              selectedAyah={selectedAyah}
+            />
+          ) : (
+            <QuranPage
+              page={unit}
+              version={version}
+              quranTheme={quranTheme}
+              width={width}
+              onAyahLongPress={onAyahLongPress}
+              selectedAyah={selectedAyah}
+            />
+          )}
+        </Animated.View>
+      );
+    }
+    // Large device, single image page: aspect-fit + centred (never stretched).
+    const single = fitPageBox(width, availPageHeight);
     return (
       <Animated.View style={[styles.page, animatedStyle]}>
-        {readerMode === ReaderViewMode.TEXT ? (
-          <TextPage
-            page={unit}
-            quranTheme={quranTheme}
-            width={width}
-            fontSize={fontSize}
-            onAyahLongPress={onAyahLongPress}
-            selectedAyah={selectedAyah}
-          />
-        ) : (
-          <QuranPage
-            page={unit}
-            version={version}
-            quranTheme={quranTheme}
-            width={width}
-            onAyahLongPress={onAyahLongPress}
-            selectedAyah={selectedAyah}
-          />
-        )}
+        <View
+          style={[
+            styles.centerBox,
+            { backgroundColor: QURAN_THEME_COLORS[quranTheme].background },
+          ]}>
+          <View style={{ width: single.w, height: single.h }}>
+            <QuranPage
+              page={unit}
+              version={version}
+              quranTheme={quranTheme}
+              width={single.w}
+              onAyahLongPress={onAyahLongPress}
+              selectedAyah={selectedAyah}
+            />
+          </View>
+        </View>
       </Animated.View>
     );
   }
 
   // Spread (image only — text never spreads). pagesOfSpread === [right, left].
+  // Each half aspect-fits its column so the pages keep their true shape.
   const pages = pagesOfSpread(unit);
   const halfWidth = (width - SPREAD_OUTER_PAD * 2 - SPREAD_GUTTER) / 2;
+  const box = fitPageBox(halfWidth, availPageHeight);
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
       {/* RTL: earlier page should sit on the RIGHT. flexDirection "row" places
@@ -327,15 +395,17 @@ const PageSlot = ({
       <View
         style={[styles.spreadRow, { backgroundColor: QURAN_THEME_COLORS[quranTheme].background }]}>
         {pages.map((p) => (
-          <View key={p} style={{ width: halfWidth, height: "100%" }}>
-            <QuranPage
-              page={p}
-              width={halfWidth}
-              version={version}
-              quranTheme={quranTheme}
-              onAyahLongPress={onAyahLongPress}
-              selectedAyah={selectedAyah}
-            />
+          <View key={p} style={styles.centerBox}>
+            <View style={{ width: box.w, height: box.h }}>
+              <QuranPage
+                page={p}
+                width={box.w}
+                version={version}
+                quranTheme={quranTheme}
+                onAyahLongPress={onAyahLongPress}
+                selectedAyah={selectedAyah}
+              />
+            </View>
           </View>
         ))}
       </View>
@@ -350,6 +420,11 @@ const styles = StyleSheet.create({
   },
   page: {
     ...StyleSheet.absoluteFill,
+  },
+  centerBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   spreadRow: {
     flex: 1,

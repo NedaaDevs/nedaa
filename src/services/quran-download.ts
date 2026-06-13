@@ -561,6 +561,11 @@ const checkDiskSpace = (requiredMB: number): { available: boolean; availableMB: 
       return { available: true, availableMB: -1 };
     }
     const availableMB = Math.floor(availableBytes / (1024 * 1024));
+    // Fail open: a missing/invalid required size must never block a download —
+    // `availableMB >= undefined` is false, which would wrongly report "no space".
+    if (!Number.isFinite(requiredMB) || requiredMB <= 0) {
+      return { available: true, availableMB };
+    }
     return { available: availableMB >= requiredMB, availableMB };
   } catch {
     return { available: true, availableMB: -1 };
