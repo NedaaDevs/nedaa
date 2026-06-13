@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
+import { MushafVersion, QuranTheme, ReaderViewMode, ReaderPageFit } from "@/enums/quran";
 import {
   TOTAL_PAGES,
   FONT_SIZE_MIN,
@@ -24,6 +24,7 @@ import {
 } from "@/constants/Quran";
 import { TOTAL_SPREADS, spreadOf, pagesOfSpread } from "@/utils/readerSpread";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
+import { useQuranStore } from "@/stores/quran";
 import QuranPage from "@/components/quran/QuranPage";
 import TextPage from "@/components/quran/TextPage";
 
@@ -94,6 +95,9 @@ const QuranReader = ({
   // off): aspect-fit it like the spread halves so it isn't stretched.
   const isLargeSingle =
     layout.mode === "single" && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
+  // Frame each page like a physical sheet (large devices only — phones fill the
+  // width, where a border would just hug the screen edge).
+  const framed = useQuranStore((s) => s.pageFit) === ReaderPageFit.PAGE;
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
 
@@ -273,6 +277,7 @@ const QuranReader = ({
             unit={unit}
             isSpread={isSpread}
             isLargeSingle={isLargeSingle}
+            framed={framed}
             availPageHeight={availPageHeight}
             unitIndex={unitIndex}
             version={version}
@@ -294,6 +299,7 @@ interface PageSlotProps {
   unit: number;
   isSpread: boolean;
   isLargeSingle: boolean;
+  framed: boolean;
   availPageHeight: number;
   unitIndex: SharedValue<number>;
   version: MushafVersion;
@@ -310,6 +316,7 @@ const PageSlot = ({
   unit,
   isSpread,
   isLargeSingle,
+  framed,
   availPageHeight,
   unitIndex,
   version,
@@ -330,6 +337,14 @@ const PageSlot = ({
     const translateX = (unitOffset + dragOffset.value) * width;
     return { transform: [{ translateX }] };
   });
+
+  // When the "Page" fit is on, a page box is framed like a physical sheet (border +
+  // rounded corners). Only the large-device paths use this — phones fill the width.
+  const frameColor = QURAN_THEME_COLORS[quranTheme].frameColor;
+  const pageBoxStyle = (w: number, h: number) =>
+    framed
+      ? [styles.framedPage, { width: w, height: h, borderColor: frameColor }]
+      : { width: w, height: h };
 
   if (!isSpread) {
     // Text mode (any device) and phone image mode fill the full width.
@@ -367,7 +382,7 @@ const PageSlot = ({
             styles.centerBox,
             { backgroundColor: QURAN_THEME_COLORS[quranTheme].background },
           ]}>
-          <View style={{ width: single.w, height: single.h }}>
+          <View style={pageBoxStyle(single.w, single.h)}>
             <QuranPage
               page={unit}
               version={version}
@@ -407,7 +422,7 @@ const PageSlot = ({
               />
             )}
             <View style={styles.centerBox}>
-              <View style={{ width: box.w, height: box.h }}>
+              <View style={pageBoxStyle(box.w, box.h)}>
                 <QuranPage
                   page={p}
                   width={box.w}
@@ -450,6 +465,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 1,
     opacity: 0.3,
+  },
+  // Framed "page" look: a thin border + rounded corners turn the page into a
+  // distinct sheet on the paper. borderColor is applied per theme at the call site.
+  framedPage: {
+    borderWidth: 1.5,
+    borderRadius: 8,
+    overflow: "hidden",
   },
 });
 

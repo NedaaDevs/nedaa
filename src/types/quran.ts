@@ -6,6 +6,7 @@ import {
   DownloadPhase,
   SurahFrameStyle,
   ReaderViewMode,
+  ReaderPageFit,
   RevelationPlace,
   SajdaType,
 } from "@/enums/quran";
@@ -142,6 +143,8 @@ export type QuranState = {
   fontSize: number;
   // Two-page spread on large screens in landscape. On by default.
   twoPageSpread: boolean;
+  // Large-device page-fit: plain fill or a framed "page" look. Fill by default.
+  pageFit: ReaderPageFit;
   // Decorative diamond ornament in the page header. Off by default.
   showHeaderOrnament: boolean;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
@@ -164,6 +167,7 @@ export type QuranState = {
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
   setTwoPageSpread: (on: boolean) => void;
+  setPageFit: (fit: ReaderPageFit) => void;
   setShowHeaderOrnament: (show: boolean) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
 

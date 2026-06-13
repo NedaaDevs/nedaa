@@ -14,7 +14,13 @@ import { ChevronDown, ChevronUp, Download, Minus, Plus, X } from "lucide-react-n
 
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import { MushafVersion, DownloadStatus, SurahFrameStyle, ReaderViewMode } from "@/enums/quran";
+import {
+  MushafVersion,
+  DownloadStatus,
+  SurahFrameStyle,
+  ReaderViewMode,
+  ReaderPageFit,
+} from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
@@ -45,11 +51,13 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
     readerMode,
     fontSize,
     twoPageSpread,
+    pageFit,
     showHeaderOrnament,
     setSurahFrameStyle,
     setReaderMode,
     setFontSize,
     setTwoPageSpread,
+    setPageFit,
     setShowHeaderOrnament,
   } = useQuranStore();
 
@@ -152,6 +160,20 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                     value={twoPageSpread}
                     onValueChange={setTwoPageSpread}
                     accessibilityLabel={t("quran.settings.twoPageSpread")}
+                  />
+                </SettingRow>
+              )}
+
+              {isLargeDevice && (
+                <SettingRow label={t("quran.settings.pageFit")} chrome={chrome}>
+                  <Segmented
+                    chrome={chrome}
+                    options={[
+                      { value: ReaderPageFit.FILL, label: t("quran.settings.pageFitFill") },
+                      { value: ReaderPageFit.PAGE, label: t("quran.settings.pageFitPage") },
+                    ]}
+                    selected={pageFit}
+                    onSelect={setPageFit}
                   />
                 </SettingRow>
               )}

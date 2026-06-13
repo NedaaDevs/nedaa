@@ -10,7 +10,13 @@ import {
   FONT_SIZE_MIN,
   FONT_SIZE_MAX,
 } from "@/constants/Quran";
-import { DownloadStatus, MushafVersion, QuranTheme, ReaderViewMode } from "@/enums/quran";
+import {
+  DownloadStatus,
+  MushafVersion,
+  QuranTheme,
+  ReaderViewMode,
+  ReaderPageFit,
+} from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
 export const useQuranStore = create<QuranState>()(
@@ -25,6 +31,7 @@ export const useQuranStore = create<QuranState>()(
       readerMode: ReaderViewMode.MADINAH,
       fontSize: FONT_SIZE_DEFAULT,
       twoPageSpread: true,
+      pageFit: ReaderPageFit.FILL,
       showHeaderOrnament: false,
       libraryTab: "index",
 
@@ -49,6 +56,7 @@ export const useQuranStore = create<QuranState>()(
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
       setTwoPageSpread: (on: boolean) => set({ twoPageSpread: on }),
+      setPageFit: (fit: ReaderPageFit) => set({ pageFit: fit }),
       setShowHeaderOrnament: (show: boolean) => set({ showHeaderOrnament: show }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
 
@@ -147,6 +155,7 @@ export const useQuranStore = create<QuranState>()(
         readerMode: state.readerMode,
         fontSize: state.fontSize,
         twoPageSpread: state.twoPageSpread,
+        pageFit: state.pageFit,
         showHeaderOrnament: state.showHeaderOrnament,
         libraryTab: state.libraryTab,
         onboardingComplete: state.onboardingComplete,
@@ -182,6 +191,10 @@ export const useQuranStore = create<QuranState>()(
         }
         if (typeof merged.twoPageSpread !== "boolean") {
           merged.twoPageSpread = true;
+        }
+        const validPageFits = Object.values(ReaderPageFit) as string[];
+        if (!validPageFits.includes(merged.pageFit)) {
+          merged.pageFit = ReaderPageFit.FILL;
         }
         // A DOWNLOADING/PAUSED status can't survive a process restart — the
         // in-flight transfer is gone. Reset to IDLE on load so the app never

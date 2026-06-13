@@ -34,6 +34,15 @@ export enum SurahFrameStyle {
   GEOMETRIC = "geometric",
 }
 
+// Page-fit on large devices: "fill" sits the page plainly on the paper; "page"
+// frames it like a physical sheet (border + lift). Phones always fill.
+export const ReaderPageFit = {
+  FILL: "fill",
+  PAGE: "page",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type ReaderPageFit = (typeof ReaderPageFit)[keyof typeof ReaderPageFit];
+
 export enum DownloadStatus {
   IDLE = "idle",
   DOWNLOADING = "downloading",
