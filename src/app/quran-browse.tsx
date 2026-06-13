@@ -13,7 +13,7 @@ import { TOTAL_PAGES, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
-import { juzLabel } from "@/utils/juz";
+import { juzForPage, juzLabel } from "@/utils/juz";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useRTL } from "@/contexts/RTLContext";
@@ -78,6 +78,11 @@ export const BrowseIndex = ({
     const n = parseInt(pageInput, 10);
     if (Number.isFinite(n)) go(Math.max(1, Math.min(TOTAL_PAGES, n)));
   };
+
+  // Live destination preview for the page jump: resolve which surah + juz the
+  // typed page lands on, so the jump is confirmed before it happens.
+  const parsedPage = parseInt(pageInput, 10);
+  const pageValid = Number.isFinite(parsedPage) && parsedPage >= 1 && parsedPage <= TOTAL_PAGES;
 
   const q = query.trim().toLowerCase();
   const results = useMemo(() => {
@@ -156,36 +161,55 @@ export const BrowseIndex = ({
             ]}
           />
           {tab === "page" && (
-            <XStack gap="$2" alignItems="center">
+            <YStack gap="$3" alignItems="center" paddingTop="$2">
               <Input
-                flex={1}
                 value={pageInput}
                 onChangeText={setPageInput}
                 onSubmitEditing={submitPage}
                 keyboardType="number-pad"
-                returnKeyType="go"
-                placeholder={t("quran.goto.pagePrompt", {
-                  from: formatNumberToLocale("1"),
-                  total: formatNumberToLocale(String(TOTAL_PAGES)),
-                })}
+                textAlign="center"
+                fontSize={32}
+                fontWeight="700"
+                width={150}
+                height={64}
+                placeholder={formatNumberToLocale("0")}
               />
+              {/* Live destination: surah + juz the page lands on, or the range. */}
+              <Text fontSize={13} fontWeight="600" color={chrome.subtleText} textAlign="center">
+                {pageValid
+                  ? [
+                      surahAtPage(parsedPage)?.number != null
+                        ? localizedSurahName(surahAtPage(parsedPage).number)
+                        : null,
+                      juzLabel(juzForPage(parsedPage)),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : t("quran.goto.pagePrompt", {
+                      from: formatNumberToLocale("1"),
+                      total: formatNumberToLocale(String(TOTAL_PAGES)),
+                    })}
+              </Text>
               <Pressable
                 onPress={submitPage}
+                disabled={!pageValid}
                 accessibilityRole="button"
-                accessibilityLabel={t("quran.goto.go")}>
+                accessibilityState={{ disabled: !pageValid }}
+                accessibilityLabel={t("quran.goto.go")}
+                style={{ width: "100%" }}>
                 <YStack
-                  backgroundColor={chrome.accent}
-                  paddingHorizontal="$4"
-                  height={44}
+                  backgroundColor={pageValid ? chrome.accent : chrome.progressTrack}
+                  height={48}
                   borderRadius="$3"
                   alignItems="center"
-                  justifyContent="center">
+                  justifyContent="center"
+                  opacity={pageValid ? 1 : 0.6}>
                   <Text color="#fff" fontWeight="700" fontSize={15}>
                     {t("quran.goto.go")}
                   </Text>
                 </YStack>
               </Pressable>
-            </XStack>
+            </YStack>
           )}
         </YStack>
       )}

@@ -9,9 +9,9 @@ import {
   ArrowRight,
   List,
   Bookmark,
-  Highlighter,
-  SlidersHorizontal,
-  LocateFixed,
+  ArrowRightToLine,
+  ArrowLeftToLine,
+  Settings2,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -20,10 +20,6 @@ import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
 import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
-import { Text } from "@/components/ui/text";
-import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
-import { juzForPage, juzLabel } from "@/utils/juz";
-import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
 import QuranDbGate from "@/components/quran/QuranDbGate";
@@ -34,12 +30,10 @@ import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import FontSizeControls from "@/components/quran/FontSizeControls";
-import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import HighlightLegend from "@/components/quran/HighlightLegend";
+import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
-import { useReaderLayout } from "@/hooks/useReaderLayout";
-import { ReaderLayoutMode } from "@/utils/readerSpread";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const QuranScreen = () => {
@@ -70,13 +64,9 @@ const QuranScreen = () => {
   const router = useRouter();
   const { isRTL } = useRTL();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
-  const layout = useReaderLayout();
-  const spreading = layout.mode === ReaderLayoutMode.SPREAD && readerMode !== ReaderViewMode.TEXT;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
-  const [currentSurah, setCurrentSurah] = useState<number | null>(null);
-  const [infoSurah, setInfoSurah] = useState<number | null>(null);
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   // The version whose download the user is actively watching on the progress
@@ -105,17 +95,6 @@ const QuranScreen = () => {
   useEffect(() => {
     setReaderActive(showReader);
   }, [showReader, setReaderActive]);
-
-  // Current surah for the chrome title (tap → surah info).
-  useEffect(() => {
-    let active = true;
-    QuranContentDB.getSurahNameForPageFromContent(currentPage).then((n) => {
-      if (active) setCurrentSurah(n);
-    });
-    return () => {
-      active = false;
-    };
-  }, [currentPage]);
 
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
@@ -262,7 +241,11 @@ const QuranScreen = () => {
         onPageChange={setCurrentPage}
         onFontSizeChange={setFontSize}
         onTap={() => setShowOverlay((prev) => !prev)}
-        onAyahLongPress={(surah, ayah) => setActionAyah({ surah, ayah })}
+        onAyahLongPress={(surah, ayah) => {
+          // The ayah sheet is the focus — clear the reader chrome behind it.
+          setShowOverlay(false);
+          setActionAyah({ surah, ayah });
+        }}
         selectedAyah={actionAyah}
       />
 
@@ -303,34 +286,14 @@ const QuranScreen = () => {
                 accessibilityRole="button"
                 accessibilityLabel={t("common.back")}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                <BackIcon color={themeColors.headerColor} size={22} />
+                <ReaderIcon
+                  sf={isRTL ? "chevron.right" : "chevron.left"}
+                  lucide={BackIcon}
+                  color={themeColors.headerColor}
+                  size={22}
+                />
               </Pressable>
-              <Pressable
-                onPress={() => currentSurah && setInfoSurah(currentSurah)}
-                accessibilityRole="button"
-                accessibilityLabel={t("a11y.quran.surahInfo")}
-                style={{ flex: 1, alignItems: "center" }}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    color: themeColors.headerColor,
-                    fontFamily: metadataFontFamily(),
-                  }}>
-                  {currentSurah ? localizedSurahName(currentSurah) : ""}
-                </Text>
-                <Text
-                  fontSize={11}
-                  fontWeight="600"
-                  color={themeColors.pageNumberColor}
-                  marginTop={1}>
-                  {layout.isLarge
-                    ? `${juzLabel(juzForPage(currentPage))} · ${t(
-                        spreading ? "quran.reader.twoPages" : "quran.reader.onePage"
-                      )}`
-                    : juzLabel(juzForPage(currentPage))}
-                </Text>
-              </Pressable>
+              <YStack flex={1} />
               {readerMode === ReaderViewMode.TEXT && (
                 <FontSizeControls
                   fontSize={fontSize}
@@ -346,17 +309,12 @@ const QuranScreen = () => {
                 accessibilityRole="button"
                 accessibilityLabel={t("quran.library.bookmarks")}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                <Bookmark color={themeColors.headerColor} size={20} />
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  setShowOverlay(false);
-                  router.push("/quran-highlights");
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t("quran.library.highlights")}
-                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                <Highlighter color={themeColors.headerColor} size={20} />
+                <ReaderIcon
+                  sf="bookmark"
+                  lucide={Bookmark}
+                  color={themeColors.headerColor}
+                  size={20}
+                />
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -366,7 +324,12 @@ const QuranScreen = () => {
                 accessibilityRole="button"
                 accessibilityLabel={t("quran.settings.title")}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                <SlidersHorizontal color={themeColors.headerColor} size={20} />
+                <ReaderIcon
+                  sf="gearshape"
+                  lucide={Settings2}
+                  color={themeColors.headerColor}
+                  size={20}
+                />
               </Pressable>
             </XStack>
 
@@ -399,21 +362,17 @@ const QuranScreen = () => {
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
-                  router.push("/quran-browse");
+                  router.push("/quran-library");
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={t("quran.browse.surahs")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 7,
-                  minHeight: 44,
-                  paddingHorizontal: 8,
-                }}>
-                <List color={themeColors.headerColor} size={17} />
-                <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
-                  {t("quran.browse.surahs")}
-                </Text>
+                accessibilityLabel={t("quran.library.title")}
+                style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+                <ReaderIcon
+                  sf="list.bullet"
+                  lucide={List}
+                  color={themeColors.headerColor}
+                  size={22}
+                />
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -422,17 +381,13 @@ const QuranScreen = () => {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t("quran.goto.title")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 7,
-                  minHeight: 44,
-                  paddingHorizontal: 8,
-                }}>
-                <Text fontSize={13} fontWeight="600" color={themeColors.headerColor}>
-                  {t("quran.goto.title")}
-                </Text>
-                <LocateFixed color={themeColors.headerColor} size={17} />
+                style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+                <ReaderIcon
+                  sf={isRTL ? "arrow.left.to.line" : "arrow.right.to.line"}
+                  lucide={isRTL ? ArrowLeftToLine : ArrowRightToLine}
+                  color={themeColors.headerColor}
+                  size={22}
+                />
               </Pressable>
             </XStack>
             <PageSlider
@@ -449,15 +404,6 @@ const QuranScreen = () => {
         <QuranSettingsSheet
           onClose={() => setShowSettings(false)}
           onDownloadMore={handleDownloadMore}
-        />
-      )}
-
-      {/* Surah info (from the chrome title) */}
-      {infoSurah !== null && (
-        <SurahInfoCard
-          surahNumber={infoSurah}
-          quranTheme={quranTheme}
-          onClose={() => setInfoSurah(null)}
         />
       )}
 
