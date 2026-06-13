@@ -67,3 +67,6 @@ fastlane/AuthKey_*.p8
 google-service-account.json
 
 docs/changelogs
+
+# Editor
+.vscode/
