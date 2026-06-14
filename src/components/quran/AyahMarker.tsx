@@ -43,7 +43,9 @@ const AyahMarker = ({
   const markerHeight = height * adjustments.scaleMultiplier;
   const markerX = x + adjustments.offsetX + (width - markerWidth) / 2;
   const markerY = y + adjustments.offsetY + (height - markerHeight) / 2;
-  const fontSize = markerHeight * adjustments.fontSizeMultiplier;
+  // Three-digit ayah numbers (100–286) shrink so they fit the slot the way one-
+  // and two-digit numbers do.
+  const fontSize = markerHeight * adjustments.fontSizeMultiplier * (ayahNumber >= 100 ? 0.72 : 1);
 
   const frameUri = `${Paths.document.uri}quran/${version}/markers/${frameFile}`;
 
