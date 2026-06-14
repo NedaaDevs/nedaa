@@ -106,9 +106,9 @@ export const MARKER_ADJUSTMENTS: Record<
   MushafVersion,
   { scaleMultiplier: number; offsetX: number; offsetY: number; fontSizeMultiplier: number }
 > = {
-  [MushafVersion.V1]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
-  [MushafVersion.V2]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
-  [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
+  [MushafVersion.V1]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V2]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V4]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
 } as const;
 
 export const QURAN_MARKER_FRAME: Record<QuranThemeType, string> = {
