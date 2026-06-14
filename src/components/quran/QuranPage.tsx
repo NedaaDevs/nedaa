@@ -11,6 +11,7 @@ import {
   IMAGE_SOURCE_WIDTH,
   IMAGE_SOURCE_LINE_HEIGHT,
   highlightTint,
+  BOOKMARK_COLORS,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { usePageData } from "@/hooks/usePageData";
@@ -23,7 +24,6 @@ import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
-import AyahBookmarkRibbon from "@/components/quran/AyahBookmarkRibbon";
 
 const LONG_PRESS_MS = 400;
 
@@ -349,18 +349,7 @@ const QuranPage = ({
             {ready &&
               markerPositions.map((m, i) => {
                 const bmColor = pageBookmarks.get(`${m.surahNumber}:${m.ayahNumber}`);
-                return bmColor ? (
-                  <AyahBookmarkRibbon
-                    key={`marker-${i}`}
-                    x={m.x}
-                    y={m.y}
-                    width={m.width}
-                    height={m.height}
-                    color={bmColor}
-                    surahNumber={m.surahNumber}
-                    ayahNumber={m.ayahNumber}
-                  />
-                ) : (
+                return (
                   <AyahMarker
                     key={`marker-${i}`}
                     x={m.x}
@@ -370,6 +359,7 @@ const QuranPage = ({
                     ayahNumber={m.ayahNumber}
                     version={version}
                     quranTheme={quranTheme}
+                    bookmarkColor={bmColor ? BOOKMARK_COLORS[bmColor].solid : undefined}
                   />
                 );
               })}

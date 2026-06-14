@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Image, Text, View } from "react-native";
 import { Paths } from "expo-file-system";
 
+import RibbonGlyph from "@/components/quran/RibbonGlyph";
 import { MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
   QURAN_THEME_COLORS,
@@ -19,9 +20,21 @@ interface AyahMarkerProps {
   ayahNumber: number;
   version: MushafVersion;
   quranTheme: QuranThemeType;
+  // When set, the ayah is bookmarked: the medallion frame tints to this colour;
+  // the number keeps its normal style.
+  bookmarkColor?: string;
 }
 
-const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: AyahMarkerProps) => {
+const AyahMarker = ({
+  x,
+  y,
+  width,
+  height,
+  ayahNumber,
+  version,
+  quranTheme,
+  bookmarkColor,
+}: AyahMarkerProps) => {
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const adjustments = MARKER_ADJUSTMENTS[version];
   const frameFile = QURAN_MARKER_FRAME[quranTheme];
@@ -54,20 +67,31 @@ const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: Ay
       accessibilityLabel={`Ayah ${ayahNumber}`}>
       <Image
         source={{ uri: frameUri }}
-        style={{ position: "absolute", width: markerWidth, height: markerHeight }}
+        style={{
+          position: "absolute",
+          width: markerWidth,
+          height: markerHeight,
+          tintColor: bookmarkColor,
+        }}
         resizeMode="contain"
         fadeDuration={0}
       />
-      <Text
-        style={{
-          fontSize,
-          color: themeColors.markerColor,
-          fontFamily: QURAN_FONT_FAMILY,
-          textAlign: "center",
-          includeFontPadding: false,
-        }}>
-        {toHafsDigits(ayahNumber)}
-      </Text>
+      {bookmarkColor ? (
+        // Bookmarked: a ribbon in the bookmark colour takes the number's place,
+        // sized to sit inside the medallion.
+        <RibbonGlyph size={markerHeight * 0.6} color={bookmarkColor} />
+      ) : (
+        <Text
+          style={{
+            fontSize,
+            color: themeColors.markerColor,
+            fontFamily: QURAN_FONT_FAMILY,
+            textAlign: "center",
+            includeFontPadding: false,
+          }}>
+          {toHafsDigits(ayahNumber)}
+        </Text>
+      )}
     </View>
   );
 };
