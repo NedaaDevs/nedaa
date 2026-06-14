@@ -8,8 +8,8 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 
-import { QuranTheme, QuranThemeType } from "@/enums/quran";
-import { TOTAL_PAGES, QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QuranThemeType } from "@/enums/quran";
+import { TOTAL_PAGES, QURAN_THEME_COLORS, isDarkPaper } from "@/constants/Quran";
 import { useTranslation } from "react-i18next";
 
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
@@ -39,7 +39,7 @@ const THUMB_LINES = [82, 68, 78, 60, 74];
 const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) => {
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
-  const isDark = quranTheme === QuranTheme.DARK;
+  const isDark = isDarkPaper(quranTheme);
   const haptic = useHaptic("light");
 
   const [trackWidth, setTrackWidth] = useState(0);

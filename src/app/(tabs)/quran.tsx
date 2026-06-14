@@ -18,8 +18,8 @@ import { useTranslation } from "react-i18next";
 import { useQuranStore } from "@/stores/quran";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
-import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
-import { MushafVersion, QuranTheme, DownloadStatus, ReaderViewMode } from "@/enums/quran";
+import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
+import { MushafVersion, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
 import QuranDbGate from "@/components/quran/QuranDbGate";
@@ -236,7 +236,7 @@ const QuranScreen = () => {
       <StatusBar
         hidden={!showOverlay}
         animated
-        style={quranTheme === QuranTheme.DARK ? "light" : "dark"}
+        style={isDarkPaper(quranTheme) ? "light" : "dark"}
       />
       <QuranReader
         currentPage={currentPage}
