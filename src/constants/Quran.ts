@@ -52,10 +52,10 @@ export const QURAN_THEME_COLORS: Record<
   [QuranTheme.DARK]: {
     background: "#19191B",
     innerBackground: "#19191B",
-    textTint: "#E4DED0",
+    textTint: "#E4E6EA",
     markerColor: "#D4A84B",
     frameColor: "#8A7438",
-    headerColor: "#E4DED0",
+    headerColor: "#E4E6EA",
     pageNumberColor: "#6B6B6B",
     highlightColor: "rgba(212, 168, 75, 0.15)",
     shimmerBase: "#181818",
