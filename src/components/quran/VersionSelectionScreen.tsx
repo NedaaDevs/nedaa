@@ -4,13 +4,14 @@ import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { useTranslation } from "react-i18next";
-import { Signal } from "lucide-react-native";
+import { ArrowLeft, ArrowRight, Signal } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { MushafVersion, DownloadStatus } from "@/enums/quran";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { QuranDownload } from "@/services/quran-download";
 import { useQuranStore } from "@/stores/quran";
+import { useRTL } from "@/contexts/RTLContext";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useIsCellular } from "@/hooks/useIsCellular";
 import VersionCard from "@/components/quran/VersionCard";
@@ -24,15 +25,21 @@ const TEXT_MODE_ID = "text";
 interface VersionSelectionScreenProps {
   onSelectVersion: (version: QuranManifestVersion) => void;
   onSelectTextMode: () => void;
+  // When set, a back affordance returns to the caller (the "Download more" flow).
+  // Omitted in onboarding, where there is nothing to go back to.
+  onBack?: () => void;
 }
 
 const VersionSelectionScreen = ({
   onSelectVersion,
   onSelectTextMode,
+  onBack,
 }: VersionSelectionScreenProps) => {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const insets = useSafeAreaInsets();
   const chrome = useQuranChromeColors();
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const isCellular = useIsCellular();
   const downloads = useQuranStore((s) => s.versionDownloads);
   const [versions, setVersions] = useState<QuranManifestVersion[]>([]);
@@ -103,10 +110,22 @@ const VersionSelectionScreen = ({
     <YStack flex={1} backgroundColor={chrome.background}>
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + 24,
+          paddingTop: insets.top + (onBack ? 8 : 24),
           paddingBottom: insets.bottom + 116,
           paddingHorizontal: 20,
         }}>
+        {onBack && (
+          <XStack justifyContent="flex-start" marginBottom="$2">
+            <Pressable
+              onPress={onBack}
+              accessibilityRole="button"
+              accessibilityLabel={t("common.back")}
+              hitSlop={8}
+              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+              <BackIcon size={24} color={chrome.text} />
+            </Pressable>
+          </XStack>
+        )}
         <YStack gap="$4" alignItems="center">
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <Text fontSize={28} textAlign="center">

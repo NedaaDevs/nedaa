@@ -174,6 +174,10 @@ const QuranScreen = () => {
           handleSelectVersion(manifest);
         }}
         onSelectTextMode={() => setShowVersionPicker(false)}
+        onBack={() => {
+          setShowVersionPicker(false);
+          setShowSettings(true);
+        }}
       />
     );
   }
