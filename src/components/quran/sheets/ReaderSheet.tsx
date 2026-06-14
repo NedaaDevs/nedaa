@@ -3,7 +3,7 @@ import { Sheet } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
-import { QuranTheme } from "@/enums/quran";
+import { QuranThemeType } from "@/enums/quran";
 import { RTLContext, useRTL } from "@/contexts/RTLContext";
 
 interface ReaderSheetProps {
@@ -12,7 +12,7 @@ interface ReaderSheetProps {
   // mount/unmount the whole sheet (the exit is then immediate).
   open?: boolean;
   onClose: () => void;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   children: React.ReactNode;
 }
 

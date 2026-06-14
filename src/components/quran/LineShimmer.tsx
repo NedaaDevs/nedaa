@@ -9,13 +9,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { QuranTheme } from "@/enums/quran";
+import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 
 interface LineShimmerProps {
   screenWidth: number;
   lineHeight: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
 }
 
 const LineShimmer = ({ screenWidth, lineHeight, quranTheme }: LineShimmerProps) => {

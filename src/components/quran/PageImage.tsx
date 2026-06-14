@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { DownloadStatus, MushafVersion, QuranTheme } from "@/enums/quran";
+import { DownloadStatus, MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
   QURAN_THEME_COLORS,
   IMAGE_SOURCE_WIDTH,
@@ -16,7 +16,7 @@ interface PageImageProps {
   page: number;
   screenWidth: number;
   availableHeight: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
 }
 
 const getPageImageUri = (dirSegment: string, page: number): string => {

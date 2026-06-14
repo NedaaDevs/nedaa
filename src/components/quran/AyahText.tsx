@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { Text } from "react-native";
 
-import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranThemeType } from "@/enums/quran";
 import {
   QURAN_THEME_COLORS,
   HIGHLIGHT_COLORS,
@@ -14,7 +14,7 @@ interface AyahTextProps {
   surahNumber: number;
   ayahNumber: number;
   text: string;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   isHighlighted: boolean;
   highlightColor?: HighlightColor | null;
   bookmarkColor?: BookmarkColor | null;

@@ -1,56 +1,54 @@
 import { useColorScheme } from "react-native";
 
-import { DownloadStatus, QuranTheme } from "@/enums/quran";
-import { isColoredVersion, isDarkPaper } from "@/constants/Quran";
+import { DownloadStatus, QuranThemeType } from "@/enums/quran";
+import { isDarkPaper } from "@/constants/Quran";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
+import { resolveQuranTheme } from "@/utils/quranTheme";
 
-// Resolves the effective Quran reader theme:
-// - When the user has explicitly picked one (`quranThemeOverride === true`),
-//   returns that choice.
-// - Otherwise follows the app's color scheme (light → SEPIA, dark → DARK),
-//   honoring `useAppStore.mode` of "system" | "light" | "dark".
-// - A colored edition (V4) renders a dark paper (DARK/AMOLED) from its own dark
-//   page bundle; without it installed, coloured pages on black are unreadable,
-//   so the resolved theme falls back to SEPIA until it is.
-export const useResolvedQuranTheme = (): QuranTheme => {
+const useAppIsDark = (): boolean => {
+  const mode = useAppStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  return mode === "system" ? systemScheme === "dark" : mode === "dark";
+};
+
+// Effective reader theme: no override → Nedaa brand paper following the app
+// scheme; otherwise the picked theme. The colored-edition dark fallback lives in
+// resolveQuranTheme.
+export const useResolvedQuranTheme = (): QuranThemeType => {
   const quranTheme = useQuranStore((s) => s.quranTheme);
   const override = useQuranStore((s) => s.quranThemeOverride);
   const currentVersion = useQuranStore((s) => s.currentVersion);
   const darkInstalled = useQuranStore(
     (s) => s.versionDownloads[s.currentVersion]?.dark?.status === DownloadStatus.COMPLETE
   );
-  const mode = useAppStore((s) => s.mode);
-  const systemScheme = useColorScheme();
-
-  const appIsDark = mode === "system" ? systemScheme === "dark" : mode === "dark";
-  const resolved = override ? quranTheme : appIsDark ? QuranTheme.DARK : QuranTheme.SEPIA;
-
-  if (isDarkPaper(resolved) && isColoredVersion(currentVersion) && !darkInstalled) {
-    return QuranTheme.SEPIA;
-  }
-  return resolved;
+  const appIsDark = useAppIsDark();
+  return resolveQuranTheme({
+    override,
+    theme: quranTheme,
+    appIsDark,
+    version: currentVersion,
+    darkInstalled,
+  });
 };
 
-// Quran theme for verse previews OUTSIDE the reader (library, index): always
-// follows the app color scheme, ignoring the in-reader theme override, so a
-// sepia/AMOLED reader choice doesn't bleed onto app-themed surfaces. Keeps the
-// V4-on-dark fallback so coloured pages stay readable.
-export const usePreviewQuranTheme = (): QuranTheme => {
+// Quran theme for verse previews OUTSIDE the reader (library, index): follows the
+// app scheme onto the Nedaa paper, ignoring the in-reader override so a reader
+// choice doesn't bleed onto app-themed surfaces.
+export const usePreviewQuranTheme = (): QuranThemeType => {
+  const quranTheme = useQuranStore((s) => s.quranTheme);
   const currentVersion = useQuranStore((s) => s.currentVersion);
   const darkInstalled = useQuranStore(
     (s) => s.versionDownloads[s.currentVersion]?.dark?.status === DownloadStatus.COMPLETE
   );
-  const mode = useAppStore((s) => s.mode);
-  const systemScheme = useColorScheme();
-
-  const appIsDark = mode === "system" ? systemScheme === "dark" : mode === "dark";
-  const resolved = appIsDark ? QuranTheme.DARK : QuranTheme.SEPIA;
-
-  if (isDarkPaper(resolved) && isColoredVersion(currentVersion) && !darkInstalled) {
-    return QuranTheme.SEPIA;
-  }
-  return resolved;
+  const appIsDark = useAppIsDark();
+  return resolveQuranTheme({
+    override: false,
+    theme: quranTheme,
+    appIsDark,
+    version: currentVersion,
+    darkInstalled,
+  });
 };
 
 // The user's effective dark preference *before* the colored-edition fallback —
@@ -59,9 +57,6 @@ export const usePreviewQuranTheme = (): QuranTheme => {
 export const usePrefersDarkReader = (): boolean => {
   const override = useQuranStore((s) => s.quranThemeOverride);
   const quranTheme = useQuranStore((s) => s.quranTheme);
-  const mode = useAppStore((s) => s.mode);
-  const systemScheme = useColorScheme();
-
-  const appIsDark = mode === "system" ? systemScheme === "dark" : mode === "dark";
+  const appIsDark = useAppIsDark();
   return override ? isDarkPaper(quranTheme) : appIsDark;
 };

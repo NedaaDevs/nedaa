@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Image, ImageStyle, View } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { DownloadStatus, MushafVersion, QuranTheme } from "@/enums/quran";
+import { DownloadStatus, MushafVersion, QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS, isColoredVersion, quranImageDirSegment } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 
@@ -12,7 +12,7 @@ interface LineImageProps {
   line: number;
   screenWidth: number;
   lineHeight: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
 }
 
 const getLineImageUri = (dirSegment: string, page: number, line: number): string => {

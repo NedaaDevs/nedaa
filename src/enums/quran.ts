@@ -9,12 +9,14 @@ export enum ReaderViewMode {
   TEXT = "text",
 }
 
-export enum QuranTheme {
-  SEPIA = "sepia",
-  DARK = "dark",
-  LIGHT = "light",
-  AMOLED = "amoled",
-}
+export const QuranTheme = {
+  NEDAA_LIGHT: "nedaa-light",
+  NEDAA_DARK: "nedaa-dark",
+  SEPIA: "sepia",
+  DARK: "dark",
+  LIGHT: "light",
+} as const;
+export type QuranThemeType = (typeof QuranTheme)[keyof typeof QuranTheme];
 
 export enum MushafImageType {
   LINE = "line",
@@ -26,12 +28,6 @@ export enum LineType {
   SURAH_HEADER = "surah-header",
   BASMALA = "basmala",
   EMPTY = "empty",
-}
-
-export enum SurahFrameStyle {
-  CARTOUCHE = "cartouche",
-  CLASSIC = "classic",
-  GEOMETRIC = "geometric",
 }
 
 // Page-fit on large devices: "fill" sits the page plainly on the paper; "page"

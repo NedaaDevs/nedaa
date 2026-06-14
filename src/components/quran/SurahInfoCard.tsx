@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { YStack } from "tamagui";
 
 import { Text } from "@/components/ui/text";
-import { QuranTheme, RevelationPlace } from "@/enums/quran";
+import { QuranThemeType, RevelationPlace } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { formatNumberToLocale } from "@/utils/number";
@@ -14,7 +14,7 @@ import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
 interface SurahInfoCardProps {
   // Null when closed; the sheet stays mounted and animates out.
   surahNumber: number | null;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   onClose: () => void;
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Image, View } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { DownloadStatus, MushafImageType, MushafVersion, QuranTheme } from "@/enums/quran";
+import { DownloadStatus, MushafImageType, MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
   IMAGE_SOURCE_WIDTH,
   IMAGE_SOURCE_LINE_HEIGHT,
@@ -21,7 +21,7 @@ interface AyahImageProps {
   page: number;
   surah: number;
   ayah: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   maxWidth: number;
   // Shown until the crop is ready, or if it can't be produced (keeps tajweed
   // colour for image editions, falls back to text otherwise).

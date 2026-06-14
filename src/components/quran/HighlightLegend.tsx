@@ -4,7 +4,7 @@ import { View } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
-import { HighlightColor, QuranTheme } from "@/enums/quran";
+import { HighlightColor, QuranThemeType } from "@/enums/quran";
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_ORDER,
@@ -15,7 +15,7 @@ import { useHighlightStore } from "@/stores/quranHighlights";
 import { formatNumberToLocale } from "@/utils/number";
 
 interface HighlightLegendProps {
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   onPress: () => void;
 }
 

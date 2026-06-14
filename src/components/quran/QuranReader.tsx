@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { MushafVersion, QuranTheme, ReaderViewMode, ReaderPageFit } from "@/enums/quran";
+import { MushafVersion, QuranThemeType, ReaderViewMode, ReaderPageFit } from "@/enums/quran";
 import {
   TOTAL_PAGES,
   FONT_SIZE_MIN,
@@ -31,7 +31,7 @@ import TextPage from "@/components/quran/TextPage";
 interface QuranReaderProps {
   currentPage: number;
   version: MushafVersion;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   readerMode: ReaderViewMode;
   fontSize: number;
   onFontSizeChange: (size: number) => void;
@@ -302,7 +302,7 @@ interface PageSlotProps {
   availPageHeight: number;
   unitIndex: SharedValue<number>;
   version: MushafVersion;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   readerMode: ReaderViewMode;
   fontSize: number;
   dragOffset: SharedValue<number>;

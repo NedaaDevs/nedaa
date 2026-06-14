@@ -1,43 +1,20 @@
-import { Pressable } from "react-native";
-import { View, XStack, YStack } from "tamagui";
+import { useColorScheme } from "react-native";
+import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { QuranTheme } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QuranTheme, QuranThemeType } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
-import { useQuranChromeColors, type QuranChromeColors } from "@/hooks/useQuranChromeColors";
+import { useAppStore } from "@/stores/app";
+import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
+import ThemePreviewCard from "@/components/quran/settings/ThemePreviewCard";
 
-// "auto" follows the app's color scheme; the rest pick a specific reader paper.
-type SwatchKey = QuranTheme | "auto";
-
-const SWATCHES: { theme: SwatchKey; bg: `#${string}`; labelKey: string }[] = [
-  {
-    theme: "auto",
-    bg: QURAN_THEME_COLORS[QuranTheme.SEPIA].background,
-    labelKey: "quran.settings.themeAuto",
-  },
-  {
-    theme: QuranTheme.SEPIA,
-    bg: QURAN_THEME_COLORS[QuranTheme.SEPIA].background,
-    labelKey: "quran.settings.themeSepia",
-  },
-  {
-    theme: QuranTheme.LIGHT,
-    bg: QURAN_THEME_COLORS[QuranTheme.LIGHT].background,
-    labelKey: "quran.settings.themeLight",
-  },
-  {
-    theme: QuranTheme.DARK,
-    bg: QURAN_THEME_COLORS[QuranTheme.DARK].background,
-    labelKey: "quran.settings.themeDark",
-  },
-  {
-    theme: QuranTheme.AMOLED,
-    bg: QURAN_THEME_COLORS[QuranTheme.AMOLED].background,
-    labelKey: "quran.settings.themeAmoled",
-  },
+// Explicit reader papers (override). Nedaa is handled separately as the
+// no-override default that follows the app scheme.
+const EXPLICIT: { theme: QuranThemeType; labelKey: string }[] = [
+  { theme: QuranTheme.LIGHT, labelKey: "quran.settings.themeLight" },
+  { theme: QuranTheme.DARK, labelKey: "quran.settings.themeDark" },
+  { theme: QuranTheme.SEPIA, labelKey: "quran.settings.themeSepia" },
 ];
 
 const ReadingThemeSwatches = () => {
@@ -48,72 +25,39 @@ const ReadingThemeSwatches = () => {
   const setQuranTheme = useQuranStore((s) => s.setQuranTheme);
   const setQuranThemeAuto = useQuranStore((s) => s.setQuranThemeAuto);
 
-  // Auto is active when the user hasn't overridden the theme.
-  const active = (theme: SwatchKey) =>
-    theme === "auto" ? !override : override && quranTheme === theme;
+  const mode = useAppStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const appIsDark = mode === "system" ? systemScheme === "dark" : mode === "dark";
+  const nedaaPreview = appIsDark ? QuranTheme.NEDAA_DARK : QuranTheme.NEDAA_LIGHT;
 
   return (
-    <YStack gap="$2">
+    <YStack gap="$2.5">
       <Text fontSize={13} fontWeight="700" color={chrome.subtleText}>
         {t("quran.settings.readingTheme")}
       </Text>
-      <XStack gap="$3" flexWrap="wrap">
-        {SWATCHES.map((s) => (
-          <Swatch
-            key={String(s.theme)}
-            bg={s.bg}
-            label={t(s.labelKey)}
-            active={active(s.theme)}
-            chrome={chrome}
-            onPress={() => {
-              if (s.theme === "auto") setQuranThemeAuto();
-              else setQuranTheme(s.theme);
-            }}
+      <XStack flexWrap="wrap" columnGap="$3" rowGap="$3" justifyContent="space-between">
+        <ThemePreviewCard
+          theme={nedaaPreview}
+          label={t("quran.settings.themeNedaa")}
+          badge={t("quran.settings.themeAuto")}
+          selected={!override}
+          onPress={setQuranThemeAuto}
+        />
+        {EXPLICIT.map((e) => (
+          <ThemePreviewCard
+            key={e.theme}
+            theme={e.theme}
+            label={t(e.labelKey)}
+            selected={override && quranTheme === e.theme}
+            onPress={() => setQuranTheme(e.theme)}
           />
         ))}
       </XStack>
-      <Text fontSize={12} color={chrome.subtleText} lineHeight={17} marginTop="$2">
+      <Text fontSize={12} color={chrome.subtleText} lineHeight={17} marginTop="$1">
         {t("quran.settings.themeNote")}
       </Text>
     </YStack>
   );
 };
-
-const Swatch = ({
-  bg,
-  label,
-  active,
-  chrome,
-  onPress,
-}: {
-  bg: `#${string}`;
-  label: string;
-  active: boolean;
-  chrome: QuranChromeColors;
-  onPress: () => void;
-}) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="radio"
-    accessibilityState={{ selected: active }}
-    accessibilityLabel={label}>
-    <YStack alignItems="center" gap="$1">
-      <View
-        width={48}
-        height={48}
-        borderRadius={12}
-        backgroundColor={bg}
-        borderWidth={2}
-        borderColor={active ? chrome.accent : chrome.cardBorder}
-        alignItems="center"
-        justifyContent="center">
-        {active && <Check size={18} color={chrome.accent} />}
-      </View>
-      <Text fontSize={11} fontWeight="600" color={active ? chrome.accent : chrome.subtleText}>
-        {label}
-      </Text>
-    </YStack>
-  </Pressable>
-);
 
 export default ReadingThemeSwatches;

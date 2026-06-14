@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Image, Text, View } from "react-native";
 import { Paths } from "expo-file-system";
 
-import { MushafVersion, QuranTheme } from "@/enums/quran";
+import { MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
   QURAN_THEME_COLORS,
   QURAN_MARKER_FRAME,
@@ -18,7 +18,7 @@ interface AyahMarkerProps {
   height: number;
   ayahNumber: number;
   version: MushafVersion;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
 }
 
 const AyahMarker = ({ x, y, width, height, ayahNumber, version, quranTheme }: AyahMarkerProps) => {

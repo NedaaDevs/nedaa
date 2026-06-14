@@ -4,7 +4,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 import { YStack } from "tamagui";
 
-import { BookmarkColor, HighlightColor, MushafVersion, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
@@ -30,7 +30,7 @@ const LONG_PRESS_MS = 400;
 interface QuranPageProps {
   page: number;
   version: MushafVersion;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   width: number;
   // Spread page side for the running header (surah → outer edge). Default single.
   side?: "left" | "right" | "single";

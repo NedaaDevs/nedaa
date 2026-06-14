@@ -25,7 +25,7 @@ import {
   highlightTint,
   bookmarkTint,
 } from "@/constants/Quran";
-import { BookmarkColor, HighlightColor, QuranTheme, ReaderViewMode } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranThemeType, ReaderViewMode } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import { useHighlightStore } from "@/stores/quranHighlights";
@@ -43,7 +43,7 @@ type Tab = "hl" | "bmk";
 interface AyahActionSheetProps {
   // The ayah whose actions are shown; null closes the sheet.
   target: { surah: number; ayah: number } | null;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   onClose: () => void;
 }
 
@@ -290,7 +290,7 @@ const UtilButton = ({
   </Pressable>
 );
 
-type Paper = (typeof QURAN_THEME_COLORS)[QuranTheme];
+type Paper = (typeof QURAN_THEME_COLORS)[QuranThemeType];
 
 // ── Highlight panel: 7 colour chips + active-label pill + Manage link ──
 const HighlightPanel = ({
@@ -304,7 +304,7 @@ const HighlightPanel = ({
   onManage,
 }: {
   chrome: Paper;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   ink: `#${string}`;
   sel: HighlightColor | null;
   label: string | null;
@@ -445,7 +445,7 @@ const BookmarkPanel = ({
   onCancelMove,
 }: {
   chrome: Paper;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   ink: `#${string}`;
   bookmarks: { surah: number; ayah: number; page: number; color: BookmarkColor }[];
   target: { surah: number; ayah: number };

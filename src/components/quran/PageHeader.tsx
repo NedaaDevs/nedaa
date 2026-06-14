@@ -3,31 +3,29 @@ import { View, XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
-import { QuranTheme } from "@/enums/quran";
+import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { juzLabel } from "@/utils/juz";
 import { metadataFontFamily } from "@/utils/surahName";
-import { useQuranStore } from "@/stores/quran";
 
 interface PageHeaderProps {
   surahName: string;
   // null while the page is still downloading — header stays blank, not stale.
   juz: number | null;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   // Spread page side: the surah sits on the OUTER screen edge, juz toward the
   // spine. "single" (default) keeps the phone/single arrangement (surah leading).
   side?: "left" | "right" | "single";
 }
 
 // Mushaf-authentic running header: surah on the outer edge, juz toward the spine,
-// with the Mihrab diamond ornament centered, over a hairline rule (phones only).
+// over a hairline rule (phones only).
 const PageHeader = ({ surahName, juz, quranTheme, side = "single" }: PageHeaderProps) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
   const themeColors = QURAN_THEME_COLORS[quranTheme];
-  const showOrnament = useQuranStore((s) => s.showHeaderOrnament);
   const fontFamily = metadataFontFamily();
 
   const juzText = juz ? juzLabel(juz) : "";
@@ -56,22 +54,6 @@ const PageHeader = ({ surahName, juz, quranTheme, side = "single" }: PageHeaderP
         <XStack alignItems="center" justifyContent="space-between">
           {headerOrder}
         </XStack>
-        {/* Centered ornament, independent of the surah/juz text widths. */}
-        {showOrnament && (
-          <View
-            position="absolute"
-            top={0}
-            bottom={0}
-            left={0}
-            right={0}
-            alignItems="center"
-            justifyContent="center"
-            pointerEvents="none">
-            <Text style={{ color: themeColors.frameColor, fontSize: 11, letterSpacing: 3 }}>
-              ◆ ◆ ◆
-            </Text>
-          </View>
-        )}
       </View>
       {/* Hairline rule under the header — dropped on tablets/foldables. */}
       {!isLarge && (

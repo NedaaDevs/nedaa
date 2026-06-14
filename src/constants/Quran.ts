@@ -3,7 +3,7 @@ import {
   HighlightColor,
   MushafVersion,
   QuranTheme,
-  SurahFrameStyle,
+  QuranThemeType,
 } from "@/enums/quran";
 
 export const TOTAL_PAGES = 604;
@@ -17,7 +17,7 @@ export const FONT_SIZE_DEFAULT = 28;
 export const FONT_SIZE_STEP = 2;
 
 export const QURAN_THEME_COLORS: Record<
-  QuranTheme,
+  QuranThemeType,
   {
     // Hex colors are typed `#${string}` so they satisfy Tamagui color props
     // directly (Tamagui rejects bare `string`); they remain assignable to the RN
@@ -50,42 +50,55 @@ export const QURAN_THEME_COLORS: Record<
     shimmerHighlight: "#EAE6DC",
   },
   [QuranTheme.DARK]: {
-    background: "#1A1917",
-    innerBackground: "#1A1917",
-    textTint: "#E8E0D4",
+    background: "#19191B",
+    innerBackground: "#19191B",
+    textTint: "#E4DED0",
     markerColor: "#D4A84B",
     frameColor: "#8A7438",
-    headerColor: "#E8E0D4",
+    headerColor: "#E4DED0",
     pageNumberColor: "#6B6B6B",
     highlightColor: "rgba(212, 168, 75, 0.15)",
     shimmerBase: "#181818",
     shimmerHighlight: "#282828",
   },
-  // Crisp white paper with near-black ink — brighter than sepia.
+  // Crisp neutral white paper with near-black ink.
   [QuranTheme.LIGHT]: {
-    background: "#FFFDF7",
-    innerBackground: "#FFFDF7",
-    textTint: "#1C1C1C",
+    background: "#FFFFFF",
+    innerBackground: "#FFFFFF",
+    textTint: "#1A1A1A",
     markerColor: "#7A5C12",
     frameColor: "#9A8030",
-    headerColor: "#3A2E1F",
-    pageNumberColor: "#9A8A70",
+    headerColor: "#2A2A2A",
+    pageNumberColor: "#9A9A9A",
     highlightColor: "rgba(170, 130, 50, 0.15)",
-    shimmerBase: "#FFFDF7",
-    shimmerHighlight: "#F0ECE2",
+    shimmerBase: "#FFFFFF",
+    shimmerHighlight: "#F0F0F0",
   },
-  // Pure black for OLED battery savings; same ink/markers as dark.
-  [QuranTheme.AMOLED]: {
-    background: "#000000",
-    innerBackground: "#000000",
+  // Nedaa brand paper, light — the app's cool surface with blue accents.
+  [QuranTheme.NEDAA_LIGHT]: {
+    background: "#F5F7FA",
+    innerBackground: "#F5F7FA",
+    textTint: "#1C1C1C",
+    markerColor: "#1C5D7D",
+    frameColor: "#1C5D7D",
+    headerColor: "#1C5D85",
+    pageNumberColor: "#6B7A85",
+    highlightColor: "rgba(28, 93, 125, 0.15)",
+    shimmerBase: "#F5F7FA",
+    shimmerHighlight: "#E8EDF2",
+  },
+  // Nedaa brand paper, dark — the app's slate surface with gold accents.
+  [QuranTheme.NEDAA_DARK]: {
+    background: "#222831",
+    innerBackground: "#222831",
     textTint: "#E8E0D4",
-    markerColor: "#D4A84B",
-    frameColor: "#7D6A36",
-    headerColor: "#E8E0D4",
-    pageNumberColor: "#5A5A5A",
-    highlightColor: "rgba(212, 168, 75, 0.15)",
-    shimmerBase: "#0A0A0A",
-    shimmerHighlight: "#1A1A1A",
+    markerColor: "#E6C469",
+    frameColor: "#C9A84B",
+    headerColor: "#E6C469",
+    pageNumberColor: "#8A8F98",
+    highlightColor: "rgba(230, 196, 105, 0.15)",
+    shimmerBase: "#20242C",
+    shimmerHighlight: "#2E343E",
   },
 } as const;
 
@@ -98,18 +111,17 @@ export const MARKER_ADJUSTMENTS: Record<
   [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.45 },
 } as const;
 
-export const QURAN_MARKER_FRAME: Record<QuranTheme, string> = {
+export const QURAN_MARKER_FRAME: Record<QuranThemeType, string> = {
   [QuranTheme.SEPIA]: "marker-sepia.png",
   [QuranTheme.DARK]: "marker-dark.png",
-  // Light reuses the sepia (dark-ink) frame; AMOLED reuses the dark (light-ink) one.
+  [QuranTheme.NEDAA_DARK]: "marker-dark.png",
+  // Light papers (light, nedaa-light) reuse the sepia (dark-ink) frame.
   [QuranTheme.LIGHT]: "marker-sepia.png",
-  [QuranTheme.AMOLED]: "marker-dark.png",
+  [QuranTheme.NEDAA_LIGHT]: "marker-sepia.png",
 };
 
-export const DEFAULT_SURAH_FRAME_STYLE = SurahFrameStyle.CLASSIC;
-
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;
-export const DEFAULT_QURAN_THEME = QuranTheme.SEPIA;
+export const DEFAULT_QURAN_THEME = QuranTheme.NEDAA_LIGHT;
 
 // Versions whose page images are full-colour (e.g. tajweed-coloured). Their
 // PNGs must NOT be tinted — a tintColor flattens every pixel to one colour.
@@ -118,10 +130,10 @@ export const COLORED_MUSHAF_VERSIONS = new Set<MushafVersion>([MushafVersion.V4]
 export const isColoredVersion = (version: MushafVersion): boolean =>
   COLORED_MUSHAF_VERSIONS.has(version);
 
-// A dark paper background (DARK or AMOLED) where coloured pages would be
+// A dark paper background (DARK or NEDAA_DARK) where coloured pages would be
 // unreadable, so colored editions read their dark bundle on those themes.
-export const isDarkPaper = (quranTheme: QuranTheme): boolean =>
-  quranTheme === QuranTheme.DARK || quranTheme === QuranTheme.AMOLED;
+export const isDarkPaper = (quranTheme: QuranThemeType): boolean =>
+  quranTheme === QuranTheme.DARK || quranTheme === QuranTheme.NEDAA_DARK;
 
 // solid = dot/ribbon ink; tint = highlight overlay, lightened for dark paper.
 export const HIGHLIGHT_COLORS: Record<
@@ -167,7 +179,7 @@ export const HIGHLIGHT_COLORS: Record<
 
 export const HIGHLIGHT_COLOR_ORDER = Object.values(HighlightColor);
 
-export const highlightTint = (color: HighlightColor, quranTheme: QuranTheme): string =>
+export const highlightTint = (color: HighlightColor, quranTheme: QuranThemeType): string =>
   isDarkPaper(quranTheme) ? HIGHLIGHT_COLORS[color].tintDark : HIGHLIGHT_COLORS[color].tintLight;
 
 // Bookmark ribbon colours — solid jewel tones, kept off the highlight hues so the
@@ -201,7 +213,7 @@ export const BOOKMARK_COLORS: Record<
 
 export const BOOKMARK_COLOR_ORDER = Object.values(BookmarkColor);
 
-export const bookmarkTint = (color: BookmarkColor, quranTheme: QuranTheme): string =>
+export const bookmarkTint = (color: BookmarkColor, quranTheme: QuranThemeType): string =>
   isDarkPaper(quranTheme) ? BOOKMARK_COLORS[color].tintDark : BOOKMARK_COLORS[color].tintLight;
 
 // Path segment for a version's images. A colored edition on a dark paper reads
@@ -209,7 +221,7 @@ export const bookmarkTint = (color: BookmarkColor, quranTheme: QuranTheme): stri
 // when the dark bundle isn't downloaded) reads the main directory.
 export const quranImageDirSegment = (
   version: MushafVersion,
-  quranTheme: QuranTheme,
+  quranTheme: QuranThemeType,
   darkAvailable: boolean
 ): string =>
   isDarkPaper(quranTheme) && isColoredVersion(version) && darkAvailable

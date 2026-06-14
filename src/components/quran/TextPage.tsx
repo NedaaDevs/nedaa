@@ -4,7 +4,7 @@ import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
-import { BookmarkColor, HighlightColor, QuranTheme } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_TEXT_FONT } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
@@ -18,7 +18,7 @@ import PageNumber from "@/components/quran/PageNumber";
 
 interface TextPageProps {
   page: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   width: number;
   fontSize: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;

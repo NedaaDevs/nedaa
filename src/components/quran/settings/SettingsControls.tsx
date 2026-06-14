@@ -22,22 +22,38 @@ export const Section = ({
   </YStack>
 );
 
+// `stacked` puts the control on its own full-width line below the label —
+// for wide controls (e.g. segmented options) that would crowd a single row.
 export const SettingRow = ({
   label,
   chrome,
+  stacked,
   children,
 }: {
   label: string;
   chrome: QuranChromeColors;
+  stacked?: boolean;
   children: React.ReactNode;
-}) => (
-  <XStack alignItems="center" justifyContent="space-between" paddingHorizontal="$3" minHeight={44}>
-    <Text fontSize={15} color={chrome.subtleText}>
-      {label}
-    </Text>
-    {children}
-  </XStack>
-);
+}) =>
+  stacked ? (
+    <YStack gap="$2" paddingHorizontal="$3" paddingVertical="$2">
+      <Text fontSize={15} color={chrome.subtleText}>
+        {label}
+      </Text>
+      {children}
+    </YStack>
+  ) : (
+    <XStack
+      alignItems="center"
+      justifyContent="space-between"
+      paddingHorizontal="$3"
+      minHeight={44}>
+      <Text fontSize={15} color={chrome.subtleText}>
+        {label}
+      </Text>
+      {children}
+    </XStack>
+  );
 
 export const Segmented = <T extends string>({
   options,

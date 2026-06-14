@@ -1,10 +1,9 @@
 import {
   MushafVersion,
-  QuranTheme,
+  QuranThemeType,
   LineType,
   DownloadStatus,
   DownloadPhase,
-  SurahFrameStyle,
   ReaderViewMode,
   ReaderPageFit,
   RevelationPlace,
@@ -131,13 +130,13 @@ export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah";
 export type QuranState = {
   currentPage: number;
   currentVersion: MushafVersion;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   // When true, `quranTheme` is the user's explicit choice. When false, the
-  // resolved theme follows the app's color scheme (light → SEPIA, dark → DARK).
-  // Set by `setQuranTheme`; cleared by `setQuranThemeAuto`. Read effective
-  // theme via the `useResolvedQuranTheme` hook, not `quranTheme` directly.
+  // resolved theme follows the app's color scheme onto Nedaa paper
+  // (light → NEDAA_LIGHT, dark → NEDAA_DARK). Set by `setQuranTheme`; cleared by
+  // `setQuranThemeAuto`. Read effective theme via the `useResolvedQuranTheme`
+  // hook, not `quranTheme` directly.
   quranThemeOverride: boolean;
-  surahFrameStyle: SurahFrameStyle;
   lastReadPage: number;
   readerMode: ReaderViewMode;
   fontSize: number;
@@ -145,8 +144,6 @@ export type QuranState = {
   twoPageSpread: boolean;
   // Large-device page-fit: plain fill or a framed "page" look. Fill by default.
   pageFit: ReaderPageFit;
-  // Decorative diamond ornament in the page header. Off by default.
-  showHeaderOrnament: boolean;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
   libraryTab: QuranLibraryTab;
 
@@ -161,14 +158,12 @@ export type QuranState = {
 
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
-  setQuranTheme: (theme: QuranTheme) => void;
+  setQuranTheme: (theme: QuranThemeType) => void;
   setQuranThemeAuto: () => void;
-  setSurahFrameStyle: (style: SurahFrameStyle) => void;
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
   setTwoPageSpread: (on: boolean) => void;
   setPageFit: (fit: ReaderPageFit) => void;
-  setShowHeaderOrnament: (show: boolean) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
 
   setOnboardingComplete: () => void;

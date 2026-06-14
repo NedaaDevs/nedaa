@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
-import { QuranTheme } from "@/enums/quran";
+import { QuranThemeType } from "@/enums/quran";
 
 interface QuranDbGateProps {
   // "loading" → spinner; "error" → message + retry. Rendered in place of the
   // reader until the content DB is ready.
   state: "loading" | "error";
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   onRetry: () => void;
 }
 

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   FadeIn,
@@ -10,17 +9,11 @@ import Animated, {
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, Download, Minus, Plus, X } from "lucide-react-native";
+import { Download, Minus, Plus, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import {
-  MushafVersion,
-  DownloadStatus,
-  SurahFrameStyle,
-  ReaderViewMode,
-  ReaderPageFit,
-} from "@/enums/quran";
+import { MushafVersion, DownloadStatus, ReaderViewMode, ReaderPageFit } from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
@@ -47,24 +40,18 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
 
   const {
     versionDownloads,
-    surahFrameStyle,
     readerMode,
     fontSize,
     twoPageSpread,
     pageFit,
-    showHeaderOrnament,
-    setSurahFrameStyle,
     setReaderMode,
     setFontSize,
     setTwoPageSpread,
     setPageFit,
-    setShowHeaderOrnament,
   } = useQuranStore();
 
   const { width, height } = useWindowDimensions();
   const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
-
-  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const libraryVersions = Object.entries(versionDownloads)
     .filter(([, s]) => s?.status && s.status !== DownloadStatus.IDLE)
@@ -111,8 +98,10 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <YStack gap="$5">
+            <ReadingThemeSwatches />
+
             <Section title={t("quran.settings.display")} chrome={chrome}>
-              <SettingRow label={t("quran.settings.readerMode")} chrome={chrome}>
+              <SettingRow label={t("quran.settings.readerMode")} chrome={chrome} stacked>
                 <Segmented
                   chrome={chrome}
                   options={[
@@ -165,7 +154,7 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
               )}
 
               {isLargeDevice && (
-                <SettingRow label={t("quran.settings.pageFit")} chrome={chrome}>
+                <SettingRow label={t("quran.settings.pageFit")} chrome={chrome} stacked>
                   <Segmented
                     chrome={chrome}
                     options={[
@@ -177,51 +166,7 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                   />
                 </SettingRow>
               )}
-
-              <SettingRow label={t("quran.settings.headerOrnament")} chrome={chrome}>
-                <Switch
-                  value={showHeaderOrnament}
-                  onValueChange={setShowHeaderOrnament}
-                  accessibilityLabel={t("quran.settings.headerOrnament")}
-                />
-              </SettingRow>
             </Section>
-
-            <ReadingThemeSwatches />
-
-            {readerMode === ReaderViewMode.MADINAH && (
-              <YStack>
-                <Pressable
-                  onPress={() => setAdvancedOpen((o) => !o)}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: advancedOpen }}>
-                  <XStack alignItems="center" justifyContent="space-between" paddingVertical="$2">
-                    <Text fontSize={13} fontWeight="700" color={chrome.subtleText}>
-                      {t("quran.settings.advanced")}
-                    </Text>
-                    {advancedOpen ? (
-                      <ChevronUp size={16} color={chrome.subtleText} />
-                    ) : (
-                      <ChevronDown size={16} color={chrome.subtleText} />
-                    )}
-                  </XStack>
-                </Pressable>
-                {advancedOpen && (
-                  <SettingRow label={t("quran.settings.surahFrame")} chrome={chrome}>
-                    <Segmented
-                      chrome={chrome}
-                      options={Object.values(SurahFrameStyle).map((style) => ({
-                        value: style,
-                        label: style.charAt(0).toUpperCase() + style.slice(1),
-                      }))}
-                      selected={surahFrameStyle}
-                      onSelect={setSurahFrameStyle}
-                      compact
-                    />
-                  </SettingRow>
-                )}
-              </YStack>
-            )}
 
             <Section title={t("quran.settings.library")} chrome={chrome}>
               {libraryVersions.map(({ version, state }) => (

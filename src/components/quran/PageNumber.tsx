@@ -3,12 +3,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
-import { QuranTheme } from "@/enums/quran";
+import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_FONT_FAMILY, toHafsDigits } from "@/constants/Quran";
 
 interface PageNumberProps {
   page: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
 }
 
 // Ornate parentheses (U+FD3F/U+FD3E) bracket the page number — code order is the

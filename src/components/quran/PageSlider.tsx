@@ -8,7 +8,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 
-import { QuranTheme } from "@/enums/quran";
+import { QuranTheme, QuranThemeType } from "@/enums/quran";
 import { TOTAL_PAGES, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useTranslation } from "react-i18next";
 
@@ -20,7 +20,7 @@ import { Text } from "@/components/ui/text";
 
 interface PageSliderProps {
   currentPage: number;
-  quranTheme: QuranTheme;
+  quranTheme: QuranThemeType;
   onPageChange: (page: number) => void;
 }
 
