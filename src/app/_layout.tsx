@@ -121,12 +121,6 @@ function AppShell() {
               headerShown: false,
             }}>
             <Stack.Screen name="(tabs)" />
-            {/* Search drops in from the top (it's opened by a downward swipe), so
-                a neutral fade here + a content slide-down, not a side push. */}
-            <Stack.Screen
-              name="quran-search"
-              options={{ animation: "fade", animationDuration: 180 }}
-            />
           </Stack>
         )}
         <PlayerBottomSheet />

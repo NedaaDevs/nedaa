@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { scheduleOnRN } from "react-native-worklets";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +11,7 @@ import {
   Bookmark,
   ArrowRightToLine,
   ArrowLeftToLine,
+  Search,
   Settings2,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -34,6 +33,7 @@ import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
 import FontSizeControls from "@/components/quran/FontSizeControls";
 import HighlightLegend from "@/components/quran/HighlightLegend";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
+import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/QuranSearchOverlay";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
@@ -79,6 +79,7 @@ const QuranScreen = () => {
   // entered on launch. Not persisted — a killed/relaunched app shows the picker.
   const [downloadFlowVersion, setDownloadFlowVersion] = useState<MushafVersion | null>(null);
   const selectedManifestRef = useRef<QuranManifestVersion | null>(null);
+  const searchRef = useRef<QuranSearchHandle>(null);
 
   const downloadState = selectedVersion ? versionDownloads[selectedVersion] : undefined;
   const downloadStatus = downloadState?.status ?? DownloadStatus.IDLE;
@@ -155,21 +156,6 @@ const QuranScreen = () => {
     setShowSettings(false);
     setShowVersionPicker(true);
   }, []);
-
-  const openSearch = useCallback(() => router.push("/quran-search"), [router]);
-  // A downward swipe starting in the top strip opens search (Spotlight-style).
-  // Only activates on a clear vertical-down drag, so taps and page-turns pass
-  // through; lives above the reader but below the chrome overlay.
-  const swipeDownSearch = useMemo(
-    () =>
-      Gesture.Pan()
-        // Down-only: no activation until the finger moves past +14 on Y (downward).
-        .activeOffsetY([-9999, 14])
-        .failOffsetX([-24, 24])
-        .cancelsTouchesInView(false)
-        .onStart(() => scheduleOnRN(openSearch)),
-    [openSearch]
-  );
 
   // Route: onboarding → progress → reader
   if (!onboardingComplete) {
@@ -276,21 +262,9 @@ const QuranScreen = () => {
         selectedAyah={actionAyah}
       />
 
-      {/* Swipe-down-to-search catcher: a top strip that opens search on a
-          downward drag. zIndex below the chrome overlay (15) so its buttons
-          stay tappable; passes taps/page-turns through otherwise. */}
-      <GestureDetector gesture={swipeDownSearch}>
-        <View
-          style={{
-            position: "absolute",
-            top: insets.top,
-            left: 0,
-            right: 0,
-            height: 64,
-            zIndex: 5,
-          }}
-        />
-      </GestureDetector>
+      {/* Pull-down-to-search: a gesture-driven overlay revealed by dragging
+          down from the top, dismissed by dragging up / tapping away. */}
+      <QuranSearchOverlay ref={searchRef} />
 
       {/* Top banners: an active background download, and/or the one-time dark
           page offer for a colored edition. */}
@@ -344,6 +318,21 @@ const QuranScreen = () => {
                   color={themeColors.headerColor}
                 />
               )}
+              <Pressable
+                onPress={() => {
+                  setShowOverlay(false);
+                  searchRef.current?.open();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.search.placeholder")}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                <ReaderIcon
+                  sf="magnifyingglass"
+                  lucide={Search}
+                  color={themeColors.headerColor}
+                  size={20}
+                />
+              </Pressable>
               <Pressable
                 onPress={() => {
                   setShowOverlay(false);
