@@ -11,11 +11,11 @@ import { Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View, XStack, YStack } from "tamagui";
@@ -181,7 +181,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const release = (toOpen: boolean, velocityY: number) => {
       "worklet";
       progress.set(withSpring(toOpen ? 1 : 0, { ...SPRING, velocity: velocityY }));
-      runOnJS(applyOpen)(toOpen);
+      scheduleOnRN(applyOpen, toOpen);
     };
 
     // Parent gesture over the whole reader. Manual activation means it only claims

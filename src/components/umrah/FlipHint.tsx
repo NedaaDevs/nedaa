@@ -5,8 +5,8 @@ import Animated, {
   useAnimatedStyle,
   withDelay,
   withTiming,
-  runOnJS,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -27,7 +27,7 @@ const FlipHint = () => {
     opacity.value = withDelay(
       HINT_DISPLAY_MS,
       withTiming(0, { duration: HINT_FADE_MS }, (finished) => {
-        if (finished) runOnJS(markFlipHintSeen)();
+        if (finished) scheduleOnRN(markFlipHintSeen);
       })
     );
   }, [hasSeenFlipHint, markFlipHintSeen, opacity]);
@@ -40,7 +40,7 @@ const FlipHint = () => {
 
   const handleDismiss = () => {
     opacity.value = withTiming(0, { duration: HINT_FADE_MS }, (finished) => {
-      if (finished) runOnJS(markFlipHintSeen)();
+      if (finished) scheduleOnRN(markFlipHintSeen);
     });
   };
 
