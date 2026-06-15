@@ -1,4 +1,6 @@
-import { Input as TamaguiInput, type InputProps } from "tamagui";
+import type { Ref } from "react";
+import type { TextInput } from "react-native";
+import { Input as TamaguiInput, type InputProps, type TamaguiElement } from "tamagui";
 
 import { useRTL } from "@/contexts/RTLContext";
 
@@ -7,10 +9,13 @@ import { useRTL } from "@/contexts/RTLContext";
 // border/background from theme tokens so it reads correctly in light and dark
 // without per-call styling. Callers can override any prop (e.g. a borderless
 // search field passes backgroundColor="transparent" borderWidth={0}).
-export const Input = (props: InputProps) => {
+export const Input = ({ ref, ...props }: InputProps & { ref?: Ref<TextInput> }) => {
   const { isRTL } = useRTL();
   return (
     <TamaguiInput
+      // Tamagui types the ref as TamaguiElement; the runtime instance is the RN
+      // TextInput, so we expose the TextInput type to callers (for .focus()).
+      ref={ref as Ref<TamaguiElement>}
       textAlign={isRTL ? "right" : "left"}
       color="$typography"
       placeholderTextColor="$typographySecondary"
