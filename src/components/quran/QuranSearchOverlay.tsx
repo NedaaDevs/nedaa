@@ -26,7 +26,7 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
-import { QURAN_FONT_FAMILY, HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER } from "@/constants/Quran";
+import { QURAN_TEXT_FONT, HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER } from "@/constants/Quran";
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
@@ -485,7 +485,7 @@ const HighlightRow = ({
           lineHeight: 32,
           writingDirection: "rtl",
           textAlign: "right",
-          fontFamily: QURAN_FONT_FAMILY,
+          fontFamily: QURAN_TEXT_FONT,
           color: chrome.text,
         }}>
         {hit.text}
@@ -573,7 +573,7 @@ const VerseRow = ({
           lineHeight: 32,
           writingDirection: "rtl",
           textAlign: "right",
-          fontFamily: QURAN_FONT_FAMILY,
+          fontFamily: QURAN_TEXT_FONT,
           color: chrome.text,
         }}>
         {hit.text}
