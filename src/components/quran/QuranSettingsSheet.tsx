@@ -67,9 +67,7 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
       </Animated.View>
 
       <Animated.View
-        entering={
-          reduceMotion ? FadeIn.duration(150) : SlideInDown.springify().damping(20).stiffness(200)
-        }
+        entering={reduceMotion ? FadeIn.duration(150) : SlideInDown.duration(240)}
         exiting={reduceMotion ? FadeOut.duration(150) : SlideOutDown.duration(200)}
         style={[
           styles.sheet,
