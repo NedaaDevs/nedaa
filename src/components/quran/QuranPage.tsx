@@ -18,6 +18,7 @@ import { usePageData } from "@/hooks/usePageData";
 import { useAyahHitTest } from "@/hooks/useAyahHitTest";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
+import { useQuranStore } from "@/stores/quran";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
 import LineShimmer from "@/components/quran/LineShimmer";
@@ -219,6 +220,16 @@ const QuranPage = ({
     return rectsForAyah(highlightedAyah.surah, highlightedAyah.ayah);
   }, [highlightedAyah, pageHighlights, rectsForAyah]);
 
+  // Search-jump highlight: tint the target ayah's word-rects like a long-press
+  // selection; QuranReader clears `flashAyah` after a couple of seconds. Skipped
+  // when the ayah is a saved highlight (its colour tint already marks it).
+  const flashAyah = useQuranStore((s) => s.flashAyah);
+  const flashRects = useMemo(() => {
+    if (!flashAyah) return [];
+    if (pageHighlights.has(`${flashAyah.surah}:${flashAyah.ayah}`)) return [];
+    return rectsForAyah(flashAyah.surah, flashAyah.ayah);
+  }, [flashAyah, pageHighlights, rectsForAyah]);
+
   // Persistent per-highlight colour tints.
   const highlightTintRects = useMemo(() => {
     const out: { left: number; top: number; width: number; height: number; tint: string }[] = [];
@@ -367,6 +378,22 @@ const QuranPage = ({
             {highlightRects.map((rect, i) => (
               <View
                 key={`hl-${i}`}
+                style={{
+                  position: "absolute",
+                  left: rect.left,
+                  top: rect.top,
+                  width: rect.width,
+                  height: rect.height,
+                  backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
+                  borderRadius: 2,
+                }}
+              />
+            ))}
+
+            {flashRects.map((rect, i) => (
+              <View
+                key={`flash-${i}`}
+                pointerEvents="none"
                 style={{
                   position: "absolute",
                   left: rect.left,

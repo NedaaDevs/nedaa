@@ -16,6 +16,8 @@ interface AyahTextProps {
   text: string;
   quranTheme: QuranThemeType;
   isHighlighted: boolean;
+  // Briefly pulse the span (search-jump landing); animates its background tint.
+  isFlashing?: boolean;
   highlightColor?: HighlightColor | null;
   bookmarkColor?: BookmarkColor | null;
   onLongPress: (surahNumber: number, ayahNumber: number) => void;
@@ -30,6 +32,7 @@ const AyahText = ({
   text,
   quranTheme,
   isHighlighted,
+  isFlashing,
   highlightColor,
   bookmarkColor,
   onLongPress,
@@ -42,9 +45,11 @@ const AyahText = ({
     [surahNumber, ayahNumber, onLongPress]
   );
 
+  // A long-press selection or a search-jump landing both tint the span with the
+  // theme highlight; a saved highlight's own colour takes precedence.
   const background = highlightColor
     ? highlightTint(highlightColor, quranTheme)
-    : isHighlighted
+    : isHighlighted || isFlashing
       ? themeColors.highlightColor
       : undefined;
   const markerColor = highlightColor

@@ -10,6 +10,7 @@ import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
+import { useQuranStore } from "@/stores/quran";
 import { juzForPage } from "@/utils/juz";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import AyahText from "@/components/quran/AyahText";
@@ -51,6 +52,7 @@ const TextPage = ({
     ayah: number;
   } | null>(null);
 
+  const flashAyah = useQuranStore((s) => s.flashAyah);
   const highlights = useHighlightStore((s) => s.highlights);
   const highlightMap = useMemo(() => {
     const map = new Map<string, HighlightColor>();
@@ -168,6 +170,11 @@ const TextPage = ({
               quranTheme={quranTheme}
               isHighlighted={
                 highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
+              }
+              isFlashing={
+                flashAyah?.surah === surah &&
+                flashAyah?.ayah === ayah.ayahNumber &&
+                !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
               }
               highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
               bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}

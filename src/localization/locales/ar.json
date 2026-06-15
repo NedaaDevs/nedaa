@@ -900,7 +900,7 @@
   "quran.browse.surahs": "السور",
   "quran.browse.title": "تصفح",
   "quran.browse.verses": "الآيات",
-  "quran.search.placeholder": "ابحث في القرآن",
+  "quran.search.placeholder": "ابحث",
   "quran.db.error": "تعذّر فتح القرآن. حاول مرة أخرى.",
   "quran.db.preparing": "جارٍ تجهيز القرآن…",
   "quran.db.retry": "حاول مرة أخرى",

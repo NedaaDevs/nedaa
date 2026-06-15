@@ -155,6 +155,9 @@ export type QuranState = {
   darkOfferDismissed: Partial<Record<MushafVersion, boolean>>;
   // Transient — true only while the immersive reader (not chrome) is visible.
   readerActive: boolean;
+  // Transient — an ayah to briefly pulse-highlight after a search jump, so the
+  // reader can spot it on the page. Cleared automatically once the pulse ends.
+  flashAyah: { surah: number; ayah: number } | null;
 
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
@@ -169,6 +172,8 @@ export type QuranState = {
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;
   setReaderActive: (active: boolean) => void;
+  setFlashAyah: (target: { surah: number; ayah: number }) => void;
+  clearFlashAyah: () => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;

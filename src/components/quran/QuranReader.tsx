@@ -47,6 +47,8 @@ const SWIPE_THRESHOLD = 0.25;
 const VELOCITY_THRESHOLD = 500;
 const SPRING_CONFIG = { damping: 22, stiffness: 200, mass: 0.8 };
 const PAGE_WINDOW = 2;
+// How long a search-jump highlight stays on the target ayah before clearing.
+const FLASH_CLEAR_MS = 2000;
 // Gap between the two spread pages at the spine, and top breathing room.
 const SPREAD_GUTTER = 10;
 const SPREAD_TOP_PAD = 16;
@@ -126,6 +128,16 @@ const QuranReader = ({
   useEffect(() => {
     unitIndex.value = currentUnit;
   }, [currentUnit, unitIndex]);
+
+  // A search jump sets `flashAyah`; the page pulse-highlights it, then we clear
+  // the flag so it doesn't re-fire on later renders.
+  const flashAyah = useQuranStore((s) => s.flashAyah);
+  const clearFlashAyah = useQuranStore((s) => s.clearFlashAyah);
+  useEffect(() => {
+    if (!flashAyah) return;
+    const id = setTimeout(clearFlashAyah, FLASH_CLEAR_MS);
+    return () => clearTimeout(id);
+  }, [flashAyah, clearFlashAyah]);
 
   const unitWindow = useMemo(() => {
     const units: number[] = [];

@@ -42,8 +42,11 @@ export const useQuranStore = create<QuranState>()(
       // status-bar safe area with the reader theme for the reader, app theme for
       // chrome. Not persisted.
       readerActive: false,
+      flashAyah: null,
 
       setReaderActive: (active) => set({ readerActive: active }),
+      setFlashAyah: (target) => set({ flashAyah: target }),
+      clearFlashAyah: () => set({ flashAyah: null }),
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme, quranThemeOverride: true }),

@@ -7,13 +7,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Pressable, StyleSheet, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, TextInput, useWindowDimensions } from "react-native";
 import Animated, {
+  Easing,
   Extrapolation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
@@ -32,6 +34,7 @@ import { HighlightColor } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
+import { useHaptic } from "@/hooks/useHaptic";
 import { useRTL } from "@/contexts/RTLContext";
 import type { SurahMeta } from "@/types/quran";
 
@@ -64,6 +67,8 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const chrome = useQuranChromeColors();
     const { isRTL } = useRTL();
     const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
+    const setFlashAyah = useQuranStore((s) => s.setFlashAyah);
+    const selectHaptic = useHaptic("light");
     const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
     const [query, setQuery] = useState("");
@@ -72,8 +77,10 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const [open, setOpen] = useState(false);
 
     const scrollRef = useRef<ScrollView>(null);
+    const inputRef = useRef<TextInput>(null);
 
     const progress = useSharedValue(0); // 0 closed → 1 open
+    const selectFade = useSharedValue(1); // 1 visible → 0 dissolved (select close)
     const scrollY = useSharedValue(0); // current results scroll offset
     const dismissing = useSharedValue(false); // this up-drag started at the top
     const startX = useSharedValue(0); // open-drag origin, for zone + axis gating
@@ -88,6 +95,33 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
       progress.set(withSpring(0, SPRING));
       applyOpen(false);
     };
+
+    // Selecting a result dissolves the overlay in place (a quick ease-out fade,
+    // no height roll-up) so the reader and its freshly-highlighted ayah are
+    // revealed cleanly — distinct from the gesture/backdrop spring-collapse.
+    const finishSelectClose = () => {
+      progress.set(0);
+      selectFade.set(1);
+      applyOpen(false);
+    };
+    const closeForSelect = () => {
+      selectFade.set(
+        withTiming(0, { duration: 240, easing: Easing.out(Easing.cubic) }, (finished) => {
+          if (finished) scheduleOnRN(finishSelectClose);
+        })
+      );
+    };
+
+    // autoFocus is unreliable inside the height-animating panel: it runs at mount,
+    // racing layout, so the keyboard may never rise (and on Android the field reads
+    // as already-focused, so a later tap is no focus change either). Focus
+    // explicitly once the panel has opened — a real focus change that reliably
+    // raises the keyboard on both platforms.
+    useEffect(() => {
+      if (!open) return;
+      const id = setTimeout(() => inputRef.current?.focus(), 250);
+      return () => clearTimeout(id);
+    }, [open]);
 
     useImperativeHandle(
       ref,
@@ -168,9 +202,13 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
       };
     }, [matchedHighlights]);
 
-    const jumpTo = (page: number) => {
+    // A verse/highlight result also flags its ayah so the reader pulse-highlights
+    // it on arrival; a surah result jumps to the page only (no single target).
+    const jumpTo = (page: number, ayah?: { surah: number; ayah: number }) => {
+      selectHaptic();
       setCurrentPage(page);
-      close();
+      if (ayah) setFlashAyah(ayah);
+      closeForSelect();
     };
 
     // --- gestures ---
@@ -229,8 +267,15 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
 
     const panelStyle = useAnimatedStyle(() => ({
       height: interpolate(progress.get(), [0, 1], [0, screenH], Extrapolation.CLAMP),
+      // Hold opaque through the drag, fade only over the last stretch so a gesture
+      // close dissolves rather than hard-wiping; `selectFade` adds the in-place
+      // dissolve when a result is tapped (panel stays full height, just fades).
+      opacity:
+        interpolate(progress.get(), [0, 0.5, 1], [0, 1, 1], Extrapolation.CLAMP) * selectFade.get(),
     }));
-    const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.get() * 0.4 }));
+    const backdropStyle = useAnimatedStyle(() => ({
+      opacity: progress.get() * 0.4 * selectFade.get(),
+    }));
 
     const hasQuery = q.length > 0;
     const empty = hasQuery && hlHits.length === 0 && surahHits.length === 0 && hits.length === 0;
@@ -279,10 +324,11 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                   height={44}>
                   <Search color={chrome.subtleText} size={18} />
                   <Input
-                    // Remount on open so it autofocuses; on close it mounts
-                    // unfocused, dismissing the keyboard.
+                    // Remount on open/close so closing mounts an unfocused field
+                    // (dismissing the keyboard); the effect above focuses it on
+                    // open. autoFocus is intentionally omitted (unreliable here).
+                    ref={inputRef}
                     key={open ? "open" : "closed"}
-                    autoFocus={open}
                     flex={1}
                     value={query}
                     onChangeText={setQuery}
@@ -324,7 +370,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                             chrome={chrome}
                             hit={h}
                             label={labels[h.color] ?? t(`quran.highlight.color.${h.color}`)}
-                            onPress={() => jumpTo(h.page)}
+                            onPress={() => jumpTo(h.page, { surah: h.surah, ayah: h.ayah })}
                           />
                         ))}
                       </>
@@ -350,7 +396,9 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                             key={`v-${hit.surahNumber}:${hit.ayahNumber}`}
                             chrome={chrome}
                             hit={hit}
-                            onPress={() => jumpTo(hit.page)}
+                            onPress={() =>
+                              jumpTo(hit.page, { surah: hit.surahNumber, ayah: hit.ayahNumber })
+                            }
                           />
                         ))}
                       </>
