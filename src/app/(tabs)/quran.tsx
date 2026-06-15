@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Pressable } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Pressable, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { scheduleOnRN } from "react-native-worklets";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -154,6 +156,21 @@ const QuranScreen = () => {
     setShowVersionPicker(true);
   }, []);
 
+  const openSearch = useCallback(() => router.push("/quran-search"), [router]);
+  // A downward swipe starting in the top strip opens search (Spotlight-style).
+  // Only activates on a clear vertical-down drag, so taps and page-turns pass
+  // through; lives above the reader but below the chrome overlay.
+  const swipeDownSearch = useMemo(
+    () =>
+      Gesture.Pan()
+        // Down-only: no activation until the finger moves past +14 on Y (downward).
+        .activeOffsetY([-9999, 14])
+        .failOffsetX([-24, 24])
+        .cancelsTouchesInView(false)
+        .onStart(() => scheduleOnRN(openSearch)),
+    [openSearch]
+  );
+
   // Route: onboarding → progress → reader
   if (!onboardingComplete) {
     return (
@@ -258,6 +275,22 @@ const QuranScreen = () => {
         }}
         selectedAyah={actionAyah}
       />
+
+      {/* Swipe-down-to-search catcher: a top strip that opens search on a
+          downward drag. zIndex below the chrome overlay (15) so its buttons
+          stay tappable; passes taps/page-turns through otherwise. */}
+      <GestureDetector gesture={swipeDownSearch}>
+        <View
+          style={{
+            position: "absolute",
+            top: insets.top,
+            left: 0,
+            right: 0,
+            height: 64,
+            zIndex: 5,
+          }}
+        />
+      </GestureDetector>
 
       {/* Top banners: an active background download, and/or the one-time dark
           page offer for a colored edition. */}

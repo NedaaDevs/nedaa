@@ -503,6 +503,7 @@
   "quran.browse.surahs": "Surah",
   "quran.browse.title": "Layari",
   "quran.browse.verses": "Ayat",
+  "quran.search.placeholder": "Cari dalam Al-Quran",
   "quran.db.error": "Tidak dapat membuka al-Quran. Sila cuba lagi.",
   "quran.db.preparing": "Menyediakan al-Quran…",
   "quran.db.retry": "Cuba lagi",

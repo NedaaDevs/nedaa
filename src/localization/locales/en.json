@@ -868,6 +868,7 @@
   "quran.browse.surahs": "Surahs",
   "quran.browse.title": "Browse",
   "quran.browse.verses": "Verses",
+  "quran.search.placeholder": "Search the Quran",
   "quran.db.error": "Couldn't open the Quran. Please try again.",
   "quran.db.preparing": "Preparing the Quran…",
   "quran.db.retry": "Try again",
