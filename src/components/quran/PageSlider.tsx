@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, LayoutChangeEvent } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 import { QuranThemeType } from "@/enums/quran";
 import { TOTAL_PAGES, QURAN_THEME_COLORS, isDarkPaper } from "@/constants/Quran";
@@ -130,7 +126,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
     const x = Math.max(0, Math.min(slidableWidth, event.x - HANDLE / 2));
     thumbX.set(withTiming(x, { duration: 150 }));
     const page = xToPage(x);
-    runOnJS(handlePageCommit)(page);
+    scheduleOnRN(handlePageCommit, page);
   });
 
   const panGesture = Gesture.Pan()
@@ -142,8 +138,8 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
       const newX = Math.max(0, Math.min(slidableWidth, event.x - HANDLE / 2));
       thumbX.set(newX);
       const page = xToPage(newX);
-      runOnJS(updateDraggingPage)(page);
-      runOnJS(showTooltipFn)();
+      scheduleOnRN(updateDraggingPage, page);
+      scheduleOnRN(showTooltipFn);
     })
     // eslint-disable-next-line react-hooks/refs
     .onUpdate((event) => {
@@ -151,20 +147,20 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
       const newX = Math.max(0, Math.min(slidableWidth, event.x - HANDLE / 2));
       thumbX.set(newX);
       const page = xToPage(newX);
-      runOnJS(updateDraggingPage)(page);
+      scheduleOnRN(updateDraggingPage, page);
     })
     .onEnd(() => {
       "worklet";
       isDragging.set(false);
       const page = xToPage(thumbX.get());
-      runOnJS(handlePageCommit)(page);
+      scheduleOnRN(handlePageCommit, page);
     });
 
   const longPressGesture = Gesture.LongPress()
     .minDuration(100)
     .onStart(() => {
       "worklet";
-      runOnJS(showTooltipFn)();
+      scheduleOnRN(showTooltipFn);
     });
 
   const composedGesture = Gesture.Simultaneous(
@@ -207,7 +203,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
 
   return (
     <View style={styles.row}>
-      <Text style={[styles.endLabel, { color: themeColors.pageNumberColor }]}>
+      <Text style={styles.endLabel} color={accent}>
         {formatNumberToLocale(String(TOTAL_PAGES))}
       </Text>
 
@@ -233,7 +229,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
                       borderRadius: 1,
                       width: `${w}%`,
                       alignSelf: "flex-end",
-                      backgroundColor: themeColors.headerColor,
+                      backgroundColor: accent,
                       opacity: 0.45,
                     }}
                   />
@@ -242,13 +238,11 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
               <View style={styles.tooltipText}>
                 <Text
                   numberOfLines={1}
-                  style={[
-                    styles.tooltipSurah,
-                    { color: themeColors.headerColor, fontFamily: metadataFontFamily() },
-                  ]}>
+                  color={accent}
+                  style={[styles.tooltipSurah, { fontFamily: metadataFontFamily() }]}>
                   {surahName}
                 </Text>
-                <Text style={[styles.tooltipPage, { color: themeColors.pageNumberColor }]}>
+                <Text style={styles.tooltipPage} color={accent}>
                   {`${t("quran.goto.page")} ${formatNumberToLocale(String(draggingPage))}`}
                 </Text>
               </View>
@@ -263,7 +257,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
         </View>
       </GestureDetector>
 
-      <Text style={[styles.endLabel, { color: themeColors.pageNumberColor }]}>
+      <Text style={styles.endLabel} color={accent}>
         {formatNumberToLocale(String(draggingPage))}
       </Text>
     </View>
