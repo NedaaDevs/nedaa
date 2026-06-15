@@ -1,4 +1,12 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   Extrapolation,
@@ -37,6 +45,7 @@ type HighlightHit = {
 
 const SNAP = 0.32; // release past this fraction → open
 const FLING = 700; // px/s that forces a snap regardless of position
+const TOP_ZONE = 130; // a downward drag starting within this top band opens search
 // overshootClamping kills the spring bounce while keeping the velocity hand-off.
 const SPRING = { damping: 26, stiffness: 240, overshootClamping: true } as const;
 
@@ -47,313 +56,323 @@ const SPRING = { damping: 26, stiffness: 240, overshootClamping: true } as const
 // labels/colours; a result jumps to its page and closes.
 export type QuranSearchHandle = { open: () => void };
 
-const QuranSearchOverlay = forwardRef<QuranSearchHandle>((_props, ref) => {
-  const { t } = useTranslation();
-  const { height: screenH } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const chrome = useQuranChromeColors();
-  const { isRTL } = useRTL();
-  const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }>(
+  ({ children }, ref) => {
+    const { t } = useTranslation();
+    const { height: screenH } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
+    const chrome = useQuranChromeColors();
+    const { isRTL } = useRTL();
+    const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
+    const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
-  const [query, setQuery] = useState("");
-  const [surahs, setSurahs] = useState<SurahMeta[]>([]);
-  const [hits, setHits] = useState<AyahSearchHit[]>([]);
-  const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState("");
+    const [surahs, setSurahs] = useState<SurahMeta[]>([]);
+    const [hits, setHits] = useState<AyahSearchHit[]>([]);
+    const [open, setOpen] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
+    const scrollRef = useRef<ScrollView>(null);
 
-  const progress = useSharedValue(0); // 0 closed → 1 open
-  const scrollY = useSharedValue(0); // current results scroll offset
-  const dismissing = useSharedValue(false); // this up-drag started at the top
+    const progress = useSharedValue(0); // 0 closed → 1 open
+    const scrollY = useSharedValue(0); // current results scroll offset
+    const dismissing = useSharedValue(false); // this up-drag started at the top
+    const startX = useSharedValue(0); // open-drag origin, for zone + axis gating
+    const startY = useSharedValue(0);
 
-  // --- open/close state, set from gesture worklets and JS handlers alike ---
-  const applyOpen = (v: boolean) => {
-    setOpen(v);
-    if (!v) setQuery("");
-  };
-  const close = () => {
-    progress.set(withSpring(0, SPRING));
-    applyOpen(false);
-  };
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      open: () => {
-        progress.set(withSpring(1, SPRING));
-        setOpen(true);
-      },
-    }),
-    [progress]
-  );
-
-  useEffect(() => {
-    QuranContentDB.getAllSurahs().then(setSurahs);
-  }, []);
-
-  // Debounced verse search; empty query clears (inside the timeout, not the body).
-  useEffect(() => {
-    const trimmed = query.trim();
-    const id = setTimeout(
-      () => {
-        if (!trimmed) {
-          setHits([]);
-          return;
-        }
-        QuranContentDB.searchAyahs(trimmed).then(setHits);
-      },
-      trimmed ? 200 : 0
-    );
-    return () => clearTimeout(id);
-  }, [query]);
-
-  const q = query.trim().toLowerCase();
-  const surahHits = useMemo(() => {
-    if (!q) return [];
-    return surahs.filter(
-      (s) => s.nameTransliterated.toLowerCase().includes(q) || s.nameArabic.includes(query.trim())
-    );
-  }, [q, query, surahs]);
-
-  const highlights = useHighlightStore((s) => s.highlights);
-  const labels = useHighlightStore((s) => s.labels);
-  const [hlHits, setHlHits] = useState<HighlightHit[]>([]);
-
-  const matchedColors = useMemo(() => {
-    const set = new Set<HighlightColor>();
-    if (!q) return set;
-    for (const color of HIGHLIGHT_COLOR_ORDER) {
-      const label = (labels[color] ?? t(`quran.highlight.color.${color}`)).toLowerCase();
-      if (label.includes(q) || color.includes(q)) set.add(color);
-    }
-    return set;
-  }, [q, labels, t]);
-
-  const matchedHighlights = useMemo(
-    () => highlights.filter((h) => matchedColors.has(h.color)),
-    [highlights, matchedColors]
-  );
-
-  useEffect(() => {
-    let active = true;
-    Promise.all(
-      matchedHighlights.map(async (h) => {
-        const a = await QuranContentDB.getAyah(h.surah, h.ayah);
-        return {
-          surah: h.surah,
-          ayah: h.ayah,
-          page: a?.page ?? 1,
-          color: h.color,
-          text: a?.text ?? "",
-        };
-      })
-    ).then((res) => {
-      if (active) setHlHits(res);
-    });
-    return () => {
-      active = false;
+    // --- open/close state, set from gesture worklets and JS handlers alike ---
+    const applyOpen = (v: boolean) => {
+      setOpen(v);
+      if (!v) setQuery("");
     };
-  }, [matchedHighlights]);
+    const close = () => {
+      progress.set(withSpring(0, SPRING));
+      applyOpen(false);
+    };
 
-  const jumpTo = (page: number) => {
-    setCurrentPage(page);
-    close();
-  };
+    useImperativeHandle(
+      ref,
+      () => ({
+        open: () => {
+          progress.set(withSpring(1, SPRING));
+          setOpen(true);
+        },
+      }),
+      [progress]
+    );
 
-  // --- gestures ---
-  const drag = (changeY: number) => {
-    "worklet";
-    progress.set(Math.min(1, Math.max(0, progress.get() + changeY / screenH)));
-  };
-  const release = (toOpen: boolean, velocityY: number) => {
-    "worklet";
-    progress.set(withSpring(toOpen ? 1 : 0, { ...SPRING, velocity: velocityY }));
-    runOnJS(applyOpen)(toOpen);
-  };
+    useEffect(() => {
+      QuranContentDB.getAllSurahs().then(setSurahs);
+    }, []);
 
-  const openPan = Gesture.Pan()
-    .activeOffsetY([-9999, 8]) // down-only, activates early
-    .failOffsetX([-40, 40]) // tolerate horizontal drift on a downward swipe
-    .cancelsTouchesInView(false)
-    .onChange((e) => drag(e.changeY))
-    .onEnd((e) => release(progress.get() > SNAP || e.velocityY > FLING, e.velocityY));
+    // Debounced verse search; empty query clears (inside the timeout, not the body).
+    useEffect(() => {
+      const trimmed = query.trim();
+      const id = setTimeout(
+        () => {
+          if (!trimmed) {
+            setHits([]);
+            return;
+          }
+          QuranContentDB.searchAyahs(trimmed).then(setHits);
+        },
+        trimmed ? 200 : 0
+      );
+      return () => clearTimeout(id);
+    }, [query]);
 
-  // Up-swipe dismiss. Latches at gesture start: if the list was at the top, this
-  // drag dismisses the panel (follows the finger); otherwise it's a normal scroll
-  // (the close button / backdrop still dismiss). Latching avoids stutter when the
-  // simultaneous scroll moves the offset mid-drag.
-  const closePan = Gesture.Pan()
-    .activeOffsetY([-12, 9999]) // up-only
-    .failOffsetX([-24, 24])
-    // eslint-disable-next-line react-hooks/refs -- gesture-handler's documented compose API
-    .simultaneousWithExternalGesture(scrollRef)
-    .onStart(() => dismissing.set(scrollY.get() <= 0))
-    .onChange((e) => {
-      if (dismissing.get()) drag(e.changeY);
-    })
-    .onEnd((e) => {
-      if (!dismissing.get()) return;
-      const stayOpen = progress.get() > 1 - SNAP && e.velocityY > -FLING;
-      release(stayOpen, e.velocityY);
-    });
+    const q = query.trim().toLowerCase();
+    const surahHits = useMemo(() => {
+      if (!q) return [];
+      return surahs.filter(
+        (s) => s.nameTransliterated.toLowerCase().includes(q) || s.nameArabic.includes(query.trim())
+      );
+    }, [q, query, surahs]);
 
-  const panelStyle = useAnimatedStyle(() => ({
-    height: interpolate(progress.get(), [0, 1], [0, screenH], Extrapolation.CLAMP),
-  }));
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.get() * 0.4 }));
+    const highlights = useHighlightStore((s) => s.highlights);
+    const labels = useHighlightStore((s) => s.labels);
+    const [hlHits, setHlHits] = useState<HighlightHit[]>([]);
 
-  const hasQuery = q.length > 0;
-  const empty = hasQuery && hlHits.length === 0 && surahHits.length === 0 && hits.length === 0;
+    const matchedColors = useMemo(() => {
+      const set = new Set<HighlightColor>();
+      if (!q) return set;
+      for (const color of HIGHLIGHT_COLOR_ORDER) {
+        const label = (labels[color] ?? t(`quran.highlight.color.${color}`)).toLowerCase();
+        if (label.includes(q) || color.includes(q)) set.add(color);
+      }
+      return set;
+    }, [q, labels, t]);
 
-  return (
-    <>
-      {/* Top catch-zone — a downward drag here opens. Taps pass through to the
-          reader; the chrome bar's search button is the explicit open. */}
-      <GestureDetector gesture={openPan}>
-        <Animated.View
-          pointerEvents={open ? "none" : "auto"}
-          // zIndex below the chrome bar (15) so its icons stay tappable; the
-          // open panel + backdrop (40/30) still sit above the chrome.
-          style={{
-            position: "absolute",
-            top: insets.top,
-            left: 0,
-            right: 0,
-            height: 110,
-            zIndex: 5,
-          }}
-        />
-      </GestureDetector>
+    const matchedHighlights = useMemo(
+      () => highlights.filter((h) => matchedColors.has(h.color)),
+      [highlights, matchedColors]
+    );
 
-      <Animated.View
-        pointerEvents={open ? "auto" : "none"}
-        style={[StyleSheet.absoluteFill, { backgroundColor: "#000", zIndex: 30 }, backdropStyle]}>
-        <Pressable style={{ flex: 1 }} onPress={close} />
-      </Animated.View>
+    useEffect(() => {
+      let active = true;
+      Promise.all(
+        matchedHighlights.map(async (h) => {
+          const a = await QuranContentDB.getAyah(h.surah, h.ayah);
+          return {
+            surah: h.surah,
+            ayah: h.ayah,
+            page: a?.page ?? 1,
+            color: h.color,
+            text: a?.text ?? "",
+          };
+        })
+      ).then((res) => {
+        if (active) setHlHits(res);
+      });
+      return () => {
+        active = false;
+      };
+    }, [matchedHighlights]);
 
-      <Animated.View
-        pointerEvents={open ? "auto" : "none"}
-        style={[
-          { position: "absolute", top: 0, left: 0, right: 0, overflow: "hidden", zIndex: 40 },
-          { backgroundColor: chrome.background },
-          panelStyle,
-        ]}>
-        <GestureDetector gesture={closePan}>
-          <YStack flex={1} paddingTop={insets.top}>
-            <XStack alignItems="center" gap="$2" paddingHorizontal="$3" paddingVertical="$2">
-              <Pressable
-                onPress={close}
-                accessibilityRole="button"
-                accessibilityLabel={t("common.back")}
-                hitSlop={8}
-                style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-                <BackIcon color={chrome.accent} size={24} />
-              </Pressable>
+    const jumpTo = (page: number) => {
+      setCurrentPage(page);
+      close();
+    };
 
-              <XStack
-                flex={1}
-                alignItems="center"
-                gap="$2"
-                backgroundColor={chrome.cardBorder}
-                borderRadius={12}
-                paddingHorizontal="$3"
-                height={44}>
-                <Search color={chrome.subtleText} size={18} />
-                <Input
-                  // Remount on open so it autofocuses; on close it mounts
-                  // unfocused, dismissing the keyboard.
-                  key={open ? "open" : "closed"}
-                  autoFocus={open}
-                  flex={1}
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder={t("quran.search.placeholder")}
-                  backgroundColor="transparent"
-                  borderWidth={0}
-                  paddingHorizontal={0}
-                  fontSize={16}
-                />
-                {query.length > 0 && (
-                  <Pressable
-                    onPress={() => setQuery("")}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("a11y.clear", { defaultValue: "Clear" })}
-                    hitSlop={8}>
-                    <X color={chrome.subtleText} size={18} />
-                  </Pressable>
-                )}
-              </XStack>
-            </XStack>
+    // --- gestures ---
+    const drag = (changeY: number) => {
+      "worklet";
+      progress.set(Math.min(1, Math.max(0, progress.get() + changeY / screenH)));
+    };
+    const release = (toOpen: boolean, velocityY: number) => {
+      "worklet";
+      progress.set(withSpring(toOpen ? 1 : 0, { ...SPRING, velocity: velocityY }));
+      runOnJS(applyOpen)(toOpen);
+    };
 
-            <ScrollView
-              ref={scrollRef}
-              style={{ flex: 1 }}
-              scrollEventThrottle={16}
-              onScroll={(e) => scrollY.set(e.nativeEvent.contentOffset.y)}
-              contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 24 }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag">
-              {hasQuery && (
-                <>
-                  {hlHits.length > 0 && (
-                    <>
-                      <SectionLabel chrome={chrome} text={t("quran.library.highlights")} />
-                      {hlHits.map((h) => (
-                        <HighlightRow
-                          key={`h-${h.surah}:${h.ayah}`}
-                          chrome={chrome}
-                          hit={h}
-                          label={labels[h.color] ?? t(`quran.highlight.color.${h.color}`)}
-                          onPress={() => jumpTo(h.page)}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {surahHits.length > 0 && (
-                    <>
-                      <SectionLabel chrome={chrome} text={t("quran.browse.surahs")} />
-                      {surahHits.map((s) => (
-                        <SurahRow
-                          key={`s-${s.number}`}
-                          chrome={chrome}
-                          surah={s}
-                          onPress={() => jumpTo(s.pageStart)}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {hits.length > 0 && (
-                    <>
-                      <SectionLabel chrome={chrome} text={t("quran.browse.verses")} />
-                      {hits.map((hit) => (
-                        <VerseRow
-                          key={`v-${hit.surahNumber}:${hit.ayahNumber}`}
-                          chrome={chrome}
-                          hit={hit}
-                          onPress={() => jumpTo(hit.page)}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {empty && (
-                    <YStack paddingVertical="$10" alignItems="center" gap="$2">
-                      <Search color={chrome.subtleText} size={28} />
-                      <Text fontSize={14} fontWeight="600" color={chrome.subtleText}>
-                        {t("quran.browse.noResults")}
-                      </Text>
-                    </YStack>
-                  )}
-                </>
-              )}
-            </ScrollView>
-          </YStack>
+    // Parent gesture over the whole reader. Manual activation means it only claims
+    // the touch for a downward drag that starts in the top zone; taps, long-presses,
+    // horizontal page-turns and scrolls fall through to the reader/page below.
+    const openPan = Gesture.Pan()
+      .manualActivation(true)
+      .onTouchesDown((e) => {
+        const tch = e.allTouches[0];
+        startX.set(tch.x);
+        startY.set(tch.y);
+      })
+      .onTouchesMove((e, state) => {
+        if (progress.get() >= 1) return;
+        const tch = e.allTouches[0];
+        const dx = tch.x - startX.get();
+        const dy = tch.y - startY.get();
+        if (startY.get() <= TOP_ZONE && dy > 10 && dy > Math.abs(dx)) {
+          state.activate();
+        } else if (startY.get() > TOP_ZONE || dy < -8 || Math.abs(dx) > 16) {
+          state.fail();
+        }
+      })
+      .onChange((e) => drag(e.changeY))
+      .onEnd((e) => release(progress.get() > SNAP || e.velocityY > FLING, e.velocityY));
+
+    // Up-swipe dismiss. Latches at gesture start: if the list was at the top, this
+    // drag dismisses the panel (follows the finger); otherwise it's a normal scroll
+    // (the close button / backdrop still dismiss). Latching avoids stutter when the
+    // simultaneous scroll moves the offset mid-drag.
+    const closePan = Gesture.Pan()
+      .activeOffsetY([-12, 9999]) // up-only
+      .failOffsetX([-24, 24])
+      // eslint-disable-next-line react-hooks/refs -- gesture-handler's documented compose API
+      .simultaneousWithExternalGesture(scrollRef)
+      .onStart(() => dismissing.set(scrollY.get() <= 0))
+      .onChange((e) => {
+        if (dismissing.get()) drag(e.changeY);
+      })
+      .onEnd((e) => {
+        if (!dismissing.get()) return;
+        const stayOpen = progress.get() > 1 - SNAP && e.velocityY > -FLING;
+        release(stayOpen, e.velocityY);
+      });
+
+    const panelStyle = useAnimatedStyle(() => ({
+      height: interpolate(progress.get(), [0, 1], [0, screenH], Extrapolation.CLAMP),
+    }));
+    const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.get() * 0.4 }));
+
+    const hasQuery = q.length > 0;
+    const empty = hasQuery && hlHits.length === 0 && surahHits.length === 0 && hits.length === 0;
+
+    return (
+      <>
+        {/* The reader lives inside the open-pan, so the pan is a *parent* gesture
+          (arbitrated with the reader's tap + page long-press) rather than an
+          overlay on top — taps/long-presses are never blocked. */}
+        <GestureDetector gesture={openPan}>
+          <View style={{ flex: 1 }}>{children}</View>
         </GestureDetector>
-      </Animated.View>
-    </>
-  );
-});
+
+        <Animated.View
+          pointerEvents={open ? "auto" : "none"}
+          style={[StyleSheet.absoluteFill, { backgroundColor: "#000", zIndex: 30 }, backdropStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={close} />
+        </Animated.View>
+
+        <Animated.View
+          pointerEvents={open ? "auto" : "none"}
+          style={[
+            { position: "absolute", top: 0, left: 0, right: 0, overflow: "hidden", zIndex: 40 },
+            { backgroundColor: chrome.background },
+            panelStyle,
+          ]}>
+          <GestureDetector gesture={closePan}>
+            <YStack flex={1} paddingTop={insets.top}>
+              <XStack alignItems="center" gap="$2" paddingHorizontal="$3" paddingVertical="$2">
+                <Pressable
+                  onPress={close}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("common.back")}
+                  hitSlop={8}
+                  style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+                  <BackIcon color={chrome.accent} size={24} />
+                </Pressable>
+
+                <XStack
+                  flex={1}
+                  alignItems="center"
+                  gap="$2"
+                  backgroundColor={chrome.cardBorder}
+                  borderRadius={12}
+                  paddingHorizontal="$3"
+                  height={44}>
+                  <Search color={chrome.subtleText} size={18} />
+                  <Input
+                    // Remount on open so it autofocuses; on close it mounts
+                    // unfocused, dismissing the keyboard.
+                    key={open ? "open" : "closed"}
+                    autoFocus={open}
+                    flex={1}
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder={t("quran.search.placeholder")}
+                    backgroundColor="transparent"
+                    borderWidth={0}
+                    paddingHorizontal={0}
+                    fontSize={16}
+                  />
+                  {query.length > 0 && (
+                    <Pressable
+                      onPress={() => setQuery("")}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("a11y.clear", { defaultValue: "Clear" })}
+                      hitSlop={8}>
+                      <X color={chrome.subtleText} size={18} />
+                    </Pressable>
+                  )}
+                </XStack>
+              </XStack>
+
+              <ScrollView
+                ref={scrollRef}
+                style={{ flex: 1 }}
+                scrollEventThrottle={16}
+                onScroll={(e) => scrollY.set(e.nativeEvent.contentOffset.y)}
+                contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 24 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag">
+                {hasQuery && (
+                  <>
+                    {hlHits.length > 0 && (
+                      <>
+                        <SectionLabel chrome={chrome} text={t("quran.library.highlights")} />
+                        {hlHits.map((h) => (
+                          <HighlightRow
+                            key={`h-${h.surah}:${h.ayah}`}
+                            chrome={chrome}
+                            hit={h}
+                            label={labels[h.color] ?? t(`quran.highlight.color.${h.color}`)}
+                            onPress={() => jumpTo(h.page)}
+                          />
+                        ))}
+                      </>
+                    )}
+                    {surahHits.length > 0 && (
+                      <>
+                        <SectionLabel chrome={chrome} text={t("quran.browse.surahs")} />
+                        {surahHits.map((s) => (
+                          <SurahRow
+                            key={`s-${s.number}`}
+                            chrome={chrome}
+                            surah={s}
+                            onPress={() => jumpTo(s.pageStart)}
+                          />
+                        ))}
+                      </>
+                    )}
+                    {hits.length > 0 && (
+                      <>
+                        <SectionLabel chrome={chrome} text={t("quran.browse.verses")} />
+                        {hits.map((hit) => (
+                          <VerseRow
+                            key={`v-${hit.surahNumber}:${hit.ayahNumber}`}
+                            chrome={chrome}
+                            hit={hit}
+                            onPress={() => jumpTo(hit.page)}
+                          />
+                        ))}
+                      </>
+                    )}
+                    {empty && (
+                      <YStack paddingVertical="$10" alignItems="center" gap="$2">
+                        <Search color={chrome.subtleText} size={28} />
+                        <Text fontSize={14} fontWeight="600" color={chrome.subtleText}>
+                          {t("quran.browse.noResults")}
+                        </Text>
+                      </YStack>
+                    )}
+                  </>
+                )}
+              </ScrollView>
+            </YStack>
+          </GestureDetector>
+        </Animated.View>
+      </>
+    );
+  }
+);
 
 QuranSearchOverlay.displayName = "QuranSearchOverlay";
 
