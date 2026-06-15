@@ -81,16 +81,22 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   const [showTooltip, setShowTooltip] = useState(false);
   // Last page a scrub haptic fired for, so each page the thumb crosses ticks once.
   const lastTickPageRef = useRef(currentPage);
+  // The thumb has been placed at least once on a measured track.
+  const positioned = useRef(false);
 
   // Sync thumb when currentPage changes externally (swiping) or the track is
-  // (re)measured.
+  // (re)measured. The first placement on a measured track is instant so the
+  // thumb appears at the current page instead of animating in from x=0 (page 604).
   useEffect(() => {
-    if (!isDragging.get()) {
-      thumbX.set(withTiming(pageToX(currentPage), { duration: 150 }));
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDraggingPage(currentPage);
-      lastTickPageRef.current = currentPage;
-    }
+    if (isDragging.get()) return;
+    const instant = !positioned.current;
+    if (slidableWidth > 0) positioned.current = true;
+    thumbX.set(
+      instant ? pageToX(currentPage) : withTiming(pageToX(currentPage), { duration: 150 })
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDraggingPage(currentPage);
+    lastTickPageRef.current = currentPage;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, slidableWidth]);
 
@@ -213,7 +219,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
                 styles.tooltip,
                 tooltipStyle,
                 {
-                  backgroundColor: isDark ? "#2A2A2A" : "#F5F0E8",
+                  backgroundColor: themeColors.shimmerHighlight,
                   borderColor: themeColors.frameColor,
                 },
               ]}>

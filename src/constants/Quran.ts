@@ -95,7 +95,7 @@ export const QURAN_THEME_COLORS: Record<
     markerColor: "#E6C469",
     frameColor: "#C9A84B",
     headerColor: "#E6C469",
-    pageNumberColor: "#8A8F98",
+    pageNumberColor: "#A0936A",
     highlightColor: "rgba(230, 196, 105, 0.15)",
     shimmerBase: "#20242C",
     shimmerHighlight: "#2E343E",
