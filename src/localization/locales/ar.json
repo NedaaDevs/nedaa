@@ -1194,6 +1194,8 @@
   "settings.preferences.title": "التفضيلات",
   "settings.preferences.westernNumerals.description": "استخدام الأرقام الغربية (1، 2، 3) بدلاً من الأرقام العربية (١، ٢، ٣)",
   "settings.preferences.westernNumerals.title": "الأرقام الغربية",
+  "settings.quranUnlocked.body": "أصبح قارئ القرآن متاحًا الآن في شريط التبويبات.",
+  "settings.quranUnlocked.title": "تم تفعيل القرآن",
   "settings.rateApp": "قيّم نداء",
   "settings.shareApp": "شارك نداء",
   "settings.shareMessage": "حمّل تطبيق نداء — مواقيت الصلاة بسهولة\nhttps://nedaa.dev/download",

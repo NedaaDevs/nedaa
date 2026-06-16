@@ -743,6 +743,8 @@
   "settings.preferences.title": "Keutamaan",
   "settings.preferences.westernNumerals.description": "Gunakan angka Barat (1, 2, 3) dan bukannya angka Arab (١، ٢، ٣)",
   "settings.preferences.westernNumerals.title": "Angka Barat",
+  "settings.quranUnlocked.body": "Pembaca Al-Quran kini tersedia di bar tab.",
+  "settings.quranUnlocked.title": "Al-Quran diaktifkan",
   "settings.rateApp": "Nilai Nedaa",
   "settings.shareApp": "Kongsi Nedaa",
   "settings.shareMessage": "Muat turun Nedaa — Waktu solat dipermudahkan\nhttps://nedaa.dev/download",
