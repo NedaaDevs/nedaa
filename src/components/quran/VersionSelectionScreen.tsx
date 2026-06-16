@@ -78,10 +78,14 @@ const VersionSelectionScreen = ({
     ? downloads[selectedId as MushafVersion]?.status === DownloadStatus.COMPLETE
     : false;
   const wantsDark = !!selected && selected.id === MushafVersion.V4 && v4Dark && !selectedInstalled;
-  const ctaSizeMB =
-    selected && wantsDark && selected.darkBundle
-      ? Math.round(selected.bundle.sizeMB + selected.darkBundle.sizeMB)
-      : (selected?.totalSizeMB ?? 0);
+  const ctaSizeMB = selected
+    ? Math.round(
+        (selected.images.light.bytes +
+          selected.meta.bytes +
+          (wantsDark ? (selected.images.dark?.bytes ?? 0) : 0)) /
+          1e6
+      )
+    : 0;
 
   const handleCta = () => {
     if (textSelected) {

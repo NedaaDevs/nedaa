@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
@@ -10,7 +10,7 @@ import { isColoredVersion } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors, type QuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { QuranDownload } from "@/services/quran-download";
-import { QuranManifestService } from "@/services/quran-manifest";
+import { QuranManifestService, type QuranPreviewImage } from "@/services/quran-manifest";
 import MushafThumbnail from "@/components/quran/MushafThumbnail";
 import MushafPreviewModal from "@/components/quran/MushafPreviewModal";
 import type { QuranManifestVersion } from "@/types/quran";
@@ -37,12 +37,24 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
   const percent = state?.progress?.percent ?? 0;
 
   const colored = isColoredVersion(versionId);
-  const previews = QuranManifestService.getPreviews(version);
+  const [previews, setPreviews] = useState<QuranPreviewImage[]>([]);
+  useEffect(() => {
+    let alive = true;
+    QuranManifestService.getPreviews(version).then((p) => {
+      if (alive) setPreviews(p);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [version]);
   const versionLabel = t(`quran.version.${versionId}`);
 
-  // Optional dark-theme bundle (V4), managed independently of the light bundle.
-  const hasDark = !!version.darkBundle;
-  const darkSizeMB = version.darkBundle ? Math.round(version.darkBundle.sizeMB) : 0;
+  const totalMB = Math.round(QuranManifestService.getTotalSizeBytes(version) / 1e6);
+  const lightMB = Math.round(QuranManifestService.getImagesSizeBytes(version) / 1e6);
+
+  // Optional dark-theme images (V4), managed independently of the light edition.
+  const hasDark = !!version.images.dark;
+  const darkSizeMB = Math.round(QuranManifestService.getImagesSizeBytes(version, true) / 1e6);
   const darkStatus = state?.dark?.status ?? DownloadStatus.IDLE;
   const darkComplete = darkStatus === DownloadStatus.COMPLETE;
   const darkDownloading =
@@ -101,7 +113,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
         accessibilityState={{ selected, disabled: isDownloading }}
         accessibilityLabel={t("a11y.quran.versionCard", {
           name: versionLabel,
-          size: version.totalSizeMB,
+          size: totalMB,
           year: version.yearGregorian,
         })}
         style={{
@@ -158,7 +170,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
 
             <XStack alignItems="center" gap="$2.5" flexWrap="wrap">
               <Text color={chrome.subtleText} fontSize={12} fontWeight="600">
-                {t("quran.download.sizeMB", { size: version.totalSizeMB })}
+                {t("quran.download.sizeMB", { size: totalMB })}
               </Text>
               {colored && (
                 <XStack alignItems="center" gap="$1.5">
@@ -225,7 +237,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
             <XStack gap="$2">
               <SegButton
                 label={t("quran.download.justLight")}
-                sub={t("quran.download.sizeMB", { size: version.bundle.sizeMB })}
+                sub={t("quran.download.sizeMB", { size: lightMB })}
                 active={!v4Dark}
                 onPress={() => setV4Dark(false)}
                 chrome={chrome}
@@ -233,7 +245,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
               <SegButton
                 label={t("quran.download.lightAndDark")}
                 sub={t("quran.download.sizeMB", {
-                  size: Math.round(version.bundle.sizeMB + darkSizeMB),
+                  size: lightMB + darkSizeMB,
                 })}
                 active={v4Dark}
                 onPress={() => setV4Dark(true)}

@@ -34,7 +34,7 @@ const DarkOfferBanner = ({ version, onDismiss }: DarkOfferBannerProps) => {
   useEffect(() => {
     let active = true;
     QuranManifestService.getVersionInfo(version).then((info) => {
-      if (active && info?.darkBundle) setSizeMB(Math.round(info.darkBundle.sizeMB));
+      if (active && info?.images.dark) setSizeMB(Math.round(info.images.dark.bytes / 1e6));
     });
     return () => {
       active = false;

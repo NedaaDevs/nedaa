@@ -15,7 +15,7 @@ import { Moon, Sun, X } from "lucide-react-native";
 import { Text } from "@/components/ui/text";
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
-import { QuranManifestService } from "@/services/quran-manifest";
+import { QuranManifestService, type QuranPreviewImage } from "@/services/quran-manifest";
 import type { QuranManifestVersion } from "@/types/quran";
 
 interface MushafPreviewModalProps {
@@ -39,7 +39,16 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
   const [dark, setDark] = useState(false);
   const [loadedPages, setLoadedPages] = useState<Record<string, boolean>>({});
 
-  const previews = QuranManifestService.getPreviews(version, { dark });
+  const [previews, setPreviews] = useState<QuranPreviewImage[]>([]);
+  useEffect(() => {
+    let alive = true;
+    QuranManifestService.getPreviews(version, { dark }).then((p) => {
+      if (alive) setPreviews(p);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [version, dark]);
   const paper = QURAN_THEME_COLORS[dark ? QuranTheme.DARK : QuranTheme.SEPIA];
   const headerColor = paper.headerColor as `#${string}`;
 
@@ -56,13 +65,17 @@ const MushafPreviewModal = ({ version, visible, onClose }: MushafPreviewModalPro
   // light/dark toggle swaps instantly instead of fetching the other set on tap.
   useEffect(() => {
     if (!visible) return;
-    const urls = [
-      ...QuranManifestService.getPreviews(version),
-      ...QuranManifestService.getPreviews(version, { dark: true }),
-    ].map((p) => p.url);
-    urls.forEach((u) => {
-      void Image.prefetch(u);
+    let alive = true;
+    Promise.all([
+      QuranManifestService.getPreviews(version),
+      QuranManifestService.getPreviews(version, { dark: true }),
+    ]).then(([light, darkSet]) => {
+      if (!alive) return;
+      [...light, ...darkSet].forEach((p) => void Image.prefetch(p.url));
     });
+    return () => {
+      alive = false;
+    };
   }, [visible, version]);
 
   return (

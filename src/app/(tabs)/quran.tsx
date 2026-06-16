@@ -134,11 +134,14 @@ const QuranScreen = () => {
         return;
       }
 
-      const spaceCheck = QuranDownload.checkDiskSpace(manifestVersion.totalSizeMB);
+      const sizeMB = Math.round(
+        (manifestVersion.images.light.bytes + manifestVersion.meta.bytes) / 1e6
+      );
+      const spaceCheck = QuranDownload.checkDiskSpace(sizeMB);
       if (!spaceCheck.available) {
         Alert.alert(
           t("quran.download.noSpace", {
-            required: manifestVersion.totalSizeMB,
+            required: sizeMB,
             available: spaceCheck.availableMB,
           })
         );

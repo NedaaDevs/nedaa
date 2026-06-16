@@ -80,9 +80,10 @@ const DownloadProgressScreen = ({
 
   useEffect(() => {
     let active = true;
-    QuranManifestService.getVersionInfo(version).then((info) => {
+    QuranManifestService.getVersionInfo(version).then(async (info) => {
       if (!active || !info) return;
-      setPreview(QuranManifestService.getPreviews(info)[0] ?? null);
+      const previews = await QuranManifestService.getPreviews(info);
+      if (active) setPreview(previews[0] ?? null);
     });
     return () => {
       active = false;
