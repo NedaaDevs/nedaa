@@ -1,0 +1,7 @@
+[
+  { "id": "waqf.lazim", "category": "waqf", "symbol": "مـ" },
+  { "id": "waqf.waqf_awla", "category": "waqf", "symbol": "قلى" },
+  { "id": "waqf.wasl_awla", "category": "waqf", "symbol": "صلى" },
+  { "id": "waqf.jaiz", "category": "waqf", "symbol": "ج" },
+  { "id": "waqf.la", "category": "waqf", "symbol": "لا" }
+]

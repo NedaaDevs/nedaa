@@ -1,0 +1,12 @@
+[
+  { "id": "tajweed.ghunnah", "category": "tajweed", "color": "#FF7E1E" },
+  { "id": "tajweed.idgham_ghunnah", "category": "tajweed", "color": "#169200" },
+  { "id": "tajweed.idgham_wo_ghunnah", "category": "tajweed", "color": "#169200" },
+  { "id": "tajweed.ikhafa", "category": "tajweed", "color": "#9400A8" },
+  { "id": "tajweed.iqlab", "category": "tajweed", "color": "#26BFFD" },
+  { "id": "tajweed.qalqalah", "category": "tajweed", "color": "#DD0008" },
+  { "id": "tajweed.madda_normal", "category": "tajweed", "color": "#537FFF" },
+  { "id": "tajweed.madda_permissible", "category": "tajweed", "color": "#4050FF" },
+  { "id": "tajweed.madda_necessary", "category": "tajweed", "color": "#000EBC" },
+  { "id": "tajweed.silent", "category": "tajweed", "color": "#AAAAAA" }
+]
