@@ -18,4 +18,8 @@ export type AppState = {
   setHijirOffset: (offset: number) => void;
   dismissedFeatureCards: string[];
   dismissFeatureCard: (id: string) => void;
+  // TODO(quran-gate): remove at 2.10.0
+  quranUnlocked: boolean;
+  // TODO(quran-gate): remove at 2.10.0
+  setQuranUnlocked: (on: boolean) => void;
 };
