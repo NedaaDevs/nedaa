@@ -13,6 +13,7 @@ import {
 import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranManifestService } from "@/services/quran-manifest";
+import { planEditionDownload, type InstalledVersions } from "@/services/quran-download-plan";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
 import type { DownloadProgress } from "@/types/quran";
@@ -63,6 +64,40 @@ const clearResume = (version: MushafVersion): void => {
   pausedStates.delete(version);
   try {
     const file = resumeFile(version);
+    if (file.exists) file.delete();
+  } catch {
+    // best effort
+  }
+};
+
+const installedFile = (version: MushafVersion): File =>
+  new File(Paths.document, `quran-${version}-installed.json`);
+
+const readInstalled = (version: MushafVersion): InstalledVersions => {
+  try {
+    const file = installedFile(version);
+    if (file.exists) return JSON.parse(file.textSync()) as InstalledVersions;
+  } catch {
+    log.e("Download", `Failed to read installed versions for ${version}`);
+  }
+  return {};
+};
+
+const writeInstalled = (version: MushafVersion, patch: InstalledVersions): void => {
+  try {
+    const next = { ...readInstalled(version), ...patch };
+    const file = installedFile(version);
+    if (file.exists) file.delete();
+    file.create();
+    file.write(JSON.stringify(next));
+  } catch {
+    log.e("Download", `Failed to write installed versions for ${version}`);
+  }
+};
+
+const clearInstalled = (version: MushafVersion): void => {
+  try {
+    const file = installedFile(version);
     if (file.exists) file.delete();
   } catch {
     // best effort
@@ -299,39 +334,77 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       return;
     }
 
+    const imagesUrl = await QuranManifestService.getImagesUrl(manifestVersion);
+    const metaUrl = await QuranManifestService.getMetaUrl(manifestVersion);
+    if (active.cancelled) return;
+    if (!imagesUrl || !metaUrl) {
+      log.e("Download", `No images/meta URL for ${version}`);
+      store.updateDownloadState(version, { status: DownloadStatus.ERROR });
+      return;
+    }
+
     log.i("Download", `Starting download for ${version}`);
     const versionDir = getVersionDir(version);
-    const bundleUrl = QuranManifestService.getBundleUrl(manifestVersion);
-
-    // Skip the download if the version is already fully extracted on disk.
     const imageType = detectImageType(version);
-    let allPresent = true;
+
+    // Decide which legs need (re)downloading from the installed vs manifest
+    // versions — images and meta/bounds are independently versioned now.
+    let imagesOnDisk = true;
     for (let p = 1; p <= 5; p++) {
       if (!verifyPageOnDisk(version, p, imageType)) {
-        allPresent = false;
+        imagesOnDisk = false;
         break;
       }
     }
-    // Already installed → a leftover resume state is meaningless; drop it.
-    if (allPresent) clearResume(version);
+    const plan = planEditionDownload(
+      readInstalled(version),
+      {
+        imagesVersion: manifestVersion.images.version,
+        metaVersion: manifestVersion.meta.version,
+        requiresImages: manifestVersion.meta.requiresImages,
+      },
+      imagesOnDisk,
+      getBoundsDbFile(version).exists
+    );
 
-    // Only resume against the SAME bundle URL — a manifest update invalidates a
-    // partial, and resuming it would append mismatched bytes (a broken zip).
+    // Already current → a leftover resume state is meaningless; drop it.
+    if (!plan.needImages) clearResume(version);
+
+    // Only resume against the SAME images URL — a version bump changes the URL,
+    // and resuming a partial would append mismatched bytes (a broken zip).
     const saved = readResume(version);
-    const resumeState = saved && saved.url === bundleUrl ? saved : undefined;
+    const resumeState = saved && saved.url === imagesUrl ? saved : undefined;
     if (saved && !resumeState) clearResume(version);
 
-    const outcome = await downloadAndExtractBundle(active, {
-      url: bundleUrl,
-      sizeBytes: QuranManifestService.getBundleSizeBytes(manifestVersion),
+    // 1) Images (resumable, ~100MB). The images zip carries no bounds.db.
+    const imagesOutcome = await downloadAndExtractBundle(active, {
+      url: imagesUrl,
+      sizeBytes: QuranManifestService.getImagesSizeBytes(manifestVersion),
       dir: versionDir,
-      zipName: `quran-${version}-bundle.zip`,
-      alreadyOnDisk: allPresent,
+      zipName: `quran-${version}-images.zip`,
+      alreadyOnDisk: !plan.needImages,
       resumeState,
       emit: (phase, bytes, total) =>
         store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
       onPaused: (state) => persistResume(version, state),
       onResumeInvalid: () => clearResume(version),
+    });
+    if (active.cancelled || imagesOutcome === BundleOutcome.CANCELLED) return;
+    if (imagesOutcome === BundleOutcome.PAUSED) {
+      store.updateDownloadState(version, { status: DownloadStatus.PAUSED });
+      return;
+    }
+    if (plan.needImages) writeInstalled(version, { images: manifestVersion.images.version });
+
+    // 2) Meta/bounds (fresh, ~5MB). bounds.db lives inside, matched to the images.
+    const metaOutcome = await downloadAndExtractBundle(active, {
+      url: metaUrl,
+      sizeBytes: QuranManifestService.getMetaSizeBytes(manifestVersion),
+      dir: versionDir,
+      zipName: `quran-${version}-meta.zip`,
+      alreadyOnDisk: !plan.needMeta,
+      emit: (phase, bytes, total) =>
+        store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
       onExtracted: async () => {
         // Drop any cached bounds connection before swapping the file, so the
         // reader opens the freshly installed geometry. A stale connection (held
@@ -339,7 +412,6 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         // render and long-press finds nothing — until the app restarts.
         await QuranContentDB.closeBoundsDb(version);
 
-        // Move bounds.db to the SQLite directory if it shipped in the bundle.
         const extractedBoundsDb = new File(versionDir, "bounds.db");
         if (extractedBoundsDb.exists) {
           const targetBoundsDb = getBoundsDbFile(version);
@@ -349,15 +421,17 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         }
       },
     });
-
-    if (active.cancelled || outcome === BundleOutcome.CANCELLED) return;
-    if (outcome === BundleOutcome.PAUSED) {
+    if (active.cancelled || metaOutcome === BundleOutcome.CANCELLED) return;
+    if (metaOutcome === BundleOutcome.PAUSED) {
+      // Meta is small + non-resumable; treat a pause as "retry later" rather than
+      // completing — otherwise the edition lands COMPLETE with bounds.db never
+      // moved into place (no markers/highlighting, nothing to re-trigger it).
       store.updateDownloadState(version, { status: DownloadStatus.PAUSED });
       return;
     }
+    if (plan.needMeta) writeInstalled(version, { meta: manifestVersion.meta.version });
 
-    // Bundle downloads are all-or-nothing: a successful extract is completion.
-    // The kv-persisted store status and the extracted files on disk are the record.
+    // Complete only once BOTH legs have landed.
     clearResume(version);
     store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
     log.i("Download", `${version} complete`);
@@ -387,19 +461,23 @@ const doStartDark = async (version: MushafVersion, active: ActiveDownload): Prom
   try {
     const manifestVersion = await QuranManifestService.getVersionInfo(version);
     if (active.cancelled) return;
-    const darkUrl = manifestVersion ? QuranManifestService.getDarkBundleUrl(manifestVersion) : null;
+    const darkUrl = manifestVersion
+      ? await QuranManifestService.getImagesUrl(manifestVersion, true)
+      : null;
+    if (active.cancelled) return;
     if (!manifestVersion || !darkUrl) {
-      log.e("Download", `No dark bundle for ${version}`);
+      log.e("Download", `No dark images for ${version}`);
       store.updateDarkDownloadState(version, { status: DownloadStatus.ERROR });
       return;
     }
 
     const imageType = detectImageType(version);
-    // The dark add-on downloads in the background without a pause/resume UI, so
-    // it has no resumeState/onPaused — only EXTRACTED counts as done.
+    // The dark add-on is images-only (bounds are shared with the light edition)
+    // and downloads in the background without a pause/resume UI, so it has no
+    // resumeState/onPaused — only EXTRACTED counts as done.
     const outcome = await downloadAndExtractBundle(active, {
       url: darkUrl,
-      sizeBytes: QuranManifestService.getDarkBundleSizeBytes(manifestVersion),
+      sizeBytes: QuranManifestService.getImagesSizeBytes(manifestVersion, true),
       dir: getDarkVersionDir(version),
       zipName: `quran-${version}-dark-bundle.zip`,
       alreadyOnDisk: darkFirstPagePresent(version, imageType),
@@ -471,8 +549,10 @@ const cancel = async (version?: MushafVersion): Promise<void> => {
     }
     // Drop the partial and resume state too — cancel means start over.
     clearResume(v);
-    const zip = new File(Paths.cache, `quran-${v}-bundle.zip`);
-    if (zip.exists) zip.delete();
+    for (const name of [`quran-${v}-images.zip`, `quran-${v}-meta.zip`]) {
+      const zip = new File(Paths.cache, name);
+      if (zip.exists) zip.delete();
+    }
     useQuranStore.getState().updateDownloadState(v, { status: DownloadStatus.IDLE });
     log.i("Download", `Cancelled download for ${v}`);
   }
@@ -517,8 +597,10 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     darkActive.controller.abort();
   }
 
-  // Drop any persisted resume state so it can't resurrect a deleted version.
+  // Drop any persisted resume state + installed-version markers so they can't
+  // resurrect a deleted version.
   clearResume(version);
+  clearInstalled(version);
 
   const versionDir = getVersionDir(version);
   if (versionDir.exists) {

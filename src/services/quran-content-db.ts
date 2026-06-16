@@ -1,23 +1,24 @@
 import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
-import { File, Directory, Paths } from "expo-file-system";
-import { Asset } from "expo-asset";
+import { File, Directory, Paths, DownloadTask } from "expo-file-system";
+import { unzip } from "react-native-zip-archive";
 
-import { QURAN_DB_NAME, QURAN_DB_VERSION } from "@/constants/DB";
+import { QURAN_DB_NAME } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/quran";
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
 import { MutashabihatGroup } from "@/types/mutashabihat";
+import { QuranManifestService } from "@/services/quran-manifest";
 import { stripTashkeel } from "@/utils/tashkeel";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("quran-content-db");
 
-// Read-only Quran content: the bundled `quran.db` (ayah text + surah/division
-// metadata) and the per-version `bounds-*.db` (glyph geometry + line metadata).
-// These connections only read; the transactional download-tracking DB lives in
-// `quran-download-db.ts`.
+// Read-only Quran content: the CDN-downloaded `quran.db` (ayah text + surah/
+// division metadata + mutashabihat) and the per-version `bounds-*.db` (glyph
+// geometry + line metadata). These connections only read; the transactional
+// download-tracking DB lives in `quran-download-db.ts`.
 
 let quranDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 const boundsDbMap = new Map<MushafVersion, Promise<SQLite.SQLiteDatabase>>();
@@ -54,7 +55,12 @@ const getDirectory = async (): Promise<string> => {
   return SQLite.defaultDatabaseDirectory;
 };
 
-const ensureQuranDbCopied = async (): Promise<void> => {
+// Ensure the shared content DB is installed, downloading it from the CDN when
+// missing or when the manifest's `content.version` has moved on. Runs inside
+// `openQuranDb` *before* the DB is opened, so there's no live connection to close
+// here (that's `forceResetQuranDb`'s job) — closing the in-flight promise here
+// would deadlock.
+const ensureContentDbDownloaded = async (): Promise<void> => {
   const dir = await getDirectory();
 
   // On Android, defaultDatabaseDirectory is a plain path, not a file:// URI.
@@ -68,47 +74,64 @@ const ensureQuranDbCopied = async (): Promise<void> => {
   const targetFile = new File(targetDir, QURAN_DB_NAME);
   const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
 
-  const installedVersion = versionFile.exists ? versionFile.textSync() : null;
-  const needsCopy = !targetFile.exists || installedVersion !== String(QURAN_DB_VERSION);
+  const content = await QuranManifestService.getContent();
+  if (!content) {
+    // Offline with the DB already installed → use it; otherwise fail loudly.
+    if (targetFile.exists) {
+      log.d("Content", "No manifest; using installed content DB");
+      return;
+    }
+    throw new Error("[QuranContentDB] No content manifest and no installed DB");
+  }
 
-  if (!needsCopy) {
-    log.d("Copy", `quran.db v${installedVersion} present`);
+  const installed = versionFile.exists ? versionFile.textSync() : null;
+  if (targetFile.exists && installed === content.content.version) {
+    log.d("Content", `content DB v${installed} present`);
     return;
   }
 
-  const [asset] = await Asset.loadAsync(require("../../assets/db/quran.db"));
-  if (!asset.localUri) {
-    throw new Error("[QuranContentDB] Failed to load quran.db asset");
+  log.i("Content", `Downloading content DB v${content.content.version}`);
+  const zipFile = new File(Paths.cache, "quran-content.zip");
+  if (zipFile.exists) zipFile.delete();
+  const downloaded = await new DownloadTask(content.url, zipFile).downloadAsync();
+  if (!downloaded) {
+    throw new Error("[QuranContentDB] content DB download failed");
   }
 
-  // Remove old DB + WAL/SHM before copying new version
+  const extractDir = new Directory(Paths.cache, "quran-content");
+  if (extractDir.exists) extractDir.delete();
+  extractDir.create({ intermediates: true });
+  await unzip(zipFile.uri, extractDir.uri);
+
+  const extracted = new File(extractDir, QURAN_DB_NAME);
+  if (!extracted.exists || extracted.size === 0) {
+    throw new Error("[QuranContentDB] content zip missing quran.db");
+  }
+
+  // Replace the installed DB + any stale WAL/SHM, then move the fresh copy in.
   if (targetFile.exists) targetFile.delete();
   const walFile = new File(targetDir, `${QURAN_DB_NAME}-wal`);
   const shmFile = new File(targetDir, `${QURAN_DB_NAME}-shm`);
   if (walFile.exists) walFile.delete();
   if (shmFile.exists) shmFile.delete();
+  extracted.move(targetFile);
 
-  const sourceFile = new File(asset.localUri);
-  await sourceFile.copy(targetFile);
-  if (targetFile.size === 0) {
-    throw new Error("[QuranContentDB] quran.db copy produced an empty file");
-  }
-
-  // Version marker is written only after a verified, non-empty copy, so an
-  // interrupted copy is never stamped "installed" — leaving needsCopy true so
-  // the next open re-copies instead of opening an empty DB forever.
+  // Version marker is written only after a verified install, so an interrupted
+  // download is never stamped "installed" — the next open re-downloads.
   if (versionFile.exists) versionFile.delete();
   versionFile.create();
-  versionFile.write(String(QURAN_DB_VERSION));
+  versionFile.write(content.content.version);
 
-  log.i("Copy", `Copied quran.db v${QURAN_DB_VERSION} (${targetFile.size}B)`);
+  zipFile.delete();
+  extractDir.delete();
+  log.i("Content", `Installed content DB v${content.content.version} (${targetFile.size}B)`);
 };
 
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   if (!quranDbPromise) {
     quranDbPromise = (async () => {
       try {
-        await ensureQuranDbCopied();
+        await ensureContentDbDownloaded();
         return await SQLite.openDatabaseAsync(
           QURAN_DB_NAME,
           { useNewConnection: true },
@@ -124,11 +147,11 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   return quranDbPromise;
 };
 
-// Testing aid: wipe the installed copy of quran.db (+ version marker / WAL / SHM)
-// and drop the in-memory connection, then re-copy the bundled DB from scratch.
-// Used on TestFlight to pull a changed bundled DB when QURAN_DB_VERSION is unchanged.
-// TODO(mutashabihat): remove before public release (along with its Maintenance
-// button) — replace with a proper QURAN_DB_VERSION bump for shipping DB changes.
+// Testing aid: wipe the installed content DB (+ version marker / WAL / SHM) and
+// drop the in-memory connection, then re-download it from the CDN. Lets a tester
+// pull a refreshed content DB without reinstalling the app.
+// TODO(quran-gate): remove with the gating scaffolding at 2.10.0 — the manifest's
+// content.version already handles normal updates.
 const forceResetQuranDb = async (): Promise<void> => {
   if (quranDbPromise) {
     try {
@@ -153,9 +176,9 @@ const forceResetQuranDb = async (): Promise<void> => {
     const f = new File(targetDir, name);
     if (f.exists) f.delete();
   }
-  log.i("Reset", "Deleted installed quran.db — re-copying bundled DB");
+  log.i("Reset", "Deleted installed content DB — re-downloading from CDN");
 
-  // Re-copy + re-open now so the caller can use it immediately.
+  // Re-download + re-open now so the caller can use it immediately.
   await openQuranDb();
 };
 
