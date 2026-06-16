@@ -8,6 +8,8 @@ import {
   Copy,
   Share2,
   Image as ImageIcon,
+  Bookmark,
+  Highlighter,
   Check,
   X,
   ChevronRight,
@@ -29,6 +31,8 @@ import {
 import { BookmarkColor, HighlightColor, QuranThemeType, ReaderViewMode } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
+import { SAJDA_AYAHS, guideEntriesByCategory } from "@/services/guide-content";
+import { GuideCategory, guideTextKey } from "@/types/guide";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
@@ -39,8 +43,9 @@ import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
 import ShareImageSheet from "@/components/quran/sheets/ShareImageSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
 import AyahImage from "@/components/quran/AyahImage";
+import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
 
-type Tab = "hl" | "bmk";
+type View = "menu" | "sajda";
 
 interface AyahActionSheetProps {
   // The ayah whose actions are shown; null closes the sheet.
@@ -50,8 +55,9 @@ interface AyahActionSheetProps {
 }
 
 const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
+  const { isRTL } = useRTL();
   const { width } = useWindowDimensions();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
@@ -60,9 +66,8 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
   const [done, setDone] = useState<"copy" | "share" | null>(null);
   const [shareImageOpen, setShareImageOpen] = useState(false);
-  // Default to the Bookmark tab — bookmarking is the quick "save my place" verb,
-  // so it sits one tap away under the thumb.
-  const [tab, setTab] = useState<Tab>("bmk");
+  // Which sub-view is showing; swaps in place (no stacked modals).
+  const [view, setView] = useState<View>("menu");
   // The bookmark colour pending a "move it here" confirmation (it's in use elsewhere).
   const [confirm, setConfirm] = useState<BookmarkColor | null>(null);
 
@@ -80,6 +85,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDone(null);
     setConfirm(null);
+    setView("menu");
     let cancelled = false;
     QuranContentDB.getAyah(target.surah, target.ayah).then((d) => {
       if (!cancelled) setData(d);
@@ -94,6 +100,9 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const ref = formatNumberToLocale(String(target.ayah));
   const surahName = localizedSurahName(target.surah);
   const shareBody = data ? `${data.text}\n${surahName} ${ref}` : "";
+  const isSajda = SAJDA_AYAHS.some((s) => s.surah === target.surah && s.ayah === target.ayah);
+  const isArabicLocale = i18n.language === "ar";
+  const isLatinLocale = i18n.language === "en" || i18n.language === "ms";
 
   const highlight = highlights.find((h) => h.surah === target.surah && h.ayah === target.ayah);
   const colorLabel = (color: HighlightColor) =>
@@ -122,10 +131,15 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     router.push("/quran-highlights");
   };
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "bmk", label: t("quran.bookmark.title") },
-    { id: "hl", label: t("quran.highlight.title") },
-  ];
+  const RowChevron = isRTL ? ChevronLeft : ChevronRight;
+  const BackChevron = isRTL ? ChevronRight : ChevronLeft;
+  const sajdaColors = {
+    text: ink,
+    subtleText: c.pageNumberColor,
+    cardBg: c.innerBackground,
+    cardBorder: c.frameColor,
+  };
+  const viewTitle = view === "sajda" ? t("quran.guide.sajda.about.title") : surahName;
 
   const versePreview = (
     <Text
@@ -150,131 +164,167 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   return (
     <>
       <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
-        {/* Preview */}
-        <YStack paddingBottom="$2">
-          <XStack alignItems="center" gap="$2" paddingBottom="$2">
-            <Text fontSize={14} fontWeight="700" color={c.headerColor}>
-              {surahName}
-            </Text>
-            <Text fontSize={12} color={c.pageNumberColor}>
+        {/* Header: ayah ref, or back + sub-view title */}
+        <XStack alignItems="center" gap="$2" paddingBottom="$2">
+          {view !== "menu" && (
+            <Pressable
+              onPress={() => setView("menu")}
+              accessibilityRole="button"
+              accessibilityLabel={t("common.back")}
+              hitSlop={8}
+              style={{ marginRight: 2 }}>
+              <BackChevron size={22} color={c.headerColor} />
+            </Pressable>
+          )}
+          <Text fontSize={15} fontWeight="700" color={c.headerColor} flex={1}>
+            {viewTitle}
+          </Text>
+          {view === "menu" && (
+            <Text fontSize={13} color={c.pageNumberColor}>
               {ref}
             </Text>
-          </XStack>
-          {showImageVerse && data ? (
-            <AyahImage
-              version={version}
-              page={data.page}
-              surah={target.surah}
-              ayah={target.ayah}
-              quranTheme={quranTheme}
-              maxWidth={Math.min(width - 56, 440)}
-              fallback={versePreview}
-            />
-          ) : (
-            versePreview
           )}
-        </YStack>
-
-        {/* Quiet utility strip — demoted secondary actions */}
-        <XStack justifyContent="center" gap="$7" paddingVertical="$2.5">
-          <UtilButton
-            icon={done === "copy" ? Check : Copy}
-            label={done === "copy" ? t("quran.action.copied") : t("quran.action.copy")}
-            onPress={copy}
-            ink={c.pageNumberColor}
-          />
-          <UtilButton
-            icon={done === "share" ? Check : Share2}
-            label={done === "share" ? t("quran.action.shared") : t("quran.action.share")}
-            onPress={share}
-            ink={c.pageNumberColor}
-          />
-          <UtilButton
-            icon={ImageIcon}
-            label={t("quran.action.shareImage")}
-            onPress={() => setShareImageOpen(true)}
-            ink={c.pageNumberColor}
-          />
         </XStack>
 
-        {/* Underline tabs (Direction B) */}
-        <XStack gap="$5" borderBottomWidth={1} borderBottomColor={c.frameColor} marginTop="$1">
-          {tabs.map((tb) => {
-            const on = tb.id === tab;
-            return (
-              <Pressable
-                key={tb.id}
-                onPress={() => setTab(tb.id)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={tb.label}
-                style={{ minHeight: 44, justifyContent: "center" }}>
-                <Text
-                  fontSize={15}
-                  fontWeight={on ? "700" : "600"}
-                  color={on ? ink : c.pageNumberColor}
-                  paddingBottom="$2">
-                  {tb.label}
+        {view === "menu" && (
+          <YStack>
+            <YStack paddingBottom="$3" alignItems="center">
+              {showImageVerse && data ? (
+                <AyahImage
+                  version={version}
+                  page={data.page}
+                  surah={target.surah}
+                  ayah={target.ayah}
+                  quranTheme={quranTheme}
+                  maxWidth={Math.min(width - 56, 440)}
+                  fallback={versePreview}
+                />
+              ) : (
+                versePreview
+              )}
+            </YStack>
+
+            {/* Bookmark — 4 ribbon slots, inline (quick to set) */}
+            <YStack borderTopWidth={1} borderTopColor={c.frameColor} paddingTop="$2.5" gap="$2.5">
+              <XStack alignItems="center" gap="$2">
+                <Bookmark size={15} color={c.pageNumberColor} />
+                <Text fontSize={12} fontWeight="700" color={c.pageNumberColor} letterSpacing={0.5}>
+                  {t("quran.bookmark.title").toUpperCase()}
                 </Text>
-                {on && (
-                  <YStack
-                    position="absolute"
-                    left={0}
-                    right={0}
-                    bottom={-1}
-                    height={2.5}
-                    borderRadius={2}
-                    backgroundColor={c.frameColor}
-                  />
-                )}
-              </Pressable>
-            );
-          })}
-        </XStack>
+              </XStack>
+              <BookmarkPanel
+                chrome={c}
+                quranTheme={quranTheme}
+                ink={ink}
+                bookmarks={bookmarks}
+                target={target}
+                confirm={confirm}
+                onPick={(color) => {
+                  if (!data) return;
+                  const at = bookmarks.find((b) => b.color === color);
+                  const here = at && at.surah === target.surah && at.ayah === target.ayah;
+                  if (here) {
+                    removeBookmark(target.surah, target.ayah);
+                  } else if (at) {
+                    setConfirm(color);
+                  } else {
+                    setBookmark(target.surah, target.ayah, data.page, color);
+                  }
+                }}
+                onConfirmMove={() => {
+                  if (data && confirm) setBookmark(target.surah, target.ayah, data.page, confirm);
+                  setConfirm(null);
+                }}
+                onCancelMove={() => setConfirm(null)}
+              />
+            </YStack>
 
-        {/* Panel */}
-        <YStack paddingTop="$3.5" minHeight={140}>
-          {tab === "hl" ? (
-            <HighlightPanel
-              chrome={c}
-              quranTheme={quranTheme}
-              ink={ink}
-              sel={highlight?.color ?? null}
-              label={highlight ? colorLabel(highlight.color) : null}
-              onPick={(color) =>
-                data && toggleHighlight(target.surah, target.ayah, data.page, color)
-              }
-              onRemove={() => removeHighlight(target.surah, target.ayah)}
-              onManage={openManage}
-            />
-          ) : (
-            <BookmarkPanel
-              chrome={c}
-              quranTheme={quranTheme}
-              ink={ink}
-              bookmarks={bookmarks}
-              target={target}
-              confirm={confirm}
-              onPick={(color) => {
-                if (!data) return;
-                const at = bookmarks.find((b) => b.color === color);
-                const here = at && at.surah === target.surah && at.ayah === target.ayah;
-                if (here) {
-                  removeBookmark(target.surah, target.ayah);
-                } else if (at) {
-                  setConfirm(color);
-                } else {
-                  setBookmark(target.surah, target.ayah, data.page, color);
+            {/* Highlight — colour chips, inline */}
+            <YStack
+              borderTopWidth={1}
+              borderTopColor={c.frameColor}
+              paddingTop="$2.5"
+              marginTop="$3"
+              gap="$2.5">
+              <XStack alignItems="center" gap="$2">
+                <Highlighter size={15} color={c.pageNumberColor} />
+                <Text fontSize={12} fontWeight="700" color={c.pageNumberColor} letterSpacing={0.5}>
+                  {t("quran.highlight.title").toUpperCase()}
+                </Text>
+              </XStack>
+              <HighlightPanel
+                chrome={c}
+                quranTheme={quranTheme}
+                ink={ink}
+                sel={highlight?.color ?? null}
+                label={highlight ? colorLabel(highlight.color) : null}
+                onPick={(color) =>
+                  data && toggleHighlight(target.surah, target.ayah, data.page, color)
                 }
-              }}
-              onConfirmMove={() => {
-                if (data && confirm) setBookmark(target.surah, target.ayah, data.page, confirm);
-                setConfirm(null);
-              }}
-              onCancelMove={() => setConfirm(null)}
-            />
-          )}
-        </YStack>
+                onRemove={() => removeHighlight(target.surah, target.ayah)}
+                onManage={openManage}
+              />
+            </YStack>
+
+            {/* Sajda → in-place dua (only on a sajda ayah) */}
+            {isSajda && (
+              <YStack borderTopWidth={1} borderTopColor={c.frameColor} marginTop="$3">
+                <ActionRow
+                  symbol="۩"
+                  label={t("quran.guide.sajda.about.title")}
+                  ink={ink}
+                  chevron={RowChevron}
+                  onPress={() => setView("sajda")}
+                />
+              </YStack>
+            )}
+
+            {/* Quick utilities */}
+            <XStack
+              justifyContent="center"
+              gap="$7"
+              paddingTop="$3"
+              marginTop="$3"
+              borderTopWidth={1}
+              borderTopColor={c.frameColor}>
+              <UtilButton
+                icon={done === "copy" ? Check : Copy}
+                label={done === "copy" ? t("quran.action.copied") : t("quran.action.copy")}
+                onPress={copy}
+                ink={c.pageNumberColor}
+              />
+              <UtilButton
+                icon={done === "share" ? Check : Share2}
+                label={done === "share" ? t("quran.action.shared") : t("quran.action.share")}
+                onPress={share}
+                ink={c.pageNumberColor}
+              />
+              <UtilButton
+                icon={ImageIcon}
+                label={t("quran.action.shareImage")}
+                onPress={() => setShareImageOpen(true)}
+                ink={c.pageNumberColor}
+              />
+            </XStack>
+          </YStack>
+        )}
+
+        {view === "sajda" && (
+          <YStack gap="$2" paddingTop="$1">
+            {guideEntriesByCategory(GuideCategory.SAJDA).map((entry) => (
+              <GuideEntryCard
+                key={entry.id}
+                entry={entry}
+                colors={sajdaColors}
+                title={t(guideTextKey(entry.id, "title"))}
+                body={t(guideTextKey(entry.id, "body"))}
+                source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
+                isArabic={isArabicLocale}
+                isLatin={isLatinLocale}
+              />
+            ))}
+          </YStack>
+        )}
       </ReaderSheet>
 
       {shareImageOpen && data && (
@@ -294,6 +344,52 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     </>
   );
 };
+
+// One primary action: leading icon (or Arabic glyph), label, optional state dot,
+// and a chevron — tapping opens its in-place sub-view.
+const ActionRow = ({
+  icon: Icon,
+  symbol,
+  label,
+  ink,
+  dotColor,
+  chevron: Chevron,
+  onPress,
+}: {
+  icon?: React.ComponentType<{ size?: number; color?: string }>;
+  symbol?: string;
+  label: string;
+  ink: `#${string}`;
+  dotColor?: string;
+  chevron: React.ComponentType<{ size?: number; color?: string }>;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityLabel={label}
+    style={{ minHeight: 52, justifyContent: "center" }}>
+    <XStack alignItems="center" gap="$3" paddingVertical="$2">
+      {Icon ? (
+        <Icon size={20} color={ink} />
+      ) : (
+        <Text
+          fontSize={20}
+          color={ink}
+          style={{ fontFamily: QURAN_TEXT_FONT, width: 20, textAlign: "center" }}>
+          {symbol}
+        </Text>
+      )}
+      <Text fontSize={15} fontWeight="600" color={ink} flex={1}>
+        {label}
+      </Text>
+      {dotColor ? (
+        <YStack width={12} height={12} borderRadius={6} style={{ backgroundColor: dotColor }} />
+      ) : null}
+      <Chevron size={18} color={ink} />
+    </XStack>
+  </Pressable>
+);
 
 const UtilButton = ({
   icon: Icon,
