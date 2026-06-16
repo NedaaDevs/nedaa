@@ -17,6 +17,8 @@ type FeatureCardConfig = {
   descriptionKey: string;
   icon: React.ComponentType<any>;
   route: string;
+  // CTA label key; defaults to the Umrah copy for back-compat.
+  ctaKey?: string;
 };
 
 type Props = {
@@ -27,6 +29,7 @@ const FeatureDiscoveryCard = ({ config }: Props) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { dismissedFeatureCards, dismissFeatureCard } = useAppStore();
+  const ctaLabel = t(config.ctaKey ?? "umrah.featureCard.explore");
 
   if (dismissedFeatureCards.includes(config.id)) return null;
 
@@ -88,9 +91,9 @@ const FeatureDiscoveryCard = ({ config }: Props) => {
           backgroundColor="$accentPrimary"
           alignItems="center"
           accessibilityRole="button"
-          accessibilityLabel={t("umrah.featureCard.explore")}>
+          accessibilityLabel={ctaLabel}>
           <Text size="sm" fontWeight="600" color="white" textAlign="center" width="100%">
-            {t("umrah.featureCard.explore")}
+            {ctaLabel}
           </Text>
         </Pressable>
       </Box>

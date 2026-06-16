@@ -41,6 +41,7 @@ import {
   Settings2Icon,
   BellRing,
   BookOpen,
+  BookText,
   AlarmClock,
   LayoutGrid,
   Star,
@@ -81,7 +82,7 @@ const QURAN_UNLOCK_TAP_TIMEOUT_MS = 3000;
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { locale, mode } = useAppStore();
+  const { locale, mode, quranUnlocked } = useAppStore();
   const { localizedLocation } = useLocationStore();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const [alarmAvailable, setAlarmAvailable] = useState(false);
@@ -270,6 +271,15 @@ const SettingsScreen = () => {
         {/* Athkar Settings - Only show for supported locales */}
         {isAthkarSupported(locale) && (
           <SettingsItem name={t("settings.athkar.title")} path="/settings/athkar" icon={BookOpen} />
+        )}
+
+        {/* Quran — only once unlocked. TODO(quran-gate): drop the guard at 2.10.0 */}
+        {quranUnlocked && (
+          <SettingsItem
+            name={t("settings.quran.title")}
+            path={"/(tabs)/quran" as any}
+            icon={BookText}
+          />
         )}
 
         {/* Widgets (Android with pinning support only) */}

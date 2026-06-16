@@ -9,6 +9,7 @@ import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import FeatureDiscoveryCard from "@/components/tools/FeatureDiscoveryCard";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
+import { BookOpen } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -27,8 +28,18 @@ const UMRAH_GUIDE_CARD = {
   route: "/umrah",
 };
 
+// TODO(quran-gate): the quranUnlocked guard goes away at 2.10.0 (feature public).
+const QURAN_FEATURE_CARD = {
+  id: "quran-feature-v1",
+  titleKey: "quran.featureCard.title",
+  descriptionKey: "quran.featureCard.description",
+  ctaKey: "quran.featureCard.explore",
+  icon: BookOpen,
+  route: "/(tabs)/quran",
+};
+
 export default function MainScreen() {
-  const { mode } = useAppStore();
+  const { mode, quranUnlocked } = useAppStore();
   const { loadPrayerTimes } = usePrayerTimesStore();
   const { becameActiveAt } = useAppVisibility();
   const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
@@ -50,6 +61,9 @@ export default function MainScreen() {
         <Box>
           <Header />
         </Box>
+
+        {/* TODO(quran-gate): remove the quranUnlocked guard at 2.10.0 */}
+        {quranUnlocked && <FeatureDiscoveryCard config={QURAN_FEATURE_CARD} />}
 
         {activeProgress ? (
           <UmrahResumeBanner />
