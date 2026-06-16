@@ -1173,6 +1173,8 @@
   "settings.preferences.title": "Preferences",
   "settings.preferences.westernNumerals.description": "Use Western numerals (1, 2, 3) instead of Arabic numerals (١، ٢، ٣)",
   "settings.preferences.westernNumerals.title": "Western Numerals",
+  "settings.quranUnlocked.body": "The Quran reader is now available in the tab bar.",
+  "settings.quranUnlocked.title": "Quran enabled",
   "settings.rateApp": "Rate Nedaa",
   "settings.shareApp": "Share Nedaa",
   "settings.shareMessage": "Download Nedaa — Prayer times simplified\nhttps://nedaa.dev/download",

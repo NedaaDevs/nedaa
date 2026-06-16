@@ -24,9 +24,18 @@ type Props = {
   icon?: any;
   backOnClick?: boolean;
   rightIconLabel?: string;
+  // TODO(quran-gate): remove at 2.10.0
+  onTitlePress?: () => void;
 };
 
-const TopBar = ({ href, title, icon, backOnClick = false, rightIconLabel }: Props) => {
+const TopBar = ({
+  href,
+  title,
+  icon,
+  backOnClick = false,
+  rightIconLabel,
+  onTitlePress,
+}: Props) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { isRTL } = useRTL();
@@ -60,9 +69,18 @@ const TopBar = ({ href, title, icon, backOnClick = false, rightIconLabel }: Prop
             </Pressable>
           )}
 
-          <Text size="2xl" bold color="$typographyContrast">
-            {t(title)}
-          </Text>
+          {onTitlePress ? (
+            // TODO(quran-gate): remove onTitlePress wrapper at 2.10.0
+            <Pressable onPress={onTitlePress} accessible={false} flexShrink={1}>
+              <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
+                {t(title)}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
+              {t(title)}
+            </Text>
+          )}
         </HStack>
 
         {href && !backOnClick && (

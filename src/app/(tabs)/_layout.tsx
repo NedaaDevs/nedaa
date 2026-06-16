@@ -21,6 +21,8 @@ import { useTheme } from "tamagui";
 
 const TabsLayout = () => {
   const { locale, mode } = useAppStore();
+  // TODO(quran-gate): remove at 2.10.0
+  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -67,6 +69,8 @@ const TabsLayout = () => {
         name="quran"
         options={{
           title: t("a11y.tab.quran"),
+          // TODO(quran-gate): remove at 2.10.0
+          href: quranUnlocked ? "/(tabs)/quran" : null,
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
           tabBarStyle: { display: "none" },
         }}
