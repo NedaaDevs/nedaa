@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, ArrowRight, Highlighter, Bookmark, List } from "lucide-react-native";
+import { ArrowLeft, ArrowRight, Highlighter, Bookmark, List, BookOpen } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
@@ -15,8 +15,9 @@ import { BrowseIndex } from "@/app/quran-browse";
 import { BookmarksTab } from "@/components/quran/library/BookmarksTab";
 import { HighlightsTab } from "@/components/quran/library/HighlightsTab";
 import { KhatmahTab } from "@/components/quran/library/KhatmahTab";
+import { GuideTab } from "@/components/quran/library/GuideTab";
 
-type LibTab = "highlights" | "bookmarks" | "khatmah" | "index";
+type LibTab = "highlights" | "bookmarks" | "khatmah" | "index" | "guide";
 
 // Khatmah is intentionally kept in the union + render switch but omitted from the
 // visible tab bar until the feature ships.
@@ -24,6 +25,7 @@ const TABS: { id: LibTab; icon: typeof List; labelKey: string }[] = [
   { id: "index", icon: List, labelKey: "quran.library.index" },
   { id: "bookmarks", icon: Bookmark, labelKey: "quran.library.bookmarks" },
   { id: "highlights", icon: Highlighter, labelKey: "quran.library.highlights" },
+  { id: "guide", icon: BookOpen, labelKey: "quran.library.guide" },
 ];
 
 // The reader's Library hub — one screen hosting Highlights, Bookmarks, Khatmah,
@@ -87,6 +89,7 @@ const QuranLibraryScreen = () => {
         {tab === "bookmarks" && <BookmarksTab onNavigate={navigate} />}
         {tab === "khatmah" && <KhatmahTab />}
         {tab === "index" && <BrowseIndex onNavigate={navigate} />}
+        {tab === "guide" && <GuideTab />}
       </YStack>
 
       {/* Bottom tab bar */}

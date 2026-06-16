@@ -126,7 +126,7 @@ export type QuranManifest = {
   versions: QuranManifestVersion[];
 };
 
-export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah";
+export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah" | "guide";
 
 export type QuranState = {
   currentPage: number;
