@@ -1,5 +1,6 @@
 import {
   MushafVersion,
+  MushafImageType,
   QuranThemeType,
   LineType,
   DownloadStatus,
@@ -87,43 +88,69 @@ export type VersionDownloadState = BundleDownloadState & {
   dark?: BundleDownloadState;
 };
 
-export type QuranBundle = {
-  path: string;
-  sizeMB: number;
-  checksum: string;
+// A downloadable, checksummed artifact, addressed relative to manifest.baseUrl.
+export type QuranAsset = {
+  url: string;
+  bytes: number;
+  sha256: string;
 };
 
 // A single preview page (a concatenated full-page image) for the version picker.
 export type QuranPreview = {
   page: number;
-  path: string;
+  url: string;
   width: number;
   height: number;
 };
 
+export type QuranEditionImages = {
+  version: string;
+  pages: number;
+  light: QuranAsset;
+  dark?: QuranAsset;
+};
+
+// The per-edition meta/bounds bundle (glyph geometry, line metadata). Versioned
+// independently of the images; `requiresImages` is the images version it was
+// built against — geometry only aligns with that exact render.
+export type QuranEditionMeta = QuranAsset & {
+  version: string;
+  schema: number;
+  requiresImages: string;
+};
+
+// One mushaf edition. (Named QuranManifestVersion for continuity with callers.)
 export type QuranManifestVersion = {
   id: string;
   published: boolean;
   name: string;
+  imageType: MushafImageType;
+  resolution: number;
   yearHijri: number;
   yearGregorian: number;
-  totalPages: number;
   linesPerPage: number;
-  imageWidth: number;
-  imageHeight: number;
-  totalSizeMB: number;
-  baseUrl: string;
-  bundle: QuranBundle;
-  darkBundle?: QuranBundle;
+  images: QuranEditionImages;
+  meta: QuranEditionMeta;
   previews: QuranPreview[];
   darkPreviews?: QuranPreview[];
-  markers: string[];
-  manifestChecksum: string;
+};
+
+// The shared content DB (ayah text, surah/division metadata, mutashabihat),
+// downloaded once from the CDN rather than bundled.
+export type QuranContent = {
+  version: string;
+  schema: number;
+  url: string;
+  bytes: number;
+  sha256: string;
 };
 
 export type QuranManifest = {
-  manifestVersion: number;
-  versions: QuranManifestVersion[];
+  manifestSchema: number;
+  baseUrl: string;
+  editions: QuranManifestVersion[];
+  content: QuranContent;
+  // `ornaments` exists in the manifest but is deferred (app uses bundled ornaments).
 };
 
 export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah" | "guide";

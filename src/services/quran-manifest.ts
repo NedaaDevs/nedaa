@@ -1,6 +1,11 @@
 import { apiGet } from "@/services/api";
 import { AppLogger } from "@/utils/appLogger";
-import type { QuranManifest, QuranManifestVersion } from "@/types/quran";
+import type {
+  QuranManifest,
+  QuranManifestVersion,
+  QuranContent,
+  QuranPreview,
+} from "@/types/quran";
 
 const log = AppLogger.create("quran-manifest");
 
@@ -19,7 +24,10 @@ const fetchManifest = async (): Promise<QuranManifest | null> => {
   if (response.success) {
     cachedManifest = response.data;
     cachedAt = Date.now();
-    log.i("Manifest", `Fetched ${cachedManifest.versions.length} versions`);
+    log.i(
+      "Manifest",
+      `Fetched ${cachedManifest.editions.length} editions, content ${cachedManifest.content.version}`
+    );
     return cachedManifest;
   }
 
@@ -27,35 +35,52 @@ const fetchManifest = async (): Promise<QuranManifest | null> => {
   return null;
 };
 
+// Join the single manifest baseUrl with a relative asset path.
+const assetUrl = (manifest: QuranManifest, path: string): string =>
+  `${manifest.baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+
 const getVersionInfo = async (versionId: string): Promise<QuranManifestVersion | null> => {
   const manifest = await fetchManifest();
-  if (!manifest) return null;
-  return manifest.versions.find((v) => v.id === versionId) ?? null;
+  return manifest?.editions.find((e) => e.id === versionId) ?? null;
 };
 
 const getVersions = async (): Promise<QuranManifestVersion[]> => {
   const manifest = await fetchManifest();
-  const versions = manifest?.versions ?? [];
-  // Hide unpublished versions in production; show them all in dev (the version
+  const editions = manifest?.editions ?? [];
+  // Hide unpublished editions in production; show them all in dev (the version
   // card badges them) so we can test before publishing.
-  return __DEV__ ? versions : versions.filter((v) => v.published);
+  return __DEV__ ? editions : editions.filter((e) => e.published);
 };
 
-const getBundleUrl = (version: QuranManifestVersion): string => {
-  return `${version.baseUrl}${version.bundle.path}`;
+// The shared content DB artifact + its absolute URL.
+const getContent = async (): Promise<{ content: QuranContent; url: string } | null> => {
+  const manifest = await fetchManifest();
+  if (!manifest) return null;
+  return { content: manifest.content, url: assetUrl(manifest, manifest.content.url) };
 };
 
-const getBundleSizeBytes = (version: QuranManifestVersion): number => {
-  return Math.round(version.bundle.sizeMB * 1024 * 1024);
+const getImagesUrl = async (
+  version: QuranManifestVersion,
+  dark = false
+): Promise<string | null> => {
+  const manifest = await fetchManifest();
+  if (!manifest) return null;
+  const asset = dark ? version.images.dark : version.images.light;
+  return asset ? assetUrl(manifest, asset.url) : null;
 };
 
-const getDarkBundleUrl = (version: QuranManifestVersion): string | null => {
-  return version.darkBundle ? `${version.baseUrl}${version.darkBundle.path}` : null;
+const getMetaUrl = async (version: QuranManifestVersion): Promise<string | null> => {
+  const manifest = await fetchManifest();
+  return manifest ? assetUrl(manifest, version.meta.url) : null;
 };
 
-const getDarkBundleSizeBytes = (version: QuranManifestVersion): number => {
-  return version.darkBundle ? Math.round(version.darkBundle.sizeMB * 1024 * 1024) : 0;
-};
+const getImagesSizeBytes = (version: QuranManifestVersion, dark = false): number =>
+  (dark ? version.images.dark?.bytes : version.images.light.bytes) ?? 0;
+
+const getMetaSizeBytes = (version: QuranManifestVersion): number => version.meta.bytes;
+
+const getTotalSizeBytes = (version: QuranManifestVersion): number =>
+  version.images.light.bytes + version.meta.bytes;
 
 export type QuranPreviewImage = {
   page: number;
@@ -65,15 +90,17 @@ export type QuranPreviewImage = {
 };
 
 // Preview page images for the version picker, with absolute URLs. Pass
-// `{ dark: true }` for the V4 dark-theme set (empty when a version has none).
-const getPreviews = (
+// `{ dark: true }` for the V4 dark-theme set (empty when an edition has none).
+const getPreviews = async (
   version: QuranManifestVersion,
   options?: { dark?: boolean }
-): QuranPreviewImage[] => {
-  const list = options?.dark ? version.darkPreviews : version.previews;
-  return (list ?? []).map((p) => ({
+): Promise<QuranPreviewImage[]> => {
+  const manifest = await fetchManifest();
+  if (!manifest) return [];
+  const list: QuranPreview[] = (options?.dark ? version.darkPreviews : version.previews) ?? [];
+  return list.map((p) => ({
     page: p.page,
-    url: `${version.baseUrl}${p.path}`,
+    url: assetUrl(manifest, p.url),
     width: p.width,
     height: p.height,
   }));
@@ -88,10 +115,12 @@ export const QuranManifestService = {
   fetchManifest,
   getVersionInfo,
   getVersions,
-  getBundleUrl,
-  getBundleSizeBytes,
-  getDarkBundleUrl,
-  getDarkBundleSizeBytes,
+  getContent,
+  getImagesUrl,
+  getMetaUrl,
+  getImagesSizeBytes,
+  getMetaSizeBytes,
+  getTotalSizeBytes,
   getPreviews,
   clearCache,
 };
