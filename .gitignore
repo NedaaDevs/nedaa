@@ -70,3 +70,10 @@ docs/changelogs
 
 # Editor
 .vscode/
+
+# Quran content-DB build tooling — run locally, output uploaded to R2 (not shipped/committed)
+scripts/build-mutashabihat.ts
+scripts/build-quran-metadata.ts
+scripts/mutashabihat/
+scripts/normalize-quran-fts.py
+scripts/qul-metadata/
