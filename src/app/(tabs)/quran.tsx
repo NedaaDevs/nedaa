@@ -14,6 +14,7 @@ import {
   Search,
   Settings2,
   Palette,
+  HelpCircle,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -38,6 +39,7 @@ import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/QuranSearchOverlay";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
+import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
 import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import { GuideCategory, type GuideEntry } from "@/types/guide";
@@ -64,6 +66,8 @@ const QuranScreen = () => {
     setReaderActive,
     updateDownloadState,
     dismissDarkOffer,
+    hasSeenQuranGuide,
+    setQuranGuideSeen,
   } = useQuranStore();
   const quranTheme = useResolvedQuranTheme();
   const prefersDark = usePrefersDarkReader();
@@ -76,6 +80,7 @@ const QuranScreen = () => {
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [infoSurah, setInfoSurah] = useState<number | null>(null);
   const [guideSheet, setGuideSheet] = useState<{ entries: GuideEntry[]; titleKey: string } | null>(
@@ -120,6 +125,12 @@ const QuranScreen = () => {
     // never lingers when the user comes back later.
     if (!showReader) setJumpReturn(null);
   }, [showReader, setReaderActive, setJumpReturn]);
+
+  // First time the reader is shown, run the gesture walkthrough.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (showReader && !hasSeenQuranGuide) setShowIntro(true);
+  }, [showReader, hasSeenQuranGuide]);
 
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
@@ -396,6 +407,21 @@ const QuranScreen = () => {
                 <Pressable
                   onPress={() => {
                     setShowOverlay(false);
+                    setShowIntro(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("quran.intro.help")}
+                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                  <ReaderIcon
+                    sf="questionmark.circle"
+                    lucide={HelpCircle}
+                    color={themeColors.headerColor}
+                    size={20}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setShowOverlay(false);
                     setShowSettings(true);
                   }}
                   accessibilityRole="button"
@@ -514,6 +540,17 @@ const QuranScreen = () => {
               </Text>
             </XStack>
           </Pressable>
+        )}
+
+        {/* First-open (and replayable) reader walkthrough */}
+        {showIntro && (
+          <QuranIntroSheet
+            quranTheme={quranTheme}
+            onClose={() => {
+              setShowIntro(false);
+              setQuranGuideSeen();
+            }}
+          />
         )}
 
         {/* Long-press ayah action sheet */}

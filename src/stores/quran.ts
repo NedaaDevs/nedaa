@@ -49,6 +49,7 @@ export const useQuranStore = create<QuranState>()(
       jumpReturn: null,
       showMutashabihatMarkers: false,
       mutashabihatNotes: {},
+      hasSeenQuranGuide: false,
 
       setReaderActive: (active) => set({ readerActive: active }),
       setFlashAyah: (target) => set({ flashAyah: target }),
@@ -63,6 +64,7 @@ export const useQuranStore = create<QuranState>()(
           else delete next[groupId];
           return { mutashabihatNotes: next };
         }),
+      setQuranGuideSeen: () => set({ hasSeenQuranGuide: true }),
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme, quranThemeOverride: true }),
@@ -176,6 +178,7 @@ export const useQuranStore = create<QuranState>()(
         shareIncludeLogo: state.shareIncludeLogo,
         showMutashabihatMarkers: state.showMutashabihatMarkers,
         mutashabihatNotes: state.mutashabihatNotes,
+        hasSeenQuranGuide: state.hasSeenQuranGuide,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
         darkOfferDismissed: state.darkOfferDismissed,
@@ -216,6 +219,9 @@ export const useQuranStore = create<QuranState>()(
         }
         if (typeof merged.showMutashabihatMarkers !== "boolean") {
           merged.showMutashabihatMarkers = false;
+        }
+        if (typeof merged.hasSeenQuranGuide !== "boolean") {
+          merged.hasSeenQuranGuide = false;
         }
         if (!merged.mutashabihatNotes || typeof merged.mutashabihatNotes !== "object") {
           merged.mutashabihatNotes = {};

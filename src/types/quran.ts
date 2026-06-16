@@ -196,6 +196,8 @@ export type QuranState = {
   showMutashabihatMarkers: boolean;
   // Persisted — personal memory note per mutashabihat group, keyed by group id.
   mutashabihatNotes: Record<string, string>;
+  // Persisted — whether the first-open reader walkthrough has been seen.
+  hasSeenQuranGuide: boolean;
 
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
@@ -217,6 +219,7 @@ export type QuranState = {
   setJumpReturn: (page: number | null) => void;
   setShowMutashabihatMarkers: (on: boolean) => void;
   setMutashabihatNote: (groupId: string, text: string) => void;
+  setQuranGuideSeen: () => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;
