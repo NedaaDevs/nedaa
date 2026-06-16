@@ -39,6 +39,7 @@ interface QuranReaderProps {
   onTap?: () => void;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
+  onWaqfPress?: (signId: string) => void;
   // The selected ayah (drives the highlight; cleared when its action sheet closes).
   selectedAyah?: { surah: number; ayah: number } | null;
 }
@@ -83,6 +84,7 @@ const QuranReader = ({
   onTap,
   onAyahLongPress,
   onSurahLongPress,
+  onWaqfPress,
   selectedAyah,
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
@@ -298,6 +300,7 @@ const QuranReader = ({
             width={width}
             onAyahLongPress={onAyahLongPress}
             onSurahLongPress={onSurahLongPress}
+            onWaqfPress={onWaqfPress}
             selectedAyah={selectedAyah}
           />
         ))}
@@ -321,6 +324,7 @@ interface PageSlotProps {
   width: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
+  onWaqfPress?: (signId: string) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
 
@@ -339,6 +343,7 @@ const PageSlot = ({
   width,
   onAyahLongPress,
   onSurahLongPress,
+  onWaqfPress,
   selectedAyah,
 }: PageSlotProps) => {
   const animatedStyle = useAnimatedStyle(() => {
@@ -372,6 +377,7 @@ const PageSlot = ({
               fontSize={fontSize}
               onAyahLongPress={onAyahLongPress}
               onSurahLongPress={onSurahLongPress}
+              onWaqfPress={onWaqfPress}
               selectedAyah={selectedAyah}
             />
           ) : (

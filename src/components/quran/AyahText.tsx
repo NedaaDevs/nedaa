@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { Text } from "react-native";
 
 import { BookmarkColor, HighlightColor, QuranThemeType } from "@/enums/quran";
@@ -9,6 +9,7 @@ import {
   highlightTint,
   toArabicDigits,
 } from "@/constants/Quran";
+import { WAQF_CHARS, waqfIdForChar } from "@/services/guide-content";
 
 interface AyahTextProps {
   surahNumber: number;
@@ -21,6 +22,8 @@ interface AyahTextProps {
   highlightColor?: HighlightColor | null;
   bookmarkColor?: BookmarkColor | null;
   onLongPress: (surahNumber: number, ayahNumber: number) => void;
+  // Tap a waqf sign within the verse → its guide entry (Text-mode contextual).
+  onWaqfPress?: (signId: string) => void;
 }
 
 // One ayah as an inline span in a surah's flowing text: the verse plus its
@@ -36,6 +39,7 @@ const AyahText = ({
   highlightColor,
   bookmarkColor,
   onLongPress,
+  onWaqfPress,
 }: AyahTextProps) => {
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const num = toArabicDigits(ayahNumber);
@@ -56,11 +60,40 @@ const AyahText = ({
     ? HIGHLIGHT_COLORS[highlightColor].solid
     : themeColors.markerColor;
 
+  // Split into word tokens, making only waqf-bearing words tappable. Whole words
+  // stay intact, so Arabic shaping and the combining stop-marks render correctly
+  // (a per-character split would detach the marks and break letter joining).
+  const verseNodes = useMemo<ReactNode>(() => {
+    if (!onWaqfPress) return text;
+    const out: ReactNode[] = [];
+    let buf = "";
+    let key = 0;
+    for (const part of text.split(/(\s+)/)) {
+      const waqfChar = [...part].find((c) => WAQF_CHARS.has(c));
+      const id = waqfChar ? waqfIdForChar(waqfChar) : undefined;
+      if (id) {
+        if (buf) {
+          out.push(buf);
+          buf = "";
+        }
+        out.push(
+          <Text key={`w${key++}`} onPress={() => onWaqfPress(id)}>
+            {part}
+          </Text>
+        );
+      } else {
+        buf += part;
+      }
+    }
+    if (buf) out.push(buf);
+    return out;
+  }, [text, onWaqfPress]);
+
   return (
     <Text
       onLongPress={handleLongPress}
       style={background ? { backgroundColor: background } : undefined}>
-      {text}
+      {verseNodes}
       {bookmarkColor ? (
         <Text style={{ color: "#FFF8EE", backgroundColor: BOOKMARK_COLORS[bookmarkColor].solid }}>
           {` ${num} `}

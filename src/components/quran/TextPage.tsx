@@ -24,6 +24,7 @@ interface TextPageProps {
   fontSize: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
+  onWaqfPress?: (signId: string) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
 }
 
@@ -39,6 +40,7 @@ const TextPage = ({
   fontSize,
   onAyahLongPress,
   onSurahLongPress,
+  onWaqfPress,
   selectedAyah,
 }: TextPageProps) => {
   const { t } = useTranslation();
@@ -179,6 +181,7 @@ const TextPage = ({
               highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
               bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
               onLongPress={handleLongPress}
+              onWaqfPress={onWaqfPress}
             />
           ))}
         </Text>

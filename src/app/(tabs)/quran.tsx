@@ -13,6 +13,7 @@ import {
   ArrowLeftToLine,
   Search,
   Settings2,
+  Palette,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -36,7 +37,10 @@ import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/QuranSearchOverlay";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
+import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
+import { GuideCategory, type GuideEntry } from "@/types/guide";
+import { guideEntriesByCategory, guideEntryById } from "@/services/guide-content";
 import type { QuranManifestVersion } from "@/types/quran";
 
 const QuranScreen = () => {
@@ -71,6 +75,16 @@ const QuranScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [infoSurah, setInfoSurah] = useState<number | null>(null);
+  const [guideSheet, setGuideSheet] = useState<{ entries: GuideEntry[]; titleKey: string } | null>(
+    null
+  );
+  const openGuide = (category: GuideCategory) => {
+    setShowOverlay(false);
+    setGuideSheet({
+      entries: guideEntriesByCategory(category),
+      titleKey: `quran.guide.category.${category}`,
+    });
+  };
   const [showVersionPicker, setShowVersionPicker] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   // The version whose download the user is actively watching on the progress
@@ -262,6 +276,10 @@ const QuranScreen = () => {
             setShowOverlay(false);
             setInfoSurah(surah);
           }}
+          onWaqfPress={(signId) => {
+            const entry = guideEntryById(signId);
+            if (entry) setGuideSheet({ entries: [entry], titleKey: "quran.guide.category.waqf" });
+          }}
           selectedAyah={actionAyah}
         />
 
@@ -316,6 +334,25 @@ const QuranScreen = () => {
                     onFontSizeChange={setFontSize}
                     color={themeColors.headerColor}
                   />
+                )}
+                {isColoredVersion(currentVersion) && readerMode !== ReaderViewMode.TEXT && (
+                  <Pressable
+                    onPress={() => openGuide(GuideCategory.TAJWEED)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("quran.guide.category.tajweed")}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                    <ReaderIcon
+                      sf="paintpalette"
+                      lucide={Palette}
+                      color={themeColors.headerColor}
+                      size={20}
+                    />
+                  </Pressable>
                 )}
                 <Pressable
                   onPress={() => {
@@ -451,6 +488,16 @@ const QuranScreen = () => {
           quranTheme={quranTheme}
           onClose={() => setInfoSurah(null)}
         />
+
+        {/* Contextual reference sheet (tajweed legend, waqf sign, sajda + dua) */}
+        {guideSheet && (
+          <GuideSheet
+            entries={guideSheet.entries}
+            titleKey={guideSheet.titleKey}
+            quranTheme={quranTheme}
+            onClose={() => setGuideSheet(null)}
+          />
+        )}
       </QuranSearchOverlay>
     </YStack>
   );
