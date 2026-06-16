@@ -123,6 +123,41 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   return quranDbPromise;
 };
 
+// Testing aid: wipe the installed copy of quran.db (+ version marker / WAL / SHM)
+// and drop the in-memory connection, then re-copy the bundled DB from scratch.
+// Used on TestFlight to pull a changed bundled DB when QURAN_DB_VERSION is unchanged.
+// TODO(mutashabihat): remove before public release (along with its Maintenance
+// button) — replace with a proper QURAN_DB_VERSION bump for shipping DB changes.
+const forceResetQuranDb = async (): Promise<void> => {
+  if (quranDbPromise) {
+    try {
+      const db = await quranDbPromise;
+      await db.closeAsync();
+    } catch {
+      // already closed or failed to open — we're deleting it regardless
+    }
+    quranDbPromise = null;
+  }
+  clearPageReadCache();
+
+  const dir = await getDirectory();
+  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
+  const targetDir = new Directory(dirUri);
+  for (const name of [
+    QURAN_DB_NAME,
+    `${QURAN_DB_NAME}.version`,
+    `${QURAN_DB_NAME}-wal`,
+    `${QURAN_DB_NAME}-shm`,
+  ]) {
+    const f = new File(targetDir, name);
+    if (f.exists) f.delete();
+  }
+  log.i("Reset", "Deleted installed quran.db — re-copying bundled DB");
+
+  // Re-copy + re-open now so the caller can use it immediately.
+  await openQuranDb();
+};
+
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
   if (!boundsDbMap.has(version)) {
     boundsDbMap.set(
@@ -443,6 +478,7 @@ const getAyahMetadata = async (
 
 export const QuranContentDB = {
   openQuranDb,
+  forceResetQuranDb,
   openBoundsDb,
   closeBoundsDb,
   getLineMetadata,

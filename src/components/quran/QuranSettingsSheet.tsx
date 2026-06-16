@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -9,7 +10,7 @@ import Animated, {
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { Download, Minus, Plus, X } from "lucide-react-native";
+import { Download, Minus, Plus, RotateCcw, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +18,7 @@ import { MushafVersion, DownloadStatus, ReaderViewMode, ReaderPageFit } from "@/
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
+import { QuranContentDB } from "@/services/quran-content-db";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import {
   Section,
@@ -52,6 +54,34 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
 
   const { width, height } = useWindowDimensions();
   const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
+
+  // Testing aid: wipe the installed quran.db and re-copy the bundled one. Lets a
+  // TestFlight build pull changed bundled data without bumping QURAN_DB_VERSION.
+  const [resetting, setResetting] = useState(false);
+  const handleResetDb = () => {
+    Alert.alert(
+      "Reset Quran data?",
+      "Deletes the installed Quran database and re-copies the bundled one.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            setResetting(true);
+            try {
+              await QuranContentDB.forceResetQuranDb();
+              Alert.alert("Quran data reset", "Reopen the reader to load the fresh data.");
+            } catch (e) {
+              Alert.alert("Reset failed", String(e));
+            } finally {
+              setResetting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const libraryVersions = Object.entries(versionDownloads)
     .filter(([, s]) => s?.status && s.status !== DownloadStatus.IDLE)
@@ -179,6 +209,23 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                   <Download size={16} color={chrome.accent} />
                   <Text fontSize={15} color={chrome.accent} fontWeight="600">
                     {t("quran.settings.downloadMore")}
+                  </Text>
+                </XStack>
+              </Pressable>
+            </Section>
+
+            {/* TODO(mutashabihat): remove this Maintenance section before the public
+                App Store release — testing-only DB reset, visible in prod builds too. */}
+            <Section title="Maintenance" chrome={chrome}>
+              <Pressable
+                onPress={handleResetDb}
+                disabled={resetting}
+                accessibilityRole="button"
+                accessibilityLabel="Reset Quran database">
+                <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
+                  <RotateCcw size={16} color={chrome.accentWarning} />
+                  <Text fontSize={15} color={chrome.accentWarning} fontWeight="600">
+                    {resetting ? "Resetting…" : "Reset Quran data (testing)"}
                   </Text>
                 </XStack>
               </Pressable>
