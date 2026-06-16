@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ChevronLeft,
   SlidersHorizontal,
+  Layers,
 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
@@ -44,8 +45,10 @@ import ShareImageSheet from "@/components/quran/sheets/ShareImageSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
 import AyahImage from "@/components/quran/AyahImage";
 import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
+import { MutashabihatView } from "@/components/quran/sheets/MutashabihatView";
+import { MutashabihatGroup } from "@/types/mutashabihat";
 
-type View = "menu" | "sajda";
+type View = "menu" | "sajda" | "mutashabihat";
 
 interface AyahActionSheetProps {
   // The ayah whose actions are shown; null closes the sheet.
@@ -61,11 +64,18 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const { width } = useWindowDimensions();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
+  const currentPage = useQuranStore((s) => s.currentPage);
+  const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
+  const setFlashAyah = useQuranStore((s) => s.setFlashAyah);
+  const setJumpReturn = useQuranStore((s) => s.setJumpReturn);
+  const mutashabihatNotes = useQuranStore((s) => s.mutashabihatNotes);
+  const setMutashabihatNote = useQuranStore((s) => s.setMutashabihatNote);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
   const [done, setDone] = useState<"copy" | "share" | null>(null);
   const [shareImageOpen, setShareImageOpen] = useState(false);
+  const [group, setGroup] = useState<MutashabihatGroup | null>(null);
   // Which sub-view is showing; swaps in place (no stacked modals).
   const [view, setView] = useState<View>("menu");
   // The bookmark colour pending a "move it here" confirmation (it's in use elsewhere).
@@ -86,9 +96,13 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     setDone(null);
     setConfirm(null);
     setView("menu");
+    setGroup(null);
     let cancelled = false;
     QuranContentDB.getAyah(target.surah, target.ayah).then((d) => {
       if (!cancelled) setData(d);
+    });
+    QuranContentDB.getMutashabihatGroupForAyah(target.surah, target.ayah).then((g) => {
+      if (!cancelled) setGroup(g);
     });
     return () => {
       cancelled = true;
@@ -139,7 +153,11 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     cardBg: c.innerBackground,
     cardBorder: c.frameColor,
   };
-  const viewTitle = view === "sajda" ? t("quran.guide.sajda.about.title") : surahName;
+  const subViewTitles: Partial<Record<View, string>> = {
+    sajda: t("quran.guide.sajda.about.title"),
+    mutashabihat: t("quran.mutashabihat.title"),
+  };
+  const viewTitle = subViewTitles[view] ?? surahName;
 
   const versePreview = (
     <Text
@@ -279,6 +297,19 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
               </YStack>
             )}
 
+            {/* Similar verses → in-place comparison (only when this ayah is in a group) */}
+            {group && group.members.length > 1 && (
+              <YStack borderTopWidth={1} borderTopColor={c.frameColor} marginTop="$3">
+                <ActionRow
+                  icon={Layers}
+                  label={`${t("quran.mutashabihat.row")} · ${group.members.length}`}
+                  ink={ink}
+                  chevron={RowChevron}
+                  onPress={() => setView("mutashabihat")}
+                />
+              </YStack>
+            )}
+
             {/* Quick utilities */}
             <XStack
               justifyContent="center"
@@ -324,6 +355,25 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
               />
             ))}
           </YStack>
+        )}
+
+        {view === "mutashabihat" && group && (
+          <MutashabihatView
+            group={group}
+            quranTheme={quranTheme}
+            isArabic={isArabicLocale}
+            note={mutashabihatNotes[group.id] ?? ""}
+            onChangeNote={(text) => setMutashabihatNote(group.id, text)}
+            RowChevron={RowChevron}
+            onGoTo={(surah, ayah, page) => {
+              setJumpReturn(currentPage);
+              onClose();
+              requestAnimationFrame(() => {
+                setCurrentPage(page);
+                setFlashAyah({ surah, ayah });
+              });
+            }}
+          />
         )}
       </ReaderSheet>
 

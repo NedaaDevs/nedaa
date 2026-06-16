@@ -11,6 +11,7 @@ import { QuranContentDB } from "@/services/quran-content-db";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
+import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import { juzForPage } from "@/utils/juz";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import AyahText from "@/components/quran/AyahText";
@@ -55,6 +56,7 @@ const TextPage = ({
   } | null>(null);
 
   const flashAyah = useQuranStore((s) => s.flashAyah);
+  const mutashabihatKeys = useMutashabihatKeys(page);
   const highlights = useHighlightStore((s) => s.highlights);
   const highlightMap = useMemo(() => {
     const map = new Map<string, HighlightColor>();
@@ -180,6 +182,7 @@ const TextPage = ({
               }
               highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
               bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+              hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
               onLongPress={handleLongPress}
               onWaqfPress={onWaqfPress}
             />

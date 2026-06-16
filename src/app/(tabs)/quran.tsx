@@ -17,6 +17,7 @@ import {
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
+import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
@@ -53,6 +54,8 @@ const QuranScreen = () => {
     darkOfferDismissed,
     readerMode,
     fontSize,
+    jumpReturn,
+    setJumpReturn,
     setCurrentPage,
     setOnboardingComplete,
     setSelectedVersion,
@@ -113,7 +116,10 @@ const QuranScreen = () => {
 
   useEffect(() => {
     setReaderActive(showReader);
-  }, [showReader, setReaderActive]);
+    // Leaving the reader drops any pending "return to" target so a stale pill
+    // never lingers when the user comes back later.
+    if (!showReader) setJumpReturn(null);
+  }, [showReader, setReaderActive, setJumpReturn]);
 
   const handleSelectVersion = useCallback(
     async (manifestVersion: QuranManifestVersion) => {
@@ -473,6 +479,38 @@ const QuranScreen = () => {
             onClose={() => setShowSettings(false)}
             onDownloadMore={handleDownloadMore}
           />
+        )}
+
+        {/* Return-to pill after a mutashabihat "go to" jump */}
+        {jumpReturn !== null && (
+          <Pressable
+            onPress={() => {
+              setCurrentPage(jumpReturn);
+              setJumpReturn(null);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t("quran.mutashabihat.return")}
+            style={{
+              position: "absolute",
+              alignSelf: "center",
+              bottom: insets.bottom + 24,
+              zIndex: 16,
+            }}>
+            <XStack
+              alignItems="center"
+              gap="$2"
+              paddingVertical="$2"
+              paddingHorizontal="$3.5"
+              borderRadius={22}
+              borderWidth={1}
+              borderColor={themeColors.frameColor}
+              style={{ backgroundColor: `${themeColors.background}F5` }}>
+              <BackIcon size={16} color={themeColors.headerColor} />
+              <Text fontSize={13} fontWeight="700" color={themeColors.headerColor}>
+                {t("quran.mutashabihat.return")}
+              </Text>
+            </XStack>
+          </Pressable>
         )}
 
         {/* Long-press ayah action sheet */}

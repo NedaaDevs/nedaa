@@ -46,10 +46,12 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
     fontSize,
     twoPageSpread,
     pageFit,
+    showMutashabihatMarkers,
     setReaderMode,
     setFontSize,
     setTwoPageSpread,
     setPageFit,
+    setShowMutashabihatMarkers,
   } = useQuranStore();
 
   const { width, height } = useWindowDimensions();
@@ -194,6 +196,14 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                   />
                 </SettingRow>
               )}
+
+              <SettingRow label={t("quran.settings.showMutashabihatMarkers")} chrome={chrome}>
+                <Switch
+                  value={showMutashabihatMarkers}
+                  onValueChange={setShowMutashabihatMarkers}
+                  accessibilityLabel={t("quran.settings.showMutashabihatMarkers")}
+                />
+              </SettingRow>
             </Section>
 
             <Section title={t("quran.settings.library")} chrome={chrome}>

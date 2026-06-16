@@ -19,6 +19,7 @@ import { useAyahHitTest } from "@/hooks/useAyahHitTest";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
+import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
 import LineShimmer from "@/components/quran/LineShimmer";
@@ -276,6 +277,17 @@ const QuranPage = ({
     srcLineHeight,
   ]);
 
+  // Similar-verse markers ("huffaz mode", off by default): a small dot above the
+  // ayah's end-marker for any verse on this page that belongs to a group.
+  const mutashabihatKeys = useMutashabihatKeys(page);
+  const mutashabihatDots = useMemo(
+    () =>
+      mutashabihatKeys.size === 0
+        ? []
+        : markerPositions.filter((m) => mutashabihatKeys.has(`${m.surahNumber}:${m.ayahNumber}`)),
+    [markerPositions, mutashabihatKeys]
+  );
+
   return (
     <YStack
       flex={1}
@@ -402,6 +414,22 @@ const QuranPage = ({
                   height: rect.height,
                   backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
                   borderRadius: 2,
+                }}
+              />
+            ))}
+
+            {mutashabihatDots.map((m, i) => (
+              <View
+                key={`mut-${i}`}
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: m.x + m.width / 2 - 2.5,
+                  top: m.y - 5,
+                  width: 5,
+                  height: 5,
+                  borderRadius: 2.5,
+                  backgroundColor: QURAN_THEME_COLORS[quranTheme].markerColor,
                 }}
               />
             ))}

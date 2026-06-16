@@ -21,6 +21,8 @@ interface AyahTextProps {
   isFlashing?: boolean;
   highlightColor?: HighlightColor | null;
   bookmarkColor?: BookmarkColor | null;
+  // Mark the verse as having similar verses (mutashabihat) — small trailing dot.
+  hasSimilar?: boolean;
   onLongPress: (surahNumber: number, ayahNumber: number) => void;
   // Tap a waqf sign within the verse → its guide entry (Text-mode contextual).
   onWaqfPress?: (signId: string) => void;
@@ -38,6 +40,7 @@ const AyahText = ({
   isFlashing,
   highlightColor,
   bookmarkColor,
+  hasSimilar,
   onLongPress,
   onWaqfPress,
 }: AyahTextProps) => {
@@ -101,6 +104,7 @@ const AyahText = ({
       ) : (
         <Text style={{ color: markerColor }}>{` ﴿${num}﴾ `}</Text>
       )}
+      {hasSimilar ? <Text style={{ color: themeColors.markerColor }}>{"• "}</Text> : null}
     </Text>
   );
 };
