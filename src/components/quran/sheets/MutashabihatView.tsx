@@ -1,5 +1,5 @@
-import { Pressable, ScrollView, Text as RNText, useWindowDimensions } from "react-native";
-import { XStack, YStack } from "tamagui";
+import { Pressable, Text as RNText, useWindowDimensions } from "react-native";
+import { Sheet, XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
@@ -19,8 +19,8 @@ type Props = {
 };
 
 // In-place comparison of a similar-verse group: each member stacked and
-// ref-labelled, with the differing words highlighted (computed multi-way diff),
-// the curated memory rule on top, and a personal note at the bottom.
+// ref-labelled, with the shared phrase highlighted from its word spans, the
+// curated memory rule on top, and a personal note at the bottom.
 export const MutashabihatView = ({
   group,
   quranTheme,
@@ -36,13 +36,14 @@ export const MutashabihatView = ({
   const ink = c.textTint ?? c.headerColor;
 
   return (
-    // Bounded + scrollable: groups can have 12 members, which would otherwise
-    // overflow the fit-sized sheet.
-    <ScrollView
-      style={{ maxHeight: height * 0.6 }}
+    // Sheet.ScrollView (not RN ScrollView) so the inner list scrolls instead of
+    // dragging the whole sheet; bounded because groups can have ~12 members and
+    // would otherwise overflow the fit-sized sheet.
+    <Sheet.ScrollView
+      maxHeight={height * 0.6}
       contentContainerStyle={{ gap: 12, paddingTop: 4 }}
       keyboardShouldPersistTaps="handled"
-      nestedScrollEnabled>
+      showsVerticalScrollIndicator={false}>
       {group.rule ? (
         <YStack gap="$1">
           <Text fontSize={12} fontWeight="700" color={c.pageNumberColor}>
@@ -119,6 +120,6 @@ export const MutashabihatView = ({
         surface={c.innerBackground}
         isArabic={isArabic}
       />
-    </ScrollView>
+    </Sheet.ScrollView>
   );
 };
