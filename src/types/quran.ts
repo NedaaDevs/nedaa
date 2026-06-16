@@ -163,6 +163,12 @@ export type QuranState = {
   // Transient — an ayah to briefly pulse-highlight after a search jump, so the
   // reader can spot it on the page. Cleared automatically once the pulse ends.
   flashAyah: { surah: number; ayah: number } | null;
+  // Transient — the page to return to after a mutashabihat "go to" jump.
+  jumpReturn: number | null;
+  // Persisted — show the at-a-glance similar-verse markers in the reader ("huffaz mode").
+  showMutashabihatMarkers: boolean;
+  // Persisted — personal memory note per mutashabihat group, keyed by group id.
+  mutashabihatNotes: Record<string, string>;
 
   setCurrentPage: (page: number) => void;
   setCurrentVersion: (version: MushafVersion) => void;
@@ -181,6 +187,9 @@ export type QuranState = {
   setReaderActive: (active: boolean) => void;
   setFlashAyah: (target: { surah: number; ayah: number }) => void;
   clearFlashAyah: () => void;
+  setJumpReturn: (page: number | null) => void;
+  setShowMutashabihatMarkers: (on: boolean) => void;
+  setMutashabihatNote: (groupId: string, text: string) => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;

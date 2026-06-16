@@ -46,10 +46,23 @@ export const useQuranStore = create<QuranState>()(
       // chrome. Not persisted.
       readerActive: false,
       flashAyah: null,
+      jumpReturn: null,
+      showMutashabihatMarkers: false,
+      mutashabihatNotes: {},
 
       setReaderActive: (active) => set({ readerActive: active }),
       setFlashAyah: (target) => set({ flashAyah: target }),
       clearFlashAyah: () => set({ flashAyah: null }),
+      setJumpReturn: (page) => set({ jumpReturn: page }),
+      setShowMutashabihatMarkers: (on) => set({ showMutashabihatMarkers: on }),
+      setMutashabihatNote: (groupId, text) =>
+        set((prev) => {
+          const next = { ...prev.mutashabihatNotes };
+          const trimmed = text.trim();
+          if (trimmed) next[groupId] = trimmed;
+          else delete next[groupId];
+          return { mutashabihatNotes: next };
+        }),
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme, quranThemeOverride: true }),
@@ -161,6 +174,8 @@ export const useQuranStore = create<QuranState>()(
         libraryTab: state.libraryTab,
         shareStyle: state.shareStyle,
         shareIncludeLogo: state.shareIncludeLogo,
+        showMutashabihatMarkers: state.showMutashabihatMarkers,
+        mutashabihatNotes: state.mutashabihatNotes,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
         darkOfferDismissed: state.darkOfferDismissed,
@@ -198,6 +213,12 @@ export const useQuranStore = create<QuranState>()(
         const validPageFits = Object.values(ReaderPageFit) as string[];
         if (!validPageFits.includes(merged.pageFit)) {
           merged.pageFit = ReaderPageFit.FILL;
+        }
+        if (typeof merged.showMutashabihatMarkers !== "boolean") {
+          merged.showMutashabihatMarkers = false;
+        }
+        if (!merged.mutashabihatNotes || typeof merged.mutashabihatNotes !== "object") {
+          merged.mutashabihatNotes = {};
         }
         // A DOWNLOADING/PAUSED status can't survive a process restart — the
         // in-flight transfer is gone. Reset to IDLE on load so the app never

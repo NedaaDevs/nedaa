@@ -8,6 +8,7 @@ import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/quran";
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
+import { MutashabihatGroup } from "@/types/mutashabihat";
 import { stripTashkeel } from "@/utils/tashkeel";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -476,9 +477,98 @@ const getAyahMetadata = async (
   };
 };
 
+const getMutashabihatGroupForAyah = async (
+  surah: number,
+  ayah: number
+): Promise<MutashabihatGroup | null> => {
+  const db = await openQuranDb();
+  // A verse can sit in several groups; surface the one where its shared phrase is
+  // longest (its most significant similarity).
+  const links = await db.getAllAsync<{ group_id: string; highlight_spans: string }>(
+    "SELECT group_id, highlight_spans FROM mutashabihat_members WHERE surah = ? AND ayah = ?",
+    [surah, ayah]
+  );
+  if (links.length === 0) return null;
+  const coverage = (spans: string): number => {
+    try {
+      return (JSON.parse(spans) as [number, number][]).reduce((n, [f, t]) => n + (t - f + 1), 0);
+    } catch {
+      return 0;
+    }
+  };
+  const best = links.reduce((a, b) =>
+    coverage(b.highlight_spans) > coverage(a.highlight_spans) ? b : a
+  );
+
+  const group = await db.getFirstAsync<{
+    id: string;
+    keyword: string | null;
+    rule: string | null;
+    show_context: number;
+    curated: number;
+  }>("SELECT id, keyword, rule, show_context, curated FROM mutashabihat_groups WHERE id = ?", [
+    best.group_id,
+  ]);
+  if (!group) return null;
+
+  const members = await db.getAllAsync<{
+    surah: number;
+    ayah: number;
+    ord: number;
+    text: string;
+    page: number;
+    name_arabic: string;
+    name_transliterated: string;
+    highlight_spans: string | null;
+  }>(
+    `SELECT m.surah, m.ayah, m.ord, a.text, a.page,
+            s.name_arabic, s.name_transliterated, m.highlight_spans
+       FROM mutashabihat_members m
+       JOIN ayahs  a ON a.surah_number = m.surah AND a.ayah_number = m.ayah
+       JOIN surahs s ON s.number = m.surah
+      WHERE m.group_id = ?
+      ORDER BY m.ord`,
+    [best.group_id]
+  );
+
+  return {
+    id: group.id,
+    keyword: group.keyword,
+    rule: group.rule,
+    showContext: group.show_context > 0,
+    curated: group.curated === 1,
+    members: members.map((m) => ({
+      surahNumber: m.surah,
+      ayahNumber: m.ayah,
+      ord: m.ord,
+      text: m.text,
+      page: m.page,
+      surahNameArabic: m.name_arabic,
+      surahNameTransliterated: m.name_transliterated,
+      highlightSpans: m.highlight_spans
+        ? (JSON.parse(m.highlight_spans) as [number, number][])
+        : null,
+    })),
+  };
+};
+
+const getMutashabihatKeysForPage = async (page: number): Promise<Set<string>> => {
+  const db = await openQuranDb();
+  const rows = await db.getAllAsync<{ surah: number; ayah: number }>(
+    `SELECT m.surah, m.ayah
+       FROM mutashabihat_members m
+       JOIN ayahs a ON a.surah_number = m.surah AND a.ayah_number = m.ayah
+      WHERE a.page = ?`,
+    [page]
+  );
+  return new Set(rows.map((r) => `${r.surah}:${r.ayah}`));
+};
+
 export const QuranContentDB = {
   openQuranDb,
   forceResetQuranDb,
+  getMutashabihatGroupForAyah,
+  getMutashabihatKeysForPage,
   openBoundsDb,
   closeBoundsDb,
   getLineMetadata,
