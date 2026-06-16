@@ -69,6 +69,15 @@ export const BundleOutcome = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type BundleOutcome = (typeof BundleOutcome)[keyof typeof BundleOutcome];
 
+// Shareable ayah card: the verse as its actual-edition Mushaf image, or as
+// styled Hafs text on themed paper.
+export const ShareCardStyle = {
+  IMAGE: "image",
+  TEXT: "text",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type ShareCardStyle = (typeof ShareCardStyle)[keyof typeof ShareCardStyle];
+
 // Highlight tag colours — each can be relabelled by the user (e.g. "Memorization").
 export const HighlightColor = {
   RED: "red",

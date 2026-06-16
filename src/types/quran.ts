@@ -8,6 +8,7 @@ import {
   ReaderPageFit,
   RevelationPlace,
   SajdaType,
+  ShareCardStyle,
 } from "@/enums/quran";
 
 export type { DownloadPhase };
@@ -146,6 +147,10 @@ export type QuranState = {
   pageFit: ReaderPageFit;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
   libraryTab: QuranLibraryTab;
+  // Ayah image-share preferences (persisted): which card style was last used,
+  // and whether to stamp the Nedaa logo on the shared image.
+  shareStyle: ShareCardStyle;
+  shareIncludeLogo: boolean;
 
   onboardingComplete: boolean;
   selectedVersion: MushafVersion | null;
@@ -168,6 +173,8 @@ export type QuranState = {
   setTwoPageSpread: (on: boolean) => void;
   setPageFit: (fit: ReaderPageFit) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
+  setShareStyle: (style: ShareCardStyle) => void;
+  setShareIncludeLogo: (on: boolean) => void;
 
   setOnboardingComplete: () => void;
   setSelectedVersion: (version: MushafVersion) => void;

@@ -7,6 +7,7 @@ import * as Clipboard from "expo-clipboard";
 import {
   Copy,
   Share2,
+  Image as ImageIcon,
   Check,
   X,
   ChevronRight,
@@ -35,6 +36,7 @@ import { useRTL } from "@/contexts/RTLContext";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
+import ShareImageSheet from "@/components/quran/sheets/ShareImageSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
 import AyahImage from "@/components/quran/AyahImage";
 
@@ -57,6 +59,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const ink = c.textTint ?? c.headerColor;
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
   const [done, setDone] = useState<"copy" | "share" | null>(null);
+  const [shareImageOpen, setShareImageOpen] = useState(false);
   // Default to the Bookmark tab — bookmarking is the quick "save my place" verb,
   // so it sits one tap away under the thumb.
   const [tab, setTab] = useState<Tab>("bmk");
@@ -145,125 +148,150 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     QuranDownload.isPageAvailable(version, data.page);
 
   return (
-    <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
-      {/* Preview */}
-      <YStack paddingBottom="$2">
-        <XStack alignItems="center" gap="$2" paddingBottom="$2">
-          <Text fontSize={14} fontWeight="700" color={c.headerColor}>
-            {surahName}
-          </Text>
-          <Text fontSize={12} color={c.pageNumberColor}>
-            {ref}
-          </Text>
+    <>
+      <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
+        {/* Preview */}
+        <YStack paddingBottom="$2">
+          <XStack alignItems="center" gap="$2" paddingBottom="$2">
+            <Text fontSize={14} fontWeight="700" color={c.headerColor}>
+              {surahName}
+            </Text>
+            <Text fontSize={12} color={c.pageNumberColor}>
+              {ref}
+            </Text>
+          </XStack>
+          {showImageVerse && data ? (
+            <AyahImage
+              version={version}
+              page={data.page}
+              surah={target.surah}
+              ayah={target.ayah}
+              quranTheme={quranTheme}
+              maxWidth={Math.min(width - 56, 440)}
+              fallback={versePreview}
+            />
+          ) : (
+            versePreview
+          )}
+        </YStack>
+
+        {/* Quiet utility strip — demoted secondary actions */}
+        <XStack justifyContent="center" gap="$7" paddingVertical="$2.5">
+          <UtilButton
+            icon={done === "copy" ? Check : Copy}
+            label={done === "copy" ? t("quran.action.copied") : t("quran.action.copy")}
+            onPress={copy}
+            ink={c.pageNumberColor}
+          />
+          <UtilButton
+            icon={done === "share" ? Check : Share2}
+            label={done === "share" ? t("quran.action.shared") : t("quran.action.share")}
+            onPress={share}
+            ink={c.pageNumberColor}
+          />
+          <UtilButton
+            icon={ImageIcon}
+            label={t("quran.action.shareImage")}
+            onPress={() => setShareImageOpen(true)}
+            ink={c.pageNumberColor}
+          />
         </XStack>
-        {showImageVerse && data ? (
-          <AyahImage
-            version={version}
-            page={data.page}
-            surah={target.surah}
-            ayah={target.ayah}
-            quranTheme={quranTheme}
-            maxWidth={Math.min(width - 56, 440)}
-            fallback={versePreview}
-          />
-        ) : (
-          versePreview
-        )}
-      </YStack>
 
-      {/* Quiet utility strip — demoted secondary actions */}
-      <XStack justifyContent="center" gap="$7" paddingVertical="$2.5">
-        <UtilButton
-          icon={done === "copy" ? Check : Copy}
-          label={done === "copy" ? t("quran.action.copied") : t("quran.action.copy")}
-          onPress={copy}
-          ink={c.pageNumberColor}
-        />
-        <UtilButton
-          icon={done === "share" ? Check : Share2}
-          label={done === "share" ? t("quran.action.shared") : t("quran.action.share")}
-          onPress={share}
-          ink={c.pageNumberColor}
-        />
-      </XStack>
+        {/* Underline tabs (Direction B) */}
+        <XStack gap="$5" borderBottomWidth={1} borderBottomColor={c.frameColor} marginTop="$1">
+          {tabs.map((tb) => {
+            const on = tb.id === tab;
+            return (
+              <Pressable
+                key={tb.id}
+                onPress={() => setTab(tb.id)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={tb.label}
+                style={{ minHeight: 44, justifyContent: "center" }}>
+                <Text
+                  fontSize={15}
+                  fontWeight={on ? "700" : "600"}
+                  color={on ? ink : c.pageNumberColor}
+                  paddingBottom="$2">
+                  {tb.label}
+                </Text>
+                {on && (
+                  <YStack
+                    position="absolute"
+                    left={0}
+                    right={0}
+                    bottom={-1}
+                    height={2.5}
+                    borderRadius={2}
+                    backgroundColor={c.frameColor}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </XStack>
 
-      {/* Underline tabs (Direction B) */}
-      <XStack gap="$5" borderBottomWidth={1} borderBottomColor={c.frameColor} marginTop="$1">
-        {tabs.map((tb) => {
-          const on = tb.id === tab;
-          return (
-            <Pressable
-              key={tb.id}
-              onPress={() => setTab(tb.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={tb.label}
-              style={{ minHeight: 44, justifyContent: "center" }}>
-              <Text
-                fontSize={15}
-                fontWeight={on ? "700" : "600"}
-                color={on ? ink : c.pageNumberColor}
-                paddingBottom="$2">
-                {tb.label}
-              </Text>
-              {on && (
-                <YStack
-                  position="absolute"
-                  left={0}
-                  right={0}
-                  bottom={-1}
-                  height={2.5}
-                  borderRadius={2}
-                  backgroundColor={c.frameColor}
-                />
-              )}
-            </Pressable>
-          );
-        })}
-      </XStack>
-
-      {/* Panel */}
-      <YStack paddingTop="$3.5" minHeight={140}>
-        {tab === "hl" ? (
-          <HighlightPanel
-            chrome={c}
-            quranTheme={quranTheme}
-            ink={ink}
-            sel={highlight?.color ?? null}
-            label={highlight ? colorLabel(highlight.color) : null}
-            onPick={(color) => data && toggleHighlight(target.surah, target.ayah, data.page, color)}
-            onRemove={() => removeHighlight(target.surah, target.ayah)}
-            onManage={openManage}
-          />
-        ) : (
-          <BookmarkPanel
-            chrome={c}
-            quranTheme={quranTheme}
-            ink={ink}
-            bookmarks={bookmarks}
-            target={target}
-            confirm={confirm}
-            onPick={(color) => {
-              if (!data) return;
-              const at = bookmarks.find((b) => b.color === color);
-              const here = at && at.surah === target.surah && at.ayah === target.ayah;
-              if (here) {
-                removeBookmark(target.surah, target.ayah);
-              } else if (at) {
-                setConfirm(color);
-              } else {
-                setBookmark(target.surah, target.ayah, data.page, color);
+        {/* Panel */}
+        <YStack paddingTop="$3.5" minHeight={140}>
+          {tab === "hl" ? (
+            <HighlightPanel
+              chrome={c}
+              quranTheme={quranTheme}
+              ink={ink}
+              sel={highlight?.color ?? null}
+              label={highlight ? colorLabel(highlight.color) : null}
+              onPick={(color) =>
+                data && toggleHighlight(target.surah, target.ayah, data.page, color)
               }
-            }}
-            onConfirmMove={() => {
-              if (data && confirm) setBookmark(target.surah, target.ayah, data.page, confirm);
-              setConfirm(null);
-            }}
-            onCancelMove={() => setConfirm(null)}
-          />
-        )}
-      </YStack>
-    </ReaderSheet>
+              onRemove={() => removeHighlight(target.surah, target.ayah)}
+              onManage={openManage}
+            />
+          ) : (
+            <BookmarkPanel
+              chrome={c}
+              quranTheme={quranTheme}
+              ink={ink}
+              bookmarks={bookmarks}
+              target={target}
+              confirm={confirm}
+              onPick={(color) => {
+                if (!data) return;
+                const at = bookmarks.find((b) => b.color === color);
+                const here = at && at.surah === target.surah && at.ayah === target.ayah;
+                if (here) {
+                  removeBookmark(target.surah, target.ayah);
+                } else if (at) {
+                  setConfirm(color);
+                } else {
+                  setBookmark(target.surah, target.ayah, data.page, color);
+                }
+              }}
+              onConfirmMove={() => {
+                if (data && confirm) setBookmark(target.surah, target.ayah, data.page, confirm);
+                setConfirm(null);
+              }}
+              onCancelMove={() => setConfirm(null)}
+            />
+          )}
+        </YStack>
+      </ReaderSheet>
+
+      {shareImageOpen && data && (
+        <ShareImageSheet
+          surah={target.surah}
+          ayah={target.ayah}
+          version={version}
+          page={data.page}
+          text={data.text}
+          surahName={surahName}
+          ayahRef={ref}
+          quranTheme={quranTheme}
+          imageAvailable={QuranDownload.isPageAvailable(version, data.page)}
+          onClose={() => setShareImageOpen(false)}
+        />
+      )}
+    </>
   );
 };
 

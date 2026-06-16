@@ -15,6 +15,7 @@ import {
   QuranTheme,
   ReaderViewMode,
   ReaderPageFit,
+  ShareCardStyle,
 } from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
@@ -31,6 +32,8 @@ export const useQuranStore = create<QuranState>()(
       twoPageSpread: true,
       pageFit: ReaderPageFit.FILL,
       libraryTab: "index",
+      shareStyle: ShareCardStyle.IMAGE,
+      shareIncludeLogo: true,
 
       onboardingComplete: false,
       selectedVersion: null,
@@ -57,6 +60,8 @@ export const useQuranStore = create<QuranState>()(
       setTwoPageSpread: (on: boolean) => set({ twoPageSpread: on }),
       setPageFit: (fit: ReaderPageFit) => set({ pageFit: fit }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
+      setShareStyle: (style) => set({ shareStyle: style }),
+      setShareIncludeLogo: (on) => set({ shareIncludeLogo: on }),
 
       setOnboardingComplete: () => set({ onboardingComplete: true }),
       setSelectedVersion: (version) => set({ selectedVersion: version, currentVersion: version }),
@@ -154,6 +159,8 @@ export const useQuranStore = create<QuranState>()(
         twoPageSpread: state.twoPageSpread,
         pageFit: state.pageFit,
         libraryTab: state.libraryTab,
+        shareStyle: state.shareStyle,
+        shareIncludeLogo: state.shareIncludeLogo,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
         darkOfferDismissed: state.darkOfferDismissed,
