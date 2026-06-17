@@ -220,6 +220,14 @@ const QuranScreen = () => {
     setShowVersionPicker(true);
   }, []);
 
+  // Full reset: wipe everything, re-arm the content gate, drop the settings sheet.
+  // The emptied store re-routes to the version picker (onboardingComplete false).
+  const handleResetAll = useCallback(async () => {
+    await QuranDownload.resetAll();
+    retryDb();
+    setShowSettings(false);
+  }, [retryDb]);
+
   // Route: onboarding → progress → reader
   if (!onboardingComplete) {
     return (
@@ -536,6 +544,7 @@ const QuranScreen = () => {
           <QuranSettingsSheet
             onClose={() => setShowSettings(false)}
             onDownloadMore={handleDownloadMore}
+            onResetAll={handleResetAll}
           />
         )}
 

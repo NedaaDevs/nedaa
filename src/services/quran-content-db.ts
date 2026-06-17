@@ -58,7 +58,7 @@ const getDirectory = async (): Promise<string> => {
 // Ensure the shared content DB is installed, downloading it from the CDN when
 // missing or when the manifest's `content.version` has moved on. Runs inside
 // `openQuranDb` *before* the DB is opened, so there's no live connection to close
-// here (that's `forceResetQuranDb`'s job) — closing the in-flight promise here
+// here (that's `wipeContentDb`'s job) — closing the in-flight promise here
 // would deadlock.
 const ensureContentDbDownloaded = async (): Promise<void> => {
   const dir = await getDirectory();
@@ -132,11 +132,15 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
     quranDbPromise = (async () => {
       try {
         await ensureContentDbDownloaded();
-        return await SQLite.openDatabaseAsync(
+        const db = await SQLite.openDatabaseAsync(
           QURAN_DB_NAME,
           { useNewConnection: true },
           await getDirectory()
         );
+        // Integrity probe: a stamped file can still be truncated/schema-broken.
+        // Reading the core `ayahs` table fails the open so the gate shows retry.
+        await db.getFirstAsync("SELECT 1 FROM ayahs LIMIT 1");
+        return db;
       } catch (error) {
         quranDbPromise = null;
         log.e("Open", "Error opening quran.db", error as Error);
@@ -147,12 +151,11 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   return quranDbPromise;
 };
 
-// Testing aid: wipe the installed content DB (+ version marker / WAL / SHM) and
-// drop the in-memory connection, then re-download it from the CDN. Lets a tester
-// pull a refreshed content DB without reinstalling the app.
-// TODO(quran-gate): remove with the gating scaffolding at 2.10.0 — the manifest's
-// content.version already handles normal updates.
-const forceResetQuranDb = async (): Promise<void> => {
+// Wipe the installed content DB (+ version marker / WAL / SHM) and drop the
+// in-memory connection. Does not re-download — the next openQuranDb() re-fetches
+// behind the reader's DB gate.
+// TODO(quran-gate): remove with the gating scaffolding at 2.10.0.
+const wipeContentDb = async (): Promise<void> => {
   if (quranDbPromise) {
     try {
       const db = await quranDbPromise;
@@ -176,10 +179,7 @@ const forceResetQuranDb = async (): Promise<void> => {
     const f = new File(targetDir, name);
     if (f.exists) f.delete();
   }
-  log.i("Reset", "Deleted installed content DB — re-downloading from CDN");
-
-  // Re-download + re-open now so the caller can use it immediately.
-  await openQuranDb();
+  log.i("Reset", "Wiped installed content DB");
 };
 
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
@@ -632,7 +632,7 @@ const getAyahTajweed = async (
 
 export const QuranContentDB = {
   openQuranDb,
-  forceResetQuranDb,
+  wipeContentDb,
   getMutashabihatGroupForAyah,
   getMutashabihatKeysForPage,
   getAyahTajweed,

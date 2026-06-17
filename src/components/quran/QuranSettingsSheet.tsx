@@ -18,7 +18,6 @@ import { MushafVersion, DownloadStatus, ReaderViewMode, ReaderPageFit } from "@/
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
-import { QuranContentDB } from "@/services/quran-content-db";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import {
   Section,
@@ -32,9 +31,10 @@ import LibraryRow from "@/components/quran/settings/LibraryRow";
 interface QuranSettingsSheetProps {
   onClose: () => void;
   onDownloadMore: () => void;
+  onResetAll: () => Promise<void>;
 }
 
-const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps) => {
+const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettingsSheetProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const chrome = useQuranChromeColors();
@@ -57,32 +57,26 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
   const { width, height } = useWindowDimensions();
   const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
 
-  // Testing aid: wipe the installed quran.db and re-copy the bundled one. Lets a
-  // TestFlight build pull changed bundled data without bumping QURAN_DB_VERSION.
+  // Testing aid: wipe all downloaded editions + content and return to setup.
   const [resetting, setResetting] = useState(false);
-  const handleResetDb = () => {
-    Alert.alert(
-      "Reset Quran data?",
-      "Deletes the installed Quran database and re-copies the bundled one.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: async () => {
-            setResetting(true);
-            try {
-              await QuranContentDB.forceResetQuranDb();
-              Alert.alert("Quran data reset", "Reopen the reader to load the fresh data.");
-            } catch (e) {
-              Alert.alert("Reset failed", String(e));
-            } finally {
-              setResetting(false);
-            }
-          },
+  const handleResetAll = () => {
+    Alert.alert("Reset all Quran data?", "Deletes downloaded editions and content. You'll return to setup.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Reset",
+        style: "destructive",
+        onPress: async () => {
+          setResetting(true);
+          try {
+            await onResetAll();
+            // onResetAll closes the sheet, so no success state to clear here.
+          } catch (e) {
+            setResetting(false);
+            Alert.alert("Reset failed", String(e));
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const libraryVersions = Object.entries(versionDownloads)
@@ -228,14 +222,14 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
                 App Store release — testing-only DB reset, visible in prod builds too. */}
             <Section title="Maintenance" chrome={chrome}>
               <Pressable
-                onPress={handleResetDb}
+                onPress={handleResetAll}
                 disabled={resetting}
                 accessibilityRole="button"
-                accessibilityLabel="Reset Quran database">
+                accessibilityLabel="Reset all Quran data">
                 <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
                   <RotateCcw size={16} color={chrome.accentWarning} />
                   <Text fontSize={15} color={chrome.accentWarning} fontWeight="600">
-                    {resetting ? "Resetting…" : "Reset Quran data (testing)"}
+                    {resetting ? "Resetting…" : "Reset all Quran data (testing)"}
                   </Text>
                 </XStack>
               </Pressable>

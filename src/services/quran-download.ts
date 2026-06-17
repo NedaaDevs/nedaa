@@ -698,6 +698,19 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
   log.i("Download", `Deleted version ${version}`);
 };
 
+// Full reset: drop every edition, wipe the content DB, clear the manifest cache.
+// Clearing onboardingComplete routes back to the version picker.
+// TODO(quran-gate): remove with the gating scaffolding at 2.10.0.
+const resetAll = async (): Promise<void> => {
+  for (const version of Object.values(MushafVersion)) {
+    await deleteVersion(version);
+  }
+  await QuranContentDB.wipeContentDb();
+  QuranManifestService.clearCache();
+  useQuranStore.setState({ selectedVersion: null, onboardingComplete: false });
+  log.i("Download", "Reset all Quran data");
+};
+
 const checkDiskSpace = (requiredMB: number): { available: boolean; availableMB: number } => {
   try {
     const availableBytes = Paths.availableDiskSpace;
@@ -729,5 +742,6 @@ export const QuranDownload = {
   getImageType,
   verifyIntegrity,
   deleteVersion,
+  resetAll,
   checkDiskSpace,
 };
