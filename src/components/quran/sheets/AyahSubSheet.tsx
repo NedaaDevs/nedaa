@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sheet, XStack } from "tamagui";
+import { Sheet, XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
@@ -98,49 +98,51 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
 
       <Sheet.ScrollView
         flex={1}
-        contentContainerStyle={{ paddingBottom: 4, gap: 16 }}
+        contentContainerStyle={{ paddingBottom: 4 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {kind === "mutashabihat" && group ? (
-          <MutashabihatView
-            group={group}
-            quranTheme={quranTheme}
-            isArabic={isArabicLocale}
-            note={mutashabihatNotes[group.id] ?? ""}
-            onChangeNote={(text) => setMutashabihatNote(group.id, text)}
-            RowChevron={RowChevron}
-            onGoTo={onGoTo}
-          />
-        ) : null}
+        <YStack gap="$4">
+          {kind === "mutashabihat" && group ? (
+            <MutashabihatView
+              group={group}
+              quranTheme={quranTheme}
+              isArabic={isArabicLocale}
+              note={mutashabihatNotes[group.id] ?? ""}
+              onChangeNote={(text) => setMutashabihatNote(group.id, text)}
+              RowChevron={RowChevron}
+              onGoTo={onGoTo}
+            />
+          ) : null}
 
-        {kind === "tajweed"
-          ? tajweedCards.map((card) => (
-              <GuideEntryCard
-                key={card.key}
-                entry={card.entry}
-                colors={cardColors}
-                title={card.title}
-                body={card.body}
-                isArabic={isArabicLocale}
-                isLatin={isLatinLocale}
-              />
-            ))
-          : null}
+          {kind === "tajweed"
+            ? tajweedCards.map((card) => (
+                <GuideEntryCard
+                  key={card.key}
+                  entry={card.entry}
+                  colors={cardColors}
+                  title={card.title}
+                  body={card.body}
+                  isArabic={isArabicLocale}
+                  isLatin={isLatinLocale}
+                />
+              ))
+            : null}
 
-        {kind === "sajda"
-          ? guideEntriesByCategory(GuideCategory.SAJDA).map((entry) => (
-              <GuideEntryCard
-                key={entry.id}
-                entry={entry}
-                colors={cardColors}
-                title={t(guideTextKey(entry.id, "title"))}
-                body={t(guideTextKey(entry.id, "body"))}
-                source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
-                isArabic={isArabicLocale}
-                isLatin={isLatinLocale}
-              />
-            ))
-          : null}
+          {kind === "sajda"
+            ? guideEntriesByCategory(GuideCategory.SAJDA).map((entry) => (
+                <GuideEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  colors={cardColors}
+                  title={t(guideTextKey(entry.id, "title"))}
+                  body={t(guideTextKey(entry.id, "body"))}
+                  source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
+                  isArabic={isArabicLocale}
+                  isLatin={isLatinLocale}
+                />
+              ))
+            : null}
+        </YStack>
       </Sheet.ScrollView>
     </ReaderSheet>
   );
