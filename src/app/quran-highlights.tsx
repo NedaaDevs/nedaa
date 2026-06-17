@@ -136,14 +136,13 @@ export const HighlightColors = () => {
 // Standalone route wrapper — frames HighlightColors with a back header.
 const QuranHighlightsScreen = () => {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const chrome = useQuranChromeColors();
   const { isRTL } = useRTL();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
   return (
-    <YStack flex={1} backgroundColor="$background" paddingTop={insets.top}>
+    <YStack flex={1} backgroundColor="$background">
       <StatusBar style="auto" />
       <XStack
         alignItems="center"

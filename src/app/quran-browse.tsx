@@ -490,7 +490,6 @@ const VerseRow = ({
 // Standalone route wrapper — frames BrowseIndex with a back header.
 const QuranBrowseScreen = () => {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const chrome = useQuranChromeColors();
   const { isRTL } = useRTL();
@@ -503,7 +502,7 @@ const QuranBrowseScreen = () => {
   const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   return (
-    <YStack flex={1} backgroundColor="$background" paddingTop={insets.top}>
+    <YStack flex={1} backgroundColor="$background">
       <StatusBar style="auto" />
       <XStack alignItems="center" paddingHorizontal="$3" paddingVertical="$2">
         <Pressable

@@ -379,7 +379,10 @@ const QuranScreen = () => {
               right={0}
               zIndex={15}
               gap="$2"
-              paddingTop={insets.top + 6}
+              // iOS keeps the SafeAreaView top edge (it already applies insets.top),
+              // so only Android — which drops that edge for the immersive reader —
+              // adds the inset here. Avoids a double top inset on iOS.
+              paddingTop={(Platform.OS === PlatformType.ANDROID ? insets.top : 0) + 6}
               paddingBottom="$2.5"
               paddingHorizontal="$3"
               backgroundColor={`${themeColors.background}F0`}

@@ -59,7 +59,7 @@ const QuranLibraryScreen = () => {
   const activeLabel = t(TABS.find((x) => x.id === tab)?.labelKey ?? "quran.library.title");
 
   return (
-    <YStack flex={1} backgroundColor="$background" paddingTop={insets.top}>
+    <YStack flex={1} backgroundColor="$background">
       <StatusBar style="auto" />
 
       {/* Header: back + active-tab title */}
