@@ -1,4 +1,6 @@
-import "@tamagui/native/setup-zeego";
+// Enables RNGH-backed Sheet gestures so Sheet.ScrollView scrolls its content
+// instead of dragging the whole sheet. Must precede any Tamagui import.
+import "@tamagui/native/setup-gesture-handler";
 import "@/localization/i18n";
 import "@tamagui/linear-gradient";
 
