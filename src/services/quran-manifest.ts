@@ -74,6 +74,21 @@ const getMetaUrl = async (version: QuranManifestVersion): Promise<string | null>
   return manifest ? assetUrl(manifest, version.meta.url) : null;
 };
 
+// The edition's default ayah-marker ornament pack (medallion frames) + its version.
+// Null when the manifest ships no ayah-marker ornaments for this edition.
+const getAyahMarkerPack = async (
+  version: QuranManifestVersion
+): Promise<{ url: string; version: string } | null> => {
+  const manifest = await fetchManifest();
+  const group = manifest?.ornaments?.ayahMarker;
+  if (!manifest || !group) return null;
+  const optionId = group.defaultByEdition?.[version.id] ?? group.default;
+  const option =
+    group.options.find((o) => o.id === optionId) ??
+    group.options.find((o) => o.editions?.includes(version.id));
+  return option ? { url: assetUrl(manifest, option.url), version: option.version } : null;
+};
+
 const getImagesSizeBytes = (version: QuranManifestVersion, dark = false): number =>
   (dark ? version.images.dark?.bytes : version.images.light.bytes) ?? 0;
 
@@ -118,6 +133,7 @@ export const QuranManifestService = {
   getContent,
   getImagesUrl,
   getMetaUrl,
+  getAyahMarkerPack,
   getImagesSizeBytes,
   getMetaSizeBytes,
   getTotalSizeBytes,

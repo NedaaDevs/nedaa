@@ -145,12 +145,38 @@ export type QuranContent = {
   sha256: string;
 };
 
+// A selectable ornament style (e.g. ayah-marker frames) as a downloadable pack.
+export type QuranOrnamentOption = QuranAsset & {
+  id: string;
+  version: string;
+  resolution?: number;
+  // Editions this option applies to (the marker artwork differs per edition).
+  editions?: string[];
+  preview?: string;
+};
+
+export type QuranOrnamentGroup = {
+  default: string;
+  // Per-edition default option id, overriding `default`.
+  defaultByEdition?: Record<string, string>;
+  options: QuranOrnamentOption[];
+};
+
+// Selectable style packs overlaid on the reader, keyed off bounds positions.
+export type QuranOrnaments = {
+  ayahMarker?: QuranOrnamentGroup;
+  surahFrame?: QuranOrnamentGroup;
+  pageHolder?: QuranOrnamentGroup;
+};
+
 export type QuranManifest = {
   manifestSchema: number;
   baseUrl: string;
   editions: QuranManifestVersion[];
   content: QuranContent;
-  // `ornaments` exists in the manifest but is deferred (app uses bundled ornaments).
+  // Style packs (ayah-marker frames etc.) downloaded per edition; the ayah-marker
+  // default pack carries the medallion frames the reader overlays on each ayah.
+  ornaments?: QuranOrnaments;
 };
 
 export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah" | "guide";

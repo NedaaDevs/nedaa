@@ -16,7 +16,7 @@ import { QuranManifestService } from "@/services/quran-manifest";
 import { planEditionDownload, type InstalledVersions } from "@/services/quran-download-plan";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
-import type { DownloadProgress } from "@/types/quran";
+import type { DownloadProgress, QuranManifestVersion } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
 
@@ -123,6 +123,12 @@ const buildProgress = (
 
 const getVersionDir = (version: MushafVersion): Directory => {
   return new Directory(Paths.document, `quran/${version}`);
+};
+
+// Where the ayah-marker medallion frames live (AyahMarker reads them here);
+// populated by extracting the edition's ayah-marker ornament pack.
+const getMarkersDir = (version: MushafVersion): Directory => {
+  return new Directory(Paths.document, `quran/${version}/markers`);
 };
 
 // Dark-theme images live in a sibling directory so they can be downloaded and
@@ -315,6 +321,57 @@ const downloadAndExtractBundle = async (
   }
 };
 
+// Download + extract the edition's default ayah-marker frame pack into the markers
+// dir, when absent or out of date. Self-contained + non-fatal: any failure is
+// logged and swallowed so the caller's edition flow proceeds (just without markers).
+const ensureAyahMarkers = async (
+  active: ActiveDownload,
+  version: MushafVersion,
+  manifestVersion: QuranManifestVersion
+): Promise<void> => {
+  try {
+    const pack = await QuranManifestService.getAyahMarkerPack(manifestVersion);
+    if (!pack || active.cancelled) return;
+    const markersDir = getMarkersDir(version);
+    const haveFrames = new File(markersDir, "marker-sepia.png").exists;
+    if (haveFrames && readInstalled(version).markers === pack.version) return;
+
+    const outcome = await downloadAndExtractBundle(active, {
+      url: pack.url,
+      sizeBytes: 0,
+      dir: markersDir,
+      zipName: `quran-${version}-markers.zip`,
+      alreadyOnDisk: false,
+      emit: () => {},
+    });
+    if (outcome === BundleOutcome.EXTRACTED) {
+      writeInstalled(version, { markers: pack.version });
+      log.d("Download", `Installed ayah-marker pack ${pack.version} for ${version}`);
+    }
+  } catch (error) {
+    log.e(
+      "Download",
+      `Ayah-marker pack failed for ${version} (markers absent)`,
+      error instanceof Error ? error : undefined
+    );
+  }
+};
+
+// Opportunistic, idempotent marker fetch for an already-installed edition (the
+// edition download covers fresh installs; this catches editions installed before
+// the ornament pack existed, or a pack version bump). Cheap: no-ops once the
+// current pack is on disk. Runs in its own lightweight context (not a tracked
+// download) so it never shows progress chrome.
+const ensureMarkersInstalled = async (version: MushafVersion): Promise<void> => {
+  const manifestVersion = await QuranManifestService.getVersionInfo(version);
+  if (!manifestVersion) return;
+  await ensureAyahMarkers(
+    { controller: new AbortController(), cancelled: false, promise: Promise.resolve() },
+    version,
+    manifestVersion
+  );
+};
+
 const start = (version: MushafVersion): Promise<void> =>
   beginDownload(activeDownloads, version, doStart);
 
@@ -430,6 +487,11 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       return;
     }
     if (plan.needMeta) writeInstalled(version, { meta: manifestVersion.meta.version });
+
+    // 3) Ayah-marker ornament (tiny ~20KB): the edition's default medallion frames
+    // the reader overlays on each ayah. Fetched when missing or its version changed.
+    // Non-fatal — a failure leaves the edition usable (text/images), just no markers.
+    await ensureAyahMarkers(active, version, manifestVersion);
 
     // Complete only once BOTH legs have landed.
     clearResume(version);
@@ -656,6 +718,7 @@ const checkDiskSpace = (requiredMB: number): { available: boolean; availableMB: 
 
 export const QuranDownload = {
   start,
+  ensureMarkersInstalled,
   startDark,
   deleteDark,
   pause,

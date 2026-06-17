@@ -148,6 +148,13 @@ const QuranScreen = () => {
     }, [setSheetReturnAyah])
   );
 
+  // Ensure the edition's ayah-marker frames are installed (covers editions added
+  // before the ornament pack shipped). Idempotent + tiny (~20KB); no-ops once on
+  // disk. New downloads already include markers via the edition download.
+  useEffect(() => {
+    if (showReader) QuranDownload.ensureMarkersInstalled(currentVersion);
+  }, [showReader, currentVersion]);
+
   // First time the reader is shown, run the gesture walkthrough.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
