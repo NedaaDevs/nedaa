@@ -83,6 +83,17 @@ Select the language you want, and submit translations to the strings in the app.
 
 If you don't see your language in the crowdin project, you can create a new ["discussion"](https://crowdin.com/project/nedaa-v2/discussions) in the crowdin project, and we will add the language for you.
 
+### Maintaining translations
+
+`en.json` is the source of truth and the only file developers edit by hand (Arabic, `ar.json`, is also hand-maintained by the team). The remaining locales are owned by Crowdin — never edit those files directly, they are overwritten on the next download.
+
+The flow:
+
+- Push to `master` and Crowdin auto-uploads new English source strings for translation.
+- Crowdin keeps a single PR open from its `l10n_master` branch. Merge it into `master` before each release (merge, don't delete the branch — Crowdin reuses it). Letting it sit lets the branch drift behind `master`.
+
+A locale only becomes selectable when it's listed in `AppLocale` (`src/enums/app.ts`) — both the language picker and the device-default resolver derive from that enum. Keep a locale gated there until its Crowdin coverage is ship-ready.
+
 ### Developer Guide
 
 Please refer to the [Developer Guide](./docs/DEV-README.md).

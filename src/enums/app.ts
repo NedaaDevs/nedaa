@@ -1,8 +1,9 @@
 export enum AppLocale {
   EN = "en",
   AR = "ar",
-  // MS = "ms",
   UR = "ur",
+  // Malay gated until Crowdin coverage is ship-ready; ms.json is bundled and ready, enable here to expose it
+  // MS = "ms",
 }
 
 export enum PlatformType {
