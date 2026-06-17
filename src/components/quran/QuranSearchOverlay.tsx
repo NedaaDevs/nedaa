@@ -30,7 +30,7 @@ import { QURAN_TEXT_FONT, HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER } from "@/cons
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
-import { HighlightColor } from "@/enums/quran";
+import { HighlightColor, RevelationPlace } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
@@ -502,43 +502,51 @@ const SurahRow = ({
   chrome: ReturnType<typeof useQuranChromeColors>;
   surah: SurahMeta;
   onPress: () => void;
-}) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityLabel={localizedSurahName(surah.number)}>
-    <XStack
-      alignItems="center"
-      gap="$3"
-      paddingVertical="$3"
-      borderBottomWidth={1}
-      borderColor="$borderColor">
-      <YStack
-        width={34}
-        height={34}
-        borderRadius={17}
+}) => {
+  const { t } = useTranslation();
+  const place =
+    surah.revelationPlace === RevelationPlace.MAKKAH
+      ? t("quran.surah.makki")
+      : t("quran.surah.madani");
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={localizedSurahName(surah.number)}>
+      <XStack
         alignItems="center"
-        justifyContent="center"
-        backgroundColor={chrome.cardBorder}>
-        <Text fontSize={13} fontWeight="700" color={chrome.text}>
-          {formatNumberToLocale(String(surah.number))}
-        </Text>
-      </YStack>
-      <YStack flex={1}>
-        <Text
-          fontSize={15}
-          fontWeight="600"
-          color={chrome.text}
-          style={{ fontFamily: metadataFontFamily() }}>
-          {localizedSurahName(surah.number)}
-        </Text>
-        <Text fontSize={12} color={chrome.subtleText}>
-          {surah.nameTransliterated}
-        </Text>
-      </YStack>
-    </XStack>
-  </Pressable>
-);
+        gap="$3"
+        paddingVertical="$3"
+        borderBottomWidth={1}
+        borderColor="$borderColor">
+        <YStack
+          width={34}
+          height={34}
+          borderRadius={17}
+          alignItems="center"
+          justifyContent="center"
+          backgroundColor={chrome.cardBorder}>
+          <Text fontSize={13} fontWeight="700" color={chrome.text}>
+            {formatNumberToLocale(String(surah.number))}
+          </Text>
+        </YStack>
+        <YStack flex={1}>
+          <Text
+            fontSize={15}
+            fontWeight="600"
+            color={chrome.text}
+            style={{ fontFamily: metadataFontFamily() }}>
+            {localizedSurahName(surah.number)}
+          </Text>
+          <Text fontSize={12} color={chrome.subtleText}>
+            {place} ·{" "}
+            {t("quran.surah.ayahCount", { n: formatNumberToLocale(String(surah.ayahCount)) })}
+          </Text>
+        </YStack>
+      </XStack>
+    </Pressable>
+  );
+};
 
 const VerseRow = ({
   chrome,
