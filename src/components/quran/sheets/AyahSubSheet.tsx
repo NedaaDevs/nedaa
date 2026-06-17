@@ -98,7 +98,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
 
       <Sheet.ScrollView
         flex={1}
-        contentContainerStyle={{ paddingBottom: 4, gap: 12 }}
+        contentContainerStyle={{ paddingBottom: 4, gap: 16 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         {kind === "mutashabihat" && group ? (

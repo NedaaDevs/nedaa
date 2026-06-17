@@ -1,5 +1,4 @@
-import { ScrollView, useWindowDimensions } from "react-native";
-import { YStack } from "tamagui";
+import { Sheet } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
@@ -22,7 +21,6 @@ interface GuideSheetProps {
 // the reader's paper and shown as a bottom sheet over the page.
 const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps) => {
   const { t, i18n } = useTranslation();
-  const { height } = useWindowDimensions();
   const c = QURAN_THEME_COLORS[quranTheme];
   const isArabic = i18n.language === "ar";
   const isLatin = i18n.language === "en" || i18n.language === "ms";
@@ -34,29 +32,27 @@ const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps)
   };
 
   return (
-    <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
-      <YStack gap="$3">
-        <Text fontSize={15} fontWeight="700" color={c.headerColor}>
-          {t(titleKey)}
-        </Text>
-        <ScrollView
-          style={{ maxHeight: height * 0.6 }}
-          contentContainerStyle={{ gap: 8 }}
-          showsVerticalScrollIndicator={false}>
-          {entries.map((entry) => (
-            <GuideEntryCard
-              key={entry.id}
-              entry={entry}
-              colors={colors}
-              title={t(guideTextKey(entry.id, "title"))}
-              body={t(guideTextKey(entry.id, "body"))}
-              source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
-              isArabic={isArabic}
-              isLatin={isLatin}
-            />
-          ))}
-        </ScrollView>
-      </YStack>
+    <ReaderSheet onClose={onClose} quranTheme={quranTheme} snapPoints={[85]}>
+      <Text fontSize={15} fontWeight="700" color={c.headerColor} paddingBottom="$2">
+        {t(titleKey)}
+      </Text>
+      <Sheet.ScrollView
+        flex={1}
+        contentContainerStyle={{ paddingBottom: 4, gap: 8 }}
+        showsVerticalScrollIndicator={false}>
+        {entries.map((entry) => (
+          <GuideEntryCard
+            key={entry.id}
+            entry={entry}
+            colors={colors}
+            title={t(guideTextKey(entry.id, "title"))}
+            body={t(guideTextKey(entry.id, "body"))}
+            source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
+            isArabic={isArabic}
+            isLatin={isLatin}
+          />
+        ))}
+      </Sheet.ScrollView>
     </ReaderSheet>
   );
 };
