@@ -6,6 +6,7 @@ import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { MushafVersion } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useQuranStore } from "@/stores/quran";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
@@ -20,7 +21,7 @@ const QuranTajweedScreen = () => {
   const surahNum = Number(surah);
   const ayahNum = Number(ayah);
   const version = useQuranStore((s) => s.currentVersion);
-  const quranTheme = useQuranStore((s) => s.quranTheme);
+  const quranTheme = useResolvedQuranTheme();
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const isArabicLocale = i18n.language === "ar";

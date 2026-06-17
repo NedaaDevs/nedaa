@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { MutashabihatGroup } from "@/types/mutashabihat";
 import { useQuranStore } from "@/stores/quran";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { useRTL } from "@/contexts/RTLContext";
 import { ReaderContentPage } from "@/components/quran/ReaderContentPage";
 import { MutashabihatView } from "@/components/quran/sheets/MutashabihatView";
@@ -21,7 +22,7 @@ const QuranMutashabihatScreen = () => {
   const surahNum = Number(surah);
   const ayahNum = Number(ayah);
 
-  const quranTheme = useQuranStore((s) => s.quranTheme);
+  const quranTheme = useResolvedQuranTheme();
   const currentPage = useQuranStore((s) => s.currentPage);
   const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
   const setFlashAyah = useQuranStore((s) => s.setFlashAyah);

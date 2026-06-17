@@ -9,7 +9,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { QURAN_THEME_COLORS, isDarkPaper } from "@/constants/Quran";
-import { useQuranStore } from "@/stores/quran";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { useRTL } from "@/contexts/RTLContext";
 
 // Full-screen reader sub-page (similar verses, tajweed, sajda) on the same paper
@@ -22,7 +22,7 @@ export const ReaderContentPage = ({ title, subtitle, children }: Props) => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isRTL } = useRTL();
-  const quranTheme = useQuranStore((s) => s.quranTheme);
+  const quranTheme = useResolvedQuranTheme();
   const c = QURAN_THEME_COLORS[quranTheme];
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 

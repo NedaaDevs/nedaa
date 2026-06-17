@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { guideEntriesByCategory } from "@/services/guide-content";
 import { GuideCategory, guideTextKey } from "@/types/guide";
-import { useQuranStore } from "@/stores/quran";
+import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
 import { ReaderContentPage } from "@/components/quran/ReaderContentPage";
 
@@ -11,7 +11,7 @@ import { ReaderContentPage } from "@/components/quran/ReaderContentPage";
 // explanation, reached from a sajdah ayah's action sheet.
 const QuranSajdaScreen = () => {
   const { t, i18n } = useTranslation();
-  const quranTheme = useQuranStore((s) => s.quranTheme);
+  const quranTheme = useResolvedQuranTheme();
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const isArabicLocale = i18n.language === "ar";
