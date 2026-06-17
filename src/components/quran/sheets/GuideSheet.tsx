@@ -1,4 +1,4 @@
-import { Sheet } from "tamagui";
+import { Sheet, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
@@ -38,20 +38,22 @@ const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps)
       </Text>
       <Sheet.ScrollView
         flex={1}
-        contentContainerStyle={{ paddingBottom: 4, gap: 8 }}
+        contentContainerStyle={{ paddingBottom: 4 }}
         showsVerticalScrollIndicator={false}>
-        {entries.map((entry) => (
-          <GuideEntryCard
-            key={entry.id}
-            entry={entry}
-            colors={colors}
-            title={t(guideTextKey(entry.id, "title"))}
-            body={t(guideTextKey(entry.id, "body"))}
-            source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
-            isArabic={isArabic}
-            isLatin={isLatin}
-          />
-        ))}
+        <YStack gap="$3">
+          {entries.map((entry) => (
+            <GuideEntryCard
+              key={entry.id}
+              entry={entry}
+              colors={colors}
+              title={t(guideTextKey(entry.id, "title"))}
+              body={t(guideTextKey(entry.id, "body"))}
+              source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
+              isArabic={isArabic}
+              isLatin={isLatin}
+            />
+          ))}
+        </YStack>
       </Sheet.ScrollView>
     </ReaderSheet>
   );
