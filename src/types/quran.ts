@@ -192,6 +192,9 @@ export type QuranState = {
   flashAyah: { surah: number; ayah: number } | null;
   // Transient — the page to return to after a mutashabihat "go to" jump.
   jumpReturn: number | null;
+  // Transient — the ayah whose action sheet should reopen when the reader regains
+  // focus (set when a sub-page opens, so Back returns to the sheet, not the reader).
+  sheetReturnAyah: { surah: number; ayah: number } | null;
   // Persisted — show the at-a-glance similar-verse markers in the reader ("huffaz mode").
   showMutashabihatMarkers: boolean;
   // Persisted — personal memory note per mutashabihat group, keyed by group id.
@@ -217,6 +220,7 @@ export type QuranState = {
   setFlashAyah: (target: { surah: number; ayah: number }) => void;
   clearFlashAyah: () => void;
   setJumpReturn: (page: number | null) => void;
+  setSheetReturnAyah: (ayah: { surah: number; ayah: number } | null) => void;
   setShowMutashabihatMarkers: (on: boolean) => void;
   setMutashabihatNote: (groupId: string, text: string) => void;
   setQuranGuideSeen: () => void;

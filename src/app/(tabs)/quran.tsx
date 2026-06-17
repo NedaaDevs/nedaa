@@ -3,7 +3,7 @@ import { Alert, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -58,6 +58,7 @@ const QuranScreen = () => {
     fontSize,
     jumpReturn,
     setJumpReturn,
+    setSheetReturnAyah,
     setCurrentPage,
     setOnboardingComplete,
     setSelectedVersion,
@@ -133,6 +134,19 @@ const QuranScreen = () => {
     const id = setTimeout(() => setJumpReturn(null), 6000);
     return () => clearTimeout(id);
   }, [jumpReturn, setJumpReturn]);
+
+  // Back from an ayah sub-page (similar verses / tajweed / sajda) reopens its action
+  // sheet, so Back returns to the sheet rather than straight to the reader. The
+  // mutashabihat "go to" clears this first, so a jump lands on the verse instead.
+  useFocusEffect(
+    useCallback(() => {
+      const pending = useQuranStore.getState().sheetReturnAyah;
+      if (pending) {
+        setActionAyah(pending);
+        setSheetReturnAyah(null);
+      }
+    }, [setSheetReturnAyah])
+  );
 
   // First time the reader is shown, run the gesture walkthrough.
   useEffect(() => {

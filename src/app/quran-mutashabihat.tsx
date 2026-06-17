@@ -26,6 +26,7 @@ const QuranMutashabihatScreen = () => {
   const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
   const setFlashAyah = useQuranStore((s) => s.setFlashAyah);
   const setJumpReturn = useQuranStore((s) => s.setJumpReturn);
+  const setSheetReturnAyah = useQuranStore((s) => s.setSheetReturnAyah);
   const mutashabihatNotes = useQuranStore((s) => s.mutashabihatNotes);
   const setMutashabihatNote = useQuranStore((s) => s.setMutashabihatNote);
 
@@ -54,6 +55,8 @@ const QuranMutashabihatScreen = () => {
           onChangeNote={(text) => setMutashabihatNote(group.id, text)}
           RowChevron={RowChevron}
           onGoTo={(s, a, page) => {
+            // A jump leaves for a new verse, so the source sheet must not reopen.
+            setSheetReturnAyah(null);
             setJumpReturn(currentPage);
             router.back();
             requestAnimationFrame(() => {

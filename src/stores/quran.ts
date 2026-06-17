@@ -47,6 +47,7 @@ export const useQuranStore = create<QuranState>()(
       readerActive: false,
       flashAyah: null,
       jumpReturn: null,
+      sheetReturnAyah: null,
       showMutashabihatMarkers: false,
       mutashabihatNotes: {},
       hasSeenQuranGuide: false,
@@ -55,6 +56,7 @@ export const useQuranStore = create<QuranState>()(
       setFlashAyah: (target) => set({ flashAyah: target }),
       clearFlashAyah: () => set({ flashAyah: null }),
       setJumpReturn: (page) => set({ jumpReturn: page }),
+      setSheetReturnAyah: (ayah) => set({ sheetReturnAyah: ayah }),
       setShowMutashabihatMarkers: (on) => set({ showMutashabihatMarkers: on }),
       setMutashabihatNote: (groupId, text) =>
         set((prev) => {

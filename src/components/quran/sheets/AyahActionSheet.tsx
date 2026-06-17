@@ -67,6 +67,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const { width } = useWindowDimensions();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
+  const setSheetReturnAyah = useQuranStore((s) => s.setSheetReturnAyah);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
@@ -151,6 +152,13 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   // Distinct tajweed rules in this ayah (V4 only) — drives the row count/visibility;
   // the rules themselves are shown on the full tajweed page.
   const tajweedCount = buildTajweedCards(tajweed, t).length;
+
+  // Opening a sub-page records this ayah so Back returns to the sheet (the reader
+  // reopens it on refocus), then closes the sheet.
+  const leaveForSubPage = () => {
+    setSheetReturnAyah({ surah: target.surah, ayah: target.ayah });
+    onClose();
+  };
 
   const versePreview = (
     <Text
@@ -281,7 +289,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                   ink={ink}
                   chevron={RowChevron}
                   onPress={() => {
-                    onClose();
+                    leaveForSubPage();
                     router.push("/quran-sajda");
                   }}
                 />
@@ -297,7 +305,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                   ink={ink}
                   chevron={RowChevron}
                   onPress={() => {
-                    onClose();
+                    leaveForSubPage();
                     router.push({
                       pathname: "/quran-mutashabihat",
                       params: { surah: target.surah, ayah: target.ayah },
@@ -316,7 +324,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                   ink={ink}
                   chevron={RowChevron}
                   onPress={() => {
-                    onClose();
+                    leaveForSubPage();
                     router.push({
                       pathname: "/quran-tajweed",
                       params: { surah: target.surah, ayah: target.ayah },
