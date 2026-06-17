@@ -8,5 +8,6 @@
   { "id": "tajweed.madda_normal", "category": "tajweed", "color": "#537FFF" },
   { "id": "tajweed.madda_permissible", "category": "tajweed", "color": "#4050FF" },
   { "id": "tajweed.madda_necessary", "category": "tajweed", "color": "#000EBC" },
+  { "id": "tajweed.tafkhim", "category": "tajweed", "color": "#7A5C1E" },
   { "id": "tajweed.silent", "category": "tajweed", "color": "#AAAAAA" }
 ]

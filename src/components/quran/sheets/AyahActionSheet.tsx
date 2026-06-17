@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   SlidersHorizontal,
   Layers,
+  Palette,
 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
@@ -29,11 +30,18 @@ import {
   highlightTint,
   bookmarkTint,
 } from "@/constants/Quran";
-import { BookmarkColor, HighlightColor, QuranThemeType, ReaderViewMode } from "@/enums/quran";
+import {
+  BookmarkColor,
+  HighlightColor,
+  MushafVersion,
+  QuranThemeType,
+  ReaderViewMode,
+} from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
-import { SAJDA_AYAHS, guideEntriesByCategory } from "@/services/guide-content";
-import { GuideCategory, guideTextKey } from "@/types/guide";
+import { SAJDA_AYAHS, guideEntriesByCategory, guideEntryById } from "@/services/guide-content";
+import { GuideCategory, GuideEntry, guideTextKey } from "@/types/guide";
+import { TAJWEED_RULE_BY_INDEX } from "@/constants/tajweed";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
@@ -48,7 +56,7 @@ import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
 import { MutashabihatView } from "@/components/quran/sheets/MutashabihatView";
 import { MutashabihatGroup } from "@/types/mutashabihat";
 
-type View = "menu" | "sajda" | "mutashabihat";
+type View = "menu" | "sajda" | "mutashabihat" | "tajweed";
 
 interface AyahActionSheetProps {
   // The ayah whose actions are shown; null closes the sheet.
@@ -76,6 +84,8 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const [done, setDone] = useState<"copy" | "share" | null>(null);
   const [shareImageOpen, setShareImageOpen] = useState(false);
   const [group, setGroup] = useState<MutashabihatGroup | null>(null);
+  // Distinct tajweed rules (CPAL index + edition hex) in this ayah; V4 only.
+  const [tajweed, setTajweed] = useState<{ index: number; hex: string }[]>([]);
   // Which sub-view is showing; swaps in place (no stacked modals).
   const [view, setView] = useState<View>("menu");
   // The bookmark colour pending a "move it here" confirmation (it's in use elsewhere).
@@ -97,6 +107,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     setConfirm(null);
     setView("menu");
     setGroup(null);
+    setTajweed([]);
     let cancelled = false;
     QuranContentDB.getAyah(target.surah, target.ayah).then((d) => {
       if (!cancelled) setData(d);
@@ -104,10 +115,16 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
     QuranContentDB.getMutashabihatGroupForAyah(target.surah, target.ayah).then((g) => {
       if (!cancelled) setGroup(g);
     });
+    // Tajweed colours only exist in the V4 edition's bounds.db.
+    if (version === MushafVersion.V4) {
+      QuranContentDB.getAyahTajweed(version, target.surah, target.ayah).then((t) => {
+        if (!cancelled) setTajweed(t);
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, [target]);
+  }, [target, version]);
 
   if (!target) return null;
 
@@ -156,8 +173,40 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   const subViewTitles: Partial<Record<View, string>> = {
     sajda: t("quran.guide.sajda.about.title"),
     mutashabihat: t("quran.mutashabihat.title"),
+    tajweed: t("quran.tajweed.title"),
   };
   const viewTitle = subViewTitles[view] ?? surahName;
+
+  // Distinct tajweed rules in this ayah as guide cards, in reading order. The swatch
+  // always uses the edition's own colour (this V4 font's palette differs from the
+  // guide's); the name comes from the mapped Reference-Guide entry, or a generic
+  // label for the few palette slots without one. Deduped so each rule shows once.
+  const tajweedCards = (() => {
+    const seen = new Set<string>();
+    const cards: { key: string; entry: GuideEntry; title: string; body: string }[] = [];
+    for (const { index, hex } of tajweed) {
+      const ruleId = TAJWEED_RULE_BY_INDEX[index];
+      const entry = ruleId ? guideEntryById(ruleId) : undefined;
+      if (entry) {
+        if (seen.has(entry.id)) continue;
+        seen.add(entry.id);
+        cards.push({
+          key: entry.id,
+          entry: { ...entry, color: hex },
+          title: t(guideTextKey(entry.id, "title")),
+          body: t(guideTextKey(entry.id, "body")),
+        });
+      } else {
+        cards.push({
+          key: `idx-${index}`,
+          entry: { id: `tajweed.idx-${index}`, category: GuideCategory.TAJWEED, color: hex },
+          title: t("quran.tajweed.mark"),
+          body: "",
+        });
+      }
+    }
+    return cards;
+  })();
 
   const versePreview = (
     <Text
@@ -310,6 +359,19 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
               </YStack>
             )}
 
+            {/* Tajweed → in-place rule list (V4 edition only; rules present in this ayah) */}
+            {tajweedCards.length > 0 && (
+              <YStack borderTopWidth={1} borderTopColor={c.frameColor} marginTop="$3">
+                <ActionRow
+                  icon={Palette}
+                  label={`${t("quran.tajweed.row")} · ${formatNumberToLocale(String(tajweedCards.length))}`}
+                  ink={ink}
+                  chevron={RowChevron}
+                  onPress={() => setView("tajweed")}
+                />
+              </YStack>
+            )}
+
             {/* Quick utilities */}
             <XStack
               justifyContent="center"
@@ -350,6 +412,22 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                 title={t(guideTextKey(entry.id, "title"))}
                 body={t(guideTextKey(entry.id, "body"))}
                 source={t(guideTextKey(entry.id, "source"), { defaultValue: "" }) || undefined}
+                isArabic={isArabicLocale}
+                isLatin={isLatinLocale}
+              />
+            ))}
+          </YStack>
+        )}
+
+        {view === "tajweed" && (
+          <YStack gap="$2" paddingTop="$1">
+            {tajweedCards.map((card) => (
+              <GuideEntryCard
+                key={card.key}
+                entry={card.entry}
+                colors={sajdaColors}
+                title={card.title}
+                body={card.body}
                 isArabic={isArabicLocale}
                 isLatin={isLatinLocale}
               />

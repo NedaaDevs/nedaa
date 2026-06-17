@@ -587,11 +587,55 @@ const getMutashabihatKeysForPage = async (page: number): Promise<Set<string>> =>
   return new Set(rows.map((r) => `${r.surah}:${r.ayah}`));
 };
 
+const getTajweedPalette = async (version: MushafVersion): Promise<Map<number, string>> => {
+  try {
+    const db = await openBoundsDb(version);
+    const rows = await db.getAllAsync<{ idx: number; hex: string }>(
+      "SELECT idx, hex FROM tajweed_palette"
+    );
+    return new Map(rows.map((r) => [r.idx, r.hex]));
+  } catch {
+    // Non-tajweed editions (V1/V2) have no tajweed_palette table.
+    return new Map();
+  }
+};
+
+// Distinct tajweed rules in an ayah, as { CPAL index, hex }, in reading order
+// (first occurrence reading down the ayah). Empty for non-tajweed editions
+// (V1/V2) or when the edition's bounds aren't installed.
+const getAyahTajweed = async (
+  version: MushafVersion,
+  surah: number,
+  ayah: number
+): Promise<{ index: number; hex: string }[]> => {
+  try {
+    const db = await openBoundsDb(version);
+    // Reading order = line then position; the per-glyph CSV is already source order.
+    const rows = await db.getAllAsync<{ tajweed_index: string }>(
+      "SELECT tajweed_index FROM glyph_bounds WHERE surah_number = ? AND ayah_number = ? AND tajweed_index IS NOT NULL AND tajweed_index != '' ORDER BY page, line, position",
+      [surah, ayah]
+    );
+    if (rows.length === 0) return [];
+    // Set preserves insertion order → distinct indices in first-occurrence order.
+    const indices = new Set<number>();
+    for (const r of rows)
+      for (const part of r.tajweed_index.split(",")) {
+        const n = Number.parseInt(part, 10);
+        if (!Number.isNaN(n)) indices.add(n);
+      }
+    const palette = await getTajweedPalette(version);
+    return [...indices].map((index) => ({ index, hex: palette.get(index) ?? "#888888" }));
+  } catch {
+    return [];
+  }
+};
+
 export const QuranContentDB = {
   openQuranDb,
   forceResetQuranDb,
   getMutashabihatGroupForAyah,
   getMutashabihatKeysForPage,
+  getAyahTajweed,
   openBoundsDb,
   closeBoundsDb,
   getLineMetadata,
