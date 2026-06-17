@@ -115,7 +115,7 @@ export const useAyahHitTest = ({
           return;
         }
 
-        const hit = glyphBounds.find(
+        let hit = glyphBounds.find(
           (g) =>
             g.isMarker === wantMarker &&
             g.line === sourceLine &&
@@ -124,6 +124,22 @@ export const useAyahHitTest = ({
             sourceY >= g.y &&
             sourceY <= g.y + g.height
         );
+
+        // Long-press near-miss: a word press landing in inter-word spacing
+        // resolves to the nearest word on the same line.
+        if (!hit && !wantMarker) {
+          let bestDist = Infinity;
+          for (const g of glyphBounds) {
+            if (g.isMarker || g.line !== sourceLine) continue;
+            const dx = Math.max(g.x - sourceX, 0, sourceX - (g.x + g.width));
+            const dy = Math.max(g.y - sourceY, 0, sourceY - (g.y + g.height));
+            const d = dx * dx + dy * dy;
+            if (d < bestDist) {
+              bestDist = d;
+              hit = g;
+            }
+          }
+        }
 
         setHighlightedAyah(
           hit ? { surah: hit.surahNumber, ayah: hit.ayahNumber, touchX, touchY } : null

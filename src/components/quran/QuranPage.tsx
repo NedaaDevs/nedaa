@@ -28,6 +28,8 @@ import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
 
 const LONG_PRESS_MS = 400;
+// Must exceed the page-swipe pan's minDistance(15) to avoid a no-op jitter band.
+const LONG_PRESS_MAX_DIST = 20;
 
 interface QuranPageProps {
   page: number;
@@ -126,6 +128,7 @@ const QuranPage = ({
     () =>
       Gesture.LongPress()
         .minDuration(LONG_PRESS_MS)
+        .maxDistance(LONG_PRESS_MAX_DIST)
         // onStart runs as a worklet on the UI thread; hop to JS for the hit-test.
         .onStart((e) => scheduleOnRN(handleLongPress, e.absoluteX, e.absoluteY)),
     [handleLongPress]
