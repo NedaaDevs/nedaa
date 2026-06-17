@@ -13,13 +13,24 @@ interface ReaderSheetProps {
   open?: boolean;
   onClose: () => void;
   quranTheme: QuranThemeType;
+  // Set % rest heights (e.g. [90]) to give the frame a definite height so an inner
+  // Sheet.ScrollView can scroll. Omit for fit-to-content (short cards) — but then
+  // content must not overflow, since a fit-sized frame has no room to scroll into.
+  snapPoints?: number[];
   children: React.ReactNode;
 }
 
-// Paper-themed reader bottom sheet built on Tamagui's Sheet — native drag
-// handle, safe-area and keyboard handling. `snapPointsMode="fit"` sizes the
-// sheet to its content (works for the short surah card and the taller ayah sheet).
-const ReaderSheet = ({ open = true, onClose, quranTheme, children }: ReaderSheetProps) => {
+// Paper-themed reader bottom sheet built on Tamagui's Sheet — native drag handle,
+// safe-area and keyboard handling. Defaults to `snapPointsMode="fit"` (sizes to
+// content) for short cards; callers with scrollable content pass `snapPoints` for a
+// definite-height frame the inner Sheet.ScrollView fills.
+const ReaderSheet = ({
+  open = true,
+  onClose,
+  quranTheme,
+  snapPoints,
+  children,
+}: ReaderSheetProps) => {
   const c = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
   const rtl = useRTL();
@@ -31,7 +42,7 @@ const ReaderSheet = ({ open = true, onClose, quranTheme, children }: ReaderSheet
       onOpenChange={(next: boolean) => {
         if (!next) onClose();
       }}
-      snapPointsMode="fit"
+      {...(snapPoints ? { snapPoints } : { snapPointsMode: "fit" as const })}
       dismissOnSnapToBottom
       dismissOnOverlayPress
       moveOnKeyboardChange
@@ -52,7 +63,10 @@ const ReaderSheet = ({ open = true, onClose, quranTheme, children }: ReaderSheet
         paddingTop="$3"
         paddingBottom={Math.max(insets.bottom, 16) + 16}>
         <RTLContext value={rtl}>
-          <View style={{ direction: rtl.direction }}>{children}</View>
+          {/* flex:1 lets a child Sheet.ScrollView fill the definite-height frame. */}
+          <View style={{ direction: rtl.direction, flex: snapPoints ? 1 : undefined }}>
+            {children}
+          </View>
         </RTLContext>
       </Sheet.Frame>
     </Sheet>

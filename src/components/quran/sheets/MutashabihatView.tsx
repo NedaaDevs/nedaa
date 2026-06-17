@@ -1,5 +1,5 @@
-import { Pressable, Text as RNText, useWindowDimensions } from "react-native";
-import { Sheet, XStack, YStack } from "tamagui";
+import { Pressable, Text as RNText } from "react-native";
+import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
@@ -31,19 +31,12 @@ export const MutashabihatView = ({
   RowChevron,
 }: Props) => {
   const { t } = useTranslation();
-  const { height } = useWindowDimensions();
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
 
   return (
-    // Sheet.ScrollView (not RN ScrollView) so the inner list scrolls instead of
-    // dragging the whole sheet; bounded because groups can have ~12 members and
-    // would otherwise overflow the fit-sized sheet.
-    <Sheet.ScrollView
-      maxHeight={height * 0.6}
-      contentContainerStyle={{ gap: 12, paddingTop: 4 }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}>
+    // Plain stack — the parent sheet body's Sheet.ScrollView handles scrolling.
+    <YStack gap="$3" paddingTop="$1">
       {group.rule ? (
         <YStack gap="$1">
           <Text fontSize={12} fontWeight="700" color={c.pageNumberColor}>
@@ -120,6 +113,6 @@ export const MutashabihatView = ({
         surface={c.innerBackground}
         isArabic={isArabic}
       />
-    </Sheet.ScrollView>
+    </YStack>
   );
 };

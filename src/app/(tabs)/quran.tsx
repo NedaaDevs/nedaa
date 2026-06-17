@@ -126,6 +126,14 @@ const QuranScreen = () => {
     if (!showReader) setJumpReturn(null);
   }, [showReader, setReaderActive, setJumpReturn]);
 
+  // The "return" pill auto-dismisses a few seconds after a jump, so it doesn't
+  // linger once you've settled on the new verse; tap it before then to go back.
+  useEffect(() => {
+    if (jumpReturn === null) return;
+    const id = setTimeout(() => setJumpReturn(null), 6000);
+    return () => clearTimeout(id);
+  }, [jumpReturn, setJumpReturn]);
+
   // First time the reader is shown, run the gesture walkthrough.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
