@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Pressable } from "react-native";
+import { Alert, Platform, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -24,6 +24,7 @@ import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
 import { MushafVersion, DownloadStatus, ReaderViewMode } from "@/enums/quran";
+import { PlatformType } from "@/enums/app";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
 import QuranDbGate from "@/components/quran/QuranDbGate";
@@ -39,6 +40,7 @@ import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/QuranSearchOverlay";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
+import AyahSubSheet, { type AyahSubViewTarget } from "@/components/quran/sheets/AyahSubSheet";
 import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
 import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
@@ -58,7 +60,7 @@ const QuranScreen = () => {
     fontSize,
     jumpReturn,
     setJumpReturn,
-    setSheetReturnAyah,
+    setFlashAyah,
     setCurrentPage,
     setOnboardingComplete,
     setSelectedVersion,
@@ -83,6 +85,7 @@ const QuranScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
+  const [subSheet, setSubSheet] = useState<AyahSubViewTarget | null>(null);
   const [infoSurah, setInfoSurah] = useState<number | null>(null);
   const [guideSheet, setGuideSheet] = useState<{ entries: GuideEntry[]; titleKey: string } | null>(
     null
@@ -135,17 +138,28 @@ const QuranScreen = () => {
     return () => clearTimeout(id);
   }, [jumpReturn, setJumpReturn]);
 
-  // Back from an ayah sub-page (similar verses / tajweed / sajda) reopens its action
-  // sheet, so Back returns to the sheet rather than straight to the reader. The
-  // mutashabihat "go to" clears this first, so a jump lands on the verse instead.
-  useFocusEffect(
-    useCallback(() => {
-      const pending = useQuranStore.getState().sheetReturnAyah;
-      if (pending) {
-        setActionAyah(pending);
-        setSheetReturnAyah(null);
-      }
-    }, [setSheetReturnAyah])
+  // Open a sub-view sheet (similar verses / tajweed / sajda) stacked OVER the action
+  // sheet, which stays mounted underneath. Unmounting the action sheet here tears down
+  // its modal mid-present, leaving the sub-sheet showing only its overlay. Closing the
+  // sub-view reveals the action sheet again.
+  const openSubView = useCallback(
+    (kind: AyahSubViewTarget["kind"]) => {
+      if (!actionAyah) return;
+      setSubSheet({ kind, ...actionAyah });
+    },
+    [actionAyah]
+  );
+  const closeSubSheet = useCallback(() => setSubSheet(null), []);
+  // Mutashabihat "go to": leave both sheets and jump the reader to the picked verse.
+  const subGoTo = useCallback(
+    (surah: number, ayah: number, page: number) => {
+      setSubSheet(null);
+      setActionAyah(null);
+      setJumpReturn(currentPage);
+      setCurrentPage(page);
+      setFlashAyah({ surah, ayah });
+    },
+    [currentPage, setJumpReturn, setCurrentPage, setFlashAyah]
   );
 
   // Ensure the edition's ayah-marker frames are installed (covers editions added
@@ -591,11 +605,19 @@ const QuranScreen = () => {
           />
         )}
 
-        {/* Long-press ayah action sheet */}
+        {/* Long-press ayah action sheet + its sub-view sheets (similar verses,
+            tajweed, sajda) — closing a sub-view reopens the action sheet. */}
         <AyahActionSheet
           target={actionAyah}
           quranTheme={quranTheme}
           onClose={() => setActionAyah(null)}
+          onOpenSubView={openSubView}
+        />
+        <AyahSubSheet
+          target={subSheet}
+          quranTheme={quranTheme}
+          onClose={closeSubSheet}
+          onGoTo={subGoTo}
         />
 
         {/* Long-press surah header → surah info sheet (controlled; stays mounted) */}

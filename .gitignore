@@ -77,3 +77,6 @@ scripts/build-quran-metadata.ts
 scripts/mutashabihat/
 scripts/normalize-quran-fts.py
 scripts/qul-metadata/
+
+# Local Crowdin CLI config (may hold a token) — never commit
+crowdin-cli.yml

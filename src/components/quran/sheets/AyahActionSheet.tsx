@@ -48,6 +48,7 @@ import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
 import ShareImageSheet from "@/components/quran/sheets/ShareImageSheet";
+import type { AyahSubViewKind } from "@/components/quran/sheets/AyahSubSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
 import AyahImage from "@/components/quran/AyahImage";
 import { buildTajweedCards } from "@/components/quran/tajweed-cards";
@@ -58,16 +59,17 @@ interface AyahActionSheetProps {
   target: { surah: number; ayah: number } | null;
   quranTheme: QuranThemeType;
   onClose: () => void;
+  // Open a sub-view sheet (similar verses / tajweed / sajda) for this ayah.
+  onOpenSubView: (kind: AyahSubViewKind) => void;
 }
 
-const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) => {
+const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahActionSheetProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { isRTL } = useRTL();
   const { width } = useWindowDimensions();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
-  const setSheetReturnAyah = useQuranStore((s) => s.setSheetReturnAyah);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const [data, setData] = useState<{ text: string; page: number } | null>(null);
@@ -152,13 +154,6 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
   // Distinct tajweed rules in this ayah (V4 only) — drives the row count/visibility;
   // the rules themselves are shown on the full tajweed page.
   const tajweedCount = buildTajweedCards(tajweed, t).length;
-
-  // Opening a sub-page records this ayah so Back returns to the sheet (the reader
-  // reopens it on refocus), then closes the sheet.
-  const leaveForSubPage = () => {
-    setSheetReturnAyah({ surah: target.surah, ayah: target.ayah });
-    onClose();
-  };
 
   const versePreview = (
     <Text
@@ -286,12 +281,9 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                 <ActionRow
                   symbol="۩"
                   label={t("quran.guide.sajda.about.title")}
-                  ink={ink}
+                  ink={c.headerColor}
                   chevron={RowChevron}
-                  onPress={() => {
-                    leaveForSubPage();
-                    router.push("/quran-sajda");
-                  }}
+                  onPress={() => onOpenSubView("sajda")}
                 />
               </YStack>
             )}
@@ -302,15 +294,9 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                 <ActionRow
                   icon={Layers}
                   label={`${t("quran.mutashabihat.row")} · ${group.members.length}`}
-                  ink={ink}
+                  ink={c.headerColor}
                   chevron={RowChevron}
-                  onPress={() => {
-                    leaveForSubPage();
-                    router.push({
-                      pathname: "/quran-mutashabihat",
-                      params: { surah: target.surah, ayah: target.ayah },
-                    });
-                  }}
+                  onPress={() => onOpenSubView("mutashabihat")}
                 />
               </YStack>
             )}
@@ -321,15 +307,9 @@ const AyahActionSheet = ({ target, quranTheme, onClose }: AyahActionSheetProps) 
                 <ActionRow
                   icon={Palette}
                   label={`${t("quran.tajweed.row")} · ${formatNumberToLocale(String(tajweedCount))}`}
-                  ink={ink}
+                  ink={c.headerColor}
                   chevron={RowChevron}
-                  onPress={() => {
-                    leaveForSubPage();
-                    router.push({
-                      pathname: "/quran-tajweed",
-                      params: { surah: target.surah, ayah: target.ayah },
-                    });
-                  }}
+                  onPress={() => onOpenSubView("tajweed")}
                 />
               </YStack>
             )}
