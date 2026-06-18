@@ -179,7 +179,13 @@ export type QuranManifest = {
   ornaments?: QuranOrnaments;
 };
 
-export type QuranLibraryTab = "index" | "highlights" | "bookmarks" | "khatmah" | "guide";
+export type QuranLibraryTab =
+  | "index"
+  | "highlights"
+  | "bookmarks"
+  | "khatmah"
+  | "reminders"
+  | "guide";
 
 export type QuranState = {
   currentPage: number;

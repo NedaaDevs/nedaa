@@ -16,7 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { XStack, YStack } from "tamagui";
-import { Bookmark, BookOpen, Highlighter, List, X } from "lucide-react-native";
+import { Bell, Bookmark, BookOpen, Highlighter, List, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
@@ -28,8 +28,9 @@ import { BookmarksTab } from "@/components/quran/library/BookmarksTab";
 import { HighlightsTab } from "@/components/quran/library/HighlightsTab";
 import { KhatmahTab } from "@/components/quran/library/KhatmahTab";
 import { GuideTab } from "@/components/quran/library/GuideTab";
+import { RemindersTab } from "@/components/quran/library/RemindersTab";
 
-export type LibTab = "highlights" | "bookmarks" | "khatmah" | "index" | "guide";
+export type LibTab = "highlights" | "bookmarks" | "khatmah" | "index" | "reminders" | "guide";
 export type ReaderLibraryDrawerHandle = { open: (tab?: LibTab) => void };
 
 // Khatmah stays in the render switch but off the visible tab bar until it ships.
@@ -37,6 +38,7 @@ const TABS: { id: LibTab; icon: typeof List; labelKey: string }[] = [
   { id: "index", icon: List, labelKey: "quran.library.index" },
   { id: "bookmarks", icon: Bookmark, labelKey: "quran.library.bookmarks" },
   { id: "highlights", icon: Highlighter, labelKey: "quran.library.highlights" },
+  { id: "reminders", icon: Bell, labelKey: "quran.library.reminders" },
   { id: "guide", icon: BookOpen, labelKey: "quran.library.guide" },
 ];
 
@@ -164,6 +166,7 @@ const ReaderLibraryDrawer = forwardRef<ReaderLibraryDrawerHandle, { children: Re
               {tab === "bookmarks" && <BookmarksTab onNavigate={navigate} />}
               {tab === "khatmah" && <KhatmahTab />}
               {tab === "index" && <BrowseIndex onNavigate={navigate} />}
+              {tab === "reminders" && <RemindersTab />}
               {tab === "guide" && <GuideTab />}
             </YStack>
 
