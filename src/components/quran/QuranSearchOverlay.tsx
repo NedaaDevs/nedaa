@@ -66,6 +66,16 @@ const TOP_ZONE = 130; // a downward drag starting within this top band opens sea
 // overshootClamping kills the spring bounce while keeping the velocity hand-off.
 const SPRING = { damping: 26, stiffness: 240, overshootClamping: true } as const;
 
+// Definite articles stripped before ranking so a search for "baqarah"/"بقرة" treats
+// Al-Baqarah as an exact/prefix hit, not a mid-name substring. Transliterated uses
+// al- and its sun-letter assimilations; Arabic always writes the article as ال.
+const SURAH_ARTICLES = ["al-", "an-", "ar-", "as-", "ash-", "at-", "ath-", "ad-", "adh-", "az-"];
+const stripArticle = (s: string) => {
+  for (const a of SURAH_ARTICLES) if (s.startsWith(a)) return s.slice(a.length);
+  return s;
+};
+const stripArabicArticle = (s: string) => (s.startsWith("ال") ? s.slice(2) : s);
+
 // Pull-down-to-search: a gesture-driven overlay revealed by dragging down from
 // the top of the reader (a top-down shade — search bar first), dismissed by
 // swiping up (when the results fit), tapping the backdrop, or the close button.
@@ -171,10 +181,35 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const q = query.trim().toLowerCase();
     const surahHits = useMemo(() => {
       if (!q) return [];
-      return surahs.filter(
-        (s) => s.nameTransliterated.toLowerCase().includes(q) || s.nameArabic.includes(query.trim())
-      );
+      const arq = query.trim();
+      // 0 = exact, 1 = starts-with, 2 = contains — for transliterated or Arabic name,
+      // each compared with and without its definite article.
+      const rank = (s: SurahMeta) => {
+        const name = s.nameTransliterated.toLowerCase();
+        const bare = stripArticle(name);
+        const arName = s.nameArabic;
+        const arBare = stripArabicArticle(arName);
+        if (name === q || bare === q || arName === arq || arBare === arq) return 0;
+        if (
+          name.startsWith(q) ||
+          bare.startsWith(q) ||
+          arName.startsWith(arq) ||
+          arBare.startsWith(arq)
+        )
+          return 1;
+        return 2;
+      };
+      return surahs
+        .filter((s) => s.nameTransliterated.toLowerCase().includes(q) || s.nameArabic.includes(arq))
+        .sort((a, b) => rank(a) - rank(b) || a.number - b.number);
     }, [q, query, surahs]);
+
+    // FTS picks the best 50 matches; re-sort those by mushaf order so earlier surahs
+    // (e.g. Al-Baqarah) lead the verse results.
+    const sortedHits = useMemo(
+      () => [...hits].sort((a, b) => a.surahNumber - b.surahNumber || a.ayahNumber - b.ayahNumber),
+      [hits]
+    );
 
     const highlights = useHighlightStore((s) => s.highlights);
     const labels = useHighlightStore((s) => s.labels);
@@ -428,20 +463,6 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                 keyboardDismissMode="on-drag">
                 {hasQuery && (
                   <>
-                    {hlHits.length > 0 && (
-                      <>
-                        <SectionLabel chrome={chrome} text={t("quran.library.highlights")} />
-                        {hlHits.map((h) => (
-                          <HighlightRow
-                            key={`h-${h.surah}:${h.ayah}`}
-                            chrome={chrome}
-                            hit={h}
-                            label={labels[h.color] ?? t(`quran.highlight.color.${h.color}`)}
-                            onPress={() => jumpTo(h.page, { surah: h.surah, ayah: h.ayah })}
-                          />
-                        ))}
-                      </>
-                    )}
                     {bmHits.length > 0 && (
                       <>
                         <SectionLabel chrome={chrome} text={t("quran.library.bookmarks")} />
@@ -452,6 +473,20 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                             hit={b}
                             label={bmLabels[b.color] ?? t(`quran.bookmark.color.${b.color}`)}
                             onPress={() => jumpTo(b.page, { surah: b.surah, ayah: b.ayah })}
+                          />
+                        ))}
+                      </>
+                    )}
+                    {hlHits.length > 0 && (
+                      <>
+                        <SectionLabel chrome={chrome} text={t("quran.library.highlights")} />
+                        {hlHits.map((h) => (
+                          <HighlightRow
+                            key={`h-${h.surah}:${h.ayah}`}
+                            chrome={chrome}
+                            hit={h}
+                            label={labels[h.color] ?? t(`quran.highlight.color.${h.color}`)}
+                            onPress={() => jumpTo(h.page, { surah: h.surah, ayah: h.ayah })}
                           />
                         ))}
                       </>
@@ -472,7 +507,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                     {hits.length > 0 && (
                       <>
                         <SectionLabel chrome={chrome} text={t("quran.browse.verses")} />
-                        {hits.map((hit) => (
+                        {sortedHits.map((hit) => (
                           <VerseRow
                             key={`v-${hit.surahNumber}:${hit.ayahNumber}`}
                             chrome={chrome}
