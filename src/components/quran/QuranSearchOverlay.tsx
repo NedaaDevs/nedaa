@@ -25,7 +25,6 @@ import { ArrowLeft, ArrowRight, Search, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
-import { Input } from "@/components/ui/input";
 import {
   QURAN_TEXT_FONT,
   HIGHLIGHT_COLORS,
@@ -385,20 +384,26 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                   paddingHorizontal="$3"
                   height={44}>
                   <Search color={chrome.subtleText} size={18} />
-                  <Input
+                  <TextInput
                     // Remount on open/close so closing mounts an unfocused field
-                    // (dismissing the keyboard); the effect above focuses it on
-                    // open. autoFocus is intentionally omitted (unreliable here).
+                    // (dismissing the keyboard); the effect above focuses it on open.
+                    // Plain RN TextInput, not the styled Input: the styled wrapper's
+                    // text renders invisibly inside the panel's animated opacity on
+                    // Android.
                     ref={inputRef}
                     key={open ? "open" : "closed"}
-                    flex={1}
                     value={query}
                     onChangeText={setQuery}
                     placeholder={t("quran.search.placeholder")}
-                    backgroundColor="transparent"
-                    borderWidth={0}
-                    paddingHorizontal={0}
-                    fontSize={16}
+                    placeholderTextColor={chrome.subtleText}
+                    style={{
+                      flex: 1,
+                      fontSize: 16,
+                      padding: 0,
+                      color: chrome.text,
+                      textAlign: isRTL ? "right" : "left",
+                      writingDirection: isRTL ? "rtl" : "ltr",
+                    }}
                   />
                   {query.length > 0 && (
                     <Pressable
