@@ -861,6 +861,8 @@
   "quran.bookmark.here": "هنا",
   "quran.bookmark.moveConfirm": "نقل هذا الفاصل إلى هنا؟ هو حاليًا على {{surah}}، الآية {{ayah}}.",
   "quran.bookmark.moveHere": "نقل الفاصل هنا",
+  "quran.bookmark.renameHint": "انقر مرتين لإعادة تسمية هذا الفاصل",
+  "quran.bookmark.renameLabel": "سمِّ هذا الفاصل",
   "quran.bookmark.ribbonAt": "فاصل على {{surah}}، الآية {{ayah}}",
   "quran.bookmark.title": "الفواصل",
   "quran.browse.beginsAt": "يبدأ من {{surah}} · صفحة {{page}}",
