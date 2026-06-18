@@ -861,6 +861,8 @@
   "quran.bookmark.here": "Di sini",
   "quran.bookmark.moveConfirm": "Alih reben ini ke sini? Ia kini pada {{surah}}, ayat {{ayah}}.",
   "quran.bookmark.moveHere": "Alih reben ke sini",
+  "quran.bookmark.renameHint": "Ketik dua kali untuk menamakan semula reben ini",
+  "quran.bookmark.renameLabel": "Namakan reben ini",
   "quran.bookmark.ribbonAt": "Reben pada {{surah}}, ayat {{ayah}}",
   "quran.bookmark.title": "Penanda",
   "quran.browse.beginsAt": "Bermula {{surah}} · halaman {{page}}",
