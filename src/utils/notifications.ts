@@ -19,6 +19,9 @@ import { stopAthan } from "expo-alarm";
 // Types
 import type { NotificationOptions } from "@/types/notification";
 
+// Constants
+import { NOTIFICATION_TYPE } from "@/constants/Notification";
+
 export const scheduleNotification = async (
   date: Date,
   notificationInput: NotificationContentInput,
@@ -238,6 +241,15 @@ export const configureNotifications = () => {
           if (data?.screen) {
             const router = useRouter();
             router.navigate(data.screen as any);
+          }
+
+          // Quran reminders also land the reader on the target surah's page.
+          // Loaded lazily so the reader/content-DB graph stays out of startup.
+          if (data?.type === NOTIFICATION_TYPE.QURAN_REMINDER) {
+            const surah = data.surah as number | undefined;
+            void import("@/utils/notificationDeepLink").then((m) =>
+              m.openQuranReminderTarget({ surah })
+            );
           }
         } catch (error) {
           console.error("[Notifications] Error handling notification response:", error);
