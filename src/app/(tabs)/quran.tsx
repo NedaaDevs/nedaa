@@ -9,8 +9,6 @@ import {
   ArrowRight,
   List,
   Bookmark,
-  ArrowRightToLine,
-  ArrowLeftToLine,
   Search,
   Settings2,
   Palette,
@@ -38,6 +36,9 @@ import FontSizeControls from "@/components/quran/FontSizeControls";
 import HighlightLegend from "@/components/quran/HighlightLegend";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/QuranSearchOverlay";
+import ReaderLibraryDrawer, {
+  type ReaderLibraryDrawerHandle,
+} from "@/components/quran/ReaderLibraryDrawer";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import AyahSubSheet, { type AyahSubViewTarget } from "@/components/quran/sheets/AyahSubSheet";
@@ -106,6 +107,7 @@ const QuranScreen = () => {
   const [downloadFlowVersion, setDownloadFlowVersion] = useState<MushafVersion | null>(null);
   const selectedManifestRef = useRef<QuranManifestVersion | null>(null);
   const searchRef = useRef<QuranSearchHandle>(null);
+  const libraryRef = useRef<ReaderLibraryDrawerHandle>(null);
 
   const downloadState = selectedVersion ? versionDownloads[selectedVersion] : undefined;
   const downloadStatus = downloadState?.status ?? DownloadStatus.IDLE;
@@ -323,97 +325,77 @@ const QuranScreen = () => {
     <YStack flex={1} style={{ backgroundColor: themeColors.background }}>
       {/* Wraps the reader so the pull-down search gesture is a parent of (and
           arbitrated with) the reader's tap + page long-press. */}
-      <QuranSearchOverlay ref={searchRef}>
-        <StatusBar
-          hidden={!showOverlay}
-          animated
-          style={isDarkPaper(quranTheme) ? "light" : "dark"}
-        />
-        <QuranReader
-          currentPage={currentPage}
-          version={currentVersion}
-          quranTheme={quranTheme}
-          readerMode={readerMode}
-          fontSize={fontSize}
-          onPageChange={setCurrentPage}
-          onFontSizeChange={setFontSize}
-          onTap={() => setShowOverlay((prev) => !prev)}
-          onAyahLongPress={(surah, ayah) => {
-            // The ayah sheet is the focus — clear the reader chrome behind it.
-            setShowOverlay(false);
-            setActionAyah({ surah, ayah });
-          }}
-          onSurahLongPress={(surah) => {
-            setShowOverlay(false);
-            setInfoSurah(surah);
-          }}
-          onWaqfPress={(signId) => {
-            const entry = guideEntryById(signId);
-            if (entry) setGuideSheet({ entries: [entry], titleKey: "quran.guide.category.waqf" });
-          }}
-          selectedAyah={actionAyah}
-        />
+      <ReaderLibraryDrawer ref={libraryRef}>
+        <QuranSearchOverlay ref={searchRef}>
+          <StatusBar
+            hidden={!showOverlay}
+            animated
+            style={isDarkPaper(quranTheme) ? "light" : "dark"}
+          />
+          <QuranReader
+            currentPage={currentPage}
+            version={currentVersion}
+            quranTheme={quranTheme}
+            readerMode={readerMode}
+            fontSize={fontSize}
+            onPageChange={setCurrentPage}
+            onFontSizeChange={setFontSize}
+            onTap={() => setShowOverlay((prev) => !prev)}
+            onAyahLongPress={(surah, ayah) => {
+              // The ayah sheet is the focus — clear the reader chrome behind it.
+              setShowOverlay(false);
+              setActionAyah({ surah, ayah });
+            }}
+            onSurahLongPress={(surah) => {
+              setShowOverlay(false);
+              setInfoSurah(surah);
+            }}
+            onWaqfPress={(signId) => {
+              const entry = guideEntryById(signId);
+              if (entry) setGuideSheet({ entries: [entry], titleKey: "quran.guide.category.waqf" });
+            }}
+            selectedAyah={actionAyah}
+          />
 
-        {/* Top banners: an active background download, and/or the one-time dark
+          {/* Top banners: an active background download, and/or the one-time dark
           page offer for a colored edition. */}
-        {(!bannerDismissed || showDarkOffer) && (
-          <YStack position="absolute" top={insets.top + 8} left={0} right={0} zIndex={5} gap="$2">
-            {!bannerDismissed && <DownloadBanner onDismiss={() => setBannerDismissed(true)} />}
-            {showDarkOffer && (
-              <DarkOfferBanner
-                version={currentVersion}
-                onDismiss={() => dismissDarkOffer(currentVersion)}
-              />
-            )}
-          </YStack>
-        )}
+          {(!bannerDismissed || showDarkOffer) && (
+            <YStack position="absolute" top={insets.top + 8} left={0} right={0} zIndex={5} gap="$2">
+              {!bannerDismissed && <DownloadBanner onDismiss={() => setBannerDismissed(true)} />}
+              {showDarkOffer && (
+                <DarkOfferBanner
+                  version={currentVersion}
+                  onDismiss={() => dismissDarkOffer(currentVersion)}
+                />
+              )}
+            </YStack>
+          )}
 
-        {showOverlay && (
-          <>
-            {/* Top chrome bar — icon row plus the highlight legend, both on the bar
+          {showOverlay && (
+            <>
+              {/* Top chrome bar — icon row plus the highlight legend, both on the bar
               so the chips sit on the chrome rather than over the page. */}
-            <YStack
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              zIndex={15}
-              gap="$2"
-              // iOS keeps the SafeAreaView top edge (it already applies insets.top),
-              // so only Android — which drops that edge for the immersive reader —
-              // adds the inset here. Avoids a double top inset on iOS.
-              paddingTop={(Platform.OS === PlatformType.ANDROID ? insets.top : 0) + 6}
-              paddingBottom="$2.5"
-              paddingHorizontal="$3"
-              backgroundColor={`${themeColors.background}F0`}
-              borderBottomWidth={1}
-              borderBottomColor={themeColors.frameColor}>
-              <XStack alignItems="center" gap="$2">
-                <Pressable
-                  onPress={() => router.navigate("/")}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("common.back")}
-                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf={isRTL ? "chevron.right" : "chevron.left"}
-                    lucide={BackIcon}
-                    color={themeColors.headerColor}
-                    size={22}
-                  />
-                </Pressable>
-                <YStack flex={1} />
-                {readerMode === ReaderViewMode.TEXT && (
-                  <FontSizeControls
-                    fontSize={fontSize}
-                    onFontSizeChange={setFontSize}
-                    color={themeColors.headerColor}
-                  />
-                )}
-                {isColoredVersion(currentVersion) && readerMode !== ReaderViewMode.TEXT && (
+              <YStack
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                zIndex={15}
+                gap="$2"
+                // iOS keeps the SafeAreaView top edge (it already applies insets.top),
+                // so only Android — which drops that edge for the immersive reader —
+                // adds the inset here. Avoids a double top inset on iOS.
+                paddingTop={(Platform.OS === PlatformType.ANDROID ? insets.top : 0) + 6}
+                paddingBottom="$2.5"
+                paddingHorizontal="$3"
+                backgroundColor={`${themeColors.background}F0`}
+                borderBottomWidth={1}
+                borderBottomColor={themeColors.frameColor}>
+                <XStack alignItems="center" gap="$2">
                   <Pressable
-                    onPress={() => openGuide(GuideCategory.TAJWEED)}
+                    onPress={() => router.navigate("/")}
                     accessibilityRole="button"
-                    accessibilityLabel={t("quran.guide.category.tajweed")}
+                    accessibilityLabel={t("common.back")}
                     style={{
                       width: 40,
                       height: 40,
@@ -421,225 +403,262 @@ const QuranScreen = () => {
                       justifyContent: "center",
                     }}>
                     <ReaderIcon
-                      sf="paintpalette"
-                      lucide={Palette}
+                      sf={isRTL ? "chevron.right" : "chevron.left"}
+                      lucide={BackIcon}
+                      color={themeColors.headerColor}
+                      size={22}
+                    />
+                  </Pressable>
+                  <YStack flex={1} />
+                  {readerMode === ReaderViewMode.TEXT && (
+                    <FontSizeControls
+                      fontSize={fontSize}
+                      onFontSizeChange={setFontSize}
+                      color={themeColors.headerColor}
+                    />
+                  )}
+                  {isColoredVersion(currentVersion) && readerMode !== ReaderViewMode.TEXT && (
+                    <Pressable
+                      onPress={() => openGuide(GuideCategory.TAJWEED)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("quran.guide.category.tajweed")}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}>
+                      <ReaderIcon
+                        sf="paintpalette"
+                        lucide={Palette}
+                        color={themeColors.headerColor}
+                        size={20}
+                      />
+                    </Pressable>
+                  )}
+                  <Pressable
+                    onPress={() => {
+                      setShowOverlay(false);
+                      searchRef.current?.open();
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("quran.search.placeholder")}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                    <ReaderIcon
+                      sf="magnifyingglass"
+                      lucide={Search}
                       color={themeColors.headerColor}
                       size={20}
                     />
                   </Pressable>
-                )}
-                <Pressable
-                  onPress={() => {
-                    setShowOverlay(false);
-                    searchRef.current?.open();
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("quran.search.placeholder")}
-                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf="magnifyingglass"
-                    lucide={Search}
-                    color={themeColors.headerColor}
-                    size={20}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setShowOverlay(false);
-                    router.push("/quran-library?tab=bookmarks");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("quran.library.bookmarks")}
-                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf="bookmark"
-                    lucide={Bookmark}
-                    color={themeColors.headerColor}
-                    size={20}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setShowOverlay(false);
-                    setShowIntro(true);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("quran.intro.help")}
-                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf="questionmark.circle"
-                    lucide={HelpCircle}
-                    color={themeColors.headerColor}
-                    size={20}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setShowOverlay(false);
-                    setShowSettings(true);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("quran.settings.title")}
-                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf="gearshape"
-                    lucide={Settings2}
-                    color={themeColors.headerColor}
-                    size={20}
-                  />
-                </Pressable>
-              </XStack>
+                  <Pressable
+                    onPress={() => {
+                      setShowOverlay(false);
+                      libraryRef.current?.open("bookmarks");
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("quran.library.bookmarks")}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                    <ReaderIcon
+                      sf="bookmark"
+                      lucide={Bookmark}
+                      color={themeColors.headerColor}
+                      size={20}
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setShowOverlay(false);
+                      setShowIntro(true);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("quran.intro.help")}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                    <ReaderIcon
+                      sf="questionmark.circle"
+                      lucide={HelpCircle}
+                      color={themeColors.headerColor}
+                      size={20}
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setShowOverlay(false);
+                      setShowSettings(true);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("quran.settings.title")}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                    <ReaderIcon
+                      sf="gearshape"
+                      lucide={Settings2}
+                      color={themeColors.headerColor}
+                      size={20}
+                    />
+                  </Pressable>
+                </XStack>
 
-              {/* Highlight legend — colours/labels/counts; renders only when ayahs
+                {/* Highlight legend — colours/labels/counts; renders only when ayahs
                 are highlighted. Tap a chip to open the highlights list. */}
-              <HighlightLegend
-                quranTheme={quranTheme}
-                onPress={() => {
-                  setShowOverlay(false);
-                  router.push("/quran-highlights");
-                }}
-              />
-            </YStack>
+                <HighlightLegend
+                  quranTheme={quranTheme}
+                  onPress={() => {
+                    setShowOverlay(false);
+                    router.push("/quran-highlights");
+                  }}
+                />
+              </YStack>
 
-            {/* Bottom chrome bar — Surahs · scrubber · Go-to. */}
-            <YStack
-              position="absolute"
-              bottom={0}
-              left={0}
-              right={0}
-              zIndex={15}
-              gap="$2"
-              paddingTop="$3"
-              paddingBottom={insets.bottom + 12}
-              paddingHorizontal="$3"
-              backgroundColor={`${themeColors.background}F0`}
-              borderTopWidth={1}
-              borderTopColor={themeColors.frameColor}>
-              <XStack alignItems="center" justifyContent="space-between">
-                <Pressable
-                  onPress={() => {
-                    setShowOverlay(false);
-                    router.push("/quran-library");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("quran.library.title")}
-                  style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf="list.bullet"
-                    lucide={List}
-                    color={themeColors.headerColor}
-                    size={22}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setShowOverlay(false);
-                    router.push("/quran-browse?tab=page");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("quran.goto.title")}
-                  style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-                  <ReaderIcon
-                    sf={isRTL ? "arrow.left.to.line" : "arrow.right.to.line"}
-                    lucide={isRTL ? ArrowLeftToLine : ArrowRightToLine}
-                    color={themeColors.headerColor}
-                    size={22}
-                  />
-                </Pressable>
+              {/* Bottom chrome bar — Surahs · scrubber · Go-to. */}
+              <YStack
+                position="absolute"
+                bottom={0}
+                left={0}
+                right={0}
+                zIndex={15}
+                gap="$2"
+                paddingTop="$3"
+                paddingBottom={insets.bottom + 12}
+                paddingHorizontal="$3"
+                backgroundColor={`${themeColors.background}F0`}
+                borderTopWidth={1}
+                borderTopColor={themeColors.frameColor}>
+                <XStack alignItems="center" justifyContent="space-between">
+                  <Pressable
+                    onPress={() => {
+                      setShowOverlay(false);
+                      libraryRef.current?.open("index");
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("quran.library.title")}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                    <ReaderIcon
+                      sf="list.bullet"
+                      lucide={List}
+                      color={themeColors.headerColor}
+                      size={22}
+                    />
+                  </Pressable>
+                </XStack>
+                <PageSlider
+                  currentPage={currentPage}
+                  quranTheme={quranTheme}
+                  onPageChange={setCurrentPage}
+                />
+              </YStack>
+            </>
+          )}
+
+          {/* Settings bottom sheet */}
+          {showSettings && (
+            <QuranSettingsSheet
+              onClose={() => setShowSettings(false)}
+              onDownloadMore={handleDownloadMore}
+              onResetAll={handleResetAll}
+            />
+          )}
+
+          {/* Return-to pill after a mutashabihat "go to" jump */}
+          {jumpReturn !== null && (
+            <Pressable
+              onPress={() => {
+                setCurrentPage(jumpReturn);
+                setJumpReturn(null);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t("quran.mutashabihat.return")}
+              style={{
+                position: "absolute",
+                alignSelf: "center",
+                bottom: insets.bottom + 24,
+                zIndex: 16,
+              }}>
+              <XStack
+                alignItems="center"
+                gap="$2"
+                paddingVertical="$2"
+                paddingHorizontal="$3.5"
+                borderRadius={22}
+                borderWidth={1}
+                borderColor={themeColors.frameColor}
+                style={{ backgroundColor: `${themeColors.background}F5` }}>
+                <BackIcon size={16} color={themeColors.headerColor} />
+                <Text fontSize={13} fontWeight="700" color={themeColors.headerColor}>
+                  {t("quran.mutashabihat.return")}
+                </Text>
               </XStack>
-              <PageSlider
-                currentPage={currentPage}
-                quranTheme={quranTheme}
-                onPageChange={setCurrentPage}
-              />
-            </YStack>
-          </>
-        )}
+            </Pressable>
+          )}
 
-        {/* Settings bottom sheet */}
-        {showSettings && (
-          <QuranSettingsSheet
-            onClose={() => setShowSettings(false)}
-            onDownloadMore={handleDownloadMore}
-            onResetAll={handleResetAll}
-          />
-        )}
+          {/* First-open (and replayable) reader walkthrough */}
+          {showIntro && (
+            <QuranIntroSheet
+              quranTheme={quranTheme}
+              onClose={() => {
+                setShowIntro(false);
+                setQuranGuideSeen();
+              }}
+            />
+          )}
 
-        {/* Return-to pill after a mutashabihat "go to" jump */}
-        {jumpReturn !== null && (
-          <Pressable
-            onPress={() => {
-              setCurrentPage(jumpReturn);
-              setJumpReturn(null);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t("quran.mutashabihat.return")}
-            style={{
-              position: "absolute",
-              alignSelf: "center",
-              bottom: insets.bottom + 24,
-              zIndex: 16,
-            }}>
-            <XStack
-              alignItems="center"
-              gap="$2"
-              paddingVertical="$2"
-              paddingHorizontal="$3.5"
-              borderRadius={22}
-              borderWidth={1}
-              borderColor={themeColors.frameColor}
-              style={{ backgroundColor: `${themeColors.background}F5` }}>
-              <BackIcon size={16} color={themeColors.headerColor} />
-              <Text fontSize={13} fontWeight="700" color={themeColors.headerColor}>
-                {t("quran.mutashabihat.return")}
-              </Text>
-            </XStack>
-          </Pressable>
-        )}
-
-        {/* First-open (and replayable) reader walkthrough */}
-        {showIntro && (
-          <QuranIntroSheet
-            quranTheme={quranTheme}
-            onClose={() => {
-              setShowIntro(false);
-              setQuranGuideSeen();
-            }}
-          />
-        )}
-
-        {/* Long-press ayah action sheet + its sub-view sheets (similar verses,
+          {/* Long-press ayah action sheet + its sub-view sheets (similar verses,
             tajweed, sajda) — closing a sub-view reopens the action sheet. */}
-        <AyahActionSheet
-          target={actionAyah}
-          quranTheme={quranTheme}
-          onClose={() => setActionAyah(null)}
-          onOpenSubView={openSubView}
-        />
-        <AyahSubSheet
-          target={subSheet}
-          quranTheme={quranTheme}
-          onClose={closeSubSheet}
-          onGoTo={subGoTo}
-        />
-
-        {/* Long-press surah header → surah info sheet (controlled; stays mounted) */}
-        <SurahInfoCard
-          surahNumber={infoSurah}
-          quranTheme={quranTheme}
-          onClose={() => setInfoSurah(null)}
-        />
-
-        {/* Contextual reference sheet (tajweed legend, waqf sign, sajda + dua) */}
-        {guideSheet && (
-          <GuideSheet
-            entries={guideSheet.entries}
-            titleKey={guideSheet.titleKey}
+          <AyahActionSheet
+            target={actionAyah}
             quranTheme={quranTheme}
-            onClose={() => setGuideSheet(null)}
+            onClose={() => setActionAyah(null)}
+            onOpenSubView={openSubView}
           />
-        )}
-      </QuranSearchOverlay>
+          <AyahSubSheet
+            target={subSheet}
+            quranTheme={quranTheme}
+            onClose={closeSubSheet}
+            onGoTo={subGoTo}
+          />
+
+          {/* Long-press surah header → surah info sheet (controlled; stays mounted) */}
+          <SurahInfoCard
+            surahNumber={infoSurah}
+            quranTheme={quranTheme}
+            onClose={() => setInfoSurah(null)}
+          />
+
+          {/* Contextual reference sheet (tajweed legend, waqf sign, sajda + dua) */}
+          {guideSheet && (
+            <GuideSheet
+              entries={guideSheet.entries}
+              titleKey={guideSheet.titleKey}
+              quranTheme={quranTheme}
+              onClose={() => setGuideSheet(null)}
+            />
+          )}
+        </QuranSearchOverlay>
+      </ReaderLibraryDrawer>
     </YStack>
   );
 };
