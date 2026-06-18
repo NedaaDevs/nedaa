@@ -26,13 +26,20 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
-import { QURAN_TEXT_FONT, HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER } from "@/constants/Quran";
+import {
+  QURAN_TEXT_FONT,
+  HIGHLIGHT_COLORS,
+  HIGHLIGHT_COLOR_ORDER,
+  BOOKMARK_COLORS,
+  BOOKMARK_COLOR_ORDER,
+} from "@/constants/Quran";
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
-import { HighlightColor, RevelationPlace } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, RevelationPlace } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
+import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useRTL } from "@/contexts/RTLContext";
@@ -43,6 +50,14 @@ type HighlightHit = {
   ayah: number;
   page: number;
   color: HighlightColor;
+  text: string;
+};
+
+type BookmarkHit = {
+  surah: number;
+  ayah: number;
+  page: number;
+  color: BookmarkColor;
   text: string;
 };
 
@@ -202,6 +217,48 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
       };
     }, [matchedHighlights]);
 
+    // Bookmarks: same shape as highlights — match by ribbon name or colour, then
+    // resolve each placed ribbon's verse text (its page is already stored).
+    const bookmarks = useBookmarkStore((s) => s.bookmarks);
+    const bmLabels = useBookmarkStore((s) => s.labels);
+    const [bmHits, setBmHits] = useState<BookmarkHit[]>([]);
+
+    const matchedBmColors = useMemo(() => {
+      const set = new Set<BookmarkColor>();
+      if (!q) return set;
+      for (const color of BOOKMARK_COLOR_ORDER) {
+        const label = (bmLabels[color] ?? t(`quran.bookmark.color.${color}`)).toLowerCase();
+        if (label.includes(q) || color.includes(q)) set.add(color);
+      }
+      return set;
+    }, [q, bmLabels, t]);
+
+    const matchedBookmarks = useMemo(
+      () => bookmarks.filter((b) => matchedBmColors.has(b.color)),
+      [bookmarks, matchedBmColors]
+    );
+
+    useEffect(() => {
+      let active = true;
+      Promise.all(
+        matchedBookmarks.map(async (b) => {
+          const a = await QuranContentDB.getAyah(b.surah, b.ayah);
+          return {
+            surah: b.surah,
+            ayah: b.ayah,
+            page: b.page,
+            color: b.color,
+            text: a?.text ?? "",
+          };
+        })
+      ).then((res) => {
+        if (active) setBmHits(res);
+      });
+      return () => {
+        active = false;
+      };
+    }, [matchedBookmarks]);
+
     // A verse/highlight result also flags its ayah so the reader pulse-highlights
     // it on arrival; a surah result jumps to the page only (no single target).
     const jumpTo = (page: number, ayah?: { surah: number; ayah: number }) => {
@@ -278,7 +335,12 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     }));
 
     const hasQuery = q.length > 0;
-    const empty = hasQuery && hlHits.length === 0 && surahHits.length === 0 && hits.length === 0;
+    const empty =
+      hasQuery &&
+      hlHits.length === 0 &&
+      bmHits.length === 0 &&
+      surahHits.length === 0 &&
+      hits.length === 0;
 
     return (
       <>
@@ -375,6 +437,20 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                         ))}
                       </>
                     )}
+                    {bmHits.length > 0 && (
+                      <>
+                        <SectionLabel chrome={chrome} text={t("quran.library.bookmarks")} />
+                        {bmHits.map((b) => (
+                          <BookmarkRow
+                            key={`b-${b.surah}:${b.ayah}`}
+                            chrome={chrome}
+                            hit={b}
+                            label={bmLabels[b.color] ?? t(`quran.bookmark.color.${b.color}`)}
+                            onPress={() => jumpTo(b.page, { surah: b.surah, ayah: b.ayah })}
+                          />
+                        ))}
+                      </>
+                    )}
                     {surahHits.length > 0 && (
                       <>
                         <SectionLabel chrome={chrome} text={t("quran.browse.surahs")} />
@@ -465,6 +541,58 @@ const HighlightRow = ({
             height={10}
             borderRadius={5}
             backgroundColor={HIGHLIGHT_COLORS[hit.color].solid}
+          />
+          <Text
+            fontSize={13}
+            fontWeight="600"
+            color={chrome.text}
+            style={{ fontFamily: metadataFontFamily() }}>
+            {localizedSurahName(hit.surah)} : {formatNumberToLocale(String(hit.ayah))}
+          </Text>
+        </XStack>
+        <Text fontSize={11} color={chrome.subtleText}>
+          {label}
+        </Text>
+      </XStack>
+      <Text
+        numberOfLines={2}
+        style={{
+          fontSize: 18,
+          lineHeight: 32,
+          writingDirection: "rtl",
+          textAlign: "right",
+          fontFamily: QURAN_TEXT_FONT,
+          color: chrome.text,
+        }}>
+        {hit.text}
+      </Text>
+    </YStack>
+  </Pressable>
+);
+
+const BookmarkRow = ({
+  chrome,
+  hit,
+  label,
+  onPress,
+}: {
+  chrome: ReturnType<typeof useQuranChromeColors>;
+  hit: BookmarkHit;
+  label: string;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityLabel={`${localizedSurahName(hit.surah)} ${hit.ayah}`}>
+    <YStack gap="$1.5" paddingVertical="$3" borderBottomWidth={1} borderColor="$borderColor">
+      <XStack alignItems="center" justifyContent="space-between">
+        <XStack alignItems="center" gap="$2">
+          <View
+            width={10}
+            height={10}
+            borderRadius={5}
+            backgroundColor={BOOKMARK_COLORS[hit.color].solid}
           />
           <Text
             fontSize={13}

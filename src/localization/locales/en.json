@@ -861,6 +861,8 @@
   "quran.bookmark.here": "Here",
   "quran.bookmark.moveConfirm": "Move this ribbon here? It’s currently on {{surah}}, ayah {{ayah}}.",
   "quran.bookmark.moveHere": "Move ribbon here",
+  "quran.bookmark.renameHint": "Double tap to rename this ribbon",
+  "quran.bookmark.renameLabel": "Name this ribbon",
   "quran.bookmark.ribbonAt": "Ribbon on {{surah}}, ayah {{ayah}}",
   "quran.bookmark.title": "Bookmarks",
   "quran.browse.beginsAt": "Begins {{surah}} · page {{page}}",
