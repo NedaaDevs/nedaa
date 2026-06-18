@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { Bell, Clock } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import TimePicker from "@/components/TimePicker";
+import { ReminderTimeSheet } from "@/components/quran/sheets/ReminderTimeSheet";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
-import { useRTL } from "@/contexts/RTLContext";
 import { useQuranRemindersStore } from "@/stores/quranReminders";
 import { ensureReminderPermission } from "@/hooks/useReminderPermission";
 import { applyReminderToggle } from "@/utils/reminders/applyReminderToggle";
@@ -16,19 +15,18 @@ import { computeNextOccurrence } from "@/utils/reminders/computeNextOccurrence";
 import { formatTime12Hour } from "@/utils/date";
 import type { QuranReminder } from "@/types/quranReminders";
 
-// One Quran reminder: a switch to arm it, a tappable time, and — once on — the
-// next fire date as the non-colour state cue. Enabling primes notification
-// permission first and reverts to a recovery hint if the OS denies it.
+// One Quran reminder as a card: an icon, its schedule, a switch to arm it, and —
+// once on — an editable time pill plus the next fire date as the non-colour state
+// cue. Enabling primes notification permission first and reverts to a recovery
+// hint if the OS denies it.
 export const ReminderRow = ({ reminder }: { reminder: QuranReminder }) => {
   const { t, i18n } = useTranslation();
   const chrome = useQuranChromeColors();
-  const { isRTL } = useRTL();
   const setEnabled = useQuranRemindersStore((s) => s.setEnabled);
   const setTime = useQuranRemindersStore((s) => s.setTime);
 
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [denied, setDenied] = useState(false);
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   const handleToggle = async (next: boolean) => {
     const result = await applyReminderToggle(next, {
@@ -55,18 +53,36 @@ export const ReminderRow = ({ reminder }: { reminder: QuranReminder }) => {
       month: "short",
     }),
   });
+  const title = t("quran.reminders.alKahf.title");
 
   return (
-    <YStack paddingVertical="$3" paddingHorizontal="$2" gap="$2">
+    <YStack
+      backgroundColor={chrome.cardBackground}
+      borderColor={chrome.cardBorder}
+      borderWidth={1}
+      borderRadius="$6"
+      padding="$4"
+      gap="$3">
       <XStack alignItems="center" gap="$3">
+        <YStack
+          width={40}
+          height={40}
+          borderRadius={20}
+          alignItems="center"
+          justifyContent="center"
+          backgroundColor={`${chrome.accent}22`}>
+          <Bell color={chrome.accent} size={20} />
+        </YStack>
+
         <YStack flex={1} gap="$1">
-          <Text fontSize={15} fontWeight="600" color={chrome.text}>
-            {t("quran.reminders.alKahf.title")}
+          <Text fontSize={16} fontWeight="700" color={chrome.text}>
+            {title}
           </Text>
-          <Text fontSize={12} color={chrome.subtleText}>
-            {scheduleLabel}
+          <Text fontSize={13} color={chrome.subtleText}>
+            {reminder.enabled ? scheduleLabel : t("quran.reminders.day.friday")}
           </Text>
         </YStack>
+
         <Switch
           value={reminder.enabled}
           onValueChange={handleToggle}
@@ -75,18 +91,31 @@ export const ReminderRow = ({ reminder }: { reminder: QuranReminder }) => {
       </XStack>
 
       {reminder.enabled && (
-        <Pressable
-          onPress={() => setShowTimePicker(true)}
-          accessibilityRole="button"
-          accessibilityLabel={t("a11y.quran.reminders.editTime")}
-          style={{ minHeight: 44, justifyContent: "center" }}>
-          <XStack alignItems="center" gap="$2">
-            <Text fontSize={13} color={chrome.accent} fontWeight="500">
+        <YStack gap="$2" borderTopColor={chrome.cardBorder} borderTopWidth={1} paddingTop="$3">
+          <XStack alignItems="center" justifyContent="space-between">
+            <Text fontSize={13} color={chrome.subtleText}>
               {nextLabel}
             </Text>
-            <Chevron color={chrome.subtleText} size={16} />
+            <Pressable
+              onPress={() => setShowTimePicker(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.quran.reminders.editTime")}
+              style={{ minHeight: 44, justifyContent: "center" }}>
+              <XStack
+                alignItems="center"
+                gap="$2"
+                paddingVertical={6}
+                paddingHorizontal={12}
+                borderRadius={999}
+                backgroundColor={`${chrome.accent}1A`}>
+                <Clock color={chrome.accent} size={15} />
+                <Text fontSize={15} fontWeight="600" color={chrome.accent}>
+                  {time}
+                </Text>
+              </XStack>
+            </Pressable>
           </XStack>
-        </Pressable>
+        </YStack>
       )}
 
       {denied && (
@@ -95,13 +124,12 @@ export const ReminderRow = ({ reminder }: { reminder: QuranReminder }) => {
         </Text>
       )}
 
-      <TimePicker
-        isVisible={showTimePicker}
-        currentHour={reminder.schedule.hour}
-        currentMinute={reminder.schedule.minute}
-        use12HourFormat
-        isPM={reminder.schedule.hour >= 12}
-        onTimeChange={handleTimeChange}
+      <ReminderTimeSheet
+        visible={showTimePicker}
+        title={title}
+        hour={reminder.schedule.hour}
+        minute={reminder.schedule.minute}
+        onConfirm={handleTimeChange}
         onClose={() => setShowTimePicker(false)}
       />
     </YStack>
