@@ -36,6 +36,7 @@ import {
   requestNotificationPermission,
   scheduleNotification,
 } from "@/utils/notifications";
+import { shouldForceReschedule } from "@/utils/notificationReschedule";
 
 // Types
 import { PermissionStatus } from "expo-notifications";
@@ -68,6 +69,7 @@ const NotificationSettings = () => {
     updateOverride,
     resetOverride,
     scheduleAllNotifications,
+    rescheduleIfNeeded,
   } = useNotificationSettings();
 
   // Permission state
@@ -86,25 +88,31 @@ const NotificationSettings = () => {
 
   const checkPermissionStatus = async () => {
     setIsCheckingPermission(true);
+    const wasGranted = hasPermission === true;
+    let granted = false;
     try {
       const { status } = await checkPermissions();
-      const granted = status === PermissionStatus.GRANTED;
+      granted = status === PermissionStatus.GRANTED;
 
       setHasPermission(granted);
       // On iOS, if permission is denied, we can only redirect to settings
       // On Android, we might be able to ask again depending on the situation
       setCanAskPermission(status === PermissionStatus.UNDETERMINED);
-
-      // If permission is granted, ensure notifications are scheduled
-      if (granted) {
-        await scheduleAllNotifications();
-      }
     } catch (error) {
       console.error("Failed to check notification permission:", error);
       setHasPermission(false);
       setCanAskPermission(false);
     } finally {
+      // Render as soon as the cheap permission read resolves — never hold the
+      // screen behind a full reschedule.
       setIsCheckingPermission(false);
+    }
+
+    // Reschedule off the critical path: forced only when permission has just
+    // become granted, otherwise guarded so it skips work already done today. The
+    // inline scheduling banner reflects it; the screen never blocks on it.
+    if (granted) {
+      void rescheduleIfNeeded(shouldForceReschedule(wasGranted, granted));
     }
   };
 

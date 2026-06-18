@@ -33,6 +33,7 @@ export const useNotificationSettings = () => {
     resetOverride,
     resetAllOverrides,
     scheduleAllNotifications,
+    rescheduleIfNeeded,
     updateOtherTimingNotification,
     updateDuhaTime,
     getEffectiveConfigForPrayer,
@@ -122,6 +123,7 @@ export const useNotificationSettings = () => {
     resetOverride,
     resetAllOverrides,
     scheduleAllNotifications,
+    rescheduleIfNeeded,
     updateOtherTimingNotification,
     updateDuhaTime,
 
