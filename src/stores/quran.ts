@@ -29,7 +29,9 @@ export const useQuranStore = create<QuranState>()(
       lastReadPage: 1,
       readerMode: ReaderViewMode.MADINAH,
       fontSize: FONT_SIZE_DEFAULT,
-      twoPageSpread: true,
+      // Off by default: the large single page fits to width and scrolls. The spread
+      // is an opt-in for readers who prefer an open-book pair.
+      twoPageSpread: false,
       pageFit: ReaderPageFit.FILL,
       libraryTab: "index",
       shareStyle: ShareCardStyle.IMAGE,
@@ -211,7 +213,7 @@ export const useQuranStore = create<QuranState>()(
           merged.fontSize = FONT_SIZE_DEFAULT;
         }
         if (typeof merged.twoPageSpread !== "boolean") {
-          merged.twoPageSpread = true;
+          merged.twoPageSpread = false;
         }
         const validPageFits = Object.values(ReaderPageFit) as string[];
         if (!validPageFits.includes(merged.pageFit)) {

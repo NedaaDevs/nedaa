@@ -6,6 +6,11 @@ import {
   TOTAL_SPREADS,
   LARGE_DEVICE_MIN_DP,
   ReaderLayoutMode,
+  fitPageBox,
+  fitWidthBox,
+  PAGE_ASPECT,
+  LARGE_PAGE_CHROME,
+  MAX_SINGLE_PAGE_WIDTH,
 } from "@/utils/readerSpread";
 
 describe("page <-> spread mapping (RTL: right=earlier/odd, left=later/even)", () => {
@@ -45,5 +50,30 @@ describe("resolveReaderLayout device matrix", () => {
     expect(LARGE_DEVICE_MIN_DP).toBe(600);
     expect(layout(599, 900).mode).toBe(ReaderLayoutMode.PHONE);
     expect(layout(600, 900).mode).toBe(ReaderLayoutMode.SINGLE);
+  });
+});
+
+describe("fitWidthBox (large landscape: fit to width, scroll vertically)", () => {
+  it("sizes the page to ~97% of the slot width on a normal large screen", () => {
+    expect(fitWidthBox(1000).w).toBe(970);
+  });
+  it("caps width at MAX_SINGLE_PAGE_WIDTH on very wide screens", () => {
+    expect(fitWidthBox(1600).w).toBe(MAX_SINGLE_PAGE_WIDTH);
+  });
+  it("derives height from PAGE_ASPECT so the page is taller than a landscape viewport (scrolls)", () => {
+    const box = fitWidthBox(1280); // a tablet's landscape width in dp
+    expect(box.h).toBe(Math.round(box.w * PAGE_ASPECT + LARGE_PAGE_CHROME));
+    expect(box.h).toBeGreaterThan(800); // taller than the ~800dp landscape height
+  });
+});
+
+describe("fitPageBox (portrait/spread: whole page visible, height-constrained)", () => {
+  it("constrains width by the available height on a short landscape screen", () => {
+    const box = fitPageBox(1280, 800);
+    expect(box.w).toBe(Math.floor((800 - LARGE_PAGE_CHROME) / PAGE_ASPECT));
+    expect(box.w).toBeLessThan(1280);
+  });
+  it("uses the full slot width when height is generous (portrait)", () => {
+    expect(fitPageBox(700, 2000).w).toBe(700);
   });
 });
