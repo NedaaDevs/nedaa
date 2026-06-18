@@ -1,8 +1,8 @@
 import { FC, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "tamagui";
 
 // Components
+import { Input } from "@/components/ui/input";
 import {
   Actionsheet,
   ActionsheetBackdrop,

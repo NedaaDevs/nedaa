@@ -1,11 +1,20 @@
-import React from "react";
-import { styled, View, Text as TamaguiText, Sheet, useTheme } from "tamagui";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import { styled, View, Text as TamaguiText, useTheme } from "tamagui";
 import type { GetProps } from "tamagui";
-import { FlatList, Platform, ScrollView as RNScrollView } from "react-native";
+import { BackHandler, FlatList, Platform } from "react-native";
+import type { FlatListProps } from "react-native";
+import {
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
 import { PlatformType } from "@/enums/app";
-import type { FlatListProps, ScrollViewProps } from "react-native";
 
 // --- Actionsheet ---
+// Built on @gorhom/bottom-sheet so an inner ActionsheetScrollView scrolls instead of
+// dragging the whole sheet. `isOpen` is bridged to present/dismiss; gorhom supplies
+// the backdrop and handle, so ActionsheetBackdrop/DragIndicator render nothing.
 
 type ActionsheetProps = {
   isOpen?: boolean;
@@ -20,36 +29,72 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   snapPoints = [50],
   children,
 }) => {
+  const theme = useTheme();
+  const ref = useRef<BottomSheetModal>(null);
+  const hasPresented = useRef(false);
+  const points = useMemo(() => snapPoints.map((n) => `${n}%`), [snapPoints]);
+
+  // Present on open; dismiss on a programmatic close only. hasPresented guards both
+  // the never-dismiss-before-present case and the reopen case: gorhom's onDismiss
+  // resets it, so a gorhom-initiated close (swipe/backdrop) doesn't trigger a
+  // redundant dismiss() that would wedge the next present().
+  useEffect(() => {
+    if (isOpen) {
+      hasPresented.current = true;
+      ref.current?.present();
+    } else if (hasPresented.current) {
+      ref.current?.dismiss();
+    }
+  }, [isOpen]);
+
+  const handleDismiss = useCallback(() => {
+    hasPresented.current = false;
+    onClose?.();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      ref.current?.dismiss();
+      return true;
+    });
+    return () => sub.remove();
+  }, [isOpen]);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   return (
-    <Sheet
-      modal
-      open={isOpen}
-      onOpenChange={(open: boolean) => {
-        if (!open) onClose?.();
-      }}
-      snapPoints={snapPoints}
-      dismissOnSnapToBottom
-      dismissOnOverlayPress
-      animation={null}>
+    <BottomSheetModal
+      ref={ref}
+      snapPoints={points}
+      enableDynamicSizing={false}
+      enablePanDownToClose
+      onDismiss={handleDismiss}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: theme.backgroundSecondary?.val }}
+      handleIndicatorStyle={{ backgroundColor: theme.backgroundMuted?.val }}>
       {children}
-    </Sheet>
+    </BottomSheetModal>
   );
 };
 Actionsheet.displayName = "Actionsheet";
 
 // --- ActionsheetBackdrop ---
+// gorhom renders the backdrop from the modal config, so the child is a no-op kept
+// for API compatibility with existing consumers.
 
-type ActionsheetBackdropProps = {
-  opacity?: number;
-  backgroundColor?: string;
-};
-
-const ActionsheetBackdrop: React.FC<ActionsheetBackdropProps> = ({
-  backgroundColor = "rgba(0,0,0,0.5)",
-  ...props
-}) => {
-  return <Sheet.Overlay backgroundColor={backgroundColor as any} {...props} />;
-};
+const ActionsheetBackdrop: React.FC = () => null;
 ActionsheetBackdrop.displayName = "ActionsheetBackdrop";
 
 // --- ActionsheetContent ---
@@ -59,38 +104,26 @@ type ActionsheetContentProps = {
 };
 
 const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children }) => {
+  // The scrollable must be the modal's content directly — gorhom doesn't scroll a
+  // BottomSheetScrollView nested inside a BottomSheetView. So the content IS the
+  // scroll view; ActionsheetScrollView below is a passthrough.
   return (
-    <Sheet.Frame
-      backgroundColor="$backgroundSecondary"
-      borderTopLeftRadius="$6"
-      borderTopRightRadius="$6"
-      paddingHorizontal="$5"
-      paddingTop="$2"
-      paddingBottom="$5">
+    <BottomSheetScrollView
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24 }}>
       {children}
-    </Sheet.Frame>
+    </BottomSheetScrollView>
   );
 };
 ActionsheetContent.displayName = "ActionsheetContent";
 
-// --- ActionsheetDragIndicatorWrapper ---
+// --- ActionsheetDragIndicatorWrapper / ActionsheetDragIndicator ---
+// gorhom renders the drag handle, so these are no-ops kept for API compatibility.
 
-const ActionsheetDragIndicatorWrapper = styled(View, {
-  name: "ActionsheetDragIndicatorWrapper",
-  alignItems: "center",
-  justifyContent: "center",
-  paddingVertical: "$2",
-});
+const ActionsheetDragIndicatorWrapper: React.FC<{ children?: React.ReactNode }> = () => null;
+ActionsheetDragIndicatorWrapper.displayName = "ActionsheetDragIndicatorWrapper";
 
-// --- ActionsheetDragIndicator ---
-
-const ActionsheetDragIndicator = styled(View, {
-  name: "ActionsheetDragIndicator",
-  width: 48,
-  height: 4,
-  borderRadius: 2,
-  backgroundColor: "$backgroundMuted",
-});
+const ActionsheetDragIndicator: React.FC = () => null;
+ActionsheetDragIndicator.displayName = "ActionsheetDragIndicator";
 
 // --- ActionsheetItem ---
 
@@ -145,20 +178,23 @@ const ActionsheetIcon: React.FC<ActionsheetIconProps> = ({
 ActionsheetIcon.displayName = "ActionsheetIcon";
 
 // --- ActionsheetFlatList ---
-// Consumers use this as a plain FlatList (not inside an Actionsheet).
+// A plain FlatList for consumers that render a list outside an Actionsheet sheet.
 
 const ActionsheetFlatList = FlatList as React.ComponentType<FlatListProps<any>>;
 
 // --- ActionsheetScrollView ---
+// Passthrough: ActionsheetContent is already the BottomSheetScrollView, so this
+// just renders its children inline (kept for API compatibility with consumers).
 
-const ActionsheetScrollView = RNScrollView as React.ComponentType<ScrollViewProps>;
+const ActionsheetScrollView: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <>{children}</>
+);
+ActionsheetScrollView.displayName = "ActionsheetScrollView";
 
 // --- Types ---
 
 type ActionsheetItemProps = GetProps<typeof ActionsheetItem>;
 type ActionsheetItemTextProps = GetProps<typeof ActionsheetItemText>;
-type ActionsheetDragIndicatorWrapperProps = GetProps<typeof ActionsheetDragIndicatorWrapper>;
-type ActionsheetDragIndicatorProps = GetProps<typeof ActionsheetDragIndicator>;
 
 export {
   Actionsheet,
@@ -177,7 +213,5 @@ export type {
   ActionsheetContentProps,
   ActionsheetItemProps,
   ActionsheetItemTextProps,
-  ActionsheetDragIndicatorWrapperProps,
-  ActionsheetDragIndicatorProps,
   ActionsheetIconProps,
 };
