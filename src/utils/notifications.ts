@@ -113,7 +113,7 @@ export const scheduleRecurringNotification = async (
   hour: number, // 0-23 hour format
   minute: number = 0, // 0-59 minute format, defaults to 0
   notificationInput: NotificationContentInput,
-  options?: NotificationOptions & { timezone?: string }
+  options?: NotificationOptions & { timezone?: string; weekday?: number }
 ) => {
   const { status } = await checkPermissions();
 
@@ -154,22 +154,20 @@ export const scheduleRecurringNotification = async (
       }
     }
 
-    let trigger: Notifications.NotificationTriggerInput;
-
-    trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      hour,
-      minute,
-      repeats: true,
-      timezone: options?.timezone,
-    };
-
-    // Use simple daily trigger for device timezone when no timezone specified
-    trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-    };
+    // A weekday yields a weekly repeat (e.g. Friday Al-Kahf); otherwise a daily
+    // repeat in the device timezone. Both are native OS-repeating triggers.
+    const trigger: Notifications.NotificationTriggerInput = options?.weekday
+      ? {
+          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+          weekday: options.weekday,
+          hour,
+          minute,
+        }
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        };
 
     // IMPORTANT: For Android 8.0+, use the channelId passed in options
     if (Platform.OS === PlatformType.ANDROID && options?.channelId) {

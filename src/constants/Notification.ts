@@ -5,4 +5,5 @@ export const NOTIFICATION_TYPE = {
   ATHKAR: "athkar",
   QADA: "qada",
   OTHER_TIMING: "otherTiming",
+  QURAN_REMINDER: "quranReminder",
 } as const;
