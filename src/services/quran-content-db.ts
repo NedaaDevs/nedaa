@@ -22,7 +22,15 @@ const log = AppLogger.create("quran-content-db");
 // download-tracking DB lives in `quran-download-db.ts`.
 
 let quranDbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+// Synchronous mirror of "the content DB is open and probed", so the reader's gate
+// can render ready on the first frame instead of flashing a loader while the
+// already-open connection resolves a microtask later.
+let quranDbReady = false;
 const boundsDbMap = new Map<MushafVersion, Promise<SQLite.SQLiteDatabase>>();
+
+// True once the content DB is open and integrity-probed; false before first open,
+// after a failed open, or after a wipe. Drives the reader gate's initial state.
+const isContentDbReady = (): boolean => quranDbReady;
 
 // Bounded in-memory cache for per-page reads, so turning or scrubbing back to a
 // recently-seen page is instant without re-querying. Keyed by version+page so it
@@ -208,11 +216,13 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         // Integrity probe: a stamped file can still be truncated/schema-broken.
         // Reading the core `ayahs` table fails the open so the gate shows retry.
         await db.getFirstAsync("SELECT 1 FROM ayahs LIMIT 1");
+        quranDbReady = true;
         // Non-blocking: refresh content for the next launch without gating the reader.
         void checkForContentUpdate();
         return db;
       } catch (error) {
         quranDbPromise = null;
+        quranDbReady = false;
         log.e("Open", "Error opening quran.db", error as Error);
         throw error;
       }
@@ -235,6 +245,7 @@ const wipeContentDb = async (): Promise<void> => {
     }
     quranDbPromise = null;
   }
+  quranDbReady = false;
   clearPageReadCache();
 
   const dir = await getDirectory();
@@ -704,6 +715,7 @@ const getAyahTajweed = async (
 
 export const QuranContentDB = {
   openQuranDb,
+  isContentDbReady,
   wipeContentDb,
   getMutashabihatGroupForAyah,
   getMutashabihatKeysForPage,

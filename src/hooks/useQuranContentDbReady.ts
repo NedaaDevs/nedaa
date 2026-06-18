@@ -10,7 +10,11 @@ type DbReadyState = "loading" | "ready" | "error";
 // exposes that as an explicit loading/ready/error state so the screen can show a
 // loader and a retry instead of silently rendering an empty page.
 export const useQuranContentDbReady = () => {
-  const [state, setState] = useState<DbReadyState>("loading");
+  // Start ready when the DB is already open (warmed at app start), so re-entering
+  // the reader doesn't flash the loader for a connection that's already live.
+  const [state, setState] = useState<DbReadyState>(() =>
+    QuranContentDB.isContentDbReady() ? "ready" : "loading"
+  );
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {

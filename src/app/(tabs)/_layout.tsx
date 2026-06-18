@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBar, BottomTabBarProps } from "expo-router/js-tabs";
@@ -5,6 +6,9 @@ import { useTranslation } from "react-i18next";
 
 // Stores
 import { useAppStore } from "@/stores/app";
+
+// Services
+import { QuranContentDB } from "@/services/quran-content-db";
 
 // Icons
 import { Home, Settings, BookOpenText, BookOpen, Wrench } from "lucide-react-native";
@@ -26,6 +30,13 @@ const TabsLayout = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+
+  // TODO(quran-gate): remove at 2.10.0
+  // Warm the content DB at startup, but ONLY when Quran is unlocked — so the
+  // reader opens without a loading flash and locked users do no Quran work.
+  useEffect(() => {
+    if (quranUnlocked) void QuranContentDB.openQuranDb();
+  }, [quranUnlocked]);
 
   return (
     <Tabs
