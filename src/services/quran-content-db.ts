@@ -10,6 +10,7 @@ import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/qur
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
 import { MutashabihatGroup } from "@/types/mutashabihat";
 import { QuranManifestService } from "@/services/quran-manifest";
+import { mustDownloadBeforeOpen, needsContentUpdate } from "@/services/quranContentDbStrategy";
 import { stripTashkeel } from "@/utils/tashkeel";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -55,48 +56,35 @@ const getDirectory = async (): Promise<string> => {
   return SQLite.defaultDatabaseDirectory;
 };
 
-// Ensure the shared content DB is installed, downloading it from the CDN when
-// missing or when the manifest's `content.version` has moved on. Runs inside
-// `openQuranDb` *before* the DB is opened, so there's no live connection to close
-// here (that's `wipeContentDb`'s job) — closing the in-flight promise here
-// would deadlock.
-const ensureContentDbDownloaded = async (): Promise<void> => {
-  const dir = await getDirectory();
+// A background-downloaded update is staged under this name and swapped into place
+// on the next open — never over the live connection.
+const STAGING_NAME = `${QURAN_DB_NAME}.next`;
 
+type ContentManifest = NonNullable<Awaited<ReturnType<typeof QuranManifestService.getContent>>>;
+
+const getTargetDir = async (): Promise<Directory> => {
+  const dir = await getDirectory();
   // On Android, defaultDatabaseDirectory is a plain path, not a file:// URI.
-  // Convert to URI for expo-file-system compatibility.
   const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
   const targetDir = new Directory(dirUri);
-  if (!targetDir.exists) {
-    targetDir.create({ intermediates: true });
-  }
+  if (!targetDir.exists) targetDir.create({ intermediates: true });
+  return targetDir;
+};
 
-  const targetFile = new File(targetDir, QURAN_DB_NAME);
-  const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
-
-  const content = await QuranManifestService.getContent();
-  if (!content) {
-    // Offline with the DB already installed → use it; otherwise fail loudly.
-    if (targetFile.exists) {
-      log.d("Content", "No manifest; using installed content DB");
-      return;
-    }
-    throw new Error("[QuranContentDB] No content manifest and no installed DB");
-  }
-
-  const installed = versionFile.exists ? versionFile.textSync() : null;
-  if (targetFile.exists && installed === content.content.version) {
-    log.d("Content", `content DB v${installed} present`);
-    return;
-  }
-
-  log.i("Content", `Downloading content DB v${content.content.version}`);
+// Download the manifest's content zip and install `quran.db` under `destName`
+// (the live name for a first install, the staging name for a background update).
+// The version marker is written only after a verified move, so an interrupted
+// download is never stamped "installed".
+const installContentDb = async (
+  content: ContentManifest,
+  targetDir: Directory,
+  destName: string
+): Promise<void> => {
+  log.i("Content", `Downloading content DB v${content.content.version} → ${destName}`);
   const zipFile = new File(Paths.cache, "quran-content.zip");
   if (zipFile.exists) zipFile.delete();
   const downloaded = await new DownloadTask(content.url, zipFile).downloadAsync();
-  if (!downloaded) {
-    throw new Error("[QuranContentDB] content DB download failed");
-  }
+  if (!downloaded) throw new Error("[QuranContentDB] content DB download failed");
 
   const extractDir = new Directory(Paths.cache, "quran-content");
   if (extractDir.exists) extractDir.delete();
@@ -108,30 +96,110 @@ const ensureContentDbDownloaded = async (): Promise<void> => {
     throw new Error("[QuranContentDB] content zip missing quran.db");
   }
 
-  // Replace the installed DB + any stale WAL/SHM, then move the fresh copy in.
-  if (targetFile.exists) targetFile.delete();
-  const walFile = new File(targetDir, `${QURAN_DB_NAME}-wal`);
-  const shmFile = new File(targetDir, `${QURAN_DB_NAME}-shm`);
-  if (walFile.exists) walFile.delete();
-  if (shmFile.exists) shmFile.delete();
-  extracted.move(targetFile);
+  const destFile = new File(targetDir, destName);
+  const destVersion = new File(targetDir, `${destName}.version`);
+  if (destFile.exists) destFile.delete();
+  const wal = new File(targetDir, `${destName}-wal`);
+  const shm = new File(targetDir, `${destName}-shm`);
+  if (wal.exists) wal.delete();
+  if (shm.exists) shm.delete();
+  extracted.move(destFile);
 
-  // Version marker is written only after a verified install, so an interrupted
-  // download is never stamped "installed" — the next open re-downloads.
-  if (versionFile.exists) versionFile.delete();
-  versionFile.create();
-  versionFile.write(content.content.version);
+  if (destVersion.exists) destVersion.delete();
+  destVersion.create();
+  destVersion.write(content.content.version);
 
   zipFile.delete();
   extractDir.delete();
-  log.i("Content", `Installed content DB v${content.content.version} (${targetFile.size}B)`);
+  log.i(
+    "Content",
+    `Installed content DB v${content.content.version} → ${destName} (${destFile.size}B)`
+  );
+};
+
+// Swap a previously-staged background update into place. Safe to call only before
+// the DB is opened (no live connection), so it lives at the top of the open path.
+const applyStagedUpdate = (targetDir: Directory): void => {
+  const stagedFile = new File(targetDir, STAGING_NAME);
+  const stagedVersion = new File(targetDir, `${STAGING_NAME}.version`);
+  if (!stagedFile.exists || !stagedVersion.exists) return;
+
+  const targetFile = new File(targetDir, QURAN_DB_NAME);
+  const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
+  const wal = new File(targetDir, `${QURAN_DB_NAME}-wal`);
+  const shm = new File(targetDir, `${QURAN_DB_NAME}-shm`);
+  if (targetFile.exists) targetFile.delete();
+  if (wal.exists) wal.delete();
+  if (shm.exists) shm.delete();
+  stagedFile.move(targetFile);
+
+  const version = stagedVersion.textSync();
+  if (versionFile.exists) versionFile.delete();
+  versionFile.create();
+  versionFile.write(version);
+  stagedVersion.delete();
+  log.i("Content", `Applied staged content DB update v${version}`);
+};
+
+// Make sure an openable `quran.db` is installed. When one is already present and
+// stamped, open it immediately and leave the manifest/version check to the
+// background — so a cold open never waits on the network for a DB it already has.
+// Only a genuine first install (or an un-stamped/partial DB) blocks on a download.
+const ensureInstalledDbForOpen = async (): Promise<void> => {
+  const targetDir = await getTargetDir();
+  applyStagedUpdate(targetDir);
+
+  const targetFile = new File(targetDir, QURAN_DB_NAME);
+  const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
+  const installed = versionFile.exists ? versionFile.textSync() : null;
+
+  if (!mustDownloadBeforeOpen(targetFile.exists, installed)) {
+    log.d("Content", `content DB v${installed} present`);
+    return;
+  }
+
+  const content = await QuranManifestService.getContent();
+  if (!content) {
+    // Offline with the DB already installed → use it; otherwise fail loudly.
+    if (targetFile.exists) {
+      log.d("Content", "No manifest; using installed content DB");
+      return;
+    }
+    throw new Error("[QuranContentDB] No content manifest and no installed DB");
+  }
+  await installContentDb(content, targetDir, QURAN_DB_NAME);
+};
+
+let updateCheckInFlight = false;
+
+// Background: compare the installed version against the manifest and, when newer,
+// download the new DB to the staging name. It is applied on the next open; the
+// live connection is never replaced mid-session.
+const checkForContentUpdate = async (): Promise<void> => {
+  if (updateCheckInFlight) return;
+  updateCheckInFlight = true;
+  try {
+    const targetDir = await getTargetDir();
+    const versionFile = new File(targetDir, `${QURAN_DB_NAME}.version`);
+    const installed = versionFile.exists ? versionFile.textSync() : null;
+
+    const content = await QuranManifestService.getContent();
+    if (!content || !needsContentUpdate(installed, content.content.version)) return;
+
+    log.i("Content", `Staging background update v${installed} → v${content.content.version}`);
+    await installContentDb(content, targetDir, STAGING_NAME);
+  } catch (error) {
+    log.e("Content", "Background content update failed", error as Error);
+  } finally {
+    updateCheckInFlight = false;
+  }
 };
 
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   if (!quranDbPromise) {
     quranDbPromise = (async () => {
       try {
-        await ensureContentDbDownloaded();
+        await ensureInstalledDbForOpen();
         const db = await SQLite.openDatabaseAsync(
           QURAN_DB_NAME,
           { useNewConnection: true },
@@ -140,6 +208,8 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         // Integrity probe: a stamped file can still be truncated/schema-broken.
         // Reading the core `ayahs` table fails the open so the gate shows retry.
         await db.getFirstAsync("SELECT 1 FROM ayahs LIMIT 1");
+        // Non-blocking: refresh content for the next launch without gating the reader.
+        void checkForContentUpdate();
         return db;
       } catch (error) {
         quranDbPromise = null;
@@ -175,6 +245,8 @@ const wipeContentDb = async (): Promise<void> => {
     `${QURAN_DB_NAME}.version`,
     `${QURAN_DB_NAME}-wal`,
     `${QURAN_DB_NAME}-shm`,
+    STAGING_NAME,
+    `${STAGING_NAME}.version`,
   ]) {
     const f = new File(targetDir, name);
     if (f.exists) f.delete();
