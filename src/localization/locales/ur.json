@@ -861,6 +861,8 @@
   "quran.bookmark.here": "یہاں",
   "quran.bookmark.moveConfirm": "اس ربن کو یہاں منتقل کریں؟ یہ فی الحال {{surah}}، آیت {{ayah}} پر ہے۔",
   "quran.bookmark.moveHere": "ربن یہاں منتقل کریں",
+  "quran.bookmark.renameHint": "اس ربن کا نام تبدیل کرنے کے لیے ڈبل ٹیپ کریں",
+  "quran.bookmark.renameLabel": "اس ربن کو نام دیں",
   "quran.bookmark.ribbonAt": "{{surah}}، آیت {{ayah}} پر ربن",
   "quran.bookmark.title": "بک مارکس",
   "quran.browse.beginsAt": "{{surah}} سے شروع · صفحہ {{page}}",
