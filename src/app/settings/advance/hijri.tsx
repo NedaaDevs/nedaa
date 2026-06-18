@@ -104,7 +104,7 @@ const HijriSettings = () => {
 
   return (
     <Background>
-      <TopBar title={t("settings.hijri.date.title")} href="/" backOnClick />
+      <TopBar title={t("settings.hijri.date.title")} href="/settings/advance" backOnClick />
 
       <Box flex={1} padding="$4">
         <Box

@@ -6,7 +6,7 @@ import Location from "@/components/Location";
 const LocationSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.location.title" href="/" backOnClick />
+      <TopBar title="settings.location.title" href="/settings" backOnClick />
       <Location />
     </Background>
   );

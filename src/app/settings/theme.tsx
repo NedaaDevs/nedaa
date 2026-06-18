@@ -6,7 +6,7 @@ import TopBar from "@/components/TopBar";
 const ThemeSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.appearance" href="/" backOnClick />
+      <TopBar title="settings.appearance" href="/settings" backOnClick />
       <ThemeList />
     </Background>
   );

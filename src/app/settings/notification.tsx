@@ -141,7 +141,7 @@ const NotificationSettings = () => {
   if (isCheckingPermission) {
     return (
       <Background>
-        <TopBar title="settings.notification.title" href="/" backOnClick />
+        <TopBar title="settings.notification.title" href="/settings" backOnClick />
         <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
           <Text color="$typography">{t("common.loading")}</Text>
         </Box>
@@ -152,7 +152,7 @@ const NotificationSettings = () => {
   if (!hasPermission) {
     return (
       <Background>
-        <TopBar title="settings.notification.title" href="/" backOnClick />
+        <TopBar title="settings.notification.title" href="/settings" backOnClick />
         <VStack flex={1} padding="$4" alignItems="center" justifyContent="center" gap="$4">
           <Card padding="$6" width="100%" style={{ maxWidth: 320 }}>
             <VStack gap="$4" alignItems="center">
@@ -216,7 +216,7 @@ const NotificationSettings = () => {
 
   return (
     <Background>
-      <TopBar title="settings.notification.title" href="/" backOnClick />
+      <TopBar title="settings.notification.title" href="/settings" backOnClick />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

@@ -6,7 +6,7 @@ import TopBar from "@/components/TopBar";
 const HelpSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.help.title" href="/" backOnClick />
+      <TopBar title="settings.help.title" href="/settings" backOnClick />
       <ConcatUs />
     </Background>
   );

@@ -43,10 +43,11 @@ const TopBar = ({
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
 
   const handlePress = () => {
-    if (backOnClick && href) {
-      router.navigate(href);
-    } else if (backOnClick) {
+    if (!backOnClick) return;
+    if (router.canGoBack()) {
       router.back();
+    } else if (href) {
+      router.navigate(href);
     }
   };
 

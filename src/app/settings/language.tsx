@@ -6,7 +6,7 @@ import TopBar from "@/components/TopBar";
 const LanguageSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.language" href="/" backOnClick />
+      <TopBar title="settings.language" href="/settings" backOnClick />
       <LanguageList />
     </Background>
   );
