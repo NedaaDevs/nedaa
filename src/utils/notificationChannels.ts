@@ -132,7 +132,8 @@ const deleteAllManagedChannels = async (): Promise<void> => {
         channel.id.startsWith("iqama_") ||
         channel.id.startsWith("preathan_") ||
         channel.id.startsWith("athkar_") ||
-        channel.id === "reminder"
+        channel.id === "reminder" ||
+        channel.id === "quran_reminder"
       ) {
         await Notifications.deleteNotificationChannelAsync(channel.id);
       }
@@ -153,7 +154,8 @@ export const createNotificationChannels = async (
     eveningNotification: AthkarNotificationSettings;
   },
   fullAthanPlayback: boolean = false,
-  fullIqamaPlayback: boolean = false
+  fullIqamaPlayback: boolean = false,
+  quranReminderEnabled: boolean = false
 ): Promise<void> => {
   if (Platform.OS !== PlatformType.ANDROID) return;
 
@@ -292,6 +294,17 @@ export const createNotificationChannels = async (
         showBadge: true,
       });
     }
+  }
+
+  if (quranReminderEnabled) {
+    channels.push({
+      id: "quran_reminder",
+      name: "Quran Reminders",
+      sound: null,
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      showBadge: true,
+    });
   }
 
   // Create all channels
@@ -490,7 +503,8 @@ export const shouldUpdateChannels = async (
         ch.id.startsWith("iqama_") ||
         ch.id.startsWith("preathan_") ||
         ch.id.startsWith("athkar_") ||
-        ch.id === "reminder"
+        ch.id === "reminder" ||
+        ch.id === "quran_reminder"
     );
 
     for (const channel of managedChannels) {
@@ -555,7 +569,8 @@ export const debugChannelInfo = async (): Promise<void> => {
         ch.id.startsWith("prayer_") ||
         ch.id.startsWith("iqama_") ||
         ch.id.startsWith("preathan_") ||
-        ch.id === "reminder"
+        ch.id === "reminder" ||
+        ch.id === "quran_reminder"
     );
 
     console.log(`[NotificationChannels] Debug: Found ${managedChannels.length} managed channels`);
