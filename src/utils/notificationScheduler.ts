@@ -53,6 +53,12 @@ import { isCustomSoundKey } from "@/utils/customSoundHelpers";
 import { formatNumberToLocale } from "@/utils/number";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
+// Quran reminders
+import { useQuranRemindersStore } from "@/stores/quranReminders";
+import { weekdayToExpo } from "@/enums/quranReminders";
+import { enabledQuranReminderCount } from "@/utils/reminders/reminderBudget";
+import type { QuranReminder } from "@/types/quranReminders";
+
 type SchedulingOptions = {
   daysToSchedule?: number;
   force?: boolean;
@@ -241,6 +247,51 @@ const generateOtherTimingNotification = (
   };
 };
 
+// Schedules each enabled Quran reminder as a native repeating notification:
+// weekly (e.g. Friday Al-Kahf) or daily. The tap data deep-links the reader to
+// the target surah via the response listener.
+const scheduleQuranReminderNotifications = async (
+  reminders: QuranReminder[],
+  t: typeof i18next.t
+): Promise<{ success: boolean; scheduledCount: number }> => {
+  let scheduledCount = 0;
+  try {
+    for (const reminder of reminders) {
+      if (!reminder.enabled) continue;
+      const surah = reminder.target.kind === "surah" ? reminder.target.surah : undefined;
+      const weekday =
+        reminder.schedule.freq === "weekly" ? weekdayToExpo(reminder.schedule.weekday) : undefined;
+
+      const result = await scheduleRecurringNotification(
+        reminder.schedule.hour,
+        reminder.schedule.minute,
+        {
+          title: t("notification.alKahf.title"),
+          body: t("notification.alKahf.body"),
+          sound: "default",
+          data: {
+            type: NOTIFICATION_TYPE.QURAN_REMINDER,
+            reminderId: reminder.id,
+            surah,
+            screen: "/(tabs)/quran",
+          },
+        },
+        {
+          vibrate: true,
+          categoryId: "quran_reminder",
+          channelId: Platform.OS === PlatformType.ANDROID ? "quran_reminder" : undefined,
+          weekday,
+        }
+      );
+      if (result.success) scheduledCount++;
+    }
+    return { success: true, scheduledCount };
+  } catch (error) {
+    console.error("[QuranReminderScheduler] Failed:", error);
+    return { success: false, scheduledCount: 0 };
+  }
+};
+
 /**
  * Schedule all notifications based on settings and prayer times
  */
@@ -293,12 +344,15 @@ export const scheduleAllNotifications = async (
       // and expo-notifications serializes all custom sounds as "custom" making diff unreliable.
       const fullAthanPlayback = androidOptions.fullAthanPlayback ?? false;
       const fullIqamaPlayback = androidOptions.fullIqamaPlayback ?? false;
+      const quranReminderEnabled =
+        enabledQuranReminderCount(useQuranRemindersStore.getState().reminders) > 0;
       await createNotificationChannels(
         settings,
         customSounds,
         athkarSettings,
         fullAthanPlayback,
-        fullIqamaPlayback
+        fullIqamaPlayback,
+        quranReminderEnabled
       );
     }
 
@@ -373,6 +427,9 @@ export const scheduleAllNotifications = async (
 
     await scheduleAthkarNotifications(athkarSettings, timezone, t);
 
+    const quranReminders = useQuranRemindersStore.getState().reminders;
+    await scheduleQuranReminderNotifications(quranReminders, t);
+
     if (qadaSettings && qadaSettings.settings) {
       await scheduleQadaNotifications(
         qadaSettings.settings,
@@ -394,10 +451,17 @@ export const scheduleAllNotifications = async (
     // Calculate qada notification count (1 if enabled, 0 if disabled)
     const qadaNotificationCount = settings.defaults.qada.enabled ? 1 : 0;
 
+    // Each enabled Quran reminder holds one recurring slot
+    const quranReminderNotificationCount = enabledQuranReminderCount(quranReminders);
+
     // Apply iOS limit(64 scheduled notifications max)
     let notificationsToProcess = notificationsToSchedule;
     if (Platform.OS === PlatformType.IOS) {
-      const maxAllowed = MAX_IOS_NOTIFICATIONS - athkarNotificationCount - qadaNotificationCount;
+      const maxAllowed =
+        MAX_IOS_NOTIFICATIONS -
+        athkarNotificationCount -
+        qadaNotificationCount -
+        quranReminderNotificationCount;
 
       if (notificationsToSchedule.length > maxAllowed) {
         notificationsToProcess = notificationsToSchedule.slice(0, maxAllowed);
