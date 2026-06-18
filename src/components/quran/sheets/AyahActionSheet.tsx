@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Pressable, Share, useWindowDimensions } from "react-native";
-import { Sheet, XStack, YStack } from "tamagui";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
@@ -46,7 +48,7 @@ import { useQuranStore } from "@/stores/quran";
 import { useRTL } from "@/contexts/RTLContext";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
-import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
+import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 import ShareImageSheet from "@/components/quran/sheets/ShareImageSheet";
 import type { AyahSubViewKind } from "@/components/quran/sheets/AyahSubSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
@@ -68,6 +70,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
   const router = useRouter();
   const { isRTL } = useRTL();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
   const c = QURAN_THEME_COLORS[quranTheme];
@@ -177,7 +180,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
 
   return (
     <>
-      <ReaderSheet onClose={onClose} quranTheme={quranTheme} snapPoints={[85]}>
+      <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable>
         {/* Header: surah name + ayah ref */}
         <XStack alignItems="center" gap="$2" paddingBottom="$2">
           <Text fontSize={15} fontWeight="700" color={c.headerColor} flex={1}>
@@ -188,12 +191,10 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
           </Text>
         </XStack>
 
-        {/* Body scrolls internally (Sheet.ScrollView, not RN ScrollView, so the
-            menu scrolls instead of dragging the whole sheet); header stays pinned.
-            flex:1 fills the definite-height frame (ReaderSheet snapPoints). */}
-        <Sheet.ScrollView
-          flex={1}
-          contentContainerStyle={{ paddingBottom: 4 }}
+        {/* Body scrolls internally; the pinned header above stays put. */}
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <YStack>
@@ -342,8 +343,8 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
               />
             </XStack>
           </YStack>
-        </Sheet.ScrollView>
-      </ReaderSheet>
+        </BottomSheetScrollView>
+      </ReaderBottomSheet>
 
       {shareImageOpen && data && (
         <ShareImageSheet

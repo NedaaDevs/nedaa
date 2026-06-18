@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { MushafVersion, QuranThemeType, ShareCardStyle } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
-import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
+import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 import AyahShareCard from "@/components/quran/AyahShareCard";
 
 interface ShareImageSheetProps {
@@ -82,7 +82,7 @@ const ShareImageSheet = ({
   ];
 
   return (
-    <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme}>
       <YStack gap="$4" alignItems="center">
         <Text fontSize={15} fontWeight="700" color={c.headerColor}>
           {t("quran.share.title")}
@@ -172,7 +172,7 @@ const ShareImageSheet = ({
           </Text>
         </XStack>
       </YStack>
-    </ReaderSheet>
+    </ReaderBottomSheet>
   );
 };
 

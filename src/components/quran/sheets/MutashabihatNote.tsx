@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, TextInput } from "react-native";
+import { Pressable } from "react-native";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { Pencil, Check, X } from "lucide-react-native";
@@ -71,7 +72,7 @@ export const MutashabihatNote = ({
         paddingTop="$2.5"
         paddingBottom="$2"
         style={{ backgroundColor: surface }}>
-        <TextInput
+        <BottomSheetTextInput
           value={draft}
           onChangeText={commit}
           onFocus={() => setFocused(true)}

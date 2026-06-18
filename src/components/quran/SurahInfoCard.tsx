@@ -9,7 +9,7 @@ import { QuranContentDB } from "@/services/quran-content-db";
 import { formatNumberToLocale } from "@/utils/number";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import type { SurahMeta } from "@/types/quran";
-import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
+import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 
 interface SurahInfoCardProps {
   // Null when closed; the sheet stays mounted and animates out.
@@ -61,7 +61,7 @@ const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps)
     : "";
 
   return (
-    <ReaderSheet open={surahNumber !== null} onClose={onClose} quranTheme={quranTheme}>
+    <ReaderBottomSheet open={surahNumber !== null} onClose={onClose} quranTheme={quranTheme}>
       {ready && (
         <YStack gap="$2" paddingBottom="$2">
           <Text
@@ -79,7 +79,7 @@ const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps)
           </Text>
         </YStack>
       )}
-    </ReaderSheet>
+    </ReaderBottomSheet>
   );
 };
 

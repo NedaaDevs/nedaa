@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Sheet, XStack, YStack } from "tamagui";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
@@ -17,7 +19,7 @@ import { formatNumberToLocale } from "@/utils/number";
 import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
 import { buildTajweedCards } from "@/components/quran/tajweed-cards";
 import { MutashabihatView } from "@/components/quran/sheets/MutashabihatView";
-import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
+import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 
 export type AyahSubViewKind = "mutashabihat" | "tajweed" | "sajda";
 export type AyahSubViewTarget = { kind: AyahSubViewKind; surah: number; ayah: number };
@@ -39,6 +41,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
   const setMutashabihatNote = useQuranStore((s) => s.setMutashabihatNote);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
+  const insets = useSafeAreaInsets();
 
   const [group, setGroup] = useState<MutashabihatGroup | null>(null);
   const [tajweed, setTajweed] = useState<{ index: number; hex: string }[]>([]);
@@ -49,6 +52,8 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
   useEffect(() => {
     if (!kind || !surah || !ayah) return;
     let cancelled = false;
+    // Clear stale data when the target ayah changes before the async load resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGroup(null);
     setTajweed([]);
     if (kind === "mutashabihat") {
@@ -75,6 +80,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
     subtleText: c.pageNumberColor,
     cardBg: c.innerBackground,
     cardBorder: c.frameColor,
+    heading: c.headerColor,
   };
   const title =
     kind === "mutashabihat"
@@ -86,7 +92,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
   const tajweedCards = buildTajweedCards(tajweed, t);
 
   return (
-    <ReaderSheet onClose={onClose} quranTheme={quranTheme} snapPoints={[85]}>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable>
       <XStack alignItems="center" gap="$2" paddingBottom="$2">
         <Text fontSize={15} fontWeight="700" color={c.headerColor} flex={1}>
           {title}
@@ -96,9 +102,9 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
         </Text>
       </XStack>
 
-      <Sheet.ScrollView
-        flex={1}
-        contentContainerStyle={{ paddingBottom: 4 }}
+      <BottomSheetScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <YStack gap="$4">
@@ -143,8 +149,8 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
               ))
             : null}
         </YStack>
-      </Sheet.ScrollView>
-    </ReaderSheet>
+      </BottomSheetScrollView>
+    </ReaderBottomSheet>
   );
 };
 

@@ -1,6 +1,3 @@
-// Enables RNGH-backed Sheet gestures so Sheet.ScrollView scrolls its content
-// instead of dragging the whole sheet. Must precede any Tamagui import.
-import "@tamagui/native/setup-gesture-handler";
 import "@/localization/i18n";
 import "@tamagui/linear-gradient";
 
@@ -14,6 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { TamaguiProvider, FontLanguage, useTheme, useThemeName } from "tamagui";
 import tamaguiConfig from "../../tamagui.config";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
@@ -98,35 +96,37 @@ function AppShell() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
-        <StatusBar style={themeName === "dark" ? "light" : "dark"} />
-        <ToastProvider />
-        <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
+      <BottomSheetModalProvider>
+        <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
+          <StatusBar style={themeName === "dark" ? "light" : "dark"} />
+          <ToastProvider />
+          <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
-        {pendingCityChange && (
-          <CityChangeModal
-            isOpen={showCityChangeModal}
-            onClose={dismissCityChangeModal}
-            onUpdate={handleCityChangeUpdate}
-            onRetry={retryUpdate}
-            currentCity={pendingCityChange.currentCity}
-            newCity={pendingCityChange.newCity}
-            updateState={updateState}
-          />
-        )}
+          {pendingCityChange && (
+            <CityChangeModal
+              isOpen={showCityChangeModal}
+              onClose={dismissCityChangeModal}
+              onUpdate={handleCityChangeUpdate}
+              onRetry={retryUpdate}
+              currentCity={pendingCityChange.currentCity}
+              newCity={pendingCityChange.newCity}
+              updateState={updateState}
+            />
+          )}
 
-        {isFirstRun && !IS_SCREENSHOT_MODE ? (
-          <OnboardingScreen />
-        ) : (
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        )}
-        <PlayerBottomSheet />
-      </SafeAreaView>
+          {isFirstRun && !IS_SCREENSHOT_MODE ? (
+            <OnboardingScreen />
+          ) : (
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}>
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          )}
+          <PlayerBottomSheet />
+        </SafeAreaView>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

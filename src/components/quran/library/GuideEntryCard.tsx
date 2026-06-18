@@ -12,6 +12,9 @@ export type GuideCardColors = {
   subtleText: `#${string}`;
   cardBg: `#${string}`;
   cardBorder: `#${string}`;
+  // Card title colour; defaults to `text`. Reader sheets pass the theme accent
+  // (headerColor) so titles match the section header instead of the verse ink.
+  heading?: `#${string}`;
 };
 
 // One guide entry as a card: a tajweed colour swatch or a waqf/sajda glyph, the
@@ -65,7 +68,7 @@ export const GuideEntryCard = ({
       ) : null}
 
       <YStack flex={1} gap="$1">
-        <Text fontSize={15} fontWeight="700" color={colors.text}>
+        <Text fontSize={15} fontWeight="700" color={colors.heading ?? colors.text}>
           {title}
         </Text>
 

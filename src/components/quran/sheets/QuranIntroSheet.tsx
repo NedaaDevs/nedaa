@@ -4,9 +4,14 @@ import { useTranslation } from "react-i18next";
 import { MousePointerClick, Hand } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { QURAN_THEME_COLORS, QURAN_TEXT_FONT, BOOKMARK_COLORS, toArabicDigits } from "@/constants/Quran";
+import {
+  QURAN_THEME_COLORS,
+  QURAN_TEXT_FONT,
+  BOOKMARK_COLORS,
+  toArabicDigits,
+} from "@/constants/Quran";
 import { QuranThemeType, BookmarkColor } from "@/enums/quran";
-import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
+import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
 
 // The reader's gestures aren't discoverable on their own, so this walkthrough
@@ -81,7 +86,7 @@ const QuranIntroSheet = ({
   };
 
   return (
-    <ReaderSheet onClose={onClose} quranTheme={quranTheme}>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme}>
       <YStack gap="$2" paddingBottom="$2">
         <Text fontSize={18} fontWeight="700" color={c.headerColor}>
           {t("quran.intro.title")}
@@ -125,7 +130,7 @@ const QuranIntroSheet = ({
           </Text>
         </YStack>
       </Pressable>
-    </ReaderSheet>
+    </ReaderBottomSheet>
   );
 };
 

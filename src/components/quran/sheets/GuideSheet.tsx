@@ -1,12 +1,14 @@
-import { Sheet, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { YStack } from "tamagui";
 
 import { Text } from "@/components/ui/text";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { QuranThemeType } from "@/enums/quran";
 import { type GuideEntry, guideTextKey } from "@/types/guide";
-import ReaderSheet from "@/components/quran/sheets/ReaderSheet";
 import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
+import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 
 interface GuideSheetProps {
   // The entries to show (a tajweed legend, a sajda explanation + dua, a single
@@ -17,11 +19,12 @@ interface GuideSheetProps {
   onClose: () => void;
 }
 
-// In-reader contextual guide: the same cards as the Library Guide tab, themed to
-// the reader's paper and shown as a bottom sheet over the page.
+// In-reader contextual guide: the same cards as the Library Guide tab, themed to the
+// reader's paper and shown as a scrollable bottom sheet over the page.
 const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps) => {
   const { t, i18n } = useTranslation();
   const c = QURAN_THEME_COLORS[quranTheme];
+  const insets = useSafeAreaInsets();
   const isArabic = i18n.language === "ar";
   const isLatin = i18n.language === "en" || i18n.language === "ms";
   const colors = {
@@ -29,16 +32,17 @@ const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps)
     subtleText: c.pageNumberColor,
     cardBg: c.innerBackground,
     cardBorder: c.frameColor,
+    heading: c.headerColor,
   };
 
   return (
-    <ReaderSheet onClose={onClose} quranTheme={quranTheme} snapPoints={[85]}>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable>
       <Text fontSize={15} fontWeight="700" color={c.headerColor} paddingBottom="$2">
         {t(titleKey)}
       </Text>
-      <Sheet.ScrollView
-        flex={1}
-        contentContainerStyle={{ paddingBottom: 4 }}
+      <BottomSheetScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
         showsVerticalScrollIndicator={false}>
         <YStack gap="$3">
           {entries.map((entry) => (
@@ -54,8 +58,8 @@ const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps)
             />
           ))}
         </YStack>
-      </Sheet.ScrollView>
-    </ReaderSheet>
+      </BottomSheetScrollView>
+    </ReaderBottomSheet>
   );
 };
 

@@ -7,9 +7,7 @@ import Animated, {
   withTiming,
   interpolate,
   cancelAnimation,
-  useAnimatedReaction,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -18,7 +16,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 
 import AthkarCard from "@/components/athkar/AthkarCard";
@@ -110,6 +108,12 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
 
   const overallProgress = totalAthkar > 0 ? (completedAthkar / totalAthkar) * 100 : 0;
 
+  // Whether the reset has anything to clear: any athkar of this type with progress,
+  // counting partial counts (what resetProgress zeroes), not just completed ones.
+  const hasResettableProgress = currentProgress.some(
+    (p) => p.athkarId.includes(`-${type}`) && (p.currentCount > 0 || p.completed)
+  );
+
   // Get streak data from store
   const streakDays = streak.currentStreak;
   const longestStreak = streak.longestStreak || 0;
@@ -160,15 +164,6 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
       setIsResetting(false);
     }
   };
-
-  useAnimatedReaction(
-    () => progress.value,
-    (current, previous) => {
-      if (current >= 100 && (previous ?? 0) < 100) {
-        scheduleOnRN(handleCompletion);
-      }
-    }
-  );
 
   // Handle press start
   const handlePressStart = () => {
@@ -356,48 +351,56 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
           />
         );
       })}
-      {/* Press and Hold Reset Button */}
-      <Animated.View
-        style={[
-          {
-            borderRadius: 8,
-            position: "relative",
-          },
-          buttonAnimatedStyle,
-        ]}>
-        <Button
-          size="md"
-          variant="outline"
-          action="default"
-          width="100%"
-          borderWidth={0}
-          backgroundColor="transparent"
-          disabled={isResetting}
-          onPressIn={handlePressStart}
-          onPressOut={handlePressEnd}
-          accessibilityLabel={t("common.resetDailyProgress")}
-          accessibilityHint={t("a11y.athkar.holdToResetHint")}>
-          {isResetting ? (
-            <Spinner size="small" />
-          ) : (
-            <Icon as={RotateCcw} size="md" color="$typographyContrast" />
-          )}
-          <Button.Text color="$typographyContrast" fontWeight="500">
-            {isResetting
-              ? t("athkar.loading.resetting")
-              : isPressing
-                ? t("common.holdToReset", {
-                    progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
-                  })
-                : t("common.resetDailyProgress")}
-          </Button.Text>
-        </Button>
+      {/* Reset only appears once there's progress to clear. */}
+      {hasResettableProgress && (
+        <Animated.View
+          style={[
+            {
+              borderRadius: 8,
+              position: "relative",
+            },
+            buttonAnimatedStyle,
+          ]}>
+          {/* Pressable, not Tamagui Button: the composed Button drops its JS press
+              mid-hold on iOS when the label re-renders each frame, cancelling the
+              reset. onTouchEnd backs up onPressOut, which can miss on iOS. */}
+          <Pressable
+            width="100%"
+            minHeight={48}
+            borderRadius={8}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+            gap="$2"
+            backgroundColor="transparent"
+            disabled={isResetting}
+            onPressIn={handlePressStart}
+            onPressOut={handlePressEnd}
+            onTouchEnd={handlePressEnd}
+            accessibilityLabel={t("common.resetDailyProgress")}
+            accessibilityHint={t("a11y.athkar.holdToResetHint")}>
+            {isResetting ? (
+              <Spinner size="small" />
+            ) : (
+              <Icon as={RotateCcw} size="md" color="$typographyContrast" />
+            )}
+            <Text color="$typographyContrast" fontWeight="500">
+              {isResetting
+                ? t("athkar.loading.resetting")
+                : isPressing
+                  ? t("common.holdToReset", {
+                      progress: formatNumberToLocale(`${Math.round(pressProgress)}`),
+                    })
+                  : t("common.resetDailyProgress")}
+            </Text>
+          </Pressable>
 
-        {/* Progress overlay */}
-        {isPressing && !isResetting && (
-          <Animated.View style={progressOverlayStyle} pointerEvents="none" />
-        )}
-      </Animated.View>
+          {/* Progress overlay */}
+          {isPressing && !isResetting && (
+            <Animated.View style={progressOverlayStyle} pointerEvents="none" />
+          )}
+        </Animated.View>
+      )}
     </VStack>
   );
 };
