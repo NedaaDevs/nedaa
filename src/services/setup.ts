@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/react-native";
+import { AppLogger } from "@/utils/appLogger";
 
 // Types
 import type { PrayerTimesStore } from "@/stores/prayerTimes";
@@ -55,6 +55,10 @@ export const appSetup = async (
     reloadPrayerWidgets();
   } catch (error) {
     console.error("App setup failed:", error);
-    Sentry.captureException(error);
+    AppLogger.create("crash").e(
+      "appSetup",
+      "setup failed",
+      error instanceof Error ? error : undefined
+    );
   }
 };

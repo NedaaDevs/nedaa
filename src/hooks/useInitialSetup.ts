@@ -13,6 +13,8 @@ import { useCustomSoundsStore } from "@/stores/customSounds";
 import { appSetup } from "@/services/setup";
 import { PrayerTimesDB } from "@/services/db";
 import { QadaDB } from "@/services/qada-db";
+import { AppLogger } from "@/utils/appLogger";
+import { installCrashHandler } from "@/utils/crashHandler";
 
 // Screenshot mode
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
@@ -41,6 +43,10 @@ export const useInitialSetup = () => {
     if (!IS_SCREENSHOT_MODE && appStore.isFirstRun) return;
 
     const initializeApp = async () => {
+      // Install the crash handler first so early-startup errors are captured, and
+      // prune old/oversized logs once per launch.
+      installCrashHandler();
+      AppLogger.prune();
       if (IS_SCREENSHOT_MODE) {
         seedScreenshotState();
       }
