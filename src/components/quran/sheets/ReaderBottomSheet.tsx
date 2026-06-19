@@ -66,13 +66,13 @@ const ReaderBottomSheet = ({
   useEffect(() => {
     if (open) {
       hasPresented.current = true;
-      log.i("sheet", `${name}: present()`);
+      log.d("sheet", `${name}: present()`);
       ref.current?.present();
     } else if (hasPresented.current) {
       if (dismissedBySheet.current) {
         dismissedBySheet.current = false;
       } else {
-        log.i("sheet", `${name}: dismiss()`);
+        log.d("sheet", `${name}: dismiss()`);
         ref.current?.dismiss();
       }
     }
@@ -114,12 +114,12 @@ const ReaderBottomSheet = ({
       enableContentPanningGesture={enablePanDownToClose}
       onDismiss={() => {
         dismissedBySheet.current = true;
-        log.i("sheet", `${name}: onDismiss`);
+        log.d("sheet", `${name}: onDismiss`);
         onClose();
       }}
       // A present() with no following "index → 0" means the modal was swallowed
       // (a wedged provider) — the signature of the dead-sheet bug.
-      onChange={(index) => log.i("sheet", `${name}: index → ${index}`)}
+      onChange={(index) => log.d("sheet", `${name}: index → ${index}`)}
       // Keep lower sheets mounted/presented underneath (real stack). The default
       // "switch" minimizes the sheet below, firing its onDismiss → onClose, which
       // would unmount the action sheet (and its child Share sheet) on open.

@@ -86,11 +86,11 @@ class AthkarPlayer {
       });
       this.initialized = true;
       await this.syncRate();
-      log.i("Player", "TrackPlayer initialized");
+      log.d("Player", "TrackPlayer initialized");
     } catch (error) {
       if ((error as Error)?.message?.includes("already been initialized")) {
         this.initialized = true;
-        log.i("Player", "TrackPlayer was already initialized");
+        log.d("Player", "TrackPlayer was already initialized");
       } else {
         log.e("Player", "TrackPlayer init failed", error instanceof Error ? error : undefined);
         throw error;

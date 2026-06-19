@@ -8,6 +8,15 @@ import { AppState, Platform } from "react-native";
 
 import { sessionMarker, pruneByAge, pruneGlobalBySize, buildBundle } from "@/utils/logBundle";
 
+// Logging convention (keep shared diagnostic bundles signal, not noise):
+//   ERROR — a failure that breaks a user-visible operation; pass the Error.
+//   WARN  — a recovered failure or data-integrity anomaly worth seeing in a report.
+//   INFO  — low-frequency lifecycle that builds a diagnostic timeline (download
+//           start/done, session start/stop, resets). NOT per-frame/per-tap/per-track.
+//   DEBUG — dev-only, never persisted: routine/high-frequency chatter and traces.
+// `tag` is a short area label ("Download", "Player"); the message says what happened,
+// the identifier, and the outcome.
+
 const logDir = new Directory(Paths.document, "logs");
 const FLUSH_INTERVAL = 5000; // 5 seconds
 const FLUSH_THRESHOLD = 20; // entries
