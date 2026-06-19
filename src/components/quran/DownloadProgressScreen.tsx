@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { BookOpen, Download, FileCheck, Loader, Pause, Play, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import ReportThisButton from "@/components/ReportThisButton";
 import { formatNumberToLocale } from "@/utils/number";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -273,21 +274,27 @@ const DownloadProgressScreen = ({
           </XStack>
         </Pressable>
       ) : isError ? (
-        <Pressable
-          onPress={() => QuranDownload.start(version)}
-          accessibilityRole="button"
-          accessibilityLabel={t("quran.download.retry")}>
-          <XStack
-            backgroundColor={chrome.accent}
-            paddingHorizontal="$4"
-            paddingVertical="$2.5"
-            borderRadius="$3"
-            alignItems="center">
-            <Text color="#fff" fontWeight="600">
-              {t("quran.download.retry")}
-            </Text>
-          </XStack>
-        </Pressable>
+        <YStack alignItems="center" gap="$2">
+          <Pressable
+            onPress={() => QuranDownload.start(version)}
+            accessibilityRole="button"
+            accessibilityLabel={t("quran.download.retry")}>
+            <XStack
+              backgroundColor={chrome.accent}
+              paddingHorizontal="$4"
+              paddingVertical="$2.5"
+              borderRadius="$3"
+              alignItems="center">
+              <Text color="#fff" fontWeight="600">
+                {t("quran.download.retry")}
+              </Text>
+            </XStack>
+          </Pressable>
+          <ReportThisButton
+            domains={["quran-download", "quran-content-db", "quran-manifest"]}
+            category="Quran download"
+          />
+        </YStack>
       ) : isPaused ? (
         <XStack alignItems="center" gap="$4">
           <Pressable
