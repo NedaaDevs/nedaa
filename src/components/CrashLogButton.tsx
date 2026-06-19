@@ -1,8 +1,6 @@
 // Components
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { HStack } from "@/components/ui/hstack";
-import { Text } from "@/components/ui/text";
 
 // Icons
 import { Bug } from "lucide-react-native";
@@ -23,10 +21,12 @@ const CrashLogButton = () => {
 
   return (
     <Pressable
+      alignItems="center"
+      justifyContent="center"
+      padding="$2"
+      borderRadius="$2"
       minHeight={44}
-      paddingHorizontal="$3"
-      paddingVertical="$2"
-      borderRadius="$4"
+      minWidth={44}
       onPress={() => {
         hapticMedium();
         AppLogger.shareAllLogs();
@@ -34,12 +34,7 @@ const CrashLogButton = () => {
       accessibilityRole="button"
       accessibilityLabel={t("settings.shareLogs.label")}
       accessibilityHint={t("settings.shareLogs.hint")}>
-      <HStack alignItems="center" gap="$2">
-        <Icon as={Bug} color="$typographySecondary" size="sm" />
-        <Text size="sm" color="$typographySecondary">
-          {t("settings.shareLogs.label")}
-        </Text>
-      </HStack>
+      <Icon as={Bug} color="$typographySecondary" />
     </Pressable>
   );
 };
