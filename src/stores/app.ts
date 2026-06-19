@@ -48,7 +48,6 @@ export const useAppStore = create<AppState>()(
           locale: initialLanguage,
           mode: Appearance.getColorScheme() as AppMode,
           direction: initialDirection,
-          sendCrashLogs: false,
           loadingMessage: "",
           showLoadingOverlay: false,
           hijriDaysOffset: 0,
@@ -67,10 +66,6 @@ export const useAppStore = create<AppState>()(
 
           setMode: (mode: AppMode) => {
             set({ mode });
-          },
-
-          setSendCrashLogs: (sendCrashLogs: boolean) => {
-            set({ sendCrashLogs });
           },
 
           setLoadingState: (loading: boolean, message?: string) => {
@@ -103,7 +98,6 @@ export const useAppStore = create<AppState>()(
             locale: state.locale,
             mode: state.mode,
             direction: state.direction,
-            sendCrashLogs: state.sendCrashLogs,
             dismissedFeatureCards: state.dismissedFeatureCards,
             // TODO(quran-gate): remove at 2.10.0
             quranUnlocked: state.quranUnlocked,

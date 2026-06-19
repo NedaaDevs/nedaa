@@ -6,7 +6,6 @@ export type AppState = {
   locale: AppLocale;
   direction: AppDirection;
   mode: AppMode;
-  sendCrashLogs: boolean;
   loadingMessage: string;
   showLoadingOverlay: boolean;
   hijriDaysOffset: number;
@@ -14,7 +13,6 @@ export type AppState = {
   setIsFirstRun: (status: boolean) => void;
   setLocale: (lang: AppLocale) => void;
   setMode: (mode: AppMode) => void;
-  setSendCrashLogs: (value: boolean) => void;
   setHijirOffset: (offset: number) => void;
   dismissedFeatureCards: string[];
   dismissFeatureCard: (id: string) => void;

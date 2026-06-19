@@ -7,10 +7,9 @@ import { checkLocationPermission } from "@/utils/location";
 import WelcomeStep from "./steps/WelcomeStep";
 import NotificationsStep from "./steps/NotificationsStep";
 import LocationStep from "./steps/LocationStep";
-import CrashReportingStep from "./steps/CrashReportingStep";
 
 type OnboardingStepConfig = {
-  id: "welcome" | "notifications" | "location" | "crashReporting";
+  id: "welcome" | "notifications" | "location";
   component: React.ComponentType<{ onNext: () => void }>;
 };
 
@@ -39,11 +38,6 @@ const allSteps: {
       const { granted } = await checkLocationPermission();
       return !granted;
     },
-  },
-  {
-    id: "crashReporting",
-    component: CrashReportingStep,
-    shouldShow: async () => true,
   },
 ];
 
