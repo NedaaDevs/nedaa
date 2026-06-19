@@ -41,7 +41,6 @@ import ReaderLibraryDrawer, {
 } from "@/components/quran/ReaderLibraryDrawer";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
-import AyahSubSheet, { type AyahSubViewTarget } from "@/components/quran/sheets/AyahSubSheet";
 import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
 import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
@@ -86,7 +85,6 @@ const QuranScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
-  const [subSheet, setSubSheet] = useState<AyahSubViewTarget | null>(null);
   const [infoSurah, setInfoSurah] = useState<number | null>(null);
   const [guideSheet, setGuideSheet] = useState<{ entries: GuideEntry[]; titleKey: string } | null>(
     null
@@ -140,22 +138,9 @@ const QuranScreen = () => {
     return () => clearTimeout(id);
   }, [jumpReturn, setJumpReturn]);
 
-  // Open a sub-view sheet (similar verses / tajweed / sajda) stacked OVER the action
-  // sheet, which stays mounted underneath. Unmounting the action sheet here tears down
-  // its modal mid-present, leaving the sub-sheet showing only its overlay. Closing the
-  // sub-view reveals the action sheet again.
-  const openSubView = useCallback(
-    (kind: AyahSubViewTarget["kind"]) => {
-      if (!actionAyah) return;
-      setSubSheet({ kind, ...actionAyah });
-    },
-    [actionAyah]
-  );
-  const closeSubSheet = useCallback(() => setSubSheet(null), []);
-  // Mutashabihat "go to": leave both sheets and jump the reader to the picked verse.
+  // Mutashabihat "go to": close the action sheet and jump the reader to the picked verse.
   const subGoTo = useCallback(
     (surah: number, ayah: number, page: number) => {
-      setSubSheet(null);
       setActionAyah(null);
       setJumpReturn(currentPage);
       setCurrentPage(page);
@@ -626,18 +611,12 @@ const QuranScreen = () => {
             />
           )}
 
-          {/* Long-press ayah action sheet + its sub-view sheets (similar verses,
-            tajweed, sajda) — closing a sub-view reopens the action sheet. */}
+          {/* Long-press ayah action sheet. Sub-views (similar verses, tajweed, sajda)
+            swap into its body — one sheet, so closing a sub-view returns to the actions. */}
           <AyahActionSheet
             target={actionAyah}
             quranTheme={quranTheme}
             onClose={() => setActionAyah(null)}
-            onOpenSubView={openSubView}
-          />
-          <AyahSubSheet
-            target={subSheet}
-            quranTheme={quranTheme}
-            onClose={closeSubSheet}
             onGoTo={subGoTo}
           />
 
