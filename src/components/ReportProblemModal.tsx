@@ -1,6 +1,13 @@
-import { FC, useState } from "react";
+import { FC, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Linking } from "react-native";
+import { BackHandler, Linking } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
 import { openComposer } from "react-native-email-link";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useTheme } from "tamagui";
@@ -10,7 +17,6 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon, MailIcon } from "@/components/ui/icon";
-import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
 import { ClipboardCopy } from "lucide-react-native";
 
 interface ReportProblemModalProps {
@@ -32,14 +38,48 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const [, setIsExporting] = useState(false);
+  const insets = useSafeAreaInsets();
+  const ref = useRef<BottomSheetModal>(null);
 
   const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
   const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
 
+  // Present/dismiss off `isOpen`. Never dismiss before the first present (gorhom wedges
+  // a never-presented modal); gorhom's onDismiss still fires onClose for swipe/backdrop.
+  const hasPresented = useRef(false);
+  useEffect(() => {
+    if (isOpen) {
+      hasPresented.current = true;
+      ref.current?.present();
+    } else if (hasPresented.current) {
+      ref.current?.dismiss();
+    }
+  }, [isOpen]);
+
+  // Android hardware back closes the sheet instead of navigating.
+  useEffect(() => {
+    if (!isOpen) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      ref.current?.dismiss();
+      return true;
+    });
+    return () => sub.remove();
+  }, [isOpen]);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   const handleEmail = async () => {
-    setIsExporting(true);
     onClose();
     try {
       const body = await getReportText();
@@ -47,12 +87,10 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
     } catch (e) {
       console.error("Failed to open email:", e);
     }
-    setIsExporting(false);
   };
 
   const handleWhatsApp = async () => {
     if (!whatsappNumber) return;
-    setIsExporting(true);
     onClose();
     try {
       const summary = await getSummaryText();
@@ -60,12 +98,10 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
     } catch (e) {
       console.error("Failed to open WhatsApp:", e);
     }
-    setIsExporting(false);
   };
 
   const handleTelegram = async () => {
     if (!telegramUsername) return;
-    setIsExporting(true);
     onClose();
     try {
       const summary = await getSummaryText();
@@ -73,7 +109,6 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
     } catch (e) {
       console.error("Failed to open Telegram:", e);
     }
-    setIsExporting(false);
   };
 
   const handleCopy = async () => {
@@ -82,94 +117,88 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalBackdrop />
-      <ModalContent>
-        <ModalBody>
-          <Text size="lg" fontWeight="600" color="$typography" textAlign="center" marginBottom="$4">
-            {t("alarm.report.shareVia")}
-          </Text>
-          <VStack gap="$2">
+    <BottomSheetModal
+      ref={ref}
+      onDismiss={onClose}
+      enablePanDownToClose
+      enableDynamicSizing
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: theme.backgroundSecondary?.val ?? theme.background?.val }}
+      handleIndicatorStyle={{
+        backgroundColor: theme.typographySecondary?.val ?? theme.outline?.val,
+      }}>
+      <BottomSheetView
+        style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) + 8 }}>
+        <Text size="lg" fontWeight="600" color="$typography" textAlign="center" marginBottom="$4">
+          {t("alarm.report.shareVia")}
+        </Text>
+        <VStack gap="$1">
+          <Pressable
+            minHeight={52}
+            paddingHorizontal="$3"
+            borderRadius="$4"
+            onPress={handleEmail}
+            accessibilityRole="button"
+            accessibilityLabel={t("alarm.report.email")}>
+            <HStack alignItems="center" width="100%" gap="$3">
+              <Icon as={MailIcon} size="xl" color="$primary" />
+              <Text size="md" color="$typography">
+                {t("alarm.report.email")}
+              </Text>
+            </HStack>
+          </Pressable>
+
+          {whatsappNumber && (
             <Pressable
-              minHeight={44}
+              minHeight={52}
               paddingHorizontal="$3"
-              borderRadius="$6"
-              onPress={handleEmail}
+              borderRadius="$4"
+              onPress={handleWhatsApp}
               accessibilityRole="button"
-              accessibilityLabel={t("alarm.report.email")}>
+              accessibilityLabel={t("alarm.report.whatsapp")}>
               <HStack alignItems="center" width="100%" gap="$3">
-                <Icon as={MailIcon} size="xl" color="$primary" />
+                <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
                 <Text size="md" color="$typography">
-                  {t("alarm.report.email")}
+                  {t("alarm.report.whatsapp")}
                 </Text>
               </HStack>
             </Pressable>
+          )}
 
-            {whatsappNumber && (
-              <Pressable
-                minHeight={44}
-                paddingHorizontal="$3"
-                borderRadius="$6"
-                onPress={handleWhatsApp}
-                accessibilityRole="button"
-                accessibilityLabel={t("alarm.report.whatsapp")}>
-                <HStack alignItems="center" width="100%" gap="$3">
-                  <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
-                  <Text size="md" color="$typography">
-                    {t("alarm.report.whatsapp")}
-                  </Text>
-                </HStack>
-              </Pressable>
-            )}
-
-            {telegramUsername && (
-              <Pressable
-                minHeight={44}
-                paddingHorizontal="$3"
-                borderRadius="$6"
-                onPress={handleTelegram}
-                accessibilityRole="button"
-                accessibilityLabel={t("alarm.report.telegram")}>
-                <HStack alignItems="center" width="100%" gap="$3">
-                  <FontAwesome5 name="telegram-plane" size={24} color={theme.typography.val} />
-                  <Text size="md" color="$typography">
-                    {t("alarm.report.telegram")}
-                  </Text>
-                </HStack>
-              </Pressable>
-            )}
-
+          {telegramUsername && (
             <Pressable
-              minHeight={44}
+              minHeight={52}
               paddingHorizontal="$3"
-              borderRadius="$6"
-              onPress={handleCopy}
+              borderRadius="$4"
+              onPress={handleTelegram}
               accessibilityRole="button"
-              accessibilityLabel={t("alarm.report.copyToClipboard")}>
+              accessibilityLabel={t("alarm.report.telegram")}>
               <HStack alignItems="center" width="100%" gap="$3">
-                <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
+                <FontAwesome5 name="telegram-plane" size={24} color={theme.typography?.val} />
                 <Text size="md" color="$typography">
-                  {t("alarm.report.copyToClipboard")}
+                  {t("alarm.report.telegram")}
                 </Text>
               </HStack>
             </Pressable>
-          </VStack>
+          )}
 
           <Pressable
-            marginTop="$4"
-            minHeight={44}
-            justifyContent="center"
-            alignItems="center"
-            onPress={onClose}
+            minHeight={52}
+            paddingHorizontal="$3"
+            borderRadius="$4"
+            onPress={handleCopy}
             accessibilityRole="button"
-            accessibilityLabel={t("common.cancel")}>
-            <Text size="sm" color="$typographySecondary">
-              {t("common.cancel")}
-            </Text>
+            accessibilityLabel={t("alarm.report.copyToClipboard")}>
+            <HStack alignItems="center" width="100%" gap="$3">
+              <Icon as={ClipboardCopy} size="xl" color="$typographySecondary" />
+              <Text size="md" color="$typography">
+                {t("alarm.report.copyToClipboard")}
+              </Text>
+            </HStack>
           </Pressable>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </VStack>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 };
 
