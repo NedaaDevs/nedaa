@@ -329,12 +329,19 @@ export const AppLogger = {
     });
   },
 
-  async shareAllLogs(): Promise<void> {
+  // Build a (optionally scoped) report bundle and open the OS share sheet with the
+  // .log file attached. Default = all domains.
+  async shareReport(opts: BuildReportOptions = {}): Promise<void> {
     try {
-      const report = await AppLogger.buildReport();
-      await shareReportFile(report, "logs");
+      const report = await AppLogger.buildReport(opts);
+      const base = opts.category ? opts.category.toLowerCase().replace(/\s+/g, "-") : "logs";
+      await shareReportFile(report, base);
     } catch (error) {
-      console.error("[AppLogger] Share all logs failed:", error);
+      console.error("[AppLogger] Share report failed:", error);
     }
+  },
+
+  async shareAllLogs(): Promise<void> {
+    return AppLogger.shareReport();
   },
 };
