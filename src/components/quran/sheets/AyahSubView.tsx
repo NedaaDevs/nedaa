@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable } from "react-native";
+import { GestureDetector, type PanGesture } from "react-native-gesture-handler";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
@@ -7,8 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
-import { MushafVersion, QuranThemeType } from "@/enums/quran";
-import { QuranContentDB } from "@/services/quran-content-db";
+import { AyahSubViewKind, QuranThemeType } from "@/enums/quran";
 import { guideEntriesByCategory } from "@/services/guide-content";
 import { GuideCategory, guideTextKey } from "@/types/guide";
 import { MutashabihatGroup } from "@/types/mutashabihat";
@@ -19,60 +19,45 @@ import { formatNumberToLocale } from "@/utils/number";
 import { GuideEntryCard } from "@/components/quran/library/GuideEntryCard";
 import { buildTajweedCards } from "@/components/quran/tajweed-cards";
 import { MutashabihatView } from "@/components/quran/sheets/MutashabihatView";
-import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 
-export type AyahSubViewKind = "mutashabihat" | "tajweed" | "sajda";
-export type AyahSubViewTarget = { kind: AyahSubViewKind; surah: number; ayah: number };
-
-interface Props {
-  target: AyahSubViewTarget | null;
+interface AyahSubViewProps {
+  kind: AyahSubViewKind;
+  surah: number;
+  ayah: number;
   quranTheme: QuranThemeType;
-  onClose: () => void;
+  // Already fetched by the action sheet; the sub-view just renders them.
+  group: MutashabihatGroup | null;
+  tajweed: { index: number; hex: string }[];
+  onBack: () => void;
   onGoTo: (surah: number, ayah: number, page: number) => void;
+  // Drives the panel's drag-to-go-back; attached to the header (a non-scroll zone).
+  dragGesture: PanGesture;
 }
 
-// The ayah sub-views (similar verses, tajweed, sajda) as one bottom sheet, matching
-// the ayah action sheet's chrome. Opened from a row there; closing reopens it.
-const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
+// The ayah sub-views (similar verses, tajweed, sajda) rendered as the action sheet's
+// body. Swapping the body (vs. a second stacked modal) keeps it a single sheet, so
+// closing the sub-view reliably returns to the action view.
+const AyahSubView = ({
+  kind,
+  surah,
+  ayah,
+  quranTheme,
+  group,
+  tajweed,
+  onBack,
+  onGoTo,
+  dragGesture,
+}: AyahSubViewProps) => {
   const { t, i18n } = useTranslation();
   const { isRTL } = useRTL();
-  const version = useQuranStore((s) => s.currentVersion);
   const mutashabihatNotes = useQuranStore((s) => s.mutashabihatNotes);
   const setMutashabihatNote = useQuranStore((s) => s.setMutashabihatNote);
   const c = QURAN_THEME_COLORS[quranTheme];
   const ink = c.textTint ?? c.headerColor;
   const insets = useSafeAreaInsets();
 
-  const [group, setGroup] = useState<MutashabihatGroup | null>(null);
-  const [tajweed, setTajweed] = useState<{ index: number; hex: string }[]>([]);
-
-  const kind = target?.kind;
-  const surah = target?.surah;
-  const ayah = target?.ayah;
-  useEffect(() => {
-    if (!kind || !surah || !ayah) return;
-    let cancelled = false;
-    // Clear stale data when the target ayah changes before the async load resolves.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGroup(null);
-    setTajweed([]);
-    if (kind === "mutashabihat") {
-      QuranContentDB.getMutashabihatGroupForAyah(surah, ayah).then((g) => {
-        if (!cancelled) setGroup(g);
-      });
-    } else if (kind === "tajweed" && version === MushafVersion.V4) {
-      QuranContentDB.getAyahTajweed(version, surah, ayah).then((r) => {
-        if (!cancelled) setTajweed(r);
-      });
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [kind, surah, ayah, version]);
-
-  if (!target) return null;
-
   const RowChevron = isRTL ? ChevronLeft : ChevronRight;
+  const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const isArabicLocale = i18n.language === "ar";
   const isLatinLocale = i18n.language === "en" || i18n.language === "ms";
   const cardColors = {
@@ -83,24 +68,34 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
     heading: c.headerColor,
   };
   const title =
-    kind === "mutashabihat"
+    kind === AyahSubViewKind.MUTASHABIHAT
       ? t("quran.mutashabihat.title")
-      : kind === "tajweed"
+      : kind === AyahSubViewKind.TAJWEED
         ? t("quran.tajweed.title")
         : t("quran.guide.sajda.about.title");
-  const ayahRef = `${localizedSurahName(target.surah)} ${formatNumberToLocale(String(target.ayah))}`;
+  const ayahRef = `${localizedSurahName(surah)} ${formatNumberToLocale(String(ayah))}`;
   const tajweedCards = buildTajweedCards(tajweed, t);
 
   return (
-    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable>
-      <XStack alignItems="center" gap="$2" paddingBottom="$2">
-        <Text fontSize={15} fontWeight="700" color={c.headerColor} flex={1}>
-          {title}
-        </Text>
-        <Text fontSize={13} color={c.pageNumberColor}>
-          {ayahRef}
-        </Text>
-      </XStack>
+    <>
+      <GestureDetector gesture={dragGesture}>
+        <XStack alignItems="center" gap="$2" paddingBottom="$2">
+          <Pressable
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.back")}
+            hitSlop={8}
+            style={{ minHeight: 32, justifyContent: "center" }}>
+            <BackIcon size={22} color={c.headerColor} />
+          </Pressable>
+          <Text fontSize={15} fontWeight="700" color={c.headerColor} flex={1}>
+            {title}
+          </Text>
+          <Text fontSize={13} color={c.pageNumberColor}>
+            {ayahRef}
+          </Text>
+        </XStack>
+      </GestureDetector>
 
       <BottomSheetScrollView
         style={{ flex: 1 }}
@@ -108,7 +103,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <YStack gap="$4">
-          {kind === "mutashabihat" && group ? (
+          {kind === AyahSubViewKind.MUTASHABIHAT && group ? (
             <MutashabihatView
               group={group}
               quranTheme={quranTheme}
@@ -120,7 +115,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
             />
           ) : null}
 
-          {kind === "tajweed"
+          {kind === AyahSubViewKind.TAJWEED
             ? tajweedCards.map((card) => (
                 <GuideEntryCard
                   key={card.key}
@@ -134,7 +129,7 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
               ))
             : null}
 
-          {kind === "sajda"
+          {kind === AyahSubViewKind.SAJDA
             ? guideEntriesByCategory(GuideCategory.SAJDA).map((entry) => (
                 <GuideEntryCard
                   key={entry.id}
@@ -150,8 +145,8 @@ const AyahSubSheet = ({ target, quranTheme, onClose, onGoTo }: Props) => {
             : null}
         </YStack>
       </BottomSheetScrollView>
-    </ReaderBottomSheet>
+    </>
   );
 };
 
-export default AyahSubSheet;
+export default AyahSubView;

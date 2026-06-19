@@ -61,7 +61,11 @@ const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps)
     : "";
 
   return (
-    <ReaderBottomSheet open={surahNumber !== null} onClose={onClose} quranTheme={quranTheme}>
+    <ReaderBottomSheet
+      open={surahNumber !== null}
+      onClose={onClose}
+      quranTheme={quranTheme}
+      name="surah-info">
       {ready && (
         <YStack gap="$2" paddingBottom="$2">
           <Text

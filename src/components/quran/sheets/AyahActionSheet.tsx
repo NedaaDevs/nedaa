@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Pressable, Share, useWindowDimensions } from "react-native";
+import { Pressable, Share, StyleSheet, useWindowDimensions } from "react-native";
+import { Gesture } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { XStack, YStack } from "tamagui";
@@ -33,6 +41,7 @@ import {
   bookmarkTint,
 } from "@/constants/Quran";
 import {
+  AyahSubViewKind,
   BookmarkColor,
   HighlightColor,
   MushafVersion,
@@ -50,7 +59,7 @@ import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import ReaderBottomSheet from "@/components/quran/sheets/ReaderBottomSheet";
 import ShareImageSheet from "@/components/quran/sheets/ShareImageSheet";
-import type { AyahSubViewKind } from "@/components/quran/sheets/AyahSubSheet";
+import AyahSubView from "@/components/quran/sheets/AyahSubView";
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
 import AyahImage from "@/components/quran/AyahImage";
 import { buildTajweedCards } from "@/components/quran/tajweed-cards";
@@ -61,15 +70,15 @@ interface AyahActionSheetProps {
   target: { surah: number; ayah: number } | null;
   quranTheme: QuranThemeType;
   onClose: () => void;
-  // Open a sub-view sheet (similar verses / tajweed / sajda) for this ayah.
-  onOpenSubView: (kind: AyahSubViewKind) => void;
+  // Jump the reader to a verse (from the similar-verses sub-view); closes the sheet.
+  onGoTo: (surah: number, ayah: number, page: number) => void;
 }
 
-const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahActionSheetProps) => {
+const AyahActionSheet = ({ target, quranTheme, onClose, onGoTo }: AyahActionSheetProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { isRTL } = useRTL();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const version = useQuranStore((s) => s.currentVersion);
   const readerMode = useQuranStore((s) => s.readerMode);
@@ -83,6 +92,43 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
   const [tajweed, setTajweed] = useState<{ index: number; hex: string }[]>([]);
   // The bookmark colour pending a "move it here" confirmation (it's in use elsewhere).
   const [confirm, setConfirm] = useState<BookmarkColor | null>(null);
+  // Active sub-view (similar verses / tajweed / sajda) shown over the actions; null = actions.
+  const [subView, setSubView] = useState<AyahSubViewKind | null>(null);
+
+  // The sub-view sits on a panel over the actions; dragging its header down moves the
+  // panel with the finger and, past a threshold, slides it off to reveal the actions —
+  // a native back gesture without a second (cascade-prone) modal.
+  // Plain functions/gesture (not useCallback/useMemo): the React Compiler memoizes
+  // them, and keeping subOffset out of a hook dependency list avoids the immutability
+  // rule that fires when a value passed to a hook is then mutated.
+  const subOffset = useSharedValue(0);
+  const closeSubView = () => setSubView(null);
+  // Reset the slide offset synchronously on open so the panel starts covering (not at
+  // a leftover slid-off position from the previous close).
+  const openSubView = (kind: AyahSubViewKind) => {
+    subOffset.value = 0;
+    setSubView(kind);
+  };
+  const subDrag = Gesture.Pan()
+    .activeOffsetY(10)
+    .failOffsetY(-10)
+    .onChange((e) => {
+      "worklet";
+      subOffset.value = Math.max(0, subOffset.value + e.changeY);
+    })
+    .onEnd((e) => {
+      "worklet";
+      if (subOffset.value > 96 || e.velocityY > 700) {
+        subOffset.value = withTiming(height, { duration: 180 }, (done) => {
+          if (done) scheduleOnRN(closeSubView);
+        });
+      } else {
+        subOffset.value = withSpring(0, { damping: 22, stiffness: 220 });
+      }
+    });
+  const subPanelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: subOffset.value }],
+  }));
 
   const highlights = useHighlightStore((s) => s.highlights);
   const labels = useHighlightStore((s) => s.labels);
@@ -100,6 +146,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
     setConfirm(null);
     setGroup(null);
     setTajweed([]);
+    setSubView(null);
     let cancelled = false;
     QuranContentDB.getAyah(target.surah, target.ayah).then((d) => {
       if (!cancelled) setData(d);
@@ -180,7 +227,14 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
 
   return (
     <>
-      <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable>
+      <ReaderBottomSheet
+        onClose={onClose}
+        quranTheme={quranTheme}
+        scrollable
+        name="ayah-action"
+        // In a sub-view the panel's own drag-to-go-back owns vertical gestures, so the
+        // sheet's swipe-to-close is disabled there.
+        enablePanDownToClose={subView === null}>
         {/* Header: surah name + ayah ref */}
         <XStack alignItems="center" gap="$2" paddingBottom="$2">
           <Text fontSize={15} fontWeight="700" color={c.headerColor} flex={1}>
@@ -284,7 +338,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
                   label={t("quran.guide.sajda.about.title")}
                   ink={c.headerColor}
                   chevron={RowChevron}
-                  onPress={() => onOpenSubView("sajda")}
+                  onPress={() => openSubView(AyahSubViewKind.SAJDA)}
                 />
               </YStack>
             )}
@@ -297,7 +351,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
                   label={`${t("quran.mutashabihat.row")} · ${group.members.length}`}
                   ink={c.headerColor}
                   chevron={RowChevron}
-                  onPress={() => onOpenSubView("mutashabihat")}
+                  onPress={() => openSubView(AyahSubViewKind.MUTASHABIHAT)}
                 />
               </YStack>
             )}
@@ -310,7 +364,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
                   label={`${t("quran.tajweed.row")} · ${formatNumberToLocale(String(tajweedCount))}`}
                   ink={c.headerColor}
                   chevron={RowChevron}
-                  onPress={() => onOpenSubView("tajweed")}
+                  onPress={() => openSubView(AyahSubViewKind.TAJWEED)}
                 />
               </YStack>
             )}
@@ -344,6 +398,24 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onOpenSubView }: AyahAct
             </XStack>
           </YStack>
         </BottomSheetScrollView>
+
+        {/* Sub-view panel over the actions; drag its header down to slide back. */}
+        {subView && (
+          <Animated.View
+            style={[StyleSheet.absoluteFill, subPanelStyle, { backgroundColor: c.background }]}>
+            <AyahSubView
+              kind={subView}
+              surah={target.surah}
+              ayah={target.ayah}
+              quranTheme={quranTheme}
+              group={group}
+              tajweed={tajweed}
+              onBack={closeSubView}
+              onGoTo={onGoTo}
+              dragGesture={subDrag}
+            />
+          </Animated.View>
+        )}
       </ReaderBottomSheet>
 
       {shareImageOpen && data && (

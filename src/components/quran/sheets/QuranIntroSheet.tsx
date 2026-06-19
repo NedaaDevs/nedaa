@@ -86,7 +86,7 @@ const QuranIntroSheet = ({
   };
 
   return (
-    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme}>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} name="intro">
       <YStack gap="$2" paddingBottom="$2">
         <Text fontSize={18} fontWeight="700" color={c.headerColor}>
           {t("quran.intro.title")}

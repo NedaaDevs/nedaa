@@ -26,6 +26,7 @@ import {
   TOTAL_SPREADS,
   spreadOf,
   pagesOfSpread,
+  clampPage,
   ReaderLayoutMode,
   fitPageBox,
   fitWidthBox,
@@ -98,7 +99,9 @@ const QuranReader = ({
   // a landscape page returns to where you left off. Transient (resets on restart).
   const scrollOffsets = useRef<Map<number, number>>(new Map());
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
-  const currentUnit = isSpread ? spreadOf(currentPage) : currentPage;
+  // Clamp a non-finite/out-of-range currentPage so the page window can't be empty (blank reader).
+  const safePage = clampPage(currentPage);
+  const currentUnit = isSpread ? spreadOf(safePage) : safePage;
 
   const insets = useSafeAreaInsets();
   // Vertical space a page can occupy on a large device (used by the aspect fit).

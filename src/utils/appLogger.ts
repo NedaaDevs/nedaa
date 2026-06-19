@@ -3,7 +3,8 @@ import * as Application from "expo-application";
 import * as Device from "expo-device";
 import * as Clipboard from "expo-clipboard";
 import * as Localization from "expo-localization";
-import { AppState, Platform, Share } from "react-native";
+import * as Sharing from "expo-sharing";
+import { AppState, Platform } from "react-native";
 
 const logDir = new Directory(Paths.document, "logs");
 const MAX_FILE_SIZE = 200 * 1024; // 200KB
@@ -165,8 +166,11 @@ class DomainLogger {
         freshLog.write(buildDeviceHeader(this.domain) + entriesText);
         this.headerWritten = true;
       } else if (fileExists) {
+        // Re-stamp the header on each session's first flush so a file kept across an
+        // app update reports the current version, not the one that created it.
         const existing = logFile.textSync();
-        logFile.write(existing + entriesText);
+        const sessionHeader = this.headerWritten ? "" : buildDeviceHeader(this.domain);
+        logFile.write(existing + sessionHeader + entriesText);
         this.headerWritten = true;
       } else {
         try {
@@ -234,12 +238,12 @@ class DomainLogger {
     try {
       const logFile = new File(logDir, `${this.domain}.log`);
       if (!logFile.exists) return;
-
-      if (Platform.OS === "ios") {
-        await Share.share({ url: logFile.uri });
-      } else {
-        const text = logFile.textSync();
-        await Share.share({ message: text, title: `${this.domain}.log` });
+      // Share the .log file itself (not its text) so both platforms attach a file.
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(logFile.uri, {
+          mimeType: "text/plain",
+          dialogTitle: `${this.domain}.log`,
+        });
       }
     } catch (error) {
       console.error(`[AppLogger] Share failed for ${this.domain}:`, error);
@@ -299,7 +303,7 @@ export const AppLogger = {
       if (!report) return;
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const fileName = `nedaa-logs-${timestamp}.txt`;
+      const fileName = `nedaa-logs-${timestamp}.log`;
       const file = new File(Paths.cache, fileName);
 
       try {
@@ -309,10 +313,9 @@ export const AppLogger = {
       }
       file.write(report);
 
-      if (Platform.OS === "ios") {
-        await Share.share({ url: file.uri });
-      } else {
-        await Share.share({ message: report, title: fileName });
+      // Share the file itself so both platforms attach a .log instead of pasting text.
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: "text/plain", dialogTitle: fileName });
       }
     } catch (error) {
       console.error("[AppLogger] Share all logs failed:", error);

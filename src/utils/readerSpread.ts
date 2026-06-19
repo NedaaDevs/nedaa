@@ -74,6 +74,14 @@ export const fitWidthBox = (slotWidth: number): PageBox => {
   return { w, h: Math.round(w * PAGE_ASPECT + LARGE_PAGE_CHROME) };
 };
 
+// Coerce any value to a valid page (integer in 1..TOTAL_PAGES). A non-finite or
+// out-of-range page would empty the reader's page window and blank the screen, so
+// the reader clamps before deriving its units.
+export const clampPage = (page: number): number => {
+  if (!Number.isFinite(page)) return 1;
+  return Math.min(TOTAL_PAGES, Math.max(1, Math.round(page)));
+};
+
 // RTL pairing: spread N shows the odd (earlier, right) page and the even
 // (later, left) page. (1,2),(3,4)... — 604 is even, so no orphan page.
 export const TOTAL_SPREADS = Math.ceil(TOTAL_PAGES / 2);

@@ -39,6 +39,16 @@ export const ReaderPageFit = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type ReaderPageFit = (typeof ReaderPageFit)[keyof typeof ReaderPageFit];
 
+// Ayah action-sheet sub-views (swapped into the sheet body): similar verses, the
+// per-ayah tajweed rule list, and the sajda guidance.
+export const AyahSubViewKind = {
+  MUTASHABIHAT: "mutashabihat",
+  TAJWEED: "tajweed",
+  SAJDA: "sajda",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type AyahSubViewKind = (typeof AyahSubViewKind)[keyof typeof AyahSubViewKind];
+
 export enum DownloadStatus {
   IDLE = "idle",
   DOWNLOADING = "downloading",

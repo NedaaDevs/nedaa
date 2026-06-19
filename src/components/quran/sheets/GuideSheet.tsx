@@ -36,7 +36,7 @@ const GuideSheet = ({ entries, titleKey, quranTheme, onClose }: GuideSheetProps)
   };
 
   return (
-    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} scrollable name="guide">
       <Text fontSize={15} fontWeight="700" color={c.headerColor} paddingBottom="$2">
         {t(titleKey)}
       </Text>

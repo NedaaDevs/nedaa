@@ -3,6 +3,7 @@ import {
   spreadOf,
   pagesOfSpread,
   anchorPage,
+  clampPage,
   TOTAL_SPREADS,
   LARGE_DEVICE_MIN_DP,
   ReaderLayoutMode,
@@ -12,6 +13,7 @@ import {
   LARGE_PAGE_CHROME,
   MAX_SINGLE_PAGE_WIDTH,
 } from "@/utils/readerSpread";
+import { TOTAL_PAGES } from "@/constants/Quran";
 
 describe("page <-> spread mapping (RTL: right=earlier/odd, left=later/even)", () => {
   it("pairs (1,2),(3,4)...; odd page anchors its spread", () => {
@@ -64,6 +66,31 @@ describe("fitWidthBox (large landscape: fit to width, scroll vertically)", () =>
     const box = fitWidthBox(1280); // a tablet's landscape width in dp
     expect(box.h).toBe(Math.round(box.w * PAGE_ASPECT + LARGE_PAGE_CHROME));
     expect(box.h).toBeGreaterThan(800); // taller than the ~800dp landscape height
+  });
+});
+
+describe("clampPage (guards the reader against a blank page window)", () => {
+  it("passes valid pages through unchanged", () => {
+    expect(clampPage(1)).toBe(1);
+    expect(clampPage(300)).toBe(300);
+    expect(clampPage(TOTAL_PAGES)).toBe(TOTAL_PAGES);
+  });
+  it("clamps out-of-range pages into 1..TOTAL_PAGES", () => {
+    expect(clampPage(0)).toBe(1);
+    expect(clampPage(-5)).toBe(1);
+    expect(clampPage(TOTAL_PAGES + 10)).toBe(TOTAL_PAGES);
+  });
+  it("rounds fractional pages to the nearest integer", () => {
+    expect(clampPage(12.4)).toBe(12);
+    expect(clampPage(12.6)).toBe(13);
+  });
+  it("falls back to page 1 for non-finite values", () => {
+    expect(clampPage(NaN)).toBe(1);
+    expect(clampPage(Infinity)).toBe(1);
+    expect(clampPage(-Infinity)).toBe(1);
+    // A NaN persisted as JSON round-trips to null; guard null/undefined too.
+    expect(clampPage(null as unknown as number)).toBe(1);
+    expect(clampPage(undefined as unknown as number)).toBe(1);
   });
 });
 

@@ -3,6 +3,7 @@ import { View, useWindowDimensions } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { captureRef } from "react-native-view-shot";
+import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { Image as ImageIcon, Type, Share2 } from "lucide-react-native";
 
@@ -63,8 +64,14 @@ const ShareImageSheet = ({
     setBusy(true);
     try {
       const uri = await captureRef(cardRef, { format: "png", quality: 1, result: "tmpfile" });
+      // Copy to a named .png: the capture tmpfile has no image-recognizable name, so
+      // the OS share sheet hides "Save Image". A proper extension restores it and
+      // gives the attachment a meaningful name.
+      const named = new File(Paths.cache, `nedaa-${surah}-${ayah}.png`);
+      if (named.exists) named.delete();
+      new File(uri).copy(named);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(named.uri, {
           mimeType: "image/png",
           dialogTitle: `${surahName} ${ayahRef}`,
         });
@@ -82,7 +89,7 @@ const ShareImageSheet = ({
   ];
 
   return (
-    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme}>
+    <ReaderBottomSheet onClose={onClose} quranTheme={quranTheme} name="share-image">
       <YStack gap="$4" alignItems="center">
         <Text fontSize={15} fontWeight="700" color={c.headerColor}>
           {t("quran.share.title")}
