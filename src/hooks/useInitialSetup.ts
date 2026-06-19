@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import * as Sentry from "@sentry/react-native";
 
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
@@ -18,15 +17,6 @@ import { installCrashHandler } from "@/utils/crashHandler";
 
 // Screenshot mode
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
-
-const initSentry = (consent: boolean) => {
-  if (!IS_SCREENSHOT_MODE && !__DEV__ && consent) {
-    Sentry.init({
-      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-      enabled: !__DEV__,
-    });
-  }
-};
 
 const initDB = async () => {
   await PrayerTimesDB.initialize();
@@ -50,7 +40,6 @@ export const useInitialSetup = () => {
       if (IS_SCREENSHOT_MODE) {
         seedScreenshotState();
       }
-      initSentry(appStore.sendCrashLogs);
       await initDB();
 
       await customSoundsStore.initialize();
