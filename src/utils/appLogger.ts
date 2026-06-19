@@ -6,10 +6,13 @@ import * as Localization from "expo-localization";
 import * as Sharing from "expo-sharing";
 import { AppState, Platform } from "react-native";
 
+import { sessionMarker, pruneByAge, pruneGlobalBySize, buildBundle } from "@/utils/logBundle";
+
 const logDir = new Directory(Paths.document, "logs");
-const MAX_FILE_SIZE = 200 * 1024; // 200KB
 const FLUSH_INTERVAL = 5000; // 5 seconds
 const FLUSH_THRESHOLD = 20; // entries
+const MAX_TOTAL_BYTES = 5 * 1024 * 1024; // global cap across all logs/*.log (no per-domain cap)
+const MAX_AGE_DAYS = 30;
 
 type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
 
@@ -46,44 +49,53 @@ function formatDateTime(date: Date): string {
   return `${y}-${mo}-${d} ${formatTime(date)}`;
 }
 
-function buildDeviceHeader(domain: string): string {
-  const appVersion = Application.nativeApplicationVersion ?? "unknown";
-  const buildNumber = Application.nativeBuildVersion ?? "unknown";
-  const deviceName = Device.modelName ?? "unknown";
-  const deviceBrand = Device.brand ?? "";
-  const osVersion = Device.osVersion ?? "unknown";
-  const locale = Localization.getLocales?.()[0]?.languageCode ?? "unknown";
+// Dated marker written once per session at the head of that session's entries (entries
+// are time-only). Enables age pruning and stamps the build that wrote the session.
+function sessionMarkerNow(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return sessionMarker(
+    stamp,
+    Application.nativeApplicationVersion ?? "unknown",
+    Application.nativeBuildVersion ?? "?"
+  );
+}
 
-  return [
-    "====== NEDAA DEBUG LOG ======",
-    `Domain:   ${domain}`,
-    `App:      ${appVersion} (${buildNumber})`,
-    `Device:   ${deviceBrand ? `${deviceBrand} ` : ""}${deviceName}`,
-    `OS:       ${Platform.OS} ${osVersion}`,
-    `Source:   ${getInstallSource()}`,
-    `Locale:   ${locale}`,
-    `Started:  ${formatDateTime(new Date())}`,
-    "=============================",
-    "",
-    "",
-  ].join("\n");
+// Write a report bundle to the cache dir and hand it to the OS share sheet as a file
+// (so both platforms attach a .log instead of pasting text into the body).
+async function shareReportFile(text: string, baseName: string): Promise<void> {
+  if (!text) return;
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const fileName = `nedaa-${baseName}-${ts}.log`;
+  const file = new File(Paths.cache, fileName);
+  try {
+    file.create();
+  } catch {
+    // may already exist
+  }
+  file.write(text);
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(file.uri, { mimeType: "text/plain", dialogTitle: fileName });
+  }
+}
+
+// One shared flush interval drives every domain (avoids leaking one timer per logger).
+let flushTimer: ReturnType<typeof setInterval> | null = null;
+function ensureFlushTimer(): void {
+  if (flushTimer) return;
+  flushTimer = setInterval(() => AppLogger.flushAll(), FLUSH_INTERVAL);
 }
 
 class DomainLogger {
   private domain: string;
   private buffer: string[] = [];
-  private flushTimer: ReturnType<typeof setInterval> | null = null;
-  private headerWritten = false;
+  // Reset per process (= per session): the first flush of a session writes a marker.
+  private sessionMarked = false;
   private flushing = false;
 
   constructor(domain: string) {
     this.domain = domain;
-
-    this.flushTimer = setInterval(() => {
-      if (this.buffer.length > 0) {
-        this.flush();
-      }
-    }, FLUSH_INTERVAL);
   }
 
   d(tag: string, msg: string) {
@@ -138,6 +150,9 @@ class DomainLogger {
     }
   }
 
+  // Synchronous: appends a session marker (first flush of a session) + buffered
+  // entries to logs/<domain>.log. No per-file header, no size rotation — retention is
+  // handled globally by prune().
   flush(): void {
     if (this.buffer.length === 0 || this.flushing) return;
     this.flushing = true;
@@ -147,40 +162,18 @@ class DomainLogger {
 
     try {
       ensureLogDir();
-
       const logFile = new File(logDir, `${this.domain}.log`);
-      const entriesText = entries.join("\n") + "\n";
-      const fileExists = logFile.exists;
-
-      if (fileExists && logFile.size + entriesText.length > MAX_FILE_SIZE) {
-        const prevFile = new File(logDir, `${this.domain}.prev.log`);
-        if (prevFile.exists) prevFile.delete();
-        logFile.move(prevFile);
-        // logFile.uri now points to prev — create fresh reference
-        const freshLog = new File(logDir, `${this.domain}.log`);
-        try {
-          freshLog.create();
-        } catch {
-          // may already exist
-        }
-        freshLog.write(buildDeviceHeader(this.domain) + entriesText);
-        this.headerWritten = true;
-      } else if (fileExists) {
-        // Re-stamp the header on each session's first flush so a file kept across an
-        // app update reports the current version, not the one that created it.
-        const existing = logFile.textSync();
-        const sessionHeader = this.headerWritten ? "" : buildDeviceHeader(this.domain);
-        logFile.write(existing + sessionHeader + entriesText);
-        this.headerWritten = true;
-      } else {
+      const marker = this.sessionMarked ? "" : sessionMarkerNow() + "\n";
+      this.sessionMarked = true;
+      const existing = logFile.exists ? logFile.textSync() : "";
+      if (!logFile.exists) {
         try {
           logFile.create();
         } catch {
           // may already exist
         }
-        logFile.write(buildDeviceHeader(this.domain) + entriesText);
-        this.headerWritten = true;
       }
+      logFile.write(existing + marker + entries.join("\n") + "\n");
     } catch (error) {
       this.buffer.unshift(...entries);
       console.error(`[AppLogger] Flush failed for ${this.domain}:`, error);
@@ -191,60 +184,29 @@ class DomainLogger {
 
   async getLogText(): Promise<string> {
     this.flush();
-    const parts: string[] = [];
-
-    try {
-      const prevFile = new File(logDir, `${this.domain}.prev.log`);
-      if (prevFile.exists) {
-        parts.push(prevFile.textSync());
-      }
-    } catch {
-      // ignore
-    }
-
     try {
       const logFile = new File(logDir, `${this.domain}.log`);
-      if (logFile.exists) {
-        parts.push(logFile.textSync());
-      }
+      return logFile.exists ? logFile.textSync() : "";
     } catch {
-      // ignore
+      return "";
     }
-
-    return parts.join("\n");
   }
 
   clear(): void {
     this.buffer = [];
-    this.headerWritten = false;
-
+    this.sessionMarked = false;
     try {
       const logFile = new File(logDir, `${this.domain}.log`);
       if (logFile.exists) logFile.delete();
     } catch {
       // ignore
     }
-    try {
-      const prevFile = new File(logDir, `${this.domain}.prev.log`);
-      if (prevFile.exists) prevFile.delete();
-    } catch {
-      // ignore
-    }
   }
 
   async shareLog(): Promise<void> {
-    this.flush();
-
     try {
-      const logFile = new File(logDir, `${this.domain}.log`);
-      if (!logFile.exists) return;
-      // Share the .log file itself (not its text) so both platforms attach a file.
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(logFile.uri, {
-          mimeType: "text/plain",
-          dialogTitle: `${this.domain}.log`,
-        });
-      }
+      const report = await AppLogger.buildReport({ domains: [this.domain] });
+      await shareReportFile(report, `${this.domain}-log`);
     } catch (error) {
       console.error(`[AppLogger] Share failed for ${this.domain}:`, error);
     }
@@ -252,8 +214,8 @@ class DomainLogger {
 
   async copyLog(): Promise<void> {
     try {
-      const text = await this.getLogText();
-      await Clipboard.setStringAsync(text);
+      const report = await AppLogger.buildReport({ domains: [this.domain] });
+      await Clipboard.setStringAsync(report);
     } catch (error) {
       console.error(`[AppLogger] Copy failed for ${this.domain}:`, error);
     }
@@ -263,11 +225,19 @@ class DomainLogger {
 AppState.addEventListener("change", (state) => {
   if (state === "background") {
     AppLogger.flushAll();
+    AppLogger.prune();
   }
 });
 
+export interface BuildReportOptions {
+  domains?: string[];
+  category?: string;
+  description?: string;
+}
+
 export const AppLogger = {
   create(domain: string): DomainLogger {
+    ensureFlushTimer();
     const existing = registry.get(domain);
     if (existing) return existing;
 
@@ -282,41 +252,78 @@ export const AppLogger = {
     }
   },
 
-  async getAllLogsText(): Promise<string> {
+  // flush() is already synchronous; this is the explicit name the crash handler uses
+  // to force everything to disk before the app dies.
+  flushAllSync(): void {
     AppLogger.flushAll();
-    const parts: string[] = [];
+  },
 
-    for (const [domain, logger] of registry) {
-      const text = await logger.getLogText();
-      if (text) {
-        parts.push(`\n====== ${domain.toUpperCase()} ======\n`);
-        parts.push(text);
+  // Bound logs by age (30 days) then by a single global size cap (5 MB), trimming the
+  // oldest session segments across all domains first. Run on startup and on background.
+  prune(): void {
+    AppLogger.flushAll();
+    try {
+      ensureLogDir();
+    } catch {
+      return;
+    }
+    const domains = [...registry.keys()];
+    const files = domains.map((domain) => {
+      const f = new File(logDir, `${domain}.log`);
+      return { domain, text: f.exists ? f.textSync() : "" };
+    });
+    const now = new Date();
+    let pruned = files.map((f) => ({
+      domain: f.domain,
+      text: pruneByAge(f.text, now, MAX_AGE_DAYS),
+    }));
+    pruned = pruneGlobalBySize(pruned, MAX_TOTAL_BYTES);
+    for (const { domain, text } of pruned) {
+      try {
+        const f = new File(logDir, `${domain}.log`);
+        if (!text) {
+          if (f.exists) f.delete();
+          continue;
+        }
+        if (!f.exists) f.create();
+        f.write(text);
+      } catch (e) {
+        console.error(`[AppLogger] prune write failed for ${domain}:`, e);
       }
     }
+  },
 
-    return parts.join("\n");
+  // Build the shareable diagnostic bundle: one authoritative header (current version,
+  // device, OS, locale, source) + optional category/description + selected domains.
+  async buildReport(opts: BuildReportOptions = {}): Promise<string> {
+    AppLogger.flushAll();
+    const domains = opts.domains ?? [...registry.keys()];
+    const sections = domains.map((domain) => {
+      const f = new File(logDir, `${domain}.log`);
+      return { domain, text: f.exists ? f.textSync() : "" };
+    });
+    return buildBundle({
+      header: [
+        [
+          "App",
+          `${Application.nativeApplicationVersion ?? "unknown"} (${Application.nativeBuildVersion ?? "?"})`,
+        ],
+        ["Device", `${Device.brand ? `${Device.brand} ` : ""}${Device.modelName ?? "unknown"}`],
+        ["OS", `${Platform.OS} ${Device.osVersion ?? "unknown"}`],
+        ["Locale", Localization.getLocales?.()[0]?.languageCode ?? "unknown"],
+        ["Source", getInstallSource()],
+        ["Created", formatDateTime(new Date())],
+      ],
+      category: opts.category,
+      description: opts.description,
+      sections,
+    });
   },
 
   async shareAllLogs(): Promise<void> {
     try {
-      const report = await AppLogger.getAllLogsText();
-      if (!report) return;
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const fileName = `nedaa-logs-${timestamp}.log`;
-      const file = new File(Paths.cache, fileName);
-
-      try {
-        file.create();
-      } catch {
-        // may already exist
-      }
-      file.write(report);
-
-      // Share the file itself so both platforms attach a .log instead of pasting text.
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, { mimeType: "text/plain", dialogTitle: fileName });
-      }
+      const report = await AppLogger.buildReport();
+      await shareReportFile(report, "logs");
     } catch (error) {
       console.error("[AppLogger] Share all logs failed:", error);
     }
