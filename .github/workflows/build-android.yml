@@ -70,11 +70,6 @@ jobs:
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🔐 Setup Sentry properties
-        run: |
-          # Replace the dummy auth token with the real one
-          sed -i "s/^auth\.token=.*/auth.token=${{ secrets.SENTRY_AUTH_TOKEN }}/" android/sentry.properties
-
       - name: 🔧 Set Build Profile and Environment
         id: config
         run: |
@@ -120,7 +115,6 @@ jobs:
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: 📊 Verify Build Output
         run: |
@@ -169,14 +163,6 @@ jobs:
               repo: context.repo.repo,
               body: `🤖 Android build completed successfully!\n\n**Profile:** ${profile}\n**Type:** ${buildType.toUpperCase()}\n**Size:** ${buildSize}\n**Commit:** ${sha}\n\n📦 Build artifact has been uploaded and is available in the workflow run artifacts.`
             })
-
-      - name: 🧹 Cleanup sensitive files
-        if: always()
-        run: |
-          # Restore dummy token in sentry.properties
-          if [ -f "android/sentry.properties" ]; then
-            sed -i "s/^auth\.token=.*/auth.token=sntrys_eyJpYXQiOjE2ODkxMjM0NTYuNzg5MDEyLCJ1cmwiOiJodHRwczovL3NlbnRyeS5pbyIsInJlZ2lvbl91cmwiOiJodHRwczovL3VzLnNlbnRyeS5pbyIsIm9yZyI6ImV4YW1wbGUifQ==_DummyTokenForBuildingPurposesOnly123456789/" android/sentry.properties
-          fi
 
       - name: 📤 Upload build logs (on failure)
         if: failure()
