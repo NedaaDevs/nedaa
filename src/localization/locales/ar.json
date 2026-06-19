@@ -1181,6 +1181,8 @@
   "settings.athkarAudio.totalStorage": "الإجمالي",
   "settings.backgroundDebug.title": "المهام الخلفية",
   "settings.crashLog.restartRequired": "الرجاء إعادة تشغيل التطبيق لتطبيق التغييرات",
+  "settings.shareLogs.label": "مشاركة سجلّات التشخيص",
+  "settings.shareLogs.hint": "تُشارك سجلّات جهازك لمساعدتنا على تشخيص المشكلة. تبقى السجلّات على جهازك حتى تشاركها.",
   "settings.crashReporting.accessibilityHint": "يفتح نافذة للموافقة على تقارير الأعطال",
   "settings.crashReporting.accessibilityLabel": "إعدادات تقارير الأعطال",
   "settings.crashReporting.bullet1": "• معلومات الخطأ التقنية",

@@ -1,6 +1,8 @@
 // Components
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
+import { HStack } from "@/components/ui/hstack";
+import { Text } from "@/components/ui/text";
 
 // Icons
 import { Bug } from "lucide-react-native";
@@ -12,29 +14,32 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Utils
 import { AppLogger } from "@/utils/appLogger";
 
-// Shares the diagnostic logs (all domains) via the OS share sheet. Logs are local —
-// sharing here is the user's explicit consent. (Plan 4 replaces this with the unified
-// "Report a problem" screen.)
+// Shares the on-device diagnostic logs (all domains) via the OS share sheet — which
+// attaches the .log file and lists the user's apps (email, WhatsApp, Files, …). Logs
+// are local; sharing here is the user's explicit consent.
 const CrashLogButton = () => {
   const { t } = useTranslation();
   const hapticMedium = useHaptic("medium");
 
   return (
     <Pressable
-      alignItems="center"
-      justifyContent="center"
-      padding="$2"
-      borderRadius="$2"
       minHeight={44}
-      minWidth={44}
+      paddingHorizontal="$3"
+      paddingVertical="$2"
+      borderRadius="$4"
       onPress={() => {
         hapticMedium();
         AppLogger.shareAllLogs();
       }}
       accessibilityRole="button"
-      accessibilityLabel={t("settings.crashReporting.accessibilityLabel")}
-      accessibilityHint={t("settings.crashReporting.accessibilityHint")}>
-      <Icon color="$typography" as={Bug} />
+      accessibilityLabel={t("settings.shareLogs.label")}
+      accessibilityHint={t("settings.shareLogs.hint")}>
+      <HStack alignItems="center" gap="$2">
+        <Icon as={Bug} color="$typographySecondary" size="sm" />
+        <Text size="sm" color="$typographySecondary">
+          {t("settings.shareLogs.label")}
+        </Text>
+      </HStack>
     </Pressable>
   );
 };

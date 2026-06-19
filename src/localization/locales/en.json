@@ -1150,6 +1150,8 @@
   "settings.athkarAudio.totalStorage": "Total",
   "settings.backgroundDebug.title": "Background Task",
   "settings.crashLog.restartRequired": "Please restart the app to apply the crash reporting settings.",
+  "settings.shareLogs.label": "Share diagnostic logs",
+  "settings.shareLogs.hint": "Shares your on-device logs so we can diagnose a problem. Logs stay on your device until you share them.",
   "settings.crashReporting.accessibilityHint": "Opens modal for crash reporting consent",
   "settings.crashReporting.accessibilityLabel": "Crash reporting settings",
   "settings.crashReporting.bullet1": "• Technical error information",
