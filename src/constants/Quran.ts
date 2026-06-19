@@ -87,18 +87,18 @@ export const QURAN_THEME_COLORS: Record<
     shimmerBase: "#F5F7FA",
     shimmerHighlight: "#E8EDF2",
   },
-  // Nedaa brand paper, dark — the app's slate surface with gold accents.
+  // Nedaa brand paper, dark — deep slate ground, cool dimmed-white ink, gold accents.
   [QuranTheme.NEDAA_DARK]: {
-    background: "#222831",
-    innerBackground: "#222831",
-    textTint: "#E8E0D4",
+    background: "#14171C",
+    innerBackground: "#14171C",
+    textTint: "#DEDFE1",
     markerColor: "#E6C469",
     frameColor: "#C9A84B",
     headerColor: "#E6C469",
     pageNumberColor: "#A0936A",
     highlightColor: "rgba(230, 196, 105, 0.15)",
-    shimmerBase: "#20242C",
-    shimmerHighlight: "#2E343E",
+    shimmerBase: "#16191F",
+    shimmerHighlight: "#23272F",
   },
 } as const;
 
