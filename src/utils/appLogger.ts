@@ -344,4 +344,14 @@ export const AppLogger = {
   async shareAllLogs(): Promise<void> {
     return AppLogger.shareReport();
   },
+
+  // Copy the (optionally scoped) report bundle text to the clipboard.
+  async copyReport(opts: BuildReportOptions = {}): Promise<void> {
+    try {
+      const report = await AppLogger.buildReport(opts);
+      await Clipboard.setStringAsync(report);
+    } catch (error) {
+      console.error("[AppLogger] Copy report failed:", error);
+    }
+  },
 };

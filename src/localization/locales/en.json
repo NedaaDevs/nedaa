@@ -1152,6 +1152,8 @@
   "settings.crashLog.restartRequired": "Please restart the app to apply the crash reporting settings.",
   "settings.shareLogs.label": "Share diagnostic logs",
   "settings.shareLogs.hint": "Shares your on-device logs so we can diagnose a problem. Logs stay on your device until you share them.",
+  "settings.shareLogs.share": "Share file",
+  "settings.shareLogs.copied": "Logs copied to clipboard",
   "crashPrompt.title": "Nedaa ran into a problem",
   "crashPrompt.body": "Nedaa closed unexpectedly last time. Send a quick report to help us fix it? No personal data — just diagnostic logs from your device.",
   "crashPrompt.send": "Send report",
