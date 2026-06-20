@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Dimensions, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "tamagui";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -49,6 +49,7 @@ import { useAthkarAudioStore } from "@/stores/athkar-audio";
 // Services
 import { athkarPlayer } from "@/services/athkar-player";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
+import { audioDownloadManager } from "@/services/athkar-audio-download";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -124,7 +125,10 @@ const AthkarFocusScreen = () => {
   // (returns false) outside screenshot mode — production behavior unchanged.
   useAthkarFocusScreenshotSeed();
 
-  const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF;
+  // Gate controls on actual downloaded audio, not just a non-OFF mode default.
+  const [hasDownloadedAudio, setHasDownloadedAudio] = useState(false);
+
+  const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF && hasDownloadedAudio;
   const isAutopilot = playbackMode === PLAYBACK_MODE.AUTOPILOT;
 
   // Reduce motion check
@@ -135,6 +139,23 @@ const AthkarFocusScreen = () => {
 
   // Onboarding modal
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Re-check downloaded audio on focus (e.g. after downloading in settings or
+  // closing onboarding) so controls appear only once a pack is on disk.
+  const refreshAudioAvailability = useCallback(async () => {
+    if (!selectedReciterId) {
+      setHasDownloadedAudio(false);
+      return;
+    }
+    const breakdown = await audioDownloadManager.getStorageBreakdown();
+    setHasDownloadedAudio(breakdown.some((s) => s.reciterId === selectedReciterId));
+  }, [selectedReciterId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshAudioAvailability();
+    }, [refreshAudioAvailability])
+  );
 
   // Audio controls expanded/collapsed
   const [audioControlsExpanded, setAudioControlsExpanded] = useState(true);
@@ -649,6 +670,10 @@ const AthkarFocusScreen = () => {
   // can be blocked by simultaneous Pan gesture recognizers (New Architecture)
   const tapGesture = Gesture.Tap()
     .runOnJS(true)
+    // Cap finger travel so a swipe (pan) can't also register as a tap and
+    // increment while the user is swiping to decrement/navigate. 10dp matches
+    // platform touch-slop and sits below the 20dp pan activation offset.
+    .maxDistance(10)
     .onEnd((_, success) => {
       if (success) handleTap();
     });
@@ -1046,7 +1071,13 @@ const AthkarFocusScreen = () => {
       </Box>
 
       {/* Audio Onboarding Modal */}
-      <AudioOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <AudioOnboarding
+        isOpen={showOnboarding}
+        onClose={() => {
+          setShowOnboarding(false);
+          refreshAudioAvailability();
+        }}
+      />
     </GestureHandlerRootView>
   );
 };
