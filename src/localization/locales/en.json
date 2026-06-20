@@ -1156,7 +1156,7 @@
   "settings.shareLogs.copied": "Copied to clipboard",
   "settings.shareLogs.describe": "What went wrong? (optional)",
   "crashPrompt.title": "Nedaa ran into a problem",
-  "crashPrompt.body": "Nedaa closed unexpectedly last time. Send a quick report to help us fix it? No personal data — just diagnostic logs from your device.",
+  "crashPrompt.body": "Nedaa closed unexpectedly last time. Send a quick report to help us fix it? No personal data — just some technical details from your device.",
   "crashPrompt.send": "Send report",
   "crashPrompt.dismiss": "Not now",
   "reportThis.label": "Report this",
