@@ -1152,7 +1152,7 @@
   "settings.crashLog.restartRequired": "Please restart the app to apply the crash reporting settings.",
   "settings.shareLogs.label": "Report a problem",
   "settings.shareLogs.hint": "Tell us what went wrong. We attach some technical details to help us fix it — nothing leaves your device until you send.",
-  "settings.shareLogs.share": "Send",
+  "settings.shareLogs.share": "Share file",
   "settings.shareLogs.copied": "Copied to clipboard",
   "settings.shareLogs.describe": "What went wrong? (optional)",
   "settings.shareLogs.emailSubject": "Nedaa — problem report",

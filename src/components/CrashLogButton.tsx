@@ -3,7 +3,7 @@ import { useState } from "react";
 // Components
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import ShareLogsSheet from "@/components/ShareLogsSheet";
+import ReportProblemModal from "@/components/ReportProblemModal";
 
 // Icons
 import { Bug } from "lucide-react-native";
@@ -12,8 +12,10 @@ import { Bug } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useHaptic } from "@/hooks/useHaptic";
 
-// Opens the share-logs bottom sheet (Share file via OS sheet, or Copy). Logs are
-// local; sharing is the user's explicit action.
+// Utils
+import { AppLogger } from "@/utils/appLogger";
+
+// Opens the shared "Report a problem" sheet, fed by the on-device logs (all domains).
 const CrashLogButton = () => {
   const { t } = useTranslation();
   const hapticMedium = useHaptic("medium");
@@ -38,7 +40,14 @@ const CrashLogButton = () => {
         <Icon as={Bug} color="$typographySecondary" />
       </Pressable>
 
-      <ShareLogsSheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <ReportProblemModal
+        isOpen={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        emailSubject={t("settings.shareLogs.emailSubject")}
+        getReportText={() => AppLogger.buildReport({ category: "App" })}
+        getSummaryText={() => AppLogger.buildSummary({})}
+        baseName="report"
+      />
     </>
   );
 };

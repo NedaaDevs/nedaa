@@ -75,9 +75,9 @@ function sessionMarkerNow(): string {
 // (so both platforms attach a .log instead of pasting text into the body).
 function writeReportFile(text: string, baseName: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  // .txt (not .log) so iOS maps it to a clean UTI (public.plain-text) — some share
-  // targets reject the type-less .log extension.
-  const fileName = `nedaa-${baseName}-${ts}.txt`;
+  // A real .log file; share/attach with an explicit public.plain-text UTI so iOS knows
+  // the type despite the .log extension having no standard UTI of its own.
+  const fileName = `nedaa-${baseName}-${ts}.log`;
   const file = new File(Paths.cache, fileName);
   try {
     file.create();
@@ -356,27 +356,15 @@ export const AppLogger = {
     return AppLogger.shareReport();
   },
 
-  // Copy the (optionally scoped) report bundle text to the clipboard.
-  async copyReport(opts: BuildReportOptions = {}): Promise<void> {
-    try {
-      const report = await AppLogger.buildReport(opts);
-      await Clipboard.setStringAsync(report);
-    } catch (error) {
-      console.error("[AppLogger] Copy report failed:", error);
-    }
+  // Write arbitrary report text to a cache .log file and return its uri (for an email
+  // attachment, etc.). Used by the report sheet with caller-built content.
+  writeReport(text: string, baseName = "report"): string {
+    return writeReportFile(text, baseName);
   },
 
-  // Write the (optionally scoped) report bundle to a cache file and return its uri —
-  // for attaching to an email (expo-mail-composer). Returns null on failure.
-  async getReportFile(opts: BuildReportOptions = {}): Promise<string | null> {
-    try {
-      const report = await AppLogger.buildReport(opts);
-      const base = opts.category ? opts.category.toLowerCase().replace(/\s+/g, "-") : "logs";
-      return writeReportFile(report, base);
-    } catch (error) {
-      console.error("[AppLogger] getReportFile failed:", error);
-      return null;
-    }
+  // Share arbitrary report text as a .log file via the OS share sheet.
+  async shareText(text: string, baseName = "report"): Promise<void> {
+    return shareReportFile(text, baseName);
   },
 
   // A short text summary for channels that can't take the file (WhatsApp/Telegram):

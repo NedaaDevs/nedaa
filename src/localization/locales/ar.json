@@ -1183,7 +1183,7 @@
   "settings.crashLog.restartRequired": "الرجاء إعادة تشغيل التطبيق لتطبيق التغييرات",
   "settings.shareLogs.label": "الإبلاغ عن مشكلة",
   "settings.shareLogs.hint": "أخبِرنا بما حدث. نُرفِق بعض التفاصيل التقنية لمساعدتنا على الإصلاح — لا يُرسَل شيء من جهازك حتى ترسله بنفسك.",
-  "settings.shareLogs.share": "إرسال",
+  "settings.shareLogs.share": "مشاركة الملف",
   "settings.shareLogs.copied": "تم النسخ إلى الحافظة",
   "settings.shareLogs.describe": "ما الذي حدث؟ (اختياري)",
   "settings.shareLogs.emailSubject": "نداء — بلاغ عن مشكلة",
