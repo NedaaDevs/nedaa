@@ -75,7 +75,9 @@ function sessionMarkerNow(): string {
 // (so both platforms attach a .log instead of pasting text into the body).
 function writeReportFile(text: string, baseName: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const fileName = `nedaa-${baseName}-${ts}.log`;
+  // .txt (not .log) so iOS maps it to a clean UTI (public.plain-text) — some share
+  // targets reject the type-less .log extension.
+  const fileName = `nedaa-${baseName}-${ts}.txt`;
   const file = new File(Paths.cache, fileName);
   try {
     file.create();
@@ -90,7 +92,11 @@ async function shareReportFile(text: string, baseName: string): Promise<void> {
   if (!text) return;
   const uri = writeReportFile(text, baseName);
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, { mimeType: "text/plain", dialogTitle: uri.split("/").pop() });
+    await Sharing.shareAsync(uri, {
+      mimeType: "text/plain",
+      UTI: "public.plain-text",
+      dialogTitle: uri.split("/").pop(),
+    });
   }
 }
 
