@@ -71,6 +71,18 @@
       <string>yandexmail</string>
       <string>fastmail</string>
       <string>protonmail</string>
+      <string>bluemail</string>
+      <string>canary</string>
+      <string>edisonmail</string>
+      <string>szn-email</string>
+      <string>x-gmxmail-netid-v1</string>
+      <string>mailrumail</string>
+      <string>ctxmail</string>
+      <string>telekommail</string>
+      <string>tutanota</string>
+      <string>x-webdemail-netid-v1</string>
+      <string>appcenter-f45b4c0b-75c9-2d01-7ab6-41f6a6015be2</string>
+      <string>mymail-mailto</string>
     </array>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
