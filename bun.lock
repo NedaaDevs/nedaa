@@ -39,6 +39,7 @@
         "expo-linking": "~56.0.14",
         "expo-localization": "~56.0.6",
         "expo-location": "~56.0.18",
+        "expo-mail-composer": "~56.0.4",
         "expo-network": "~56.0.5",
         "expo-notifications": "~56.0.18",
         "expo-orientation": "file:./modules/expo-orientation",
@@ -1427,6 +1428,8 @@
     "expo-localization": ["expo-localization@56.0.6", "", { "dependencies": { "rtl-detect": "^1.0.2" }, "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-zzBVoUFHCVNBywcxGsspoZeIXebihOo/AnmQYE4jMv8gHCSKlLNFT+ft+0+mWcZCMs9necvUs8S8TDonAu/xBA=="],
 
     "expo-location": ["expo-location@56.0.18", "", { "dependencies": { "@expo/image-utils": "^0.10.1" }, "peerDependencies": { "expo": "*" } }, "sha512-6xP0UwGy8a7EEHAMeigYAp3HNo3yWHAg05tVPUfwrOWepWPpFXmjsfUBUxQdkpfpjddJ9r+f4PplxZqKI0LtjA=="],
+
+    "expo-mail-composer": ["expo-mail-composer@56.0.4", "", { "peerDependencies": { "expo": "*" } }, "sha512-8DWyBcKLIFtuPFZKdZeErDoRAfNCl/UJP7uuReY06Bl98YIHEd3DpNyzW5+vMLAxq8Lj8DhDjFBL2U1nDF151g=="],
 
     "expo-manifests": ["expo-manifests@56.0.4", "", { "dependencies": { "expo-json-utils": "~56.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-Fokawl2UkiExIF0bqGoblRFA8lYpROVD+EpvDwSW4LgqQyPwNua1gLSgHZjdl5GsVugfRMMWE3LHaibDyX93hw=="],
 

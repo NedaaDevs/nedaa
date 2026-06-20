@@ -73,8 +73,7 @@ function sessionMarkerNow(): string {
 
 // Write a report bundle to the cache dir and hand it to the OS share sheet as a file
 // (so both platforms attach a .log instead of pasting text into the body).
-async function shareReportFile(text: string, baseName: string): Promise<void> {
-  if (!text) return;
+function writeReportFile(text: string, baseName: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const fileName = `nedaa-${baseName}-${ts}.log`;
   const file = new File(Paths.cache, fileName);
@@ -84,8 +83,14 @@ async function shareReportFile(text: string, baseName: string): Promise<void> {
     // may already exist
   }
   file.write(text);
+  return file.uri;
+}
+
+async function shareReportFile(text: string, baseName: string): Promise<void> {
+  if (!text) return;
+  const uri = writeReportFile(text, baseName);
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType: "text/plain", dialogTitle: fileName });
+    await Sharing.shareAsync(uri, { mimeType: "text/plain", dialogTitle: uri.split("/").pop() });
   }
 }
 
@@ -353,5 +358,39 @@ export const AppLogger = {
     } catch (error) {
       console.error("[AppLogger] Copy report failed:", error);
     }
+  },
+
+  // Write the (optionally scoped) report bundle to a cache file and return its uri —
+  // for attaching to an email (expo-mail-composer). Returns null on failure.
+  async getReportFile(opts: BuildReportOptions = {}): Promise<string | null> {
+    try {
+      const report = await AppLogger.buildReport(opts);
+      const base = opts.category ? opts.category.toLowerCase().replace(/\s+/g, "-") : "logs";
+      return writeReportFile(report, base);
+    } catch (error) {
+      console.error("[AppLogger] getReportFile failed:", error);
+      return null;
+    }
+  },
+
+  // A short text summary for channels that can't take the file (WhatsApp/Telegram):
+  // the user's note + app/device line + the most recent WARN/ERROR lines.
+  async buildSummary(opts: BuildReportOptions = {}): Promise<string> {
+    AppLogger.flushAll();
+    const domains = opts.domains ?? [...registry.keys()];
+    const issues: string[] = [];
+    for (const domain of domains) {
+      const f = new File(logDir, `${domain}.log`);
+      if (!f.exists) continue;
+      for (const line of f.textSync().split("\n")) {
+        if (line.includes("[ERROR]") || line.includes("[WARN]"))
+          issues.push(`${domain}: ${line.trim()}`);
+      }
+    }
+    const recent = issues.slice(-10);
+    const head = `Nedaa ${Application.nativeApplicationVersion ?? "?"} (${Application.nativeBuildVersion ?? "?"}) · ${Device.modelName ?? "?"} · ${Platform.OS} ${Device.osVersion ?? "?"}`;
+    return [opts.description?.trim(), head, recent.length ? "Recent issues:" : "", ...recent]
+      .filter(Boolean)
+      .join("\n");
   },
 };

@@ -134,6 +134,7 @@
       "react-native-email-link",
       "expo-web-browser",
       "expo-asset",
+      "expo-mail-composer",
       "expo-background-task",
       "@react-native-community/datetimepicker"
     ],

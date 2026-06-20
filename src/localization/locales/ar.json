@@ -1186,6 +1186,7 @@
   "settings.shareLogs.share": "إرسال",
   "settings.shareLogs.copied": "تم النسخ إلى الحافظة",
   "settings.shareLogs.describe": "ما الذي حدث؟ (اختياري)",
+  "settings.shareLogs.emailSubject": "نداء — بلاغ عن مشكلة",
   "crashPrompt.title": "واجه نداء مشكلة",
   "crashPrompt.body": "أُغلِق التطبيق بشكلٍ غير متوقع في المرة السابقة. هل تريد إرسال تقرير سريع لمساعدتنا على إصلاحها؟ لا بيانات شخصية — فقط بعض التفاصيل التقنية من جهازك.",
   "crashPrompt.send": "إرسال التقرير",

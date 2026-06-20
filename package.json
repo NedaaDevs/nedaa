@@ -68,6 +68,7 @@
     "expo-linking": "~56.0.14",
     "expo-localization": "~56.0.6",
     "expo-location": "~56.0.18",
+    "expo-mail-composer": "~56.0.4",
     "expo-network": "~56.0.5",
     "expo-notifications": "~56.0.18",
     "expo-orientation": "file:./modules/expo-orientation",
