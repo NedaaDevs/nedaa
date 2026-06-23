@@ -2,14 +2,15 @@ appId: dev.nedaa.android
 ---
 # Stop, then open the link cold so the app launches *with* the deep link as
 # its initial URL — the only point Expo Router reliably navigates from.
-# Android's Maestro driver does not detect the tiny readiness marker the way
-# iOS does, so instead of gating on it we settle on animation completion
-# (cold launch → getInitialURL nav → router settle → screen render is one
-# continuous sequence; two stacked settles cover it with margin).
+# Android's Maestro driver can't see the 1x1 readiness marker, so we settle on
+# animation completion. Three stacked settles give the cold launch + splash
+# fade enough margin that we don't capture the splash/loading state.
 - stopApp
 - openLink: ${SCREENSHOT_URL}
 - waitForAnimationToEnd:
-    timeout: 6000
+    timeout: 8000
 - waitForAnimationToEnd:
-    timeout: 6000
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 8000
 - takeScreenshot: ${OUT_PATH}
