@@ -21,6 +21,8 @@ import { BackgroundTaskLog } from "@/services/background-task-log";
 import { UmrahDB } from "@/services/umrah-db";
 import { cleanupManager } from "@/services/cleanup";
 
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
+
 export const appSetup = async (
   prayerStore: PrayerTimesStore,
   notificationStore: NotificationStore
@@ -31,9 +33,10 @@ export const appSetup = async (
     await loadPrayerTimes();
     await ensureAlarmsScheduled();
 
-    // Check for city changes (if auto-update is enabled)
+    // Check for city changes (if auto-update is enabled). Skipped in screenshot
+    // mode: location is seeded, and the GMS settings check pops a native dialog.
     const locationStore = useLocationStore.getState();
-    if (locationStore.autoUpdateLocation) {
+    if (!IS_SCREENSHOT_MODE && locationStore.autoUpdateLocation) {
       await locationStore.checkAndPromptCityChange();
     }
 
