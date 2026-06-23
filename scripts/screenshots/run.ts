@@ -437,14 +437,17 @@ async function runFrame(opts: {
 
 // Play feature graphic (1024x500) for en + ar. Uses a cached prayer-times raw
 // for the inset device when present; otherwise renders the banner without it.
-async function runFeatureGraphic(opts: { deviceOverride?: string }): Promise<void> {
-  const platform: TargetPlatform = "android";
-  const cfg = platformConfig(platform);
-  const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
+async function runFeatureGraphic(): Promise<void> {
+  const cfg = platformConfig("android");
 
   for (const locale of ["en", "ar"] as const) {
-    const inset = rawPath({ screen: "prayer-times", locale, deviceId: device.id, platform });
-    const rawPng = existsSync(inset) ? readFileSync(inset) : undefined;
+    // Inset device is generic, so any cached prayer-times raw works — prefer
+    // android, fall back to the iOS capture.
+    const insetFile = [
+      rawPath({ screen: "prayer-times", locale, deviceId: "android-phone", platform: "android" }),
+      rawPath({ screen: "prayer-times", locale, deviceId: "iphone-6.9", platform: "ios" }),
+    ].find((f) => existsSync(f));
+    const rawPng = insetFile ? readFileSync(insetFile) : undefined;
     if (!rawPng)
       console.log(`[feature-graphic] no cached prayer-times raw for ${locale}; banner only`);
     const buf = await renderFeatureGraphic({ locale, rawPng });
@@ -526,7 +529,7 @@ if (import.meta.main) {
       })
     );
   } else if (cmd === "feature-graphic") {
-    run(runFeatureGraphic({ deviceOverride }));
+    run(runFeatureGraphic());
   } else {
     console.log(USAGE);
     process.exit(2);
