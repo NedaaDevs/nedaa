@@ -10,7 +10,7 @@ function fontBase64(filename: string): string {
   return readFileSync(path.join(SCRIPT_DIR, "fonts", filename)).toString("base64");
 }
 
-const FONT_FACES = `
+export const FONT_FACES = `
   @font-face { font-family: 'Asap'; font-weight: 400; src: url('data:font/ttf;base64,${fontBase64("Asap-400.ttf")}') format('truetype'); font-style: normal; }
   @font-face { font-family: 'Asap'; font-weight: 700; src: url('data:font/ttf;base64,${fontBase64("Asap-700.ttf")}') format('truetype'); font-style: normal; }
   @font-face { font-family: 'Asap'; font-weight: 700; src: url('data:font/ttf;base64,${fontBase64("Asap-700.ttf")}') format('truetype'); font-style: italic; }
@@ -20,7 +20,7 @@ const FONT_FACES = `
   @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: url('data:font/ttf;base64,${fontBase64("JetBrainsMono-500.ttf")}') format('truetype'); }
 `;
 
-export type Variant = "hero" | "fajr" | "athkar" | "honest" | "plate";
+export type Variant = "hero" | "fajr" | "athkar" | "honest" | "plate" | "frame";
 
 export type RenderInput = {
   rawPng?: Buffer;
@@ -57,6 +57,8 @@ type HeroCopy = {
   // instead of stacked under line 1 in the top band. Use only when line 2 is a
   // standalone qualifier (not a sentence continuation that would dangle a comma).
   line2Below?: boolean;
+  // Muted qualifier under the phone (e.g. OS-version requirement).
+  footnote?: string;
 };
 
 const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
@@ -148,6 +150,24 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
   },
 };
 
+// iOS reliable alarms need iOS 26.1+ (AlarmKit); soften + footnote the claim.
+const HERO_COPY_IOS_OVERRIDE: Partial<Record<"en" | "ar", Record<string, HeroCopy>>> = {
+  en: {
+    "reliable-alarms": {
+      headlineLine1: "An alarm that wakes you,",
+      headlineLine2Italic: "even on silent.",
+      footnote: "Requires iOS 26.1 or later.",
+    },
+  },
+  ar: {
+    "reliable-alarms": {
+      headlineLine1: "منبّه يوقظك،",
+      headlineLine2Italic: "ولو كان الصوت صامتًا.",
+      footnote: "يتطلب iOS 26.1 أو أحدث.",
+    },
+  },
+};
+
 function escapeHtml(s: string): string {
   return s.replace(
     /[&<>"']/g,
@@ -175,14 +195,15 @@ function heroHtml(opts: {
   // as possible, bounded by EITHER a width cap OR the height left under the
   // band — whichever binds — so it never clips on a short canvas (Android
   // 1080x1920) yet fills a tall one (iOS 1290x2796).
-  const HEADLINE_BAND = Math.round(H * 0.26);
+  const HEADLINE_BAND = Math.round(H * 0.22);
   const BOTTOM_MARGIN = Math.round(H * 0.05);
   const SIDE = Math.round(W * 0.08);
   // A below-phone caption needs its own reserved strip so the phone shrinks to
   // make room rather than overflowing the canvas.
   const CAPTION_BAND = line2Below ? Math.round(H * 0.09) : 0;
-  const availH = H - HEADLINE_BAND - BOTTOM_MARGIN - CAPTION_BAND;
-  const FRAME_H = Math.round(Math.min(availH, 0.74 * W * ASPECT));
+  const FOOTNOTE_BAND = copy.footnote ? Math.round(H * 0.05) : 0;
+  const availH = H - HEADLINE_BAND - BOTTOM_MARGIN - CAPTION_BAND - FOOTNOTE_BAND;
+  const FRAME_H = Math.round(Math.min(availH, 0.82 * W * ASPECT));
   const FRAME_W = Math.round(FRAME_H / ASPECT);
   const FRAME_RADIUS = Math.round(FRAME_W * 0.13);
   const FRAME_BORDER = Math.max(2, Math.round(FRAME_W * 0.012));
@@ -193,6 +214,7 @@ function heroHtml(opts: {
   const INNER_RADIUS = FRAME_RADIUS - Math.round(FRAME_W * 0.02);
   const headlineSize = Math.round(W * (isAr ? 0.092 : 0.105));
   const captionSize = Math.round(W * (isAr ? 0.06 : 0.066));
+  const footnoteSize = Math.round(W * 0.032);
   const ruleGap = Math.round(H * 0.0425);
   const shadowY = Math.round(FRAME_W * 0.08);
   const shadowBlur = Math.round(FRAME_W * 0.1);
@@ -215,6 +237,9 @@ function heroHtml(opts: {
   const captionHtml = line2Below
     ? `<div class="caption">${escapeHtml(copy.headlineLine2Italic)}</div>`
     : "";
+  const footnoteHtml = copy.footnote
+    ? `<div class="footnote">${escapeHtml(copy.footnote)}</div>`
+    : "";
 
   return `<!doctype html>
 <html lang="${locale}" dir="${dir}">
@@ -226,7 +251,7 @@ function heroHtml(opts: {
   body {
     width: ${W}px;
     height: ${H}px;
-    background: #F5F1E6;
+    background: linear-gradient(160deg, #F7F3E9 0%, #F1EBDC 55%, #E8E1CF 100%);
     color: #1C5D85;
     font-family: '${fontFamily}', system-ui, sans-serif;
     position: relative;
@@ -290,6 +315,15 @@ function heroHtml(opts: {
     margin-top: ${Math.round(H * 0.03)}px;
     padding: 0 ${SIDE}px;
     line-height: 1.1;
+    box-sizing: border-box;
+  }
+  .footnote {
+    font-family: '${fontFamily}', system-ui, sans-serif;
+    font-size: ${footnoteSize}px;
+    color: #6B7280;
+    text-align: center;
+    margin-top: ${Math.round(H * 0.022)}px;
+    padding: 0 ${SIDE}px;
     box-sizing: border-box;
   }
   .phone-wrap {
@@ -373,6 +407,7 @@ function heroHtml(opts: {
         </div>
       </div>
       ${captionHtml}
+      ${footnoteHtml}
     </div>
   </div>
 </body>
@@ -381,7 +416,7 @@ function heroHtml(opts: {
 
 let _browser: Browser | null = null;
 
-async function getBrowser(): Promise<Browser> {
+export async function getBrowser(): Promise<Browser> {
   if (_browser) return _browser;
   _browser = await chromium.launch();
   return _browser;
@@ -471,7 +506,7 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
   body {
     width: ${W}px;
     height: ${H}px;
-    background: #F5F1E6;
+    background: linear-gradient(160deg, #F7F3E9 0%, #F1EBDC 55%, #E8E1CF 100%);
     color: #1C5D85;
     font-family: '${fontFamily}', system-ui, sans-serif;
     position: relative;
@@ -613,7 +648,7 @@ function bilingualHtml(opts: {
   body {
     width: ${device.width}px;
     height: ${device.height}px;
-    background: #F5F1E6;
+    background: linear-gradient(160deg, #F7F3E9 0%, #F1EBDC 55%, #E8E1CF 100%);
     color: #1C5D85;
     font-family: '${fontFamily}', system-ui, sans-serif;
     position: relative;
@@ -734,11 +769,87 @@ function bilingualHtml(opts: {
 </html>`;
 }
 
+// Frame-only render for website use: just the framed device on a transparent
+// canvas, no headline or marketing background. Reuses the store bezel.
+const FRAME_ONLY_WIDTH = 720;
+const FRAME_ONLY_PAD = Math.round(FRAME_ONLY_WIDTH * 0.03);
+
+function frameCanvasSize(): { width: number; height: number } {
+  const frameH = Math.round(FRAME_ONLY_WIDTH * (19.5 / 9));
+  return {
+    width: FRAME_ONLY_WIDTH + FRAME_ONLY_PAD * 2,
+    height: frameH + FRAME_ONLY_PAD * 2,
+  };
+}
+
+function frameHtml(opts: { rawPngBase64: string; platform: DeviceSpec["platform"] }): string {
+  const { rawPngBase64, platform } = opts;
+  const isAndroid = platform === "android";
+  const ASPECT = 19.5 / 9;
+  const FRAME_W = FRAME_ONLY_WIDTH;
+  const FRAME_H = Math.round(FRAME_W * ASPECT);
+  const FRAME_RADIUS = Math.round(FRAME_W * 0.13);
+  const FRAME_BORDER = Math.max(2, Math.round(FRAME_W * 0.012));
+  const FRAME_PADDING = Math.round(FRAME_W * 0.018);
+  const INNER_RADIUS = FRAME_RADIUS - Math.round(FRAME_W * 0.02);
+  const ISLAND_W = Math.round(FRAME_W * 0.3);
+  const ISLAND_H = Math.round(FRAME_W * 0.078);
+  const PUNCH_D = Math.round(FRAME_W * 0.052);
+  const PAD = Math.round(FRAME_W * 0.03);
+  const deviceChrome = isAndroid
+    ? `<div aria-hidden="true" class="punch"></div>
+        <div class="btn ar1"></div>
+        <div class="btn ar2"></div>`
+    : `<div aria-hidden="true" class="island"></div>
+        <div class="btn l1"></div>
+        <div class="btn l2"></div>
+        <div class="btn l3"></div>
+        <div class="btn r1"></div>`;
+
+  return `<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; }
+  body { width: ${FRAME_W + PAD * 2}px; height: ${FRAME_H + PAD * 2}px; position: relative; }
+  .phone {
+    position: absolute; top: ${PAD}px; left: ${PAD}px;
+    width: ${FRAME_W}px; height: ${FRAME_H}px;
+    background: #0A0A0F;
+    border: ${FRAME_BORDER}px solid #1A1A1F;
+    border-radius: ${FRAME_RADIUS}px;
+    padding: ${FRAME_PADDING}px;
+    box-sizing: border-box;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.04);
+  }
+  .island { position: absolute; top: ${Math.round(FRAME_W * 0.028)}px; left: 50%; transform: translateX(-50%); width: ${ISLAND_W}px; height: ${ISLAND_H}px; background: #000; border-radius: 9999px; z-index: 20; }
+  .punch { position: absolute; top: ${Math.round(FRAME_W * 0.034)}px; left: 50%; transform: translateX(-50%); width: ${PUNCH_D}px; height: ${PUNCH_D}px; background: #000; border-radius: 9999px; z-index: 20; }
+  .btn { position: absolute; background: #1A1A1F; }
+  .btn.l1 { left: -4px; top: 14%; width: 4px; height: 5%; border-radius: 2px 0 0 2px; }
+  .btn.l2 { left: -4px; top: 22%; width: 4px; height: 8%; border-radius: 2px 0 0 2px; }
+  .btn.l3 { left: -4px; top: 32%; width: 4px; height: 8%; border-radius: 2px 0 0 2px; }
+  .btn.r1 { right: -4px; top: 24%; width: 4px; height: 12%; border-radius: 0 2px 2px 0; }
+  .btn.ar1 { right: -4px; top: 18%; width: 4px; height: 8%; border-radius: 0 2px 2px 0; }
+  .btn.ar2 { right: -4px; top: 29%; width: 4px; height: 13%; border-radius: 0 2px 2px 0; }
+  .screen { width: 100%; height: 100%; border-radius: ${INNER_RADIUS}px; overflow: hidden; background: #F5F7FA; }
+  .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+</style></head>
+<body>
+  <div class="phone">
+    ${deviceChrome}
+    <div class="screen"><img src="data:image/png;base64,${rawPngBase64}" alt=""/></div>
+  </div>
+</body></html>`;
+}
+
 export async function renderVariant(input: RenderInput): Promise<Buffer> {
   let html: string;
   if (input.variant === "hero") {
     if (!input.rawPng) throw new Error('Variant "hero" requires rawPng.');
-    const copy = HERO_COPY[input.locale][input.screen];
+    const override =
+      input.device.platform === "ios"
+        ? HERO_COPY_IOS_OVERRIDE[input.locale]?.[input.screen]
+        : undefined;
+    const copy = override ?? HERO_COPY[input.locale][input.screen];
     if (!copy) {
       throw new Error(`No hero copy for ${input.locale}/${input.screen}. Add it to HERO_COPY.`);
     }
@@ -747,6 +858,12 @@ export async function renderVariant(input: RenderInput): Promise<Buffer> {
       copy,
       device: input.device,
       locale: input.locale,
+    });
+  } else if (input.variant === "frame") {
+    if (!input.rawPng) throw new Error('Variant "frame" requires rawPng.');
+    html = frameHtml({
+      rawPngBase64: input.rawPng.toString("base64"),
+      platform: input.device.platform,
     });
   } else if (input.variant === "honest") {
     html = promisesHtml({ device: input.device, locale: input.locale });
@@ -765,15 +882,19 @@ export async function renderVariant(input: RenderInput): Promise<Buffer> {
     throw new Error(`Variant ${input.variant} not yet implemented.`);
   }
 
+  // Frame-only is a transparent, tightly-cropped device; store cells fill the
+  // full marketing canvas.
+  const isFrame = input.variant === "frame";
+  const viewport = isFrame
+    ? frameCanvasSize()
+    : { width: input.device.width, height: input.device.height };
+
   const browser = await getBrowser();
-  const ctx = await browser.newContext({
-    viewport: { width: input.device.width, height: input.device.height },
-    deviceScaleFactor: 1,
-  });
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
   const page: Page = await ctx.newPage();
   await page.setContent(html, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  const buf = await page.screenshot({ type: "png", fullPage: false });
+  const buf = await page.screenshot({ type: "png", fullPage: false, omitBackground: isFrame });
   await ctx.close();
   return buf;
 }

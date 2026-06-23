@@ -27,4 +27,17 @@ describe("parseScreenshotDeepLink", () => {
   test("returns null for invalid locale", () => {
     expect(parseScreenshotDeepLink("nedaa://screenshot/prayer-times?locale=fr&seed=x")).toBeNull();
   });
+
+  test("parses an optional dark theme", () => {
+    const result = parseScreenshotDeepLink(
+      "nedaa://screenshot/prayer-times?locale=en&seed=x&theme=dark"
+    );
+    expect(result?.theme).toBe("dark");
+  });
+
+  test("returns null for invalid theme", () => {
+    expect(
+      parseScreenshotDeepLink("nedaa://screenshot/prayer-times?locale=en&seed=x&theme=sepia")
+    ).toBeNull();
+  });
 });

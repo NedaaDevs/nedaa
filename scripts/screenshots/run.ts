@@ -4,10 +4,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEVICE_MATRIX, type DeviceSpec } from "./device-matrix.ts";
 import { renderVariant, closeBrowser } from "./render-variant.ts";
-import { HEADLINE_KEYS } from "./headlines.schema.ts";
-
-type ScreenKey = (typeof HEADLINE_KEYS)[number];
-type TargetPlatform = "ios" | "android";
+import { renderFeatureGraphic } from "./feature-graphic.ts";
+import {
+  SCREEN_KEYS,
+  fileStem,
+  planFor,
+  type PlanCell,
+  type ScreenKey,
+  type TargetPlatform,
+  type Variant,
+} from "./screenshot-plan.ts";
 
 type PlatformConfig = {
   deviceId: DeviceSpec["id"];
@@ -15,14 +21,10 @@ type PlatformConfig = {
   shotFlow: string;
   // Resolves a booted device serial/udid Maestro can target via `--device`.
   resolveTarget: () => string;
-  // Resolves the fastlane output file path for a composited cell.
-  outPath: (opts: {
-    locale: "en" | "ar";
-    deviceId: string;
-    idx: string;
-    screen: ScreenKey;
-    variant: "hero" | "athkar" | "honest";
-  }) => string;
+  // fastlane output path for a composited store cell, named `NN-screen.png`.
+  outPath: (opts: { locale: "en" | "ar"; deviceId: string; stem: string }) => string;
+  // Play feature graphic output path (Android only; throws on iOS).
+  featurePath: (locale: "en" | "ar") => string;
 };
 
 const DEFAULT_SEED: Record<ScreenKey, string> = {
@@ -36,36 +38,39 @@ const DEFAULT_SEED: Record<ScreenKey, string> = {
   "athkar-with-audio": "track-2-at-1m14s",
   tools: "default",
   umrah: "sai-2-of-4",
-  "widgets-1": "default",
-  "widgets-2": "default",
-};
-
-const SCREEN_INDEX: Record<ScreenKey, number> = {
-  "prayer-times": 1,
-  "reliable-alarms": 2,
-  athkar: 3,
-  qibla: 4,
-  privacy: 5,
-  qada: 6,
-  quran: 7,
-  "athkar-with-audio": 8,
-  tools: 11,
-  umrah: 12,
-  "widgets-1": 9,
-  "widgets-2": 10,
 };
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..", "..");
 const RAW_DIR = path.join(PROJECT_ROOT, "tmp", "screenshots-raw");
 const OUT_DIR = path.join(PROJECT_ROOT, "fastlane", "screenshots");
+const WEBSITE_DIR = path.join(PROJECT_ROOT, "website-v2", "src", "assets", "screenshots");
 
 function sh(cmd: string, args: string[]): void {
   execFileSync(cmd, args, { stdio: "inherit" });
 }
 
+// Run a noisy command quietly; only surface its output if it fails. Keeps the
+// per-cell progress log readable instead of drowning it in Maestro chatter.
+function shQuiet(cmd: string, args: string[]): void {
+  try {
+    execFileSync(cmd, args, { stdio: "pipe" });
+  } catch (e) {
+    const err = e as { stdout?: Buffer; stderr?: Buffer };
+    if (err.stdout) process.stdout.write(err.stdout);
+    if (err.stderr) process.stderr.write(err.stderr);
+    throw e;
+  }
+}
+
 function shOut(cmd: string, args: string[]): string {
   return execFileSync(cmd, args, { encoding: "utf8" });
+}
+
+function findDevice(deviceId: string): DeviceSpec {
+  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
+  if (!device) throw new Error(`Unknown device: ${deviceId}`);
+  return device;
 }
 
 function getBootedDeviceId(): string {
@@ -106,6 +111,17 @@ const IOS_LOCALE_DIR: Record<"en" | "ar", string> = { en: "en-US", ar: "ar-SA" }
 // Android/Play: dirs verified on disk at fastlane/metadata/android (en-US, ar).
 const ANDROID_PLAY_LOCALE: Record<"en" | "ar", string> = { en: "en-US", ar: "ar" };
 
+function androidImagesDir(locale: "en" | "ar"): string {
+  return path.join(
+    PROJECT_ROOT,
+    "fastlane",
+    "metadata",
+    "android",
+    ANDROID_PLAY_LOCALE[locale],
+    "images"
+  );
+}
+
 function platformConfig(platform: TargetPlatform): PlatformConfig {
   if (platform === "android") {
     return {
@@ -113,25 +129,9 @@ function platformConfig(platform: TargetPlatform): PlatformConfig {
       bootFlow: "boot.android.yaml",
       shotFlow: "shot.android.yaml",
       resolveTarget: getBootedAndroidSerial,
-      outPath: ({ locale, idx, screen, variant }) => {
-        const playLocale = ANDROID_PLAY_LOCALE[locale];
-        const dir = path.join(
-          PROJECT_ROOT,
-          "fastlane",
-          "metadata",
-          "android",
-          playLocale,
-          "images",
-          "phoneScreenshots"
-        );
-        const name =
-          variant === "honest"
-            ? "02-promises.png"
-            : variant === "athkar"
-              ? "03-athkar-bilingual.png"
-              : `${idx}-${screen}.png`;
-        return path.join(dir, name);
-      },
+      outPath: ({ locale, stem }) =>
+        path.join(androidImagesDir(locale), "phoneScreenshots", `${stem}.png`),
+      featurePath: (locale) => path.join(androidImagesDir(locale), "featureGraphic.png"),
     };
   }
   return {
@@ -139,17 +139,21 @@ function platformConfig(platform: TargetPlatform): PlatformConfig {
     bootFlow: "boot.yaml",
     shotFlow: "shot.yaml",
     resolveTarget: getBootedDeviceId,
-    outPath: ({ locale, deviceId, idx, screen, variant }) => {
-      const dir = path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], deviceId);
-      const name =
-        variant === "honest"
-          ? "02-promises.png"
-          : variant === "athkar"
-            ? "03-athkar-bilingual.png"
-            : `${idx}-${screen}.png`;
-      return path.join(dir, name);
+    outPath: ({ locale, deviceId, stem }) =>
+      path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], deviceId, `${stem}.png`),
+    featurePath: () => {
+      throw new Error("Feature graphic is a Play Store asset; use --platform=android.");
     },
   };
+}
+
+function rawPath(opts: {
+  screen: ScreenKey;
+  locale: "en" | "ar";
+  deviceId: string;
+  platform: TargetPlatform;
+}): string {
+  return path.join(RAW_DIR, opts.platform, opts.locale, opts.deviceId, `${opts.screen}.png`);
 }
 
 function captureRaw(opts: {
@@ -159,300 +163,372 @@ function captureRaw(opts: {
   deviceId: string;
   bootedUdid: string;
   platform: TargetPlatform;
+  theme?: "light" | "dark";
 }): Buffer {
-  const { screen, locale, seed, deviceId, bootedUdid, platform } = opts;
+  const { screen, locale, seed, deviceId, bootedUdid, platform, theme } = opts;
   const cfg = platformConfig(platform);
-  const rawDir = path.join(RAW_DIR, platform, locale, deviceId);
-  mkdirSync(rawDir, { recursive: true });
-  const idx = String(SCREEN_INDEX[screen]).padStart(2, "0");
-  // Maestro appends `.png` to whatever path it gets. Pass the stem; read back with extension.
-  const rawPathStem = path.join(rawDir, `${idx}-${screen}`);
-  const rawPath = `${rawPathStem}.png`;
+  const out = rawPath({ screen, locale, deviceId, platform });
+  mkdirSync(path.dirname(out), { recursive: true });
+  // Maestro appends `.png`; pass the stem, read back with the extension.
+  const stem = out.replace(/\.png$/, "");
 
-  const url = `myapp://screenshot/${screen}?locale=${locale}&seed=${seed}`;
+  const themeParam = theme ? `&theme=${theme}` : "";
+  const url = `myapp://screenshot/${screen}?locale=${locale}&seed=${seed}${themeParam}`;
   const flowPath = path.join(SCRIPT_DIR, "flows", cfg.shotFlow);
   const readyId = `shot-ready-${screen}-${locale}`;
 
-  console.log(`[capture] ${locale} → ${url}`);
-  sh("maestro", [
+  shQuiet("maestro", [
     "--device",
     bootedUdid,
     "test",
     "-e",
     `SCREENSHOT_URL=${url}`,
     "-e",
-    `OUT_PATH=${rawPathStem}`,
+    `OUT_PATH=${stem}`,
     "-e",
     `READY_ID=${readyId}`,
     flowPath,
   ]);
 
-  if (!existsSync(rawPath)) {
-    throw new Error(`Maestro did not produce ${rawPath} — check the flow output above`);
+  if (!existsSync(out)) {
+    throw new Error(`Maestro did not produce ${out} — check the flow output above`);
   }
-  console.log(`[capture] raw captured: ${rawPath}`);
-  return readFileSync(rawPath);
+  return readFileSync(out);
 }
 
 function bootApp(bootedUdid: string, platform: TargetPlatform): void {
   const flowPath = path.join(SCRIPT_DIR, "flows", platformConfig(platform).bootFlow);
   console.log(`[boot] cold-launching app once on ${bootedUdid}`);
-  sh("maestro", ["--device", bootedUdid, "test", flowPath]);
+  shQuiet("maestro", ["--device", bootedUdid, "test", flowPath]);
 }
 
-// Capture + composite one cell. Assumes the app is already running (bootApp
-// was called once for the whole batch); fires a deep link into the live
-// session rather than relaunching.
-async function captureCell(opts: {
-  screen: ScreenKey;
+// Build one store cell. `honest` is pure HTML; `athkar` needs en+ar captures;
+// `hero` needs the single-locale capture. Pass a capture function so the same
+// builder serves live capture (`all`) and cached re-render (`recomposite`).
+async function buildCell(opts: {
+  cell: PlanCell;
   locale: "en" | "ar";
-  seed?: string;
-  device?: string;
-  variant?: "hero" | "athkar";
-  bootedUdid: string;
-  platform: TargetPlatform;
-}) {
-  const { screen, locale, bootedUdid, platform } = opts;
-  const cfg = platformConfig(platform);
-  const variant = opts.variant ?? "hero";
-  const seed = opts.seed ?? DEFAULT_SEED[screen];
-  const deviceId = opts.device ?? cfg.deviceId;
-
-  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
-  if (!device) throw new Error(`Unknown device: ${deviceId}`);
-
-  const idx = String(SCREEN_INDEX[screen]).padStart(2, "0");
-
-  let out: Buffer;
-  if (variant === "athkar") {
-    // Bilingual variant: capture en + ar then composite both into one canvas.
-    const enRaw = captureRaw({ screen, locale: "en", seed, deviceId, bootedUdid, platform });
-    const arRaw = captureRaw({ screen, locale: "ar", seed, deviceId, bootedUdid, platform });
-    out = await renderVariant({
-      rawPngs: { en: enRaw, ar: arRaw },
-      screen,
+  device: DeviceSpec;
+  getRaw: (screen: ScreenKey, locale: "en" | "ar") => Buffer;
+}): Promise<Buffer> {
+  const { cell, locale, device, getRaw } = opts;
+  if (cell.variant === "honest") {
+    return renderVariant({ screen: cell.screen, device, locale, variant: "honest" });
+  }
+  if (cell.variant === "athkar") {
+    return renderVariant({
+      rawPngs: { en: getRaw(cell.screen, "en"), ar: getRaw(cell.screen, "ar") },
+      screen: cell.screen,
       device,
       locale,
       variant: "athkar",
     });
-  } else {
-    const raw = captureRaw({ screen, locale, seed, deviceId, bootedUdid, platform });
-    out = await renderVariant({ rawPng: raw, screen, device, locale, variant: "hero" });
   }
-
-  const outPath = cfg.outPath({ locale, deviceId: device.id, idx, screen, variant });
-  mkdirSync(path.dirname(outPath), { recursive: true });
-  writeFileSync(outPath, out);
-
-  console.log(`\n✓ Verification cell produced:\n  ${outPath}\n`);
-  console.log(`Open it (\`open ${outPath}\`) and approve visually before proceeding.\n`);
+  return renderVariant({
+    rawPng: getRaw(cell.screen, locale),
+    screen: cell.screen,
+    device,
+    locale,
+    variant: "hero",
+  });
 }
 
-// Re-composite one cell from the cached raw capture(s) in tmp/screenshots-raw —
-// no device, no app, no Maestro. For fast layout/compositor iteration.
-async function recompositeCell(opts: {
-  screen: ScreenKey;
+function writeCell(opts: {
+  cell: PlanCell;
   locale: "en" | "ar";
-  variant?: "hero" | "athkar";
-  device?: string;
+  device: DeviceSpec;
   platform: TargetPlatform;
-}) {
-  const { screen, locale, platform } = opts;
-  const cfg = platformConfig(platform);
-  const variant = opts.variant ?? "hero";
-  const deviceId = opts.device ?? cfg.deviceId;
-  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
-  if (!device) throw new Error(`Unknown device: ${deviceId}`);
-  const idx = String(SCREEN_INDEX[screen]).padStart(2, "0");
-  const rawFile = (loc: "en" | "ar") =>
-    path.join(RAW_DIR, platform, loc, deviceId, `${idx}-${screen}.png`);
-
-  let out: Buffer;
-  if (variant === "athkar") {
-    const en = rawFile("en");
-    const ar = rawFile("ar");
-    if (!existsSync(en) || !existsSync(ar))
-      throw new Error(`Missing cached raw for ${screen} (need en+ar): ${en} / ${ar}`);
-    out = await renderVariant({
-      rawPngs: { en: readFileSync(en), ar: readFileSync(ar) },
-      screen,
-      device,
-      locale,
-      variant: "athkar",
-    });
-  } else {
-    const raw = rawFile(locale);
-    if (!existsSync(raw)) throw new Error(`Missing cached raw: ${raw} — run a capture first`);
-    out = await renderVariant({
-      rawPng: readFileSync(raw),
-      screen,
-      device,
-      locale,
-      variant: "hero",
-    });
-  }
-
-  const outPath = cfg.outPath({ locale, deviceId: device.id, idx, screen, variant });
+  buf: Buffer;
+}): string {
+  const cfg = platformConfig(opts.platform);
+  const outPath = cfg.outPath({
+    locale: opts.locale,
+    deviceId: opts.device.id,
+    stem: fileStem(opts.cell),
+  });
   mkdirSync(path.dirname(outPath), { recursive: true });
-  writeFileSync(outPath, out);
-  console.log(`✓ recomposited ${platform}/${locale}/${screen} → ${outPath}`);
+  writeFileSync(outPath, opts.buf);
+  return outPath;
 }
 
 function parseFlags(): Record<string, string> {
   const out: Record<string, string> = {};
   for (let i = 3; i < process.argv.length; i++) {
-    const m = process.argv[i].match(/^--(\w[\w-]*)=(.+)$/);
-    if (m) out[m[1]] = m[2];
+    const m = process.argv[i].match(/^--(\w[\w-]*)(?:=(.+))?$/);
+    if (m) out[m[1]] = m[2] ?? "true";
   }
   return out;
 }
 
-// The review-ready matrix: every cell shares one app session (one cold boot).
-const ALL_CELLS: { screen: ScreenKey; locale: "en" | "ar"; variant: "hero" | "athkar" }[] = [
-  { screen: "prayer-times", locale: "en", variant: "hero" },
-  { screen: "prayer-times", locale: "ar", variant: "hero" },
-  { screen: "qibla", locale: "en", variant: "hero" },
-  { screen: "qibla", locale: "ar", variant: "hero" },
-  { screen: "qada", locale: "en", variant: "hero" },
-  { screen: "qada", locale: "ar", variant: "hero" },
-  { screen: "athkar-with-audio", locale: "en", variant: "hero" },
-  { screen: "athkar-with-audio", locale: "ar", variant: "hero" },
-  { screen: "tools", locale: "en", variant: "hero" },
-  { screen: "tools", locale: "ar", variant: "hero" },
-  { screen: "umrah", locale: "en", variant: "hero" },
-  { screen: "umrah", locale: "ar", variant: "hero" },
-];
+// (cell, locale) pairs for a platform: every store slot in both locales.
+function planCells(platform: TargetPlatform): { cell: PlanCell; locale: "en" | "ar" }[] {
+  return planFor(platform).flatMap((cell) =>
+    (["en", "ar"] as const).map((locale) => ({ cell, locale }))
+  );
+}
 
-// Template cells are pure HTML (no device capture), so they render directly
-// and belong to every set regardless of capture.
-const TEMPLATE_CELLS: { locale: "en" | "ar" }[] = [{ locale: "en" }, { locale: "ar" }];
-
-async function renderTemplateCell(opts: {
-  locale: "en" | "ar";
-  device?: string;
+async function runAll(opts: {
   platform: TargetPlatform;
-}) {
-  const { locale, platform } = opts;
+  deviceOverride?: string;
+  resume?: boolean;
+}): Promise<void> {
+  const { platform, resume } = opts;
   const cfg = platformConfig(platform);
-  const deviceId = opts.device ?? cfg.deviceId;
-  const device = DEVICE_MATRIX.find((d) => d.id === deviceId);
-  if (!device) throw new Error(`Unknown device: ${deviceId}`);
-  const out = await renderVariant({ screen: "privacy", device, locale, variant: "honest" });
-  const outPath = cfg.outPath({
-    locale,
-    deviceId: device.id,
-    idx: "02",
-    screen: "privacy",
-    variant: "honest",
-  });
-  mkdirSync(path.dirname(outPath), { recursive: true });
-  writeFileSync(outPath, out);
-  console.log(`✓ template ${platform}/${locale}/promises → ${outPath}`);
+  const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
+  const bootedUdid = cfg.resolveTarget();
+  bootApp(bootedUdid, platform);
+
+  // With --resume, reuse a cached raw when present instead of re-capturing —
+  // turns an interrupted run's expensive device I/O into an instant re-render.
+  const getRaw = (screen: ScreenKey, locale: "en" | "ar") => {
+    const cached = rawPath({ screen, locale, deviceId: device.id, platform });
+    if (resume && existsSync(cached)) return readFileSync(cached);
+    return captureRaw({
+      screen,
+      locale,
+      seed: DEFAULT_SEED[screen],
+      deviceId: device.id,
+      bootedUdid,
+      platform,
+    });
+  };
+
+  const cells = planCells(platform);
+  const failures: string[] = [];
+  for (let i = 0; i < cells.length; i++) {
+    const { cell, locale } = cells[i];
+    const label = `${fileStem(cell)}/${locale}`;
+    const startedAt = Date.now();
+    console.log(`[${i + 1}/${cells.length}] ${label} …`);
+    try {
+      const buf = await buildCell({ cell, locale, device, getRaw });
+      const out = writeCell({ cell, locale, device, platform, buf });
+      const secs = ((Date.now() - startedAt) / 1000).toFixed(1);
+      console.log(`[${i + 1}/${cells.length}] ${label} ✓ (${secs}s) → ${out}`);
+    } catch (e) {
+      console.error(`[${i + 1}/${cells.length}] ${label} ✗ FAILED:`, e);
+      failures.push(label);
+    }
+  }
+  await closeBrowser();
+  if (failures.length) {
+    console.error(`\n[all] ${failures.length} cell(s) failed: ${failures.join(", ")}`);
+    process.exit(1);
+  }
+  console.log(`\n[all] ${cells.length} cells composited.`);
+}
+
+async function runRecomposite(opts: {
+  platform: TargetPlatform;
+  deviceOverride?: string;
+}): Promise<void> {
+  const { platform } = opts;
+  const cfg = platformConfig(platform);
+  const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
+
+  const getRaw = (screen: ScreenKey, locale: "en" | "ar") => {
+    const file = rawPath({ screen, locale, deviceId: device.id, platform });
+    if (!existsSync(file)) throw new Error(`Missing cached raw: ${file} — run a capture first`);
+    return readFileSync(file);
+  };
+
+  const failures: string[] = [];
+  for (const { cell, locale } of planCells(platform)) {
+    try {
+      const buf = await buildCell({ cell, locale, device, getRaw });
+      const out = writeCell({ cell, locale, device, platform, buf });
+      console.log(`✓ recomposited ${platform}/${locale}/${fileStem(cell)} → ${out}`);
+    } catch (e) {
+      console.error(`[recomposite] FAILED ${fileStem(cell)}/${locale}:`, e);
+      failures.push(`${fileStem(cell)}/${locale}`);
+    }
+  }
+  await closeBrowser();
+  if (failures.length) {
+    console.error(`\n[recomposite] ${failures.length} failed: ${failures.join(", ")}`);
+    process.exit(1);
+  }
+  console.log(`\n[recomposite] ${planCells(platform).length} cells re-rendered from cached raws.`);
+}
+
+async function runVerify(opts: {
+  platform: TargetPlatform;
+  screen: ScreenKey;
+  locale: "en" | "ar";
+  variant: Variant;
+  seed?: string;
+  theme?: "light" | "dark";
+  deviceOverride?: string;
+}): Promise<void> {
+  const { platform, screen, locale, variant, theme } = opts;
+  const cfg = platformConfig(platform);
+  const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
+  const planned = planFor(platform).find((c) => c.screen === screen);
+  const cell: PlanCell = { idx: planned?.idx ?? 0, screen, variant };
+
+  let bootedUdid: string | null = null;
+  const getRaw = (s: ScreenKey, loc: "en" | "ar") => {
+    bootedUdid ??= cfg.resolveTarget();
+    return captureRaw({
+      screen: s,
+      locale: loc,
+      seed: opts.seed ?? DEFAULT_SEED[s],
+      deviceId: device.id,
+      bootedUdid,
+      platform,
+      theme,
+    });
+  };
+
+  if (variant !== "honest") {
+    bootedUdid = cfg.resolveTarget();
+    bootApp(bootedUdid, platform);
+  }
+  const buf = await buildCell({ cell, locale, device, getRaw });
+  const out = writeCell({ cell, locale, device, platform, buf });
+  await closeBrowser();
+  console.log(`\n✓ Verification cell produced:\n  ${out}\n`);
+  console.log(`Open it (\`open ${out}\`) and approve visually before proceeding.\n`);
+}
+
+// Transparent, tightly-cropped framed device for website use.
+async function runFrame(opts: {
+  platform: TargetPlatform;
+  screen: ScreenKey;
+  locale: "en" | "ar";
+  fromCache: boolean;
+  seed?: string;
+  theme?: "light" | "dark";
+  deviceOverride?: string;
+}): Promise<void> {
+  const { platform, screen, locale, fromCache, theme } = opts;
+  const cfg = platformConfig(platform);
+  const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
+
+  let raw: Buffer;
+  if (fromCache) {
+    const file = rawPath({ screen, locale, deviceId: device.id, platform });
+    if (!existsSync(file)) throw new Error(`Missing cached raw: ${file} — capture first`);
+    raw = readFileSync(file);
+  } else {
+    const bootedUdid = cfg.resolveTarget();
+    bootApp(bootedUdid, platform);
+    raw = captureRaw({
+      screen,
+      locale,
+      seed: opts.seed ?? DEFAULT_SEED[screen],
+      deviceId: device.id,
+      bootedUdid,
+      platform,
+      theme,
+    });
+  }
+
+  const buf = await renderVariant({ rawPng: raw, screen, device, locale, variant: "frame" });
+  await closeBrowser();
+  mkdirSync(WEBSITE_DIR, { recursive: true });
+  const out = path.join(
+    WEBSITE_DIR,
+    `frame-${screen}-${platform}-${locale}-${theme ?? "light"}.png`
+  );
+  writeFileSync(out, buf);
+  console.log(`✓ frame → ${out}`);
+}
+
+// Play feature graphic (1024x500) for en + ar. Uses a cached prayer-times raw
+// for the inset device when present; otherwise renders the banner without it.
+async function runFeatureGraphic(opts: { deviceOverride?: string }): Promise<void> {
+  const platform: TargetPlatform = "android";
+  const cfg = platformConfig(platform);
+  const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
+
+  for (const locale of ["en", "ar"] as const) {
+    const inset = rawPath({ screen: "prayer-times", locale, deviceId: device.id, platform });
+    const rawPng = existsSync(inset) ? readFileSync(inset) : undefined;
+    if (!rawPng)
+      console.log(`[feature-graphic] no cached prayer-times raw for ${locale}; banner only`);
+    const buf = await renderFeatureGraphic({ locale, rawPng });
+    const out = cfg.featurePath(locale);
+    mkdirSync(path.dirname(out), { recursive: true });
+    writeFileSync(out, buf);
+    console.log(`✓ feature-graphic ${locale} → ${out}`);
+  }
+  await closeBrowser();
+}
+
+const USAGE =
+  "Usage:\n" +
+  "  bun run.ts all [--platform=ios|android] [--resume] — full store set in one app session\n" +
+  "  bun run.ts recomposite [--platform=ios|android]    — re-render store set from cached raws\n" +
+  "  bun run.ts verify [--platform=] [--screen=] [--locale=en|ar] [--variant=hero|honest|athkar] [--theme=light|dark] [--seed=]\n" +
+  "  bun run.ts frame --screen=<key> [--platform=] [--locale=en|ar] [--theme=light|dark] [--from-cache]  — website device frame\n" +
+  "  bun run.ts feature-graphic                         — Play 1024x500 banner (en + ar)";
+
+function asPlatform(value: string | undefined): TargetPlatform {
+  if (value === "android") return "android";
+  if (value !== undefined && value !== "ios") {
+    console.error(`Unknown platform: ${value}. Valid: ios, android`);
+    process.exit(2);
+  }
+  return "ios";
+}
+
+function asScreen(value: string | undefined, fallback: ScreenKey): ScreenKey {
+  const screen = (value ?? fallback) as ScreenKey;
+  if (!SCREEN_KEYS.includes(screen)) {
+    console.error(`Unknown screen: ${screen}. Valid: ${SCREEN_KEYS.join(", ")}`);
+    process.exit(2);
+  }
+  return screen;
 }
 
 if (import.meta.main) {
   const cmd = process.argv[2];
   const flags = parseFlags();
-  const platform = (flags.platform ?? "ios") as TargetPlatform;
-  if (platform !== "ios" && platform !== "android") {
-    console.error(`Unknown platform: ${platform}. Valid: ios, android`);
+  const platform = asPlatform(flags.platform);
+  const deviceOverride = flags.device;
+  const locale = (flags.locale ?? "en") as "en" | "ar";
+  const theme = flags.theme as "light" | "dark" | undefined;
+  if (theme !== undefined && theme !== "light" && theme !== "dark") {
+    console.error(`Unknown theme: ${theme}. Valid: light, dark`);
     process.exit(2);
   }
-  if (cmd === "verify") {
-    const screen = (flags.screen ?? "prayer-times") as ScreenKey;
-    const locale = (flags.locale ?? "en") as "en" | "ar";
-    if (!HEADLINE_KEYS.includes(screen)) {
-      console.error(`Unknown screen: ${screen}. Valid: ${HEADLINE_KEYS.join(", ")}`);
+
+  const run = (p: Promise<void>) =>
+    p.catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+
+  if (cmd === "all") {
+    run(runAll({ platform, deviceOverride, resume: flags.resume === "true" }));
+  } else if (cmd === "recomposite") {
+    run(runRecomposite({ platform, deviceOverride }));
+  } else if (cmd === "verify") {
+    const screen = asScreen(flags.screen, "prayer-times");
+    const variant = (flags.variant ?? "hero") as Variant;
+    if (!["hero", "honest", "athkar"].includes(variant)) {
+      console.error(`Unknown variant: ${variant}. Valid: hero, honest, athkar`);
       process.exit(2);
     }
-    const variant = (flags.variant ?? "hero") as "hero" | "athkar";
-    if (variant !== "hero" && variant !== "athkar") {
-      console.error(`Unknown variant: ${variant}. Valid: hero, athkar`);
-      process.exit(2);
-    }
-    (async () => {
-      const bootedUdid = platformConfig(platform).resolveTarget();
-      bootApp(bootedUdid, platform);
-      await captureCell({
+    run(runVerify({ platform, screen, locale, variant, seed: flags.seed, theme, deviceOverride }));
+  } else if (cmd === "frame") {
+    const screen = asScreen(flags.screen, "prayer-times");
+    run(
+      runFrame({
+        platform,
         screen,
         locale,
+        fromCache: flags["from-cache"] === "true",
         seed: flags.seed,
-        device: flags.device,
-        variant,
-        bootedUdid,
-        platform,
-      });
-      await closeBrowser();
-    })().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    });
-  } else if (cmd === "all") {
-    (async () => {
-      const bootedUdid = platformConfig(platform).resolveTarget();
-      bootApp(bootedUdid, platform);
-      const failures: string[] = [];
-      for (const cell of ALL_CELLS) {
-        try {
-          await captureCell({ ...cell, device: flags.device, bootedUdid, platform });
-        } catch (e) {
-          console.error(`[all] FAILED ${cell.screen}/${cell.locale}:`, e);
-          failures.push(`${cell.screen}/${cell.locale}`);
-        }
-      }
-      for (const t of TEMPLATE_CELLS) {
-        try {
-          await renderTemplateCell({ ...t, device: flags.device, platform });
-        } catch (e) {
-          console.error(`[all] FAILED promises/${t.locale}:`, e);
-          failures.push(`promises/${t.locale}`);
-        }
-      }
-      await closeBrowser();
-      if (failures.length) {
-        console.error(`\n[all] ${failures.length} cell(s) failed: ${failures.join(", ")}`);
-        process.exit(1);
-      }
-      console.log(`\n[all] ${ALL_CELLS.length} cells composited successfully.`);
-    })().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    });
-  } else if (cmd === "recomposite") {
-    (async () => {
-      const failures: string[] = [];
-      for (const cell of ALL_CELLS) {
-        try {
-          await recompositeCell({ ...cell, device: flags.device, platform });
-        } catch (e) {
-          console.error(`[recomposite] FAILED ${cell.screen}/${cell.locale}:`, e);
-          failures.push(`${cell.screen}/${cell.locale}`);
-        }
-      }
-      for (const t of TEMPLATE_CELLS) {
-        try {
-          await renderTemplateCell({ ...t, device: flags.device, platform });
-        } catch (e) {
-          console.error(`[recomposite] FAILED promises/${t.locale}:`, e);
-          failures.push(`promises/${t.locale}`);
-        }
-      }
-      await closeBrowser();
-      if (failures.length) {
-        console.error(`\n[recomposite] ${failures.length} failed: ${failures.join(", ")}`);
-        process.exit(1);
-      }
-      console.log(`\n[recomposite] ${ALL_CELLS.length} cells re-rendered from cached raws.`);
-    })().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    });
-  } else {
-    console.log(
-      "Usage:\n" +
-        "  bun run.ts verify [--platform=ios|android] [--screen=<key>] [--locale=en|ar] [--variant=hero|athkar] [--seed=<key>]\n" +
-        "  bun run.ts all [--platform=ios|android]   — full review-ready matrix in one app session"
+        theme,
+        deviceOverride,
+      })
     );
+  } else if (cmd === "feature-graphic") {
+    run(runFeatureGraphic({ deviceOverride }));
+  } else {
+    console.log(USAGE);
     process.exit(2);
   }
 }

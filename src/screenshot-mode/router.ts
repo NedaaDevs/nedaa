@@ -6,7 +6,7 @@ import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { parseScreenshotDeepLink } from "@/screenshot-mode/parseScreenshotDeepLink";
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
 import { useAppStore } from "@/stores/app";
-import { AppLocale } from "@/enums/app";
+import { AppLocale, AppMode } from "@/enums/app";
 
 // How long to let the target screen mount and settle before re-arming the
 // readiness marker. Keeps a single long-lived app session from letting the
@@ -51,8 +51,25 @@ function handleUrl(url: string | null | undefined) {
     console.log(`[screenshot] switching i18n locale to ${targetLocale}`);
     useAppStore.getState().setLocale(targetLocale);
   }
+
+  // Force a fixed theme so shots are deterministic; default light when omitted.
+  const targetMode = link.theme === "dark" ? AppMode.DARK : AppMode.LIGHT;
+  if (useAppStore.getState().mode !== targetMode) {
+    console.log(`[screenshot] switching theme to ${targetMode}`);
+    useAppStore.getState().setMode(targetMode);
+  }
   console.log(`[screenshot] navigating to ${SCREEN_TO_PATH[link.screen]}`);
-  expoRouter.replace(SCREEN_TO_PATH[link.screen] as never);
+  if (link.screen === "reliable-alarms") {
+    // Pass the seeded prayer as alarmType so the screen shows a real (localized)
+    // Fajr alarm title instead of the generic CUSTOM fallback.
+    const { ringingPrayer } = payload as { ringingPrayer: string };
+    expoRouter.replace({
+      pathname: SCREEN_TO_PATH[link.screen],
+      params: { alarmType: ringingPrayer.toLowerCase() },
+    } as never);
+  } else {
+    expoRouter.replace(SCREEN_TO_PATH[link.screen] as never);
+  }
 
   // Re-arm the readiness marker only after the target screen has had time to
   // mount. The marker is keyed by screen+locale so the Maestro flow waits for

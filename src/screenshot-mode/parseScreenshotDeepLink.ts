@@ -18,6 +18,7 @@ const schema = z.object({
   screen: z.enum(SCREEN_KEYS as [ScreenshotScreenKey, ...ScreenshotScreenKey[]]),
   locale: z.enum(["en", "ar"]),
   seed: z.string().min(1),
+  theme: z.enum(["light", "dark"]).optional(),
 });
 
 export type ScreenshotDeepLink = z.infer<typeof schema>;
@@ -31,7 +32,8 @@ export function parseScreenshotDeepLink(url: string): ScreenshotDeepLink | null 
     const screen = parsed.pathname.replace(/^\//, "");
     const locale = parsed.searchParams.get("locale");
     const seed = parsed.searchParams.get("seed");
-    const result = schema.safeParse({ screen, locale, seed });
+    const theme = parsed.searchParams.get("theme") ?? undefined;
+    const result = schema.safeParse({ screen, locale, seed, theme });
     return result.success ? result.data : null;
   } catch {
     return null;
