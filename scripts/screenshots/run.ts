@@ -139,8 +139,9 @@ function platformConfig(platform: TargetPlatform): PlatformConfig {
     bootFlow: "boot.yaml",
     shotFlow: "shot.yaml",
     resolveTarget: getBootedDeviceId,
-    outPath: ({ locale, deviceId, stem }) =>
-      path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], deviceId, `${stem}.png`),
+    // deliver wants screenshots directly under the locale dir and infers the
+    // device from image resolution — no device subfolder.
+    outPath: ({ locale, stem }) => path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], `${stem}.png`),
     featurePath: () => {
       throw new Error("Feature graphic is a Play Store asset; use --platform=android.");
     },
@@ -152,8 +153,10 @@ function rawPath(opts: {
   locale: "en" | "ar";
   deviceId: string;
   platform: TargetPlatform;
+  theme?: "light" | "dark";
 }): string {
-  return path.join(RAW_DIR, opts.platform, opts.locale, opts.deviceId, `${opts.screen}.png`);
+  const theme = opts.theme ?? "light";
+  return path.join(RAW_DIR, opts.platform, opts.locale, theme, opts.deviceId, `${opts.screen}.png`);
 }
 
 function captureRaw(opts: {
@@ -167,7 +170,7 @@ function captureRaw(opts: {
 }): Buffer {
   const { screen, locale, seed, deviceId, bootedUdid, platform, theme } = opts;
   const cfg = platformConfig(platform);
-  const out = rawPath({ screen, locale, deviceId, platform });
+  const out = rawPath({ screen, locale, deviceId, platform, theme });
   mkdirSync(path.dirname(out), { recursive: true });
   // Maestro appends `.png`; pass the stem, read back with the extension.
   const stem = out.replace(/\.png$/, "");
@@ -407,7 +410,7 @@ async function runFrame(opts: {
 
   let raw: Buffer;
   if (fromCache) {
-    const file = rawPath({ screen, locale, deviceId: device.id, platform });
+    const file = rawPath({ screen, locale, deviceId: device.id, platform, theme });
     if (!existsSync(file)) throw new Error(`Missing cached raw: ${file} — capture first`);
     raw = readFileSync(file);
   } else {
