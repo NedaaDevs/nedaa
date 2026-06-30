@@ -172,4 +172,34 @@ enum PrayerTimelineUtils {
 
         return .none
     }
+
+    // MARK: - Combined Widget Half Selection
+
+    /// The prayer the timer/highlight currently focuses on: the just-passed prayer during
+    /// its count-up window, otherwise the next prayer.
+    static func focusPrayer(
+        at entryDate: Date,
+        previousPrayer: PrayerData?,
+        nextPrayer: PrayerData?,
+        timerEnabled: Bool
+    ) -> PrayerData? {
+        switch timerPhase(
+            at: entryDate, previousPrayer: previousPrayer, nextPrayer: nextPrayer, timerEnabled: timerEnabled
+        ) {
+        case .countUp(let prayer), .countdown(let prayer), .absoluteTime(let prayer):
+            return prayer
+        case .none:
+            return nextPrayer
+        }
+    }
+
+    /// Whether the first half (indices 0..<3) of the prayer list should be shown — i.e. it
+    /// contains the focus prayer. Defaults to the first half when focus can't be located.
+    static func showsFirstHalf(focus: PrayerData?, in prayers: [PrayerData]) -> Bool {
+        guard let focus = focus,
+              let index = prayers.firstIndex(where: { $0.isSame(as: focus) }) else {
+            return true
+        }
+        return index < 3
+    }
 }
