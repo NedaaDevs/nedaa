@@ -2116,6 +2116,50 @@
           }
         }
       }
+    },
+    "allPrayersCombinedWidgetTitle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل الصلوات"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Prayers"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمام نمازیں"
+          }
+        }
+      }
+    },
+    "allPrayersCombinedWidgetDesc": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل الصلوات اليومية بلمحة، مع تمييز الصلاة القادمة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All daily prayers at a glance, with the next one highlighted"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ایک نظر میں تمام نمازیں، اگلی نماز نمایاں"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
