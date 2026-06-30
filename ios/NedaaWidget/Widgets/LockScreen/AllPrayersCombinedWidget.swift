@@ -100,6 +100,12 @@ struct CombinedPrayerProvider: AppIntentTimelineProvider {
 struct CombinedPrayerView: View {
     var entry: AllPrayersEntry
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// The stacked absolute time only fits at non-accessibility text sizes; above that the
+    /// two-line active row would clip, so the time is hidden and only the timer remains.
+    private var showsStackedTime: Bool { !dynamicTypeSize.isAccessibilitySize }
+
     var body: some View {
         if let prayers = entry.allPrayers {
             VStack(alignment: .leading, spacing: 2) {
@@ -126,6 +132,7 @@ struct CombinedPrayerView: View {
         let isPreviousActive = prayer.isSame(as: entry.previousPrayer)
             && minutesSincePrayer >= 0 && minutesSincePrayer <= 30 && entry.showTimer
         let isActive = isNext || isPreviousActive
+        let showLiveTimer = isPreviousActive || showCountdown
         let isPast = prayer.isPast(at: entry.date)
 
         let content = HStack(spacing: 8) {
@@ -134,16 +141,7 @@ struct CombinedPrayerView: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if isPreviousActive || showCountdown {
-                Text(prayer.date, style: .timer)
-                    .font(.system(size: 12, weight: .medium))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-            } else {
-                Text(prayer.date, format: .dateTime.hour().minute())
-                    .font(.system(size: 12, weight: .medium))
-                    .monospacedDigit()
-            }
+            trailing(for: prayer, showLiveTimer: showLiveTimer)
         }
         .opacity(isPast && !isPreviousActive ? 0.55 : 1.0)
 
@@ -151,6 +149,31 @@ struct CombinedPrayerView: View {
             content.widgetAccentable()
         } else {
             content
+        }
+    }
+
+    /// Active row trailing: live timer, with the absolute prayer time stacked beneath in a
+    /// smaller (HIG-floor 11pt) font — shown only when the text size leaves room for it
+    /// (`showsStackedTime`), otherwise hidden so the row never clips. Inactive rows show
+    /// absolute time only.
+    @ViewBuilder
+    private func trailing(for prayer: PrayerData, showLiveTimer: Bool) -> some View {
+        if showLiveTimer {
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(prayer.date, style: .timer)
+                    .font(.system(size: 12, weight: .medium))
+                    .contentTransition(.numericText())
+                if showsStackedTime {
+                    Text(prayer.date, format: .dateTime.hour().minute())
+                        .font(.system(size: 11, weight: .regular))
+                        .opacity(0.7)
+                }
+            }
+            .monospacedDigit()
+        } else {
+            Text(prayer.date, format: .dateTime.hour().minute())
+                .font(.system(size: 12, weight: .medium))
+                .monospacedDigit()
         }
     }
 }
