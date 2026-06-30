@@ -37,23 +37,36 @@ enum PrayerTimelineUtils {
         }
 
         // 3. Ramadan: at Imsak + (when timer enabled) at Imsak+30min (count-up cap)
-        if isRamadan, let imsak = imsakTime, imsak > currentDate {
-            dates.insert(imsak)
+        if isRamadan, let imsak = imsakTime {
+            if imsak > currentDate {
+                dates.insert(imsak)
+            }
             if showTimer {
-                dates.insert(imsak.addingTimeInterval(1800))
+                let countUpCap = imsak.addingTimeInterval(1800)
+                if countUpCap > currentDate {
+                    dates.insert(countUpCap)
+                }
             }
         }
 
-        // 4. Each future prayer today: at prayer time
-        //    When timer is enabled, also add prayer-60min (countdown start) and prayer+30min (count-up cap)
-        for prayer in todayPrayers where prayer.date > currentDate {
-            dates.insert(prayer.date)
+        // 4. Each prayer today: at prayer time (future only).
+        //    When timer is enabled, also add prayer-60min (countdown start) and prayer+30min
+        //    (count-up cap). The count-up cap is scheduled whenever it is still in the future —
+        //    including for a prayer that already passed but is within its 30min count-up window —
+        //    so a timeline regenerated mid-count-up still gets an entry to stop the timer.
+        for prayer in todayPrayers {
+            if prayer.date > currentDate {
+                dates.insert(prayer.date)
+            }
             if showTimer {
                 let countdownStart = prayer.date.addingTimeInterval(-3600)
                 if countdownStart > currentDate {
                     dates.insert(countdownStart)
                 }
-                dates.insert(prayer.date.addingTimeInterval(1800))
+                let countUpCap = prayer.date.addingTimeInterval(1800)
+                if countUpCap > currentDate {
+                    dates.insert(countUpCap)
+                }
             }
         }
 
