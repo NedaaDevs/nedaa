@@ -38,6 +38,7 @@ struct WidgetsBundle26: WidgetBundle {
         InlinePrayerWidget()
         MorningPrayerWidget()
         EveningPrayerWidget()
+        AllPrayersCombinedWidget()
 
         // Home Screen Widgets
         PrayerTimesHomeScreen()
@@ -64,6 +65,7 @@ struct WidgetsBundle17: WidgetBundle {
         InlinePrayerWidget()
         MorningPrayerWidget()
         EveningPrayerWidget()
+        AllPrayersCombinedWidget()
 
         // Home Screen Widgets
         PrayerTimesHomeScreen()
