@@ -9,6 +9,8 @@ type PreferencesState = {
   iqamaCountUpEnabled: boolean;
   iqamaCountUpMinutes: number;
   hapticsEnabled: boolean;
+  // Home shows the Important Days pager card. The Tools screen is always available.
+  showImportantDaysOnHome: boolean;
 
   setUseWesternNumerals: (value: boolean) => void;
   setCountdownEnabled: (value: boolean) => void;
@@ -16,6 +18,7 @@ type PreferencesState = {
   setIqamaCountUpEnabled: (value: boolean) => void;
   setIqamaCountUpMinutes: (value: number) => void;
   setHapticsEnabled: (value: boolean) => void;
+  setShowImportantDaysOnHome: (value: boolean) => void;
 };
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -27,6 +30,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       iqamaCountUpEnabled: false,
       iqamaCountUpMinutes: 30,
       hapticsEnabled: true,
+      showImportantDaysOnHome: false,
 
       setUseWesternNumerals: (value) => set({ useWesternNumerals: value }),
       setCountdownEnabled: (value) => set({ countdownEnabled: value }),
@@ -34,6 +38,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setIqamaCountUpEnabled: (value) => set({ iqamaCountUpEnabled: value }),
       setIqamaCountUpMinutes: (value) => set({ iqamaCountUpMinutes: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
+      setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
     }),
     {
       name: "display-storage",

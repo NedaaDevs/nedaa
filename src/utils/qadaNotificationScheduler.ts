@@ -6,8 +6,10 @@ import { toZonedTime } from "date-fns-tz";
 // Utils
 import { scheduleNotification, scheduleRecurringNotification } from "@/utils/notifications";
 import { createChannelWithCustomSound } from "@/utils/customSoundManager";
-import { timeZonedNow, HijriNative } from "@/utils/date";
+import { timeZonedNow } from "@/utils/date";
+import { nextHijriOccurrence } from "@/utils/importantDays";
 import locationStore from "@/stores/location";
+import { useAppStore } from "@/stores/app";
 
 // Types
 import type { QadaSettings } from "@/services/qada-db";
@@ -21,35 +23,21 @@ import { PlatformType } from "@/enums/app";
  * Calculate next Ramadan date using Hijri calendar with timezone awareness
  */
 export const calculateNextRamadan = (): Date => {
-  // Get current timezone from location store
   const timezone = locationStore.getState().locationDetails.timezone;
-  const today = timeZonedNow(timezone);
-
-  const currentHijri = HijriNative.today(timezone);
-
-  const toDate = (g: { year: number; month: number; day: number }) =>
-    new Date(g.year, g.month - 1, g.day);
-
-  // Check if we've passed Ramadan this year (inclusive - if today is Ramadan, return it)
-  const currentYearRamadan = toDate(HijriNative.toGregorian(currentHijri.year, 9, 1)); // 1 Ramadan
-
-  let nextRamadan: Date;
-  let hijriYear: number;
-
-  if (currentYearRamadan >= today) {
-    nextRamadan = currentYearRamadan; // Ramadan is today or coming up this year
-    hijriYear = currentHijri.year;
-  } else {
-    // Ramadan has passed this year, use next year
-    hijriYear = currentHijri.year + 1;
-    nextRamadan = toDate(HijriNative.toGregorian(hijriYear, 9, 1)); // 1 Ramadan next year
-  }
+  const hijriDaysOffset = useAppStore.getState().hijriDaysOffset;
+  // Shared occasions util; respects the user's Hijri offset like the converter.
+  const { expectedGregorian, hijriYear } = nextHijriOccurrence({
+    hijriMonth: 9,
+    hijriDay: 1,
+    timezone,
+    hijriDaysOffset,
+  });
 
   console.log(
-    `[Qada Notification] Next Ramadan: ${format(nextRamadan, "PPP")} (1 Ramadan ${hijriYear} AH)`
+    `[Qada Notification] Next Ramadan: ${format(expectedGregorian, "PPP")} (1 Ramadan ${hijriYear} AH)`
   );
 
-  return nextRamadan;
+  return expectedGregorian;
 };
 
 /**

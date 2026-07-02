@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import FeatureDiscoveryCard from "@/components/tools/FeatureDiscoveryCard";
+import ImportantDaysCard from "@/components/ImportantDaysCard";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { BookOpen } from "lucide-react-native";
@@ -70,6 +71,8 @@ export default function MainScreen() {
         ) : (
           <FeatureDiscoveryCard config={UMRAH_GUIDE_CARD} />
         )}
+
+        <ImportantDaysCard />
 
         <Box flex={1}>
           <TimingsCarousel mode={mode} />

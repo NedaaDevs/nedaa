@@ -78,6 +78,8 @@ const PreferencesSettings = () => {
     setIqamaCountUpMinutes,
     hapticsEnabled,
     setHapticsEnabled,
+    showImportantDaysOnHome,
+    setShowImportantDaysOnHome,
   } = usePreferencesStore();
 
   const isArabic = locale.startsWith("ar");
@@ -197,6 +199,30 @@ const PreferencesSettings = () => {
                 value={hapticsEnabled}
                 onValueChange={setHapticsEnabled}
                 accessibilityLabel={t("settings.preferences.haptics.title")}
+              />
+            </HStack>
+          </Box>
+
+          {/* Important Days on Home */}
+          <Box
+            backgroundColor="$backgroundSecondary"
+            borderRadius="$6"
+            padding="$4"
+            flexDirection="row"
+            alignItems="center">
+            <HStack justifyContent="space-between" alignItems="center" width="100%">
+              <VStack flexShrink={1} marginEnd="$4">
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.preferences.importantDays.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
+                  {t("settings.preferences.importantDays.description")}
+                </Text>
+              </VStack>
+              <Switch
+                value={showImportantDaysOnHome}
+                onValueChange={setShowImportantDaysOnHome}
+                accessibilityLabel={t("settings.preferences.importantDays.title")}
               />
             </HStack>
           </Box>
