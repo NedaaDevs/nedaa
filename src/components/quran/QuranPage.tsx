@@ -26,7 +26,7 @@ import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
-import SurahFrame from "@/components/quran/SurahFrame";
+// import SurahFrame from "@/components/quran/SurahFrame";
 
 // Native aspect of the surah-frame SVG (viewBox 2793×720) — used to size the banner
 // without stretching, the way Ayah derives its header height from the bitmap ratio.
@@ -411,7 +411,7 @@ const QuranPage = ({
                 );
               })}
 
-            {ready &&
+            {/* {ready &&
               surahFramePositions.map((s, i) => (
                 <SurahFrame
                   key={`surah-${i}`}
@@ -422,7 +422,7 @@ const QuranPage = ({
                   surahNumber={s.surahNumber}
                   quranTheme={quranTheme}
                 />
-              ))}
+              ))} */}
 
             {highlightRects.map((rect, i) => (
               <View
