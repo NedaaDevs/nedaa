@@ -12,6 +12,7 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 
 // Constants
 import { RTL_LOCALES } from "@/constants/Locales";
+import { ALL_FEATURE_CARD_IDS } from "@/constants/FeatureCards";
 
 // Types
 import { AppState } from "@/types/app";
@@ -56,7 +57,15 @@ export const useAppStore = create<AppState>()(
           quranUnlocked: false,
 
           setIsFirstRun(isFirstRun: boolean) {
-            set({ isFirstRun });
+            // Completing first-run seeds every current feature card as dismissed:
+            // discovery cards announce features to EXISTING users, so a fresh
+            // install never starts with an announcement backlog.
+            set((state) => ({
+              isFirstRun,
+              dismissedFeatureCards: isFirstRun
+                ? state.dismissedFeatureCards
+                : [...new Set([...state.dismissedFeatureCards, ...ALL_FEATURE_CARD_IDS])],
+            }));
           },
 
           setLocale: (locale: AppLocale) => {
