@@ -4,7 +4,7 @@ import "@tamagui/linear-gradient";
 import { useEffect } from "react";
 import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Platform, useColorScheme } from "react-native";
+import { Appearance, Platform, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
 
@@ -20,6 +20,7 @@ import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { nativeColorSchemeFor } from "@/utils/appearance";
 
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
@@ -139,6 +140,13 @@ export default function RootLayout() {
 
   const [fontsLoaded, fontError] = useLoadFonts();
   useInitialSetup();
+
+  // Pin the native layer (system dialogs, keyboard, window bg) to the in-app
+  // mode so it can't follow the OS day/night independently.
+  useEffect(() => {
+    if (!hasHydrated) return;
+    Appearance.setColorScheme(nativeColorSchemeFor(mode));
+  }, [mode, hasHydrated]);
 
   useEffect(() => {
     athkarPlayer.initialize();
