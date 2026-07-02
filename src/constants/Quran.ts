@@ -35,6 +35,10 @@ export const QURAN_THEME_COLORS: Record<
     highlightColor: string;
     shimmerBase: `#${string}`;
     shimmerHighlight: `#${string}`;
+    // BookCanvas ambient ground (large devices): radial gradient from
+    // canvasInner (center, near the page) to canvasOuter (screen edges).
+    canvasInner: `#${string}`;
+    canvasOuter: `#${string}`;
   }
 > = {
   [QuranTheme.SEPIA]: {
@@ -48,6 +52,8 @@ export const QURAN_THEME_COLORS: Record<
     highlightColor: "rgba(170, 130, 50, 0.18)",
     shimmerBase: "#F3F0E9",
     shimmerHighlight: "#EAE6DC",
+    canvasInner: "#F6F2E7",
+    canvasOuter: "#E6DECA",
   },
   [QuranTheme.DARK]: {
     background: "#19191B",
@@ -60,6 +66,8 @@ export const QURAN_THEME_COLORS: Record<
     highlightColor: "rgba(212, 168, 75, 0.15)",
     shimmerBase: "#181818",
     shimmerHighlight: "#282828",
+    canvasInner: "#1C1C1F",
+    canvasOuter: "#111113",
   },
   // Crisp neutral white paper with near-black ink.
   [QuranTheme.LIGHT]: {
@@ -73,6 +81,8 @@ export const QURAN_THEME_COLORS: Record<
     highlightColor: "rgba(170, 130, 50, 0.15)",
     shimmerBase: "#FFFFFF",
     shimmerHighlight: "#F0F0F0",
+    canvasInner: "#FFFFFF",
+    canvasOuter: "#EFEEEA",
   },
   // Nedaa brand paper, light — the app's cool surface with blue accents.
   [QuranTheme.NEDAA_LIGHT]: {
@@ -86,6 +96,8 @@ export const QURAN_THEME_COLORS: Record<
     highlightColor: "rgba(28, 93, 125, 0.15)",
     shimmerBase: "#F5F7FA",
     shimmerHighlight: "#E8EDF2",
+    canvasInner: "#F7F9FC",
+    canvasOuter: "#E7ECF2",
   },
   // Nedaa brand paper, dark — deep slate ground, cool dimmed-white ink, gold accents.
   [QuranTheme.NEDAA_DARK]: {
@@ -99,6 +111,8 @@ export const QURAN_THEME_COLORS: Record<
     highlightColor: "rgba(230, 196, 105, 0.15)",
     shimmerBase: "#16191F",
     shimmerHighlight: "#23272F",
+    canvasInner: "#171B21",
+    canvasOuter: "#0E1114",
   },
 } as const;
 

@@ -14,7 +14,13 @@ import { Download, Minus, Plus, RotateCcw, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
-import { MushafVersion, DownloadStatus, ReaderViewMode, ReaderPageFit } from "@/enums/quran";
+import {
+  MushafVersion,
+  DownloadStatus,
+  ReaderViewMode,
+  SpreadFit,
+  SpreadPreference,
+} from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
@@ -44,13 +50,13 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
     versionDownloads,
     readerMode,
     fontSize,
-    twoPageSpread,
-    pageFit,
+    spreadPreference,
+    spreadFit,
     showMutashabihatMarkers,
     setReaderMode,
     setFontSize,
-    setTwoPageSpread,
-    setPageFit,
+    setSpreadPreference,
+    setSpreadFit,
     setShowMutashabihatMarkers,
   } = useQuranStore();
 
@@ -60,23 +66,27 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
   // Testing aid: wipe all downloaded editions + content and return to setup.
   const [resetting, setResetting] = useState(false);
   const handleResetAll = () => {
-    Alert.alert("Reset all Quran data?", "Deletes downloaded editions and content. You'll return to setup.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Reset",
-        style: "destructive",
-        onPress: async () => {
-          setResetting(true);
-          try {
-            await onResetAll();
-            // onResetAll closes the sheet, so no success state to clear here.
-          } catch (e) {
-            setResetting(false);
-            Alert.alert("Reset failed", String(e));
-          }
+    Alert.alert(
+      "Reset all Quran data?",
+      "Deletes downloaded editions and content. You'll return to setup.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            setResetting(true);
+            try {
+              await onResetAll();
+              // onResetAll closes the sheet, so no success state to clear here.
+            } catch (e) {
+              setResetting(false);
+              Alert.alert("Reset failed", String(e));
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const libraryVersions = Object.entries(versionDownloads)
@@ -168,25 +178,30 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
               )}
 
               {isLargeDevice && (
-                <SettingRow label={t("quran.settings.twoPageSpread")} chrome={chrome}>
-                  <Switch
-                    value={twoPageSpread}
-                    onValueChange={setTwoPageSpread}
-                    accessibilityLabel={t("quran.settings.twoPageSpread")}
+                <SettingRow label={t("quran.settings.twoPageSpread")} chrome={chrome} stacked>
+                  <Segmented
+                    chrome={chrome}
+                    options={[
+                      { value: SpreadPreference.AUTO, label: t("quran.settings.spreadAuto") },
+                      { value: SpreadPreference.ON, label: t("quran.settings.spreadOn") },
+                      { value: SpreadPreference.OFF, label: t("quran.settings.spreadOff") },
+                    ]}
+                    selected={spreadPreference}
+                    onSelect={setSpreadPreference}
                   />
                 </SettingRow>
               )}
 
               {isLargeDevice && (
-                <SettingRow label={t("quran.settings.pageFit")} chrome={chrome} stacked>
+                <SettingRow label={t("quran.settings.spreadFit")} chrome={chrome} stacked>
                   <Segmented
                     chrome={chrome}
                     options={[
-                      { value: ReaderPageFit.FILL, label: t("quran.settings.pageFitFill") },
-                      { value: ReaderPageFit.PAGE, label: t("quran.settings.pageFitPage") },
+                      { value: SpreadFit.SCROLL, label: t("quran.settings.spreadFitScroll") },
+                      { value: SpreadFit.WHOLE, label: t("quran.settings.spreadFitWhole") },
                     ]}
-                    selected={pageFit}
-                    onSelect={setPageFit}
+                    selected={spreadFit}
+                    onSelect={setSpreadFit}
                   />
                 </SettingRow>
               )}

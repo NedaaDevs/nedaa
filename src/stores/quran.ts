@@ -14,8 +14,9 @@ import {
   MushafVersion,
   QuranTheme,
   ReaderViewMode,
-  ReaderPageFit,
   ShareCardStyle,
+  SpreadFit,
+  SpreadPreference,
 } from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
@@ -29,10 +30,10 @@ export const useQuranStore = create<QuranState>()(
       lastReadPage: 1,
       readerMode: ReaderViewMode.MADINAH,
       fontSize: FONT_SIZE_DEFAULT,
-      // Off by default: the large single page fits to width and scrolls. The spread
-      // is an opt-in for readers who prefer an open-book pair.
-      twoPageSpread: false,
-      pageFit: ReaderPageFit.FILL,
+      // AUTO: pane width decides; ON/OFF are explicit.
+      spreadPreference: SpreadPreference.AUTO,
+      // Symmetric spread defaults to bigger, per-page-scrolling pages.
+      spreadFit: SpreadFit.SCROLL,
       libraryTab: "index",
       shareStyle: ShareCardStyle.IMAGE,
       shareIncludeLogo: true,
@@ -74,8 +75,8 @@ export const useQuranStore = create<QuranState>()(
       setReaderMode: (mode: ReaderViewMode) => set({ readerMode: mode }),
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
-      setTwoPageSpread: (on: boolean) => set({ twoPageSpread: on }),
-      setPageFit: (fit: ReaderPageFit) => set({ pageFit: fit }),
+      setSpreadPreference: (pref: SpreadPreference) => set({ spreadPreference: pref }),
+      setSpreadFit: (fit: SpreadFit) => set({ spreadFit: fit }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setShareStyle: (style) => set({ shareStyle: style }),
       setShareIncludeLogo: (on) => set({ shareIncludeLogo: on }),
@@ -173,8 +174,8 @@ export const useQuranStore = create<QuranState>()(
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,
         fontSize: state.fontSize,
-        twoPageSpread: state.twoPageSpread,
-        pageFit: state.pageFit,
+        spreadPreference: state.spreadPreference,
+        spreadFit: state.spreadFit,
         libraryTab: state.libraryTab,
         shareStyle: state.shareStyle,
         shareIncludeLogo: state.shareIncludeLogo,
@@ -212,12 +213,13 @@ export const useQuranStore = create<QuranState>()(
         ) {
           merged.fontSize = FONT_SIZE_DEFAULT;
         }
-        if (typeof merged.twoPageSpread !== "boolean") {
-          merged.twoPageSpread = false;
+        const validSpreadPrefs = Object.values(SpreadPreference) as string[];
+        if (!validSpreadPrefs.includes(merged.spreadPreference)) {
+          merged.spreadPreference = SpreadPreference.AUTO;
         }
-        const validPageFits = Object.values(ReaderPageFit) as string[];
-        if (!validPageFits.includes(merged.pageFit)) {
-          merged.pageFit = ReaderPageFit.FILL;
+        const validSpreadFits = Object.values(SpreadFit) as string[];
+        if (!validSpreadFits.includes(merged.spreadFit)) {
+          merged.spreadFit = SpreadFit.SCROLL;
         }
         if (typeof merged.showMutashabihatMarkers !== "boolean") {
           merged.showMutashabihatMarkers = false;

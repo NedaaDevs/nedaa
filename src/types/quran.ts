@@ -6,10 +6,11 @@ import {
   DownloadStatus,
   DownloadPhase,
   ReaderViewMode,
-  ReaderPageFit,
   RevelationPlace,
   SajdaType,
   ShareCardStyle,
+  SpreadFit,
+  SpreadPreference,
 } from "@/enums/quran";
 
 export type { DownloadPhase };
@@ -180,12 +181,7 @@ export type QuranManifest = {
 };
 
 export type QuranLibraryTab =
-  | "index"
-  | "highlights"
-  | "bookmarks"
-  | "khatmah"
-  | "reminders"
-  | "guide";
+  "index" | "highlights" | "bookmarks" | "khatmah" | "reminders" | "guide";
 
 export type QuranState = {
   currentPage: number;
@@ -200,10 +196,10 @@ export type QuranState = {
   lastReadPage: number;
   readerMode: ReaderViewMode;
   fontSize: number;
-  // Two-page spread on large screens in landscape. On by default.
-  twoPageSpread: boolean;
-  // Large-device page-fit: plain fill or a framed "page" look. Fill by default.
-  pageFit: ReaderPageFit;
+  // Two-page spread on large landscape: AUTO lets geometry decide; ON/OFF are explicit.
+  spreadPreference: SpreadPreference;
+  // Symmetric-spread page sizing: SCROLL (bigger text, per-page scroll) or WHOLE.
+  spreadFit: SpreadFit;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
   libraryTab: QuranLibraryTab;
   // Ayah image-share preferences (persisted): which card style was last used,
@@ -237,8 +233,8 @@ export type QuranState = {
   setQuranThemeAuto: () => void;
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
-  setTwoPageSpread: (on: boolean) => void;
-  setPageFit: (fit: ReaderPageFit) => void;
+  setSpreadPreference: (pref: SpreadPreference) => void;
+  setSpreadFit: (fit: SpreadFit) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
   setShareStyle: (style: ShareCardStyle) => void;
   setShareIncludeLogo: (on: boolean) => void;

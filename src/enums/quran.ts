@@ -30,14 +30,14 @@ export enum LineType {
   EMPTY = "empty",
 }
 
-// Page-fit on large devices: "fill" sits the page plainly on the paper; "page"
-// frames it like a physical sheet (border + lift). Phones always fill.
-export const ReaderPageFit = {
-  FILL: "fill",
-  PAGE: "page",
+// Spread sizing: SCROLL fills the width (each page scrolls alone),
+// WHOLE height-fits both full pages.
+export const SpreadFit = {
+  SCROLL: "scroll",
+  WHOLE: "whole",
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
-export type ReaderPageFit = (typeof ReaderPageFit)[keyof typeof ReaderPageFit];
+export type SpreadFit = (typeof SpreadFit)[keyof typeof SpreadFit];
 
 // Ayah action-sheet sub-views (swapped into the sheet body): similar verses, the
 // per-ayah tajweed rule list, and the sajda guidance.
@@ -122,3 +122,13 @@ export enum RevelationPlace {
   MAKKAH = "makkah",
   MADINAH = "madinah",
 }
+
+// Two-page spread on large devices: AUTO lets pane width decide; ON/OFF are
+// explicit user choices that geometry never overrides.
+export const SpreadPreference = {
+  AUTO: "auto",
+  ON: "on",
+  OFF: "off",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type SpreadPreference = (typeof SpreadPreference)[keyof typeof SpreadPreference];

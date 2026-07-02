@@ -10,9 +10,18 @@ import {
   fitPageBox,
   fitWidthBox,
   PAGE_ASPECT,
-  LARGE_PAGE_CHROME,
+  SPREAD_CHROME_RATIO,
+  FIT_WIDTH_CHROME_RATIO,
   MAX_SINGLE_PAGE_WIDTH,
+  shouldDefaultSpread,
+  MIN_SPREAD_PANE_WIDTH,
+  canvasFrame,
+  CanvasMode,
+  SPREAD_GUTTER,
+  SPREAD_TOP_PAD,
+  fitSpreadWidthBox,
 } from "@/utils/readerSpread";
+import { SpreadPreference } from "@/enums/quran";
 import { TOTAL_PAGES } from "@/constants/Quran";
 
 describe("page <-> spread mapping (RTL: right=earlier/odd, left=later/even)", () => {
@@ -34,19 +43,41 @@ describe("page <-> spread mapping (RTL: right=earlier/odd, left=later/even)", ()
   });
 });
 
-describe("resolveReaderLayout device matrix", () => {
-  const layout = (w: number, h: number, spreadEnabled = true) =>
-    resolveReaderLayout({ width: w, height: h, spreadEnabled });
-  it("phone stays 'phone' in both orientations", () => {
+describe("shouldDefaultSpread (AUTO heuristics)", () => {
+  it("is false on phones and in portrait", () => {
+    expect(shouldDefaultSpread({ width: 844, height: 390 })).toBe(false);
+    expect(shouldDefaultSpread({ width: 834, height: 1112 })).toBe(false);
+  });
+  it("each half-pane must reach MIN_SPREAD_PANE_WIDTH", () => {
+    expect(MIN_SPREAD_PANE_WIDTH).toBe(580);
+    // 13" iPad (1376×1024, 688/half) and 11" (1180×820, 590/half) spread…
+    expect(shouldDefaultSpread({ width: 1376, height: 1024 })).toBe(true);
+    expect(shouldDefaultSpread({ width: 1180, height: 820 })).toBe(true);
+    // …iPad mini (1133×744, 566/half) stays single.
+    expect(shouldDefaultSpread({ width: 1133, height: 744 })).toBe(false);
+    // Exact boundary: width/2 >= 580.
+    expect(shouldDefaultSpread({ width: 1160, height: 800 })).toBe(true);
+    expect(shouldDefaultSpread({ width: 1159, height: 800 })).toBe(false);
+  });
+});
+
+describe("resolveReaderLayout device matrix (tri-state preference)", () => {
+  const layout = (w: number, h: number, pref: SpreadPreference = SpreadPreference.AUTO) =>
+    resolveReaderLayout({ width: w, height: h, spreadPreference: pref });
+  it("phone stays 'phone' in both orientations regardless of preference", () => {
     expect(layout(390, 844).mode).toBe(ReaderLayoutMode.PHONE);
-    expect(layout(844, 390).mode).toBe(ReaderLayoutMode.PHONE);
+    expect(layout(844, 390, SpreadPreference.ON).mode).toBe(ReaderLayoutMode.PHONE);
   });
-  it("large portrait => single; large landscape => spread", () => {
-    expect(layout(834, 1112).mode).toBe(ReaderLayoutMode.SINGLE);
-    expect(layout(1194, 834).mode).toBe(ReaderLayoutMode.SPREAD);
+  it("large portrait is always single", () => {
+    expect(layout(834, 1112, SpreadPreference.ON).mode).toBe(ReaderLayoutMode.SINGLE);
   });
-  it("large landscape with spread disabled => single", () => {
-    expect(layout(1194, 834, false).mode).toBe(ReaderLayoutMode.SINGLE);
+  it("AUTO follows shouldDefaultSpread", () => {
+    expect(layout(1376, 1024).mode).toBe(ReaderLayoutMode.SPREAD);
+    expect(layout(1133, 744).mode).toBe(ReaderLayoutMode.SINGLE);
+  });
+  it("explicit ON/OFF override geometry", () => {
+    expect(layout(1133, 744, SpreadPreference.ON).mode).toBe(ReaderLayoutMode.SPREAD);
+    expect(layout(1376, 1024, SpreadPreference.OFF).mode).toBe(ReaderLayoutMode.SINGLE);
   });
   it("threshold is shortest-side >= LARGE_DEVICE_MIN_DP", () => {
     expect(LARGE_DEVICE_MIN_DP).toBe(600);
@@ -62,9 +93,10 @@ describe("fitWidthBox (large landscape: fit to width, scroll vertically)", () =>
   it("caps width at MAX_SINGLE_PAGE_WIDTH on very wide screens", () => {
     expect(fitWidthBox(1600).w).toBe(MAX_SINGLE_PAGE_WIDTH);
   });
-  it("derives height from PAGE_ASPECT so the page is taller than a landscape viewport (scrolls)", () => {
+  it("derives height from PAGE_ASPECT + percentage chrome so the page is taller than the viewport", () => {
     const box = fitWidthBox(1280); // a tablet's landscape width in dp
-    expect(box.h).toBe(Math.round(box.w * PAGE_ASPECT + LARGE_PAGE_CHROME));
+    const chrome = box.w * FIT_WIDTH_CHROME_RATIO;
+    expect(box.h).toBe(Math.round(box.w * PAGE_ASPECT + chrome));
     expect(box.h).toBeGreaterThan(800); // taller than the ~800dp landscape height
   });
 });
@@ -97,10 +129,60 @@ describe("clampPage (guards the reader against a blank page window)", () => {
 describe("fitPageBox (portrait/spread: whole page visible, height-constrained)", () => {
   it("constrains width by the available height on a short landscape screen", () => {
     const box = fitPageBox(1280, 800);
-    expect(box.w).toBe(Math.floor((800 - LARGE_PAGE_CHROME) / PAGE_ASPECT));
+    const chrome = 800 * SPREAD_CHROME_RATIO;
+    expect(box.w).toBe(Math.floor((800 - chrome) / PAGE_ASPECT));
     expect(box.w).toBeLessThan(1280);
   });
   it("uses the full slot width when height is generous (portrait)", () => {
     expect(fitPageBox(700, 2000).w).toBe(700);
+  });
+});
+
+describe("canvasFrame (BookCanvas slab + crease share the pager's geometry)", () => {
+  it("spread: one height-fit slab spans both panes plus the gutter; crease at center", () => {
+    const availPageHeight = 1024 - SPREAD_TOP_PAD - 20;
+    const box = fitPageBox((1366 - SPREAD_GUTTER) / 2, availPageHeight);
+    const frame = canvasFrame({
+      mode: CanvasMode.SPREAD,
+      width: 1366,
+      screenHeight: 1024,
+      availPageHeight,
+    });
+    expect(frame.slab).toEqual({
+      x: Math.round((1366 - (box.w * 2 + SPREAD_GUTTER)) / 2),
+      y: Math.round(SPREAD_TOP_PAD + (1024 - SPREAD_TOP_PAD - box.h) / 2),
+      w: box.w * 2 + SPREAD_GUTTER,
+      h: box.h,
+    });
+    expect(frame.creaseX).toBe(1366 / 2);
+  });
+  it("scroll spread: full-height slab spans both fit-width panes; crease at center", () => {
+    const box = fitSpreadWidthBox(1366);
+    const frame = canvasFrame({
+      mode: CanvasMode.SPREAD_SCROLL,
+      width: 1366,
+      screenHeight: 1024,
+      availPageHeight: 980,
+    });
+    expect(frame.slab).toEqual({
+      x: Math.round((1366 - (box.w * 2 + SPREAD_GUTTER)) / 2),
+      y: 0,
+      w: box.w * 2 + SPREAD_GUTTER,
+      h: 1024,
+    });
+    expect(frame.creaseX).toBe(1366 / 2);
+    // Pane width honors the cap and the gutter split.
+    expect(box.w).toBe(Math.floor(((1366 - SPREAD_GUTTER) / 2) * 0.97));
+  });
+  it("fit-width landscape: slab is the full-height page column (page scrolls under it)", () => {
+    const box = fitWidthBox(1194);
+    const frame = canvasFrame({
+      mode: CanvasMode.FIT_WIDTH,
+      width: 1194,
+      screenHeight: 834,
+      availPageHeight: 800,
+    });
+    expect(frame.slab).toEqual({ x: Math.round((1194 - box.w) / 2), y: 0, w: box.w, h: 834 });
+    expect(frame.creaseX).toBeNull();
   });
 });

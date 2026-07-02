@@ -26,6 +26,11 @@ import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
+import SurahFrame from "@/components/quran/SurahFrame";
+
+// Native aspect of the surah-frame SVG (viewBox 2793×720) — used to size the banner
+// without stretching, the way Ayah derives its header height from the bitmap ratio.
+const SURAH_FRAME_ASPECT = 2793 / 720;
 
 const LONG_PRESS_MS = 400;
 // Must exceed the page-swipe pan's minDistance(15) to avoid a no-op jitter band.
@@ -280,6 +285,22 @@ const QuranPage = ({
     srcLineHeight,
   ]);
 
+  // Surah-opening banners: a frame on each surah-header line. Sized per Ayah's rule —
+  // width = 96% of the page (1038/1080), height = width ÷ the frame's native aspect
+  // (aspect preserved, not stretched) — centred on the header line.
+  const surahFramePositions = useMemo(() => {
+    if (lineHeight === 0) return [];
+    const bannerW = width * (1038 / 1080);
+    const bannerH = bannerW / SURAH_FRAME_ASPECT;
+    const x = (width - bannerW) / 2;
+    return Object.entries(surahHeaderLines).map(([lineStr, surahNumber]) => {
+      const line = Number(lineStr);
+      const base = isPageMode ? srcLineHeight * pageScaleX * pageScaleY : lineHeight;
+      const lineCenterY = (line - 1) * base + base / 2;
+      return { x, y: lineCenterY - bannerH / 2, width: bannerW, height: bannerH, surahNumber };
+    });
+  }, [surahHeaderLines, width, lineHeight, isPageMode, srcLineHeight, pageScaleX, pageScaleY]);
+
   // Similar-verse markers ("huffaz mode", off by default): a small dot above the
   // ayah's end-marker for any verse on this page that belongs to a group.
   const mutashabihatKeys = useMutashabihatKeys(page);
@@ -389,6 +410,19 @@ const QuranPage = ({
                   />
                 );
               })}
+
+            {ready &&
+              surahFramePositions.map((s, i) => (
+                <SurahFrame
+                  key={`surah-${i}`}
+                  x={s.x}
+                  y={s.y}
+                  width={s.width}
+                  height={s.height}
+                  surahNumber={s.surahNumber}
+                  quranTheme={quranTheme}
+                />
+              ))}
 
             {highlightRects.map((rect, i) => (
               <View
