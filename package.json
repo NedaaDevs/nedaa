@@ -109,6 +109,7 @@
   },
   "devDependencies": {
     "@tamagui/babel-plugin": "2.1.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.2.10",
     "baseline-browser-mapping": "^2.10.33",
     "eslint": "^9.39.4",
