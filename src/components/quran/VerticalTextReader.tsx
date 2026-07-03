@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QuranThemeType } from "@/enums/quran";
-import { AUTO_SCROLL_PX_PER_SEC, QURAN_THEME_COLORS, TOTAL_PAGES } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, TOTAL_PAGES } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import TextPage from "@/components/quran/TextPage";
@@ -55,12 +55,12 @@ const VerticalTextReader = ({
   // touched (auto-resumes); reaching the end stops it. The animated ref doubles as
   // the list ref used for resume-jump scrolling below.
   const playing = useQuranStore((s) => s.autoScrollPlaying);
-  const speed = useQuranStore((s) => s.autoScrollSpeed);
+  const pxPerSec = useQuranStore((s) => s.autoScrollSpeed);
   const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
   const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
   const { animatedRef, scrollHandler } = useAutoScroll<number>({
     playing,
-    pxPerSec: AUTO_SCROLL_PX_PER_SEC[speed],
+    pxPerSec,
     onReachEnd: pause,
   });
 

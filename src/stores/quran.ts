@@ -9,9 +9,9 @@ import {
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MIN,
   FONT_SIZE_MAX,
+  clampAutoScrollSpeed,
 } from "@/constants/Quran";
 import {
-  AutoScrollSpeed,
   DownloadStatus,
   MushafVersion,
   QuranTheme,
@@ -84,7 +84,7 @@ export const useQuranStore = create<QuranState>()(
       setScrollDirection: (dir: ScrollDirection) => set({ scrollDirection: dir }),
       setAutoScrollPlaying: (playing: boolean) => set({ autoScrollPlaying: playing }),
       toggleAutoScroll: () => set((prev) => ({ autoScrollPlaying: !prev.autoScrollPlaying })),
-      setAutoScrollSpeed: (speed: AutoScrollSpeed) => set({ autoScrollSpeed: speed }),
+      setAutoScrollSpeed: (px: number) => set({ autoScrollSpeed: clampAutoScrollSpeed(px) }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setShareStyle: (style) => set({ shareStyle: style }),
       setShareIncludeLogo: (on) => set({ shareIncludeLogo: on }),
@@ -230,10 +230,10 @@ export const useQuranStore = create<QuranState>()(
         if (!validScrollDirs.includes(merged.scrollDirection)) {
           merged.scrollDirection = ScrollDirection.HORIZONTAL;
         }
-        const validSpeeds = Object.values(AutoScrollSpeed) as string[];
-        if (!validSpeeds.includes(merged.autoScrollSpeed)) {
-          merged.autoScrollSpeed = DEFAULT_AUTO_SCROLL_SPEED;
-        }
+        merged.autoScrollSpeed =
+          typeof merged.autoScrollSpeed === "number"
+            ? clampAutoScrollSpeed(merged.autoScrollSpeed)
+            : DEFAULT_AUTO_SCROLL_SPEED;
         // Never persist a "playing" state — motion must be re-armed by the user.
         merged.autoScrollPlaying = false;
         if (typeof merged.showMutashabihatMarkers !== "boolean") {

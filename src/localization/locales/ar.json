@@ -74,6 +74,8 @@
   "a11y.quran.autoScrollPause": "إيقاف التمرير التلقائي",
   "a11y.quran.autoScrollHint": "يمرّر الصفحة تلقائيًا بالسرعة المختارة",
   "a11y.quran.autoScrollSpeed": "سرعة القراءة: {{speed}}",
+  "a11y.quran.autoScrollSlower": "أبطأ",
+  "a11y.quran.autoScrollFaster": "أسرع",
   "a11y.quran.ayahBookmarked": "سورة {{surah}}، الآية {{ayah}}، عليها فاصل",
   "a11y.quran.ayahMarker": "الآية {{number}}",
   "a11y.quran.ayahText": "سورة {{surah}}، الآية {{ayah}}",

@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MushafVersion, QuranThemeType } from "@/enums/quran";
-import { AUTO_SCROLL_PX_PER_SEC, TOTAL_PAGES } from "@/constants/Quran";
+import { TOTAL_PAGES } from "@/constants/Quran";
 import { fitWidthBox } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
@@ -52,12 +52,12 @@ const VerticalReader = ({
   // Auto-scroll glide: driven on the UI thread. A manual drag only pauses it while
   // touched (auto-resumes); reaching the end stops it in the store.
   const playing = useQuranStore((s) => s.autoScrollPlaying);
-  const speed = useQuranStore((s) => s.autoScrollSpeed);
+  const pxPerSec = useQuranStore((s) => s.autoScrollSpeed);
   const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
   const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
   const { animatedRef, scrollHandler } = useAutoScroll<number>({
     playing,
-    pxPerSec: AUTO_SCROLL_PX_PER_SEC[speed],
+    pxPerSec,
     onReachEnd: pause,
   });
 

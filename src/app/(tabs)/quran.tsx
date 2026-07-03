@@ -60,7 +60,6 @@ const QuranScreen = () => {
     readerMode,
     fontSize,
     scrollDirection,
-    autoScrollPlaying,
     jumpReturn,
     setJumpReturn,
     setFlashAyah,
@@ -360,10 +359,7 @@ const QuranScreen = () => {
                 alignItems="center"
                 zIndex={12}
                 pointerEvents="box-none">
-                <AutoScrollControl
-                  quranTheme={quranTheme}
-                  visible={!autoScrollPlaying || showOverlay}
-                />
+                <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />
               </YStack>
             )}
 

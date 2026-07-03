@@ -1,17 +1,24 @@
 import { Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { MotiView } from "moti";
-import { Play, Pause } from "lucide-react-native";
+import { Play, Pause, Minus, Plus } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { AutoScrollSpeed, QuranThemeType } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import {
+  AUTO_SCROLL_SPEED_MAX,
+  AUTO_SCROLL_SPEED_MIN,
+  AUTO_SCROLL_SPEED_PX,
+  AUTO_SCROLL_SPEED_STEP,
+  QURAN_THEME_COLORS,
+} from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 
-// Floating auto-scroll control for the vertical continuous reader: three
-// tap-through speed presets and one large play/pause button (no sliders or hidden
-// gestures). Fades out while gliding and returns on a screen tap, via `visible`.
+// Floating auto-scroll control for the vertical continuous reader: three preset
+// anchors (Slow/Med/Fast) with `−`/`+` fine trim either side, and one large
+// play/pause button — no sliders or hidden gestures. Follows the reader chrome:
+// a screen tap shows it, otherwise it fades away (via `visible`).
 
 const SPEEDS: { value: AutoScrollSpeed; labelKey: string }[] = [
   { value: AutoScrollSpeed.SLOW, labelKey: "quran.autoScroll.slow" },
@@ -34,6 +41,22 @@ const AutoScrollControl = ({
   const toggle = useQuranStore((s) => s.toggleAutoScroll);
   const setSpeed = useQuranStore((s) => s.setAutoScrollSpeed);
 
+  const trim = (icon: typeof Minus, delta: number, label: string, disabled: boolean) => {
+    const Icon = icon;
+    return (
+      <Pressable
+        onPress={() => setSpeed(speed + delta)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled }}
+        hitSlop={6}
+        style={{ width: 34, height: 40, alignItems: "center", justifyContent: "center" }}>
+        <Icon size={18} color={colors.headerColor} opacity={disabled ? 0.3 : 1} />
+      </Pressable>
+    );
+  };
+
   return (
     <MotiView
       // Fade + lift out while hidden; ignore touches then so taps reach the reader.
@@ -42,9 +65,8 @@ const AutoScrollControl = ({
       pointerEvents={visible ? "auto" : "none"}>
       <XStack
         alignItems="center"
-        gap="$1.5"
-        paddingLeft="$1.5"
-        paddingRight="$1"
+        gap="$1"
+        paddingHorizontal="$1"
         paddingVertical="$1"
         borderRadius={999}
         backgroundColor={`${colors.background}F5`}
@@ -57,20 +79,27 @@ const AutoScrollControl = ({
           shadowRadius: 8,
           elevation: 5,
         }}>
-        <XStack alignItems="center" gap="$1">
+        {trim(
+          Minus,
+          -AUTO_SCROLL_SPEED_STEP,
+          t("a11y.quran.autoScrollSlower"),
+          speed <= AUTO_SCROLL_SPEED_MIN
+        )}
+
+        <XStack alignItems="center" gap="$0.5">
           {SPEEDS.map(({ value, labelKey }) => {
-            const active = value === speed;
+            const active = speed === AUTO_SCROLL_SPEED_PX[value];
             return (
               <Pressable
                 key={value}
-                onPress={() => setSpeed(value)}
+                onPress={() => setSpeed(AUTO_SCROLL_SPEED_PX[value])}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={t("a11y.quran.autoScrollSpeed", { speed: t(labelKey) })}
-                hitSlop={6}
+                hitSlop={4}
                 style={{ minHeight: 40, justifyContent: "center" }}>
                 <YStack
-                  paddingHorizontal="$2.5"
+                  paddingHorizontal="$2"
                   paddingVertical="$1.5"
                   borderRadius={999}
                   backgroundColor={active ? colors.headerColor : "transparent"}>
@@ -86,6 +115,13 @@ const AutoScrollControl = ({
           })}
         </XStack>
 
+        {trim(
+          Plus,
+          AUTO_SCROLL_SPEED_STEP,
+          t("a11y.quran.autoScrollFaster"),
+          speed >= AUTO_SCROLL_SPEED_MAX
+        )}
+
         <Pressable
           onPress={toggle}
           accessibilityRole="button"
@@ -98,6 +134,7 @@ const AutoScrollControl = ({
             width: 48,
             height: 48,
             borderRadius: 24,
+            marginLeft: 2,
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: colors.headerColor,

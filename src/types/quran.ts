@@ -11,7 +11,6 @@ import {
   ShareCardStyle,
   ScrollDirection,
   SpreadPreference,
-  AutoScrollSpeed,
 } from "@/enums/quran";
 
 export type { DownloadPhase };
@@ -202,9 +201,9 @@ export type QuranState = {
   // Reader paging axis: HORIZONTAL page-turn, or VERTICAL continuous scroll.
   scrollDirection: ScrollDirection;
   // Auto-scroll glide (vertical continuous mode). `playing` is transient — motion
-  // only starts on a deliberate tap; `speed` is a persisted reading-pace preset.
+  // only starts on a deliberate tap; `speed` is a persisted points/second pace.
   autoScrollPlaying: boolean;
-  autoScrollSpeed: AutoScrollSpeed;
+  autoScrollSpeed: number;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
   libraryTab: QuranLibraryTab;
   // Ayah image-share preferences (persisted): which card style was last used,
@@ -242,7 +241,7 @@ export type QuranState = {
   setScrollDirection: (dir: ScrollDirection) => void;
   setAutoScrollPlaying: (playing: boolean) => void;
   toggleAutoScroll: () => void;
-  setAutoScrollSpeed: (speed: AutoScrollSpeed) => void;
+  setAutoScrollSpeed: (px: number) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
   setShareStyle: (style: ShareCardStyle) => void;
   setShareIncludeLogo: (on: boolean) => void;

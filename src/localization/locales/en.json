@@ -74,6 +74,8 @@
   "a11y.quran.autoScrollPause": "Pause auto-scroll",
   "a11y.quran.autoScrollHint": "Scrolls the page automatically at the selected speed",
   "a11y.quran.autoScrollSpeed": "Reading speed: {{speed}}",
+  "a11y.quran.autoScrollSlower": "Slower",
+  "a11y.quran.autoScrollFaster": "Faster",
   "a11y.quran.ayahBookmarked": "Surah {{surah}}, Ayah {{ayah}}, bookmarked",
   "a11y.quran.ayahMarker": "Ayah {{number}}",
   "a11y.quran.ayahText": "Surah {{surah}}, Ayah {{ayah}}",
