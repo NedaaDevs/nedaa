@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Platform, ScrollView, Alert, LayoutAnimation } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "expo-router";
@@ -13,6 +13,8 @@ import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useToastStore } from "@/stores/toast";
 
 // Icons
 import {
@@ -227,16 +229,33 @@ const WidgetSettings = () => {
     canPin = false;
   }
   const [batteryOptDisabled, setBatteryOptDisabled] = useState(true);
+  // True only while the user's grant is pending (dialog open), so returning to
+  // the app can confirm success with a toast rather than a silent card swap.
+  const awaitingBatteryGrant = useRef(false);
+  const { becameActiveAt } = useAppVisibility();
+  const showToast = useToastStore((s) => s.showToast);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS === PlatformType.ANDROID) {
-        setBatteryOptDisabled(isBatteryOptimizationDisabled());
-      }
-    }, [])
-  );
+  // Re-read on navigation focus AND every foreground return — the battery
+  // dialog is a separate system Activity, so RN navigation focus never fires
+  // when the user comes back from it; only the AppState 'active' transition does.
+  const refreshBatteryState = useCallback(() => {
+    if (Platform.OS !== PlatformType.ANDROID) return;
+    const disabled = isBatteryOptimizationDisabled();
+    setBatteryOptDisabled(disabled);
+    if (disabled && awaitingBatteryGrant.current) {
+      awaitingBatteryGrant.current = false;
+      showToast(t("settings.widgets.batteryOptEnabled"), "success");
+    }
+  }, [showToast, t]);
+
+  useFocusEffect(refreshBatteryState);
+
+  useEffect(() => {
+    refreshBatteryState();
+  }, [becameActiveAt, refreshBatteryState]);
 
   const handleBatteryOptimization = () => {
+    awaitingBatteryGrant.current = true;
     requestDisableBatteryOptimization();
   };
 
