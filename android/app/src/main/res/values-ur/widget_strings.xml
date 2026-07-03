@@ -71,4 +71,8 @@
     <string name="widget_config_show_sunrise">طلوع آفتاب کا وقت دکھائیں</string>
     <string name="widget_config_save">محفوظ کریں</string>
     <string name="widget_config_cancel">منسوخ</string>
+    <string name="widget_important_days_name">اہم دن</string>
+    <string name="widget_important_days_description">رمضان، عید اور مزید کی الٹی گنتی</string>
+    <string name="widget_days_today">آج</string>
+    <string name="widget_days_unit">دن</string>
 </resources>

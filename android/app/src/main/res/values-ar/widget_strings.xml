@@ -71,4 +71,8 @@
     <string name="widget_config_show_sunrise">إظهار وقت الشروق</string>
     <string name="widget_config_save">حفظ</string>
     <string name="widget_config_cancel">إلغاء</string>
+    <string name="widget_important_days_name">أيام مهمة</string>
+    <string name="widget_important_days_description">عدّ تنازلي لرمضان والعيدين وغيرها</string>
+    <string name="widget_days_today">اليوم</string>
+    <string name="widget_days_unit">يوم</string>
 </resources>

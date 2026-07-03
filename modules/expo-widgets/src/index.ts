@@ -10,7 +10,8 @@ export type WidgetType =
   | "athkar_medium"
   | "qada"
   | "qada_medium"
-  | "prayer_athkar";
+  | "prayer_athkar"
+  | "important_days";
 
 export function isPinningSupported(): boolean {
   if (Platform.OS !== "android" || !NativeModule) return false;

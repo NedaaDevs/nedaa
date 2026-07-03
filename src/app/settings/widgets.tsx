@@ -25,6 +25,7 @@ import {
   BatteryWarning,
   CircleCheck,
   ChevronDown,
+  CalendarDays,
 } from "lucide-react-native";
 
 // Widget module
@@ -100,6 +101,13 @@ const WIDGETS: WidgetItem[] = [
     descKey: "settings.widgets.prayerAthkarDesc",
     icon: Layers,
     size: "4×2",
+  },
+  {
+    type: "important_days",
+    nameKey: "settings.widgets.importantDays",
+    descKey: "settings.widgets.importantDaysDesc",
+    icon: CalendarDays,
+    size: "2×2",
   },
 ];
 

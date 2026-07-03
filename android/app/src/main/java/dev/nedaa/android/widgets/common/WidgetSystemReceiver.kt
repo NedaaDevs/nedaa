@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import dev.nedaa.android.widgets.athkar.AthkarWorker
 import dev.nedaa.android.widgets.combined.PrayerAthkarWorker
+import dev.nedaa.android.widgets.importantdays.ImportantDaysWorker
 import dev.nedaa.android.widgets.prayer.PrayerTimesWorker
 import dev.nedaa.android.widgets.qada.QadaWorker
 
@@ -21,5 +22,6 @@ class WidgetSystemReceiver : BroadcastReceiver() {
         AthkarWorker.schedulePeriodicUpdate(context)
         AthkarWorker.scheduleUpdate(context, 0)
         QadaWorker.schedulePeriodicUpdate(context)
+        ImportantDaysWorker.scheduleUpdate(context, 0)
     }
 }
