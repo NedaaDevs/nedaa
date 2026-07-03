@@ -37,6 +37,7 @@ import { getAdapterByProviderId } from "@/adapters/providers";
 
 // Widget
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
@@ -156,6 +157,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             }
 
             reloadPrayerWidgets();
+            refreshAllWidgets();
 
             return true;
           } catch (error: any) {

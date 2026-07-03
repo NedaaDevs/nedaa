@@ -12,6 +12,8 @@ import { useUmrahGuideStore } from "@/stores/umrahGuide";
 // Utils
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { refreshAllWidgets } from "../../modules/expo-widgets/src";
+import { syncWidgetPayloads } from "@/services/widgetPayloads";
 
 // Background task
 import { registerBackgroundRefresh } from "@/tasks/backgroundRefresh";
@@ -56,6 +58,8 @@ export const appSetup = async (
     cleanupManager.register("umrah-db-flush", () => UmrahDB.flush(), 10);
 
     reloadPrayerWidgets();
+    refreshAllWidgets();
+    void syncWidgetPayloads();
   } catch (error) {
     console.error("App setup failed:", error);
     AppLogger.create("crash").e(

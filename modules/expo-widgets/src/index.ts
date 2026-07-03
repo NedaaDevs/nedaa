@@ -27,6 +27,12 @@ export async function pinWidget(widgetType: WidgetType): Promise<boolean> {
   return NativeModule.pinWidget(widgetType);
 }
 
+// Re-render all placed Android widgets now; call after widget-relevant data writes.
+export async function refreshAllWidgets(): Promise<void> {
+  if (Platform.OS !== "android" || !NativeModule) return;
+  return NativeModule.refreshAllWidgets();
+}
+
 export function isBatteryOptimizationDisabled(): boolean {
   if (Platform.OS !== "android" || !NativeModule) return true;
   return NativeModule.isBatteryOptimizationDisabled();

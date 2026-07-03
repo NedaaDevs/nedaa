@@ -27,7 +27,8 @@ class ExpoWidgetsModule : Module() {
         "athkar_medium" to "dev.nedaa.android.widgets.athkar.AthkarReceiverMedium",
         "qada" to "dev.nedaa.android.widgets.qada.QadaReceiver",
         "qada_medium" to "dev.nedaa.android.widgets.qada.QadaReceiverMedium",
-        "prayer_athkar" to "dev.nedaa.android.widgets.combined.PrayerAthkarReceiver"
+        "prayer_athkar" to "dev.nedaa.android.widgets.combined.PrayerAthkarReceiver",
+
     )
 
     override fun definition() = ModuleDefinition {
@@ -62,6 +63,25 @@ class ExpoWidgetsModule : Module() {
 
             val provider = ComponentName(ctx.packageName, receiverClassName)
             return@AsyncFunction appWidgetManager.requestPinAppWidget(provider, null, null)
+        }
+
+        // Re-render every placed widget (JS calls this after data writes).
+        // Broadcasts ACTION_APPWIDGET_UPDATE — this module can't reference the
+        // app's receiver classes directly.
+        AsyncFunction("refreshAllWidgets") {
+            val ctx = context
+            val mgr = AppWidgetManager.getInstance(ctx)
+            widgetReceiverMap.values.forEach { className ->
+                val provider = ComponentName(ctx.packageName, className)
+                val ids = mgr.getAppWidgetIds(provider)
+                if (ids.isNotEmpty()) {
+                    val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+                        .setComponent(provider)
+                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                    ctx.sendBroadcast(intent)
+                }
+            }
+            return@AsyncFunction null
         }
 
         Function("isBatteryOptimizationDisabled") {
