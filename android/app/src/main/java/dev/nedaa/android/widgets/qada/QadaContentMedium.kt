@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
@@ -28,11 +29,15 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.nedaa.android.R
 import dev.nedaa.android.widgets.common.NedaaColors
+import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.data.QadaSummary
 
+/** [ramadanDeadline], when present, is a pre-formatted "Ramadan · 42d" make-up deadline line. */
 @Composable
 fun QadaContentMedium(
     summary: QadaSummary,
+    config: WidgetConfig,
+    ramadanDeadline: String? = null,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
@@ -42,7 +47,7 @@ fun QadaContentMedium(
 
     Box(
         modifier = modifier
-            .background(NedaaColors.GlanceColors.background)
+            .background(GlanceTheme.colors.background)
             .cornerRadius(16.dp)
             .clickable(actionStartActivity(deepLinkIntent))
             .padding(14.dp),
@@ -64,7 +69,7 @@ fun QadaContentMedium(
                     Text(
                         text = context.getString(R.string.widget_qada_tracker),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.primary,
+                            color = GlanceTheme.colors.primary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -80,9 +85,9 @@ fun QadaContentMedium(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${summary.remaining}",
+                            text = config.localizeNumber(summary.remaining),
                             style = TextStyle(
-                                color = NedaaColors.GlanceColors.primary,
+                                color = GlanceTheme.colors.primary,
                                 fontSize = if (summary.remaining >= 100) 24.sp else 30.sp,
                                 fontWeight = FontWeight.Bold
                             ),
@@ -95,7 +100,7 @@ fun QadaContentMedium(
                     Text(
                         text = context.getString(R.string.widget_fasts_remaining),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 11.sp
                         ),
                         maxLines = 1
@@ -109,7 +114,7 @@ fun QadaContentMedium(
                         .width(1.dp)
                         .fillMaxHeight()
                         .padding(vertical = 8.dp)
-                        .background(NedaaColors.GlanceColors.textSecondary)
+                        .background(GlanceTheme.colors.onSurfaceVariant)
                 ) {}
                 Spacer(modifier = GlanceModifier.width(12.dp))
 
@@ -122,7 +127,7 @@ fun QadaContentMedium(
                     Text(
                         text = context.getString(R.string.widget_progress),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -132,9 +137,9 @@ fun QadaContentMedium(
 
                     // Percentage
                     Text(
-                        text = "${summary.completionPercentage}%",
+                        text = config.localizeNumber("${summary.completionPercentage}%"),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.primary,
+                            color = GlanceTheme.colors.primary,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -145,7 +150,7 @@ fun QadaContentMedium(
                     Text(
                         text = context.getString(R.string.widget_completed),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 11.sp
                         )
                     )
@@ -155,7 +160,7 @@ fun QadaContentMedium(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "${summary.totalCompleted}",
+                            text = config.localizeNumber(summary.totalCompleted),
                             style = TextStyle(
                                 color = NedaaColors.GlanceColors.success,
                                 fontSize = 16.sp,
@@ -166,7 +171,7 @@ fun QadaContentMedium(
                         if (summary.todayCompleted > 0) {
                             Spacer(modifier = GlanceModifier.width(8.dp))
                             Text(
-                                text = "+${summary.todayCompleted}",
+                                text = config.localizeNumber("+${summary.todayCompleted}"),
                                 style = TextStyle(
                                     color = NedaaColors.GlanceColors.success,
                                     fontSize = 12.sp,
@@ -174,6 +179,18 @@ fun QadaContentMedium(
                                 )
                             )
                         }
+                    }
+
+                    if (ramadanDeadline != null) {
+                        Spacer(modifier = GlanceModifier.height(6.dp))
+                        Text(
+                            text = ramadanDeadline,
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                                fontSize = 11.sp
+                            ),
+                            maxLines = 1
+                        )
                     }
                 }
             }
@@ -191,7 +208,7 @@ private fun NoQadaMediumView(context: Context) {
         Text(
             text = context.getString(R.string.widget_qada),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.primary,
+                color = GlanceTheme.colors.primary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -213,7 +230,7 @@ private fun NoQadaMediumView(context: Context) {
         Text(
             text = context.getString(R.string.widget_no_qada),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.textSecondary,
+                color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 13.sp
             )
         )

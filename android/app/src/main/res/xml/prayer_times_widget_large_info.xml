@@ -5,6 +5,8 @@
     android:targetCellWidth="4"
     android:targetCellHeight="4"
     android:resizeMode="horizontal|vertical"
+    android:maxResizeWidth="250dp"
+    android:maxResizeHeight="250dp"
     android:widgetCategory="home_screen"
     android:previewLayout="@layout/widget_prayer_times_preview"
     android:description="@string/widget_prayer_times_large_description"

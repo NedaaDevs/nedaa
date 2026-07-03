@@ -6,7 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
@@ -27,6 +29,8 @@ import androidx.glance.text.TextStyle
 import dev.nedaa.android.R
 import dev.nedaa.android.widgets.common.DateUtils
 import dev.nedaa.android.widgets.common.NedaaColors
+import dev.nedaa.android.widgets.common.WidgetConfig
+import dev.nedaa.android.widgets.common.WidgetSizes
 import dev.nedaa.android.widgets.data.DayPrayers
 import dev.nedaa.android.widgets.data.PrayerData
 import java.util.Date
@@ -42,6 +46,35 @@ enum class WidgetSize {
 }
 
 /**
+ * Picks the [WidgetSize] bucket from the current Glance size and renders [PrayerTimesContent].
+ * Used by all three prayer receivers (Small/Medium/Large) under SizeMode.Responsive so a
+ * resized widget switches layout instead of clipping.
+ */
+@Composable
+fun ResponsivePrayerTimesContent(
+    dayPrayers: DayPrayers?,
+    nextPrayer: PrayerData?,
+    previousPrayer: PrayerData?,
+    config: WidgetConfig,
+    modifier: GlanceModifier = GlanceModifier
+) {
+    val size = LocalSize.current
+    val widgetSize = when {
+        size.width >= WidgetSizes.MEDIUM.width && size.height >= WidgetSizes.WIDE.height -> WidgetSize.LARGE
+        size.width >= WidgetSizes.MEDIUM.width -> WidgetSize.MEDIUM
+        else -> WidgetSize.SMALL
+    }
+    PrayerTimesContent(
+        dayPrayers = dayPrayers,
+        nextPrayer = nextPrayer,
+        previousPrayer = previousPrayer,
+        widgetSize = widgetSize,
+        config = config,
+        modifier = modifier
+    )
+}
+
+/**
  * Main content composable for Prayer Times widget
  * Uses explicit widget size selection
  */
@@ -51,6 +84,7 @@ fun PrayerTimesContent(
     nextPrayer: PrayerData?,
     previousPrayer: PrayerData?,
     widgetSize: WidgetSize,
+    config: WidgetConfig,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
@@ -60,7 +94,7 @@ fun PrayerTimesContent(
 
     Box(
         modifier = modifier
-            .background(NedaaColors.GlanceColors.background)
+            .background(GlanceTheme.colors.background)
             .cornerRadius(16.dp)
             .clickable(actionStartActivity(launchIntent ?: Intent()))
             .padding(12.dp),
@@ -78,7 +112,8 @@ fun PrayerTimesContent(
                     previousPrayer = previousPrayer,
                     timezone = timezone,
                     currentDate = currentDate,
-                    context = context
+                    context = context,
+                    config = config
                 )
                 WidgetSize.LARGE -> LargePrayerTimesView(
                     prayers = dayPrayers.prayers,
@@ -86,14 +121,16 @@ fun PrayerTimesContent(
                     previousPrayer = previousPrayer,
                     timezone = timezone,
                     currentDate = currentDate,
-                    context = context
+                    context = context,
+                    config = config
                 )
                 WidgetSize.MEDIUM -> MediumPrayerTimesView(
                     prayers = dayPrayers.prayers,
                     nextPrayer = nextPrayer,
                     timezone = timezone,
                     currentDate = currentDate,
-                    context = context
+                    context = context,
+                    config = config
                 )
             }
         }
@@ -109,7 +146,8 @@ private fun SmallPrayerTimesView(
     previousPrayer: PrayerData?,
     timezone: TimeZone,
     currentDate: Date,
-    context: Context
+    context: Context,
+    config: WidgetConfig
 ) {
     Column(
         modifier = GlanceModifier
@@ -119,9 +157,9 @@ private fun SmallPrayerTimesView(
     ) {
         // Weekday and Hijri date at top (compact for small widget)
         Text(
-            text = DateUtils.getWeekdayName(currentDate, timezone),
+            text = DateUtils.getWeekdayName(currentDate, timezone, config.locale),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.primary,
+                color = GlanceTheme.colors.primary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             ),
@@ -129,9 +167,11 @@ private fun SmallPrayerTimesView(
         )
         Spacer(modifier = GlanceModifier.height(1.dp))
         Text(
-            text = DateUtils.getHijriDateStringCompact(currentDate, timezone),
+            text = config.localizeNumber(
+                DateUtils.getHijriDateStringCompact(currentDate, timezone, config.locale)
+            ),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.textSecondary,
+                color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 10.sp
             ),
             maxLines = 1
@@ -153,16 +193,16 @@ private fun SmallPrayerTimesView(
                     Text(
                         text = getPrayerDisplayName(previousPrayer.name, context),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         ),
                         maxLines = 1
                     )
                     Text(
-                        text = previousPrayer.formatTime12Hour(timezone),
+                        text = config.localizeNumber(previousPrayer.formatTime12Hour(timezone, config.locale)),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                     )
@@ -196,7 +236,7 @@ private fun SmallPrayerTimesView(
                 Text(
                     text = getPrayerDisplayName(nextPrayer.name, context),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.primary,
+                        color = GlanceTheme.colors.primary,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     ),
@@ -206,9 +246,9 @@ private fun SmallPrayerTimesView(
                 Spacer(modifier = GlanceModifier.height(2.dp))
 
                 Text(
-                    text = nextPrayer.formatTime12Hour(timezone),
+                    text = config.localizeNumber(nextPrayer.formatTime12Hour(timezone, config.locale)),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.text,
+                        color = GlanceTheme.colors.onBackground,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -218,7 +258,7 @@ private fun SmallPrayerTimesView(
             Text(
                 text = context.getString(R.string.widget_no_data),
                 style = TextStyle(
-                    color = NedaaColors.GlanceColors.textSecondary,
+                    color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
                 )
             )
@@ -237,7 +277,8 @@ private fun MediumPrayerTimesView(
     nextPrayer: PrayerData?,
     timezone: TimeZone,
     currentDate: Date,
-    context: Context
+    context: Context,
+    config: WidgetConfig
 ) {
     Column(
         modifier = GlanceModifier
@@ -256,7 +297,7 @@ private fun MediumPrayerTimesView(
             Text(
                 text = "☪",
                 style = TextStyle(
-                    color = NedaaColors.GlanceColors.primary,
+                    color = GlanceTheme.colors.primary,
                     fontSize = 14.sp
                 )
             )
@@ -265,9 +306,11 @@ private fun MediumPrayerTimesView(
 
             // Hijri date
             Text(
-                text = DateUtils.getHijriDateString(currentDate, timezone),
+                text = config.localizeNumber(
+                    DateUtils.getHijriDateString(currentDate, timezone, config.locale)
+                ),
                 style = TextStyle(
-                    color = NedaaColors.GlanceColors.textSecondary,
+                    color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
                 ),
                 maxLines = 1
@@ -277,9 +320,11 @@ private fun MediumPrayerTimesView(
 
             // Gregorian date
             Text(
-                text = DateUtils.getGregorianDateShort(currentDate, timezone),
+                text = config.localizeNumber(
+                    DateUtils.getGregorianDateShort(currentDate, timezone, config.locale)
+                ),
                 style = TextStyle(
-                    color = NedaaColors.GlanceColors.textSecondary,
+                    color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
                 )
             )
@@ -309,7 +354,7 @@ private fun MediumPrayerTimesView(
                     Text(
                         text = getPrayerDisplayName(prayer.name, context),
                         style = TextStyle(
-                            color = if (isNext) NedaaColors.GlanceColors.primary else NedaaColors.GlanceColors.text,
+                            color = if (isNext) GlanceTheme.colors.primary else GlanceTheme.colors.onBackground,
                             fontSize = if (prayers.size > 5) 11.sp else 13.sp,
                             fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium
                         ),
@@ -320,9 +365,9 @@ private fun MediumPrayerTimesView(
 
                     // Prayer time
                     Text(
-                        text = prayer.formatTime12Hour(timezone),
+                        text = config.localizeNumber(prayer.formatTime12Hour(timezone, config.locale)),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = if (prayers.size > 5) 10.sp else 12.sp
                         ),
                         maxLines = 1
@@ -338,7 +383,7 @@ private fun MediumPrayerTimesView(
                             .cornerRadius(3.dp)
                             .background(
                                 when {
-                                    isNext -> NedaaColors.GlanceColors.primary
+                                    isNext -> GlanceTheme.colors.primary
                                     isPast -> NedaaColors.GlanceColors.success
                                     else -> NedaaColors.GlanceColors.divider
                                 }
@@ -360,7 +405,8 @@ private fun LargePrayerTimesView(
     previousPrayer: PrayerData?,
     timezone: TimeZone,
     currentDate: Date,
-    context: Context
+    context: Context,
+    config: WidgetConfig
 ) {
     // Log prayer count for debugging
     android.util.Log.d("LargePrayerWidget", "Rendering ${prayers.size} prayers: ${prayers.map { it.name }}")
@@ -379,7 +425,7 @@ private fun LargePrayerTimesView(
             Text(
                 text = "☪",
                 style = TextStyle(
-                    color = NedaaColors.GlanceColors.primary,
+                    color = GlanceTheme.colors.primary,
                     fontSize = 20.sp
                 )
             )
@@ -390,7 +436,7 @@ private fun LargePrayerTimesView(
                 Text(
                     text = context.getString(R.string.widget_prayer_times_title),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.text,
+                        color = GlanceTheme.colors.onBackground,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -401,23 +447,27 @@ private fun LargePrayerTimesView(
                 // Both dates
                 Row {
                     Text(
-                        text = DateUtils.getGregorianDateShort(currentDate, timezone),
+                        text = config.localizeNumber(
+                            DateUtils.getGregorianDateShort(currentDate, timezone, config.locale)
+                        ),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                     )
                     Text(
                         text = " • ",
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                     )
                     Text(
-                        text = DateUtils.getHijriDateString(currentDate, timezone),
+                        text = config.localizeNumber(
+                            DateUtils.getHijriDateString(currentDate, timezone, config.locale)
+                        ),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                     )
@@ -450,7 +500,8 @@ private fun LargePrayerTimesView(
                     isPrevious = isPrevious,
                     isPast = isPast,
                     timezone = timezone,
-                    context = context
+                    context = context,
+                    config = config
                 )
                 if (index < prayers.size - 1) {
                     Spacer(modifier = GlanceModifier.height(6.dp))
@@ -470,24 +521,25 @@ private fun PrayerRowLarge(
     isPrevious: Boolean,
     isPast: Boolean,
     timezone: TimeZone,
-    context: Context
+    context: Context,
+    config: WidgetConfig
 ) {
     val backgroundColor = when {
         isNext -> NedaaColors.GlanceColors.primaryBackground
         isPrevious -> NedaaColors.GlanceColors.successBackground
-        else -> NedaaColors.GlanceColors.background
+        else -> GlanceTheme.colors.background
     }
 
     val textColor = when {
-        isNext -> NedaaColors.GlanceColors.primary
-        isPast -> NedaaColors.GlanceColors.textSecondary
-        else -> NedaaColors.GlanceColors.text
+        isNext -> GlanceTheme.colors.primary
+        isPast -> GlanceTheme.colors.onSurfaceVariant
+        else -> GlanceTheme.colors.onBackground
     }
 
     val dotColor = when {
-        isNext -> NedaaColors.GlanceColors.primary
+        isNext -> GlanceTheme.colors.primary
         isPast -> NedaaColors.GlanceColors.success
-        else -> NedaaColors.GlanceColors.textSecondary
+        else -> GlanceTheme.colors.onSurfaceVariant
     }
 
     Row(
@@ -522,7 +574,7 @@ private fun PrayerRowLarge(
 
         // Time
         Text(
-            text = prayer.formatTime12Hour(timezone),
+            text = config.localizeNumber(prayer.formatTime12Hour(timezone, config.locale)),
             style = TextStyle(
                 color = textColor,
                 fontSize = 12.sp
@@ -535,14 +587,14 @@ private fun PrayerRowLarge(
 
             Box(
                 modifier = GlanceModifier
-                    .background(if (isNext) NedaaColors.GlanceColors.primary else NedaaColors.GlanceColors.success)
+                    .background(if (isNext) GlanceTheme.colors.primary else NedaaColors.GlanceColors.success)
                     .cornerRadius(10.dp)
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = if (isNext) context.getString(R.string.widget_next) else context.getString(R.string.widget_previous),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.background,
+                        color = GlanceTheme.colors.background,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -565,7 +617,7 @@ private fun NoDataView(context: Context) {
         Text(
             text = context.getString(R.string.widget_no_data),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.text,
+                color = GlanceTheme.colors.onBackground,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -576,7 +628,7 @@ private fun NoDataView(context: Context) {
         Text(
             text = context.getString(R.string.widget_open_app),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.textSecondary,
+                color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 11.sp
             )
         )

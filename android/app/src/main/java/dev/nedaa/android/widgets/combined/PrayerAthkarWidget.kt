@@ -12,12 +12,16 @@ import androidx.glance.currentState
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import dev.nedaa.android.widgets.common.NedaaWidgetTheme
+import dev.nedaa.android.widgets.common.WidgetConfig
+import dev.nedaa.android.widgets.common.WidgetSizes
 import dev.nedaa.android.widgets.data.AthkarDataService
 import dev.nedaa.android.widgets.data.PrayerDataService
 
 /**
- * Combined Prayer Times + Athkar Progress widget (4x2 fixed)
- * Shows next prayer and athkar completion status side by side
+ * Combined Prayer Times + Athkar Progress widget (4x2), resizable from Compact to Wide.
+ * Shows next prayer and athkar completion status side by side. The single flex-based
+ * layout (weighted columns, no fixed widths) already adapts across the responsive range.
  */
 class PrayerAthkarWidget : GlanceAppWidget() {
 
@@ -28,7 +32,9 @@ class PrayerAthkarWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
-    override val sizeMode = SizeMode.Exact
+    override val sizeMode = SizeMode.Responsive(
+        setOf(WidgetSizes.COMPACT, WidgetSizes.MEDIUM, WidgetSizes.WIDE)
+    )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
@@ -43,16 +49,20 @@ class PrayerAthkarWidget : GlanceAppWidget() {
             val nextPrayer = prayerService.getNextPrayer(showSunrise)
             val previousPrayer = prayerService.getPreviousPrayer(showSunrise)
             val athkarSummary = athkarService.getAthkarSummary()
+            val config = WidgetConfig.get(context)
 
-            PrayerAthkarContent(
-                prayers = todayPrayers?.prayers ?: emptyList(),
-                nextPrayer = nextPrayer,
-                previousPrayer = previousPrayer,
-                athkarSummary = athkarSummary,
-                timezone = todayPrayers?.getTimezoneObj(),
-                currentDate = todayPrayers?.getDateAsDate(),
-                modifier = GlanceModifier.fillMaxSize()
-            )
+            NedaaWidgetTheme {
+                PrayerAthkarContent(
+                    prayers = todayPrayers?.prayers ?: emptyList(),
+                    nextPrayer = nextPrayer,
+                    previousPrayer = previousPrayer,
+                    athkarSummary = athkarSummary,
+                    config = config,
+                    timezone = todayPrayers?.getTimezoneObj(),
+                    currentDate = todayPrayers?.getDateAsDate(),
+                    modifier = GlanceModifier.fillMaxSize()
+                )
+            }
         }
     }
 }

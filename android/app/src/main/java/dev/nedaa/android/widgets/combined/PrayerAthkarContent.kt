@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
@@ -28,6 +29,7 @@ import androidx.glance.text.TextStyle
 import dev.nedaa.android.R
 import dev.nedaa.android.widgets.common.DateUtils
 import dev.nedaa.android.widgets.common.NedaaColors
+import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.data.AthkarSummary
 import dev.nedaa.android.widgets.data.PrayerData
 import java.util.Date
@@ -43,6 +45,7 @@ fun PrayerAthkarContent(
     nextPrayer: PrayerData?,
     previousPrayer: PrayerData?,
     athkarSummary: AthkarSummary,
+    config: WidgetConfig,
     timezone: TimeZone? = null,
     currentDate: Date? = null,
     modifier: GlanceModifier = GlanceModifier
@@ -56,7 +59,7 @@ fun PrayerAthkarContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(NedaaColors.GlanceColors.background)
+            .background(GlanceTheme.colors.background)
             .cornerRadius(16.dp)
             .clickable(actionStartActivity(launchIntent ?: Intent()))
             .padding(12.dp),
@@ -64,9 +67,11 @@ fun PrayerAthkarContent(
     ) {
         // Hijri date centered at top (compact for tight 4x2 layout)
         Text(
-            text = DateUtils.getHijriDateStringCompact(currentDate ?: Date(), tz),
+            text = config.localizeNumber(
+                DateUtils.getHijriDateStringCompact(currentDate ?: Date(), tz, config.locale)
+            ),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.textSecondary,
+                color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 11.sp
             ),
             maxLines = 1
@@ -85,6 +90,7 @@ fun PrayerAthkarContent(
                 previousPrayer = previousPrayer,
                 timezone = tz,
                 context = context,
+                config = config,
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
             )
 
@@ -111,6 +117,7 @@ fun PrayerAthkarContent(
             AthkarSection(
                 athkarSummary = athkarSummary,
                 context = context,
+                config = config,
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
             )
         }
@@ -123,6 +130,7 @@ private fun PrayerSection(
     previousPrayer: PrayerData?,
     timezone: TimeZone,
     context: Context,
+    config: WidgetConfig,
     modifier: GlanceModifier
 ) {
     Column(
@@ -136,6 +144,7 @@ private fun PrayerSection(
             prayer = previousPrayer,
             timezone = timezone,
             context = context,
+            config = config,
             isPrimary = false
         )
 
@@ -147,6 +156,7 @@ private fun PrayerSection(
             prayer = nextPrayer,
             timezone = timezone,
             context = context,
+            config = config,
             isPrimary = true
         )
     }
@@ -158,6 +168,7 @@ private fun PrayerRow(
     prayer: PrayerData?,
     timezone: TimeZone,
     context: Context,
+    config: WidgetConfig,
     isPrimary: Boolean
 ) {
     Row(
@@ -165,7 +176,7 @@ private fun PrayerRow(
             .fillMaxWidth()
             .background(
                 if (isPrimary) NedaaColors.GlanceColors.primaryBackground
-                else NedaaColors.GlanceColors.background
+                else GlanceTheme.colors.background
             )
             .cornerRadius(8.dp)
             .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -175,7 +186,7 @@ private fun PrayerRow(
         Text(
             text = label,
             style = TextStyle(
-                color = NedaaColors.GlanceColors.textSecondary,
+                color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 9.sp
             )
         )
@@ -187,8 +198,8 @@ private fun PrayerRow(
             Text(
                 text = getPrayerDisplayName(prayer.name, context),
                 style = TextStyle(
-                    color = if (isPrimary) NedaaColors.GlanceColors.primary
-                           else NedaaColors.GlanceColors.text,
+                    color = if (isPrimary) GlanceTheme.colors.primary
+                           else GlanceTheme.colors.onBackground,
                     fontSize = if (isPrimary) 12.sp else 10.sp,
                     fontWeight = if (isPrimary) FontWeight.Bold else FontWeight.Medium
                 ),
@@ -199,10 +210,10 @@ private fun PrayerRow(
 
             // Prayer time
             Text(
-                text = prayer.formatTime12Hour(timezone),
+                text = config.localizeNumber(prayer.formatTime12Hour(timezone, config.locale)),
                 style = TextStyle(
-                    color = if (isPrimary) NedaaColors.GlanceColors.text
-                           else NedaaColors.GlanceColors.textSecondary,
+                    color = if (isPrimary) GlanceTheme.colors.onBackground
+                           else GlanceTheme.colors.onSurfaceVariant,
                     fontSize = if (isPrimary) 11.sp else 10.sp,
                     fontWeight = if (isPrimary) FontWeight.Medium else FontWeight.Normal
                 ),
@@ -212,7 +223,7 @@ private fun PrayerRow(
             Text(
                 text = "-",
                 style = TextStyle(
-                    color = NedaaColors.GlanceColors.textSecondary,
+                    color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 11.sp
                 )
             )
@@ -224,6 +235,7 @@ private fun PrayerRow(
 private fun AthkarSection(
     athkarSummary: AthkarSummary,
     context: Context,
+    config: WidgetConfig,
     modifier: GlanceModifier
 ) {
     android.util.Log.d("CombinedWidget", "AthkarSection: current=${athkarSummary.currentStreak}, longest=${athkarSummary.longestStreak}")
@@ -237,7 +249,7 @@ private fun AthkarSection(
         Text(
             text = context.getString(R.string.widget_athkar),
             style = TextStyle(
-                color = NedaaColors.GlanceColors.textSecondary,
+                color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 10.sp
             )
         )
@@ -268,9 +280,9 @@ private fun AthkarSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🔥 ${athkarSummary.currentStreak}",
+                    text = config.localizeNumber("🔥 ${athkarSummary.currentStreak}"),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.text,
+                        color = GlanceTheme.colors.onBackground,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -279,7 +291,7 @@ private fun AthkarSection(
                 Text(
                     text = context.getString(R.string.widget_current_streak),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.textSecondary,
+                        color = GlanceTheme.colors.onSurfaceVariant,
                         fontSize = 9.sp
                     ),
                     maxLines = 1
@@ -292,9 +304,9 @@ private fun AthkarSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "⭐ ${athkarSummary.longestStreak}",
+                    text = config.localizeNumber("⭐ ${athkarSummary.longestStreak}"),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.text,
+                        color = GlanceTheme.colors.onBackground,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -303,7 +315,7 @@ private fun AthkarSection(
                 Text(
                     text = context.getString(R.string.widget_best_streak),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.textSecondary,
+                        color = GlanceTheme.colors.onSurfaceVariant,
                         fontSize = 9.sp
                     ),
                     maxLines = 1
@@ -333,7 +345,7 @@ private fun CompletionRow(
             text = if (isCompleted) "✓" else "○",
             style = TextStyle(
                 color = if (isCompleted) NedaaColors.GlanceColors.success
-                       else NedaaColors.GlanceColors.textSecondary,
+                       else GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -342,8 +354,8 @@ private fun CompletionRow(
         Text(
             text = label,
             style = TextStyle(
-                color = if (isCompleted) NedaaColors.GlanceColors.text
-                       else NedaaColors.GlanceColors.textSecondary,
+                color = if (isCompleted) GlanceTheme.colors.onBackground
+                       else GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 11.sp,
                 fontWeight = if (isCompleted) FontWeight.Medium else FontWeight.Normal
             )

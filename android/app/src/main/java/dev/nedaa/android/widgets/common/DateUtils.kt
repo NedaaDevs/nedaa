@@ -14,6 +14,15 @@ import java.util.TimeZone
  */
 object DateUtils {
 
+    // Eastern-Arabic digits for Arabic dates (date formatting uses the locale's
+    // own numerals; the numeral preference only governs app/widget body numbers).
+    private fun localizeDigits(value: Int, arabic: Boolean): String {
+        val s = value.toString()
+        if (!arabic) return s
+        val ar = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
+        return buildString { for (c in s) append(if (c in '0'..'9') ar[c - '0'] else c) }
+    }
+
     // Islamic month names in English
     private val ISLAMIC_MONTHS_EN = arrayOf(
         "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
@@ -32,16 +41,14 @@ object DateUtils {
      * Get Hijri date string for a given date (locale-aware, with weekday)
      * Format: "Weekday, day MonthName year" e.g., "Thursday, 26 Jumada al-Awwal 1447"
      */
-    fun getHijriDateString(date: Date, timezone: TimeZone? = null): String {
-        val locale = Locale.getDefault()
+    fun getHijriDateString(date: Date, timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         return getHijriDateForLocale(date, timezone, locale, includeWeekday = true)
     }
 
     /**
      * Get Hijri date string without weekday (for compact displays)
      */
-    fun getHijriDateStringCompact(date: Date, timezone: TimeZone? = null): String {
-        val locale = Locale.getDefault()
+    fun getHijriDateStringCompact(date: Date, timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         return getHijriDateForLocale(date, timezone, locale, includeWeekday = false)
     }
 
@@ -72,24 +79,27 @@ object DateUtils {
             islamicCalendar.time = date
 
             // Extract day, month, year from Islamic calendar
-            val day = islamicCalendar.get(IslamicCalendar.DAY_OF_MONTH)
+            val isArabic = locale.language == "ar"
+            val day = localizeDigits(islamicCalendar.get(IslamicCalendar.DAY_OF_MONTH), isArabic)
             val month = islamicCalendar.get(IslamicCalendar.MONTH)
-            val year = islamicCalendar.get(IslamicCalendar.YEAR)
+            val year = localizeDigits(islamicCalendar.get(IslamicCalendar.YEAR), isArabic)
 
             // Get month name based on locale
-            val monthNames = if (locale.language == "ar") ISLAMIC_MONTHS_AR else ISLAMIC_MONTHS_EN
+            val monthNames = if (isArabic) ISLAMIC_MONTHS_AR else ISLAMIC_MONTHS_EN
             val monthName = if (month in 0..11) monthNames[month] else ""
 
             val dateStr = if (includeWeekday) {
                 val weekdayFormatter = SimpleDateFormat("EEEE", locale)
                 weekdayFormatter.timeZone = tz
                 val weekday = weekdayFormatter.format(date)
-                val separator = if (locale.language == "ar") "،" else ","
+                val separator = if (isArabic) "،" else ","
                 "$weekday$separator $day $monthName $year"
             } else {
                 "$day $monthName $year"
             }
-            if (locale.language == "ar") "\u200F$dateStr" else dateStr
+            // Wrap in a directional isolate so this number-first date renders as
+            // one unit and cannot reorder inside an RTL widget (FSI … PDI).
+            "⁨$dateStr⁩"
         } catch (e: Exception) {
             SimpleDateFormat("dd/MM/yyyy", locale).format(date)
         }
@@ -99,9 +109,8 @@ object DateUtils {
      * Get weekday name for a given date (locale-aware)
      * Returns the full weekday name e.g., "Friday", "الجمعة"
      */
-    fun getWeekdayName(date: Date, timezone: TimeZone? = null): String {
+    fun getWeekdayName(date: Date, timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         val tz = timezone ?: TimeZone.getDefault()
-        val locale = Locale.getDefault()
         val formatter = SimpleDateFormat("EEEE", locale)
         formatter.timeZone = tz
         return formatter.format(date)
@@ -110,9 +119,8 @@ object DateUtils {
     /**
      * Get Gregorian date string (locale-aware)
      */
-    fun getGregorianDateString(date: Date, timezone: TimeZone? = null): String {
+    fun getGregorianDateString(date: Date, timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         val tz = timezone ?: TimeZone.getDefault()
-        val locale = Locale.getDefault()
         val formatter = SimpleDateFormat("d MMMM yyyy", locale)
         formatter.timeZone = tz
         return formatter.format(date)
@@ -121,9 +129,8 @@ object DateUtils {
     /**
      * Get short Gregorian date string (locale-aware)
      */
-    fun getGregorianDateShort(date: Date, timezone: TimeZone? = null): String {
+    fun getGregorianDateShort(date: Date, timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         val tz = timezone ?: TimeZone.getDefault()
-        val locale = Locale.getDefault()
         val formatter = SimpleDateFormat("d MMM", locale)
         formatter.timeZone = tz
         return formatter.format(date)

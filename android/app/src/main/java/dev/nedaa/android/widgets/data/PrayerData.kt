@@ -48,9 +48,8 @@ data class PrayerData(
     /**
      * Format time in 12-hour format with specific timezone
      */
-    fun formatTime12Hour(timezone: TimeZone? = null): String {
+    fun formatTime12Hour(timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         val tz = timezone ?: TimeZone.getDefault()
-        val locale = Locale.getDefault()
         val formatter = SimpleDateFormat("h:mm a", locale)
         formatter.timeZone = tz
         return formatter.format(time)
@@ -59,9 +58,8 @@ data class PrayerData(
     /**
      * Format the time respecting system 24-hour setting (with context)
      */
-    fun formatTime(context: Context, timezone: TimeZone? = null): String {
+    fun formatTime(context: Context, timezone: TimeZone? = null, locale: Locale = Locale.getDefault()): String {
         val tz = timezone ?: TimeZone.getDefault()
-        val locale = Locale.getDefault()
         val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm a"
         val formatter = SimpleDateFormat(pattern, locale)
         formatter.timeZone = tz

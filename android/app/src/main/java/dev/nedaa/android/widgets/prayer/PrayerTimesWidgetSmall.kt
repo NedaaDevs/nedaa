@@ -1,8 +1,6 @@
 package dev.nedaa.android.widgets.prayer
 
 import android.content.Context
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
@@ -14,21 +12,25 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.glance.layout.fillMaxSize
+import dev.nedaa.android.widgets.common.NedaaWidgetTheme
+import dev.nedaa.android.widgets.common.WidgetConfig
+import dev.nedaa.android.widgets.common.WidgetSizes
 import dev.nedaa.android.widgets.data.PrayerDataService
 
 /**
- * Small Prayer Times widget (2x2)
+ * Small Prayer Times widget (2x2), resizable up through Medium/Wide layouts.
  */
 class PrayerTimesWidgetSmall : GlanceAppWidget() {
 
     companion object {
         val SHOW_SUNRISE_KEY = booleanPreferencesKey("show_sunrise")
-        private val SIZE = DpSize(110.dp, 110.dp)
     }
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
-    override val sizeMode = SizeMode.Exact
+    override val sizeMode = SizeMode.Responsive(
+        setOf(WidgetSizes.COMPACT, WidgetSizes.MEDIUM, WidgetSizes.WIDE)
+    )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
@@ -39,14 +41,17 @@ class PrayerTimesWidgetSmall : GlanceAppWidget() {
             val dayPrayers = prayerService.getTodaysPrayerTimes(showSunrise)
             val nextPrayer = prayerService.getNextPrayer(showSunrise)
             val previousPrayer = prayerService.getPreviousPrayer(showSunrise)
+            val config = WidgetConfig.get(context)
 
-            PrayerTimesContent(
-                dayPrayers = dayPrayers,
-                nextPrayer = nextPrayer,
-                previousPrayer = previousPrayer,
-                widgetSize = WidgetSize.SMALL,
-                modifier = GlanceModifier.fillMaxSize()
-            )
+            NedaaWidgetTheme {
+                ResponsivePrayerTimesContent(
+                    dayPrayers = dayPrayers,
+                    nextPrayer = nextPrayer,
+                    previousPrayer = previousPrayer,
+                    config = config,
+                    modifier = GlanceModifier.fillMaxSize()
+                )
+            }
         }
     }
 }

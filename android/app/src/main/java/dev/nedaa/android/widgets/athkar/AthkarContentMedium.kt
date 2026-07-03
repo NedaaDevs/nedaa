@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
@@ -27,21 +28,32 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.nedaa.android.R
 import dev.nedaa.android.widgets.common.NedaaColors
+import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.data.AthkarSummary
 
+/**
+ * [promotedSession] ("morning"/"evening") picks which session's progress the percentage reflects.
+ */
 @Composable
 fun AthkarContentMedium(
     summary: AthkarSummary,
+    config: WidgetConfig,
+    promotedSession: String = "morning",
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
     val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse("myapp:///athkar")).apply {
         setPackage(context.packageName)
     }
+    val sessionLabel = if (promotedSession == "evening") {
+        context.getString(R.string.widget_evening)
+    } else {
+        context.getString(R.string.widget_morning)
+    }
 
     Box(
         modifier = modifier
-            .background(NedaaColors.GlanceColors.background)
+            .background(GlanceTheme.colors.background)
             .cornerRadius(16.dp)
             .clickable(actionStartActivity(deepLinkIntent))
             .padding(14.dp),
@@ -58,12 +70,13 @@ fun AthkarContentMedium(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = context.getString(R.string.widget_athkar),
+                    text = "${context.getString(R.string.widget_athkar)} · $sessionLabel",
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.primary,
+                        color = GlanceTheme.colors.primary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
-                    )
+                    ),
+                    maxLines = 1
                 )
 
                 Spacer(modifier = GlanceModifier.height(6.dp))
@@ -76,7 +89,7 @@ fun AthkarContentMedium(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "${summary.progressPercentage}%",
+                        text = config.localizeNumber("${summary.progressPercentage}%"),
                         style = TextStyle(
                             color = NedaaColors.GlanceColors.success,
                             fontSize = 28.sp,
@@ -90,7 +103,7 @@ fun AthkarContentMedium(
                 Text(
                     text = context.getString(R.string.widget_today_progress),
                     style = TextStyle(
-                        color = NedaaColors.GlanceColors.textSecondary,
+                        color = GlanceTheme.colors.onSurfaceVariant,
                         fontSize = 11.sp
                     ),
                     maxLines = 1
@@ -104,7 +117,7 @@ fun AthkarContentMedium(
                     .width(1.dp)
                     .fillMaxHeight()
                     .padding(vertical = 8.dp)
-                    .background(NedaaColors.GlanceColors.textSecondary)
+                    .background(GlanceTheme.colors.onSurfaceVariant)
             ) {}
             Spacer(modifier = GlanceModifier.width(12.dp))
 
@@ -122,7 +135,7 @@ fun AthkarContentMedium(
                             color = if (summary.morningCompleted)
                                 NedaaColors.GlanceColors.success
                             else
-                                NedaaColors.GlanceColors.textSecondary,
+                                GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     )
@@ -130,7 +143,7 @@ fun AthkarContentMedium(
                     Text(
                         text = context.getString(R.string.widget_morning),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.text,
+                            color = GlanceTheme.colors.onBackground,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -158,7 +171,7 @@ fun AthkarContentMedium(
                             color = if (summary.eveningCompleted)
                                 NedaaColors.GlanceColors.success
                             else
-                                NedaaColors.GlanceColors.textSecondary,
+                                GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     )
@@ -166,7 +179,7 @@ fun AthkarContentMedium(
                     Text(
                         text = context.getString(R.string.widget_evening),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.text,
+                            color = GlanceTheme.colors.onBackground,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -189,9 +202,9 @@ fun AthkarContentMedium(
                 // Streaks
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "🔥 ${summary.currentStreak}",
+                        text = config.localizeNumber("🔥 ${summary.currentStreak}"),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.text,
+                            color = GlanceTheme.colors.onBackground,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -200,7 +213,7 @@ fun AthkarContentMedium(
                     Text(
                         text = context.getString(R.string.widget_current_streak),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 11.sp
                         ),
                         maxLines = 1
@@ -211,9 +224,9 @@ fun AthkarContentMedium(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "⭐ ${summary.longestStreak}",
+                        text = config.localizeNumber("⭐ ${summary.longestStreak}"),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.text,
+                            color = GlanceTheme.colors.onBackground,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -222,7 +235,7 @@ fun AthkarContentMedium(
                     Text(
                         text = context.getString(R.string.widget_best_streak),
                         style = TextStyle(
-                            color = NedaaColors.GlanceColors.textSecondary,
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 11.sp
                         ),
                         maxLines = 1

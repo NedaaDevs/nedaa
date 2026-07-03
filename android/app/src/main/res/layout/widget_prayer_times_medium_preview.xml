@@ -29,12 +29,7 @@
             android:textColor="#666666"
             android:textSize="12sp" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
-
-        <TextView
+        <TextView android:layout_marginStart="0dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Nov 26"
@@ -75,12 +70,6 @@
                 android:textColor="#666666"
                 android:textSize="11sp" />
 
-            <View
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginTop="6dp"
-                android:background="#1C5D85" />
-
         </LinearLayout>
 
         <!-- Sunrise -->
@@ -105,12 +94,6 @@
                 android:text="6:45"
                 android:textColor="#666666"
                 android:textSize="11sp" />
-
-            <View
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginTop="6dp"
-                android:background="#E0E0E0" />
 
         </LinearLayout>
 
@@ -137,12 +120,6 @@
                 android:textColor="#666666"
                 android:textSize="11sp" />
 
-            <View
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginTop="6dp"
-                android:background="#E0E0E0" />
-
         </LinearLayout>
 
         <!-- Asr -->
@@ -167,12 +144,6 @@
                 android:text="3:30"
                 android:textColor="#666666"
                 android:textSize="11sp" />
-
-            <View
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginTop="6dp"
-                android:background="#E0E0E0" />
 
         </LinearLayout>
 
@@ -199,12 +170,6 @@
                 android:textColor="#666666"
                 android:textSize="11sp" />
 
-            <View
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginTop="6dp"
-                android:background="#E0E0E0" />
-
         </LinearLayout>
 
         <!-- Isha -->
@@ -229,12 +194,6 @@
                 android:text="7:15"
                 android:textColor="#666666"
                 android:textSize="11sp" />
-
-            <View
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginTop="6dp"
-                android:background="#E0E0E0" />
 
         </LinearLayout>
 
