@@ -408,9 +408,6 @@ private fun LargePrayerTimesView(
     context: Context,
     config: WidgetConfig
 ) {
-    // Log prayer count for debugging
-    android.util.Log.d("LargePrayerWidget", "Rendering ${prayers.size} prayers: ${prayers.map { it.name }}")
-
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -487,9 +484,11 @@ private fun LargePrayerTimesView(
 
         Spacer(modifier = GlanceModifier.height(10.dp))
 
-        // Prayer times list
-        Column(modifier = GlanceModifier.fillMaxWidth()) {
-            prayers.forEachIndexed { index, prayer ->
+        // Prayer list fills the remaining height; each row takes an equal
+        // share via defaultWeight so all prayers fit any widget height
+        // instead of the last rows clipping off the bottom.
+        Column(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+            prayers.forEach { prayer ->
                 val isNext = prayer.name == nextPrayer?.name && prayer.time == nextPrayer?.time
                 val isPrevious = prayer.name == previousPrayer?.name && prayer.time == previousPrayer?.time
                 val isPast = prayer.isPast
@@ -501,11 +500,9 @@ private fun LargePrayerTimesView(
                     isPast = isPast,
                     timezone = timezone,
                     context = context,
-                    config = config
+                    config = config,
+                    modifier = GlanceModifier.defaultWeight()
                 )
-                if (index < prayers.size - 1) {
-                    Spacer(modifier = GlanceModifier.height(6.dp))
-                }
             }
         }
     }
@@ -522,7 +519,8 @@ private fun PrayerRowLarge(
     isPast: Boolean,
     timezone: TimeZone,
     context: Context,
-    config: WidgetConfig
+    config: WidgetConfig,
+    modifier: GlanceModifier = GlanceModifier
 ) {
     val backgroundColor = when {
         isNext -> NedaaColors.GlanceColors.primaryBackground
@@ -543,11 +541,11 @@ private fun PrayerRowLarge(
     }
 
     Row(
-        modifier = GlanceModifier
+        modifier = modifier
             .fillMaxWidth()
             .background(backgroundColor)
             .cornerRadius(8.dp)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Status dot
