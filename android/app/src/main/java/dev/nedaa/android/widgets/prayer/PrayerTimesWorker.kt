@@ -8,6 +8,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import dev.nedaa.android.widgets.common.WidgetBoundaries
 import dev.nedaa.android.widgets.data.PrayerDataService
 import java.util.concurrent.TimeUnit
 
@@ -29,7 +30,6 @@ class PrayerTimesWorker(
         private const val WORK_NAME = "prayer_times_widget_update"
 
         private const val FIFTEEN_MINUTES = 15 * 60 * 1000L
-        private const val ONE_MINUTE = 60 * 1000L
 
         /**
          * Schedule widget update with optional delay
@@ -79,24 +79,16 @@ class PrayerTimesWorker(
 
     private fun scheduleNextUpdate() {
         val prayerService = PrayerDataService(context)
-        val nextPrayer = prayerService.getNextPrayer(true)
-
-        val currentTime = System.currentTimeMillis()
-        val nextPrayerTime = nextPrayer?.time?.time ?: (currentTime + FIFTEEN_MINUTES)
-
-        val timeToNext = nextPrayerTime - currentTime
-
-        val nextUpdateTime = if (timeToNext < FIFTEEN_MINUTES) {
-            // Next prayer is less than 15 min away, schedule 15 min after it
-            Log.d(TAG, "Next prayer < 15min away, scheduling 15min after prayer time")
+        val nextPrayerTime = prayerService.getNextPrayer(true)?.time?.time
+        val now = System.currentTimeMillis()
+        // A prayer already within 15 min updates 15 min AFTER the prayer instead,
+        // so the widget settles on the new current prayer.
+        val candidate = if (nextPrayerTime != null && nextPrayerTime - now < FIFTEEN_MINUTES) {
             nextPrayerTime + FIFTEEN_MINUTES
         } else {
-            // Schedule at exact prayer time
-            Log.d(TAG, "Scheduling at exact next prayer time")
             nextPrayerTime
         }
-
-        val delay = (nextUpdateTime - currentTime).coerceAtLeast(ONE_MINUTE)
+        val delay = WidgetBoundaries.nextBoundary(now, listOf(candidate)) - now
         scheduleUpdate(context, delay)
     }
 }

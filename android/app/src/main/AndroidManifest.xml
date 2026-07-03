@@ -44,6 +44,14 @@
         <data android:scheme="exp+nedaa"/>
       </intent-filter>
     </activity>
+    <receiver android:name=".widgets.common.WidgetSystemReceiver" android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+        <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+        <action android:name="android.intent.action.TIME_SET"/>
+        <action android:name="android.intent.action.LOCALE_CHANGED"/>
+      </intent-filter>
+    </receiver>
     <receiver android:name=".widgets.prayer.PrayerTimesReceiverSmall" android:exported="true" android:label="@string/widget_prayer_times_small_name">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
@@ -87,6 +95,18 @@
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/qada_widget_medium_info"/>
+    </receiver>
+<receiver android:name=".widgets.ramadan.SuhoorIftarReceiver" android:exported="true" android:label="@string/widget_suhoor_iftar_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/suhoor_iftar_widget_info"/>
+    </receiver>
+<receiver android:name=".widgets.importantdays.ImportantDaysReceiver" android:exported="true" android:label="@string/widget_important_days_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/important_days_widget_info"/>
     </receiver>
     <receiver android:name="expo.modules.notifications.service.NotificationsService" android:enabled="true" android:exported="false" tools:node="replace">
       <intent-filter android:priority="-1">
