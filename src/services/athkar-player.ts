@@ -1,5 +1,9 @@
 import { Appearance, Image } from "react-native";
-import TrackPlayer, { Capability, RepeatMode } from "react-native-track-player";
+import TrackPlayer, {
+  AppKilledPlaybackBehavior,
+  Capability,
+  RepeatMode,
+} from "react-native-track-player";
 import type { Track } from "react-native-track-player";
 
 import { SMART_PAUSE, getThikrId } from "@/constants/AthkarAudio";
@@ -73,6 +77,12 @@ class AthkarPlayer {
         autoHandleInterruptions: true,
       });
       await TrackPlayer.updateOptions({
+        android: {
+          // Tear the service down when the app is swiped away; a lingering START_STICKY
+          // service gets restarted by the OS in the background, where Android 12+ forbids
+          // its foreground promotion (ForegroundServiceStartNotAllowedException).
+          appKilledPlaybackBehavior: AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
+        },
         progressUpdateEventInterval: 1,
         capabilities: [
           Capability.Play,

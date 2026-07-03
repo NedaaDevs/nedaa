@@ -1,3 +1,6 @@
+diff --git a/node_modules/react-native-track-player/.bun-tag-4e76a7f425360df0 b/.bun-tag-4e76a7f425360df0
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt b/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
 index b2409a09939164c49c0f7a16bb6d3284e8eab8fb..fee72e1944273e778650193aaca298f21600a5eb 100644
 --- a/android/src/main/java/com/doublesymmetry/trackplayer/module/MusicModule.kt
@@ -411,20 +414,47 @@ index b2409a09939164c49c0f7a16bb6d3284e8eab8fb..fee72e1944273e778650193aaca298f2
 +    } }
  }
 diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
-index afa6b0f335714de0cc8741d5bbdd51b4e04bb3bb..c417e7b46c1286ccf4eecc0f0775676f297b66fe 100644
+index afa6b0f335714de0cc8741d5bbdd51b4e04bb3bb..6cff3acf65a59ad60e3d5b70472e219b69842791 100644
 --- a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
 +++ b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
-@@ -226,8 +226,5 @@ class MusicService : HeadlessJsTaskService() {
+@@ -120,9 +120,22 @@ class MusicService : HeadlessJsTaskService() {
+             notificationBuilder.foregroundServiceBehavior = NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
+         }
+         val notification = notificationBuilder.build()
+-        startForeground(EMPTY_NOTIFICATION_ID, notification)
+-        @Suppress("DEPRECATION")
+-        stopForeground(true)
++        try {
++            startForeground(EMPTY_NOTIFICATION_ID, notification)
++            @Suppress("DEPRECATION")
++            stopForeground(true)
++        } catch (error: Exception) {
++            // Android 12+ forbids foreground-service starts from the background. The system can
++            // still deliver onStartCommand while backgrounded (START_STICKY restart, MEDIA_BUTTON
++            // intent), so skip the foreground promotion instead of crashing.
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
++                error is ForegroundServiceStartNotAllowedException
++            ) {
++                Timber.w(error, "Foreground start disallowed while backgrounded; skipping ANR workaround notification")
++            } else {
++                throw error
++            }
++        }
+     }
+ 
+     @MainThread
+@@ -225,9 +238,6 @@ class MusicService : HeadlessJsTaskService() {
+ 
          val openAppIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
              flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
 -            // Add the Uri data so apps can identify that it was a notification click
 -            data = Uri.parse("trackplayer://notification.click")
 -            action = Intent.ACTION_VIEW
          }
-
+ 
          val accentColor = BundleUtils.getIntOrNull(options, "color")
-@@ -741,7 +738,7 @@ class MusicService : HeadlessJsTaskService() {
-
+@@ -741,7 +751,7 @@ class MusicService : HeadlessJsTaskService() {
+ 
      @MainThread
      private fun emit(event: String, data: Bundle? = null) {
 -        reactNativeHost.reactInstanceManager.currentReactContext
@@ -432,10 +462,10 @@ index afa6b0f335714de0cc8741d5bbdd51b4e04bb3bb..c417e7b46c1286ccf4eecc0f0775676f
              ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
              ?.emit(event, data?.let { Arguments.fromBundle(it) })
      }
-@@ -751,7 +748,7 @@ class MusicService : HeadlessJsTaskService() {
+@@ -751,7 +761,7 @@ class MusicService : HeadlessJsTaskService() {
          val payload = Arguments.createArray()
          data.forEach { payload.pushMap(Arguments.fromBundle(it)) }
-
+ 
 -        reactNativeHost.reactInstanceManager.currentReactContext
 +        reactContext
              ?.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
