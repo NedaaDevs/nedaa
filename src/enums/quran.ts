@@ -132,3 +132,13 @@ export const ScrollDirection = {
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type ScrollDirection = (typeof ScrollDirection)[keyof typeof ScrollDirection];
+
+// Auto-scroll (vertical continuous mode) reading pace — three presets, not a
+// slider (large, unambiguous tap targets).
+export const AutoScrollSpeed = {
+  SLOW: "slow",
+  MEDIUM: "medium",
+  FAST: "fast",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type AutoScrollSpeed = (typeof AutoScrollSpeed)[keyof typeof AutoScrollSpeed];

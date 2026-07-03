@@ -3,6 +3,7 @@ import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import {
+  DEFAULT_AUTO_SCROLL_SPEED,
   DEFAULT_MUSHAF_VERSION,
   DEFAULT_QURAN_THEME,
   FONT_SIZE_DEFAULT,
@@ -10,6 +11,7 @@ import {
   FONT_SIZE_MAX,
 } from "@/constants/Quran";
 import {
+  AutoScrollSpeed,
   DownloadStatus,
   MushafVersion,
   QuranTheme,
@@ -34,6 +36,9 @@ export const useQuranStore = create<QuranState>()(
       spreadPreference: SpreadPreference.AUTO,
       // Page-turn by default; VERTICAL is the continuous-scroll reading mode.
       scrollDirection: ScrollDirection.HORIZONTAL,
+      // Auto-scroll starts paused (no surprise motion); pace persists.
+      autoScrollPlaying: false,
+      autoScrollSpeed: DEFAULT_AUTO_SCROLL_SPEED,
       libraryTab: "index",
       shareStyle: ShareCardStyle.IMAGE,
       shareIncludeLogo: true,
@@ -77,6 +82,9 @@ export const useQuranStore = create<QuranState>()(
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
       setSpreadPreference: (pref: SpreadPreference) => set({ spreadPreference: pref }),
       setScrollDirection: (dir: ScrollDirection) => set({ scrollDirection: dir }),
+      setAutoScrollPlaying: (playing: boolean) => set({ autoScrollPlaying: playing }),
+      toggleAutoScroll: () => set((prev) => ({ autoScrollPlaying: !prev.autoScrollPlaying })),
+      setAutoScrollSpeed: (speed: AutoScrollSpeed) => set({ autoScrollSpeed: speed }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setShareStyle: (style) => set({ shareStyle: style }),
       setShareIncludeLogo: (on) => set({ shareIncludeLogo: on }),
@@ -176,6 +184,7 @@ export const useQuranStore = create<QuranState>()(
         fontSize: state.fontSize,
         spreadPreference: state.spreadPreference,
         scrollDirection: state.scrollDirection,
+        autoScrollSpeed: state.autoScrollSpeed,
         libraryTab: state.libraryTab,
         shareStyle: state.shareStyle,
         shareIncludeLogo: state.shareIncludeLogo,
@@ -221,6 +230,12 @@ export const useQuranStore = create<QuranState>()(
         if (!validScrollDirs.includes(merged.scrollDirection)) {
           merged.scrollDirection = ScrollDirection.HORIZONTAL;
         }
+        const validSpeeds = Object.values(AutoScrollSpeed) as string[];
+        if (!validSpeeds.includes(merged.autoScrollSpeed)) {
+          merged.autoScrollSpeed = DEFAULT_AUTO_SCROLL_SPEED;
+        }
+        // Never persist a "playing" state — motion must be re-armed by the user.
+        merged.autoScrollPlaying = false;
         if (typeof merged.showMutashabihatMarkers !== "boolean") {
           merged.showMutashabihatMarkers = false;
         }

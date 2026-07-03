@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { FlatList, View, ViewToken } from "react-native";
+import { View, ViewToken } from "react-native";
+import Animated from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MushafVersion, QuranThemeType } from "@/enums/quran";
-import { TOTAL_PAGES } from "@/constants/Quran";
+import { AUTO_SCROLL_PX_PER_SEC, TOTAL_PAGES } from "@/constants/Quran";
 import { fitWidthBox } from "@/utils/readerSpread";
+import { useQuranStore } from "@/stores/quran";
+import { useAutoScroll } from "@/hooks/useAutoScroll";
 import QuranPage from "@/components/quran/QuranPage";
 
 // Every mushaf page number, hoisted so the list data isn't reallocated per render.
@@ -45,6 +48,18 @@ const VerticalReader = ({
   const insets = useSafeAreaInsets();
   const box = fitWidthBox(width);
   const itemHeight = box.h + PAGE_GAP;
+
+  // Auto-scroll glide: driven on the UI thread. A manual drag only pauses it while
+  // touched (auto-resumes); reaching the end stops it in the store.
+  const playing = useQuranStore((s) => s.autoScrollPlaying);
+  const speed = useQuranStore((s) => s.autoScrollSpeed);
+  const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
+  const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
+  const { animatedRef, scrollHandler } = useAutoScroll<number>({
+    playing,
+    pxPerSec: AUTO_SCROLL_PX_PER_SEC[speed],
+    onReachEnd: pause,
+  });
 
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
@@ -104,12 +119,15 @@ const VerticalReader = ({
 
   return (
     <GestureDetector gesture={tapGesture}>
-      <FlatList
+      <Animated.FlatList
+        ref={animatedRef}
         data={ALL_PAGES}
         keyExtractor={pageKey}
         renderItem={renderItem}
         getItemLayout={(_, index) => ({ length: itemHeight, offset: itemHeight * index, index })}
         initialScrollIndex={Math.max(0, currentPage - 1)}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY_CONFIG}
         showsVerticalScrollIndicator={false}

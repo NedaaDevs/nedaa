@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { FlatList, View, ViewToken } from "react-native";
+import { View, ViewToken } from "react-native";
+import Animated from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QuranThemeType } from "@/enums/quran";
-import { QURAN_THEME_COLORS, TOTAL_PAGES } from "@/constants/Quran";
+import { AUTO_SCROLL_PX_PER_SEC, QURAN_THEME_COLORS, TOTAL_PAGES } from "@/constants/Quran";
+import { useQuranStore } from "@/stores/quran";
+import { useAutoScroll } from "@/hooks/useAutoScroll";
 import TextPage from "@/components/quran/TextPage";
 
 // Every mushaf page number, hoisted so the list data isn't reallocated per render.
@@ -47,7 +50,19 @@ const VerticalTextReader = ({
 }: VerticalTextReaderProps) => {
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
-  const listRef = useRef<FlatList<number>>(null);
+
+  // Auto-scroll glide: driven on the UI thread. A manual drag only pauses it while
+  // touched (auto-resumes); reaching the end stops it. The animated ref doubles as
+  // the list ref used for resume-jump scrolling below.
+  const playing = useQuranStore((s) => s.autoScrollPlaying);
+  const speed = useQuranStore((s) => s.autoScrollSpeed);
+  const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
+  const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
+  const { animatedRef, scrollHandler } = useAutoScroll<number>({
+    playing,
+    pxPerSec: AUTO_SCROLL_PX_PER_SEC[speed],
+    onReachEnd: pause,
+  });
 
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
@@ -80,15 +95,15 @@ const VerticalTextReader = ({
   // the list's estimated offset, then settle onto the exact page once it renders.
   const onScrollToIndexFailed = useCallback(
     (info: { index: number; averageItemLength: number }) => {
-      listRef.current?.scrollToOffset({
+      animatedRef.current?.scrollToOffset({
         offset: info.averageItemLength * info.index,
         animated: false,
       });
       setTimeout(() => {
-        listRef.current?.scrollToIndex({ index: info.index, animated: false });
+        animatedRef.current?.scrollToIndex({ index: info.index, animated: false });
       }, 350);
     },
-    []
+    [animatedRef]
   );
 
   const separator = useCallback(
@@ -115,13 +130,15 @@ const VerticalTextReader = ({
 
   return (
     <GestureDetector gesture={tapGesture}>
-      <FlatList
-        ref={listRef}
+      <Animated.FlatList
+        ref={animatedRef}
         data={ALL_PAGES}
         keyExtractor={pageKey}
         renderItem={renderItem}
         ItemSeparatorComponent={separator}
         initialScrollIndex={Math.max(0, currentPage - 1)}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         onScrollToIndexFailed={onScrollToIndexFailed}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY_CONFIG}

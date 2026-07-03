@@ -21,12 +21,13 @@ import { useQuranStore } from "@/stores/quran";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
-import { MushafVersion, DownloadStatus, ReaderViewMode } from "@/enums/quran";
+import { MushafVersion, DownloadStatus, ReaderViewMode, ScrollDirection } from "@/enums/quran";
 import { PlatformType } from "@/enums/app";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
 import QuranDbGate from "@/components/quran/QuranDbGate";
 import PageSlider from "@/components/quran/PageSlider";
+import AutoScrollControl from "@/components/quran/AutoScrollControl";
 import QuranSettingsSheet from "@/components/quran/QuranSettingsSheet";
 import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
@@ -58,6 +59,8 @@ const QuranScreen = () => {
     darkOfferDismissed,
     readerMode,
     fontSize,
+    scrollDirection,
+    autoScrollPlaying,
     jumpReturn,
     setJumpReturn,
     setFlashAyah,
@@ -341,6 +344,28 @@ const QuranScreen = () => {
             }}
             selectedAyah={actionAyah}
           />
+
+          {/* Auto-scroll control — vertical mode only, suppressed while a sheet has
+          focus. Pinned above the bottom chrome bar (≈120pt) so it never overlaps.
+          `box-none` lets taps through when it's faded out so the reader gets them. */}
+          {scrollDirection === ScrollDirection.VERTICAL &&
+            !actionAyah &&
+            infoSurah == null &&
+            !guideSheet && (
+              <YStack
+                position="absolute"
+                bottom={insets.bottom + 136}
+                left={0}
+                right={0}
+                alignItems="center"
+                zIndex={12}
+                pointerEvents="box-none">
+                <AutoScrollControl
+                  quranTheme={quranTheme}
+                  visible={!autoScrollPlaying || showOverlay}
+                />
+              </YStack>
+            )}
 
           {/* Top banners: an active background download, and/or the one-time dark
           page offer for a colored edition. */}

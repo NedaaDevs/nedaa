@@ -1,4 +1,5 @@
 import {
+  AutoScrollSpeed,
   BookmarkColor,
   HighlightColor,
   MushafVersion,
@@ -15,6 +16,15 @@ export const FONT_SIZE_MIN = 20;
 export const FONT_SIZE_MAX = 48;
 export const FONT_SIZE_DEFAULT = 28;
 export const FONT_SIZE_STEP = 2;
+
+// Auto-scroll pace in points/second per preset. Tuned for an unhurried reading
+// glide; refine on-device. Speed is device-independent (points, not pixels).
+export const AUTO_SCROLL_PX_PER_SEC: Record<AutoScrollSpeed, number> = {
+  [AutoScrollSpeed.SLOW]: 18,
+  [AutoScrollSpeed.MEDIUM]: 34,
+  [AutoScrollSpeed.FAST]: 60,
+};
+export const DEFAULT_AUTO_SCROLL_SPEED = AutoScrollSpeed.MEDIUM;
 
 export const QURAN_THEME_COLORS: Record<
   QuranThemeType,

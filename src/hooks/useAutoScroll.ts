@@ -1,0 +1,101 @@
+import { useEffect } from "react";
+import Animated, {
+  scrollTo,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useFrameCallback,
+  useSharedValue,
+} from "react-native-reanimated";
+import { runOnUI, scheduleOnRN } from "react-native-worklets";
+
+// Continuous "teleprompter" glide for a vertical list: each frame (UI thread)
+// advances an independent `target` by pxPerSec × frame time and scrollTo()s there.
+//
+// Hands-free — a drag only pauses the glide while touched (the loop follows the
+// finger via `interacting`), then resumes from the new position; only the pause
+// button or the end stops it.
+//
+// `target` is never written from the scroll event: that event lags on Android
+// (pre-scroll offset), which drove the glide backward. `liveOffset` mirrors the
+// real position for seeding/following.
+//
+// Attach `animatedRef` + `scrollHandler` to an Animated.FlatList (scrollEventThrottle=16).
+
+type Params = {
+  playing: boolean;
+  pxPerSec: number;
+  onReachEnd: () => void;
+};
+
+export const useAutoScroll = <ItemT>({ playing, pxPerSec, onReachEnd }: Params) => {
+  const animatedRef = useAnimatedRef<Animated.FlatList<ItemT>>();
+  const target = useSharedValue(0);
+  const liveOffset = useSharedValue(0);
+  const contentH = useSharedValue(0);
+  const layoutH = useSharedValue(0);
+  const speed = useSharedValue(pxPerSec);
+  const interacting = useSharedValue(false);
+
+  useEffect(() => {
+    speed.value = pxPerSec;
+  }, [pxPerSec, speed]);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    // Mirror the real position + extent for seeding/following — never drives the loop.
+    onScroll: (e) => {
+      liveOffset.value = e.contentOffset.y;
+      contentH.value = e.contentSize.height;
+      layoutH.value = e.layoutMeasurement.height;
+    },
+    // A touch (drag + any fling) suspends the glide; releasing resumes. Fire only
+    // on real user interaction, not our scrollTo.
+    onBeginDrag: () => {
+      interacting.value = true;
+    },
+    onEndDrag: () => {
+      interacting.value = false;
+    },
+    onMomentumBegin: () => {
+      interacting.value = true;
+    },
+    onMomentumEnd: () => {
+      interacting.value = false;
+    },
+  });
+
+  const frame = useFrameCallback((f) => {
+    // While the user is touching, follow their scroll so the glide picks up from
+    // the new position on release — don't drive against them.
+    if (interacting.value) {
+      target.value = liveOffset.value;
+      return;
+    }
+    const dt = (f.timeSincePreviousFrame ?? 16) / 1000;
+    const next = target.value + speed.value * dt;
+    // Clamp/stop only once we actually know the scrollable extent; until then
+    // (before the first scroll event) just keep gliding so play can start.
+    const max = contentH.value - layoutH.value;
+    if (max > 0 && next >= max) {
+      target.value = max;
+      scrollTo(animatedRef, 0, max, false);
+      scheduleOnRN(onReachEnd);
+      return;
+    }
+    target.value = next;
+    scrollTo(animatedRef, 0, next, false);
+  }, false);
+
+  // Seed the driver from the reader's actual position at play-start (so a resume
+  // continues in place), then run the loop only while playing. The seed runs in a
+  // UI worklet — writing a shared value off-render.
+  useEffect(() => {
+    if (playing) {
+      runOnUI(() => {
+        target.value = liveOffset.value;
+      })();
+    }
+    frame.setActive(playing);
+  }, [playing, frame, target, liveOffset]);
+
+  return { animatedRef, scrollHandler };
+};
