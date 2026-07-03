@@ -36,6 +36,12 @@ export const getDirection = (locale: AppLocale): AppDirection => {
 
 export const isRTL = (direction: AppDirection) => direction === AppDirection.RTL;
 
+// Lazy import: widgetPayloads.ts pulls in hijri-native/expo-sqlite, which
+// would otherwise load on every app-store import (incl. unrelated tests).
+const syncWidgetPayloads = () => {
+  void import("@/services/widgetPayloads").then((m) => m.syncWidgetPayloads());
+};
+
 const initialLanguage = getInitialLanguage();
 const initialDirection = getDirection(initialLanguage);
 
@@ -71,6 +77,7 @@ export const useAppStore = create<AppState>()(
           setLocale: (locale: AppLocale) => {
             i18n.changeLanguage(locale);
             set({ locale });
+            void syncWidgetPayloads();
           },
 
           setMode: (mode: AppMode) => {
@@ -86,6 +93,7 @@ export const useAppStore = create<AppState>()(
 
           setHijirOffset: (daysOffset) => {
             set({ hijriDaysOffset: daysOffset });
+            void syncWidgetPayloads();
           },
 
           dismissFeatureCard: (id: string) => {
