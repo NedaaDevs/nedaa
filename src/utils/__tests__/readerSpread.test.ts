@@ -19,7 +19,8 @@ import {
   CanvasMode,
   SPREAD_GUTTER,
   SPREAD_TOP_PAD,
-  fitSpreadWidthBox,
+  SINGLE_FIT_ASPECT,
+  fitSinglePageBox,
 } from "@/utils/readerSpread";
 import { SpreadPreference } from "@/enums/quran";
 import { TOTAL_PAGES } from "@/constants/Quran";
@@ -138,10 +139,27 @@ describe("fitPageBox (portrait/spread: whole page visible, height-constrained)",
   });
 });
 
+describe("fitSinglePageBox (tablet portrait: whole page, no scroll, dense pack)", () => {
+  it("fits within the available height", () => {
+    const box = fitSinglePageBox(900, 1024);
+    expect(box.h).toBeLessThanOrEqual(1024);
+  });
+  it("packs denser than the ink-ratio fit, so the page is wider for the same height", () => {
+    const availHeight = 1024;
+    expect(fitSinglePageBox(2000, availHeight).w).toBeGreaterThan(
+      fitPageBox(2000, availHeight).w
+    );
+  });
+  it("never exceeds the slot width", () => {
+    expect(fitSinglePageBox(600, 5000).w).toBeLessThanOrEqual(600);
+  });
+});
+
 describe("canvasFrame (BookCanvas slab + crease share the pager's geometry)", () => {
   it("spread: one height-fit slab spans both panes plus the gutter; crease at center", () => {
     const availPageHeight = 1024 - SPREAD_TOP_PAD - 20;
-    const box = fitPageBox((1366 - SPREAD_GUTTER) / 2, availPageHeight);
+    // Backdrop matches the panes' dense tablet pack, not the default aspect.
+    const box = fitPageBox((1366 - SPREAD_GUTTER) / 2, availPageHeight, SINGLE_FIT_ASPECT);
     const frame = canvasFrame({
       mode: CanvasMode.SPREAD,
       width: 1366,
@@ -155,24 +173,6 @@ describe("canvasFrame (BookCanvas slab + crease share the pager's geometry)", ()
       h: box.h,
     });
     expect(frame.creaseX).toBe(1366 / 2);
-  });
-  it("scroll spread: full-height slab spans both fit-width panes; crease at center", () => {
-    const box = fitSpreadWidthBox(1366);
-    const frame = canvasFrame({
-      mode: CanvasMode.SPREAD_SCROLL,
-      width: 1366,
-      screenHeight: 1024,
-      availPageHeight: 980,
-    });
-    expect(frame.slab).toEqual({
-      x: Math.round((1366 - (box.w * 2 + SPREAD_GUTTER)) / 2),
-      y: 0,
-      w: box.w * 2 + SPREAD_GUTTER,
-      h: 1024,
-    });
-    expect(frame.creaseX).toBe(1366 / 2);
-    // Pane width honors the cap and the gutter split.
-    expect(box.w).toBe(Math.floor(((1366 - SPREAD_GUTTER) / 2) * 0.97));
   });
   it("fit-width landscape: slab is the full-height page column (page scrolls under it)", () => {
     const box = fitWidthBox(1194);

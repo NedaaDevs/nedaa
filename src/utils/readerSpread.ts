@@ -74,12 +74,17 @@ export interface PageBox {
   h: number;
 }
 
-// Largest undistorted page fitting slot width AND available height —
-// WHOLE-fit spread panes (entire 15-line page visible).
-export const fitPageBox = (slotWidth: number, availHeight: number): PageBox => {
+// Largest page fitting slot width AND available height — WHOLE-fit panes (entire
+// 15-line page visible, no scroll). `aspect` defaults to the ink-packed page; pass
+// SINGLE_FIT_ASPECT for the denser tablet pack.
+export const fitPageBox = (
+  slotWidth: number,
+  availHeight: number,
+  aspect: number = PAGE_ASPECT
+): PageBox => {
   const chrome = availHeight * SPREAD_CHROME_RATIO;
-  const w = Math.min(slotWidth, Math.floor((availHeight - chrome) / PAGE_ASPECT));
-  return { w, h: Math.round(w * PAGE_ASPECT + chrome) };
+  const w = Math.min(slotWidth, Math.floor((availHeight - chrome) / aspect));
+  return { w, h: Math.round(w * aspect + chrome) };
 };
 
 // Page sized to the slot width (capped); taller than the screen, the caller scrolls.
@@ -89,11 +94,20 @@ export const fitWidthBox = (slotWidth: number): PageBox => {
   return { w, h: Math.round(w * PAGE_ASPECT + chrome) };
 };
 
-// One SCROLL-fit spread pane: half the gutter-adjusted width (capped); scrolls alone.
-export const fitSpreadWidthBox = (width: number): PageBox => {
-  const w = Math.min(MAX_SINGLE_PAGE_WIDTH, Math.floor(((width - SPREAD_GUTTER) / 2) * 0.97));
-  const chrome = w * FIT_WIDTH_CHROME_RATIO;
-  return { w, h: Math.round(w * PAGE_ASPECT + chrome) };
+// Single-page FIT: packs the 15 lines tighter than the ink ratio so a near-full-
+// width page still fits the height with no scroll. Tunable — raise toward
+// LINE_INK_RATIO for looser lines, lower for a wider/denser page. Must stay above
+// the true glyph-ink fraction or lines clip.
+export const SINGLE_FIT_PACK_RATIO = 0.59;
+export const SINGLE_FIT_ASPECT =
+  (IMAGE_SOURCE_LINE_HEIGHT * LINES_PER_PAGE * SINGLE_FIT_PACK_RATIO) / IMAGE_SOURCE_WIDTH;
+
+// Widest page whose 15 packed lines still fit availHeight — the "fit whole page,
+// no scroll" single-page box. LINE mode packs its 15 line images into this box.
+export const fitSinglePageBox = (slotWidth: number, availHeight: number): PageBox => {
+  const chrome = availHeight * SPREAD_CHROME_RATIO;
+  const w = Math.min(slotWidth, Math.floor((availHeight - chrome) / SINGLE_FIT_ASPECT));
+  return { w, h: Math.round(w * SINGLE_FIT_ASPECT + chrome) };
 };
 
 // Spine gap and top breathing room (minimal — reserved dp shrinks the pages).
@@ -103,7 +117,6 @@ export const SPREAD_TOP_PAD = 8;
 // BookCanvas placement mode — mirrors the reader's large-device layouts.
 export const CanvasMode = {
   SPREAD: "spread",
-  SPREAD_SCROLL: "spread-scroll",
   FIT_WIDTH: "fit-width",
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
@@ -130,20 +143,12 @@ export const canvasFrame = (args: {
     Math.round(SPREAD_TOP_PAD + (screenHeight - SPREAD_TOP_PAD - h) / 2);
   switch (mode) {
     case CanvasMode.SPREAD: {
-      // WHOLE fit: fully visible pair; height margins become book margins.
-      const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight);
+      // WHOLE fit: fully visible pair; height margins become book margins. Matches
+      // the panes' dense pack so the backdrop sits flush behind them.
+      const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight, SINGLE_FIT_ASPECT);
       const w = box.w * 2 + SPREAD_GUTTER;
       return {
         slab: { x: Math.round((width - w) / 2), y: spreadY(box.h), w, h: box.h },
-        creaseX: width / 2,
-      };
-    }
-    case CanvasMode.SPREAD_SCROLL: {
-      // SCROLL-fit pair: panes scroll under a full-height slab column.
-      const box = fitSpreadWidthBox(width);
-      const w = box.w * 2 + SPREAD_GUTTER;
-      return {
-        slab: { x: Math.round((width - w) / 2), y: 0, w, h: screenHeight },
         creaseX: width / 2,
       };
     }

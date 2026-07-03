@@ -15,7 +15,6 @@ import {
   QuranTheme,
   ReaderViewMode,
   ShareCardStyle,
-  SpreadFit,
   SpreadPreference,
 } from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
@@ -32,8 +31,6 @@ export const useQuranStore = create<QuranState>()(
       fontSize: FONT_SIZE_DEFAULT,
       // AUTO: pane width decides; ON/OFF are explicit.
       spreadPreference: SpreadPreference.AUTO,
-      // Symmetric spread defaults to bigger, per-page-scrolling pages.
-      spreadFit: SpreadFit.SCROLL,
       libraryTab: "index",
       shareStyle: ShareCardStyle.IMAGE,
       shareIncludeLogo: true,
@@ -76,7 +73,6 @@ export const useQuranStore = create<QuranState>()(
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
       setSpreadPreference: (pref: SpreadPreference) => set({ spreadPreference: pref }),
-      setSpreadFit: (fit: SpreadFit) => set({ spreadFit: fit }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setShareStyle: (style) => set({ shareStyle: style }),
       setShareIncludeLogo: (on) => set({ shareIncludeLogo: on }),
@@ -175,7 +171,6 @@ export const useQuranStore = create<QuranState>()(
         readerMode: state.readerMode,
         fontSize: state.fontSize,
         spreadPreference: state.spreadPreference,
-        spreadFit: state.spreadFit,
         libraryTab: state.libraryTab,
         shareStyle: state.shareStyle,
         shareIncludeLogo: state.shareIncludeLogo,
@@ -216,10 +211,6 @@ export const useQuranStore = create<QuranState>()(
         const validSpreadPrefs = Object.values(SpreadPreference) as string[];
         if (!validSpreadPrefs.includes(merged.spreadPreference)) {
           merged.spreadPreference = SpreadPreference.AUTO;
-        }
-        const validSpreadFits = Object.values(SpreadFit) as string[];
-        if (!validSpreadFits.includes(merged.spreadFit)) {
-          merged.spreadFit = SpreadFit.SCROLL;
         }
         if (typeof merged.showMutashabihatMarkers !== "boolean") {
           merged.showMutashabihatMarkers = false;

@@ -30,14 +30,6 @@ export enum LineType {
   EMPTY = "empty",
 }
 
-// Spread sizing: SCROLL fills the width (each page scrolls alone),
-// WHOLE height-fits both full pages.
-export const SpreadFit = {
-  SCROLL: "scroll",
-  WHOLE: "whole",
-} as const;
-// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
-export type SpreadFit = (typeof SpreadFit)[keyof typeof SpreadFit];
 
 // Ayah action-sheet sub-views (swapped into the sheet body): similar verses, the
 // per-ayah tajweed rule list, and the sajda guidance.

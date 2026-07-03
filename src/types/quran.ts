@@ -9,7 +9,6 @@ import {
   RevelationPlace,
   SajdaType,
   ShareCardStyle,
-  SpreadFit,
   SpreadPreference,
 } from "@/enums/quran";
 
@@ -198,8 +197,6 @@ export type QuranState = {
   fontSize: number;
   // Two-page spread on large landscape: AUTO lets geometry decide; ON/OFF are explicit.
   spreadPreference: SpreadPreference;
-  // Symmetric-spread page sizing: SCROLL (bigger text, per-page scroll) or WHOLE.
-  spreadFit: SpreadFit;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
   libraryTab: QuranLibraryTab;
   // Ayah image-share preferences (persisted): which card style was last used,
@@ -234,7 +231,6 @@ export type QuranState = {
   setReaderMode: (mode: ReaderViewMode) => void;
   setFontSize: (size: number) => void;
   setSpreadPreference: (pref: SpreadPreference) => void;
-  setSpreadFit: (fit: SpreadFit) => void;
   setLibraryTab: (tab: QuranLibraryTab) => void;
   setShareStyle: (style: ShareCardStyle) => void;
   setShareIncludeLogo: (on: boolean) => void;

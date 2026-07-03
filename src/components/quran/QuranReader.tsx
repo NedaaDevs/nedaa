@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   useWindowDimensions,
   StyleSheet,
   View,
   ScrollView,
   I18nManager,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -21,7 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { MushafVersion, QuranThemeType, ReaderViewMode, SpreadFit } from "@/enums/quran";
+import { MushafVersion, QuranThemeType, ReaderViewMode } from "@/enums/quran";
 import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX } from "@/constants/Quran";
 import {
   TOTAL_SPREADS,
@@ -29,9 +27,10 @@ import {
   pagesOfSpread,
   clampPage,
   ReaderLayoutMode,
+  fitSinglePageBox,
   fitWidthBox,
   fitPageBox,
-  fitSpreadWidthBox,
+  SINGLE_FIT_ASPECT,
   canvasFrame,
   CanvasMode,
   SPREAD_GUTTER,
@@ -96,14 +95,12 @@ const QuranReader = ({
   // Large device showing one image page.
   const isLargeSingle =
     layout.mode === ReaderLayoutMode.SINGLE && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
-  // SCROLL: fit-width pages, each scrolling alone (a shared scroll would zigzag
-  // against right-then-left reading). WHOLE: height-fit.
-  const spreadFit = useQuranStore((s) => s.spreadFit);
-  const spreadScrolls = isSpread && spreadFit === SpreadFit.SCROLL;
-  // Modes where a vertical drag scrolls a page instead of turning it.
-  const verticalScrolls = readerMode === ReaderViewMode.TEXT || isLargeSingle || spreadScrolls;
-  // Session scroll memory, keyed "p"+page (single) / "sp"+page (spread pane).
-  const scrollOffsets = useRef<Map<string, number>>(new Map());
+  // Portrait large-single fits the whole page (no scroll) → vertical drags turn
+  // pages; landscape large-single still fills width and scrolls (a fit page would
+  // be tiny), so a vertical drag there scrolls.
+  const isLandscape = width > height;
+  const verticalScrolls =
+    readerMode === ReaderViewMode.TEXT || (isLargeSingle && isLandscape);
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   // Clamp a non-finite/out-of-range currentPage so the page window can't be empty (blank reader).
   const safePage = clampPage(currentPage);
@@ -118,11 +115,7 @@ const QuranReader = ({
   const settleSpring = showBookCanvas ? TABLET_SPRING_CONFIG : SPRING_CONFIG;
   const bookFrame = showBookCanvas
     ? canvasFrame({
-        mode: isSpread
-          ? spreadScrolls
-            ? CanvasMode.SPREAD_SCROLL
-            : CanvasMode.SPREAD
-          : CanvasMode.FIT_WIDTH,
+        mode: isSpread ? CanvasMode.SPREAD : CanvasMode.FIT_WIDTH,
         width,
         screenHeight: height,
         availPageHeight,
@@ -310,12 +303,10 @@ const QuranReader = ({
             key={unit}
             unit={unit}
             isSpread={isSpread}
-            spreadScrolls={spreadScrolls}
             isLargeSingle={isLargeSingle}
             availPageHeight={availPageHeight}
             scrollPadTop={insets.top + 8}
             scrollPadBottom={insets.bottom + 8}
-            scrollOffsets={scrollOffsets}
             unitIndex={unitIndex}
             version={version}
             quranTheme={quranTheme}
@@ -339,12 +330,10 @@ const QuranReader = ({
 interface PageSlotProps {
   unit: number;
   isSpread: boolean;
-  spreadScrolls: boolean;
   isLargeSingle: boolean;
   availPageHeight: number;
   scrollPadTop: number;
   scrollPadBottom: number;
-  scrollOffsets: React.RefObject<Map<string, number>>;
   unitIndex: SharedValue<number>;
   version: MushafVersion;
   quranTheme: QuranThemeType;
@@ -362,12 +351,10 @@ interface PageSlotProps {
 const PageSlot = ({
   unit,
   isSpread,
-  spreadScrolls,
   isLargeSingle,
   availPageHeight,
   scrollPadTop,
   scrollPadBottom,
-  scrollOffsets,
   unitIndex,
   version,
   quranTheme,
@@ -381,21 +368,6 @@ const PageSlot = ({
   onWaqfPress,
   selectedAyah,
 }: PageSlotProps) => {
-  // Fit-width single: restore the remembered offset once content is measured,
-  // save on scroll. Plain functions — the React Compiler memoizes ref reads.
-  const scrollRef = useRef<ScrollView>(null);
-  const restoredScroll = useRef(false);
-  const scrollKey = `p${unit}`;
-  const onScrollContentSize = () => {
-    if (restoredScroll.current) return;
-    restoredScroll.current = true;
-    const y = scrollOffsets.current?.get(scrollKey) ?? 0;
-    if (y > 0) scrollRef.current?.scrollTo({ y, animated: false });
-  };
-  const onPageScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollOffsets.current?.set(scrollKey, e.nativeEvent.contentOffset.y);
-  };
-
   const animatedStyle = useAnimatedStyle(() => {
     // unitOffset: 0 = current, -1 = next, +1 = prev; dragOffset: -1..1 drag.
     // UI-thread values only, so a turn updates position in one frame.
@@ -473,13 +445,36 @@ const PageSlot = ({
         </Animated.View>
       );
     }
-    // Large single (portrait or landscape): fit the page to the (capped) width
-    // and scroll it vertically — content fills the width edge-to-edge.
+    // Portrait large-single: fit the whole page to the height so all 15 lines +
+    // the footer sit on one screen — no scroll. Lines pack tighter than the ink
+    // ratio to keep the page near full width (see fitSinglePageBox).
+    if (availPageHeight > width) {
+      const box = fitSinglePageBox(width, availPageHeight);
+      return (
+        <Animated.View style={[styles.page, animatedStyle]}>
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <View style={pageBoxStyle(box.w, box.h)}>
+              <QuranPage
+                page={unit}
+                version={version}
+                quranTheme={quranTheme}
+                width={box.w}
+                onAyahLongPress={onAyahLongPress}
+                onSurahLongPress={onSurahLongPress}
+                selectedAyah={selectedAyah}
+              />
+            </View>
+          </View>
+          {turnShadows}
+        </Animated.View>
+      );
+    }
+    // Landscape large-single (edge case — e.g. spread turned off): a whole-page
+    // fit would be a tiny letterboxed column, so fill the width and scroll.
     const box = fitWidthBox(width);
     return (
       <Animated.View style={[styles.page, animatedStyle]}>
         <ScrollView
-          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{
             flexGrow: 1,
@@ -488,10 +483,7 @@ const PageSlot = ({
             paddingTop: scrollPadTop,
             paddingBottom: scrollPadBottom,
           }}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={onPageScroll}
-          onContentSizeChange={onScrollContentSize}>
+          showsVerticalScrollIndicator={false}>
           <View style={pageBoxStyle(box.w, box.h)}>
             <QuranPage
               page={unit}
@@ -513,36 +505,8 @@ const PageSlot = ({
   // earlier page on the visual right.
   const pages = pagesOfSpread(unit);
 
-  // SCROLL fit: two fit-width pages, each scrolling in its own ScrollView.
-  if (spreadScrolls) {
-    const box = fitSpreadWidthBox(width);
-    return (
-      <Animated.View style={[styles.page, animatedStyle]}>
-        <View style={styles.spreadScrollRow}>
-          {pages.map((p, i) => (
-            <SpreadPane
-              key={p}
-              page={p}
-              box={box}
-              version={version}
-              quranTheme={quranTheme}
-              side={(i === 0) === I18nManager.isRTL ? "right" : "left"}
-              scrollOffsets={scrollOffsets}
-              padTop={scrollPadTop}
-              padBottom={scrollPadBottom}
-              onAyahLongPress={onAyahLongPress}
-              onSurahLongPress={onSurahLongPress}
-              selectedAyah={selectedAyah}
-            />
-          ))}
-        </View>
-        {turnShadows}
-      </Animated.View>
-    );
-  }
-
-  // WHOLE fit: height-fit pair, both full pages visible at once.
-  const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight);
+  // Height-fit pair, both full pages visible at once (dense pack, no scroll).
+  const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight, SINGLE_FIT_ASPECT);
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
       <View style={styles.spreadRow}>
@@ -567,71 +531,6 @@ const PageSlot = ({
   );
 };
 
-interface SpreadPaneProps {
-  page: number;
-  box: { w: number; h: number };
-  version: MushafVersion;
-  quranTheme: QuranThemeType;
-  side: "left" | "right";
-  scrollOffsets: React.RefObject<Map<string, number>>;
-  padTop: number;
-  padBottom: number;
-  onAyahLongPress?: (surah: number, ayah: number) => void;
-  onSurahLongPress?: (surah: number) => void;
-  selectedAyah?: { surah: number; ayah: number } | null;
-}
-
-// One independently-scrolling page of a SCROLL-fit spread ("sp" scroll keys).
-const SpreadPane = ({
-  page,
-  box,
-  version,
-  quranTheme,
-  side,
-  scrollOffsets,
-  padTop,
-  padBottom,
-  onAyahLongPress,
-  onSurahLongPress,
-  selectedAyah,
-}: SpreadPaneProps) => {
-  const scrollRef = useRef<ScrollView>(null);
-  const restoredScroll = useRef(false);
-  const scrollKey = `sp${page}`;
-  const onScrollContentSize = () => {
-    if (restoredScroll.current) return;
-    restoredScroll.current = true;
-    const y = scrollOffsets.current?.get(scrollKey) ?? 0;
-    if (y > 0) scrollRef.current?.scrollTo({ y, animated: false });
-  };
-  const onPaneScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollOffsets.current?.set(scrollKey, e.nativeEvent.contentOffset.y);
-  };
-  return (
-    <ScrollView
-      ref={scrollRef}
-      style={{ width: box.w, flexGrow: 0 }}
-      contentContainerStyle={{ paddingTop: padTop, paddingBottom: padBottom }}
-      showsVerticalScrollIndicator={false}
-      scrollEventThrottle={16}
-      onScroll={onPaneScroll}
-      onContentSizeChange={onScrollContentSize}>
-      <View style={{ width: box.w, height: box.h }}>
-        <QuranPage
-          page={page}
-          width={box.w}
-          version={version}
-          quranTheme={quranTheme}
-          side={side}
-          onAyahLongPress={onAyahLongPress}
-          onSurahLongPress={onSurahLongPress}
-          selectedAyah={selectedAyah}
-        />
-      </View>
-    </ScrollView>
-  );
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -649,12 +548,6 @@ const styles = StyleSheet.create({
     gap: SPREAD_GUTTER,
   },
   // SCROLL-fit spread: the two independently-scrolling panes sit side by side.
-  spreadScrollRow: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: SPREAD_GUTTER,
-  },
   turnShadow: {
     position: "absolute",
     top: 0,

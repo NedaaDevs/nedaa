@@ -18,7 +18,6 @@ import {
   MushafVersion,
   DownloadStatus,
   ReaderViewMode,
-  SpreadFit,
   SpreadPreference,
 } from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
@@ -51,12 +50,10 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
     readerMode,
     fontSize,
     spreadPreference,
-    spreadFit,
     showMutashabihatMarkers,
     setReaderMode,
     setFontSize,
     setSpreadPreference,
-    setSpreadFit,
     setShowMutashabihatMarkers,
   } = useQuranStore();
 
@@ -188,20 +185,6 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
                     ]}
                     selected={spreadPreference}
                     onSelect={setSpreadPreference}
-                  />
-                </SettingRow>
-              )}
-
-              {isLargeDevice && (
-                <SettingRow label={t("quran.settings.spreadFit")} chrome={chrome} stacked>
-                  <Segmented
-                    chrome={chrome}
-                    options={[
-                      { value: SpreadFit.SCROLL, label: t("quran.settings.spreadFitScroll") },
-                      { value: SpreadFit.WHOLE, label: t("quran.settings.spreadFitWhole") },
-                    ]}
-                    selected={spreadFit}
-                    onSelect={setSpreadFit}
                   />
                 </SettingRow>
               )}
