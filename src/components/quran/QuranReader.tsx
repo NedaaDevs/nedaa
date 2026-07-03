@@ -30,7 +30,6 @@ import {
   fitSinglePageBox,
   fitWidthBox,
   fitPageBox,
-  SINGLE_FIT_ASPECT,
   canvasFrame,
   CanvasMode,
   SPREAD_GUTTER,
@@ -95,12 +94,12 @@ const QuranReader = ({
   // Large device showing one image page.
   const isLargeSingle =
     layout.mode === ReaderLayoutMode.SINGLE && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
-  // Portrait large-single fits the whole page (no scroll) → vertical drags turn
-  // pages; landscape large-single still fills width and scrolls (a fit page would
-  // be tiny), so a vertical drag there scrolls.
-  const isLandscape = width > height;
+  // A large single page fits by orientation: portrait aspect-fits the whole page
+  // (no scroll → vertical drags turn pages); landscape fills the capped width and
+  // scrolls (a height-fit page would be a tiny letterboxed column).
+  const usePortraitFit = height > width;
   const verticalScrolls =
-    readerMode === ReaderViewMode.TEXT || (isLargeSingle && isLandscape);
+    readerMode === ReaderViewMode.TEXT || (isLargeSingle && !usePortraitFit);
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   // Clamp a non-finite/out-of-range currentPage so the page window can't be empty (blank reader).
   const safePage = clampPage(currentPage);
@@ -304,6 +303,7 @@ const QuranReader = ({
             unit={unit}
             isSpread={isSpread}
             isLargeSingle={isLargeSingle}
+            usePortraitFit={usePortraitFit}
             availPageHeight={availPageHeight}
             scrollPadTop={insets.top + 8}
             scrollPadBottom={insets.bottom + 8}
@@ -331,6 +331,7 @@ interface PageSlotProps {
   unit: number;
   isSpread: boolean;
   isLargeSingle: boolean;
+  usePortraitFit: boolean;
   availPageHeight: number;
   scrollPadTop: number;
   scrollPadBottom: number;
@@ -352,6 +353,7 @@ const PageSlot = ({
   unit,
   isSpread,
   isLargeSingle,
+  usePortraitFit,
   availPageHeight,
   scrollPadTop,
   scrollPadBottom,
@@ -445,10 +447,8 @@ const PageSlot = ({
         </Animated.View>
       );
     }
-    // Portrait large-single: fit the whole page to the height so all 15 lines +
-    // the footer sit on one screen — no scroll. Lines pack tighter than the ink
-    // ratio to keep the page near full width (see fitSinglePageBox).
-    if (availPageHeight > width) {
+    // Portrait single (tablet portrait): aspect-fit the whole page, no scroll.
+    if (usePortraitFit) {
       const box = fitSinglePageBox(width, availPageHeight);
       return (
         <Animated.View style={[styles.page, animatedStyle]}>
@@ -506,7 +506,7 @@ const PageSlot = ({
   const pages = pagesOfSpread(unit);
 
   // Height-fit pair, both full pages visible at once (dense pack, no scroll).
-  const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight, SINGLE_FIT_ASPECT);
+  const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight);
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
       <View style={styles.spreadRow}>

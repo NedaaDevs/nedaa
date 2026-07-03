@@ -29,7 +29,7 @@ import AyahMarker from "@/components/quran/AyahMarker";
 // import SurahFrame from "@/components/quran/SurahFrame";
 
 // Native aspect of the surah-frame SVG (viewBox 2793×720) — used to size the banner
-// without stretching, the way Ayah derives its header height from the bitmap ratio.
+// without stretching — the banner height derives from the bitmap's aspect ratio.
 const SURAH_FRAME_ASPECT = 2793 / 720;
 
 const LONG_PRESS_MS = 400;

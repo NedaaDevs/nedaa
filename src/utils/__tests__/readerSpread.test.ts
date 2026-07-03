@@ -14,12 +14,12 @@ import {
   FIT_WIDTH_CHROME_RATIO,
   MAX_SINGLE_PAGE_WIDTH,
   shouldDefaultSpread,
+  isNearSquare,
   MIN_SPREAD_PANE_WIDTH,
   canvasFrame,
   CanvasMode,
   SPREAD_GUTTER,
   SPREAD_TOP_PAD,
-  SINGLE_FIT_ASPECT,
   fitSinglePageBox,
 } from "@/utils/readerSpread";
 import { SpreadPreference } from "@/enums/quran";
@@ -60,6 +60,15 @@ describe("shouldDefaultSpread (AUTO heuristics)", () => {
     expect(shouldDefaultSpread({ width: 1160, height: 800 })).toBe(true);
     expect(shouldDefaultSpread({ width: 1159, height: 800 })).toBe(false);
   });
+  it("an unfolded foldable opens an open-book spread in portrait, single in landscape", () => {
+    // Pixel Fold unfolded ≈ 852×883dp — near-square held portrait → two pages.
+    expect(shouldDefaultSpread({ width: 852, height: 883 })).toBe(true);
+    // Rotated to landscape (883×852) it reads as one wide page.
+    expect(shouldDefaultSpread({ width: 883, height: 852 })).toBe(false);
+    expect(isNearSquare(852, 883)).toBe(true);
+    // A clearly-portrait iPad is not near-square.
+    expect(isNearSquare(834, 1112)).toBe(false);
+  });
 });
 
 describe("resolveReaderLayout device matrix (tri-state preference)", () => {
@@ -79,6 +88,12 @@ describe("resolveReaderLayout device matrix (tri-state preference)", () => {
   it("explicit ON/OFF override geometry", () => {
     expect(layout(1133, 744, SpreadPreference.ON).mode).toBe(ReaderLayoutMode.SPREAD);
     expect(layout(1376, 1024, SpreadPreference.OFF).mode).toBe(ReaderLayoutMode.SINGLE);
+  });
+  it("unfolded foldable: portrait opens an open-book spread; OFF forces single", () => {
+    expect(layout(852, 883).mode).toBe(ReaderLayoutMode.SPREAD);
+    expect(layout(852, 883, SpreadPreference.OFF).mode).toBe(ReaderLayoutMode.SINGLE);
+    // Rotated to landscape, the fold reads as one wide (scrolling) page.
+    expect(layout(883, 852).mode).toBe(ReaderLayoutMode.SINGLE);
   });
   it("threshold is shortest-side >= LARGE_DEVICE_MIN_DP", () => {
     expect(LARGE_DEVICE_MIN_DP).toBe(600);
@@ -158,8 +173,7 @@ describe("fitSinglePageBox (tablet portrait: whole page, no scroll, dense pack)"
 describe("canvasFrame (BookCanvas slab + crease share the pager's geometry)", () => {
   it("spread: one height-fit slab spans both panes plus the gutter; crease at center", () => {
     const availPageHeight = 1024 - SPREAD_TOP_PAD - 20;
-    // Backdrop matches the panes' dense tablet pack, not the default aspect.
-    const box = fitPageBox((1366 - SPREAD_GUTTER) / 2, availPageHeight, SINGLE_FIT_ASPECT);
+    const box = fitPageBox((1366 - SPREAD_GUTTER) / 2, availPageHeight);
     const frame = canvasFrame({
       mode: CanvasMode.SPREAD,
       width: 1366,

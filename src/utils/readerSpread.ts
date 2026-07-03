@@ -27,12 +27,23 @@ export interface ReaderLayout {
 // 10.2" (540) stay single.
 export const MIN_SPREAD_PANE_WIDTH = 580;
 
-// AUTO opens as a spread: large landscape with wide-enough halves.
+// Below this aspect a large screen is "near-square" — an unfolded foldable, which
+// reads as an open book (two facing pages) rather than one page with wide margins.
+// iPads in portrait sit well above this (10.2" ≈ 1.33, Pro 11" ≈ 1.43), so they
+// stay single.
+export const NEAR_SQUARE_MAX_ASPECT = 1.2;
+export const isNearSquare = (width: number, height: number): boolean =>
+  Math.max(width, height) / Math.min(width, height) < NEAR_SQUARE_MAX_ASPECT;
+
+// AUTO opens as a spread where two pages fit. A near-square foldable is an open
+// book in PORTRAIT (its width holds two portrait pages); rotated to landscape it
+// reads as one wide page. A clearly-shaped tablet spreads only in wide landscape.
 export const shouldDefaultSpread = (args: { width: number; height: number }): boolean => {
   const { width, height } = args;
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
-  if (!isLarge || width <= height) return false;
-  return width / 2 >= MIN_SPREAD_PANE_WIDTH;
+  if (!isLarge) return false;
+  if (isNearSquare(width, height)) return height > width;
+  return width > height && width / 2 >= MIN_SPREAD_PANE_WIDTH;
 };
 
 export const resolveReaderLayout = (args: {
@@ -46,9 +57,12 @@ export const resolveReaderLayout = (args: {
   const spreadOn =
     spreadPreference === SpreadPreference.ON ||
     (spreadPreference === SpreadPreference.AUTO && shouldDefaultSpread({ width, height }));
+  // Spread makes sense where two pages fit: a near-square foldable held portrait,
+  // or a wide landscape tablet. (Fold landscape and tablet portrait stay single.)
+  const spreadAllowed = isNearSquare(width, height) ? !isLandscape : isLandscape;
   const mode: ReaderLayoutMode = !isLarge
     ? ReaderLayoutMode.PHONE
-    : isLandscape && spreadOn
+    : spreadOn && spreadAllowed
       ? ReaderLayoutMode.SPREAD
       : ReaderLayoutMode.SINGLE;
   return { mode, isLarge, isLandscape };
@@ -74,17 +88,12 @@ export interface PageBox {
   h: number;
 }
 
-// Largest page fitting slot width AND available height — WHOLE-fit panes (entire
-// 15-line page visible, no scroll). `aspect` defaults to the ink-packed page; pass
-// SINGLE_FIT_ASPECT for the denser tablet pack.
-export const fitPageBox = (
-  slotWidth: number,
-  availHeight: number,
-  aspect: number = PAGE_ASPECT
-): PageBox => {
+// Largest ink-packed page fitting slot width AND available height — WHOLE-fit
+// panes (entire 15-line page visible, no scroll).
+export const fitPageBox = (slotWidth: number, availHeight: number): PageBox => {
   const chrome = availHeight * SPREAD_CHROME_RATIO;
-  const w = Math.min(slotWidth, Math.floor((availHeight - chrome) / aspect));
-  return { w, h: Math.round(w * aspect + chrome) };
+  const w = Math.min(slotWidth, Math.floor((availHeight - chrome) / PAGE_ASPECT));
+  return { w, h: Math.round(w * PAGE_ASPECT + chrome) };
 };
 
 // Page sized to the slot width (capped); taller than the screen, the caller scrolls.
@@ -143,9 +152,8 @@ export const canvasFrame = (args: {
     Math.round(SPREAD_TOP_PAD + (screenHeight - SPREAD_TOP_PAD - h) / 2);
   switch (mode) {
     case CanvasMode.SPREAD: {
-      // WHOLE fit: fully visible pair; height margins become book margins. Matches
-      // the panes' dense pack so the backdrop sits flush behind them.
-      const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight, SINGLE_FIT_ASPECT);
+      // WHOLE fit: fully visible pair; height margins become book margins.
+      const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight);
       const w = box.w * 2 + SPREAD_GUTTER;
       return {
         slab: { x: Math.round((width - w) / 2), y: spreadY(box.h), w, h: box.h },
