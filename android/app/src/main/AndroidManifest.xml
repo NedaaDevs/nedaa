@@ -66,6 +66,13 @@
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_times_widget_medium_info"/>
     </receiver>
+    <receiver android:name=".widgets.prayer.PrayerTimesReceiverLarge" android:exported="true" android:label="@string/widget_prayer_times_large_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="dev.nedaa.android.ACTION_UPDATE_PRAYER_WIDGET"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_times_widget_large_info"/>
+    </receiver>
     <receiver android:name=".widgets.combined.PrayerAthkarReceiver" android:exported="true" android:label="@string/widget_combined_name">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
