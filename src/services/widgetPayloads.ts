@@ -11,6 +11,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 import { refreshAllWidgets } from "../../modules/expo-widgets/src";
+import { reloadAllWidgets } from "../../modules/expo-widget/src";
 
 export type WidgetImportantDay = {
   id: string;
@@ -55,7 +56,9 @@ export const buildHijriTodayPayload = (
 // (a second handle to nedaa.db NPEs mid-session). Widgets are decoration: any
 // failure here must never break the app.
 export const syncWidgetPayloads = async (): Promise<void> => {
-  if (Platform.OS !== PlatformType.ANDROID) return;
+  // Android reads these tables from nedaa.db directly; iOS reads the same DB
+  // via the App Group container (see getDirectory in services/db).
+  if (Platform.OS !== PlatformType.ANDROID && Platform.OS !== PlatformType.IOS) return;
   try {
     const t = i18n.t.bind(i18n);
     const { hijriDaysOffset } = useAppStore.getState();
@@ -93,7 +96,11 @@ export const syncWidgetPayloads = async (): Promise<void> => {
         );
       });
     });
-    refreshAllWidgets();
+    if (Platform.OS === PlatformType.IOS) {
+      reloadAllWidgets();
+    } else {
+      refreshAllWidgets();
+    }
   } catch (e) {
     console.warn("[widgetPayloads] sync failed", e);
   }

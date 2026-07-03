@@ -50,6 +50,9 @@ struct WidgetsBundle26: WidgetBundle {
         SuhoorIftarWidget()
         RamadanProgressWidget()
 
+        // Occasions
+        ImportantDaysWidget()
+
         // Live Activities
         AlarmLiveActivity()  // Regular Live Activity (fallback)
         AlarmKitCountdownWidget()  // AlarmKit countdown (Dynamic Island)
@@ -76,6 +79,9 @@ struct WidgetsBundle17: WidgetBundle {
         // Ramadan Widgets
         SuhoorIftarWidget()
         RamadanProgressWidget()
+
+        // Occasions
+        ImportantDaysWidget()
 
         // Live Activity
         AlarmLiveActivity()

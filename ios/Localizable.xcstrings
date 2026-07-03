@@ -1973,6 +1973,106 @@
         }
       }
     },
+    "occasion.ramadan": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ramadan" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "رمضان" } }
+      }
+    },
+    "occasion.eid-al-fitr": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Eid al-Fitr" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "عيد الفطر" } }
+      }
+    },
+    "occasion.arafah": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Day of Arafah" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "يوم عرفة" } }
+      }
+    },
+    "occasion.eid-al-adha": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Eid al-Adha" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "عيد الأضحى" } }
+      }
+    },
+    "occasion.hijri-new-year": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Islamic New Year" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "رأس السنة الهجرية" } }
+      }
+    },
+    "occasion.ashura": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ashura" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "عاشوراء" } }
+      }
+    },
+    "importantDaysWidgetTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Islamic Occasions"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المناسبات الإسلامية"
+          }
+        }
+      }
+    },
+    "importantDaysWidgetDesc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Countdowns to Ramadan, Eid, and more"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عدّ تنازلي لرمضان والعيدين وغيرها"
+          }
+        }
+      }
+    },
+    "widget_days_today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم"
+          }
+        }
+      }
+    },
+    "widget_days_unit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم"
+          }
+        }
+      }
+    },
     "suhoorIftarWidgetTitle": {
       "localizations": {
         "en": {
