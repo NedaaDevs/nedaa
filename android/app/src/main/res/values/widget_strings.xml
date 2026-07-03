@@ -43,6 +43,10 @@
     <string name="widget_progress">Progress</string>
     <string name="widget_no_qada">No Qada to track</string>
 
+    <!-- Important Days labels -->
+    <string name="widget_days_today">Today</string>
+    <string name="widget_days_unit">days</string>
+
     <!-- Widget descriptions (shown in widget picker) -->
     <string name="widget_prayer_times_description">Shows prayer times and countdown to next prayer</string>
     <string name="widget_prayer_times_small_description">Shows next and previous prayer (2x2)</string>
@@ -53,6 +57,7 @@
     <string name="widget_qada_description">Track your missed fasts (Qada)</string>
     <string name="widget_qada_medium_description">Qada tracker with remaining count and progress (4x2)</string>
     <string name="widget_combined_description">Prayer times and Athkar progress together</string>
+    <string name="widget_important_days_description">Countdowns to Ramadan, Eid, and more</string>
 
     <!-- Widget names (shown in widget picker) -->
     <string name="widget_prayer_times_name">Nedaa Prayer Times</string>
@@ -64,6 +69,7 @@
     <string name="widget_qada_name">Nedaa Qada</string>
     <string name="widget_qada_medium_name">Nedaa Qada (Medium)</string>
     <string name="widget_combined_name">Nedaa Prayer + Athkar</string>
+    <string name="widget_important_days_name">Important Days</string>
 
     <!-- Configuration -->
     <string name="widget_config_title">Widget Settings</string>
@@ -71,8 +77,9 @@
     <string name="widget_config_show_sunrise">Show sunrise time</string>
     <string name="widget_config_save">Save</string>
     <string name="widget_config_cancel">Cancel</string>
-    <string name="widget_important_days_name">Important Days</string>
-    <string name="widget_important_days_description">Countdowns to Ramadan, Eid, and more</string>
-    <string name="widget_days_today">Today</string>
-    <string name="widget_days_unit">days</string>
+    <string name="widget_all_prayers_name">All Prayers</string>
+    <string name="widget_suhoor_iftar_name">Suhoor &amp; Iftar</string>
+    <string name="widget_suhoor">Suhoor</string>
+    <string name="widget_iftar">Iftar</string>
+    <string name="widget_hijri_date_name">Hijri Date</string>
 </resources>

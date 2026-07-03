@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder description string below reuses an existing resource; the controller
+     should point this at a dedicated widget_all_prayers_description when it wires
+     registration up (see AllPrayersWidget.kt top-of-file note). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:maxResizeWidth="250dp"
+    android:maxResizeHeight="110dp"
+    android:widgetCategory="home_screen"
+    android:previewLayout="@layout/widget_all_prayers_preview"
+    android:description="@string/widget_prayer_times_medium_description"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/glance_default_loading_layout" />

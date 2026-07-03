@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import { Platform } from "react-native";
 
+import { PlatformType } from "@/enums/app";
 import { HijriNative } from "@/utils/date";
 import { upcomingImportantDays } from "@/utils/importantDays";
 import { sharedDb } from "@/services/db";
@@ -54,7 +55,7 @@ export const buildHijriTodayPayload = (
 // (a second handle to nedaa.db NPEs mid-session). Widgets are decoration: any
 // failure here must never break the app.
 export const syncWidgetPayloads = async (): Promise<void> => {
-  if (Platform.OS !== "android") return;
+  if (Platform.OS !== PlatformType.ANDROID) return;
   try {
     const t = i18n.t.bind(i18n);
     const { hijriDaysOffset } = useAppStore.getState();

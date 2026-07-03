@@ -26,6 +26,8 @@ import {
   CircleCheck,
   ChevronDown,
   CalendarDays,
+  Moon,
+  CalendarRange,
 } from "lucide-react-native";
 
 // Widget module
@@ -36,6 +38,7 @@ import {
   requestDisableBatteryOptimization,
   type WidgetType,
 } from "expo-widgets";
+import { PlatformType } from "@/enums/app";
 
 type WidgetItem = {
   type: WidgetType;
@@ -108,6 +111,27 @@ const WIDGETS: WidgetItem[] = [
     descKey: "settings.widgets.importantDaysDesc",
     icon: CalendarDays,
     size: "2×2",
+  },
+  {
+    type: "all_prayers",
+    nameKey: "settings.widgets.allPrayers",
+    descKey: "settings.widgets.allPrayersDesc",
+    icon: Clock,
+    size: "4×2",
+  },
+  {
+    type: "suhoor_iftar",
+    nameKey: "settings.widgets.suhoorIftar",
+    descKey: "settings.widgets.suhoorIftarDesc",
+    icon: Moon,
+    size: "2×2",
+  },
+  {
+    type: "hijri_date",
+    nameKey: "settings.widgets.hijriDate",
+    descKey: "settings.widgets.hijriDateDesc",
+    icon: CalendarRange,
+    size: "2×1",
   },
 ];
 
@@ -198,7 +222,7 @@ const WidgetSettings = () => {
   const { t } = useTranslation();
   let canPin = false;
   try {
-    canPin = Platform.OS === "android" && isPinningSupported();
+    canPin = Platform.OS === PlatformType.ANDROID && isPinningSupported();
   } catch {
     canPin = false;
   }
@@ -206,7 +230,7 @@ const WidgetSettings = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === "android") {
+      if (Platform.OS === PlatformType.ANDROID) {
         setBatteryOptDisabled(isBatteryOptimizationDisabled());
       }
     }, [])
@@ -229,7 +253,7 @@ const WidgetSettings = () => {
           </Text>
 
           {/* iOS info note */}
-          {Platform.OS === "ios" && (
+          {Platform.OS === PlatformType.IOS && (
             <HStack
               gap="$3"
               padding="$4"
@@ -246,7 +270,7 @@ const WidgetSettings = () => {
           )}
 
           {/* Battery optimization banner (Android only) */}
-          {Platform.OS === "android" && !batteryOptDisabled && (
+          {Platform.OS === PlatformType.ANDROID && !batteryOptDisabled && (
             <Pressable
               onPress={handleBatteryOptimization}
               padding="$4"
@@ -270,7 +294,7 @@ const WidgetSettings = () => {
             </Pressable>
           )}
 
-          {Platform.OS === "android" && batteryOptDisabled && (
+          {Platform.OS === PlatformType.ANDROID && batteryOptDisabled && (
             <HStack
               gap="$2"
               paddingHorizontal="$4"
@@ -288,7 +312,7 @@ const WidgetSettings = () => {
           )}
 
           {/* Android widget list */}
-          {Platform.OS === "android" && (
+          {Platform.OS === PlatformType.ANDROID && (
             <VStack gap="$2">
               {WIDGETS.map((widget) => (
                 <WidgetCard key={widget.type} widget={widget} canPin={canPin} t={t} />

@@ -7,7 +7,10 @@ import android.util.Log
 import dev.nedaa.android.widgets.athkar.AthkarWorker
 import dev.nedaa.android.widgets.combined.PrayerAthkarWorker
 import dev.nedaa.android.widgets.importantdays.ImportantDaysWorker
+import dev.nedaa.android.widgets.allprayers.AllPrayersWorker
+import dev.nedaa.android.widgets.hijri.HijriDateWorker
 import dev.nedaa.android.widgets.prayer.PrayerTimesWorker
+import dev.nedaa.android.widgets.ramadan.SuhoorIftarWorker
 import dev.nedaa.android.widgets.qada.QadaWorker
 
 /**
@@ -23,5 +26,8 @@ class WidgetSystemReceiver : BroadcastReceiver() {
         AthkarWorker.scheduleUpdate(context, 0)
         QadaWorker.schedulePeriodicUpdate(context)
         ImportantDaysWorker.scheduleUpdate(context, 0)
+        AllPrayersWorker.scheduleUpdate(context, 0)
+        SuhoorIftarWorker.scheduleUpdate(context, 0)
+        HijriDateWorker.scheduleUpdate(context, 0)
     }
 }

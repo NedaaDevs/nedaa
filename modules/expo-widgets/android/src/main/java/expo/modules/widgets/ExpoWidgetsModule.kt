@@ -28,7 +28,10 @@ class ExpoWidgetsModule : Module() {
         "qada" to "dev.nedaa.android.widgets.qada.QadaReceiver",
         "qada_medium" to "dev.nedaa.android.widgets.qada.QadaReceiverMedium",
         "prayer_athkar" to "dev.nedaa.android.widgets.combined.PrayerAthkarReceiver",
-
+        "important_days" to "dev.nedaa.android.widgets.importantdays.ImportantDaysReceiver",
+        "all_prayers" to "dev.nedaa.android.widgets.allprayers.AllPrayersReceiver",
+        "suhoor_iftar" to "dev.nedaa.android.widgets.ramadan.SuhoorIftarReceiver",
+        "hijri_date" to "dev.nedaa.android.widgets.hijri.HijriDateReceiver"
     )
 
     override fun definition() = ModuleDefinition {
