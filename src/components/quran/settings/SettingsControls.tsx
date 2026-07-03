@@ -55,6 +55,10 @@ export const SettingRow = ({
     </XStack>
   );
 
+// Optional per-option illustration, rendered above the label. Receives the
+// segment's active state and resolved text colour so the glyph can match.
+type SegmentIcon = (props: { active: boolean; color: string }) => React.ReactNode;
+
 export const Segmented = <T extends string>({
   options,
   selected,
@@ -62,15 +66,16 @@ export const Segmented = <T extends string>({
   chrome,
   compact,
 }: {
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; icon?: SegmentIcon }[];
   selected: T;
   onSelect: (value: T) => void;
   chrome: QuranChromeColors;
   compact?: boolean;
 }) => (
   <XStack gap="$1" backgroundColor={chrome.cardBorder} borderRadius={10} padding={2}>
-    {options.map(({ value, label }) => {
+    {options.map(({ value, label, icon }) => {
       const active = value === selected;
+      const textColor = active ? "#fff" : chrome.subtleText;
       return (
         <Pressable
           key={value}
@@ -80,14 +85,13 @@ export const Segmented = <T extends string>({
           style={{ flex: 1 }}>
           <YStack
             paddingHorizontal={compact ? "$2.5" : "$3.5"}
-            paddingVertical="$1.5"
+            paddingVertical={icon ? "$2" : "$1.5"}
             borderRadius={8}
             alignItems="center"
+            gap={icon ? "$1.5" : undefined}
             backgroundColor={active ? chrome.accent : "transparent"}>
-            <Text
-              fontSize={compact ? 12 : 13}
-              fontWeight="600"
-              color={active ? "#fff" : chrome.subtleText}>
+            {icon?.({ active, color: textColor })}
+            <Text fontSize={compact ? 12 : 13} fontWeight="600" color={textColor}>
               {label}
             </Text>
           </YStack>

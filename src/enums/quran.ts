@@ -30,7 +30,6 @@ export enum LineType {
   EMPTY = "empty",
 }
 
-
 // Ayah action-sheet sub-views (swapped into the sheet body): similar verses, the
 // per-ayah tajweed rule list, and the sajda guidance.
 export const AyahSubViewKind = {
@@ -124,3 +123,12 @@ export const SpreadPreference = {
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type SpreadPreference = (typeof SpreadPreference)[keyof typeof SpreadPreference];
+
+// Reader paging axis. HORIZONTAL: swipe page-to-page (spread allowed). VERTICAL:
+// one continuous column of pages that scrolls, where auto-scroll is available.
+export const ScrollDirection = {
+  HORIZONTAL: "horizontal",
+  VERTICAL: "vertical",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type ScrollDirection = (typeof ScrollDirection)[keyof typeof ScrollDirection];

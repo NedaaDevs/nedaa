@@ -23,6 +23,10 @@ interface TextPageProps {
   quranTheme: QuranThemeType;
   width: number;
   fontSize: number;
+  // When true, render at intrinsic height without the inner ScrollView, so an
+  // outer continuous list (VerticalTextReader) owns the scroll. Default paginated
+  // mode keeps its own full-screen ScrollView.
+  flow?: boolean;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
   onWaqfPress?: (signId: string) => void;
@@ -39,6 +43,7 @@ const TextPage = ({
   quranTheme,
   width,
   fontSize,
+  flow,
   onAyahLongPress,
   onSurahLongPress,
   onWaqfPress,
@@ -194,6 +199,18 @@ const TextPage = ({
     return blocks;
   };
 
+  // Continuous mode: intrinsic height, no inner ScrollView — the outer list
+  // scrolls, and each page keeps its header + page number as a visual divider.
+  if (flow) {
+    return (
+      <YStack width={width} style={{ backgroundColor: themeColors.background }}>
+        <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
+        <View style={[styles.column, styles.flowContent]}>{renderContent()}</View>
+        <PageNumber page={page} quranTheme={quranTheme} />
+      </YStack>
+    );
+  }
+
   return (
     <YStack flex={1} width={width} style={{ backgroundColor: themeColors.background }}>
       <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
@@ -226,6 +243,11 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 720,
     alignSelf: "center",
+  },
+  flowContent: {
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   surahHeader: {
     alignItems: "center",

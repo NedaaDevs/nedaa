@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo } from "react";
-import {
-  useWindowDimensions,
-  StyleSheet,
-  View,
-  ScrollView,
-  I18nManager,
-} from "react-native";
+import { useWindowDimensions, StyleSheet, View, ScrollView, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,7 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { MushafVersion, QuranThemeType, ReaderViewMode } from "@/enums/quran";
+import { MushafVersion, QuranThemeType, ReaderViewMode, ScrollDirection } from "@/enums/quran";
 import { TOTAL_PAGES, FONT_SIZE_MIN, FONT_SIZE_MAX } from "@/constants/Quran";
 import {
   TOTAL_SPREADS,
@@ -38,6 +32,8 @@ import {
 import { useReaderLayout } from "@/hooks/useReaderLayout";
 import { useQuranStore } from "@/stores/quran";
 import QuranPage from "@/components/quran/QuranPage";
+import VerticalReader from "@/components/quran/VerticalReader";
+import VerticalTextReader from "@/components/quran/VerticalTextReader";
 import BookCanvas from "@/components/quran/BookCanvas";
 import TextPage from "@/components/quran/TextPage";
 import ReaderDebugGuides from "@/components/quran/ReaderDebugGuides";
@@ -89,8 +85,13 @@ const QuranReader = ({
 }: QuranReaderProps) => {
   const { width, height } = useWindowDimensions();
   const layout = useReaderLayout();
+  // Continuous vertical scroll for both the image mushaf and reflowed text.
+  // Spread and page-turn are disabled while it's on.
+  const scrollDirection = useQuranStore((s) => s.scrollDirection);
+  const isVertical = scrollDirection === ScrollDirection.VERTICAL;
   // Only the image mushaf spreads; reflowed text reads better as one column.
-  const isSpread = layout.mode === ReaderLayoutMode.SPREAD && readerMode !== ReaderViewMode.TEXT;
+  const isSpread =
+    layout.mode === ReaderLayoutMode.SPREAD && readerMode !== ReaderViewMode.TEXT && !isVertical;
   // Large device showing one image page.
   const isLargeSingle =
     layout.mode === ReaderLayoutMode.SINGLE && layout.isLarge && readerMode !== ReaderViewMode.TEXT;
@@ -98,8 +99,7 @@ const QuranReader = ({
   // (no scroll → vertical drags turn pages); landscape fills the capped width and
   // scrolls (a height-fit page would be a tiny letterboxed column).
   const usePortraitFit = height > width;
-  const verticalScrolls =
-    readerMode === ReaderViewMode.TEXT || (isLargeSingle && !usePortraitFit);
+  const verticalScrolls = readerMode === ReaderViewMode.TEXT || (isLargeSingle && !usePortraitFit);
   const totalUnits = isSpread ? TOTAL_SPREADS : TOTAL_PAGES;
   // Clamp a non-finite/out-of-range currentPage so the page window can't be empty (blank reader).
   const safePage = clampPage(currentPage);
@@ -290,6 +290,42 @@ const QuranReader = ({
     readerMode === ReaderViewMode.TEXT
       ? Gesture.Simultaneous(pinchGesture, Gesture.Exclusive(panGesture, tapGesture))
       : Gesture.Exclusive(panGesture, tapGesture);
+
+  // Continuous vertical scroll replaces the page-turn pager entirely. Text mode
+  // reflows, so it uses its own variable-height reader; the image mushaf uses the
+  // fixed-height one.
+  if (isVertical) {
+    return (
+      <View style={styles.container}>
+        {readerMode === ReaderViewMode.TEXT ? (
+          <VerticalTextReader
+            width={width}
+            currentPage={safePage}
+            quranTheme={quranTheme}
+            fontSize={fontSize}
+            onPageChange={onPageChange}
+            onTap={onTap}
+            onAyahLongPress={onAyahLongPress}
+            onSurahLongPress={onSurahLongPress}
+            onWaqfPress={onWaqfPress}
+            selectedAyah={selectedAyah}
+          />
+        ) : (
+          <VerticalReader
+            width={width}
+            currentPage={safePage}
+            version={version}
+            quranTheme={quranTheme}
+            onPageChange={onPageChange}
+            onTap={onTap}
+            onAyahLongPress={onAyahLongPress}
+            onSurahLongPress={onSurahLongPress}
+            selectedAyah={selectedAyah}
+          />
+        )}
+      </View>
+    );
+  }
 
   return (
     <GestureDetector gesture={composedGesture}>

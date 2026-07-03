@@ -18,6 +18,7 @@ import {
   MushafVersion,
   DownloadStatus,
   ReaderViewMode,
+  ScrollDirection,
   SpreadPreference,
 } from "@/enums/quran";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
@@ -30,6 +31,7 @@ import {
   Segmented,
   Stepper,
 } from "@/components/quran/settings/SettingsControls";
+import { ScrollDirectionIcon } from "@/components/quran/settings/ScrollDirectionIcon";
 import ReadingThemeSwatches from "@/components/quran/settings/ReadingThemeSwatches";
 import LibraryRow from "@/components/quran/settings/LibraryRow";
 
@@ -50,10 +52,12 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
     readerMode,
     fontSize,
     spreadPreference,
+    scrollDirection,
     showMutashabihatMarkers,
     setReaderMode,
     setFontSize,
     setSpreadPreference,
+    setScrollDirection,
     setShowMutashabihatMarkers,
   } = useQuranStore();
 
@@ -174,7 +178,31 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
                 </SettingRow>
               )}
 
-              {isLargeDevice && (
+              <SettingRow label={t("quran.settings.scrollDirection")} chrome={chrome} stacked>
+                <Segmented
+                  chrome={chrome}
+                  options={[
+                    {
+                      value: ScrollDirection.HORIZONTAL,
+                      label: t("quran.settings.scrollHorizontal"),
+                      icon: ({ color }) => (
+                        <ScrollDirectionIcon direction={ScrollDirection.HORIZONTAL} color={color} />
+                      ),
+                    },
+                    {
+                      value: ScrollDirection.VERTICAL,
+                      label: t("quran.settings.scrollVertical"),
+                      icon: ({ color }) => (
+                        <ScrollDirectionIcon direction={ScrollDirection.VERTICAL} color={color} />
+                      ),
+                    },
+                  ]}
+                  selected={scrollDirection}
+                  onSelect={setScrollDirection}
+                />
+              </SettingRow>
+
+              {isLargeDevice && scrollDirection === ScrollDirection.HORIZONTAL && (
                 <SettingRow label={t("quran.settings.twoPageSpread")} chrome={chrome} stacked>
                   <Segmented
                     chrome={chrome}
