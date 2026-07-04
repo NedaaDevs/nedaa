@@ -14,6 +14,7 @@ import { PrayerTimesDB } from "@/services/db";
 import { QadaDB } from "@/services/qada-db";
 import { AppLogger } from "@/utils/appLogger";
 import { installCrashHandler } from "@/utils/crashHandler";
+import { installLifecycleLogging } from "@/utils/appLifecycle";
 
 // Screenshot mode
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
@@ -33,9 +34,10 @@ export const useInitialSetup = () => {
     if (!IS_SCREENSHOT_MODE && appStore.isFirstRun) return;
 
     const initializeApp = async () => {
-      // Install the crash handler first so early-startup errors are captured, and
-      // prune old/oversized logs once per launch.
+      // Install the crash handler first so early-startup errors are captured, then
+      // lifecycle breadcrumbs (launch/update/unclean-exit), and prune logs once per launch.
       installCrashHandler();
+      installLifecycleLogging();
       AppLogger.prune();
       if (IS_SCREENSHOT_MODE) {
         seedScreenshotState();
@@ -48,7 +50,11 @@ export const useInitialSetup = () => {
     };
 
     initializeApp().catch((error) => {
-      console.error("App initialization failed: ", error);
+      AppLogger.create("crash").e(
+        "Startup",
+        "app initialization failed",
+        error instanceof Error ? error : undefined
+      );
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appStore.isFirstRun]);
