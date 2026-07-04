@@ -139,9 +139,12 @@ function platformConfig(platform: TargetPlatform): PlatformConfig {
     bootFlow: "boot.yaml",
     shotFlow: "shot.yaml",
     resolveTarget: getBootedDeviceId,
-    // deliver wants screenshots directly under the locale dir and infers the
-    // device from image resolution — no device subfolder.
-    outPath: ({ locale, stem }) => path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], `${stem}.png`),
+    // deliver globs screenshots flat per locale dir (no subfolder recursion)
+    // and buckets them into device slots by image resolution alone — so every
+    // iOS device size sharing a locale dir needs a distinct filename or one
+    // silently overwrites another on disk before deliver ever runs.
+    outPath: ({ locale, deviceId, stem }) =>
+      path.join(OUT_DIR, "ios", IOS_LOCALE_DIR[locale], `${stem}-${deviceId}.png`),
     featurePath: () => {
       throw new Error("Feature graphic is a Play Store asset; use --platform=android.");
     },

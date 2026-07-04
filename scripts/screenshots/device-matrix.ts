@@ -8,6 +8,10 @@ export type DeviceSpec = {
   capturedRawWidth: number;
   capturedRawHeight: number;
   supportsWidgets: boolean;
+  // Which device-mockup chrome the hero compositor should draw around the
+  // screenshot: Dynamic Island + iOS side buttons, Android punch-hole, or a
+  // borderless tablet bezel with a small centered camera.
+  chrome: "iphone" | "android" | "ipad";
 };
 
 export const DEVICE_MATRIX: readonly DeviceSpec[] = [
@@ -20,6 +24,7 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     capturedRawWidth: 1290,
     capturedRawHeight: 2796,
     supportsWidgets: true,
+    chrome: "iphone",
   },
   {
     id: "iphone-6.5",
@@ -30,6 +35,7 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     capturedRawWidth: 1242,
     capturedRawHeight: 2688,
     supportsWidgets: true,
+    chrome: "iphone",
   },
   {
     id: "ipad-13",
@@ -40,6 +46,7 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     capturedRawWidth: 2064,
     capturedRawHeight: 2752,
     supportsWidgets: false,
+    chrome: "ipad",
   },
   {
     id: "android-phone",
@@ -50,5 +57,6 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     capturedRawWidth: 1080,
     capturedRawHeight: 1920,
     supportsWidgets: false,
+    chrome: "android",
   },
 ] as const;

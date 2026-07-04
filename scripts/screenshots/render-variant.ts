@@ -186,10 +186,14 @@ function heroHtml(opts: {
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
   const isAndroid = device.platform === "android";
+  const isTablet = device.chrome === "ipad";
   const line2Below = copy.line2Below === true;
   const W = device.width;
   const H = device.height;
-  const ASPECT = 19.5 / 9;
+  // Match the mockup's silhouette to the real device instead of assuming a
+  // phone shape — an iPad screenshot squeezed into a 19.5:9 phone frame via
+  // object-fit: cover crops most of the screen away.
+  const ASPECT = device.height / device.width;
 
   // Responsive: a headline band is always kept; the phone is then made as large
   // as possible, bounded by EITHER a width cap OR the height left under the
@@ -205,12 +209,15 @@ function heroHtml(opts: {
   const availH = H - HEADLINE_BAND - BOTTOM_MARGIN - CAPTION_BAND - FOOTNOTE_BAND;
   const FRAME_H = Math.round(Math.min(availH, 0.82 * W * ASPECT));
   const FRAME_W = Math.round(FRAME_H / ASPECT);
-  const FRAME_RADIUS = Math.round(FRAME_W * 0.13);
+  // iPad corners are far less rounded relative to device size than an
+  // iPhone's, and its bezel is thin with a tiny camera dot sitting in it
+  // (not a punch-hole cut into the screen like Android's).
+  const FRAME_RADIUS = Math.round(FRAME_W * (isTablet ? 0.045 : 0.13));
   const FRAME_BORDER = Math.max(2, Math.round(FRAME_W * 0.012));
-  const FRAME_PADDING = Math.round(FRAME_W * 0.018);
+  const FRAME_PADDING = Math.round(FRAME_W * (isTablet ? 0.01 : 0.018));
   const ISLAND_W = Math.round(FRAME_W * 0.3);
   const ISLAND_H = Math.round(FRAME_W * 0.078);
-  const PUNCH_D = Math.round(FRAME_W * 0.052);
+  const PUNCH_D = Math.round(FRAME_W * (isTablet ? 0.012 : 0.052));
   const INNER_RADIUS = FRAME_RADIUS - Math.round(FRAME_W * 0.02);
   const headlineSize = Math.round(W * (isAr ? 0.092 : 0.105));
   const captionSize = Math.round(W * (isAr ? 0.06 : 0.066));
@@ -219,13 +226,16 @@ function heroHtml(opts: {
   const shadowY = Math.round(FRAME_W * 0.08);
   const shadowBlur = Math.round(FRAME_W * 0.1);
   // Platform-correct device chrome: iPhone Dynamic Island + iOS button layout,
-  // or Android punch-hole + side-mounted volume/power. The captured screen
+  // Android punch-hole + side-mounted volume/power, or a borderless iPad bezel
+  // with a small centered camera and no side buttons. The captured screen
   // already carries the right OS status bar and nav, so only the bezel differs.
-  const deviceChrome = isAndroid
-    ? `<div aria-hidden="true" class="punch"></div>
+  const deviceChrome = isTablet
+    ? `<div aria-hidden="true" class="punch"></div>`
+    : isAndroid
+      ? `<div aria-hidden="true" class="punch"></div>
         <div class="btn ar1"></div>
         <div class="btn ar2"></div>`
-    : `<div aria-hidden="true" class="island"></div>
+      : `<div aria-hidden="true" class="island"></div>
         <div class="btn l1"></div>
         <div class="btn l2"></div>
         <div class="btn l3"></div>
@@ -355,7 +365,7 @@ function heroHtml(opts: {
   }
   .punch {
     position: absolute;
-    top: ${Math.round(FRAME_W * 0.034)}px;
+    top: ${isTablet ? Math.round((FRAME_BORDER + FRAME_PADDING) / 2 - PUNCH_D / 2) : Math.round(FRAME_W * 0.034)}px;
     left: 50%;
     transform: translateX(-50%);
     width: ${PUNCH_D}px;
