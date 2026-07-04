@@ -27,6 +27,10 @@ type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
 
 const registry: Map<string, DomainLogger> = new Map();
 
+// Extra report sections from other subsystems (e.g. the background-task SQLite log).
+// Providers are registered at module load and rendered into every full bundle.
+const sectionProviders: Map<string, () => Promise<string>> = new Map();
+
 let dirReady = false;
 
 function ensureLogDir(): void {
@@ -35,6 +39,25 @@ function ensureLogDir(): void {
     logDir.create({ intermediates: true });
   }
   dirReady = true;
+}
+
+// All domains with a .log file on disk, merged with the in-session registry. Reports
+// must not depend on the registry alone: after a restart, domains of lazily-loaded
+// features (quran, athkar player) have files on disk but no logger yet — a crash
+// bundle built from the registry would silently omit the crashing domain's log.
+function listDomains(): string[] {
+  const domains = new Set(registry.keys());
+  try {
+    ensureLogDir();
+    for (const entry of logDir.list()) {
+      if (entry instanceof File && entry.name.endsWith(".log")) {
+        domains.add(entry.name.slice(0, -".log".length));
+      }
+    }
+  } catch {
+    // fall back to registry-only
+  }
+  return [...domains];
 }
 
 function getInstallSource(): string {
@@ -287,7 +310,7 @@ export const AppLogger = {
     } catch {
       return;
     }
-    const domains = [...registry.keys()];
+    const domains = listDomains();
     const files = domains.map((domain) => {
       const f = new File(logDir, `${domain}.log`);
       return { domain, text: f.exists ? f.textSync() : "" };
@@ -313,15 +336,30 @@ export const AppLogger = {
     }
   },
 
+  // Register an extra bundle section sourced outside the file logger (e.g. the
+  // background-task SQLite history). Included in full reports; a failing provider
+  // renders as an error line rather than dropping the section silently.
+  registerReportSection(name: string, provider: () => Promise<string>): void {
+    sectionProviders.set(name, provider);
+  },
+
   // Build the shareable diagnostic bundle: one authoritative header (current version,
   // device, OS, locale, source) + optional category/description + selected domains.
+  // Domain discovery is disk-based so pre-restart logs are never omitted.
   async buildReport(opts: BuildReportOptions = {}): Promise<string> {
     AppLogger.flushAll();
-    const domains = opts.domains ?? [...registry.keys()];
+    const domains = opts.domains ?? listDomains();
     const sections = domains.map((domain) => {
       const f = new File(logDir, `${domain}.log`);
       return { domain, text: f.exists ? f.textSync() : "" };
     });
+    // Full (unscoped) reports also carry the registered external sections.
+    if (!opts.domains) {
+      for (const [name, provider] of sectionProviders) {
+        const text = await provider().catch((e) => `(section failed: ${e?.message ?? e})`);
+        sections.push({ domain: name, text });
+      }
+    }
     return buildBundle({
       header: [
         [
@@ -371,7 +409,7 @@ export const AppLogger = {
   // the user's note + app/device line + the most recent WARN/ERROR lines.
   async buildSummary(opts: BuildReportOptions = {}): Promise<string> {
     AppLogger.flushAll();
-    const domains = opts.domains ?? [...registry.keys()];
+    const domains = opts.domains ?? listDomains();
     const issues: string[] = [];
     for (const domain of domains) {
       const f = new File(logDir, `${domain}.log`);

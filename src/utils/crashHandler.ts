@@ -29,6 +29,40 @@ export const installCrashHandler = (): void => {
     }
     previous?.(error, isFatal);
   });
+  installRejectionTracker();
+};
+
+// Record unhandled promise rejections — ErrorUtils only sees sync fatals, so without
+// this, failed async work (DB, downloads, scheduling) vanishes in production.
+// Production-only: dev keeps RN's built-in tracker and its LogBox warning.
+const installRejectionTracker = (): void => {
+  if (__DEV__) return;
+  const onUnhandled = (_id: number, rejection: unknown) => {
+    try {
+      const err = rejection instanceof Error ? rejection : undefined;
+      log.e("unhandled-rejection", err?.message ?? String(rejection), err);
+      AppLogger.flushAllSync();
+    } catch {
+      // never throw from the tracker
+    }
+  };
+  try {
+    // Hermes has a native tracker; the promise-polyfill path covers other engines.
+    const hermes = (
+      globalThis as { HermesInternal?: { enablePromiseRejectionTracker?: (o: object) => void } }
+    ).HermesInternal;
+    if (hermes?.enablePromiseRejectionTracker) {
+      hermes.enablePromiseRejectionTracker({ allRejections: true, onUnhandled });
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("promise/setimmediate/rejection-tracking").enable({
+        allRejections: true,
+        onUnhandled,
+      });
+    }
+  } catch {
+    // tracker is best-effort
+  }
 };
 
 const writePendingReport = (summary: string): void => {

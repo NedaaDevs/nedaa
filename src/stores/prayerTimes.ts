@@ -31,6 +31,7 @@ import { useAppStore } from "@/stores/app";
 // Utils
 import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
 import { checkLocationPermission } from "@/utils/location";
+import { AppLogger } from "@/utils/appLogger";
 
 // Adapters
 import { getAdapterByProviderId } from "@/adapters/providers";
@@ -38,6 +39,8 @@ import { getAdapterByProviderId } from "@/adapters/providers";
 // Widget
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 import { refreshAllWidgets } from "../../modules/expo-widgets/src";
+
+const log = AppLogger.create("prayertimes");
 
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
@@ -159,9 +162,14 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             reloadPrayerWidgets();
             refreshAllWidgets();
 
+            log.i("Fetch", `stored prayer times (${yearOverride ?? "current"}/${month ?? "all"})`);
             return true;
           } catch (error: any) {
-            console.error("Failed getAndStorePrayerTimes: ", error);
+            log.e(
+              "Fetch",
+              "getAndStorePrayerTimes failed",
+              error instanceof Error ? error : undefined
+            );
             return false;
           }
         },
@@ -211,6 +219,20 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             // Check if we need to fetch fresh data
             if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
+              log.i(
+                "Load",
+                `refetching: ${
+                  forceGetAndStore
+                    ? "forced"
+                    : `missing ${[
+                        !yesterdayTimings && "yesterday",
+                        !todayTimings && "today",
+                        !tomorrowTimings && "tomorrow",
+                      ]
+                        .filter(Boolean)
+                        .join("+")}`
+                }`
+              );
               const currentYear = getTimezoneYear(locationDetails.timezone);
               const currentMonth = getTimezoneMonth(locationDetails.timezone);
 
@@ -256,7 +278,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             await get().cleanupOldData();
           } catch (error: any) {
-            console.error("Failed to load prayer times:", error);
+            log.e("Load", "loadPrayerTimes failed", error instanceof Error ? error : undefined);
             set({
               hasError: true,
               errorMessage: error.message || "Failed to load prayer times",
@@ -381,7 +403,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             return await PrayerTimesDB.cleanData(cutoffDate);
           } catch (error) {
-            console.error("Failed to clean up old prayer times data:", error);
+            log.w("DB", `cleanup of old rows failed: ${(error as Error)?.message ?? error}`);
             return false;
           }
         },

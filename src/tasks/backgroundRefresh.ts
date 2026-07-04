@@ -162,6 +162,7 @@ export async function unregisterBackgroundRefresh(): Promise<void> {
       console.log("[BackgroundRefresh] Task unregistered");
     }
   } catch (error) {
-    console.error("[BackgroundRefresh] Unregistration failed:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "unregistration_error", "failed", msg);
   }
 }

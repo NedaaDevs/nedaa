@@ -10,6 +10,10 @@ import {
 // Enums
 import { LocalPermissionStatus } from "@/enums/location";
 
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("location");
+
 // Constants
 export const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 export const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
@@ -35,7 +39,7 @@ export const checkLocationPermission = async () => {
       canRequestAgain: canAskAgain,
     };
   } catch (error) {
-    console.error("Location Permission check failed: ", error);
+    log.w("Permission", `check failed: ${(error as Error)?.message ?? error}`);
     return {
       granted: false,
       canRequestAgain: true,
@@ -48,7 +52,7 @@ export const requestLocationPermission = async () => {
     const { status } = await requestForegroundPermissionsAsync();
     return { granted: status === PermissionStatus.GRANTED };
   } catch (error) {
-    console.error("Location permission request failed:", error);
+    log.w("Permission", `request failed: ${(error as Error)?.message ?? error}`);
     return { granted: false, error };
   }
 };
@@ -66,7 +70,7 @@ export const getLocationWithTimeout = async (): Promise<LocationObject> => {
 
     return await Promise.race([locationPromise, timeoutPromise]);
   } catch (error) {
-    console.error("Location request failed:", error);
+    log.e("Position", "location request failed", error instanceof Error ? error : undefined);
     throw error;
   }
 };

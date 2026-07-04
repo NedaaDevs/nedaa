@@ -10,12 +10,15 @@ import { ErrorResponse } from "@/types/api";
 
 // Stores
 import appStore from "@/stores/app";
+import { AppLogger } from "@/utils/appLogger";
 
 // Services
 import { geocodeApi } from "@/api/geocodeApi";
 
 // Utils
 import { getLocationWithTimeout, calculateDistance, CITY_CHANGE_THRESHOLD } from "@/utils/location";
+
+const log = AppLogger.create("location");
 
 export type LocationStore = {
   locationDetails: LocationDetails;
@@ -68,7 +71,7 @@ export const useLocationStore = create<LocationStore>()(
           try {
             // Get initial location with timeout protection
             const location = await getLocationWithTimeout();
-            console.log("Initial location retrieved", location.coords);
+            log.i("Init", "initial location retrieved");
 
             const [geocodedAddress] = await Location.reverseGeocodeAsync({
               latitude: location.coords.latitude,
@@ -83,7 +86,7 @@ export const useLocationStore = create<LocationStore>()(
                 locale: appStore.getState().locale,
               })
               .catch((error) => {
-                console.error("Failed to get localized address:", error);
+                log.w("Geocode", `localized address failed: ${(error as Error)?.message ?? error}`);
                 return null;
               });
 
@@ -110,7 +113,7 @@ export const useLocationStore = create<LocationStore>()(
               isLocationPermissionGranted: true,
             });
           } catch (error) {
-            console.error("Failed to initialize location:", error);
+            log.e("Init", "initialize location failed", error instanceof Error ? error : undefined);
             set({
               locationDetails: {
                 ...initialLocationDetails,
@@ -147,10 +150,13 @@ export const useLocationStore = create<LocationStore>()(
             get()
               .updateAddressTranslation()
               .catch((error) => {
-                console.error("Failed to update address translation:", error);
+                log.w(
+                  "Geocode",
+                  `address translation failed: ${(error as Error)?.message ?? error}`
+                );
               });
           } catch (error) {
-            console.error("Failed to update location:", error);
+            log.e("Update", "update location failed", error instanceof Error ? error : undefined);
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
@@ -200,7 +206,7 @@ export const useLocationStore = create<LocationStore>()(
               const newCity = geocodedAddress.city ?? "N/A";
 
               if (currentCity !== newCity) {
-                console.log(`City changed from ${currentCity} to ${newCity}`);
+                log.i("CityChange", `city changed: ${currentCity} -> ${newCity}`);
 
                 return true;
               }
@@ -208,7 +214,7 @@ export const useLocationStore = create<LocationStore>()(
 
             return false;
           } catch (error) {
-            console.error("Failed to check city change:", error);
+            log.w("CityChange", `check failed: ${(error as Error)?.message ?? error}`);
             return false;
           }
         },
@@ -227,7 +233,9 @@ export const useLocationStore = create<LocationStore>()(
               lng: location.coords.longitude,
               locale: appStore.getState().locale,
             })
-            .catch((e) => console.error("Failed to update address translation:", e));
+            .catch((e) => {
+              log.w("Geocode", `address translation failed: ${(e as Error)?.message ?? e}`);
+            });
 
           if (geocodeAdd) {
             // Update localizedLocation with localized strings

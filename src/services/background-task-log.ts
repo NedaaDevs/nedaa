@@ -1,6 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import { getDirectory } from "@/services/db";
 import { createSerializedDatabase } from "@/utils/serializedDatabase";
+import { AppLogger } from "@/utils/appLogger";
 
 const BG_LOG_DB_NAME = "background_task_logs.db";
 const TABLE_NAME = "task_logs";
@@ -86,3 +87,18 @@ export const BackgroundTaskLog = {
         console.error("[BackgroundTaskLog] Failed to clear logs:", error);
       }),
 };
+
+// Surface the background-task history in shared diagnostic bundles — it's the key
+// evidence for "prayer times didn't update" reports and lives outside the file logger.
+AppLogger.registerReportSection("background-tasks", async () => {
+  const rows = await BackgroundTaskLog.getRecentLogs(100);
+  return rows
+    .map(
+      (r) =>
+        `${r.timestamp} ${r.task_name}/${r.action}: ${r.result}` +
+        (r.duration_ms != null ? ` (${r.duration_ms}ms)` : "") +
+        (r.details ? ` — ${r.details}` : "")
+    )
+    .reverse() // oldest first, matching the .log files' chronology
+    .join("\n");
+});

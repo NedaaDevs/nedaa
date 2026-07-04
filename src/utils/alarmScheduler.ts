@@ -75,6 +75,7 @@ export async function schedulePrayerAlarm(
 
   const prayerDate = getNextPrayerDate(prayerName);
   if (!prayerDate) {
+    alarmLog.w("Scheduler", `${alarmType}: no prayer data for ${prayerName} — alarm not scheduled`);
     return null;
   }
 
@@ -84,6 +85,10 @@ export async function schedulePrayerAlarm(
 
   // Ensure trigger date is in the future
   if (triggerDate.getTime() <= Date.now()) {
+    alarmLog.w(
+      "Scheduler",
+      `${alarmType}: computed trigger ${triggerDate.toISOString()} is in the past — skipped`
+    );
     return null;
   }
 
@@ -129,6 +134,10 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
 
   // Ensure trigger date is in the future
   if (triggerDate.getTime() <= Date.now()) {
+    alarmLog.w(
+      "Scheduler",
+      `jummah: computed trigger ${triggerDate.toISOString()} is in the past — skipped`
+    );
     return null;
   }
 

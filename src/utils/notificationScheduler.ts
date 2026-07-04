@@ -18,6 +18,7 @@ import {
   scheduleRecurringNotification,
 } from "@/utils/notifications";
 import { timeZonedNow } from "@/utils/date";
+import { AppLogger } from "@/utils/appLogger";
 import { scheduleQadaNotifications } from "@/utils/qadaNotificationScheduler";
 
 // Types
@@ -58,6 +59,8 @@ import { useQuranRemindersStore } from "@/stores/quranReminders";
 import { weekdayToExpo } from "@/enums/quranReminders";
 import { enabledQuranReminderCount } from "@/utils/reminders/reminderBudget";
 import type { QuranReminder } from "@/types/quranReminders";
+
+const log = AppLogger.create("notifications");
 
 type SchedulingOptions = {
   daysToSchedule?: number;
@@ -310,9 +313,7 @@ export const scheduleAllNotifications = async (
   duhaTime: { hour: number; minute: number } | null = null
 ): Promise<SchedulingResult> => {
   if ((await checkPermissions()).status !== PermissionStatus.GRANTED) {
-    console.warn(
-      "[NotificationScheduler] Notification permission not granted, skipping scheduling"
-    );
+    log.w("Scheduler", "permission not granted — nothing scheduled");
     return {
       success: false,
       scheduledCount: 0,
@@ -321,7 +322,7 @@ export const scheduleAllNotifications = async (
   }
 
   if (!data) {
-    console.log("No data to schedule");
+    log.w("Scheduler", "no prayer times data — nothing scheduled");
     return {
       success: false,
       scheduledCount: 0,
@@ -486,6 +487,8 @@ export const scheduleAllNotifications = async (
     }
 
     let scheduledCount = 0;
+    let failedCount = 0;
+    let firstFailure: string | null = null;
     for (const notification of notificationsToProcess) {
       const notificationInput: NotificationContentInput = {
         title: notification.title,
@@ -559,13 +562,19 @@ export const scheduleAllNotifications = async (
             stopLabel: t("common.stop"),
           });
         }
+      } else {
+        failedCount++;
+        firstFailure ??= `${notification.type}/${notification.prayerId} at ${notification.time.toISOString()}: ${result.message ?? "unknown"}`;
       }
     }
     scheduledCount = scheduledCount + athkarNotificationCount + qadaNotificationCount;
-    console.log(`[NotificationScheduler] Successfully scheduled ${scheduledCount} notifications`);
+    if (failedCount > 0) {
+      log.w("Scheduler", `${failedCount} of the run failed — first: ${firstFailure}`);
+    }
+    log.i("Scheduler", `scheduled ${scheduledCount} notifications`);
     return { success: true, scheduledCount };
   } catch (error) {
-    console.error("Failed to schedule notifications:", error);
+    log.e("Scheduler", "scheduling run failed", error instanceof Error ? error : undefined);
     return {
       success: false,
       scheduledCount: 0,

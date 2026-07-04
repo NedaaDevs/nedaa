@@ -57,7 +57,14 @@ export const useAlarmStore = create<AlarmState>()(
               alarmType,
             });
 
-            if (!success) return false;
+            if (!success) {
+              alarmLog.e(
+                "Store",
+                `scheduleAlarm: native refused ${alarmType} for ${triggerDate.toISOString()}`
+              );
+              return false;
+            }
+            alarmLog.i("Store", `scheduled ${alarmType} at ${triggerDate.toISOString()}`);
 
             set((state) => ({
               scheduledAlarms: {
@@ -74,7 +81,12 @@ export const useAlarmStore = create<AlarmState>()(
             }));
 
             return true;
-          } catch {
+          } catch (error) {
+            alarmLog.e(
+              "Store",
+              `scheduleAlarm: ${alarmType} for ${triggerDate.toISOString()} threw`,
+              error as Error
+            );
             return false;
           }
         },
@@ -121,13 +133,20 @@ export const useAlarmStore = create<AlarmState>()(
           await ExpoAlarm.cancelAllBackups();
           await ExpoAlarm.clearPendingChallenge();
 
-          await get().scheduleAlarm({
+          const rescheduled = await get().scheduleAlarm({
             id: snoozeId,
             triggerDate: snoozeTime,
             title: snoozeTitle,
             alarmType: alarm.alarmType,
             snoozeCount: newSnoozeCount,
           });
+          if (!rescheduled) {
+            // The old alarm is already cancelled — a failed snooze means no alarm at all.
+            alarmLog.e(
+              "Store",
+              `snooze: rescheduling ${alarm.alarmType} failed — alarm ${alarmId} is gone with no replacement`
+            );
+          }
 
           // Remove the old alarm from store (new snooze alarm replaces it)
           set((state) => {
@@ -136,13 +155,18 @@ export const useAlarmStore = create<AlarmState>()(
             return { scheduledAlarms: newAlarms };
           });
 
-          await ExpoAlarm.endAllLiveActivities();
-          await ExpoAlarm.startLiveActivity({
-            alarmId: snoozeId,
-            alarmType: alarm.alarmType,
-            title: snoozeTitle,
-            triggerDate: snoozeTime,
-          });
+          try {
+            await ExpoAlarm.endAllLiveActivities();
+            await ExpoAlarm.startLiveActivity({
+              alarmId: snoozeId,
+              alarmType: alarm.alarmType,
+              title: snoozeTitle,
+              triggerDate: snoozeTime,
+            });
+          } catch (error) {
+            // Cosmetic (lock-screen countdown) — the snooze alarm itself is scheduled.
+            alarmLog.w("Store", `snooze: live activity failed: ${(error as Error).message}`);
+          }
 
           return {
             snoozeId,
