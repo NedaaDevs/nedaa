@@ -25,6 +25,10 @@ import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 import type { ReciterCatalogEntry, ReciterManifest, PlaybackMode } from "@/types/athkar-audio";
 
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("athkar-audio");
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -63,6 +67,7 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
   // Detect sample completion via status
   useEffect(() => {
     if (playingSampleId && !playing && duration > 0 && position >= duration - 0.1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlayingSampleId(null);
     }
   }, [playing, position, duration, playingSampleId]);
@@ -80,7 +85,12 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
         await TrackPlayer.load({ url, title: reciterId });
         await TrackPlayer.play();
         setPlayingSampleId(reciterId);
-      } catch {}
+      } catch (error) {
+        log.w(
+          "Sample",
+          `sample playback failed for ${reciterId}: ${(error as Error)?.message ?? error}`
+        );
+      }
     },
     [stopSample]
   );
@@ -96,12 +106,14 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
 
   // Stop sample when closing or selecting a different reciter
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!isOpen) stopSample();
   }, [isOpen, stopSample]);
 
   // Load reciters on open
   useEffect(() => {
     if (!isOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStep(1);
     setSelectedId(null);
     setSelectedMode(PLAYBACK_MODE.AUTOPILOT);

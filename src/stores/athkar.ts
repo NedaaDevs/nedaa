@@ -146,7 +146,11 @@ export const useAthkarStore = create<AthkarStore>()(
             // Clean up old data
             await get().cleanUpOldData();
           } catch (error) {
-            console.error("Error initializing store:", error);
+            log.e(
+              "Store",
+              "store initialization failed",
+              error instanceof Error ? error : undefined
+            );
           }
         },
 

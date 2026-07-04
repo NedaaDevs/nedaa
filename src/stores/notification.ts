@@ -33,6 +33,9 @@ import { Platform } from "react-native";
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { PlatformType } from "@/enums/app";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("notifications");
 
 export type NotificationStore = NotificationState & NotificationAction;
 
@@ -372,7 +375,7 @@ export const useNotificationStore = create<NotificationStore>()(
                 sound: "tasbih",
                 vibration: true,
               };
-              console.log("[Notification Store] Migration v1: Added qada defaults");
+              log.i("Store", "migration v1: added qada defaults");
             }
             state.migrationVersion = 1;
           }
@@ -381,7 +384,7 @@ export const useNotificationStore = create<NotificationStore>()(
           if (state.migrationVersion < 2) {
             if (state.fullAthanPlayback === undefined) {
               state.fullAthanPlayback = false;
-              console.log("[Notification Store] Migration v2: Added fullAthanPlayback default");
+              log.i("Store", "migration v2: added fullAthanPlayback default");
             }
             state.migrationVersion = 2;
           }
@@ -390,7 +393,7 @@ export const useNotificationStore = create<NotificationStore>()(
           if (state.migrationVersion < 3) {
             if (state.athanAudioStream === undefined) {
               state.athanAudioStream = "media";
-              console.log("[Notification Store] Migration v3: Added athanAudioStream default");
+              log.i("Store", "migration v3: added athanAudioStream default");
             }
             state.migrationVersion = 3;
           }
@@ -399,11 +402,11 @@ export const useNotificationStore = create<NotificationStore>()(
           if (state.migrationVersion < 4) {
             if (state.fullIqamaPlayback === undefined) {
               state.fullIqamaPlayback = false;
-              console.log("[Notification Store] Migration v4: Added fullIqamaPlayback default");
+              log.i("Store", "migration v4: added fullIqamaPlayback default");
             }
             if (state.iqamaAudioStream === undefined) {
               state.iqamaAudioStream = "media";
-              console.log("[Notification Store] Migration v4: Added iqamaAudioStream default");
+              log.i("Store", "migration v4: added iqamaAudioStream default");
             }
             state.migrationVersion = 4;
           }
@@ -411,9 +414,7 @@ export const useNotificationStore = create<NotificationStore>()(
           if (state.migrationVersion < 5) {
             if (!state.otherTimingNotifications) {
               state.otherTimingNotifications = defaultOtherTimingNotifications;
-              console.log(
-                "[Notification Store] Migration v5: Added otherTimingNotifications defaults"
-              );
+              log.i("Store", "migration v5: added otherTimingNotifications defaults");
             }
             state.migrationVersion = 5;
           }
@@ -421,7 +422,7 @@ export const useNotificationStore = create<NotificationStore>()(
           if (state.migrationVersion < 6) {
             if (!state.duhaTime) {
               state.duhaTime = defaultDuhaTime;
-              console.log("[Notification Store] Migration v6: Added duhaTime defaults");
+              log.i("Store", "migration v6: added duhaTime defaults");
             }
             state.migrationVersion = 6;
           }
@@ -433,7 +434,9 @@ export const useNotificationStore = create<NotificationStore>()(
                 setAthanAudioStream(state.athanAudioStream ?? "media");
                 setIqamaAudioStream(state.iqamaAudioStream ?? "media");
               })
-              .catch(() => {});
+              .catch((e) => {
+                log.w("Store", `native audio-stream pref sync failed: ${e?.message ?? e}`);
+              });
           }
         },
       }

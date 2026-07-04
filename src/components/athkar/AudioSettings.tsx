@@ -92,6 +92,7 @@ const AudioSettings: FC = () => {
   // Detect sample completion
   useEffect(() => {
     if (playingSampleId && !playing && duration > 0 && position >= duration - 0.1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlayingSampleId(null);
     }
   }, [playing, position, duration, playingSampleId]);
@@ -118,7 +119,12 @@ const AudioSettings: FC = () => {
         await TrackPlayer.load({ url, title: reciterId });
         await TrackPlayer.play();
         setPlayingSampleId(reciterId);
-      } catch {}
+      } catch (error) {
+        athkarLog.w(
+          "Sample",
+          `sample playback failed for ${reciterId}: ${(error as Error)?.message ?? error}`
+        );
+      }
     },
     [stopSample]
   );
@@ -139,6 +145,7 @@ const AudioSettings: FC = () => {
   }, [refreshStorage]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 

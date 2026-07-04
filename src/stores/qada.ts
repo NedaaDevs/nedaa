@@ -23,6 +23,10 @@ import { selectScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 // Types
 import type { QadaHistory, QadaSettings } from "@/services/qada-db";
 
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("qada");
+
 /**
  * Sync qada notifications with current settings
  * Handles both scheduling new notifications and cancelling when disabled
@@ -38,7 +42,7 @@ const syncQadaNotifications = async () => {
 
     // Validate settings exist before proceeding
     if (!settings) {
-      console.warn("[Qada Store] No settings found, skipping notification sync");
+      log.w("Sync", "no qada settings found — notification sync skipped");
       return;
     }
 
@@ -53,7 +57,7 @@ const syncQadaNotifications = async () => {
       customSoundsStore.customSounds
     );
   } catch (error) {
-    console.error("[Qada Store] Error syncing notifications:", error);
+    log.e("Sync", "qada notification sync failed", error instanceof Error ? error : undefined);
   }
 };
 
@@ -279,7 +283,7 @@ export const useQadaStore = create<QadaState>()(
             const history = await QadaDB.getHistory(limit);
             set({ history });
           } catch (error) {
-            console.error("[Qada Store] Error loading history:", error);
+            log.e("DB", "loading history failed", error instanceof Error ? error : undefined);
           }
         },
 
@@ -291,7 +295,11 @@ export const useQadaStore = create<QadaState>()(
             const pendingEntries = await QadaDB.getPendingEntries();
             set({ pendingEntries });
           } catch (error) {
-            console.error("[Qada Store] Error loading pending entries:", error);
+            log.e(
+              "DB",
+              "loading pending entries failed",
+              error instanceof Error ? error : undefined
+            );
           }
         },
 

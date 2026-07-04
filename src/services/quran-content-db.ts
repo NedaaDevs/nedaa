@@ -708,7 +708,8 @@ const getAyahTajweed = async (
       }
     const palette = await getTajweedPalette(version);
     return [...indices].map((index) => ({ index, hex: palette.get(index) ?? "#888888" }));
-  } catch {
+  } catch (error) {
+    log.w("Tajweed", `rule palette lookup failed: ${(error as Error)?.message ?? error}`);
     return [];
   }
 };

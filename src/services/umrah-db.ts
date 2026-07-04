@@ -2,6 +2,10 @@ import { sharedDb } from "@/services/db";
 import { createDebouncedQueue } from "@/utils/debounce";
 import type { UmrahRecord } from "@/types/umrah";
 
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("umrah");
+
 const UMRAH_HISTORY_TABLE = "umrah_history" as const;
 
 const debouncedSave = createDebouncedQueue(async (record: UmrahRecord) => {
@@ -44,7 +48,7 @@ const saveRecord = async (record: UmrahRecord): Promise<boolean> => {
     debouncedSave.add(record.id, record);
     return true;
   } catch (error) {
-    console.error("[Umrah DB] Error saving record:", error);
+    log.e("DB", "saveRecord failed", error instanceof Error ? error : undefined);
     return false;
   }
 };
@@ -70,7 +74,7 @@ const getHistory = (): Promise<UmrahRecord[]> =>
         gregorianDate: r.gregorian_date,
       }));
     } catch (error) {
-      console.error("[Umrah DB] Error getting history:", error);
+      log.e("DB", "getHistory failed", error instanceof Error ? error : undefined);
       return [];
     }
   });
@@ -81,7 +85,7 @@ const deleteRecord = (id: string): Promise<boolean> =>
       await db.runAsync(`DELETE FROM ${UMRAH_HISTORY_TABLE} WHERE id = ?;`, [id]);
       return true;
     } catch (error) {
-      console.error("[Umrah DB] Error deleting record:", error);
+      log.e("DB", "deleteRecord failed", error instanceof Error ? error : undefined);
       return false;
     }
   });

@@ -4,6 +4,10 @@ import type { SQLiteDatabase } from "expo-sqlite";
 // Utils
 import { sharedDb } from "@/services/db";
 
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("qada");
+
 // Table names
 export const QADA_FASTS_TABLE = "qada_fasts" as const;
 export const QADA_HISTORY_TABLE = "qada_history" as const;
@@ -219,7 +223,7 @@ const getHistory = (limit?: number): Promise<QadaHistory[]> =>
 
       return results || [];
     } catch (error) {
-      console.error("[Qada DB] Error getting history:", error);
+      log.e("DB", "getHistory failed", error instanceof Error ? error : undefined);
       return [];
     }
   });
@@ -453,7 +457,7 @@ const getPendingEntries = (): Promise<QadaHistory[]> =>
       );
       return results || [];
     } catch (error) {
-      console.error("[Qada DB] Error getting pending entries:", error);
+      log.e("DB", "getPendingEntries failed", error instanceof Error ? error : undefined);
       return [];
     }
   });

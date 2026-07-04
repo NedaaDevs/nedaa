@@ -1096,7 +1096,7 @@ const getReciterDownloads = (reciterId: string): Promise<AthkarAudioDownload[]> 
         })
         .filter((item): item is AthkarAudioDownload => item !== null);
     } catch (error) {
-      console.error("[Athkar-DB] Error getting reciter downloads:", error);
+      log.e("DB", "getReciterDownloads failed", error instanceof Error ? error : undefined);
       return [];
     }
   });
@@ -1234,7 +1234,7 @@ const batchAddToMyAthkar = (
 
       return insertedIds;
     } catch (error) {
-      console.error("[Athkar-DB] Error batch adding to my athkar:", error);
+      log.e("DB", "batch add to my athkar failed", error instanceof Error ? error : undefined);
       return [];
     }
   });

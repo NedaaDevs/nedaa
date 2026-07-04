@@ -12,6 +12,9 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 import { reloadAllWidgets } from "../../modules/expo-widget/src";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("widgets");
 
 export type WidgetImportantDay = {
   id: string;
@@ -102,6 +105,7 @@ export const syncWidgetPayloads = async (): Promise<void> => {
       refreshAllWidgets();
     }
   } catch (e) {
-    console.warn("[widgetPayloads] sync failed", e);
+    // Failed sync = stale/empty widgets until the next trigger.
+    log.e("Sync", "widget payload sync failed", e instanceof Error ? e : undefined);
   }
 };

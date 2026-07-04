@@ -22,6 +22,10 @@ import { isCustomSoundKey, createChannelWithCustomSound } from "@/utils/customSo
 // Enums
 import { PlatformType } from "@/enums/app";
 
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("notifications");
+
 type ChannelConfig = {
   id: string;
   name: string;
@@ -546,7 +550,11 @@ export const getActiveChannelMappings = async (): Promise<ChannelMapping[]> => {
 
     return mappings;
   } catch (error) {
-    console.error("[NotificationChannels] Error getting active channel mappings:", error);
+    log.e(
+      "Channels",
+      "getting active channel mappings failed",
+      error instanceof Error ? error : undefined
+    );
     return [];
   }
 };

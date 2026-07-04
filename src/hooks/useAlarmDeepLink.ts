@@ -171,27 +171,44 @@ export function useAlarmDeepLink() {
       // Process any alarms completed/snoozed via Android overlay first
       processQueues();
 
-      Linking.getInitialURL().then((url) => {
-        if (url) {
-          processAlarmUrl(url);
-        } else {
-          detectActiveAlarm(scheduledAlarms, handledAlarmIds).then((active) => {
-            if (active) {
-              navigateToAlarm(active.alarmId, active.alarmType, active.source);
-            }
-          });
-        }
-      });
+      Linking.getInitialURL()
+        .then((url) => {
+          if (url) {
+            processAlarmUrl(url);
+          } else {
+            detectActiveAlarm(scheduledAlarms, handledAlarmIds).then((active) => {
+              if (active) {
+                navigateToAlarm(active.alarmId, active.alarmType, active.source);
+              }
+            });
+          }
+        })
+        .catch((e) => {
+          // A missed launch URL / failed detection can leave a ringing alarm undismissable.
+          alarmLog.e(
+            "DeepLink",
+            "initial URL / active-alarm detection failed",
+            e instanceof Error ? e : undefined
+          );
+        });
     }
 
     const appStateSubscription = AppState.addEventListener("change", (state) => {
       if (state === "active") {
         processQueues();
-        detectActiveAlarm(scheduledAlarms, handledAlarmIds).then((active) => {
-          if (active) {
-            navigateToAlarm(active.alarmId, active.alarmType, active.source);
-          }
-        });
+        detectActiveAlarm(scheduledAlarms, handledAlarmIds)
+          .then((active) => {
+            if (active) {
+              navigateToAlarm(active.alarmId, active.alarmType, active.source);
+            }
+          })
+          .catch((e) => {
+            alarmLog.e(
+              "DeepLink",
+              "active-alarm detection on foreground failed",
+              e instanceof Error ? e : undefined
+            );
+          });
       }
     });
 
@@ -217,7 +234,6 @@ async function processAlarmUrl(url: string) {
     const urlObj = new URL(url);
     const alarmId = urlObj.searchParams.get("alarmId");
     const alarmType = urlObj.searchParams.get("alarmType") ?? ScheduledAlarmType.CUSTOM;
-    const action = urlObj.searchParams.get("action");
 
     if (!alarmId) return;
 

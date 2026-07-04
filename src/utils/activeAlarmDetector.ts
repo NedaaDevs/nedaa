@@ -2,6 +2,7 @@ import * as ExpoAlarm from "expo-alarm";
 import type { ScheduledAlarm } from "@/stores/alarm";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
+import { alarmLog } from "@/utils/alarmReport";
 
 export interface ActiveAlarmInfo {
   alarmId: string;
@@ -18,7 +19,7 @@ function normalizeTimestampToMs(timestamp: number): number {
 
 async function autoCompleteStaleAlarm(alarmId: string): Promise<void> {
   await completeAndRescheduleAlarm(alarmId);
-  console.log(`[Alarm] Auto-completed stale alarm ${alarmId}`);
+  alarmLog.i("Detector", `auto-completed stale alarm ${alarmId}`);
 }
 
 export async function detectActiveAlarm(
@@ -27,7 +28,11 @@ export async function detectActiveAlarm(
   retryCount = 0
 ): Promise<ActiveAlarmInfo | null> {
   // Check completed queue first to avoid showing challenge for already-completed alarms
-  const completedQueue = await ExpoAlarm.getCompletedQueue().catch(() => []);
+  const completedQueue = await ExpoAlarm.getCompletedQueue().catch((e) => {
+    // Empty fallback risks re-showing a challenge for an already-completed alarm.
+    alarmLog.w("Detector", `getCompletedQueue failed: ${e?.message ?? e}`);
+    return [];
+  });
   const completedIds = new Set(completedQueue.map((item) => item.alarmId));
 
   const now = Date.now();
