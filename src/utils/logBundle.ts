@@ -36,8 +36,12 @@ export const pruneByAge = (text: string, now: Date, maxDays: number): string => 
   return text.slice(keepFrom);
 };
 
-const byteLen = (s: string): number =>
-  typeof Buffer !== "undefined" ? Buffer.byteLength(s, "utf8") : new Blob([s]).size;
+const byteLen = (s: string): number => {
+  // Buffer exists under jest/node; Hermes falls back to Blob. Typed via globalThis
+  // because @types/node isn't in the RN type roots.
+  const B = (globalThis as { Buffer?: { byteLength: (v: string, enc: string) => number } }).Buffer;
+  return B ? B.byteLength(s, "utf8") : new Blob([s]).size;
+};
 
 // Bound total log size by dropping whole session segments across all domains, oldest
 // session date first, until under maxBytes. A domain trimmed to nothing returns "".

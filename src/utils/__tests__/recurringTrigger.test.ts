@@ -1,6 +1,6 @@
 import { scheduleRecurringNotification } from "@/utils/notifications";
 
-const mockScheduleNotificationAsync = jest.fn(() => Promise.resolve("notif-id"));
+const mockScheduleNotificationAsync = jest.fn((..._a: unknown[]) => Promise.resolve("notif-id"));
 const SchedulableTriggerInputTypes = {
   DAILY: "daily",
   WEEKLY: "weekly",

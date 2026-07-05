@@ -39,7 +39,7 @@ class AthkarPlayer {
   private isSmartPausing = false;
 
   // Timers
-  private smartPauseTimer: NodeJS.Timeout | null = null;
+  private smartPauseTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Download dedup
   private activeDownloads: Map<string, Promise<string | null>> = new Map();

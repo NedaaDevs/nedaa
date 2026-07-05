@@ -78,7 +78,7 @@ describe("pruneGlobalBySize", () => {
       { domain: "b", text: sess("2026-06-10", big) },
     ];
     const out = pruneGlobalBySize(files, 3000);
-    const total = out.reduce((n, f) => n + Buffer.byteLength(f.text, "utf8"), 0);
+    const total = out.reduce((n, f) => n + new TextEncoder().encode(f.text).length, 0);
     expect(total).toBeLessThanOrEqual(3000);
     // Oldest (a:2026-06-01) dropped first, then b:2026-06-10; newest (a:2026-06-20) survives.
     expect(out.find((f) => f.domain === "a")!.text).toContain("2026-06-20");
