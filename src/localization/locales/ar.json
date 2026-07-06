@@ -239,6 +239,7 @@
   "athkar.audio.downloadRetrySuccess": "تم تحميل جميع الملفات بنجاح",
   "athkar.audio.expand": "توسيع عناصر التحكم",
   "athkar.audio.loading": "جارٍ التحميل...",
+  "athkar.audio.cellularNote": "البث عبر بيانات الجوّال",
   "athkar.audio.minimize": "تصغير",
   "athkar.audio.minimizeHint": "اضغط مطولًا لإيقاف الصوت",
   "athkar.audio.next": "التالي",

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Dimensions, View } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "tamagui";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -35,6 +35,7 @@ import {
   ChevronDown,
   CircleHelp,
   Play,
+  Signal,
 } from "lucide-react-native";
 import { Icon } from "@/components/ui/icon";
 
@@ -59,6 +60,7 @@ import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { useIsCellular } from "@/hooks/useIsCellular";
 import { useAthkarFocusScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 
 // Utils
@@ -127,11 +129,12 @@ const AthkarFocusScreen = () => {
   // (returns false) outside screenshot mode — production behavior unchanged.
   useAthkarFocusScreenshotSeed();
 
-  // Gate controls on actual downloaded audio, not just a non-OFF mode default.
-  const [hasDownloadedAudio, setHasDownloadedAudio] = useState(false);
-
-  const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF && hasDownloadedAudio;
+  // Audio is available whenever a reciter is chosen and the mode isn't OFF —
+  // playback streams undownloaded files, so download state no longer gates the
+  // controls (download is a cache, not a prerequisite).
+  const showAudioControls = playbackMode !== PLAYBACK_MODE.OFF && !!selectedReciterId;
   const isAutopilot = playbackMode === PLAYBACK_MODE.AUTOPILOT;
+  const isCellular = useIsCellular();
 
   // Reduce motion check
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -141,23 +144,6 @@ const AthkarFocusScreen = () => {
 
   // Onboarding modal
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // Re-check downloaded audio on focus (e.g. after downloading in settings or
-  // closing onboarding) so controls appear only once a pack is on disk.
-  const refreshAudioAvailability = useCallback(async () => {
-    if (!selectedReciterId) {
-      setHasDownloadedAudio(false);
-      return;
-    }
-    const breakdown = await audioDownloadManager.getStorageBreakdown();
-    setHasDownloadedAudio(breakdown.some((s) => s.reciterId === selectedReciterId));
-  }, [selectedReciterId]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refreshAudioAvailability();
-    }, [refreshAudioAvailability])
-  );
 
   // Audio controls expanded/collapsed
   const [audioControlsExpanded, setAudioControlsExpanded] = useState(false);
@@ -538,6 +524,13 @@ const AthkarFocusScreen = () => {
         } else {
           await athkarPlayer.play();
         }
+        // Cache the reciter's files for offline in the background — WiFi only.
+        // On cellular we stream (files are tiny) and leave downloading to an
+        // explicit action, mirroring the Quran download flow. downloadPack is
+        // idempotent, so it only fetches what's missing.
+        if (!isCellular) {
+          void audioDownloadManager.downloadPack(selectedReciterId, manifest);
+        }
       } catch {
         useAthkarStore.getState().setPlayerState(PLAYER_STATE.IDLE);
       }
@@ -549,6 +542,7 @@ const AthkarFocusScreen = () => {
     currentAthkarList,
     currentType,
     currentAthkar,
+    isCellular,
   ]);
 
   const handleAudioNext = useCallback(() => {
@@ -1058,6 +1052,21 @@ const AthkarFocusScreen = () => {
           </Pressable>
         </GestureDetector>
 
+        {/* On cellular we stream rather than auto-download — tell the user why. */}
+        {isCellular && showAudioControls && !audioDismissed && (
+          <HStack
+            alignItems="center"
+            justifyContent="center"
+            gap="$1.5"
+            paddingVertical="$1"
+            accessibilityRole="text">
+            <Icon as={Signal} size="xs" color="$typographySecondary" />
+            <Text size="xs" color="$typographySecondary">
+              {t("athkar.audio.cellularNote")}
+            </Text>
+          </HStack>
+        )}
+
         {/* Audio Controls — bottom strip */}
         {showAudioControls && !audioDismissed && audioControlsExpanded && (
           <AudioControls
@@ -1100,7 +1109,6 @@ const AthkarFocusScreen = () => {
         isOpen={showOnboarding}
         onClose={() => {
           setShowOnboarding(false);
-          refreshAudioAvailability();
         }}
       />
     </GestureHandlerRootView>
