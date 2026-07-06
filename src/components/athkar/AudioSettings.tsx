@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Alert, ScrollView } from "react-native";
 import { router } from "expo-router";
 import * as Application from "expo-application";
-import TrackPlayer, { useProgress, useIsPlaying } from "react-native-track-player";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -28,6 +27,7 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { AthkarDB } from "@/services/athkar-db";
+import * as audioPreview from "@/services/audio/previewPlayer";
 import { formatFileSize } from "@/utils/customSoundManager";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 import { AppLogger } from "@/utils/appLogger";
@@ -77,38 +77,42 @@ const AudioSettings: FC = () => {
     return `Nedaa Athkar Audio\nApp: ${appVersion} (${buildNumber})\nReciter: ${selectedReciterId}\nMode: ${playbackMode}`;
   }, [selectedReciterId, playbackMode]);
 
-  // Sample player via TrackPlayer
-  const { position, duration } = useProgress();
-  const { playing } = useIsPlaying();
+  // Sample player via the shared preview player
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+  const [sampleProgress, setSampleProgress] = useState(0);
   const playingSampleIdRef = useRef<string | null>(null);
-  const sampleProgress = duration > 0 ? position / duration : 0;
 
   // Keep ref in sync for use in non-reactive callbacks
   useEffect(() => {
     playingSampleIdRef.current = playingSampleId;
   }, [playingSampleId]);
 
-  // Detect sample completion
+  // Track sample progress and completion via preview player status
   useEffect(() => {
-    if (playingSampleId && !playing && duration > 0 && position >= duration - 0.1) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPlayingSampleId(null);
-    }
-  }, [playing, position, duration, playingSampleId]);
+    return audioPreview.addPreviewListener(({ didJustFinish, currentTime, duration }) => {
+      if (!playingSampleIdRef.current) return;
+      if (didJustFinish) {
+        setPlayingSampleId(null);
+        setSampleProgress(0);
+        return;
+      }
+      setSampleProgress(duration > 0 ? currentTime / duration : 0);
+    });
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (playingSampleIdRef.current) {
-        TrackPlayer.pause().catch(() => {});
+        void audioPreview.stopPreview();
       }
     };
   }, []);
 
   const stopSample = useCallback(() => {
-    TrackPlayer.pause().catch(() => {});
+    void audioPreview.stopPreview();
     setPlayingSampleId(null);
+    setSampleProgress(0);
   }, []);
 
   const playSample = useCallback(
@@ -116,8 +120,7 @@ const AudioSettings: FC = () => {
       await athkarPlayer.initialize();
       stopSample();
       try {
-        await TrackPlayer.load({ url, title: reciterId });
-        await TrackPlayer.play();
+        await audioPreview.playPreview(url);
         setPlayingSampleId(reciterId);
       } catch (error) {
         athkarLog.w(

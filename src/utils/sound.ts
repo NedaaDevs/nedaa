@@ -1,5 +1,3 @@
-import TrackPlayer from "react-native-track-player";
-
 // Constants
 import { SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
 
@@ -10,6 +8,9 @@ import type { CustomSound } from "@/types/customSound";
 
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
+
+// Services
+import * as audioPreview from "@/services/audio/previewPlayer";
 
 // Utils
 import { isCustomSoundKey } from "@/utils/customSoundHelpers";
@@ -70,34 +71,8 @@ class SoundPreviewManager {
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
   private listeners: Set<SoundPreviewListener> = new Set();
-  private playerReady: boolean = false;
-  private setupPromise: Promise<void> | null = null;
 
   private constructor() {}
-
-  private async ensurePlayerReady(): Promise<void> {
-    if (this.playerReady) return;
-    if (this.setupPromise) return this.setupPromise;
-
-    this.setupPromise = (async () => {
-      try {
-        await TrackPlayer.setupPlayer({
-          autoHandleInterruptions: true,
-        });
-        this.playerReady = true;
-      } catch (error) {
-        if ((error as Error)?.message?.includes("already been initialized")) {
-          this.playerReady = true;
-        } else {
-          console.error("[SoundPreview] Setup failed:", error);
-          this.setupPromise = null;
-          throw error;
-        }
-      }
-    })();
-
-    return this.setupPromise;
-  }
 
   static getInstance(): SoundPreviewManager {
     if (!SoundPreviewManager.instance) {
@@ -125,8 +100,6 @@ class SoundPreviewManager {
     soundKey: string,
     customSounds?: import("@/types/customSound").CustomSound[]
   ): Promise<void> {
-    await this.ensurePlayerReady();
-
     // Guard: don't interrupt active athkar playback
     const athkarState = useAthkarStore.getState().playerState;
     if (athkarState === "playing" || athkarState === "loading") {
@@ -154,9 +127,7 @@ class SoundPreviewManager {
         this.currentSoundId = soundId;
         this.notifyListeners();
 
-        await TrackPlayer.reset();
-        await TrackPlayer.add({ url: customSound.contentUri, title: soundKey });
-        await TrackPlayer.play();
+        await audioPreview.playPreview(customSound.contentUri);
       } catch (error) {
         console.error("[SoundPreview] Custom play failed:", error);
         this.isPlaying = false;
@@ -187,11 +158,7 @@ class SoundPreviewManager {
       this.currentSoundId = soundId;
       this.notifyListeners();
 
-      await TrackPlayer.reset();
-      // TrackPlayer.add() accepts url: string | ResourceObject (number from require())
-      // This lets RNTP natively resolve bundled assets on both emulator and physical devices
-      await TrackPlayer.add({ url: soundSource as string, title: soundKey });
-      await TrackPlayer.play();
+      await audioPreview.playPreview(soundSource);
     } catch (error) {
       console.error("[SoundPreview] Play failed:", error);
       this.isPlaying = false;
@@ -203,8 +170,7 @@ class SoundPreviewManager {
 
   async stopPreview(): Promise<void> {
     try {
-      if (!this.playerReady) return;
-      await TrackPlayer.reset();
+      await audioPreview.stopPreview();
       this.isPlaying = false;
       this.currentSoundId = null;
       this.notifyListeners();
