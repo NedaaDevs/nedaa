@@ -239,6 +239,7 @@
   "athkar.audio.downloadRetrySuccess": "All files downloaded successfully",
   "athkar.audio.expand": "Expand audio controls",
   "athkar.audio.loading": "Loading...",
+  "athkar.audio.cellularNote": "Streaming over cellular data",
   "athkar.audio.minimize": "Minimize",
   "athkar.audio.minimizeHint": "Long press to dismiss audio",
   "athkar.audio.next": "Next",
