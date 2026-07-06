@@ -4,6 +4,7 @@ import Storage from "expo-sqlite/kv-store";
 
 // Types
 import { Athkar, AthkarActions, AthkarState, AthkarType } from "@/types/athkar";
+import { PLAYER_STATE } from "@/types/athkar-audio";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
@@ -108,6 +109,7 @@ export const useAthkarStore = create<AthkarStore>()(
 
         // Audio playback state (sole writer: player singleton)
         playerState: "idle",
+        loadingAthkarId: null,
         currentAthkarId: null,
         currentThikrId: null,
         repeatProgress: { current: 0, total: 0 },
@@ -343,7 +345,13 @@ export const useAthkarStore = create<AthkarStore>()(
         setCurrentAthkarIndex: (index: number) => set({ currentAthkarIndex: index }),
 
         // Audio state actions (sole writer: player singleton)
-        setPlayerState: (playerState) => set({ playerState }),
+        setPlayerState: (playerState) =>
+          set((s) => ({
+            playerState,
+            // Clear the pending-load marker once we leave the loading state.
+            loadingAthkarId: playerState === PLAYER_STATE.LOADING ? s.loadingAthkarId : null,
+          })),
+        setLoadingAthkarId: (loadingAthkarId) => set({ loadingAthkarId }),
         setCurrentTrack: (thikrId, athkarId) =>
           set({ currentThikrId: thikrId, currentAthkarId: athkarId }),
         setRepeatProgress: (repeatProgress) => set({ repeatProgress }),
@@ -411,6 +419,7 @@ export const useAthkarStore = create<AthkarStore>()(
         resetPlaybackState: () =>
           set({
             playerState: "idle",
+            loadingAthkarId: null,
             currentAthkarId: null,
             currentThikrId: null,
             repeatProgress: { current: 0, total: 0 },

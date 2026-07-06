@@ -354,6 +354,9 @@ class AthkarPlayer {
   }
 
   async startAndJumpTo(athkarId: string): Promise<void> {
+    // Mark the tapped athkar as loading so its list card can show a spinner
+    // immediately; cleared when the store leaves the loading state.
+    this.athkarStore.setLoadingAthkarId(athkarId);
     if (this.playlistId) {
       await this.jumpTo(athkarId);
       return;

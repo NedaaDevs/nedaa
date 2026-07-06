@@ -58,6 +58,9 @@ export type AthkarState = {
 
   // Audio playback state (merged from athkar-audio store for atomic updates)
   playerState: PlayerState;
+  // The athkar whose play button was just pressed, while its queue builds — lets
+  // the tapped list card show its own loading spinner before playback binds.
+  loadingAthkarId: string | null;
   currentAthkarId: string | null;
   currentThikrId: string | null;
   repeatProgress: { current: number; total: number };
@@ -85,6 +88,7 @@ export type TrackTransitionParams = {
 export type AthkarActions = {
   // Audio state (sole writer: player singleton)
   setPlayerState: (state: PlayerState) => void;
+  setLoadingAthkarId: (id: string | null) => void;
   setCurrentTrack: (thikrId: string | null, athkarId: string | null) => void;
   setRepeatProgress: (progress: { current: number; total: number }) => void;
   setSessionProgress: (progress: { current: number; total: number }) => void;

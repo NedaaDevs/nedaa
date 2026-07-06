@@ -9,6 +9,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { Spinner } from "@/components/ui/spinner";
 
 // Icons
 import { Check, Minus, Play, Pause } from "lucide-react-native";
@@ -45,12 +46,14 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const { incrementCount, incrementCountBy, decrementCount } = useAthkarStore();
   const playerState = useAthkarStore((s) => s.playerState);
   const currentAthkarId = useAthkarStore((s) => s.currentAthkarId);
+  const loadingAthkarId = useAthkarStore((s) => s.loadingAthkarId);
   const playbackMode = useAthkarAudioStore((s) => s.playbackMode);
   const onboardingCompleted = useAthkarAudioStore((s) => s.onboardingCompleted);
   const showAudioIcon = playbackMode !== PLAYBACK_MODE.OFF;
 
   const isThisPlaying = currentAthkarId === athkar.id && playerState === "playing";
   const isThisPaused = currentAthkarId === athkar.id && playerState === "paused";
+  const isThisLoading = loadingAthkarId === athkar.id;
 
   const hapticSelection = useHaptic("selection");
   const hapticMedium = useHaptic("medium");
@@ -190,19 +193,26 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                       isThisPlaying ? t("a11y.athkar.audioPause") : t("a11y.athkar.audioPlay")
                     }
                     accessibilityRole="button"
+                    disabled={isThisLoading}
                     width={32}
                     height={32}
                     borderRadius={16}
                     backgroundColor={
-                      isThisPlaying || isThisPaused ? "$primary" : "$backgroundMuted"
+                      isThisPlaying || isThisPaused || isThisLoading
+                        ? "$primary"
+                        : "$backgroundMuted"
                     }
                     alignItems="center"
                     justifyContent="center">
-                    <Icon
-                      as={isThisPlaying ? Pause : Play}
-                      size="xs"
-                      color={isThisPlaying || isThisPaused ? "$typographyContrast" : "$primary"}
-                    />
+                    {isThisLoading ? (
+                      <Spinner size="small" color="$typographyContrast" />
+                    ) : (
+                      <Icon
+                        as={isThisPlaying ? Pause : Play}
+                        size="xs"
+                        color={isThisPlaying || isThisPaused ? "$typographyContrast" : "$primary"}
+                      />
+                    )}
                   </Pressable>
                 )}
                 {/* Count Display */}
