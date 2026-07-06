@@ -14,6 +14,7 @@ import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
+import { Spinner } from "@/components/ui/spinner";
 import { Play, Pause, X } from "lucide-react-native";
 
 import { useAthkarStore } from "@/stores/athkar";
@@ -70,6 +71,7 @@ const MiniPlayerBar: FC = () => {
   if (!isActive) return null;
 
   const isPlaying = playerState === "playing";
+  const isLoading = playerState === "loading";
   const progressPercent = audioDuration > 0 ? (audioPosition / audioDuration) * 100 : 0;
 
   const handlePlayPause = (e: any) => {
@@ -204,8 +206,13 @@ const MiniPlayerBar: FC = () => {
                 backgroundColor="$primary"
                 alignItems="center"
                 justifyContent="center"
+                disabled={isLoading}
                 accessibilityLabel={isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}>
-                <Icon as={isPlaying ? Pause : Play} size="md" color="$typographyContrast" />
+                {isLoading ? (
+                  <Spinner size="small" color="$typographyContrast" />
+                ) : (
+                  <Icon as={isPlaying ? Pause : Play} size="md" color="$typographyContrast" />
+                )}
               </Pressable>
 
               {/* Close */}
