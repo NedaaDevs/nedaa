@@ -9,6 +9,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  withSequence,
   FadeIn,
   FadeOut,
   useAnimatedProps,
@@ -45,6 +46,7 @@ import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 // Stores
 import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { PLAYER_STATE } from "@/types/athkar-audio";
 
 // Services
 import { athkarPlayer } from "@/services/athkar-player";
@@ -250,9 +252,10 @@ const AthkarFocusScreen = () => {
         setPrevGroupIndex(currentGroupIndex);
         return;
       }
-      textFadeOpacity.value = withTiming(0, { duration: 100 }, () => {
-        textFadeOpacity.value = withTiming(1, { duration: 100 });
-      });
+      textFadeOpacity.value = withSequence(
+        withTiming(0, { duration: 100 }),
+        withTiming(1, { duration: 100 })
+      );
       setPrevGroupIndex(currentGroupIndex);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -304,36 +307,27 @@ const AthkarFocusScreen = () => {
       const slideDirection = isNext ? -1 : 1; // Up = next (-1), Down = previous (+1)
       const SLIDE_DISTANCE = 80;
 
-      // Slide out animation with scale and opacity
-      slideOpacity.value = withTiming(0.4, { duration: 250 });
-      slideScale.value = withTiming(0.92, { duration: 250 });
-      slideTranslateY.value = withTiming(slideDirection * SLIDE_DISTANCE, { duration: 250 });
-      navigationBlur.value = withTiming(0.5, { duration: 200 }, () => {
-        // Reset position for slide in from opposite direction
-        slideTranslateY.value = -slideDirection * SLIDE_DISTANCE;
-
-        // Slide in animation with spring effects
-        slideOpacity.value = withSpring(1, {
-          damping: 18,
-          stiffness: 280,
-          mass: 0.9,
-        });
-        slideScale.value = withSpring(1, {
-          damping: 16,
-          stiffness: 220,
-          mass: 0.8,
-        });
-        slideTranslateY.value = withSpring(0, {
-          damping: 20,
-          stiffness: 320,
-          mass: 0.8,
-        });
-        navigationBlur.value = withSpring(0, {
-          damping: 22,
-          stiffness: 380,
-          mass: 0.7,
-        });
-      });
+      // Slide out, then spring back in — sequenced per value, with the position
+      // reset as a zero-duration step. Sequences restart cleanly when a rapid
+      // track change interrupts them; chaining the slide-in from a completion
+      // callback recursed on the UI thread under fast skips (stack overflow).
+      slideOpacity.value = withSequence(
+        withTiming(0.4, { duration: 250 }),
+        withSpring(1, { damping: 18, stiffness: 280, mass: 0.9 })
+      );
+      slideScale.value = withSequence(
+        withTiming(0.92, { duration: 250 }),
+        withSpring(1, { damping: 16, stiffness: 220, mass: 0.8 })
+      );
+      slideTranslateY.value = withSequence(
+        withTiming(slideDirection * SLIDE_DISTANCE, { duration: 250 }),
+        withTiming(-slideDirection * SLIDE_DISTANCE, { duration: 0 }),
+        withSpring(0, { damping: 20, stiffness: 320, mass: 0.8 })
+      );
+      navigationBlur.value = withSequence(
+        withTiming(0.5, { duration: 200 }),
+        withSpring(0, { damping: 22, stiffness: 380, mass: 0.7 })
+      );
 
       setPreviousIndex(currentAthkarIndex);
     }
@@ -366,7 +360,7 @@ const AthkarFocusScreen = () => {
 
   // Stop audio when all athkar completed
   useEffect(() => {
-    if (allCompleted && playerState !== "idle") {
+    if (allCompleted && playerState !== PLAYER_STATE.IDLE) {
       athkarPlayer.stop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -377,7 +371,7 @@ const AthkarFocusScreen = () => {
   useEffect(() => {
     if (prevShortVersion.current !== shortVersion) {
       prevShortVersion.current = shortVersion;
-      if (playerState !== "idle") {
+      if (playerState !== PLAYER_STATE.IDLE) {
         athkarPlayer.stop();
       }
     }
@@ -460,21 +454,23 @@ const AthkarFocusScreen = () => {
   // Handle tap to increment
   const handleTap = () => {
     // In autopilot, taps are disabled (counts come from audio)
-    if (isAutopilot && playerState === "playing") return;
+    if (isAutopilot && playerState === PLAYER_STATE.PLAYING) return;
 
     if (!isCompleted && currentAthkar) {
       hapticSelection();
 
       if (!reduceMotion) {
         // Animate circle scale for feedback
-        circleScale.value = withSpring(1.05, { damping: 20, stiffness: 300 }, () => {
-          circleScale.value = withSpring(1, { damping: 20, stiffness: 300 });
-        });
+        circleScale.value = withSequence(
+          withSpring(1.05, { damping: 20, stiffness: 300 }),
+          withSpring(1, { damping: 20, stiffness: 300 })
+        );
 
         // Animate count text
-        countOpacity.value = withTiming(0.7, { duration: 100 }, () => {
-          countOpacity.value = withTiming(1, { duration: 100 });
-        });
+        countOpacity.value = withSequence(
+          withTiming(0.7, { duration: 100 }),
+          withTiming(1, { duration: 100 })
+        );
       }
 
       incrementCount(currentAthkar.id);
@@ -483,9 +479,10 @@ const AthkarFocusScreen = () => {
       if (currentCount + 1 === totalCount) {
         hapticSuccess();
         if (!reduceMotion) {
-          circleScale.value = withSpring(1.1, { damping: 15, stiffness: 200 }, () => {
-            circleScale.value = withSpring(1, { damping: 15, stiffness: 200 });
-          });
+          circleScale.value = withSequence(
+            withSpring(1.1, { damping: 15, stiffness: 200 }),
+            withSpring(1, { damping: 15, stiffness: 200 })
+          );
         }
       }
     }
@@ -493,34 +490,47 @@ const AthkarFocusScreen = () => {
 
   // Audio control handlers
   const handlePlayPause = useCallback(async () => {
+    log.i(
+      "Focus",
+      `handlePlayPause tap: playerState=${playerState} onboarded=${onboardingCompleted}`
+    );
     if (!onboardingCompleted) {
       setShowOnboarding(true);
       return;
     }
 
-    if (playerState === "loading") return;
+    if (playerState === PLAYER_STATE.LOADING) return;
 
-    if (playerState === "playing") {
+    if (playerState === PLAYER_STATE.PLAYING) {
       athkarPlayer.pause();
-    } else if (playerState === "paused") {
+    } else if (playerState === PLAYER_STATE.PAUSED) {
       athkarPlayer.play();
     } else {
       // First play — build queue and start
       if (!selectedReciterId) return;
-      useAthkarStore.getState().setPlayerState("loading");
+      useAthkarStore.getState().setPlayerState(PLAYER_STATE.LOADING);
       try {
         const catalog = await reciterRegistry.fetchCatalog();
         const reciter = catalog?.reciters.find((r) => r.id === selectedReciterId);
-        if (!reciter) return;
+        if (!reciter) {
+          useAthkarStore.getState().setPlayerState(PLAYER_STATE.IDLE);
+          return;
+        }
         const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
-        if (!manifest) return;
+        if (!manifest) {
+          useAthkarStore.getState().setPlayerState(PLAYER_STATE.IDLE);
+          return;
+        }
         await athkarPlayer.buildQueue(currentAthkarList, manifest, selectedReciterId, currentType);
+        // jumpTo positions and starts playback (playSong); only play from the top
+        // when there's no specific athkar to resume at.
         if (currentAthkar) {
           await athkarPlayer.jumpTo(currentAthkar.id);
+        } else {
+          await athkarPlayer.play();
         }
-        await athkarPlayer.play();
       } catch {
-        useAthkarStore.getState().setPlayerState("idle");
+        useAthkarStore.getState().setPlayerState(PLAYER_STATE.IDLE);
       }
     }
   }, [
@@ -596,14 +606,16 @@ const AthkarFocusScreen = () => {
         scheduleOnRN(hapticWarning);
 
         // Animate circle scale for decrement feedback
-        circleScale.value = withSpring(0.95, { damping: 20, stiffness: 300 }, () => {
-          circleScale.value = withSpring(1, { damping: 20, stiffness: 300 });
-        });
+        circleScale.value = withSequence(
+          withSpring(0.95, { damping: 20, stiffness: 300 }),
+          withSpring(1, { damping: 20, stiffness: 300 })
+        );
 
         // Animate count text
-        countOpacity.value = withTiming(0.7, { duration: 100 }, () => {
-          countOpacity.value = withTiming(1, { duration: 100 });
-        });
+        countOpacity.value = withSequence(
+          withTiming(0.7, { duration: 100 }),
+          withTiming(1, { duration: 100 })
+        );
 
         scheduleOnRN(handleSwipeDecrement, currentAthkar.id);
       }
@@ -642,16 +654,18 @@ const AthkarFocusScreen = () => {
       if (event.translationY < -NAVIGATION_THRESHOLD) {
         // Swipe up - Next athkar
         scheduleOnRN(hapticSelection);
-        slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
-          slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
-        });
+        slideScale.value = withSequence(
+          withSpring(1.02, { damping: 20, stiffness: 400 }),
+          withSpring(1, { damping: 15, stiffness: 300 })
+        );
         scheduleOnRN(handleSwipeToNext);
       } else if (event.translationY > NAVIGATION_THRESHOLD) {
         // Swipe down - Previous athkar
         scheduleOnRN(hapticSelection);
-        slideScale.value = withSpring(1.02, { damping: 20, stiffness: 400 }, () => {
-          slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
-        });
+        slideScale.value = withSequence(
+          withSpring(1.02, { damping: 20, stiffness: 400 }),
+          withSpring(1, { damping: 15, stiffness: 300 })
+        );
         scheduleOnRN(handleSwipeToPrevious);
       } else {
         // Return to original state if swipe wasn't strong enough
@@ -923,7 +937,7 @@ const AthkarFocusScreen = () => {
                                 })}
                               </Text>
                             )}
-                            {playerState === "loading" && (
+                            {playerState === PLAYER_STATE.LOADING && (
                               <Text size="xs" color="$primary" style={{ marginTop: 4 }}>
                                 {t("athkar.audio.loading")}
                               </Text>
