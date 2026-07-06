@@ -165,6 +165,7 @@ const AthkarFocusScreen = () => {
 
   // State for showing instructions
   const [showInstructions, setShowInstructions] = useState(true);
+  const [showTipIcon, setShowTipIcon] = useState(true);
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   const [showNavigationIndicator, setShowNavigationIndicator] = useState(false);
   const swipeIndicatorOpacity = useSharedValue(0);
@@ -216,6 +217,14 @@ const AthkarFocusScreen = () => {
     }, 5000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fade the help/tip icon out a few seconds after the instructions hide, so the
+  // reading surface goes fully uncluttered.
+  useEffect(() => {
+    if (showInstructions) return;
+    const timer = setTimeout(() => setShowTipIcon(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showInstructions]);
 
   // Auto-show onboarding for users who haven't completed setup
   useEffect(() => {
@@ -757,21 +766,23 @@ const AthkarFocusScreen = () => {
       <Box flex={1} backgroundColor="$background" style={{ paddingBottom: insets.bottom }}>
         {/* Header */}
         <HStack position="absolute" top={insets.top + 8} end={16} zIndex={20} gap="$2">
-          {!showInstructions && (
-            <Button
-              size="md"
-              variant="outline"
-              action="default"
-              accessibilityLabel={t("athkar.focus.showInstructions")}
-              onPress={() => setShowInstructions(true)}
-              width={48}
-              height={48}
-              padding={0}
-              borderRadius={999}
-              backgroundColor="$backgroundSecondary"
-              opacity={0.6}>
-              <Icon size="sm" color="$typographySecondary" as={CircleHelp} />
-            </Button>
+          {!showInstructions && showTipIcon && (
+            <Animated.View exiting={reduceMotion ? undefined : FadeOut}>
+              <Button
+                size="md"
+                variant="outline"
+                action="default"
+                accessibilityLabel={t("athkar.focus.showInstructions")}
+                onPress={() => setShowInstructions(true)}
+                width={48}
+                height={48}
+                padding={0}
+                borderRadius={999}
+                backgroundColor="$backgroundSecondary"
+                opacity={0.6}>
+                <Icon size="sm" color="$typographySecondary" as={CircleHelp} />
+              </Button>
+            </Animated.View>
           )}
           <Button
             size="md"
