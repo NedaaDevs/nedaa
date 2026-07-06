@@ -6,8 +6,15 @@ export type PlaybackMode = (typeof PLAYBACK_MODE)[keyof typeof PLAYBACK_MODE];
 // Repeat limit
 export type RepeatLimit = (typeof REPEAT_LIMIT_OPTIONS)[number]["value"];
 
-// Player state — no more crossfading
-export type PlayerState = "idle" | "loading" | "playing" | "paused" | "ended";
+export const PLAYER_STATE = {
+  IDLE: "idle",
+  LOADING: "loading",
+  PLAYING: "playing",
+  PAUSED: "paused",
+  ENDED: "ended",
+} as const;
+
+export type PlayerState = (typeof PLAYER_STATE)[keyof typeof PLAYER_STATE];
 
 // Download status
 export type DownloadStatus = "pending" | "downloading" | "complete" | "failed";

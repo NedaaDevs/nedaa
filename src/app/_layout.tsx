@@ -38,12 +38,8 @@ import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
 import { installScreenshotRouter } from "@/screenshot-mode/router";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
-import TrackPlayer from "react-native-track-player";
-import { PlaybackService } from "@/services/playback-service";
 import { athkarPlayer } from "@/services/athkar-player";
 import { trackAppSession } from "@/utils/reviewPrompt";
-
-TrackPlayer.registerPlaybackService(() => PlaybackService);
 
 import "@/tasks/backgroundRefresh";
 

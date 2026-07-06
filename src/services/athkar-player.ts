@@ -1,49 +1,70 @@
-import { Appearance, Image } from "react-native";
-import TrackPlayer, {
-  AppKilledPlaybackBehavior,
-  Capability,
-  RepeatMode,
-} from "react-native-track-player";
-import type { Track } from "react-native-track-player";
+import { Appearance, Image, PermissionsAndroid, Platform } from "react-native";
+import { TrackPlayer, PlayerQueue } from "react-native-nitro-player";
+import type { TrackItem, TrackPlayerState } from "react-native-nitro-player";
 
 import { SMART_PAUSE, getThikrId } from "@/constants/AthkarAudio";
+import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { useAthkarStore } from "@/stores/athkar";
-import { reciterRegistry } from "@/services/athkar-reciter-registry";
+import { reciterRegistry, getLocalizedName } from "@/services/athkar-reciter-registry";
 import { AppLogger } from "@/utils/appLogger";
-import type { PlayerState, ReciterManifest, QueueItem } from "@/types/athkar-audio";
-import type { Athkar } from "@/types/athkar";
+import { PLAYER_STATE, type PlayerState, type ReciterManifest } from "@/types/athkar-audio";
+import type { Athkar, AthkarType } from "@/types/athkar";
+
+type SessionType = Exclude<AthkarType, typeof ATHKAR_TYPE.ALL>;
 import i18n from "@/localization/i18n";
 
 const log = AppLogger.create("athkar-audio");
 
-const PREFETCH_AHEAD = 3;
+// One recitation of one audio file. The plan is the flat sequence of steps; a
+// non-group athkar is a single step whose file loops `repeatTarget` times, a
+// group athkar expands to one step per (round × audio). Repeats are NOT expanded
+// into separate queue entries — the count lives here, not in the native queue.
+type Step = {
+  athkarId: string;
+  thikrId: string;
+  url: string;
+  repeatTarget: number;
+  isGroup: boolean;
+};
 
+// A backward jump larger than this (seconds) means the current file looped —
+// RepeatMode.track restarts it at 0, so one repeat finished.
+const LOOP_WRAP_DROP = 0.5;
+
+// Drives the athkar session. The player is a dumb audio engine: it plays and
+// loops the current file (RepeatMode.track) and reports progress. This service
+// owns everything meaningful — which athkar, repeat counting, smart pause,
+// advancement, and session completion — and only ever tells the player which
+// file to play. Player lifecycle events never decide session state.
 class AthkarPlayer {
   private static instance: AthkarPlayer;
   private initialized = false;
+  private listenersAttached = false;
 
-  // Queue (JS-side: one entry per thikr, NOT per repeat)
-  private queue: QueueItem[] = [];
-  private uniqueThikrIds: string[] = [];
-  private sessionType: "morning" | "evening" = "morning";
+  // Native playlist of the unique step files (deleted on rebuild/stop).
+  private playlistId: string | null = null;
+
+  private sessionType: SessionType = ATHKAR_TYPE.MORNING;
   private reciterId: string | null = null;
   private manifest: ReciterManifest | null = null;
 
-  // Track state for counting and smart pause
-  private previousAthkarId: string | null = null;
-  private previousDuration = 0;
-  private isManualSkip = false;
-  private manualSkipDirection: "next" | "previous" | null = null;
+  // The session plan and our position within it — the source of truth.
+  private plan: Step[] = [];
+  private stepIndex = 0;
+  private repeatDone = 0;
+  private uniqueAthkarIds: string[] = [];
+
+  private lastPosition = 0;
+  private stepDuration = 0;
+  // True while we reposition the player ourselves, so the resulting progress
+  // reset and track-change aren't misread as a loop or an external skip.
+  private advancing = false;
   private isSmartPausing = false;
+  private userStopping = false;
 
-  // Timers
   private smartPauseTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Download dedup
-  private activeDownloads: Map<string, Promise<string | null>> = new Map();
-  private failedDownloads: Set<string> = new Set();
 
   private constructor() {}
 
@@ -68,43 +89,51 @@ class AthkarPlayer {
     this.athkarStore.setPlayerState(state);
   }
 
+  private indexOf(track: TrackItem): number {
+    // Track ids are `t<stepIndex>`, assigned in plan order at build time.
+    return Number(track.id.slice(1));
+  }
+
   // ─── Initialize ───────────────────────────────────────────────────
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
     try {
-      await TrackPlayer.setupPlayer({
-        autoHandleInterruptions: true,
+      if (!this.listenersAttached) {
+        TrackPlayer.onChangeTrack((track: TrackItem) => {
+          this.onChangeTrack(track);
+        });
+        TrackPlayer.onPlaybackStateChange((state: TrackPlayerState) => {
+          this.onPlaybackStateChange(state);
+        });
+        TrackPlayer.onPlaybackProgressChange(
+          (position: number, totalDuration: number, isManuallySeeked?: boolean) => {
+            this.onProgress(position, totalDuration, isManuallySeeked ?? false);
+          }
+        );
+        this.listenersAttached = true;
+      }
+
+      await TrackPlayer.configure({
+        showInNotification: true,
+        androidAutoEnabled: false,
+        carPlayEnabled: false,
       });
-      await TrackPlayer.updateOptions({
-        android: {
-          // Tear the service down when the app is swiped away; a lingering START_STICKY
-          // service gets restarted by the OS in the background, where Android 12+ forbids
-          // its foreground promotion (ForegroundServiceStartNotAllowedException).
-          appKilledPlaybackBehavior: AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
-        },
-        progressUpdateEventInterval: 1,
-        capabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.SkipToNext,
-          Capability.SkipToPrevious,
-          Capability.Stop,
-          Capability.SeekTo,
-        ],
-        compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
-      });
+
+      // Android 13+ suppresses the media notification (= lock-screen controls)
+      // silently without this grant.
+      if (Platform.OS === "android" && Platform.Version >= 33) {
+        await PermissionsAndroid.request("android.permission.POST_NOTIFICATIONS" as never).catch(
+          () => {}
+        );
+      }
+
       this.initialized = true;
       await this.syncRate();
-      log.d("Player", "TrackPlayer initialized");
+      log.d("Player", "nitro player initialized");
     } catch (error) {
-      if ((error as Error)?.message?.includes("already been initialized")) {
-        this.initialized = true;
-        log.d("Player", "TrackPlayer was already initialized");
-      } else {
-        log.e("Player", "TrackPlayer init failed", error instanceof Error ? error : undefined);
-        throw error;
-      }
+      log.e("Player", "init failed", error instanceof Error ? error : undefined);
+      throw error;
     }
   }
 
@@ -114,131 +143,110 @@ class AthkarPlayer {
     athkarList: Athkar[],
     manifest: ReciterManifest,
     reciterId: string,
-    sessionType: "morning" | "evening"
+    sessionType: SessionType
   ): Promise<void> {
     await this.initialize();
 
     this.reciterId = reciterId;
     this.manifest = manifest;
     this.sessionType = sessionType;
-    this.previousAthkarId = null;
-    this.previousDuration = 0;
-    this.isManualSkip = false;
-    this.manualSkipDirection = null;
-    this.isSmartPausing = false;
     this.clearSmartPauseTimer();
+    this.isSmartPausing = false;
+    this.advancing = false;
+    this.stepIndex = 0;
+    this.repeatDone = 0;
+    this.lastPosition = 0;
+    this.stepDuration = 0;
 
-    // Build JS queue (one entry per thikr)
-    this.queue = athkarList.flatMap((athkar) => {
+    // Build the plan: one step per file, repeats kept as a count (not expanded).
+    const plan: Step[] = [];
+    for (const athkar of athkarList) {
       if (athkar.group) {
         const rounds = Math.ceil(athkar.count / athkar.group.itemsPerRound);
-        const entries: QueueItem[] = [];
         for (let round = 0; round < rounds; round++) {
           for (const audioId of athkar.group.audioIds) {
-            const audioFile = manifest.files[audioId] ?? null;
-            entries.push({
+            const file = manifest.files[audioId];
+            if (!file) continue;
+            const local = await audioDownloadManager.getLocalPath(reciterId, audioId);
+            plan.push({
               athkarId: athkar.id,
               thikrId: audioId,
-              totalRepeats: 1,
-              audioFile,
-              localPath: null,
+              url: local ?? file.url,
+              repeatTarget: 1,
+              isGroup: true,
             });
           }
         }
-        return entries;
+        continue;
       }
 
-      const thikrId = getThikrId(athkar.order, sessionType);
-      const audioFile = thikrId ? (manifest.files[thikrId] ?? null) : null;
-      const totalRepeats = athkar.count;
-
-      return {
+      const thikrId = getThikrId(athkar.order, sessionType) ?? athkar.id;
+      const file = manifest.files[thikrId];
+      if (!file) continue;
+      const local = await audioDownloadManager.getLocalPath(reciterId, thikrId);
+      plan.push({
         athkarId: athkar.id,
-        thikrId: thikrId ?? athkar.id,
-        totalRepeats,
-        audioFile,
-        localPath: null,
-      };
-    });
-
-    // Track unique athkar IDs for session progress display
-    this.uniqueThikrIds = [];
-    const seen = new Set<string>();
-    for (const item of this.queue) {
-      if (!seen.has(item.athkarId)) {
-        seen.add(item.athkarId);
-        this.uniqueThikrIds.push(item.athkarId);
-      }
+        thikrId,
+        url: local ?? file.url,
+        repeatTarget: this.getEffectiveRepeats(athkar.count),
+        isGroup: false,
+      });
     }
 
-    // Resolve local paths and build RNTP tracks (expanded: one track per repeat)
-    const tracks: Track[] = [];
-    let trackCounter = 0;
-    for (let i = 0; i < this.queue.length; i++) {
-      const item = this.queue[i];
-      if (!item.audioFile) continue;
-
-      const localPath = await this.resolveLocalPath(
-        reciterId,
-        item.thikrId,
-        item.audioFile.url,
-        item.audioFile.size
-      );
-      if (!localPath) continue;
-
-      item.localPath = localPath;
-
-      const effectiveRepeats = this.getEffectiveRepeats(item);
-
-      const isGroup =
-        item.totalRepeats === 1 &&
-        this.queue.some((q) => q.athkarId === item.athkarId && q.thikrId !== item.thikrId);
-
-      for (let r = 0; r < effectiveRepeats; r++) {
-        tracks.push({
-          id: `t${trackCounter++}`,
-          url: localPath,
-          title: this.getSessionTitle(),
-          artist: this.getReciterName(),
-          artwork: this.getArtworkUrl(),
-          thikrId: item.thikrId,
-          athkarId: item.athkarId,
-          repeatIndex: r,
-          totalRepeats: effectiveRepeats,
-          isGroup,
-        });
-      }
-    }
-
-    if (tracks.length === 0) {
+    if (plan.length === 0) {
       log.w("Player", "No tracks available for queue");
       return;
     }
 
-    await TrackPlayer.reset();
-    await TrackPlayer.add(tracks);
-    await TrackPlayer.setRepeatMode(RepeatMode.Off);
-    await this.syncRate();
-
-    // Update athkar store (sync-critical state)
-    this.athkarStore.setSessionProgress({ current: 1, total: this.uniqueThikrIds.length });
-    this.athkarStore.setCurrentTrack(
-      this.queue[0]?.thikrId ?? null,
-      this.queue[0]?.athkarId ?? null
-    );
-    this.athkarStore.setRepeatProgress({
-      current: 0,
-      total: this.getEffectiveRepeats(this.queue[0]),
-    });
-
-    // Set initial group progress if first track is a group
-    if (this.queue.length > 0) {
-      this.computeGroupProgress(this.queue[0].athkarId, this.queue[0].thikrId);
+    this.plan = plan;
+    this.uniqueAthkarIds = [];
+    const seen = new Set<string>();
+    for (const step of plan) {
+      if (!seen.has(step.athkarId)) {
+        seen.add(step.athkarId);
+        this.uniqueAthkarIds.push(step.athkarId);
+      }
     }
 
+    // Native queue = the plain step files, no recitation metadata.
+    const title = this.getSessionTitle();
+    const artist = this.getReciterName();
+    const artwork = this.getArtworkUrl();
+    const tracks: TrackItem[] = plan.map((step, i) => ({
+      id: `t${i}`,
+      title,
+      artist,
+      album: "",
+      duration: 0,
+      url: step.url,
+      artwork,
+    }));
+
+    if (this.playlistId) {
+      await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
+    }
+    const pid = await PlayerQueue.createPlaylist(`athkar-${sessionType}`);
+    await PlayerQueue.addTracksToPlaylist(pid, tracks);
+    await PlayerQueue.loadPlaylist(pid);
+    // Loop the current file; we advance to the next step explicitly once its
+    // repeats are counted. The player never auto-advances on its own.
+    await TrackPlayer.setRepeatMode("track");
+    await this.syncRate();
+    this.playlistId = pid;
+
+    const first = plan[0];
+    this.athkarStore.setSessionProgress({ current: 1, total: this.uniqueAthkarIds.length });
+    this.athkarStore.setCurrentTrack(first.thikrId, first.athkarId);
+    this.athkarStore.setRepeatProgress({ current: 0, total: first.repeatTarget });
+    this.computeGroupProgress(first.athkarId, first.thikrId);
+
+    // Streaming (undownloaded) files are a common stall/error source — record how
+    // many so a shared log shows whether playback ran off local files or the CDN.
+    const streamed = plan.filter((s) => s.url === manifest.files[s.thikrId]?.url).length;
     log.i(
       "Player",
-      `Queue built: ${tracks.length} tracks (${this.uniqueThikrIds.length} thikrs) for ${sessionType}`
+      `Queue built: ${plan.length} steps, ${this.uniqueAthkarIds.length} thikrs, ${sessionType}, ` +
+        `reciter=${reciterId}, ${streamed > 0 ? `${streamed}/${plan.length} streamed` : "all local"}`
     );
   }
 
@@ -246,140 +254,49 @@ class AthkarPlayer {
 
   async play(): Promise<void> {
     await this.initialize();
-    this.setPlayerState("playing");
     await TrackPlayer.play();
   }
 
   async pause(): Promise<void> {
-    this.setPlayerState("paused");
     await TrackPlayer.pause();
   }
 
   async next(): Promise<void> {
+    if (!this.playlistId) return;
     this.clearSmartPauseTimer();
-
-    const currentIndex = await TrackPlayer.getActiveTrackIndex();
-    const queue = await TrackPlayer.getQueue();
-    if (currentIndex === undefined || currentIndex === null) return;
-
-    const currentTrack = queue[currentIndex];
-    const isGroup = currentTrack?.isGroup;
-
-    let nextIndex: number;
-    if (isGroup) {
-      // Groups: move one track at a time (each track is a different audio in the group)
-      nextIndex = currentIndex + 1;
-    } else {
-      // Non-groups: skip past all remaining repeats of the current athkar
-      const currentAthkarId = currentTrack?.athkarId;
-      nextIndex = currentIndex + 1;
-      while (nextIndex < queue.length && queue[nextIndex].athkarId === currentAthkarId) {
-        nextIndex++;
-      }
+    const nextIndex = this.stepIndex + 1;
+    if (nextIndex >= this.plan.length) {
+      await this.completeSession();
+      return;
     }
-
-    if (nextIndex < queue.length) {
-      this.isManualSkip = true;
-      this.manualSkipDirection = "next";
-      try {
-        await TrackPlayer.skip(nextIndex);
-        await TrackPlayer.play();
-        this.setPlayerState("playing");
-      } catch (error) {
-        log.w("Player", `next skip failed: ${(error as Error)?.message}`);
-      }
-    } else {
-      await this.handleSessionComplete();
-    }
+    await this.goToStep(nextIndex, this.plan[this.stepIndex].athkarId);
   }
 
   async previous(): Promise<void> {
+    if (!this.playlistId) return;
     this.clearSmartPauseTimer();
-
-    const currentIndex = await TrackPlayer.getActiveTrackIndex();
-    const queue = await TrackPlayer.getQueue();
-    if (currentIndex === undefined || currentIndex === null) return;
-
-    const currentTrack = queue[currentIndex];
-    const isGroup = currentTrack?.isGroup;
-
-    if (isGroup) {
-      // Groups: move one track back (each track is a different audio in the group)
-      if (currentIndex > 0) {
-        this.isManualSkip = true;
-        this.manualSkipDirection = "previous";
-        try {
-          await TrackPlayer.skip(currentIndex - 1);
-          await TrackPlayer.play();
-          this.setPlayerState("playing");
-        } catch (error) {
-          log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
-        }
-      } else {
-        await TrackPlayer.seekTo(0);
-      }
+    // Restart the current step if we're partway through it, else step back.
+    if (this.repeatDone === 0 && this.lastPosition < 1.5 && this.stepIndex > 0) {
+      await this.goToStep(this.stepIndex - 1, this.plan[this.stepIndex].athkarId);
     } else {
-      // Non-groups: find first repeat of current athkarId
-      const currentAthkarId = currentTrack?.athkarId;
-      let firstRepeatIndex = currentIndex;
-      while (firstRepeatIndex > 0 && queue[firstRepeatIndex - 1]?.athkarId === currentAthkarId) {
-        firstRepeatIndex--;
-      }
-
-      if (firstRepeatIndex < currentIndex) {
-        // Go back to first repeat of current thikr
-        this.isManualSkip = true;
-        try {
-          await TrackPlayer.skip(firstRepeatIndex);
-          await TrackPlayer.play();
-          this.setPlayerState("playing");
-        } catch (error) {
-          log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
-        }
-      } else if (firstRepeatIndex > 0) {
-        // Already at first repeat — go to first repeat of previous thikr
-        const prevAthkarId = queue[firstRepeatIndex - 1]?.athkarId;
-        let prevFirstIndex = firstRepeatIndex - 1;
-        while (prevFirstIndex > 0 && queue[prevFirstIndex - 1]?.athkarId === prevAthkarId) {
-          prevFirstIndex--;
-        }
-        this.isManualSkip = true;
-        try {
-          await TrackPlayer.skip(prevFirstIndex);
-          await TrackPlayer.play();
-          this.setPlayerState("playing");
-        } catch (error) {
-          log.w("Player", `previous skip failed: ${(error as Error)?.message}`);
-        }
-      } else {
-        await TrackPlayer.seekTo(0);
-      }
+      await this.goToStep(this.stepIndex, this.plan[this.stepIndex].athkarId);
     }
   }
 
   async stop(): Promise<void> {
-    this.clearSmartPauseTimer();
-
-    await TrackPlayer.reset();
-
-    this.queue = [];
-    this.uniqueThikrIds = [];
-    this.previousAthkarId = null;
-    this.previousDuration = 0;
-    this.isManualSkip = false;
-    this.manualSkipDirection = null;
-    this.isSmartPausing = false;
-    this.activeDownloads.clear();
-    this.failedDownloads.clear();
-
-    this.athkarStore.resetPlaybackState();
-    this.store.setPosition(0);
-    this.store.setDuration(0);
+    this.userStopping = true;
+    try {
+      await TrackPlayer.pause();
+      await this.teardown();
+    } finally {
+      this.userStopping = false;
+    }
     log.i("Player", "Stopped");
   }
 
   async seekTo(seconds: number): Promise<void> {
-    await TrackPlayer.seekTo(seconds);
+    await TrackPlayer.seek(seconds);
+    this.lastPosition = seconds;
     this.store.setPosition(seconds);
   }
 
@@ -387,55 +304,57 @@ class AthkarPlayer {
     this.store.setPlaybackRate(rate);
     if (!this.initialized) return;
     try {
-      await TrackPlayer.setRate(rate);
+      await TrackPlayer.setPlaybackSpeed(rate);
     } catch (error) {
-      log.w("Player", `setRate failed: ${(error as Error)?.message}`);
+      log.w("Player", `setPlaybackSpeed failed: ${(error as Error)?.message}`);
     }
   }
 
   private async syncRate(): Promise<void> {
     try {
-      await TrackPlayer.setRate(this.store.playbackRate);
+      await TrackPlayer.setPlaybackSpeed(this.store.playbackRate);
     } catch (error) {
       log.w("Player", `syncRate failed: ${(error as Error)?.message}`);
     }
   }
 
   async jumpTo(athkarId: string): Promise<void> {
-    const rnQueue = await TrackPlayer.getQueue();
-
-    // Collect all RNTP tracks for this athkarId
-    const matchingIndices: number[] = [];
-    for (let i = 0; i < rnQueue.length; i++) {
-      if (rnQueue[i].athkarId === athkarId) matchingIndices.push(i);
+    if (!this.playlistId) return;
+    const stepIdxs: number[] = [];
+    for (let i = 0; i < this.plan.length; i++) {
+      if (this.plan[i].athkarId === athkarId) stepIdxs.push(i);
     }
-
-    if (matchingIndices.length === 0) {
-      log.w("Player", `jumpTo: athkarId ${athkarId} not found in queue`);
+    if (stepIdxs.length === 0) {
+      log.w("Player", `jumpTo: athkarId ${athkarId} not found in plan`);
       return;
     }
 
-    // Use current count to resume at the right track (skip already-completed ones)
+    // Resume at the recitation matching the current count.
     const progressItem = this.athkarStore.currentProgress.find((p) => p.athkarId === athkarId);
     const currentCount = progressItem?.currentCount ?? 0;
-    const offset = Math.min(currentCount, matchingIndices.length - 1);
-    const targetIndex = matchingIndices[offset];
+
+    let target: number;
+    let resumeRepeat = 0;
+    if (this.plan[stepIdxs[0]].isGroup) {
+      // Groups have one step per item — the count selects which item.
+      target = stepIdxs[Math.min(currentCount, stepIdxs.length - 1)];
+    } else {
+      // Non-group is a single looping step — the count is how many repeats done.
+      target = stepIdxs[0];
+      resumeRepeat = Math.min(currentCount, this.plan[target].repeatTarget);
+    }
 
     this.clearSmartPauseTimer();
-    this.isManualSkip = true;
-
-    try {
-      await TrackPlayer.skip(targetIndex);
-      await TrackPlayer.play();
-      this.setPlayerState("playing");
-    } catch (error) {
-      log.w("Player", `jumpTo skip/play failed: ${(error as Error)?.message}`);
-    }
+    this.repeatDone = resumeRepeat;
+    log.i(
+      "Player",
+      `Start: ${athkarId} @ step ${target}, repeat ${resumeRepeat}/${this.plan[target].repeatTarget}`
+    );
+    await this.playStep(target, true, null);
   }
 
   async startAndJumpTo(athkarId: string): Promise<void> {
-    const rnQueue = await TrackPlayer.getQueue();
-    if (rnQueue.length > 0) {
+    if (this.playlistId) {
       await this.jumpTo(athkarId);
       return;
     }
@@ -447,7 +366,7 @@ class AthkarPlayer {
     }
 
     const { currentType, morningAthkarList, eveningAthkarList } = this.athkarStore;
-    const athkarList = currentType === "morning" ? morningAthkarList : eveningAthkarList;
+    const athkarList = currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
 
     const manifest = await reciterRegistry.fetchManifest(selectedReciterId);
     if (!manifest) {
@@ -455,229 +374,214 @@ class AthkarPlayer {
       return;
     }
 
-    this.setPlayerState("loading");
+    this.setPlayerState(PLAYER_STATE.LOADING);
     await this.buildQueue(athkarList, manifest, selectedReciterId, currentType);
     await this.jumpTo(athkarId);
   }
 
-  // ─── Event Handlers (called by PlaybackService) ────────────────────
+  // ─── Advancement (app-driven) ──────────────────────────────────────
 
-  async handleTrackChanged(event: { track?: Track | null; index?: number | null }): Promise<void> {
-    const { track, index } = event;
-    if (!track || index === null || index === undefined) return;
+  // Position the player on a step and play it. `athkarChanged` drives whether the
+  // UI does a full athkar transition; `completedAthkarId` marks the prior athkar
+  // done (for the completion animation) on a natural advance.
+  private async playStep(
+    index: number,
+    athkarChanged: boolean,
+    completedAthkarId: string | null
+  ): Promise<void> {
+    const step = this.plan[index];
+    if (!step) return;
+    this.stepIndex = index;
+    this.lastPosition = 0;
+    this.advancing = true;
+    try {
+      // Select then start: a lone command right after loadPlaylist is dropped
+      // before the track is ready, so issue both.
+      await TrackPlayer.playSong(`t${index}`, this.playlistId ?? undefined);
+      await TrackPlayer.play();
+    } catch (error) {
+      log.w("Player", `playStep(${index}) failed: ${(error as Error)?.message}`);
+    } finally {
+      this.advancing = false;
+    }
+    this.syncUI(step, athkarChanged, completedAthkarId);
+  }
 
-    // Skip non-athkar tracks (e.g. sound previews)
-    if (!track.athkarId) return;
+  // Manual navigation (next/previous, lock screen): reposition without counting.
+  private async goToStep(index: number, fromAthkarId: string): Promise<void> {
+    this.repeatDone = 0;
+    const changed = this.plan[index]?.athkarId !== fromAthkarId;
+    await this.playStep(index, changed, null);
+  }
 
-    const thikrId = track.thikrId as string;
-    const athkarId = track.athkarId as string;
-    const repeatIndex = (track.repeatIndex as number) ?? 0;
-    const totalRepeats = (track.totalRepeats as number) ?? 1;
-    const wasManualSkip = this.isManualSkip;
-    const skipDirection = this.manualSkipDirection;
-    this.isManualSkip = false;
-    this.manualSkipDirection = null;
+  // One repeat of the current file finished (detected via a progress wrap).
+  private async onRepeatComplete(): Promise<void> {
+    const step = this.plan[this.stepIndex];
+    if (!step) return;
 
-    const athkarChanged = athkarId !== this.previousAthkarId;
-    const isGroup = !!track.isGroup;
+    this.repeatDone += 1;
+    this.athkarStore.incrementCount(step.athkarId, true);
+
+    if (this.repeatDone < step.repeatTarget) {
+      this.athkarStore.setRepeatProgress({ current: this.repeatDone, total: step.repeatTarget });
+      this.computeGroupProgress(step.athkarId, step.thikrId);
+      return;
+    }
+
+    // Step done — advance, or complete the session if it was the last.
+    const nextIndex = this.stepIndex + 1;
+    if (nextIndex >= this.plan.length) {
+      await this.completeSession();
+      return;
+    }
+
+    const prevAthkarId = step.athkarId;
+    const next = this.plan[nextIndex];
+    const athkarChanged = next.athkarId !== prevAthkarId;
+
+    // Smart pause only between different athkar, matching the reading rhythm.
+    if (athkarChanged) {
+      const pauseMs = this.getSmartPause(this.stepDuration);
+      if (pauseMs > 0) {
+        this.isSmartPausing = true;
+        this.setPlayerState(PLAYER_STATE.LOADING);
+        await TrackPlayer.pause();
+        await new Promise<void>((resolve) => {
+          this.smartPauseTimer = setTimeout(() => resolve(), pauseMs);
+        });
+        this.smartPauseTimer = null;
+        this.isSmartPausing = false;
+      }
+    }
+
+    this.repeatDone = 0;
+    log.d(
+      "Player",
+      `advance -> step ${nextIndex} ${next.thikrId}${athkarChanged ? " (new athkar)" : ""}`
+    );
+    await this.playStep(nextIndex, athkarChanged, athkarChanged ? prevAthkarId : null);
+  }
+
+  // ─── Native Event Handlers ─────────────────────────────────────────
+
+  private onProgress(position: number, duration: number, seeked: boolean): void {
+    if (!this.playlistId) return;
+    this.store.setPosition(position);
+    if (duration > 0) {
+      this.store.setDuration(duration);
+      this.stepDuration = duration;
+    }
+
+    if (this.advancing || this.isSmartPausing || seeked) {
+      this.lastPosition = position;
+      return;
+    }
+
+    // A backward jump means RepeatMode.track looped the file → one repeat done.
+    if (duration > 0 && this.lastPosition > position + LOOP_WRAP_DROP) {
+      this.lastPosition = position;
+      void this.onRepeatComplete();
+      return;
+    }
+    this.lastPosition = position;
+  }
+
+  // Only fires for changes we didn't initiate — i.e. lock-screen / notification
+  // controls. Our own repositioning sets `advancing`. Sync our plan position.
+  private onChangeTrack(track: TrackItem): void {
+    if (this.advancing) return;
+    const index = this.indexOf(track);
+    if (Number.isNaN(index) || index === this.stepIndex || !this.plan[index]) return;
+
+    const fromAthkarId = this.plan[this.stepIndex]?.athkarId ?? null;
+    this.stepIndex = index;
+    this.repeatDone = 0;
+    this.lastPosition = 0;
+    const step = this.plan[index];
+    this.syncUI(step, step.athkarId !== fromAthkarId, null);
+  }
+
+  private onPlaybackStateChange(state: TrackPlayerState): void {
+    if (!this.playlistId) return;
+    // Ignore state churn we caused ourselves (repositioning / smart pause).
+    if (this.advancing || this.isSmartPausing) return;
+
+    if (state === "playing") {
+      this.setPlayerState(PLAYER_STATE.PLAYING);
+    } else if (state === "paused" || state === "stopped") {
+      // Never treat a stop as end-of-session — completion is our decision. Reflect
+      // it only as a pause so the UI stays truthful when the player halts.
+      if (!this.userStopping && this.athkarStore.playerState === PLAYER_STATE.PLAYING) {
+        if (state === "stopped") {
+          log.w("Player", "Playback stopped unexpectedly mid-session");
+        }
+        this.setPlayerState(PLAYER_STATE.PAUSED);
+      }
+    }
+  }
+
+  // ─── UI Sync ───────────────────────────────────────────────────────
+
+  private syncUI(step: Step, athkarChanged: boolean, completedAthkarId: string | null): void {
+    const thikrNumber = this.uniqueAthkarIds.indexOf(step.athkarId);
+    const sessionProgress =
+      thikrNumber !== -1
+        ? { current: thikrNumber + 1, total: this.uniqueAthkarIds.length }
+        : this.athkarStore.sessionProgress;
 
     if (athkarChanged) {
-      // ── Thikr transition (or first track): atomic UI update ──
-
-      // Compute session progress
-      const thikrNumber = this.uniqueThikrIds.indexOf(athkarId);
-      const sessionProgress =
-        thikrNumber !== -1
-          ? { current: thikrNumber + 1, total: this.uniqueThikrIds.length }
-          : this.athkarStore.sessionProgress;
-
-      // Compute focus screen index
       const { currentType, morningAthkarList, eveningAthkarList } = this.athkarStore;
-      const list = currentType === "morning" ? morningAthkarList : eveningAthkarList;
-      const newIndex = list.findIndex((a) => a.id === athkarId);
-
-      // One atomic set(): increment previous count + set new track + progress + index
+      const list = currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
+      const newIndex = list.findIndex((a) => a.id === step.athkarId);
       this.athkarStore.transitionTrack({
-        previousAthkarId: !wasManualSkip && this.previousAthkarId ? this.previousAthkarId : null,
-        newAthkarId: athkarId,
-        newThikrId: thikrId,
-        repeatProgress: { current: repeatIndex, total: totalRepeats },
+        previousAthkarId: completedAthkarId,
+        newAthkarId: step.athkarId,
+        newThikrId: step.thikrId,
+        repeatProgress: { current: this.repeatDone, total: step.repeatTarget },
         sessionProgress,
         newIndex: newIndex !== -1 ? newIndex : this.athkarStore.currentAthkarIndex,
       });
-
-      // Smart pause AFTER UI update (user sees the new card instantly)
-      if (!wasManualSkip && this.previousAthkarId) {
-        const pauseMs = this.getSmartPause(this.previousDuration);
-        if (pauseMs > 0) {
-          this.isSmartPausing = true;
-          this.setPlayerState("loading");
-          await TrackPlayer.pause();
-          await new Promise((resolve) => {
-            this.smartPauseTimer = setTimeout(resolve, pauseMs);
-          });
-          this.smartPauseTimer = null;
-          await TrackPlayer.play();
-          this.setPlayerState("playing");
-          this.isSmartPausing = false;
-        }
-      }
     } else {
-      // ── Same athkarId, new track ──
-      if (isGroup && wasManualSkip && this.previousAthkarId) {
-        // Group manual skip: update count to rotate group UI
-        if (skipDirection === "next") {
-          this.athkarStore.incrementCount(this.previousAthkarId, true);
-        } else if (skipDirection === "previous") {
-          this.athkarStore.decrementCount(this.previousAthkarId);
-        }
-      } else if (!wasManualSkip && this.previousAthkarId) {
-        // Auto-advance: increment count as usual
-        this.athkarStore.incrementCount(this.previousAthkarId, true);
-      }
-      this.athkarStore.setRepeatProgress({ current: repeatIndex, total: totalRepeats });
-      // Update current thikr so store reflects the active audio
-      this.athkarStore.setCurrentTrack(thikrId, athkarId);
+      this.athkarStore.setRepeatProgress({ current: this.repeatDone, total: step.repeatTarget });
+      this.athkarStore.setCurrentTrack(step.thikrId, step.athkarId);
     }
-
-    this.previousAthkarId = athkarId;
-
-    // Update group progress for UI
-    this.computeGroupProgress(athkarId, thikrId);
-
-    // Prefetch upcoming audio files
-    const jsQueueIdx = this.queue.findIndex((q) => q.athkarId === athkarId);
-    if (jsQueueIdx !== -1) {
-      this.prefetchAhead(jsQueueIdx);
-    }
-
-    log.d("Player", `Track: ${thikrId} repeat ${repeatIndex + 1}/${totalRepeats} (index ${index})`);
+    this.computeGroupProgress(step.athkarId, step.thikrId);
   }
 
-  handleProgressUpdate(event: { position: number; duration: number; buffered: number }): void {
-    if (this.queue.length === 0) return;
+  // ─── Teardown ──────────────────────────────────────────────────────
 
-    this.store.setPosition(event.position);
-    if (event.duration > 0) {
-      this.store.setDuration(event.duration);
-      this.previousDuration = event.duration;
-    }
-  }
-
-  handlePlayWhenReadyChanged(event: { playWhenReady: boolean }): void {
-    if (this.queue.length === 0) return;
-    if (this.isSmartPausing) return;
-
-    if (event.playWhenReady) {
-      this.setPlayerState("playing");
-    } else {
-      const currentState = this.athkarStore.playerState;
-      if (currentState === "playing") {
-        this.setPlayerState("paused");
-      }
-    }
-  }
-
-  async handleQueueEnded(_event: { track?: number; position: number }): Promise<void> {
-    if (this.queue.length === 0) return;
-
-    // Increment count for the last track in the session
-    if (this.previousAthkarId) {
-      this.athkarStore.incrementCount(this.previousAthkarId, true);
-    }
-
-    await this.handleSessionComplete();
-  }
-
-  handlePlaybackError(event: { code?: string; message?: string }): void {
-    log.e(
-      "Player",
-      `Playback error: ${event.code ?? "unknown"} — ${event.message ?? "no message"}`
-    );
-  }
-
-  // ─── Session Complete ──────────────────────────────────────────────
-
-  async handleSessionComplete(): Promise<void> {
+  private async completeSession(): Promise<void> {
     log.i("Player", "Session complete");
-    await TrackPlayer.reset();
+    await TrackPlayer.pause().catch(() => {});
+    await this.teardown();
+  }
 
-    this.queue = [];
-    this.uniqueThikrIds = [];
-    this.previousAthkarId = null;
-    this.previousDuration = 0;
-    this.isManualSkip = false;
-    this.isSmartPausing = false;
+  private async teardown(): Promise<void> {
     this.clearSmartPauseTimer();
+    if (this.playlistId) {
+      await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
+    }
+    this.playlistId = null;
+    this.plan = [];
+    this.uniqueAthkarIds = [];
+    this.stepIndex = 0;
+    this.repeatDone = 0;
+    this.lastPosition = 0;
+    this.stepDuration = 0;
+    this.isSmartPausing = false;
+    this.advancing = false;
 
     this.athkarStore.resetPlaybackState();
     this.store.setPosition(0);
     this.store.setDuration(0);
   }
 
-  // ─── Download & Prefetch ───────────────────────────────────────────
-
-  private async resolveLocalPath(
-    reciterId: string,
-    thikrId: string,
-    url: string,
-    size: number
-  ): Promise<string | null> {
-    const existing = await audioDownloadManager.getLocalPath(reciterId, thikrId);
-    if (existing) return existing;
-
-    const key = `${reciterId}/${thikrId}`;
-    if (this.failedDownloads.has(key)) return null;
-
-    if (this.activeDownloads.has(key)) {
-      return this.activeDownloads.get(key)!;
-    }
-
-    const downloadPromise = audioDownloadManager
-      .downloadFile(reciterId, thikrId, url, size)
-      .then((result) => {
-        this.activeDownloads.delete(key);
-        if (!result) this.failedDownloads.add(key);
-        return result;
-      })
-      .catch((error) => {
-        this.activeDownloads.delete(key);
-        this.failedDownloads.add(key);
-        log.e("Player", `Download failed: ${key}`, error instanceof Error ? error : undefined);
-        return null;
-      });
-
-    this.activeDownloads.set(key, downloadPromise);
-    return downloadPromise;
-  }
-
-  private async prefetchAhead(currentQueueIndex: number): Promise<void> {
-    if (!this.reciterId || !this.manifest) return;
-
-    const startIdx = currentQueueIndex + 1;
-    const endIdx = Math.min(startIdx + PREFETCH_AHEAD, this.queue.length);
-
-    for (let i = startIdx; i < endIdx; i++) {
-      const item = this.queue[i];
-      if (!item?.audioFile || item.localPath) continue;
-
-      const localPath = await this.resolveLocalPath(
-        this.reciterId,
-        item.thikrId,
-        item.audioFile.url,
-        item.audioFile.size
-      );
-      if (localPath) item.localPath = localPath;
-    }
-  }
-
   // ─── Helpers ───────────────────────────────────────────────────────
 
-  private getEffectiveRepeats(item: QueueItem | undefined): number {
-    if (!item) return 0;
+  private getEffectiveRepeats(totalRepeats: number): number {
     const repeatLimit = this.store.repeatLimit;
-    if (repeatLimit === "all") return item.totalRepeats;
-    return Math.min(repeatLimit as number, item.totalRepeats);
+    if (repeatLimit === "all") return totalRepeats;
+    return Math.min(repeatLimit as number, totalRepeats);
   }
 
   private getSmartPause(audioDuration: number): number {
@@ -687,8 +591,7 @@ class AthkarPlayer {
   }
 
   private getSessionTitle(): string {
-    const key = this.sessionType === "morning" ? "athkar.morning" : "athkar.evening";
-    return i18n.t(key);
+    return i18n.t(`athkar.${this.sessionType}`);
   }
 
   private getReciterName(): string {
@@ -697,7 +600,7 @@ class AthkarPlayer {
     if (!catalog) return this.reciterId;
     const reciter = catalog.reciters.find((r) => r.id === this.reciterId);
     if (!reciter) return this.reciterId;
-    return reciter.name["ar"] ?? reciter.name["en"] ?? this.reciterId;
+    return getLocalizedName(reciter.name, i18n.language) || this.reciterId;
   }
 
   private getArtworkUrl(): string | undefined {
@@ -723,7 +626,7 @@ class AthkarPlayer {
 
   private computeGroupProgress(athkarId: string, thikrId: string): void {
     const { currentType, morningAthkarList, eveningAthkarList, currentProgress } = this.athkarStore;
-    const list = currentType === "morning" ? morningAthkarList : eveningAthkarList;
+    const list = currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
     const athkar = list.find((a) => a.id === athkarId);
 
     if (!athkar?.group) {
@@ -754,7 +657,7 @@ class AthkarPlayer {
 
   isActive(): boolean {
     const state = this.athkarStore.playerState;
-    return state !== "idle" && state !== "ended";
+    return state !== PLAYER_STATE.IDLE && state !== PLAYER_STATE.ENDED;
   }
 
   getCurrentAthkarId(): string | null {

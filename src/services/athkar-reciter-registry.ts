@@ -44,7 +44,7 @@ const fetchManifest = async (reciterId: string): Promise<ReciterManifest | null>
   }
 };
 
-const getLocalizedName = (name: Record<string, string>, locale: string): string => {
+export const getLocalizedName = (name: Record<string, string>, locale: string): string => {
   // Try exact locale match first
   if (name[locale]) return name[locale];
 
