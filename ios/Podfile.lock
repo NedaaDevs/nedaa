@@ -184,6 +184,8 @@ PODS:
     - ExpoModulesCore
   - ExpoAsset (57.0.3):
     - ExpoModulesCore
+  - ExpoAudio (57.0.0):
+    - ExpoModulesCore
   - ExpoBackgroundTask (57.0.2):
     - ExpoModulesCore
     - ExpoTaskManager
@@ -310,6 +312,53 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - NitroModules (0.36.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-callinvoker
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - NitroPlayer (1.4.3):
+    - hermes-engine
+    - NitroModules
+    - RCTRequired
+    - RCTTypeSafety
+    - React-callinvoker
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RCTDeprecation (0.86.0)
   - RCTRequired (0.86.0)
   - RCTSwiftUI (0.86.0)
@@ -352,7 +401,7 @@ PODS:
     - React-utils
     - ReactNativeDependencies
     - Yoga
-  - React-Core-prebuilt (0.85.3):
+  - React-Core-prebuilt (0.86.0):
     - ReactNativeDependencies
   - React-Core/CoreModulesHeaders (0.86.0):
     - hermes-engine
@@ -1824,9 +1873,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-track-player (4.1.2):
-    - React-Core
-    - SwiftAudioEx (= 1.1.0)
   - react-native-view-shot (5.1.0):
     - hermes-engine
     - RCTRequired
@@ -2598,7 +2644,6 @@ PODS:
     - SSZipArchive (~> 2.5.5)
     - Yoga
   - SSZipArchive (2.5.5)
-  - SwiftAudioEx (1.1.0)
   - UMAppLoader (57.0.0)
   - Yoga (0.0.0)
 
@@ -2614,6 +2659,7 @@ DEPENDENCIES:
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - ExpoAlarm (from `../modules/expo-alarm/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoAudio (from `../node_modules/expo-audio/ios`)
   - ExpoBackgroundTask (from `../node_modules/expo-background-task/ios`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoDevice (from `../node_modules/expo-device/ios`)
@@ -2651,6 +2697,8 @@ DEPENDENCIES:
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - HijriNative (from `../node_modules/hijri-native`)
+  - NitroModules (from `../node_modules/react-native-nitro-modules`)
+  - NitroPlayer (from `../node_modules/react-native-nitro-player`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../node_modules/react-native/Libraries/Required`)
   - RCTSwiftUI (from `../node_modules/react-native/ReactApple/RCTSwiftUI`)
@@ -2691,7 +2739,6 @@ DEPENDENCIES:
   - React-mutationobservernativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver`)
   - react-native-color-matrix-image-filters (from `../node_modules/react-native-color-matrix-image-filters`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
-  - react-native-track-player (from `../node_modules/react-native-track-player`)
   - react-native-view-shot (from `../node_modules/react-native-view-shot`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
@@ -2742,7 +2789,6 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - SSZipArchive
-    - SwiftAudioEx
 
 EXTERNAL SOURCES:
   EXApplication:
@@ -2767,6 +2813,8 @@ EXTERNAL SOURCES:
     :path: "../modules/expo-alarm/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
+  ExpoAudio:
+    :path: "../node_modules/expo-audio/ios"
   ExpoBackgroundTask:
     :path: "../node_modules/expo-background-task/ios"
   ExpoClipboard:
@@ -2842,6 +2890,10 @@ EXTERNAL SOURCES:
     :tag: hermes-v250829098.0.14
   HijriNative:
     :path: "../node_modules/hijri-native"
+  NitroModules:
+    :path: "../node_modules/react-native-nitro-modules"
+  NitroPlayer:
+    :path: "../node_modules/react-native-nitro-player"
   RCTDeprecation:
     :path: "../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation"
   RCTRequired:
@@ -2920,8 +2972,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-color-matrix-image-filters"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
-  react-native-track-player:
-    :path: "../node_modules/react-native-track-player"
   react-native-view-shot:
     :path: "../node_modules/react-native-view-shot"
   React-NativeModulesApple:
@@ -3027,6 +3077,7 @@ SPEC CHECKSUMS:
   expo-dev-menu-interface: 7a59e803916fbfd1b96c75ff91ea8dddac7e722f
   ExpoAlarm: 8f71cefb35639b1e79fb50d89e36736b29fc8681
   ExpoAsset: 586e89aeaab2e23bfa90b9dce4d7d5e36815c039
+  ExpoAudio: 4f27c2bc1cc08f003c2af070cedf25fefd9da5bb
   ExpoBackgroundTask: b7a806b88d95a483125d2a10effdded8c67d1f5e
   ExpoClipboard: 67d46a8be4a50ec610c7b2f4966c0475aec6d969
   ExpoDevice: 090ee05e20e40ca981d39263e3e95c46ed850782
@@ -3064,6 +3115,8 @@ SPEC CHECKSUMS:
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
   hermes-engine: 2e133f34c53e40e0ff37f1dada36832656d020ad
   HijriNative: 1c014bcd73d2a2bf9507dd13d9d1cc5ba168bb9b
+  NitroModules: b4174dd303728e16ad1afb79f64c1a5c69a3b373
+  NitroPlayer: 24cc4e9ffe97c41e8b677e4d81f6ca6b17749f0c
   RCTDeprecation: 2a74a2c57675e64419bd89078efde81f7c1de90b
   RCTRequired: 30451112e6fef4e6f31b4e7eee0845156e35e4b0
   RCTSwiftUI: 5aaf0b07e747ba749dc6acc94d8bd41eea4b570f
@@ -3072,7 +3125,7 @@ SPEC CHECKSUMS:
   React: 2574546f2d017abd14d0c9b48cf2b6a0547c2591
   React-callinvoker: 03cd4b931d1d583d87aae99b8f7b6fe26bf571ee
   React-Core: 1c824d9c7dd8aa760b5f1b50d5a54c2a3f598f87
-  React-Core-prebuilt: 2d024c0d5ba3970e8dc19dfdbb539ae925c6dc6a
+  React-Core-prebuilt: 13924a267683b3d6fa4bde9c80380becf83a9c5c
   React-CoreModules: 2f9ed75bca7f6dea2b70e8a1f4a5ca9b6be52d76
   React-cxxreact: 7103d5ba69848c039e11079e74ceede05efe795e
   React-debug: 8cc8d99ccc664ef9e873027f7fc3fb0a50496012
@@ -3103,7 +3156,6 @@ SPEC CHECKSUMS:
   React-mutationobservernativemodule: f0a0d5ae9b51caf7becbeabf836d716cfedb6bf2
   react-native-color-matrix-image-filters: 8f4050f2159f33948f387819847cb6e0f61c0983
   react-native-safe-area-context: 6b4966397ada0f7dd481e4486a2ef936834861a1
-  react-native-track-player: dd56f9948e03756a217c75e0a61aa04aab65b5a1
   react-native-view-shot: 5bf17256c542d46c02a6f2d2752fe88eb3a8d058
   React-NativeModulesApple: a092d89b58f635ebfab88048b0eda9fb516819fd
   React-networking: 968bbbe73590149feb1e72b2af4f6a68e4796ece
@@ -3149,7 +3201,6 @@ SPEC CHECKSUMS:
   RNWorklets: ae7f2b95d75b903387e6359583f2fd67bc9a93ff
   RNZipArchive: d2e50460c579f1cc099dda7f67d8c0c4eb3414f8
   SSZipArchive: c69881e8ac5521f0e622291387add5f60f30f3c4
-  SwiftAudioEx: f6aa653770f3a0d3851edaf8d834a30aee4a7646
   UMAppLoader: 6cb9f7f40f458bab7fbf7d8a4a4c95aa8016ce0b
   Yoga: fe50ab299e578f397fef753cf309c6703a4db29b
 

@@ -11,7 +11,7 @@
     },
     "name": "nedaa",
     "slug": "nedaa",
-    "version": "2.9.4",
+    "version": "2.10.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -138,7 +138,15 @@
       "expo-background-task",
       "@react-native-community/datetimepicker",
       "expo-sharing",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-audio",
+        {
+          "recordAudioAndroid": false,
+          "microphonePermission": "This app does not require microphone access.",
+          "enableBackgroundPlayback": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
