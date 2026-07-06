@@ -1,0 +1,53 @@
+Nedaa ialah aplikasi waktu solat dan teman Islami yang percuma, sumber terbuka dan mengutamakan privasi. Tiada pengumpulan data. Tiada iklan. Tiada akaun. Tiada bayaran tersembunyi. Tiada tahap premium.
+
+Nedaa (Arab: نداء, "seruan" — merujuk kepada Azan) dibina berteraskan waktu solat yang tepat, penggera Subuh sebenar peringkat sistem, Azkar harian, Kiblat, alat Hijri, panduan Umrah, penjejak Qada (puasa), dan pembaca al-Quran yang sedang dibangunkan.
+
+WAKTU SOLAT TEPAT — DI MANA SAHAJA
+• 22 kaedah pengiraan (Muslim World League, ISNA, Umm al-Qura, Karachi, Mesir, Diyanet, JAKIM, Kemenag, MUIS Singapura, dan banyak lagi)
+• Mazhab Asar Hanafi dan standard
+• Pelarasan latitud tinggi
+• Berfungsi luar talian selepas penyegerakan pertama — tiada internet diperlukan selepas itu
+• Lapisan API yang boleh ditukar penyedia, kini dikuasakan oleh API Aladhan
+
+PENGGERA SOLAT YANG BENAR-BENAR MENGEJUTKAN ANDA
+• Penggera sebenar peringkat sistem — bukan sekadar pemberitahuan
+• Apple AlarmKit di iOS 26+ (ciri penggera memerlukan iOS 26)
+• Tiga jenis penggera utama: Subuh, Jumaat dan tersuai
+• Menembusi mod Jangan Ganggu dan mod senyap
+• Cabaran bangun pilihan (ketik atau matematik)
+• Bunyi Azan tersuai bagi setiap jenis penggera
+
+AZKAR HARIAN
+• Zikir pagi dan petang daripada himpunan Hisnul Muslim (Sa'id bin Ali bin Wahaf al-Qahtani)
+• Pelbagai suara qari
+• Pembaca mod fokus
+• Azkar tambahan oleh pengguna
+• Penjejakan amalan yang lembut tanpa unsur permainan, dengan jeda/sambung
+
+PANDUAN UMRAH
+• Panduan langkah demi langkah bagi setiap amalan
+• Doa Nabi yang lengkap di Safa dan Marwah
+• Segala yang anda perlukan, luar talian, di satu tempat
+
+PENJEJAK PUASA QADA
+• Mengira puasa Ramadan yang tertinggal
+• Peringatan berpaksikan Ramadan untuk tarikh akhir "ganti sebelum Ramadan berikutnya"
+• Sembunyi dengan mod privasi
+
+WIDGET
+• Widget Skrin Utama untuk semua solat atau solat seterusnya sahaja
+• Widget Skrin Kunci dengan pemasa kira detik
+• Sedia untuk Ramadan: widget Sahur dan Berbuka
+
+MENGUTAMAKAN PRIVASI DARI ASASNYA
+• Lokasi berketepatan rendah, digunakan hanya untuk mengira waktu solat — kekal pada peranti
+• Tiada ID pengiklanan, tiada graf pemasangan, tiada akses kenalan, tiada profil merentas peranti
+• Sumber terbuka — audit cara data anda dikendalikan di github.com/NedaaDevs/nedaa
+• Ketelusan sumber: Projek Tanzil (teks al-Quran, CC-BY 3.0), Hisnul Muslim (azkar), Aladhan (waktu solat) — semuanya dikreditkan dalam aplikasi
+
+BAHASA
+• Inggeris, Arab, Melayu, Urdu — reka bentuk mengutamakan RTL
+
+Nedaa ialah sumber terbuka di bawah lesennya di github.com/NedaaDevs/nedaa. Sumbangan terjemahan dialu-alukan di crowdin.com/project/nedaa-v2.
+
+Muat turun Nedaa dan permudahkan ibadah harian anda.
