@@ -29,6 +29,12 @@
             "value": "Afternoon Prayer"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Asar"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -54,6 +60,12 @@
             "value": "Asr"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asar"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -74,6 +86,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Athkar"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azkar"
           }
         },
         "ur": {
@@ -99,6 +117,12 @@
             "value": "Track your daily Athkar completion and progress"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jejaki penyempurnaan dan kemajuan Azkar harian anda"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -122,6 +146,12 @@
             "value": "Athkar Progress"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kemajuan Azkar"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -142,6 +172,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Best"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terbaik"
           }
         },
         "ur": {
@@ -167,6 +203,12 @@
             "value": "Complete"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selesai"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -189,6 +231,12 @@
             "value": "Completed"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selesai"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -209,6 +257,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Completed Today"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selesai Hari Ini"
           }
         },
         "ur": {
@@ -245,6 +299,12 @@
             "value": "in %dh %dm"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dalam %dj %dm"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -266,6 +326,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "in %dm"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dalam %dm"
           }
         },
         "ur": {
@@ -290,6 +356,12 @@
             "value": "Current"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semasa"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -310,6 +382,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dawn Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Subuh"
           }
         },
         "ur": {
@@ -334,6 +412,12 @@
             "value": "Day Streak"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rentetan Harian"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -356,6 +440,12 @@
             "value": "Days"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hari"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -376,6 +466,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Duhur"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zohor"
           }
         },
         "ur": {
@@ -402,6 +498,12 @@
             "value": "Evening"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Petang"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -422,6 +524,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Track Asr, Maghrib, and Isha prayer times at a glance"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lihat waktu solat Asar, Maghrib dan Isyak dengan sekilas pandang"
           }
         },
         "ur": {
@@ -446,6 +554,12 @@
             "value": "Evening Prayers"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Petang"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -466,6 +580,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fajr"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subuh"
           }
         },
         "ur": {
@@ -490,6 +610,12 @@
             "value": "Fasts Remaining"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puasa Berbaki"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -510,6 +636,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Friday Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Jumaat"
           }
         },
         "ur": {
@@ -535,6 +667,12 @@
             "value": "Isha"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isyak"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -556,6 +694,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Items"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item"
           }
         },
         "ur": {
@@ -581,6 +725,12 @@
             "value": "Jumu'ah"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jumaat"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -598,6 +748,12 @@
           }
         },
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maghrib"
+          }
+        },
+        "ms": {
           "stringUnit": {
             "state": "translated",
             "value": "Maghrib"
@@ -625,6 +781,12 @@
             "value": "Missed Fasts"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puasa Tertinggal"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -645,6 +807,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Morning"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagi"
           }
         },
         "ur": {
@@ -669,6 +837,12 @@
             "value": "Track Fajr, Sunrise, and Dhuhr prayer times at a glance"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lihat waktu solat Subuh, Syuruk dan Zohor dengan sekilas pandang"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -689,6 +863,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Morning Prayers"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Pagi"
           }
         },
         "ur": {
@@ -714,6 +894,12 @@
             "value": "My Widget"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widget Saya"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -734,6 +920,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Next Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Seterusnya"
           }
         },
         "ur": {
@@ -759,6 +951,12 @@
             "value": "Displays the next prayer. it shows a countdown timer 60 minutes before the prayer. And count up 30 minutes after"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memaparkan solat seterusnya. Ia menunjukkan pemasa kira detik 60 minit sebelum solat, dan mengira menaik 30 minit selepasnya"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -782,6 +980,12 @@
             "value": "Next Prayer"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Seterusnya"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -802,6 +1006,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Night Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Isyak"
           }
         },
         "ur": {
@@ -827,6 +1037,12 @@
             "value": "No Athkar data available"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiada data Azkar tersedia"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -847,6 +1063,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "No Athkar data available"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiada data Azkar tersedia"
           }
         },
         "ur": {
@@ -871,6 +1093,12 @@
             "value": "No data"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiada data"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -891,6 +1119,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Noon Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Zohor"
           }
         },
         "ur": {
@@ -917,6 +1151,12 @@
             "value": "Overall Progress"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kemajuan Keseluruhan"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -940,6 +1180,12 @@
             "value": "Passed"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Berlalu"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -960,6 +1206,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat"
           }
         },
         "ur": {
@@ -985,6 +1237,12 @@
             "value": "View next prayer time and daily Athkar progress together"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lihat waktu solat seterusnya dan kemajuan Azkar harian bersama-sama"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1006,6 +1264,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prayer & Athkar"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat & Azkar"
           }
         },
         "ur": {
@@ -1031,6 +1295,12 @@
             "value": "View prayer times for today"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lihat waktu solat untuk hari ini"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1054,6 +1324,12 @@
             "value": "Prayer Times"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waktu Solat"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1074,6 +1350,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "progress"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kemajuan"
           }
         },
         "ur": {
@@ -1099,6 +1381,12 @@
             "value": "Progress"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kemajuan"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1116,6 +1404,12 @@
           }
         },
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qada"
+          }
+        },
+        "ms": {
           "stringUnit": {
             "state": "translated",
             "value": "Qada"
@@ -1143,6 +1437,12 @@
             "value": "Qada Tracker"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penjejak Qada"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1163,6 +1463,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Track your Qada fasts and progress"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jejaki puasa Qada dan kemajuan anda"
           }
         },
         "ur": {
@@ -1187,6 +1493,12 @@
             "value": "Qada Tracker"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penjejak Qada"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1209,6 +1521,12 @@
             "value": "remaining"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "berbaki"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1229,6 +1547,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Select a family"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pilih satu keluarga"
           }
         },
         "ur": {
@@ -1254,6 +1578,12 @@
             "value": "Start tracking your daily Athkar in the app"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mula menjejaki Azkar harian anda dalam aplikasi"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1274,6 +1604,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sunrise"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syuruk"
           }
         },
         "ur": {
@@ -1298,6 +1634,12 @@
             "value": "Sunrise Time"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waktu Syuruk"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1318,6 +1660,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sunset Prayer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat Maghrib"
           }
         },
         "ur": {
@@ -1343,6 +1691,12 @@
             "value": "This is an example widget."
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ini adalah widget contoh."
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1364,6 +1718,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Today's Progress"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kemajuan Hari Ini"
           }
         },
         "ur": {
@@ -1389,6 +1749,12 @@
             "value": "Today's Athkar Progress"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kemajuan Azkar Hari Ini"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1409,6 +1775,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Today Completed"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selesai Hari Ini"
           }
         },
         "ur": {
@@ -1433,6 +1805,12 @@
             "value": "Today Progress"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kemajuan Hari Ini"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1455,6 +1833,12 @@
             "value": "Today's Athkar"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azkar Hari Ini"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1475,6 +1859,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Total Fasts"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jumlah Puasa"
           }
         },
         "ur": {
@@ -1501,6 +1891,12 @@
             "value": "Prayer & Athkar Settings"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tetapan Solat & Azkar"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1521,6 +1917,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Configure your Prayer & Athkar widget display options"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfigurasi pilihan paparan widget Solat & Azkar anda"
           }
         },
         "ur": {
@@ -1548,6 +1950,12 @@
             "value": "Prayer Times Settings"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tetapan Waktu Solat"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1571,6 +1979,12 @@
             "value": "Configure your Prayer Times widget display options"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfigurasi pilihan paparan widget Waktu Solat anda"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1591,6 +2005,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show Countdown"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunjukkan Kira Detik"
           }
         },
         "ur": {
@@ -1616,6 +2036,12 @@
             "value": "Show Sunrise"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunjukkan Syuruk"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1637,6 +2063,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show Timer"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunjukkan Pemasa"
           }
         },
         "ur": {
@@ -1663,6 +2095,12 @@
             "value": "in %dh %dm"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dalam %dj %dm"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1685,6 +2123,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "in %d min"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dalam %d min"
           }
         },
         "ur": {
@@ -1711,6 +2155,12 @@
             "value": "Next"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seterusnya"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1733,6 +2183,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Next prayer in"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solat seterusnya dalam"
           }
         },
         "ur": {
@@ -1759,6 +2215,12 @@
             "value": "No prayer times available"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiada waktu solat tersedia"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1781,6 +2243,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prayer Times"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waktu Solat"
           }
         },
         "ur": {
@@ -1807,6 +2275,12 @@
             "value": "Previous"
           }
         },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sebelumnya"
+          }
+        },
         "ur": {
           "stringUnit": {
             "state": "translated",
@@ -1818,16 +2292,22 @@
     "inlinePrayerWidgetTitle": {
       "comment": "Inline lock screen widget title",
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة القادمة (مضمّن)"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Next Prayer Inline"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "الصلاة القادمة (مضمّن)"
+            "value": "Solat Seterusnya (Sebaris)"
           }
         },
         "ur": {
@@ -1841,16 +2321,22 @@
     "inlinePrayerWidgetDesc": {
       "comment": "Inline lock screen widget description",
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يعرض اسم ووقت الصلاة القادمة فوق الساعة"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Shows next prayer name and time above the clock"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "يعرض اسم ووقت الصلاة القادمة فوق الساعة"
+            "value": "Menunjukkan nama dan waktu solat seterusnya di atas jam"
           }
         },
         "ur": {
@@ -1863,356 +2349,572 @@
     },
     "suhoor": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السحور"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Suhoor"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "السحور"
+            "value": "Sahur"
           }
         }
       }
     },
     "iftar": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإفطار"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Iftar"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "الإفطار"
+            "value": "Berbuka"
           }
         }
       }
     },
     "ramadan": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رمضان"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Ramadan"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "رمضان"
+            "value": "Ramadan"
           }
         }
       }
     },
     "imsak": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإمساك"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Imsak"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "الإمساك"
+            "value": "Imsak"
           }
         }
       }
     },
     "widget_ramadan_day": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم %d"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Day %d"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "اليوم %d"
+            "value": "Hari %d"
           }
         }
       }
     },
     "widget_ramadan_day_complete": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم %d مكتمل"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Day %d Complete"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "اليوم %d مكتمل"
+            "value": "Hari %d Selesai"
           }
         }
       }
     },
     "widget_ramadan_placeholder": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متاح خلال رمضان"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Available during Ramadan"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "متاح خلال رمضان"
+            "value": "Tersedia semasa Ramadan"
           }
         }
       }
     },
     "occasion.ramadan": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Ramadan" } },
-        "ar": { "stringUnit": { "state": "translated", "value": "رمضان" } }
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رمضان"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ramadan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ramadan"
+          }
+        }
       }
     },
     "occasion.eid-al-fitr": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Eid al-Fitr" } },
-        "ar": { "stringUnit": { "state": "translated", "value": "عيد الفطر" } }
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عيد الفطر"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eid al-Fitr"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aidilfitri"
+          }
+        }
       }
     },
     "occasion.arafah": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Day of Arafah" } },
-        "ar": { "stringUnit": { "state": "translated", "value": "يوم عرفة" } }
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم عرفة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day of Arafah"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hari Arafah"
+          }
+        }
       }
     },
     "occasion.eid-al-adha": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Eid al-Adha" } },
-        "ar": { "stringUnit": { "state": "translated", "value": "عيد الأضحى" } }
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عيد الأضحى"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eid al-Adha"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aidiladha"
+          }
+        }
       }
     },
     "occasion.hijri-new-year": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Islamic New Year" } },
-        "ar": { "stringUnit": { "state": "translated", "value": "رأس السنة الهجرية" } }
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رأس السنة الهجرية"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Islamic New Year"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahun Baharu Islam"
+          }
+        }
       }
     },
     "occasion.ashura": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Ashura" } },
-        "ar": { "stringUnit": { "state": "translated", "value": "عاشوراء" } }
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عاشوراء"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ashura"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asyura"
+          }
+        }
       }
     },
     "importantDaysWidgetTitle": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المناسبات الإسلامية"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Islamic Occasions"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "المناسبات الإسلامية"
+            "value": "Peristiwa Islam"
           }
         }
       }
     },
     "importantDaysWidgetDesc": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عدّ تنازلي لرمضان والعيدين وغيرها"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Countdowns to Ramadan, Eid, and more"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "عدّ تنازلي لرمضان والعيدين وغيرها"
+            "value": "Kira detik ke Ramadan, Aidilfitri dan lain-lain"
           }
         }
       }
     },
     "widget_days_today": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Today"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "اليوم"
+            "value": "Hari Ini"
           }
         }
       }
     },
     "widget_days_unit": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "days"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "يوم"
+            "value": "hari"
           }
         }
       }
     },
     "suhoorIftarWidgetTitle": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السحور والإفطار"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Suhoor & Iftar"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "السحور والإفطار"
+            "value": "Sahur & Berbuka"
           }
         }
       }
     },
     "suhoorIftarWidgetDesc": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العد التنازلي لأوقات السحور والإفطار"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Countdown to suhoor and iftar times"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "العد التنازلي لأوقات السحور والإفطار"
+            "value": "Kira detik ke waktu sahur dan berbuka"
           }
         }
       }
     },
     "ramadanProgressWidgetTitle": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقدم رمضان"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Ramadan Progress"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "تقدم رمضان"
+            "value": "Kemajuan Ramadan"
           }
         }
       }
     },
     "ramadanProgressWidgetDesc": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتبع رحلتك في رمضان مع التقدم اليومي"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Track your Ramadan journey with daily progress"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "تتبع رحلتك في رمضان مع التقدم اليومي"
+            "value": "Jejaki perjalanan Ramadan anda dengan kemajuan harian"
           }
         }
       }
     },
     "widget_suhoor_iftar_settings": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعدادات السحور والإفطار"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Suhoor & Iftar Settings"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "إعدادات السحور والإفطار"
+            "value": "Tetapan Sahur & Berbuka"
           }
         }
       }
     },
     "widget_suhoor_iftar_settings_desc": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تكوين العد التنازلي للسحور والإفطار"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Configure suhoor and iftar countdown"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "تكوين العد التنازلي للسحور والإفطار"
+            "value": "Konfigurasi kira detik sahur dan berbuka"
           }
         }
       }
     },
     "widget_ramadan_progress_settings": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعدادات تقدم رمضان"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Ramadan Progress Settings"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "إعدادات تقدم رمضان"
+            "value": "Tetapan Kemajuan Ramadan"
           }
         }
       }
     },
     "widget_ramadan_progress_settings_desc": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تكوين عرض تقدم رمضان"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Configure Ramadan progress display"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "تكوين عرض تقدم رمضان"
+            "value": "Konfigurasi paparan kemajuan Ramadan"
           }
         }
       }
     },
     "widget_show_ramadan_labels": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار تسميات رمضان"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Show Ramadan Labels"
           }
         },
-        "ar": {
+        "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "إظهار تسميات رمضان"
+            "value": "Tunjukkan Label Ramadan"
           }
         }
       }
@@ -2229,6 +2931,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "All Prayers"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semua Solat"
           }
         },
         "ur": {
@@ -2251,6 +2959,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "All daily prayers at a glance, with the next one highlighted"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semua solat harian dengan sekilas pandang, dengan solat seterusnya diserlahkan"
           }
         },
         "ur": {

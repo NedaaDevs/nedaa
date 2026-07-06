@@ -1,6 +1,6 @@
 import { addDays, format, parse, subDays } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { ar, enUS } from "date-fns/locale";
+import { ar, enUS, ms } from "date-fns/locale";
 
 // Enums
 import { AppLocale } from "@/enums/app";
@@ -96,8 +96,8 @@ export const getDateLocale = (locale: AppLocale) => {
   switch (locale) {
     case "ar":
       return ar;
-    // case "ms":
-    //   return ms;
+    case "ms":
+      return ms;
     default:
       return enUS;
   }

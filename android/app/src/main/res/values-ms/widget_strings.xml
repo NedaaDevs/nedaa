@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Prayer names -->
+    <string name="prayer_fajr">Subuh</string>
+    <string name="prayer_sunrise">Syuruk</string>
+    <string name="prayer_dhuhr">Zohor</string>
+    <string name="prayer_asr">Asar</string>
+    <string name="prayer_maghrib">Maghrib</string>
+    <string name="prayer_isha">Isyak</string>
+    <string name="prayer_jumuah">Jumaat</string>
+
+    <!-- Widget labels -->
+    <string name="widget_next_prayer">Solat Seterusnya</string>
+    <string name="widget_previous">Sebelumnya</string>
+    <string name="widget_next">Seterusnya</string>
+    <string name="widget_in_minutes">dalam %1$d min</string>
+    <string name="widget_in_hours_minutes">dalam %1$dj %2$dm</string>
+    <string name="widget_prayer_times">Waktu Solat</string>
+    <string name="widget_prayer_times_title">Waktu Solat</string>
+    <string name="widget_next_prayer_in">Solat seterusnya dalam</string>
+    <string name="widget_no_data">Tiada data tersedia</string>
+    <string name="widget_open_app">Buka apl untuk memuatkan data</string>
+
+    <!-- Athkar labels -->
+    <string name="widget_athkar">Azkar</string>
+    <string name="widget_athkar_progress">Kemajuan Azkar</string>
+    <string name="widget_morning">Pagi</string>
+    <string name="widget_evening">Petang</string>
+    <string name="widget_today_progress">Kemajuan Hari Ini</string>
+    <string name="widget_current_streak">Semasa</string>
+    <string name="widget_best_streak">Terbaik</string>
+    <string name="widget_day_streak">hari rentetan</string>
+    <string name="widget_days_streak">hari rentetan</string>
+    <string name="widget_complete">Selesai</string>
+    <string name="widget_completed">Selesai</string>
+
+    <!-- Qada labels -->
+    <string name="widget_qada">Qada</string>
+    <string name="widget_qada_tracker">Penjejak Qada</string>
+    <string name="widget_remaining">Baki</string>
+    <string name="widget_fasts_remaining">puasa berbaki</string>
+    <string name="widget_today_completed">%1$d hari ini</string>
+    <string name="widget_progress">Kemajuan</string>
+    <string name="widget_no_qada">Tiada Qada untuk dijejak</string>
+
+    <!-- Important Days labels -->
+    <string name="widget_days_today">Hari Ini</string>
+    <string name="widget_days_unit">hari</string>
+
+    <!-- Widget descriptions (shown in widget picker) -->
+    <string name="widget_prayer_times_description">Menunjukkan waktu solat dan kiraan detik ke solat seterusnya</string>
+    <string name="widget_prayer_times_small_description">Menunjukkan solat seterusnya dan sebelumnya (2x2)</string>
+    <string name="widget_prayer_times_medium_description">Menunjukkan semua waktu solat dalam satu baris (4x2)</string>
+    <string name="widget_prayer_times_large_description">Menunjukkan semua waktu solat dengan butiran (4x4)</string>
+    <string name="widget_athkar_description">Jejaki kemajuan Azkar harian dan rentetan anda</string>
+    <string name="widget_athkar_medium_description">Kemajuan Azkar dengan status pagi/petang dan rentetan (4x2)</string>
+    <string name="widget_qada_description">Jejaki puasa Qada anda</string>
+    <string name="widget_qada_medium_description">Penjejak Qada dengan bilangan baki dan kemajuan (4x2)</string>
+    <string name="widget_combined_description">Waktu solat dan kemajuan Azkar bersama</string>
+    <string name="widget_important_days_description">Kiraan detik ke Ramadan, Hari Raya, dan lagi</string>
+
+    <!-- Widget names (shown in widget picker) -->
+    <string name="widget_prayer_times_name">Nedaa Waktu Solat</string>
+    <string name="widget_prayer_times_small_name">Waktu Solat (Kecil)</string>
+    <string name="widget_prayer_times_medium_name">Waktu Solat (Sederhana)</string>
+    <string name="widget_prayer_times_large_name">Waktu Solat (Besar)</string>
+    <string name="widget_athkar_name">Nedaa Azkar</string>
+    <string name="widget_athkar_medium_name">Nedaa Azkar (Sederhana)</string>
+    <string name="widget_qada_name">Nedaa Qada</string>
+    <string name="widget_qada_medium_name">Nedaa Qada (Sederhana)</string>
+    <string name="widget_combined_name">Nedaa Solat + Azkar</string>
+    <string name="widget_important_days_name">Peristiwa Islam</string>
+
+    <!-- Configuration -->
+    <string name="widget_config_title">Tetapan Widget</string>
+    <string name="widget_config_show_timer">Tunjukkan pemasa kiraan detik</string>
+    <string name="widget_config_show_sunrise">Tunjukkan waktu syuruk</string>
+    <string name="widget_config_save">Simpan</string>
+    <string name="widget_config_cancel">Batal</string>
+    <string name="widget_all_prayers_name">Semua Solat</string>
+    <string name="widget_suhoor_iftar_name">Sahur &amp; Berbuka</string>
+    <string name="widget_suhoor">Sahur</string>
+    <string name="widget_iftar">Berbuka</string>
+    <string name="widget_hijri_date_name">Tarikh Hijri</string>
+</resources>
