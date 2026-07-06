@@ -90,7 +90,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "dev.nedaa.android",
-      "blockedPermissions": ["ACTIVITY_RECOGNITION", "RECORD_AUDIO"],
+      "blockedPermissions": [
+        "ACTIVITY_RECOGNITION",
+        "RECORD_AUDIO",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+      ],
       "permissions": ["READ_MEDIA_AUDIO", "READ_EXTERNAL_STORAGE"]
     },
     "plugins": [
