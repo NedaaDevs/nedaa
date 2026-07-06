@@ -18,17 +18,14 @@ import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
+import { Spinner } from "@/components/ui/spinner";
 import { Play, Pause, SkipBack, SkipForward, X } from "lucide-react-native";
 
 import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
-import {
-  AUDIO_UI,
-  PLAYBACK_RATE_OPTIONS,
-  DEFAULT_PLAYBACK_RATE,
-} from "@/constants/AthkarAudio";
+import { AUDIO_UI, PLAYBACK_RATE_OPTIONS, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
 
@@ -483,8 +480,46 @@ export const CollapsedAudioBar: FC<CollapsedBarProps> = ({ onExpand, onPlayPause
 
   const isPlaying = playerState === "playing";
   const isLoading = playerState === "loading";
+  // The session progress bar is only meaningful once audio is actually running;
+  // before the first play the bar is just the play button.
+  const hasStarted = isPlaying || playerState === "paused";
   const progressPercent =
     sessionProgress.total > 0 ? sessionProgress.current / sessionProgress.total : 0;
+
+  const playButton = (
+    <Pressable
+      onPress={(e) => {
+        e.stopPropagation();
+        onPlayPause();
+      }}
+      width={hasStarted ? 36 : 48}
+      height={hasStarted ? 36 : 48}
+      borderRadius={hasStarted ? 18 : 24}
+      backgroundColor="$primary"
+      alignItems="center"
+      justifyContent="center"
+      disabled={isLoading}
+      accessibilityLabel={isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}>
+      {isLoading ? (
+        <Spinner size="small" color="$typographyContrast" />
+      ) : (
+        <Icon
+          as={isPlaying ? Pause : Play}
+          size={hasStarted ? "sm" : "md"}
+          color="$typographyContrast"
+        />
+      )}
+    </Pressable>
+  );
+
+  // Before playback starts (idle / loading-on-press), show only the play button.
+  if (!hasStarted) {
+    return (
+      <Box alignItems="center" paddingVertical="$3">
+        {playButton}
+      </Box>
+    );
+  }
 
   return (
     <Pressable
@@ -498,25 +533,7 @@ export const CollapsedAudioBar: FC<CollapsedBarProps> = ({ onExpand, onPlayPause
         borderTopEndRadius="$6"
         alignItems="center"
         gap="$3">
-        {/* Play/Pause mini button */}
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            onPlayPause();
-          }}
-          width={36}
-          height={36}
-          borderRadius={18}
-          backgroundColor="$primary"
-          alignItems="center"
-          justifyContent="center"
-          opacity={isLoading ? 0.6 : 1}
-          disabled={isLoading}
-          accessibilityLabel={isPlaying ? t("athkar.audio.pause") : t("athkar.audio.play")}>
-          <Icon as={isPlaying ? Pause : Play} size="sm" color="$typographyContrast" />
-        </Pressable>
-
-        {/* Session progress bar */}
+        {playButton}
         <Box
           flex={1}
           height={4}
