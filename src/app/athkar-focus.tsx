@@ -160,7 +160,7 @@ const AthkarFocusScreen = () => {
   );
 
   // Audio controls expanded/collapsed
-  const [audioControlsExpanded, setAudioControlsExpanded] = useState(true);
+  const [audioControlsExpanded, setAudioControlsExpanded] = useState(false);
   const [audioDismissed, setAudioDismissed] = useState(false);
 
   // State for showing instructions
@@ -415,9 +415,9 @@ const AthkarFocusScreen = () => {
   }, [audioPosition, audioDuration]);
 
   // Circle constants
-  const CIRCLE_RADIUS = 120;
+  const CIRCLE_RADIUS = 72;
   const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
-  const AUDIO_RING_RADIUS = 106;
+  const AUDIO_RING_RADIUS = 60;
   const AUDIO_RING_CIRCUMFERENCE = 2 * Math.PI * AUDIO_RING_RADIUS;
 
   // Resolve theme colors for animation interpolation
@@ -826,7 +826,7 @@ const AthkarFocusScreen = () => {
                   <Animated.View style={[slideStyle, { alignItems: "center", maxWidth: "100%" }]}>
                     <VStack gap="$7" alignItems="center" maxWidth="100%">
                       {/* Circular Progress */}
-                      <View style={{ position: "relative", width: 256, height: 256 }}>
+                      <View style={{ position: "relative", width: 160, height: 160 }}>
                         {/* Background Circle */}
                         <View
                           style={{
@@ -839,13 +839,13 @@ const AthkarFocusScreen = () => {
                             justifyContent: "center",
                           }}>
                           <Svg
-                            width={256}
-                            height={256}
+                            width={160}
+                            height={160}
                             style={{ transform: [{ rotate: "-90deg" }] }}>
                             {/* Background circle */}
                             <Circle
-                              cx={128}
-                              cy={128}
+                              cx={80}
+                              cy={80}
                               r={CIRCLE_RADIUS}
                               stroke={
                                 progressStartColor.startsWith("#")
@@ -857,8 +857,8 @@ const AthkarFocusScreen = () => {
                             />
                             {/* Progress circle */}
                             <AnimatedCircle
-                              cx={128}
-                              cy={128}
+                              cx={80}
+                              cy={80}
                               r={CIRCLE_RADIUS}
                               strokeWidth={8}
                               fill="none"
@@ -869,8 +869,8 @@ const AthkarFocusScreen = () => {
                             {/* Audio playback progress ring (inner) */}
                             {audioDuration > 0 && (
                               <Circle
-                                cx={128}
-                                cy={128}
+                                cx={80}
+                                cy={80}
                                 r={AUDIO_RING_RADIUS}
                                 stroke={`${theme.primary.val}1A`}
                                 strokeWidth={3}
@@ -879,8 +879,8 @@ const AthkarFocusScreen = () => {
                             )}
                             {audioDuration > 0 && (
                               <AnimatedCircle
-                                cx={128}
-                                cy={128}
+                                cx={80}
+                                cy={80}
                                 r={AUDIO_RING_RADIUS}
                                 stroke={theme.primary.val}
                                 strokeWidth={3}
@@ -909,7 +909,7 @@ const AthkarFocusScreen = () => {
                           ]}>
                           <VStack alignItems="center" justifyContent="center" gap="$1">
                             <Text
-                              size="5xl"
+                              size="3xl"
                               bold
                               color={isCompleted ? "$typographySecondary" : "$info"}>
                               {formatNumberToLocale(`${currentCount}`)}
@@ -976,7 +976,7 @@ const AthkarFocusScreen = () => {
                           accessibilityLiveRegion={isGrouped ? "polite" : undefined}>
                           <AthkarTextDisplay
                             textKey={displayTextKey}
-                            size="xl"
+                            size="2xl"
                             textAlign="center"
                           />
                         </VStack>
