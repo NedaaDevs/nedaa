@@ -81,7 +81,9 @@ platform :ios do
     precheck(
       api_key: asc_api_key,
       app_identifier: "dev.nedaa.app",
-      default_rule_level: :error
+      default_rule_level: :error,
+      # App has no in-app purchases; the ASC API key cannot check IAPs, so skip.
+      include_in_app_purchases: false
     )
   end
 
