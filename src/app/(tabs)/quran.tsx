@@ -13,11 +13,16 @@ import {
   Settings2,
   Palette,
   HelpCircle,
+  AudioLines,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
+import { useQuranAudioStore } from "@/stores/quranAudio";
+import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
+import { QuranContentDB } from "@/services/quran-content-db";
+import { localizedSurahName } from "@/utils/surahName";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
@@ -74,6 +79,9 @@ const QuranScreen = () => {
     hasSeenQuranGuide,
     setQuranGuideSeen,
   } = useQuranStore();
+  const quranPlayerState = useQuranAudioStore((s) => s.playerState);
+  const playingSurah = useQuranAudioStore((s) => s.currentSurah);
+  const playingAyah = useQuranAudioStore((s) => s.currentAyah);
   const quranTheme = useResolvedQuranTheme();
   const prefersDark = usePrefersDarkReader();
   const { state: dbState, retry: retryDb } = useQuranContentDbReady();
@@ -150,6 +158,18 @@ const QuranScreen = () => {
     },
     [currentPage, setJumpReturn, setCurrentPage, setFlashAyah]
   );
+
+  // Jump the reader to the verse the player is currently reciting.
+  const goToPlaying = useCallback(() => {
+    if (playingSurah == null) return;
+    const ayah = playingAyah ?? 1;
+    QuranContentDB.getAyahMetadata(playingSurah, ayah).then((meta) => {
+      if (!meta) return;
+      setJumpReturn(currentPage);
+      setCurrentPage(meta.page);
+      setFlashAyah({ surah: playingSurah, ayah });
+    });
+  }, [playingSurah, playingAyah, currentPage, setJumpReturn, setCurrentPage, setFlashAyah]);
 
   // Ensure the edition's ayah-marker frames are installed (covers editions added
   // before the ornament pack shipped). Idempotent + tiny (~20KB); no-ops once on
@@ -415,7 +435,26 @@ const QuranScreen = () => {
                       size={22}
                     />
                   </Pressable>
-                  <YStack flex={1} />
+                  {quranPlayerState !== QURAN_PLAYER_STATE.IDLE && playingSurah != null ? (
+                    <Pressable
+                      onPress={goToPlaying}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("a11y.quran.listen.goToPlaying")}
+                      style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                      <XStack alignItems="center" gap="$1.5" maxWidth="80%">
+                        <AudioLines size={13} color={themeColors.headerColor} />
+                        <Text
+                          fontSize={13}
+                          fontWeight="700"
+                          color={themeColors.headerColor}
+                          numberOfLines={1}>
+                          {localizedSurahName(playingSurah)}
+                        </Text>
+                      </XStack>
+                    </Pressable>
+                  ) : (
+                    <YStack flex={1} />
+                  )}
                   {readerMode === ReaderViewMode.TEXT && (
                     <FontSizeControls
                       fontSize={fontSize}

@@ -85,6 +85,7 @@
   "a11y.quran.increaseFontSize": "Increase font size",
   "a11y.quran.juz": "Juz {{number}}",
   "a11y.quran.listen.cycleMode": "Change listen mode",
+  "a11y.quran.listen.goToPlaying": "Go to the playing verse",
   "a11y.quran.listen.nextSurah": "Next surah",
   "a11y.quran.listen.pause": "Pause",
   "a11y.quran.listen.play": "Play",

@@ -85,6 +85,7 @@
   "a11y.quran.increaseFontSize": "تكبير حجم الخط",
   "a11y.quran.juz": "الجزء {{number}}",
   "a11y.quran.listen.cycleMode": "تغيير وضع الاستماع",
+  "a11y.quran.listen.goToPlaying": "الانتقال إلى الآية قيد التشغيل",
   "a11y.quran.listen.nextSurah": "السورة التالية",
   "a11y.quran.listen.pause": "إيقاف مؤقت",
   "a11y.quran.listen.play": "تشغيل",
