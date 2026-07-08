@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useTheme } from "tamagui";
 import { useTranslation } from "react-i18next";
 import {
   type LucideIcon,
@@ -36,6 +39,7 @@ import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistr
 import { QURAN_PLAYER_STATE, QURAN_LISTEN_MODE, type QuranListenMode } from "@/types/quran-audio";
 import { useRTL } from "@/contexts/RTLContext";
 import { localizedSurahName } from "@/utils/surahName";
+import { formatNumberToLocale } from "@/utils/number";
 
 const MODE_ORDER: QuranListenMode[] = [
   QURAN_LISTEN_MODE.STOP,
@@ -48,6 +52,21 @@ const MODE_ICON: Record<QuranListenMode, LucideIcon> = {
   [QURAN_LISTEN_MODE.REPEAT_SURAH]: Repeat,
 };
 const TIMER_MINUTES = [5, 10, 15, 30, 45, 60];
+
+// Seconds → "m:ss" in the app's numerals.
+const formatTime = (sec: number): string => {
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${formatNumberToLocale(String(m))}:${formatNumberToLocale(String(r).padStart(2, "0"))}`;
+};
+
+// Touch x within the bar → playback fraction; the bar fills from the right in RTL.
+const fracFromX = (x: number, width: number, rtl: boolean): number => {
+  if (width <= 0) return 0;
+  const c = Math.min(width, Math.max(0, x));
+  return rtl ? 1 - c / width : c / width;
+};
 
 // Pinned transport bar, shown whenever a queue is active.
 export const QuranMiniPlayer = () => {
@@ -63,6 +82,8 @@ export const QuranMiniPlayer = () => {
   const position = useQuranAudioStore((s) => s.position);
   const duration = useQuranAudioStore((s) => s.duration);
   const [barWidth, setBarWidth] = useState(0);
+  const [scrubFrac, setScrubFrac] = useState<number | null>(null);
+  const theme = useTheme();
 
   const [reciterName, setReciterName] = useState("");
   useEffect(() => {
@@ -88,6 +109,25 @@ export const QuranMiniPlayer = () => {
 
   const [timerOpen, setTimerOpen] = useState(false);
 
+  // Drag (or tap) the bar to scrub; scrubFrac overrides the live position while
+  // the finger is down, and the seek is committed from the gesture's own x.
+  const seekGesture = useMemo(() => {
+    const commit = (x: number) => {
+      if (duration > 0) quranAudioPlayer.seekTo(fracFromX(x, barWidth, isRTL) * duration);
+    };
+    const pan = Gesture.Pan()
+      .runOnJS(true)
+      .minDistance(0)
+      .onBegin((e) => setScrubFrac(fracFromX(e.x, barWidth, isRTL)))
+      .onUpdate((e) => setScrubFrac(fracFromX(e.x, barWidth, isRTL)))
+      .onEnd((e) => commit(e.x))
+      .onFinalize(() => setScrubFrac(null));
+    const tap = Gesture.Tap()
+      .runOnJS(true)
+      .onEnd((e) => commit(e.x));
+    return Gesture.Race(pan, tap);
+  }, [barWidth, isRTL, duration]);
+
   if (playerState === QURAN_PLAYER_STATE.IDLE) return null;
 
   const isPlaying = playerState === QURAN_PLAYER_STATE.PLAYING;
@@ -95,15 +135,7 @@ export const QuranMiniPlayer = () => {
   const surah = currentSurah ?? 1;
   const timerActive = sleepTimerSurahEnd || sleepTimerEndsAt !== null;
   const progress = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
-
-  // Tap the bar to seek. locationX is measured from the left edge; in RTL the bar
-  // fills from the right, so invert.
-  const seek = (locationX: number) => {
-    if (duration <= 0 || barWidth <= 0) return;
-    const x = Math.min(barWidth, Math.max(0, locationX));
-    const frac = isRTL ? 1 - x / barWidth : x / barWidth;
-    quranAudioPlayer.seekTo(frac * duration);
-  };
+  const displayFrac = scrubFrac ?? progress;
 
   // Directional icons mirror in RTL: the layout row flips, so the skip icons swap
   // to keep "previous" pointing toward the start and "next" toward the end.
@@ -180,26 +212,51 @@ export const QuranMiniPlayer = () => {
         </Pressable>
       </HStack>
 
-      {/* Seek bar — tap to scrub */}
-      <Pressable
-        onPress={(e) => seek(e.nativeEvent.locationX)}
-        onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
-        accessibilityRole="adjustable"
-        accessibilityLabel={t("a11y.quran.listen.seek")}
-        paddingVertical="$1.5">
-        <HStack
-          height={4}
-          borderRadius={2}
-          backgroundColor="$backgroundInteractive"
-          overflow="hidden">
-          <VStack
-            height={4}
-            borderRadius={2}
-            backgroundColor="$accentPrimary"
-            width={`${progress * 100}%`}
-          />
-        </HStack>
-      </Pressable>
+      {/* Seek bar — drag or tap to scrub, with elapsed / total time */}
+      <HStack alignItems="center" gap="$2">
+        <Text size="xs" color="$typographySecondary" minWidth={38} textAlign="center">
+          {formatTime(displayFrac * duration)}
+        </Text>
+        <GestureDetector gesture={seekGesture}>
+          <View
+            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+            accessibilityRole="adjustable"
+            accessibilityLabel={t("a11y.quran.listen.seek")}
+            style={{ flex: 1, paddingVertical: 8, justifyContent: "center" }}>
+            <View
+              style={{
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: theme.backgroundInteractive.val,
+              }}>
+              <View
+                style={{
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: theme.accentPrimary.val,
+                  width: `${displayFrac * 100}%`,
+                }}
+              />
+              <View
+                style={{
+                  position: "absolute",
+                  top: -5,
+                  width: 14,
+                  height: 14,
+                  borderRadius: 7,
+                  backgroundColor: theme.accentPrimary.val,
+                  ...(isRTL
+                    ? { right: `${displayFrac * 100}%`, marginRight: -7 }
+                    : { left: `${displayFrac * 100}%`, marginLeft: -7 }),
+                }}
+              />
+            </View>
+          </View>
+        </GestureDetector>
+        <Text size="xs" color="$typographySecondary" minWidth={38} textAlign="center">
+          {formatTime(duration)}
+        </Text>
+      </HStack>
 
       {/* Mode · transport · timer */}
       <HStack alignItems="center">
