@@ -20,6 +20,11 @@ type QuranAudioState = {
   following: boolean;
   position: number;
   duration: number;
+  // Sleep timer: a deadline (epoch ms) + the chosen duration for the duration
+  // timer, or a flag to stop when the current surah ends. All null/false when off.
+  sleepTimerEndsAt: number | null;
+  sleepTimerMinutes: number | null;
+  sleepTimerSurahEnd: boolean;
 
   setSelectedRecitation: (id: string) => void;
   setListenMode: (mode: QuranListenMode) => void;
@@ -29,6 +34,7 @@ type QuranAudioState = {
   setFollowing: (on: boolean) => void;
   setPosition: (position: number) => void;
   setDuration: (duration: number) => void;
+  setSleepTimer: (endsAt: number | null, minutes: number | null, surahEnd: boolean) => void;
   resetPlayback: () => void;
 };
 
@@ -44,6 +50,9 @@ export const useQuranAudioStore = create<QuranAudioState>()(
       following: true,
       position: 0,
       duration: 0,
+      sleepTimerEndsAt: null,
+      sleepTimerMinutes: null,
+      sleepTimerSurahEnd: false,
 
       setSelectedRecitation: (selectedRecitationId) => set({ selectedRecitationId }),
       setListenMode: (listenMode) => set({ listenMode }),
@@ -53,6 +62,8 @@ export const useQuranAudioStore = create<QuranAudioState>()(
       setFollowing: (following) => set({ following }),
       setPosition: (position) => set({ position }),
       setDuration: (duration) => set({ duration }),
+      setSleepTimer: (sleepTimerEndsAt, sleepTimerMinutes, sleepTimerSurahEnd) =>
+        set({ sleepTimerEndsAt, sleepTimerMinutes, sleepTimerSurahEnd }),
       resetPlayback: () =>
         set({
           playerState: QURAN_PLAYER_STATE.IDLE,
@@ -62,6 +73,9 @@ export const useQuranAudioStore = create<QuranAudioState>()(
           following: true,
           position: 0,
           duration: 0,
+          sleepTimerEndsAt: null,
+          sleepTimerMinutes: null,
+          sleepTimerSurahEnd: false,
         }),
     }),
     {

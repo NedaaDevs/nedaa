@@ -45,6 +45,10 @@ class QuranAudioPlayer {
   // an ayah queue is loaded instead.
   private surahPlaylistReciter: string | null = null;
   private isSurahPlaylist = false;
+  // Sleep timer: a pending duration timeout, and/or a one-shot "stop at the end
+  // of the current surah" flag.
+  private sleepTimerId: ReturnType<typeof setTimeout> | null = null;
+  private stopAtSurahEnd = false;
 
   static getInstance(): QuranAudioPlayer {
     if (!QuranAudioPlayer.instance) QuranAudioPlayer.instance = new QuranAudioPlayer();
@@ -81,10 +85,11 @@ class QuranAudioPlayer {
 
   // Repeat mode is a live projection of the listen mode. REPEAT_SURAH loops the
   // current surah — one track in the surah playlist ("track"), the whole ayah
-  // queue in the reader ("Playlist"). Every other mode plays through.
+  // queue in the reader ("Playlist"). An armed surah-end sleep timer suppresses
+  // repeat so the surah actually ends. Every other mode plays through.
   private async applyRepeatMode(): Promise<void> {
     let repeat: RepeatMode = "off";
-    if (this.store.listenMode === QURAN_LISTEN_MODE.REPEAT_SURAH) {
+    if (!this.stopAtSurahEnd && this.store.listenMode === QURAN_LISTEN_MODE.REPEAT_SURAH) {
       repeat = this.isSurahPlaylist ? "track" : "Playlist";
     }
     await TrackPlayer.setRepeatMode(repeat);
@@ -94,6 +99,35 @@ class QuranAudioPlayer {
   // player so switching the mode mid-playback takes effect immediately.
   async setListenMode(mode: QuranListenMode): Promise<void> {
     this.store.setListenMode(mode);
+    if (this.playlistId) await this.applyRepeatMode();
+  }
+
+  private clearSleepTimer(): void {
+    if (this.sleepTimerId) clearTimeout(this.sleepTimerId);
+    this.sleepTimerId = null;
+    this.stopAtSurahEnd = false;
+  }
+
+  // Clear any sleep timer and restore the listen mode's repeat behavior.
+  async setSleepOff(): Promise<void> {
+    this.clearSleepTimer();
+    this.store.setSleepTimer(null, null, false);
+    if (this.playlistId) await this.applyRepeatMode();
+  }
+
+  // Stop when the current surah finishes (overriding advance/repeat this once).
+  async setSleepAtSurahEnd(): Promise<void> {
+    this.clearSleepTimer();
+    this.stopAtSurahEnd = true;
+    this.store.setSleepTimer(null, null, true);
+    if (this.playlistId) await this.applyRepeatMode();
+  }
+
+  // Stop after `minutes`, regardless of what is playing at that moment.
+  async setSleepAfter(minutes: number): Promise<void> {
+    this.clearSleepTimer();
+    this.sleepTimerId = setTimeout(() => void this.stop(), minutes * 60_000);
+    this.store.setSleepTimer(Date.now() + minutes * 60_000, minutes, false);
     if (this.playlistId) await this.applyRepeatMode();
   }
 
@@ -295,13 +329,14 @@ class QuranAudioPlayer {
     if (!item) return;
     this.store.setCurrentAyah(item.surah, item.ayah);
 
-    // STOP mode: a surah that finishes on its own auto-advances to the next track
-    // in the full playlist. End the session there so it stops at the end of a
-    // surah, while a user-initiated skip (lock screen / mini-player) still moves.
+    // A surah that finishes on its own auto-advances to the next track in the full
+    // playlist (reason "end"). End the session there when STOP mode or a surah-end
+    // sleep timer asks for it; a user-initiated skip (lock screen / mini-player)
+    // carries a different reason and still moves freely.
     if (
       this.isSurahPlaylist &&
-      this.store.listenMode === QURAN_LISTEN_MODE.STOP &&
-      reason === "end"
+      reason === "end" &&
+      (this.stopAtSurahEnd || this.store.listenMode === QURAN_LISTEN_MODE.STOP)
     ) {
       void this.stop();
     }
@@ -326,6 +361,7 @@ class QuranAudioPlayer {
   }
 
   private async teardown(): Promise<void> {
+    this.clearSleepTimer();
     if (this.playlistId) await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
     this.playlistId = null;
     this.items = [];
