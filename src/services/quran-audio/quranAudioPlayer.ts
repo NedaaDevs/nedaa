@@ -131,6 +131,24 @@ class QuranAudioPlayer {
     if (this.playlistId) await this.applyRepeatMode();
   }
 
+  // Best-effort warm-up for the Listen surface: pre-fetches the manifest (so a
+  // later play* skips the API round trip) and issues a tiny ranged GET for the
+  // first surah, which warms the connection (reused for every surah) and caches
+  // that first file. A HEAD would only warm the connection, not the cache.
+  // Failures are ignored — playback does its own fetching regardless.
+  async warmUp(): Promise<void> {
+    try {
+      const recitation = await this.resolveRecitation();
+      const manifest = await QuranManifestService.fetchManifest();
+      if (!recitation || !manifest) return;
+      await fetch(remoteSurahUrl(manifest.baseUrl, recitation, 1), {
+        headers: { Range: "bytes=0-1" },
+      });
+    } catch {
+      // warm-up only; playback fetches for itself
+    }
+  }
+
   // Play a surah from the gapless full-surah playlist. Reuses the loaded playlist
   // (a native skip to the surah) unless the reciter changed, so switching surahs
   // and the lock-screen next/previous are instant rather than a rebuild.

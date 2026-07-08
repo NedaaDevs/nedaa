@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ScrollView } from "react-native";
 
 import { Background } from "@/components/ui/background";
@@ -16,6 +17,11 @@ const SURAHS = Array.from({ length: 114 }, (_, i) => i + 1);
 
 const QuranListenSurahsScreen = () => {
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
+
+  // Warm the CDN connection and manifest cache so the first surah tap starts fast.
+  useEffect(() => {
+    void quranAudioPlayer.warmUp();
+  }, []);
 
   return (
     <Background>
