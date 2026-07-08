@@ -16,6 +16,7 @@ import { Home, Settings, BookOpenText, BookOpen, Wrench } from "lucide-react-nat
 // Components
 import { Box } from "@/components/ui/box";
 import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
+import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
@@ -43,6 +44,7 @@ const TabsLayout = () => {
       key={`tabs-${mode}`}
       tabBar={(props: BottomTabBarProps) => (
         <Box backgroundColor="$backgroundSecondary">
+          <QuranMiniPlayer />
           <MiniPlayerBar />
           <BottomTabBar {...props} />
         </Box>
