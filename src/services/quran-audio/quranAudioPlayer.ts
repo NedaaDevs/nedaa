@@ -95,11 +95,15 @@ class QuranAudioPlayer {
     toAyah: number
   ): Promise<void> {
     const token = ++this.buildToken;
-    await this.initialize();
-    await nitroSession.acquire("quran");
+    // Reflect the target immediately so the mini-player shows a loading spinner
+    // the instant the surah is tapped, before init/handoff and the network fetch.
+    this.store.setCurrentAyah(surah, fromAyah);
     this.store.setPlayerState(QURAN_PLAYER_STATE.LOADING);
 
     try {
+      await this.initialize();
+      await nitroSession.acquire("quran");
+
       const recitation = await this.resolveRecitation();
       const manifest = await QuranManifestService.fetchManifest();
       if (!recitation || !manifest) {
