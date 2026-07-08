@@ -53,12 +53,15 @@ const MODE_ICON: Record<QuranListenMode, LucideIcon> = {
 };
 const TIMER_MINUTES = [5, 10, 15, 30, 45, 60, 90, 120];
 
-// Seconds → "m:ss" in the app's numerals.
+// Seconds → "m:ss", or "h:mm:ss" past an hour, in the app's numerals.
 const formatTime = (sec: number): string => {
   const s = Math.max(0, Math.floor(sec));
-  const m = Math.floor(s / 60);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
   const r = s % 60;
-  return `${formatNumberToLocale(String(m))}:${formatNumberToLocale(String(r).padStart(2, "0"))}`;
+  const loc = (n: number, pad = false) =>
+    formatNumberToLocale(pad ? String(n).padStart(2, "0") : String(n));
+  return h > 0 ? `${loc(h)}:${loc(m, true)}:${loc(r, true)}` : `${loc(m)}:${loc(r, true)}`;
 };
 
 // Touch x within the bar → playback fraction; the bar fills from the right in RTL.
@@ -238,7 +241,7 @@ export const QuranMiniPlayer = () => {
 
       {/* Seek bar — drag or tap to scrub, with elapsed / total time */}
       <HStack alignItems="center" gap="$2">
-        <Text size="xs" color="$typographySecondary" minWidth={38} textAlign="center">
+        <Text size="xs" color="$typographySecondary" minWidth={52} textAlign="center">
           {formatTime(currentSec)}
         </Text>
         <GestureDetector gesture={seekGesture}>
@@ -277,7 +280,7 @@ export const QuranMiniPlayer = () => {
             </View>
           </View>
         </GestureDetector>
-        <Text size="xs" color="$typographySecondary" minWidth={38} textAlign="center">
+        <Text size="xs" color="$typographySecondary" minWidth={52} textAlign="center">
           {formatTime(duration)}
         </Text>
       </HStack>
@@ -306,7 +309,7 @@ export const QuranMiniPlayer = () => {
             prevIcon,
             () => surah > 1 && quranAudioPlayer.playSurah(surah - 1),
             t("a11y.quran.listen.prevSurah"),
-            surah <= 1
+            surah <= 1 || isLoading
           )}
           <Pressable
             onPress={() => (isPlaying ? quranAudioPlayer.pause() : quranAudioPlayer.resume())}
@@ -330,7 +333,7 @@ export const QuranMiniPlayer = () => {
             nextIcon,
             () => surah < 114 && quranAudioPlayer.playSurah(surah + 1),
             t("a11y.quran.listen.nextSurah"),
-            surah >= 114
+            surah >= 114 || isLoading
           )}
         </HStack>
 

@@ -404,6 +404,9 @@ class QuranAudioPlayer {
     if (!this.playlistId) return;
     if (state === NITRO_STATE.PLAYING) {
       this.store.setPlayerState(QURAN_PLAYER_STATE.PLAYING);
+    } else if (state === NITRO_STATE.BUFFERING) {
+      // Keep the spinner up while the stream buffers, until audio actually plays.
+      this.store.setPlayerState(QURAN_PLAYER_STATE.LOADING);
     } else if (state === NITRO_STATE.PAUSED) {
       this.store.setPlayerState(QURAN_PLAYER_STATE.PAUSED);
     } else if (state === NITRO_STATE.STOPPED && !this.userStopping) {
