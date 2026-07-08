@@ -73,6 +73,12 @@ const downloadSurah = async (
 const surahFile = (recitationId: string, surah: number, fileFormat: string): File =>
   new File(recitationDir(recitationId), `${surah}.${fileFormat}`);
 
+// In-progress downloads write here and are promoted to `surahFile` only on
+// completion, so a paused/partial transfer is never mistaken for a saved surah
+// by `downloadedSurahs` (which matches the bare `<n>.<ext>` name).
+const partFile = (recitationId: string, surah: number, fileFormat: string): File =>
+  new File(recitationDir(recitationId), `${surah}.${fileFormat}.part`);
+
 // Local uri if this surah is saved, else null (sync — .exists is a getter).
 const getSurahFilePath = (
   recitationId: string,
@@ -103,6 +109,8 @@ const downloadSurahFile = async (
   if (file.exists) return { done: true, resume: null };
   const dir = recitationDir(recitation.id);
   if (!dir.exists) dir.create({ intermediates: true });
+  const part = partFile(recitation.id, surah, recitation.fileFormat);
+  const url = remoteSurahUrl(baseUrl, recitation, surah);
   const key = taskKey(recitation.id, surah);
   const options: DownloadTaskOptions = {
     onProgress: ({ bytesWritten, totalBytes }) =>
@@ -117,18 +125,24 @@ const downloadSurahFile = async (
         activeTasks.set(key, task);
         result = await task.resumeAsync();
       } catch {
-        // Stale resume state — restart fresh.
-        task = new DownloadTask(remoteSurahUrl(baseUrl, recitation, surah), file, options);
+        // Stale resume state — discard the partial and restart fresh.
+        if (part.exists) part.delete();
+        task = new DownloadTask(url, part, options);
         activeTasks.set(key, task);
         result = await task.downloadAsync();
       }
     } else {
-      task = new DownloadTask(remoteSurahUrl(baseUrl, recitation, surah), file, options);
+      // A leftover partial with no resume state can't be continued — start clean.
+      if (part.exists) part.delete();
+      task = new DownloadTask(url, part, options);
       activeTasks.set(key, task);
       result = await task.downloadAsync();
     }
     activeTasks.delete(key);
     if (result) {
+      // Promote the completed partial to its final, countable name.
+      if (file.exists) file.delete();
+      part.move(file);
       log.i("Download", `surah ${surah} saved for ${recitation.id}`);
       return { done: true, resume: null };
     }
@@ -155,13 +169,22 @@ const downloadSurahFile = async (
 };
 
 // Pause an in-flight download (its downloadAsync resolves to null → resume state).
-const pauseSurahDownload = (recitationId: string, surah: number): void => {
-  void activeTasks.get(taskKey(recitationId, surah))?.pauseAsync();
+// Returns whether a live task existed to pause — false means nothing was in
+// flight yet (e.g. the manifest fetch hasn't resolved), so the caller must
+// prevent the download another way.
+const pauseSurahDownload = (recitationId: string, surah: number): boolean => {
+  const task = activeTasks.get(taskKey(recitationId, surah));
+  if (!task) return false;
+  void task.pauseAsync();
+  return true;
 };
 
+// Remove a surah's saved file AND any in-progress partial.
 const deleteSurahFile = (recitationId: string, surah: number, fileFormat: string): void => {
   const file = surahFile(recitationId, surah, fileFormat);
   if (file.exists) file.delete();
+  const part = partFile(recitationId, surah, fileFormat);
+  if (part.exists) part.delete();
   log.i("Download", `surah ${surah} deleted for ${recitationId}`);
 };
 

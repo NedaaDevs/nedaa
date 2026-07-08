@@ -16,7 +16,11 @@ import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { useQuranDownloadStore } from "@/stores/quranDownload";
+import {
+  useQuranDownloadStore,
+  surahsForReciter,
+  progressForReciter,
+} from "@/stores/quranDownload";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import type { QuranRecitation } from "@/types/quran-audio";
 import { SURAH_NAMES, SURAH_NAMES_LATIN } from "@/constants/Quran";
@@ -53,6 +57,17 @@ const QuranListenSurahsScreen = () => {
   const pauseOne = useQuranDownloadStore((s) => s.pauseOne);
   const deleteOne = useQuranDownloadStore((s) => s.deleteOne);
 
+  // This reciter's in-flight surahs + per-surah progress, sliced from the
+  // composite-keyed store state.
+  const downloadingSet = useMemo(
+    () => new Set(surahsForReciter(downloading, selectedRecitationId)),
+    [downloading, selectedRecitationId]
+  );
+  const progressBySurah = useMemo(
+    () => progressForReciter(progress, selectedRecitationId),
+    [progress, selectedRecitationId]
+  );
+
   // Surahs with a saved resume point but no longer in flight = paused.
   const pausedSet = useMemo(() => {
     const prefix = `${selectedRecitationId}:`;
@@ -60,11 +75,11 @@ const QuranListenSurahsScreen = () => {
     for (const k of Object.keys(resumeStates)) {
       if (k.startsWith(prefix)) {
         const n = Number(k.slice(prefix.length));
-        if (!downloading.includes(n)) out.add(n);
+        if (!downloadingSet.has(n)) out.add(n);
       }
     }
     return out;
-  }, [resumeStates, selectedRecitationId, downloading]);
+  }, [resumeStates, selectedRecitationId, downloadingSet]);
 
   useEffect(() => {
     // Warm the CDN connection and load per-surah metadata in a single query.
@@ -146,10 +161,10 @@ const QuranListenSurahsScreen = () => {
         keyExtractor={(surah) => String(surah)}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 12, flexGrow: 1 }}
-        extraData={`${currentSurah}:${playerState}:${downloaded.join()}:${downloading.join()}:${[...pausedSet].join()}:${Object.keys(
-          progress
+        extraData={`${currentSurah}:${playerState}:${downloaded.join()}:${[...downloadingSet].join()}:${[...pausedSet].join()}:${Object.keys(
+          progressBySurah
         )
-          .map((n) => `${n}=${Math.round((progress[Number(n)] ?? 0) * 100)}`)
+          .map((n) => `${n}=${Math.round((progressBySurah[Number(n)] ?? 0) * 100)}`)
           .join()}:${Object.keys(metaBySurah).length}`}
         ListEmptyComponent={
           <Text color="$typographySecondary" textAlign="center" paddingVertical="$6">
@@ -163,9 +178,9 @@ const QuranListenSurahsScreen = () => {
             isCurrent={currentSurah === surah}
             isLoading={playerState === QURAN_PLAYER_STATE.LOADING && currentSurah === surah}
             isDownloaded={downloaded.includes(surah)}
-            isDownloading={downloading.includes(surah)}
+            isDownloading={downloadingSet.has(surah)}
             isPaused={pausedSet.has(surah)}
-            downloadProgress={progress[surah]}
+            downloadProgress={progressBySurah[surah]}
             estimatedBytes={sizeOf(surah)}
             sizeApprox={!sizeExact}
             onPress={onPress}

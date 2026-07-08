@@ -19,7 +19,11 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { useRTL } from "@/contexts/RTLContext";
 import { useIsCellular } from "@/hooks/useIsCellular";
-import { useQuranDownloadStore } from "@/stores/quranDownload";
+import {
+  useQuranDownloadStore,
+  surahsForReciter,
+  progressForReciter,
+} from "@/stores/quranDownload";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatFileSizeLocale, formatNumberToLocale } from "@/utils/number";
 import type { QuranRecitation } from "@/types/quran-audio";
@@ -157,23 +161,32 @@ export const DownloadsDrawer = ({ open, onClose, recitation, sizeOf, sizeApprox 
   const pauseOne = useQuranDownloadStore((s) => s.pauseOne);
   const deleteOne = useQuranDownloadStore((s) => s.deleteOne);
 
-  const recId = recitation?.id ?? "";
+  const recId = recitation?.id ?? null;
+  // This reciter's in-flight surahs + per-surah progress, sliced from the
+  // composite-keyed store state.
+  const downloadingSet = useMemo(
+    () => new Set(surahsForReciter(downloading, recId)),
+    [downloading, recId]
+  );
+  const progressBySurah = useMemo(() => progressForReciter(progress, recId), [progress, recId]);
+
   // Surahs with a saved resume point but no longer in flight = paused.
   const pausedSet = useMemo(() => {
-    const prefix = `${recId}:`;
     const out = new Set<number>();
+    if (!recId) return out;
+    const prefix = `${recId}:`;
     for (const k of Object.keys(resumeStates)) {
       if (k.startsWith(prefix)) {
         const n = Number(k.slice(prefix.length));
-        if (!downloading.includes(n)) out.add(n);
+        if (!downloadingSet.has(n)) out.add(n);
       }
     }
     return out;
-  }, [resumeStates, recId, downloading]);
+  }, [resumeStates, recId, downloadingSet]);
 
   const queue = useMemo(
-    () => [...new Set([...downloading, ...pausedSet])].sort((a, b) => a - b),
-    [downloading, pausedSet]
+    () => [...new Set([...downloadingSet, ...pausedSet])].sort((a, b) => a - b),
+    [downloadingSet, pausedSet]
   );
 
   const drawerW = Math.round(width * WIDTH_FRACTION);
@@ -379,7 +392,7 @@ export const DownloadsDrawer = ({ open, onClose, recitation, sizeOf, sizeApprox 
                       key={n}
                       surah={n}
                       paused={pausedSet.has(n)}
-                      frac={progress[n] ?? 0}
+                      frac={progressBySurah[n] ?? 0}
                       size={sizeOf(n)}
                       sizeApprox={sizeApprox}
                       onPause={() => recitation && pauseOne(recitation, n)}
