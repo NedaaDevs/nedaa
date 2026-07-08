@@ -89,6 +89,7 @@
   "a11y.quran.listen.pause": "إيقاف مؤقت",
   "a11y.quran.listen.play": "تشغيل",
   "a11y.quran.listen.prevSurah": "السورة السابقة",
+  "a11y.quran.listen.seek": "التقديم",
   "a11y.quran.listen.stop": "إيقاف",
   "a11y.quran.listen.timer": "مؤقّت الإيقاف",
   "a11y.quran.page": "صفحة {{page}}",

@@ -64,6 +64,10 @@ class QuranAudioPlayer {
     nitroSession.register("quran", {
       onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
+      onProgress: (position, duration) => {
+        this.store.setPosition(position);
+        this.store.setDuration(duration);
+      },
       onEvict: () => this.teardown(),
     });
     await nitroSession.ensureStarted();
@@ -325,6 +329,11 @@ class QuranAudioPlayer {
   async resume(): Promise<void> {
     if (!this.playlistId) return;
     await TrackPlayer.play();
+  }
+
+  async seekTo(position: number): Promise<void> {
+    if (!this.playlistId) return;
+    await TrackPlayer.seek(position);
   }
 
   async stop(): Promise<void> {

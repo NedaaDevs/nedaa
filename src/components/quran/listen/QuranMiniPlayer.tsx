@@ -4,7 +4,7 @@ import {
   type LucideIcon,
   Play,
   Pause,
-  Square,
+  X,
   SkipBack,
   SkipForward,
   Repeat,
@@ -60,6 +60,9 @@ export const QuranMiniPlayer = () => {
   const sleepTimerEndsAt = useQuranAudioStore((s) => s.sleepTimerEndsAt);
   const sleepTimerMinutes = useQuranAudioStore((s) => s.sleepTimerMinutes);
   const sleepTimerSurahEnd = useQuranAudioStore((s) => s.sleepTimerSurahEnd);
+  const position = useQuranAudioStore((s) => s.position);
+  const duration = useQuranAudioStore((s) => s.duration);
+  const [barWidth, setBarWidth] = useState(0);
 
   const [reciterName, setReciterName] = useState("");
   useEffect(() => {
@@ -91,6 +94,16 @@ export const QuranMiniPlayer = () => {
   const isLoading = playerState === QURAN_PLAYER_STATE.LOADING;
   const surah = currentSurah ?? 1;
   const timerActive = sleepTimerSurahEnd || sleepTimerEndsAt !== null;
+  const progress = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
+
+  // Tap the bar to seek. locationX is measured from the left edge; in RTL the bar
+  // fills from the right, so invert.
+  const seek = (locationX: number) => {
+    if (duration <= 0 || barWidth <= 0) return;
+    const x = Math.min(barWidth, Math.max(0, locationX));
+    const frac = isRTL ? 1 - x / barWidth : x / barWidth;
+    quranAudioPlayer.seekTo(frac * duration);
+  };
 
   // Directional icons mirror in RTL: the layout row flips, so the skip icons swap
   // to keep "previous" pointing toward the start and "next" toward the end.
@@ -152,8 +165,41 @@ export const QuranMiniPlayer = () => {
             </Text>
           ) : null}
         </VStack>
-        {iconBtn(Square, () => quranAudioPlayer.stop(), t("a11y.quran.listen.stop"))}
+        <Pressable
+          onPress={() => quranAudioPlayer.stop()}
+          accessibilityRole="button"
+          accessibilityLabel={t("a11y.quran.listen.stop")}
+          hitSlop={8}
+          width={32}
+          height={32}
+          borderRadius={16}
+          alignItems="center"
+          justifyContent="center"
+          backgroundColor="$backgroundMuted">
+          <Icon as={X} size="xs" color="$typographySecondary" />
+        </Pressable>
       </HStack>
+
+      {/* Seek bar — tap to scrub */}
+      <Pressable
+        onPress={(e) => seek(e.nativeEvent.locationX)}
+        onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+        accessibilityRole="adjustable"
+        accessibilityLabel={t("a11y.quran.listen.seek")}
+        paddingVertical="$1.5">
+        <HStack
+          height={4}
+          borderRadius={2}
+          backgroundColor="$backgroundInteractive"
+          overflow="hidden">
+          <VStack
+            height={4}
+            borderRadius={2}
+            backgroundColor="$accentPrimary"
+            width={`${progress * 100}%`}
+          />
+        </HStack>
+      </Pressable>
 
       {/* Mode · transport · timer */}
       <HStack alignItems="center">

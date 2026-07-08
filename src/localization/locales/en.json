@@ -89,6 +89,7 @@
   "a11y.quran.listen.pause": "Pause",
   "a11y.quran.listen.play": "Play",
   "a11y.quran.listen.prevSurah": "Previous surah",
+  "a11y.quran.listen.seek": "Seek",
   "a11y.quran.listen.stop": "Stop",
   "a11y.quran.listen.timer": "Sleep timer",
   "a11y.quran.page": "Page {{page}}",
