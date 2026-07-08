@@ -343,6 +343,9 @@ class QuranAudioPlayer {
 
   async seekTo(position: number): Promise<void> {
     if (!this.playlistId) return;
+    // Reflect the new position immediately so the scrubber doesn't flash back to
+    // the old spot before nitro's next (coarse) progress tick arrives.
+    this.store.setProgress(position, this.store.duration, Date.now());
     await TrackPlayer.seek(position);
   }
 
