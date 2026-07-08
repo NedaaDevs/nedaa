@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { AudioLines } from "lucide-react-native";
+import { AudioLines, Download, CheckCircle2 } from "lucide-react-native";
 
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -8,7 +8,6 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
-import { SURAH_NAMES, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { RevelationPlace } from "@/enums/quran";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
@@ -19,15 +18,26 @@ type Props = {
   meta?: SurahMeta;
   isCurrent: boolean;
   isLoading: boolean;
+  isDownloaded: boolean;
+  isDownloading: boolean;
   onPress: (surah: number) => void;
+  onDownload: (surah: number) => void;
+  onDelete: (surah: number) => void;
 };
 
-const SurahListRowBase = ({ surah, meta, isCurrent, isLoading, onPress }: Props) => {
+const SurahListRowBase = ({
+  surah,
+  meta,
+  isCurrent,
+  isLoading,
+  isDownloaded,
+  isDownloading,
+  onPress,
+  onDownload,
+  onDelete,
+}: Props) => {
   const { t } = useTranslation();
   const scriptFont = metadataFontFamily();
-  // In an Arabic-script locale the primary name is already the scripture name, so
-  // don't repeat it on the trailing side; Latin locales get it as an accent.
-  const isArabicScript = scriptFont !== undefined;
   const name = localizedSurahName(surah);
 
   const meccaOrMedina = meta
@@ -84,19 +94,37 @@ const SurahListRowBase = ({ surah, meta, isCurrent, isLoading, onPress }: Props)
           ) : null}
         </VStack>
 
-        {isLoading ? (
-          <Spinner size="small" color="$accentPrimary" />
-        ) : isCurrent ? (
-          <Icon as={AudioLines} size="sm" color="$accentPrimary" />
-        ) : !isArabicScript ? (
-          <Text
-            size="xl"
-            color="$typographySecondary"
-            style={{ fontFamily: QURAN_FONT_FAMILY }}
-            numberOfLines={1}>
-            {SURAH_NAMES[surah]}
-          </Text>
-        ) : null}
+        <HStack alignItems="center" gap="$2">
+          {isLoading ? (
+            <Spinner size="small" color="$accentPrimary" />
+          ) : isCurrent ? (
+            <Icon as={AudioLines} size="sm" color="$accentPrimary" />
+          ) : null}
+
+          {isDownloading ? (
+            <Spinner size="small" color="$typographySecondary" />
+          ) : (
+            <Pressable
+              onPress={() => (isDownloaded ? onDelete(surah) : onDownload(surah))}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isDownloaded
+                  ? t("a11y.quran.listen.deleteDownload")
+                  : t("a11y.quran.listen.download")
+              }
+              width={30}
+              height={30}
+              alignItems="center"
+              justifyContent="center">
+              <Icon
+                as={isDownloaded ? CheckCircle2 : Download}
+                size="sm"
+                color={isDownloaded ? "$accentPrimary" : "$typographySecondary"}
+              />
+            </Pressable>
+          )}
+        </HStack>
       </HStack>
     </Pressable>
   );

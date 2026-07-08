@@ -211,7 +211,10 @@ class QuranAudioPlayer {
         const items: QuranQueueItem[] = [];
         const tracks: TrackItem[] = [];
         for (let n = 1; n <= SURAH_COUNT; n++) {
-          const url = remoteSurahUrl(manifest.baseUrl, recitation, n);
+          // Prefer a downloaded file; fall back to streaming from the CDN.
+          const url =
+            quranAudioDownload.getSurahFilePath(recitation.id, n, recitation.fileFormat) ??
+            remoteSurahUrl(manifest.baseUrl, recitation, n);
           items.push({ surah: n, ayah: 1, url });
           tracks.push({
             id: `t${n - 1}`,
