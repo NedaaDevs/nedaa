@@ -60,6 +60,10 @@ const ensureStarted = async (): Promise<void> => {
         handlers[currentOwner]?.onProgress?.(position, totalDuration, isManuallySeeked ?? false);
     }
   );
+  // First activation of the audio session — deferred to the first play() so
+  // opening the app doesn't interrupt other apps' audio. If this logs at launch,
+  // something initialized a player before playback started.
+  log.i("Session", "configuring audio session (first activation)");
   await TrackPlayer.configure({
     showInNotification: true,
     androidAutoEnabled: false,

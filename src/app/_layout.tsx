@@ -38,7 +38,6 @@ import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
 import { installScreenshotRouter } from "@/screenshot-mode/router";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
-import { athkarPlayer } from "@/services/athkar-player";
 import { trackAppSession } from "@/utils/reviewPrompt";
 
 import "@/tasks/backgroundRefresh";
@@ -145,7 +144,6 @@ export default function RootLayout() {
   }, [mode, hasHydrated]);
 
   useEffect(() => {
-    athkarPlayer.initialize();
     trackAppSession();
   }, []);
 

@@ -125,11 +125,14 @@ export const QuranMiniPlayer = () => {
   // Drag (or tap) the bar to scrub; scrubFrac overrides the live position while
   // the finger is down, and the seek is committed from the gesture's own x.
   const seekGesture = useMemo(() => {
+    // No scrubbing until the track is actually playable.
+    const loading = playerState === QURAN_PLAYER_STATE.LOADING;
     const commit = (x: number) => {
       if (duration > 0) quranAudioPlayer.seekTo(fracFromX(x, barWidth, isRTL) * duration);
     };
     const pan = Gesture.Pan()
       .runOnJS(true)
+      .enabled(!loading)
       .minDistance(0)
       .onBegin((e) => setScrubFrac(fracFromX(e.x, barWidth, isRTL)))
       .onUpdate((e) => setScrubFrac(fracFromX(e.x, barWidth, isRTL)))
@@ -137,9 +140,10 @@ export const QuranMiniPlayer = () => {
       .onFinalize(() => setScrubFrac(null));
     const tap = Gesture.Tap()
       .runOnJS(true)
+      .enabled(!loading)
       .onEnd((e) => commit(e.x));
     return Gesture.Race(pan, tap);
-  }, [barWidth, isRTL, duration]);
+  }, [barWidth, isRTL, duration, playerState]);
 
   if (playerState === QURAN_PLAYER_STATE.IDLE) return null;
 
@@ -238,7 +242,7 @@ export const QuranMiniPlayer = () => {
       </HStack>
 
       {/* Seek bar — drag or tap to scrub, with elapsed / total time */}
-      <HStack alignItems="center" gap="$2">
+      <HStack alignItems="center" gap="$2" opacity={isLoading ? 0.4 : 1}>
         <Text size="xs" color="$typographySecondary" minWidth={52} textAlign="center">
           {formatTime(currentSec)}
         </Text>
