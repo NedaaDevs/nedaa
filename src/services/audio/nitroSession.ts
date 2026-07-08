@@ -5,6 +5,23 @@ import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("audio-session");
 
+// Nitro's playback states and state-change reasons, named so comparisons aren't
+// bare string literals. Values mirror the library's TrackPlayerState / Reason.
+export const NITRO_STATE = {
+  PLAYING: "playing",
+  PAUSED: "paused",
+  STOPPED: "stopped",
+  BUFFERING: "buffering",
+} as const;
+
+export const NITRO_REASON = {
+  USER_ACTION: "user_action",
+  SKIP: "skip",
+  END: "end",
+  ERROR: "error",
+  REPEAT: "repeat",
+} as const;
+
 export type NitroOwner = "athkar" | "quran" | "debug";
 
 export type NitroHandlers = {

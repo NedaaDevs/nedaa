@@ -1,7 +1,7 @@
 import { TrackPlayer, PlayerQueue } from "react-native-nitro-player";
 import type { TrackItem, TrackPlayerState, Reason, RepeatMode } from "react-native-nitro-player";
 
-import { nitroSession } from "@/services/audio/nitroSession";
+import { nitroSession, NITRO_STATE, NITRO_REASON } from "@/services/audio/nitroSession";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
@@ -353,7 +353,7 @@ class QuranAudioPlayer {
     // carries a different reason and still moves freely.
     if (
       this.isSurahPlaylist &&
-      reason === "end" &&
+      reason === NITRO_REASON.END &&
       (this.stopAtSurahEnd || this.store.listenMode === QURAN_LISTEN_MODE.STOP)
     ) {
       void this.stop();
@@ -362,14 +362,14 @@ class QuranAudioPlayer {
 
   private onPlaybackStateChange(state: TrackPlayerState, reason?: Reason): void {
     if (!this.playlistId) return;
-    if (state === "playing") {
+    if (state === NITRO_STATE.PLAYING) {
       this.store.setPlayerState(QURAN_PLAYER_STATE.PLAYING);
-    } else if (state === "paused") {
+    } else if (state === NITRO_STATE.PAUSED) {
       this.store.setPlayerState(QURAN_PLAYER_STATE.PAUSED);
-    } else if (state === "stopped" && !this.userStopping) {
+    } else if (state === NITRO_STATE.STOPPED && !this.userStopping) {
       // The queue reached its end (last surah / last ayah). Other stops are an
       // error or interruption — surface them as a pause, not an end.
-      if (reason === "end") {
+      if (reason === NITRO_REASON.END) {
         void this.teardown();
       } else {
         log.w("Player", `unexpected stop (${reason ?? "unknown"})`);
