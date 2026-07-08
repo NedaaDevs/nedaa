@@ -9,6 +9,7 @@ import {
   SkipForward,
   Repeat,
   ArrowRight,
+  ArrowLeft,
   Ban,
   Moon,
   Check,
@@ -33,6 +34,7 @@ import { useQuranAudioStore } from "@/stores/quranAudio";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { QURAN_PLAYER_STATE, QURAN_LISTEN_MODE, type QuranListenMode } from "@/types/quran-audio";
+import { useRTL } from "@/contexts/RTLContext";
 import { localizedSurahName } from "@/utils/surahName";
 
 const MODE_ORDER: QuranListenMode[] = [
@@ -50,6 +52,7 @@ const TIMER_MINUTES = [5, 10, 15, 30, 45, 60];
 // Pinned transport bar, shown whenever a queue is active.
 export const QuranMiniPlayer = () => {
   const { t, i18n } = useTranslation();
+  const { isRTL } = useRTL();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
   const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
@@ -88,6 +91,17 @@ export const QuranMiniPlayer = () => {
   const isLoading = playerState === QURAN_PLAYER_STATE.LOADING;
   const surah = currentSurah ?? 1;
   const timerActive = sleepTimerSurahEnd || sleepTimerEndsAt !== null;
+
+  // Directional icons mirror in RTL: the layout row flips, so the skip icons swap
+  // to keep "previous" pointing toward the start and "next" toward the end.
+  const modeIcon =
+    listenMode === QURAN_LISTEN_MODE.ADVANCE
+      ? isRTL
+        ? ArrowLeft
+        : ArrowRight
+      : MODE_ICON[listenMode];
+  const prevIcon = isRTL ? SkipForward : SkipBack;
+  const nextIcon = isRTL ? SkipBack : SkipForward;
 
   const cycleMode = () => {
     const i = MODE_ORDER.indexOf(listenMode);
@@ -154,7 +168,7 @@ export const QuranMiniPlayer = () => {
           paddingVertical="$1.5"
           borderRadius={999}
           backgroundColor="$backgroundInteractive">
-          <Icon as={MODE_ICON[listenMode]} size="xs" color="$accentPrimary" />
+          <Icon as={modeIcon} size="xs" color="$accentPrimary" />
           <Text size="xs" color="$accentPrimary" fontWeight="600">
             {t(`quran.listen.mode.${listenMode}`)}
           </Text>
@@ -162,7 +176,7 @@ export const QuranMiniPlayer = () => {
 
         <HStack flex={1} alignItems="center" justifyContent="center" gap="$5">
           {iconBtn(
-            SkipBack,
+            prevIcon,
             () => surah > 1 && quranAudioPlayer.playSurah(surah - 1),
             t("a11y.quran.listen.prevSurah"),
             surah <= 1
@@ -186,7 +200,7 @@ export const QuranMiniPlayer = () => {
             )}
           </Pressable>
           {iconBtn(
-            SkipForward,
+            nextIcon,
             () => surah < 114 && quranAudioPlayer.playSurah(surah + 1),
             t("a11y.quran.listen.nextSurah"),
             surah >= 114

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, ChevronLeft } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
 import { VStack } from "@/components/ui/vstack";
@@ -16,6 +16,7 @@ import TopBar from "@/components/TopBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { useQuranAudioStore } from "@/stores/quranAudio";
+import { useRTL } from "@/contexts/RTLContext";
 import type { QuranReciter } from "@/types/quran-audio";
 
 type LoadStatus = "loading" | "error" | "ready";
@@ -23,6 +24,7 @@ type LoadStatus = "loading" | "error" | "ready";
 const QuranListenScreen = () => {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { isRTL } = useRTL();
   const setSelectedRecitation = useQuranAudioStore((s) => s.setSelectedRecitation);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [reciters, setReciters] = useState<QuranReciter[]>([]);
@@ -118,7 +120,11 @@ const QuranListenScreen = () => {
                         <Text color="$typography">
                           {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
                         </Text>
-                        <Icon as={ChevronRight} size="sm" color="$typographySecondary" />
+                        <Icon
+                          as={isRTL ? ChevronLeft : ChevronRight}
+                          size="sm"
+                          color="$typographySecondary"
+                        />
                       </HStack>
                     </Pressable>
                   ))}
