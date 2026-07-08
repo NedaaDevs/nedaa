@@ -1043,6 +1043,8 @@
   "quran.listen.mode.advance": "Continuous",
   "quran.listen.mode.repeat": "Repeat surah",
   "quran.listen.mode.stop": "Stop at end",
+  "quran.listen.playAyah": "Play this verse",
+  "quran.listen.playFromHere": "Play from here",
   "quran.listen.retry": "Retry",
   "quran.listen.style.mujawwad": "Mujawwad",
   "quran.listen.style.murattal": "Murattal",

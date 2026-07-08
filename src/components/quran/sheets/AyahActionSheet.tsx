@@ -27,6 +27,8 @@ import {
   SlidersHorizontal,
   Layers,
   Palette,
+  Play,
+  FastForward,
 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
@@ -50,6 +52,7 @@ import {
 } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
+import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { SAJDA_AYAHS } from "@/services/guide-content";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
@@ -328,6 +331,40 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onGoTo }: AyahActionShee
                 onRemove={() => removeHighlight(target.surah, target.ayah)}
                 onManage={openManage}
               />
+            </YStack>
+
+            {/* Listen — play this verse, or from here to the end of the surah */}
+            <YStack borderTopWidth={1} borderTopColor={c.frameColor} marginTop="$3">
+              <Pressable
+                onPress={() => {
+                  quranAudioPlayer.playAyah(target.surah, target.ayah);
+                  onClose();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.listen.playAyah")}
+                style={{ minHeight: 52, justifyContent: "center" }}>
+                <XStack alignItems="center" gap="$3" paddingVertical="$2">
+                  <Play size={20} color={c.headerColor} />
+                  <Text fontSize={15} fontWeight="600" color={c.headerColor} flex={1}>
+                    {t("quran.listen.playAyah")}
+                  </Text>
+                </XStack>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  quranAudioPlayer.playFromHere(target.surah, target.ayah);
+                  onClose();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.listen.playFromHere")}
+                style={{ minHeight: 52, justifyContent: "center" }}>
+                <XStack alignItems="center" gap="$3" paddingVertical="$2">
+                  <FastForward size={20} color={c.headerColor} />
+                  <Text fontSize={15} fontWeight="600" color={c.headerColor} flex={1}>
+                    {t("quran.listen.playFromHere")}
+                  </Text>
+                </XStack>
+              </Pressable>
             </YStack>
 
             {/* Sajda → full page (only on a sajda ayah) */}
