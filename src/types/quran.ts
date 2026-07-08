@@ -1,3 +1,4 @@
+import type { QuranAudioManifest } from "@/types/quran-audio";
 import {
   MushafVersion,
   MushafImageType,
@@ -178,6 +179,8 @@ export type QuranManifest = {
   // Style packs (ayah-marker frames etc.) downloaded per edition; the ayah-marker
   // default pack carries the medallion frames the reader overlays on each ayah.
   ornaments?: QuranOrnaments;
+  // Recitation audio catalog; absent until at least one reciter is published.
+  audio?: QuranAudioManifest;
 };
 
 export type QuranLibraryTab =

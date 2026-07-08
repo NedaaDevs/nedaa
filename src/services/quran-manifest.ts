@@ -6,6 +6,7 @@ import type {
   QuranContent,
   QuranPreview,
 } from "@/types/quran";
+import type { QuranAudioManifest, QuranReciter } from "@/types/quran-audio";
 
 const log = AppLogger.create("quran-manifest");
 
@@ -121,6 +122,18 @@ const getPreviews = async (
   }));
 };
 
+// Recitation audio catalog (reciters + nested recitations); absent until a
+// reciter is published.
+const getAudio = async (): Promise<QuranAudioManifest | null> => {
+  const manifest = await fetchManifest();
+  return manifest?.audio ?? null;
+};
+
+const getReciters = async (): Promise<QuranReciter[]> => {
+  const audio = await getAudio();
+  return audio?.reciters ?? [];
+};
+
 const clearCache = (): void => {
   cachedManifest = null;
   cachedAt = 0;
@@ -138,5 +151,7 @@ export const QuranManifestService = {
   getMetaSizeBytes,
   getTotalSizeBytes,
   getPreviews,
+  getAudio,
+  getReciters,
   clearCache,
 };

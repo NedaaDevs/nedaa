@@ -1,9 +1,10 @@
-import { Appearance, Image, PermissionsAndroid, Platform } from "react-native";
+import { Appearance, Image } from "react-native";
 import { TrackPlayer, PlayerQueue } from "react-native-nitro-player";
 import type { TrackItem, TrackPlayerState } from "react-native-nitro-player";
 
 import { SMART_PAUSE, getThikrId } from "@/constants/AthkarAudio";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { nitroSession } from "@/services/audio/nitroSession";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { useAthkarStore } from "@/stores/athkar";
@@ -11,9 +12,9 @@ import { reciterRegistry, getLocalizedName } from "@/services/athkar-reciter-reg
 import { AppLogger } from "@/utils/appLogger";
 import { PLAYER_STATE, type PlayerState, type ReciterManifest } from "@/types/athkar-audio";
 import type { Athkar, AthkarType } from "@/types/athkar";
+import i18n from "@/localization/i18n";
 
 type SessionType = Exclude<AthkarType, typeof ATHKAR_TYPE.ALL>;
-import i18n from "@/localization/i18n";
 
 const log = AppLogger.create("athkar-audio");
 
@@ -41,7 +42,6 @@ const LOOP_WRAP_DROP = 0.5;
 class AthkarPlayer {
   private static instance: AthkarPlayer;
   private initialized = false;
-  private listenersAttached = false;
 
   // Native playlist of the unique step files (deleted on rebuild/stop).
   private playlistId: string | null = null;
@@ -99,38 +99,18 @@ class AthkarPlayer {
   async initialize(): Promise<void> {
     if (this.initialized) return;
     try {
-      if (!this.listenersAttached) {
-        TrackPlayer.onChangeTrack((track: TrackItem) => {
-          this.onChangeTrack(track);
-        });
-        TrackPlayer.onPlaybackStateChange((state: TrackPlayerState) => {
-          this.onPlaybackStateChange(state);
-        });
-        TrackPlayer.onPlaybackProgressChange(
-          (position: number, totalDuration: number, isManuallySeeked?: boolean) => {
-            this.onProgress(position, totalDuration, isManuallySeeked ?? false);
-          }
-        );
-        this.listenersAttached = true;
-      }
-
-      await TrackPlayer.configure({
-        showInNotification: true,
-        androidAutoEnabled: false,
-        carPlayEnabled: false,
+      nitroSession.register("athkar", {
+        onChangeTrack: (track) => this.onChangeTrack(track),
+        onPlaybackStateChange: (state) => this.onPlaybackStateChange(state),
+        onProgress: (position, duration, seeked) => this.onProgress(position, duration, seeked),
+        // Another owner took the player — drop this session. Returned so the
+        // incoming owner waits for teardown before loading its own queue.
+        onEvict: () => this.teardown(),
       });
-
-      // Android 13+ suppresses the media notification (= lock-screen controls)
-      // silently without this grant.
-      if (Platform.OS === "android" && Platform.Version >= 33) {
-        await PermissionsAndroid.request("android.permission.POST_NOTIFICATIONS" as never).catch(
-          () => {}
-        );
-      }
-
+      await nitroSession.ensureStarted();
       this.initialized = true;
       await this.syncRate();
-      log.d("Player", "nitro player initialized");
+      log.d("Player", "athkar player initialized");
     } catch (error) {
       log.e("Player", "init failed", error instanceof Error ? error : undefined);
       throw error;
@@ -146,6 +126,7 @@ class AthkarPlayer {
     sessionType: SessionType
   ): Promise<void> {
     await this.initialize();
+    await nitroSession.acquire("athkar");
 
     this.reciterId = reciterId;
     this.manifest = manifest;
@@ -577,6 +558,7 @@ class AthkarPlayer {
     this.athkarStore.resetPlaybackState();
     this.store.setPosition(0);
     this.store.setDuration(0);
+    nitroSession.release("athkar");
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────

@@ -306,6 +306,11 @@ const SettingsScreen = () => {
               path={"/settings/background-debug" as any}
               icon={Activity}
             />
+            <SettingsItem
+              name="Quran Audio Debug"
+              path={"/settings/quran-audio-debug" as any}
+              icon={BookText}
+            />
           </>
         )}
 

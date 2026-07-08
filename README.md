@@ -19,6 +19,7 @@
 - [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Features](#features)
+- [Acknowledgements](#acknowledgements)
 - [Feedback](#feedback)
 - [Translation](#translation)
   - [Developer Guide](#developer-guide)
@@ -65,6 +66,21 @@ Nedaa Features:
  <img src="https://i.imgur.com/njUoebp.png"  width=400>
  <img src="https://i.imgur.com/Pt36AGI.png"  width=400>
 </p> -->
+
+## Acknowledgements
+
+Nedaa is built on the generous work of others:
+
+**Qur'an**
+
+- **Qur'an text & Mushaf layout** — [King Fahd Glorious Qur'an Printing Complex (KFGQPC)](https://qurancomplex.gov.sa) — UthmanicHafs font and page layout.
+- **Verse metadata & recitation timing** — [Qur'anic Universal Library (QUL)](https://qul.tarteel.ai) by Tarteel.
+- **Recitation** — Muhammad Siddiq al-Minshawi (Hafs, Murattal); recitation audio courtesy of [QuranicAudio](https://quranicaudio.com) and [quran.com](https://quran.com), mirrored via QUL.
+
+**Fonts**
+
+- [IBM Plex Sans Arabic](https://github.com/IBM/plex) — SIL Open Font License 1.1.
+- [Asap](https://fonts.google.com/specimen/Asap) — SIL Open Font License 1.1.
 
 ## Feedback
 
