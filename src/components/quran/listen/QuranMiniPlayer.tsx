@@ -180,10 +180,8 @@ export const QuranMiniPlayer = () => {
     quranAudioPlayer.setListenMode(MODE_ORDER[(i + 1) % MODE_ORDER.length]);
   };
 
-  const selectTimer = (option: "off" | "surah" | number) => {
-    if (option === "off") quranAudioPlayer.setSleepOff();
-    else if (option === "surah") quranAudioPlayer.setSleepAtSurahEnd();
-    else quranAudioPlayer.setSleepAfter(option);
+  const applyTimer = (fn: () => void) => {
+    fn();
     setTimerOpen(false);
   };
 
@@ -376,20 +374,23 @@ export const QuranMiniPlayer = () => {
               paddingVertical="$2">
               {t("quran.listen.timer.title")}
             </Text>
-            <ActionsheetItem onPress={() => selectTimer("off")}>
+            <ActionsheetItem onPress={() => applyTimer(() => quranAudioPlayer.setSleepOff())}>
               <ActionsheetItemText color="$typography">
                 {t("quran.listen.timer.off")}
               </ActionsheetItemText>
               {!timerActive ? <Icon as={Check} size="sm" color="$accentPrimary" /> : null}
             </ActionsheetItem>
-            <ActionsheetItem onPress={() => selectTimer("surah")}>
+            <ActionsheetItem
+              onPress={() => applyTimer(() => quranAudioPlayer.setSleepAtSurahEnd())}>
               <ActionsheetItemText color="$typography">
                 {t("quran.listen.timer.endOfSurah")}
               </ActionsheetItemText>
               {sleepTimerSurahEnd ? <Icon as={Check} size="sm" color="$accentPrimary" /> : null}
             </ActionsheetItem>
             {TIMER_MINUTES.map((m) => (
-              <ActionsheetItem key={m} onPress={() => selectTimer(m)}>
+              <ActionsheetItem
+                key={m}
+                onPress={() => applyTimer(() => quranAudioPlayer.setSleepAfter(m))}>
                 <ActionsheetItemText color="$typography">{formatDuration(m)}</ActionsheetItemText>
                 {sleepTimerMinutes === m ? (
                   <Icon as={Check} size="sm" color="$accentPrimary" />

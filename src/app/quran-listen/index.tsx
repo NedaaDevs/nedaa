@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react-native";
+import { keyboardFilter } from "miftah";
 
 import { Background } from "@/components/ui/background";
 import { VStack } from "@/components/ui/vstack";
@@ -13,12 +14,19 @@ import { Pressable } from "@/components/ui/pressable";
 import { Spinner } from "@/components/ui/spinner";
 import TopBar from "@/components/TopBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
+import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { useRTL } from "@/contexts/RTLContext";
 import type { QuranReciter } from "@/types/quran-audio";
 
-type LoadStatus = "loading" | "error" | "ready";
+const LOAD_STATUS = { LOADING: "loading", ERROR: "error", READY: "ready" } as const;
+type LoadStatus = (typeof LOAD_STATUS)[keyof typeof LOAD_STATUS];
+
+// Match a reciter by either script name; miftah covers Latin ("husary"),
+// Arabic-keyboard mistypes, and phonetic input.
+const matchesReciter = (r: QuranReciter, q: string): boolean =>
+  keyboardFilter(r.nameArabic, q) || keyboardFilter(r.nameEnglish, q);
 
 const QuranListenScreen = () => {
   const router = useRouter();
@@ -26,8 +34,9 @@ const QuranListenScreen = () => {
   const { isRTL } = useRTL();
   const setSelectedRecitation = useQuranAudioStore((s) => s.setSelectedRecitation);
   const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
-  const [status, setStatus] = useState<LoadStatus>("loading");
+  const [status, setStatus] = useState<LoadStatus>(LOAD_STATUS.LOADING);
   const [reciters, setReciters] = useState<QuranReciter[]>([]);
+  const [query, setQuery] = useState("");
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -45,17 +54,17 @@ const QuranListenScreen = () => {
       .then((r) => {
         if (!mounted.current) return;
         setReciters(r);
-        setStatus("ready");
+        setStatus(LOAD_STATUS.READY);
       })
       .catch(() => {
-        if (mounted.current) setStatus("error");
+        if (mounted.current) setStatus(LOAD_STATUS.ERROR);
       });
   }, []);
 
   useEffect(() => fetchReciters(), [fetchReciters]);
 
   const retry = () => {
-    setStatus("loading");
+    setStatus(LOAD_STATUS.LOADING);
     fetchReciters();
   };
 
@@ -64,17 +73,33 @@ const QuranListenScreen = () => {
     router.push("/quran-listen/surahs");
   };
 
+  const filtered = useMemo(
+    () => (query.trim() === "" ? reciters : reciters.filter((r) => matchesReciter(r, query))),
+    [reciters, query]
+  );
+
   return (
     <Background>
       <TopBar title="tools.quranListen.title" href="/(tabs)/tools" backOnClick />
-      <ScrollView contentContainerStyle={{ padding: 12, flexGrow: 1 }}>
+      {status === LOAD_STATUS.READY && reciters.length > 0 ? (
+        <VStack paddingHorizontal="$3" paddingTop="$2">
+          <ListenSearchBar
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t("quran.listen.searchReciter")}
+          />
+        </VStack>
+      ) : null}
+      <ScrollView
+        contentContainerStyle={{ padding: 12, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled">
         <VStack gap="$3">
-          {status === "loading" && (
+          {status === LOAD_STATUS.LOADING && (
             <HStack paddingVertical="$6" justifyContent="center">
               <Spinner size="large" color="$accentPrimary" />
             </HStack>
           )}
-          {status === "error" && (
+          {status === LOAD_STATUS.ERROR && (
             <VStack paddingVertical="$6" gap="$3" alignItems="center">
               <Text color="$typographySecondary" textAlign="center">
                 {t("quran.listen.error")}
@@ -93,10 +118,15 @@ const QuranListenScreen = () => {
               </Pressable>
             </VStack>
           )}
-          {status === "ready" && reciters.length === 0 && (
+          {status === LOAD_STATUS.READY && reciters.length === 0 && (
             <Text color="$typographySecondary">{t("quran.listen.empty")}</Text>
           )}
-          {reciters.map((r) => {
+          {status === LOAD_STATUS.READY && reciters.length > 0 && filtered.length === 0 && (
+            <Text color="$typographySecondary" textAlign="center" paddingVertical="$4">
+              {t("quran.listen.noResults")}
+            </Text>
+          )}
+          {filtered.map((r) => {
             const name = quranReciterRegistry.localizedName(r, i18n.language);
             return r.recitations.map((rec) => {
               const selected = rec.id === selectedRecitationId;

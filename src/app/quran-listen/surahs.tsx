@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import { keyboardFilter } from "miftah";
 
 import { Background } from "@/components/ui/background";
-import { Input } from "@/components/ui/input";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import TopBar from "@/components/TopBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
+import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
 import { SurahListRow } from "@/components/quran/listen/SurahListRow";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
@@ -70,15 +70,10 @@ const QuranListenSurahsScreen = () => {
     <Background>
       <TopBar title={reciterName ?? "tools.quranListen.title"} href="/quran-listen" backOnClick />
       <VStack paddingHorizontal="$3" paddingTop="$2">
-        <Input
-          size="$3"
-          borderRadius="$4"
-          placeholder={t("quran.listen.searchSurah")}
+        <ListenSearchBar
           value={query}
           onChangeText={setQuery}
-          autoCorrect={false}
-          autoCapitalize="none"
-          clearButtonMode="while-editing"
+          placeholder={t("quran.listen.searchSurah")}
         />
       </VStack>
       <FlatList
