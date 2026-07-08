@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, ChevronLeft } from "lucide-react-native";
+import { ChevronRight, ChevronLeft, Check } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
 import { VStack } from "@/components/ui/vstack";
@@ -10,7 +10,6 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import TopBar from "@/components/TopBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
@@ -26,6 +25,7 @@ const QuranListenScreen = () => {
   const { t, i18n } = useTranslation();
   const { isRTL } = useRTL();
   const setSelectedRecitation = useQuranAudioStore((s) => s.setSelectedRecitation);
+  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [reciters, setReciters] = useState<QuranReciter[]>([]);
   const mounted = useRef(true);
@@ -96,42 +96,66 @@ const QuranListenScreen = () => {
           {status === "ready" && reciters.length === 0 && (
             <Text color="$typographySecondary">{t("quran.listen.empty")}</Text>
           )}
-          {reciters.map((r) => (
-            <VStack key={r.id} gap="$1.5">
-              <Text size="md" fontWeight="700" color="$typography">
-                {quranReciterRegistry.localizedName(r, i18n.language)}
-              </Text>
-              <Card padding="$2">
-                <VStack>
-                  {r.recitations.map((rec) => (
-                    <Pressable
-                      key={rec.id}
-                      onPress={() => openRecitation(rec.id)}
-                      accessibilityRole="button"
-                      accessibilityLabel={t(
-                        `quran.listen.style.${rec.style.toLowerCase()}`,
-                        rec.style
-                      )}>
-                      <HStack
-                        alignItems="center"
-                        justifyContent="space-between"
-                        paddingVertical="$3"
-                        paddingHorizontal="$2">
-                        <Text color="$typography">
-                          {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
-                        </Text>
-                        <Icon
-                          as={isRTL ? ChevronLeft : ChevronRight}
-                          size="sm"
-                          color="$typographySecondary"
-                        />
-                      </HStack>
-                    </Pressable>
-                  ))}
-                </VStack>
-              </Card>
-            </VStack>
-          ))}
+          {reciters.map((r) => {
+            const name = quranReciterRegistry.localizedName(r, i18n.language);
+            return r.recitations.map((rec) => {
+              const selected = rec.id === selectedRecitationId;
+              return (
+                <Pressable
+                  key={rec.id}
+                  onPress={() => openRecitation(rec.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={name}
+                  accessibilityState={{ selected }}>
+                  <HStack
+                    alignItems="center"
+                    gap="$3"
+                    padding="$3"
+                    borderRadius="$6"
+                    backgroundColor={selected ? "$accentPrimary" : "$backgroundSecondary"}
+                    borderWidth={1}
+                    borderColor={selected ? "$accentPrimary" : "$backgroundInteractive"}>
+                    <VStack
+                      width={48}
+                      height={48}
+                      borderRadius={24}
+                      alignItems="center"
+                      justifyContent="center"
+                      backgroundColor={
+                        selected ? "$backgroundSecondary" : "$backgroundInteractive"
+                      }>
+                      <Text
+                        size="lg"
+                        fontWeight="700"
+                        color={selected ? "$accentPrimary" : "$typography"}>
+                        {name.charAt(0)}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} gap="$0.5">
+                      <Text
+                        size="md"
+                        fontWeight="700"
+                        color={selected ? "$typographyContrast" : "$typography"}
+                        numberOfLines={1}>
+                        {name}
+                      </Text>
+                      <Text
+                        size="xs"
+                        color={selected ? "$typographyContrast" : "$typographySecondary"}
+                        numberOfLines={1}>
+                        {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
+                      </Text>
+                    </VStack>
+                    <Icon
+                      as={selected ? Check : isRTL ? ChevronLeft : ChevronRight}
+                      size="sm"
+                      color={selected ? "$typographyContrast" : "$typographySecondary"}
+                    />
+                  </HStack>
+                </Pressable>
+              );
+            });
+          })}
         </VStack>
       </ScrollView>
       <QuranMiniPlayer />
