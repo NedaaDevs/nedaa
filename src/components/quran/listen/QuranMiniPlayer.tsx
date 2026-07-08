@@ -81,6 +81,7 @@ export const QuranMiniPlayer = () => {
   const sleepTimerSurahEnd = useQuranAudioStore((s) => s.sleepTimerSurahEnd);
   const position = useQuranAudioStore((s) => s.position);
   const duration = useQuranAudioStore((s) => s.duration);
+  const positionUpdatedAt = useQuranAudioStore((s) => s.positionUpdatedAt);
   const [barWidth, setBarWidth] = useState(0);
   const [scrubFrac, setScrubFrac] = useState<number | null>(null);
   const theme = useTheme();
@@ -109,6 +110,15 @@ export const QuranMiniPlayer = () => {
 
   const [timerOpen, setTimerOpen] = useState(false);
 
+  // Advance the interpolated elapsed time each second between nitro's coarse
+  // progress ticks so the scrubber and clock move smoothly.
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    if (playerState !== QURAN_PLAYER_STATE.PLAYING) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [playerState]);
+
   // Drag (or tap) the bar to scrub; scrubFrac overrides the live position while
   // the finger is down, and the seek is committed from the gesture's own x.
   const seekGesture = useMemo(() => {
@@ -134,8 +144,22 @@ export const QuranMiniPlayer = () => {
   const isLoading = playerState === QURAN_PLAYER_STATE.LOADING;
   const surah = currentSurah ?? 1;
   const timerActive = sleepTimerSurahEnd || sleepTimerEndsAt !== null;
-  const progress = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
+  const delta =
+    isPlaying && positionUpdatedAt > 0 ? Math.max(0, (now - positionUpdatedAt) / 1000) : 0;
+  const elapsed = duration > 0 ? Math.min(duration, position + delta) : position;
+  const progress = duration > 0 ? Math.min(1, Math.max(0, elapsed / duration)) : 0;
   const displayFrac = scrubFrac ?? progress;
+  const currentSec = scrubFrac != null ? scrubFrac * duration : elapsed;
+
+  // Minutes → "1h", "1h 30m", or "45m" in the app's numerals.
+  const formatDuration = (mins: number): string => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const loc = (n: number) => formatNumberToLocale(String(n));
+    if (h > 0 && m > 0) return t("quran.listen.timer.hoursMinutes", { h: loc(h), m: loc(m) });
+    if (h > 0) return t("quran.listen.timer.hoursShort", { h: loc(h) });
+    return t("quran.listen.timer.minutesShort", { m: loc(m) });
+  };
 
   // Directional icons mirror in RTL: the layout row flips, so the skip icons swap
   // to keep "previous" pointing toward the start and "next" toward the end.
@@ -215,7 +239,7 @@ export const QuranMiniPlayer = () => {
       {/* Seek bar — drag or tap to scrub, with elapsed / total time */}
       <HStack alignItems="center" gap="$2">
         <Text size="xs" color="$typographySecondary" minWidth={38} textAlign="center">
-          {formatTime(displayFrac * duration)}
+          {formatTime(currentSec)}
         </Text>
         <GestureDetector gesture={seekGesture}>
           <View
@@ -328,7 +352,7 @@ export const QuranMiniPlayer = () => {
           />
           {sleepTimerEndsAt !== null && remaining !== null ? (
             <Text size="xs" color="$accentPrimary" fontWeight="600">
-              {t("quran.listen.timer.compact", { minutes: remaining })}
+              {formatDuration(remaining)}
             </Text>
           ) : null}
         </Pressable>
@@ -363,9 +387,7 @@ export const QuranMiniPlayer = () => {
             </ActionsheetItem>
             {TIMER_MINUTES.map((m) => (
               <ActionsheetItem key={m} onPress={() => selectTimer(m)}>
-                <ActionsheetItemText color="$typography">
-                  {t("quran.listen.timer.minutes", { minutes: m })}
-                </ActionsheetItemText>
+                <ActionsheetItemText color="$typography">{formatDuration(m)}</ActionsheetItemText>
                 {sleepTimerMinutes === m ? (
                   <Icon as={Check} size="sm" color="$accentPrimary" />
                 ) : null}

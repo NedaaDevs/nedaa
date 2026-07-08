@@ -20,6 +20,9 @@ type QuranAudioState = {
   following: boolean;
   position: number;
   duration: number;
+  // Wall-clock (epoch ms) of the last position update, so the UI can interpolate
+  // smoothly between nitro's coarse progress ticks.
+  positionUpdatedAt: number;
   // Sleep timer: a deadline (epoch ms) + the chosen duration for the duration
   // timer, or a flag to stop when the current surah ends. All null/false when off.
   sleepTimerEndsAt: number | null;
@@ -34,6 +37,7 @@ type QuranAudioState = {
   setFollowing: (on: boolean) => void;
   setPosition: (position: number) => void;
   setDuration: (duration: number) => void;
+  setProgress: (position: number, duration: number, updatedAt: number) => void;
   setSleepTimer: (endsAt: number | null, minutes: number | null, surahEnd: boolean) => void;
   resetPlayback: () => void;
 };
@@ -50,6 +54,7 @@ export const useQuranAudioStore = create<QuranAudioState>()(
       following: true,
       position: 0,
       duration: 0,
+      positionUpdatedAt: 0,
       sleepTimerEndsAt: null,
       sleepTimerMinutes: null,
       sleepTimerSurahEnd: false,
@@ -62,6 +67,8 @@ export const useQuranAudioStore = create<QuranAudioState>()(
       setFollowing: (following) => set({ following }),
       setPosition: (position) => set({ position }),
       setDuration: (duration) => set({ duration }),
+      setProgress: (position, duration, positionUpdatedAt) =>
+        set({ position, duration, positionUpdatedAt }),
       setSleepTimer: (sleepTimerEndsAt, sleepTimerMinutes, sleepTimerSurahEnd) =>
         set({ sleepTimerEndsAt, sleepTimerMinutes, sleepTimerSurahEnd }),
       resetPlayback: () =>
@@ -73,6 +80,7 @@ export const useQuranAudioStore = create<QuranAudioState>()(
           following: true,
           position: 0,
           duration: 0,
+          positionUpdatedAt: 0,
           sleepTimerEndsAt: null,
           sleepTimerMinutes: null,
           sleepTimerSurahEnd: false,

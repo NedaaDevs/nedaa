@@ -92,6 +92,7 @@
     "i18next": "^26.3.0",
     "intl-pluralrules": "^2.0.1",
     "lucide-react-native": "^1.17.0",
+    "miftah": "^1.1.5",
     "moti": "^0.30.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

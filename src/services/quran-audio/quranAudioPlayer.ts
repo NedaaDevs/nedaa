@@ -65,8 +65,7 @@ class QuranAudioPlayer {
       onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
       onProgress: (position, duration) => {
-        this.store.setPosition(position);
-        this.store.setDuration(duration);
+        this.store.setProgress(position, duration, Date.now());
       },
       onEvict: () => this.teardown(),
     });
@@ -157,6 +156,17 @@ class QuranAudioPlayer {
   // (a native skip to the surah) unless the reciter changed, so switching surahs
   // and the lock-screen next/previous are instant rather than a rebuild.
   async playSurah(surah: number): Promise<void> {
+    // Re-tapping the surah that's already loaded resumes rather than restarting.
+    if (
+      surah === this.store.currentSurah &&
+      this.playlistId !== null &&
+      this.isSurahPlaylist &&
+      this.store.playerState !== QURAN_PLAYER_STATE.IDLE
+    ) {
+      if (this.store.playerState === QURAN_PLAYER_STATE.PAUSED) await this.resume();
+      return;
+    }
+
     const token = ++this.buildToken;
     // Reflect the target immediately so the mini-player shows a loading spinner
     // the instant the surah is tapped, before init/handoff and the network fetch.
