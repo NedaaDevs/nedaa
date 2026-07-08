@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -18,15 +18,44 @@ import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistr
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import type { QuranReciter } from "@/types/quran-audio";
 
+type LoadStatus = "loading" | "error" | "ready";
+
 const QuranListenScreen = () => {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const setSelectedRecitation = useQuranAudioStore((s) => s.setSelectedRecitation);
-  const [reciters, setReciters] = useState<QuranReciter[] | null>(null);
+  const [status, setStatus] = useState<LoadStatus>("loading");
+  const [reciters, setReciters] = useState<QuranReciter[]>([]);
+  const mounted = useRef(true);
 
   useEffect(() => {
-    quranReciterRegistry.listenReciters().then(setReciters);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
   }, []);
+
+  // A rejection (rather than an empty list) surfaces the error state so a network
+  // failure is distinguishable from "no reciters yet" and can be retried.
+  const fetchReciters = useCallback(() => {
+    quranReciterRegistry
+      .listenReciters()
+      .then((r) => {
+        if (!mounted.current) return;
+        setReciters(r);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (mounted.current) setStatus("error");
+      });
+  }, []);
+
+  useEffect(() => fetchReciters(), [fetchReciters]);
+
+  const retry = () => {
+    setStatus("loading");
+    fetchReciters();
+  };
 
   const openRecitation = (recitationId: string) => {
     setSelectedRecitation(recitationId);
@@ -38,15 +67,34 @@ const QuranListenScreen = () => {
       <TopBar title="tools.quranListen.title" href="/(tabs)/tools" backOnClick />
       <ScrollView contentContainerStyle={{ padding: 12, flexGrow: 1 }}>
         <VStack gap="$3">
-          {reciters === null && (
+          {status === "loading" && (
             <HStack paddingVertical="$6" justifyContent="center">
               <Spinner size="large" color="$accentPrimary" />
             </HStack>
           )}
-          {reciters?.length === 0 && (
+          {status === "error" && (
+            <VStack paddingVertical="$6" gap="$3" alignItems="center">
+              <Text color="$typographySecondary" textAlign="center">
+                {t("quran.listen.error")}
+              </Text>
+              <Pressable
+                onPress={retry}
+                accessibilityRole="button"
+                accessibilityLabel={t("quran.listen.retry")}
+                paddingHorizontal="$4"
+                paddingVertical="$2.5"
+                borderRadius={999}
+                backgroundColor="$accentPrimary">
+                <Text color="$typographyContrast" fontWeight="600">
+                  {t("quran.listen.retry")}
+                </Text>
+              </Pressable>
+            </VStack>
+          )}
+          {status === "ready" && reciters.length === 0 && (
             <Text color="$typographySecondary">{t("quran.listen.empty")}</Text>
           )}
-          {reciters?.map((r) => (
+          {reciters.map((r) => (
             <VStack key={r.id} gap="$1.5">
               <Text size="md" fontWeight="700" color="$typography">
                 {quranReciterRegistry.localizedName(r, i18n.language)}
