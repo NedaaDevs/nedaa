@@ -70,7 +70,7 @@ const SurahListRowBase = ({ surah, meta, isCurrent, isLoading, onPress }: Props)
 
         <VStack flex={1} gap="$0.5">
           <Text
-            size="md"
+            size="lg"
             fontWeight="600"
             color={isCurrent ? "$accentPrimary" : "$typography"}
             numberOfLines={1}
