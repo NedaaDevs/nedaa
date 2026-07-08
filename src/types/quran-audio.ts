@@ -30,6 +30,9 @@ export type QuranRecitation = {
   fileFormat: string; // "mp3"
   ayahCount: number;
   bytesApprox: number;
+  // Exact size in bytes of each surah's audio file, indexed 0 = surah 1 (114
+  // entries). Surah-granular only; when absent the size is estimated by page span.
+  surahBytes?: number[];
   published: boolean;
   timings?: { url: string; version: string; bytes: number }; // surah-granular only
 };

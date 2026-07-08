@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { AudioLines, Download, CheckCircle2 } from "lucide-react-native";
+import { AudioLines, Download, CheckCircle2, Pause } from "lucide-react-native";
+import Svg, { Circle } from "react-native-svg";
+import { useTheme } from "tamagui";
 
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -10,7 +12,7 @@ import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
 import { RevelationPlace } from "@/enums/quran";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
-import { formatNumberToLocale } from "@/utils/number";
+import { formatFileSizeLocale, formatNumberToLocale } from "@/utils/number";
 import type { SurahMeta } from "@/types/quran";
 
 type Props = {
@@ -20,9 +22,50 @@ type Props = {
   isLoading: boolean;
   isDownloaded: boolean;
   isDownloading: boolean;
+  isPaused: boolean; // interrupted transfer with a saved resume point
+  downloadProgress?: number; // 0..1 while downloading
+  estimatedBytes?: number; // download size in bytes
+  sizeApprox?: boolean; // prefix the size with "~" (estimate, not exact)
   onPress: (surah: number) => void;
-  onDownload: (surah: number) => void;
+  onDownload: (surah: number) => void; // fresh download OR resume a paused one
+  onPause: (surah: number) => void;
   onDelete: (surah: number) => void;
+};
+
+// Compact circular download-progress indicator.
+const RING = 26;
+const RADIUS = 10;
+const CIRC = 2 * Math.PI * RADIUS;
+const DownloadRing = ({ fraction, showPause }: { fraction: number; showPause?: boolean }) => {
+  const theme = useTheme();
+  return (
+    <VStack width={RING} height={RING} alignItems="center" justifyContent="center">
+      <Svg width={RING} height={RING} style={{ position: "absolute" }}>
+        <Circle
+          cx={RING / 2}
+          cy={RING / 2}
+          r={RADIUS}
+          stroke={theme.backgroundInteractive.val}
+          strokeWidth={2.5}
+          fill="none"
+        />
+        <Circle
+          cx={RING / 2}
+          cy={RING / 2}
+          r={RADIUS}
+          stroke={theme.accentPrimary.val}
+          strokeWidth={2.5}
+          fill="none"
+          strokeDasharray={`${CIRC}`}
+          strokeDashoffset={CIRC * (1 - Math.min(1, Math.max(0, fraction)))}
+          strokeLinecap="round"
+          rotation={-90}
+          origin={`${RING / 2}, ${RING / 2}`}
+        />
+      </Svg>
+      {showPause ? <Icon as={Pause} size="xs" color="$accentPrimary" /> : null}
+    </VStack>
+  );
 };
 
 const SurahListRowBase = ({
@@ -32,8 +75,13 @@ const SurahListRowBase = ({
   isLoading,
   isDownloaded,
   isDownloading,
+  isPaused,
+  downloadProgress,
+  estimatedBytes,
+  sizeApprox,
   onPress,
   onDownload,
+  onPause,
   onDelete,
 }: Props) => {
   const { t } = useTranslation();
@@ -45,8 +93,18 @@ const SurahListRowBase = ({
       ? t("quran.surah.makki")
       : t("quran.surah.madani")
     : null;
+  const sizeLabel =
+    estimatedBytes && estimatedBytes > 0
+      ? `${sizeApprox ? "~" : ""}${formatFileSizeLocale(estimatedBytes, t)}`
+      : null;
   const metaLine = meta
-    ? `${t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta.ayahCount)) })} · ${meccaOrMedina}`
+    ? [
+        t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta.ayahCount)) }),
+        meccaOrMedina,
+        sizeLabel,
+      ]
+        .filter(Boolean)
+        .join(" · ")
     : null;
 
   return (
@@ -102,7 +160,22 @@ const SurahListRowBase = ({
           ) : null}
 
           {isDownloading ? (
-            <Spinner size="small" color="$typographySecondary" />
+            // Tap to pause; a paused transfer keeps its partial file and resumes.
+            <Pressable
+              onPress={() => onPause(surah)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.quran.listen.pauseDownload")}
+              width={30}
+              height={30}
+              alignItems="center"
+              justifyContent="center">
+              {downloadProgress && downloadProgress > 0 ? (
+                <DownloadRing fraction={downloadProgress} showPause />
+              ) : (
+                <Spinner size="small" color="$typographySecondary" />
+              )}
+            </Pressable>
           ) : (
             <Pressable
               onPress={() => (isDownloaded ? onDelete(surah) : onDownload(surah))}
@@ -111,7 +184,9 @@ const SurahListRowBase = ({
               accessibilityLabel={
                 isDownloaded
                   ? t("a11y.quran.listen.deleteDownload")
-                  : t("a11y.quran.listen.download")
+                  : isPaused
+                    ? t("a11y.quran.listen.resumeDownload")
+                    : t("a11y.quran.listen.download")
               }
               width={30}
               height={30}
@@ -120,7 +195,7 @@ const SurahListRowBase = ({
               <Icon
                 as={isDownloaded ? CheckCircle2 : Download}
                 size="sm"
-                color={isDownloaded ? "$accentPrimary" : "$typographySecondary"}
+                color={isDownloaded || isPaused ? "$accentPrimary" : "$typographySecondary"}
               />
             </Pressable>
           )}

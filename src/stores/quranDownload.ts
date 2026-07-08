@@ -22,12 +22,14 @@ type QuranDownloadState = {
   allActive: boolean; // a "download all" run is in progress
   allDone: number;
   allTotal: number;
+  progress: Record<number, number>; // 0..1 per surah being downloaded
   // Persisted so an interrupted transfer resumes from its byte offset (like the
   // mushaf image download) instead of restarting.
   resumeStates: Record<string, DownloadPauseState>;
 
   refresh: (recitation: QuranRecitation) => void;
   downloadOne: (recitation: QuranRecitation, surah: number) => Promise<void>;
+  pauseOne: (recitation: QuranRecitation, surah: number) => void;
   deleteOne: (recitation: QuranRecitation, surah: number) => void;
   downloadAll: (recitation: QuranRecitation, surahs: number[]) => Promise<void>;
   cancelAll: () => void;
@@ -44,16 +46,20 @@ export const useQuranDownloadStore = create<QuranDownloadState>()(
           recitation,
           surah,
           baseUrl,
-          get().resumeStates[k]
+          get().resumeStates[k],
+          (frac) => set((s) => ({ progress: { ...s.progress, [surah]: frac } }))
         );
         set((s) => {
           const resumeStates = { ...s.resumeStates };
           if (done || !resume) delete resumeStates[k];
           else resumeStates[k] = resume;
+          const progress = { ...s.progress };
+          delete progress[surah];
           return {
             downloading: s.downloading.filter((n) => n !== surah),
             downloaded: done ? Array.from(new Set([...s.downloaded, surah])) : s.downloaded,
             resumeStates,
+            progress,
             bytes: quranAudioDownload.surahStorageBytes(recitation.id, recitation.fileFormat),
           };
         });
@@ -68,6 +74,7 @@ export const useQuranDownloadStore = create<QuranDownloadState>()(
         allActive: false,
         allDone: 0,
         allTotal: 0,
+        progress: {},
         resumeStates: {},
 
         refresh: (recitation) => {
@@ -80,10 +87,19 @@ export const useQuranDownloadStore = create<QuranDownloadState>()(
 
         downloadOne: async (recitation, surah) => {
           if (get().downloading.includes(surah) || get().downloaded.includes(surah)) return;
-          const manifest = await QuranManifestService.fetchManifest();
-          if (!manifest) return;
+          // Mark in-flight synchronously, before the manifest await, so a second
+          // rapid tap is rejected by the guard above (no duplicate download).
           set((s) => ({ downloading: [...s.downloading, surah] }));
+          const manifest = await QuranManifestService.fetchManifest();
+          if (!manifest) {
+            set((s) => ({ downloading: s.downloading.filter((n) => n !== surah) }));
+            return;
+          }
           await runOne(recitation, surah, manifest.baseUrl);
+        },
+
+        pauseOne: (recitation, surah) => {
+          quranAudioDownload.pauseSurahDownload(recitation.id, surah);
         },
 
         deleteOne: (recitation, surah) => {

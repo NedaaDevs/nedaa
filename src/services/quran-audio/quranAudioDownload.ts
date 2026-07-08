@@ -96,14 +96,18 @@ const downloadSurahFile = async (
   recitation: QuranRecitation,
   surah: number,
   baseUrl: string,
-  resume?: DownloadPauseState | null
+  resume?: DownloadPauseState | null,
+  onProgress?: (fraction: number) => void
 ): Promise<SurahDownloadResult> => {
   const file = surahFile(recitation.id, surah, recitation.fileFormat);
   if (file.exists) return { done: true, resume: null };
   const dir = recitationDir(recitation.id);
   if (!dir.exists) dir.create({ intermediates: true });
   const key = taskKey(recitation.id, surah);
-  const options: DownloadTaskOptions = {};
+  const options: DownloadTaskOptions = {
+    onProgress: ({ bytesWritten, totalBytes }) =>
+      onProgress?.(totalBytes > 0 ? bytesWritten / totalBytes : 0),
+  };
   let task: DownloadTask | null = null;
   try {
     let result: File | null;
