@@ -382,19 +382,22 @@ class QuranAudioPlayer {
     if (!this.playlistId) return;
     const item = this.items[this.indexOf(track)];
     if (!item) return;
-    this.store.setCurrentAyah(item.surah, item.ayah);
 
     // A surah that finishes on its own auto-advances to the next track in the full
     // playlist (reason "end"). End the session there when STOP mode or a surah-end
-    // sleep timer asks for it; a user-initiated skip (lock screen / mini-player)
-    // carries a different reason and still moves freely.
+    // sleep timer asks for it — before updating currentAyah, so the next surah's
+    // name never flashes. A user-initiated skip carries a different reason and
+    // still moves freely.
     if (
       this.isSurahPlaylist &&
       reason === NITRO_REASON.END &&
       (this.stopAtSurahEnd || this.store.listenMode === QURAN_LISTEN_MODE.STOP)
     ) {
       void this.stop();
+      return;
     }
+
+    this.store.setCurrentAyah(item.surah, item.ayah);
   }
 
   private onPlaybackStateChange(state: TrackPlayerState, reason?: Reason): void {
