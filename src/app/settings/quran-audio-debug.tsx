@@ -45,7 +45,7 @@ const QuranAudioDebugScreen = () => {
     setSpikeRunning(true);
     try {
       nitroSession.register("debug", {
-        onChangeTrack: (t) => push(`onChangeTrack → ${t.id}`),
+        onChangeTrack: (t, r) => push(`onChangeTrack → ${t.id}${r ? ` (${r})` : ""}`),
         onPlaybackStateChange: (s, r) => push(`state → ${s}${r ? ` (${r})` : ""}`),
       });
       await nitroSession.ensureStarted();

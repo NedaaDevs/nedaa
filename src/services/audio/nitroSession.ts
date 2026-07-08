@@ -8,7 +8,8 @@ const log = AppLogger.create("audio-session");
 export type NitroOwner = "athkar" | "quran" | "debug";
 
 export type NitroHandlers = {
-  onChangeTrack?: (track: TrackItem) => void;
+  // `reason` distinguishes an auto-advance ("end") from a user skip.
+  onChangeTrack?: (track: TrackItem, reason?: Reason) => void;
   // `reason` distinguishes a natural queue-end ("end") from an error/interruption.
   onPlaybackStateChange?: (state: TrackPlayerState, reason?: Reason) => void;
   onProgress?: (position: number, duration: number, seeked: boolean) => void;
@@ -30,8 +31,8 @@ const register = (owner: NitroOwner, h: NitroHandlers): void => {
 
 const ensureStarted = async (): Promise<void> => {
   if (started) return;
-  TrackPlayer.onChangeTrack((track: TrackItem) => {
-    if (currentOwner) handlers[currentOwner]?.onChangeTrack?.(track);
+  TrackPlayer.onChangeTrack((track: TrackItem, reason?: Reason) => {
+    if (currentOwner) handlers[currentOwner]?.onChangeTrack?.(track, reason);
   });
   TrackPlayer.onPlaybackStateChange((state: TrackPlayerState, reason?: Reason) => {
     if (currentOwner) handlers[currentOwner]?.onPlaybackStateChange?.(state, reason);

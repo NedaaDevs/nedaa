@@ -1,5 +1,5 @@
 import { TrackPlayer, PlayerQueue } from "react-native-nitro-player";
-import type { TrackItem, TrackPlayerState, Reason } from "react-native-nitro-player";
+import type { TrackItem, TrackPlayerState, Reason, RepeatMode } from "react-native-nitro-player";
 
 import { nitroSession } from "@/services/audio/nitroSession";
 import { useQuranAudioStore } from "@/stores/quranAudio";
@@ -19,22 +19,32 @@ import {
   type QuranQueueKind,
   type QuranListenMode,
 } from "@/types/quran-audio";
+import { localizedSurahName } from "@/utils/surahName";
 import { AppLogger } from "@/utils/appLogger";
 import i18n from "@/localization/i18n";
 
 const log = AppLogger.create("quran-audio");
 
-// Plays a queue of consecutive ayahs. Nitro owns the queue and advances through
-// it; each track change records which ayah is now sounding as the store's
-// currentAyah.
+const SURAH_COUNT = 114;
+
+// Two playback shapes share one nitro player:
+//  - Listen (gapless): one playlist of all 114 surah files, so the OS lock-screen
+//    next/previous move between surahs natively and upcoming surahs prebuffer.
+//    Rebuilt only when the reciter changes; switching surah is a native skip.
+//  - Reader (per-ayah): a single-surah queue of ayah files.
+// Each track change records which surah/ayah is now sounding as currentAyah.
 class QuranAudioPlayer {
   private static instance: QuranAudioPlayer;
   private initialized = false;
   private playlistId: string | null = null;
   private items: QuranQueueItem[] = [];
   private userStopping = false;
-  // Bumped on every play(); a build only commits if it's still the latest.
+  // Bumped on every play*(); a build only commits if it's still the latest.
   private buildToken = 0;
+  // The full-surah playlist is memoized per reciter; null once torn down or when
+  // an ayah queue is loaded instead.
+  private surahPlaylistReciter: string | null = null;
+  private isSurahPlaylist = false;
 
   static getInstance(): QuranAudioPlayer {
     if (!QuranAudioPlayer.instance) QuranAudioPlayer.instance = new QuranAudioPlayer();
@@ -48,7 +58,7 @@ class QuranAudioPlayer {
   private async initialize(): Promise<void> {
     if (this.initialized) return;
     nitroSession.register("quran", {
-      onChangeTrack: (track) => this.onChangeTrack(track),
+      onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
       onEvict: () => this.teardown(),
     });
@@ -69,34 +79,110 @@ class QuranAudioPlayer {
     );
   }
 
-  // Repeat mode is a live projection of the listen mode: REPEAT_SURAH loops the
-  // loaded surah, every other mode plays through once and lets handleQueueEnd
-  // decide what happens at the end.
+  // Repeat mode is a live projection of the listen mode. REPEAT_SURAH loops the
+  // current surah — one track in the surah playlist ("track"), the whole ayah
+  // queue in the reader ("Playlist"). Every other mode plays through.
   private async applyRepeatMode(): Promise<void> {
-    const repeat = this.store.listenMode === QURAN_LISTEN_MODE.REPEAT_SURAH ? "Playlist" : "off";
+    let repeat: RepeatMode = "off";
+    if (this.store.listenMode === QURAN_LISTEN_MODE.REPEAT_SURAH) {
+      repeat = this.isSurahPlaylist ? "track" : "Playlist";
+    }
     await TrackPlayer.setRepeatMode(repeat);
   }
 
-  // Change the listen mode and, if a surah is loaded, re-apply it to the running
-  // queue so switching the mode mid-playback takes effect immediately.
+  // Change the listen mode and, if a queue is loaded, re-apply it to the running
+  // player so switching the mode mid-playback takes effect immediately.
   async setListenMode(mode: QuranListenMode): Promise<void> {
     this.store.setListenMode(mode);
     if (this.playlistId) await this.applyRepeatMode();
   }
 
-  // Build the ayah queue [fromAyah..toAyah] for one surah, load it into nitro,
-  // and start playback. A build token makes the latest call win: if a newer
-  // play() starts while this one is still resolving, the stale build abandons
-  // its work instead of racing on the shared player.
-  private async play(
+  // Play a surah from the gapless full-surah playlist. Reuses the loaded playlist
+  // (a native skip to the surah) unless the reciter changed, so switching surahs
+  // and the lock-screen next/previous are instant rather than a rebuild.
+  async playSurah(surah: number): Promise<void> {
+    const token = ++this.buildToken;
+    // Reflect the target immediately so the mini-player shows a loading spinner
+    // the instant the surah is tapped, before init/handoff and the network fetch.
+    this.store.setCurrentAyah(surah, 1);
+    this.store.setPlayerState(QURAN_PLAYER_STATE.LOADING);
+
+    try {
+      await this.initialize();
+      await nitroSession.acquire("quran");
+
+      const recitation = await this.resolveRecitation();
+      const manifest = await QuranManifestService.fetchManifest();
+      if (!recitation || !manifest) {
+        log.w("Player", "no recitation or manifest");
+        await this.teardown();
+        return;
+      }
+
+      const reuse =
+        this.isSurahPlaylist &&
+        this.playlistId !== null &&
+        this.surahPlaylistReciter === recitation.id;
+
+      if (!reuse) {
+        const reciter = await quranReciterRegistry.reciterOf(recitation.id);
+        const artist = reciter ? quranReciterRegistry.localizedName(reciter, i18n.language) : "";
+        const items: QuranQueueItem[] = [];
+        const tracks: TrackItem[] = [];
+        for (let n = 1; n <= SURAH_COUNT; n++) {
+          const url = remoteSurahUrl(manifest.baseUrl, recitation, n);
+          items.push({ surah: n, ayah: 1, url });
+          tracks.push({
+            id: `t${n - 1}`,
+            title: localizedSurahName(n),
+            artist,
+            album: "",
+            duration: 0,
+            url,
+            artwork: undefined,
+          });
+        }
+
+        // A newer play superseded us while resolving; it owns the player now.
+        if (token !== this.buildToken) return;
+
+        if (this.playlistId) await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
+        const pid = await PlayerQueue.createPlaylist("quran-surahs");
+        await PlayerQueue.addTracksToPlaylist(pid, tracks);
+        if (token !== this.buildToken) {
+          await PlayerQueue.deletePlaylist(pid).catch(() => {});
+          return;
+        }
+        this.items = items;
+        this.playlistId = pid;
+        this.surahPlaylistReciter = recitation.id;
+        this.isSurahPlaylist = true;
+        await PlayerQueue.loadPlaylist(pid, surah - 1);
+      } else {
+        if (token !== this.buildToken) return;
+        await TrackPlayer.skipToIndex(surah - 1);
+      }
+
+      if (token !== this.buildToken) return;
+      this.store.setQueue({ kind: "surah", surah, fromAyah: 1, toAyah: 1 });
+      this.store.setCurrentAyah(surah, 1);
+      await this.applyRepeatMode();
+      await TrackPlayer.play();
+    } catch (error) {
+      log.e("Player", "playSurah failed", error as Error);
+      if (token === this.buildToken) await this.teardown();
+    }
+  }
+
+  // Build a per-ayah queue [fromAyah..toAyah] within one surah (reader path),
+  // preferring downloaded files.
+  private async playAyahRange(
     kind: QuranQueueKind,
     surah: number,
     fromAyah: number,
     toAyah: number
   ): Promise<void> {
     const token = ++this.buildToken;
-    // Reflect the target immediately so the mini-player shows a loading spinner
-    // the instant the surah is tapped, before init/handoff and the network fetch.
     this.store.setCurrentAyah(surah, fromAyah);
     this.store.setPlayerState(QURAN_PLAYER_STATE.LOADING);
 
@@ -112,8 +198,6 @@ class QuranAudioPlayer {
         return;
       }
 
-      // Gapless recitations are one file per surah; ayah recitations expand to
-      // one file per ayah (preferring downloaded files).
       let items: QuranQueueItem[];
       if (recitation.granularity === "surah") {
         items = [{ surah, ayah: 1, url: remoteSurahUrl(manifest.baseUrl, recitation, surah) }];
@@ -146,7 +230,6 @@ class QuranAudioPlayer {
         artwork: undefined,
       }));
 
-      // A newer play() superseded us while resolving; it now owns the player.
       if (token !== this.buildToken) return;
 
       if (this.playlistId) await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
@@ -154,7 +237,6 @@ class QuranAudioPlayer {
       await PlayerQueue.addTracksToPlaylist(pid, tracks);
       await PlayerQueue.loadPlaylist(pid);
 
-      // Superseded during the load; drop the orphan playlist we just created.
       if (token !== this.buildToken) {
         await PlayerQueue.deletePlaylist(pid).catch(() => {});
         return;
@@ -162,30 +244,26 @@ class QuranAudioPlayer {
 
       this.items = items;
       this.playlistId = pid;
+      this.surahPlaylistReciter = null;
+      this.isSurahPlaylist = false;
       this.store.setQueue({ kind, surah, fromAyah, toAyah });
       this.store.setCurrentAyah(surah, fromAyah);
       await this.applyRepeatMode();
       await TrackPlayer.playSong("t0", pid);
       await TrackPlayer.play();
     } catch (error) {
-      log.e("Player", "play failed", error as Error);
-      // Only recover if we're still the active build; a newer one owns state now.
+      log.e("Player", "playAyahRange failed", error as Error);
       if (token === this.buildToken) await this.teardown();
     }
   }
 
   async playAyah(surah: number, ayah: number): Promise<void> {
-    await this.play("ayah", surah, ayah, ayah);
+    await this.playAyahRange("ayah", surah, ayah, ayah);
   }
 
   async playFromHere(surah: number, ayah: number): Promise<void> {
     const last = (await QuranContentDB.getSurah(surah))?.ayahCount ?? ayah;
-    await this.play("from-here", surah, ayah, last);
-  }
-
-  async playSurah(surah: number): Promise<void> {
-    const last = (await QuranContentDB.getSurah(surah))?.ayahCount ?? 1;
-    await this.play("surah", surah, 1, last);
+    await this.playAyahRange("from-here", surah, ayah, last);
   }
 
   async pause(): Promise<void> {
@@ -211,11 +289,22 @@ class QuranAudioPlayer {
     return this.store.playerState !== QURAN_PLAYER_STATE.IDLE;
   }
 
-  private onChangeTrack(track: TrackItem): void {
+  private onChangeTrack(track: TrackItem, reason?: Reason): void {
     if (!this.playlistId) return;
     const item = this.items[this.indexOf(track)];
     if (!item) return;
     this.store.setCurrentAyah(item.surah, item.ayah);
+
+    // STOP mode: a surah that finishes on its own auto-advances to the next track
+    // in the full playlist. End the session there so it stops at the end of a
+    // surah, while a user-initiated skip (lock screen / mini-player) still moves.
+    if (
+      this.isSurahPlaylist &&
+      this.store.listenMode === QURAN_LISTEN_MODE.STOP &&
+      reason === "end"
+    ) {
+      void this.stop();
+    }
   }
 
   private onPlaybackStateChange(state: TrackPlayerState, reason?: Reason): void {
@@ -225,11 +314,10 @@ class QuranAudioPlayer {
     } else if (state === "paused") {
       this.store.setPlayerState(QURAN_PLAYER_STATE.PAUSED);
     } else if (state === "stopped" && !this.userStopping) {
-      // Only a natural queue-end advances or ends the session. An error or
-      // interruption ("error"/"user_action"/…) is surfaced as a pause, never
-      // mistaken for the surah finishing.
+      // The queue reached its end (last surah / last ayah). Other stops are an
+      // error or interruption — surface them as a pause, not an end.
       if (reason === "end") {
-        void this.handleQueueEnd();
+        void this.teardown();
       } else {
         log.w("Player", `unexpected stop (${reason ?? "unknown"})`);
         this.store.setPlayerState(QURAN_PLAYER_STATE.PAUSED);
@@ -237,25 +325,12 @@ class QuranAudioPlayer {
     }
   }
 
-  // The loaded surah finished. Continue to the next surah only in ADVANCE listen
-  // mode; otherwise stop.
-  private async handleQueueEnd(): Promise<void> {
-    const q = this.store.queue;
-    if (
-      q?.kind === "surah" &&
-      this.store.listenMode === QURAN_LISTEN_MODE.ADVANCE &&
-      q.surah < 114
-    ) {
-      await this.playSurah(q.surah + 1);
-      return;
-    }
-    await this.teardown();
-  }
-
   private async teardown(): Promise<void> {
     if (this.playlistId) await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
     this.playlistId = null;
     this.items = [];
+    this.surahPlaylistReciter = null;
+    this.isSurahPlaylist = false;
     this.store.resetPlayback();
     nitroSession.release("quran");
   }
