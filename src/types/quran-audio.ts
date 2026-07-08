@@ -14,7 +14,11 @@ export const QURAN_LISTEN_MODE = {
 } as const;
 export type QuranListenMode = (typeof QURAN_LISTEN_MODE)[keyof typeof QURAN_LISTEN_MODE];
 
-export type QuranGranularity = "ayah" | "surah";
+export const QURAN_GRANULARITY = {
+  AYAH: "ayah", // one file per ayah
+  SURAH: "surah", // one gapless file per surah
+} as const;
+export type QuranGranularity = (typeof QURAN_GRANULARITY)[keyof typeof QURAN_GRANULARITY];
 
 // A reciter's complete audio set in one style — the unit the player plays.
 export type QuranRecitation = {
@@ -46,9 +50,15 @@ export type QuranAudioManifest = {
 
 // A gapless (surah) file can't drive per-ayah highlighting, so only ayah-granular
 // recitations can play in the reader.
-export const isReaderEligible = (r: QuranRecitation): boolean => r.granularity === "ayah";
+export const isReaderEligible = (r: QuranRecitation): boolean =>
+  r.granularity === QURAN_GRANULARITY.AYAH;
 
-export type QuranQueueKind = "ayah" | "from-here" | "surah";
+export const QURAN_QUEUE_KIND = {
+  AYAH: "ayah", // a single ayah
+  FROM_HERE: "from-here", // this ayah to the end of the surah
+  SURAH: "surah", // a whole surah (gapless)
+} as const;
+export type QuranQueueKind = (typeof QURAN_QUEUE_KIND)[keyof typeof QURAN_QUEUE_KIND];
 
 // One ayah's playable entry in a session queue.
 export type QuranQueueItem = {

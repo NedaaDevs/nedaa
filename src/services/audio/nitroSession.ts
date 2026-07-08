@@ -80,6 +80,9 @@ const acquire = async (owner: NitroOwner): Promise<void> => {
   if (currentOwner === owner) return;
   if (currentOwner) {
     log.i("Session", `evicting ${currentOwner} for ${owner}`);
+    // Pause before teardown so the outgoing owner's audio can't keep sounding
+    // during the incoming owner's (possibly slow) build, or orphan if it fails.
+    await TrackPlayer.pause().catch(() => {});
     await handlers[currentOwner]?.onEvict?.();
   }
   currentOwner = owner;

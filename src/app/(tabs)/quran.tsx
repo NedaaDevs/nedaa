@@ -163,12 +163,14 @@ const QuranScreen = () => {
   const goToPlaying = useCallback(() => {
     if (playingSurah == null) return;
     const ayah = playingAyah ?? 1;
-    QuranContentDB.getAyahMetadata(playingSurah, ayah).then((meta) => {
-      if (!meta) return;
-      setJumpReturn(currentPage);
-      setCurrentPage(meta.page);
-      setFlashAyah({ surah: playingSurah, ayah });
-    });
+    QuranContentDB.getAyahMetadata(playingSurah, ayah)
+      .then((meta) => {
+        if (!meta) return;
+        setJumpReturn(currentPage);
+        setCurrentPage(meta.page);
+        setFlashAyah({ surah: playingSurah, ayah });
+      })
+      .catch(() => {});
   }, [playingSurah, playingAyah, currentPage, setJumpReturn, setCurrentPage, setFlashAyah]);
 
   // Ensure the edition's ayah-marker frames are installed (covers editions added

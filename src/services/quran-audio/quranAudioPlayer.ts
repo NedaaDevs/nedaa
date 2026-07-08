@@ -15,6 +15,9 @@ import {
 import {
   QURAN_PLAYER_STATE,
   QURAN_LISTEN_MODE,
+  QURAN_GRANULARITY,
+  QURAN_QUEUE_KIND,
+  isReaderEligible,
   type QuranQueueItem,
   type QuranQueueKind,
   type QuranListenMode,
@@ -78,12 +81,22 @@ class QuranAudioPlayer {
     return Number(track.id.slice(1));
   }
 
-  private async resolveRecitation() {
-    const id = this.store.selectedRecitationId;
-    return (
-      (await quranReciterRegistry.getRecitationById(id)) ??
-      (await quranReciterRegistry.getDefaultRecitation())
-    );
+  // Listen plays gapless (surah) files; fall back to the first surah reciter if
+  // the stored selection isn't surah-granular.
+  private async resolveListenRecitation() {
+    const chosen = await quranReciterRegistry.getRecitationById(this.store.selectedRecitationId);
+    if (chosen && chosen.granularity === QURAN_GRANULARITY.SURAH) return chosen;
+    const reciters = await quranReciterRegistry.listenReciters();
+    return reciters[0]?.recitations[0] ?? null;
+  }
+
+  // The reader plays per-ayah files; fall back to the first ayah reciter if the
+  // stored selection is a gapless (Listen) reciter.
+  private async resolveReaderRecitation() {
+    const chosen = await quranReciterRegistry.getRecitationById(this.store.selectedRecitationId);
+    if (chosen && isReaderEligible(chosen)) return chosen;
+    const readers = await quranReciterRegistry.readerRecitations();
+    return readers[0] ?? null;
   }
 
   // Repeat mode is a live projection of the listen mode. REPEAT_SURAH loops the
@@ -141,7 +154,7 @@ class QuranAudioPlayer {
   // Failures are ignored — playback does its own fetching regardless.
   async warmUp(): Promise<void> {
     try {
-      const recitation = await this.resolveRecitation();
+      const recitation = await this.resolveListenRecitation();
       const manifest = await QuranManifestService.fetchManifest();
       if (!recitation || !manifest) return;
       await fetch(remoteSurahUrl(manifest.baseUrl, recitation, 1), {
@@ -156,11 +169,13 @@ class QuranAudioPlayer {
   // (a native skip to the surah) unless the reciter changed, so switching surahs
   // and the lock-screen next/previous are instant rather than a rebuild.
   async playSurah(surah: number): Promise<void> {
-    // Re-tapping the surah that's already loaded resumes rather than restarting.
+    // Re-tapping the same surah with the same reciter resumes rather than
+    // restarting; a reciter change falls through to a rebuild.
     if (
       surah === this.store.currentSurah &&
       this.playlistId !== null &&
       this.isSurahPlaylist &&
+      this.surahPlaylistReciter === this.store.selectedRecitationId &&
       this.store.playerState !== QURAN_PLAYER_STATE.IDLE
     ) {
       if (this.store.playerState === QURAN_PLAYER_STATE.PAUSED) await this.resume();
@@ -177,7 +192,7 @@ class QuranAudioPlayer {
       await this.initialize();
       await nitroSession.acquire("quran");
 
-      const recitation = await this.resolveRecitation();
+      const recitation = await this.resolveListenRecitation();
       const manifest = await QuranManifestService.fetchManifest();
       if (!recitation || !manifest) {
         log.w("Player", "no recitation or manifest");
@@ -230,7 +245,7 @@ class QuranAudioPlayer {
       }
 
       if (token !== this.buildToken) return;
-      this.store.setQueue({ kind: "surah", surah, fromAyah: 1, toAyah: 1 });
+      this.store.setQueue({ kind: QURAN_QUEUE_KIND.SURAH, surah, fromAyah: 1, toAyah: 1 });
       this.store.setCurrentAyah(surah, 1);
       await this.applyRepeatMode();
       await TrackPlayer.play();
@@ -256,7 +271,7 @@ class QuranAudioPlayer {
       await this.initialize();
       await nitroSession.acquire("quran");
 
-      const recitation = await this.resolveRecitation();
+      const recitation = await this.resolveReaderRecitation();
       const manifest = await QuranManifestService.fetchManifest();
       if (!recitation || !manifest) {
         log.w("Player", "no recitation or manifest");
@@ -265,7 +280,7 @@ class QuranAudioPlayer {
       }
 
       let items: QuranQueueItem[];
-      if (recitation.granularity === "surah") {
+      if (recitation.granularity === QURAN_GRANULARITY.SURAH) {
         items = [{ surah, ayah: 1, url: remoteSurahUrl(manifest.baseUrl, recitation, surah) }];
       } else {
         items = buildAyahRange(surah, fromAyah, toAyah, (s, a) =>
@@ -324,12 +339,12 @@ class QuranAudioPlayer {
   }
 
   async playAyah(surah: number, ayah: number): Promise<void> {
-    await this.playAyahRange("ayah", surah, ayah, ayah);
+    await this.playAyahRange(QURAN_QUEUE_KIND.AYAH, surah, ayah, ayah);
   }
 
   async playFromHere(surah: number, ayah: number): Promise<void> {
     const last = (await QuranContentDB.getSurah(surah))?.ayahCount ?? ayah;
-    await this.playAyahRange("from-here", surah, ayah, last);
+    await this.playAyahRange(QURAN_QUEUE_KIND.FROM_HERE, surah, ayah, last);
   }
 
   async pause(): Promise<void> {

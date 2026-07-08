@@ -3,6 +3,7 @@ import { nitroSession } from "@/services/audio/nitroSession";
 jest.mock("react-native-nitro-player", () => ({
   TrackPlayer: {
     configure: jest.fn().mockResolvedValue(undefined),
+    pause: jest.fn().mockResolvedValue(undefined),
     onChangeTrack: jest.fn(),
     onPlaybackStateChange: jest.fn(),
     onPlaybackProgressChange: jest.fn(),

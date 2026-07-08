@@ -51,7 +51,7 @@ const MODE_ICON: Record<QuranListenMode, LucideIcon> = {
   [QURAN_LISTEN_MODE.ADVANCE]: ArrowRight,
   [QURAN_LISTEN_MODE.REPEAT_SURAH]: Repeat,
 };
-const TIMER_MINUTES = [5, 10, 15, 30, 45, 60];
+const TIMER_MINUTES = [5, 10, 15, 30, 45, 60, 90, 120];
 
 // Seconds → "m:ss" in the app's numerals.
 const formatTime = (sec: number): string => {
