@@ -328,7 +328,14 @@ export const QuranMiniPlayer = () => {
             {isLoading ? (
               <Spinner size="small" color="$typographyContrast" />
             ) : (
-              <Icon as={isPlaying ? Pause : Play} size="lg" color="$typographyContrast" />
+              <Icon
+                as={isPlaying ? Pause : Play}
+                size="lg"
+                color="$typographyContrast"
+                // The play triangle points toward playback direction; mirror it in
+                // RTL to match the flipped transport. Pause is symmetric.
+                style={!isPlaying && isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+              />
             )}
           </Pressable>
           {iconBtn(
