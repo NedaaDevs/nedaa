@@ -106,13 +106,15 @@ export const useReadAlongWord = () => {
 
     const resolve = () => {
       const s = useQuranAudioStore.getState();
+      // Store position/duration are in SECONDS (matching the scrubber); word
+      // timings are in MILLISECONDS — so convert to ms here before comparing.
       let pos =
         s.positionUpdatedAt >= ayahStartedAt
-          ? s.position +
+          ? s.position * 1000 +
             (s.playerState === QURAN_PLAYER_STATE.PLAYING ? Date.now() - s.positionUpdatedAt : 0)
           : 0;
       pos = Math.max(0, pos);
-      if (s.duration > 0) pos = Math.min(pos, s.duration);
+      if (s.duration > 0) pos = Math.min(pos, s.duration * 1000);
 
       // Each fallback reason logs once per ayah (not per tick), so a device run
       // shows exactly why an ayah isn't tracking per-word.
