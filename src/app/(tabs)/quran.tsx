@@ -26,13 +26,14 @@ import { localizedSurahName } from "@/utils/surahName";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
-import { MushafVersion, DownloadStatus, ReaderViewMode, ScrollDirection } from "@/enums/quran";
+import { MushafVersion, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import { PlatformType } from "@/enums/app";
 import { QuranDownload } from "@/services/quran-download";
 import QuranReader from "@/components/quran/QuranReader";
 import QuranDbGate from "@/components/quran/QuranDbGate";
 import PageSlider from "@/components/quran/PageSlider";
 import AutoScrollControl from "@/components/quran/AutoScrollControl";
+import ReaderAudioControl from "@/components/quran/ReaderAudioControl";
 import QuranSettingsSheet from "@/components/quran/QuranSettingsSheet";
 import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
@@ -50,6 +51,7 @@ import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
 import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
+import { useReadAlongWord } from "@/hooks/useReadAlongWord";
 import { GuideCategory, type GuideEntry } from "@/types/guide";
 import { guideEntriesByCategory, guideEntryById } from "@/services/guide-content";
 import type { QuranManifestVersion } from "@/types/quran";
@@ -64,7 +66,6 @@ const QuranScreen = () => {
     darkOfferDismissed,
     readerMode,
     fontSize,
-    scrollDirection,
     jumpReturn,
     setJumpReturn,
     setFlashAyah,
@@ -82,6 +83,8 @@ const QuranScreen = () => {
   const quranPlayerState = useQuranAudioStore((s) => s.playerState);
   const playingSurah = useQuranAudioStore((s) => s.currentSurah);
   const playingAyah = useQuranAudioStore((s) => s.currentAyah);
+  // Drives the per-word read-along highlight (no-op unless read-along is on).
+  useReadAlongWord();
   const quranTheme = useResolvedQuranTheme();
   const prefersDark = usePrefersDarkReader();
   const { state: dbState, retry: retryDb } = useQuranContentDbReady();
@@ -366,24 +369,24 @@ const QuranScreen = () => {
             selectedAyah={actionAyah}
           />
 
-          {/* Auto-scroll control — vertical mode only, suppressed while a sheet has
-          focus. Pinned above the bottom chrome bar (≈120pt) so it never overlaps.
-          `box-none` lets taps through when it's faded out so the reader gets them. */}
-          {scrollDirection === ScrollDirection.VERTICAL &&
-            !actionAyah &&
-            infoSurah == null &&
-            !guideSheet && (
-              <YStack
-                position="absolute"
-                bottom={insets.bottom + 136}
-                left={0}
-                right={0}
-                alignItems="center"
-                zIndex={12}
-                pointerEvents="box-none">
-                <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />
-              </YStack>
-            )}
+          {/* Floating controls above the bottom chrome (≈120pt), suppressed while a
+          sheet has focus. `box-none` lets taps through when faded out. The reader
+          audio control is always available (press play to start from the current
+          page); the vertical auto-scroll control stacks above it while idle. */}
+          {!actionAyah && infoSurah == null && !guideSheet && (
+            <YStack
+              position="absolute"
+              bottom={insets.bottom + 136}
+              left={0}
+              right={0}
+              alignItems="center"
+              gap="$2"
+              zIndex={12}
+              pointerEvents="box-none">
+              <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />
+              <ReaderAudioControl quranTheme={quranTheme} visible={showOverlay} />
+            </YStack>
+          )}
 
           {/* Top banners: an active background download, and/or the one-time dark
           page offer for a colored edition. */}

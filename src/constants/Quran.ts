@@ -24,10 +24,13 @@ export const AUTO_SCROLL_SPEED_PX: Record<AutoScrollSpeed, number> = {
   [AutoScrollSpeed.MEDIUM]: 34,
   [AutoScrollSpeed.FAST]: 60,
 };
-export const AUTO_SCROLL_SPEED_MIN = 8;
-export const AUTO_SCROLL_SPEED_MAX = 100;
+// Reading-pace levels (points/sec), slow → fast. Deliberately gentle — even the
+// slowest lets a careful reader keep up, and the fastest is still a reading pace.
+export const AUTO_SCROLL_SPEED_LEVELS = [4, 6, 9, 13, 18, 25, 34] as const;
+export const AUTO_SCROLL_SPEED_MIN = 4;
+export const AUTO_SCROLL_SPEED_MAX = 40;
 export const AUTO_SCROLL_SPEED_STEP = 4;
-export const DEFAULT_AUTO_SCROLL_SPEED = AUTO_SCROLL_SPEED_PX[AutoScrollSpeed.MEDIUM];
+export const DEFAULT_AUTO_SCROLL_SPEED = 13;
 
 // Clamp any speed (fine step, preset, or migrated value) into the valid range.
 export const clampAutoScrollSpeed = (px: number): number =>

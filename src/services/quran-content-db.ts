@@ -384,6 +384,46 @@ const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBoun
     }));
   });
 
+// An ayah's word glyphs (no ayah-end marker) in global reading order
+// (page → line → position), so the Nth entry is the ayah's Nth word — the index
+// used by the read-along timings. Cached; spans page boundaries.
+const getAyahWordGlyphs = (
+  version: MushafVersion,
+  surah: number,
+  ayah: number
+): Promise<GlyphBound[]> =>
+  cachedRead(`aw:${version}:${surah}:${ayah}`, async () => {
+    const db = await openBoundsDb(version);
+    const rows = await db.getAllAsync<{
+      page: number;
+      line: number;
+      position: number;
+      surah_number: number;
+      ayah_number: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      is_marker: number;
+    }>(
+      "SELECT * FROM glyph_bounds WHERE surah_number = ? AND ayah_number = ? AND is_marker = 0 ORDER BY page, line, position",
+      [surah, ayah]
+    );
+
+    return rows.map((row) => ({
+      page: row.page,
+      line: row.line,
+      position: row.position,
+      surahNumber: row.surah_number,
+      ayahNumber: row.ayah_number,
+      x: row.x,
+      y: row.y,
+      width: row.width,
+      height: row.height,
+      isMarker: row.is_marker === 1,
+    }));
+  });
+
 const getSurahForPage = async (version: MushafVersion, page: number): Promise<string> => {
   const db = await openBoundsDb(version);
   const result = await db.getFirstAsync<{ surah_name: string }>(
@@ -725,6 +765,7 @@ export const QuranContentDB = {
   closeBoundsDb,
   getLineMetadata,
   getGlyphBounds,
+  getAyahWordGlyphs,
   getMarkerBounds,
   getSurahForPage,
   getAyahsForPage,

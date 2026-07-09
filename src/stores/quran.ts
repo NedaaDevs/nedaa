@@ -55,6 +55,9 @@ export const useQuranStore = create<QuranState>()(
       readerActive: false,
       flashAyah: null,
       jumpReturn: null,
+      // Opt-in audio read-along; re-armed each session (not persisted).
+      readAlong: false,
+      readAlongWord: null,
       showMutashabihatMarkers: false,
       mutashabihatNotes: {},
       hasSeenQuranGuide: false,
@@ -62,6 +65,9 @@ export const useQuranStore = create<QuranState>()(
       setReaderActive: (active) => set({ readerActive: active }),
       setFlashAyah: (target) => set({ flashAyah: target }),
       clearFlashAyah: () => set({ flashAyah: null }),
+      setReadAlong: (on) => set({ readAlong: on, readAlongWord: null }),
+      toggleReadAlong: () => set((prev) => ({ readAlong: !prev.readAlong, readAlongWord: null })),
+      setReadAlongWord: (readAlongWord) => set({ readAlongWord }),
       setJumpReturn: (page) => set({ jumpReturn: page }),
       setShowMutashabihatMarkers: (on) => set({ showMutashabihatMarkers: on }),
       setMutashabihatNote: (groupId, text) =>
@@ -82,8 +88,19 @@ export const useQuranStore = create<QuranState>()(
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
       setSpreadPreference: (pref: SpreadPreference) => set({ spreadPreference: pref }),
       setScrollDirection: (dir: ScrollDirection) => set({ scrollDirection: dir }),
-      setAutoScrollPlaying: (playing: boolean) => set({ autoScrollPlaying: playing }),
-      toggleAutoScroll: () => set((prev) => ({ autoScrollPlaying: !prev.autoScrollPlaying })),
+      // Starting auto-scroll forces the vertical reader — page-turn mode can't glide.
+      setAutoScrollPlaying: (playing: boolean) =>
+        set(
+          playing
+            ? { autoScrollPlaying: true, scrollDirection: ScrollDirection.VERTICAL }
+            : { autoScrollPlaying: false }
+        ),
+      toggleAutoScroll: () =>
+        set((prev) =>
+          prev.autoScrollPlaying
+            ? { autoScrollPlaying: false }
+            : { autoScrollPlaying: true, scrollDirection: ScrollDirection.VERTICAL }
+        ),
       setAutoScrollSpeed: (px: number) => set({ autoScrollSpeed: clampAutoScrollSpeed(px) }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setShareStyle: (style) => set({ shareStyle: style }),

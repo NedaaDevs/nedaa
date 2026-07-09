@@ -19,6 +19,8 @@ import { useAyahHitTest } from "@/hooks/useAyahHitTest";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
+import { useQuranAudioStore } from "@/stores/quranAudio";
+import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
@@ -35,6 +37,10 @@ const SURAH_FRAME_ASPECT = 2793 / 720;
 const LONG_PRESS_MS = 400;
 // Must exceed the page-swipe pan's minDistance(15) to avoid a no-op jitter band.
 const LONG_PRESS_MAX_DIST = 20;
+
+// Stable empty rect list, so the common "nothing to tint" case keeps a constant
+// identity instead of allocating a fresh [] each render.
+const NO_RECTS: { left: number; top: number; width: number; height: number }[] = [];
 
 interface QuranPageProps {
   page: number;
@@ -239,6 +245,73 @@ const QuranPage = ({
     return rectsForAyah(flashAyah.surah, flashAyah.ayah);
   }, [flashAyah, pageHighlights, rectsForAyah]);
 
+  // Audio read-along highlight. To avoid every mounted page re-rendering on each
+  // recited-word change, this page subscribes narrowly: `hasWord` (word-mode on/off,
+  // changes per ayah) and `pageWord` (the recited word *only if it's on this page*,
+  // else null). A page that doesn't own the current word therefore doesn't re-render
+  // as the word advances on another page — only the owning page (and the one the word
+  // leaves) re-render per word.
+  const readAlong = useQuranStore((s) => s.readAlong);
+  const hasWord = useQuranStore((s) => s.readAlongWord != null);
+  const pageWord = useQuranStore((s) => {
+    const w = s.readAlongWord;
+    return w && w.page === page ? w : null;
+  });
+  const playingSurah = useQuranAudioStore((s) => s.currentSurah);
+  const playingAyah = useQuranAudioStore((s) => s.currentAyah);
+  const playerActive = useQuranAudioStore((s) => s.playerState !== QURAN_PLAYER_STATE.IDLE);
+  const playingRects = useMemo(() => {
+    if (!readAlong || !playerActive || playingSurah == null || playingAyah == null) return NO_RECTS;
+    if (lineHeight === 0) return NO_RECTS;
+    if (pageHighlights.has(`${playingSurah}:${playingAyah}`)) return NO_RECTS;
+
+    // Word mode: a per-word timing is active for the recited ayah — tint just that
+    // word, and only on the page it lives on.
+    if (hasWord) {
+      const w = pageWord;
+      if (!w || w.surah !== playingSurah || w.ayah !== playingAyah) return NO_RECTS;
+      if (isPageMode) {
+        return [
+          {
+            left: w.x * pageScaleX,
+            top:
+              (w.line - 1) * srcLineHeight * pageScaleX * pageScaleY +
+              w.y * pageScaleX * pageScaleY,
+            width: w.width * pageScaleX,
+            height: w.height * pageScaleX * pageScaleY,
+          },
+        ];
+      }
+      return [
+        {
+          left: w.x * coverScale,
+          top: (w.line - 1) * lineHeight + w.y * coverScale - lineCoverClipY,
+          width: w.width * coverScale,
+          height: w.height * coverScale,
+        },
+      ];
+    }
+
+    // Fallback: no word timings for this ayah — tint the whole ayah.
+    return rectsForAyah(playingSurah, playingAyah);
+  }, [
+    readAlong,
+    hasWord,
+    pageWord,
+    playerActive,
+    playingSurah,
+    playingAyah,
+    lineHeight,
+    isPageMode,
+    coverScale,
+    lineCoverClipY,
+    pageScaleX,
+    pageScaleY,
+    srcLineHeight,
+    pageHighlights,
+    rectsForAyah,
+  ]);
+
   // Persistent per-highlight colour tints.
   const highlightTintRects = useMemo(() => {
     const out: { left: number; top: number; width: number; height: number; tint: string }[] = [];
@@ -442,6 +515,22 @@ const QuranPage = ({
             {flashRects.map((rect, i) => (
               <View
                 key={`flash-${i}`}
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: rect.left,
+                  top: rect.top,
+                  width: rect.width,
+                  height: rect.height,
+                  backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
+                  borderRadius: 2,
+                }}
+              />
+            ))}
+
+            {playingRects.map((rect, i) => (
+              <View
+                key={`play-${i}`}
                 pointerEvents="none"
                 style={{
                   position: "absolute",

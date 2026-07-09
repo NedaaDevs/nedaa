@@ -35,6 +35,16 @@ const listenReciters = async (): Promise<QuranReciter[]> =>
     }))
     .filter((r) => r.recitations.length > 0);
 
+// Reciters for the reader: ayah-granular recitations only (the only ones that can
+// drive per-ayah/word read-along). Reciters with no ayah recitation drop out.
+const readerReciters = async (): Promise<QuranReciter[]> =>
+  (await fetchReciters())
+    .map((r) => ({
+      ...r,
+      recitations: r.recitations.filter((rec) => rec.granularity === QURAN_GRANULARITY.AYAH),
+    }))
+    .filter((r) => r.recitations.length > 0);
+
 const reciterOf = async (recitationId: string): Promise<QuranReciter | null> =>
   (await fetchReciters()).find((r) => r.recitations.some((x) => x.id === recitationId)) ?? null;
 
@@ -48,6 +58,7 @@ export const quranReciterRegistry = {
   getDefaultRecitation,
   readerRecitations,
   listenReciters,
+  readerReciters,
   reciterOf,
   localizedName,
 };

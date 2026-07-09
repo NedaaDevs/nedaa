@@ -11,6 +11,8 @@ type PreferencesState = {
   hapticsEnabled: boolean;
   // Home shows the Important Days pager card. The Tools screen is always available.
   showImportantDaysOnHome: boolean;
+  // Accessibility: render bigger buttons/text where controls support it (default off).
+  largeControls: boolean;
 
   setUseWesternNumerals: (value: boolean) => void;
   setCountdownEnabled: (value: boolean) => void;
@@ -19,6 +21,7 @@ type PreferencesState = {
   setIqamaCountUpMinutes: (value: number) => void;
   setHapticsEnabled: (value: boolean) => void;
   setShowImportantDaysOnHome: (value: boolean) => void;
+  setLargeControls: (value: boolean) => void;
 };
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -31,6 +34,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       iqamaCountUpMinutes: 30,
       hapticsEnabled: true,
       showImportantDaysOnHome: false,
+      largeControls: false,
 
       setUseWesternNumerals: (value) => set({ useWesternNumerals: value }),
       setCountdownEnabled: (value) => set({ countdownEnabled: value }),
@@ -39,6 +43,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setIqamaCountUpMinutes: (value) => set({ iqamaCountUpMinutes: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
+      setLargeControls: (value) => set({ largeControls: value }),
     }),
     {
       name: "display-storage",

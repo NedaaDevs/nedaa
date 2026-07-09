@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 
 // Stores
 import { useAppStore } from "@/stores/app";
+import { useQuranStore } from "@/stores/quran";
 
 // Services
 import { QuranContentDB } from "@/services/quran-content-db";
@@ -28,6 +29,9 @@ const TabsLayout = () => {
   const { locale, mode } = useAppStore();
   // TODO(quran-gate): remove at 2.10.0
   const quranUnlocked = useAppStore((s) => s.quranUnlocked);
+  // The immersive reader owns the whole screen — the global Listen mini-player
+  // would overlay the page and disrupt reading, so suppress it there.
+  const readerActive = useQuranStore((s) => s.readerActive);
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -44,7 +48,7 @@ const TabsLayout = () => {
       key={`tabs-${mode}`}
       tabBar={(props: BottomTabBarProps) => (
         <Box backgroundColor="$backgroundSecondary">
-          <QuranMiniPlayer />
+          {!readerActive && <QuranMiniPlayer />}
           <MiniPlayerBar />
           <BottomTabBar {...props} />
         </Box>

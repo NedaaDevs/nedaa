@@ -1,7 +1,7 @@
 import { Pressable, Text as RNText } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
-import { MousePointerClick, Hand } from "lucide-react-native";
+import { MousePointerClick, Hand, AudioLines } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import {
@@ -16,7 +16,7 @@ import RibbonGlyph from "@/components/quran/RibbonGlyph";
 
 // The reader's gestures aren't discoverable on their own, so this walkthrough
 // names them once and shows what each looks like on the page.
-const TIP_IDS = ["tap", "longPress", "similar", "highlight", "bookmark"] as const;
+const TIP_IDS = ["tap", "longPress", "listen", "similar", "highlight", "bookmark"] as const;
 
 // First-open reader walkthrough (also reopenable from the reader's help icon).
 const QuranIntroSheet = ({
@@ -69,7 +69,7 @@ const QuranIntroSheet = ({
     if (id === "bookmark") {
       return <RibbonGlyph size={26} color={BOOKMARK_COLORS[BookmarkColor.GARNET].solid} />;
     }
-    const Icon = id === "tap" ? MousePointerClick : Hand;
+    const Icon = id === "tap" ? MousePointerClick : id === "listen" ? AudioLines : Hand;
     return (
       <YStack
         width={38}

@@ -78,6 +78,8 @@ const PreferencesSettings = () => {
     setIqamaCountUpMinutes,
     hapticsEnabled,
     setHapticsEnabled,
+    largeControls,
+    setLargeControls,
     showImportantDaysOnHome,
     setShowImportantDaysOnHome,
   } = usePreferencesStore();
@@ -199,6 +201,30 @@ const PreferencesSettings = () => {
                 value={hapticsEnabled}
                 onValueChange={setHapticsEnabled}
                 accessibilityLabel={t("settings.preferences.haptics.title")}
+              />
+            </HStack>
+          </Box>
+
+          {/* Larger controls (accessibility) */}
+          <Box
+            backgroundColor="$backgroundSecondary"
+            borderRadius="$6"
+            padding="$4"
+            flexDirection="row"
+            alignItems="center">
+            <HStack justifyContent="space-between" alignItems="center" width="100%">
+              <VStack flexShrink={1} marginEnd="$4">
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.preferences.largeControls.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
+                  {t("settings.preferences.largeControls.description")}
+                </Text>
+              </VStack>
+              <Switch
+                value={largeControls}
+                onValueChange={setLargeControls}
+                accessibilityLabel={t("settings.preferences.largeControls.title")}
               />
             </HStack>
           </Box>

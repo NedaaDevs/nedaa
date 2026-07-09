@@ -24,10 +24,14 @@ import { runOnUI, scheduleOnRN } from "react-native-worklets";
 type Params = {
   playing: boolean;
   pxPerSec: number;
+  // The list offset of the current page — used to seed the glide when the list
+  // was just mounted (e.g. a layout switch) and its live offset is still 0, so the
+  // glide starts from the page you're on rather than dragging back to the top.
+  initialOffset: number;
   onReachEnd: () => void;
 };
 
-export const useAutoScroll = <ItemT>({ playing, pxPerSec, onReachEnd }: Params) => {
+export const useAutoScroll = <ItemT>({ playing, pxPerSec, initialOffset, onReachEnd }: Params) => {
   const animatedRef = useAnimatedRef<Animated.FlatList<ItemT>>();
   const target = useSharedValue(0);
   const liveOffset = useSharedValue(0);
@@ -91,11 +95,14 @@ export const useAutoScroll = <ItemT>({ playing, pxPerSec, onReachEnd }: Params) 
   useEffect(() => {
     if (playing) {
       runOnUI(() => {
-        target.value = liveOffset.value;
+        // A just-mounted list reports liveOffset 0 before its first scroll event;
+        // fall back to the current page's offset so the glide doesn't start at the top.
+        target.value =
+          liveOffset.value === 0 && initialOffset > 0 ? initialOffset : liveOffset.value;
       })();
     }
     frame.setActive(playing);
-  }, [playing, frame, target, liveOffset]);
+  }, [playing, frame, target, liveOffset, initialOffset]);
 
   return { animatedRef, scrollHandler };
 };

@@ -227,6 +227,23 @@ export type QuranState = {
   flashAyah: { surah: number; ayah: number } | null;
   // Transient — the page to return to after a mutashabihat "go to" jump.
   jumpReturn: number | null;
+  // Transient — audio read-along mode: tint the recited ayah (and, in vertical
+  // mode, follow it). Opt-in and re-armed each session so it never disturbs plain
+  // reading. Not persisted.
+  readAlong: boolean;
+  // Transient — the recited word to highlight (source-image coords + its page),
+  // resolved centrally from per-word timings. Null → no word (fall back to tinting
+  // the whole ayah). Not persisted.
+  readAlongWord: {
+    surah: number;
+    ayah: number;
+    page: number;
+    line: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
   // Persisted — show the at-a-glance similar-verse markers in the reader ("huffaz mode").
   showMutashabihatMarkers: boolean;
   // Persisted — personal memory note per mutashabihat group, keyed by group id.
@@ -254,6 +271,9 @@ export type QuranState = {
   setReaderActive: (active: boolean) => void;
   setFlashAyah: (target: { surah: number; ayah: number }) => void;
   clearFlashAyah: () => void;
+  setReadAlong: (on: boolean) => void;
+  toggleReadAlong: () => void;
+  setReadAlongWord: (word: QuranState["readAlongWord"]) => void;
   setJumpReturn: (page: number | null) => void;
   setShowMutashabihatMarkers: (on: boolean) => void;
   setMutashabihatNote: (groupId: string, text: string) => void;

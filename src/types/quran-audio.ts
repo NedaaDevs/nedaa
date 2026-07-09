@@ -34,8 +34,16 @@ export type QuranRecitation = {
   // entries). Surah-granular only; when absent the size is estimated by page span.
   surahBytes?: number[];
   published: boolean;
-  timings?: { url: string; version: string; bytes: number }; // surah-granular only
+  // Per-word timing artifact (QUL segments) for read-along word highlighting.
+  // Ayah-granular only; absent → read-along degrades to ayah-level highlight.
+  timings?: { url: string; version: string; bytes: number };
 };
+
+// One recited word: [wordIndex (1-based, reading order), startMs, endMs] with
+// times relative to that ayah's audio file. Maps to the ayah's Nth word-glyph.
+export type WordSegment = [number, number, number];
+// Per-ayah word segments, keyed "surah:ayah".
+export type AyahSegmentMap = Record<string, WordSegment[]>;
 
 // A reciter (person) groups one or more recitations — the display/grouping unit.
 export type QuranReciter = {

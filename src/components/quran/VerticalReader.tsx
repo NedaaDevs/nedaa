@@ -58,6 +58,8 @@ const VerticalReader = ({
   const { animatedRef, scrollHandler } = useAutoScroll<number>({
     playing,
     pxPerSec,
+    // Matches getItemLayout's offset for the current page (index = page − 1).
+    initialOffset: itemHeight * Math.max(0, currentPage - 1),
     onReachEnd: pause,
   });
 
