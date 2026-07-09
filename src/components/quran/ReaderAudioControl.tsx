@@ -19,7 +19,7 @@ import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
+import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
@@ -57,6 +57,7 @@ const ReaderAudioControl = ({
   const currentPage = useQuranStore((s) => s.currentPage);
   const version = useQuranStore((s) => s.currentVersion);
   const playerState = useQuranAudioStore((s) => s.playerState);
+  const queueKind = useQuranAudioStore((s) => s.queue?.kind);
   const readerRecitationId = useQuranAudioStore((s) => s.readerRecitationId);
 
   const [reciterName, setReciterName] = useState<string | null>(null);
@@ -131,16 +132,19 @@ const ReaderAudioControl = ({
     setDl(has ? "done" : "idle");
   };
 
-  const loading = playerState === QURAN_PLAYER_STATE.LOADING;
-  const playing = playerState === QURAN_PLAYER_STATE.PLAYING;
-  const active = playerState !== QURAN_PLAYER_STATE.IDLE;
+  // Only reflect the reader's own (ayah) playback — a Listen (surah) session sharing
+  // the player must not surface in the reader control.
+  const isReaderPlayback = queueKind != null && queueKind !== QURAN_QUEUE_KIND.SURAH;
+  const loading = isReaderPlayback && playerState === QURAN_PLAYER_STATE.LOADING;
+  const playing = isReaderPlayback && playerState === QURAN_PLAYER_STATE.PLAYING;
+  const active = isReaderPlayback && playerState !== QURAN_PLAYER_STATE.IDLE;
 
   const onPlayPause = async () => {
     if (playing) {
       void quranAudioPlayer.pause();
       return;
     }
-    if (playerState === QURAN_PLAYER_STATE.PAUSED) {
+    if (isReaderPlayback && playerState === QURAN_PLAYER_STATE.PAUSED) {
       void quranAudioPlayer.resume();
       return;
     }

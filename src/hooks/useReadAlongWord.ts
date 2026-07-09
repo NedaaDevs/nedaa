@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_GRANULARITY, QURAN_PLAYER_STATE } from "@/types/quran-audio";
+import { QURAN_GRANULARITY, QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
 import type { QuranRecitation } from "@/types/quran-audio";
 import type { GlyphBound } from "@/types/quran";
 import { ReadAlongGranularity } from "@/enums/quran";
@@ -36,6 +36,7 @@ export const useReadAlongWord = () => {
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
   const currentAyah = useQuranAudioStore((s) => s.currentAyah);
   const playerState = useQuranAudioStore((s) => s.playerState);
+  const queueKind = useQuranAudioStore((s) => s.queue?.kind);
 
   // Word-level highlighting runs only when read-along is on AND the user chose
   // word granularity; in verse mode this hook stays idle and the reader shows the
@@ -100,7 +101,13 @@ export const useReadAlongWord = () => {
   // `positionUpdatedAt` catches up — otherwise the highlight would jump to the
   // last word of the new ayah at every boundary.
   useEffect(() => {
-    if (!wordMode || !recitation || currentSurah == null || currentAyah == null) {
+    if (
+      !wordMode ||
+      !recitation ||
+      currentSurah == null ||
+      currentAyah == null ||
+      queueKind === QURAN_QUEUE_KIND.SURAH // a Listen (gapless) session — not the reader's
+    ) {
       setReadAlongWord(null);
       lastWordRef.current = -1;
       return;
@@ -220,6 +227,7 @@ export const useReadAlongWord = () => {
     currentSurah,
     currentAyah,
     playerState,
+    queueKind,
     setReadAlongWord,
     setReadAlongVerse,
   ]);

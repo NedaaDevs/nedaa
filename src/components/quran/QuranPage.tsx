@@ -26,7 +26,7 @@ import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
+import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
 import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import LineImage from "@/components/quran/LineImage";
 import PageImage from "@/components/quran/PageImage";
@@ -268,8 +268,19 @@ const QuranPage = ({
   const playingSurah = useQuranAudioStore((s) => s.currentSurah);
   const playingAyah = useQuranAudioStore((s) => s.currentAyah);
   const playerActive = useQuranAudioStore((s) => s.playerState !== QURAN_PLAYER_STATE.IDLE);
+  // Reader highlight follows only reader (ayah) playback, not a Listen (surah) session.
+  const playingReaderAudio = useQuranAudioStore(
+    (s) => s.queue?.kind != null && s.queue.kind !== QURAN_QUEUE_KIND.SURAH
+  );
   const playingRects = useMemo(() => {
-    if (!readAlong || !playerActive || playingSurah == null || playingAyah == null) return NO_RECTS;
+    if (
+      !readAlong ||
+      !playerActive ||
+      !playingReaderAudio ||
+      playingSurah == null ||
+      playingAyah == null
+    )
+      return NO_RECTS;
     if (lineHeight === 0) return NO_RECTS;
     if (pageHighlights.has(`${playingSurah}:${playingAyah}`)) return NO_RECTS;
 
@@ -311,6 +322,7 @@ const QuranPage = ({
     readAlong,
     highlightGranularity,
     readAlongVerse,
+    playingReaderAudio,
     hasWord,
     pageWord,
     playerActive,
