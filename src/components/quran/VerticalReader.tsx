@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { View, ViewToken } from "react-native";
-import Animated from "react-native-reanimated";
+import { useWindowDimensions, View, ViewToken } from "react-native";
+import Animated, { runOnUI, scrollTo } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MushafVersion, QuranThemeType } from "@/enums/quran";
-import { TOTAL_PAGES } from "@/constants/Quran";
+import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
 import { fitWidthBox } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
+import { useAudioFollowTarget } from "@/hooks/useAudioFollowTarget";
 import QuranPage from "@/components/quran/QuranPage";
 
 // Every mushaf page number, hoisted so the list data isn't reallocated per render.
@@ -46,8 +47,10 @@ const VerticalReader = ({
   selectedAyah,
 }: VerticalReaderProps) => {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const box = fitWidthBox(width);
   const itemHeight = box.h + PAGE_GAP;
+  const lineHeightInPage = box.h / LINES_PER_PAGE;
 
   // Auto-scroll glide: driven on the UI thread. A manual drag only pauses it while
   // touched (auto-resumes); reaching the end stops it in the store.
@@ -62,6 +65,24 @@ const VerticalReader = ({
     initialOffset: itemHeight * Math.max(0, currentPage - 1),
     onReachEnd: pause,
   });
+
+  // Read-along follow: on each recited-ayah change, glide so that ayah's first line
+  // sits ~a third down the viewport. Only fires on ayah change (not per word).
+  const followTarget = useAudioFollowTarget();
+  useEffect(() => {
+    if (!followTarget) return;
+    const y = Math.max(
+      0,
+      insets.top +
+        itemHeight * (followTarget.page - 1) +
+        (followTarget.line - 1) * lineHeightInPage -
+        height * 0.3
+    );
+    runOnUI(() => {
+      "worklet";
+      scrollTo(animatedRef, 0, y, true);
+    })();
+  }, [followTarget, insets.top, itemHeight, lineHeightInPage, height, animatedRef]);
 
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
