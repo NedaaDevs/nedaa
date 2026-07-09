@@ -1,5 +1,5 @@
 import { QuranManifestService } from "@/services/quran-manifest";
-import { isReaderEligible, QURAN_GRANULARITY } from "@/types/quran-audio";
+import { QURAN_GRANULARITY } from "@/types/quran-audio";
 import type { QuranReciter, QuranRecitation } from "@/types/quran-audio";
 
 // Locales rendered in Arabic script (matches localizedSurahName).
@@ -24,9 +24,23 @@ const getDefaultRecitation = async (): Promise<QuranRecitation | null> => {
 // can test before publishing (mirrors the manifest edition gate).
 const isVisible = (r: QuranRecitation): boolean => __DEV__ || r.published;
 
-// Recitations the reader can use: ayah-granular + visible.
+// A reciter can carry more than one ayah recitation of the same style (e.g. a
+// re-upload); collapse each (style, riwayah) to one entry, preferring the one with
+// word timings so the reader gets word-level whenever it exists.
+const dedupeByStyle = (recs: QuranRecitation[]): QuranRecitation[] => {
+  const best = new Map<string, QuranRecitation>();
+  for (const rec of recs) {
+    const key = `${rec.style}:${rec.riwayah}`;
+    const existing = best.get(key);
+    if (!existing || (!existing.timings && rec.timings)) best.set(key, rec);
+  }
+  return [...best.values()];
+};
+
+// Recitations the reader can use: derived from the reader reciters so both surfaces
+// agree (ayah-granular, visible, de-duplicated).
 const readerRecitations = async (): Promise<QuranRecitation[]> =>
-  (await allRecitations()).filter((r) => isReaderEligible(r) && isVisible(r));
+  (await readerReciters()).flatMap((r) => r.recitations);
 
 // Reciters for the Listen surface: gapless (surah) recitations only — per-ayah
 // recitations are the reader's. Reciters left with no gapless recitation drop out.
@@ -46,8 +60,8 @@ const readerReciters = async (): Promise<QuranReciter[]> =>
   (await fetchReciters())
     .map((r) => ({
       ...r,
-      recitations: r.recitations.filter(
-        (rec) => rec.granularity === QURAN_GRANULARITY.AYAH && isVisible(rec)
+      recitations: dedupeByStyle(
+        r.recitations.filter((rec) => rec.granularity === QURAN_GRANULARITY.AYAH && isVisible(rec))
       ),
     }))
     .filter((r) => r.recitations.length > 0);

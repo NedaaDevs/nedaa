@@ -68,6 +68,18 @@ describe("quranReciterRegistry", () => {
     expect(ids).toEqual(["a-x", "b-draft"]); // both ayah; a-gapless is surah
   });
 
+  it("dedupes same-style ayah recitations, keeping the one with word timings", async () => {
+    const withTimings: QuranRecitation = {
+      ...rec("sudais-recitation"),
+      timings: { url: "t.json", version: "1.0.0", bytes: 1 },
+    };
+    setManifest("minshawi-murattal", [
+      reciter("sudais", [rec("sudais-951"), withTimings]), // both Murattal/hafs → collapse
+    ]);
+    const ids = (await quranReciterRegistry.readerRecitations()).map((r) => r.id);
+    expect(ids).toEqual(["sudais-recitation"]); // the timings-bearing one wins
+  });
+
   it("listenReciters keeps only gapless recitations, drops ayah-only reciters", async () => {
     setManifest("a-x", [
       reciter("a", [rec("a-x"), rec("a-gapless", "surah")]),
