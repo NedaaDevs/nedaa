@@ -41,7 +41,7 @@ const QuranListenSurahsScreen = () => {
   const { t, i18n } = useTranslation();
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
   const playerState = useQuranAudioStore((s) => s.playerState);
-  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
+  const listenRecitationId = useQuranAudioStore((s) => s.listenRecitationId);
   const [metaBySurah, setMetaBySurah] = useState<Record<number, SurahMeta>>({});
   const [reciterName, setReciterName] = useState<string | null>(null);
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
@@ -60,17 +60,17 @@ const QuranListenSurahsScreen = () => {
   // This reciter's in-flight surahs + per-surah progress, sliced from the
   // composite-keyed store state.
   const downloadingSet = useMemo(
-    () => new Set(surahsForReciter(downloading, selectedRecitationId)),
-    [downloading, selectedRecitationId]
+    () => new Set(surahsForReciter(downloading, listenRecitationId)),
+    [downloading, listenRecitationId]
   );
   const progressBySurah = useMemo(
-    () => progressForReciter(progress, selectedRecitationId),
-    [progress, selectedRecitationId]
+    () => progressForReciter(progress, listenRecitationId),
+    [progress, listenRecitationId]
   );
 
   // Surahs with a saved resume point but no longer in flight = paused.
   const pausedSet = useMemo(() => {
-    const prefix = `${selectedRecitationId}:`;
+    const prefix = `${listenRecitationId}:`;
     const out = new Set<number>();
     for (const k of Object.keys(resumeStates)) {
       if (k.startsWith(prefix)) {
@@ -79,7 +79,7 @@ const QuranListenSurahsScreen = () => {
       }
     }
     return out;
-  }, [resumeStates, selectedRecitationId, downloadingSet]);
+  }, [resumeStates, listenRecitationId, downloadingSet]);
 
   useEffect(() => {
     // Warm the CDN connection and load per-surah metadata in a single query.
@@ -93,10 +93,10 @@ const QuranListenSurahsScreen = () => {
 
   useEffect(() => {
     let alive = true;
-    quranReciterRegistry.reciterOf(selectedRecitationId).then((r) => {
+    quranReciterRegistry.reciterOf(listenRecitationId).then((r) => {
       if (alive && r) setReciterName(quranReciterRegistry.localizedName(r, i18n.language));
     });
-    quranReciterRegistry.getRecitationById(selectedRecitationId).then((rec) => {
+    quranReciterRegistry.getRecitationById(listenRecitationId).then((rec) => {
       if (!alive || !rec) return;
       setRecitation(rec);
       refresh(rec);
@@ -104,7 +104,7 @@ const QuranListenSurahsScreen = () => {
     return () => {
       alive = false;
     };
-  }, [selectedRecitationId, i18n.language, refresh]);
+  }, [listenRecitationId, i18n.language, refresh]);
 
   const onPress = useCallback((surah: number) => {
     quranAudioPlayer.playSurah(surah);

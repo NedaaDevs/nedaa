@@ -77,7 +77,7 @@ export const QuranMiniPlayer = () => {
   const { isRTL } = useRTL();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
-  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
+  const listenRecitationId = useQuranAudioStore((s) => s.listenRecitationId);
   const listenMode = useQuranAudioStore((s) => s.listenMode);
   const sleepTimerEndsAt = useQuranAudioStore((s) => s.sleepTimerEndsAt);
   const sleepTimerMinutes = useQuranAudioStore((s) => s.sleepTimerMinutes);
@@ -92,13 +92,13 @@ export const QuranMiniPlayer = () => {
   const [reciterName, setReciterName] = useState("");
   useEffect(() => {
     let alive = true;
-    quranReciterRegistry.reciterOf(selectedRecitationId).then((r) => {
+    quranReciterRegistry.reciterOf(listenRecitationId).then((r) => {
       if (alive) setReciterName(r ? quranReciterRegistry.localizedName(r, i18n.language) : "");
     });
     return () => {
       alive = false;
     };
-  }, [selectedRecitationId, i18n.language]);
+  }, [listenRecitationId, i18n.language]);
 
   // Live remaining minutes for a duration sleep timer (ticks once a second).
   const [remaining, setRemaining] = useState<number | null>(null);

@@ -31,7 +31,7 @@ export const useReadAlongWord = () => {
   const version = useQuranStore((s) => s.currentVersion);
   const setReadAlongWord = useQuranStore((s) => s.setReadAlongWord);
 
-  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
+  const readerRecitationId = useQuranAudioStore((s) => s.readerRecitationId);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
   const currentAyah = useQuranAudioStore((s) => s.currentAyah);
   const playerState = useQuranAudioStore((s) => s.playerState);
@@ -53,12 +53,12 @@ export const useReadAlongWord = () => {
   useEffect(() => {
     if (!wordMode) return;
     let alive = true;
-    quranReciterRegistry.getRecitationById(selectedRecitationId).then((rec) => {
+    quranReciterRegistry.getRecitationById(readerRecitationId).then((rec) => {
       if (!alive) return;
       const eligible = rec && rec.granularity === QURAN_GRANULARITY.AYAH ? rec : null;
       log.i(
         "Recitation",
-        `reader=${selectedRecitationId} gran=${rec?.granularity ?? "missing"} eligible=${!!eligible} timings=${!!eligible?.timings}`
+        `reader=${readerRecitationId} gran=${rec?.granularity ?? "missing"} eligible=${!!eligible} timings=${!!eligible?.timings}`
       );
       setRecitation(eligible);
       if (eligible) void quranAudioTimings.load(eligible);
@@ -66,7 +66,7 @@ export const useReadAlongWord = () => {
     return () => {
       alive = false;
     };
-  }, [wordMode, selectedRecitationId]);
+  }, [wordMode, readerRecitationId]);
 
   // Load the current ayah's word glyphs in global reading order on ayah change.
   useEffect(() => {

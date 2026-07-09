@@ -27,7 +27,7 @@ const QuranAudioDebugScreen = () => {
     currentSurah,
     currentAyah,
     listenMode,
-    selectedRecitationId,
+    readerRecitationId,
     following,
     setListenMode,
   } = useQuranAudioStore();
@@ -107,7 +107,7 @@ const QuranAudioDebugScreen = () => {
               <HStack justifyContent="space-between">
                 <Text color="$typographySecondary">recitation</Text>
                 <Badge action="info">
-                  <Badge.Text>{selectedRecitationId}</Badge.Text>
+                  <Badge.Text>{readerRecitationId}</Badge.Text>
                 </Badge>
               </HStack>
               <HStack justifyContent="space-between">

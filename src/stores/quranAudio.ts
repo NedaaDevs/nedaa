@@ -11,7 +11,10 @@ import {
 } from "@/types/quran-audio";
 
 type QuranAudioState = {
-  selectedRecitationId: string; // holds a recitation id, e.g. "minshawi-murattal"
+  // Reader (ayah) and Listen (gapless) keep separate selections so a Listen pick
+  // can't bind a gapless recitation to the reader — which needs per-ayah/word.
+  readerRecitationId: string;
+  listenRecitationId: string;
   listenMode: QuranListenMode;
   playerState: QuranPlayerState;
   currentSurah: number | null;
@@ -29,7 +32,8 @@ type QuranAudioState = {
   sleepTimerMinutes: number | null;
   sleepTimerSurahEnd: boolean;
 
-  setSelectedRecitation: (id: string) => void;
+  setReaderRecitation: (id: string) => void;
+  setListenRecitation: (id: string) => void;
   setListenMode: (mode: QuranListenMode) => void;
   setPlayerState: (state: QuranPlayerState) => void;
   setCurrentAyah: (surah: number, ayah: number) => void;
@@ -45,7 +49,8 @@ type QuranAudioState = {
 export const useQuranAudioStore = create<QuranAudioState>()(
   persist(
     (set) => ({
-      selectedRecitationId: "minshawi-murattal",
+      readerRecitationId: "minshawi-murattal",
+      listenRecitationId: "minshawi-murattal",
       listenMode: QURAN_LISTEN_MODE.STOP,
       playerState: QURAN_PLAYER_STATE.IDLE,
       currentSurah: null,
@@ -59,7 +64,8 @@ export const useQuranAudioStore = create<QuranAudioState>()(
       sleepTimerMinutes: null,
       sleepTimerSurahEnd: false,
 
-      setSelectedRecitation: (selectedRecitationId) => set({ selectedRecitationId }),
+      setReaderRecitation: (readerRecitationId) => set({ readerRecitationId }),
+      setListenRecitation: (listenRecitationId) => set({ listenRecitationId }),
       setListenMode: (listenMode) => set({ listenMode }),
       setPlayerState: (playerState) => set({ playerState }),
       setCurrentAyah: (currentSurah, currentAyah) => set({ currentSurah, currentAyah }),
@@ -91,7 +97,8 @@ export const useQuranAudioStore = create<QuranAudioState>()(
       storage: createJSONStorage(() => Storage),
       // Only preferences persist; transient playback state never does.
       partialize: (state) => ({
-        selectedRecitationId: state.selectedRecitationId,
+        readerRecitationId: state.readerRecitationId,
+        listenRecitationId: state.listenRecitationId,
         listenMode: state.listenMode,
       }),
     }

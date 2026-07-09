@@ -32,8 +32,8 @@ const QuranListenScreen = () => {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { isRTL } = useRTL();
-  const setSelectedRecitation = useQuranAudioStore((s) => s.setSelectedRecitation);
-  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
+  const setListenRecitation = useQuranAudioStore((s) => s.setListenRecitation);
+  const listenRecitationId = useQuranAudioStore((s) => s.listenRecitationId);
   const [status, setStatus] = useState<LoadStatus>(LOAD_STATUS.LOADING);
   const [reciters, setReciters] = useState<QuranReciter[]>([]);
   const [query, setQuery] = useState("");
@@ -69,7 +69,7 @@ const QuranListenScreen = () => {
   };
 
   const openRecitation = (recitationId: string) => {
-    setSelectedRecitation(recitationId);
+    setListenRecitation(recitationId);
     router.push("/quran-listen/surahs");
   };
 
@@ -129,7 +129,7 @@ const QuranListenScreen = () => {
           {filtered.map((r) => {
             const name = quranReciterRegistry.localizedName(r, i18n.language);
             return r.recitations.map((rec) => {
-              const selected = rec.id === selectedRecitationId;
+              const selected = rec.id === listenRecitationId;
               return (
                 <Pressable
                   key={rec.id}

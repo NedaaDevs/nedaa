@@ -32,8 +32,8 @@ export const ReaderReciterSheet = ({
   onClose: () => void;
 }) => {
   const { t, i18n } = useTranslation();
-  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
-  const setSelectedRecitation = useQuranAudioStore((s) => s.setSelectedRecitation);
+  const readerRecitationId = useQuranAudioStore((s) => s.readerRecitationId);
+  const setReaderRecitation = useQuranAudioStore((s) => s.setReaderRecitation);
   const [reciters, setReciters] = useState<QuranReciter[]>([]);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export const ReaderReciterSheet = ({
   }, [isOpen]);
 
   const select = (recitationId: string) => {
-    setSelectedRecitation(recitationId);
+    setReaderRecitation(recitationId);
     // Continue playback with the new reciter from the current ayah, if any.
     const s = useQuranAudioStore.getState();
     if (
@@ -77,7 +77,7 @@ export const ReaderReciterSheet = ({
               {reciters.flatMap((r) => {
                 const name = quranReciterRegistry.localizedName(r, i18n.language);
                 return r.recitations.map((rec) => {
-                  const selected = rec.id === selectedRecitationId;
+                  const selected = rec.id === readerRecitationId;
                   return (
                     <Pressable
                       key={rec.id}

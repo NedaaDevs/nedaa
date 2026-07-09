@@ -84,7 +84,7 @@ class QuranAudioPlayer {
   // Listen plays gapless (surah) files; fall back to the first surah reciter if
   // the stored selection isn't surah-granular.
   private async resolveListenRecitation() {
-    const chosen = await quranReciterRegistry.getRecitationById(this.store.selectedRecitationId);
+    const chosen = await quranReciterRegistry.getRecitationById(this.store.listenRecitationId);
     if (chosen && chosen.granularity === QURAN_GRANULARITY.SURAH) return chosen;
     const reciters = await quranReciterRegistry.listenReciters();
     return reciters[0]?.recitations[0] ?? null;
@@ -93,7 +93,7 @@ class QuranAudioPlayer {
   // The reader plays per-ayah files; fall back to the first ayah reciter if the
   // stored selection is a gapless (Listen) reciter.
   private async resolveReaderRecitation() {
-    const chosen = await quranReciterRegistry.getRecitationById(this.store.selectedRecitationId);
+    const chosen = await quranReciterRegistry.getRecitationById(this.store.readerRecitationId);
     if (chosen && isReaderEligible(chosen)) return chosen;
     const readers = await quranReciterRegistry.readerRecitations();
     return readers[0] ?? null;
@@ -175,7 +175,7 @@ class QuranAudioPlayer {
       surah === this.store.currentSurah &&
       this.playlistId !== null &&
       this.isSurahPlaylist &&
-      this.surahPlaylistReciter === this.store.selectedRecitationId &&
+      this.surahPlaylistReciter === this.store.listenRecitationId &&
       this.store.playerState !== QURAN_PLAYER_STATE.IDLE
     ) {
       if (this.store.playerState === QURAN_PLAYER_STATE.PAUSED) await this.resume();

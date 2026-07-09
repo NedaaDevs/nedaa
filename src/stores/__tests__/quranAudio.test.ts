@@ -21,8 +21,9 @@ const reset = () =>
 describe("quranAudio store", () => {
   beforeEach(reset);
 
-  it("defaults to the minshawi-murattal recitation and STOP listen mode", () => {
-    expect(useQuranAudioStore.getState().selectedRecitationId).toBe("minshawi-murattal");
+  it("defaults reader + listen to the minshawi-murattal recitation and STOP listen mode", () => {
+    expect(useQuranAudioStore.getState().readerRecitationId).toBe("minshawi-murattal");
+    expect(useQuranAudioStore.getState().listenRecitationId).toBe("minshawi-murattal");
     expect(useQuranAudioStore.getState().listenMode).toBe(QURAN_LISTEN_MODE.STOP);
   });
 

@@ -47,20 +47,20 @@ const ReaderAudioControl = ({
   const currentPage = useQuranStore((s) => s.currentPage);
   const version = useQuranStore((s) => s.currentVersion);
   const playerState = useQuranAudioStore((s) => s.playerState);
-  const selectedRecitationId = useQuranAudioStore((s) => s.selectedRecitationId);
+  const readerRecitationId = useQuranAudioStore((s) => s.readerRecitationId);
 
   const [reciterName, setReciterName] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    quranReciterRegistry.reciterOf(selectedRecitationId).then((r) => {
+    quranReciterRegistry.reciterOf(readerRecitationId).then((r) => {
       if (alive && r) setReciterName(quranReciterRegistry.localizedName(r, i18n.language));
     });
     return () => {
       alive = false;
     };
-  }, [selectedRecitationId, i18n.language]);
+  }, [readerRecitationId, i18n.language]);
 
   const loading = playerState === QURAN_PLAYER_STATE.LOADING;
   const playing = playerState === QURAN_PLAYER_STATE.PLAYING;
