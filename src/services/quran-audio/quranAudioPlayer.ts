@@ -300,6 +300,12 @@ class QuranAudioPlayer {
         }
       }
 
+      const localCount = items.filter((it) => it.url.startsWith("file")).length;
+      log.i(
+        "Player",
+        `ayah ${surah}:${fromAyah}-${toAyah} tracks=${items.length} local=${localCount} remote=${items.length - localCount} first=${items[0]?.url.slice(0, 64)}`
+      );
+
       const surahMeta = await QuranContentDB.getSurah(surah);
       const title = surahMeta?.nameArabic ?? `${surah}`;
       const reciter = await quranReciterRegistry.reciterOf(recitation.id);
@@ -385,6 +391,7 @@ class QuranAudioPlayer {
     if (!this.playlistId) return;
     const item = this.items[this.indexOf(track)];
     if (!item) return;
+    log.i("Player", `track ${item.surah}:${item.ayah} reason=${reason ?? "?"}`);
 
     // A surah that finishes on its own auto-advances to the next track in the full
     // playlist (reason "end"). End the session there when STOP mode or a surah-end
@@ -405,6 +412,7 @@ class QuranAudioPlayer {
 
   private onPlaybackStateChange(state: TrackPlayerState, reason?: Reason): void {
     if (!this.playlistId) return;
+    log.i("Player", `state=${state} reason=${reason ?? "?"}`);
     if (state === NITRO_STATE.PLAYING) {
       this.store.setPlayerState(QURAN_PLAYER_STATE.PLAYING);
     } else if (state === NITRO_STATE.BUFFERING) {
