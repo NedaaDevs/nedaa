@@ -1,8 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { MotiView } from "moti";
-import { Play, Pause, X, Highlighter, ChevronDown } from "lucide-react-native";
+import {
+  Play,
+  Pause,
+  X,
+  Highlighter,
+  ChevronDown,
+  Download,
+  CheckCircle2,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
@@ -14,6 +22,8 @@ import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
+import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
+import { QuranManifestService } from "@/services/quran-manifest";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { usePreferencesStore } from "@/stores/preferences";
 import { ReaderReciterSheet } from "@/components/quran/ReaderReciterSheet";
@@ -61,6 +71,65 @@ const ReaderAudioControl = ({
       alive = false;
     };
   }, [readerRecitationId, i18n.language]);
+
+  // Offline the current page's surah (per-ayah files). Streaming per-ayah is
+  // unreliable, so the reader lets you pull a surah's bundle for local playback.
+  const [dl, setDl] = useState<"idle" | "busy" | "done">("idle");
+
+  const resolveTarget = useCallback(async () => {
+    const glyphs = await QuranContentDB.getGlyphBounds(version, currentPage);
+    const first = glyphs.find((g) => !g.isMarker);
+    if (!first) return null;
+    const [recitation, surahMeta, manifest] = await Promise.all([
+      quranReciterRegistry.getRecitationById(readerRecitationId),
+      QuranContentDB.getSurah(first.surahNumber),
+      QuranManifestService.fetchManifest(),
+    ]);
+    if (!recitation || !surahMeta || !manifest) return null;
+    return {
+      recitation,
+      surah: first.surahNumber,
+      ayahCount: surahMeta.ayahCount,
+      baseUrl: manifest.baseUrl,
+    };
+  }, [version, currentPage, readerRecitationId]);
+
+  // Reflect whether the current page's surah is already saved.
+  useEffect(() => {
+    let alive = true;
+    resolveTarget().then(async (tgt) => {
+      if (!alive) return;
+      if (!tgt) {
+        setDl("idle");
+        return;
+      }
+      const has = await quranAudioDownload.hasSurah(
+        tgt.recitation.id,
+        tgt.surah,
+        tgt.ayahCount,
+        tgt.recitation.fileFormat
+      );
+      if (alive) setDl(has ? "done" : "idle");
+    });
+    return () => {
+      alive = false;
+    };
+  }, [resolveTarget]);
+
+  const onDownload = async () => {
+    if (dl !== "idle") return;
+    const tgt = await resolveTarget();
+    if (!tgt) return;
+    setDl("busy");
+    await quranAudioDownload.downloadSurah(tgt.recitation, tgt.surah, tgt.ayahCount, tgt.baseUrl);
+    const has = await quranAudioDownload.hasSurah(
+      tgt.recitation.id,
+      tgt.surah,
+      tgt.ayahCount,
+      tgt.recitation.fileFormat
+    );
+    setDl(has ? "done" : "idle");
+  };
 
   const loading = playerState === QURAN_PLAYER_STATE.LOADING;
   const playing = playerState === QURAN_PLAYER_STATE.PLAYING;
@@ -149,6 +218,24 @@ const ReaderAudioControl = ({
     </Pressable>
   );
 
+  const downloadButton = (touch: number, icon: number) => (
+    <Pressable
+      onPress={onDownload}
+      disabled={dl !== "idle"}
+      accessibilityRole="button"
+      accessibilityLabel={t("quran.reader.downloadSurah")}
+      hitSlop={6}
+      style={{ width: touch, height: touch, alignItems: "center", justifyContent: "center" }}>
+      {dl === "busy" ? (
+        <Spinner size="small" color={colors.headerColor} />
+      ) : dl === "done" ? (
+        <CheckCircle2 size={icon} color={colors.headerColor} opacity={0.7} />
+      ) : (
+        <Download size={icon} color={colors.headerColor} opacity={0.7} />
+      )}
+    </Pressable>
+  );
+
   const stopButton = (touch: number, icon: number) =>
     active ? (
       <Pressable
@@ -183,7 +270,8 @@ const ReaderAudioControl = ({
             borderColor={colors.frameColor}
             style={CARD_SHADOW}>
             <YStack alignSelf="center">{reciterButton(15, 16)}</YStack>
-            <XStack alignItems="center" justifyContent="center" gap="$5">
+            <XStack alignItems="center" justifyContent="center" gap="$4">
+              {downloadButton(44, 22)}
               {followToggle(44, 38, 20)}
               {playButton(54, 24)}
               {stopButton(44, 22)}
@@ -203,6 +291,7 @@ const ReaderAudioControl = ({
             borderColor={colors.frameColor}
             style={CARD_SHADOW}>
             {reciterButton(14, 14)}
+            {downloadButton(36, 18)}
             {followToggle(38, 32, 18)}
             {playButton(40, 20)}
             {stopButton(36, 18)}
