@@ -26,8 +26,19 @@ const parse = (raw: unknown): AyahSegmentMap => {
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     const segs = Array.isArray(v) ? v : (v as { segments?: unknown })?.segments;
     if (!Array.isArray(segs)) continue;
-    const valid = segs.filter(isValidSegment);
-    if (valid.length > 0) out[k] = valid;
+    // Keep well-formed triples whose word index strictly increases. A few ayahs
+    // carry a backward index reset upstream (e.g. …11,12,13,11,12,13,14…); dropping
+    // the reset segments stops wordAt() from jumping the highlight back mid-ayah —
+    // the last good word simply holds through the bad span.
+    const monotonic: WordSegment[] = [];
+    let maxIndex = 0;
+    for (const seg of segs) {
+      if (isValidSegment(seg) && seg[0] > maxIndex) {
+        monotonic.push(seg);
+        maxIndex = seg[0];
+      }
+    }
+    if (monotonic.length > 0) out[k] = monotonic;
   }
   return out;
 };
@@ -99,3 +110,6 @@ const wordAt = (
 };
 
 export const quranAudioTimings = { load, wordAt };
+
+// Exported for unit tests.
+export const _parseTimings = parse;
