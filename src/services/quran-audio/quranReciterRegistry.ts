@@ -20,10 +20,13 @@ const getDefaultRecitation = async (): Promise<QuranRecitation | null> => {
   return all.find((r) => r.id === audio?.defaultRecitationId) ?? all[0];
 };
 
-// Recitations the reader can use: ayah-granular.
-// TODO(quran-audio-published): re-add `r.published` (show unpublished only in __DEV__).
+// In production only published recitations are user-facing; dev shows all so we
+// can test before publishing (mirrors the manifest edition gate).
+const isVisible = (r: QuranRecitation): boolean => __DEV__ || r.published;
+
+// Recitations the reader can use: ayah-granular + visible.
 const readerRecitations = async (): Promise<QuranRecitation[]> =>
-  (await allRecitations()).filter(isReaderEligible);
+  (await allRecitations()).filter((r) => isReaderEligible(r) && isVisible(r));
 
 // Reciters for the Listen surface: gapless (surah) recitations only — per-ayah
 // recitations are the reader's. Reciters left with no gapless recitation drop out.
@@ -31,7 +34,9 @@ const listenReciters = async (): Promise<QuranReciter[]> =>
   (await fetchReciters())
     .map((r) => ({
       ...r,
-      recitations: r.recitations.filter((rec) => rec.granularity === QURAN_GRANULARITY.SURAH),
+      recitations: r.recitations.filter(
+        (rec) => rec.granularity === QURAN_GRANULARITY.SURAH && isVisible(rec)
+      ),
     }))
     .filter((r) => r.recitations.length > 0);
 
@@ -41,7 +46,9 @@ const readerReciters = async (): Promise<QuranReciter[]> =>
   (await fetchReciters())
     .map((r) => ({
       ...r,
-      recitations: r.recitations.filter((rec) => rec.granularity === QURAN_GRANULARITY.AYAH),
+      recitations: r.recitations.filter(
+        (rec) => rec.granularity === QURAN_GRANULARITY.AYAH && isVisible(rec)
+      ),
     }))
     .filter((r) => r.recitations.length > 0);
 
