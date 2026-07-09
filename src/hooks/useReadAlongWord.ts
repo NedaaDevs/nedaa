@@ -89,6 +89,15 @@ export const useReadAlongWord = () => {
       pos = Math.max(0, pos);
       if (s.duration > 0) pos = Math.min(pos, s.duration);
 
+      // Per-word highlighting is only safe when the timings' word count matches the
+      // mushaf's glyph words for this ayah. On divergence (or before glyphs load),
+      // hold the whole-ayah tint (leave readAlongWord null) rather than risk a
+      // silently drifted word.
+      const glyphCount = wordsRef.current.length;
+      if (glyphCount === 0) return; // glyphs not loaded yet
+      const timingCount = quranAudioTimings.ayahWordCount(recitation.id, currentSurah, currentAyah);
+      if (timingCount > 0 && timingCount !== glyphCount) return; // divergent → ayah fallback
+
       const wordIndex = quranAudioTimings.wordAt(recitation.id, currentSurah, currentAyah, pos);
       if (wordIndex == null) return; // no timings yet → leave ayah fallback
       // Assumes QUL's 1-based word index maps 1:1 onto the ayah's Nth non-marker

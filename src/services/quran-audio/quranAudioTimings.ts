@@ -109,7 +109,13 @@ const wordAt = (
   return bestWord;
 };
 
-export const quranAudioTimings = { load, wordAt };
+// Number of word segments the loaded timings hold for (surah, ayah); 0 when the
+// recitation's timings aren't loaded or the ayah carries none. Used by the reader
+// to detect a QUL-vs-mushaf word-count divergence and degrade to ayah highlight.
+const ayahWordCount = (recitationId: string, surah: number, ayah: number): number =>
+  cache.get(recitationId)?.[ayahKey(surah, ayah)]?.length ?? 0;
+
+export const quranAudioTimings = { load, wordAt, ayahWordCount };
 
 // Exported for unit tests.
 export const _parseTimings = parse;
