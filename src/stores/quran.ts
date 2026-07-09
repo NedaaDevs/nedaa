@@ -56,7 +56,7 @@ export const useQuranStore = create<QuranState>()(
       readerActive: false,
       flashAyah: null,
       jumpReturn: null,
-      // Opt-in audio read-along; re-armed each session (not persisted).
+      // Opt-in audio read-along; persisted so it stays on across launches.
       readAlong: false,
       // Persisted preference: word-level highlight, degrading to verse when needed.
       readAlongGranularity: ReadAlongGranularity.WORD,
@@ -203,6 +203,7 @@ export const useQuranStore = create<QuranState>()(
         quranThemeOverride: state.quranThemeOverride,
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,
+        readAlong: state.readAlong,
         readAlongGranularity: state.readAlongGranularity,
         fontSize: state.fontSize,
         spreadPreference: state.spreadPreference,

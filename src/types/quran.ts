@@ -228,9 +228,8 @@ export type QuranState = {
   flashAyah: { surah: number; ayah: number } | null;
   // Transient — the page to return to after a mutashabihat "go to" jump.
   jumpReturn: number | null;
-  // Transient — audio read-along mode: tint the recited ayah (and, in vertical
-  // mode, follow it). Opt-in and re-armed each session so it never disturbs plain
-  // reading. Not persisted.
+  // Audio read-along mode: tint the recited ayah (and, in vertical mode, follow
+  // it). Opt-in, persisted so it stays on across launches.
   readAlong: boolean;
   // Persisted preference — read-along highlight granularity (whole verse vs current
   // word). Word falls back to verse when timings are missing or word-count diverges.
