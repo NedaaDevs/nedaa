@@ -49,6 +49,9 @@ export const useReadAlongWord = () => {
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
   const wordsRef = useRef<GlyphBound[]>([]);
   const lastWordRef = useRef(-1);
+  // Latches once this ayah's audio has wrapped past its last word, so the highlight
+  // hides at the end instead of snapping back to word 1.
+  const endedRef = useRef(false);
   // Fallback reasons already logged for the current ayah, so each distinct reason
   // logs once (not per 120ms tick).
   const loggedRef = useRef<Set<string>>(new Set());
@@ -101,10 +104,12 @@ export const useReadAlongWord = () => {
     }
     setReadAlongWord(null); // clear any stale word until this ayah resolves
     lastWordRef.current = -1;
+    endedRef.current = false;
     loggedRef.current.clear();
     const ayahStartedAt = Date.now();
 
     const resolve = () => {
+      if (endedRef.current) return; // ayah finished → stay hidden until it changes
       const s = useQuranAudioStore.getState();
       // Store position/duration are in SECONDS (matching the scrubber); word
       // timings are in MILLISECONDS — so convert to ms here before comparing.
@@ -145,6 +150,14 @@ export const useReadAlongWord = () => {
       const wordIndex = quranAudioTimings.wordAt(recitation.id, currentSurah, currentAyah, pos);
       if (wordIndex == null) {
         logOnce("before-first", `${a} verse — pos ${Math.round(pos)}ms before first word`);
+        return;
+      }
+      // A backward jump (word index dropping below the last one) means the audio
+      // wrapped past this ayah's end — hide the highlight and stay hidden.
+      if (wordIndex < lastWordRef.current) {
+        endedRef.current = true;
+        setReadAlongWord(null);
+        logOnce("ended", `${a} done — hiding highlight`);
         return;
       }
       // QUL's 1-based word index should map onto the ayah's Nth non-marker glyph;
