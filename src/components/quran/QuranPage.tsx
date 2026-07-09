@@ -259,6 +259,7 @@ const QuranPage = ({
   // leaves) re-render per word.
   const readAlong = useQuranStore((s) => s.readAlong);
   const highlightGranularity = useQuranStore((s) => s.readAlongGranularity);
+  const readAlongVerse = useQuranStore((s) => s.readAlongVerse);
   const hasWord = useQuranStore((s) => s.readAlongWord != null);
   const pageWord = useQuranStore((s) => {
     const w = s.readAlongWord;
@@ -299,13 +300,17 @@ const QuranPage = ({
       ];
     }
 
-    // Word mode: show nothing until a word resolves, so a new ayah never flashes
-    // the whole-ayah tint before per-word starts. Whole-ayah tint is verse mode.
-    if (highlightGranularity === ReadAlongGranularity.WORD) return NO_RECTS;
+    // Word mode: whole-ayah tint only when this ayah genuinely can't track words
+    // (readAlongVerse); otherwise show nothing so a new ayah never flashes the
+    // whole-ayah tint before per-word starts.
+    if (highlightGranularity === ReadAlongGranularity.WORD) {
+      return readAlongVerse ? rectsForAyah(playingSurah, playingAyah) : NO_RECTS;
+    }
     return rectsForAyah(playingSurah, playingAyah);
   }, [
     readAlong,
     highlightGranularity,
+    readAlongVerse,
     hasWord,
     pageWord,
     playerActive,

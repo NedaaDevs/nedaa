@@ -115,7 +115,11 @@ const wordAt = (
 const ayahWordCount = (recitationId: string, surah: number, ayah: number): number =>
   cache.get(recitationId)?.[ayahKey(surah, ayah)]?.length ?? 0;
 
-export const quranAudioTimings = { load, wordAt, ayahWordCount };
+// Whether the recitation's timings map is loaded, so the reader can tell "still
+// loading" (show nothing) from "loaded but this ayah has no words" (verse fallback).
+const isLoaded = (recitationId: string): boolean => cache.has(recitationId);
+
+export const quranAudioTimings = { load, wordAt, ayahWordCount, isLoaded };
 
 // Exported for unit tests.
 export const _parseTimings = parse;

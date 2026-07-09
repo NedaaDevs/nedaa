@@ -61,6 +61,7 @@ export const useQuranStore = create<QuranState>()(
       // Persisted preference: word-level highlight, degrading to verse when needed.
       readAlongGranularity: ReadAlongGranularity.WORD,
       readAlongWord: null,
+      readAlongVerse: false,
       showMutashabihatMarkers: false,
       mutashabihatNotes: {},
       hasSeenQuranGuide: false,
@@ -68,11 +69,13 @@ export const useQuranStore = create<QuranState>()(
       setReaderActive: (active) => set({ readerActive: active }),
       setFlashAyah: (target) => set({ flashAyah: target }),
       clearFlashAyah: () => set({ flashAyah: null }),
-      setReadAlong: (on) => set({ readAlong: on, readAlongWord: null }),
-      toggleReadAlong: () => set((prev) => ({ readAlong: !prev.readAlong, readAlongWord: null })),
+      setReadAlong: (on) => set({ readAlong: on, readAlongWord: null, readAlongVerse: false }),
+      toggleReadAlong: () =>
+        set((prev) => ({ readAlong: !prev.readAlong, readAlongWord: null, readAlongVerse: false })),
       setReadAlongGranularity: (granularity) =>
-        set({ readAlongGranularity: granularity, readAlongWord: null }),
+        set({ readAlongGranularity: granularity, readAlongWord: null, readAlongVerse: false }),
       setReadAlongWord: (readAlongWord) => set({ readAlongWord }),
+      setReadAlongVerse: (readAlongVerse) => set({ readAlongVerse }),
       setJumpReturn: (page) => set({ jumpReturn: page }),
       setShowMutashabihatMarkers: (on) => set({ showMutashabihatMarkers: on }),
       setMutashabihatNote: (groupId, text) =>

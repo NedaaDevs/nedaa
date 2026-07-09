@@ -247,6 +247,10 @@ export type QuranState = {
     width: number;
     height: number;
   } | null;
+  // Transient — in word mode, the current ayah can't be tracked word-by-word
+  // (no/divergent timings) so it falls back to a whole-ayah tint. False while still
+  // loading (show nothing, no flash) and while a word is highlighting. Not persisted.
+  readAlongVerse: boolean;
   // Persisted — show the at-a-glance similar-verse markers in the reader ("huffaz mode").
   showMutashabihatMarkers: boolean;
   // Persisted — personal memory note per mutashabihat group, keyed by group id.
@@ -278,6 +282,7 @@ export type QuranState = {
   toggleReadAlong: () => void;
   setReadAlongGranularity: (granularity: ReadAlongGranularity) => void;
   setReadAlongWord: (word: QuranState["readAlongWord"]) => void;
+  setReadAlongVerse: (on: boolean) => void;
   setJumpReturn: (page: number | null) => void;
   setShowMutashabihatMarkers: (on: boolean) => void;
   setMutashabihatNote: (groupId: string, text: string) => void;
