@@ -44,8 +44,9 @@ export const useReadAlongWord = () => {
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
   const wordsRef = useRef<GlyphBound[]>([]);
   const lastWordRef = useRef(-1);
-  // Last ayah we emitted a diagnostic for, so the per-ayah decision logs once.
-  const diagRef = useRef("");
+  // Fallback reasons already logged for the current ayah, so each distinct reason
+  // logs once (not per 120ms tick).
+  const loggedRef = useRef<Set<string>>(new Set());
 
   // Resolve the reader (ayah-granular) recitation and warm its word timings.
   // (A stale recitation while word mode is off is harmless — the tick effect
@@ -95,7 +96,7 @@ export const useReadAlongWord = () => {
     }
     setReadAlongWord(null); // clear any stale word until this ayah resolves
     lastWordRef.current = -1;
-    diagRef.current = "";
+    loggedRef.current.clear();
     const ayahStartedAt = Date.now();
 
     const resolve = () => {
@@ -108,39 +109,52 @@ export const useReadAlongWord = () => {
       pos = Math.max(0, pos);
       if (s.duration > 0) pos = Math.min(pos, s.duration);
 
-      // Emit the ayah's per-word decision once (divergence fallback or first word),
-      // so a device log shows why an ayah highlighted per-word or fell back to verse.
-      const logDecision = (msg: string) => {
-        const key = `${currentSurah}:${currentAyah}`;
-        if (diagRef.current === key) return;
-        diagRef.current = key;
+      // Each fallback reason logs once per ayah (not per tick), so a device run
+      // shows exactly why an ayah isn't tracking per-word.
+      const a = `${currentSurah}:${currentAyah}`;
+      const logOnce = (reason: string, msg: string) => {
+        if (loggedRef.current.has(reason)) return;
+        loggedRef.current.add(reason);
         log.i("Word", msg);
       };
 
       // Per-word highlighting is only safe when the timings' word count matches the
-      // mushaf's glyph words for this ayah. On divergence (or before glyphs load),
-      // hold the whole-ayah tint (leave readAlongWord null) rather than risk a
-      // silently drifted word.
+      // mushaf's glyph words. Any mismatch/missing data holds the whole-ayah tint.
       const glyphCount = wordsRef.current.length;
-      if (glyphCount === 0) return; // glyphs not loaded yet
+      if (glyphCount === 0) {
+        logOnce("no-glyphs", `${a} verse — glyphs not loaded yet`);
+        return;
+      }
       const timingCount = quranAudioTimings.ayahWordCount(recitation.id, currentSurah, currentAyah);
-      if (timingCount > 0 && timingCount !== glyphCount) {
-        logDecision(
-          `${currentSurah}:${currentAyah} verse — diverge glyph=${glyphCount} timing=${timingCount}`
-        );
-        return; // divergent → ayah fallback
+      if (timingCount === 0) {
+        logOnce("no-timings", `${a} verse — no timings for this ayah`);
+        return;
+      }
+      if (timingCount !== glyphCount) {
+        logOnce("diverge", `${a} verse — diverge glyph=${glyphCount} timing=${timingCount}`);
+        return;
       }
 
       const wordIndex = quranAudioTimings.wordAt(recitation.id, currentSurah, currentAyah, pos);
-      if (wordIndex == null) return; // no timings yet → leave ayah fallback
-      // Assumes QUL's 1-based word index maps 1:1 onto the ayah's Nth non-marker
-      // glyph. If a recitation's word count diverges from the mushaf's, the index
-      // can fall out of range — we hold the previous word rather than mis-highlight.
+      if (wordIndex == null) {
+        logOnce("before-first", `${a} verse — pos ${Math.round(pos)}ms before first word`);
+        return;
+      }
+      // QUL's 1-based word index should map onto the ayah's Nth non-marker glyph;
+      // an index past the glyph count (gappy timing data) holds the previous word.
       const glyph = wordsRef.current[wordIndex - 1];
-      if (!glyph) return; // out of range / glyphs not loaded yet → keep previous word
+      if (!glyph) {
+        logOnce("oob", `${a} verse — word ${wordIndex} OUT OF RANGE (glyphs ${glyphCount})`);
+        return;
+      }
       if (wordIndex === lastWordRef.current) return;
       lastWordRef.current = wordIndex;
-      logDecision(`${currentSurah}:${currentAyah} word ${wordIndex}/${glyphCount}`);
+      // Logs on every word advance (not per tick) so a device run shows the
+      // word-by-word tracking: which word, playback position, page/line.
+      log.i(
+        "Word",
+        `${currentSurah}:${currentAyah} w${wordIndex}/${glyphCount} @${Math.round(pos)}ms p${glyph.page} l${glyph.line}`
+      );
       setReadAlongWord({
         surah: currentSurah,
         ayah: currentAyah,
