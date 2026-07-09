@@ -41,6 +41,11 @@ export const useReadAlongWord = () => {
   // whole-ayah tint.
   const wordMode = readAlong && granularity === ReadAlongGranularity.WORD;
 
+  // Surface the gate inputs so a device run shows why word mode is (in)active.
+  useEffect(() => {
+    log.i("Mode", `readAlong=${readAlong} granularity=${granularity} → wordMode=${wordMode}`);
+  }, [readAlong, granularity, wordMode]);
+
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
   const wordsRef = useRef<GlyphBound[]>([]);
   const lastWordRef = useRef(-1);
