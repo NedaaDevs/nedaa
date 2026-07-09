@@ -68,6 +68,7 @@ class QuranAudioPlayer {
       onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
       onProgress: (position, duration) => {
+        log.i("Progress", `pos=${Math.round(position)}ms dur=${Math.round(duration)}ms`);
         this.store.setProgress(position, duration, Date.now());
       },
       onEvict: () => this.teardown(),
