@@ -56,7 +56,13 @@ const downloadSurah = async (
   const zipFile = new File(dir, `${surah}.zip`);
   try {
     await File.downloadFileAsync(surahBundleUrl(baseUrl, recitation, surah), zipFile);
+    log.i(
+      "Download",
+      `surah ${surah} zip=${zipFile.exists ? zipFile.size : "MISSING"}b → unzip to ${dir.uri}`
+    );
     await unzip(zipFile.uri, dir.uri); // extracts <surah>_<ayah>.mp3 into dir
+    const ok = await hasSurah(recitation.id, surah, ayahCount, recitation.fileFormat);
+    log.i("Download", `surah ${surah} unzipped, hasSurah=${ok}`);
   } catch (error) {
     log.w("Download", `surah ${surah} bundle failed: ${(error as Error)?.message}`);
     return;
