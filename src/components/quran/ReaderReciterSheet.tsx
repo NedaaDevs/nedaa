@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react-native";
+import { Check, Highlighter } from "lucide-react-native";
 
 import {
   Actionsheet,
@@ -11,6 +11,7 @@ import {
   ActionsheetDragIndicatorWrapper,
 } from "@/components/ui/actionsheet";
 import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -89,7 +90,9 @@ export const ReaderReciterSheet = ({
                       backgroundColor={selected ? "$backgroundInteractive" : "$backgroundSecondary"}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
-                      accessibilityLabel={name}>
+                      accessibilityLabel={
+                        rec.timings ? t("a11y.quran.reciterWordByWord", { name }) : name
+                      }>
                       <VStack
                         width={44}
                         height={44}
@@ -108,6 +111,22 @@ export const ReaderReciterSheet = ({
                         <Text size="xs" color="$typographySecondary">
                           {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
                         </Text>
+                        {rec.timings ? (
+                          <HStack
+                            alignSelf="flex-start"
+                            alignItems="center"
+                            gap="$1"
+                            marginTop="$0.5"
+                            paddingHorizontal="$2"
+                            paddingVertical="$0.5"
+                            borderRadius="$2"
+                            backgroundColor="$backgroundInteractive">
+                            <Icon as={Highlighter} size="xs" color="$accentPrimary" />
+                            <Text size="xs" fontWeight="600" color="$accentPrimary">
+                              {t("quran.reader.wordByWord")}
+                            </Text>
+                          </HStack>
+                        ) : null}
                       </VStack>
                       {selected ? <Icon as={Check} size="sm" color="$accentPrimary" /> : null}
                     </Pressable>
