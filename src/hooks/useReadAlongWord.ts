@@ -9,10 +9,15 @@ import { ReadAlongGranularity } from "@/enums/quran";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioTimings } from "@/services/quran-audio/quranAudioTimings";
 import { QuranContentDB } from "@/services/quran-content-db";
+import { AppLogger } from "@/utils/appLogger";
 
 // How often to re-map playback position to a word. Coarse enough to be cheap,
 // fine enough that the highlight lands within ~a frame of the spoken word.
 const TICK_MS = 120;
+
+// Diagnoses why an ayah highlights per-word vs falls back to the whole-verse tint.
+// Logged once per recitation-resolve and once per ayah (not per tick) to stay quiet.
+const log = AppLogger.create("quran-readalong");
 
 // Drives the per-word read-along highlight. Loads the reader recitation's word
 // timings + the current ayah's word glyphs, then on a light interval maps the
@@ -39,6 +44,8 @@ export const useReadAlongWord = () => {
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
   const wordsRef = useRef<GlyphBound[]>([]);
   const lastWordRef = useRef(-1);
+  // Last ayah we emitted a diagnostic for, so the per-ayah decision logs once.
+  const diagRef = useRef("");
 
   // Resolve the reader (ayah-granular) recitation and warm its word timings.
   // (A stale recitation while word mode is off is harmless — the tick effect
@@ -49,6 +56,10 @@ export const useReadAlongWord = () => {
     quranReciterRegistry.getRecitationById(selectedRecitationId).then((rec) => {
       if (!alive) return;
       const eligible = rec && rec.granularity === QURAN_GRANULARITY.AYAH ? rec : null;
+      log.i(
+        "Recitation",
+        `reader=${selectedRecitationId} gran=${rec?.granularity ?? "missing"} eligible=${!!eligible} timings=${!!eligible?.timings}`
+      );
       setRecitation(eligible);
       if (eligible) void quranAudioTimings.load(eligible);
     });
@@ -84,6 +95,7 @@ export const useReadAlongWord = () => {
     }
     setReadAlongWord(null); // clear any stale word until this ayah resolves
     lastWordRef.current = -1;
+    diagRef.current = "";
     const ayahStartedAt = Date.now();
 
     const resolve = () => {
@@ -96,6 +108,15 @@ export const useReadAlongWord = () => {
       pos = Math.max(0, pos);
       if (s.duration > 0) pos = Math.min(pos, s.duration);
 
+      // Emit the ayah's per-word decision once (divergence fallback or first word),
+      // so a device log shows why an ayah highlighted per-word or fell back to verse.
+      const logDecision = (msg: string) => {
+        const key = `${currentSurah}:${currentAyah}`;
+        if (diagRef.current === key) return;
+        diagRef.current = key;
+        log.i("Word", msg);
+      };
+
       // Per-word highlighting is only safe when the timings' word count matches the
       // mushaf's glyph words for this ayah. On divergence (or before glyphs load),
       // hold the whole-ayah tint (leave readAlongWord null) rather than risk a
@@ -103,7 +124,12 @@ export const useReadAlongWord = () => {
       const glyphCount = wordsRef.current.length;
       if (glyphCount === 0) return; // glyphs not loaded yet
       const timingCount = quranAudioTimings.ayahWordCount(recitation.id, currentSurah, currentAyah);
-      if (timingCount > 0 && timingCount !== glyphCount) return; // divergent → ayah fallback
+      if (timingCount > 0 && timingCount !== glyphCount) {
+        logDecision(
+          `${currentSurah}:${currentAyah} verse — diverge glyph=${glyphCount} timing=${timingCount}`
+        );
+        return; // divergent → ayah fallback
+      }
 
       const wordIndex = quranAudioTimings.wordAt(recitation.id, currentSurah, currentAyah, pos);
       if (wordIndex == null) return; // no timings yet → leave ayah fallback
@@ -114,6 +140,7 @@ export const useReadAlongWord = () => {
       if (!glyph) return; // out of range / glyphs not loaded yet → keep previous word
       if (wordIndex === lastWordRef.current) return;
       lastWordRef.current = wordIndex;
+      logDecision(`${currentSurah}:${currentAyah} word ${wordIndex}/${glyphCount}`);
       setReadAlongWord({
         surah: currentSurah,
         ayah: currentAyah,
