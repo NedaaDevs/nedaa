@@ -48,6 +48,7 @@ import {
   Share2,
   Heart,
   Activity,
+  Award,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -316,6 +317,16 @@ const SettingsScreen = () => {
 
         {/* Help */}
         <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
+
+        {/* Acknowledgements — credits for Qur'an text, metadata, recitation.
+            TODO(quran-gate): drop the guard at 2.10.0 */}
+        {quranUnlocked && (
+          <SettingsItem
+            name={t("settings.acknowledgements.title")}
+            path={"/settings/acknowledgements" as any}
+            icon={Award}
+          />
+        )}
 
         {/* Rate & Share */}
         <HStack marginHorizontal="$2" marginTop="$2" gap="$2">

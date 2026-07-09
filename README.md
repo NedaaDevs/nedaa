@@ -73,9 +73,10 @@ Nedaa is built on the generous work of others:
 
 **Qur'an**
 
-- **Qur'an text & Mushaf layout** — [King Fahd Glorious Qur'an Printing Complex (KFGQPC)](https://qurancomplex.gov.sa) — UthmanicHafs font and page layout.
+- **Qur'an text** — [Tanzil.net](https://tanzil.net).
+- **Mushaf layout & font** — [King Fahd Glorious Qur'an Printing Complex (KFGQPC)](https://qurancomplex.gov.sa) — UthmanicHafs font and page layout.
 - **Verse metadata & recitation timing** — [Qur'anic Universal Library (QUL)](https://qul.tarteel.ai) by Tarteel.
-- **Recitation** — Muhammad Siddiq al-Minshawi (Hafs, Murattal); recitation audio courtesy of [QuranicAudio](https://quranicaudio.com) and [quran.com](https://quran.com), mirrored via QUL.
+- **Recitation** — recitation audio from [QuranicAudio](https://quranicaudio.com) and [quran.com](https://quran.com), mirrored via QUL.
 
 **Fonts**
 

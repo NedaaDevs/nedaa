@@ -56,6 +56,7 @@
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F34F4E30F2694C3280179AC2 /* Asap_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */; };
 		F613F027BF5FAFD6C3F9DFAD /* iOS-Signal.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */; };
+		B176DA807A9849918BDCFBF5 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = C781E4824C17489FA7470F90 /* Settings.bundle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -136,6 +137,7 @@
 		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
 		FDE52688DF5F5110C0D947CA /* Pods-nedaa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.debug.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.debug.xcconfig"; sourceTree = "<group>"; };
 		FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_700Bold.ttf; path = "../node_modules/@expo-google-fonts/asap/700Bold/Asap_700Bold.ttf"; sourceTree = "<group>"; };
+		C781E4824C17489FA7470F90 /* Settings.bundle */ = {isa = PBXFileReference; name = "Settings.bundle"; path = "nedaa/Settings.bundle"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = wrapper.plug-in; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -233,6 +235,7 @@
 				35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */,
 				353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */,
 				0279B5DCCC4F0F8A79E7947D /* sounds */,
+				C781E4824C17489FA7470F90 /* Settings.bundle */,
 			);
 			name = nedaa;
 			sourceTree = "<group>";
@@ -462,6 +465,7 @@
 				CBABBC2891E740E0B0A511D2 /* Asap_500Medium.ttf in Resources */,
 				782C1853BC45468A9E97557A /* Asap_600SemiBold.ttf in Resources */,
 				2086DF27F7974C99BB880496 /* Asap_700Bold.ttf in Resources */,
+				B176DA807A9849918BDCFBF5 /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

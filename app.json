@@ -150,7 +150,8 @@
           "microphonePermission": "This app does not require microphone access.",
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "./plugins/withIosAcknowledgements"
     ],
     "experiments": {
       "typedRoutes": true,
