@@ -5,6 +5,7 @@ import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_GRANULARITY, QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import type { QuranRecitation } from "@/types/quran-audio";
 import type { GlyphBound } from "@/types/quran";
+import { ReadAlongGranularity } from "@/enums/quran";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioTimings } from "@/services/quran-audio/quranAudioTimings";
 import { QuranContentDB } from "@/services/quran-content-db";
@@ -21,6 +22,7 @@ const TICK_MS = 120;
 // falls back to tinting the whole ayah. Mount once in the reader.
 export const useReadAlongWord = () => {
   const readAlong = useQuranStore((s) => s.readAlong);
+  const granularity = useQuranStore((s) => s.readAlongGranularity);
   const version = useQuranStore((s) => s.currentVersion);
   const setReadAlongWord = useQuranStore((s) => s.setReadAlongWord);
 
@@ -29,15 +31,20 @@ export const useReadAlongWord = () => {
   const currentAyah = useQuranAudioStore((s) => s.currentAyah);
   const playerState = useQuranAudioStore((s) => s.playerState);
 
+  // Word-level highlighting runs only when read-along is on AND the user chose
+  // word granularity; in verse mode this hook stays idle and the reader shows the
+  // whole-ayah tint.
+  const wordMode = readAlong && granularity === ReadAlongGranularity.WORD;
+
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
   const wordsRef = useRef<GlyphBound[]>([]);
   const lastWordRef = useRef(-1);
 
   // Resolve the reader (ayah-granular) recitation and warm its word timings.
-  // (A stale recitation while read-along is off is harmless — the tick effect
-  // below guards on `readAlong` — so no synchronous reset here.)
+  // (A stale recitation while word mode is off is harmless — the tick effect
+  // below guards on `wordMode` — so no synchronous reset here.)
   useEffect(() => {
-    if (!readAlong) return;
+    if (!wordMode) return;
     let alive = true;
     quranReciterRegistry.getRecitationById(selectedRecitationId).then((rec) => {
       if (!alive) return;
@@ -48,13 +55,13 @@ export const useReadAlongWord = () => {
     return () => {
       alive = false;
     };
-  }, [readAlong, selectedRecitationId]);
+  }, [wordMode, selectedRecitationId]);
 
   // Load the current ayah's word glyphs in global reading order on ayah change.
   useEffect(() => {
     wordsRef.current = [];
     lastWordRef.current = -1;
-    if (!readAlong || currentSurah == null || currentAyah == null) return;
+    if (!wordMode || currentSurah == null || currentAyah == null) return;
     let alive = true;
     QuranContentDB.getAyahWordGlyphs(version, currentSurah, currentAyah).then((ws) => {
       if (alive) wordsRef.current = ws;
@@ -62,7 +69,7 @@ export const useReadAlongWord = () => {
     return () => {
       alive = false;
     };
-  }, [readAlong, version, currentSurah, currentAyah]);
+  }, [wordMode, version, currentSurah, currentAyah]);
 
   // Interpolate position → word index → glyph → store. Ticks only while PLAYING;
   // paused/loading resolves once and holds. Position from the previous ayah is
@@ -70,7 +77,7 @@ export const useReadAlongWord = () => {
   // `positionUpdatedAt` catches up — otherwise the highlight would jump to the
   // last word of the new ayah at every boundary.
   useEffect(() => {
-    if (!readAlong || !recitation || currentSurah == null || currentAyah == null) {
+    if (!wordMode || !recitation || currentSurah == null || currentAyah == null) {
       setReadAlongWord(null);
       lastWordRef.current = -1;
       return;
@@ -123,5 +130,5 @@ export const useReadAlongWord = () => {
     if (playerState !== QURAN_PLAYER_STATE.PLAYING) return; // idle while paused/loading
     const id = setInterval(resolve, TICK_MS);
     return () => clearInterval(id);
-  }, [readAlong, recitation, currentSurah, currentAyah, playerState, setReadAlongWord]);
+  }, [wordMode, recitation, currentSurah, currentAyah, playerState, setReadAlongWord]);
 };

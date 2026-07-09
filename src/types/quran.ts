@@ -7,6 +7,7 @@ import {
   DownloadStatus,
   DownloadPhase,
   ReaderViewMode,
+  ReadAlongGranularity,
   RevelationPlace,
   SajdaType,
   ShareCardStyle,
@@ -231,6 +232,9 @@ export type QuranState = {
   // mode, follow it). Opt-in and re-armed each session so it never disturbs plain
   // reading. Not persisted.
   readAlong: boolean;
+  // Persisted preference — read-along highlight granularity (whole verse vs current
+  // word). Word falls back to verse when timings are missing or word-count diverges.
+  readAlongGranularity: ReadAlongGranularity;
   // Transient — the recited word to highlight (source-image coords + its page),
   // resolved centrally from per-word timings. Null → no word (fall back to tinting
   // the whole ayah). Not persisted.
@@ -273,6 +277,7 @@ export type QuranState = {
   clearFlashAyah: () => void;
   setReadAlong: (on: boolean) => void;
   toggleReadAlong: () => void;
+  setReadAlongGranularity: (granularity: ReadAlongGranularity) => void;
   setReadAlongWord: (word: QuranState["readAlongWord"]) => void;
   setJumpReturn: (page: number | null) => void;
   setShowMutashabihatMarkers: (on: boolean) => void;

@@ -15,6 +15,7 @@ import {
   DownloadStatus,
   MushafVersion,
   QuranTheme,
+  ReadAlongGranularity,
   ReaderViewMode,
   ScrollDirection,
   ShareCardStyle,
@@ -57,6 +58,8 @@ export const useQuranStore = create<QuranState>()(
       jumpReturn: null,
       // Opt-in audio read-along; re-armed each session (not persisted).
       readAlong: false,
+      // Persisted preference: word-level highlight, degrading to verse when needed.
+      readAlongGranularity: ReadAlongGranularity.WORD,
       readAlongWord: null,
       showMutashabihatMarkers: false,
       mutashabihatNotes: {},
@@ -67,6 +70,8 @@ export const useQuranStore = create<QuranState>()(
       clearFlashAyah: () => set({ flashAyah: null }),
       setReadAlong: (on) => set({ readAlong: on, readAlongWord: null }),
       toggleReadAlong: () => set((prev) => ({ readAlong: !prev.readAlong, readAlongWord: null })),
+      setReadAlongGranularity: (granularity) =>
+        set({ readAlongGranularity: granularity, readAlongWord: null }),
       setReadAlongWord: (readAlongWord) => set({ readAlongWord }),
       setJumpReturn: (page) => set({ jumpReturn: page }),
       setShowMutashabihatMarkers: (on) => set({ showMutashabihatMarkers: on }),
@@ -198,6 +203,7 @@ export const useQuranStore = create<QuranState>()(
         quranThemeOverride: state.quranThemeOverride,
         lastReadPage: state.lastReadPage,
         readerMode: state.readerMode,
+        readAlongGranularity: state.readAlongGranularity,
         fontSize: state.fontSize,
         spreadPreference: state.spreadPreference,
         scrollDirection: state.scrollDirection,

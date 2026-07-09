@@ -18,6 +18,7 @@ import {
   MushafVersion,
   DownloadStatus,
   ReaderViewMode,
+  ReadAlongGranularity,
   ScrollDirection,
   SpreadPreference,
 } from "@/enums/quran";
@@ -53,11 +54,13 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
     fontSize,
     spreadPreference,
     scrollDirection,
+    readAlongGranularity,
     showMutashabihatMarkers,
     setReaderMode,
     setFontSize,
     setSpreadPreference,
     setScrollDirection,
+    setReadAlongGranularity,
     setShowMutashabihatMarkers,
   } = useQuranStore();
 
@@ -216,6 +219,18 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
                   />
                 </SettingRow>
               )}
+
+              <SettingRow label={t("quran.settings.readAlongHighlight")} chrome={chrome} stacked>
+                <Segmented
+                  chrome={chrome}
+                  options={[
+                    { value: ReadAlongGranularity.WORD, label: t("quran.settings.highlightWord") },
+                    { value: ReadAlongGranularity.AYAH, label: t("quran.settings.highlightAyah") },
+                  ]}
+                  selected={readAlongGranularity}
+                  onSelect={setReadAlongGranularity}
+                />
+              </SettingRow>
 
               <SettingRow label={t("quran.settings.showMutashabihatMarkers")} chrome={chrome}>
                 <Switch

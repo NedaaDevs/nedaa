@@ -40,6 +40,15 @@ export const AyahSubViewKind = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type AyahSubViewKind = (typeof AyahSubViewKind)[keyof typeof AyahSubViewKind];
 
+// How the audio read-along highlights the recited text: the whole verse, or the
+// current word (falls back to verse when word timings are missing/divergent).
+export const ReadAlongGranularity = {
+  AYAH: "ayah",
+  WORD: "word",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type ReadAlongGranularity = (typeof ReadAlongGranularity)[keyof typeof ReadAlongGranularity];
+
 export enum DownloadStatus {
   IDLE = "idle",
   DOWNLOADING = "downloading",
