@@ -52,6 +52,7 @@ import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
 import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
 import { useReadAlongWord } from "@/hooks/useReadAlongWord";
+import { useStopReaderAudioOnLeave } from "@/hooks/useStopReaderAudioOnLeave";
 import { GuideCategory, type GuideEntry } from "@/types/guide";
 import { guideEntriesByCategory, guideEntryById } from "@/services/guide-content";
 import type { QuranManifestVersion } from "@/types/quran";
@@ -85,6 +86,9 @@ const QuranScreen = () => {
   const playingAyah = useQuranAudioStore((s) => s.currentAyah);
   // Drives the per-word read-along highlight (no-op unless read-along is on).
   useReadAlongWord();
+  // Reader (per-ayah) playback stops on leaving the reader / backgrounding; Listen
+  // owns background playback.
+  useStopReaderAudioOnLeave();
   const quranTheme = useResolvedQuranTheme();
   const prefersDark = usePrefersDarkReader();
   const { state: dbState, retry: retryDb } = useQuranContentDbReady();
