@@ -4,7 +4,13 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 import { YStack } from "tamagui";
 
-import { BookmarkColor, HighlightColor, MushafVersion, QuranThemeType } from "@/enums/quran";
+import {
+  BookmarkColor,
+  HighlightColor,
+  MushafVersion,
+  QuranThemeType,
+  ReadAlongGranularity,
+} from "@/enums/quran";
 import {
   LINES_PER_PAGE,
   QURAN_THEME_COLORS,
@@ -252,6 +258,7 @@ const QuranPage = ({
   // as the word advances on another page — only the owning page (and the one the word
   // leaves) re-render per word.
   const readAlong = useQuranStore((s) => s.readAlong);
+  const highlightGranularity = useQuranStore((s) => s.readAlongGranularity);
   const hasWord = useQuranStore((s) => s.readAlongWord != null);
   const pageWord = useQuranStore((s) => {
     const w = s.readAlongWord;
@@ -292,10 +299,13 @@ const QuranPage = ({
       ];
     }
 
-    // Fallback: no word timings for this ayah — tint the whole ayah.
+    // Word mode: show nothing until a word resolves, so a new ayah never flashes
+    // the whole-ayah tint before per-word starts. Whole-ayah tint is verse mode.
+    if (highlightGranularity === ReadAlongGranularity.WORD) return NO_RECTS;
     return rectsForAyah(playingSurah, playingAyah);
   }, [
     readAlong,
+    highlightGranularity,
     hasWord,
     pageWord,
     playerActive,
