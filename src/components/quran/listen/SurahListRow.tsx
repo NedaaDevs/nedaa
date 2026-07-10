@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { AudioLines, Download, CheckCircle2, Pause } from "lucide-react-native";
+import { AudioLines, Download, CheckCircle2, Pause, Headphones } from "lucide-react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "tamagui";
 
@@ -112,6 +112,7 @@ const SurahListRowBase = ({
       onPress={() => onPress(surah)}
       accessibilityRole="button"
       accessibilityLabel={name}
+      accessibilityHint={t("a11y.quran.listen.playSurah")}
       accessibilityState={{ selected: isCurrent }}>
       <HStack
         alignItems="center"
@@ -153,11 +154,14 @@ const SurahListRowBase = ({
         </VStack>
 
         <HStack alignItems="center" gap="$2">
+          {/* Tap-to-listen affordance; the whole row plays on press. */}
           {isLoading ? (
             <Spinner size="small" color="$accentPrimary" />
           ) : isCurrent ? (
             <Icon as={AudioLines} size="sm" color="$accentPrimary" />
-          ) : null}
+          ) : (
+            <Icon as={Headphones} size="sm" color="$typographySecondary" />
+          )}
 
           {isDownloading ? (
             // Tap to pause; a paused transfer keeps its partial file and resumes.

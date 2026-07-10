@@ -11,7 +11,7 @@ import ImportantDaysCard from "@/components/ImportantDaysCard";
 import { FeatureCardId } from "@/constants/FeatureCards";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
-import { BookOpen, CalendarDays } from "lucide-react-native";
+import { BookOpen, CalendarDays, Headphones } from "lucide-react-native";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -49,6 +49,16 @@ const QURAN_FEATURE_CARD = {
   route: "/(tabs)/quran",
 };
 
+// TODO(quran-gate): the quranUnlocked guard goes away at 2.10.0 (feature public).
+const QURAN_AUDIO_CARD = {
+  id: FeatureCardId.QURAN_AUDIO,
+  titleKey: "quranAudio.featureCard.title",
+  descriptionKey: "quranAudio.featureCard.description",
+  ctaKey: "quranAudio.featureCard.explore",
+  icon: Headphones,
+  route: "/quran-listen",
+};
+
 export default function MainScreen() {
   const { mode, quranUnlocked, dismissedFeatureCards } = useAppStore();
   const { loadPrayerTimes } = usePrayerTimesStore();
@@ -58,7 +68,7 @@ export default function MainScreen() {
 
   // First eligible undismissed announcement (cards never stack).
   const featureCard = [
-    ...(quranUnlocked ? [QURAN_FEATURE_CARD] : []),
+    ...(quranUnlocked ? [QURAN_AUDIO_CARD, QURAN_FEATURE_CARD] : []),
     IMPORTANT_DAYS_CARD,
     ...(activeProgress ? [] : [UMRAH_GUIDE_CARD]),
   ].find((card) => !dismissedFeatureCards.includes(card.id));

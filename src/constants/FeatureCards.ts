@@ -3,8 +3,9 @@
 // so only users who installed before a feature shipped see its card. Ship a
 // new announcement by adding an id here (and its config where it renders).
 export const FeatureCardId = {
-  // TODO(quran-gate): card retires once the feature has been public for a release.
+  // TODO(quran-gate): cards retire once the feature has been public for a release.
   QURAN: "quran-feature-v1",
+  QURAN_AUDIO: "quran-audio-v1",
   IMPORTANT_DAYS: "important-days-v1",
   UMRAH: "umrah-guide-v1",
 } as const;
