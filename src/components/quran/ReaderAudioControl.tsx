@@ -26,6 +26,7 @@ import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { usePreferencesStore } from "@/stores/preferences";
+import { useRTL } from "@/contexts/RTLContext";
 import { ReaderReciterSheet } from "@/components/quran/ReaderReciterSheet";
 
 const CARD_SHADOW = {
@@ -38,9 +39,9 @@ const CARD_SHADOW = {
 
 // Floating reader audio control for the current recitation — its own control (not
 // the Listen mini-player), pinned where the auto-scroll control sits and following
-// the reader chrome (`visible`). Default: a slim one-row pill (tap reciter to switch,
-// word follow-along toggle, play/pause, stop). The "Larger controls" preference swaps
-// in a big two-row card with the reciter centred on top.
+// the reader chrome (`visible`). Two-row card: reciter (tap to switch) on top;
+// download, read-along toggle, play/pause, stop beneath. The "Larger controls"
+// preference scales the same layout up.
 const ReaderAudioControl = ({
   quranTheme,
   visible,
@@ -49,6 +50,7 @@ const ReaderAudioControl = ({
   visible: boolean;
 }) => {
   const { t, i18n } = useTranslation();
+  const { isRTL } = useRTL();
   const colors = QURAN_THEME_COLORS[quranTheme];
   const big = usePreferencesStore((s) => s.largeControls);
 
@@ -167,14 +169,15 @@ const ReaderAudioControl = ({
         fontWeight="700"
         color={colors.headerColor}
         numberOfLines={1}
-        maxWidth={big ? 230 : 150}>
+        maxWidth={240}>
         {reciterName ?? t("quran.reader.reciter")}
       </Text>
       <ChevronDown size={chevron} color={colors.headerColor} opacity={0.8} />
     </Pressable>
   );
 
-  const followToggle = (touch: number, dot: number, icon: number) => (
+  // Read-along on = the pen itself lights up in the theme accent (no filled dot).
+  const followToggle = (touch: number, icon: number) => (
     <Pressable
       onPress={toggleReadAlong}
       accessibilityRole="switch"
@@ -182,19 +185,11 @@ const ReaderAudioControl = ({
       accessibilityLabel={t("a11y.quran.readAlong")}
       hitSlop={6}
       style={{ width: touch, height: touch, alignItems: "center", justifyContent: "center" }}>
-      <YStack
-        width={dot}
-        height={dot}
-        borderRadius={dot / 2}
-        alignItems="center"
-        justifyContent="center"
-        backgroundColor={readAlong ? colors.headerColor : "transparent"}>
-        <Highlighter
-          size={icon}
-          color={readAlong ? colors.background : colors.headerColor}
-          opacity={readAlong ? 1 : 0.6}
-        />
-      </YStack>
+      <Highlighter
+        size={icon}
+        color={readAlong ? colors.markerColor : colors.headerColor}
+        opacity={readAlong ? 1 : 0.5}
+      />
     </Pressable>
   );
 
@@ -217,7 +212,14 @@ const ReaderAudioControl = ({
       ) : playing ? (
         <Pause size={icon} color={colors.background} fill={colors.background} />
       ) : (
-        <Play size={icon} color={colors.background} fill={colors.background} />
+        // The play triangle points along the reading direction, like the Listen
+        // mini-player.
+        <Play
+          size={icon}
+          color={colors.background}
+          fill={colors.background}
+          style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+        />
       )}
     </Pressable>
   );
@@ -260,47 +262,27 @@ const ReaderAudioControl = ({
         animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 8 }}
         transition={{ type: "timing", duration: 180 }}
         pointerEvents={visible ? "auto" : "none"}>
-        {big ? (
-          // Large: reciter centred on top, big controls beneath.
-          <YStack
-            gap="$1.5"
-            paddingHorizontal="$4"
-            paddingTop="$2"
-            paddingBottom="$2.5"
-            borderRadius={24}
-            minWidth={300}
-            backgroundColor={`${colors.background}F5`}
-            borderWidth={1}
-            borderColor={colors.frameColor}
-            style={CARD_SHADOW}>
-            <YStack alignSelf="center">{reciterButton(15, 16)}</YStack>
-            <XStack alignItems="center" justifyContent="center" gap="$4">
-              {downloadButton(44, 22)}
-              {followToggle(44, 38, 20)}
-              {playButton(54, 24)}
-              {stopButton(44, 22)}
-            </XStack>
-          </YStack>
-        ) : (
-          // Default: slim one-row pill.
-          <XStack
-            alignItems="center"
-            gap="$2"
-            paddingLeft="$3"
-            paddingRight="$1"
-            paddingVertical="$1"
-            borderRadius={999}
-            backgroundColor={`${colors.background}F5`}
-            borderWidth={1}
-            borderColor={colors.frameColor}
-            style={CARD_SHADOW}>
-            {reciterButton(14, 14)}
-            {downloadButton(36, 18)}
-            {followToggle(38, 32, 18)}
-            {playButton(40, 20)}
-            {stopButton(36, 18)}
+        {/* Reciter name on its own row (long names fit), controls beneath. The
+        "Larger controls" preference only scales the same layout up. */}
+        <YStack
+          gap={big ? "$1.5" : "$0.5"}
+          paddingHorizontal={big ? "$4" : "$3"}
+          paddingTop={big ? "$2" : "$1.5"}
+          paddingBottom={big ? "$2.5" : "$1.5"}
+          borderRadius={big ? 24 : 22}
+          minWidth={big ? 300 : undefined}
+          backgroundColor={`${colors.background}F5`}
+          borderWidth={1}
+          borderColor={colors.frameColor}
+          style={CARD_SHADOW}>
+          <YStack alignSelf="center">{reciterButton(big ? 15 : 14, big ? 16 : 14)}</YStack>
+          <XStack alignItems="center" justifyContent="center" gap={big ? "$4" : "$2"}>
+            {downloadButton(big ? 44 : 36, big ? 22 : 18)}
+            {followToggle(big ? 44 : 38, big ? 20 : 18)}
+            {playButton(big ? 54 : 40, big ? 24 : 20)}
+            {stopButton(big ? 44 : 36, big ? 22 : 18)}
           </XStack>
-        )}
+        </YStack>
       </MotiView>
 
       <ReaderReciterSheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)} />

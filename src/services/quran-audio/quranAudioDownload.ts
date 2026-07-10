@@ -72,6 +72,39 @@ const downloadSurah = async (
   log.i("Download", `surah ${surah} cached for ${recitation.id}`);
 };
 
+// Surahs with saved per-ayah files (parses `<surah>_<ayah>.<ext>`), with their
+// total bytes — the reader's offline inventory.
+const downloadedAyahSurahs = (
+  recitationId: string,
+  fileFormat: string
+): { surah: number; bytes: number }[] => {
+  const dir = recitationDir(recitationId);
+  if (!dir.exists) return [];
+  const re = new RegExp(`^(\\d+)_\\d+\\.${fileFormat}$`);
+  const bySurah = new Map<number, number>();
+  for (const entry of dir.list()) {
+    const m = (entry.uri.split("/").pop() ?? "").match(re);
+    if (m) {
+      const surah = Number(m[1]);
+      bySurah.set(surah, (bySurah.get(surah) ?? 0) + ((entry as File).size ?? 0));
+    }
+  }
+  return [...bySurah.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([surah, bytes]) => ({ surah, bytes }));
+};
+
+// Delete a surah's per-ayah files (reader offline copy).
+const deleteAyahSurah = (recitationId: string, surah: number, fileFormat: string): void => {
+  const dir = recitationDir(recitationId);
+  if (!dir.exists) return;
+  const re = new RegExp(`^${surah}_\\d+\\.${fileFormat}$`);
+  for (const entry of dir.list()) {
+    if (re.test(entry.uri.split("/").pop() ?? "")) (entry as File).delete();
+  }
+  log.i("Download", `surah ${surah} ayah files deleted for ${recitationId}`);
+};
+
 // ── Gapless (Listen) offline files ────────────────────────────────────────────
 // One MP3 per surah at `<surah>.<fileFormat>`, distinct from the reader's
 // per-ayah `<surah>_<ayah>` files, so both can share a recitation directory.
@@ -224,6 +257,8 @@ export const quranAudioDownload = {
   getLocalPath,
   hasSurah,
   downloadSurah,
+  downloadedAyahSurahs,
+  deleteAyahSurah,
   getSurahFilePath,
   downloadSurahFile,
   pauseSurahDownload,

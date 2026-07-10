@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
-import { AlignJustify, Check, Highlighter } from "lucide-react-native";
+import { AlignJustify, Check, Highlighter, Trash2, type LucideIcon } from "lucide-react-native";
 
 import {
   Actionsheet,
@@ -17,9 +17,39 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
+import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import type { QuranReciter } from "@/types/quran-audio";
+import { localizedSurahName } from "@/utils/surahName";
+import { formatFileSizeLocale } from "@/utils/number";
+
+// A reciter capability badge (word-by-word / verse-by-verse highlight support).
+const CapabilityChip = ({
+  icon,
+  accent,
+  label,
+}: {
+  icon: LucideIcon;
+  accent?: boolean;
+  label: string;
+}) => {
+  const color = accent ? ("$accentPrimary" as const) : ("$typographySecondary" as const);
+  return (
+    <HStack
+      alignItems="center"
+      gap="$1"
+      paddingHorizontal="$2"
+      paddingVertical="$0.5"
+      borderRadius="$2"
+      backgroundColor="$backgroundInteractive">
+      <Icon as={icon} size="xs" color={color} />
+      <Text size="xs" fontWeight="600" color={color}>
+        {label}
+      </Text>
+    </HStack>
+  );
+};
 
 // Picks the reader recitation — ayah-granular reciters only (the only ones that
 // can drive per-ayah/word read-along). Switching mid-playback continues from the
@@ -35,6 +65,8 @@ export const ReaderReciterSheet = ({
   const readerRecitationId = useQuranAudioStore((s) => s.readerRecitationId);
   const setReaderRecitation = useQuranAudioStore((s) => s.setReaderRecitation);
   const [reciters, setReciters] = useState<QuranReciter[]>([]);
+  // The selected recitation's offline surahs (per-ayah files), for management.
+  const [downloads, setDownloads] = useState<{ surah: number; bytes: number }[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -42,10 +74,21 @@ export const ReaderReciterSheet = ({
     quranReciterRegistry.readerReciters().then((r) => {
       if (alive) setReciters(r);
     });
+    quranReciterRegistry.getRecitationById(readerRecitationId).then((rec) => {
+      if (alive)
+        setDownloads(rec ? quranAudioDownload.downloadedAyahSurahs(rec.id, rec.fileFormat) : []);
+    });
     return () => {
       alive = false;
     };
-  }, [isOpen]);
+  }, [isOpen, readerRecitationId]);
+
+  const deleteDownload = async (surah: number) => {
+    const rec = await quranReciterRegistry.getRecitationById(readerRecitationId);
+    if (!rec) return;
+    quranAudioDownload.deleteAyahSurah(rec.id, surah, rec.fileFormat);
+    setDownloads(quranAudioDownload.downloadedAyahSurahs(rec.id, rec.fileFormat));
+  };
 
   const select = (recitationId: string) => {
     setReaderRecitation(recitationId);
@@ -113,28 +156,19 @@ export const ReaderReciterSheet = ({
                         <Text size="xs" color="$typographySecondary">
                           {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
                         </Text>
-                        <HStack
-                          alignSelf="flex-start"
-                          alignItems="center"
-                          gap="$1"
-                          marginTop="$0.5"
-                          paddingHorizontal="$2"
-                          paddingVertical="$0.5"
-                          borderRadius="$2"
-                          backgroundColor="$backgroundInteractive">
-                          <Icon
-                            as={rec.timings ? Highlighter : AlignJustify}
-                            size="xs"
-                            color={rec.timings ? "$accentPrimary" : "$typographySecondary"}
+                        {/* Word-timed reciters support both highlight modes — show both. */}
+                        <HStack alignSelf="flex-start" gap="$1.5" marginTop="$0.5">
+                          {rec.timings ? (
+                            <CapabilityChip
+                              icon={Highlighter}
+                              accent
+                              label={t("quran.reader.wordByWord")}
+                            />
+                          ) : null}
+                          <CapabilityChip
+                            icon={AlignJustify}
+                            label={t("quran.reader.ayahByAyah")}
                           />
-                          <Text
-                            size="xs"
-                            fontWeight="600"
-                            color={rec.timings ? "$accentPrimary" : "$typographySecondary"}>
-                            {rec.timings
-                              ? t("quran.reader.wordByWord")
-                              : t("quran.reader.ayahByAyah")}
-                          </Text>
                         </HStack>
                       </VStack>
                       {selected ? <Icon as={Check} size="sm" color="$accentPrimary" /> : null}
@@ -143,6 +177,39 @@ export const ReaderReciterSheet = ({
                 });
               })}
             </VStack>
+
+            {/* Offline surahs saved for the selected reciter, with per-surah delete. */}
+            {downloads.length > 0 ? (
+              <VStack gap="$2" marginTop="$4">
+                <Text size="sm" fontWeight="700" color="$typographySecondary">
+                  {t("quran.reader.downloadedSurahs")}
+                </Text>
+                {downloads.map(({ surah, bytes }) => (
+                  <HStack
+                    key={surah}
+                    alignItems="center"
+                    gap="$3"
+                    paddingVertical="$1.5"
+                    paddingHorizontal="$3"
+                    borderRadius="$3"
+                    backgroundColor="$backgroundSecondary">
+                    <Text size="sm" fontWeight="600" color="$typography" flex={1}>
+                      {localizedSurahName(surah)}
+                    </Text>
+                    <Text size="xs" color="$typographySecondary">
+                      {formatFileSizeLocale(bytes, t)}
+                    </Text>
+                    <Pressable
+                      onPress={() => void deleteDownload(surah)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("a11y.quran.listen.deleteDownload")}
+                      hitSlop={8}>
+                      <Icon as={Trash2} size="sm" color="$typographySecondary" />
+                    </Pressable>
+                  </HStack>
+                ))}
+              </VStack>
+            ) : null}
           </ScrollView>
         </VStack>
       </ActionsheetContent>
