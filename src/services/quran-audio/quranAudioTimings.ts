@@ -38,6 +38,18 @@ const parse = (raw: unknown): AyahSegmentMap => {
         maxIndex = seg[0];
       }
     }
+    // Aligner tail repair: ~16% of ayahs end with a degenerate final segment (a
+    // few-ms sliver at EOF after a >1s gap) because the aligner mis-bounds the
+    // final madd word. Pull its start back to the previous segment's end so the
+    // last word lights while it's actually recited; at worst it lights early.
+    // A tiny final after a small gap is left alone — that's a legit short word.
+    if (monotonic.length >= 2) {
+      const last = monotonic[monotonic.length - 1];
+      const prev = monotonic[monotonic.length - 2];
+      if (last[2] - last[1] < 200 && last[1] - prev[2] > 1000) {
+        monotonic[monotonic.length - 1] = [last[0], prev[2], last[2]];
+      }
+    }
     if (monotonic.length > 0) out[k] = monotonic;
   }
   return out;

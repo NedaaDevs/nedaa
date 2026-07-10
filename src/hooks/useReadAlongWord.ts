@@ -49,7 +49,10 @@ export const useReadAlongWord = () => {
   }, [readAlong, granularity, wordMode]);
 
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
-  const wordsRef = useRef<GlyphBound[]>([]);
+  // The current ayah's glyphs keyed by canonical QPC word index, plus the highest
+  // index — timing indices past it are trailing surplus (= the ayah has ended).
+  const wordsRef = useRef<Map<number, GlyphBound>>(new Map());
+  const maxWordRef = useRef(0);
   const lastWordRef = useRef(-1);
   // Latches once this ayah's audio has wrapped past its last word, so the highlight
   // hides at the end instead of snapping back to word 1.
@@ -81,14 +84,24 @@ export const useReadAlongWord = () => {
     };
   }, [wordMode, readerRecitationId]);
 
-  // Load the current ayah's word glyphs in global reading order on ayah change.
+  // Load the current ayah's word glyphs on ayah change, keyed by their canonical
+  // QPC word index (timing indices map onto it directly).
   useEffect(() => {
-    wordsRef.current = [];
+    wordsRef.current = new Map();
+    maxWordRef.current = 0;
     lastWordRef.current = -1;
     if (!wordMode || currentSurah == null || currentAyah == null) return;
     let alive = true;
     QuranContentDB.getAyahWordGlyphs(version, currentSurah, currentAyah).then((ws) => {
-      if (alive) wordsRef.current = ws;
+      if (!alive) return;
+      const map = new Map<number, GlyphBound>();
+      let max = 0;
+      for (const g of ws) {
+        map.set(g.wordIndex, g);
+        if (g.wordIndex > max) max = g.wordIndex;
+      }
+      wordsRef.current = map;
+      maxWordRef.current = max;
     });
     return () => {
       alive = false;
@@ -148,10 +161,9 @@ export const useReadAlongWord = () => {
         log.i("Word", msg);
       };
 
-      // Per-word highlighting is only safe when the timings' word count matches the
-      // mushaf's glyph words. Any mismatch/missing data holds the whole-ayah tint.
-      const glyphCount = wordsRef.current.length;
-      if (glyphCount === 0) {
+      // Timing word indices and glyph wordIndex share the QPC enumeration (identity
+      // for words 1..N, verified across all 6236 ayahs) — no count reconciliation.
+      if (wordsRef.current.size === 0) {
         // Glyphs still loading — show nothing (no flash), not the verse fallback.
         logOnce("no-glyphs", `${a} waiting — glyphs not loaded yet`);
         return;
@@ -166,11 +178,6 @@ export const useReadAlongWord = () => {
           "no-timings",
           `${a} ${loaded ? "verse — no timings" : "waiting — timings loading"}`
         );
-        return;
-      }
-      if (timingCount !== glyphCount) {
-        setVerse(true); // can't track words → whole-ayah fallback
-        logOnce("diverge", `${a} verse — diverge glyph=${glyphCount} timing=${timingCount}`);
         return;
       }
 
@@ -189,11 +196,18 @@ export const useReadAlongWord = () => {
         logOnce("ended", `${a} done — hiding highlight`);
         return;
       }
-      // QUL's 1-based word index should map onto the ayah's Nth non-marker glyph;
-      // an index past the glyph count (gappy timing data) holds the previous word.
-      const glyph = wordsRef.current[wordIndex - 1];
+      // Some timing files carry trailing surplus segments past the last QPC word
+      // (the pause/end-marker tail). The words are done — hide the highlight.
+      if (wordIndex > maxWordRef.current) {
+        endedRef.current = true;
+        setVerse(false);
+        setReadAlongWord(null);
+        logOnce("tail", `${a} tail segment w${wordIndex} > ${maxWordRef.current} — done`);
+        return;
+      }
+      const glyph = wordsRef.current.get(wordIndex);
       if (!glyph) {
-        logOnce("oob", `${a} word ${wordIndex} out of range (glyphs ${glyphCount}) — holding`);
+        logOnce("oob", `${a} word ${wordIndex} has no glyph — holding`);
         return;
       }
       if (wordIndex === lastWordRef.current) return;
@@ -203,11 +217,12 @@ export const useReadAlongWord = () => {
       // word-by-word tracking: which word, playback position, page/line.
       log.i(
         "Word",
-        `${currentSurah}:${currentAyah} w${wordIndex}/${glyphCount} @${Math.round(pos)}ms p${glyph.page} l${glyph.line}`
+        `${currentSurah}:${currentAyah} w${wordIndex}/${maxWordRef.current} @${Math.round(pos)}ms p${glyph.page} l${glyph.line}`
       );
       setReadAlongWord({
         surah: currentSurah,
         ayah: currentAyah,
+        wordIndex,
         page: glyph.page,
         line: glyph.line,
         x: glyph.x,

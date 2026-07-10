@@ -23,6 +23,9 @@ export type GlyphBound = {
   position: number;
   surahNumber: number;
   ayahNumber: number;
+  // Canonical QPC word number within the ayah (1..N, generator-assigned). Timing
+  // word indices map onto this directly — same enumeration, verified all 6236 ayahs.
+  wordIndex: number;
   x: number;
   y: number;
   width: number;
@@ -240,6 +243,9 @@ export type QuranState = {
   readAlongWord: {
     surah: number;
     ayah: number;
+    // 1-based ordinal of the word within the ayah (the Nth non-marker word), so
+    // text mode can colour the same word the mushaf highlights by rectangle.
+    wordIndex: number;
     page: number;
     line: number;
     x: number;

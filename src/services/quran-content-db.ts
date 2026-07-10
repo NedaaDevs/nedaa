@@ -371,6 +371,7 @@ const getMarkerBounds = (version: MushafVersion, page: number): Promise<GlyphBou
       width: number;
       height: number;
       is_marker: number;
+      word_index: number | null;
     }>("SELECT * FROM glyph_bounds WHERE page = ? AND is_marker = 1 ORDER BY line, position", [
       page,
     ]);
@@ -381,6 +382,7 @@ const getMarkerBounds = (version: MushafVersion, page: number): Promise<GlyphBou
       position: row.position,
       surahNumber: row.surah_number,
       ayahNumber: row.ayah_number,
+      wordIndex: row.word_index ?? 0,
       x: row.x,
       y: row.y,
       width: row.width,
@@ -403,6 +405,7 @@ const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBoun
       width: number;
       height: number;
       is_marker: number;
+      word_index: number | null;
     }>("SELECT * FROM glyph_bounds WHERE page = ? ORDER BY line, position", [page]);
 
     return rows.map((row) => ({
@@ -411,6 +414,7 @@ const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBoun
       position: row.position,
       surahNumber: row.surah_number,
       ayahNumber: row.ayah_number,
+      wordIndex: row.word_index ?? 0,
       x: row.x,
       y: row.y,
       width: row.width,
@@ -420,8 +424,8 @@ const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBoun
   });
 
 // An ayah's word glyphs (no ayah-end marker) in global reading order
-// (page → line → position), so the Nth entry is the ayah's Nth word — the index
-// used by the read-along timings. Cached; spans page boundaries.
+// (page → line → position). Each carries its canonical QPC wordIndex — the same
+// enumeration the read-along timings use. Cached; spans page boundaries.
 const getAyahWordGlyphs = (
   version: MushafVersion,
   surah: number,
@@ -440,17 +444,21 @@ const getAyahWordGlyphs = (
       width: number;
       height: number;
       is_marker: number;
+      word_index: number | null;
     }>(
       "SELECT * FROM glyph_bounds WHERE surah_number = ? AND ayah_number = ? AND is_marker = 0 ORDER BY page, line, position",
       [surah, ayah]
     );
 
-    return rows.map((row) => ({
+    // word_index is NULL on schema-0 bounds DBs; the reading-order ordinal is the
+    // same enumeration (QPC words never split across glyph rows).
+    return rows.map((row, i) => ({
       page: row.page,
       line: row.line,
       position: row.position,
       surahNumber: row.surah_number,
       ayahNumber: row.ayah_number,
+      wordIndex: row.word_index ?? i + 1,
       x: row.x,
       y: row.y,
       width: row.width,
