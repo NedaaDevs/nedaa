@@ -83,12 +83,19 @@ const getTargetDir = async (): Promise<Directory> => {
 // (the live name for a first install, the staging name for a background update).
 // The version marker is written only after a verified move, so an interrupted
 // download is never stamped "installed".
+// Correlates concurrent/retried install attempts in logs.
+let installSeq = 0;
+
 const installContentDb = async (
   content: ContentManifest,
   targetDir: Directory,
   destName: string
 ): Promise<void> => {
-  log.i("Content", `Downloading content DB v${content.content.version} → ${destName}`);
+  const seq = ++installSeq;
+  log.i(
+    "Content",
+    `#${seq} downloading content DB v${content.content.version} → ${destName} (dir=${targetDir.uri})`
+  );
   // Cache staging is scoped to destName so a foreground install (quran.db) and a
   // background update (quran.db.next) never share the zip/extract dir — otherwise
   // one's extractDir.delete() yanks the file the other is mid-move(), corrupting
@@ -108,6 +115,7 @@ const installContentDb = async (
   if (!extracted.exists || extracted.size === 0) {
     throw new Error("[QuranContentDB] content zip missing quran.db");
   }
+  log.d("Content", `#${seq} extracted ${extracted.size}B, target dir exists=${targetDir.exists}`);
 
   const destFile = new File(targetDir, destName);
   const destVersion = new File(targetDir, `${destName}.version`);
@@ -117,6 +125,10 @@ const installContentDb = async (
   if (wal.exists) wal.delete();
   if (shm.exists) shm.delete();
   extracted.move(destFile);
+  log.d(
+    "Content",
+    `#${seq} moved → dest exists=${destFile.exists} src still exists=${extracted.exists}`
+  );
 
   // Verify the file landed before stamping the version marker — a stamped-but-
   // missing DB is the state that can't self-recover. Existence only: File.size can
@@ -125,6 +137,17 @@ const installContentDb = async (
   // integrity probe, which triggers the recovery wipe.
   const landed = new File(targetDir, destName);
   if (!landed.exists) {
+    // Diagnose where the move actually left things before failing.
+    const names = targetDir.exists
+      ? targetDir
+          .list()
+          .map((e) => e.uri.split("/").pop())
+          .join(", ")
+      : "<target dir missing>";
+    log.e(
+      "Content",
+      `#${seq} landed missing — destFile.exists=${destFile.exists} src=${extracted.exists} target dir: [${names}]`
+    );
     throw new Error("[QuranContentDB] content DB missing after install");
   }
 
@@ -134,7 +157,7 @@ const installContentDb = async (
 
   zipFile.delete();
   extractDir.delete();
-  log.i("Content", `Installed content DB v${content.content.version} → ${destName}`);
+  log.i("Content", `#${seq} installed content DB v${content.content.version} → ${destName}`);
 };
 
 // Swap a previously-staged background update into place. Safe to call only before
@@ -253,7 +276,6 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         void checkForContentUpdate();
         return db;
       } catch (error) {
-        quranDbPromise = null;
         quranDbReady = false;
         log.e("Open", "Error opening quran.db", error as Error);
         // A stamped-but-unopenable DB can't self-heal: mustDownloadBeforeOpen sees
@@ -263,12 +285,16 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
           const targetDir = await getTargetDir();
           const stamped = new File(targetDir, `${QURAN_DB_NAME}.version`).exists;
           if (stamped) {
+            log.w("Open", "recovery wipe begin");
             removeContentFiles(targetDir, CONTENT_DB_FILES);
-            log.w("Open", "Wiped stamped-but-unopenable content DB — retry re-downloads");
+            log.w("Open", "recovery wipe done — retry re-downloads");
           }
         } catch (cleanupError) {
           log.e("Open", "Recovery wipe failed", cleanupError as Error);
         }
+        // Release the single-flight slot only after cleanup, so a concurrent
+        // caller can't start a fresh install while the wipe is still deleting.
+        quranDbPromise = null;
         throw error;
       }
     })();
