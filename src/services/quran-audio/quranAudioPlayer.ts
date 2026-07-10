@@ -45,6 +45,10 @@ class QuranAudioPlayer {
   private userStopping = false;
   // Bumped on every play*(); a build only commits if it's still the latest.
   private buildToken = 0;
+  // True once the current load reached PLAYING. Android delivers the replaced
+  // playlist's stopped/end + progress events late; a queue-end can't precede
+  // PLAYING, so such events arriving before it are stale and ignored.
+  private reachedPlaying = false;
   // The full-surah playlist is memoized per reciter; null once torn down or when
   // an ayah queue is loaded instead.
   private surahPlaylistReciter: string | null = null;
@@ -69,6 +73,8 @@ class QuranAudioPlayer {
       onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
       onProgress: (position, duration) => {
+        // Drop stale progress from a replaced playlist (see reachedPlaying).
+        if (!this.reachedPlaying) return;
         log.i("Progress", `pos=${position.toFixed(1)}s dur=${duration.toFixed(1)}s`);
         this.store.setProgress(position, duration, Date.now());
       },
@@ -203,6 +209,7 @@ class QuranAudioPlayer {
     }
 
     const token = ++this.buildToken;
+    this.reachedPlaying = false;
     // Reflect the target immediately so the mini-player shows a loading spinner
     // the instant the surah is tapped, before init/handoff and the network fetch.
     this.store.setCurrentAyah(surah, 1);
@@ -289,6 +296,7 @@ class QuranAudioPlayer {
     toAyah: number
   ): Promise<void> {
     const token = ++this.buildToken;
+    this.reachedPlaying = false;
     this.store.setCurrentAyah(surah, fromAyah);
     this.store.setPlayerState(QURAN_PLAYER_STATE.LOADING);
 
@@ -437,6 +445,7 @@ class QuranAudioPlayer {
     if (!this.playlistId) return;
     log.i("Player", `state=${state} reason=${reason ?? "?"}`);
     if (state === NITRO_STATE.PLAYING) {
+      this.reachedPlaying = true;
       this.store.setPlayerState(QURAN_PLAYER_STATE.PLAYING);
     } else if (state === NITRO_STATE.BUFFERING) {
       // Keep the spinner up while the stream buffers, until audio actually plays.
@@ -447,6 +456,12 @@ class QuranAudioPlayer {
       // The queue reached its end (last surah / last ayah). Other stops are an
       // error or interruption — surface them as a pause, not an end.
       if (reason === NITRO_REASON.END) {
+        // An end before ever playing is the replaced playlist's late stop
+        // (Android), not this session's end.
+        if (!this.reachedPlaying) {
+          log.w("Player", "ignoring stale end before playback started");
+          return;
+        }
         void this.teardown();
       } else {
         log.w("Player", `unexpected stop (${reason ?? "unknown"})`);
