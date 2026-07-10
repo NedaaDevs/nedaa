@@ -89,12 +89,17 @@ const installContentDb = async (
   destName: string
 ): Promise<void> => {
   log.i("Content", `Downloading content DB v${content.content.version} → ${destName}`);
-  const zipFile = new File(Paths.cache, "quran-content.zip");
+  // Cache staging is scoped to destName so a foreground install (quran.db) and a
+  // background update (quran.db.next) never share the zip/extract dir — otherwise
+  // one's extractDir.delete() yanks the file the other is mid-move(), corrupting
+  // the install (java.nio NoSuchFileException).
+  const slug = destName.replace(/[^a-zA-Z0-9]/g, "_");
+  const zipFile = new File(Paths.cache, `quran-content-${slug}.zip`);
   if (zipFile.exists) zipFile.delete();
   const downloaded = await new DownloadTask(content.url, zipFile).downloadAsync();
   if (!downloaded) throw new Error("[QuranContentDB] content DB download failed");
 
-  const extractDir = new Directory(Paths.cache, "quran-content");
+  const extractDir = new Directory(Paths.cache, `quran-content-${slug}`);
   if (extractDir.exists) extractDir.delete();
   extractDir.create({ intermediates: true });
   await unzip(zipFile.uri, extractDir.uri);
@@ -113,16 +118,23 @@ const installContentDb = async (
   if (shm.exists) shm.delete();
   extracted.move(destFile);
 
+  // Verify the file landed before stamping the version marker — a stamped-but-
+  // missing DB is the state that can't self-recover. Existence only: File.size can
+  // read null on a freshly-moved handle even when the bytes are present, so it's not
+  // a reliable signal here. A truncated/corrupt DB is caught at open by the
+  // integrity probe, which triggers the recovery wipe.
+  const landed = new File(targetDir, destName);
+  if (!landed.exists) {
+    throw new Error("[QuranContentDB] content DB missing after install");
+  }
+
   if (destVersion.exists) destVersion.delete();
   destVersion.create();
   destVersion.write(content.content.version);
 
   zipFile.delete();
   extractDir.delete();
-  log.i(
-    "Content",
-    `Installed content DB v${content.content.version} → ${destName} (${destFile.size}B)`
-  );
+  log.i("Content", `Installed content DB v${content.content.version} → ${destName}`);
 };
 
 // Swap a previously-staged background update into place. Safe to call only before
@@ -203,6 +215,26 @@ const checkForContentUpdate = async (): Promise<void> => {
   }
 };
 
+// Delete the given file names under targetDir (missing ones are skipped). Shared
+// by the recovery wipe and the full reset.
+const removeContentFiles = (targetDir: Directory, names: string[]): void => {
+  for (const name of names) {
+    const f = new File(targetDir, name);
+    if (f.exists) f.delete();
+  }
+};
+
+// Every file the installed content DB owns — the DB, its version stamp, WAL/SHM,
+// and any pending staged update.
+const CONTENT_DB_FILES = [
+  QURAN_DB_NAME,
+  `${QURAN_DB_NAME}.version`,
+  `${QURAN_DB_NAME}-wal`,
+  `${QURAN_DB_NAME}-shm`,
+  STAGING_NAME,
+  `${STAGING_NAME}.version`,
+];
+
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   if (!quranDbPromise) {
     quranDbPromise = (async () => {
@@ -224,6 +256,19 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         quranDbPromise = null;
         quranDbReady = false;
         log.e("Open", "Error opening quran.db", error as Error);
+        // A stamped-but-unopenable DB can't self-heal: mustDownloadBeforeOpen sees
+        // the file present + stamped and skips the re-download, so every retry hits
+        // the same broken file. Delete the install so the next open re-downloads.
+        try {
+          const targetDir = await getTargetDir();
+          const stamped = new File(targetDir, `${QURAN_DB_NAME}.version`).exists;
+          if (stamped) {
+            removeContentFiles(targetDir, CONTENT_DB_FILES);
+            log.w("Open", "Wiped stamped-but-unopenable content DB — retry re-downloads");
+          }
+        } catch (cleanupError) {
+          log.e("Open", "Recovery wipe failed", cleanupError as Error);
+        }
         throw error;
       }
     })();
@@ -251,17 +296,7 @@ const wipeContentDb = async (): Promise<void> => {
   const dir = await getDirectory();
   const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
   const targetDir = new Directory(dirUri);
-  for (const name of [
-    QURAN_DB_NAME,
-    `${QURAN_DB_NAME}.version`,
-    `${QURAN_DB_NAME}-wal`,
-    `${QURAN_DB_NAME}-shm`,
-    STAGING_NAME,
-    `${STAGING_NAME}.version`,
-  ]) {
-    const f = new File(targetDir, name);
-    if (f.exists) f.delete();
-  }
+  removeContentFiles(targetDir, CONTENT_DB_FILES);
   log.i("Reset", "Wiped installed content DB");
 };
 
