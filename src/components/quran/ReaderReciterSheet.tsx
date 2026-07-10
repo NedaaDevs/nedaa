@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Check, Highlighter } from "lucide-react-native";
+import { AlignJustify, Check, Highlighter } from "lucide-react-native";
 
 import {
   Actionsheet,
@@ -91,7 +91,9 @@ export const ReaderReciterSheet = ({
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
                       accessibilityLabel={
-                        rec.timings ? t("a11y.quran.reciterWordByWord", { name }) : name
+                        rec.timings
+                          ? t("a11y.quran.reciterWordByWord", { name })
+                          : t("a11y.quran.reciterAyahByAyah", { name })
                       }>
                       <VStack
                         width={44}
@@ -111,22 +113,29 @@ export const ReaderReciterSheet = ({
                         <Text size="xs" color="$typographySecondary">
                           {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
                         </Text>
-                        {rec.timings ? (
-                          <HStack
-                            alignSelf="flex-start"
-                            alignItems="center"
-                            gap="$1"
-                            marginTop="$0.5"
-                            paddingHorizontal="$2"
-                            paddingVertical="$0.5"
-                            borderRadius="$2"
-                            backgroundColor="$backgroundInteractive">
-                            <Icon as={Highlighter} size="xs" color="$accentPrimary" />
-                            <Text size="xs" fontWeight="600" color="$accentPrimary">
-                              {t("quran.reader.wordByWord")}
-                            </Text>
-                          </HStack>
-                        ) : null}
+                        <HStack
+                          alignSelf="flex-start"
+                          alignItems="center"
+                          gap="$1"
+                          marginTop="$0.5"
+                          paddingHorizontal="$2"
+                          paddingVertical="$0.5"
+                          borderRadius="$2"
+                          backgroundColor="$backgroundInteractive">
+                          <Icon
+                            as={rec.timings ? Highlighter : AlignJustify}
+                            size="xs"
+                            color={rec.timings ? "$accentPrimary" : "$typographySecondary"}
+                          />
+                          <Text
+                            size="xs"
+                            fontWeight="600"
+                            color={rec.timings ? "$accentPrimary" : "$typographySecondary"}>
+                            {rec.timings
+                              ? t("quran.reader.wordByWord")
+                              : t("quran.reader.ayahByAyah")}
+                          </Text>
+                        </HStack>
                       </VStack>
                       {selected ? <Icon as={Check} size="sm" color="$accentPrimary" /> : null}
                     </Pressable>

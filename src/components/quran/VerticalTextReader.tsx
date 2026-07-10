@@ -8,6 +8,7 @@ import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS, TOTAL_PAGES } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
+import { useAudioFollowTarget } from "@/hooks/useAudioFollowTarget";
 import TextPage from "@/components/quran/TextPage";
 
 // Every mushaf page number, hoisted so the list data isn't reallocated per render.
@@ -64,6 +65,24 @@ const VerticalTextReader = ({
     onReachEnd: pause,
   });
 
+  // Read-along follow: text reflows, so there's no pixel target for a line — the
+  // reliable unit is the page. When the recited verse moves onto a page that isn't
+  // the one on screen, flip to it; within a page the verse tint tracks position.
+  const followTarget = useAudioFollowTarget();
+  const visiblePageRef = useRef(currentPage);
+  const lastFollowPageRef = useRef(0);
+  useEffect(() => {
+    if (!followTarget) {
+      lastFollowPageRef.current = 0;
+      return;
+    }
+    const page = followTarget.page;
+    if (page === lastFollowPageRef.current) return; // already handled this page
+    lastFollowPageRef.current = page;
+    if (page === visiblePageRef.current) return; // recited verse already on screen
+    animatedRef.current?.scrollToIndex({ index: page - 1, animated: true, viewPosition: 0 });
+  }, [followTarget, animatedRef]);
+
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
   // the list's native scroll (fires only on a tap, not a drag).
@@ -86,7 +105,10 @@ const VerticalTextReader = ({
     () =>
       ({ viewableItems }: { viewableItems: ViewToken[] }) => {
         const top = viewableItems[0]?.index;
-        if (top != null) onPageChangeRef.current(top + 1);
+        if (top != null) {
+          visiblePageRef.current = top + 1;
+          onPageChangeRef.current(top + 1);
+        }
       },
     []
   );

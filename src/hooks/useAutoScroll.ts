@@ -27,11 +27,17 @@ type Params = {
   // The list offset of the current page — used to seed the glide when the list
   // was just mounted (e.g. a layout switch) and its live offset is still 0, so the
   // glide starts from the page you're on rather than dragging back to the top.
-  initialOffset: number;
+  // Omit when item heights are unknown (variable-height text reader).
+  initialOffset?: number;
   onReachEnd: () => void;
 };
 
-export const useAutoScroll = <ItemT>({ playing, pxPerSec, initialOffset, onReachEnd }: Params) => {
+export const useAutoScroll = <ItemT>({
+  playing,
+  pxPerSec,
+  initialOffset = 0,
+  onReachEnd,
+}: Params) => {
   const animatedRef = useAnimatedRef<Animated.FlatList<ItemT>>();
   const target = useSharedValue(0);
   const liveOffset = useSharedValue(0);
@@ -104,5 +110,7 @@ export const useAutoScroll = <ItemT>({ playing, pxPerSec, initialOffset, onReach
     frame.setActive(playing);
   }, [playing, frame, target, liveOffset, initialOffset]);
 
-  return { animatedRef, scrollHandler };
+  // liveOffset/layoutH are exposed so a follower (read-along) can decide, on the UI
+  // thread, whether the target line is already on screen before scrolling to it.
+  return { animatedRef, scrollHandler, liveOffset, layoutH };
 };

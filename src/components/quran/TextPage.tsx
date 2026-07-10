@@ -4,13 +4,15 @@ import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
-import { BookmarkColor, HighlightColor, QuranThemeType } from "@/enums/quran";
+import { BookmarkColor, HighlightColor, QuranThemeType, ReadAlongGranularity } from "@/enums/quran";
 import { QURAN_THEME_COLORS, QURAN_TEXT_FONT } from "@/constants/Quran";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
+import { useQuranAudioStore } from "@/stores/quranAudio";
+import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
 import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import { juzForPage } from "@/utils/juz";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
@@ -61,6 +63,40 @@ const TextPage = ({
   } | null>(null);
 
   const flashAyah = useQuranStore((s) => s.flashAyah);
+
+  // Read-along, mirroring the mushaf exactly: word granularity tints the recited
+  // word, verse granularity (and the word-mode fallback for untrackable verses)
+  // tints the whole verse. Gated to reader playback, not a Listen/gapless session.
+  const readAlong = useQuranStore((s) => s.readAlong);
+  const granularity = useQuranStore((s) => s.readAlongGranularity);
+  const readAlongWord = useQuranStore((s) => s.readAlongWord);
+  const readAlongVerse = useQuranStore((s) => s.readAlongVerse);
+  const raSurah = useQuranAudioStore((s) => s.currentSurah);
+  const raAyah = useQuranAudioStore((s) => s.currentAyah);
+  const raActive = useQuranAudioStore((s) => s.playerState !== QURAN_PLAYER_STATE.IDLE);
+  const raQueueKind = useQuranAudioStore((s) => s.queue?.kind);
+  const readAlongAyah =
+    readAlong && raActive && raQueueKind != null && raQueueKind !== QURAN_QUEUE_KIND.SURAH
+      ? { surah: raSurah, ayah: raAyah }
+      : null;
+
+  // Resolve, for one verse, whether to tint a single word, the whole verse, or
+  // nothing — matching QuranPage's rectangle logic.
+  const readAlongFor = (surah: number, ayahNumber: number) => {
+    if (readAlongAyah?.surah !== surah || readAlongAyah?.ayah !== ayahNumber) {
+      return { whole: false, wordIndex: undefined as number | undefined };
+    }
+    if (granularity === ReadAlongGranularity.WORD) {
+      if (readAlongWord?.surah === surah && readAlongWord?.ayah === ayahNumber) {
+        return { whole: false, wordIndex: readAlongWord.wordIndex };
+      }
+      // No trackable word yet: whole-verse only once we know it's untrackable
+      // (divergent/missing timings); otherwise show nothing (still loading).
+      return { whole: readAlongVerse, wordIndex: undefined };
+    }
+    return { whole: true, wordIndex: undefined };
+  };
+
   const mutashabihatKeys = useMutashabihatKeys(page);
   const highlights = useHighlightStore((s) => s.highlights);
   const highlightMap = useMemo(() => {
@@ -170,28 +206,33 @@ const TextPage = ({
             writingDirection: "rtl",
             marginBottom: 14,
           }}>
-          {group.map((ayah) => (
-            <AyahText
-              key={`${surah}-${ayah.ayahNumber}`}
-              surahNumber={surah}
-              ayahNumber={ayah.ayahNumber}
-              text={ayah.text}
-              quranTheme={quranTheme}
-              isHighlighted={
-                highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
-              }
-              isFlashing={
-                flashAyah?.surah === surah &&
-                flashAyah?.ayah === ayah.ayahNumber &&
-                !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
-              }
-              highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
-              bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
-              hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
-              onLongPress={handleLongPress}
-              onWaqfPress={onWaqfPress}
-            />
-          ))}
+          {group.map((ayah) => {
+            const ra = readAlongFor(surah, ayah.ayahNumber);
+            return (
+              <AyahText
+                key={`${surah}-${ayah.ayahNumber}`}
+                surahNumber={surah}
+                ayahNumber={ayah.ayahNumber}
+                text={ayah.text}
+                quranTheme={quranTheme}
+                isHighlighted={
+                  highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
+                }
+                isReadAlong={ra.whole}
+                readAlongWordIndex={ra.wordIndex}
+                isFlashing={
+                  flashAyah?.surah === surah &&
+                  flashAyah?.ayah === ayah.ayahNumber &&
+                  !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
+                }
+                highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+                bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+                hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
+                onLongPress={handleLongPress}
+                onWaqfPress={onWaqfPress}
+              />
+            );
+          })}
         </Text>
       );
     }

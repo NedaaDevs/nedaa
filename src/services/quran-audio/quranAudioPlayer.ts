@@ -3,6 +3,7 @@ import type { TrackItem, TrackPlayerState, Reason, RepeatMode } from "react-nati
 
 import { nitroSession, NITRO_STATE, NITRO_REASON } from "@/services/audio/nitroSession";
 import { useQuranAudioStore } from "@/stores/quranAudio";
+import { useQuranStore } from "@/stores/quran";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { QuranManifestService } from "@/services/quran-manifest";
@@ -68,7 +69,7 @@ class QuranAudioPlayer {
       onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
       onProgress: (position, duration) => {
-        log.i("Progress", `pos=${Math.round(position)}ms dur=${Math.round(duration)}ms`);
+        log.i("Progress", `pos=${position.toFixed(1)}s dur=${duration.toFixed(1)}s`);
         this.store.setProgress(position, duration, Date.now());
       },
       onEvict: () => this.teardown(),
@@ -169,6 +170,24 @@ class QuranAudioPlayer {
   // Play a surah from the gapless full-surah playlist. Reuses the loaded playlist
   // (a native skip to the surah) unless the reciter changed, so switching surahs
   // and the lock-screen next/previous are instant rather than a rebuild.
+  // One line capturing everything needed to reproduce a playback session from a
+  // shared log: which surface, reciter, ayah range, and the reader settings that
+  // shape read-along/scroll behaviour.
+  private logSessionContext(
+    surface: string,
+    recitationId: string,
+    surah: number,
+    fromAyah: number,
+    toAyah: number
+  ): void {
+    const q = useQuranStore.getState();
+    const range = toAyah !== fromAyah ? `${fromAyah}-${toAyah}` : `${fromAyah}`;
+    log.i(
+      "Context",
+      `${surface} reciter=${recitationId} ${surah}:${range} scroll=${q.scrollDirection} readerMode=${q.readerMode} version=${q.currentVersion} readAlong=${q.readAlong} gran=${q.readAlongGranularity}`
+    );
+  }
+
   async playSurah(surah: number): Promise<void> {
     // Re-tapping the same surah with the same reciter resumes rather than
     // restarting; a reciter change falls through to a rebuild.
@@ -200,6 +219,8 @@ class QuranAudioPlayer {
         await this.teardown();
         return;
       }
+
+      this.logSessionContext("listen", recitation.id, surah, 1, 1);
 
       const reuse =
         this.isSurahPlaylist &&
@@ -302,6 +323,7 @@ class QuranAudioPlayer {
       }
 
       const localCount = items.filter((it) => it.url.startsWith("file")).length;
+      this.logSessionContext("reader", recitation.id, surah, fromAyah, toAyah);
       log.i(
         "Player",
         `ayah ${surah}:${fromAyah}-${toAyah} tracks=${items.length} local=${localCount} remote=${items.length - localCount} first=${items[0]?.url.slice(0, 64)}`

@@ -61,7 +61,7 @@ const VerticalReader = ({
   const pxPerSec = useQuranStore((s) => s.autoScrollSpeed);
   const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
   const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
-  const { animatedRef, scrollHandler } = useAutoScroll<number>({
+  const { animatedRef, scrollHandler, liveOffset, layoutH } = useAutoScroll<number>({
     playing,
     pxPerSec,
     // Matches getItemLayout's offset for the current page (index = page − 1).
@@ -69,8 +69,10 @@ const VerticalReader = ({
     onReachEnd: pause,
   });
 
-  // Read-along follow: on each recited-ayah change, glide so that ayah's first line
-  // sits ~a third down the viewport. Only fires on ayah change (not per word).
+  // Read-along follow: keep the recited line on screen. Only nudges when the line
+  // drifts outside a comfortable band (top ~20% … bottom ~30%); a line already in
+  // view is left alone so a short surah that fits the screen never scrolls. Fires on
+  // line change only (not per word on the same line).
   const followTarget = useAudioFollowTarget();
   const lastFollowRef = useRef("");
   useEffect(() => {
@@ -78,26 +80,36 @@ const VerticalReader = ({
       lastFollowRef.current = "";
       return;
     }
-    // Only re-scroll when the highlighted line changes (not per word on the line).
     const key = `${followTarget.page}:${followTarget.line}`;
     if (key === lastFollowRef.current) return;
     lastFollowRef.current = key;
-    const y = Math.max(
-      0,
+    // Absolute Y of the line's top within the scroller (paddingTop + page + line).
+    const lineTop =
       insets.top +
-        itemHeight * (followTarget.page - 1) +
-        (followTarget.line - 1) * lineHeightInPage -
-        height * 0.35
-    );
+      itemHeight * (followTarget.page - 1) +
+      (followTarget.line - 1) * lineHeightInPage;
     log.i(
       "Follow",
-      `${followTarget.surah}:${followTarget.ayah} p${followTarget.page} l${followTarget.line} → y=${Math.round(y)}`
+      `${followTarget.surah}:${followTarget.ayah} p${followTarget.page} l${followTarget.line} lineTop=${Math.round(lineTop)}`
     );
     runOnUI(() => {
       "worklet";
-      scrollTo(animatedRef, 0, y, true);
+      const viewportY = lineTop - liveOffset.value;
+      const view = layoutH.value || height;
+      // In-band → leave it; the line is already comfortably visible.
+      if (viewportY >= view * 0.2 && viewportY <= view * 0.7) return;
+      scrollTo(animatedRef, 0, Math.max(0, lineTop - view * 0.35), true);
     })();
-  }, [followTarget, insets.top, itemHeight, lineHeightInPage, height, animatedRef]);
+  }, [
+    followTarget,
+    insets.top,
+    itemHeight,
+    lineHeightInPage,
+    height,
+    animatedRef,
+    liveOffset,
+    layoutH,
+  ]);
 
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
