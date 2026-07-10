@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { RefObject } from "react";
-import { Platform, StatusBar, View } from "react-native";
+import { View } from "react-native";
 import type { GestureResponderEvent } from "react-native";
 
 import { MushafVersion } from "@/enums/quran";
@@ -42,7 +42,7 @@ type Params = {
 // word under the finger (a text glyph); a tap selects an ayah-end marker. A
 // long-press on a surah-header line resolves to that surah instead (the header
 // has no glyphs).
-export const useAyahHitTest = ({
+export const useAyahSelection = ({
   version,
   page,
   glyphBounds,
@@ -90,85 +90,76 @@ export const useAyahHitTest = ({
     [isPageMode, pageScaleX, pageScaleY, srcLineHeight, coverScale, lineHeight, lineCoverClipY]
   );
 
-  // Both gestures resolve the glyph under the touch; they differ only in which
-  // glyph kind they match — a tap matches an ayah-end marker, a long-press a word.
+  // Both gestures resolve the glyph under the touch (page-local coords); they
+  // differ only in which glyph kind they match — a tap matches an ayah-end
+  // marker, a long-press a word.
   const resolveHit = useCallback(
-    (absoluteX: number, absoluteY: number, wantMarker: boolean) => {
+    (touchX: number, touchY: number, wantMarker: boolean) => {
       if (lineHeight === 0) return;
-      pressableRef.current?.measureInWindow((px, py) => {
-        const statusBarOffset = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
-        const touchX = absoluteX - px;
-        const touchY = absoluteY - py - statusBarOffset;
-        const { sourceX, sourceY, sourceLine } = toSourceCoords(touchX, touchY);
+      const { sourceX, sourceY, sourceLine } = toSourceCoords(touchX, touchY);
 
-        // Long-press on a surah-header line resolves to that surah (the header
-        // band has no glyphs to hit-test).
-        const headerSurah = surahHeaderLines[sourceLine];
-        if (!wantMarker && headerSurah) {
-          setHighlightedAyah(null);
-          onSurahLongPress?.(headerSurah);
-          return;
-        }
+      // Long-press on a surah-header line resolves to that surah (the header
+      // band has no glyphs to hit-test).
+      const headerSurah = surahHeaderLines[sourceLine];
+      if (!wantMarker && headerSurah) {
+        setHighlightedAyah(null);
+        onSurahLongPress?.(headerSurah);
+        return;
+      }
 
-        if (glyphBounds.length === 0) {
-          setHighlightedAyah(null);
-          return;
-        }
+      if (glyphBounds.length === 0) {
+        setHighlightedAyah(null);
+        return;
+      }
 
-        let hit = glyphBounds.find(
-          (g) =>
-            g.isMarker === wantMarker &&
-            g.line === sourceLine &&
-            sourceX >= g.x &&
-            sourceX <= g.x + g.width &&
-            sourceY >= g.y &&
-            sourceY <= g.y + g.height
-        );
+      let hit = glyphBounds.find(
+        (g) =>
+          g.isMarker === wantMarker &&
+          g.line === sourceLine &&
+          sourceX >= g.x &&
+          sourceX <= g.x + g.width &&
+          sourceY >= g.y &&
+          sourceY <= g.y + g.height
+      );
 
-        // Long-press near-miss: a word press landing in inter-word spacing
-        // resolves to the nearest word on the same line.
-        if (!hit && !wantMarker) {
-          let bestDist = Infinity;
-          for (const g of glyphBounds) {
-            if (g.isMarker || g.line !== sourceLine) continue;
-            const dx = Math.max(g.x - sourceX, 0, sourceX - (g.x + g.width));
-            const dy = Math.max(g.y - sourceY, 0, sourceY - (g.y + g.height));
-            const d = dx * dx + dy * dy;
-            if (d < bestDist) {
-              bestDist = d;
-              hit = g;
-            }
+      // Long-press near-miss: a word press landing in inter-word spacing
+      // resolves to the nearest word on the same line.
+      if (!hit && !wantMarker) {
+        let bestDist = Infinity;
+        for (const g of glyphBounds) {
+          if (g.isMarker || g.line !== sourceLine) continue;
+          const dx = Math.max(g.x - sourceX, 0, sourceX - (g.x + g.width));
+          const dy = Math.max(g.y - sourceY, 0, sourceY - (g.y + g.height));
+          const d = dx * dx + dy * dy;
+          if (d < bestDist) {
+            bestDist = d;
+            hit = g;
           }
         }
+      }
 
-        setHighlightedAyah(
-          hit ? { surah: hit.surahNumber, ayah: hit.ayahNumber, touchX, touchY } : null
-        );
-        if (hit && !wantMarker) onAyahLongPress?.(hit.surahNumber, hit.ayahNumber);
-      });
+      setHighlightedAyah(
+        hit ? { surah: hit.surahNumber, ayah: hit.ayahNumber, touchX, touchY } : null
+      );
+      if (hit && !wantMarker) onAyahLongPress?.(hit.surahNumber, hit.ayahNumber);
     },
-    [
-      glyphBounds,
-      lineHeight,
-      toSourceCoords,
-      pressableRef,
-      surahHeaderLines,
-      onAyahLongPress,
-      onSurahLongPress,
-    ]
+    [glyphBounds, lineHeight, toSourceCoords, surahHeaderLines, onAyahLongPress, onSurahLongPress]
   );
 
-  // Long-press is driven by an RNGH LongPress gesture (coordinates natively with
-  // the page-swipe pan), which reports screen coords directly.
+  // Long-press is an RNGH LongPress gesture; its e.x/e.y are already relative to
+  // the page view, so no window math (which broke under edge-to-edge Android).
   const handleLongPress = useCallback(
-    (absoluteX: number, absoluteY: number) => resolveHit(absoluteX, absoluteY, false),
+    (x: number, y: number) => resolveHit(x, y, false),
     [resolveHit]
   );
-  // Tap stays on the RN Pressable, which reports coords via the touch event.
+  // Tap stays on the RN Pressable. locationX/Y is child-relative on the stacked
+  // line images, so convert window coords (pageX/Y) to page-local instead.
   const handlePress = useCallback(
-    (event: GestureResponderEvent) =>
-      resolveHit(event.nativeEvent.pageX, event.nativeEvent.pageY, true),
-    [resolveHit]
+    (event: GestureResponderEvent) => {
+      const { pageX, pageY } = event.nativeEvent;
+      pressableRef.current?.measureInWindow((px, py) => resolveHit(pageX - px, pageY - py, true));
+    },
+    [resolveHit, pressableRef]
   );
 
   const clearHighlight = useCallback(() => setHighlightedAyah(null), []);

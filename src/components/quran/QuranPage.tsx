@@ -21,7 +21,7 @@ import {
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { usePageData } from "@/hooks/usePageData";
-import { useAyahHitTest } from "@/hooks/useAyahHitTest";
+import { useAyahSelection } from "@/hooks/useAyahSelection";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranStore } from "@/stores/quran";
@@ -128,7 +128,7 @@ const QuranPage = ({
     [isPageMode, coverScale, lineHeight, lineCoverClipY, pageScaleX, pageScaleY, srcLineHeight]
   );
 
-  const { highlightedAyah, clearHighlight, handlePress, handleLongPress } = useAyahHitTest({
+  const { highlightedAyah, clearHighlight, handlePress, handleLongPress } = useAyahSelection({
     version,
     page,
     glyphBounds,
@@ -147,7 +147,8 @@ const QuranPage = ({
         .minDuration(LONG_PRESS_MS)
         .maxDistance(LONG_PRESS_MAX_DIST)
         // onStart runs as a worklet on the UI thread; hop to JS for the hit-test.
-        .onStart((e) => scheduleOnRN(handleLongPress, e.absoluteX, e.absoluteY)),
+        // e.x/e.y are relative to the page view — no window-coord conversion.
+        .onStart((e) => scheduleOnRN(handleLongPress, e.x, e.y)),
     [handleLongPress]
   );
 
