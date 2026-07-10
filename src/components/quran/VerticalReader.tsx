@@ -10,7 +10,10 @@ import { fitWidthBox } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useAudioFollowTarget } from "@/hooks/useAudioFollowTarget";
+import { AppLogger } from "@/utils/appLogger";
 import QuranPage from "@/components/quran/QuranPage";
+
+const log = AppLogger.create("quran-follow");
 
 // Every mushaf page number, hoisted so the list data isn't reallocated per render.
 const ALL_PAGES = Array.from({ length: TOTAL_PAGES }, (_, i) => i + 1);
@@ -69,14 +72,26 @@ const VerticalReader = ({
   // Read-along follow: on each recited-ayah change, glide so that ayah's first line
   // sits ~a third down the viewport. Only fires on ayah change (not per word).
   const followTarget = useAudioFollowTarget();
+  const lastFollowRef = useRef("");
   useEffect(() => {
-    if (!followTarget) return;
+    if (!followTarget) {
+      lastFollowRef.current = "";
+      return;
+    }
+    // Only re-scroll when the highlighted line changes (not per word on the line).
+    const key = `${followTarget.page}:${followTarget.line}`;
+    if (key === lastFollowRef.current) return;
+    lastFollowRef.current = key;
     const y = Math.max(
       0,
       insets.top +
         itemHeight * (followTarget.page - 1) +
         (followTarget.line - 1) * lineHeightInPage -
-        height * 0.3
+        height * 0.35
+    );
+    log.i(
+      "Follow",
+      `${followTarget.surah}:${followTarget.ayah} p${followTarget.page} l${followTarget.line} → y=${Math.round(y)}`
     );
     runOnUI(() => {
       "worklet";
