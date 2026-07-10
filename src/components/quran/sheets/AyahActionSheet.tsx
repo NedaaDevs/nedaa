@@ -69,6 +69,9 @@ import { buildTajweedCards } from "@/components/quran/tajweed-cards";
 import { MutashabihatGroup } from "@/types/mutashabihat";
 
 interface AyahActionSheetProps {
+  // Fires when a play action starts reader audio; the screen re-shows its chrome
+  // so the audio control is reachable.
+  onPlayStarted?: () => void;
   // The ayah whose actions are shown; null closes the sheet.
   target: { surah: number; ayah: number } | null;
   quranTheme: QuranThemeType;
@@ -77,7 +80,13 @@ interface AyahActionSheetProps {
   onGoTo: (surah: number, ayah: number, page: number) => void;
 }
 
-const AyahActionSheet = ({ target, quranTheme, onClose, onGoTo }: AyahActionSheetProps) => {
+const AyahActionSheet = ({
+  target,
+  quranTheme,
+  onClose,
+  onGoTo,
+  onPlayStarted,
+}: AyahActionSheetProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { isRTL } = useRTL();
@@ -338,6 +347,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onGoTo }: AyahActionShee
               <Pressable
                 onPress={() => {
                   quranAudioPlayer.playAyah(target.surah, target.ayah);
+                  onPlayStarted?.();
                   onClose();
                 }}
                 accessibilityRole="button"
@@ -353,6 +363,7 @@ const AyahActionSheet = ({ target, quranTheme, onClose, onGoTo }: AyahActionShee
               <Pressable
                 onPress={() => {
                   quranAudioPlayer.playFromHere(target.surah, target.ayah);
+                  onPlayStarted?.();
                   onClose();
                 }}
                 accessibilityRole="button"

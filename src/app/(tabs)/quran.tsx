@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import { Text } from "@/components/ui/text";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
+import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { localizedSurahName } from "@/utils/surahName";
 import { useRTL } from "@/contexts/RTLContext";
@@ -84,15 +84,6 @@ const QuranScreen = () => {
   const quranPlayerState = useQuranAudioStore((s) => s.playerState);
   const playingSurah = useQuranAudioStore((s) => s.currentSurah);
   const playingAyah = useQuranAudioStore((s) => s.currentAyah);
-  // Reader (per-ayah) playback in progress — keeps the audio control reachable
-  // even when the chrome is hidden, so playback started from the ayah sheet
-  // (which hides the chrome) can always be stopped.
-  const readerAudioActive = useQuranAudioStore(
-    (s) =>
-      s.queue?.kind != null &&
-      s.queue.kind !== QURAN_QUEUE_KIND.SURAH &&
-      s.playerState !== QURAN_PLAYER_STATE.IDLE
-  );
   // Drives the per-word read-along highlight (no-op unless read-along is on).
   useReadAlongWord();
   // Reader (per-ayah) playback stops on leaving the reader / backgrounding; Listen
@@ -397,10 +388,7 @@ const QuranScreen = () => {
               zIndex={12}
               pointerEvents="box-none">
               <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />
-              <ReaderAudioControl
-                quranTheme={quranTheme}
-                visible={showOverlay || readerAudioActive}
-              />
+              <ReaderAudioControl quranTheme={quranTheme} visible={showOverlay} />
             </YStack>
           )}
 
@@ -699,6 +687,7 @@ const QuranScreen = () => {
             quranTheme={quranTheme}
             onClose={() => setActionAyah(null)}
             onGoTo={subGoTo}
+            onPlayStarted={() => setShowOverlay(true)}
           />
 
           {/* Long-press surah header → surah info sheet (controlled; stays mounted) */}
