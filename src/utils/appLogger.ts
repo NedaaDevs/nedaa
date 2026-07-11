@@ -3,6 +3,8 @@ import * as Application from "expo-application";
 import * as Device from "expo-device";
 import * as Clipboard from "expo-clipboard";
 import * as Localization from "expo-localization";
+
+import { useDebugModeStore } from "@/stores/debugMode";
 import * as Sharing from "expo-sharing";
 import { AppState, Platform } from "react-native";
 
@@ -159,9 +161,10 @@ class DomainLogger {
   }
 
   private append(level: LogLevel, tag: string, msg: string) {
-    // DEBUG is a development-only level: never persisted to the shareable log
-    // file nor printed in production builds, keeping prod diagnostics clean.
-    if (level === "DEBUG" && !__DEV__) return;
+    // DEBUG is verbose per-tick detail: dev builds always have it; production
+    // keeps shareable logs lean unless the hidden debug mode is on — the support
+    // flow is "enable debug mode, reproduce, share logs" for a full trace.
+    if (level === "DEBUG" && !__DEV__ && !useDebugModeStore.getState().isEnabled) return;
 
     const time = formatTime(new Date());
     const line = `${time} [${level}] ${tag}: ${msg}`;

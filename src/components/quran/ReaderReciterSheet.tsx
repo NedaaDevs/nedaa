@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
-import { AlignJustify, Check, Highlighter, Trash2, type LucideIcon } from "lucide-react-native";
+import {
+  AlignJustify,
+  Check,
+  FlaskConical,
+  Highlighter,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react-native";
 
 import {
   Actionsheet,
@@ -25,16 +32,22 @@ import { localizedSurahName } from "@/utils/surahName";
 import { formatFileSizeLocale } from "@/utils/number";
 
 // A reciter capability badge (word-by-word / verse-by-verse highlight support).
+const CHIP_TONES = {
+  accent: "$accentPrimary",
+  muted: "$typographySecondary",
+  warning: "$warning",
+} as const;
+
 const CapabilityChip = ({
   icon,
-  accent,
+  tone = "muted",
   label,
 }: {
   icon: LucideIcon;
-  accent?: boolean;
+  tone?: keyof typeof CHIP_TONES;
   label: string;
 }) => {
-  const color = accent ? ("$accentPrimary" as const) : ("$typographySecondary" as const);
+  const color = CHIP_TONES[tone];
   return (
     <HStack
       alignItems="center"
@@ -161,7 +174,7 @@ export const ReaderReciterSheet = ({
                           {rec.timings ? (
                             <CapabilityChip
                               icon={Highlighter}
-                              accent
+                              tone="accent"
                               label={t("quran.reader.wordByWord")}
                             />
                           ) : null}
@@ -169,6 +182,15 @@ export const ReaderReciterSheet = ({
                             icon={AlignJustify}
                             label={t("quran.reader.ayahByAyah")}
                           />
+                          {/* Dev/debug-only rows: unpublished reciters need testing
+                          before release, so flag them (hardcoded — never user-facing). */}
+                          {!rec.published ? (
+                            <CapabilityChip
+                              icon={FlaskConical}
+                              tone="warning"
+                              label="Unpublished"
+                            />
+                          ) : null}
                         </HStack>
                       </VStack>
                       {selected ? <Icon as={Check} size="sm" color="$accentPrimary" /> : null}

@@ -115,7 +115,7 @@ const installContentDb = async (
   if (!extracted.exists || extracted.size === 0) {
     throw new Error("[QuranContentDB] content zip missing quran.db");
   }
-  log.d("Content", `#${seq} extracted ${extracted.size}B, target dir exists=${targetDir.exists}`);
+  log.i("Content", `#${seq} extracted ${extracted.size}B, target dir exists=${targetDir.exists}`);
 
   const destFile = new File(targetDir, destName);
   const destVersion = new File(targetDir, `${destName}.version`);
@@ -125,7 +125,7 @@ const installContentDb = async (
   if (wal.exists) wal.delete();
   if (shm.exists) shm.delete();
   extracted.move(destFile);
-  log.d(
+  log.i(
     "Content",
     `#${seq} moved → dest exists=${destFile.exists} src still exists=${extracted.exists}`
   );

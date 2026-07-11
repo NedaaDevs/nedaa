@@ -75,7 +75,7 @@ class QuranAudioPlayer {
       onProgress: (position, duration) => {
         // Drop stale progress from a replaced playlist (see reachedPlaying).
         if (!this.reachedPlaying) return;
-        log.i("Progress", `pos=${position.toFixed(1)}s dur=${duration.toFixed(1)}s`);
+        log.d("Progress", `pos=${position.toFixed(1)}s dur=${duration.toFixed(1)}s`);
         this.store.setProgress(position, duration, Date.now());
       },
       onEvict: () => this.teardown(),

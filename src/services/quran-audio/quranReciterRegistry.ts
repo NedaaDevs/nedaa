@@ -1,6 +1,7 @@
 import { QuranManifestService } from "@/services/quran-manifest";
 import { QURAN_GRANULARITY } from "@/types/quran-audio";
 import type { QuranReciter, QuranRecitation } from "@/types/quran-audio";
+import { useDebugModeStore } from "@/stores/debugMode";
 
 // Locales rendered in Arabic script (matches localizedSurahName).
 const ARABIC_SCRIPT_LOCALES = ["ar", "ur"];
@@ -20,9 +21,11 @@ const getDefaultRecitation = async (): Promise<QuranRecitation | null> => {
   return all.find((r) => r.id === audio?.defaultRecitationId) ?? all[0];
 };
 
-// In production only published recitations are user-facing; dev shows all so we
-// can test before publishing (mirrors the manifest edition gate).
-const isVisible = (r: QuranRecitation): boolean => __DEV__ || r.published;
+// In production only published recitations are user-facing; dev builds and the
+// hidden debug mode show all, so a reciter can be tested before publishing
+// (mirrors the manifest edition gate).
+const isVisible = (r: QuranRecitation): boolean =>
+  __DEV__ || useDebugModeStore.getState().isEnabled || r.published;
 
 // A reciter can carry more than one ayah recitation of the same style (e.g. a
 // re-upload); collapse each (style, riwayah) to one entry, preferring the one with

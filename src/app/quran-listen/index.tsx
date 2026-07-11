@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, ChevronLeft, Check } from "lucide-react-native";
+import { ChevronRight, ChevronLeft, Check, FlaskConical } from "lucide-react-native";
 import { keyboardFilter } from "miftah";
 
 import { Background } from "@/components/ui/background";
@@ -176,6 +176,22 @@ const QuranListenScreen = () => {
                         {t(`quran.listen.style.${rec.style.toLowerCase()}`, rec.style)}
                       </Text>
                     </VStack>
+                    {/* Dev/debug-only rows: unpublished reciters need testing before
+                    release, so flag them (hardcoded — never user-facing). */}
+                    {!rec.published ? (
+                      <HStack
+                        alignItems="center"
+                        gap="$1"
+                        paddingHorizontal="$2"
+                        paddingVertical="$0.5"
+                        borderRadius="$2"
+                        backgroundColor="$backgroundSecondary">
+                        <Icon as={FlaskConical} size="xs" color="$warning" />
+                        <Text size="xs" fontWeight="600" color="$warning">
+                          Unpublished
+                        </Text>
+                      </HStack>
+                    ) : null}
                     <Icon
                       as={selected ? Check : isRTL ? ChevronLeft : ChevronRight}
                       size="sm"
