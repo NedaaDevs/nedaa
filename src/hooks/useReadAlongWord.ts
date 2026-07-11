@@ -37,6 +37,10 @@ const FIRST_WORD_LEAD_IN_MS = 450;
 // replay; any later drop is interpolation jitter and holds instead.
 const REPLAY_WINDOW_MS = 2000;
 
+// A progress anchor this far below the best one seen is a seek/loop (adopt it),
+// not event-delivery jitter (ignore it) — no bridge delay is seconds long.
+const ANCHOR_RESET_MS = 2000;
+
 // Diagnoses why an ayah highlights per-word vs falls back to the whole-verse tint.
 // Logged once per recitation-resolve and once per ayah (not per tick) to stay quiet.
 const log = AppLogger.create("quran-readalong");
@@ -152,6 +156,12 @@ export const useReadAlongWord = () => {
     verseRef.current = false;
     loggedRef.current.clear();
     const ayahStartedAt = Date.now();
+    // Best progress anchor (position − receipt time ≈ −track start in wall-clock)
+    // seen this ayah. A progress event delivered late — the JS thread is busy while
+    // the user scrolls — pairs a stale position with a fresh stamp, so extrapolating
+    // from the latest event lags the highlight by the delivery latency. The anchor
+    // with the highest value is the least-delayed event; extrapolate from that.
+    let bestAnchor = -Infinity;
 
     const resolve = (): number => {
       const s = useQuranAudioStore.getState();
@@ -163,11 +173,17 @@ export const useReadAlongWord = () => {
       };
       // Store position/duration are in SECONDS (matching the scrubber); word
       // timings are in MILLISECONDS — so convert to ms here before comparing.
-      let pos =
-        s.positionUpdatedAt >= ayahStartedAt
-          ? s.position * 1000 +
-            (s.playerState === QURAN_PLAYER_STATE.PLAYING ? Date.now() - s.positionUpdatedAt : 0)
-          : 0;
+      let pos = 0;
+      if (s.positionUpdatedAt >= ayahStartedAt) {
+        if (s.playerState === QURAN_PLAYER_STATE.PLAYING) {
+          const anchor = s.position * 1000 - s.positionUpdatedAt;
+          if (anchor > bestAnchor || anchor < bestAnchor - ANCHOR_RESET_MS) bestAnchor = anchor;
+          pos = bestAnchor + Date.now();
+        } else {
+          bestAnchor = -Infinity; // pause shifts the position↔wall-clock relation
+          pos = s.position * 1000;
+        }
+      }
       pos = Math.max(0, pos);
       if (s.duration > 0) pos = Math.min(pos, s.duration * 1000);
       pos += HIGHLIGHT_LEAD_MS;

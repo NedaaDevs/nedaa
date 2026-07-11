@@ -59,7 +59,7 @@ const VerticalTextReader = ({
   const pxPerSec = useQuranStore((s) => s.autoScrollSpeed);
   const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
   const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
-  const { animatedRef, scrollHandler, syncToLive, liveOffset, maxOffset } = useAutoScroll<number>({
+  const { animatedRef, scrollHandler, syncToLive, maxOffset } = useAutoScroll<number>({
     playing,
     pxPerSec,
     onReachEnd: pause,
@@ -79,15 +79,13 @@ const VerticalTextReader = ({
   const retriedIndexRef = useRef(-1);
   const visiblePageRef = useRef(currentPage);
   const lastFollowPageRef = useRef(0);
-  // The recited page, for the auto-scroll freeze below (0 = no reader recitation).
-  const followPageRef = useRef(0);
   useEffect(() => {
-    followPageRef.current = followTarget?.page ?? 0;
-    // Recitation advanced (or stopped): lift any freeze; the viewability handler
-    // re-freezes if the view is still ahead of the recited page.
+    // While recitation drives the view the teleprompter creep parks entirely —
+    // the page flips below do all the movement (stop → flip → stop).
+    const parked = !!followTarget;
     runOnUI(() => {
       "worklet";
-      maxOffset.value = Number.MAX_SAFE_INTEGER;
+      maxOffset.value = parked ? 0 : Number.MAX_SAFE_INTEGER;
     })();
     if (!followTarget) {
       lastFollowPageRef.current = 0;
@@ -127,17 +125,9 @@ const VerticalTextReader = ({
         if (top != null) {
           visiblePageRef.current = top + 1;
           onPageChangeRef.current(top + 1);
-          // Text pages have no line pixels to cap against, so the read-along cap is
-          // page-grained: once the view runs ahead of the recited page, park the
-          // glide where it is; the follow effect lifts this as recitation advances.
-          const ahead = followPageRef.current > 0 && top + 1 > followPageRef.current;
-          runOnUI(() => {
-            "worklet";
-            maxOffset.value = ahead ? liveOffset.value : Number.MAX_SAFE_INTEGER;
-          })();
         }
       },
-    [maxOffset, liveOffset]
+    []
   );
 
   // External page jumps (search, goto, slider) command currentPage from outside;

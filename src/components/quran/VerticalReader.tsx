@@ -93,17 +93,16 @@ const VerticalReader = ({
       insets.top +
       itemHeight * (followTarget.page - 1) +
       (followTarget.line - 1) * lineHeightInPage;
-    // Auto-scroll may glide up to (not past) the recited line: the cap keeps the
-    // teleprompter from scrolling the highlight off the top and rises with the
-    // recitation.
-    const cap = Math.max(0, lineTop - lineHeightInPage);
     log.d(
       "Follow",
       `${followTarget.surah}:${followTarget.ayah} p${followTarget.page} l${followTarget.line} lineTop=${Math.round(lineTop)}`
     );
     runOnUI(() => {
       "worklet";
-      maxOffset.value = cap;
+      // While recitation drives the view, the teleprompter creep parks entirely —
+      // all movement comes from the discrete nudge below (stop → glide → stop
+      // reads better than a constant crawl pinned under the highlight).
+      maxOffset.value = 0;
       const viewportY = lineTop - liveOffset.value;
       const view = layoutH.value || height;
       // In-band → leave it; the line is already comfortably visible.

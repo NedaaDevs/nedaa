@@ -45,9 +45,9 @@ export const useAutoScroll = <ItemT>({
   const layoutH = useSharedValue(0);
   const speed = useSharedValue(pxPerSec);
   const interacting = useSharedValue(false);
-  // Ceiling for the glide (UI thread). During read-along the reader keeps this at
-  // the recited line's offset so the teleprompter never scrolls past the highlight;
-  // it parks at the cap and resumes as the recitation advances. MAX = uncapped.
+  // Ceiling for the glide (UI thread). While read-along follow drives the view the
+  // reader sets this to 0, parking the creep entirely (follow moves the list with
+  // its own discrete glides); MAX = uncapped normal teleprompter.
   const maxOffset = useSharedValue(Number.MAX_SAFE_INTEGER);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export const useAutoScroll = <ItemT>({
       return;
     }
     const dt = (f.timeSincePreviousFrame ?? 16) / 1000;
-    // Park at the read-along ceiling (don't outrun the highlight); resumes as it rises.
+    // Park at the read-along ceiling (0 while follow drives); resumes when lifted.
     const next = Math.min(target.value + speed.value * dt, maxOffset.value);
     // Clamp/stop only once we actually know the scrollable extent; until then
     // (before the first scroll event) just keep gliding so play can start.
