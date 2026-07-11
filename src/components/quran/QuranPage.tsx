@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutChangeEvent, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { YStack } from "tamagui";
 
@@ -62,6 +68,47 @@ interface QuranPageProps {
 
 // Constant 1..15 line numbers — hoisted so it isn't reallocated every render.
 const PAGE_LINE_NUMBERS = Array.from({ length: LINES_PER_PAGE }, (_, i) => i + 1);
+
+// The read-along word highlight glides between words rather than hard-stepping:
+// motion reads as continuous tracking and masks the aligner's ~±70ms boundary
+// noise that a discrete jump would expose. A quick spring gives an organic
+// arrival with a whisper of settle; the pad lets the tint breathe around the
+// glyphs instead of hugging their exact bounds.
+const WORD_GLIDE_SPRING = { damping: 22, stiffness: 380, mass: 0.7 } as const;
+const WORD_PAD_X = 3;
+const WORD_PAD_Y = 2;
+
+type HighlightRect = { left: number; top: number; width: number; height: number };
+
+const AnimatedWordHighlight = ({ rect, color }: { rect: HighlightRect; color: string }) => {
+  const reduceMotion = useReducedMotion();
+  const left = useSharedValue(rect.left - WORD_PAD_X);
+  const top = useSharedValue(rect.top - WORD_PAD_Y);
+  const width = useSharedValue(rect.width + 2 * WORD_PAD_X);
+  const height = useSharedValue(rect.height + 2 * WORD_PAD_Y);
+
+  useEffect(() => {
+    const to = (v: number) => (reduceMotion ? v : withSpring(v, WORD_GLIDE_SPRING));
+    left.value = to(rect.left - WORD_PAD_X);
+    top.value = to(rect.top - WORD_PAD_Y);
+    width.value = to(rect.width + 2 * WORD_PAD_X);
+    height.value = to(rect.height + 2 * WORD_PAD_Y);
+  }, [rect, reduceMotion, left, top, width, height]);
+
+  const style = useAnimatedStyle(() => ({
+    left: left.value,
+    top: top.value,
+    width: width.value,
+    height: height.value,
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: "absolute", borderRadius: 5, backgroundColor: color }, style]}
+    />
+  );
+};
 
 const QuranPage = ({
   page,
@@ -288,8 +335,11 @@ const QuranPage = ({
     // Word mode: a per-word timing is active for the recited ayah — tint just that
     // word, and only on the page it lives on.
     if (hasWord) {
+      // The published word may briefly belong to the PREVIOUS ayah — the hook holds
+      // the last word lit through the ayah boundary (the reciter's breath), so draw
+      // whatever it publishes rather than gating on the recited ayah.
       const w = pageWord;
-      if (!w || w.surah !== playingSurah || w.ayah !== playingAyah) return NO_RECTS;
+      if (!w) return NO_RECTS;
       if (isPageMode) {
         return [
           {
@@ -556,21 +606,28 @@ const QuranPage = ({
               />
             ))}
 
-            {playingRects.map((rect, i) => (
-              <View
-                key={`play-${i}`}
-                pointerEvents="none"
-                style={{
-                  position: "absolute",
-                  left: rect.left,
-                  top: rect.top,
-                  width: rect.width,
-                  height: rect.height,
-                  backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
-                  borderRadius: 2,
-                }}
+            {playingRects.length === 1 ? (
+              <AnimatedWordHighlight
+                rect={playingRects[0]}
+                color={QURAN_THEME_COLORS[quranTheme].highlightColor}
               />
-            ))}
+            ) : (
+              playingRects.map((rect, i) => (
+                <View
+                  key={`play-${i}`}
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    backgroundColor: QURAN_THEME_COLORS[quranTheme].highlightColor,
+                    borderRadius: 2,
+                  }}
+                />
+              ))
+            )}
 
             {mutashabihatDots.map((m, i) => (
               <View

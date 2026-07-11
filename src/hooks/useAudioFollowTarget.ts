@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
@@ -39,11 +39,16 @@ export const useAudioFollowTarget = (): FollowTarget | null => {
     };
   }, [version, surah, ayah, queueKind, active, isReaderPlayback]);
 
-  if (!active || !isReaderPlayback || surah == null || ayah == null) return null;
-  // Exact highlighted word, when it belongs to the recited ayah.
-  if (word && word.surah === surah && word.ayah === ayah) {
-    return { surah, ayah, page: word.page, line: word.line };
-  }
-  if (ayahStart) return { surah, ayah, page: ayahStart.page, line: ayahStart.line };
-  return null;
+  // Prefer the exact highlighted word's line; fall back to the ayah's first line.
+  const wordMatches = word != null && word.surah === surah && word.ayah === ayah;
+  const page = wordMatches ? word.page : ayahStart?.page;
+  const line = wordMatches ? word.line : ayahStart?.line;
+
+  // Stable identity per (surah, ayah, page, line): consumers' follow effects run
+  // on target change, and word ticks within the same line must not re-fire them.
+  return useMemo(() => {
+    if (!active || !isReaderPlayback || surah == null || ayah == null) return null;
+    if (page == null || line == null) return null;
+    return { surah, ayah, page, line };
+  }, [active, isReaderPlayback, surah, ayah, page, line]);
 };

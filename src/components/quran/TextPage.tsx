@@ -83,17 +83,22 @@ const TextPage = ({
   // Resolve, for one verse, whether to tint a single word, the whole verse, or
   // nothing — matching QuranPage's rectangle logic.
   const readAlongFor = (surah: number, ayahNumber: number) => {
-    if (readAlongAyah?.surah !== surah || readAlongAyah?.ayah !== ayahNumber) {
-      return { whole: false, wordIndex: undefined as number | undefined };
-    }
+    const none = { whole: false, wordIndex: undefined as number | undefined };
+    if (!readAlongAyah) return none;
     if (granularity === ReadAlongGranularity.WORD) {
+      // The published word may briefly belong to the PREVIOUS ayah — the hook
+      // holds the last word lit through the ayah boundary (the reciter's breath).
       if (readAlongWord?.surah === surah && readAlongWord?.ayah === ayahNumber) {
         return { whole: false, wordIndex: readAlongWord.wordIndex };
       }
-      // No trackable word yet: whole-verse only once we know it's untrackable
-      // (divergent/missing timings); otherwise show nothing (still loading).
-      return { whole: readAlongVerse, wordIndex: undefined };
+      if (readAlongAyah.surah === surah && readAlongAyah.ayah === ayahNumber) {
+        // No trackable word yet: whole-verse only once we know it's untrackable
+        // (divergent/missing timings); otherwise show nothing (still loading).
+        return { whole: readAlongVerse, wordIndex: undefined };
+      }
+      return none;
     }
+    if (readAlongAyah.surah !== surah || readAlongAyah.ayah !== ayahNumber) return none;
     return { whole: true, wordIndex: undefined };
   };
 

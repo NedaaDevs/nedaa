@@ -121,6 +121,24 @@ const wordAt = (
   return bestWord;
 };
 
+// The next word-start boundary after `positionMs` within (surah, ayah), or null
+// when no later word begins (past the last word). Lets the read-along driver
+// schedule a precise wake-up at the boundary instead of polling.
+const nextWordStartAfter = (
+  recitationId: string,
+  surah: number,
+  ayah: number,
+  positionMs: number
+): number | null => {
+  const segs = cache.get(recitationId)?.[ayahKey(surah, ayah)];
+  if (!segs || segs.length === 0) return null;
+  let best: number | null = null;
+  for (const [, start] of segs) {
+    if (start > positionMs && (best === null || start < best)) best = start;
+  }
+  return best;
+};
+
 // Number of word segments the loaded timings hold for (surah, ayah); 0 when the
 // recitation's timings aren't loaded or the ayah carries none. Used by the reader
 // to detect a QUL-vs-mushaf word-count divergence and degrade to ayah highlight.
@@ -131,7 +149,7 @@ const ayahWordCount = (recitationId: string, surah: number, ayah: number): numbe
 // loading" (show nothing) from "loaded but this ayah has no words" (verse fallback).
 const isLoaded = (recitationId: string): boolean => cache.has(recitationId);
 
-export const quranAudioTimings = { load, wordAt, ayahWordCount, isLoaded };
+export const quranAudioTimings = { load, wordAt, nextWordStartAfter, ayahWordCount, isLoaded };
 
 // Exported for unit tests.
 export const _parseTimings = parse;

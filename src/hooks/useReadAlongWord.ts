@@ -11,9 +11,31 @@ import { quranAudioTimings } from "@/services/quran-audio/quranAudioTimings";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { AppLogger } from "@/utils/appLogger";
 
-// How often to re-map playback position to a word. Coarse enough to be cheap,
-// fine enough that the highlight lands within ~a frame of the spoken word.
-const TICK_MS = 120;
+// The driver wakes exactly at the next word boundary (scheduled from the timing
+// segments) instead of polling, so words light on time rather than up to a poll
+// interval late. This coarse tick is only the fallback while there is no known
+// upcoming boundary (data still loading, gaps, the tail hold).
+const FALLBACK_TICK_MS = 250;
+
+// Wake-up clamps: MIN guards against zero/negative delays (schedule immediately
+// but yield a frame); MAX keeps long gaps re-checked against live state.
+const MIN_WAKE_MS = 16;
+const MAX_WAKE_MS = 1000;
+// Fire just past the boundary so the position lands inside the new word's window.
+const BOUNDARY_SLACK_MS = 8;
+
+// Constant lead compensating event/bridge/render latency — a highlight that
+// slightly leads the audio reads as simultaneous; one that trails reads as laggy.
+const HIGHLIGHT_LEAD_MS = 110;
+
+// The aligner assigns each file's leading silence to word 1's window (its start is
+// ~0ms), so word 1 would light before the reciter speaks. Until playback passes
+// this mark, the previous ayah's held word stays lit instead.
+const FIRST_WORD_LEAD_IN_MS = 450;
+
+// A word-index drop with playback this close to the track start is a repeat-mode
+// replay; any later drop is interpolation jitter and holds instead.
+const REPLAY_WINDOW_MS = 2000;
 
 // Diagnoses why an ayah highlights per-word vs falls back to the whole-verse tint.
 // Logged once per recitation-resolve and once per ayah (not per tick) to stay quiet.
@@ -54,9 +76,6 @@ export const useReadAlongWord = () => {
   const wordsRef = useRef<Map<number, GlyphBound>>(new Map());
   const maxWordRef = useRef(0);
   const lastWordRef = useRef(-1);
-  // Latches once this ayah's audio has wrapped past its last word, so the highlight
-  // hides at the end instead of snapping back to word 1.
-  const endedRef = useRef(false);
   // Mirrors the published `readAlongVerse` so we only write it on change (not per tick).
   const verseRef = useRef(false);
   // Fallback reasons already logged for the current ayah, so each distinct reason
@@ -125,16 +144,16 @@ export const useReadAlongWord = () => {
       lastWordRef.current = -1;
       return;
     }
-    setReadAlongWord(null); // clear any stale word until this ayah resolves
+    // The previous ayah's last word stays lit through the track change — the gap
+    // between ayahs is the reciter's breath, and a dark flash there reads as a
+    // glitch. It swaps to the new ayah's word 1 once recitation resumes.
     setReadAlongVerse(false);
     lastWordRef.current = -1;
-    endedRef.current = false;
     verseRef.current = false;
     loggedRef.current.clear();
     const ayahStartedAt = Date.now();
 
-    const resolve = () => {
-      if (endedRef.current) return; // ayah finished → stay hidden until it changes
+    const resolve = (): number => {
       const s = useQuranAudioStore.getState();
       // Publish the whole-ayah fallback flag only on change (avoids per-tick sets).
       const setVerse = (on: boolean) => {
@@ -151,6 +170,7 @@ export const useReadAlongWord = () => {
           : 0;
       pos = Math.max(0, pos);
       if (s.duration > 0) pos = Math.min(pos, s.duration * 1000);
+      pos += HIGHLIGHT_LEAD_MS;
 
       // Each fallback reason logs once per ayah (not per tick), so a device run
       // shows exactly why an ayah isn't tracking per-word.
@@ -166,7 +186,7 @@ export const useReadAlongWord = () => {
       if (wordsRef.current.size === 0) {
         // Glyphs still loading — show nothing (no flash), not the verse fallback.
         logOnce("no-glyphs", `${a} waiting — glyphs not loaded yet`);
-        return;
+        return pos;
       }
       const timingCount = quranAudioTimings.ayahWordCount(recitation.id, currentSurah, currentAyah);
       if (timingCount === 0) {
@@ -174,48 +194,61 @@ export const useReadAlongWord = () => {
         // it's still loading, so show nothing.
         const loaded = quranAudioTimings.isLoaded(recitation.id);
         setVerse(loaded);
+        // Release the previous ayah's held word — word rects outrank the verse
+        // tint, so a lingering hold would mask this ayah's fallback entirely.
+        if (loaded && !loggedRef.current.has("released-held")) {
+          loggedRef.current.add("released-held");
+          setReadAlongWord(null);
+        }
         logOnce(
           "no-timings",
           `${a} ${loaded ? "verse — no timings" : "waiting — timings loading"}`
         );
-        return;
+        return pos;
       }
 
       const wordIndex = quranAudioTimings.wordAt(recitation.id, currentSurah, currentAyah, pos);
       if (wordIndex == null) {
-        // Audio hasn't reached word 1 yet (brief) — show nothing, not verse.
+        // Audio hasn't reached word 1 yet — hold whatever is lit (the previous
+        // ayah's last word), not a dark flash.
         logOnce("before-first", `${a} waiting — pos ${Math.round(pos)}ms before first word`);
-        return;
+        return pos;
       }
-      // A backward jump (word index dropping below the last one) means the audio
-      // wrapped past this ayah's end — hide the highlight and stay hidden.
+      // Word 1's window starts at ~0ms (leading silence included), so hold the
+      // previous ayah's word through the breath until recitation plausibly resumed.
+      if (wordIndex === 1 && lastWordRef.current === -1 && pos < FIRST_WORD_LEAD_IN_MS) {
+        return pos;
+      }
+      // A backward word jump near the track start is a replay (repeat mode looped
+      // this ayah) — restart tracking. Elsewhere it's interpolation jitter around a
+      // progress correction — hold the current word rather than jumping back.
       if (wordIndex < lastWordRef.current) {
-        endedRef.current = true;
-        setVerse(false);
-        setReadAlongWord(null);
-        logOnce("ended", `${a} done — hiding highlight`);
-        return;
+        if (pos < REPLAY_WINDOW_MS) {
+          lastWordRef.current = -1;
+          loggedRef.current.clear();
+          logOnce("replay", `${a} looped — restarting word tracking`);
+        } else {
+          return pos;
+        }
       }
       // Some timing files carry trailing surplus segments past the last QPC word
-      // (the pause/end-marker tail). The words are done — hide the highlight.
+      // (the pause/end-marker tail). The words are done — hold the last word lit
+      // until the next ayah takes over (a dark gap here reads as a glitch).
       if (wordIndex > maxWordRef.current) {
-        endedRef.current = true;
-        setVerse(false);
-        setReadAlongWord(null);
-        logOnce("tail", `${a} tail segment w${wordIndex} > ${maxWordRef.current} — done`);
-        return;
+        logOnce("tail", `${a} tail segment w${wordIndex} > ${maxWordRef.current} — holding last`);
+        return pos;
       }
       const glyph = wordsRef.current.get(wordIndex);
       if (!glyph) {
         logOnce("oob", `${a} word ${wordIndex} has no glyph — holding`);
-        return;
+        return pos;
       }
-      if (wordIndex === lastWordRef.current) return;
+      if (wordIndex === lastWordRef.current) return pos;
       setVerse(false); // tracking a word → not the whole-ayah fallback
       lastWordRef.current = wordIndex;
       // Logs on every word advance (not per tick) so a device run shows the
       // word-by-word tracking: which word, playback position, page/line.
-      log.i(
+      log.d(
         "Word",
         `${currentSurah}:${currentAyah} w${wordIndex}/${maxWordRef.current} @${Math.round(pos)}ms p${glyph.page} l${glyph.line}`
       );
@@ -230,12 +263,41 @@ export const useReadAlongWord = () => {
         width: glyph.width,
         height: glyph.height,
       });
+      return pos;
     };
 
     resolve();
     if (playerState !== QURAN_PLAYER_STATE.PLAYING) return; // idle while paused/loading
-    const id = setInterval(resolve, TICK_MS);
-    return () => clearInterval(id);
+
+    // Wake exactly at the next word boundary; fall back to a coarse tick while no
+    // boundary is known. Each player progress event re-anchors the schedule, so a
+    // position correction moves the next wake-up instead of waiting out a stale one.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const loop = () => {
+      const pos = resolve();
+      const next = quranAudioTimings.nextWordStartAfter(
+        recitation.id,
+        currentSurah,
+        currentAyah,
+        pos
+      );
+      const delay =
+        next != null
+          ? Math.min(Math.max(next - pos + BOUNDARY_SLACK_MS, MIN_WAKE_MS), MAX_WAKE_MS)
+          : FALLBACK_TICK_MS;
+      timer = setTimeout(loop, delay);
+    };
+    loop();
+    const unsubscribe = useQuranAudioStore.subscribe((now, prev) => {
+      if (now.positionUpdatedAt !== prev.positionUpdatedAt) {
+        if (timer) clearTimeout(timer);
+        loop();
+      }
+    });
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    };
   }, [
     wordMode,
     recitation,
