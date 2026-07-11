@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useReducedMotion,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useRouter } from "expo-router";
 
 import { Box } from "@/components/ui/box";
@@ -23,10 +28,6 @@ const DWELL_MS = 10000;
 // A manual swipe holds the rotation off long enough to read at leisure.
 const PAUSE_AFTER_SWIPE_MS = 20000;
 
-const markPaused = (pausedUntilRef: MutableRefObject<number>) => {
-  pausedUntilRef.current = Date.now() + PAUSE_AFTER_SWIPE_MS;
-};
-
 // Opt-in Home rotator: closest occasion first, cross-fading through the rest
 // (no sliding — calmer than a carousel). Fling to page manually; tap opens the
 // full Important Days tool, which is also the non-gestural a11y path.
@@ -40,7 +41,10 @@ const ImportantDaysCard = () => {
   const [page, setPage] = useState(0);
   const { hijriLabel, remainingLabel, daysUnit } = useImportantDayFormat();
   const reduceMotion = useReducedMotion();
-  const pausedUntilRef = useRef(0);
+  // Timestamp until which auto-rotation stays paused after a manual swipe.
+  // A shared value (not a ref) so the gesture handler can write it without
+  // tripping the React Compiler's ref-during-render check.
+  const pausedUntil = useSharedValue(0);
 
   const days = useMemo(
     () => upcomingImportantDays({ timezone, hijriDaysOffset }),
@@ -53,29 +57,36 @@ const ImportantDaysCard = () => {
   useEffect(() => {
     if (!enabled || reduceMotion || count <= 1) return;
     const id = setInterval(() => {
-      if (Date.now() < pausedUntilRef.current) return;
+      if (Date.now() < pausedUntil.value) return;
       setPage((p) => (p + 1) % count);
     }, DWELL_MS);
     return () => clearInterval(id);
-  }, [enabled, reduceMotion, count]);
+  }, [enabled, reduceMotion, count, pausedUntil]);
 
   const advance = useCallback(
     (dir: number) => {
-      markPaused(pausedUntilRef);
+      // Shared values are mutable by design; the compiler's immutability check
+      // doesn't model reanimated, so it flags this legitimate write.
+      // eslint-disable-next-line react-hooks/immutability
+      pausedUntil.value = Date.now() + PAUSE_AFTER_SWIPE_MS;
       setPage((p) => (p + dir + count) % count);
       selectionHaptic();
     },
-    [count, selectionHaptic]
+    [count, pausedUntil, selectionHaptic]
   );
 
+  // runOnJS: advance() calls React state setters and haptics, so its onEnd must
+  // run on the JS thread — the gesture callbacks are workletized by default.
   const flings = useMemo(
     () =>
       Gesture.Race(
         Gesture.Fling()
           .direction(Directions.LEFT)
+          .runOnJS(true)
           .onEnd(() => advance(1)),
         Gesture.Fling()
           .direction(Directions.RIGHT)
+          .runOnJS(true)
           .onEnd(() => advance(-1))
       ),
     [advance]
