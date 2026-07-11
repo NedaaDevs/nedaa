@@ -28,6 +28,7 @@ import CityChangeModal from "@/components/CityChangeModal";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 import PlayerBottomSheet from "@/components/athkar/PlayerBottomSheet";
 import CrashReportPrompt from "@/components/CrashReportPrompt";
+import WhatsNewSheet from "@/components/WhatsNewSheet";
 
 import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useLoadFonts } from "@/config/fonts";
@@ -123,6 +124,7 @@ function AppShell() {
           )}
           <PlayerBottomSheet />
           <CrashReportPrompt />
+          <WhatsNewSheet />
         </SafeAreaView>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
