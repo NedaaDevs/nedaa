@@ -272,6 +272,11 @@ class AlarmDataService {
             let error = db != nil ? String(cString: sqlite3_errmsg(db)!) : "Unknown"
             throw NSError(domain: "AlarmDataService", code: 2, userInfo: [NSLocalizedDescriptionKey: "Could not open DB: \(error)"])
         }
+
+        // The app holds a brief WAL write lock right when it asks widgets to
+        // reload; without a busy timeout that read fails instantly with
+        // SQLITE_BUSY and WidgetKit keeps the stale timeline.
+        sqlite3_busy_timeout(db, 2000)
     }
 
     private func closeDB() {

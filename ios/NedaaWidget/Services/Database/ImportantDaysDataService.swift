@@ -110,6 +110,11 @@ class ImportantDaysDataService {
             if db != nil { sqlite3_close(db); db = nil }
             throw DatabaseError.openError(message: "Error opening database: \(errorMessage)")
         }
+
+        // The app holds a brief WAL write lock right when it asks widgets to
+        // reload; without a busy timeout that read fails instantly with
+        // SQLITE_BUSY and WidgetKit keeps the stale timeline.
+        sqlite3_busy_timeout(db, 2000)
     }
 
     private func closeDB() {

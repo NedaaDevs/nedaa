@@ -69,7 +69,7 @@ import { isAthkarSupported } from "@/utils/athkar";
 import { STORE_LINKS } from "@/constants/StoreLinks";
 
 // Services
-import ExpoAlarm from "expo-alarm";
+import { isAlarmKitAvailable } from "expo-alarm";
 import { PlatformType } from "@/enums/app";
 
 const THANK_YOU_DURATION = 2000;
@@ -140,7 +140,7 @@ const SettingsScreen = () => {
   const shareHeartFillStyle = useAnimatedStyle(() => ({ opacity: shareHeartFill.value }));
 
   useEffect(() => {
-    ExpoAlarm.isAlarmKitAvailable().then(setAlarmAvailable);
+    isAlarmKitAvailable().then(setAlarmAvailable);
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
     const timers = timersRef;
     return () => {
@@ -283,8 +283,10 @@ const SettingsScreen = () => {
           />
         )}
 
-        {/* Widgets (Android with pinning support only) */}
-        {Platform.OS === PlatformType.ANDROID && isPinningSupported() && (
+        {/* Widgets — iOS always (add-instructions + manual refresh); Android only
+        with pinning support (the screen is built around pin cards there). */}
+        {(Platform.OS === PlatformType.IOS ||
+          (Platform.OS === PlatformType.ANDROID && isPinningSupported())) && (
           <SettingsItem
             name={t("settings.widgets.title")}
             path={"/settings/widgets" as any}

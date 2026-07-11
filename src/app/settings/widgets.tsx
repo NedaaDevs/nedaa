@@ -40,6 +40,8 @@ import {
   requestDisableBatteryOptimization,
   type WidgetType,
 } from "expo-widgets";
+import { refreshAllWidgets } from "../../../modules/expo-widgets/src";
+import { reloadAllWidgets, isWidgetReloadAvailable } from "../../../modules/expo-widget/src";
 import { PlatformType } from "@/enums/app";
 
 type WidgetItem = {
@@ -251,6 +253,7 @@ const WidgetSettings = () => {
   useFocusEffect(refreshBatteryState);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs state from a native battery query on foreground return
     refreshBatteryState();
   }, [becameActiveAt, refreshBatteryState]);
 
@@ -287,6 +290,40 @@ const WidgetSettings = () => {
               </Text>
             </HStack>
           )}
+
+          {/* Manual escape hatch: rebuild every widget timeline from current data. */}
+          <Pressable
+            onPress={() => {
+              // WidgetKit reloads have no completion callback, so "refreshed" means
+              // the request was submitted — but a missing native module is a
+              // detectable failure and must not report success.
+              if (Platform.OS === PlatformType.IOS && !isWidgetReloadAvailable()) {
+                showToast(t("settings.widgets.refreshFailed"), "error");
+                return;
+              }
+              reloadAllWidgets();
+              refreshAllWidgets();
+              showToast(t("settings.widgets.refreshed"), "success");
+            }}
+            padding="$4"
+            borderRadius="$7"
+            backgroundColor="$backgroundSecondary"
+            borderWidth={1}
+            borderColor="$outline"
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.widgets.refreshNow")}>
+            <HStack gap="$3" alignItems="center">
+              <Icon as={RotateCcw} size="sm" color="$primary" />
+              <VStack flex={1} gap="$0.5">
+                <Text size="sm" fontWeight="600">
+                  {t("settings.widgets.refreshNow")}
+                </Text>
+                <Text size="xs" color="$typographySecondary">
+                  {t("settings.widgets.refreshNowDesc")}
+                </Text>
+              </VStack>
+            </HStack>
+          </Pressable>
 
           {/* Battery optimization banner (Android only) */}
           {Platform.OS === PlatformType.ANDROID && !batteryOptDisabled && (
