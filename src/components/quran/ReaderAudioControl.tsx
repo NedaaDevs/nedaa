@@ -20,7 +20,7 @@ import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
+import { QURAN_PLAYER_STATE, isReaderQueue } from "@/types/quran-audio";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
@@ -140,7 +140,7 @@ const ReaderAudioControl = ({
 
   // Only reflect the reader's own (ayah) playback — a Listen (surah) session sharing
   // the player must not surface in the reader control.
-  const isReaderPlayback = queueKind != null && queueKind !== QURAN_QUEUE_KIND.SURAH;
+  const isReaderPlayback = isReaderQueue(queueKind);
   const loading = isReaderPlayback && playerState === QURAN_PLAYER_STATE.LOADING;
   const playing = isReaderPlayback && playerState === QURAN_PLAYER_STATE.PLAYING;
   const active = isReaderPlayback && playerState !== QURAN_PLAYER_STATE.IDLE;

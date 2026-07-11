@@ -196,12 +196,15 @@ class QuranAudioPlayer {
 
   async playSurah(surah: number): Promise<void> {
     // Re-tapping the same surah with the same reciter resumes rather than
-    // restarting; a reciter change falls through to a rebuild.
+    // restarting; a reciter change falls through to a rebuild. Compare against
+    // the RESOLVED recitation (mirrors the rebuild path below) since the stored
+    // preference may not be surah-granular and gets substituted.
+    const resolvedRecitation = await this.resolveListenRecitation();
     if (
       surah === this.store.currentSurah &&
       this.playlistId !== null &&
       this.isSurahPlaylist &&
-      this.surahPlaylistReciter === this.store.listenRecitationId &&
+      this.surahPlaylistReciter === resolvedRecitation?.id &&
       this.store.playerState !== QURAN_PLAYER_STATE.IDLE
     ) {
       if (this.store.playerState === QURAN_PLAYER_STATE.PAUSED) await this.resume();
@@ -219,7 +222,7 @@ class QuranAudioPlayer {
       await this.initialize();
       await nitroSession.acquire("quran");
 
-      const recitation = await this.resolveListenRecitation();
+      const recitation = resolvedRecitation;
       const manifest = await QuranManifestService.fetchManifest();
       if (!recitation || !manifest) {
         log.w("Player", "no recitation or manifest");

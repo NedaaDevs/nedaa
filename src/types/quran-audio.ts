@@ -71,6 +71,10 @@ export const QURAN_QUEUE_KIND = {
 } as const;
 export type QuranQueueKind = (typeof QURAN_QUEUE_KIND)[keyof typeof QURAN_QUEUE_KIND];
 
+// Reader (per-ayah) sessions are every queue kind except the Listen surah queue.
+export const isReaderQueue = (kind: QuranQueueKind | null | undefined): boolean =>
+  kind != null && kind !== QURAN_QUEUE_KIND.SURAH;
+
 // One ayah's playable entry in a session queue.
 export type QuranQueueItem = {
   surah: number;

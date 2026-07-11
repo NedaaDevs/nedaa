@@ -26,7 +26,7 @@ import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistr
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
+import { QURAN_PLAYER_STATE, isReaderQueue } from "@/types/quran-audio";
 import type { QuranReciter } from "@/types/quran-audio";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatFileSizeLocale } from "@/utils/number";
@@ -105,12 +105,14 @@ export const ReaderReciterSheet = ({
 
   const select = (recitationId: string) => {
     setReaderRecitation(recitationId);
-    // Continue playback with the new reciter from the current ayah, if any.
+    // Continue READER playback with the new reciter from the current ayah, if any —
+    // a Listen (surah) session must not be hijacked into reader playback.
     const s = useQuranAudioStore.getState();
     if (
       s.playerState !== QURAN_PLAYER_STATE.IDLE &&
       s.currentSurah != null &&
-      s.currentAyah != null
+      s.currentAyah != null &&
+      isReaderQueue(s.queue?.kind)
     ) {
       void quranAudioPlayer.playFromHere(s.currentSurah, s.currentAyah);
     }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useQuranStore } from "@/stores/quran";
 import { useQuranAudioStore } from "@/stores/quranAudio";
-import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
+import { QURAN_PLAYER_STATE, isReaderQueue } from "@/types/quran-audio";
 import { QuranContentDB } from "@/services/quran-content-db";
 
 export type FollowTarget = { surah: number; ayah: number; page: number; line: number };
@@ -18,7 +18,7 @@ export const useAudioFollowTarget = (): FollowTarget | null => {
   const ayah = useQuranAudioStore((s) => s.currentAyah);
   const queueKind = useQuranAudioStore((s) => s.queue?.kind);
   const active = useQuranAudioStore((s) => s.playerState !== QURAN_PLAYER_STATE.IDLE);
-  const isReaderPlayback = queueKind != null && queueKind !== QURAN_QUEUE_KIND.SURAH;
+  const isReaderPlayback = isReaderQueue(queueKind);
 
   // The ayah's first line, resolved on ayah change (the fallback target).
   const [ayahStart, setAyahStart] = useState<{ page: number; line: number } | null>(null);
