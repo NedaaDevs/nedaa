@@ -45,6 +45,7 @@
 		740242B0A19C4804A06D2674 /* IBMPlexSansArabic_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F3087B62D4D4E6293EBFAB8 /* IBMPlexSansArabic_400Regular.ttf */; };
 		782C1853BC45468A9E97557A /* Asap_600SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 07DD26D53B684119BBB6CDA6 /* Asap_600SemiBold.ttf */; };
 		7B9EFBE5E5F14916BD6BE5CF /* IBMPlexSansArabic_600SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D8229BED42F148008205B852 /* IBMPlexSansArabic_600SemiBold.ttf */; };
+		B176DA807A9849918BDCFBF5 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = C781E4824C17489FA7470F90 /* Settings.bundle */; };
 		B9BCF485FE7430CECA3FC17F /* iOS-Daybreak-EncoreInfinitum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		C8DD410D3DFF5769BF95E8D0 /* iOS-Chimes.m4a in Resources */ = {isa = PBXBuildFile; fileRef = BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */; };
@@ -56,7 +57,6 @@
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F34F4E30F2694C3280179AC2 /* Asap_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */; };
 		F613F027BF5FAFD6C3F9DFAD /* iOS-Signal.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */; };
-		B176DA807A9849918BDCFBF5 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = C781E4824C17489FA7470F90 /* Settings.bundle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +124,7 @@
 		BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Chimes.m4a"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Reflection-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
+		C781E4824C17489FA7470F90 /* Settings.bundle */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = "wrapper.plug-in"; name = Settings.bundle; path = nedaa/Settings.bundle; sourceTree = "<group>"; };
 		C7947A41E2F14420B203A5EB /* IBMPlexSansArabic_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_700Bold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/700Bold/IBMPlexSansArabic_700Bold.ttf"; sourceTree = "<group>"; };
 		CB31401727F611561E0B3393 /* iOS-Beacon.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Beacon.m4a"; sourceTree = "<group>"; };
 		D8229BED42F148008205B852 /* IBMPlexSansArabic_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSansArabic_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold/IBMPlexSansArabic_600SemiBold.ttf"; sourceTree = "<group>"; };
@@ -137,7 +138,6 @@
 		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
 		FDE52688DF5F5110C0D947CA /* Pods-nedaa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.debug.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.debug.xcconfig"; sourceTree = "<group>"; };
 		FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_700Bold.ttf; path = "../node_modules/@expo-google-fonts/asap/700Bold/Asap_700Bold.ttf"; sourceTree = "<group>"; };
-		C781E4824C17489FA7470F90 /* Settings.bundle */ = {isa = PBXFileReference; name = "Settings.bundle"; path = "nedaa/Settings.bundle"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = wrapper.plug-in; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
