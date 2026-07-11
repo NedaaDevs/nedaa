@@ -12,7 +12,7 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 
 // Constants
 import { RTL_LOCALES } from "@/constants/Locales";
-import { ALL_FEATURE_CARD_IDS } from "@/constants/FeatureCards";
+import { ALL_WHATS_NEW_IDS } from "@/constants/WhatsNew";
 
 // Types
 import { AppState } from "@/types/app";
@@ -70,7 +70,7 @@ export const useAppStore = create<AppState>()(
               isFirstRun,
               dismissedFeatureCards: isFirstRun
                 ? state.dismissedFeatureCards
-                : [...new Set([...state.dismissedFeatureCards, ...ALL_FEATURE_CARD_IDS])],
+                : [...new Set([...state.dismissedFeatureCards, ...ALL_WHATS_NEW_IDS])],
             }));
           },
 
@@ -99,6 +99,12 @@ export const useAppStore = create<AppState>()(
           dismissFeatureCard: (id: string) => {
             set((state) => ({
               dismissedFeatureCards: [...state.dismissedFeatureCards, id],
+            }));
+          },
+
+          dismissFeatureCards: (ids: string[]) => {
+            set((state) => ({
+              dismissedFeatureCards: [...new Set([...state.dismissedFeatureCards, ...ids])],
             }));
           },
 
