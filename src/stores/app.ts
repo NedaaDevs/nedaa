@@ -96,12 +96,6 @@ export const useAppStore = create<AppState>()(
             void syncWidgetPayloads();
           },
 
-          dismissFeatureCard: (id: string) => {
-            set((state) => ({
-              dismissedFeatureCards: [...state.dismissedFeatureCards, id],
-            }));
-          },
-
           dismissFeatureCards: (ids: string[]) => {
             set((state) => ({
               dismissedFeatureCards: [...new Set([...state.dismissedFeatureCards, ...ids])],

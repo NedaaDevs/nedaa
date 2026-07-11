@@ -15,7 +15,6 @@ export type AppState = {
   setMode: (mode: AppMode) => void;
   setHijirOffset: (offset: number) => void;
   dismissedFeatureCards: string[];
-  dismissFeatureCard: (id: string) => void;
   dismissFeatureCards: (ids: string[]) => void;
   // TODO(quran-gate): remove at 2.10.0
   quranUnlocked: boolean;
