@@ -26,16 +26,31 @@ const getLocalPath = async (
   return file.exists ? file.uri : null;
 };
 
+// Memoizes hasSurah's per-ayah stat loop, keyed by (recitation, surah, format).
+// Invalidated wherever ayah files for a surah are added or removed — see
+// downloadSurah and deleteAyahSurah.
+const hasSurahCache = new Map<string, boolean>();
+const hasSurahCacheKey = (recitationId: string, surah: number, fileFormat: string): string =>
+  `${recitationId}:${surah}:${fileFormat}`;
+
 const hasSurah = async (
   recitationId: string,
   surah: number,
   ayahCount: number,
   fileFormat: string
 ): Promise<boolean> => {
+  const key = hasSurahCacheKey(recitationId, surah, fileFormat);
+  const cached = hasSurahCache.get(key);
+  if (cached !== undefined) return cached;
+  let result = true;
   for (let ayah = 1; ayah <= ayahCount; ayah++) {
-    if (!ayahFile(recitationId, surah, ayah, fileFormat).exists) return false;
+    if (!ayahFile(recitationId, surah, ayah, fileFormat).exists) {
+      result = false;
+      break;
+    }
   }
-  return true;
+  hasSurahCache.set(key, result);
+  return result;
 };
 
 // The per-surah bundle URL: `${baseUrl}/${basePath}bundles/<surah>.zip`.
@@ -61,6 +76,7 @@ const downloadSurah = async (
       `surah ${surah} zip=${zipFile.exists ? zipFile.size : "MISSING"}b → unzip to ${dir.uri}`
     );
     await unzip(zipFile.uri, dir.uri); // extracts <surah>_<ayah>.mp3 into dir
+    hasSurahCache.delete(hasSurahCacheKey(recitation.id, surah, recitation.fileFormat));
     const ok = await hasSurah(recitation.id, surah, ayahCount, recitation.fileFormat);
     log.i("Download", `surah ${surah} unzipped, hasSurah=${ok}`);
   } catch (error) {
@@ -102,6 +118,7 @@ const deleteAyahSurah = (recitationId: string, surah: number, fileFormat: string
   for (const entry of dir.list()) {
     if (re.test(entry.uri.split("/").pop() ?? "")) (entry as File).delete();
   }
+  hasSurahCache.delete(hasSurahCacheKey(recitationId, surah, fileFormat));
   log.i("Download", `surah ${surah} ayah files deleted for ${recitationId}`);
 };
 

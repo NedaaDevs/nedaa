@@ -39,22 +39,47 @@ const isContentDbReady = (): boolean => quranDbReady;
 // is read-only after the one-time copy.
 const PAGE_CACHE_LIMIT = 60;
 const pageReadCache = new Map<string, unknown>();
+// In-flight reads by key, so two callers requesting the same page/ayah on the same
+// tick (e.g. useReadAlongWord + useAudioFollowTarget reacting to one ayah change)
+// share a single SQLite query instead of issuing a duplicate.
+const inflightReads = new Map<string, Promise<unknown>>();
+// Bumped on cache clear; a read started before the bump was issued against the
+// old DB connection, so its result must not land in the fresh cache.
+let cacheGeneration = 0;
 
 const cachedRead = async <T>(key: string, read: () => Promise<T>): Promise<T> => {
   const cached = pageReadCache.get(key);
   if (cached !== undefined) return cached as T;
-  const value = await read();
-  if (pageReadCache.size >= PAGE_CACHE_LIMIT) {
-    // Map preserves insertion order — evict the oldest entry.
-    const oldest = pageReadCache.keys().next().value;
-    if (oldest !== undefined) pageReadCache.delete(oldest);
-  }
-  pageReadCache.set(key, value);
-  return value;
+  const existing = inflightReads.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const generation = cacheGeneration;
+  const promise = (async () => {
+    try {
+      const value = await read();
+      if (generation === cacheGeneration) {
+        if (pageReadCache.size >= PAGE_CACHE_LIMIT) {
+          // Map preserves insertion order — evict the oldest entry.
+          const oldest = pageReadCache.keys().next().value;
+          if (oldest !== undefined) pageReadCache.delete(oldest);
+        }
+        pageReadCache.set(key, value);
+      }
+      return value;
+    } finally {
+      inflightReads.delete(key);
+    }
+  })();
+  inflightReads.set(key, promise);
+  return promise;
 };
 
 const clearPageReadCache = (): void => {
   pageReadCache.clear();
+  // Drop in-flight reads and invalidate their pending results — they were issued
+  // against the DB connection being replaced/closed.
+  inflightReads.clear();
+  cacheGeneration++;
 };
 
 const getDirectory = async (): Promise<string> => {

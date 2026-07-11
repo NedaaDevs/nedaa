@@ -40,42 +40,51 @@ export type NitroHandlers = {
 // two players never both react. Ownership hands off explicitly on acquire().
 const handlers: Partial<Record<NitroOwner, NitroHandlers>> = {};
 let currentOwner: NitroOwner | null = null;
-let started = false;
+// In-flight start promise, coalesced so concurrent callers (athkar + quran both
+// funnel here on init) await the same run instead of double-registering nitro
+// listeners, which would fire every handler twice.
+let startPromise: Promise<void> | null = null;
 
 const register = (owner: NitroOwner, h: NitroHandlers): void => {
   handlers[owner] = h;
 };
 
 const ensureStarted = async (): Promise<void> => {
-  if (started) return;
-  TrackPlayer.onChangeTrack((track: TrackItem, reason?: Reason) => {
-    if (currentOwner) handlers[currentOwner]?.onChangeTrack?.(track, reason);
-  });
-  TrackPlayer.onPlaybackStateChange((state: TrackPlayerState, reason?: Reason) => {
-    if (currentOwner) handlers[currentOwner]?.onPlaybackStateChange?.(state, reason);
-  });
-  TrackPlayer.onPlaybackProgressChange(
-    (position: number, totalDuration: number, isManuallySeeked?: boolean) => {
-      if (currentOwner)
-        handlers[currentOwner]?.onProgress?.(position, totalDuration, isManuallySeeked ?? false);
-    }
-  );
-  // First activation of the audio session — deferred to the first play() so
-  // opening the app doesn't interrupt other apps' audio. If this logs at launch,
-  // something initialized a player before playback started.
-  log.i("Session", "configuring audio session (first activation)");
-  await TrackPlayer.configure({
-    showInNotification: true,
-    androidAutoEnabled: false,
-    carPlayEnabled: false,
-  });
-  if (Platform.OS === "android" && Platform.Version >= 33) {
-    await PermissionsAndroid.request("android.permission.POST_NOTIFICATIONS" as never).catch(
-      () => {}
+  if (startPromise) return startPromise;
+  startPromise = (async () => {
+    TrackPlayer.onChangeTrack((track: TrackItem, reason?: Reason) => {
+      if (currentOwner) handlers[currentOwner]?.onChangeTrack?.(track, reason);
+    });
+    TrackPlayer.onPlaybackStateChange((state: TrackPlayerState, reason?: Reason) => {
+      if (currentOwner) handlers[currentOwner]?.onPlaybackStateChange?.(state, reason);
+    });
+    TrackPlayer.onPlaybackProgressChange(
+      (position: number, totalDuration: number, isManuallySeeked?: boolean) => {
+        if (currentOwner)
+          handlers[currentOwner]?.onProgress?.(position, totalDuration, isManuallySeeked ?? false);
+      }
     );
-  }
-  started = true;
-  log.d("Session", "nitro session started");
+    // First activation of the audio session — deferred to the first play() so
+    // opening the app doesn't interrupt other apps' audio. If this logs at launch,
+    // something initialized a player before playback started.
+    log.i("Session", "configuring audio session (first activation)");
+    await TrackPlayer.configure({
+      showInNotification: true,
+      androidAutoEnabled: false,
+      carPlayEnabled: false,
+    });
+    if (Platform.OS === "android" && Platform.Version >= 33) {
+      await PermissionsAndroid.request("android.permission.POST_NOTIFICATIONS" as never).catch(
+        () => {}
+      );
+    }
+    log.d("Session", "nitro session started");
+  })().catch((error) => {
+    // Let a later caller retry instead of getting stuck on a failed start forever.
+    startPromise = null;
+    throw error;
+  });
+  return startPromise;
 };
 
 // Awaits the outgoing owner's teardown before handing the player over, so the
@@ -101,7 +110,7 @@ const current = (): NitroOwner | null => currentOwner;
 
 const __resetForTest = (): void => {
   currentOwner = null;
-  started = false;
+  startPromise = null;
   delete handlers.athkar;
   delete handlers.quran;
 };
