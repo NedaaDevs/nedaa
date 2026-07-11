@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useWindowDimensions, StyleSheet, View, ScrollView, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -30,6 +30,7 @@ import {
   SPREAD_TOP_PAD,
 } from "@/utils/readerSpread";
 import { useReaderLayout } from "@/hooks/useReaderLayout";
+import { useAudioFollowTarget } from "@/hooks/useAudioFollowTarget";
 import { useQuranStore } from "@/stores/quran";
 import QuranPage from "@/components/quran/QuranPage";
 import VerticalReader from "@/components/quran/VerticalReader";
@@ -141,6 +142,22 @@ const QuranReader = ({
   useEffect(() => {
     unitIndex.value = currentUnit;
   }, [currentUnit, unitIndex]);
+
+  // Read-along follow, horizontal mode: when the recited ayah moves onto a page
+  // that isn't visible, turn to it (the vertical readers scroll instead). Dedupe
+  // per page so a manual flip away isn't fought every word tick within the page.
+  const followTarget = useAudioFollowTarget();
+  const lastFollowPageRef = useRef(0);
+  useEffect(() => {
+    if (isVertical || !followTarget) {
+      lastFollowPageRef.current = 0;
+      return;
+    }
+    if (followTarget.page === lastFollowPageRef.current) return;
+    lastFollowPageRef.current = followTarget.page;
+    const visible = isSpread ? pagesOfSpread(currentUnit) : [safePage];
+    if (!visible.includes(followTarget.page)) onPageChange(followTarget.page);
+  }, [followTarget, isVertical, isSpread, currentUnit, safePage, onPageChange]);
 
   // A search jump sets `flashAyah`; the page pulse-highlights it, then we clear
   // the flag so it doesn't re-fire on later renders.

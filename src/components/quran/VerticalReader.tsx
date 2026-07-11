@@ -61,13 +61,14 @@ const VerticalReader = ({
   const pxPerSec = useQuranStore((s) => s.autoScrollSpeed);
   const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
   const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
-  const { animatedRef, scrollHandler, liveOffset, layoutH } = useAutoScroll<number>({
-    playing,
-    pxPerSec,
-    // Matches getItemLayout's offset for the current page (index = page − 1).
-    initialOffset: itemHeight * Math.max(0, currentPage - 1),
-    onReachEnd: pause,
-  });
+  const { animatedRef, scrollHandler, liveOffset, layoutH, maxOffset, glideTarget, jumpTo } =
+    useAutoScroll<number>({
+      playing,
+      pxPerSec,
+      // Matches getItemLayout's offset for the current page (index = page − 1).
+      initialOffset: itemHeight * Math.max(0, currentPage - 1),
+      onReachEnd: pause,
+    });
 
   // Read-along follow: keep the recited line on screen. Only nudges when the line
   // drifts outside a comfortable band (top ~20% … bottom ~30%); a line already in
@@ -78,6 +79,10 @@ const VerticalReader = ({
   useEffect(() => {
     if (!followTarget) {
       lastFollowRef.current = "";
+      runOnUI(() => {
+        "worklet";
+        maxOffset.value = Number.MAX_SAFE_INTEGER; // no recitation → uncapped glide
+      })();
       return;
     }
     const key = `${followTarget.page}:${followTarget.line}`;
@@ -88,17 +93,24 @@ const VerticalReader = ({
       insets.top +
       itemHeight * (followTarget.page - 1) +
       (followTarget.line - 1) * lineHeightInPage;
-    log.i(
+    // Auto-scroll may glide up to (not past) the recited line: the cap keeps the
+    // teleprompter from scrolling the highlight off the top and rises with the
+    // recitation.
+    const cap = Math.max(0, lineTop - lineHeightInPage);
+    log.d(
       "Follow",
       `${followTarget.surah}:${followTarget.ayah} p${followTarget.page} l${followTarget.line} lineTop=${Math.round(lineTop)}`
     );
     runOnUI(() => {
       "worklet";
+      maxOffset.value = cap;
       const viewportY = lineTop - liveOffset.value;
       const view = layoutH.value || height;
       // In-band → leave it; the line is already comfortably visible.
       if (viewportY >= view * 0.2 && viewportY <= view * 0.7) return;
-      scrollTo(animatedRef, 0, Math.max(0, lineTop - view * 0.35), true);
+      const dest = Math.max(0, lineTop - view * 0.35);
+      glideTarget.value = dest; // keep the auto-scroll glide in step with the follow
+      scrollTo(animatedRef, 0, dest, true);
     })();
   }, [
     followTarget,
@@ -109,6 +121,8 @@ const VerticalReader = ({
     animatedRef,
     liveOffset,
     layoutH,
+    maxOffset,
+    glideTarget,
   ]);
 
   // A single tap toggles the reader chrome (top bar / page slider), same as the
@@ -129,14 +143,27 @@ const VerticalReader = ({
   useEffect(() => {
     onPageChangeRef.current = onPageChange;
   }, [onPageChange]);
+  const visiblePageRef = useRef(currentPage);
   const onViewableItemsChanged = useMemo(
     () =>
       ({ viewableItems }: { viewableItems: ViewToken[] }) => {
         const top = viewableItems[0]?.index;
-        if (top != null) onPageChangeRef.current(top + 1);
+        if (top != null) {
+          visiblePageRef.current = top + 1;
+          onPageChangeRef.current(top + 1);
+        }
       },
     []
   );
+
+  // External page jumps (search, goto, slider) command currentPage from outside;
+  // jump the list AND the glide there (or auto-scroll drags the view back). Self-
+  // reported pages (the user scrolling) echo back equal to visiblePageRef and are
+  // ignored, so the list never fights a drag.
+  useEffect(() => {
+    if (currentPage === visiblePageRef.current) return;
+    jumpTo(itemHeight * Math.max(0, currentPage - 1));
+  }, [currentPage, itemHeight, jumpTo]);
 
   const renderItem = useCallback(
     ({ item }: { item: number }) => (

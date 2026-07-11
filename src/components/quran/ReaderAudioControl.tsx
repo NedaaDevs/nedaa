@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { MotiView } from "moti";
 import {
@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Download,
   CheckCircle2,
+  LocateFixed,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -45,9 +46,12 @@ const CARD_SHADOW = {
 const ReaderAudioControl = ({
   quranTheme,
   visible,
+  onLocate,
 }: {
   quranTheme: QuranThemeType;
   visible: boolean;
+  // Jump the reader back to the recited ayah (sync after scrolling away).
+  onLocate?: () => void;
 }) => {
   const { t, i18n } = useTranslation();
   const { isRTL } = useRTL();
@@ -212,14 +216,11 @@ const ReaderAudioControl = ({
       ) : playing ? (
         <Pause size={icon} color={colors.background} fill={colors.background} />
       ) : (
-        // The play triangle points along the reading direction, like the Listen
-        // mini-player.
-        <Play
-          size={icon}
-          color={colors.background}
-          fill={colors.background}
-          style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
-        />
+        // The play triangle points along the reading direction. Mirroring lives on
+        // a wrapper View — transforms on the Svg itself break its rendering.
+        <View style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}>
+          <Play size={icon} color={colors.background} fill={colors.background} />
+        </View>
       )}
     </Pressable>
   );
@@ -241,6 +242,19 @@ const ReaderAudioControl = ({
       )}
     </Pressable>
   );
+
+  // Sync: jump back to the recited ayah. Only meaningful mid-playback.
+  const locateButton = (touch: number, icon: number) =>
+    active && onLocate ? (
+      <Pressable
+        onPress={onLocate}
+        accessibilityRole="button"
+        accessibilityLabel={t("a11y.quran.listen.goToPlaying")}
+        hitSlop={6}
+        style={{ width: touch, height: touch, alignItems: "center", justifyContent: "center" }}>
+        <LocateFixed size={icon} color={colors.headerColor} opacity={0.7} />
+      </Pressable>
+    ) : null;
 
   const stopButton = (touch: number, icon: number) =>
     active ? (
@@ -280,6 +294,7 @@ const ReaderAudioControl = ({
             {downloadButton(big ? 44 : 36, big ? 22 : 18)}
             {followToggle(big ? 44 : 38, big ? 20 : 18)}
             {playButton(big ? 54 : 40, big ? 24 : 20)}
+            {locateButton(big ? 44 : 36, big ? 22 : 18)}
             {stopButton(big ? 44 : 36, big ? 22 : 18)}
           </XStack>
         </YStack>

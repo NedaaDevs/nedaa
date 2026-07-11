@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { View, ViewToken } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { runOnUI } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -59,19 +59,36 @@ const VerticalTextReader = ({
   const pxPerSec = useQuranStore((s) => s.autoScrollSpeed);
   const setAutoScrollPlaying = useQuranStore((s) => s.setAutoScrollPlaying);
   const pause = useCallback(() => setAutoScrollPlaying(false), [setAutoScrollPlaying]);
-  const { animatedRef, scrollHandler } = useAutoScroll<number>({
+  const { animatedRef, scrollHandler, syncToLive, liveOffset, maxOffset } = useAutoScroll<number>({
     playing,
     pxPerSec,
     onReachEnd: pause,
   });
 
+  // Index-based jumps can't pre-compute a pixel offset (variable page heights), so
+  // after any jump the glide re-seeds from the list's settled position — otherwise
+  // auto-scroll drags the view back to where it was.
+  const settleGlide = useCallback(() => {
+    setTimeout(syncToLive, 120);
+  }, [syncToLive]);
+
   // Read-along follow: text reflows, so there's no pixel target for a line — the
   // reliable unit is the page. When the recited verse moves onto a page that isn't
   // the one on screen, flip to it; within a page the verse tint tracks position.
   const followTarget = useAudioFollowTarget();
+  const retriedIndexRef = useRef(-1);
   const visiblePageRef = useRef(currentPage);
   const lastFollowPageRef = useRef(0);
+  // The recited page, for the auto-scroll freeze below (0 = no reader recitation).
+  const followPageRef = useRef(0);
   useEffect(() => {
+    followPageRef.current = followTarget?.page ?? 0;
+    // Recitation advanced (or stopped): lift any freeze; the viewability handler
+    // re-freezes if the view is still ahead of the recited page.
+    runOnUI(() => {
+      "worklet";
+      maxOffset.value = Number.MAX_SAFE_INTEGER;
+    })();
     if (!followTarget) {
       lastFollowPageRef.current = 0;
       return;
@@ -80,8 +97,10 @@ const VerticalTextReader = ({
     if (page === lastFollowPageRef.current) return; // already handled this page
     lastFollowPageRef.current = page;
     if (page === visiblePageRef.current) return; // recited verse already on screen
+    retriedIndexRef.current = -1;
     animatedRef.current?.scrollToIndex({ index: page - 1, animated: true, viewPosition: 0 });
-  }, [followTarget, animatedRef]);
+    settleGlide();
+  }, [followTarget, animatedRef, settleGlide, maxOffset]);
 
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
@@ -108,24 +127,50 @@ const VerticalTextReader = ({
         if (top != null) {
           visiblePageRef.current = top + 1;
           onPageChangeRef.current(top + 1);
+          // Text pages have no line pixels to cap against, so the read-along cap is
+          // page-grained: once the view runs ahead of the recited page, park the
+          // glide where it is; the follow effect lifts this as recitation advances.
+          const ahead = followPageRef.current > 0 && top + 1 > followPageRef.current;
+          runOnUI(() => {
+            "worklet";
+            maxOffset.value = ahead ? liveOffset.value : Number.MAX_SAFE_INTEGER;
+          })();
         }
       },
-    []
+    [maxOffset, liveOffset]
   );
+
+  // External page jumps (search, goto, slider) command currentPage from outside;
+  // scroll to them. Self-reported pages (the user scrolling) echo back as the same
+  // value as visiblePageRef and are ignored, so the list never fights a drag.
+  useEffect(() => {
+    if (currentPage === visiblePageRef.current) return;
+    retriedIndexRef.current = -1; // fresh jump → allow one exact-position retry
+    animatedRef.current?.scrollToIndex({ index: currentPage - 1, animated: false });
+    settleGlide();
+  }, [currentPage, animatedRef, settleGlide]);
 
   // Resume jump: with variable heights the target isn't measured yet, so land on
   // the list's estimated offset, then settle onto the exact page once it renders.
+  // One retry per jumped-to index — a still-unmeasured target after that keeps the
+  // estimated landing rather than re-firing this handler forever.
   const onScrollToIndexFailed = useCallback(
     (info: { index: number; averageItemLength: number }) => {
       animatedRef.current?.scrollToOffset({
         offset: info.averageItemLength * info.index,
         animated: false,
       });
+      if (retriedIndexRef.current === info.index) {
+        settleGlide();
+        return;
+      }
+      retriedIndexRef.current = info.index;
       setTimeout(() => {
         animatedRef.current?.scrollToIndex({ index: info.index, animated: false });
+        settleGlide();
       }, 350);
     },
-    [animatedRef]
+    [animatedRef, settleGlide]
   );
 
   const separator = useCallback(

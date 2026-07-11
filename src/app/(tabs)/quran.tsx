@@ -388,7 +388,11 @@ const QuranScreen = () => {
               zIndex={12}
               pointerEvents="box-none">
               <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />
-              <ReaderAudioControl quranTheme={quranTheme} visible={showOverlay} />
+              <ReaderAudioControl
+                quranTheme={quranTheme}
+                visible={showOverlay}
+                onLocate={goToPlaying}
+              />
             </YStack>
           )}
 

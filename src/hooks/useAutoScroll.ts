@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import Animated, {
   scrollTo,
   useAnimatedRef,
@@ -45,6 +45,10 @@ export const useAutoScroll = <ItemT>({
   const layoutH = useSharedValue(0);
   const speed = useSharedValue(pxPerSec);
   const interacting = useSharedValue(false);
+  // Ceiling for the glide (UI thread). During read-along the reader keeps this at
+  // the recited line's offset so the teleprompter never scrolls past the highlight;
+  // it parks at the cap and resumes as the recitation advances. MAX = uncapped.
+  const maxOffset = useSharedValue(Number.MAX_SAFE_INTEGER);
 
   useEffect(() => {
     speed.value = pxPerSec;
@@ -81,7 +85,8 @@ export const useAutoScroll = <ItemT>({
       return;
     }
     const dt = (f.timeSincePreviousFrame ?? 16) / 1000;
-    const next = target.value + speed.value * dt;
+    // Park at the read-along ceiling (don't outrun the highlight); resumes as it rises.
+    const next = Math.min(target.value + speed.value * dt, maxOffset.value);
     // Clamp/stop only once we actually know the scrollable extent; until then
     // (before the first scroll event) just keep gliding so play can start.
     const max = contentH.value - layoutH.value;
@@ -91,6 +96,7 @@ export const useAutoScroll = <ItemT>({
       scheduleOnRN(onReachEnd);
       return;
     }
+    if (next <= target.value) return; // parked at the cap — hold position
     target.value = next;
     scrollTo(animatedRef, 0, next, false);
   }, false);
@@ -110,7 +116,38 @@ export const useAutoScroll = <ItemT>({
     frame.setActive(playing);
   }, [playing, frame, target, liveOffset, initialOffset]);
 
+  // Jump the list AND the glide to an absolute offset. External navigation (search,
+  // sync-to-recited) must move `target` too, or the frame loop drags the view back.
+  const jumpTo = useCallback(
+    (offset: number) => {
+      runOnUI(() => {
+        target.value = offset;
+        scrollTo(animatedRef, 0, offset, false);
+      })();
+    },
+    [animatedRef, target]
+  );
+
+  // Re-seed the glide from the list's real position — for index-based jumps whose
+  // pixel offset isn't knowable up front (variable-height text pages).
+  const syncToLive = useCallback(() => {
+    runOnUI(() => {
+      target.value = liveOffset.value;
+    })();
+  }, [liveOffset, target]);
+
   // liveOffset/layoutH are exposed so a follower (read-along) can decide, on the UI
-  // thread, whether the target line is already on screen before scrolling to it.
-  return { animatedRef, scrollHandler, liveOffset, layoutH };
+  // thread, whether the target line is already on screen before scrolling to it;
+  // maxOffset is the read-along ceiling the follower raises as recitation advances;
+  // glideTarget lets a follower's own scroll keep the glide in step.
+  return {
+    animatedRef,
+    scrollHandler,
+    liveOffset,
+    layoutH,
+    maxOffset,
+    glideTarget: target,
+    jumpTo,
+    syncToLive,
+  };
 };

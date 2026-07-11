@@ -1,4 +1,4 @@
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { MotiView } from "moti";
 import { Play, Pause, Minus, Plus } from "lucide-react-native";
@@ -9,6 +9,7 @@ import { QuranThemeType } from "@/enums/quran";
 import { AUTO_SCROLL_SPEED_LEVELS as LEVELS, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { usePreferencesStore } from "@/stores/preferences";
+import { useRTL } from "@/contexts/RTLContext";
 
 const CARD_SHADOW = {
   shadowColor: "#000",
@@ -33,6 +34,10 @@ const AutoScrollControl = ({
   const colors = QURAN_THEME_COLORS[quranTheme];
   const big = usePreferencesStore((s) => s.largeControls);
 
+  const { isRTL } = useRTL();
+  // Play triangle points along the reading direction; the mirror lives on a
+  // wrapper View (transforms on the Svg itself break its rendering).
+  const mirror = isRTL ? { transform: [{ scaleX: -1 }] } : undefined;
   const playing = useQuranStore((s) => s.autoScrollPlaying);
   const speed = useQuranStore((s) => s.autoScrollSpeed);
   const toggle = useQuranStore((s) => s.toggleAutoScroll);
@@ -147,7 +152,9 @@ const AutoScrollControl = ({
             {playing ? (
               <Pause size={26} color={colors.background} fill={colors.background} />
             ) : (
-              <Play size={26} color={colors.background} fill={colors.background} />
+              <View style={mirror}>
+                <Play size={26} color={colors.background} fill={colors.background} />
+              </View>
             )}
             <Text fontSize={17} fontWeight="700" color={colors.background}>
               {t(playing ? "common.pause" : "common.play")}
@@ -190,7 +197,9 @@ const AutoScrollControl = ({
             {playing ? (
               <Pause size={20} color={colors.background} fill={colors.background} />
             ) : (
-              <Play size={20} color={colors.background} fill={colors.background} />
+              <View style={mirror}>
+                <Play size={20} color={colors.background} fill={colors.background} />
+              </View>
             )}
           </Pressable>
         </XStack>
