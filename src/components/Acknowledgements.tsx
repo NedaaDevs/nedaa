@@ -228,7 +228,7 @@ const Acknowledgements = () => {
                 {t("settings.acknowledgements.contribute.body")}
               </Text>
               <Pressable
-                onPress={() => router.push("/settings/help")}
+                onPress={() => router.push("/settings/feedback" as never)}
                 accessibilityRole="button"
                 accessibilityLabel={t("settings.acknowledgements.contribute.cta")}
                 accessibilityHint={t("a11y.acknowledgements.contribute")}>
