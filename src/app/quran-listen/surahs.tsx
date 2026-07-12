@@ -14,7 +14,6 @@ import { SurahListRow } from "@/components/quran/listen/SurahListRow";
 import { DownloadsDrawer } from "@/components/quran/listen/DownloadsDrawer";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
-import { QuranContentDB } from "@/services/quran-content-db";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import {
   useQuranDownloadStore,
@@ -24,8 +23,6 @@ import {
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import type { QuranRecitation } from "@/types/quran-audio";
 import { SURAH_NAMES, SURAH_NAMES_LATIN } from "@/constants/Quran";
-import { buildSurahSizeResolver } from "@/utils/quranAudioSize";
-import type { SurahMeta } from "@/types/quran";
 
 const SURAHS = Array.from({ length: 114 }, (_, i) => i + 1);
 
@@ -42,7 +39,6 @@ const QuranListenSurahsScreen = () => {
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
   const playerState = useQuranAudioStore((s) => s.playerState);
   const listenRecitationId = useQuranAudioStore((s) => s.listenRecitationId);
-  const [metaBySurah, setMetaBySurah] = useState<Record<number, SurahMeta>>({});
   const [reciterName, setReciterName] = useState<string | null>(null);
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
   const [query, setQuery] = useState("");
@@ -82,13 +78,7 @@ const QuranListenSurahsScreen = () => {
   }, [resumeStates, listenRecitationId, downloadingSet]);
 
   useEffect(() => {
-    // Warm the CDN connection and load per-surah metadata in a single query.
     void quranAudioPlayer.warmUp();
-    QuranContentDB.getAllSurahs().then((all) => {
-      const map: Record<number, SurahMeta> = {};
-      for (const m of all) map[m.number] = m;
-      setMetaBySurah(map);
-    });
   }, []);
 
   useEffect(() => {
@@ -133,10 +123,10 @@ const QuranListenSurahsScreen = () => {
     [query]
   );
 
-  // Per-surah download size (exact from the manifest, else estimated).
-  const { sizeOf, exact: sizeExact } = useMemo(
-    () => buildSurahSizeResolver(metaBySurah, recitation),
-    [metaBySurah, recitation]
+  // Per-surah download size, straight from the manifest (every recitation publishes exact bytes).
+  const sizeOf = useCallback(
+    (surah: number) => Math.max(0, recitation?.surahBytes?.[surah - 1] ?? 0),
+    [recitation]
   );
 
   return (
@@ -165,7 +155,7 @@ const QuranListenSurahsScreen = () => {
           progressBySurah
         )
           .map((n) => `${n}=${Math.round((progressBySurah[Number(n)] ?? 0) * 100)}`)
-          .join()}:${Object.keys(metaBySurah).length}`}
+          .join()}`}
         ListEmptyComponent={
           <Text color="$typographySecondary" textAlign="center" paddingVertical="$6">
             {t("quran.listen.noResults")}
@@ -174,7 +164,6 @@ const QuranListenSurahsScreen = () => {
         renderItem={({ item: surah }) => (
           <SurahListRow
             surah={surah}
-            meta={metaBySurah[surah]}
             isCurrent={currentSurah === surah}
             isLoading={playerState === QURAN_PLAYER_STATE.LOADING && currentSurah === surah}
             isDownloaded={downloaded.includes(surah)}
@@ -182,7 +171,6 @@ const QuranListenSurahsScreen = () => {
             isPaused={pausedSet.has(surah)}
             downloadProgress={progressBySurah[surah]}
             estimatedBytes={sizeOf(surah)}
-            sizeApprox={!sizeExact}
             onPress={onPress}
             onDownload={onDownload}
             onPause={onPause}
@@ -197,7 +185,6 @@ const QuranListenSurahsScreen = () => {
         onClose={() => setDrawerOpen(false)}
         recitation={recitation}
         sizeOf={sizeOf}
-        sizeApprox={!sizeExact}
       />
     </Background>
   );

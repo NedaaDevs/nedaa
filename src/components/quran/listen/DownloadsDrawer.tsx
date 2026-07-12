@@ -49,22 +49,12 @@ type QueueRowProps = {
   paused: boolean;
   frac: number;
   size: number;
-  sizeApprox: boolean;
   onPause: () => void;
   onResume: () => void;
   onCancel: () => void;
 };
 
-const QueueRow = ({
-  surah,
-  paused,
-  frac,
-  size,
-  sizeApprox,
-  onPause,
-  onResume,
-  onCancel,
-}: QueueRowProps) => {
+const QueueRow = ({ surah, paused, frac, size, onPause, onResume, onCancel }: QueueRowProps) => {
   const { t } = useTranslation();
   const scriptFont = metadataFontFamily();
   const pct = formatNumberToLocale(String(Math.round(Math.min(1, Math.max(0, frac)) * 100)));
@@ -83,7 +73,7 @@ const QueueRow = ({
             </Text>
             {size > 0 ? (
               <Text size="xs" color="$typographySecondary">
-                {`${sizeApprox ? "~" : ""}${formatFileSizeLocale(size, t)}`}
+                {formatFileSizeLocale(size, t)}
               </Text>
             ) : null}
           </HStack>
@@ -130,7 +120,6 @@ type Props = {
   onClose: () => void;
   recitation: QuranRecitation | null;
   sizeOf: (surah: number) => number; // per-surah size (bytes)
-  sizeApprox: boolean; // sizes are estimates → prefix with "~"
 };
 
 // A trailing-edge side panel, opened from the header cloud icon, showing the live
@@ -138,7 +127,7 @@ type Props = {
 // downloaded or paused (individually or via download-all), plus reciter-level
 // download-all / delete-all controls. Slide-in only (button, scrim, or back);
 // mirrors ReaderLibraryDrawer's animation.
-export const DownloadsDrawer = ({ open, onClose, recitation, sizeOf, sizeApprox }: Props) => {
+export const DownloadsDrawer = ({ open, onClose, recitation, sizeOf }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const theme = useTheme();
@@ -362,7 +351,7 @@ export const DownloadsDrawer = ({ open, onClose, recitation, sizeOf, sizeApprox 
                     </Text>
                     {!allDownloaded && remainingBytes > 0 ? (
                       <Text size="xs" color="$typographySecondary">
-                        {`${sizeApprox ? "~" : ""}${formatFileSizeLocale(remainingBytes, t)}`}
+                        {formatFileSizeLocale(remainingBytes, t)}
                       </Text>
                     ) : null}
                   </VStack>
@@ -394,7 +383,6 @@ export const DownloadsDrawer = ({ open, onClose, recitation, sizeOf, sizeApprox 
                       paused={pausedSet.has(n)}
                       frac={progressBySurah[n] ?? 0}
                       size={sizeOf(n)}
-                      sizeApprox={sizeApprox}
                       onPause={() => recitation && pauseOne(recitation, n)}
                       onResume={() => recitation && void downloadOne(recitation, n)}
                       onCancel={() => recitation && deleteOne(recitation, n)}

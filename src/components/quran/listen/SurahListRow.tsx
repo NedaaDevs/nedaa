@@ -12,12 +12,11 @@ import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
 import { RevelationPlace } from "@/enums/quran";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
+import { SURAH_AYAH_COUNTS, SURAH_REVELATION_PLACES } from "@/constants/Quran";
 import { formatFileSizeLocale, formatNumberToLocale } from "@/utils/number";
-import type { SurahMeta } from "@/types/quran";
 
 type Props = {
   surah: number;
-  meta?: SurahMeta;
   isCurrent: boolean;
   isLoading: boolean;
   isDownloaded: boolean;
@@ -25,7 +24,6 @@ type Props = {
   isPaused: boolean; // interrupted transfer with a saved resume point
   downloadProgress?: number; // 0..1 while downloading
   estimatedBytes?: number; // download size in bytes
-  sizeApprox?: boolean; // prefix the size with "~" (estimate, not exact)
   onPress: (surah: number) => void;
   onDownload: (surah: number) => void; // fresh download OR resume a paused one
   onPause: (surah: number) => void;
@@ -70,7 +68,6 @@ const DownloadRing = ({ fraction, showPause }: { fraction: number; showPause?: b
 
 const SurahListRowBase = ({
   surah,
-  meta,
   isCurrent,
   isLoading,
   isDownloaded,
@@ -78,7 +75,6 @@ const SurahListRowBase = ({
   isPaused,
   downloadProgress,
   estimatedBytes,
-  sizeApprox,
   onPress,
   onDownload,
   onPause,
@@ -88,24 +84,21 @@ const SurahListRowBase = ({
   const scriptFont = metadataFontFamily();
   const name = localizedSurahName(surah);
 
-  const meccaOrMedina = meta
-    ? meta.revelationPlace === RevelationPlace.MAKKAH
+  const meccaOrMedina =
+    SURAH_REVELATION_PLACES[surah] === RevelationPlace.MAKKAH
       ? t("quran.surah.makki")
-      : t("quran.surah.madani")
-    : null;
+      : t("quran.surah.madani");
   const sizeLabel =
-    estimatedBytes && estimatedBytes > 0
-      ? `${sizeApprox ? "~" : ""}${formatFileSizeLocale(estimatedBytes, t)}`
-      : null;
-  const metaLine = meta
-    ? [
-        t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta.ayahCount)) }),
-        meccaOrMedina,
-        sizeLabel,
-      ]
-        .filter(Boolean)
-        .join(" · ")
-    : null;
+    estimatedBytes && estimatedBytes > 0 ? formatFileSizeLocale(estimatedBytes, t) : null;
+  const metaLine = [
+    t("quran.surah.ayahCount", {
+      n: formatNumberToLocale(String(SURAH_AYAH_COUNTS[surah])),
+    }),
+    meccaOrMedina,
+    sizeLabel,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Pressable

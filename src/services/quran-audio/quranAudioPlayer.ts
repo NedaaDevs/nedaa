@@ -4,10 +4,10 @@ import type { TrackItem, TrackPlayerState, Reason, RepeatMode } from "react-nati
 import { nitroSession, NITRO_STATE, NITRO_REASON } from "@/services/audio/nitroSession";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { useQuranStore } from "@/stores/quran";
+import { SURAH_AYAH_COUNTS, SURAH_NAMES } from "@/constants/Quran";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { QuranManifestService } from "@/services/quran-manifest";
-import { QuranContentDB } from "@/services/quran-content-db";
 import {
   remoteAyahUrl,
   remoteSurahUrl,
@@ -340,8 +340,7 @@ class QuranAudioPlayer {
         `ayah ${surah}:${fromAyah}-${toAyah} tracks=${items.length} local=${localCount} remote=${items.length - localCount} first=${items[0]?.url.slice(0, 64)}`
       );
 
-      const surahMeta = await QuranContentDB.getSurah(surah);
-      const title = surahMeta?.nameArabic ?? `${surah}`;
+      const title = SURAH_NAMES[surah] ?? `${surah}`;
       const reciter = await quranReciterRegistry.reciterOf(recitation.id);
       const artist = reciter ? quranReciterRegistry.localizedName(reciter, i18n.language) : "";
       const tracks: TrackItem[] = items.map((item, i) => ({
@@ -386,7 +385,7 @@ class QuranAudioPlayer {
   }
 
   async playFromHere(surah: number, ayah: number): Promise<void> {
-    const last = (await QuranContentDB.getSurah(surah))?.ayahCount ?? ayah;
+    const last = SURAH_AYAH_COUNTS[surah] ?? ayah;
     await this.playAyahRange(QURAN_QUEUE_KIND.FROM_HERE, surah, ayah, last);
   }
 
