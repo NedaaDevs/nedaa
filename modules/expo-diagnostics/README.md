@@ -27,8 +27,11 @@ not a required-reason API, and App Attest is a capability/entitlement, not a req
 Attestation is NOT part of this native module — it wraps the official `@expo/app-integrity`
 package. Setup:
 
-- **iOS:** App Attest capability + `com.apple.developer.devicecheck.appattest-environment`
-  entitlement (`production`, already in `ios/Nedaa/nedaa.entitlements`). Needs a registered App ID.
+- **iOS:** NOT enabled. The `com.apple.developer.devicecheck.appattest-environment` entitlement
+  fails App Store signing until App Attest is enabled on the `dev.nedaa.app` App ID in the Apple
+  Developer portal and the provisioning profile is regenerated. Do all three together when
+  attestation is actually wired: enable the capability, regenerate the profile, add the
+  entitlement to `ios/nedaa/nedaa.entitlements`. `attest()` resolves `null` until then.
 - **Android:** Play Integrity — enable in Play Console, set `CLOUD_PROJECT_NUMBER` in
   `src/constants/Attestation.ts` to the Google Cloud project number. Requires GMS; resolves
   `null` on HMS/no-GMS builds by design.

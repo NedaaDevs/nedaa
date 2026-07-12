@@ -72,7 +72,7 @@ type ContributorGroup = { titleKey: string; entries: Contributor[] };
 const CONTRIBUTORS: ContributorGroup[] = [
   {
     titleKey: "settings.acknowledgements.contributors.translations",
-    entries: [{ name: "عبد الرحمن راجا", detail: "اردو" }],
+    entries: [{ name: "عبدالرحمن راجا", detail: "اردو" }],
   },
   {
     titleKey: "settings.acknowledgements.contributors.design",
