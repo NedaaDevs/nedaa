@@ -290,6 +290,8 @@ const DownloadProgressScreen = ({
               </Text>
             </XStack>
           </Pressable>
+          {/* A failed download must not be a dead end — same escape as paused/in-flight. */}
+          <CancelControl onCancel={onCancel} color={chrome.subtleText} label={t("common.cancel")} />
           <ReportThisButton
             domains={["quran-download", "quran-content-db", "quran-manifest"]}
             category="Quran download"
