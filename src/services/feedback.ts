@@ -31,6 +31,8 @@ export interface SubmitFeedbackInput {
   area?: string;
   contact?: string;
   attachments?: OutgoingAttachment[];
+  // Reused across retries of the same report so the backend dedupes instead of duplicating.
+  clientKey?: string;
 }
 
 export interface FeedbackReceipt {
@@ -94,7 +96,7 @@ export const submitFeedback = async (input: SubmitFeedbackInput): Promise<Feedba
     attachments: attachments.length
       ? attachments.map(({ kind, mime, bytes }) => ({ kind, mime, bytes }))
       : undefined,
-    clientKey: generateClientKey(),
+    clientKey: input.clientKey ?? generateClientKey(),
   };
 
   const draft = await createFeedbackDraft(body);
