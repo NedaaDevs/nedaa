@@ -10,14 +10,19 @@ import {
 } from "@gorhom/bottom-sheet";
 import { useTheme } from "tamagui";
 
+import { WifiOff } from "lucide-react-native";
+
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
+import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { readPendingReport, clearPendingReport } from "@/utils/crashHandler";
 import { usePendingReportStore } from "@/stores/pendingReport";
 import { submitFeedback, buildLogAttachment, generateClientKey } from "@/services/feedback";
+import { useIsOffline } from "@/hooks/useIsOffline";
 import { Report } from "@/types/feedback";
 
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -32,6 +37,7 @@ const CrashReportPrompt = () => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
+  const offline = useIsOffline();
   const [status, setStatus] = useState<Status>("idle");
   const [note, setNote] = useState("");
   // Reused across retries so an ambiguous failure can't produce a duplicate report.
@@ -157,6 +163,19 @@ const CrashReportPrompt = () => {
               }}
             />
 
+            {offline ? (
+              <HStack
+                gap="$2"
+                alignItems="center"
+                justifyContent="center"
+                accessibilityLiveRegion="polite">
+                <Icon as={WifiOff} size={16} color="$typographySecondary" />
+                <Text size="sm" color="$typographySecondary">
+                  {t("feedback.offline")}
+                </Text>
+              </HStack>
+            ) : null}
+
             {status === "error" ? (
               <Text size="sm" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
                 {t("feedback.error")}
@@ -166,7 +185,7 @@ const CrashReportPrompt = () => {
             <Button
               onPress={send}
               width="100%"
-              disabled={submitting}
+              disabled={submitting || offline}
               accessibilityRole="button"
               accessibilityLabel={t(status === "error" ? "feedback.retry" : "crashPrompt.send")}>
               {submitting ? (

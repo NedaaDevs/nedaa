@@ -1610,5 +1610,6 @@
   "feedback.messagePlaceholder.bug": "کیا چیز توقع کے مطابق کام نہیں کر رہی؟",
   "feedback.messagePlaceholder.feature": "نداء کو آپ کے لیے کیا بہتر بنائے گا؟",
   "feedback.messagePlaceholder.other": "آپ کے ذہن میں کیا ہے؟",
-  "crashPrompt.notePlaceholder": "کیا آپ کو یاد ہے کہ بند ہونے سے پہلے آپ کیا کر رہے تھے؟ (اختیاری)"
+  "crashPrompt.notePlaceholder": "کیا آپ کو یاد ہے کہ بند ہونے سے پہلے آپ کیا کر رہے تھے؟ (اختیاری)",
+  "feedback.offline": "انٹرنیٹ کنکشن نہیں ہے"
 }

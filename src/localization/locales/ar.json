@@ -1658,5 +1658,6 @@
   "feedback.messagePlaceholder.bug": "ما الذي لا يعمل كما هو متوقع؟",
   "feedback.messagePlaceholder.feature": "ما الذي قد يجعل نداء أفضل بالنسبة لك؟",
   "feedback.messagePlaceholder.other": "بمَ تفكر؟",
-  "crashPrompt.notePlaceholder": "هل تتذكر ما كنت تفعله قبل أن يُغلق؟ (اختياري)"
+  "crashPrompt.notePlaceholder": "هل تتذكر ما كنت تفعله قبل أن يُغلق؟ (اختياري)",
+  "feedback.offline": "لا يوجد اتصال بالإنترنت"
 }

@@ -15,6 +15,7 @@ import {
   ChevronUp,
   ImagePlus,
   X,
+  WifiOff,
 } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
@@ -35,6 +36,7 @@ import {
   pickImageAttachment,
   generateClientKey,
 } from "@/services/feedback";
+import { useIsOffline } from "@/hooks/useIsOffline";
 import { Report, type ReportType, type OutgoingAttachment } from "@/types/feedback";
 
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
@@ -83,6 +85,7 @@ const formatBytes = (b: number): string => {
 const FeedbackScreen = () => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const offline = useIsOffline();
   const params = useLocalSearchParams<{ type?: string }>();
   const initialType = validType(params.type);
 
@@ -537,6 +540,19 @@ const FeedbackScreen = () => {
           {/* Submit — the button itself becomes the progress indicator while sending. */}
           <Animated.View entering={enter(6)}>
             <VStack gap="$3">
+              {offline ? (
+                <HStack
+                  gap="$2"
+                  alignItems="center"
+                  justifyContent="center"
+                  accessibilityLiveRegion="polite">
+                  <Icon as={WifiOff} size={16} color="$typographySecondary" />
+                  <Text size="sm" color="$typographySecondary">
+                    {t("feedback.offline")}
+                  </Text>
+                </HStack>
+              ) : null}
+
               {status === "error" ? (
                 <Text
                   size="sm"
@@ -552,8 +568,8 @@ const FeedbackScreen = () => {
                 width="100%"
                 position="relative"
                 overflow="hidden"
-                disabled={!type || submitting}
-                opacity={!type ? 0.5 : 1}
+                disabled={!type || submitting || offline}
+                opacity={!type || offline ? 0.5 : 1}
                 onPress={onSend}
                 accessibilityRole="button"
                 accessibilityLabel={t(status === "error" ? "feedback.retry" : "feedback.send")}>

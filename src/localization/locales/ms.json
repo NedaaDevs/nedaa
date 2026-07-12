@@ -1610,5 +1610,6 @@
   "feedback.messagePlaceholder.bug": "Apa yang tidak berfungsi seperti dijangka?",
   "feedback.messagePlaceholder.feature": "Apa yang boleh menjadikan Nedaa lebih baik untuk anda?",
   "feedback.messagePlaceholder.other": "Apa yang ada di fikiran anda?",
-  "crashPrompt.notePlaceholder": "Adakah anda ingat apa yang anda lakukan sebelum ia ditutup? (pilihan)"
+  "crashPrompt.notePlaceholder": "Adakah anda ingat apa yang anda lakukan sebelum ia ditutup? (pilihan)",
+  "feedback.offline": "Tiada sambungan internet"
 }
