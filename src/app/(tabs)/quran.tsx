@@ -247,6 +247,13 @@ const QuranScreen = () => {
     setDownloadFlowVersion(null);
   }, [selectedVersion]);
 
+  // The Qur'an tab hides the tab bar, so onboarding needs its own way out of the flow.
+  // Any in-flight download keeps running; only onCancel stops it.
+  const handleExitQuran = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/(tabs)");
+  }, [router]);
+
   const handleDownloadMore = useCallback(() => {
     setShowSettings(false);
     setShowVersionPicker(true);
@@ -266,6 +273,7 @@ const QuranScreen = () => {
       <VersionSelectionScreen
         onSelectVersion={handleSelectVersion}
         onSelectTextMode={handleSelectTextMode}
+        onBack={handleExitQuran}
       />
     );
   }
@@ -304,6 +312,7 @@ const QuranScreen = () => {
         versionName={t(`quran.version.${selectedVersion}`)}
         onStartReading={handleStartReading}
         onCancel={handleCancelDownload}
+        onBack={handleExitQuran}
       />
     );
   }
@@ -316,6 +325,7 @@ const QuranScreen = () => {
       <VersionSelectionScreen
         onSelectVersion={handleSelectVersion}
         onSelectTextMode={handleSelectTextMode}
+        onBack={handleExitQuran}
       />
     );
   }

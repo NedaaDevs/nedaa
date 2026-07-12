@@ -25,8 +25,8 @@ const TEXT_MODE_ID = "text";
 interface VersionSelectionScreenProps {
   onSelectVersion: (version: QuranManifestVersion) => void;
   onSelectTextMode: () => void;
-  // When set, a back affordance returns to the caller (the "Download more" flow).
-  // Omitted in onboarding, where there is nothing to go back to.
+  // Back affordance: returns to the reader in the "Download more" flow, or leaves the Qur'an
+  // tab in onboarding (the tab bar is hidden here, so it is the only way out).
   onBack?: () => void;
 }
 

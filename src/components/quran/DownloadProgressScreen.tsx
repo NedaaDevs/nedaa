@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Image, Pressable } from "react-native";
 import { View, XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useRTL } from "@/contexts/RTLContext";
 import { MotiView, AnimatePresence } from "moti";
 import Animated, {
   Easing,
@@ -11,7 +13,17 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Download, FileCheck, Loader, Pause, Play, X } from "lucide-react-native";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Download,
+  FileCheck,
+  Loader,
+  Pause,
+  Play,
+  X,
+} from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import ReportThisButton from "@/components/ReportThisButton";
@@ -29,6 +41,9 @@ interface DownloadProgressScreenProps {
   versionName: string;
   onStartReading: () => void;
   onCancel: () => void;
+  // Leaves the Qur'an flow entirely. The tab bar is hidden here, so without this there is no
+  // way out. Distinct from onCancel, which stops the download and returns to version selection.
+  onBack?: () => void;
 }
 
 // The page visual is rendered like the reader (paper + ink), independent of the
@@ -54,8 +69,11 @@ const DownloadProgressScreen = ({
   versionName,
   onStartReading,
   onCancel,
+  onBack,
 }: DownloadProgressScreenProps) => {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const insets = useSafeAreaInsets();
   const hapticSuccess = useHaptic("success");
   const chrome = useQuranChromeColors();
@@ -153,6 +171,22 @@ const DownloadProgressScreen = ({
       alignItems="center"
       justifyContent="center"
       gap="$5">
+      {onBack && (
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t("a11y.back")}
+          style={{
+            position: "absolute",
+            top: insets.top + 12,
+            ...(isRTL ? { right: 16 } : { left: 16 }),
+            zIndex: 10,
+          }}>
+          <BackIcon size={24} color={chrome.subtleText} />
+        </Pressable>
+      )}
+
       <Text fontSize={28} textAlign="center">
         ﷽
       </Text>
