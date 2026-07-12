@@ -275,15 +275,6 @@ const SettingsScreen = () => {
           <SettingsItem name={t("settings.athkar.title")} path="/settings/athkar" icon={BookOpen} />
         )}
 
-        {/* Quran — only once unlocked. TODO(quran-gate): drop the guard at 2.10.0 */}
-        {quranUnlocked && (
-          <SettingsItem
-            name={t("settings.quran.title")}
-            path={"/(tabs)/quran" as any}
-            icon={BookText}
-          />
-        )}
-
         {/* Widgets — iOS always (add-instructions + manual refresh); Android only
         with pinning support (the screen is built around pin cards there). */}
         {(Platform.OS === PlatformType.IOS ||
