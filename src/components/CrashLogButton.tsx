@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { router } from "expo-router";
 
 // Components
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import ReportProblemModal from "@/components/ReportProblemModal";
 
 // Icons
 import { Bug } from "lucide-react-native";
@@ -12,43 +11,28 @@ import { Bug } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useHaptic } from "@/hooks/useHaptic";
 
-// Utils
-import { AppLogger } from "@/utils/appLogger";
-
-// Opens the shared "Report a problem" sheet, fed by the on-device logs (all domains).
+// Opens the in-app feedback form, preset to a bug report (diagnostics auto-attached).
 const CrashLogButton = () => {
   const { t } = useTranslation();
   const hapticMedium = useHaptic("medium");
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <>
-      <Pressable
-        alignItems="center"
-        justifyContent="center"
-        padding="$2"
-        borderRadius="$2"
-        minHeight={44}
-        minWidth={44}
-        onPress={() => {
-          hapticMedium();
-          setSheetOpen(true);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t("settings.shareLogs.label")}
-        accessibilityHint={t("settings.shareLogs.hint")}>
-        <Icon as={Bug} color="$typographySecondary" />
-      </Pressable>
-
-      <ReportProblemModal
-        isOpen={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        emailSubject={t("settings.shareLogs.emailSubject")}
-        getReportText={() => AppLogger.buildReport({ category: "App" })}
-        getSummaryText={() => AppLogger.buildSummary({})}
-        baseName="report"
-      />
-    </>
+    <Pressable
+      alignItems="center"
+      justifyContent="center"
+      padding="$2"
+      borderRadius="$2"
+      minHeight={44}
+      minWidth={44}
+      onPress={() => {
+        hapticMedium();
+        router.push("/settings/feedback?type=bug" as never);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={t("feedback.title")}
+      accessibilityHint={t("feedback.a11y.openHint")}>
+      <Icon as={Bug} color="$typographySecondary" />
+    </Pressable>
   );
 };
 

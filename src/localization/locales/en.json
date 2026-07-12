@@ -1587,5 +1587,6 @@
   "feedback.success.title": "Thank you",
   "feedback.success.body": "Your feedback was sent. We read every report.",
   "feedback.success.reference": "Reference: {{id}}",
-  "feedback.success.done": "Done"
+  "feedback.success.done": "Done",
+  "feedback.a11y.openHint": "Opens the feedback form"
 }

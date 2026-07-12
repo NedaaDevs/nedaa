@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -8,13 +8,12 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useTheme } from "tamagui";
+import { router } from "expo-router";
 
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Button } from "@/components/ui/button";
-import ReportProblemModal from "@/components/ReportProblemModal";
-import { AppLogger } from "@/utils/appLogger";
 import { readPendingReport, clearPendingReport } from "@/utils/crashHandler";
 import { usePendingReportStore } from "@/stores/pendingReport";
 
@@ -28,7 +27,6 @@ const CrashReportPrompt = () => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
-  const [reportOpen, setReportOpen] = useState(false);
   const pendingSend = useRef(false);
 
   // Re-checked when the sentinel nonce bumps: the native-diagnostics drain writes the sentinel
@@ -55,12 +53,12 @@ const CrashReportPrompt = () => {
     ref.current?.dismiss();
   }, []);
 
-  // Clear on any dismissal so it shows once; open the report sheet if Send was tapped.
+  // Clear on any dismissal so it shows once; open the feedback form if Send was tapped.
   const onPromptDismiss = useCallback(() => {
     clearPendingReport();
     if (pendingSend.current) {
       pendingSend.current = false;
-      setReportOpen(true);
+      router.push("/settings/feedback?type=crash" as never);
     }
   }, []);
 
@@ -126,15 +124,6 @@ const CrashReportPrompt = () => {
           </VStack>
         </BottomSheetView>
       </BottomSheetModal>
-
-      <ReportProblemModal
-        isOpen={reportOpen}
-        onClose={() => setReportOpen(false)}
-        emailSubject={t("settings.shareLogs.emailSubject")}
-        getReportText={() => AppLogger.buildReport({ category: "Crash" })}
-        getSummaryText={() => AppLogger.buildSummary({})}
-        baseName="crash"
-      />
     </>
   );
 };
