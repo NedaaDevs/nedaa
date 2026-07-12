@@ -20,7 +20,6 @@ import {
 } from "lucide-react-native";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
-import { useAppStore } from "@/stores/app";
 import { useHaptic } from "@/hooks/useHaptic";
 import ProgressRing from "@/components/umrah/ProgressRing";
 
@@ -32,7 +31,6 @@ type ToolItem = {
   route: string;
   hasActiveBadge?: () => boolean;
   getProgress?: () => number;
-  gated?: boolean;
 };
 
 const TOOLS: ToolItem[] = [
@@ -73,14 +71,12 @@ const TOOLS: ToolItem[] = [
     icon: Compass,
     route: "/(tabs)/compass",
   },
-  // TODO(quran-gate): remove `gated` at 2.10.0 (feature goes public).
   {
     id: "quran-listen",
     titleKey: "tools.quranListen.title",
     subtitleKey: "tools.quranListen.subtitle",
     icon: Headphones,
     route: "/quran-listen",
-    gated: true,
   },
 ];
 
@@ -88,9 +84,6 @@ export default function ToolsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
-  // TODO(quran-gate): drop the filter at 2.10.0.
-  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
-  const tools = TOOLS.filter((tool) => !tool.gated || quranUnlocked);
 
   const handleToolPress = async (route: string) => {
     await selectionHaptic();
@@ -104,7 +97,7 @@ export default function ToolsScreen() {
 
         <Box paddingHorizontal="$2" paddingTop="$2">
           <HStack flexWrap="wrap" gap="$2">
-            {tools.map((tool) => (
+            {TOOLS.map((tool) => (
               <Box key={tool.id} width="48.5%">
                 <Pressable
                   onPress={() => handleToolPress(tool.route)}
