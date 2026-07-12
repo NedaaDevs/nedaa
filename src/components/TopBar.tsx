@@ -23,6 +23,9 @@ type Props = {
   title: string;
   icon?: any;
   backOnClick?: boolean;
+  // For tab routes: router.back() pops to the first tab (home), not the referring screen,
+  // so navigate to `href` instead.
+  preferHref?: boolean;
   rightIconLabel?: string;
   // A tappable right-side action (works alongside backOnClick, unlike `href`).
   onRightPress?: () => void;
@@ -35,6 +38,7 @@ const TopBar = ({
   title,
   icon,
   backOnClick = false,
+  preferHref = false,
   rightIconLabel,
   onRightPress,
   onTitlePress,
@@ -47,7 +51,9 @@ const TopBar = ({
 
   const handlePress = () => {
     if (!backOnClick) return;
-    if (router.canGoBack()) {
+    if (preferHref && href) {
+      router.navigate(href);
+    } else if (router.canGoBack()) {
       router.back();
     } else if (href) {
       router.navigate(href);

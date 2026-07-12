@@ -244,7 +244,7 @@ const Compass = () => {
 
   return (
     <Background>
-      <TopBar title="compass.title" href="/(tabs)/tools" backOnClick />
+      <TopBar title="compass.title" href="/(tabs)/tools" backOnClick preferHref />
 
       <Center flex={1} paddingHorizontal="$6">
         {!isAvailable ? (

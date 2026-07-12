@@ -207,7 +207,7 @@ const QadaScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Box position="relative">
-        <TopBar title="qada.title" />
+        <TopBar title="qada.title" href="/(tabs)/tools" backOnClick preferHref />
         {/* Settings Icon Overlay */}
         <Pressable
           onPress={() => {
