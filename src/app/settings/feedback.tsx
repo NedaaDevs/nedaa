@@ -104,6 +104,7 @@ const FeedbackScreen = () => {
   const [receiptId, setReceiptId] = useState<string | null>(null);
 
   const clientKey = useRef<string | null>(null);
+  const submittingRef = useRef(false);
   const supportsLogs = type === Report.CRASH || type === Report.BUG;
   const logsAttached = supportsLogs && !logsRemoved;
 
@@ -121,8 +122,10 @@ const FeedbackScreen = () => {
     };
   }, [logsAttached, type]);
 
-  // Any edit starts a fresh operation (new client key) and clears a prior error.
+  // Any edit starts a fresh operation (new client key) and clears a prior error. Ignored while a
+  // submit is in flight so a failed retry keeps deduping on the same key.
   const markEdited = useCallback(() => {
+    if (submittingRef.current) return;
     clientKey.current = null;
     setStatus((s) => (s === "error" ? "idle" : s));
   }, []);
@@ -152,6 +155,7 @@ const FeedbackScreen = () => {
   const onSend = useCallback(async () => {
     if (!type) return;
     if (!clientKey.current) clientKey.current = generateClientKey();
+    submittingRef.current = true;
     setStatus("submitting");
     setProgress(0);
     try {
@@ -168,6 +172,8 @@ const FeedbackScreen = () => {
       setStatus("success");
     } catch {
       setStatus("error");
+    } finally {
+      submittingRef.current = false;
     }
   }, [type, logsAttached, logAttachment, image, message, contact, area]);
 

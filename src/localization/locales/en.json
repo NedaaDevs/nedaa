@@ -1615,5 +1615,6 @@
   "feedback.messagePlaceholder.crash": "What were you doing when it closed?",
   "feedback.messagePlaceholder.bug": "What isn't working as expected?",
   "feedback.messagePlaceholder.feature": "What would make Nedaa better for you?",
-  "feedback.messagePlaceholder.other": "What's on your mind?"
+  "feedback.messagePlaceholder.other": "What's on your mind?",
+  "crashPrompt.notePlaceholder": "Do you remember what you were doing before it closed? (optional)"
 }

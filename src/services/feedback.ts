@@ -1,6 +1,7 @@
 import * as Application from "expo-application";
 import * as Device from "expo-device";
 import { getDocumentAsync } from "expo-document-picker";
+import { File } from "expo-file-system";
 import { Platform } from "react-native";
 
 import { PlatformType } from "@/enums/app";
@@ -85,6 +86,14 @@ export const buildLogAttachment = async (
 const IMAGE_MIMES = ["image/jpeg", "image/png", "image/heic", "image/webp"];
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+const EXT_MIME: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".heic": "image/heic",
+  ".webp": "image/webp",
+};
+
 export type ImagePickResult =
   | { ok: true; attachment: OutgoingAttachment }
   | { ok: false; reason: "canceled" | "tooLarge" | "unsupported" };
@@ -99,10 +108,13 @@ export const pickImageAttachment = async (): Promise<ImagePickResult> => {
   if (res.canceled || res.assets.length === 0) return { ok: false, reason: "canceled" };
 
   const asset = res.assets[0];
-  const mime = asset.mimeType ?? "";
+  const file = new File(asset.uri);
+  // Some providers omit mimeType/size; fall back to the file extension and a byte read.
+  const mime = asset.mimeType ?? EXT_MIME[file.extension.toLowerCase()] ?? "";
   if (!IMAGE_MIMES.includes(mime)) return { ok: false, reason: "unsupported" };
 
-  const bytes = asset.size ?? 0;
+  const bytes = asset.size ?? (await file.arrayBuffer()).byteLength;
+  if (bytes <= 0) return { ok: false, reason: "unsupported" };
   if (bytes > IMAGE_MAX_BYTES) return { ok: false, reason: "tooLarge" };
 
   return {

@@ -1,4 +1,4 @@
-import { File } from "expo-file-system";
+import { File, UploadType } from "expo-file-system";
 
 import type {
   CreateReportBody,
@@ -56,7 +56,8 @@ export const uploadFeedbackAttachment = async (
   slot: UploadSlot,
   attachment: OutgoingAttachment
 ): Promise<void> => {
-  const headers = slot.headers ?? { "Content-Type": attachment.mime };
+  // Content-Type must match what the URL was signed with; slot.headers carries it.
+  const headers = { "Content-Type": attachment.mime, ...slot.headers };
 
   if (typeof attachment.body === "string") {
     const res = await fetch(slot.url, { method: "PUT", headers, body: attachment.body });
@@ -64,8 +65,10 @@ export const uploadFeedbackAttachment = async (
     return;
   }
 
+  // BINARY_CONTENT streams the raw file bytes (not multipart), matching the presigned PUT.
   const result = await new File(attachment.body.uri).upload(slot.url, {
     httpMethod: "PUT",
+    uploadType: UploadType.BINARY_CONTENT,
     headers,
   });
   if (result.status < 200 || result.status >= 300) {

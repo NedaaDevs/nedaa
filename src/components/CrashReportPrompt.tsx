@@ -5,6 +5,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
+  BottomSheetTextInput,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useTheme } from "tamagui";
@@ -32,6 +33,7 @@ const CrashReportPrompt = () => {
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const [status, setStatus] = useState<Status>("idle");
+  const [note, setNote] = useState("");
   // Reused across retries so an ambiguous failure can't produce a duplicate report.
   const clientKey = useRef<string | null>(null);
 
@@ -55,6 +57,7 @@ const CrashReportPrompt = () => {
       const logs = await buildLogAttachment({ category: "Crash" });
       await submitFeedback({
         type: Report.CRASH,
+        message: note.trim() || undefined,
         attachments: [logs],
         clientKey: clientKey.current,
       });
@@ -63,7 +66,7 @@ const CrashReportPrompt = () => {
     } catch {
       setStatus("error");
     }
-  }, []);
+  }, [note]);
 
   const dismiss = useCallback(() => {
     clearPendingReport();
@@ -132,6 +135,27 @@ const CrashReportPrompt = () => {
             <Text size="sm" color="$typographySecondary" textAlign="center" lineHeight={20}>
               {t("crashPrompt.body")}
             </Text>
+
+            <BottomSheetTextInput
+              value={note}
+              onChangeText={setNote}
+              editable={!submitting}
+              placeholder={t("crashPrompt.notePlaceholder")}
+              placeholderTextColor={theme.typographySecondary?.val}
+              multiline
+              accessibilityLabel={t("crashPrompt.notePlaceholder")}
+              style={{
+                color: theme.typography?.val,
+                backgroundColor: theme.backgroundMuted?.val ?? theme.background?.val,
+                borderColor: theme.borderColor?.val,
+                borderWidth: 1,
+                borderRadius: 12,
+                padding: 12,
+                minHeight: 72,
+                fontSize: 15,
+                textAlignVertical: "top",
+              }}
+            />
 
             {status === "error" ? (
               <Text size="sm" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
