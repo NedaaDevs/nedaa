@@ -63,13 +63,9 @@ const CREDITS: Credit[] = [
   },
 ];
 
-// Contributors grouped by contribution type (translation, code, features…),
-// not translation-only. Names are proper nouns (not localized); the centered
-// layout keeps a mixed-script list clean with no RTL/LTR handling. MOCK DATA —
-// replace with the real, consented list; category titles need i18n keys before
-// this section is shown.
-// Category titles are localized; names are proper nouns and never are. `detail` uses the
-// language's endonym so it reads correctly in every locale without a translation matrix.
+// Contributors grouped by contribution type. Category titles are localized; names are proper
+// nouns and never are. `detail` uses the language's endonym so it reads correctly in every
+// locale without a translation matrix.
 type Contributor = { name: string; detail?: string };
 type ContributorGroup = { titleKey: string; entries: Contributor[] };
 
@@ -106,8 +102,7 @@ const Acknowledgements = () => {
   const quranUnlocked = useAppStore((s) => s.quranUnlocked);
   const creditsCount = quranUnlocked ? CREDITS.length : 0;
 
-  // Contributors can grow long, so collapse by default to keep the closing
-  // gratitude + CTA within reach.
+  // Expanded by default; collapsible so a longer list can't push the closing CTA out of reach.
   const [contributorsOpen, setContributorsOpen] = useState(true);
   const toggleContributors = () => {
     if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -182,7 +177,7 @@ const Acknowledgements = () => {
           ))}
 
         {/* Contributors — grouped by contribution type, centered so a
-            mixed-script list needs no RTL/LTR alignment. Hidden for now. */}
+            mixed-script list needs no RTL/LTR alignment. */}
         {SHOW_CONTRIBUTORS && (
           <Animated.View entering={enter(creditsCount)}>
             <Box
