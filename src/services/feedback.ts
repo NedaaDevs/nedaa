@@ -1,5 +1,6 @@
 import * as Application from "expo-application";
 import * as Device from "expo-device";
+import { getDocumentAsync } from "expo-document-picker";
 import { Platform } from "react-native";
 
 import { PlatformType } from "@/enums/app";
@@ -80,9 +81,42 @@ export const buildLogAttachment = async (
   return { kind: Attachment.LOGS, mime: "text/plain", bytes: utf8ByteLength(text), body: text };
 };
 
-// Create the draft, upload each attachment to its presigned slot, then submit. Attachments map
-// to upload slots by index — the backend presigns them in the order they were sent.
-export const submitFeedback = async (input: SubmitFeedbackInput): Promise<FeedbackReceipt> => {
+// Image is the only user-media kind allowed at the basic tier (video requires attestation).
+const IMAGE_MIMES = ["image/jpeg", "image/png", "image/heic", "image/webp"];
+export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+export type ImagePickResult =
+  | { ok: true; attachment: OutgoingAttachment }
+  | { ok: false; reason: "canceled" | "tooLarge" | "unsupported" };
+
+// Pick a single image from the device and shape it into an OutgoingAttachment (streamed on upload).
+export const pickImageAttachment = async (): Promise<ImagePickResult> => {
+  const res = await getDocumentAsync({
+    type: IMAGE_MIMES,
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+  if (res.canceled || res.assets.length === 0) return { ok: false, reason: "canceled" };
+
+  const asset = res.assets[0];
+  const mime = asset.mimeType ?? "";
+  if (!IMAGE_MIMES.includes(mime)) return { ok: false, reason: "unsupported" };
+
+  const bytes = asset.size ?? 0;
+  if (bytes > IMAGE_MAX_BYTES) return { ok: false, reason: "tooLarge" };
+
+  return {
+    ok: true,
+    attachment: { kind: Attachment.IMAGE, mime, bytes, body: { uri: asset.uri } },
+  };
+};
+
+// One operation to the caller: onProgress reports a single 0→1 track across create/upload/submit.
+// Uploads map to slots by index (backend presigns in the order sent).
+export const submitFeedback = async (
+  input: SubmitFeedbackInput,
+  onProgress?: (fraction: number) => void
+): Promise<FeedbackReceipt> => {
   const attachments = input.attachments ?? [];
   const message = input.message?.trim();
   const contact = input.contact?.trim();
@@ -99,12 +133,23 @@ export const submitFeedback = async (input: SubmitFeedbackInput): Promise<Feedba
     clientKey: input.clientKey ?? generateClientKey(),
   };
 
+  onProgress?.(0.05);
   const draft = await createFeedbackDraft(body);
+  onProgress?.(0.15);
 
+  const total = draft.uploads.length;
+  let done = 0;
   await Promise.all(
-    draft.uploads.map((slot, index) => uploadFeedbackAttachment(slot, attachments[index]))
+    draft.uploads.map((slot, index) =>
+      uploadFeedbackAttachment(slot, attachments[index]).then(() => {
+        done += 1;
+        onProgress?.(0.15 + 0.75 * (done / Math.max(total, 1)));
+      })
+    )
   );
 
+  onProgress?.(0.9);
   await submitFeedbackReport(draft.id, draft.submitToken);
+  onProgress?.(1);
   return { id: draft.id, tier: draft.tier };
 };

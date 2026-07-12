@@ -1,3 +1,5 @@
+import { File } from "expo-file-system";
+
 import type {
   CreateReportBody,
   CreateReportResponse,
@@ -46,18 +48,29 @@ export const createFeedbackDraft = async (
   return (await res.json()) as CreateReportResponse;
 };
 
-// PUT the attachment bytes straight to R2. The presigned URL is signed with the content type,
-// so the PUT must echo the returned headers exactly (Content-Type) or the signature fails.
+// PUT the attachment straight to R2. The presigned URL is signed with the content type, so the
+// PUT must echo the returned headers exactly (Content-Type) or the signature fails. Inline text
+// (logs) goes through fetch; a local file (picked media) is streamed by uploadAsync so a large
+// file never sits in JS memory.
 export const uploadFeedbackAttachment = async (
   slot: UploadSlot,
   attachment: OutgoingAttachment
 ): Promise<void> => {
-  const res = await fetch(slot.url, {
-    method: "PUT",
-    headers: slot.headers ?? { "Content-Type": attachment.mime },
-    body: attachment.body as BodyInit,
+  const headers = slot.headers ?? { "Content-Type": attachment.mime };
+
+  if (typeof attachment.body === "string") {
+    const res = await fetch(slot.url, { method: "PUT", headers, body: attachment.body });
+    if (!res.ok) throw new FeedbackApiError("upload", res.status, await readDetail(res));
+    return;
+  }
+
+  const result = await new File(attachment.body.uri).upload(slot.url, {
+    httpMethod: "PUT",
+    headers,
   });
-  if (!res.ok) throw new FeedbackApiError("upload", res.status, await readDetail(res));
+  if (result.status < 200 || result.status >= 300) {
+    throw new FeedbackApiError("upload", result.status);
+  }
 };
 
 export const submitFeedbackReport = async (id: string, submitToken: string): Promise<void> => {

@@ -39,8 +39,9 @@ export interface AttachmentInput {
 }
 
 // Attachment carrying the actual payload to PUT to R2, plus its create-body metadata.
+// `body` is inline text (logs) or a local file reference (picked media, streamed by uploadAsync).
 export interface OutgoingAttachment extends AttachmentInput {
-  body: string | Uint8Array | Blob;
+  body: string | { uri: string };
 }
 
 export interface CreateReportBody {

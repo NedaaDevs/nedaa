@@ -15,6 +15,7 @@ jest.mock("expo-application", () => ({
   nativeBuildVersion: "100",
 }));
 jest.mock("expo-device", () => ({ modelName: "iPhone 15" }));
+jest.mock("expo-document-picker", () => ({ getDocumentAsync: jest.fn() }));
 jest.mock("react-native", () => ({ Platform: { OS: "ios", Version: "17.0" } }));
 jest.mock("@/localization/i18n", () => ({ language: "en" }));
 jest.mock("@/utils/appLogger", () => ({
