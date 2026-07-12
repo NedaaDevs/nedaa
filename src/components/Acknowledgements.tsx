@@ -101,7 +101,7 @@ const Acknowledgements = () => {
 
   // Contributors can grow long, so collapse by default to keep the closing
   // gratitude + CTA within reach.
-  const [contributorsOpen, setContributorsOpen] = useState(false);
+  const [contributorsOpen, setContributorsOpen] = useState(true);
   const toggleContributors = () => {
     if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setContributorsOpen((open) => !open);
