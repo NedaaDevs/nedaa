@@ -4,7 +4,8 @@ import type { TrackItem, TrackPlayerState, Reason, RepeatMode } from "react-nati
 import { nitroSession, NITRO_STATE, NITRO_REASON } from "@/services/audio/nitroSession";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { useQuranStore } from "@/stores/quran";
-import { SURAH_AYAH_COUNTS, SURAH_NAMES } from "@/constants/Quran";
+import { SURAH_NAMES } from "@/constants/Quran";
+import { QuranContentDB } from "@/services/quran-content-db";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { QuranManifestService } from "@/services/quran-manifest";
@@ -385,7 +386,7 @@ class QuranAudioPlayer {
   }
 
   async playFromHere(surah: number, ayah: number): Promise<void> {
-    const last = SURAH_AYAH_COUNTS[surah] ?? ayah;
+    const last = (await QuranContentDB.getSurah(surah))?.ayahCount ?? ayah;
     await this.playAyahRange(QURAN_QUEUE_KIND.FROM_HERE, surah, ayah, last);
   }
 

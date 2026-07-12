@@ -10,9 +10,7 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
-import { RevelationPlace } from "@/enums/quran";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
-import { SURAH_AYAH_COUNTS, SURAH_REVELATION_PLACES } from "@/constants/Quran";
 import { formatFileSizeLocale, formatNumberToLocale } from "@/utils/number";
 
 type Props = {
@@ -84,21 +82,11 @@ const SurahListRowBase = ({
   const scriptFont = metadataFontFamily();
   const name = localizedSurahName(surah);
 
-  const meccaOrMedina =
-    SURAH_REVELATION_PLACES[surah] === RevelationPlace.MAKKAH
-      ? t("quran.surah.makki")
-      : t("quran.surah.madani");
-  const sizeLabel =
+  // Size comes from the audio manifest, so Listen needs no content DB.
+  // TODO(quran-gate): at 2.10.0 the content DB is always installed — restore the
+  // "<n> ayahs · Makki/Madani" prefix here, read from QuranContentDB.
+  const metaLine =
     estimatedBytes && estimatedBytes > 0 ? formatFileSizeLocale(estimatedBytes, t) : null;
-  const metaLine = [
-    t("quran.surah.ayahCount", {
-      n: formatNumberToLocale(String(SURAH_AYAH_COUNTS[surah])),
-    }),
-    meccaOrMedina,
-    sizeLabel,
-  ]
-    .filter(Boolean)
-    .join(" · ");
 
   return (
     <Pressable
