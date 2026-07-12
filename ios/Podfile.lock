@@ -182,6 +182,8 @@ PODS:
     - Yoga
   - ExpoAlarm (1.0.0):
     - ExpoModulesCore
+  - ExpoAppIntegrity (56.0.3):
+    - ExpoModulesCore
   - ExpoAsset (57.0.3):
     - ExpoModulesCore
   - ExpoAudio (57.0.0):
@@ -192,6 +194,8 @@ PODS:
   - ExpoClipboard (57.0.0):
     - ExpoModulesCore
   - ExpoDevice (57.0.0):
+    - ExpoModulesCore
+  - ExpoDiagnostics (1.0.0):
     - ExpoModulesCore
   - ExpoDocumentPicker (57.0.0):
     - ExpoModulesCore
@@ -2658,11 +2662,13 @@ DEPENDENCIES:
   - expo-dev-menu (from `../node_modules/expo-dev-menu`)
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - ExpoAlarm (from `../modules/expo-alarm/ios`)
+  - "ExpoAppIntegrity (from `../node_modules/@expo/app-integrity/ios`)"
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoAudio (from `../node_modules/expo-audio/ios`)
   - ExpoBackgroundTask (from `../node_modules/expo-background-task/ios`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoDevice (from `../node_modules/expo-device/ios`)
+  - ExpoDiagnostics (from `../modules/expo-diagnostics/ios`)
   - ExpoDocumentPicker (from `../node_modules/expo-document-picker/ios`)
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
@@ -2811,6 +2817,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-dev-menu-interface/ios"
   ExpoAlarm:
     :path: "../modules/expo-alarm/ios"
+  ExpoAppIntegrity:
+    :path: "../node_modules/@expo/app-integrity/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
   ExpoAudio:
@@ -2821,6 +2829,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-clipboard/ios"
   ExpoDevice:
     :path: "../node_modules/expo-device/ios"
+  ExpoDiagnostics:
+    :path: "../modules/expo-diagnostics/ios"
   ExpoDocumentPicker:
     :path: "../node_modules/expo-document-picker/ios"
   ExpoDomWebView:
@@ -3076,11 +3086,13 @@ SPEC CHECKSUMS:
   expo-dev-menu: ec44430d95774d757adc9524fc4a755b8bd8e6c1
   expo-dev-menu-interface: 7a59e803916fbfd1b96c75ff91ea8dddac7e722f
   ExpoAlarm: 8f71cefb35639b1e79fb50d89e36736b29fc8681
+  ExpoAppIntegrity: 43cc62f24c533b960de07b5038568acedc3a567a
   ExpoAsset: 586e89aeaab2e23bfa90b9dce4d7d5e36815c039
   ExpoAudio: 4f27c2bc1cc08f003c2af070cedf25fefd9da5bb
   ExpoBackgroundTask: b7a806b88d95a483125d2a10effdded8c67d1f5e
   ExpoClipboard: 67d46a8be4a50ec610c7b2f4966c0475aec6d969
   ExpoDevice: 090ee05e20e40ca981d39263e3e95c46ed850782
+  ExpoDiagnostics: 49654a614074dab798674313908949496ca74971
   ExpoDocumentPicker: 1160f4221c6ed4fed906aad0761549ea163b7a01
   ExpoDomWebView: 73ba90107a5acc0017a09b06e66d8eb238e089b8
   ExpoFileSystem: ffcd56066188802f263254b6b2e60f74b6a0bdae
