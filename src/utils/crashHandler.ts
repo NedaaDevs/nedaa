@@ -1,6 +1,7 @@
 import { File, Directory, Paths } from "expo-file-system";
 
 import { AppLogger } from "@/utils/appLogger";
+import { usePendingReportStore } from "@/stores/pendingReport";
 
 // Sentinel dropped when a fatal JS error is caught, so the next launch can detect the
 // crash and offer to share a report (consumed by the report flow).
@@ -65,27 +66,25 @@ const installRejectionTracker = (): void => {
   }
 };
 
-const writePendingReport = (summary: string): void => {
+const writeSentinel = (kind: PendingReport["kind"], summary: string): void => {
   try {
     const f = sentinelFile();
     if (!f.exists) f.create();
-    f.write(JSON.stringify({ ts: Date.now(), kind: "crash", summary } satisfies PendingReport));
+    f.write(JSON.stringify({ ts: Date.now(), kind, summary } satisfies PendingReport));
+    // Wake any mounted CrashReportPrompt: the native drain writes this after the prompt's
+    // first read, so a nonce bump makes it re-check within the same session.
+    usePendingReportStore.getState().notify();
   } catch {
     // ignore — best-effort
   }
 };
 
+const writePendingReport = (summary: string): void => writeSentinel("crash", summary);
+
 // Written by the native-diagnostics drain when an OS-level crash or ANR is found on the
 // previous session, so CrashReportPrompt shows on this launch (same sentinel file).
-export const writeNativePendingReport = (kind: "native-crash" | "anr", summary: string): void => {
-  try {
-    const f = sentinelFile();
-    if (!f.exists) f.create();
-    f.write(JSON.stringify({ ts: Date.now(), kind, summary } satisfies PendingReport));
-  } catch {
-    // ignore — best-effort
-  }
-};
+export const writeNativePendingReport = (kind: "native-crash" | "anr", summary: string): void =>
+  writeSentinel(kind, summary);
 
 export const readPendingReport = (): PendingReport | null => {
   try {

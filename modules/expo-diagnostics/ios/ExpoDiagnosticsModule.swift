@@ -66,7 +66,8 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
       let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     else { return [] }
 
-    let now = Date().timeIntervalSince1970 * 1000
+    // Prefer the payload's own event time; fall back to drain time only if it's absent.
+    let now = self.eventTimestamp(root: root) ?? Date().timeIntervalSince1970 * 1000
     var entries: [[String: Any]] = []
 
     let crashDiags = (root["crashDiagnostics"] as? [[String: Any]]) ?? []
@@ -120,8 +121,19 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
   }
 
   private func truncated(_ s: String) -> String {
-    if s.utf8.count <= detailCap { return s }
-    return String(s.prefix(detailCap / 2)) + "\n…[truncated]"
+    let bytes = Array(s.utf8)
+    if bytes.count <= detailCap { return s }
+    return String(decoding: bytes.prefix(detailCap / 2), as: UTF8.self) + "\n…[truncated]"
+  }
+
+  // MetricKit stamps payloads with ISO8601 timeStampBegin/End; use End as the event time.
+  private func eventTimestamp(root: [String: Any]) -> Double? {
+    guard let s = root["timeStampEnd"] as? String else { return nil }
+    let withFraction = ISO8601DateFormatter()
+    withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let d = withFraction.date(from: s) { return d.timeIntervalSince1970 * 1000 }
+    if let d = ISO8601DateFormatter().date(from: s) { return d.timeIntervalSince1970 * 1000 }
+    return nil
   }
 }
 

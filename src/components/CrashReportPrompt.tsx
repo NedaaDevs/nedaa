@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import ReportProblemModal from "@/components/ReportProblemModal";
 import { AppLogger } from "@/utils/appLogger";
 import { readPendingReport, clearPendingReport } from "@/utils/crashHandler";
+import { usePendingReportStore } from "@/stores/pendingReport";
 
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -30,6 +31,10 @@ const CrashReportPrompt = () => {
   const [reportOpen, setReportOpen] = useState(false);
   const pendingSend = useRef(false);
 
+  // Re-checked when the sentinel nonce bumps: the native-diagnostics drain writes the sentinel
+  // asynchronously, after this effect's first run, so depend on the nonce to catch it this launch.
+  const pendingNonce = usePendingReportStore((s) => s.nonce);
+
   useEffect(() => {
     const pending = readPendingReport();
     if (pending && Date.now() - pending.ts < MAX_AGE_MS) {
@@ -37,7 +42,7 @@ const CrashReportPrompt = () => {
     } else if (pending) {
       clearPendingReport(); // stale crash — drop it silently
     }
-  }, []);
+  }, [pendingNonce]);
 
   const send = useCallback(() => {
     pendingSend.current = true;

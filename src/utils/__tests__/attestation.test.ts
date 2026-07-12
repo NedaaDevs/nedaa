@@ -28,7 +28,11 @@ jest.mock("@/utils/appLogger", () => ({
   AppLogger: { create: () => ({ w: (...args: unknown[]) => mockWarn(...args) }) },
 }));
 
-jest.mock("@/constants/Attestation", () => ({ CLOUD_PROJECT_NUMBER: "12345" }));
+let mockCloudConfigured = true;
+jest.mock("@/constants/Attestation", () => ({
+  CLOUD_PROJECT_NUMBER: "12345",
+  isCloudProjectConfigured: () => mockCloudConfigured,
+}));
 
 // eslint-disable-next-line import/first -- import must follow jest.mock hoisting
 import { attest } from "@/utils/attestation";
@@ -63,7 +67,14 @@ describe("attest (iOS)", () => {
 describe("attest (Android)", () => {
   beforeEach(() => {
     mockPlatformOS = "android";
+    mockCloudConfigured = true;
     jest.clearAllMocks();
+  });
+
+  it("returns null without calling the provider when the cloud project is unconfigured", async () => {
+    mockCloudConfigured = false;
+    expect(await attest("c")).toBeNull();
+    expect(mockPrepareProvider).not.toHaveBeenCalled();
   });
 
   it("prepares provider then returns integrity token", async () => {

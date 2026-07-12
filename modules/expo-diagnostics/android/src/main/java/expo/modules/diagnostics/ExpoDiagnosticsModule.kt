@@ -47,9 +47,17 @@ class ExpoDiagnosticsModule : Module() {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
       ?: return emptyList()
     val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-    val cursor = prefs.getLong(cursorKey, 0L)
-
     val records = am.getHistoricalProcessExitReasons(context.packageName, 0, 20)
+
+    // First run (no cursor yet): seed to the newest existing exit and report nothing, so
+    // pre-install / pre-update history is not replayed as fresh crashes.
+    if (!prefs.contains(cursorKey)) {
+      val newest = records.maxOfOrNull { it.timestamp } ?: 0L
+      prefs.edit().putLong(cursorKey, newest).apply()
+      return emptyList()
+    }
+
+    val cursor = prefs.getLong(cursorKey, 0L)
     var maxTs = cursor
     val out = ArrayList<Map<String, Any?>>()
 
@@ -95,7 +103,9 @@ class ExpoDiagnosticsModule : Module() {
     )
   }
 
-  private fun truncate(s: String): String =
-    if (s.toByteArray().size <= detailCap) s
-    else s.substring(0, detailCap / 2) + "\n…[truncated]"
+  private fun truncate(s: String): String {
+    val bytes = s.toByteArray()
+    if (bytes.size <= detailCap) return s
+    return String(bytes, 0, detailCap / 2, Charsets.UTF_8) + "\n…[truncated]"
+  }
 }

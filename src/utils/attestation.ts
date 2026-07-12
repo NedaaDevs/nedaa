@@ -2,7 +2,7 @@ import * as AppIntegrity from "@expo/app-integrity";
 import { Platform } from "react-native";
 
 import { PlatformType } from "@/enums/app";
-import { CLOUD_PROJECT_NUMBER } from "@/constants/Attestation";
+import { CLOUD_PROJECT_NUMBER, isCloudProjectConfigured } from "@/constants/Attestation";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("feedback");
@@ -24,6 +24,10 @@ const attestIOS = async (challenge: string): Promise<AttestationResult | null> =
 // Android Play Integrity standard flow: prepare provider, then request a token bound to the
 // challenge. Returns null on HMS / no-GMS devices (prepare/request reject).
 const attestAndroid = async (challenge: string): Promise<AttestationResult | null> => {
+  if (!isCloudProjectConfigured()) {
+    log.w("attest", "CLOUD_PROJECT_NUMBER not configured; Android attestation is disabled");
+    return null;
+  }
   await AppIntegrity.prepareIntegrityTokenProviderAsync(CLOUD_PROJECT_NUMBER);
   const token = await AppIntegrity.requestIntegrityCheckAsync(challenge);
   return { platform: PlatformType.ANDROID, token };

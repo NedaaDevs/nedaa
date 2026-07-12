@@ -7,7 +7,7 @@ export type { NativeDiagnostic } from "./ExpoDiagnostics.types";
 
 const NativeModule = requireOptionalNativeModule<{
   drain(): Promise<NativeDiagnostic[]>;
-  testNativeCrash(): void;
+  testNativeCrash?(): void;
   testHang?(): void;
   testAnr?(): void;
 }>("ExpoDiagnostics");
@@ -21,7 +21,7 @@ export const ExpoDiagnosticsModule = {
   // Debug crash triggers — force a real native crash so the drain path can be exercised
   // end-to-end on device. Present on both platforms.
   testNativeCrash(): void {
-    NativeModule?.testNativeCrash();
+    NativeModule?.testNativeCrash?.();
   },
   // Main-thread block: MXHangDiagnostic on iOS. No-op on Android.
   testHang(): void {
