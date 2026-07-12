@@ -15,6 +15,7 @@ import { QadaDB } from "@/services/qada-db";
 import { AppLogger } from "@/utils/appLogger";
 import { installCrashHandler } from "@/utils/crashHandler";
 import { installLifecycleLogging } from "@/utils/appLifecycle";
+import { processNativeDiagnostics } from "@/utils/nativeDiagnostics";
 
 // Screenshot mode
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
@@ -39,6 +40,8 @@ export const useInitialSetup = () => {
       installCrashHandler();
       installLifecycleLogging();
       AppLogger.prune();
+      // Drain OS-level diagnostics from the previous session into the crash log (best-effort).
+      void processNativeDiagnostics();
       if (IS_SCREENSHOT_MODE) {
         seedScreenshotState();
       }
