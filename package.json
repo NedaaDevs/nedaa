@@ -40,6 +40,7 @@
   "dependencies": {
     "@expo-google-fonts/asap": "^0.4.3",
     "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
+    "@expo/app-integrity": "56.0.3",
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-community/datetimepicker": "9.1.0",

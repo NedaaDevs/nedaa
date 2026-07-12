@@ -41,8 +41,7 @@ export const processNativeDiagnostics = async (): Promise<void> => {
   } catch (error) {
     log.w(
       "native-drain",
-      "failed to drain native diagnostics",
-      error instanceof Error ? error : undefined
+      `failed to drain native diagnostics: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 };
