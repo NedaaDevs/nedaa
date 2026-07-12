@@ -1611,5 +1611,8 @@
   "feedback.messagePlaceholder.feature": "Apa yang boleh menjadikan Nedaa lebih baik untuk anda?",
   "feedback.messagePlaceholder.other": "Apa yang ada di fikiran anda?",
   "crashPrompt.notePlaceholder": "Adakah anda ingat apa yang anda lakukan sebelum ia ditutup? (pilihan)",
-  "feedback.offline": "Tiada sambungan internet"
+  "feedback.offline": "Tiada sambungan internet",
+  "settings.acknowledgements.contributors.translations": "Terjemahan",
+  "settings.acknowledgements.contributors.design": "Reka bentuk",
+  "settings.acknowledgements.contributors.support": "Sokongan"
 }

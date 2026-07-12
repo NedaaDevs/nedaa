@@ -67,15 +67,27 @@ const CREDITS: Credit[] = [
 // layout keeps a mixed-script list clean with no RTL/LTR handling. MOCK DATA —
 // replace with the real, consented list; category titles need i18n keys before
 // this section is shown.
-const CONTRIBUTORS: { title: string; entries: string[] }[] = [
-  { title: "Translations", entries: ["Ahem — Urdu", "Nurul — Bahasa Melayu"] },
-  { title: "Code", entries: ["Sarah Thompson"] },
-  { title: "Features", entries: ["أحمد الغامدي"] },
+// Category titles are localized; names are proper nouns and never are. `detail` uses the
+// language's endonym so it reads correctly in every locale without a translation matrix.
+type Contributor = { name: string; detail?: string };
+type ContributorGroup = { titleKey: string; entries: Contributor[] };
+
+const CONTRIBUTORS: ContributorGroup[] = [
+  {
+    titleKey: "settings.acknowledgements.contributors.translations",
+    entries: [{ name: "عبد الرحمن راجا", detail: "اردو" }],
+  },
+  {
+    titleKey: "settings.acknowledgements.contributors.design",
+    entries: [{ name: "سعد راجا" }],
+  },
+  {
+    titleKey: "settings.acknowledgements.contributors.support",
+    entries: [{ name: "M.N" }],
+  },
 ];
 
-// Hidden until the real, consented contributor list is ready.
-// TODO(acknowledgements-contributors): flip on + add i18n keys for category titles.
-const SHOW_CONTRIBUTORS = false;
+const SHOW_CONTRIBUTORS = true;
 
 // One entrance motion per element, staggered top-to-bottom; skipped entirely
 // when the user prefers reduced motion.
@@ -193,13 +205,13 @@ const Acknowledgements = () => {
                 {contributorsOpen && (
                   <VStack gap="$4" alignItems="center">
                     {CONTRIBUTORS.map((group) => (
-                      <VStack key={group.title} gap="$1" alignItems="center">
+                      <VStack key={group.titleKey} gap="$1" alignItems="center">
                         <Text size="sm" fontWeight="600" color="$typographySecondary">
-                          {group.title}
+                          {t(group.titleKey)}
                         </Text>
                         {group.entries.map((entry) => (
-                          <Text key={entry} size="md" color="$typography" textAlign="center">
-                            {entry}
+                          <Text key={entry.name} size="md" color="$typography" textAlign="center">
+                            {entry.detail ? `${entry.name} · ${entry.detail}` : entry.name}
                           </Text>
                         ))}
                       </VStack>

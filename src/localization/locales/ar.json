@@ -1659,5 +1659,8 @@
   "feedback.messagePlaceholder.feature": "ما الذي قد يجعل نداء أفضل بالنسبة لك؟",
   "feedback.messagePlaceholder.other": "بمَ تفكر؟",
   "crashPrompt.notePlaceholder": "هل تتذكر ما كنت تفعله قبل أن يُغلق؟ (اختياري)",
-  "feedback.offline": "لا يوجد اتصال بالإنترنت"
+  "feedback.offline": "لا يوجد اتصال بالإنترنت",
+  "settings.acknowledgements.contributors.translations": "الترجمة",
+  "settings.acknowledgements.contributors.design": "التصميم",
+  "settings.acknowledgements.contributors.support": "الدعم"
 }

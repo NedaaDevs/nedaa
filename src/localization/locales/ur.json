@@ -1611,5 +1611,8 @@
   "feedback.messagePlaceholder.feature": "نداء کو آپ کے لیے کیا بہتر بنائے گا؟",
   "feedback.messagePlaceholder.other": "آپ کے ذہن میں کیا ہے؟",
   "crashPrompt.notePlaceholder": "کیا آپ کو یاد ہے کہ بند ہونے سے پہلے آپ کیا کر رہے تھے؟ (اختیاری)",
-  "feedback.offline": "انٹرنیٹ کنکشن نہیں ہے"
+  "feedback.offline": "انٹرنیٹ کنکشن نہیں ہے",
+  "settings.acknowledgements.contributors.translations": "تراجم",
+  "settings.acknowledgements.contributors.design": "ڈیزائن",
+  "settings.acknowledgements.contributors.support": "معاونت"
 }
