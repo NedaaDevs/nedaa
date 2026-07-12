@@ -62,7 +62,7 @@ function listDomains(): string[] {
   return [...domains];
 }
 
-function getInstallSource(): string {
+export function getInstallSource(): string {
   if (__DEV__) return "Development";
   if (Platform.OS === "ios") return "App Store";
   return "Production";
