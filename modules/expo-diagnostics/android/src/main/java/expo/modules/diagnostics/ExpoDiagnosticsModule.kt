@@ -4,6 +4,8 @@ import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.UUID
@@ -20,6 +22,21 @@ class ExpoDiagnosticsModule : Module() {
 
     AsyncFunction("drain") {
       drain()
+    }
+
+    // Throw uncaught on the main thread; the process dies and ApplicationExitInfo records
+    // REASON_CRASH with a trace on the next launch.
+    Function("testNativeCrash") {
+      Handler(Looper.getMainLooper()).post {
+        throw RuntimeException("expo-diagnostics test crash")
+      }
+    }
+
+    // Block the main thread past the input-dispatch timeout to record REASON_ANR.
+    Function("testAnr") {
+      Handler(Looper.getMainLooper()).post {
+        Thread.sleep(10_000)
+      }
     }
   }
 

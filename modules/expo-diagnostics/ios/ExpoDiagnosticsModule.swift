@@ -1,26 +1,20 @@
 import ExpoModulesCore
 import MetricKit
 
-// Persists MetricKit diagnostic payloads to disk as they arrive (delivery can happen
-// with no JS context alive), then hands them to JS on drain() and deletes them.
-public final class ExpoDiagnosticsModule: Module, MXMetricManagerSubscriber {
+// MetricKit subscriber must inherit NSObject (MXMetricManagerSubscriber refines NSObjectProtocol),
+// so it lives in its own NSObject class rather than on the Expo Module (a plain Swift class).
+// Persists diagnostic payloads to disk as they arrive (delivery can happen with no JS context
+// alive), then hands them to JS on drain() and deletes them.
+final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
   private let inboxName = "diagnostics-inbox"
   private let detailCap = 64 * 1024
 
-  public func definition() -> ModuleDefinition {
-    Name("ExpoDiagnostics")
+  func start() {
+    MXMetricManager.shared.add(self)
+  }
 
-    OnCreate {
-      MXMetricManager.shared.add(self)
-    }
-
-    OnDestroy {
-      MXMetricManager.shared.remove(self)
-    }
-
-    AsyncFunction("drain") { () -> [[String: Any]] in
-      self.drainInbox()
-    }
+  func stop() {
+    MXMetricManager.shared.remove(self)
   }
 
   private func inboxURL() -> URL? {
@@ -34,7 +28,7 @@ public final class ExpoDiagnosticsModule: Module, MXMetricManagerSubscriber {
 
   // MARK: MXMetricManagerSubscriber
 
-  public func didReceive(_ payloads: [MXDiagnosticPayload]) {
+  func didReceive(_ payloads: [MXDiagnosticPayload]) {
     guard let dir = inboxURL() else { return }
     for payload in payloads {
       let name = "\(UUID().uuidString).json"
@@ -44,11 +38,11 @@ public final class ExpoDiagnosticsModule: Module, MXMetricManagerSubscriber {
   }
 
   // MetricKit also delivers metric payloads to this subscriber; ignore them (no telemetry).
-  public func didReceive(_ payloads: [MXMetricPayload]) {}
+  func didReceive(_ payloads: [MXMetricPayload]) {}
 
   // MARK: Drain
 
-  private func drainInbox() -> [[String: Any]] {
+  func drain() -> [[String: Any]] {
     guard let dir = inboxURL() else { return [] }
     let fm = FileManager.default
     guard let files = try? fm.contentsOfDirectory(
@@ -128,5 +122,38 @@ public final class ExpoDiagnosticsModule: Module, MXMetricManagerSubscriber {
   private func truncated(_ s: String) -> String {
     if s.utf8.count <= detailCap { return s }
     return String(s.prefix(detailCap / 2)) + "\n…[truncated]"
+  }
+}
+
+public final class ExpoDiagnosticsModule: Module {
+  private let inbox = DiagnosticsInbox()
+
+  public func definition() -> ModuleDefinition {
+    Name("ExpoDiagnostics")
+
+    OnCreate {
+      self.inbox.start()
+    }
+
+    OnDestroy {
+      self.inbox.stop()
+    }
+
+    AsyncFunction("drain") { () -> [[String: Any]] in
+      self.inbox.drain()
+    }
+
+    // Force a fatal out-of-bounds trap; MetricKit records an MXCrashDiagnostic next launch.
+    Function("testNativeCrash") {
+      let empty: [Int] = []
+      _ = empty[1]
+    }
+
+    // Block the main thread past MetricKit's hang threshold to record an MXHangDiagnostic.
+    Function("testHang") {
+      DispatchQueue.main.sync {
+        Thread.sleep(forTimeInterval: 8.0)
+      }
+    }
   }
 }

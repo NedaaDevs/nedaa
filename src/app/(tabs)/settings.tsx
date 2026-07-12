@@ -49,6 +49,7 @@ import {
   Heart,
   Activity,
   Award,
+  Bug,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -313,6 +314,11 @@ const SettingsScreen = () => {
               name="Quran Audio Debug"
               path={"/settings/quran-audio-debug" as any}
               icon={BookText}
+            />
+            <SettingsItem
+              name="Diagnostics Debug"
+              path={"/settings/diagnostics-debug" as any}
+              icon={Bug}
             />
           </>
         )}
