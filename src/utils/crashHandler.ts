@@ -8,7 +8,7 @@ const sentinelFile = () => new File(new Directory(Paths.document, "logs"), ".pen
 
 export interface PendingReport {
   ts: number;
-  kind: "crash";
+  kind: "crash" | "native-crash" | "anr";
   summary: string;
 }
 
@@ -70,6 +70,18 @@ const writePendingReport = (summary: string): void => {
     const f = sentinelFile();
     if (!f.exists) f.create();
     f.write(JSON.stringify({ ts: Date.now(), kind: "crash", summary } satisfies PendingReport));
+  } catch {
+    // ignore — best-effort
+  }
+};
+
+// Written by the native-diagnostics drain when an OS-level crash or ANR is found on the
+// previous session, so CrashReportPrompt shows on this launch (same sentinel file).
+export const writeNativePendingReport = (kind: "native-crash" | "anr", summary: string): void => {
+  try {
+    const f = sentinelFile();
+    if (!f.exists) f.create();
+    f.write(JSON.stringify({ ts: Date.now(), kind, summary } satisfies PendingReport));
   } catch {
     // ignore — best-effort
   }
