@@ -12,6 +12,7 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { ExternalLink } from "@/components/ExternalLink";
+import { useAppStore } from "@/stores/app";
 
 // Icons
 import {
@@ -99,6 +100,12 @@ const Acknowledgements = () => {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
+  // The source credits are Qur'an-specific, so they stay hidden until the reader ships.
+  // Contributors and the contact CTA are not, and always show.
+  // TODO(quran-gate): drop the guard at 2.10.0
+  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
+  const creditsCount = quranUnlocked ? CREDITS.length : 0;
+
   // Contributors can grow long, so collapse by default to keep the closing
   // gratitude + CTA within reach.
   const [contributorsOpen, setContributorsOpen] = useState(true);
@@ -113,70 +120,71 @@ const Acknowledgements = () => {
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
       <VStack padding="$4" gap="$3.5">
-        {CREDITS.map((credit, index) => (
-          <Animated.View key={credit.titleKey} entering={enter(index)}>
-            <Box
-              padding="$5"
-              borderRadius="$4"
-              backgroundColor="$backgroundSecondary"
-              borderWidth={1}
-              borderColor="$borderColor">
-              <VStack gap="$3.5">
-                <HStack alignItems="center" gap="$3">
-                  <Box
-                    width={40}
-                    height={40}
-                    borderRadius="$3"
-                    backgroundColor="$backgroundMuted"
-                    alignItems="center"
-                    justifyContent="center">
-                    <Icon color="$accentPrimary" size="md" as={credit.icon} />
-                  </Box>
-                  <Text size="lg" fontWeight="600" color="$typography" flexShrink={1}>
-                    {t(credit.titleKey)}
+        {quranUnlocked &&
+          CREDITS.map((credit, index) => (
+            <Animated.View key={credit.titleKey} entering={enter(index)}>
+              <Box
+                padding="$5"
+                borderRadius="$4"
+                backgroundColor="$backgroundSecondary"
+                borderWidth={1}
+                borderColor="$borderColor">
+                <VStack gap="$3.5">
+                  <HStack alignItems="center" gap="$3">
+                    <Box
+                      width={40}
+                      height={40}
+                      borderRadius="$3"
+                      backgroundColor="$backgroundMuted"
+                      alignItems="center"
+                      justifyContent="center">
+                      <Icon color="$accentPrimary" size="md" as={credit.icon} />
+                    </Box>
+                    <Text size="lg" fontWeight="600" color="$typography" flexShrink={1}>
+                      {t(credit.titleKey)}
+                    </Text>
+                  </HStack>
+
+                  <Text size="md" color="$typographySecondary" lineHeight={22}>
+                    {t(credit.bodyKey)}
                   </Text>
-                </HStack>
 
-                <Text size="md" color="$typographySecondary" lineHeight={22}>
-                  {t(credit.bodyKey)}
-                </Text>
-
-                <HStack gap="$2" flexWrap="wrap">
-                  {credit.links.map((link) => (
-                    <ExternalLink key={link.href} href={link.href} asChild>
-                      <Pressable
-                        hitSlop={8}
-                        accessibilityRole="link"
-                        accessibilityLabel={t("a11y.acknowledgements.openLink", {
-                          name: link.label,
-                        })}>
-                        <HStack
-                          alignItems="center"
-                          gap="$1.5"
-                          paddingVertical="$2"
-                          paddingHorizontal="$3"
-                          borderRadius="$3"
-                          borderWidth={1}
-                          borderColor="$borderColor"
-                          backgroundColor="$background">
-                          <Text size="sm" fontWeight="500" color="$accentPrimary">
-                            {link.label}
-                          </Text>
-                          <Icon color="$accentPrimary" size="xs" as={ExternalLinkIcon} />
-                        </HStack>
-                      </Pressable>
-                    </ExternalLink>
-                  ))}
-                </HStack>
-              </VStack>
-            </Box>
-          </Animated.View>
-        ))}
+                  <HStack gap="$2" flexWrap="wrap">
+                    {credit.links.map((link) => (
+                      <ExternalLink key={link.href} href={link.href} asChild>
+                        <Pressable
+                          hitSlop={8}
+                          accessibilityRole="link"
+                          accessibilityLabel={t("a11y.acknowledgements.openLink", {
+                            name: link.label,
+                          })}>
+                          <HStack
+                            alignItems="center"
+                            gap="$1.5"
+                            paddingVertical="$2"
+                            paddingHorizontal="$3"
+                            borderRadius="$3"
+                            borderWidth={1}
+                            borderColor="$borderColor"
+                            backgroundColor="$background">
+                            <Text size="sm" fontWeight="500" color="$accentPrimary">
+                              {link.label}
+                            </Text>
+                            <Icon color="$accentPrimary" size="xs" as={ExternalLinkIcon} />
+                          </HStack>
+                        </Pressable>
+                      </ExternalLink>
+                    ))}
+                  </HStack>
+                </VStack>
+              </Box>
+            </Animated.View>
+          ))}
 
         {/* Contributors — grouped by contribution type, centered so a
             mixed-script list needs no RTL/LTR alignment. Hidden for now. */}
         {SHOW_CONTRIBUTORS && (
-          <Animated.View entering={enter(CREDITS.length)}>
+          <Animated.View entering={enter(creditsCount)}>
             <Box
               padding="$5"
               borderRadius="$4"
@@ -225,7 +233,7 @@ const Acknowledgements = () => {
 
         {/* Closing: gratitude to the sources and the user, then an open invite
             to contribute (any kind of help), routing to the Contact screen. */}
-        <Animated.View entering={enter(SHOW_CONTRIBUTORS ? CREDITS.length + 1 : CREDITS.length)}>
+        <Animated.View entering={enter(SHOW_CONTRIBUTORS ? creditsCount + 1 : creditsCount)}>
           <Box
             padding="$5"
             borderRadius="$4"

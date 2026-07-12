@@ -84,7 +84,7 @@ const QURAN_UNLOCK_TAP_TIMEOUT_MS = 3000;
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { locale, mode, quranUnlocked } = useAppStore();
+  const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const [alarmAvailable, setAlarmAvailable] = useState(false);
@@ -317,15 +317,13 @@ const SettingsScreen = () => {
         {/* Help */}
         <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
 
-        {/* Acknowledgements — credits for Qur'an text, metadata, recitation.
-            TODO(quran-gate): drop the guard at 2.10.0 */}
-        {quranUnlocked && (
-          <SettingsItem
-            name={t("settings.acknowledgements.title")}
-            path={"/settings/acknowledgements" as any}
-            icon={Award}
-          />
-        )}
+        {/* Contributors + contact CTA are always shown; the Qur'an source credits inside
+            are gated on quranUnlocked until the reader ships. */}
+        <SettingsItem
+          name={t("settings.acknowledgements.title")}
+          path={"/settings/acknowledgements" as any}
+          icon={Award}
+        />
 
         {/* Rate & Share */}
         <HStack marginHorizontal="$2" marginTop="$2" gap="$2">
