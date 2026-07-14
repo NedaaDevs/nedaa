@@ -554,15 +554,17 @@ const PageSlot = ({
     );
   }
 
-  // pagesOfSpread = [earlier, later]; RN flips the row under RTL, landing the
-  // earlier page on the visual right.
+  // pagesOfSpread = [earlier, later]. The mushaf is an Arabic book in every
+  // interface language: the earlier page is always the right leaf. RN flips a
+  // "row" under RTL, so LTR locales need the reversed row to land it there.
   const pages = pagesOfSpread(unit);
 
   // Height-fit pair, both full pages visible at once (dense pack, no scroll).
   const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight);
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
-      <View style={styles.spreadRow}>
+      <View
+        style={[styles.spreadRow, { flexDirection: I18nManager.isRTL ? "row" : "row-reverse" }]}>
         {pages.map((p, i) => (
           <View key={p} style={pageBoxStyle(box.w, box.h)}>
             <QuranPage
@@ -570,8 +572,7 @@ const PageSlot = ({
               width={box.w}
               version={version}
               quranTheme={quranTheme}
-              // RTL flips the row; the header side prop matches.
-              side={(i === 0) === I18nManager.isRTL ? "right" : "left"}
+              side={i === 0 ? "right" : "left"}
               onAyahLongPress={onAyahLongPress}
               onSurahLongPress={onSurahLongPress}
               selectedAyah={selectedAyah}
@@ -592,9 +593,10 @@ const styles = StyleSheet.create({
   page: {
     ...StyleSheet.absoluteFill,
   },
+  // flexDirection is set per-render: the earlier page must land on the right in
+  // both interface directions.
   spreadRow: {
     flex: 1,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingTop: SPREAD_TOP_PAD,
