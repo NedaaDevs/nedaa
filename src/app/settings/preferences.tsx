@@ -1,5 +1,8 @@
+import { useRef } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
+import type { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { Info } from "lucide-react-native";
 
 // Components
 import { Background } from "@/components/ui/background";
@@ -10,6 +13,8 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Pressable } from "@/components/ui/pressable";
+import { Icon } from "@/components/ui/icon";
+import { InfoSheet } from "@/components/InfoSheet";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -82,7 +87,11 @@ const PreferencesSettings = () => {
     setLargeControls,
     showImportantDaysOnHome,
     setShowImportantDaysOnHome,
+    shareUsageStats,
+    setShareUsageStats,
   } = usePreferencesStore();
+
+  const usageInfoRef = useRef<BottomSheetModal>(null);
 
   const isArabic = locale.startsWith("ar");
 
@@ -252,7 +261,47 @@ const PreferencesSettings = () => {
               />
             </HStack>
           </Box>
+
+          {/* Usage stats — keep this row LAST; add new preferences above it.
+              Detail lives in the info sheet (tap the ⓘ), not inline. */}
+          <Box
+            backgroundColor="$backgroundSecondary"
+            borderRadius="$6"
+            padding="$4"
+            flexDirection="row"
+            alignItems="center">
+            <HStack justifyContent="space-between" alignItems="center" width="100%">
+              <HStack flex={1} marginEnd="$4" alignItems="center" gap="$1.5" flexWrap="nowrap">
+                <Text fontWeight="500" color="$typography" flexShrink={1}>
+                  {t("settings.preferences.usageStats.title")}
+                </Text>
+                {/* Override the 44×44 tap-target minimums so the icon sizes to
+                    itself and centers with the title; hitSlop keeps it tappable. */}
+                <Pressable
+                  minWidth={0}
+                  minHeight={0}
+                  alignSelf="center"
+                  flexShrink={0}
+                  onPress={() => usageInfoRef.current?.present()}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("settings.preferences.usageStats.title")}>
+                  <Icon as={Info} size="sm" color="$typographySecondary" />
+                </Pressable>
+              </HStack>
+              <Switch
+                value={shareUsageStats}
+                onValueChange={setShareUsageStats}
+                accessibilityLabel={t("settings.preferences.usageStats.title")}
+              />
+            </HStack>
+          </Box>
         </VStack>
+        <InfoSheet
+          ref={usageInfoRef}
+          titleKey="settings.preferences.usageStats.title"
+          bodyKey="settings.preferences.usageStats.body"
+        />
       </ScrollView>
     </Background>
   );

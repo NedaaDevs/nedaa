@@ -13,6 +13,8 @@ type PreferencesState = {
   showImportantDaysOnHome: boolean;
   // Accessibility: render bigger buttons/text where controls support it (default off).
   largeControls: boolean;
+  // Send anonymous play stats to the API (default on). Gates trackPlay().
+  shareUsageStats: boolean;
 
   setUseWesternNumerals: (value: boolean) => void;
   setCountdownEnabled: (value: boolean) => void;
@@ -22,6 +24,7 @@ type PreferencesState = {
   setHapticsEnabled: (value: boolean) => void;
   setShowImportantDaysOnHome: (value: boolean) => void;
   setLargeControls: (value: boolean) => void;
+  setShareUsageStats: (value: boolean) => void;
 };
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -35,6 +38,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       hapticsEnabled: true,
       showImportantDaysOnHome: false,
       largeControls: false,
+      shareUsageStats: true,
 
       setUseWesternNumerals: (value) => set({ useWesternNumerals: value }),
       setCountdownEnabled: (value) => set({ countdownEnabled: value }),
@@ -44,6 +48,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
       setLargeControls: (value) => set({ largeControls: value }),
+      setShareUsageStats: (value) => set({ shareUsageStats: value }),
     }),
     {
       name: "display-storage",

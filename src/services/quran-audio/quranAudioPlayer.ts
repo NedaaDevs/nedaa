@@ -8,6 +8,7 @@ import { SURAH_NAMES } from "@/constants/Quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
+import { trackPlay } from "@/services/quran-audio/playStats";
 import { QuranManifestService } from "@/services/quran-manifest";
 import {
   remoteAyahUrl,
@@ -232,6 +233,7 @@ class QuranAudioPlayer {
       }
 
       this.logSessionContext("listen", recitation.id, surah, 1, 1);
+      trackPlay(recitation.id);
 
       const reuse =
         this.isSurahPlaylist &&
@@ -336,6 +338,7 @@ class QuranAudioPlayer {
 
       const localCount = items.filter((it) => it.url.startsWith("file")).length;
       this.logSessionContext("reader", recitation.id, surah, fromAyah, toAyah);
+      trackPlay(recitation.id);
       log.i(
         "Player",
         `ayah ${surah}:${fromAyah}-${toAyah} tracks=${items.length} local=${localCount} remote=${items.length - localCount} first=${items[0]?.url.slice(0, 64)}`
