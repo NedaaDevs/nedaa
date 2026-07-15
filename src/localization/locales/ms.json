@@ -1614,5 +1614,7 @@
   "feedback.offline": "Tiada sambungan internet",
   "settings.acknowledgements.contributors.translations": "Terjemahan",
   "settings.acknowledgements.contributors.design": "Reka bentuk",
+  "settings.acknowledgements.contributors.ideas": "Idea",
+  "settings.acknowledgements.contributors.iosLockScreenWidget": "Widget Semua Solat Skrin Kunci iOS",
   "settings.acknowledgements.contributors.support": "Sokongan"
 }

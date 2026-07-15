@@ -1614,5 +1614,7 @@
   "feedback.offline": "انٹرنیٹ کنکشن نہیں ہے",
   "settings.acknowledgements.contributors.translations": "تراجم",
   "settings.acknowledgements.contributors.design": "ڈیزائن",
+  "settings.acknowledgements.contributors.ideas": "تجاویز",
+  "settings.acknowledgements.contributors.iosLockScreenWidget": "iOS لاک اسکرین تمام نمازیں ویجٹ",
   "settings.acknowledgements.contributors.support": "معاونت"
 }

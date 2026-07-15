@@ -13,76 +13,16 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { ExternalLink } from "@/components/ExternalLink";
 import { useAppStore } from "@/stores/app";
+import { CREDITS, CONTRIBUTORS } from "@/constants/Acknowledgements";
 
 // Icons
 import {
-  BookText,
-  Database,
-  AudioLines,
   ExternalLinkIcon,
   MessageCircleHeart,
   UsersRound,
   ChevronDown,
   ChevronUp,
 } from "lucide-react-native";
-
-// A source we credit. `body` describes the contribution; `links` are the
-// canonical homepages, opened in an in-app browser. Link labels are proper
-// nouns, so they stay untranslated.
-type Credit = {
-  icon: any;
-  titleKey: string;
-  bodyKey: string;
-  links: { label: string; href: string }[];
-};
-
-const CREDITS: Credit[] = [
-  {
-    icon: BookText,
-    titleKey: "settings.acknowledgements.quranText.title",
-    bodyKey: "settings.acknowledgements.quranText.body",
-    links: [
-      { label: "Tanzil.net", href: "https://tanzil.net" },
-      { label: "KFGQPC", href: "https://qurancomplex.gov.sa" },
-    ],
-  },
-  {
-    icon: Database,
-    titleKey: "settings.acknowledgements.metadata.title",
-    bodyKey: "settings.acknowledgements.metadata.body",
-    links: [{ label: "QUL / Tarteel", href: "https://qul.tarteel.ai" }],
-  },
-  {
-    icon: AudioLines,
-    titleKey: "settings.acknowledgements.recitation.title",
-    bodyKey: "settings.acknowledgements.recitation.body",
-    links: [
-      { label: "QuranicAudio", href: "https://quranicaudio.com" },
-      { label: "quran.com", href: "https://quran.com" },
-    ],
-  },
-];
-
-// Contributors grouped by contribution type. Category titles are localized; names are proper
-// nouns and never are. `detail` uses the language's endonym so it reads correctly in every
-// locale without a translation matrix.
-type Contributor = { name: string; detail?: string };
-type ContributorGroup = { titleKey: string; entries: Contributor[] };
-
-const CONTRIBUTORS: ContributorGroup[] = [
-  {
-    titleKey: "settings.acknowledgements.contributors.translations",
-    entries: [{ name: "عبدالرحمن راجا", detail: "اردو" }],
-  },
-  {
-    titleKey: "settings.acknowledgements.contributors.design",
-    entries: [{ name: "سعد راجا" }],
-  },
-  {
-    titleKey: "settings.acknowledgements.contributors.support",
-    entries: [{ name: "M.N" }],
-  },
-];
 
 const SHOW_CONTRIBUTORS = true;
 
@@ -212,11 +152,14 @@ const Acknowledgements = () => {
                         <Text size="sm" fontWeight="600" color="$typographySecondary">
                           {t(group.titleKey)}
                         </Text>
-                        {group.entries.map((entry) => (
-                          <Text key={entry.name} size="md" color="$typography" textAlign="center">
-                            {entry.detail ? `${entry.name} · ${entry.detail}` : entry.name}
-                          </Text>
-                        ))}
+                        {group.entries.map((entry) => {
+                          const detail = entry.detailKey ? t(entry.detailKey) : entry.detail;
+                          return (
+                            <Text key={entry.name} size="md" color="$typography" textAlign="center">
+                              {detail ? `${entry.name} · ${detail}` : entry.name}
+                            </Text>
+                          );
+                        })}
                       </VStack>
                     ))}
                   </VStack>

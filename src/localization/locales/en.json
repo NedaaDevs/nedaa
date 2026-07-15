@@ -1620,5 +1620,7 @@
   "feedback.offline": "No internet connection",
   "settings.acknowledgements.contributors.translations": "Translations",
   "settings.acknowledgements.contributors.design": "Design",
+  "settings.acknowledgements.contributors.ideas": "Ideas",
+  "settings.acknowledgements.contributors.iosLockScreenWidget": "iOS All Prayers Lock Screen widget",
   "settings.acknowledgements.contributors.support": "Support"
 }

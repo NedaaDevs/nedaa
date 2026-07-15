@@ -1662,5 +1662,7 @@
   "feedback.offline": "لا يوجد اتصال بالإنترنت",
   "settings.acknowledgements.contributors.translations": "الترجمة",
   "settings.acknowledgements.contributors.design": "التصميم",
+  "settings.acknowledgements.contributors.ideas": "الأفكار",
+  "settings.acknowledgements.contributors.iosLockScreenWidget": "أداة كل الصلوات على شاشة القفل بنظام iOS",
   "settings.acknowledgements.contributors.support": "الدعم"
 }
