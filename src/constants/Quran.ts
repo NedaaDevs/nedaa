@@ -180,12 +180,12 @@ export const SURAH_FRAME_ADJUSTMENTS: Record<
 > = {
   [NEDAA_STYLE_ID]: {},
   classic: {
-    [MushafVersion.V1]: { offsetY: -0.083, scale: 1 }, // names sit high (0.408)
+    // V1/V4 strips are re-rendered with names ink-centered + panel-fitted
+    // (2026-07-17 set), so no trim is needed.
+    [MushafVersion.V1]: { offsetY: 0, scale: 1 },
     [MushafVersion.V2]: { offsetY: 0, scale: 1 }, // LOCKED — device-verified 2026-07-17 (0.485)
-    [MushafVersion.V4]: { offsetY: 0.031, scale: 1 }, // names sit low (0.522)
+    [MushafVersion.V4]: { offsetY: 0, scale: 1 },
   },
-  // Legacy per-edition pack ids (pre-"classic" installs) share the same trims.
-  [MushafVersion.V1]: { [MushafVersion.V1]: { offsetY: -0.083, scale: 1 } },
 };
 
 // Bundled `nedaa` ornament art: the offline baseline every category falls back
