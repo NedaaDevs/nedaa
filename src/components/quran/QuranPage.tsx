@@ -14,6 +14,8 @@ import {
   BookmarkColor,
   HighlightColor,
   MushafVersion,
+  OrnamentAsset,
+  OrnamentCategory,
   QuranThemeType,
   ReadAlongGranularity,
 } from "@/enums/quran";
@@ -24,6 +26,8 @@ import {
   IMAGE_SOURCE_LINE_HEIGHT,
   highlightTint,
   BOOKMARK_COLORS,
+  BUNDLED_ORNAMENT_META,
+  NEDAA_STYLE_ID,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { usePageData } from "@/hooks/usePageData";
@@ -40,11 +44,7 @@ import LineShimmer from "@/components/quran/LineShimmer";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
 import AyahMarker from "@/components/quran/AyahMarker";
-// import SurahFrame from "@/components/quran/SurahFrame";
-
-// Native aspect of the surah-frame SVG (viewBox 2793×720) — used to size the banner
-// without stretching — the banner height derives from the bitmap's aspect ratio.
-const SURAH_FRAME_ASPECT = 2793 / 720;
+import SurahFrame from "@/components/quran/SurahFrame";
 
 const LONG_PRESS_MS = 400;
 // Must exceed the page-swipe pan's minDistance(15) to avoid a no-op jitter band.
@@ -436,13 +436,22 @@ const QuranPage = ({
     srcLineHeight,
   ]);
 
-  // Surah-opening banners: a frame on each surah-header line. Sized per Ayah's rule —
-  // width = 96% of the page (1038/1080), height = width ÷ the frame's native aspect
-  // (aspect preserved, not stretched) — centred on the header line.
+  // Active surah-frame style + its pack metadata (installed pack overrides the
+  // bundled nedaa values); the frame's aspect comes from that metadata.
+  const surahFrameStyle =
+    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.SURAH_FRAME]) ?? NEDAA_STYLE_ID;
+  const surahFrameMeta =
+    useQuranStore((s) => s.ornamentMeta[OrnamentCategory.SURAH_FRAME]) ??
+    BUNDLED_ORNAMENT_META[OrnamentCategory.SURAH_FRAME];
+  const surahFrameAspect = surahFrameMeta.assets[OrnamentAsset.FRAME]?.aspect ?? 5.968;
+
+  // Surah-opening banners: a frame on each surah-header line. Width = 96% of the
+  // page (1038/1080), height = width ÷ the style's aspect (aspect preserved, not
+  // stretched) — centred on the header line.
   const surahFramePositions = useMemo(() => {
     if (lineHeight === 0) return [];
     const bannerW = width * (1038 / 1080);
-    const bannerH = bannerW / SURAH_FRAME_ASPECT;
+    const bannerH = bannerW / surahFrameAspect;
     const x = (width - bannerW) / 2;
     return Object.entries(surahHeaderLines).map(([lineStr, surahNumber]) => {
       const line = Number(lineStr);
@@ -450,7 +459,16 @@ const QuranPage = ({
       const lineCenterY = (line - 1) * base + base / 2;
       return { x, y: lineCenterY - bannerH / 2, width: bannerW, height: bannerH, surahNumber };
     });
-  }, [surahHeaderLines, width, lineHeight, isPageMode, srcLineHeight, pageScaleX, pageScaleY]);
+  }, [
+    surahHeaderLines,
+    width,
+    lineHeight,
+    isPageMode,
+    srcLineHeight,
+    pageScaleX,
+    pageScaleY,
+    surahFrameAspect,
+  ]);
 
   // Similar-verse markers ("huffaz mode", off by default): a small dot above the
   // ayah's end-marker for any verse on this page that belongs to a group.
@@ -490,6 +508,22 @@ const QuranPage = ({
               direction: "ltr",
             }}
             onPress={handlePress}>
+            {/* Surah-frame UNDERLAY: drawn before the page/line images so the
+                baked calligraphic name composites on top of the open panel. */}
+            {ready &&
+              surahFramePositions.map((s, i) => (
+                <SurahFrame
+                  key={`surah-${i}`}
+                  x={s.x}
+                  y={s.y}
+                  width={s.width}
+                  height={s.height}
+                  surahNumber={s.surahNumber}
+                  version={version}
+                  quranTheme={quranTheme}
+                  styleId={surahFrameStyle}
+                />
+              ))}
             {lineHeight > 0 && ready && isPageMode && (
               <PageImage
                 version={version}
@@ -561,19 +595,6 @@ const QuranPage = ({
                   />
                 );
               })}
-
-            {/* {ready &&
-              surahFramePositions.map((s, i) => (
-                <SurahFrame
-                  key={`surah-${i}`}
-                  x={s.x}
-                  y={s.y}
-                  width={s.width}
-                  height={s.height}
-                  surahNumber={s.surahNumber}
-                  quranTheme={quranTheme}
-                />
-              ))} */}
 
             {highlightRects.map((rect, i) => (
               <View

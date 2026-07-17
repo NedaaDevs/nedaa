@@ -1,5 +1,18 @@
-import { BUNDLED_ORNAMENTS, isDarkPaper, OrnamentPackMeta } from "@/constants/Quran";
-import { OrnamentAsset, OrnamentCategory, OrnamentSlot, QuranThemeType } from "@/enums/quran";
+import { Paths } from "expo-file-system";
+
+import {
+  BUNDLED_ORNAMENTS,
+  isDarkPaper,
+  NEDAA_STYLE_ID,
+  OrnamentPackMeta,
+} from "@/constants/Quran";
+import {
+  MushafVersion,
+  OrnamentAsset,
+  OrnamentCategory,
+  OrnamentSlot,
+  QuranThemeType,
+} from "@/enums/quran";
 
 // 5 reader themes → 2 pre-tinted slots. Light papers read the sepia (dark-ink)
 // artwork; dark papers read the dark (light-ink) artwork. Generalizes the old
@@ -17,6 +30,25 @@ export const bundledOrnamentModule = (
 // Pack files are named `<asset>-<slot>.png`, matching pack.json's asset keys.
 export const ornamentSlotFileName = (asset: OrnamentAsset, slot: OrnamentSlot): string =>
   `${asset}-${slot}.png`;
+
+// Render-time image source for a category's asset: the installed pack's doc-dir
+// file for a non-nedaa style, else the bundled nedaa module. A missing doc-dir
+// file renders as nothing (ornaments are decorative; ensureOrnamentsInstalled
+// re-fetches on next open).
+export const resolveOrnamentImage = (
+  category: OrnamentCategory,
+  asset: OrnamentAsset,
+  theme: QuranThemeType,
+  version: MushafVersion,
+  styleId: string
+): { uri: string } | number => {
+  const slot = ornamentThemeSlot(theme);
+  const file = ornamentSlotFileName(asset, slot);
+  if (styleId !== NEDAA_STYLE_ID) {
+    return { uri: `${Paths.document.uri}quran/${version}/ornaments/${category}/${file}` };
+  }
+  return bundledOrnamentModule(category, asset, slot) ?? 0;
+};
 
 // Parse a pack.json blob into OrnamentPackMeta, or null when malformed/incomplete
 // (caller keeps the bundled meta). Guards the two required fields.

@@ -1,6 +1,16 @@
-import { BUNDLED_ORNAMENT_META } from "@/constants/Quran";
-import { OrnamentAsset, OrnamentCategory, OrnamentSlot, QuranTheme } from "@/enums/quran";
-import { bundledOrnamentModule, ornamentThemeSlot } from "@/utils/quranOrnaments";
+import { BUNDLED_ORNAMENT_META, NEDAA_STYLE_ID } from "@/constants/Quran";
+import {
+  MushafVersion,
+  OrnamentAsset,
+  OrnamentCategory,
+  OrnamentSlot,
+  QuranTheme,
+} from "@/enums/quran";
+import {
+  bundledOrnamentModule,
+  ornamentThemeSlot,
+  resolveOrnamentImage,
+} from "@/utils/quranOrnaments";
 
 describe("ornamentThemeSlot", () => {
   it("maps light papers to the sepia slot", () => {
@@ -38,6 +48,38 @@ describe("bundledOrnamentModule", () => {
         OrnamentSlot.SEPIA
       )
     ).toBeUndefined();
+  });
+});
+
+describe("resolveOrnamentImage", () => {
+  it("returns the bundled module for the nedaa style", () => {
+    const src = resolveOrnamentImage(
+      OrnamentCategory.SURAH_FRAME,
+      OrnamentAsset.FRAME,
+      QuranTheme.DARK,
+      MushafVersion.V1,
+      NEDAA_STYLE_ID
+    );
+    // Jest's RN preset stubs asset requires, so compare against the bundled
+    // lookup rather than asserting the runtime `number` module id shape.
+    expect(src).toBe(
+      bundledOrnamentModule(
+        OrnamentCategory.SURAH_FRAME,
+        OrnamentAsset.FRAME,
+        OrnamentSlot.DARK
+      ) as number
+    );
+  });
+  it("returns a doc-dir uri for an installed non-nedaa style", () => {
+    const src = resolveOrnamentImage(
+      OrnamentCategory.SURAH_FRAME,
+      OrnamentAsset.FRAME,
+      QuranTheme.DARK,
+      MushafVersion.V1,
+      "v1"
+    );
+    expect(typeof src === "object" && "uri" in src).toBe(true);
+    expect((src as { uri: string }).uri).toContain("ornaments/surahFrame/frame-dark.png");
   });
 });
 
