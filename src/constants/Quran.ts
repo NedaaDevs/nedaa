@@ -158,6 +158,10 @@ export const QURAN_THEME_COLORS: Record<
   },
 } as const;
 
+// Nominal ayah-marker box in source-strip pixels (232px line): constant so
+// medallions render one size regardless of each page's fitted font.
+export const MARKER_BOX_SOURCE_PX = 112;
+
 export const MARKER_ADJUSTMENTS: Record<
   MushafVersion,
   { scaleMultiplier: number; offsetX: number; offsetY: number; fontSizeMultiplier: number }

@@ -27,6 +27,7 @@ import {
   highlightTint,
   BOOKMARK_COLORS,
   BUNDLED_ORNAMENT_META,
+  MARKER_BOX_SOURCE_PX,
   SURAH_FRAME_ADJUSTMENTS,
   SURAH_FRAME_NO_ADJUSTMENT,
 } from "@/constants/Quran";
@@ -405,25 +406,37 @@ const QuranPage = ({
     return out;
   }, [pageHighlights, rectsForAyah, quranTheme]);
 
+  // Markers draw at a CONSTANT size (the nominal 112px box in 232px source
+  // units) centered on their glyph box — per-page font fitting makes the raw
+  // glyph boxes vary, which read as randomly-sized medallions.
   const markerPositions = useMemo(() => {
     if (lineHeight === 0) return [];
     const markers = glyphBounds.filter((g) => g.isMarker);
     return markers.map((g) => {
       if (isPageMode) {
+        const w = MARKER_BOX_SOURCE_PX * pageScaleX;
+        const h = MARKER_BOX_SOURCE_PX * pageScaleX * pageScaleY;
+        const cx = (g.x + g.width / 2) * pageScaleX;
+        const cy =
+          (g.line - 1) * srcLineHeight * pageScaleX * pageScaleY +
+          (g.y + g.height / 2) * pageScaleX * pageScaleY;
         return {
-          x: g.x * pageScaleX,
-          y: (g.line - 1) * srcLineHeight * pageScaleX * pageScaleY + g.y * pageScaleX * pageScaleY,
-          width: g.width * pageScaleX,
-          height: g.height * pageScaleX * pageScaleY,
+          x: cx - w / 2,
+          y: cy - h / 2,
+          width: w,
+          height: h,
           surahNumber: g.surahNumber,
           ayahNumber: g.ayahNumber,
         };
       }
+      const side = MARKER_BOX_SOURCE_PX * coverScale;
+      const cx = (g.x + g.width / 2) * coverScale;
+      const cy = (g.line - 1) * lineHeight + (g.y + g.height / 2) * coverScale - lineCoverClipY;
       return {
-        x: g.x * coverScale,
-        y: (g.line - 1) * lineHeight + g.y * coverScale - lineCoverClipY,
-        width: g.width * coverScale,
-        height: g.height * coverScale,
+        x: cx - side / 2,
+        y: cy - side / 2,
+        width: side,
+        height: side,
         surahNumber: g.surahNumber,
         ayahNumber: g.ayahNumber,
       };
