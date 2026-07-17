@@ -1,5 +1,10 @@
 import i18n from "@/localization/i18n";
-import { SURAH_NAMES, SURAH_NAMES_LATIN, QURAN_FONT_FAMILY } from "@/constants/Quran";
+import {
+  SURAH_NAMES,
+  SURAH_NAMES_LATIN,
+  SURAH_NAMES_VOCALIZED,
+  QURAN_FONT_FAMILY,
+} from "@/constants/Quran";
 
 // Locales whose metadata renders in Arabic script (vs Latin transliteration).
 const ARABIC_SCRIPT_LANGUAGES = ["ar", "ur"];
@@ -13,6 +18,18 @@ export const localizedSurahName = (surahNumber: number): string =>
 // Header-metadata font: scripture font renders Arabic-script names; app font renders Latin.
 export const metadataFontFamily = (): string | undefined =>
   isArabicScript() ? QURAN_FONT_FAMILY : undefined;
+
+// Running-header surah label: Arabic-script locales get the vocalized print
+// form after «سُورَةُ»; Latin locales get the localized "Surah X".
+export const headerSurahLabel = (surahNumber: number): string => {
+  const vocalized = SURAH_NAMES_VOCALIZED[surahNumber];
+  if (isArabicScript() && vocalized) {
+    return i18n.language === "ar"
+      ? `سُورَةُ ${vocalized}`
+      : `${i18n.t("quran.goto.surah")} ${vocalized}`;
+  }
+  return `${i18n.t("quran.goto.surah")} ${localizedSurahName(surahNumber)}`;
+};
 
 export const SURAH_NAME_LIGATURE_FONT = "SurahNames";
 

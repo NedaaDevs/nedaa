@@ -1,5 +1,6 @@
 import i18n from "@/localization/i18n";
 import { headerJuzLabel } from "@/utils/juz";
+import { headerSurahLabel } from "@/utils/surahName";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   getItem: jest.fn(),
@@ -30,5 +31,17 @@ describe("headerJuzLabel (ar)", () => {
     expect(headerJuzLabel(1)).toBe("الجُزْءُ الأَوَّلُ");
     expect(headerJuzLabel(15)).toBe("الجُزْءُ الخَامِسَ عَشَرَ");
     expect(headerJuzLabel(30)).toBe("الجُزْءُ الثَّلَاثُونَ");
+  });
+});
+
+describe("headerSurahLabel", () => {
+  it("uses the vocalized genitive print form in Arabic", async () => {
+    await i18n.changeLanguage("ar");
+    expect(headerSurahLabel(1)).toBe("سُورَةُ الفَاتِحَةِ");
+    expect(headerSurahLabel(3)).toBe("سُورَةُ آلِ عِمْرَانَ");
+  });
+  it("keeps the localized form in English", async () => {
+    await i18n.changeLanguage("en");
+    expect(headerSurahLabel(2)).toBe("Surah Al-Baqarah");
   });
 });

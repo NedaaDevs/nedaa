@@ -497,6 +497,7 @@ const QuranPage = ({
       style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
       <PageHeader
         surahName={headerSurah}
+        surahNumber={headerSurahNumber}
         juz={pageAvailable ? juz : null}
         quranTheme={quranTheme}
         side={side}

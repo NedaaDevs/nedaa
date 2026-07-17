@@ -7,10 +7,12 @@ import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { headerJuzLabel } from "@/utils/juz";
-import { metadataFontFamily } from "@/utils/surahName";
+import { headerSurahLabel, metadataFontFamily } from "@/utils/surahName";
 
 interface PageHeaderProps {
   surahName: string;
+  // Enables the vocalized print-form label; fallback is prefix + surahName.
+  surahNumber?: number | null;
   // null while the page is still downloading — header stays blank, not stale.
   juz: number | null;
   quranTheme: QuranThemeType;
@@ -22,7 +24,7 @@ interface PageHeaderProps {
 // the physical right on every page, one uniform script on both sides (the
 // calligraphic name belongs to the surah frame band, not here). Hairline rule
 // on phones only.
-const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
+const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
@@ -41,7 +43,11 @@ const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
         {/* direction ltr pins physical sides under RTL locales. */}
         <XStack alignItems="center" justifyContent="space-between" style={{ direction: "ltr" }}>
           <Text style={{ color: themeColors.headerColor, fontFamily }}>
-            {surahName ? `${t("quran.goto.surah")} ${surahName}` : ""}
+            {surahNumber != null
+              ? headerSurahLabel(surahNumber)
+              : surahName
+                ? `${t("quran.goto.surah")} ${surahName}`
+                : ""}
           </Text>
           <Text style={{ color: themeColors.headerColor, fontFamily }}>{juzText}</Text>
         </XStack>
