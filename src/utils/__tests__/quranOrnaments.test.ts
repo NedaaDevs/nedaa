@@ -9,6 +9,8 @@ import {
 import {
   bundledOrnamentModule,
   ornamentThemeSlot,
+  pageLeafSide,
+  quarterHolderAsset,
   resolveOrnamentImage,
 } from "@/utils/quranOrnaments";
 
@@ -80,6 +82,24 @@ describe("resolveOrnamentImage", () => {
     );
     expect(typeof src === "object" && "uri" in src).toBe(true);
     expect((src as { uri: string }).uri).toContain("ornaments/surahFrame/frame-dark.png");
+  });
+});
+
+describe("quarterHolderAsset", () => {
+  it("puts the narrow cell toward the outer edge per leaf", () => {
+    expect(quarterHolderAsset("right")).toBe(OrnamentAsset.QUARTER_RIGHT);
+    expect(quarterHolderAsset("left")).toBe(OrnamentAsset.QUARTER_LEFT);
+  });
+});
+
+describe("pageLeafSide", () => {
+  it("derives leaf from parity for single-page reading", () => {
+    expect(pageLeafSide(9)).toBe("right");
+    expect(pageLeafSide(10)).toBe("left");
+    expect(pageLeafSide(9, "single")).toBe("right");
+  });
+  it("respects an explicit spread side", () => {
+    expect(pageLeafSide(9, "left")).toBe("left");
   });
 });
 

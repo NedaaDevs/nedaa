@@ -70,6 +70,16 @@ export const medallionBox = (
   return { width: height * aspect, height };
 };
 
+// Quarter-holder file for a leaf: the narrow (page-number) cell sits toward the
+// page's outer edge — right leaf → narrow-right art, left leaf → narrow-left.
+export const quarterHolderAsset = (leaf: "left" | "right"): OrnamentAsset =>
+  leaf === "right" ? OrnamentAsset.QUARTER_RIGHT : OrnamentAsset.QUARTER_LEFT;
+
+// Leaf side for a page: spreads pass their side; single-page reading derives it
+// from parity (odd = right leaf in the RTL spread pairing).
+export const pageLeafSide = (page: number, side?: "left" | "right" | "single"): "left" | "right" =>
+  side === "left" || side === "right" ? side : page % 2 === 1 ? "right" : "left";
+
 // Parse a pack.json blob into OrnamentPackMeta, or null when malformed/incomplete
 // (caller keeps the bundled meta). Guards the two required fields.
 export const parseOrnamentPackJson = (raw: string): OrnamentPackMeta | null => {

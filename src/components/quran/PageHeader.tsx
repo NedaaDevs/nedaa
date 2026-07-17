@@ -7,12 +7,10 @@ import { QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { headerJuzLabel } from "@/utils/juz";
-import { metadataFontFamily, SURAH_NAME_LIGATURE_FONT, surahNameLigature } from "@/utils/surahName";
+import { metadataFontFamily } from "@/utils/surahName";
 
 interface PageHeaderProps {
   surahName: string;
-  // Enables the calligraphic ligature name for Arabic-script locales.
-  surahNumber?: number | null;
   // null while the page is still downloading — header stays blank, not stale.
   juz: number | null;
   quranTheme: QuranThemeType;
@@ -21,8 +19,10 @@ interface PageHeaderProps {
 }
 
 // Running header, print-mushaf convention: surah at the physical left, juz at
-// the physical right on every page. Hairline rule on phones only.
-const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps) => {
+// the physical right on every page, one uniform script on both sides (the
+// calligraphic name belongs to the surah frame band, not here). Hairline rule
+// on phones only.
+const PageHeader = ({ surahName, juz, quranTheme }: PageHeaderProps) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
@@ -30,7 +30,6 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
   const fontFamily = metadataFontFamily();
 
   const juzText = juz ? headerJuzLabel(juz) : "";
-  const ligature = surahNumber != null ? surahNameLigature(surahNumber) : null;
 
   return (
     <YStack
@@ -41,19 +40,9 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
       <View position="relative" justifyContent="center">
         {/* direction ltr pins physical sides under RTL locales. */}
         <XStack alignItems="center" justifyContent="space-between" style={{ direction: "ltr" }}>
-          {ligature ? (
-            <Text
-              style={{
-                color: themeColors.headerColor,
-                fontFamily: SURAH_NAME_LIGATURE_FONT,
-                fontSize: 18,
-              }}
-              accessibilityLabel={surahName}>
-              {ligature}
-            </Text>
-          ) : (
-            <Text style={{ color: themeColors.headerColor, fontFamily }}>{surahName}</Text>
-          )}
+          <Text style={{ color: themeColors.headerColor, fontFamily }}>
+            {surahName ? `${t("quran.goto.surah")} ${surahName}` : ""}
+          </Text>
           <Text style={{ color: themeColors.headerColor, fontFamily }}>{juzText}</Text>
         </XStack>
       </View>

@@ -4,7 +4,7 @@ import { Image, Text, View } from "react-native";
 import { OrnamentPanel } from "@/constants/Quran";
 import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "@/enums/quran";
 import { resolveOrnamentImage } from "@/utils/quranOrnaments";
-import { metadataFontFamily } from "@/utils/surahName";
+import { metadataFontFamily, SURAH_NAME_LIGATURE_FONT, surahNameLigature } from "@/utils/surahName";
 
 interface SurahFrameProps {
   x: number;
@@ -30,6 +30,7 @@ const SurahFrame = ({
   y,
   width,
   height,
+  surahNumber,
   version,
   quranTheme,
   styleId,
@@ -48,6 +49,9 @@ const SurahFrame = ({
       ),
     [quranTheme, version, styleId]
   );
+  // Arabic-script locales render the calligraphic vocalized name glyph, like
+  // the baked band on MADINAH pages; Latin locales keep the transliteration.
+  const ligature = label ? surahNameLigature(surahNumber) : null;
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: x, top: y, width, height }}>
       <Image source={source} style={{ width, height }} resizeMode="contain" fadeDuration={0} />
@@ -68,13 +72,14 @@ const SurahFrame = ({
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
+            accessibilityLabel={label}
             style={{
-              fontFamily: metadataFontFamily(),
-              fontSize: height * 0.42,
+              fontFamily: ligature ? SURAH_NAME_LIGATURE_FONT : metadataFontFamily(),
+              fontSize: height * (ligature ? 0.5 : 0.42),
               color: labelColor,
               textAlign: "center",
             }}>
-            {label}
+            {ligature ?? label}
           </Text>
         </View>
       ) : null}
