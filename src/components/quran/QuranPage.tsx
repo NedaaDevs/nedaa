@@ -207,11 +207,11 @@ const QuranPage = ({
   // Header surah is derived from the page's own glyphs (each carries its
   // surahNumber), so continuation pages show the running surah — and it's
   // naturally blank while the page is still downloading (no glyphs yet).
-  const headerSurah = useMemo(() => {
-    if (!pageAvailable || glyphBounds.length === 0) return "";
-    const topSurah = glyphBounds.reduce((min, g) => Math.min(min, g.surahNumber), Infinity);
-    return localizedSurahName(topSurah);
+  const headerSurahNumber = useMemo(() => {
+    if (!pageAvailable || glyphBounds.length === 0) return null;
+    return glyphBounds.reduce((min, g) => Math.min(min, g.surahNumber), Infinity);
   }, [pageAvailable, glyphBounds]);
+  const headerSurah = headerSurahNumber != null ? localizedSurahName(headerSurahNumber) : "";
 
   // Highlighted ayahs present on this page, keyed "surah:ayah" → colour. Matched
   // by glyph membership (not the stored page) so an ayah that spills across a
@@ -496,6 +496,7 @@ const QuranPage = ({
       style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
       <PageHeader
         surahName={headerSurah}
+        surahNumber={headerSurahNumber}
         juz={pageAvailable ? juz : null}
         quranTheme={quranTheme}
         side={side}

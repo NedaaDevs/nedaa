@@ -13,3 +13,12 @@ export const localizedSurahName = (surahNumber: number): string =>
 // Header-metadata font: scripture font renders Arabic-script names; app font renders Latin.
 export const metadataFontFamily = (): string | undefined =>
   isArabicScript() ? QURAN_FONT_FAMILY : undefined;
+
+export const SURAH_NAME_LIGATURE_FONT = "SurahNames";
+
+// GSUB ligature token the SurahNames font turns into the calligraphic vocalized
+// «سورة …» glyph. Null for Latin locales (they keep transliterated text).
+export const surahNameLigature = (surahNumber: number): string | null =>
+  isArabicScript() && surahNumber >= 1 && surahNumber <= 114
+    ? `surah${String(surahNumber).padStart(3, "0")} surah-icon`
+    : null;

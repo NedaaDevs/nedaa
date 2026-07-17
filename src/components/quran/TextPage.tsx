@@ -280,7 +280,12 @@ const TextPage = ({
   if (flow) {
     return (
       <YStack width={width} style={{ backgroundColor: themeColors.background }}>
-        <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
+        <PageHeader
+          surahName={surahName}
+          surahNumber={ayahs[0]?.surahNumber ?? null}
+          juz={juz}
+          quranTheme={quranTheme}
+        />
         <View style={[styles.column, styles.flowContent]}>{renderContent()}</View>
         <PageNumber page={page} quranTheme={quranTheme} version={currentVersion} />
       </YStack>
@@ -289,7 +294,12 @@ const TextPage = ({
 
   return (
     <YStack flex={1} width={width} style={{ backgroundColor: themeColors.background }}>
-      <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
+      <PageHeader
+        surahName={surahName}
+        surahNumber={ayahs[0]?.surahNumber ?? null}
+        juz={juz}
+        quranTheme={quranTheme}
+      />
 
       <ScrollView
         style={styles.scrollView}
