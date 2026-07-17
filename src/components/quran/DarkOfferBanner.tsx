@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet } from "react-native";
 import { XStack } from "tamagui";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  FadeOutUp,
-  useReducedMotion,
-} from "react-native-reanimated";
+import Animated, { FadeInDown, FadeOutUp, useReducedMotion } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Moon, X } from "lucide-react-native";
 
@@ -45,10 +39,8 @@ const DarkOfferBanner = ({ version, onDismiss }: DarkOfferBannerProps) => {
 
   return (
     <Animated.View
-      entering={
-        reduceMotion ? FadeIn.duration(150) : FadeInDown.springify().damping(18).stiffness(200)
-      }
-      exiting={reduceMotion ? FadeOut.duration(150) : FadeOutUp.duration(200)}
+      entering={reduceMotion ? undefined : FadeInDown.springify().damping(18).stiffness(200)}
+      exiting={reduceMotion ? undefined : FadeOutUp.duration(200)}
       style={[
         styles.container,
         { backgroundColor: chrome.cardBackground, borderColor: chrome.cardBorder },

@@ -3,7 +3,7 @@ import { Toast, ToastTitle, ToastDescription } from "@/components/ui/toast";
 import { useToastStore } from "@/stores/toast";
 import { AccessibilityInfo, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInUp } from "react-native-reanimated";
 
 export function ToastProvider() {
   const { message, title, type, isVisible } = useToastStore();
@@ -18,7 +18,7 @@ export function ToastProvider() {
 
   return (
     <Animated.View
-      entering={reduceMotion ? FadeIn.duration(1) : FadeInUp.duration(200)}
+      entering={reduceMotion ? undefined : FadeInUp.duration(200)}
       style={{
         position: Platform.OS === "web" ? ("fixed" as any) : "absolute",
         top: insets.top + 10,

@@ -73,7 +73,7 @@ export default function IhramScreen() {
         </HStack>
 
         {selectedGender && (
-          <Animated.View entering={reduceMotion ? FadeIn.duration(1) : FadeIn.duration(300)}>
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(300)}>
             <VStack gap="$4">
               <Box
                 alignItems="center"

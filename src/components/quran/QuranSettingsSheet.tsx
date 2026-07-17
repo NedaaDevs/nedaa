@@ -100,15 +100,15 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
   return (
     <>
       <Animated.View
-        entering={FadeIn.duration(reduceMotion ? 150 : 200)}
-        exiting={FadeOut.duration(200)}
+        entering={reduceMotion ? undefined : FadeIn.duration(200)}
+        exiting={reduceMotion ? undefined : FadeOut.duration(200)}
         style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
       </Animated.View>
 
       <Animated.View
-        entering={reduceMotion ? FadeIn.duration(150) : SlideInDown.duration(240)}
-        exiting={reduceMotion ? FadeOut.duration(150) : SlideOutDown.duration(200)}
+        entering={reduceMotion ? undefined : SlideInDown.duration(240)}
+        exiting={reduceMotion ? undefined : SlideOutDown.duration(200)}
         style={[
           styles.sheet,
           { backgroundColor: chrome.background, paddingBottom: insets.bottom + 8 },

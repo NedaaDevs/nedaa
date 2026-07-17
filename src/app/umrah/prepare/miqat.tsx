@@ -88,7 +88,7 @@ export default function MiqatScreen() {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 16 }}>
         {step === "origin" && (
-          <Animated.View entering={reduceMotion ? FadeIn.duration(1) : FadeIn.duration(300)}>
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(300)}>
             <VStack gap="$3" paddingTop="$4">
               <Pressable
                 onPress={() => handleOriginSelect(false)}
@@ -150,7 +150,7 @@ export default function MiqatScreen() {
         )}
 
         {step === "direction" && (
-          <Animated.View entering={reduceMotion ? FadeIn.duration(1) : FadeIn.duration(300)}>
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(300)}>
             <VStack gap="$3" paddingTop="$4">
               {uniqueDirectionGroups.map(({ key, miqat }) => (
                 <Pressable
@@ -197,7 +197,7 @@ export default function MiqatScreen() {
         )}
 
         {step === "result" && selectedMiqat && (
-          <Animated.View entering={reduceMotion ? FadeIn.duration(1) : FadeIn.duration(300)}>
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(300)}>
             <VStack gap="$4" paddingTop="$4">
               <Text size="md" fontWeight="600" color="$typography">
                 {t("umrah.prepare.miqat.result")}

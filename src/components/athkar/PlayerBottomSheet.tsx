@@ -114,7 +114,7 @@ const PlayerBottomSheet: FC = () => {
             ? FadeIn.duration(1)
             : SlideInDown.duration(220).easing(Easing.out(Easing.cubic))
         }
-        exiting={reduceMotion ? FadeOut.duration(1) : SlideOutDown.duration(200)}
+        exiting={reduceMotion ? undefined : SlideOutDown.duration(200)}
         style={{
           position: "absolute",
           bottom: 0,
