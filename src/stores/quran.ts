@@ -65,6 +65,8 @@ export const useQuranStore = create<QuranState>()(
       showMutashabihatMarkers: false,
       mutashabihatNotes: {},
       hasSeenQuranGuide: false,
+      ornamentStyle: {},
+      ornamentMeta: {},
 
       setReaderActive: (active) => set({ readerActive: active }),
       setFlashAyah: (target) => set({ flashAyah: target }),
@@ -87,6 +89,16 @@ export const useQuranStore = create<QuranState>()(
           return { mutashabihatNotes: next };
         }),
       setQuranGuideSeen: () => set({ hasSeenQuranGuide: true }),
+      setOrnamentStyle: (category, styleId) =>
+        set((prev) => ({ ornamentStyle: { ...prev.ornamentStyle, [category]: styleId } })),
+      clearOrnamentStyle: (category) =>
+        set((prev) => {
+          const next = { ...prev.ornamentStyle };
+          delete next[category];
+          return { ornamentStyle: next };
+        }),
+      setOrnamentMeta: (category, meta) =>
+        set((prev) => ({ ornamentMeta: { ...prev.ornamentMeta, [category]: meta } })),
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
       setCurrentVersion: (version) => set({ currentVersion: version }),
       setQuranTheme: (theme) => set({ quranTheme: theme, quranThemeOverride: true }),
@@ -218,6 +230,8 @@ export const useQuranStore = create<QuranState>()(
         showMutashabihatMarkers: state.showMutashabihatMarkers,
         mutashabihatNotes: state.mutashabihatNotes,
         hasSeenQuranGuide: state.hasSeenQuranGuide,
+        ornamentStyle: state.ornamentStyle,
+        ornamentMeta: state.ornamentMeta,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
         darkOfferDismissed: state.darkOfferDismissed,
@@ -296,6 +310,12 @@ export const useQuranStore = create<QuranState>()(
               return [k, entry];
             })
           ) as Partial<Record<MushafVersion, VersionDownloadState>>;
+        }
+        if (!merged.ornamentStyle || typeof merged.ornamentStyle !== "object") {
+          merged.ornamentStyle = {};
+        }
+        if (!merged.ornamentMeta || typeof merged.ornamentMeta !== "object") {
+          merged.ornamentMeta = {};
         }
         return merged;
       },

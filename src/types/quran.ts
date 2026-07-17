@@ -2,6 +2,7 @@ import type { QuranAudioManifest } from "@/types/quran-audio";
 import {
   MushafVersion,
   MushafImageType,
+  OrnamentCategory,
   QuranThemeType,
   LineType,
   DownloadStatus,
@@ -14,6 +15,7 @@ import {
   ScrollDirection,
   SpreadPreference,
 } from "@/enums/quran";
+import type { OrnamentPackMeta } from "@/constants/Quran";
 
 export type { DownloadPhase };
 
@@ -261,6 +263,10 @@ export type QuranState = {
   showMutashabihatMarkers: boolean;
   // Persisted — personal memory note per mutashabihat group, keyed by group id.
   mutashabihatNotes: Record<string, string>;
+  // Per-category ornament style chosen by the user (absent = resolve via the
+  // manifest chain), and the installed pack's parsed pack.json metadata.
+  ornamentStyle: Partial<Record<OrnamentCategory, string>>;
+  ornamentMeta: Partial<Record<OrnamentCategory, OrnamentPackMeta>>;
   // Persisted — whether the first-open reader walkthrough has been seen.
   hasSeenQuranGuide: boolean;
 
@@ -293,6 +299,9 @@ export type QuranState = {
   setShowMutashabihatMarkers: (on: boolean) => void;
   setMutashabihatNote: (groupId: string, text: string) => void;
   setQuranGuideSeen: () => void;
+  setOrnamentStyle: (category: OrnamentCategory, styleId: string) => void;
+  clearOrnamentStyle: (category: OrnamentCategory) => void;
+  setOrnamentMeta: (category: OrnamentCategory, meta: OrnamentPackMeta) => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;
   removeVersion: (version: MushafVersion) => void;
