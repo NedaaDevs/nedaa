@@ -1,5 +1,7 @@
+import { OrnamentCategory } from "@/enums/quran";
 import { apiGet } from "@/services/api";
 import { AppLogger } from "@/utils/appLogger";
+import { findOrnamentOption, resolveOrnamentStyle } from "@/utils/quranOrnamentResolve";
 import type {
   QuranManifest,
   QuranManifestVersion,
@@ -75,19 +77,22 @@ const getMetaUrl = async (version: QuranManifestVersion): Promise<string | null>
   return manifest ? assetUrl(manifest, version.meta.url) : null;
 };
 
-// The edition's default ayah-marker ornament pack (medallion frames) + its version.
-// Null when the manifest ships no ayah-marker ornaments for this edition.
-const getAyahMarkerPack = async (
-  version: QuranManifestVersion
-): Promise<{ url: string; version: string } | null> => {
+// The resolved ornament pack for a category + edition (+ optional user style
+// override) and its version. Null when the manifest ships no CDN pack for this
+// category/edition (caller then uses the bundled nedaa fallback).
+const getOrnamentPack = async (
+  category: OrnamentCategory,
+  version: QuranManifestVersion,
+  userChoice?: string
+): Promise<{ url: string; version: string; styleId: string } | null> => {
   const manifest = await fetchManifest();
-  const group = manifest?.ornaments?.ayahMarker;
+  const group = manifest?.ornaments?.[category];
   if (!manifest || !group) return null;
-  const optionId = group.defaultByEdition?.[version.id] ?? group.default;
-  const option =
-    group.options.find((o) => o.id === optionId) ??
-    group.options.find((o) => o.editions?.includes(version.id));
-  return option ? { url: assetUrl(manifest, option.url), version: option.version } : null;
+  const styleId = resolveOrnamentStyle(category, version.id, manifest, userChoice);
+  const option = findOrnamentOption(group, styleId, version.id);
+  return option
+    ? { url: assetUrl(manifest, option.url), version: option.version, styleId: option.id }
+    : null;
 };
 
 const getImagesSizeBytes = (version: QuranManifestVersion, dark = false): number =>
@@ -146,7 +151,7 @@ export const QuranManifestService = {
   getContent,
   getImagesUrl,
   getMetaUrl,
-  getAyahMarkerPack,
+  getOrnamentPack,
   getImagesSizeBytes,
   getMetaSizeBytes,
   getTotalSizeBytes,
