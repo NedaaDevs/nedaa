@@ -184,7 +184,7 @@ const QuranScreen = () => {
   // before the ornament pack shipped). Idempotent + tiny (~20KB); no-ops once on
   // disk. New downloads already include markers via the edition download.
   useEffect(() => {
-    if (showReader) QuranDownload.ensureMarkersInstalled(currentVersion);
+    if (showReader) QuranDownload.ensureOrnamentsInstalled(currentVersion);
   }, [showReader, currentVersion]);
 
   // First time the reader is shown, run the gesture walkthrough.

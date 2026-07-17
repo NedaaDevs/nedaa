@@ -9,8 +9,12 @@ import {
   DownloadStatus,
   DownloadPhase,
   BundleOutcome,
+  OrnamentAsset,
+  OrnamentCategory,
+  OrnamentSlot,
 } from "@/enums/quran";
-import { TOTAL_PAGES, LINES_PER_PAGE } from "@/constants/Quran";
+import { TOTAL_PAGES, LINES_PER_PAGE, BUNDLED_ORNAMENT_META } from "@/constants/Quran";
+import { ornamentSlotFileName, parseOrnamentPackJson } from "@/utils/quranOrnaments";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { planEditionDownload, type InstalledVersions } from "@/services/quran-download-plan";
@@ -125,10 +129,13 @@ const getVersionDir = (version: MushafVersion): Directory => {
   return new Directory(Paths.document, `quran/${version}`);
 };
 
-// Where the ayah-marker medallion frames live (AyahMarker reads them here);
-// populated by extracting the edition's ayah-marker ornament pack.
-const getMarkersDir = (version: MushafVersion): Directory => {
-  return new Directory(Paths.document, `quran/${version}/markers`);
+// Where a category's ornament pack lives (readers resolve slot files here,
+// falling back to the bundled nedaa art); populated by extracting the
+// edition's resolved ornament pack for that category.
+const ALL_ORNAMENT_CATEGORIES = Object.values(OrnamentCategory);
+
+const getOrnamentDir = (version: MushafVersion, category: OrnamentCategory): Directory => {
+  return new Directory(Paths.document, `quran/${version}/ornaments/${category}`);
 };
 
 // Dark-theme images live in a sibling directory so they can be downloaded and
@@ -321,55 +328,70 @@ const downloadAndExtractBundle = async (
   }
 };
 
-// Download + extract the edition's default ayah-marker frame pack into the markers
-// dir, when absent or out of date. Self-contained + non-fatal: any failure is
-// logged and swallowed so the caller's edition flow proceeds (just without markers).
-const ensureAyahMarkers = async (
+// Download + extract one category's resolved ornament pack into its dir, when
+// absent or out of date. Reads pack.json and pushes the parsed metadata into the
+// store. Self-contained + non-fatal — any failure leaves the bundled nedaa
+// fallback in place and the edition flow proceeds.
+const installOrnamentPack = async (
   active: ActiveDownload,
   version: MushafVersion,
-  manifestVersion: QuranManifestVersion
+  manifestVersion: QuranManifestVersion,
+  category: OrnamentCategory
 ): Promise<void> => {
+  const store = useQuranStore.getState();
   try {
-    const pack = await QuranManifestService.getAyahMarkerPack(manifestVersion);
-    if (!pack || active.cancelled) return;
-    const markersDir = getMarkersDir(version);
-    const haveFrames = new File(markersDir, "marker-sepia.png").exists;
-    if (haveFrames && readInstalled(version).markers === pack.version) return;
+    const userChoice = store.ornamentStyle[category];
+    const pack = await QuranManifestService.getOrnamentPack(category, manifestVersion, userChoice);
+    if (!pack || active.cancelled) return; // no CDN pack → bundled nedaa fallback
+    const dir = getOrnamentDir(version, category);
+    const installedKey = `ornament_${category}`;
+    // "Have it" probe: the dark slot of the category's first asset.
+    const probeAsset = Object.keys(BUNDLED_ORNAMENT_META[category].assets)[0] as OrnamentAsset;
+    const probeFile = new File(dir, ornamentSlotFileName(probeAsset, OrnamentSlot.DARK));
+    if (probeFile.exists && readInstalled(version)[installedKey] === pack.version) return;
 
     const outcome = await downloadAndExtractBundle(active, {
       url: pack.url,
       sizeBytes: 0,
-      dir: markersDir,
-      zipName: `quran-${version}-markers.zip`,
+      dir,
+      zipName: `quran-${version}-${category}.zip`,
       alreadyOnDisk: false,
       emit: () => {},
     });
-    if (outcome === BundleOutcome.EXTRACTED) {
-      writeInstalled(version, { markers: pack.version });
-      log.d("Download", `Installed ayah-marker pack ${pack.version} for ${version}`);
+    if (outcome !== BundleOutcome.EXTRACTED) return;
+
+    writeInstalled(version, { [installedKey]: pack.version });
+    const packJson = new File(dir, "pack.json");
+    if (packJson.exists) {
+      const meta = parseOrnamentPackJson(packJson.textSync());
+      if (meta) store.setOrnamentMeta(category, meta);
     }
+    log.d("Download", `Installed ${category} pack ${pack.version} for ${version}`);
   } catch (error) {
     log.e(
       "Download",
-      `Ayah-marker pack failed for ${version} (markers absent)`,
+      `Ornament pack ${category} failed for ${version}`,
       error instanceof Error ? error : undefined
     );
   }
 };
 
-// Opportunistic, idempotent marker fetch for an already-installed edition (the
+// Opportunistic, idempotent ornament fetch for an already-installed edition (the
 // edition download covers fresh installs; this catches editions installed before
-// the ornament pack existed, or a pack version bump). Cheap: no-ops once the
-// current pack is on disk. Runs in its own lightweight context (not a tracked
-// download) so it never shows progress chrome.
-const ensureMarkersInstalled = async (version: MushafVersion): Promise<void> => {
+// a pack existed, or a pack version bump). Cheap: no-ops once the current packs
+// are on disk. Runs in its own lightweight context (not a tracked download) so
+// it never shows progress chrome.
+const ensureOrnamentsInstalled = async (version: MushafVersion): Promise<void> => {
   const manifestVersion = await QuranManifestService.getVersionInfo(version);
   if (!manifestVersion) return;
-  await ensureAyahMarkers(
-    { controller: new AbortController(), cancelled: false, promise: Promise.resolve() },
-    version,
-    manifestVersion
-  );
+  const active: ActiveDownload = {
+    controller: new AbortController(),
+    cancelled: false,
+    promise: Promise.resolve(),
+  };
+  for (const category of ALL_ORNAMENT_CATEGORIES) {
+    await installOrnamentPack(active, version, manifestVersion, category);
+  }
 };
 
 const start = (version: MushafVersion): Promise<void> =>
@@ -488,10 +510,12 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
     }
     if (plan.needMeta) writeInstalled(version, { meta: manifestVersion.meta.version });
 
-    // 3) Ayah-marker ornament (tiny ~20KB): the edition's default medallion frames
-    // the reader overlays on each ayah. Fetched when missing or its version changed.
-    // Non-fatal — a failure leaves the edition usable (text/images), just no markers.
-    await ensureAyahMarkers(active, version, manifestVersion);
+    // 3) Ornament packs (tiny): the resolved ayah-marker/surah-frame/page-holder
+    // packs, installed as silent tail steps of this one download job — no second
+    // visible download. Non-fatal; failures fall back to the bundled nedaa art.
+    for (const category of ALL_ORNAMENT_CATEGORIES) {
+      await installOrnamentPack(active, version, manifestVersion, category);
+    }
 
     // Complete only once BOTH legs have landed.
     clearResume(version);
@@ -731,7 +755,7 @@ const checkDiskSpace = (requiredMB: number): { available: boolean; availableMB: 
 
 export const QuranDownload = {
   start,
-  ensureMarkersInstalled,
+  ensureOrnamentsInstalled,
   startDark,
   deleteDark,
   pause,
