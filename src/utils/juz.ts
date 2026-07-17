@@ -1,4 +1,5 @@
 import i18n from "@/localization/i18n";
+import { toArabicDigits } from "@/constants/Quran";
 import { formatNumberToLocale } from "@/utils/number";
 
 // Juz furniture for the reader, computed without a DB call. Juz boundaries are
@@ -53,6 +54,30 @@ export const juzForPage = (page: number): number => {
     juz = i + 1;
   }
   return juz;
+};
+
+// Rub number (1..240) → its hizb (1..60) and quarter position within it
+// (0 = hizb start, 1 = ¼, 2 = ½, 3 = ¾).
+export const rubForHizbQuarter = (rub: number): { hizb: number; quarter: 0 | 1 | 2 | 3 } => {
+  const hizb = Math.floor((rub - 1) / 4) + 1;
+  const quarter = ((rub - 1) % 4) as 0 | 1 | 2 | 3;
+  return { hizb, quarter };
+};
+
+// Reduced quarter fractions: ¼, ½, ¾ — a hizb start (quarter 0) shows no fraction.
+const QUARTER_FRACTION_AR = ["", "١/٤", "١/٢", "٣/٤"] as const;
+const QUARTER_FRACTION_LATIN = ["", "1/4", "1/2", "3/4"] as const;
+
+// Localized hizb-quarter label for the footer holder: «٣/٤ الحزب ١» in Arabic,
+// "3/4 Hizb 1" elsewhere; hizb starts show just the hizb.
+export const rubLabel = (rub: number): string => {
+  const { hizb, quarter } = rubForHizbQuarter(rub);
+  if (i18n.language === "ar") {
+    const h = `الحزب ${toArabicDigits(hizb)}`;
+    return quarter === 0 ? h : `${QUARTER_FRACTION_AR[quarter]} ${h}`;
+  }
+  const h = i18n.t("quran.goto.hizbLabel", { n: formatNumberToLocale(String(hizb)) });
+  return quarter === 0 ? h : `${QUARTER_FRACTION_LATIN[quarter]} ${h}`;
 };
 
 // Localized running-header juz label. Arabic keeps the mushaf-authentic ordinal

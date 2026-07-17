@@ -674,6 +674,18 @@ const getHizbStartPages = async (): Promise<{ division: number; page: number }[]
   );
 };
 
+// Start page of each rub (hizb quarter, 1..240) — drives the footer's
+// quarter-holder variant on boundary pages.
+const getRubStartPages = async (): Promise<{ division: number; page: number }[]> => {
+  const db = await openQuranDb();
+  return db.getAllAsync<{ division: number; page: number }>(
+    `SELECT d.rub AS division, MIN(a.page) AS page
+     FROM ayah_divisions d
+     JOIN ayahs a ON a.surah_number = d.surah AND a.ayah_number = d.ayah
+     GROUP BY d.rub ORDER BY d.rub`
+  );
+};
+
 // Full metadata for one ayah — powers the press-to-highlight info sheet.
 const getAyahMetadata = async (
   surahNumber: number,
@@ -870,5 +882,6 @@ export const QuranContentDB = {
   getAllSurahs,
   getJuzStartPages,
   getHizbStartPages,
+  getRubStartPages,
   getAyahMetadata,
 };

@@ -445,24 +445,28 @@ const QuranPage = ({
     BUNDLED_ORNAMENT_META[OrnamentCategory.SURAH_FRAME];
   const surahFrameAspect = surahFrameMeta.assets[OrnamentAsset.FRAME]?.aspect ?? 5.968;
 
-  // Surah-opening banners: a frame on each surah-header line. Width = 96% of the
-  // page (1038/1080), height = width ÷ the style's aspect (aspect preserved, not
-  // stretched) — centred on the header line.
+  // Surah-opening banners: a frame on each surah-header line. Full text-block
+  // width (edge to edge, like the printed band), height from the style's aspect,
+  // centred on the header line — with Y clamped inside the lines area so a
+  // clipped line slot (squarish screens, spreads) never pushes the frame up
+  // over the running header or past the last line.
   const surahFramePositions = useMemo(() => {
     if (lineHeight === 0) return [];
-    const bannerW = width * (1038 / 1080);
+    const base = isPageMode ? srcLineHeight * pageScaleX * pageScaleY : lineHeight;
+    const bannerW = width;
     const bannerH = bannerW / surahFrameAspect;
-    const x = (width - bannerW) / 2;
+    const maxY = Math.max(0, linesAreaHeight - bannerH);
     return Object.entries(surahHeaderLines).map(([lineStr, surahNumber]) => {
       const line = Number(lineStr);
-      const base = isPageMode ? srcLineHeight * pageScaleX * pageScaleY : lineHeight;
       const lineCenterY = (line - 1) * base + base / 2;
-      return { x, y: lineCenterY - bannerH / 2, width: bannerW, height: bannerH, surahNumber };
+      const y = Math.min(Math.max(lineCenterY - bannerH / 2, 0), maxY);
+      return { x: 0, y, width: bannerW, height: bannerH, surahNumber };
     });
   }, [
     surahHeaderLines,
     width,
     lineHeight,
+    linesAreaHeight,
     isPageMode,
     srcLineHeight,
     pageScaleX,
