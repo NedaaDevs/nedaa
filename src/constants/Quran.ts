@@ -7,6 +7,16 @@ import {
   QuranThemeType,
 } from "@/enums/quran";
 
+// Bundled offline ornament style family (never a downloadable pack).
+export const NEDAA_STYLE_ID = "nedaa";
+
+// pack.json metadata carried by every ornament pack (and mirrored for the
+// bundled defaults): per-asset aspect ratio plus, for frames, the text-safe
+// open panel (fractional box) guaranteed around the baked calligraphic name.
+export type OrnamentPanel = { l: number; t: number; r: number; b: number };
+export type OrnamentAssetMeta = { aspect: number; panel?: OrnamentPanel };
+export type OrnamentPackMeta = { version: string; assets: Record<string, OrnamentAssetMeta> };
+
 export const TOTAL_PAGES = 604;
 export const LINES_PER_PAGE = 15;
 export const IMAGE_SOURCE_WIDTH = 1440;

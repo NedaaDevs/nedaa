@@ -151,3 +151,35 @@ export const AutoScrollSpeed = {
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type AutoScrollSpeed = (typeof AutoScrollSpeed)[keyof typeof AutoScrollSpeed];
+
+// Ornament categories: each page ornament resolves its style (bundled nedaa
+// default, or a downloaded pack) independently per category.
+export const OrnamentCategory = {
+  AYAH_MARKER: "ayahMarker",
+  SURAH_FRAME: "surahFrame",
+  PAGE_HOLDER: "pageHolder",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type OrnamentCategory = (typeof OrnamentCategory)[keyof typeof OrnamentCategory];
+
+// Pre-tinted theme slots shipped inside every ornament pack; the app maps its
+// five reader themes onto the sepia (dark-ink) and dark (light-ink) slots.
+export const OrnamentSlot = {
+  LIGHT: "light",
+  SEPIA: "sepia",
+  DARK: "dark",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type OrnamentSlot = (typeof OrnamentSlot)[keyof typeof OrnamentSlot];
+
+// Logical asset stems inside a pack: file names are `<asset>-<slot>.png` and
+// pack.json metadata is keyed by the same stem.
+export const OrnamentAsset = {
+  FRAME: "frame", // surahFrame
+  MARKER: "marker", // ayahMarker
+  CARTOUCHE: "cartouche", // pageHolder, normal pages
+  QUARTER_LEFT: "quarter-left", // pageHolder hizb-quarter, narrow cell left
+  QUARTER_RIGHT: "quarter-right", // pageHolder hizb-quarter, narrow cell right
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type OrnamentAsset = (typeof OrnamentAsset)[keyof typeof OrnamentAsset];
