@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranThemeType } from "@/enums/quran";
-import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { ORNAMENT_INKS, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { headerJuzLabel } from "@/utils/juz";
+import { ornamentThemeSlot } from "@/utils/quranOrnaments";
 import { headerSurahLabel, metadataFontFamily } from "@/utils/surahName";
 
 interface PageHeaderProps {
@@ -30,6 +31,9 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const fontFamily = metadataFontFamily();
+  // Same ornament ink as the footer holders' digits, so top and bottom
+  // furniture read as one set.
+  const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
 
   const juzText = juz ? headerJuzLabel(juz) : "";
 
@@ -42,14 +46,14 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
       <View position="relative" justifyContent="center">
         {/* direction ltr pins physical sides under RTL locales. */}
         <XStack alignItems="center" justifyContent="space-between" style={{ direction: "ltr" }}>
-          <Text style={{ color: themeColors.headerColor, fontFamily }}>
+          <Text style={{ color: inkColor, fontFamily }}>
             {surahNumber != null
               ? headerSurahLabel(surahNumber)
               : surahName
                 ? `${t("quran.goto.surah")} ${surahName}`
                 : ""}
           </Text>
-          <Text style={{ color: themeColors.headerColor, fontFamily }}>{juzText}</Text>
+          <Text style={{ color: inkColor, fontFamily }}>{juzText}</Text>
         </XStack>
       </View>
       {/* Hairline rule under the header — dropped on tablets/foldables. */}

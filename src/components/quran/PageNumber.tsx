@@ -43,6 +43,11 @@ const QUARTER_NARROW_CENTER = 0.3;
 const QUARTER_WIDE_CENTER = 0.645;
 const QUARTER_LABEL_FONT_SIZE = 12;
 
+// Soft wash inside the holder's inner panel (fractions of the holder box).
+const FILL_ALPHA = "1F"; // ~12%
+const HOLDER_FILL = { w: 0.62, h: 0.6 };
+const QUARTER_FILL = { w: 0.72, h: 0.58 };
+
 // Final optical trim per platform, applied on top of the SVG centering below.
 // Positive y moves the digits down, positive x toward the right.
 const DIGIT_NUDGE = Platform.select({
@@ -112,6 +117,18 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
         <View
           style={{ width: qWidth, height: QUARTER_HEIGHT }}
           accessibilityLabel={t("a11y.quran.pageQuarter", { page, quarter: label })}>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              alignSelf: "center",
+              top: (QUARTER_HEIGHT * (1 - QUARTER_FILL.h)) / 2,
+              width: qWidth * QUARTER_FILL.w,
+              height: QUARTER_HEIGHT * QUARTER_FILL.h,
+              borderRadius: (QUARTER_HEIGHT * QUARTER_FILL.h) / 2,
+              backgroundColor: `${inkColor}${FILL_ALPHA}`,
+            }}
+          />
           <Image
             source={qSource}
             style={{ position: "absolute", width: qWidth, height: QUARTER_HEIGHT }}
@@ -151,6 +168,18 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
         <View
           style={{ width: holderWidth, height: HOLDER_HEIGHT }}
           accessibilityLabel={t("a11y.quran.page", { page })}>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              alignSelf: "center",
+              top: (HOLDER_HEIGHT * (1 - HOLDER_FILL.h)) / 2,
+              width: holderWidth * HOLDER_FILL.w,
+              height: HOLDER_HEIGHT * HOLDER_FILL.h,
+              borderRadius: (HOLDER_HEIGHT * HOLDER_FILL.h) / 2,
+              backgroundColor: `${inkColor}${FILL_ALPHA}`,
+            }}
+          />
           <Image
             source={source}
             style={{ position: "absolute", width: holderWidth, height: HOLDER_HEIGHT }}
