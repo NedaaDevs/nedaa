@@ -6,13 +6,17 @@ import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "
 import {
   BUNDLED_ORNAMENT_META,
   MARKER_ADJUSTMENTS,
-  NEDAA_STYLE_ID,
   ORNAMENT_INKS,
   QURAN_FONT_FAMILY,
   toHafsDigits,
 } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
-import { medallionBox, ornamentThemeSlot, resolveOrnamentImage } from "@/utils/quranOrnaments";
+import {
+  effectiveOrnamentStyle,
+  medallionBox,
+  ornamentThemeSlot,
+  resolveOrnamentImage,
+} from "@/utils/quranOrnaments";
 
 interface AyahMarkerProps {
   x: number;
@@ -38,8 +42,12 @@ const AyahMarker = ({
   bookmarkColor,
 }: AyahMarkerProps) => {
   const adjustments = MARKER_ADJUSTMENTS[version];
-  const markerStyle =
-    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.AYAH_MARKER]) ?? NEDAA_STYLE_ID;
+  const markerStyle = useQuranStore((s) =>
+    effectiveOrnamentStyle(
+      s.ornamentStyle[OrnamentCategory.AYAH_MARKER],
+      s.ornamentResolved[OrnamentCategory.AYAH_MARKER]?.[version]
+    )
+  );
   const markerMeta =
     useQuranStore((s) => s.ornamentMeta[OrnamentCategory.AYAH_MARKER]) ??
     BUNDLED_ORNAMENT_META[OrnamentCategory.AYAH_MARKER];

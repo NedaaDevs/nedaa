@@ -264,8 +264,11 @@ export type QuranState = {
   // Persisted — personal memory note per mutashabihat group, keyed by group id.
   mutashabihatNotes: Record<string, string>;
   // Per-category ornament style chosen by the user (absent = resolve via the
-  // manifest chain), and the installed pack's parsed pack.json metadata.
+  // manifest chain), the manifest-resolved style per category+edition (written
+  // at install time so synchronous renderers see edition defaults), and the
+  // installed pack's parsed pack.json metadata.
   ornamentStyle: Partial<Record<OrnamentCategory, string>>;
+  ornamentResolved: Partial<Record<OrnamentCategory, Partial<Record<MushafVersion, string>>>>;
   ornamentMeta: Partial<Record<OrnamentCategory, OrnamentPackMeta>>;
   // Persisted — whether the first-open reader walkthrough has been seen.
   hasSeenQuranGuide: boolean;
@@ -301,6 +304,11 @@ export type QuranState = {
   setQuranGuideSeen: () => void;
   setOrnamentStyle: (category: OrnamentCategory, styleId: string) => void;
   clearOrnamentStyle: (category: OrnamentCategory) => void;
+  setOrnamentResolved: (
+    category: OrnamentCategory,
+    version: MushafVersion,
+    styleId: string
+  ) => void;
   setOrnamentMeta: (category: OrnamentCategory, meta: OrnamentPackMeta) => void;
   updateDownloadState: (version: MushafVersion, state: Partial<VersionDownloadState>) => void;
   updateDarkDownloadState: (version: MushafVersion, state: Partial<BundleDownloadState>) => void;

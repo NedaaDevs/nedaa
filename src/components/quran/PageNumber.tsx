@@ -7,14 +7,17 @@ import { Text } from "@/components/ui/text";
 import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "@/enums/quran";
 import {
   BUNDLED_ORNAMENT_META,
-  NEDAA_STYLE_ID,
   ORNAMENT_INKS,
   QURAN_FONT_FAMILY,
   QURAN_THEME_COLORS,
   toHafsDigits,
 } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
-import { ornamentThemeSlot, resolveOrnamentImage } from "@/utils/quranOrnaments";
+import {
+  effectiveOrnamentStyle,
+  ornamentThemeSlot,
+  resolveOrnamentImage,
+} from "@/utils/quranOrnaments";
 
 interface PageNumberProps {
   page: number;
@@ -42,8 +45,12 @@ const PageNumber = ({ page, quranTheme, version }: PageNumberProps) => {
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
-  const holderStyle =
-    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.PAGE_HOLDER]) ?? NEDAA_STYLE_ID;
+  const holderStyle = useQuranStore((s) =>
+    effectiveOrnamentStyle(
+      s.ornamentStyle[OrnamentCategory.PAGE_HOLDER],
+      s.ornamentResolved[OrnamentCategory.PAGE_HOLDER]?.[version]
+    )
+  );
   const holderMeta =
     useQuranStore((s) => s.ornamentMeta[OrnamentCategory.PAGE_HOLDER]) ??
     BUNDLED_ORNAMENT_META[OrnamentCategory.PAGE_HOLDER];

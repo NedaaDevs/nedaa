@@ -12,13 +12,9 @@ import {
   QuranThemeType,
   ReadAlongGranularity,
 } from "@/enums/quran";
-import {
-  BUNDLED_ORNAMENT_META,
-  NEDAA_STYLE_ID,
-  QURAN_THEME_COLORS,
-  QURAN_TEXT_FONT,
-} from "@/constants/Quran";
+import { BUNDLED_ORNAMENT_META, QURAN_THEME_COLORS, QURAN_TEXT_FONT } from "@/constants/Quran";
 import SurahFrame from "@/components/quran/SurahFrame";
+import { effectiveOrnamentStyle } from "@/utils/quranOrnaments";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHighlightStore } from "@/stores/quranHighlights";
@@ -70,8 +66,12 @@ const TextPage = ({
   // Surah-opening ornament frame: TEXT pages have no baked calligraphy, so the
   // localized name renders inside the frame's text-safe panel.
   const currentVersion = useQuranStore((s) => s.currentVersion);
-  const surahFrameStyle =
-    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.SURAH_FRAME]) ?? NEDAA_STYLE_ID;
+  const surahFrameStyle = useQuranStore((s) =>
+    effectiveOrnamentStyle(
+      s.ornamentStyle[OrnamentCategory.SURAH_FRAME],
+      s.ornamentResolved[OrnamentCategory.SURAH_FRAME]?.[s.currentVersion]
+    )
+  );
   const surahFrameMeta =
     useQuranStore((s) => s.ornamentMeta[OrnamentCategory.SURAH_FRAME]) ??
     BUNDLED_ORNAMENT_META[OrnamentCategory.SURAH_FRAME];

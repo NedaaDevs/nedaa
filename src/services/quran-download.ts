@@ -343,6 +343,9 @@ const installOrnamentPack = async (
     const userChoice = store.ornamentStyle[category];
     const pack = await QuranManifestService.getOrnamentPack(category, manifestVersion, userChoice);
     if (!pack || active.cancelled) return; // no CDN pack → bundled nedaa fallback
+    // Record the manifest-resolved style so synchronous renderers pick this
+    // edition's pack (not the bundled default) once its files are on disk.
+    store.setOrnamentResolved(category, version, pack.styleId);
     const dir = getOrnamentDir(version, category);
     const installedKey = `ornament_${category}`;
     // "Have it" probe: the dark slot of the category's first asset.

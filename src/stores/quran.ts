@@ -66,6 +66,7 @@ export const useQuranStore = create<QuranState>()(
       mutashabihatNotes: {},
       hasSeenQuranGuide: false,
       ornamentStyle: {},
+      ornamentResolved: {},
       ornamentMeta: {},
 
       setReaderActive: (active) => set({ readerActive: active }),
@@ -97,6 +98,13 @@ export const useQuranStore = create<QuranState>()(
           delete next[category];
           return { ornamentStyle: next };
         }),
+      setOrnamentResolved: (category, version, styleId) =>
+        set((prev) => ({
+          ornamentResolved: {
+            ...prev.ornamentResolved,
+            [category]: { ...prev.ornamentResolved[category], [version]: styleId },
+          },
+        })),
       setOrnamentMeta: (category, meta) =>
         set((prev) => ({ ornamentMeta: { ...prev.ornamentMeta, [category]: meta } })),
       setCurrentPage: (page) => set({ currentPage: page, lastReadPage: page }),
@@ -231,6 +239,7 @@ export const useQuranStore = create<QuranState>()(
         mutashabihatNotes: state.mutashabihatNotes,
         hasSeenQuranGuide: state.hasSeenQuranGuide,
         ornamentStyle: state.ornamentStyle,
+        ornamentResolved: state.ornamentResolved,
         ornamentMeta: state.ornamentMeta,
         onboardingComplete: state.onboardingComplete,
         selectedVersion: state.selectedVersion,
@@ -313,6 +322,9 @@ export const useQuranStore = create<QuranState>()(
         }
         if (!merged.ornamentStyle || typeof merged.ornamentStyle !== "object") {
           merged.ornamentStyle = {};
+        }
+        if (!merged.ornamentResolved || typeof merged.ornamentResolved !== "object") {
+          merged.ornamentResolved = {};
         }
         if (!merged.ornamentMeta || typeof merged.ornamentMeta !== "object") {
           merged.ornamentMeta = {};

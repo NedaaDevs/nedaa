@@ -27,9 +27,9 @@ import {
   highlightTint,
   BOOKMARK_COLORS,
   BUNDLED_ORNAMENT_META,
-  NEDAA_STYLE_ID,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
+import { effectiveOrnamentStyle } from "@/utils/quranOrnaments";
 import { usePageData } from "@/hooks/usePageData";
 import { useAyahSelection } from "@/hooks/useAyahSelection";
 import { useHighlightStore } from "@/stores/quranHighlights";
@@ -438,8 +438,12 @@ const QuranPage = ({
 
   // Active surah-frame style + its pack metadata (installed pack overrides the
   // bundled nedaa values); the frame's aspect comes from that metadata.
-  const surahFrameStyle =
-    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.SURAH_FRAME]) ?? NEDAA_STYLE_ID;
+  const surahFrameStyle = useQuranStore((s) =>
+    effectiveOrnamentStyle(
+      s.ornamentStyle[OrnamentCategory.SURAH_FRAME],
+      s.ornamentResolved[OrnamentCategory.SURAH_FRAME]?.[version]
+    )
+  );
   const surahFrameMeta =
     useQuranStore((s) => s.ornamentMeta[OrnamentCategory.SURAH_FRAME]) ??
     BUNDLED_ORNAMENT_META[OrnamentCategory.SURAH_FRAME];

@@ -31,6 +31,13 @@ export const bundledOrnamentModule = (
 export const ornamentSlotFileName = (asset: OrnamentAsset, slot: OrnamentSlot): string =>
   `${asset}-${slot}.png`;
 
+// The style a renderer should draw for a category + edition:
+// user choice → manifest-resolved (written at pack install) → bundled nedaa.
+export const effectiveOrnamentStyle = (
+  userChoice: string | undefined,
+  resolved: string | undefined
+): string => userChoice ?? resolved ?? NEDAA_STYLE_ID;
+
 // Render-time image source for a category's asset: the installed pack's doc-dir
 // file for a non-nedaa style, else the bundled nedaa module. A missing doc-dir
 // file renders as nothing (ornaments are decorative; ensureOrnamentsInstalled
