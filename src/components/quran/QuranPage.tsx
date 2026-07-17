@@ -27,6 +27,7 @@ import {
   highlightTint,
   BOOKMARK_COLORS,
   BUNDLED_ORNAMENT_META,
+  SURAH_FRAME_ADJUSTMENTS,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { effectiveOrnamentStyle } from "@/utils/quranOrnaments";
@@ -458,14 +459,17 @@ const QuranPage = ({
   const surahFramePositions = useMemo(() => {
     if (lineHeight === 0) return [];
     const base = isPageMode ? srcLineHeight * pageScaleX * pageScaleY : lineHeight;
-    const bannerW = width;
+    const adj = SURAH_FRAME_ADJUSTMENTS[surahFrameStyle] ?? { offsetY: 0, scale: 1 };
+    const bannerW = width * adj.scale;
     const bannerH = bannerW / surahFrameAspect;
+    const x = (width - bannerW) / 2;
     const maxY = Math.max(0, linesAreaHeight - bannerH);
     return Object.entries(surahHeaderLines).map(([lineStr, surahNumber]) => {
       const line = Number(lineStr);
       const lineCenterY = (line - 1) * base + base / 2;
-      const y = Math.min(Math.max(lineCenterY - bannerH / 2, 0), maxY);
-      return { x: 0, y, width: bannerW, height: bannerH, surahNumber };
+      const idealY = lineCenterY - bannerH / 2 + adj.offsetY * base;
+      const y = Math.min(Math.max(idealY, 0), maxY);
+      return { x, y, width: bannerW, height: bannerH, surahNumber };
     });
   }, [
     surahHeaderLines,
@@ -477,6 +481,7 @@ const QuranPage = ({
     pageScaleX,
     pageScaleY,
     surahFrameAspect,
+    surahFrameStyle,
   ]);
 
   // Similar-verse markers ("huffaz mode", off by default): a small dot above the

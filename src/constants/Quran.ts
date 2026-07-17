@@ -167,6 +167,17 @@ export const MARKER_ADJUSTMENTS: Record<
   [MushafVersion.V4]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
 } as const;
 
+// Per-style surah-frame placement trims: each edition bakes its calligraphic
+// name at a slightly different spot in the header line, so the active frame
+// style nudges to wrap it. offsetY = fraction of the line slot (positive =
+// down); scale multiplies the banner size around its center.
+export const SURAH_FRAME_ADJUSTMENTS: Record<string, { offsetY: number; scale: number }> = {
+  [NEDAA_STYLE_ID]: { offsetY: 0, scale: 1 },
+  [MushafVersion.V1]: { offsetY: 0.12, scale: 1 },
+  [MushafVersion.V2]: { offsetY: 0, scale: 1 },
+  [MushafVersion.V4]: { offsetY: 0, scale: 1 },
+};
+
 // Bundled `nedaa` ornament art: the offline baseline every category falls back
 // to when no pack is installed. Keyed category → asset stem → theme slot.
 export const BUNDLED_ORNAMENTS: Record<
