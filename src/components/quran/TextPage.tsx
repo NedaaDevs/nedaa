@@ -282,7 +282,7 @@ const TextPage = ({
       <YStack width={width} style={{ backgroundColor: themeColors.background }}>
         <PageHeader surahName={surahName} juz={juz} quranTheme={quranTheme} />
         <View style={[styles.column, styles.flowContent]}>{renderContent()}</View>
-        <PageNumber page={page} quranTheme={quranTheme} />
+        <PageNumber page={page} quranTheme={quranTheme} version={currentVersion} />
       </YStack>
     );
   }
@@ -303,7 +303,7 @@ const TextPage = ({
         <View style={styles.column}>{renderContent()}</View>
       </ScrollView>
 
-      <PageNumber page={page} quranTheme={quranTheme} />
+      <PageNumber page={page} quranTheme={quranTheme} version={currentVersion} />
     </YStack>
   );
 };

@@ -669,7 +669,7 @@ const QuranPage = ({
         </GestureDetector>
       </View>
 
-      <PageNumber page={page} quranTheme={quranTheme} />
+      <PageNumber page={page} quranTheme={quranTheme} version={version} />
     </YStack>
   );
 };
