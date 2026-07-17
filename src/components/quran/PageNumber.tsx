@@ -1,4 +1,4 @@
-import { Image } from "react-native";
+import { Image, Platform } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -24,6 +24,15 @@ interface PageNumberProps {
 
 // Height of the footer cartouche; the digits sit centered inside its open panel.
 const HOLDER_HEIGHT = 24;
+
+// Optical centering nudge for the digits, per platform: text boxes center
+// differently on iOS/Android for the Hafs font's tall metrics. Positive y moves
+// the digits down, positive x moves them toward the trailing edge.
+const DIGIT_NUDGE = Platform.select({
+  ios: { x: 0, y: 0 },
+  android: { x: 0, y: 0 },
+  default: { x: 0, y: 0 },
+}) as { x: number; y: number };
 
 // Page number over the page-holder cartouche. Falls back to ornate parentheses
 // (U+FD3F/U+FD3E, code order = RTL reading order → ﴾ N ﴿) when no holder art
@@ -69,14 +78,13 @@ const PageNumber = ({ page, quranTheme, version }: PageNumberProps) => {
             style={{
               color: inkColor,
               fontFamily: QURAN_FONT_FAMILY,
-              writingDirection: "rtl",
               fontSize: 17,
-              // Center the glyphs optically in the holder: no Android font-box
-              // padding, and the line box spans the holder so the baseline sits
-              // mid-panel rather than hanging from the text box's top.
+              // Container-centered like AyahMarker's digits (no lineHeight —
+              // iOS and Android disagree on baseline placement inside a line
+              // box); DIGIT_NUDGE absorbs the residual per-platform offset.
               includeFontPadding: false,
-              lineHeight: HOLDER_HEIGHT,
               textAlign: "center",
+              transform: [{ translateX: DIGIT_NUDGE.x }, { translateY: DIGIT_NUDGE.y }],
             }}
             accessibilityLabel={t("a11y.quran.page", { page })}>
             {toHafsDigits(page)}
