@@ -1,10 +1,14 @@
 import { useMemo } from "react";
 import { Image, Text, View } from "react-native";
 
-import { OrnamentPanel } from "@/constants/Quran";
+import { ORNAMENT_INKS, OrnamentPanel } from "@/constants/Quran";
 import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "@/enums/quran";
-import { resolveOrnamentImage } from "@/utils/quranOrnaments";
+import { ornamentThemeSlot, resolveOrnamentImage } from "@/utils/quranOrnaments";
 import { metadataFontFamily, SURAH_NAME_LIGATURE_FONT, surahNameLigature } from "@/utils/surahName";
+
+// Soft wash inside the frame's text-safe panel (skipped when the style carries
+// no panel metadata). Opacity as a hex suffix (~12%).
+const FILL_ALPHA = "1F";
 
 interface SurahFrameProps {
   x: number;
@@ -52,8 +56,24 @@ const SurahFrame = ({
   // Arabic-script locales render the calligraphic vocalized name glyph, like
   // the baked band on MADINAH pages; Latin locales keep the transliteration.
   const ligature = label ? surahNameLigature(surahNumber) : null;
+  const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
+  const panelH = panel ? height * (panel.b - panel.t) : 0;
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: x, top: y, width, height }}>
+      {panel ? (
+        // panel l/t are start fractions and r/b END fractions (r > l, b > t).
+        <View
+          style={{
+            position: "absolute",
+            left: width * panel.l,
+            top: height * panel.t,
+            width: width * (panel.r - panel.l),
+            height: panelH,
+            borderRadius: panelH * 0.25,
+            backgroundColor: `${inkColor}${FILL_ALPHA}`,
+          }}
+        />
+      ) : null}
       <Image source={source} style={{ width, height }} resizeMode="contain" fadeDuration={0} />
       {label ? (
         // panel l/t are start fractions and r/b END fractions (r > l, b > t),

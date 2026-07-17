@@ -532,6 +532,7 @@ const QuranPage = ({
                   version={version}
                   quranTheme={quranTheme}
                   styleId={surahFrameStyle}
+                  panel={surahFrameMeta.assets[OrnamentAsset.FRAME]?.panel}
                 />
               ))}
             {lineHeight > 0 && ready && isPageMode && (
