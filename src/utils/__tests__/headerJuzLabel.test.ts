@@ -26,7 +26,9 @@ describe("headerJuzLabel (ar)", () => {
   beforeAll(async () => {
     await i18n.changeLanguage("ar");
   });
-  it("keeps the Arabic ordinal form", () => {
-    expect(headerJuzLabel(1)).toBe("الجزء الأول");
+  it("uses the vocalized print form", () => {
+    expect(headerJuzLabel(1)).toBe("الجُزْءُ الأَوَّلُ");
+    expect(headerJuzLabel(15)).toBe("الجُزْءُ الخَامِسَ عَشَرَ");
+    expect(headerJuzLabel(30)).toBe("الجُزْءُ الثَّلَاثُونَ");
   });
 });

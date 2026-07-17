@@ -92,8 +92,47 @@ export const juzLabel = (juz: number): string => {
     : "";
 };
 
-// Running-header variant of juzLabel with its own English wording.
+// Vocalized ordinals for the running header, following the Madinah print
+// («الجُزْءُ الأَوَّلُ»; compounds 11–19 built on fath). User-reviewed list.
+const JUZ_ORDINALS_VOCALIZED = [
+  "الأَوَّلُ",
+  "الثَّانِي",
+  "الثَّالِثُ",
+  "الرَّابِعُ",
+  "الخَامِسُ",
+  "السَّادِسُ",
+  "السَّابِعُ",
+  "الثَّامِنُ",
+  "التَّاسِعُ",
+  "العَاشِرُ",
+  "الحَادِيَ عَشَرَ",
+  "الثَّانِيَ عَشَرَ",
+  "الثَّالِثَ عَشَرَ",
+  "الرَّابِعَ عَشَرَ",
+  "الخَامِسَ عَشَرَ",
+  "السَّادِسَ عَشَرَ",
+  "السَّابِعَ عَشَرَ",
+  "الثَّامِنَ عَشَرَ",
+  "التَّاسِعَ عَشَرَ",
+  "العِشْرُونَ",
+  "الحَادِي وَالعِشْرُونَ",
+  "الثَّانِي وَالعِشْرُونَ",
+  "الثَّالِثُ وَالعِشْرُونَ",
+  "الرَّابِعُ وَالعِشْرُونَ",
+  "الخَامِسُ وَالعِشْرُونَ",
+  "السَّادِسُ وَالعِشْرُونَ",
+  "السَّابِعُ وَالعِشْرُونَ",
+  "الثَّامِنُ وَالعِشْرُونَ",
+  "التَّاسِعُ وَالعِشْرُونَ",
+  "الثَّلَاثُونَ",
+] as const;
+
+// Running-header variant of juzLabel: vocalized Arabic, English "Part" wording.
 export const headerJuzLabel = (juz: number): string => {
+  if (i18n.language === "ar") {
+    const ordinal = JUZ_ORDINALS_VOCALIZED[juz - 1];
+    return ordinal ? `الجُزْءُ ${ordinal}` : "";
+  }
   if (i18n.language === "en") {
     return juz >= 1 && juz <= 30 ? i18n.t("quran.header.partLabel", { n: juz }) : "";
   }
