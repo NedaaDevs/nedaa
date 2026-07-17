@@ -91,3 +91,11 @@ export const juzLabel = (juz: number): string => {
     ? i18n.t("quran.goto.juzLabel", { n: formatNumberToLocale(String(juz)) })
     : "";
 };
+
+// Running-header variant of juzLabel with its own English wording.
+export const headerJuzLabel = (juz: number): string => {
+  if (i18n.language === "en") {
+    return juz >= 1 && juz <= 30 ? i18n.t("quran.header.partLabel", { n: juz }) : "";
+  }
+  return juzLabel(juz);
+};
