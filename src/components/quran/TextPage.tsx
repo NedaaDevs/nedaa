@@ -4,8 +4,21 @@ import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
-import { BookmarkColor, HighlightColor, QuranThemeType, ReadAlongGranularity } from "@/enums/quran";
-import { QURAN_THEME_COLORS, QURAN_TEXT_FONT } from "@/constants/Quran";
+import {
+  BookmarkColor,
+  HighlightColor,
+  OrnamentAsset,
+  OrnamentCategory,
+  QuranThemeType,
+  ReadAlongGranularity,
+} from "@/enums/quran";
+import {
+  BUNDLED_ORNAMENT_META,
+  NEDAA_STYLE_ID,
+  QURAN_THEME_COLORS,
+  QURAN_TEXT_FONT,
+} from "@/constants/Quran";
+import SurahFrame from "@/components/quran/SurahFrame";
 import { AyahTextData } from "@/types/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHighlightStore } from "@/stores/quranHighlights";
@@ -54,6 +67,17 @@ const TextPage = ({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
+  // Surah-opening ornament frame: TEXT pages have no baked calligraphy, so the
+  // localized name renders inside the frame's text-safe panel.
+  const currentVersion = useQuranStore((s) => s.currentVersion);
+  const surahFrameStyle =
+    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.SURAH_FRAME]) ?? NEDAA_STYLE_ID;
+  const surahFrameMeta =
+    useQuranStore((s) => s.ornamentMeta[OrnamentCategory.SURAH_FRAME]) ??
+    BUNDLED_ORNAMENT_META[OrnamentCategory.SURAH_FRAME];
+  const surahFrameAssetMeta = surahFrameMeta.assets[OrnamentAsset.FRAME];
+  const surahFrameW = width * 0.92;
+  const surahFrameH = surahFrameW / (surahFrameAssetMeta?.aspect ?? 5.968);
   const [ayahs, setAyahs] = useState<AyahTextData[]>([]);
   const [surahName, setSurahName] = useState("");
   const [juz, setJuz] = useState(1);
@@ -170,18 +194,24 @@ const TextPage = ({
             delayLongPress={400}
             accessibilityRole="header"
             accessibilityHint={t("a11y.quran.surahInfo")}>
-            <Text
-              style={[
-                styles.surahHeaderText,
-                {
-                  color: themeColors.headerColor,
-                  fontSize: fontSize * 0.9,
-                  fontFamily: metadataFontFamily(),
-                },
-              ]}
-              accessibilityRole="header">
-              {t("quran.goto.surah")} {localizedSurahName(surah)}
-            </Text>
+            <View
+              style={{ width: surahFrameW, height: surahFrameH }}
+              accessibilityRole="header"
+              accessibilityLabel={`${t("quran.goto.surah")} ${localizedSurahName(surah)}`}>
+              <SurahFrame
+                x={0}
+                y={0}
+                width={surahFrameW}
+                height={surahFrameH}
+                surahNumber={surah}
+                version={currentVersion}
+                quranTheme={quranTheme}
+                styleId={surahFrameStyle}
+                label={`${t("quran.goto.surah")} ${localizedSurahName(surah)}`}
+                panel={surahFrameAssetMeta?.panel}
+                labelColor={themeColors.headerColor}
+              />
+            </View>
             {!NO_BASMALA_SURAHS.includes(surah) && (
               <Text
                 style={[
