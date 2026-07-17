@@ -103,6 +103,7 @@
   "a11y.quran.listen.stop": "بند کریں",
   "a11y.quran.listen.timer": "سلیپ ٹائمر",
   "a11y.quran.page": "صفحہ {{page}}",
+  "a11y.quran.pageQuarter": "صفحہ {{page}}، {{quarter}}",
   "a11y.quran.pageInfo": "صفحہ {{page}}، سورۃ {{surah}}، پارہ {{juz}}",
   "a11y.quran.pauseDownload": "ڈاؤن لوڈ روکیں",
   "a11y.quran.readAlong": "ساتھ ساتھ تلاوت نمایاں کاری کو ٹوگل کریں",

@@ -17,18 +17,31 @@ import { useQuranStore } from "@/stores/quran";
 import {
   effectiveOrnamentStyle,
   ornamentThemeSlot,
+  pageLeafSide,
+  quarterHolderAsset,
   resolveOrnamentImage,
 } from "@/utils/quranOrnaments";
+import { rubLabel } from "@/utils/juz";
 
 interface PageNumberProps {
   page: number;
   quranTheme: QuranThemeType;
   version: MushafVersion;
+  // Rub (hizb quarter) starting on this page — switches the footer to the
+  // two-cell quarter holder. Null/absent = normal cartouche.
+  rubStart?: number | null;
+  side?: "left" | "right" | "single";
 }
 
 // Height of the footer cartouche; the digits sit centered inside its open panel.
 const HOLDER_HEIGHT = 24;
 const DIGIT_FONT_SIZE = 17;
+// Quarter holder: taller band, two cells. Cell x-centers as width fractions of
+// the narrow-left art (mirrored for narrow-right).
+const QUARTER_HEIGHT = 28;
+const QUARTER_NARROW_CENTER = 0.3;
+const QUARTER_WIDE_CENTER = 0.645;
+const QUARTER_LABEL_FONT_SIZE = 12;
 
 // Final optical trim per platform, applied on top of the SVG centering below.
 // Positive y moves the digits down, positive x toward the right.
@@ -45,7 +58,7 @@ const DIGIT_NUDGE = Platform.select({
 // back to ornate parentheses (U+FD3F/U+FD3E, code order = RTL reading order →
 // ﴾ N ﴿) when no holder art resolves. Bottom padding clears the home-indicator
 // / swipe-to-close strip.
-const PageNumber = ({ page, quranTheme, version }: PageNumberProps) => {
+const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
@@ -71,6 +84,66 @@ const PageNumber = ({ page, quranTheme, version }: PageNumberProps) => {
   );
   // Digits match the holder's pre-tinted ink, not the theme token.
   const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
+
+  // Rub-boundary pages replace the cartouche with the two-cell quarter holder,
+  // side-anchored toward the page's outer edge.
+  const leaf = pageLeafSide(page, side);
+  const quarterAsset = quarterHolderAsset(leaf);
+  const quarterMeta = holderMeta.assets[quarterAsset];
+  if (rubStart != null && quarterMeta) {
+    const qWidth = QUARTER_HEIGHT * quarterMeta.aspect;
+    const qSource = resolveOrnamentImage(
+      OrnamentCategory.PAGE_HOLDER,
+      quarterAsset,
+      quranTheme,
+      version,
+      holderStyle
+    );
+    // Narrow (page-number) cell sits toward the outer edge per the art file.
+    const narrowX = leaf === "right" ? 1 - QUARTER_NARROW_CENTER : QUARTER_NARROW_CENTER;
+    const wideX = leaf === "right" ? 1 - QUARTER_WIDE_CENTER : QUARTER_WIDE_CENTER;
+    const label = rubLabel(rubStart);
+    return (
+      <YStack
+        alignItems={leaf === "right" ? "flex-end" : "flex-start"}
+        paddingTop="$2"
+        paddingHorizontal="$4"
+        style={{ paddingBottom: insets.bottom }}>
+        <View
+          style={{ width: qWidth, height: QUARTER_HEIGHT }}
+          accessibilityLabel={t("a11y.quran.pageQuarter", { page, quarter: label })}>
+          <Image
+            source={qSource}
+            style={{ position: "absolute", width: qWidth, height: QUARTER_HEIGHT }}
+            resizeMode="contain"
+            fadeDuration={0}
+          />
+          <Svg width={qWidth} height={QUARTER_HEIGHT}>
+            <SvgText
+              x={qWidth * narrowX + DIGIT_NUDGE.x}
+              y={QUARTER_HEIGHT / 2 + DIGIT_NUDGE.y}
+              fontFamily={QURAN_FONT_FAMILY}
+              fontSize={DIGIT_FONT_SIZE * 0.85}
+              fill={inkColor}
+              textAnchor="middle"
+              alignmentBaseline="central">
+              {toHafsDigits(page)}
+            </SvgText>
+            <SvgText
+              x={qWidth * wideX + DIGIT_NUDGE.x}
+              y={QUARTER_HEIGHT / 2 + DIGIT_NUDGE.y}
+              fontFamily={QURAN_FONT_FAMILY}
+              fontSize={QUARTER_LABEL_FONT_SIZE}
+              fill={inkColor}
+              textAnchor="middle"
+              alignmentBaseline="central">
+              {label}
+            </SvgText>
+          </Svg>
+        </View>
+      </YStack>
+    );
+  }
 
   return (
     <YStack alignItems="center" paddingTop="$2" style={{ paddingBottom: insets.bottom }}>

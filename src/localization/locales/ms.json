@@ -103,6 +103,7 @@
   "a11y.quran.listen.stop": "Henti",
   "a11y.quran.listen.timer": "Pemasa tidur",
   "a11y.quran.page": "Halaman {{page}}",
+  "a11y.quran.pageQuarter": "Halaman {{page}}, {{quarter}}",
   "a11y.quran.pageInfo": "Halaman {{page}}, Surah {{surah}}, Juzuk {{juz}}",
   "a11y.quran.pauseDownload": "Jeda muat turun",
   "a11y.quran.readAlong": "Togol sorotan bacaan bersama",

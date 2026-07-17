@@ -131,6 +131,7 @@ const QuranPage = ({
     isPageMode,
     surahHeaderLines,
     juz,
+    rubStart,
     glyphBounds,
     sourcePageHeight,
     pageDataLoaded,
@@ -677,7 +678,13 @@ const QuranPage = ({
         </GestureDetector>
       </View>
 
-      <PageNumber page={page} quranTheme={quranTheme} version={version} />
+      <PageNumber
+        page={page}
+        quranTheme={quranTheme}
+        version={version}
+        rubStart={rubStart}
+        side={side}
+      />
     </YStack>
   );
 };
