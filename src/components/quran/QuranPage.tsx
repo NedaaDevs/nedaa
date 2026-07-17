@@ -450,38 +450,53 @@ const QuranPage = ({
   const surahFrameMeta =
     useQuranStore((s) => s.ornamentMeta[OrnamentCategory.SURAH_FRAME]) ??
     BUNDLED_ORNAMENT_META[OrnamentCategory.SURAH_FRAME];
-  const surahFrameAspect = surahFrameMeta.assets[OrnamentAsset.FRAME]?.aspect ?? 5.968;
 
   // Surah-opening banners: a frame on each surah-header line. Full text-block
   // width (edge to edge, like the printed band), height from the style's aspect,
   // centred on the header line — with Y clamped inside the lines area so a
   // clipped line slot (squarish screens, spreads) never pushes the frame up
   // over the running header or past the last line.
+  // The band must land exactly where the line image's baked name lands, so it
+  // uses the SAME mapping the image does: LINE mode = cover (scale by the
+  // larger ratio, center the overflow), PAGE mode = width-fit + scaleY. Each
+  // frame is clipped to its line slot, mirroring the image's own clipping.
   const surahFramePositions = useMemo(() => {
     if (lineHeight === 0) return [];
     const base = isPageMode ? srcLineHeight * pageScaleX * pageScaleY : lineHeight;
     const adj = SURAH_FRAME_ADJUSTMENTS[surahFrameStyle]?.[version] ?? SURAH_FRAME_NO_ADJUSTMENT;
-    const bannerW = width * adj.scale;
-    const bannerH = bannerW / surahFrameAspect;
-    const x = (width - bannerW) / 2;
-    const maxY = Math.max(0, linesAreaHeight - bannerH);
+    let bannerW: number;
+    let bannerH: number;
+    if (isPageMode) {
+      bannerW = width;
+      bannerH = IMAGE_SOURCE_LINE_HEIGHT * pageScaleX * pageScaleY;
+    } else {
+      const coverRatio = Math.max(coverScale, lineHeight / IMAGE_SOURCE_LINE_HEIGHT);
+      bannerW = IMAGE_SOURCE_WIDTH * coverRatio;
+      bannerH = IMAGE_SOURCE_LINE_HEIGHT * coverRatio;
+    }
+    bannerW *= adj.scale;
+    bannerH *= adj.scale;
     return Object.entries(surahHeaderLines).map(([lineStr, surahNumber]) => {
       const line = Number(lineStr);
-      const lineCenterY = (line - 1) * base + base / 2;
-      const idealY = lineCenterY - bannerH / 2 + adj.offsetY * bannerH;
-      const y = Math.min(Math.max(idealY, 0), maxY);
-      return { x, y, width: bannerW, height: bannerH, surahNumber };
+      return {
+        slotY: (line - 1) * base,
+        slotHeight: base,
+        x: (width - bannerW) / 2,
+        y: (base - bannerH) / 2 + adj.offsetY * bannerH,
+        width: bannerW,
+        height: bannerH,
+        surahNumber,
+      };
     });
   }, [
     surahHeaderLines,
     width,
     lineHeight,
-    linesAreaHeight,
+    coverScale,
     isPageMode,
     srcLineHeight,
     pageScaleX,
     pageScaleY,
-    surahFrameAspect,
     surahFrameStyle,
     version,
   ]);
@@ -526,21 +541,33 @@ const QuranPage = ({
             }}
             onPress={handlePress}>
             {/* Surah-frame UNDERLAY: drawn before the page/line images so the
-                baked calligraphic name composites on top of the open panel. */}
+                baked calligraphic name composites on top of the open panel.
+                Clipped to the line slot, exactly like the line image itself. */}
             {ready &&
               surahFramePositions.map((s, i) => (
-                <SurahFrame
+                <View
                   key={`surah-${i}`}
-                  x={s.x}
-                  y={s.y}
-                  width={s.width}
-                  height={s.height}
-                  surahNumber={s.surahNumber}
-                  version={version}
-                  quranTheme={quranTheme}
-                  styleId={surahFrameStyle}
-                  panel={surahFrameMeta.assets[OrnamentAsset.FRAME]?.panel}
-                />
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: s.slotY,
+                    width,
+                    height: s.slotHeight,
+                    overflow: "hidden",
+                  }}>
+                  <SurahFrame
+                    x={s.x}
+                    y={s.y}
+                    width={s.width}
+                    height={s.height}
+                    surahNumber={s.surahNumber}
+                    version={version}
+                    quranTheme={quranTheme}
+                    styleId={surahFrameStyle}
+                    panel={surahFrameMeta.assets[OrnamentAsset.FRAME]?.panel}
+                  />
+                </View>
               ))}
             {lineHeight > 0 && ready && isPageMode && (
               <PageImage

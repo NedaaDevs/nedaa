@@ -181,7 +181,7 @@ export const SURAH_FRAME_ADJUSTMENTS: Record<
   [NEDAA_STYLE_ID]: {},
   classic: {
     [MushafVersion.V1]: { offsetY: -0.083, scale: 1 }, // names sit high (0.408)
-    [MushafVersion.V2]: { offsetY: 0, scale: 1 }, // already aligned (0.485)
+    [MushafVersion.V2]: { offsetY: 0, scale: 1 }, // LOCKED — device-verified 2026-07-17 (0.485)
     [MushafVersion.V4]: { offsetY: 0.031, scale: 1 }, // names sit low (0.522)
   },
   // Legacy per-edition pack ids (pre-"classic" installs) share the same trims.
