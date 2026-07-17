@@ -468,7 +468,7 @@ const QuranPage = ({
     return Object.entries(surahHeaderLines).map(([lineStr, surahNumber]) => {
       const line = Number(lineStr);
       const lineCenterY = (line - 1) * base + base / 2;
-      const idealY = lineCenterY - bannerH / 2 + adj.offsetY * base;
+      const idealY = lineCenterY - bannerH / 2 + adj.offsetY * bannerH;
       const y = Math.min(Math.max(idealY, 0), maxY);
       return { x, y, width: bannerW, height: bannerH, surahNumber };
     });

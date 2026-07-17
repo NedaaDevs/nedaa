@@ -168,9 +168,10 @@ export const MARKER_ADJUSTMENTS: Record<
 } as const;
 
 // Surah-frame placement trims, keyed style → edition: the frame art is shared,
-// but each edition bakes its calligraphic name at a slightly different spot in
-// the header line. offsetY = fraction of the line slot (positive = down);
-// scale multiplies the banner size around its center.
+// but each edition bakes its calligraphic name at a different height in the
+// header strip. offsetY is a fraction of the BAND height (positive = down),
+// measured as (edition's mean name-ink center) − (band ink center 0.491) over
+// all 113 headers; scale multiplies the banner size around its center.
 export type SurahFrameAdjustment = { offsetY: number; scale: number };
 export const SURAH_FRAME_NO_ADJUSTMENT: SurahFrameAdjustment = { offsetY: 0, scale: 1 };
 export const SURAH_FRAME_ADJUSTMENTS: Record<
@@ -179,12 +180,12 @@ export const SURAH_FRAME_ADJUSTMENTS: Record<
 > = {
   [NEDAA_STYLE_ID]: {},
   classic: {
-    [MushafVersion.V1]: { offsetY: 0.12, scale: 1 },
-    [MushafVersion.V2]: { offsetY: 0, scale: 1 },
-    [MushafVersion.V4]: { offsetY: 0, scale: 1 },
+    [MushafVersion.V1]: { offsetY: -0.083, scale: 1 }, // names sit high (0.408)
+    [MushafVersion.V2]: { offsetY: 0, scale: 1 }, // already aligned (0.485)
+    [MushafVersion.V4]: { offsetY: 0.031, scale: 1 }, // names sit low (0.522)
   },
   // Legacy per-edition pack ids (pre-"classic" installs) share the same trims.
-  [MushafVersion.V1]: { [MushafVersion.V1]: { offsetY: 0.12, scale: 1 } },
+  [MushafVersion.V1]: { [MushafVersion.V1]: { offsetY: -0.083, scale: 1 } },
 };
 
 // Bundled `nedaa` ornament art: the offline baseline every category falls back
