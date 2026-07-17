@@ -28,6 +28,7 @@ import {
   BOOKMARK_COLORS,
   BUNDLED_ORNAMENT_META,
   SURAH_FRAME_ADJUSTMENTS,
+  SURAH_FRAME_NO_ADJUSTMENT,
 } from "@/constants/Quran";
 import { localizedSurahName } from "@/utils/surahName";
 import { effectiveOrnamentStyle } from "@/utils/quranOrnaments";
@@ -459,7 +460,7 @@ const QuranPage = ({
   const surahFramePositions = useMemo(() => {
     if (lineHeight === 0) return [];
     const base = isPageMode ? srcLineHeight * pageScaleX * pageScaleY : lineHeight;
-    const adj = SURAH_FRAME_ADJUSTMENTS[surahFrameStyle] ?? { offsetY: 0, scale: 1 };
+    const adj = SURAH_FRAME_ADJUSTMENTS[surahFrameStyle]?.[version] ?? SURAH_FRAME_NO_ADJUSTMENT;
     const bannerW = width * adj.scale;
     const bannerH = bannerW / surahFrameAspect;
     const x = (width - bannerW) / 2;
@@ -482,6 +483,7 @@ const QuranPage = ({
     pageScaleY,
     surahFrameAspect,
     surahFrameStyle,
+    version,
   ]);
 
   // Similar-verse markers ("huffaz mode", off by default): a small dot above the

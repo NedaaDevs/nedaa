@@ -167,15 +167,24 @@ export const MARKER_ADJUSTMENTS: Record<
   [MushafVersion.V4]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
 } as const;
 
-// Per-style surah-frame placement trims: each edition bakes its calligraphic
-// name at a slightly different spot in the header line, so the active frame
-// style nudges to wrap it. offsetY = fraction of the line slot (positive =
-// down); scale multiplies the banner size around its center.
-export const SURAH_FRAME_ADJUSTMENTS: Record<string, { offsetY: number; scale: number }> = {
-  [NEDAA_STYLE_ID]: { offsetY: 0, scale: 1 },
-  [MushafVersion.V1]: { offsetY: 0.12, scale: 1 },
-  [MushafVersion.V2]: { offsetY: 0, scale: 1 },
-  [MushafVersion.V4]: { offsetY: 0, scale: 1 },
+// Surah-frame placement trims, keyed style → edition: the frame art is shared,
+// but each edition bakes its calligraphic name at a slightly different spot in
+// the header line. offsetY = fraction of the line slot (positive = down);
+// scale multiplies the banner size around its center.
+export type SurahFrameAdjustment = { offsetY: number; scale: number };
+export const SURAH_FRAME_NO_ADJUSTMENT: SurahFrameAdjustment = { offsetY: 0, scale: 1 };
+export const SURAH_FRAME_ADJUSTMENTS: Record<
+  string,
+  Partial<Record<MushafVersion, SurahFrameAdjustment>>
+> = {
+  [NEDAA_STYLE_ID]: {},
+  classic: {
+    [MushafVersion.V1]: { offsetY: 0.12, scale: 1 },
+    [MushafVersion.V2]: { offsetY: 0, scale: 1 },
+    [MushafVersion.V4]: { offsetY: 0, scale: 1 },
+  },
+  // Legacy per-edition pack ids (pre-"classic" installs) share the same trims.
+  [MushafVersion.V1]: { [MushafVersion.V1]: { offsetY: 0.12, scale: 1 } },
 };
 
 // Bundled `nedaa` ornament art: the offline baseline every category falls back

@@ -8,7 +8,14 @@ import { ORNAMENT_INKS, QURAN_THEME_COLORS } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { headerJuzLabel } from "@/utils/juz";
 import { ornamentThemeSlot } from "@/utils/quranOrnaments";
-import { headerSurahLabel, metadataFontFamily } from "@/utils/surahName";
+import {
+  headerSurahLabel,
+  JUZ_NAME_LIGATURE_FONT,
+  juzNameLigature,
+  metadataFontFamily,
+  SURAH_NAME_LIGATURE_FONT,
+  surahNameLigature,
+} from "@/utils/surahName";
 
 interface PageHeaderProps {
   surahName: string;
@@ -35,6 +42,16 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
   // furniture read as one set.
   const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
 
+  // Arabic-script locales render both sides as the mushaf's calligraphic
+  // ligature glyphs (vocalized, matched style); Latin locales keep text.
+  const surahLig = surahNumber != null ? surahNameLigature(surahNumber) : null;
+  const juzLig = juz ? juzNameLigature(juz) : null;
+  const surahText =
+    surahNumber != null
+      ? headerSurahLabel(surahNumber)
+      : surahName
+        ? `${t("quran.goto.surah")} ${surahName}`
+        : "";
   const juzText = juz ? headerJuzLabel(juz) : "";
 
   return (
@@ -46,14 +63,32 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
       <View position="relative" justifyContent="center">
         {/* direction ltr pins physical sides under RTL locales. */}
         <XStack alignItems="center" justifyContent="space-between" style={{ direction: "ltr" }}>
-          <Text style={{ color: inkColor, fontFamily }}>
-            {surahNumber != null
-              ? headerSurahLabel(surahNumber)
-              : surahName
-                ? `${t("quran.goto.surah")} ${surahName}`
-                : ""}
+          <Text
+            accessibilityLabel={surahText}
+            style={{
+              color: inkColor,
+              fontFamily: surahLig ? SURAH_NAME_LIGATURE_FONT : fontFamily,
+              fontSize: surahLig ? 20 : 14,
+              // Calligraphic glyphs overflow the default text box — give them
+              // headroom so marks/descenders don't clip.
+              lineHeight: surahLig ? 30 : undefined,
+              includeFontPadding: false,
+            }}>
+            {surahLig ?? surahText}
           </Text>
-          <Text style={{ color: inkColor, fontFamily }}>{juzText}</Text>
+          <Text
+            accessibilityLabel={juzText}
+            style={{
+              color: inkColor,
+              fontFamily: juzLig ? JUZ_NAME_LIGATURE_FONT : fontFamily,
+              fontSize: juzLig ? 20 : 14,
+              lineHeight: juzLig ? 30 : undefined,
+              includeFontPadding: false,
+              // Optical lift — the juz glyph sits low in its em box.
+              transform: juzLig ? [{ translateY: -2 }] : undefined,
+            }}>
+            {juzLig ?? juzText}
+          </Text>
         </XStack>
       </View>
       {/* Hairline rule under the header — dropped on tablets/foldables. */}

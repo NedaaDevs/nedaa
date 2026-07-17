@@ -54,5 +54,7 @@ export const useLoadFonts = () => {
     Hafs: require("@/../assets/fonts/KFGQPC-HafsUthmanic.otf"),
     // Calligraphic surah-name ligatures ("surahNNN surah-icon" → vocalized name glyph).
     SurahNames: require("@/../assets/fonts/SurahNames.ttf"),
+    // Juz-name ligatures + ornaments ("juzNNN" → vocalized juz name glyph).
+    QuranCommon: require("@/../assets/fonts/QuranCommon.ttf"),
   });
 };

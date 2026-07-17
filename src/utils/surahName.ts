@@ -32,6 +32,12 @@ export const headerSurahLabel = (surahNumber: number): string => {
 };
 
 export const SURAH_NAME_LIGATURE_FONT = "SurahNames";
+export const JUZ_NAME_LIGATURE_FONT = "QuranCommon";
+
+// GSUB ligature token QuranCommon turns into the calligraphic vocalized
+// «الجزء …» glyph. Null for Latin locales.
+export const juzNameLigature = (juz: number): string | null =>
+  isArabicScript() && juz >= 1 && juz <= 30 ? `juz${String(juz).padStart(3, "0")}` : null;
 
 // GSUB ligature token the SurahNames font turns into the calligraphic vocalized
 // «سورة …» glyph. Null for Latin locales (they keep transliterated text).
