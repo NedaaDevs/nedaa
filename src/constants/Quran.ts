@@ -3,6 +3,9 @@ import {
   BookmarkColor,
   HighlightColor,
   MushafVersion,
+  OrnamentAsset,
+  OrnamentCategory,
+  OrnamentSlot,
   QuranTheme,
   QuranThemeType,
 } from "@/enums/quran";
@@ -162,6 +165,73 @@ export const QURAN_MARKER_FRAME: Record<QuranThemeType, string> = {
   // Light papers (light, nedaa-light) reuse the sepia (dark-ink) frame.
   [QuranTheme.LIGHT]: "marker-sepia.png",
   [QuranTheme.NEDAA_LIGHT]: "marker-sepia.png",
+};
+
+// Bundled `nedaa` ornament art: the offline baseline every category falls back
+// to when no pack is installed. Keyed category → asset stem → theme slot.
+export const BUNDLED_ORNAMENTS: Record<
+  OrnamentCategory,
+  Partial<Record<OrnamentAsset, Partial<Record<OrnamentSlot, number>>>>
+> = {
+  [OrnamentCategory.SURAH_FRAME]: {
+    [OrnamentAsset.FRAME]: {
+      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/surah-frame/frame-sepia.png"),
+      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/surah-frame/frame-dark.png"),
+    },
+  },
+  [OrnamentCategory.AYAH_MARKER]: {
+    [OrnamentAsset.MARKER]: {
+      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/ayah-marker/marker-sepia.png"),
+      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/ayah-marker/marker-dark.png"),
+    },
+  },
+  [OrnamentCategory.PAGE_HOLDER]: {
+    [OrnamentAsset.CARTOUCHE]: {
+      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/cartouche-sepia.png"),
+      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/cartouche-dark.png"),
+    },
+    [OrnamentAsset.QUARTER_LEFT]: {
+      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/quarter-left-sepia.png"),
+      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/quarter-left-dark.png"),
+    },
+    [OrnamentAsset.QUARTER_RIGHT]: {
+      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/quarter-right-sepia.png"),
+      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/quarter-right-dark.png"),
+    },
+  },
+};
+
+// Metadata for the bundled art, transcribed from elysia-api's
+// output/ornaments/nedaa/pack.json (the export pipeline measures these).
+// The ayahMarker entry is the generator's native circle (360×480) shipped as
+// an interim stand-in while the nedaa medallion art is revised.
+export const BUNDLED_ORNAMENT_META: Record<OrnamentCategory, OrnamentPackMeta> = {
+  [OrnamentCategory.SURAH_FRAME]: {
+    version: "2026-07-17",
+    assets: {
+      [OrnamentAsset.FRAME]: {
+        aspect: 5.9681,
+        panel: {
+          l: 0.32569391392920805,
+          t: 0.12310030395136778,
+          r: 0.6790170613700025,
+          b: 0.8693009118541033,
+        },
+      },
+    },
+  },
+  [OrnamentCategory.AYAH_MARKER]: {
+    version: "2026-07-17",
+    assets: { [OrnamentAsset.MARKER]: { aspect: 0.75 } },
+  },
+  [OrnamentCategory.PAGE_HOLDER]: {
+    version: "2026-07-17",
+    assets: {
+      [OrnamentAsset.CARTOUCHE]: { aspect: 3.2397 },
+      [OrnamentAsset.QUARTER_LEFT]: { aspect: 3.937 },
+      [OrnamentAsset.QUARTER_RIGHT]: { aspect: 3.937 },
+    },
+  },
 };
 
 export const DEFAULT_MUSHAF_VERSION = MushafVersion.V1;
