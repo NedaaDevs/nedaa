@@ -41,6 +41,11 @@ const AyahMarker = ({
   quranTheme,
   bookmarkColor,
 }: AyahMarkerProps) => {
+  // Soft wash inside the marker's circle so the digit sits on a tinted ground.
+  // Diameter as a fraction of the marker box width; opacity as a hex suffix.
+  const INNER_FILL_FRACTION = 0.82;
+  const INNER_FILL_ALPHA = "1F"; // ~12%
+
   const adjustments = MARKER_ADJUSTMENTS[version];
   const markerStyle = useQuranStore((s) =>
     effectiveOrnamentStyle(
@@ -93,11 +98,22 @@ const AyahMarker = ({
     [markerX, markerY, markerWidth, markerHeight]
   );
 
+  const fillSize = markerWidth * INNER_FILL_FRACTION;
   return (
     <View
       style={containerStyle}
       accessibilityRole="button"
       accessibilityLabel={`Ayah ${ayahNumber}`}>
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: fillSize,
+          height: fillSize,
+          borderRadius: fillSize / 2,
+          backgroundColor: `${bookmarkColor ?? inkColor}${INNER_FILL_ALPHA}`,
+        }}
+      />
       <Image
         source={source}
         style={{
