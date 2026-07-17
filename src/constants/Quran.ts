@@ -13,6 +13,15 @@ import {
 // Bundled offline ornament style family (never a downloadable pack).
 export const NEDAA_STYLE_ID = "nedaa";
 
+// Ink colors the ornament pipeline pre-tints each slot with (single source of
+// truth lives in the asset pipeline; these mirror it for text drawn ON the
+// ornaments — e.g. the ayah number matches its medallion's ink, not the theme).
+export const ORNAMENT_INKS: Record<OrnamentSlot, `#${string}`> = {
+  [OrnamentSlot.LIGHT]: "#B8860B",
+  [OrnamentSlot.SEPIA]: "#8B6914",
+  [OrnamentSlot.DARK]: "#C4A265",
+};
+
 // pack.json metadata carried by every ornament pack (and mirrored for the
 // bundled defaults): per-asset aspect ratio plus, for frames, the text-safe
 // open panel (fractional box) guaranteed around the baked calligraphic name.
@@ -157,15 +166,6 @@ export const MARKER_ADJUSTMENTS: Record<
   [MushafVersion.V2]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
   [MushafVersion.V4]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
 } as const;
-
-export const QURAN_MARKER_FRAME: Record<QuranThemeType, string> = {
-  [QuranTheme.SEPIA]: "marker-sepia.png",
-  [QuranTheme.DARK]: "marker-dark.png",
-  [QuranTheme.NEDAA_DARK]: "marker-dark.png",
-  // Light papers (light, nedaa-light) reuse the sepia (dark-ink) frame.
-  [QuranTheme.LIGHT]: "marker-sepia.png",
-  [QuranTheme.NEDAA_LIGHT]: "marker-sepia.png",
-};
 
 // Bundled `nedaa` ornament art: the offline baseline every category falls back
 // to when no pack is installed. Keyed category → asset stem → theme slot.

@@ -1,16 +1,18 @@
 import { useMemo } from "react";
 import { Image, Text, View } from "react-native";
-import { Paths } from "expo-file-system";
 
 import RibbonGlyph from "@/components/quran/RibbonGlyph";
-import { MushafVersion, QuranThemeType } from "@/enums/quran";
+import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "@/enums/quran";
 import {
-  QURAN_THEME_COLORS,
-  QURAN_MARKER_FRAME,
+  BUNDLED_ORNAMENT_META,
   MARKER_ADJUSTMENTS,
+  NEDAA_STYLE_ID,
+  ORNAMENT_INKS,
   QURAN_FONT_FAMILY,
   toHafsDigits,
 } from "@/constants/Quran";
+import { useQuranStore } from "@/stores/quran";
+import { medallionBox, ornamentThemeSlot, resolveOrnamentImage } from "@/utils/quranOrnaments";
 
 interface AyahMarkerProps {
   x: number;
@@ -35,19 +37,40 @@ const AyahMarker = ({
   quranTheme,
   bookmarkColor,
 }: AyahMarkerProps) => {
-  const themeColors = QURAN_THEME_COLORS[quranTheme];
   const adjustments = MARKER_ADJUSTMENTS[version];
-  const frameFile = QURAN_MARKER_FRAME[quranTheme];
+  const markerStyle =
+    useQuranStore((s) => s.ornamentStyle[OrnamentCategory.AYAH_MARKER]) ?? NEDAA_STYLE_ID;
+  const markerMeta =
+    useQuranStore((s) => s.ornamentMeta[OrnamentCategory.AYAH_MARKER]) ??
+    BUNDLED_ORNAMENT_META[OrnamentCategory.AYAH_MARKER];
+  const aspect = markerMeta.assets[OrnamentAsset.MARKER]?.aspect ?? 0.75;
 
-  const markerWidth = width * adjustments.scaleMultiplier;
-  const markerHeight = height * adjustments.scaleMultiplier;
+  // Height-based box at the art's native aspect, centered on the squarish glyph slot.
+  const { width: markerWidth, height: markerHeight } = medallionBox(
+    width,
+    height,
+    aspect,
+    adjustments.scaleMultiplier
+  );
   const markerX = x + adjustments.offsetX + (width - markerWidth) / 2;
   const markerY = y + adjustments.offsetY + (height - markerHeight) / 2;
   // Three-digit ayah numbers (100–286) shrink so they fit the slot the way one-
   // and two-digit numbers do.
   const fontSize = markerHeight * adjustments.fontSizeMultiplier * (ayahNumber >= 100 ? 0.72 : 1);
+  // The number matches the medallion's pre-tinted ink, not the theme token.
+  const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
 
-  const frameUri = `${Paths.document.uri}quran/${version}/markers/${frameFile}`;
+  const source = useMemo(
+    () =>
+      resolveOrnamentImage(
+        OrnamentCategory.AYAH_MARKER,
+        OrnamentAsset.MARKER,
+        quranTheme,
+        version,
+        markerStyle
+      ),
+    [quranTheme, version, markerStyle]
+  );
 
   const containerStyle = useMemo(
     () => ({
@@ -68,11 +91,12 @@ const AyahMarker = ({
       accessibilityRole="button"
       accessibilityLabel={`Ayah ${ayahNumber}`}>
       <Image
-        source={{ uri: frameUri }}
+        source={source}
         style={{
           position: "absolute",
           width: markerWidth,
           height: markerHeight,
+          // The ONLY runtime tint: a bookmark colours the whole medallion.
           tintColor: bookmarkColor,
         }}
         resizeMode="contain"
@@ -86,7 +110,7 @@ const AyahMarker = ({
         <Text
           style={{
             fontSize,
-            color: themeColors.markerColor,
+            color: inkColor,
             fontFamily: QURAN_FONT_FAMILY,
             textAlign: "center",
             includeFontPadding: false,

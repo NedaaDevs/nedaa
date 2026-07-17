@@ -15,8 +15,8 @@ import {
 } from "@/enums/quran";
 
 // 5 reader themes → 2 pre-tinted slots. Light papers read the sepia (dark-ink)
-// artwork; dark papers read the dark (light-ink) artwork. Generalizes the old
-// per-theme QURAN_MARKER_FRAME map to every ornament category.
+// artwork; dark papers read the dark (light-ink) artwork — one mapping for
+// every ornament category.
 export const ornamentThemeSlot = (theme: QuranThemeType): OrnamentSlot =>
   isDarkPaper(theme) ? OrnamentSlot.DARK : OrnamentSlot.SEPIA;
 
@@ -48,6 +48,19 @@ export const resolveOrnamentImage = (
     return { uri: `${Paths.document.uri}quran/${version}/ornaments/${category}/${file}` };
   }
   return bundledOrnamentModule(category, asset, slot) ?? 0;
+};
+
+// Marker box over the squarish glyph slot: height-based, width from the art's
+// native aspect (portrait medallions overhang the slot vertically) — never
+// stretched to the slot's own proportions.
+export const medallionBox = (
+  slotWidth: number,
+  slotHeight: number,
+  aspect: number,
+  scaleMultiplier: number
+): { width: number; height: number } => {
+  const height = slotHeight * scaleMultiplier;
+  return { width: height * aspect, height };
 };
 
 // Parse a pack.json blob into OrnamentPackMeta, or null when malformed/incomplete
