@@ -80,6 +80,7 @@ const QuranScreen = () => {
     dismissDarkOffer,
     hasSeenQuranGuide,
     setQuranGuideSeen,
+    readAlong,
   } = useQuranStore();
   const quranPlayerState = useQuranAudioStore((s) => s.playerState);
   const playingSurah = useQuranAudioStore((s) => s.currentSurah);
@@ -386,7 +387,7 @@ const QuranScreen = () => {
           {/* Floating controls above the bottom chrome (≈120pt), suppressed while a
           sheet has focus. `box-none` lets taps through when faded out. The reader
           audio control is always available (press play to start from the current
-          page); the vertical auto-scroll control stacks above it while idle. */}
+          page); the auto-scroll control stacks above it unless read-along is on. */}
           {!actionAyah && infoSurah == null && !guideSheet && (
             <YStack
               position="absolute"
@@ -397,7 +398,10 @@ const QuranScreen = () => {
               gap="$2"
               zIndex={12}
               pointerEvents="box-none">
-              <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />
+              {/* Hidden while read-along drives the viewport — one thing scrolls
+              at a time. Unmounted rather than faded so the audio control closes
+              the gap instead of sitting under dead space. */}
+              {!readAlong && <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />}
               <ReaderAudioControl
                 quranTheme={quranTheme}
                 visible={showOverlay}
