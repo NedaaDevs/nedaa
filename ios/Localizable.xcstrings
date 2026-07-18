@@ -2974,6 +2974,50 @@
           }
         }
       }
+    },
+    "nedaaLauncherWidgetTitle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح نداء"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Nedaa"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نداء کھولیں"
+          }
+        }
+      }
+    },
+    "nedaaLauncherWidgetDesc": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح نداء بسرعة من شاشة القفل."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quickly open Nedaa from your Lock Screen."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لاک اسکرین سے نداء فوری طور پر کھولیں۔"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

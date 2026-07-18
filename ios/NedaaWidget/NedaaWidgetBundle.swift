@@ -39,6 +39,7 @@ struct WidgetsBundle26: WidgetBundle {
         MorningPrayerWidget()
         EveningPrayerWidget()
         AllPrayersCombinedWidget()
+        NedaaLauncherWidget()
 
         // Home Screen Widgets
         PrayerTimesHomeScreen()
@@ -69,6 +70,7 @@ struct WidgetsBundle17: WidgetBundle {
         MorningPrayerWidget()
         EveningPrayerWidget()
         AllPrayersCombinedWidget()
+        NedaaLauncherWidget()
 
         // Home Screen Widgets
         PrayerTimesHomeScreen()
