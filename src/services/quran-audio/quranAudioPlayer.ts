@@ -9,6 +9,7 @@ import { QuranContentDB } from "@/services/quran-content-db";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { quranAudioDownload } from "@/services/quran-audio/quranAudioDownload";
 import { trackPlay } from "@/services/quran-audio/playStats";
+import { isNaturalTrackEnd } from "@/services/quran-audio/trackEndDetection";
 import { QuranManifestService } from "@/services/quran-manifest";
 import {
   remoteAyahUrl,
@@ -60,6 +61,11 @@ class QuranAudioPlayer {
   // of the current surah" flag.
   private sleepTimerId: ReturnType<typeof setTimeout> | null = null;
   private stopAtSurahEnd = false;
+  // Furthest progress reached on the currently sounding track, used to tell a
+  // natural end from a user skip (see isNaturalTrackEnd). Reset on every track
+  // change, on a seek, and on every load.
+  private peakPosition = 0;
+  private peakDuration = 0;
 
   static getInstance(): QuranAudioPlayer {
     if (!QuranAudioPlayer.instance) QuranAudioPlayer.instance = new QuranAudioPlayer();
@@ -75,10 +81,16 @@ class QuranAudioPlayer {
     nitroSession.register("quran", {
       onChangeTrack: (track, reason) => this.onChangeTrack(track, reason),
       onPlaybackStateChange: (state, reason) => this.onPlaybackStateChange(state, reason),
-      onProgress: (position, duration) => {
+      onProgress: (position, duration, seeked) => {
         // Drop stale progress from a replaced playlist (see reachedPlaying).
         if (!this.reachedPlaying) return;
         log.d("Progress", `pos=${position.toFixed(1)}s dur=${duration.toFixed(1)}s`);
+        // A seek redefines the trail: jumping back from the tail must not leave a
+        // peak behind that would read a later skip as a natural end.
+        if (seeked || position >= this.peakPosition) {
+          this.peakPosition = position;
+          this.peakDuration = duration;
+        }
         this.store.setProgress(position, duration, Date.now());
       },
       onEvict: () => this.teardown(),
@@ -216,6 +228,8 @@ class QuranAudioPlayer {
 
     const token = ++this.buildToken;
     this.reachedPlaying = false;
+    this.peakPosition = 0;
+    this.peakDuration = 0;
     // Reflect the target immediately so the mini-player shows a loading spinner
     // the instant the surah is tapped, before init/handoff and the network fetch.
     this.store.setCurrentAyah(surah, 1);
@@ -305,6 +319,8 @@ class QuranAudioPlayer {
   ): Promise<void> {
     const token = ++this.buildToken;
     this.reachedPlaying = false;
+    this.peakPosition = 0;
+    this.peakDuration = 0;
     this.store.setCurrentAyah(surah, fromAyah);
     this.store.setPlayerState(QURAN_PLAYER_STATE.LOADING);
 
@@ -410,6 +426,8 @@ class QuranAudioPlayer {
     // Reflect the new position immediately so the scrubber doesn't flash back to
     // the old spot before nitro's next (coarse) progress tick arrives.
     this.store.setProgress(position, this.store.duration, Date.now());
+    this.peakPosition = position;
+    this.peakDuration = this.store.duration;
     await TrackPlayer.seek(position);
   }
 
@@ -431,16 +449,25 @@ class QuranAudioPlayer {
     if (!this.playlistId) return;
     const item = this.items[this.indexOf(track)];
     if (!item) return;
-    log.i("Player", `track ${item.surah}:${item.ayah} reason=${reason ?? "?"}`);
+    const natural = isNaturalTrackEnd({
+      reason,
+      peakPosition: this.peakPosition,
+      duration: this.peakDuration,
+    });
+    log.i(
+      "Player",
+      `track ${item.surah}:${item.ayah} reason=${reason ?? "?"} natural=${natural} peak=${this.peakPosition.toFixed(1)}/${this.peakDuration.toFixed(1)}s`
+    );
+    this.peakPosition = 0;
+    this.peakDuration = 0;
 
     // A surah that finishes on its own auto-advances to the next track in the full
-    // playlist (reason "end"). End the session there when STOP mode or a surah-end
-    // sleep timer asks for it — before updating currentAyah, so the next surah's
-    // name never flashes. A user-initiated skip carries a different reason and
-    // still moves freely.
+    // playlist. End the session there when STOP mode or a surah-end sleep timer
+    // asks for it — before updating currentAyah, so the next surah's name never
+    // flashes. A user-initiated skip still moves freely.
     if (
       this.isSurahPlaylist &&
-      reason === NITRO_REASON.END &&
+      natural &&
       (this.stopAtSurahEnd || this.store.listenMode === QURAN_LISTEN_MODE.STOP)
     ) {
       void this.stop();
