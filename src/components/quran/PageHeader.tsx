@@ -25,13 +25,16 @@ interface PageHeaderProps {
   quranTheme: QuranThemeType;
   // Spread page side (unused for ordering — the print convention is fixed).
   side?: "left" | "right" | "single";
+  // Top safe-area clearance, set only by layouts that render the page flush to
+  // the screen edge. Boxed and scroll-padded layouts already clear the edge.
+  topInset?: number;
 }
 
 // Running header, print-mushaf convention: surah at the physical left, juz at
 // the physical right on every page, one uniform script on both sides (the
 // calligraphic name belongs to the surah frame band, not here). Hairline rule
 // on phones only.
-const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps) => {
+const PageHeader = ({ surahName, surahNumber, juz, quranTheme, topInset = 0 }: PageHeaderProps) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
@@ -57,6 +60,7 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
     <YStack
       paddingHorizontal="$3"
       paddingTop="$1"
+      marginTop={topInset}
       accessibilityRole="header"
       accessibilityLabel={t("a11y.quran.pageInfo", { page: "", surah: surahName, juz: juz ?? "" })}>
       <View position="relative" justifyContent="center">

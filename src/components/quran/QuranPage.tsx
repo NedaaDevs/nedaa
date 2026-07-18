@@ -540,6 +540,7 @@ const QuranPage = ({
         juz={pageAvailable ? juz : null}
         quranTheme={quranTheme}
         side={side}
+        topInset={topInset}
       />
 
       <View

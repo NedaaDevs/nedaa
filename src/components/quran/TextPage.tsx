@@ -38,6 +38,10 @@ interface TextPageProps {
   // outer continuous list (VerticalTextReader) owns the scroll. Default paginated
   // mode keeps its own full-screen ScrollView.
   flow?: boolean;
+  // Top safe-area clearance for the running header; set only by the paginated
+  // path, which renders flush to the screen top. Ignored in flow mode, where the
+  // outer list's contentContainer owns the inset.
+  topInset?: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
   onWaqfPress?: (signId: string) => void;
@@ -55,6 +59,7 @@ const TextPage = ({
   width,
   fontSize,
   flow,
+  topInset,
   onAyahLongPress,
   onSurahLongPress,
   onWaqfPress,
@@ -300,6 +305,7 @@ const TextPage = ({
         surahNumber={ayahs[0]?.surahNumber ?? null}
         juz={juz}
         quranTheme={quranTheme}
+        topInset={topInset}
       />
 
       <ScrollView
