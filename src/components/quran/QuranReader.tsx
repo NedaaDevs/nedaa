@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/immutability -- every write here is a deliberate
+Reanimated shared-value mutation driving the pager on the UI thread; the rule
+models plain React state, not worklets. */
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useWindowDimensions, StyleSheet, View, ScrollView, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -66,9 +69,30 @@ const TABLET_SPRING_CONFIG = { damping: 26, stiffness: 140, mass: 0.9 };
 const PAGE_WINDOW = 2;
 // How long a search-jump highlight stays on the target ayah before clearing.
 const FLASH_CLEAR_MS = 2000;
+// Automatic follow-along turn: the same settle a zero-velocity swipe gets.
+const FOLLOW_TURN_TIMING = { duration: 240, easing: Easing.out(Easing.cubic) };
 // Turn shadow on the outgoing page's covered edge, peaking mid-drag.
 const TURN_SHADOW_WIDTH = 28;
 const TURN_SHADOW_PEAK = 0.25;
+
+// Slide one unit under program control, mirroring the gesture settle: advance the
+// index and zero the drag in the same UI frame so the turn is seamless, then let
+// React sync for windowing + persistence.
+const runFollowTurn = (
+  dragOffset: SharedValue<number>,
+  unitIndex: SharedValue<number>,
+  from: number,
+  delta: number,
+  commitUnit: (unit: number) => void
+) => {
+  dragOffset.value = withTiming(delta, FOLLOW_TURN_TIMING, (finished) => {
+    "worklet";
+    if (!finished) return;
+    unitIndex.value = from + delta;
+    dragOffset.value = 0;
+    scheduleOnRN(commitUnit, unitIndex.value);
+  });
+};
 
 const QuranReader = ({
   currentPage,
@@ -143,22 +167,6 @@ const QuranReader = ({
     unitIndex.value = currentUnit;
   }, [currentUnit, unitIndex]);
 
-  // Read-along follow, horizontal mode: when the recited ayah moves onto a page
-  // that isn't visible, turn to it (the vertical readers scroll instead). Dedupe
-  // per page so a manual flip away isn't fought every word tick within the page.
-  const followTarget = useAudioFollowTarget();
-  const lastFollowPageRef = useRef(0);
-  useEffect(() => {
-    if (isVertical || !followTarget) {
-      lastFollowPageRef.current = 0;
-      return;
-    }
-    if (followTarget.page === lastFollowPageRef.current) return;
-    lastFollowPageRef.current = followTarget.page;
-    const visible = isSpread ? pagesOfSpread(currentUnit) : [safePage];
-    if (!visible.includes(followTarget.page)) onPageChange(followTarget.page);
-  }, [followTarget, isVertical, isSpread, currentUnit, safePage, onPageChange]);
-
   // A search jump sets `flashAyah`; the page pulse-highlights it, then we clear
   // the flag so it doesn't re-fire on later renders.
   const flashAyah = useQuranStore((s) => s.flashAyah);
@@ -187,6 +195,37 @@ const QuranReader = ({
     (unit: number) => onPageChange(isSpread ? pagesOfSpread(unit)[0] : unit),
     [isSpread, onPageChange]
   );
+
+  // Read-along follow, horizontal mode: when the recited ayah moves onto a page
+  // that isn't visible, turn to it (the vertical readers scroll instead). Dedupe
+  // per page so a manual flip away isn't fought every word tick within the page.
+  //
+  // The turn matches the swipe settle. Only an adjacent unit can slide:
+  // dragOffset is a single-unit fraction and only a ±PAGE_WINDOW slice of slots
+  // is mounted, so anything further jumps instead. An in-flight drag wins.
+  const followTarget = useAudioFollowTarget();
+  const lastFollowPageRef = useRef(0);
+  useEffect(() => {
+    if (isVertical || !followTarget) {
+      lastFollowPageRef.current = 0;
+      return;
+    }
+    if (followTarget.page === lastFollowPageRef.current) return;
+    lastFollowPageRef.current = followTarget.page;
+    const visible = isSpread ? pagesOfSpread(currentUnit) : [safePage];
+    if (visible.includes(followTarget.page)) return;
+
+    const targetUnit = isSpread ? spreadOf(followTarget.page) : followTarget.page;
+    const from = unitIndex.value;
+    const delta = targetUnit - from;
+    if (Math.abs(delta) !== 1 || isHorizontal.value !== null) {
+      commitUnit(targetUnit);
+      return;
+    }
+    runFollowTurn(dragOffset, unitIndex, from, delta, commitUnit);
+    // Reanimated shared values are stable refs, deliberately kept out of the deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followTarget, isVertical, isSpread, currentUnit, safePage, commitUnit]);
 
   const tapGesture = Gesture.Tap().onEnd(() => {
     "worklet";
