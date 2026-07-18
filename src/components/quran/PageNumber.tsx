@@ -1,4 +1,4 @@
-import { Image, Platform, View } from "react-native";
+import { Image, Platform, Text as RNText, View } from "react-native";
 import Svg, { Text as SvgText } from "react-native-svg";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,11 +37,17 @@ interface PageNumberProps {
 // Height of the footer cartouche; the digits sit centered inside its open panel.
 const HOLDER_HEIGHT = 24;
 const DIGIT_FONT_SIZE = 17;
-// Quarter holder: taller band, two cells. Cell x-centers as width fractions of
-// the narrow-left art (mirrored for narrow-right).
+// Quarter holder: taller band, two cells. Narrow (digit) cell x-center as a
+// width fraction of the narrow-left art (mirrored for narrow-right).
 const QUARTER_HEIGHT = 28;
 const QUARTER_NARROW_CENTER = 0.3;
-const QUARTER_WIDE_CENTER = 0.645;
+// Wide cell's open interior, as fractions of the art's width/height — measured
+// by flood-filling quarter-left-sepia.png from inside the cell (same technique
+// as the surah-frame medallion boxes). Mirrored for the right leaf the same way
+// narrowX mirrors below. Gives the hizb-quarter label a real box to fit instead
+// of a bare center point, so long labels ("3/4 Hizb 60") shrink to fit rather
+// than clipping against the plaque's rounded end.
+const QUARTER_WIDE_BOX = { l: 0.4722, t: 0.2432, r: 0.8187, b: 0.765 };
 const QUARTER_LABEL_FONT_SIZE = 12;
 
 // Soft wash inside the holder's inner panel (fractions of the holder box).
@@ -109,7 +115,15 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
     );
     // Narrow (page-number) cell sits toward the outer edge per the art file.
     const narrowX = leaf === "right" ? 1 - QUARTER_NARROW_CENTER : QUARTER_NARROW_CENTER;
-    const wideX = leaf === "right" ? 1 - QUARTER_WIDE_CENTER : QUARTER_WIDE_CENTER;
+    const wideBox =
+      leaf === "right"
+        ? {
+            l: 1 - QUARTER_WIDE_BOX.r,
+            t: QUARTER_WIDE_BOX.t,
+            r: 1 - QUARTER_WIDE_BOX.l,
+            b: QUARTER_WIDE_BOX.b,
+          }
+        : QUARTER_WIDE_BOX;
     const label = rubLabel(rubStart);
     return (
       <YStack
@@ -149,17 +163,37 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
               alignmentBaseline="central">
               {toHafsDigits(page)}
             </SvgText>
-            <SvgText
-              x={qWidth * wideX + DIGIT_NUDGE.x}
-              y={QUARTER_HEIGHT / 2 + DIGIT_NUDGE.y}
-              fontFamily={QURAN_FONT_FAMILY}
-              fontSize={QUARTER_LABEL_FONT_SIZE}
-              fill={textColor}
-              textAnchor="middle"
-              alignmentBaseline="central">
-              {label}
-            </SvgText>
           </Svg>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: qWidth * wideBox.l,
+              top: QUARTER_HEIGHT * wideBox.t,
+              right: qWidth * (1 - wideBox.r),
+              bottom: QUARTER_HEIGHT * (1 - wideBox.b),
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+            {/* RN Text over the wide cell, not SvgText: it can wrap/shrink to the
+                box instead of clipping ("3/4 Hizb 60" in Latin locales overflows
+                a fixed-size SVG label). allowFontScaling is off because the art's
+                cell can't grow with the OS font size, so the label must instead
+                shrink to it. */}
+            <RNText
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+              allowFontScaling={false}
+              style={{
+                fontFamily: QURAN_FONT_FAMILY,
+                fontSize: QUARTER_LABEL_FONT_SIZE,
+                color: textColor,
+                textAlign: "center",
+              }}>
+              {label}
+            </RNText>
+          </View>
         </View>
       </YStack>
     );
