@@ -26,6 +26,7 @@ import {
   type QuranListenMode,
 } from "@/types/quran-audio";
 import { localizedSurahName } from "@/utils/surahName";
+import { resolveNowPlayingArtwork } from "@/utils/nowPlayingArtwork";
 import { AppLogger } from "@/utils/appLogger";
 import i18n from "@/localization/i18n";
 
@@ -243,6 +244,7 @@ class QuranAudioPlayer {
       if (!reuse) {
         const reciter = await quranReciterRegistry.reciterOf(recitation.id);
         const artist = reciter ? quranReciterRegistry.localizedName(reciter, i18n.language) : "";
+        const artwork = resolveNowPlayingArtwork();
         const items: QuranQueueItem[] = [];
         const tracks: TrackItem[] = [];
         for (let n = 1; n <= SURAH_COUNT; n++) {
@@ -258,7 +260,7 @@ class QuranAudioPlayer {
             album: "",
             duration: 0,
             url,
-            artwork: undefined,
+            artwork,
           });
         }
 
@@ -347,6 +349,7 @@ class QuranAudioPlayer {
       const title = SURAH_NAMES[surah] ?? `${surah}`;
       const reciter = await quranReciterRegistry.reciterOf(recitation.id);
       const artist = reciter ? quranReciterRegistry.localizedName(reciter, i18n.language) : "";
+      const artwork = resolveNowPlayingArtwork();
       const tracks: TrackItem[] = items.map((item, i) => ({
         id: `t${i}`,
         title,
@@ -354,7 +357,7 @@ class QuranAudioPlayer {
         album: "",
         duration: 0,
         url: item.url,
-        artwork: undefined,
+        artwork,
       }));
 
       if (token !== this.buildToken) return;

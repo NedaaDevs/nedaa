@@ -1,4 +1,3 @@
-import { Appearance, Image } from "react-native";
 import { TrackPlayer, PlayerQueue } from "react-native-nitro-player";
 import type { TrackItem, TrackPlayerState } from "react-native-nitro-player";
 
@@ -10,6 +9,7 @@ import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { useAthkarStore } from "@/stores/athkar";
 import { reciterRegistry, getLocalizedName } from "@/services/athkar-reciter-registry";
 import { AppLogger } from "@/utils/appLogger";
+import { resolveNowPlayingArtwork } from "@/utils/nowPlayingArtwork";
 import { PLAYER_STATE, type PlayerState, type ReciterManifest } from "@/types/athkar-audio";
 import type { Athkar, AthkarType } from "@/types/athkar";
 import i18n from "@/localization/i18n";
@@ -192,7 +192,7 @@ class AthkarPlayer {
     // Native queue = the plain step files, no recitation metadata.
     const title = this.getSessionTitle();
     const artist = this.getReciterName();
-    const artwork = this.getArtworkUrl();
+    const artwork = resolveNowPlayingArtwork();
     const tracks: TrackItem[] = plan.map((step, i) => ({
       id: `t${i}`,
       title,
@@ -586,18 +586,6 @@ class AthkarPlayer {
     const reciter = catalog.reciters.find((r) => r.id === this.reciterId);
     if (!reciter) return this.reciterId;
     return getLocalizedName(reciter.name, i18n.language) || this.reciterId;
-  }
-
-  private getArtworkUrl(): string | undefined {
-    try {
-      const isDark = Appearance.getColorScheme() === "dark";
-      const icon = isDark
-        ? Image.resolveAssetSource(require("../../assets/images/ios-dark.png"))
-        : Image.resolveAssetSource(require("../../assets/images/icon.png"));
-      return icon?.uri;
-    } catch {
-      return undefined;
-    }
   }
 
   private clearSmartPauseTimer() {
