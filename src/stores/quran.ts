@@ -23,6 +23,29 @@ import {
 } from "@/enums/quran";
 import { QuranState, VersionDownloadState } from "@/types/quran";
 
+// Auto-scroll needs the continuous reader, so starting it may switch the axis.
+// The previous axis is stashed on that switch and put back on stop, leaving the
+// user's persisted `scrollDirection` preference untouched.
+const autoScrollPatch = (prev: QuranState, playing: boolean): Partial<QuranState> => {
+  if (playing === prev.autoScrollPlaying) return { autoScrollPlaying: playing };
+  if (playing) {
+    return prev.scrollDirection === ScrollDirection.HORIZONTAL
+      ? {
+          autoScrollPlaying: true,
+          scrollDirection: ScrollDirection.VERTICAL,
+          autoScrollPrevDirection: prev.scrollDirection,
+        }
+      : { autoScrollPlaying: true };
+  }
+  return prev.autoScrollPrevDirection
+    ? {
+        autoScrollPlaying: false,
+        scrollDirection: prev.autoScrollPrevDirection,
+        autoScrollPrevDirection: null,
+      }
+    : { autoScrollPlaying: false };
+};
+
 export const useQuranStore = create<QuranState>()(
   persist(
     (set, get) => ({
@@ -40,6 +63,7 @@ export const useQuranStore = create<QuranState>()(
       // Auto-scroll starts paused (no surprise motion); pace persists.
       autoScrollPlaying: false,
       autoScrollSpeed: DEFAULT_AUTO_SCROLL_SPEED,
+      autoScrollPrevDirection: null,
       libraryTab: "index",
       shareStyle: ShareCardStyle.IMAGE,
       shareIncludeLogo: true,
@@ -72,9 +96,21 @@ export const useQuranStore = create<QuranState>()(
       setReaderActive: (active) => set({ readerActive: active }),
       setFlashAyah: (target) => set({ flashAyah: target }),
       clearFlashAyah: () => set({ flashAyah: null }),
-      setReadAlong: (on) => set({ readAlong: on, readAlongWord: null, readAlongVerse: false }),
+      // Read-along drives the viewport itself, so switching it on stops the glide.
+      setReadAlong: (on) =>
+        set((prev) => ({
+          ...(on ? autoScrollPatch(prev, false) : null),
+          readAlong: on,
+          readAlongWord: null,
+          readAlongVerse: false,
+        })),
       toggleReadAlong: () =>
-        set((prev) => ({ readAlong: !prev.readAlong, readAlongWord: null, readAlongVerse: false })),
+        set((prev) => ({
+          ...(prev.readAlong ? null : autoScrollPatch(prev, false)),
+          readAlong: !prev.readAlong,
+          readAlongWord: null,
+          readAlongVerse: false,
+        })),
       setReadAlongGranularity: (granularity) =>
         set({ readAlongGranularity: granularity, readAlongWord: null, readAlongVerse: false }),
       setReadAlongWord: (readAlongWord) => set({ readAlongWord }),
@@ -115,20 +151,11 @@ export const useQuranStore = create<QuranState>()(
       setFontSize: (size: number) =>
         set({ fontSize: Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size)) }),
       setSpreadPreference: (pref: SpreadPreference) => set({ spreadPreference: pref }),
-      setScrollDirection: (dir: ScrollDirection) => set({ scrollDirection: dir }),
-      // Starting auto-scroll forces the vertical reader — page-turn mode can't glide.
-      setAutoScrollPlaying: (playing: boolean) =>
-        set(
-          playing
-            ? { autoScrollPlaying: true, scrollDirection: ScrollDirection.VERTICAL }
-            : { autoScrollPlaying: false }
-        ),
-      toggleAutoScroll: () =>
-        set((prev) =>
-          prev.autoScrollPlaying
-            ? { autoScrollPlaying: false }
-            : { autoScrollPlaying: true, scrollDirection: ScrollDirection.VERTICAL }
-        ),
+      // An explicit axis choice supersedes any stashed restore.
+      setScrollDirection: (dir: ScrollDirection) =>
+        set({ scrollDirection: dir, autoScrollPrevDirection: null }),
+      setAutoScrollPlaying: (playing: boolean) => set((prev) => autoScrollPatch(prev, playing)),
+      toggleAutoScroll: () => set((prev) => autoScrollPatch(prev, !prev.autoScrollPlaying)),
       setAutoScrollSpeed: (px: number) => set({ autoScrollSpeed: clampAutoScrollSpeed(px) }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setShareStyle: (style) => set({ shareStyle: style }),

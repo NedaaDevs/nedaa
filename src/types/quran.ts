@@ -216,6 +216,10 @@ export type QuranState = {
   // only starts on a deliberate tap; `speed` is a persisted points/second pace.
   autoScrollPlaying: boolean;
   autoScrollSpeed: number;
+  // Transient — the paging axis to put back when auto-scroll stops, captured
+  // because the glide needs the continuous reader. Null when the reader was
+  // already vertical or the user has since chosen an axis. Not persisted.
+  autoScrollPrevDirection: ScrollDirection | null;
   // The Library hub's last-viewed tab, so reopening lands where the user left.
   libraryTab: QuranLibraryTab;
   // Ayah image-share preferences (persisted): which card style was last used,
