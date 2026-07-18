@@ -6,9 +6,11 @@ import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "
 import { ornamentThemeSlot, resolveOrnamentImage } from "@/utils/quranOrnaments";
 import { metadataFontFamily, SURAH_NAME_LIGATURE_FONT, surahNameLigature } from "@/utils/surahName";
 
-// Soft wash inside the frame's text-safe panel (skipped when the style carries
-// no panel metadata). Opacity as a hex suffix (~12%).
+// Soft wash filling the frame's whole plaque. Opacity as a hex suffix (~12%).
 const FILL_ALPHA = "1F";
+// Corner rounding of the wash, as a fraction of the frame's drawn height —
+// tracks the rounded outer boundary of the frame art.
+const FILL_RADIUS_RATIO = 0.16;
 
 interface SurahFrameProps {
   x: number;
@@ -24,8 +26,10 @@ interface SurahFrameProps {
   // page image and the frame draws underneath it).
   label?: string;
   panel?: OrnamentPanel;
-  medallions?: OrnamentPanel[];
   labelColor?: string;
+  // Frame art aspect (w/h) from the pack metadata, used to place the wash under
+  // the letterboxed image. Without it the wash falls back to the layout box.
+  aspect?: number;
 }
 
 // Decorative surah-opening frame drawn UNDER the line images at the surah-header
@@ -41,8 +45,8 @@ const SurahFrame = ({
   styleId,
   label,
   panel,
-  medallions,
   labelColor,
+  aspect,
 }: SurahFrameProps) => {
   const source = useMemo(
     () =>
@@ -59,40 +63,26 @@ const SurahFrame = ({
   // the baked band on MADINAH pages; Latin locales keep the transliteration.
   const ligature = label ? surahNameLigature(surahNumber) : null;
   const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
-  const panelH = panel ? height * (panel.b - panel.t) : 0;
+  // The <Image> below is `resizeMode="contain"`, so its drawn rect is
+  // letterboxed inside width×height. Mirror that math here so the wash sits
+  // under the actual art rather than the (possibly larger) layout box.
+  const drawnHeight = aspect !== undefined ? Math.min(width / aspect, height) : height;
+  const drawnWidth = aspect !== undefined ? aspect * drawnHeight : width;
+  const drawnLeft = (width - drawnWidth) / 2;
+  const drawnTop = (height - drawnHeight) / 2;
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: x, top: y, width, height }}>
-      {panel ? (
-        // panel l/t are start fractions and r/b END fractions (r > l, b > t).
-        <View
-          style={{
-            position: "absolute",
-            left: width * panel.l,
-            top: height * panel.t,
-            width: width * (panel.r - panel.l),
-            height: panelH,
-            borderRadius: panelH * 0.25,
-            backgroundColor: `${inkColor}${FILL_ALPHA}`,
-          }}
-        />
-      ) : null}
-      {medallions?.map((m, i) => {
-        const h = height * (m.b - m.t);
-        return (
-          <View
-            key={i}
-            style={{
-              position: "absolute",
-              left: width * m.l,
-              top: height * m.t,
-              width: width * (m.r - m.l),
-              height: h,
-              borderRadius: h / 2,
-              backgroundColor: `${inkColor}${FILL_ALPHA}`,
-            }}
-          />
-        );
-      })}
+      <View
+        style={{
+          position: "absolute",
+          left: drawnLeft,
+          top: drawnTop,
+          width: drawnWidth,
+          height: drawnHeight,
+          borderRadius: drawnHeight * FILL_RADIUS_RATIO,
+          backgroundColor: `${inkColor}${FILL_ALPHA}`,
+        }}
+      />
       <Image source={source} style={{ width, height }} resizeMode="contain" fadeDuration={0} />
       {label ? (
         // panel l/t are start fractions and r/b END fractions (r > l, b > t),

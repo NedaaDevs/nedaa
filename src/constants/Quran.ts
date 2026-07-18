@@ -27,11 +27,9 @@ export const ORNAMENT_INKS: Record<OrnamentSlot, `#${string}`> = {
 // bundled defaults): per-asset aspect ratio plus, for frames, the text-safe
 // open panel (fractional box) guaranteed around the baked calligraphic name.
 export type OrnamentPanel = { l: number; t: number; r: number; b: number };
-// `medallions` are additional enclosed openings (circles) washed like the panel.
 export type OrnamentAssetMeta = {
   aspect: number;
   panel?: OrnamentPanel;
-  medallions?: OrnamentPanel[];
 };
 export type OrnamentPackMeta = { version: string; assets: Record<string, OrnamentAssetMeta> };
 

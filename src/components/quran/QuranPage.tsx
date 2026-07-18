@@ -64,6 +64,9 @@ interface QuranPageProps {
   width: number;
   // Spread page side for the running header (surah → outer edge). Default single.
   side?: "left" | "right" | "single";
+  // Top safe-area clearance for the running header; set only when the page is
+  // rendered flush to the screen top.
+  topInset?: number;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
@@ -119,6 +122,7 @@ const QuranPage = ({
   quranTheme,
   width,
   side,
+  topInset,
   onAyahLongPress,
   onSurahLongPress,
   selectedAyah,
@@ -579,7 +583,7 @@ const QuranPage = ({
                     quranTheme={quranTheme}
                     styleId={surahFrameStyle}
                     panel={surahFrameMeta.assets[OrnamentAsset.FRAME]?.panel}
-                    medallions={surahFrameMeta.assets[OrnamentAsset.FRAME]?.medallions}
+                    aspect={surahFrameMeta.assets[OrnamentAsset.FRAME]?.aspect}
                   />
                 </View>
               ))}
