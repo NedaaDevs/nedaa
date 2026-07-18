@@ -19,6 +19,7 @@ import { ornamentSlotFileName, parseOrnamentPackJson } from "@/utils/quranOrname
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranManifestService } from "@/services/quran-manifest";
 import { planEditionDownload, type InstalledVersions } from "@/services/quran-download-plan";
+import { trackDownload } from "@/services/quran-download-stats";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
 import type { DownloadProgress, QuranManifestVersion } from "@/types/quran";
@@ -333,15 +334,14 @@ const downloadAndExtractBundle = async (
 // Download + extract one category's resolved ornament pack into its dir, when
 // absent or out of date. Reads pack.json and pushes the parsed metadata into the
 // store. Self-contained + non-fatal — any failure leaves the bundled nedaa
-// fallback in place and the edition flow proceeds. `emit` is only supplied by
-// the tracked edition download (step 2/2 progress); the opportunistic top-up
-// below passes no emitter and reports nothing.
+// fallback in place and the edition flow proceeds. Ornament packs report no
+// progress of their own; the single DOWNLOADING phase set before the loop in
+// doStart covers the whole ornament leg.
 const installOrnamentPack = async (
   active: ActiveDownload,
   version: MushafVersion,
   manifestVersion: QuranManifestVersion,
-  category: OrnamentCategory,
-  emit: (phase: DownloadPhase, bytesDownloaded: number, totalBytes: number) => void = () => {}
+  category: OrnamentCategory
 ): Promise<void> => {
   const store = useQuranStore.getState();
   try {
@@ -364,7 +364,7 @@ const installOrnamentPack = async (
       dir,
       zipName: `quran-${version}-${category}.zip`,
       alreadyOnDisk: false,
-      emit,
+      emit: () => {},
     });
     if (outcome !== BundleOutcome.EXTRACTED) return;
 
@@ -532,10 +532,10 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       progress: buildProgress(DownloadStep.ORNAMENTS, DownloadPhase.DOWNLOADING, 0, 0),
     });
     for (const category of ALL_ORNAMENT_CATEGORIES) {
-      // installOrnamentPack's own emit would replay a DOWNLOADING→EXTRACTING
-      // cycle per pack, cross-fading the step 2/2 label three times in a row.
-      // Leave emit at its no-op default so the single DOWNLOADING phase set
-      // above holds for the whole ornament leg.
+      // Per-pack progress would replay a DOWNLOADING→EXTRACTING cycle per pack,
+      // cross-fading the step 2/2 label three times in a row, so ornament
+      // installs report nothing and the single DOWNLOADING phase set above
+      // holds for the whole ornament leg.
       await installOrnamentPack(active, version, manifestVersion, category);
     }
 
@@ -543,6 +543,7 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
     clearResume(version);
     store.updateDownloadState(version, { status: DownloadStatus.COMPLETE });
     log.i("Download", `${version} complete`);
+    trackDownload(version);
   } catch (error) {
     if (active.cancelled) {
       log.i("Download", `${version} download cancelled`);
