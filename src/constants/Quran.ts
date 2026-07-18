@@ -170,7 +170,7 @@ export const QURAN_THEME_COLORS: Record<
 } as const;
 
 // Body ink: the tint applied to page images (and to text meant to match them).
-export const quranBodyInk = (theme: QuranThemeType): string =>
+export const quranBodyInk = (theme: QuranThemeType): `#${string}` =>
   QURAN_THEME_COLORS[theme].textTint ?? QURAN_THEME_COLORS[theme].headerColor;
 
 // Nominal ayah-marker box in source-strip pixels (232px line): constant so

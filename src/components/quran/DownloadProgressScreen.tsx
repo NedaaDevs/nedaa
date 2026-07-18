@@ -231,12 +231,12 @@ const DownloadProgressScreen = ({
             ? t("quran.download.complete")
             : t("a11y.quran.editionDownloadProgress", { step: stepLabel, phase: phaseLabel })
         }
-        // Step 2/2 (ornaments) reports no byte progress; while it's still in
-        // flight, a numeric now=100 would falsely announce completion, so
-        // screen readers rely on the label instead. A true completion (any
-        // step) still reports its accurate now=100.
+        // A numeric now is only meaningful for an accurate completion (100) or
+        // real byte progress (step 1/2 images, DOWNLOADING phase) — fillTarget
+        // is 100 for any other non-downloading phase without meaning "done", so
+        // those fall back to undefined and screen readers rely on the label.
         accessibilityValue={
-          isComplete || step !== DownloadStep.ORNAMENTS
+          isComplete || (step === DownloadStep.IMAGES && phase === DownloadPhase.DOWNLOADING)
             ? { min: 0, max: 100, now: Math.round(fillTarget) }
             : undefined
         }>
