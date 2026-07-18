@@ -11,6 +11,7 @@ import {
   ORNAMENT_INKS,
   QURAN_FONT_FAMILY,
   QURAN_THEME_COLORS,
+  quranBodyInk,
   toHafsDigits,
 } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
@@ -87,8 +88,10 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
     version,
     holderStyle
   );
-  // Digits match the holder's pre-tinted ink, not the theme token.
+  // Wash fill matches the holder's pre-tinted gold ink.
   const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
+  // Digits read as body ink (black/white), not the ornament gold.
+  const textColor = quranBodyInk(quranTheme);
 
   // Rub-boundary pages replace the cartouche with the two-cell quarter holder,
   // side-anchored toward the page's outer edge.
@@ -141,7 +144,7 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
               y={QUARTER_HEIGHT / 2 + DIGIT_NUDGE.y}
               fontFamily={QURAN_FONT_FAMILY}
               fontSize={DIGIT_FONT_SIZE * 0.85}
-              fill={inkColor}
+              fill={textColor}
               textAnchor="middle"
               alignmentBaseline="central">
               {toHafsDigits(page)}
@@ -151,7 +154,7 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
               y={QUARTER_HEIGHT / 2 + DIGIT_NUDGE.y}
               fontFamily={QURAN_FONT_FAMILY}
               fontSize={QUARTER_LABEL_FONT_SIZE}
-              fill={inkColor}
+              fill={textColor}
               textAnchor="middle"
               alignmentBaseline="central">
               {label}
@@ -192,7 +195,7 @@ const PageNumber = ({ page, quranTheme, version, rubStart, side }: PageNumberPro
               y={HOLDER_HEIGHT / 2 + DIGIT_NUDGE.y}
               fontFamily={QURAN_FONT_FAMILY}
               fontSize={DIGIT_FONT_SIZE}
-              fill={inkColor}
+              fill={textColor}
               textAnchor="middle"
               alignmentBaseline="central">
               {toHafsDigits(page)}

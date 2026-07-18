@@ -579,6 +579,7 @@ const QuranPage = ({
                     quranTheme={quranTheme}
                     styleId={surahFrameStyle}
                     panel={surahFrameMeta.assets[OrnamentAsset.FRAME]?.panel}
+                    medallions={surahFrameMeta.assets[OrnamentAsset.FRAME]?.medallions}
                   />
                 </View>
               ))}

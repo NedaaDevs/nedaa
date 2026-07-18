@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Check, Eye, Loader, Trash2 } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { MushafVersion, DownloadStatus, DownloadPhase } from "@/enums/quran";
-import { isColoredVersion } from "@/constants/Quran";
+import { MushafVersion, DownloadStatus, DownloadPhase, DownloadStep } from "@/enums/quran";
+import { DOWNLOAD_STEP_LABEL_KEYS, isColoredVersion } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors, type QuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { QuranDownload } from "@/services/quran-download";
@@ -62,14 +62,17 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
   const darkError = darkStatus === DownloadStatus.ERROR;
   const darkPercent = state?.dark?.progress?.percent ?? 0;
 
-  // Downloading has byte progress shown as a percentage; extract and finalize
-  // have none, so they show the phase name.
-  const progressLabel = (phase: DownloadPhase | undefined, pct: number) =>
+  // Step 1/2 (images) has byte progress shown as a percentage; extract and
+  // finalize show the phase name instead, as does all of step 2/2
+  // (ornaments), which carries no byte progress.
+  const progressLabel = (step: DownloadStep, phase: DownloadPhase | undefined, pct: number) =>
     phase === DownloadPhase.EXTRACTING
       ? t("quran.download.phaseExtracting")
       : phase === DownloadPhase.FINALIZING
         ? t("quran.download.phaseFinalizing")
-        : `${pct}%`;
+        : step === DownloadStep.ORNAMENTS
+          ? t("quran.download.phaseDownloading")
+          : `${pct}%`;
 
   const confirmDeleteVersion = () => {
     Alert.alert(
@@ -111,11 +114,23 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
         disabled={isDownloading}
         accessibilityRole="radio"
         accessibilityState={{ selected, disabled: isDownloading }}
-        accessibilityLabel={t("a11y.quran.versionCard", {
-          name: versionLabel,
-          size: totalMB,
-          year: version.yearGregorian,
-        })}
+        accessibilityLabel={
+          isDownloading
+            ? t("a11y.quran.versionCardDownloading", {
+                name: versionLabel,
+                step: t(DOWNLOAD_STEP_LABEL_KEYS[state?.progress?.step ?? DownloadStep.IMAGES]),
+                status: progressLabel(
+                  state?.progress?.step ?? DownloadStep.IMAGES,
+                  state?.progress?.phase,
+                  percent
+                ),
+              })
+            : t("a11y.quran.versionCard", {
+                name: versionLabel,
+                size: totalMB,
+                year: version.yearGregorian,
+              })
+        }
         style={{
           borderWidth: 2,
           borderColor: selected ? chrome.accent : chrome.cardBorder,
@@ -217,7 +232,12 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
             marginTop={-6}>
             <Loader size={14} color={chrome.subtleText} />
             <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
-              {progressLabel(state?.progress?.phase, percent)}
+              {t(DOWNLOAD_STEP_LABEL_KEYS[state?.progress?.step ?? DownloadStep.IMAGES])} ·{" "}
+              {progressLabel(
+                state?.progress?.step ?? DownloadStep.IMAGES,
+                state?.progress?.phase,
+                percent
+              )}
             </Text>
           </XStack>
         )}
@@ -282,7 +302,7 @@ const VersionCard = ({ version, selected, onSelect, v4Dark, setV4Dark }: Version
               <XStack alignItems="center" gap="$1.5">
                 <Loader size={14} color={chrome.subtleText} />
                 <Text color={chrome.subtleText} fontSize={13} fontWeight="600">
-                  {progressLabel(state?.dark?.progress?.phase, darkPercent)}
+                  {progressLabel(DownloadStep.IMAGES, state?.dark?.progress?.phase, darkPercent)}
                 </Text>
               </XStack>
             ) : (

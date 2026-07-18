@@ -4,10 +4,9 @@ import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { QuranThemeType } from "@/enums/quran";
-import { ORNAMENT_INKS, QURAN_THEME_COLORS } from "@/constants/Quran";
+import { QURAN_THEME_COLORS, quranBodyInk } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { headerJuzLabel } from "@/utils/juz";
-import { ornamentThemeSlot } from "@/utils/quranOrnaments";
 import {
   headerSurahLabel,
   JUZ_NAME_LIGATURE_FONT,
@@ -38,9 +37,9 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const fontFamily = metadataFontFamily();
-  // Same ornament ink as the footer holders' digits, so top and bottom
-  // furniture read as one set.
-  const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
+  // Body ink (black on light papers, white on dark), same token as the footer
+  // holders' digits — the ornament artwork keeps its gold tint, the text doesn't.
+  const textColor = quranBodyInk(quranTheme);
 
   // Arabic-script locales render both sides as the mushaf's calligraphic
   // ligature glyphs (vocalized, matched style); Latin locales keep text.
@@ -66,7 +65,7 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
           <Text
             accessibilityLabel={surahText}
             style={{
-              color: inkColor,
+              color: textColor,
               fontFamily: surahLig ? SURAH_NAME_LIGATURE_FONT : fontFamily,
               fontSize: surahLig ? 20 : 14,
               // Calligraphic glyphs overflow the default text box — give them
@@ -79,7 +78,7 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme }: PageHeaderProps
           <Text
             accessibilityLabel={juzText}
             style={{
-              color: inkColor,
+              color: textColor,
               fontFamily: juzLig ? JUZ_NAME_LIGATURE_FONT : fontFamily,
               fontSize: juzLig ? 20 : 14,
               lineHeight: juzLig ? 30 : undefined,

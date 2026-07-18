@@ -1,6 +1,7 @@
 import {
   AutoScrollSpeed,
   BookmarkColor,
+  DownloadStep,
   HighlightColor,
   MushafVersion,
   OrnamentAsset,
@@ -26,13 +27,25 @@ export const ORNAMENT_INKS: Record<OrnamentSlot, `#${string}`> = {
 // bundled defaults): per-asset aspect ratio plus, for frames, the text-safe
 // open panel (fractional box) guaranteed around the baked calligraphic name.
 export type OrnamentPanel = { l: number; t: number; r: number; b: number };
-export type OrnamentAssetMeta = { aspect: number; panel?: OrnamentPanel };
+// `medallions` are additional enclosed openings (circles) washed like the panel.
+export type OrnamentAssetMeta = {
+  aspect: number;
+  panel?: OrnamentPanel;
+  medallions?: OrnamentPanel[];
+};
 export type OrnamentPackMeta = { version: string; assets: Record<string, OrnamentAssetMeta> };
 
 export const TOTAL_PAGES = 604;
 export const LINES_PER_PAGE = 15;
 export const IMAGE_SOURCE_WIDTH = 1440;
 export const IMAGE_SOURCE_LINE_HEIGHT = 232;
+
+// The main edition download is the two-step job (images then ornaments); the
+// dark add-on is a separate one-shot download and never carries a step prefix.
+export const DOWNLOAD_STEP_LABEL_KEYS: Record<DownloadStep, string> = {
+  [DownloadStep.IMAGES]: "quran.download.stepPages",
+  [DownloadStep.ORNAMENTS]: "quran.download.stepDecorations",
+};
 
 export const FONT_SIZE_MIN = 20;
 export const FONT_SIZE_MAX = 48;
@@ -158,6 +171,10 @@ export const QURAN_THEME_COLORS: Record<
   },
 } as const;
 
+// Body ink: the tint applied to page images (and to text meant to match them).
+export const quranBodyInk = (theme: QuranThemeType): string =>
+  QURAN_THEME_COLORS[theme].textTint ?? QURAN_THEME_COLORS[theme].headerColor;
+
 // Nominal ayah-marker box in source-strip pixels (232px line): constant so
 // medallions render one size regardless of each page's fitted font.
 export const MARKER_BOX_SOURCE_PX = 112;
@@ -166,9 +183,9 @@ export const MARKER_ADJUSTMENTS: Record<
   MushafVersion,
   { scaleMultiplier: number; offsetX: number; offsetY: number; fontSizeMultiplier: number }
 > = {
-  [MushafVersion.V1]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
-  [MushafVersion.V2]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
-  [MushafVersion.V4]: { scaleMultiplier: 1.1, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V1]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V2]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
 } as const;
 
 // Surah-frame placement trims, keyed style → edition: the frame art is shared,

@@ -30,8 +30,14 @@ import ReportThisButton from "@/components/ReportThisButton";
 import { formatNumberToLocale } from "@/utils/number";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
-import { MushafVersion, QuranTheme, DownloadStatus, DownloadPhase } from "@/enums/quran";
-import { QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
+import {
+  MushafVersion,
+  QuranTheme,
+  DownloadStatus,
+  DownloadPhase,
+  DownloadStep,
+} from "@/enums/quran";
+import { DOWNLOAD_STEP_LABEL_KEYS, QURAN_THEME_COLORS, isColoredVersion } from "@/constants/Quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { QuranManifestService, type QuranPreviewImage } from "@/services/quran-manifest";
 import { QuranDownload } from "@/services/quran-download";
@@ -83,6 +89,7 @@ const DownloadProgressScreen = ({
   const progress = downloadState?.progress;
   const status = downloadState?.status ?? DownloadStatus.IDLE;
 
+  const step = progress?.step ?? DownloadStep.IMAGES;
   const phase = progress?.phase ?? DownloadPhase.DOWNLOADING;
   const percent = progress?.percent ?? 0;
   const downloadedMB = progress ? Math.round(progress.bytesDownloaded / (1024 * 1024)) : 0;
@@ -91,8 +98,14 @@ const DownloadProgressScreen = ({
   const isError = status === DownloadStatus.ERROR;
   const isComplete = status === DownloadStatus.COMPLETE;
   const isPaused = status === DownloadStatus.PAUSED;
-  // Pause only applies to the byte transfer, not extract/finalize.
-  const canPause = !isComplete && !isError && !isPaused && phase === DownloadPhase.DOWNLOADING;
+  // Pause only applies to the images byte transfer — ornament packs (step 2/2)
+  // have no resumable transfer to pause.
+  const canPause =
+    !isComplete &&
+    !isError &&
+    !isPaused &&
+    step === DownloadStep.IMAGES &&
+    phase === DownloadPhase.DOWNLOADING;
   const colored = isColoredVersion(version);
 
   const [preview, setPreview] = useState<QuranPreviewImage | null>(null);
@@ -112,11 +125,17 @@ const DownloadProgressScreen = ({
   const aspect = preview ? preview.height / preview.width : DEFAULT_ASPECT;
   const pageHeight = Math.round(PAGE_WIDTH * aspect);
 
-  // The page fills with real download bytes; extract/finalize have no byte
-  // progress, so the page is shown fully inked and the phase label carries the
-  // remaining work. Linear motion reflects real progress; reduced-motion users
-  // get a cross-fade (handled below) instead of positional travel.
-  const fillTarget = isComplete ? 100 : phase === DownloadPhase.DOWNLOADING ? percent : 100;
+  // The page fills with real download bytes during step 1/2 (images); once
+  // those land the page is shown fully inked and the step/phase labels carry
+  // the remaining work (extract/finalize, then the ornament packs in step
+  // 2/2). Linear motion reflects real progress; reduced-motion users get a
+  // cross-fade (handled below) instead of positional travel.
+  const fillTarget =
+    isComplete || step !== DownloadStep.IMAGES
+      ? 100
+      : phase === DownloadPhase.DOWNLOADING
+        ? percent
+        : 100;
   const fill = useSharedValue(0);
 
   useEffect(() => {
@@ -137,6 +156,8 @@ const DownloadProgressScreen = ({
     : isPaused
       ? t("quran.download.paused")
       : t(PHASE_LABEL_KEYS[phase]);
+
+  const stepLabel = t(DOWNLOAD_STEP_LABEL_KEYS[step]);
 
   const PhaseIcon = isComplete ? FileCheck : isPaused ? Pause : PHASE_ICONS[phase];
 
@@ -205,7 +226,20 @@ const DownloadProgressScreen = ({
         borderWidth={1}
         borderColor={chrome.cardBorder}
         accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(fillTarget) }}>
+        accessibilityLabel={
+          isComplete
+            ? t("quran.download.complete")
+            : t("a11y.quran.editionDownloadProgress", { step: stepLabel, phase: phaseLabel })
+        }
+        // Step 2/2 (ornaments) reports no byte progress; while it's still in
+        // flight, a numeric now=100 would falsely announce completion, so
+        // screen readers rely on the label instead. A true completion (any
+        // step) still reports its accurate now=100.
+        accessibilityValue={
+          isComplete || step !== DownloadStep.ORNAMENTS
+            ? { min: 0, max: 100, now: Math.round(fillTarget) }
+            : undefined
+        }>
         {/* Faint base layer (the not-yet-downloaded page) */}
         {preview && (
           <View position="absolute" opacity={0.16}>
@@ -241,48 +275,61 @@ const DownloadProgressScreen = ({
         )}
       </View>
 
-      {/* Phase label (icon + text, never color alone) */}
+      {/* Step + phase label (icon + text, never color alone) */}
       <AnimatePresence exitBeforeEnter>
         <MotiView
-          key={phaseLabel}
+          key={`${step}-${phaseLabel}`}
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 200 }}>
           <YStack alignItems="center" gap="$1.5">
+            {!isComplete && (
+              <Text
+                fontSize={11.5}
+                fontWeight="700"
+                color={chrome.subtleText}
+                letterSpacing={0.3}
+                textTransform="uppercase">
+                {stepLabel}
+              </Text>
+            )}
             <XStack alignItems="center" gap="$2">
               <PhaseIcon size={16} color={labelColor} />
               <Text fontSize={16} color={labelColor}>
                 {phaseLabel}
               </Text>
             </XStack>
-            {!isComplete && phase === DownloadPhase.DOWNLOADING && totalMB > 0 && (
-              <YStack width={PAGE_WIDTH} alignItems="center" gap="$2" paddingTop="$1">
-                <Text fontSize={14} fontWeight="700" color={chrome.text}>
-                  {formatNumberToLocale(String(percent))}%
-                </Text>
-                {/* Linear progress line */}
-                <View
-                  width="100%"
-                  height={4}
-                  borderRadius={2}
-                  overflow="hidden"
-                  backgroundColor={chrome.progressTrack}>
+            {!isComplete &&
+              step === DownloadStep.IMAGES &&
+              phase === DownloadPhase.DOWNLOADING &&
+              totalMB > 0 && (
+                <YStack width={PAGE_WIDTH} alignItems="center" gap="$2" paddingTop="$1">
+                  <Text fontSize={14} fontWeight="700" color={chrome.text}>
+                    {formatNumberToLocale(String(percent))}%
+                  </Text>
+                  {/* Linear progress line */}
                   <View
+                    width="100%"
                     height={4}
                     borderRadius={2}
-                    backgroundColor={chrome.accent}
-                    style={{ width: `${percent}%` }}
-                  />
-                </View>
-                <Text fontSize={12.5} color={chrome.subtleText}>
-                  {t("quran.download.sizeProgress", {
-                    downloaded: formatNumberToLocale(String(downloadedMB)),
-                    total: formatNumberToLocale(String(totalMB)),
-                  })}
-                </Text>
-              </YStack>
-            )}
+                    overflow="hidden"
+                    backgroundColor={chrome.progressTrack}>
+                    <View
+                      height={4}
+                      borderRadius={2}
+                      backgroundColor={chrome.accent}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </View>
+                  <Text fontSize={12.5} color={chrome.subtleText}>
+                    {t("quran.download.sizeProgress", {
+                      downloaded: formatNumberToLocale(String(downloadedMB)),
+                      total: formatNumberToLocale(String(totalMB)),
+                    })}
+                  </Text>
+                </YStack>
+              )}
           </YStack>
         </MotiView>
       </AnimatePresence>

@@ -8,6 +8,7 @@ import {
   MARKER_ADJUSTMENTS,
   ORNAMENT_INKS,
   QURAN_FONT_FAMILY,
+  quranBodyInk,
   toHafsDigits,
 } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
@@ -70,8 +71,10 @@ const AyahMarker = ({
   // Three-digit ayah numbers (100–286) shrink so they fit the slot the way one-
   // and two-digit numbers do.
   const fontSize = markerHeight * adjustments.fontSizeMultiplier * (ayahNumber >= 100 ? 0.72 : 1);
-  // The number matches the medallion's pre-tinted ink, not the theme token.
+  // The wash fill matches the medallion's pre-tinted gold ink.
   const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
+  // The digit itself reads as body ink (black/white), not the ornament gold.
+  const textColor = quranBodyInk(quranTheme);
 
   const source = useMemo(
     () =>
@@ -134,7 +137,7 @@ const AyahMarker = ({
         <Text
           style={{
             fontSize,
-            color: inkColor,
+            color: textColor,
             fontFamily: QURAN_FONT_FAMILY,
             textAlign: "center",
             includeFontPadding: false,

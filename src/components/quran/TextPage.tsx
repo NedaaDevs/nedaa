@@ -209,6 +209,7 @@ const TextPage = ({
                 styleId={surahFrameStyle}
                 label={`${t("quran.goto.surah")} ${localizedSurahName(surah)}`}
                 panel={surahFrameAssetMeta?.panel}
+                medallions={surahFrameAssetMeta?.medallions}
                 labelColor={themeColors.headerColor}
               />
             </View>

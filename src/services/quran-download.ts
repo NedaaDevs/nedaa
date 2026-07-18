@@ -8,6 +8,7 @@ import {
   MushafImageType,
   DownloadStatus,
   DownloadPhase,
+  DownloadStep,
   BundleOutcome,
   OrnamentAsset,
   OrnamentCategory,
@@ -116,13 +117,14 @@ const activeDownloads = new Map<MushafVersion, ActiveDownload>();
 const activeDarkDownloads = new Map<MushafVersion, ActiveDownload>();
 
 const buildProgress = (
+  step: DownloadStep,
   phase: DownloadPhase,
   bytesDownloaded: number,
   totalBytes: number
 ): DownloadProgress => {
   const percent =
     totalBytes > 0 ? Math.min(100, Math.round((bytesDownloaded / totalBytes) * 100)) : 0;
-  return { phase, bytesDownloaded, totalBytes, percent };
+  return { step, phase, bytesDownloaded, totalBytes, percent };
 };
 
 const getVersionDir = (version: MushafVersion): Directory => {
@@ -331,12 +333,15 @@ const downloadAndExtractBundle = async (
 // Download + extract one category's resolved ornament pack into its dir, when
 // absent or out of date. Reads pack.json and pushes the parsed metadata into the
 // store. Self-contained + non-fatal — any failure leaves the bundled nedaa
-// fallback in place and the edition flow proceeds.
+// fallback in place and the edition flow proceeds. `emit` is only supplied by
+// the tracked edition download (step 2/2 progress); the opportunistic top-up
+// below passes no emitter and reports nothing.
 const installOrnamentPack = async (
   active: ActiveDownload,
   version: MushafVersion,
   manifestVersion: QuranManifestVersion,
-  category: OrnamentCategory
+  category: OrnamentCategory,
+  emit: (phase: DownloadPhase, bytesDownloaded: number, totalBytes: number) => void = () => {}
 ): Promise<void> => {
   const store = useQuranStore.getState();
   try {
@@ -359,7 +364,7 @@ const installOrnamentPack = async (
       dir,
       zipName: `quran-${version}-${category}.zip`,
       alreadyOnDisk: false,
-      emit: () => {},
+      emit,
     });
     if (outcome !== BundleOutcome.EXTRACTED) return;
 
@@ -467,7 +472,9 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       alreadyOnDisk: !plan.needImages,
       resumeState,
       emit: (phase, bytes, total) =>
-        store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
+        store.updateDownloadState(version, {
+          progress: buildProgress(DownloadStep.IMAGES, phase, bytes, total),
+        }),
       onPaused: (state) => persistResume(version, state),
       onResumeInvalid: () => clearResume(version),
     });
@@ -486,7 +493,9 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
       zipName: `quran-${version}-meta.zip`,
       alreadyOnDisk: !plan.needMeta,
       emit: (phase, bytes, total) =>
-        store.updateDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
+        store.updateDownloadState(version, {
+          progress: buildProgress(DownloadStep.IMAGES, phase, bytes, total),
+        }),
       onExtracted: async () => {
         // Drop any cached bounds connection before swapping the file, so the
         // reader opens the freshly installed geometry. A stale connection (held
@@ -514,9 +523,19 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
     if (plan.needMeta) writeInstalled(version, { meta: manifestVersion.meta.version });
 
     // 3) Ornament packs (tiny): the resolved ayah-marker/surah-frame/page-holder
-    // packs, installed as silent tail steps of this one download job — no second
-    // visible download. Non-fatal; failures fall back to the bundled nedaa art.
+    // packs — step 2/2 of this one visible download job, not a second download.
+    // installOrnamentPack declares no sizeBytes for these downloads (a per-pack
+    // Content-Length may still arrive over the wire), but the UI intentionally
+    // renders no numbers for this step — only the step/phase labels.
+    // Non-fatal; failures fall back to the bundled nedaa art.
+    store.updateDownloadState(version, {
+      progress: buildProgress(DownloadStep.ORNAMENTS, DownloadPhase.DOWNLOADING, 0, 0),
+    });
     for (const category of ALL_ORNAMENT_CATEGORIES) {
+      // installOrnamentPack's own emit would replay a DOWNLOADING→EXTRACTING
+      // cycle per pack, cross-fading the step 2/2 label three times in a row.
+      // Leave emit at its no-op default so the single DOWNLOADING phase set
+      // above holds for the whole ornament leg.
       await installOrnamentPack(active, version, manifestVersion, category);
     }
 
@@ -570,8 +589,12 @@ const doStartDark = async (version: MushafVersion, active: ActiveDownload): Prom
       dir: getDarkVersionDir(version),
       zipName: `quran-${version}-dark-bundle.zip`,
       alreadyOnDisk: darkFirstPagePresent(version, imageType),
+      // The dark bundle is a standalone add-on outside the two-step edition job
+      // (no ornament leg of its own), so it always reports as the images step.
       emit: (phase, bytes, total) =>
-        store.updateDarkDownloadState(version, { progress: buildProgress(phase, bytes, total) }),
+        store.updateDarkDownloadState(version, {
+          progress: buildProgress(DownloadStep.IMAGES, phase, bytes, total),
+        }),
     });
     if (active.cancelled || outcome !== BundleOutcome.EXTRACTED) return;
 

@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { MushafVersion, DownloadStatus, DownloadPhase } from "@/enums/quran";
+import { MushafVersion, DownloadStatus, DownloadPhase, DownloadStep } from "@/enums/quran";
+import { DOWNLOAD_STEP_LABEL_KEYS } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 
@@ -32,16 +33,25 @@ const DownloadBanner = ({ onDismiss }: DownloadBannerProps) => {
   const [version, state] = downloading;
   const percent = state?.progress?.percent ?? 0;
   const phase = state?.progress?.phase;
+  const step = state?.progress?.step ?? DownloadStep.IMAGES;
 
-  // Downloading shows the live percentage; extract and finalize have no byte
-  // progress, so they show the phase name and hold the bar full.
+  // Downloading shows the live percentage for step 1/2; extract/finalize (and
+  // all of step 2/2, which carries no byte progress) show the phase name
+  // instead, and hold the bar full.
   const statusLabel =
     phase === DownloadPhase.EXTRACTING
       ? t("quran.download.phaseExtracting")
       : phase === DownloadPhase.FINALIZING
         ? t("quran.download.phaseFinalizing")
-        : `${percent}%`;
-  const barWidth = phase && phase !== DownloadPhase.DOWNLOADING ? 100 : percent;
+        : step === DownloadStep.ORNAMENTS
+          ? t("quran.download.phaseDownloading")
+          : `${percent}%`;
+  // The ornament packs (step 2/2) carry no declared size, so the bar holds
+  // full rather than showing a stray 0%.
+  const barWidth =
+    step === DownloadStep.ORNAMENTS || (phase && phase !== DownloadPhase.DOWNLOADING)
+      ? 100
+      : percent;
 
   return (
     <Animated.View
@@ -54,7 +64,8 @@ const DownloadBanner = ({ onDismiss }: DownloadBannerProps) => {
       <XStack alignItems="center" justifyContent="space-between" gap="$2">
         <XStack alignItems="center" gap="$2" flex={1}>
           <Text fontSize={13}>
-            {t(`quran.version.${version as MushafVersion}`)} — {statusLabel}
+            {t(`quran.version.${version as MushafVersion}`)} — {t(DOWNLOAD_STEP_LABEL_KEYS[step])} ·{" "}
+            {statusLabel}
           </Text>
           <View
             flex={1}

@@ -7,6 +7,7 @@ import {
   LineType,
   DownloadStatus,
   DownloadPhase,
+  DownloadStep,
   ReaderViewMode,
   ReadAlongGranularity,
   RevelationPlace,
@@ -17,7 +18,7 @@ import {
 } from "@/enums/quran";
 import type { OrnamentPackMeta } from "@/constants/Quran";
 
-export type { DownloadPhase };
+export type { DownloadPhase, DownloadStep };
 
 export type GlyphBound = {
   page: number;
@@ -79,6 +80,8 @@ export type LineMetadata = {
 };
 
 export type DownloadProgress = {
+  // Which of the two visible job steps this progress event belongs to.
+  step: DownloadStep;
   phase: DownloadPhase;
   bytesDownloaded: number;
   totalBytes: number;

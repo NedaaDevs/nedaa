@@ -70,6 +70,17 @@ export enum DownloadPhase {
   FINALIZING = "finalizing",
 }
 
+// An edition download is one visible job in two steps: page images (+ their
+// geometry meta) land first, then the ornament decoration packs. Surfaced in
+// the UI as "Step 1/2" / "Step 2/2" so the two phases read as a plan, not a
+// stall after 100%.
+export const DownloadStep = {
+  IMAGES: "images",
+  ORNAMENTS: "ornaments",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
+export type DownloadStep = (typeof DownloadStep)[keyof typeof DownloadStep];
+
 // Result of a single bundle download attempt (download → extract).
 export const BundleOutcome = {
   EXTRACTED: "extracted",

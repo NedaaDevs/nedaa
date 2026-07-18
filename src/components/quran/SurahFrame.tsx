@@ -24,6 +24,7 @@ interface SurahFrameProps {
   // page image and the frame draws underneath it).
   label?: string;
   panel?: OrnamentPanel;
+  medallions?: OrnamentPanel[];
   labelColor?: string;
 }
 
@@ -40,6 +41,7 @@ const SurahFrame = ({
   styleId,
   label,
   panel,
+  medallions,
   labelColor,
 }: SurahFrameProps) => {
   const source = useMemo(
@@ -74,6 +76,23 @@ const SurahFrame = ({
           }}
         />
       ) : null}
+      {medallions?.map((m, i) => {
+        const h = height * (m.b - m.t);
+        return (
+          <View
+            key={i}
+            style={{
+              position: "absolute",
+              left: width * m.l,
+              top: height * m.t,
+              width: width * (m.r - m.l),
+              height: h,
+              borderRadius: h / 2,
+              backgroundColor: `${inkColor}${FILL_ALPHA}`,
+            }}
+          />
+        );
+      })}
       <Image source={source} style={{ width, height }} resizeMode="contain" fadeDuration={0} />
       {label ? (
         // panel l/t are start fractions and r/b END fractions (r > l, b > t),
