@@ -1,12 +1,10 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
 
 group = 'expo.modules.orientation'
 version = '1.0.0'
-
-def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
-apply from: expoModulesCorePlugin
-applyKotlinExpoModulesCorePlugin()
 
 def buildVariant = System.getenv("BUILD_VARIANT") ?: "gms"
 def isGms = buildVariant != "hms"
@@ -18,6 +16,8 @@ android {
   defaultConfig {
     minSdkVersion 24
     targetSdkVersion 35
+    versionCode 1
+    versionName '1.0.0'
     buildConfigField "boolean", "HAS_GMS", "${isGms}"
   }
 
@@ -39,7 +39,6 @@ android {
 }
 
 dependencies {
-  implementation project(':expo-modules-core')
   if (isGms) {
     implementation 'com.google.android.gms:play-services-location:21.3.0'
   }

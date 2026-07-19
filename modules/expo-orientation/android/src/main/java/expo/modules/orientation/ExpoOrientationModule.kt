@@ -33,7 +33,6 @@ class ExpoOrientationModule : Module() {
 
         Function("startWatching") { options: Map<String, Any> ->
             startSensors(options)
-            null
         }
 
         Function("stopWatching") {
