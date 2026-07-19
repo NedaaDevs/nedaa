@@ -1,11 +1,10 @@
 import {
-  PermissionStatus,
   getCurrentPositionAsync,
   getForegroundPermissionsAsync,
   requestForegroundPermissionsAsync,
-  LocationObject,
-  Accuracy,
-} from "expo-location";
+  LocationAccuracy,
+  type LocationObject,
+} from "@/adapters/location";
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/location";
@@ -19,11 +18,11 @@ export const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseco
 export const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
 export const LOCATION_REQUEST_TIMEOUT = 10000; // 10 seconds
 
-export const mapToLocalStatus = (status: PermissionStatus): LocalPermissionStatus => {
+export const mapToLocalStatus = (status: LocalPermissionStatus): LocalPermissionStatus => {
   switch (status) {
-    case PermissionStatus.GRANTED:
+    case LocalPermissionStatus.GRANTED:
       return LocalPermissionStatus.GRANTED;
-    case PermissionStatus.DENIED:
+    case LocalPermissionStatus.DENIED:
       return LocalPermissionStatus.DENIED;
     default:
       return LocalPermissionStatus.UNDETERMINED;
@@ -34,10 +33,7 @@ export const checkLocationPermission = async () => {
   try {
     const { status, canAskAgain } = await getForegroundPermissionsAsync();
 
-    return {
-      granted: status === PermissionStatus.GRANTED,
-      canRequestAgain: canAskAgain,
-    };
+    return { granted: status === LocalPermissionStatus.GRANTED, canRequestAgain: canAskAgain };
   } catch (error) {
     log.w("Permission", `check failed: ${(error as Error)?.message ?? error}`);
     return {
@@ -50,7 +46,7 @@ export const checkLocationPermission = async () => {
 export const requestLocationPermission = async () => {
   try {
     const { status } = await requestForegroundPermissionsAsync();
-    return { granted: status === PermissionStatus.GRANTED };
+    return { granted: status === LocalPermissionStatus.GRANTED };
   } catch (error) {
     log.w("Permission", `request failed: ${(error as Error)?.message ?? error}`);
     return { granted: false, error };
@@ -61,7 +57,7 @@ export const requestLocationPermission = async () => {
 export const getLocationWithTimeout = async (): Promise<LocationObject> => {
   try {
     const locationPromise = getCurrentPositionAsync({
-      accuracy: Accuracy.Low,
+      accuracy: LocationAccuracy.LOW,
     });
 
     const timeoutPromise = new Promise<never>((_, reject) => {

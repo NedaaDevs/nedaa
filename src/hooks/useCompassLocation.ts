@@ -1,8 +1,7 @@
-import { PermissionStatus } from "expo";
-import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform } from "react-native";
 
+import * as Location from "@/adapters/location";
 import { PlatformType } from "@/enums/app";
 import {
   CompassLocationPermissionAccuracy,
@@ -13,6 +12,7 @@ import {
   type CompassLocationSourceValue,
   type CompassReliabilityIssueValue,
 } from "@/enums/compass";
+import { LocalPermissionStatus } from "@/enums/location";
 import { useCompassStore } from "@/stores/compass";
 import type { CompassLocationFix } from "@/types/compass";
 import { AppLogger } from "@/utils/appLogger";
@@ -94,7 +94,7 @@ const getPermissionAccuracy = (
 const getPermissionIssue = (
   response: Location.LocationPermissionResponse
 ): CompassReliabilityIssueValue => {
-  if (response.status === PermissionStatus.UNDETERMINED) {
+  if (response.status === LocalPermissionStatus.UNDETERMINED) {
     return CompassReliabilityIssue.LOCATION_REQUIRED;
   }
   return response.canAskAgain
@@ -159,7 +159,7 @@ const createPositionRequest = (
 
     void Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.LocationAccuracy.HIGH,
         mayShowUserSettingsDialog,
       },
       handleLocation,

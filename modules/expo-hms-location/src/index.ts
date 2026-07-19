@@ -115,7 +115,9 @@ export const ExpoHmsLocationModule = {
         removed = true;
         locationSubscription.remove();
         errorSubscription.remove();
-        void nativeModule.stopWatchingAsync(watchId);
+        void nativeModule.stopWatchingAsync(watchId).catch((error) => {
+          console.warn("[ExpoHmsLocation] Failed to stop location watch", error);
+        });
       },
     };
   },

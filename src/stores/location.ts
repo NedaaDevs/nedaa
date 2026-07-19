@@ -1,15 +1,16 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import * as Location from "expo-location";
+import * as Location from "@/adapters/location";
 
 // Types
-import { LocationDetails, initialLocationDetails } from "@/types/location";
-import { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
-import { ErrorResponse } from "@/types/api";
+import { initialLocationDetails, type LocationDetails } from "@/types/location";
+import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
+import type { ErrorResponse } from "@/types/api";
 
 // Stores
 import appStore from "@/stores/app";
+import i18n from "@/localization/i18n";
 import { AppLogger } from "@/utils/appLogger";
 
 // Services
@@ -67,15 +68,40 @@ export const useLocationStore = create<LocationStore>()(
         pendingCityChange: null,
         // Initialize location when permission is granted
         initializeLocation: async () => {
+          const previousState = get();
+          const previousLastKnownCoords = previousState.lastKnownCoords;
+          const previousVerifiedLocation = previousLastKnownCoords
+            ? {
+                locationDetails: previousState.locationDetails,
+                localizedLocation: previousState.localizedLocation,
+                lastKnownCoords: previousLastKnownCoords,
+              }
+            : null;
           set({ isGettingLocation: true });
           try {
             // Get initial location with timeout protection
             const location = await getLocationWithTimeout();
             log.i("Init", "initial location retrieved");
 
+            // Keep an accurate fix even when address services are unavailable.
+            set((state) => ({
+              locationDetails: {
+                ...state.locationDetails,
+                coords: location.coords,
+                error: null,
+                isLoading: false,
+              },
+              // A coordinate becomes prayer-ready only after its timezone is resolved.
+              lastKnownCoords: null,
+              isLocationPermissionGranted: true,
+            }));
+
             const [geocodedAddress] = await Location.reverseGeocodeAsync({
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
+            }).catch((error) => {
+              log.w("Geocode", `device address failed: ${(error as Error)?.message ?? error}`);
+              return [];
             });
 
             // Get localized version
@@ -90,21 +116,28 @@ export const useLocationStore = create<LocationStore>()(
                 return null;
               });
 
-            // Set initial state
+            const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
+            if (!timezone) {
+              if (previousVerifiedLocation) {
+                set(previousVerifiedLocation);
+              }
+              throw new Error(i18n.t("location.update.error"));
+            }
+
             set({
               locationDetails: {
                 coords: location.coords,
                 address: {
-                  country: geocodedAddress.country ?? "N/A",
-                  city: geocodedAddress.city ?? "N/A",
+                  country: geocodedAddress?.country ?? localizedGeocode?.countryName ?? "N/A",
+                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? "N/A",
                 },
-                timezone: localizedGeocode?.timezone || "Asia/Riyadh",
+                timezone,
                 error: null,
                 isLoading: false,
               },
               localizedLocation: {
-                country: localizedGeocode?.countryName || geocodedAddress.country || "N/A",
-                city: localizedGeocode?.city || geocodedAddress.city || "N/A",
+                country: localizedGeocode?.countryName || geocodedAddress?.country || "N/A",
+                city: localizedGeocode?.city || geocodedAddress?.city || "N/A",
               },
               lastKnownCoords: {
                 latitude: location.coords.latitude,
@@ -113,14 +146,17 @@ export const useLocationStore = create<LocationStore>()(
               isLocationPermissionGranted: true,
             });
           } catch (error) {
-            log.e("Init", "initialize location failed", error instanceof Error ? error : undefined);
-            set({
+            const cause =
+              error instanceof Error ? error : new Error("Failed to initialize location");
+            log.e("Init", "initialize location failed", cause);
+            set((state) => ({
               locationDetails: {
-                ...initialLocationDetails,
-                error: error instanceof Error ? error.message : "Failed to initialize location",
+                ...state.locationDetails,
+                error: cause.message,
                 isLoading: false,
               },
-            });
+            }));
+            throw cause;
           } finally {
             set({ isGettingLocation: false });
           }
@@ -156,13 +192,15 @@ export const useLocationStore = create<LocationStore>()(
                 );
               });
           } catch (error) {
-            log.e("Update", "update location failed", error instanceof Error ? error : undefined);
+            const cause = error instanceof Error ? error : new Error("Failed to update location");
+            log.e("Update", "update location failed", cause);
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
-                error: error instanceof Error ? error.message : "Failed to update location",
+                error: cause.message,
               },
             }));
+            throw cause;
           } finally {
             set({ isGettingLocation: false });
           }

@@ -184,16 +184,28 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             set({ hasError: false, errorMessage: "" });
             useAppStore.getState().setLoadingState(true, i18n.t("common.loadingPrayerTimes"));
 
-            // if we haven't already get the current location
+            // If we haven't already got the current location, acquire it before reading prayer data.
             if (!get().didGetCurrentLocation && (await checkLocationPermission()).granted) {
-              await locationStore.getState().initializeLocation();
-
-              set({
-                didGetCurrentLocation: true,
-              });
+              try {
+                await locationStore.getState().initializeLocation();
+              } catch (error) {
+                if (!locationStore.getState().lastKnownCoords) {
+                  throw error;
+                }
+                log.w(
+                  "Load",
+                  `current location failed; using verified saved coordinates: ${(error as Error)?.message ?? error}`
+                );
+              }
             }
-            // Get location details from location store
-            const { locationDetails } = locationStore.getState();
+
+            const { locationDetails, lastKnownCoords } = locationStore.getState();
+            if (!lastKnownCoords) {
+              set({ didGetCurrentLocation: false });
+              throw new Error(locationDetails.error || i18n.t("location.permission.deniedMessage"));
+            }
+
+            set({ didGetCurrentLocation: true });
             // Get yesterday, today, tomorrow dates
             const now = timeZonedNow(locationDetails.timezone);
             const yesterday = dateToInt(subDays(now, 1));
