@@ -108,37 +108,44 @@ describe("useCompassLocation", () => {
     jest.restoreAllMocks();
   });
 
-  it("keeps first-use and compass-only modes completely free of location API calls", async () => {
-    useCompassStore.setState({
-      lastVerifiedFix: {
-        latitude: precisePosition.coords.latitude,
-        longitude: precisePosition.coords.longitude,
-        accuracyMeters: precisePosition.coords.accuracy,
-        altitude: precisePosition.coords.altitude,
-        timestamp: precisePosition.timestamp,
-      },
-    });
+  it("keeps first-use mode completely free of location API calls", async () => {
     const tree = await renderHook();
 
     expect(latest().preference).toBe(CompassLocationPreference.ASK);
     expect(latest().source).toBe(CompassLocationSource.NONE);
     expect(mockGetForegroundPermissionsAsync).not.toHaveBeenCalled();
 
+    act(() => tree.unmount());
+  });
+
+  it("reuses a verified saved fix in compass-only mode without requesting or deleting location", async () => {
+    const savedFix = {
+      latitude: precisePosition.coords.latitude,
+      longitude: precisePosition.coords.longitude,
+      accuracyMeters: precisePosition.coords.accuracy,
+      altitude: precisePosition.coords.altitude,
+      timestamp: precisePosition.timestamp,
+    };
+    useCompassStore.setState({ lastVerifiedFix: savedFix });
+    const tree = await renderHook();
+
     await act(async () => latest().chooseCompassOnly());
     await flush();
 
-    expect(latest().preference).toBe(CompassLocationPreference.COMPASS_ONLY);
-    expect(latest().fix).toBeNull();
+    await act(async () => tree.update(<Probe active={false} />));
+    await act(async () => tree.update(<Probe active />));
+
+    const result = latest();
+    const persistedFix = useCompassStore.getState().lastVerifiedFix;
+    act(() => tree.unmount());
+
+    expect(result.preference).toBe(CompassLocationPreference.COMPASS_ONLY);
+    expect(result.source).toBe(CompassLocationSource.SAVED);
+    expect(result.fix).toEqual(savedFix);
     expect(mockGetForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
-    expect(useCompassStore.getState().lastVerifiedFix).toBeNull();
-
-    await act(async () => tree.update(<Probe active={false} />));
-    await act(async () => tree.update(<Probe active />));
-    expect(mockGetForegroundPermissionsAsync).not.toHaveBeenCalled();
-    expect(mockWatchPositionAsync).not.toHaveBeenCalled();
-    act(() => tree.unmount());
+    expect(persistedFix).toEqual(savedFix);
   });
 
   it("requests permission only after Qibla is chosen and saves one high-accuracy fix", async () => {

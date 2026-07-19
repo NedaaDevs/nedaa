@@ -47,13 +47,7 @@ export const useCompassStore = create<CompassStore>()(
     (set) => ({
       preference: CompassLocationPreference.ASK,
       lastVerifiedFix: null,
-      setPreference: (preference) =>
-        set((state) => ({
-          preference,
-          // Coordinates only belong to Qibla mode; leaving it removes them atomically.
-          lastVerifiedFix:
-            preference === CompassLocationPreference.QIBLA ? state.lastVerifiedFix : null,
-        })),
+      setPreference: (preference) => set({ preference }),
       setLastVerifiedFix: (fix) => {
         if (isValidCompassLocationFix(fix)) set({ lastVerifiedFix: fix });
       },
@@ -74,11 +68,9 @@ export const useCompassStore = create<CompassStore>()(
         return {
           ...currentState,
           preference,
-          lastVerifiedFix:
-            preference === CompassLocationPreference.QIBLA &&
-            isValidCompassLocationFix(persisted?.lastVerifiedFix)
-              ? persisted.lastVerifiedFix
-              : null,
+          lastVerifiedFix: isValidCompassLocationFix(persisted?.lastVerifiedFix)
+            ? persisted.lastVerifiedFix
+            : null,
         };
       },
     }

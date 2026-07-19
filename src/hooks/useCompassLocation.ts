@@ -217,7 +217,7 @@ const toCompassLocationFix = (location: Location.LocationObject): CompassLocatio
 
 const getInitialView = (): LocationViewState => {
   const { preference, lastVerifiedFix } = useCompassStore.getState();
-  if (preference !== CompassLocationPreference.QIBLA || !lastVerifiedFix) return EMPTY_VIEW;
+  if (preference === CompassLocationPreference.ASK || !lastVerifiedFix) return EMPTY_VIEW;
 
   const issue = getLocationReliabilityIssue(lastVerifiedFix, { isSaved: true });
   if (issue) return { ...EMPTY_VIEW, issue };
@@ -485,7 +485,20 @@ export const useCompassLocation = ({
     skipNextAutomaticRefreshRef.current = false;
     invalidateRequests();
     setPreference(CompassLocationPreference.COMPASS_ONLY);
-    setView(EMPTY_VIEW);
+    const savedFix = useCompassStore.getState().lastVerifiedFix;
+    const savedIssue = savedFix ? getLocationReliabilityIssue(savedFix, { isSaved: true }) : null;
+    setView(
+      savedFix && savedIssue === null
+        ? {
+            ...EMPTY_VIEW,
+            fix: savedFix,
+            source: CompassLocationSource.SAVED,
+          }
+        : {
+            ...EMPTY_VIEW,
+            issue: savedIssue,
+          }
+    );
   }, [invalidateRequests, setPreference]);
 
   const refresh = useCallback(async () => {
@@ -522,13 +535,20 @@ export const useCompassLocation = ({
 
   useEffect(() => {
     if (!lastVerifiedFix) return;
-    if (preference !== CompassLocationPreference.QIBLA) {
-      log.i("Location", "stored fix removed outside Qibla mode");
-      clearLastVerifiedFix();
+    const issue = getLocationReliabilityIssue(lastVerifiedFix, { isSaved: true });
+    if (!issue) {
+      if (
+        preference === CompassLocationPreference.COMPASS_ONLY &&
+        viewRef.current.fix !== lastVerifiedFix
+      ) {
+        setView({
+          ...EMPTY_VIEW,
+          fix: lastVerifiedFix,
+          source: CompassLocationSource.SAVED,
+        });
+      }
       return;
     }
-    const issue = getLocationReliabilityIssue(lastVerifiedFix, { isSaved: true });
-    if (!issue) return;
 
     log.w("Location", `stored fix removed issue=${issue}`);
     clearLastVerifiedFix();
@@ -556,7 +576,7 @@ export const useCompassLocation = ({
   }, [active, invalidateRequests, performRefresh, preference]);
 
   useEffect(() => {
-    if (preference !== CompassLocationPreference.QIBLA || !view.fix) return;
+    if (preference === CompassLocationPreference.ASK || !view.fix) return;
 
     const fix = view.fix;
     const source = view.source;
@@ -613,7 +633,7 @@ export const useCompassLocation = ({
   }, [clearLastVerifiedFix, preference, view.fix, view.source]);
 
   const exposedView =
-    preference === CompassLocationPreference.QIBLA ? getReliabilityCheckedView(view) : EMPTY_VIEW;
+    preference === CompassLocationPreference.ASK ? EMPTY_VIEW : getReliabilityCheckedView(view);
 
   return {
     preference,
