@@ -13,6 +13,7 @@ on:
         options:
           - preview
           - production
+          - production-hms
 
 env:
   JAVA_VERSION: "17"
@@ -63,7 +64,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.android/build-cache
-          key: ${{ runner.os }}-deps-${{ hashFiles('bun.lockb', 'package.json', 'android/**/*.gradle*') }}
+          key: ${{ runner.os }}-deps-${{ hashFiles('bun.lock', 'package.json', 'android/**/*.gradle*', 'modules/**/android/**/*.gradle*') }}
           restore-keys: |
             ${{ runner.os }}-deps-
 
@@ -81,13 +82,31 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
 
           # Determine build type from profile
-          if [ "$PROFILE" == "production" ]; then
+          if [ "$PROFILE" == "production" ] || [ "$PROFILE" == "production-hms" ]; then
             echo "build_type=aab" >> $GITHUB_OUTPUT
             echo "artifact_pattern=*.aab" >> $GITHUB_OUTPUT
           else
             echo "build_type=apk" >> $GITHUB_OUTPUT
             echo "artifact_pattern=*.apk" >> $GITHUB_OUTPUT
           fi
+
+          if [ "$PROFILE" == "production-hms" ]; then
+            echo "BUILD_VARIANT=hms" >> $GITHUB_ENV
+          fi
+
+      - name: 🔐 Prepare HMS AppGallery Connect config
+        if: steps.config.outputs.profile == 'production-hms'
+        env:
+          AGCONNECT_SERVICES_JSON_CONTENT: ${{ secrets.AGCONNECT_SERVICES_JSON }}
+        run: |
+          if [ -z "$AGCONNECT_SERVICES_JSON_CONTENT" ]; then
+            echo "AGCONNECT_SERVICES_JSON GitHub secret is required for production-hms" >&2
+            exit 1
+          fi
+          AGCONNECT_PATH="$RUNNER_TEMP/agconnect-services.json"
+          printf '%s' "$AGCONNECT_SERVICES_JSON_CONTENT" > "$AGCONNECT_PATH"
+          chmod 600 "$AGCONNECT_PATH"
+          echo "AGCONNECT_SERVICES_JSON=$AGCONNECT_PATH" >> "$GITHUB_ENV"
 
       - name: 🚀 Build Android Locally
         id: build
@@ -138,6 +157,10 @@ jobs:
             echo "❌ Build failed - no output file found"
             exit 1
           fi
+
+      - name: 🛡 Verify HMS dependency graph and AAB
+        if: steps.config.outputs.profile == 'production-hms'
+        run: bun scripts/verify-hms-build.ts "${{ steps.build.outputs.build_output }}"
 
       - name: 📤 Upload Build Artifact
         uses: actions/upload-artifact@v4
