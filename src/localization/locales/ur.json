@@ -450,6 +450,7 @@
   "common.warning": "انتباہ",
   "compass.accuracy": "قطب نما کی درستگی",
   "compass.accuracyDegrees": "±{{degrees}}°",
+  "compass.accuracyUnknown": "دستیاب نہیں",
   "compass.calibrationNote": "قطب نما کیلیبریٹ کرنے کے لیے فون کو 8 کی شکل میں حرکت دیں",
   "compass.currentDirection": "موجودہ سمت",
   "compass.directions.E": "مش",

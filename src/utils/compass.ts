@@ -189,16 +189,16 @@ export const getHeadingReliabilityIssue = (
     return CompassReliabilityIssue.SENSOR_STALE;
   }
 
-  if (
-    sample.accuracyDegrees === null ||
-    !Number.isFinite(sample.accuracyDegrees) ||
-    sample.accuracyDegrees < 0
-  ) {
-    return CompassReliabilityIssue.SENSOR_INVALID;
-  }
+  // A null accuracy means the platform reports a usable heading without bounding its error.
+  // The direction is still shown; callers withhold the error figure and alignment claims.
+  if (sample.accuracyDegrees !== null) {
+    if (!Number.isFinite(sample.accuracyDegrees) || sample.accuracyDegrees < 0) {
+      return CompassReliabilityIssue.SENSOR_INVALID;
+    }
 
-  if (sample.accuracyDegrees > MAX_HEADING_ERROR_DEGREES) {
-    return CompassReliabilityIssue.SENSOR_UNCALIBRATED;
+    if (sample.accuracyDegrees > MAX_HEADING_ERROR_DEGREES) {
+      return CompassReliabilityIssue.SENSOR_UNCALIBRATED;
+    }
   }
 
   if (sample.northReference === CompassNorthReference.UNKNOWN) {

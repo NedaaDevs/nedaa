@@ -450,6 +450,7 @@
   "common.warning": "Amaran",
   "compass.accuracy": "Ketepatan Kompas",
   "compass.accuracyDegrees": "±{{degrees}}°",
+  "compass.accuracyUnknown": "Tidak dilaporkan",
   "compass.calibrationNote": "Gerakkan telefon anda dalam corak angka-8 untuk menentukur kompas",
   "compass.currentDirection": "Arah Semasa",
   "compass.directions.E": "T",

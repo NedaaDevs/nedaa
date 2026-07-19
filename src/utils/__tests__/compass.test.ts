@@ -87,7 +87,6 @@ describe("compass reliability", () => {
 
   it.each([
     ["invalid", false, 8, NOW - 100, CompassReliabilityIssue.SENSOR_INVALID],
-    ["unknown accuracy", true, null, NOW - 100, CompassReliabilityIssue.SENSOR_INVALID],
     [
       "excessive error",
       true,
@@ -116,6 +115,27 @@ describe("compass reliability", () => {
         { now: NOW, requiresTrueNorth: true }
       )
     ).toBe(expected);
+  });
+
+  it("accepts a heading whose error the platform cannot bound", () => {
+    // Android reports values[4] as -1 when the HAL cannot estimate heading error. The heading
+    // stays usable so the direction is shown; alignment claims are withheld separately.
+    expect(
+      getHeadingReliabilityIssue(
+        {
+          heading: 127,
+          accuracyDegrees: null,
+          isValid: true,
+          northReference: CompassNorthReference.TRUE,
+          timestamp: NOW - 100,
+        },
+        { now: NOW, requiresTrueNorth: true }
+      )
+    ).toBeNull();
+  });
+
+  it("withholds alignment feedback when the heading error is unbounded", () => {
+    expect(canProvideAlignmentFeedback(null, 1)).toBe(false);
   });
 
   it("rejects a location whose uncertainty makes the nearby Qibla bearing unsafe", () => {

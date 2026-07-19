@@ -139,21 +139,12 @@ class ExpoOrientationModule : Module() {
                     return
                 }
 
-                val accuracyDegrees = rotationVectorAccuracyDegrees(event)
-                if (accuracyDegrees == null) {
-                    emitInvalid(
-                        heading = heading,
-                        source = SOURCE_ROTATION_VECTOR,
-                        northReference = reference.northReference,
-                        error = ERROR_HEADING_ACCURACY_UNAVAILABLE,
-                        timestamp = sensorTimestampToEpoch(event.timestamp),
-                    )
-                    return
-                }
-
+                // values[4] is -1 when the HAL cannot estimate heading error. The attitude is still
+                // usable, so publish the heading with an unknown bound rather than withholding a
+                // direction; consumers must not claim alignment without a bound.
                 emitHeading(
                     heading = heading,
-                    accuracyDegrees = accuracyDegrees,
+                    accuracyDegrees = rotationVectorAccuracyDegrees(event),
                     northReference = reference.northReference,
                     source = SOURCE_ROTATION_VECTOR,
                     timestamp = sensorTimestampToEpoch(event.timestamp),
@@ -274,15 +265,23 @@ class ExpoOrientationModule : Module() {
                 }
                 lastHeading = heading
 
-                emitInvalid(
+                if (event.accuracy <= SensorManager.SENSOR_STATUS_UNRELIABLE) {
+                    emitInvalid(
+                        heading = heading,
+                        source = SOURCE_ACCELEROMETER_MAGNETOMETER,
+                        northReference = reference.northReference,
+                        error = ERROR_SENSOR_UNRELIABLE,
+                        timestamp = sensorTimestampToEpoch(event.timestamp),
+                    )
+                    return
+                }
+
+                // This path derives heading from raw vectors and has no error estimate at all.
+                emitHeading(
                     heading = heading,
-                    source = SOURCE_ACCELEROMETER_MAGNETOMETER,
+                    accuracyDegrees = null,
                     northReference = reference.northReference,
-                    error = if (event.accuracy <= SensorManager.SENSOR_STATUS_UNRELIABLE) {
-                        ERROR_SENSOR_UNRELIABLE
-                    } else {
-                        ERROR_HEADING_ACCURACY_UNAVAILABLE
-                    },
+                    source = SOURCE_ACCELEROMETER_MAGNETOMETER,
                     timestamp = sensorTimestampToEpoch(event.timestamp),
                 )
             }
@@ -396,9 +395,10 @@ class ExpoOrientationModule : Module() {
         }
     }
 
+    /** A null [accuracyDegrees] means the heading is usable but its error is unknown. */
     private fun emitHeading(
         heading: Float,
-        accuracyDegrees: Double,
+        accuracyDegrees: Double?,
         northReference: String,
         source: String,
         timestamp: Long,
@@ -406,7 +406,7 @@ class ExpoOrientationModule : Module() {
         lastInvalidError = null
         sendEvent(
             "onHeadingUpdate",
-            mapOf(
+            mapOf<String, Any?>(
                 "heading" to heading.toDouble(),
                 "accuracyDegrees" to accuracyDegrees,
                 "northReference" to northReference,
@@ -504,7 +504,6 @@ class ExpoOrientationModule : Module() {
         const val ERROR_SENSOR_UNAVAILABLE = "sensor_unavailable"
         const val ERROR_SENSOR_REGISTRATION_FAILED = "sensor_registration_failed"
         const val ERROR_SENSOR_UNRELIABLE = "sensor_unreliable"
-        const val ERROR_HEADING_ACCURACY_UNAVAILABLE = "heading_accuracy_unavailable"
         const val ERROR_INVALID_HEADING = "invalid_heading"
 
         const val NANOS_PER_MILLISECOND = 1_000_000L

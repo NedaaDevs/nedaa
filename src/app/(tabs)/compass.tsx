@@ -307,9 +307,14 @@ const CompassScreen = () => {
     proximityState === "aligned"
       ? t("compass.facingQibla")
       : getTranslatedCompassDirection(compass.heading, t);
-  const sensorAccuracyText = t("compass.accuracyDegrees", {
-    degrees: formatNumberToLocale(`${Math.round(compass.accuracyDegrees ?? 0)}`),
-  });
+  // Some devices report a heading without bounding its error. Showing ±0° there would claim
+  // perfect precision, so the margin is named as unknown instead.
+  const sensorAccuracyText =
+    compass.accuracyDegrees !== null && Number.isFinite(compass.accuracyDegrees)
+      ? t("compass.accuracyDegrees", {
+          degrees: formatNumberToLocale(`${Math.round(compass.accuracyDegrees)}`),
+        })
+      : t("compass.accuracyUnknown");
   // The native layer can flag an unreliable sensor while still reporting a small error margin,
   // so the advisory outranks the reported accuracy.
   const sensorReliability = advisorySensorIssue
