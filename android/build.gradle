@@ -4,11 +4,19 @@ buildscript {
   repositories {
     google()
     mavenCentral()
+    if (System.getenv("BUILD_VARIANT") == "hms") {
+      maven { url 'https://developer.huawei.com/repo/' }
+    }
   }
   dependencies {
-    classpath('com.android.tools.build:gradle')
+    // AGConnect requires the Android Gradle Plugin coordinate to carry its version explicitly.
+    // Keep this aligned with React Native's gradle/libs.versions.toml.
+    classpath('com.android.tools.build:gradle:8.12.0')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    if (System.getenv("BUILD_VARIANT") == "hms") {
+      classpath('com.huawei.agconnect:agcp:1.9.1.301')
+    }
   }
 }
 
@@ -23,6 +31,22 @@ allprojects {
     maven { url 'https://www.jitpack.io' }
     if (System.getenv("BUILD_VARIANT") == "hms") {
       maven { url 'https://developer.huawei.com/repo/' }
+    }
+  }
+
+  if (System.getenv("BUILD_VARIANT") == "hms") {
+    configurations.configureEach {
+      resolutionStrategy.eachDependency { details ->
+        if (details.requested.group in [
+          'com.google.android.gms',
+          'com.google.android.play',
+          'com.google.firebase'
+        ]) {
+          throw new GradleException(
+            "HMS builds cannot resolve Google mobile-service dependency ${details.requested}"
+          )
+        }
+      }
     }
   }
 }

@@ -6,6 +6,10 @@ apply plugin: "com.facebook.react"
 def buildVariant = System.getenv("BUILD_VARIANT") ?: "gms"
 def isHms = buildVariant == "hms"
 
+if (isHms) {
+    apply plugin: "com.huawei.agconnect"
+}
+
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 /**
@@ -104,6 +108,14 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "2.9.6"
+
+        // The committed manifest keeps the GMS metadata for the default build. HMS substitutes a
+        // private namespace so the final manifest contains no Firebase component identifiers.
+        manifestPlaceholders = [
+            firebaseMessagingMetadataPrefix: isHms
+                ? "dev.nedaa.hms.disabled."
+                : "com.google.firebase.messaging."
+        ]
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -204,10 +216,62 @@ dependencies {
     // Kotlin coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // HMS Core (only for Huawei AppGallery builds)
-    if (isHms) {
-        implementation 'com.huawei.agconnect:agconnect-core:1.9.1.301'
-        implementation 'com.huawei.hms:base:6.12.0.300'
-        implementation 'com.huawei.hms:location:6.12.0.300'
+}
+
+tasks.register("verifyHmsReleaseDependencies") {
+    group = "verification"
+    description = "Fails when the HMS release runtime graph contains Google mobile-service SDKs"
+
+    doLast {
+        if (!isHms) {
+            throw new GradleException("verifyHmsReleaseDependencies requires BUILD_VARIANT=hms")
+        }
+
+        def bannedGroups = [
+            "com.google.android.gms",
+            "com.google.android.play",
+            "com.google.firebase"
+        ] as Set
+        def bannedProjects = [
+            "expo-app-integrity",
+            "expo-location",
+            "expo-notifications",
+            "expo-store-review"
+        ] as Set
+        def violations = configurations.releaseRuntimeClasspath.incoming.resolutionResult.allComponents
+            .collect { it.id }
+            .findAll { id ->
+                (id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier &&
+                    bannedGroups.contains(id.group)) ||
+                (id instanceof org.gradle.api.artifacts.component.ProjectComponentIdentifier &&
+                    bannedProjects.contains(id.projectName))
+            }
+            .collect { it.displayName }
+            .sort()
+
+        if (!violations.isEmpty()) {
+            throw new GradleException("HMS release contains forbidden Google runtime dependencies:\n - ${violations.join('\n - ')}")
+        }
+    }
+}
+
+if (isHms) {
+    def verifyHmsAgConnectConfig = tasks.register("verifyHmsAgConnectConfig") {
+        group = "verification"
+        description = "Fails release packaging when the HMS AppGallery Connect config is missing"
+
+        doLast {
+            def configFile = file("agconnect-services.json")
+            if (!configFile.isFile() || configFile.length() == 0) {
+                throw new GradleException(
+                    "HMS release packaging requires android/app/agconnect-services.json. " +
+                    "Provide AGCONNECT_SERVICES_JSON through the EAS pre-install hook."
+                )
+            }
+        }
+    }
+
+    tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+        dependsOn verifyHmsAgConnectConfig
     }
 }

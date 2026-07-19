@@ -7,7 +7,9 @@
 build/
 .idea
 .gradle
+/.kotlin/
 local.properties
+app/agconnect-services.json
 *.iml
 *.hprof
 .cxx/

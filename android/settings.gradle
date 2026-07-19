@@ -22,6 +22,15 @@ plugins {
   id("expo-autolinking-settings")
 }
 
+def buildVariant = System.getenv('BUILD_VARIANT') ?: 'gms'
+def isHmsBuild = buildVariant == 'hms'
+
+// Expo autolinking is resolved before app Gradle configuration. Keep mutually exclusive native
+// implementations out of the graph here so an HMS release cannot inherit Google runtime SDKs.
+expoAutolinking.exclude = isHmsBuild
+  ? ['@expo/app-integrity', 'expo-location', 'expo-notifications', 'expo-store-review']
+  : ['expo-hms-compat', 'expo-hms-location', 'expo-hms-notifications']
+
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
     ex.autolinkLibrariesFromCommand()

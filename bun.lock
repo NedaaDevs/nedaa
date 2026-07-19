@@ -36,6 +36,9 @@
         "expo-font": "~57.0.0",
         "expo-glass-effect": "~57.0.0",
         "expo-haptics": "~57.0.0",
+        "expo-hms-compat": "file:./modules/expo-hms-compat",
+        "expo-hms-location": "file:./modules/expo-hms-location",
+        "expo-hms-notifications": "file:./modules/expo-hms-notifications",
         "expo-linear-gradient": "~57.0.0",
         "expo-linking": "~57.0.1",
         "expo-localization": "~57.0.0",
@@ -1429,6 +1432,12 @@
     "expo-glass-effect": ["expo-glass-effect@57.0.0", "", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-QadzKSKpjXOlkIEnkX7SqHwCgUJZLjhWUvg1AauaUgKVnz35Ror41juM4y+KNr9pFxnukSDUz8L+UvdZVCNu6Q=="],
 
     "expo-haptics": ["expo-haptics@57.0.0", "", { "peerDependencies": { "expo": "*" } }, "sha512-va+uB/DoMlT9f0OJ8v24iNqs+YH6Q6wip+LLjVvalbJzGK8LvZQ+gIiauogFxAAFLQIJzrQVJGf+0BmV3q13bQ=="],
+
+    "expo-hms-compat": ["expo-hms-compat@file:modules/expo-hms-compat", {}],
+
+    "expo-hms-location": ["expo-hms-location@file:modules/expo-hms-location", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }],
+
+    "expo-hms-notifications": ["expo-hms-notifications@file:modules/expo-hms-notifications", {}],
 
     "expo-json-utils": ["expo-json-utils@57.0.0", "", {}, "sha512-GJMjJlS3ZRTXWkKJPXY9OjscEEyPxbvNURBJ9Gkd3KxS4Hzof+EdK8pF+3Ty4ec435ciYm9ll+IWznuVHYMiow=="],
 
