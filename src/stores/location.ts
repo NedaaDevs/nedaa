@@ -17,7 +17,12 @@ import { AppLogger } from "@/utils/appLogger";
 import { geocodeApi } from "@/api/geocodeApi";
 
 // Utils
-import { getLocationWithTimeout, calculateDistance, CITY_CHANGE_THRESHOLD } from "@/utils/location";
+import {
+  getLocationWithTimeout,
+  calculateDistance,
+  CITY_CHANGE_THRESHOLD,
+  LocationPermissionError,
+} from "@/utils/location";
 
 const log = AppLogger.create("location");
 
@@ -252,6 +257,8 @@ export const useLocationStore = create<LocationStore>()(
 
             return false;
           } catch (error) {
+            // Without permission there is nothing to compare against; this runs unprompted.
+            if (error instanceof LocationPermissionError) return false;
             log.w("CityChange", `check failed: ${(error as Error)?.message ?? error}`);
             return false;
           }
@@ -362,6 +369,8 @@ export const useLocationStore = create<LocationStore>()(
               console.log(`[Location] City change check completed - no significant change`);
             }
           } catch (error) {
+            // Runs on every launch, so a declined permission is an expected quiet skip.
+            if (error instanceof LocationPermissionError) return;
             console.error("[Location] Failed to check city change:", error);
           }
         },

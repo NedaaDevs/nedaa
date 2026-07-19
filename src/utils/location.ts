@@ -53,8 +53,25 @@ export const requestLocationPermission = async () => {
   }
 };
 
+/** Thrown instead of calling the native provider when location permission is missing. */
+export class LocationPermissionError extends Error {
+  constructor() {
+    super("Location permission not granted");
+    this.name = "LocationPermissionError";
+  }
+}
+
 // Get location with timeout protection(sometimes getting location get stuck)
 export const getLocationWithTimeout = async (): Promise<LocationObject> => {
+  // Every position read funnels through here, so the permission gate lives here. Calling the
+  // native provider unpermitted rejects with "Not authorized to use location services", which
+  // reads as a hard failure in the logs even when the user simply declined.
+  const { granted } = await checkLocationPermission();
+  if (!granted) {
+    log.w("Position", "location request skipped; permission not granted");
+    throw new LocationPermissionError();
+  }
+
   try {
     const locationPromise = getCurrentPositionAsync({
       accuracy: LocationAccuracy.LOW,
@@ -95,8 +112,12 @@ export const getCurrentLocation = async () => {
   // First check permission
   const { granted, canRequestAgain } = await checkLocationPermission();
 
-  if (!granted && canRequestAgain) {
-    // Try to request permission
+  if (!granted) {
+    // A blocked permission cannot be re-requested; only a trip to app settings clears it.
+    if (!canRequestAgain) {
+      return { error: "Location permission denied" };
+    }
+
     const { granted: newPermission } = await requestLocationPermission();
     if (!newPermission) {
       return { error: "Location permission denied" };
