@@ -4,7 +4,7 @@
 
 Before running the project, make sure you have the following installed:
 
-- [Bun](https://bun.sh/) (version 1.1.45)
+- [Bun](https://bun.sh/) (version 1.2.14 — see `.bun-version`)
 - [Node.js](https://nodejs.org/) (version 22)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - [Xcode](https://developer.apple.com/xcode/) (for iOS development)
