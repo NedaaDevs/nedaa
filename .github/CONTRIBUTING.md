@@ -31,6 +31,14 @@ bun test
 
 A pre-commit hook runs ESLint and Prettier on staged files, so formatting is handled for you.
 
+## Running without the API
+
+Prayer times, Quran downloads, and feedback go through our API, and `.env.example` leaves `EXPO_PUBLIC_API_URL` blank. A fresh clone won't fetch any of those.
+
+Most of the app doesn't need it. Athkar, the Qibla compass, Hijri dates and the converter, the Umrah guide, Qada, and all of the UI, theming, translations, and RTL work fine offline. If your change is in one of those areas, copy `.env.example` to `.env`, leave the URL empty, and carry on.
+
+If you're working on something that does need the API, email <support@nedaa.dev> and we'll give you a development endpoint. We don't publish it because it's unauthenticated and we cover the running costs.
+
 ## Conventions worth knowing
 
 These are the ones you can't guess from reading a single file:

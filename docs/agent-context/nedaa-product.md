@@ -70,7 +70,7 @@ These are the differentiators that should anchor most marketing copy:
 - **Respectful of the subject matter.** This is a worship app. Avoid memes, edgy humor, or casual gamification framing. Streaks/tracking should be framed as habit support, not "leveling up."
 - **Bilingual sensibility.** When relevant, present Arabic terminology with care: _Salah, Fajr, Dhuhr, Asr, Maghrib, Isha, Athan, Iqama, Athkar, Dhikr, Qibla, Umrah, Sa'i, Suhoor, Iftar._ Don't over-translate; assume the audience knows the vocabulary.
 - **Trust-building, not selling.** "Open source" and "no ads" are stated as facts, not bragged about.
-- **Short sentences, scannable bullets.** The App Store description in `store.config.json` is the canonical voice reference — match it.
+- **Short sentences, scannable bullets.** The App Store description in `fastlane/metadata/` is the canonical voice reference — match it.
 
 ## Anti-positioning ("what Nedaa is NOT")
 
@@ -102,7 +102,7 @@ These are the differentiators that should anchor most marketing copy:
 
 ## Canonical App Store copy
 
-The English and Arabic App Store descriptions in `store.config.json` are the authoritative voice. New marketing copy should align with those. Excerpts:
+The English and Arabic App Store descriptions in `fastlane/metadata/` are the authoritative voice. New marketing copy should align with those. Excerpts:
 
 > "Accurate prayer times with beautiful widgets, smart alarms, and daily Athkar — completely free, no ads, and open source."
 
