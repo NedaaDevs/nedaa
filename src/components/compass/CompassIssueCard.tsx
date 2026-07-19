@@ -24,9 +24,17 @@ export const CompassIssueCard = ({
 }: CompassIssueCardProps) => {
   const { t } = useTranslation();
   const actionLabel =
-    action === "settings" ? t("compass.action.openSettings") : t("compass.action.retry");
+    action === "settings"
+      ? t("compass.action.openSettings")
+      : action === "calibrate"
+        ? t("compass.action.calibrate")
+        : t("compass.action.retry");
   const actionA11yLabel =
-    action === "settings" ? t("a11y.compass.openSettings") : t("a11y.compass.retry");
+    action === "settings"
+      ? t("a11y.compass.openSettings")
+      : action === "calibrate"
+        ? t("compass.action.calibrate")
+        : t("a11y.compass.retry");
   const actionA11yHint =
     action === "settings"
       ? t("a11y.compass.openSettingsHint")

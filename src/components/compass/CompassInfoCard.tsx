@@ -11,11 +11,14 @@ import { VStack } from "@/components/ui/vstack";
 
 type CompassInfoCardProps = {
   isQiblaMode: boolean;
+  canRefreshLocation: boolean;
   isSavedLocation: boolean;
   isRefreshing: boolean;
   needsSettings: boolean;
   northReferenceLabel: string;
   sensorAccuracyText: string;
+  sensorReliabilityText: string;
+  savedLocationAgeText: string | null;
   qiblaDirectionText: string | null;
   qiblaCardinalText: string | null;
   distanceText: string | null;
@@ -47,11 +50,14 @@ const InfoRow = ({
 
 export const CompassInfoCard = ({
   isQiblaMode,
+  canRefreshLocation,
   isSavedLocation,
   isRefreshing,
   needsSettings,
   northReferenceLabel,
   sensorAccuracyText,
+  sensorReliabilityText,
+  savedLocationAgeText,
   qiblaDirectionText,
   qiblaCardinalText,
   distanceText,
@@ -71,7 +77,7 @@ export const CompassInfoCard = ({
       gap="$4"
       accessibilityLiveRegion="polite"
       accessibilityRole="summary">
-      {isQiblaMode && (
+      {canRefreshLocation && (
         <HStack justifyContent="space-between" alignItems="center" gap="$2" flexWrap="wrap">
           <Badge action={isSavedLocation ? "warning" : "success"} size="md" variant="outline">
             <Badge.Icon as={isSavedLocation ? MapPinned : LocateFixed} />
@@ -116,6 +122,7 @@ export const CompassInfoCard = ({
         {distanceText && <InfoRow label={t("compass.distance")} value={distanceText} />}
         <InfoRow label={t("compass.northReference")} value={northReferenceLabel} />
         <InfoRow label={t("compass.accuracy")} value={sensorAccuracyText} />
+        <InfoRow label={t("compass.sensorReliability")} value={sensorReliabilityText} />
         {locationAccuracyText && (
           <InfoRow label={t("compass.locationAccuracy")} value={locationAccuracyText} />
         )}
@@ -134,9 +141,20 @@ export const CompassInfoCard = ({
         </Box>
       ) : isSavedLocation ? (
         <Box padding="$3" borderRadius="$4" backgroundColor="$backgroundWarning">
-          <Text size="xs" color="$warning" textAlign="center">
-            {t("compass.locationSavedNote")}
-          </Text>
+          <VStack gap="$1">
+            {savedLocationAgeText && (
+              <Text size="xs" bold color="$warning" textAlign="center">
+                {savedLocationAgeText}
+              </Text>
+            )}
+            <Text size="xs" color="$warning" textAlign="center">
+              {t(
+                canRefreshLocation
+                  ? "compass.locationSavedNote"
+                  : "compass.locationSavedNoteCompassOnly"
+              )}
+            </Text>
+          </VStack>
         </Box>
       ) : null}
 
