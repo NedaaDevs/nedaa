@@ -64,6 +64,42 @@ Expo and React Native, TypeScript, Tamagui for the UI, Zustand for state, and SQ
 
 Setup instructions are in the [Developer Guide](./docs/DEV-README.md).
 
+## Permissions
+
+Android counts every permission an app declares, including the ones libraries merge in, so the number on the store page looks larger than it is. Here is what each one is actually for, and where in the code it is used.
+
+### Android
+
+| Permission                                                                         | Used for                                                                                                                                  | Where                                                                                                                                 |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`                                   | Prayer times for where you are. Requested at **low accuracy** and only while the app is open — a city-level fix is all prayer times need. | [`src/utils/location.ts`](src/utils/location.ts)                                                                                      |
+| `INTERNET`                                                                         | Fetching prayer times, downloading Quran content, sending feedback you choose to send.                                                    | [`src/services/api.ts`](src/services/api.ts)                                                                                          |
+| `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`                                          | Firing the Athan and alarms at the exact minute. Android defers inexact alarms, which is no good for Fajr.                                | [`modules/expo-alarm/android/.../AlarmScheduler.kt`](modules/expo-alarm/android/src/main/java/expo/modules/alarm/AlarmScheduler.kt)   |
+| `RECEIVE_BOOT_COMPLETED`                                                           | Re-scheduling your alarms after the phone restarts. Without it they'd silently stop.                                                      | [`modules/expo-alarm/android/.../BootReceiver.kt`](modules/expo-alarm/android/src/main/java/expo/modules/alarm/BootReceiver.kt)       |
+| `SYSTEM_ALERT_WINDOW`                                                              | Showing the alarm screen over the lock screen when it goes off.                                                                           | [`android/.../MainActivity.kt`](android/app/src/main/java/dev/nedaa/android/MainActivity.kt)                                          |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`                                             | Optional, and you're asked before it's used. It tells Android not to hold back your alarms while the phone is idle.                       | [`modules/expo-alarm/android/.../ExpoAlarmModule.kt`](modules/expo-alarm/android/src/main/java/expo/modules/alarm/ExpoAlarmModule.kt) |
+| `READ_MEDIA_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`              | Letting you use your own audio file as an Athan sound. Only the file you pick is read.                                                    | [`src/utils/customSoundManager.ts`](src/utils/customSoundManager.ts)                                                                  |
+| `MODIFY_AUDIO_SETTINGS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Playing Athkar and Quran recitation, and keeping the lock screen controls working while playback continues in the background.             | [`src/services/audio/nitroSession.ts`](src/services/audio/nitroSession.ts)                                                            |
+| `VIBRATE`                                                                          | Haptics, and vibration on notifications and alarms.                                                                                       | [`src/hooks/useHaptic.ts`](src/hooks/useHaptic.ts)                                                                                    |
+
+Nedaa does not ask for the microphone, camera, contacts, or activity recognition. `RECORD_AUDIO`, `ACTIVITY_RECOGNITION`, and `FOREGROUND_SERVICE_DATA_SYNC` are pulled in by libraries and stripped from the build on purpose — see `blockedPermissions` in [`app.json`](app.json).
+
+### iOS
+
+| Capability             | Used for                                                                                                  | Where                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Location, while in use | Prayer times for where you are, at low accuracy. There's no "always" prompt in normal use.                | [`src/utils/location.ts`](src/utils/location.ts)                           |
+| Notifications          | Athan, pre-prayer warnings, Iqama reminders, and reading reminders.                                       | [`src/utils/notifications.ts`](src/utils/notifications.ts)                 |
+| Background audio       | Athkar and Quran recitation keep playing when you leave the app, with lock screen controls.               | [`src/services/audio/nitroSession.ts`](src/services/audio/nitroSession.ts) |
+| Background refresh     | Topping up cached prayer times so they're there when you're offline.                                      | [`src/tasks/backgroundRefresh.ts`](src/tasks/backgroundRefresh.ts)         |
+| AlarmKit (iOS 26+)     | Real system alarms for Fajr and Jummah. On earlier iOS the alarm feature is turned off rather than faked. | [`modules/expo-alarm`](modules/expo-alarm)                                 |
+
+### Checking for yourself
+
+On Android, [Exodus Privacy](https://reports.exodus-privacy.eu.org/en/reports/dev.nedaa.android/latest/) analyses the published APK and reports **no trackers**.
+
+No equivalent exists for iOS — Apple encrypts app binaries, so nobody outside Apple can analyse them. What we can do instead is ship the declaration in the open: [`ios/nedaa/PrivacyInfo.xcprivacy`](ios/nedaa/PrivacyInfo.xcprivacy) lists no collected data types, no tracking domains, and `NSPrivacyTracking` set to false. Since the app is open source, you can read it, and the code behind it, rather than taking our word for it.
+
 ## Acknowledgements
 
 Nedaa is built on the generous work of others:
