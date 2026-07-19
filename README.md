@@ -14,58 +14,55 @@
   </a>
 </p>
 
-## Table of Contents
-
-- [Table of Contents](#table-of-contents)
-- [Introduction](#introduction)
-- [Features](#features)
-- [Acknowledgements](#acknowledgements)
-- [Feedback](#feedback)
-- [Translation](#translation)
-  - [Developer Guide](#developer-guide)
-
-## Introduction
-
-<!-- ![CI Status](https://github.com/nedaaDevs/nedaa/actions/workflows/flutter-ci.yml/badge.svg) -->
-
-View Prayer Times, Hijri Date, get notifications for prayer times, and more to come.
-
-**Available for both iOS and Android.**
-
-<!-- <p align="center">
-  <img alt="iphone-preview" src="https://i.imgur.com/r2lgNUo.png"  width=350>
-  <img alt="oneplus-preview" src="https://i.imgur.com/WGWpycM.png" width=350>
-</p> -->
-
-## Features
-
-Nedaa Features:
-
-- Simple and intuitive design.
-- Notifications for each prayer, iqama and pre-prayer.
-- Deep customization for the notifications settings, with the ability to enable/disable, and change the sound, and timing of the iqama, and pre-prayer, along with other settings.
-- Multi-language support Arabic and English. [Want to see the app in your language? ](#translation)
-- Finding the location automatically using the phone’s GPS. Or manually.
-- Count down to the next prayer.
-- Count up since the last prayer.
-- Prayer times for the current day.
-- and more to come.
-
-<!-- <p align="center">
-  <img src="https://i.imgur.com/VoCxMoo.png" height=350>
-  <img src="https://i.imgur.com/YtOMaFQ.png" height=350>
-  <img src="https://i.imgur.com/bA3FdZd.png" height=350>
-  <img src="https://i.imgur.com/XMvcdJr.png" height=350>
-  <img src="https://i.imgur.com/QlyrIHk.png" height=350>
+<p align="center">
+  Prayer times, Athkar, Qibla, and reliable alarms for iOS and Android.<br/>
+  Free, no ads, no tracking, no accounts.
 </p>
 
 <p align="center">
- <img src="https://i.imgur.com/C3iLTaw.png" width=400 >
- <img src="https://i.imgur.com/mdC2OX8.png"  width=400>
- <img src="https://i.imgur.com/dycQy7M.png" width=400>
- <img src="https://i.imgur.com/njUoebp.png"  width=400>
- <img src="https://i.imgur.com/Pt36AGI.png"  width=400>
-</p> -->
+  <a href="https://apps.apple.com/app/id6740703900">App Store</a>
+  &nbsp;·&nbsp;
+  <a href="https://play.google.com/store/apps/details?id=dev.nedaa.android">Google Play</a>
+  &nbsp;·&nbsp;
+  <a href="https://appgallery.huawei.com/app/C114573733">AppGallery</a>
+  &nbsp;·&nbsp;
+  <a href="https://nedaa.dev">nedaa.dev</a>
+</p>
+
+<p align="center">
+  <img src="./assets/images/readme/prayer-times.png" width="250">
+  <img src="./assets/images/readme/athkar.png" width="250">
+  <img src="./assets/images/readme/qibla.png" width="250">
+</p>
+
+## What it does
+
+Nedaa tells you when to pray, wherever you are, and reminds you the way you want to be reminded. It's free, with no ads and no tracking, and there's no account to make.
+
+Available for iOS and Android, including Huawei devices without Google services.
+
+## Features
+
+- Prayer times anywhere in the world, with 23 calculation methods so you can match your local mosque.
+- Notifications for each prayer, with your own Athan sound, pre-prayer warnings, and Iqama reminders. All of it is set per prayer.
+- A Fajr alarm that behaves like a real alarm instead of a notification, with an optional wake-up challenge.
+- Home screen and lock screen widgets, including Suhoor and Iftar widgets during Ramadan.
+- Morning and evening Athkar with audio, and you can add your own.
+- Qibla compass.
+- Hijri date, and a Hijri to Gregorian converter.
+- Qada tracker for missed Ramadan fasts.
+- A step-by-step Umrah guide.
+- Countdowns to Ramadan, both Eids, Arafah, Ashura, and the Hijri new year.
+- Arabic, English, Malay, and Urdu, with full RTL. [Want to see the app in your language?](#translation)
+- Works offline once your prayer times are synced.
+
+A Mushaf reader with recitation audio is in beta testing and ships soon.
+
+## Built with
+
+Expo and React Native, TypeScript, Tamagui for the UI, Zustand for state, and SQLite for local storage. The alarms, compass, and widgets are native modules under `modules/`.
+
+Setup instructions are in the [Developer Guide](./docs/DEV-README.md).
 
 ## Acknowledgements
 
@@ -82,6 +79,10 @@ Nedaa is built on the generous work of others:
 
 - [IBM Plex Sans Arabic](https://github.com/IBM/plex) — SIL Open Font License 1.1.
 - [Asap](https://fonts.google.com/specimen/Asap) — SIL Open Font License 1.1.
+
+**Tools**
+
+- [Crowdin](https://crowdin.com) — free access to their localization platform through their open source program.
 
 ## Feedback
 
@@ -106,11 +107,7 @@ If you don't see your language in the crowdin project, you can create a new ["di
 
 The flow:
 
-- Push to `master` and Crowdin auto-uploads new English source strings for translation.
+- Once new English strings land on `master`, Crowdin picks them up for translation on its own.
 - Crowdin keeps a single PR open from its `l10n_master` branch. Merge it into `master` before each release (merge, don't delete the branch — Crowdin reuses it). Letting it sit lets the branch drift behind `master`.
 
 A locale only becomes selectable when it's listed in `AppLocale` (`src/enums/app.ts`) — both the language picker and the device-default resolver derive from that enum. Keep a locale gated there until its Crowdin coverage is ship-ready.
-
-### Developer Guide
-
-Please refer to the [Developer Guide](./docs/DEV-README.md).
