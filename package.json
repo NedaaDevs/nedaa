@@ -16,6 +16,7 @@
     "verify:android": "bun run verify:android:gms && bun run verify:android:hms",
     "verify:android:gms": "cd android && BUILD_VARIANT=gms ./gradlew :app:assembleDebug --no-daemon --console=plain",
     "verify:android:hms": "bun scripts/verify-hms-build.ts",
+    "install:android:hms": "bun scripts/install-hms.ts",
     "prepare": "husky",
     "clean:cache": "./scripts/clean-cache.sh",
     "clean:derived": "./scripts/clean-derived.sh",
