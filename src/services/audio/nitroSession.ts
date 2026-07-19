@@ -22,7 +22,7 @@ export const NITRO_REASON = {
   REPEAT: "repeat",
 } as const;
 
-export type NitroOwner = "athkar" | "quran" | "debug";
+export type NitroOwner = "athkar" | "quran" | "debug" | "preview";
 
 export type NitroHandlers = {
   // `reason` distinguishes an auto-advance ("end") from a user skip.
@@ -113,6 +113,7 @@ const __resetForTest = (): void => {
   startPromise = null;
   delete handlers.athkar;
   delete handlers.quran;
+  delete handlers.preview;
 };
 
 export const nitroSession = {

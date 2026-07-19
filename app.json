@@ -11,7 +11,7 @@
     },
     "name": "nedaa",
     "slug": "nedaa",
-    "version": "2.9.5",
+    "version": "2.10.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -67,7 +67,6 @@
       "infoPlist": {
         "CFBundleDisplayName": "Nedaa",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "This app does not require microphone access.",
         "NSMotionUsageDescription": "$(PRODUCT_NAME) does not require motion access.",
         "NSLocationWhenInUseUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only while you are using the app and will not be shared with any third parties.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used while you are using the app and may also be used in the background to send you notifications about upcoming prayers. Your location data will not be shared with any third parties.",
@@ -92,7 +91,6 @@
       "package": "dev.nedaa.android",
       "blockedPermissions": [
         "ACTIVITY_RECOGNITION",
-        "RECORD_AUDIO",
         "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
       ],
       "permissions": ["READ_MEDIA_AUDIO", "READ_EXTERNAL_STORAGE"]
@@ -143,14 +141,6 @@
       "@react-native-community/datetimepicker",
       "expo-sharing",
       "expo-status-bar",
-      [
-        "expo-audio",
-        {
-          "recordAudioAndroid": false,
-          "microphonePermission": "This app does not require microphone access.",
-          "enableBackgroundPlayback": false
-        }
-      ],
       "./plugins/withIosAcknowledgements"
     ],
     "experiments": {

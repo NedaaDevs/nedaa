@@ -58,7 +58,6 @@
     "expo-alarm": "file:./modules/expo-alarm",
     "expo-application": "~57.0.0",
     "expo-asset": "~57.0.3",
-    "expo-audio": "~57.0.0",
     "expo-background-task": "~57.0.2",
     "expo-build-properties": "~57.0.3",
     "expo-clipboard": "~57.0.0",

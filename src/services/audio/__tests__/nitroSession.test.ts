@@ -57,4 +57,28 @@ describe("nitroSession ownership", () => {
     nitroSession.release("athkar");
     expect(nitroSession.current()).toBeNull();
   });
+
+  it("preview can acquire ownership and evict the previous owner", async () => {
+    const athkarEvict = jest.fn();
+    nitroSession.register("athkar", { onEvict: athkarEvict });
+    nitroSession.register("preview", {});
+
+    await nitroSession.acquire("athkar");
+    await nitroSession.acquire("preview");
+
+    expect(athkarEvict).toHaveBeenCalledTimes(1);
+    expect(nitroSession.owns("preview")).toBe(true);
+  });
+
+  it("reset removes the preview handler", async () => {
+    const previewEvict = jest.fn();
+    nitroSession.register("preview", { onEvict: previewEvict });
+    await nitroSession.acquire("preview");
+
+    nitroSession.__resetForTest();
+    await nitroSession.acquire("preview");
+    await nitroSession.acquire("quran");
+
+    expect(previewEvict).not.toHaveBeenCalled();
+  });
 });

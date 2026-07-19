@@ -186,8 +186,6 @@ PODS:
     - ExpoModulesCore
   - ExpoAsset (57.0.3):
     - ExpoModulesCore
-  - ExpoAudio (57.0.0):
-    - ExpoModulesCore
   - ExpoBackgroundTask (57.0.2):
     - ExpoModulesCore
     - ExpoTaskManager
@@ -2664,7 +2662,6 @@ DEPENDENCIES:
   - ExpoAlarm (from `../modules/expo-alarm/ios`)
   - "ExpoAppIntegrity (from `../node_modules/@expo/app-integrity/ios`)"
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
-  - ExpoAudio (from `../node_modules/expo-audio/ios`)
   - ExpoBackgroundTask (from `../node_modules/expo-background-task/ios`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoDevice (from `../node_modules/expo-device/ios`)
@@ -2821,8 +2818,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@expo/app-integrity/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
-  ExpoAudio:
-    :path: "../node_modules/expo-audio/ios"
   ExpoBackgroundTask:
     :path: "../node_modules/expo-background-task/ios"
   ExpoClipboard:
@@ -3088,7 +3083,6 @@ SPEC CHECKSUMS:
   ExpoAlarm: 8f71cefb35639b1e79fb50d89e36736b29fc8681
   ExpoAppIntegrity: 43cc62f24c533b960de07b5038568acedc3a567a
   ExpoAsset: 586e89aeaab2e23bfa90b9dce4d7d5e36815c039
-  ExpoAudio: 4f27c2bc1cc08f003c2af070cedf25fefd9da5bb
   ExpoBackgroundTask: b7a806b88d95a483125d2a10effdded8c67d1f5e
   ExpoClipboard: 67d46a8be4a50ec610c7b2f4966c0475aec6d969
   ExpoDevice: 090ee05e20e40ca981d39263e3e95c46ed850782
