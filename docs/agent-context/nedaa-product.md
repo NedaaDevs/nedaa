@@ -36,11 +36,11 @@ Nedaa keeps a Muslim's daily worship on track without clutter, ads, or surveilla
 
 **Geographic / linguistic reach:** Global. Currently shipped in **English, Arabic, Malay, and Urdu**, with full RTL support. Crowdin-based community translation pipeline (`crowdin.com/project/nedaa-v2`).
 
-**Platform reach:**
+**Shipping platform reach and source targets:**
 
 - iOS (App Store)
 - Android with Google Mobile Services (Play Store)
-- Android with **Huawei Mobile Services** — a deliberately maintained `production-hms` build variant for users on Huawei devices without GMS. Few competitors do this.
+- Android **HMS source target** — a deliberately maintained `production-hms` profile intended for Huawei devices without GMS and configured with no Google Mobile Services runtime dependencies. Release-artifact, physical no-GMS device, and AppGallery distribution validation are pending; do not market this as available support yet.
 
 **User segments worth calling out in copy:**
 
@@ -57,8 +57,8 @@ These are the differentiators that should anchor most marketing copy:
 
 1. **Free, no ads, no paywalls, no subscriptions, ever.** This is non-negotiable to the project's identity.
 2. **Open source** — transparent in how it handles data; community-auditable.
-3. **Privacy-first** — low-accuracy location only, no tracking, no analytics ad networks, **no crash/telemetry SDK**. Diagnostics are written to on-device log files and never leave the phone unless the user explicitly shares them.
-4. **Native, polished platform integration** — real iOS AlarmKit-backed alarms on **iOS 26+** (alarm feature requires iOS 26; gated off entirely on earlier iOS — there is no fake-alarm fallback), native foreground alarm service on Android, iOS lock-screen and home widgets, native compass sensors with sensible fallbacks, HMS support. Alarm types are first-class for **Fajr, Jummah, and custom**.
+3. **Privacy-first** — prayer-time refreshes request low-accuracy location. High accuracy is requested only during user-initiated Qibla location acquisition; the compass heading remains sensor-derived, and those coordinates are not used for analytics or tracking. There are no analytics ad networks and **no crash/telemetry SDK**. Diagnostics are written to on-device log files and never leave the phone unless the user explicitly shares them.
+4. **Native, polished platform integration** — real iOS AlarmKit-backed alarms on **iOS 26+** (alarm feature requires iOS 26; gated off entirely on earlier iOS — there is no fake-alarm fallback), native foreground alarm service on Android, iOS lock-screen and home widgets, native compass sensors with sensible fallbacks, and a conditional HMS source path whose release validation is pending. Alarm types are first-class for **Fajr, Jummah, and custom**.
 5. **Deep customization** — per-prayer sound, pre-prayer minutes, Iqama minutes, 23 calculation methods, custom Athan sounds the user provides.
 6. **Works offline once synced** — prayer times are cached from the current month through the end of the year, so the app keeps working without internet. The cache tops itself up in the background when the system grants the app a window, and otherwise on the next open. December pulls in the following year, so the year boundary is usually invisible.
 7. **Multi-language, RTL-first**.
@@ -83,7 +83,7 @@ These are the differentiators that should anchor most marketing copy:
 
 ## Privacy & data stance
 
-- Location is collected at **low accuracy** and used locally for prayer-time computation.
+- Prayer-time refreshes request **low-accuracy** location. High accuracy is requested only while the user initiates Qibla location acquisition to calculate the bearing; compass heading remains sensor-derived. These coordinates are not used for analytics or tracking.
 - No third-party advertising or tracking SDKs.
 - **No crash/telemetry SDK** (Sentry was removed 2026-06). Diagnostics are on-device log files only (per-domain, 30-day + 5 MB retention, local JS crash capture); nothing is uploaded — the user shares logs manually when reporting a problem. Marketing can lead with **"no telemetry, ever — diagnostics never leave your device."**
 - No user account, no cloud sync.
@@ -93,7 +93,7 @@ These are the differentiators that should anchor most marketing copy:
 
 - **App Store** (iOS): bundle id `dev.nedaa.app`.
 - **Google Play** (Android, GMS): package `dev.nedaa.android`.
-- **Huawei AppGallery** (Android, HMS): same package, separate `production-hms` build variant.
+- **HMS/AppGallery release target** (not yet validated or advertised as available): same package, separate `production-hms` source profile. Release-artifact, physical no-GMS device, and distribution validation are pending.
 - **Source:** GitHub `NedaaDevs/nedaa`.
 - **Translation:** Crowdin `nedaa-v2`.
 - **Support email:** `support@nedaa.dev`.
