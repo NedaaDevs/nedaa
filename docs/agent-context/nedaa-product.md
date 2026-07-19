@@ -57,7 +57,7 @@ These are the differentiators that should anchor most marketing copy:
 
 1. **Free, no ads, no paywalls, no subscriptions, ever.** This is non-negotiable to the project's identity.
 2. **Open source** — transparent in how it handles data; community-auditable.
-3. **Privacy-first** — prayer-time refreshes request low-accuracy location. High accuracy is requested only during user-initiated Qibla location acquisition; the compass heading remains sensor-derived, and those coordinates are not used for analytics or tracking. There are no analytics ad networks and **no crash/telemetry SDK**. Diagnostics are written to on-device log files and never leave the phone unless the user explicitly shares them.
+3. **Privacy-first** — prayer-time refreshes request low-accuracy location. High accuracy is requested only during user-initiated Qibla location acquisition; the compass heading remains sensor-derived, and those coordinates are not used for analytics or tracking. The Qibla fix is kept on-device only and expires after 24 hours. There are no analytics ad networks and **no crash/telemetry SDK**. Diagnostics are written to on-device log files and never leave the phone unless the user explicitly shares them.
 4. **Native, polished platform integration** — real iOS AlarmKit-backed alarms on **iOS 26+** (alarm feature requires iOS 26; gated off entirely on earlier iOS — there is no fake-alarm fallback), native foreground alarm service on Android, iOS lock-screen and home widgets, native compass sensors with sensible fallbacks, and a conditional HMS source path whose release validation is pending. Alarm types are first-class for **Fajr, Jummah, and custom**.
 5. **Deep customization** — per-prayer sound, pre-prayer minutes, Iqama minutes, 23 calculation methods, custom Athan sounds the user provides.
 6. **Works offline once synced** — prayer times are cached from the current month through the end of the year, so the app keeps working without internet. The cache tops itself up in the background when the system grants the app a window, and otherwise on the next open. December pulls in the following year, so the year boundary is usually invisible.
@@ -84,6 +84,7 @@ These are the differentiators that should anchor most marketing copy:
 ## Privacy & data stance
 
 - Prayer-time refreshes request **low-accuracy** location. High accuracy is requested only while the user initiates Qibla location acquisition to calculate the bearing; compass heading remains sensor-derived. These coordinates are not used for analytics or tracking.
+- The one precise Qibla fix is stored **on-device only** and expires after 24 hours. It is reused offline — including in compass-only mode, which shows Qibla from the saved fix but never itself requests location. Copy must not claim compass-only keeps no location; the accurate claim is that it never _requests_ location.
 - No third-party advertising or tracking SDKs.
 - **No crash/telemetry SDK** (Sentry was removed 2026-06). Diagnostics are on-device log files only (per-domain, 30-day + 5 MB retention, local JS crash capture); nothing is uploaded — the user shares logs manually when reporting a problem. Marketing can lead with **"no telemetry, ever — diagnostics never leave your device."**
 - No user account, no cloud sync.
