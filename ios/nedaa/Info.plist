@@ -108,7 +108,7 @@
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only for this purpose and will not be shared with any third parties.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only while you are using the app and will not be shared with any third parties.</string>
+    <string>Nedaa uses your precise location while you use the app to calculate the Qibla direction and provide accurate prayer times and reminders. Your location is not shared with third parties.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>This app does not require microphone access.</string>
     <key>NSMotionUsageDescription</key>

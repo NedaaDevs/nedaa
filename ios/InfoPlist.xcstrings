@@ -79,7 +79,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "This app uses your location to provide accurate prayer times and reminders based on your\n      current location. Your location data will be used only while you are using the app and will\n      not be shared with any third parties."
+            "value" : "Nedaa uses your precise location while you use the app to calculate the Qibla direction and provide accurate prayer times and reminders. Your location is not shared with third parties."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم نداء موقعك الدقيق أثناء استخدام التطبيق لحساب اتجاه القبلة وتقديم أوقات صلاة وتذكيرات دقيقة. لا تتم مشاركة موقعك مع أي طرف ثالث."
           }
         }
       }

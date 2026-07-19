@@ -3,9 +3,14 @@ import {
   EventEmitter,
   type EventSubscription,
 } from "expo-modules-core";
-import type { OrientationData } from "./ExpoOrientation.types";
+import type { OrientationData, OrientationStartOptions } from "./ExpoOrientation.types";
 
-export type { OrientationData, OrientationSource } from "./ExpoOrientation.types";
+export type {
+  OrientationData,
+  OrientationNorthReference,
+  OrientationSource,
+  OrientationStartOptions,
+} from "./ExpoOrientation.types";
 
 const NativeModule = requireOptionalNativeModule("ExpoOrientation");
 const emitter = NativeModule ? new EventEmitter(NativeModule) : null;
@@ -14,8 +19,8 @@ const noop = { remove() {} } as EventSubscription;
 
 export const ExpoOrientationModule = {
   isAvailable: NativeModule !== null,
-  startWatching(): void {
-    NativeModule?.startWatching();
+  startWatching(options: OrientationStartOptions = {}): void {
+    NativeModule?.startWatching(options);
   },
   stopWatching(): void {
     NativeModule?.stopWatching();
