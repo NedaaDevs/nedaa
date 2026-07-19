@@ -1,0 +1,5 @@
+-keepattributes Annotation,Exceptions,InnerClasses,Signature,SourceFile,LineNumberTable
+-keep class com.huawei.hms.** { *; }
+-keep class * extends com.huawei.hms.core.aidl.IMessageEntity { *; }
+-keep public class com.huawei.location.nlp.network.** { *; }
+-keep class com.huawei.wisesecurity.ucs.** { *; }

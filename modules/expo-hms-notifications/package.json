@@ -1,0 +1,6 @@
+{
+  "name": "expo-hms-notifications",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GMS-free Android local-notification implementation for Nedaa HMS builds"
+}

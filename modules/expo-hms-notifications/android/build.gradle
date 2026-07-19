@@ -1,0 +1,76 @@
+plugins {
+  id 'com.android.library'
+  id 'kotlin-parcelize'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.hmsnotifications'
+version = '1.0.0'
+
+def upstreamVersion = '57.0.3'
+def upstreamAndroidDir = rootProject.file('../node_modules/expo-notifications/android')
+def upstreamJavaDir = new File(upstreamAndroidDir, 'src/main/java')
+def generatedSourceDir = layout.buildDirectory.dir('generated/upstream/java')
+def syncScript = file('../scripts/sync-upstream.mjs')
+
+if (!upstreamAndroidDir.exists()) {
+  throw new GradleException('expo-hms-notifications requires the installed expo-notifications package')
+}
+
+def installedPackage = new groovy.json.JsonSlurper().parse(
+  rootProject.file('../node_modules/expo-notifications/package.json')
+)
+if (installedPackage.version != upstreamVersion) {
+  throw new GradleException("expo-hms-notifications targets expo-notifications ${upstreamVersion}, but ${installedPackage.version} is installed")
+}
+
+tasks.register('syncUpstreamNotificationSources', Exec) {
+  inputs.dir(upstreamJavaDir)
+  inputs.file(syncScript)
+  outputs.dir(generatedSourceDir)
+  commandLine(
+    'node',
+    syncScript.absolutePath,
+    upstreamJavaDir.absolutePath,
+    generatedSourceDir.get().asFile.absolutePath
+  )
+}
+
+android {
+  namespace 'expo.modules.notifications'
+
+  defaultConfig {
+    minSdkVersion 24
+    versionCode 1
+    versionName '1.0.0'
+    consumerProguardFiles new File(upstreamAndroidDir, 'proguard-rules.pro')
+  }
+
+  buildFeatures {
+    buildConfig true
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+
+  sourceSets {
+    main {
+      java.srcDir generatedSourceDir
+      res.srcDir new File(upstreamAndroidDir, 'src/main/res')
+    }
+  }
+}
+
+tasks.named('preBuild').configure {
+  dependsOn tasks.named('syncUpstreamNotificationSources')
+}
+
+dependencies {
+  implementation 'androidx.core:core:1.17.0'
+  implementation 'androidx.lifecycle:lifecycle-runtime:2.9.3'
+  implementation 'androidx.lifecycle:lifecycle-process:2.9.3'
+  implementation 'androidx.lifecycle:lifecycle-common-java8:2.9.3'
+  implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+  implementation 'me.leolin:ShortcutBadger:1.1.22@aar'
+}

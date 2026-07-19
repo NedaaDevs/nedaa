@@ -1,0 +1,6 @@
+{
+  "name": "expo-hms-compat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fail-closed replacements for Google Play-only Expo APIs in Nedaa HMS builds"
+}

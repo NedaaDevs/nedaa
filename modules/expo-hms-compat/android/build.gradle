@@ -1,0 +1,21 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.hmscompat'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.hmscompat'
+
+  defaultConfig {
+    minSdkVersion 24
+    versionCode 1
+    versionName '1.0.0'
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+}
