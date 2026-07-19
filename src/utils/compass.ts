@@ -1,7 +1,9 @@
 import {
   CompassNorthReference,
   CompassReliabilityIssue,
+  CompassSensorReliability,
   type CompassReliabilityIssueValue,
+  type CompassSensorReliabilityValue,
 } from "@/enums/compass";
 import type { CompassLocationFix } from "@/types/compass";
 
@@ -94,6 +96,35 @@ export const MAX_HEADING_AGE_MS = 3_000;
 export const MAX_HEADING_FUTURE_SKEW_MS = 1_000;
 export const MAX_FRESH_LOCATION_AGE_MS = 2 * 60 * 1_000;
 export const MAX_SAVED_LOCATION_AGE_MS = 24 * 60 * 60 * 1_000;
+
+export type CompassLocationAge = {
+  unit: "now" | "minutes" | "hours";
+  value: number;
+};
+
+export const getCompassLocationAge = (timestamp: number, now = Date.now()): CompassLocationAge => {
+  const ageMs = Math.max(0, now - timestamp);
+  if (ageMs < 60_000) return { unit: "now", value: 0 };
+  if (ageMs < 60 * 60_000) {
+    return { unit: "minutes", value: Math.floor(ageMs / 60_000) };
+  }
+  return { unit: "hours", value: Math.floor(ageMs / (60 * 60_000)) };
+};
+
+export const getCompassSensorReliability = (
+  accuracyDegrees: number | null
+): CompassSensorReliabilityValue => {
+  if (accuracyDegrees === null || !Number.isFinite(accuracyDegrees) || accuracyDegrees < 0) {
+    return CompassSensorReliability.UNKNOWN;
+  }
+  if (accuracyDegrees > MAX_HEADING_ERROR_DEGREES) {
+    return CompassSensorReliability.NEEDS_CALIBRATION;
+  }
+  if (accuracyDegrees > MAX_ALIGNMENT_COMBINED_ERROR_DEGREES) {
+    return CompassSensorReliability.FAIR;
+  }
+  return CompassSensorReliability.GOOD;
+};
 
 const nativeCompassErrorIssues: Record<string, CompassReliabilityIssueValue> = {
   module_unavailable: CompassReliabilityIssue.SENSOR_UNAVAILABLE,

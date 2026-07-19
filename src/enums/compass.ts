@@ -34,6 +34,16 @@ export const CompassNorthReference = {
 export type CompassNorthReferenceValue =
   (typeof CompassNorthReference)[keyof typeof CompassNorthReference];
 
+export const CompassSensorReliability = {
+  GOOD: "good",
+  FAIR: "fair",
+  NEEDS_CALIBRATION: "needsCalibration",
+  UNKNOWN: "unknown",
+} as const;
+
+export type CompassSensorReliabilityValue =
+  (typeof CompassSensorReliability)[keyof typeof CompassSensorReliability];
+
 export const CompassReliabilityIssue = {
   LOCATION_REQUIRED: "location_required",
   LOCATION_PERMISSION_DENIED: "location_permission_denied",

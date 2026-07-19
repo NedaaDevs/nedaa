@@ -1,4 +1,8 @@
-import { CompassNorthReference, CompassReliabilityIssue } from "@/enums/compass";
+import {
+  CompassNorthReference,
+  CompassReliabilityIssue,
+  CompassSensorReliability,
+} from "@/enums/compass";
 import {
   MAX_BEARING_ERROR_DEGREES,
   MAX_HEADING_FUTURE_SKEW_MS,
@@ -8,6 +12,8 @@ import {
   calculateBearingUncertaintyDegrees,
   calculateQiblaDirection,
   getCompassSensorIssueAction,
+  getCompassLocationAge,
+  getCompassSensorReliability,
   getHeadingReliabilityIssue,
   getLocationReliabilityIssue,
   getNativeCompassReliabilityIssue,
@@ -163,6 +169,24 @@ describe("compass reliability", () => {
     expect(canProvideAlignmentFeedback(null, 2)).toBe(false);
     expect(canProvideAlignmentFeedback(20, 2)).toBe(false);
     expect(canProvideAlignmentFeedback(10, 6)).toBe(false);
+  });
+
+  it.each([
+    ["just now", NOW, { unit: "now", value: 0 }],
+    ["one minute", NOW - 60_000, { unit: "minutes", value: 1 }],
+    ["one hour", NOW - 60 * 60_000, { unit: "hours", value: 1 }],
+    ["twenty-four hours", NOW - 24 * 60 * 60_000, { unit: "hours", value: 24 }],
+  ])("formats saved-location age at the %s boundary", (_label, timestamp, expected) => {
+    expect(getCompassLocationAge(timestamp, NOW)).toEqual(expected);
+  });
+
+  it.each([
+    [8, CompassSensorReliability.GOOD],
+    [20, CompassSensorReliability.FAIR],
+    [45, CompassSensorReliability.NEEDS_CALIBRATION],
+    [null, CompassSensorReliability.UNKNOWN],
+  ])("maps %s° uncertainty to %s reliability", (accuracy, expected) => {
+    expect(getCompassSensorReliability(accuracy)).toBe(expected);
   });
 
   it("enters alignment at five degrees", () => {
