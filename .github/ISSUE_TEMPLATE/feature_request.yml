@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest something Nedaa could do better
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a look at the [out of scope list](https://github.com/NedaaDevs/nedaa/blob/master/.github/CONTRIBUTING.md#out-of-scope) first — a few directions are settled, and it'll save you writing something up.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the situation rather than the solution. It often turns out there's a better fix than the one we'd have guessed.
+      placeholder: I follow a mosque whose Iqama times shift through the year, and I re-enter them by hand every few weeks.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: What happens today?
+      description: How you handle it now, and where that falls short.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you expect instead?
+      description: Optional. If you have a specific idea, describe it — but the problem above matters more.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which platform?
+      options:
+        - Both
+        - iOS
+        - Android
+    validations:
+      required: true

@@ -1,0 +1,72 @@
+name: Bug report
+description: Something in the app isn't working
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the existing issues first — someone may have reported this already.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what you expected instead.
+      placeholder: The Fajr alarm didn't fire. I expected it at 04:12.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, in order. If it only happens sometimes, say roughly how often.
+      placeholder: |
+        1. Open Settings, then Alarms
+        2. Enable the Fajr alarm
+        3. Lock the phone overnight
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Settings, at the bottom of the screen.
+      placeholder: "2.9.5"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS version
+      placeholder: iPhone 15 Pro, iOS 26.1 — or Pixel 8, Android 15
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where did you install it from?
+      options:
+        - App Store
+        - Google Play
+        - AppGallery
+        - Built from source
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        Please don't paste logs into this issue — it's public.
+
+        Instead, open **Settings → Send feedback** in the app, describe the same problem, and turn on "Include diagnostics". That sends the technical details straight to us, privately. Nedaa uploads nothing on its own, so this only happens when you choose to send it.
+
+        Tick the box below once you have, and we'll match it up with this issue.
+      options:
+        - label: I sent diagnostics through the app
+          required: false
