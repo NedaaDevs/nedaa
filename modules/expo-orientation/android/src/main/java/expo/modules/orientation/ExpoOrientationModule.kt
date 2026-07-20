@@ -379,6 +379,17 @@ class ExpoOrientationModule : Module() {
                 }
                 lastHeading = heading
 
+                if (isMagneticallyDisturbed(magnetic, reference.expectedFieldMicroTesla)) {
+                    emitInvalid(
+                        heading = heading,
+                        source = SOURCE_ACCELEROMETER_MAGNETOMETER,
+                        northReference = reference.northReference,
+                        error = ERROR_SENSOR_UNRELIABLE,
+                        timestamp = sensorTimestampToEpoch(event.timestamp),
+                    )
+                    return
+                }
+
                 if (event.accuracy <= SensorManager.SENSOR_STATUS_UNRELIABLE) {
                     emitInvalid(
                         heading = heading,
@@ -501,7 +512,9 @@ class ExpoOrientationModule : Module() {
                 Log.w(TAG, "Geomagnetic declination unavailable; using magnetic north")
                 HeadingReference(0f, NORTH_REFERENCE_MAGNETIC)
             } else {
-                HeadingReference(declination, NORTH_REFERENCE_TRUE)
+                // getFieldStrength is nanotesla; the magnetometer reports microtesla.
+                val expected = (field.fieldStrength / 1_000f).takeIf { it.isFinite() && it > 0f }
+                HeadingReference(declination, NORTH_REFERENCE_TRUE, expected)
             }
         } catch (error: RuntimeException) {
             Log.w(TAG, "Geomagnetic declination failed; using magnetic north", error)
@@ -588,6 +601,19 @@ class ExpoOrientationModule : Module() {
         return Math.toDegrees(radians).takeIf { it.isFinite() && it <= 180.0 }
     }
 
+    /**
+     * Earth's field runs 25-65uT. A measured magnitude far from the modelled value means a nearby
+     * magnet or ferrous mass is bending the field, which the HAL often fails to flag.
+     */
+    private fun isMagneticallyDisturbed(magnetic: FloatArray, expectedMicroTesla: Float?): Boolean {
+        val expected = expectedMicroTesla ?: return false
+        val magnitude = kotlin.math.sqrt(
+            magnetic[0] * magnetic[0] + magnetic[1] * magnetic[1] + magnetic[2] * magnetic[2],
+        )
+        if (!magnitude.isFinite() || magnitude <= 0f) return false
+        return kotlin.math.abs(magnitude - expected) > expected * FIELD_DEVIATION_TOLERANCE
+    }
+
     private fun normalizeHeading(degrees: Float): Float {
         if (!degrees.isFinite()) return 0f
         return ((degrees % 360f) + 360f) % 360f
@@ -605,6 +631,7 @@ class ExpoOrientationModule : Module() {
     private data class HeadingReference(
         val declinationDegrees: Float,
         val northReference: String,
+        val expectedFieldMicroTesla: Float? = null,
     )
 
     private companion object {
@@ -628,5 +655,6 @@ class ExpoOrientationModule : Module() {
         const val FOP_STARTUP_TIMEOUT_MS = 2_000L
         const val MAX_FRESH_LOCATION_AGE_MS = 2 * 60 * 1_000L
         const val INVALID_HEADING_ERROR_DEGREES = 180.0
+        const val FIELD_DEVIATION_TOLERANCE = 0.35f
     }
 }
