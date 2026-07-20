@@ -1,65 +1,89 @@
 package expo.modules.orientation
 
 import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorManager
+import android.util.Log
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.DeviceOrientation
 import com.google.android.gms.location.DeviceOrientationListener
 import com.google.android.gms.location.DeviceOrientationRequest
 import com.google.android.gms.location.LocationServices
 import java.util.concurrent.Executors
-import kotlin.math.abs
 
+/**
+ * Adapter over the Play Services Fused Orientation Provider. Headings are passed through
+ * unsmoothed and are already referenced to true north when Play Services holds a location fix.
+ */
 object FopHelper {
+
+    private const val TAG = "ExpoOrientationFop"
 
     private var listener: DeviceOrientationListener? = null
     private val executor = Executors.newSingleThreadExecutor()
 
-    private var lastHeading: Float = 0f
-    private var hasLastHeading = false
-
-    fun start(context: Context, callback: (heading: Float, accuracy: Float) -> Unit): Boolean {
-        val client = LocationServices.getFusedOrientationProviderClient(context)
-
-        val request = DeviceOrientationRequest.Builder(
-            DeviceOrientationRequest.OUTPUT_PERIOD_DEFAULT
-        ).build()
-
-        val orientationListener = DeviceOrientationListener { orientation: DeviceOrientation ->
-            val heading = orientation.headingDegrees
-            val accuracy = orientation.headingErrorDegrees
-
-            val smoothed = smoothHeading(heading)
-            callback(smoothed, accuracy)
+    /** FOP needs Play Services plus all three fusion sensors; there is no degraded mode. */
+    fun isAvailable(context: Context): Boolean {
+        val playServices = GoogleApiAvailability.getInstance()
+            .isGooglePlayServicesAvailable(context)
+        if (playServices != ConnectionResult.SUCCESS) {
+            Log.i(TAG, "FOP unavailable: play services status=$playServices")
+            return false
         }
 
-        listener = orientationListener
-        client.requestOrientationUpdates(request, executor, orientationListener)
+        val sm = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return false
+        val missing = listOf(
+            Sensor.TYPE_ACCELEROMETER to "accelerometer",
+            Sensor.TYPE_GYROSCOPE to "gyroscope",
+            Sensor.TYPE_MAGNETIC_FIELD to "magnetometer",
+        ).filter { (type, _) -> sm.getDefaultSensor(type) == null }
+
+        if (missing.isNotEmpty()) {
+            Log.i(TAG, "FOP unavailable: missing ${missing.joinToString { it.second }}")
+            return false
+        }
         return true
     }
 
-    fun stop(context: Context) {
-        listener?.let {
+    fun start(
+        context: Context,
+        onSample: (headingDegrees: Float, headingErrorDegrees: Float, elapsedRealtimeNs: Long) -> Unit,
+    ): Boolean {
+        if (!isAvailable(context)) return false
+
+        return try {
             val client = LocationServices.getFusedOrientationProviderClient(context)
-            client.removeOrientationUpdates(it)
+            val request = DeviceOrientationRequest.Builder(
+                DeviceOrientationRequest.OUTPUT_PERIOD_DEFAULT,
+            ).build()
+
+            val orientationListener = DeviceOrientationListener { orientation: DeviceOrientation ->
+                onSample(
+                    orientation.headingDegrees,
+                    orientation.headingErrorDegrees,
+                    orientation.elapsedRealtimeNs,
+                )
+            }
+
+            listener = orientationListener
+            client.requestOrientationUpdates(request, executor, orientationListener)
+            true
+        } catch (error: RuntimeException) {
+            Log.w(TAG, "FOP start failed", error)
+            listener = null
+            false
         }
-        listener = null
-        hasLastHeading = false
     }
 
-    private fun smoothHeading(newHeading: Float): Float {
-        if (!hasLastHeading) {
-            lastHeading = newHeading
-            hasLastHeading = true
-            return newHeading
+    fun stop(context: Context) {
+        val current = listener ?: return
+        listener = null
+        try {
+            LocationServices.getFusedOrientationProviderClient(context)
+                .removeOrientationUpdates(current)
+        } catch (error: RuntimeException) {
+            Log.w(TAG, "FOP stop failed", error)
         }
-        var diff = newHeading - lastHeading
-        if (diff > 180) diff -= 360
-        if (diff < -180) diff += 360
-        if (abs(diff) < 0.5f) return lastHeading
-        val alpha = 0.3f
-        var smoothed = lastHeading + alpha * diff
-        if (smoothed < 0) smoothed += 360
-        if (smoothed >= 360) smoothed -= 360
-        lastHeading = smoothed
-        return smoothed
     }
 }
