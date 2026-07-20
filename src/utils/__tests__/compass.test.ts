@@ -4,6 +4,7 @@ import {
   CompassSensorReliability,
 } from "@/enums/compass";
 import {
+  INVALID_HEADING_ERROR_DEGREES,
   MAX_BEARING_ERROR_DEGREES,
   MAX_HEADING_FUTURE_SKEW_MS,
   MAX_HEADING_ERROR_DEGREES,
@@ -205,6 +206,10 @@ describe("compass reliability", () => {
     [20, CompassSensorReliability.FAIR],
     [45, CompassSensorReliability.NEEDS_CALIBRATION],
     [null, CompassSensorReliability.UNKNOWN],
+    // The fused orientation provider reports 180 when it cannot bound the error at all,
+    // which is an absent estimate rather than a wide one.
+    [INVALID_HEADING_ERROR_DEGREES, CompassSensorReliability.UNKNOWN],
+    [200, CompassSensorReliability.UNKNOWN],
   ])("maps %s° uncertainty to %s reliability", (accuracy, expected) => {
     expect(getCompassSensorReliability(accuracy)).toBe(expected);
   });

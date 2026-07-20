@@ -89,6 +89,8 @@ export const angleDifference = (angle1: number, angle2: number): number => {
   return diff;
 };
 
+/** The fused orientation provider reports this when it cannot bound the heading error at all. */
+export const INVALID_HEADING_ERROR_DEGREES = 180;
 export const MAX_HEADING_ERROR_DEGREES = 30;
 export const MAX_BEARING_ERROR_DEGREES = 5;
 export const MAX_ALIGNMENT_COMBINED_ERROR_DEGREES = 15;
@@ -114,7 +116,12 @@ export const getCompassLocationAge = (timestamp: number, now = Date.now()): Comp
 export const getCompassSensorReliability = (
   accuracyDegrees: number | null
 ): CompassSensorReliabilityValue => {
-  if (accuracyDegrees === null || !Number.isFinite(accuracyDegrees) || accuracyDegrees < 0) {
+  if (
+    accuracyDegrees === null ||
+    !Number.isFinite(accuracyDegrees) ||
+    accuracyDegrees < 0 ||
+    accuracyDegrees >= INVALID_HEADING_ERROR_DEGREES
+  ) {
     return CompassSensorReliability.UNKNOWN;
   }
   if (accuracyDegrees > MAX_HEADING_ERROR_DEGREES) {
