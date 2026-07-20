@@ -279,7 +279,7 @@ class ExpoOrientationModule : Module() {
         }
 
         sensorListener = listener
-        val registered = sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
+        val registered = sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
         if (!registered) {
             Log.e(TAG, "Compass registration failed for $SOURCE_ROTATION_VECTOR")
             emitInvalid(
@@ -419,12 +419,12 @@ class ExpoOrientationModule : Module() {
         val accelerometerRegistered = sm.registerListener(
             listener,
             accelSensor,
-            SensorManager.SENSOR_DELAY_UI,
+            SensorManager.SENSOR_DELAY_GAME,
         )
         val magnetometerRegistered = sm.registerListener(
             listener,
             magSensor,
-            SensorManager.SENSOR_DELAY_UI,
+            SensorManager.SENSOR_DELAY_GAME,
         )
 
         if (!accelerometerRegistered || !magnetometerRegistered) {
