@@ -6,6 +6,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.view.Surface
@@ -25,6 +27,17 @@ class ExpoOrientationModule : Module() {
     private var isWatching = false
     private var lastHeading = 0f
     private var lastInvalidError: String? = null
+
+    // FOP delivers on its own executor thread while the watchdog runs on main; both flags are
+    // written from one and read from the other.
+    @Volatile
+    private var isFopActive = false
+
+    @Volatile
+    private var hasFopSample = false
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var fopWatchdog: Runnable? = null
 
     override fun definition() = ModuleDefinition {
         Name("ExpoOrientation")
@@ -67,6 +80,107 @@ class ExpoOrientationModule : Module() {
         }
 
         sensorManager = sm
+
+        if (isFopEligible(options, reference) && startFop(sm, reference, session)) return
+
+        startRotationVectorOrFallback(sm, reference, session)
+    }
+
+    /**
+     * FOP applies magnetic declination itself, but only when Play Services holds a location fix,
+     * and it never reports which reference frame it used. A fresh fix of our own is the evidence
+     * that Play Services has one too; on a saved fix we decline FOP and correct declination
+     * ourselves via the rotation-vector path.
+     */
+    private fun isFopEligible(options: Map<String, Any>, reference: HeadingReference): Boolean {
+        if (reference.northReference != NORTH_REFERENCE_TRUE) return false
+        val locationTimestamp = options.finiteDouble("locationTimestamp") ?: return false
+        val age = System.currentTimeMillis() - locationTimestamp.toLong()
+        return age >= 0 && age <= MAX_FRESH_LOCATION_AGE_MS
+    }
+
+    private fun startFop(sm: SensorManager, reference: HeadingReference, session: Long): Boolean {
+        activeSource = SOURCE_FOP
+        hasFopSample = false
+
+        val started = FopHelper.start(context) { headingDegrees, headingErrorDegrees, elapsedRealtimeNs ->
+            if (!isCurrentSession(session, SOURCE_FOP)) return@start
+
+            val heading = normalizeHeading(headingDegrees)
+            if (!heading.isFinite()) {
+                emitInvalid(
+                    source = SOURCE_FOP,
+                    northReference = reference.northReference,
+                    error = ERROR_INVALID_HEADING,
+                )
+                return@start
+            }
+
+            if (!hasFopSample) {
+                hasFopSample = true
+                cancelFopWatchdog()
+                Log.i(TAG, "FOP delivered its first sample; staying on $SOURCE_FOP")
+            }
+
+            lastHeading = heading
+            // FOP already applied declination; adding reference.declinationDegrees would double-correct.
+            emitHeading(
+                heading = heading,
+                accuracyDegrees = fopAccuracyDegrees(headingErrorDegrees),
+                northReference = NORTH_REFERENCE_TRUE,
+                source = SOURCE_FOP,
+                timestamp = sensorTimestampToEpoch(elapsedRealtimeNs),
+            )
+        }
+
+        if (!started) {
+            Log.i(TAG, "FOP unavailable; using $SOURCE_ROTATION_VECTOR")
+            return false
+        }
+
+        isFopActive = true
+        Log.i(TAG, "Compass starting source=$SOURCE_FOP reference=$NORTH_REFERENCE_TRUE")
+        scheduleFopWatchdog(sm, reference, session)
+        return true
+    }
+
+    /** FOP can accept a request and then never deliver; demote to the rotation vector if so. */
+    private fun scheduleFopWatchdog(sm: SensorManager, reference: HeadingReference, session: Long) {
+        val watchdog = Runnable {
+            if (!isCurrentSession(session, SOURCE_FOP) || hasFopSample) return@Runnable
+            Log.w(TAG, "FOP produced no sample in ${FOP_STARTUP_TIMEOUT_MS}ms; falling back")
+            stopFop()
+            startRotationVectorOrFallback(sm, reference, session)
+        }
+        fopWatchdog = watchdog
+        mainHandler.postDelayed(watchdog, FOP_STARTUP_TIMEOUT_MS)
+    }
+
+    private fun cancelFopWatchdog() {
+        fopWatchdog?.let { mainHandler.removeCallbacks(it) }
+        fopWatchdog = null
+    }
+
+    private fun stopFop() {
+        cancelFopWatchdog()
+        if (!isFopActive) return
+        isFopActive = false
+        hasFopSample = false
+        FopHelper.stop(context)
+    }
+
+    /** FOP reports 180 when it cannot bound the heading error; that is unknown, not a huge error. */
+    private fun fopAccuracyDegrees(headingErrorDegrees: Float): Double? {
+        val value = headingErrorDegrees.toDouble()
+        if (!value.isFinite() || value < 0.0 || value >= INVALID_HEADING_ERROR_DEGREES) return null
+        return value
+    }
+
+    private fun startRotationVectorOrFallback(
+        sm: SensorManager,
+        reference: HeadingReference,
+        session: Long,
+    ) {
         val rotationSensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         if (rotationSensor != null) {
             Log.i(TAG, "Compass starting source=$SOURCE_ROTATION_VECTOR reference=${reference.northReference}")
@@ -445,6 +559,7 @@ class ExpoOrientationModule : Module() {
 
     private fun stopFailedRegistration(session: Long) {
         if (activeSession != session) return
+        stopFop()
         sensorListener?.let { sensorManager?.unregisterListener(it) }
         sensorListener = null
         sensorManager = null
@@ -452,6 +567,7 @@ class ExpoOrientationModule : Module() {
     }
 
     private fun stopAll() {
+        stopFop()
         activeSession += 1
         isWatching = false
         sensorListener?.let { sensorManager?.unregisterListener(it) }
@@ -497,6 +613,7 @@ class ExpoOrientationModule : Module() {
         const val SOURCE_UNKNOWN = "unknown"
         const val SOURCE_ROTATION_VECTOR = "rotation_vector"
         const val SOURCE_ACCELEROMETER_MAGNETOMETER = "accelerometer_magnetometer"
+        const val SOURCE_FOP = "fop"
 
         const val NORTH_REFERENCE_TRUE = "true"
         const val NORTH_REFERENCE_MAGNETIC = "magnetic"
@@ -507,5 +624,9 @@ class ExpoOrientationModule : Module() {
         const val ERROR_INVALID_HEADING = "invalid_heading"
 
         const val NANOS_PER_MILLISECOND = 1_000_000L
+
+        const val FOP_STARTUP_TIMEOUT_MS = 2_000L
+        const val MAX_FRESH_LOCATION_AGE_MS = 2 * 60 * 1_000L
+        const val INVALID_HEADING_ERROR_DEGREES = 180.0
     }
 }
