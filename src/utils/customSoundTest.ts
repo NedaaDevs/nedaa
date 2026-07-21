@@ -50,7 +50,7 @@ export async function testPickAndRegisterSound() {
     if (filePath.startsWith("content://")) {
       console.log("[Test] Converting content:// URI to local file...");
       const tempFile = new File(Paths.cache, `temp_sound_${Date.now()}.${getExtension(file.name)}`);
-      new File(filePath).copy(tempFile);
+      await new File(filePath).copy(tempFile);
       filePath = tempFile.uri;
     }
 

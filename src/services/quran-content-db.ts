@@ -149,11 +149,8 @@ const installContentDb = async (
   const shm = new File(targetDir, `${destName}-shm`);
   if (wal.exists) wal.delete();
   if (shm.exists) shm.delete();
-  extracted.move(destFile);
-  log.i(
-    "Content",
-    `#${seq} moved → dest exists=${destFile.exists} src still exists=${extracted.exists}`
-  );
+  await extracted.move(destFile);
+  log.i("Content", `#${seq} moved → dest exists=${destFile.exists}`);
 
   // Verify the file landed before stamping the version marker — a stamped-but-
   // missing DB is the state that can't self-recover. Existence only: File.size can
@@ -171,7 +168,7 @@ const installContentDb = async (
       : "<target dir missing>";
     log.e(
       "Content",
-      `#${seq} landed missing — destFile.exists=${destFile.exists} src=${extracted.exists} target dir: [${names}]`
+      `#${seq} landed missing — destFile.exists=${destFile.exists} target dir: [${names}]`
     );
     throw new Error("[QuranContentDB] content DB missing after install");
   }
@@ -199,7 +196,7 @@ const applyStagedUpdate = (targetDir: Directory): void => {
   if (targetFile.exists) targetFile.delete();
   if (wal.exists) wal.delete();
   if (shm.exists) shm.delete();
-  stagedFile.move(targetFile);
+  stagedFile.moveSync(targetFile);
 
   const version = stagedVersion.textSync();
   if (versionFile.exists) versionFile.delete();

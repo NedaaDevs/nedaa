@@ -124,7 +124,7 @@ export async function addCustomSound(
         Paths.cache,
         `temp_sound_${Date.now()}${getFileExtension(file.name)}`
       );
-      new File(filePath).copy(tempFile);
+      await new File(filePath).copy(tempFile);
       filePath = tempFile.uri;
     }
 

@@ -198,7 +198,7 @@ const downloadSurahFile = async (
     if (result) {
       // Promote the completed partial to its final, countable name.
       if (file.exists) file.delete();
-      part.move(file);
+      await part.move(file);
       log.i("Download", `surah ${surah} saved for ${recitation.id}`);
       return { done: true, resume: null };
     }

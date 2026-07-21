@@ -507,7 +507,7 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         if (extractedBoundsDb.exists) {
           const targetBoundsDb = getBoundsDbFile(version);
           if (targetBoundsDb.exists) targetBoundsDb.delete();
-          extractedBoundsDb.move(targetBoundsDb);
+          await extractedBoundsDb.move(targetBoundsDb);
           log.d("Download", "Moved bounds.db into place");
         }
       },

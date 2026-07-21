@@ -69,7 +69,7 @@ const ShareImageSheet = ({
       // gives the attachment a meaningful name.
       const named = new File(Paths.cache, `nedaa-${surah}-${ayah}.png`);
       if (named.exists) named.delete();
-      new File(uri).copy(named);
+      await new File(uri).copy(named);
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(named.uri, {
           mimeType: "image/png",
