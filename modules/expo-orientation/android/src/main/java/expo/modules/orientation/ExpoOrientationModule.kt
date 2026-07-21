@@ -20,16 +20,30 @@ class ExpoOrientationModule : Module() {
     private val context: Context
         get() = requireNotNull(appContext.reactContext)
 
+    // Shared across three threads: the JS thread (start/stop), the main looper (FOP watchdog),
+    // and the FOP executor (heading callbacks). Volatile gives the readers a happens-before
+    // edge on the writers; without it a stale read lets a torn-down session keep emitting.
+    @Volatile
     private var sensorManager: SensorManager? = null
+
+    @Volatile
     private var sensorListener: SensorEventListener? = null
+
+    @Volatile
     private var activeSource = SOURCE_ROTATION_VECTOR
+
+    @Volatile
     private var activeSession = 0L
+
+    @Volatile
     private var isWatching = false
+
+    @Volatile
     private var lastHeading = 0f
+
+    @Volatile
     private var lastInvalidError: String? = null
 
-    // FOP delivers on its own executor thread while the watchdog runs on main; both flags are
-    // written from one and read from the other.
     @Volatile
     private var isFopActive = false
 
@@ -102,19 +116,25 @@ class ExpoOrientationModule : Module() {
     private fun startFop(sm: SensorManager, reference: HeadingReference, session: Long): Boolean {
         activeSource = SOURCE_FOP
         hasFopSample = false
+        isFopActive = true
 
         val started = FopHelper.start(context) { headingDegrees, headingErrorDegrees, elapsedRealtimeNs ->
-            if (!isCurrentSession(session, SOURCE_FOP)) return@start
+            // isFopActive drops samples already queued on the executor when a stop or the
+            // watchdog demotion races this callback.
+            if (!isFopActive || !isCurrentSession(session, SOURCE_FOP)) return@start
 
-            val heading = normalizeHeading(headingDegrees)
-            if (!heading.isFinite()) {
+            // Validate the raw value: normalizeHeading coerces non-finite input to 0, which
+            // would otherwise pass a garbage sample off as a confident due-North heading.
+            if (!headingDegrees.isFinite()) {
                 emitInvalid(
                     source = SOURCE_FOP,
                     northReference = reference.northReference,
                     error = ERROR_INVALID_HEADING,
+                    timestamp = sensorTimestampToEpoch(elapsedRealtimeNs),
                 )
                 return@start
             }
+            val heading = normalizeHeading(headingDegrees)
 
             if (!hasFopSample) {
                 hasFopSample = true
@@ -134,11 +154,11 @@ class ExpoOrientationModule : Module() {
         }
 
         if (!started) {
+            isFopActive = false
             Log.i(TAG, "FOP unavailable; using $SOURCE_ROTATION_VECTOR")
             return false
         }
 
-        isFopActive = true
         Log.i(TAG, "Compass starting source=$SOURCE_FOP reference=$NORTH_REFERENCE_TRUE")
         scheduleFopWatchdog(sm, reference, session)
         return true
@@ -150,6 +170,8 @@ class ExpoOrientationModule : Module() {
             if (!isCurrentSession(session, SOURCE_FOP) || hasFopSample) return@Runnable
             Log.w(TAG, "FOP produced no sample in ${FOP_STARTUP_TIMEOUT_MS}ms; falling back")
             stopFop()
+            // A stop or restart may have raced the demotion; never register for a dead session.
+            if (!isWatching || activeSession != session) return@Runnable
             startRotationVectorOrFallback(sm, reference, session)
         }
         fopWatchdog = watchdog
@@ -379,7 +401,9 @@ class ExpoOrientationModule : Module() {
                 }
                 lastHeading = heading
 
-                if (isMagneticallyDisturbed(magnetic, reference.expectedFieldMicroTesla)) {
+                // Test the raw sample: the low-pass vector starts at zero, so its magnitude
+                // reads as disturbed for the first frames of every session.
+                if (isMagneticallyDisturbed(event.values, reference.expectedFieldMicroTesla)) {
                     emitInvalid(
                         heading = heading,
                         source = SOURCE_ACCELEROMETER_MAGNETOMETER,
@@ -598,7 +622,8 @@ class ExpoOrientationModule : Module() {
         val radians = event.values.getOrNull(4)?.toDouble() ?: return null
         if (!radians.isFinite() || radians < 0.0) return null
 
-        return Math.toDegrees(radians).takeIf { it.isFinite() && it <= 180.0 }
+        // 180 degrees means the error is unbounded, which is an absent estimate, not a wide one.
+        return Math.toDegrees(radians).takeIf { it.isFinite() && it < 180.0 }
     }
 
     /**
@@ -653,6 +678,9 @@ class ExpoOrientationModule : Module() {
         const val NANOS_PER_MILLISECOND = 1_000_000L
 
         const val FOP_STARTUP_TIMEOUT_MS = 2_000L
+
+        // Mirrors MAX_FRESH_LOCATION_AGE_MS in src/utils/compass.ts; the FOP eligibility gate
+        // and the JS freshness classification must agree on this boundary.
         const val MAX_FRESH_LOCATION_AGE_MS = 2 * 60 * 1_000L
         const val INVALID_HEADING_ERROR_DEGREES = 180.0
         const val FIELD_DEVIATION_TOLERANCE = 0.35f

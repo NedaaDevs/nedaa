@@ -67,6 +67,8 @@ object FopHelper {
             }
 
             listener = orientationListener
+            // An async Task failure surfaces as no samples; the module's startup watchdog
+            // catches that and demotes to the rotation vector.
             client.requestOrientationUpdates(request, executor, orientationListener)
             true
         } catch (error: RuntimeException) {
