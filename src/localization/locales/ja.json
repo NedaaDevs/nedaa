@@ -473,6 +473,7 @@
   "common.warning": "Warning",
   "compass.accuracy": "Sensor uncertainty",
   "compass.accuracyDegrees": "±{{degrees}}°",
+  "compass.accuracyUnknown": "Not reported",
   "compass.action.calibrate": "How to calibrate",
   "compass.action.compassOnly": "Compass only",
   "compass.action.enableQibla": "Enable Qibla direction",
