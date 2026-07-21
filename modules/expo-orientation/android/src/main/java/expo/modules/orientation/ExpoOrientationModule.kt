@@ -72,7 +72,8 @@ class ExpoOrientationModule : Module() {
         }
     }
 
-    private fun startSensors(options: Map<String, Any>) {
+    /** Returns a one-line startup-decision summary for the JS diagnostics log. */
+    private fun startSensors(options: Map<String, Any>): String {
         stopAll()
 
         activeSession += 1
@@ -90,14 +91,20 @@ class ExpoOrientationModule : Module() {
                 error = ERROR_SENSOR_UNAVAILABLE,
             )
             isWatching = false
-            return
+            return "failed: sensor service unavailable"
         }
 
         sensorManager = sm
 
-        if (isFopEligible(options, reference) && startFop(sm, reference, session)) return
+        val fopReason = fopIneligibilityReason(options, reference)
+        if (fopReason == null && startFop(sm, reference, session)) {
+            return "source=$SOURCE_FOP; reference=$NORTH_REFERENCE_TRUE; watchdog=${FOP_STARTUP_TIMEOUT_MS}ms"
+        }
 
         startRotationVectorOrFallback(sm, reference, session)
+        val skipNote = fopReason ?: "fop unavailable"
+        return "fop skipped: $skipNote; source=$activeSource; " +
+            "reference=${reference.northReference}; declination=${reference.declinationDegrees}"
     }
 
     /**
@@ -105,12 +112,17 @@ class ExpoOrientationModule : Module() {
      * and it never reports which reference frame it used. A fresh fix of our own is the evidence
      * that Play Services has one too; on a saved fix we decline FOP and correct declination
      * ourselves via the rotation-vector path.
+     *
+     * Returns null when FOP may run, otherwise a short reason for the startup diagnostics line.
      */
-    private fun isFopEligible(options: Map<String, Any>, reference: HeadingReference): Boolean {
-        if (reference.northReference != NORTH_REFERENCE_TRUE) return false
-        val locationTimestamp = options.finiteDouble("locationTimestamp") ?: return false
+    private fun fopIneligibilityReason(options: Map<String, Any>, reference: HeadingReference): String? {
+        if (reference.northReference != NORTH_REFERENCE_TRUE) return "magnetic reference"
+        val locationTimestamp = options.finiteDouble("locationTimestamp")
+            ?: return "no fix timestamp"
         val age = System.currentTimeMillis() - locationTimestamp.toLong()
-        return age >= 0 && age <= MAX_FRESH_LOCATION_AGE_MS
+        if (age < 0) return "fix timestamp in the future"
+        if (age > MAX_FRESH_LOCATION_AGE_MS) return "fix stale (${age / 1000}s old)"
+        return null
     }
 
     private fun startFop(sm: SensorManager, reference: HeadingReference, session: Long): Boolean {

@@ -19,8 +19,10 @@ const noop = { remove() {} } as EventSubscription;
 
 export const ExpoOrientationModule = {
   isAvailable: NativeModule !== null,
-  startWatching(options: OrientationStartOptions = {}): void {
-    NativeModule?.startWatching(options);
+  /** Returns the platform's startup-decision summary for diagnostics, when it provides one. */
+  startWatching(options: OrientationStartOptions = {}): string | null {
+    const startupInfo = NativeModule?.startWatching(options);
+    return typeof startupInfo === "string" ? startupInfo : null;
   },
   stopWatching(): void {
     NativeModule?.stopWatching();

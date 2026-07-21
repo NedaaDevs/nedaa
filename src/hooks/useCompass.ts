@@ -247,13 +247,16 @@ export const useCompass = ({
         }
       );
 
-      ExpoOrientationModule.startWatching({
+      const startupInfo = ExpoOrientationModule.startWatching({
         ...(hasLocation ? { latitude, longitude } : {}),
         ...(typeof altitude === "number" && Number.isFinite(altitude) ? { altitude } : {}),
         ...(typeof locationTimestamp === "number" && Number.isFinite(locationTimestamp)
           ? { locationTimestamp }
           : {}),
       });
+      if (startupInfo) {
+        log.i("Session", `native start: ${startupInfo}`);
+      }
 
       return () => {
         clearTimeout(timeout);
