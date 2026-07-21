@@ -473,6 +473,7 @@
   "common.warning": "تحذير",
   "compass.accuracy": "هامش خطأ المستشعر",
   "compass.accuracyDegrees": "±{{degrees}}°",
+  "compass.accuracyUnknown": "غير متوفر",
   "compass.action.calibrate": "طريقة المعايرة",
   "compass.action.compassOnly": "بوصلة فقط",
   "compass.action.enableQibla": "تفعيل اتجاه القبلة",
