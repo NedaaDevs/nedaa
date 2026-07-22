@@ -1,32 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Pressable, ScrollView } from "react-native";
 import { useIsFocused } from "expo-router/react-navigation";
-import { LocateFixed } from "lucide-react-native";
+import { Info, LocateFixed } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import TopBar from "@/components/TopBar";
+import { CompassDetailsSheet } from "@/components/compass/CompassDetailsSheet";
 import { CompassDial } from "@/components/compass/CompassDial";
-import { CompassInfoCard } from "@/components/compass/CompassInfoCard";
 import { CompassIssueCard } from "@/components/compass/CompassIssueCard";
-import { CompassModeSwitch } from "@/components/compass/CompassModeSwitch";
-import { CompassSetupCard } from "@/components/compass/CompassSetupCard";
+import { CompassOverlay } from "@/components/compass/CompassOverlay";
 import { Background } from "@/components/ui/background";
-import { Card } from "@/components/ui/card";
+import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import {
-  CompassLocationPreference,
   CompassLocationSource,
   CompassNorthReference,
   CompassReliabilityIssue,
-  CompassSensorReliability,
   type CompassReliabilityIssueValue,
 } from "@/enums/compass";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useCompass } from "@/hooks/useCompass";
 import { useCompassLocation } from "@/hooks/useCompassLocation";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import type { CompassLocationFix } from "@/types/compass";
@@ -36,35 +35,23 @@ import {
   calculateDistanceToMecca,
   calculateQiblaDirection,
   canProvideAlignmentFeedback,
-  getCompassSensorIssueAction,
+  getCalibrationOverlayVisible,
   getCompassLocationAge,
   getCompassSensorReliability,
   getHeadingReliabilityIssue,
   getNativeCompassReliabilityIssue,
   getQiblaProximityState,
+  getTiltOverlayVisible,
   getTranslatedCompassDirection,
+  getTurnDirection,
   type QiblaProximityState,
 } from "@/utils/compass";
 import { formatNumberToLocale } from "@/utils/number";
 
 const log = AppLogger.create("compass");
 
-const locationIssues = new Set<CompassReliabilityIssueValue>([
-  CompassReliabilityIssue.LOCATION_REQUIRED,
-  CompassReliabilityIssue.LOCATION_PERMISSION_DENIED,
-  CompassReliabilityIssue.LOCATION_PERMISSION_BLOCKED,
-  CompassReliabilityIssue.LOCATION_SERVICES_DISABLED,
-  CompassReliabilityIssue.LOCATION_TIMEOUT,
-  CompassReliabilityIssue.LOCATION_REDUCED_ACCURACY,
-  CompassReliabilityIssue.LOCATION_TOO_INACCURATE,
-  CompassReliabilityIssue.LOCATION_STALE,
-]);
-
-const settingsIssues = new Set<CompassReliabilityIssueValue>([
-  CompassReliabilityIssue.LOCATION_PERMISSION_BLOCKED,
-  CompassReliabilityIssue.LOCATION_REDUCED_ACCURACY,
-  CompassReliabilityIssue.LOCATION_SERVICES_DISABLED,
-]);
+const CALIBRATE_OVERLAY_DELAY_MS = 1_000;
+const TILT_OVERLAY_DELAY_MS = 500;
 
 const getSensorIssue = (
   compass: ReturnType<typeof useCompass>,
@@ -83,11 +70,7 @@ const getSensorIssue = (
       northReference: compass.northReference,
       timestamp: compass.timestamp,
     },
-    {
-      // The hook owns the live stale timer and records when this sample was observed.
-      now: compass.observedAt,
-      requiresTrueNorth,
-    }
+    { now: compass.observedAt, requiresTrueNorth }
   );
 };
 
@@ -104,11 +87,9 @@ const CompassScreen = () => {
   const hapticMedium = useHaptic("medium");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [sensorRestartKey, setSensorRestartKey] = useState(0);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const previousHapticProximity = useRef<QiblaProximityState>("searching");
 
-  const preference = isScreenshotMode ? CompassLocationPreference.QIBLA : location.preference;
-  const isQiblaMode = preference === CompassLocationPreference.QIBLA;
-  const isCompassOnly = preference === CompassLocationPreference.COMPASS_ONLY;
   const effectiveFix: CompassLocationFix | null = qiblaSeed
     ? {
         latitude: qiblaSeed.lat,
@@ -120,12 +101,7 @@ const CompassScreen = () => {
     : location.fix;
   const locationSource = qiblaSeed ? CompassLocationSource.FRESH : location.source;
 
-  const compassPaused =
-    isScreenshotMode ||
-    !isFocused ||
-    !isAppActive ||
-    preference === CompassLocationPreference.ASK ||
-    (isQiblaMode && effectiveFix === null);
+  const compassPaused = isScreenshotMode || !isFocused || !isAppActive;
   const liveCompass = useCompass({
     paused: compassPaused,
     location: effectiveFix,
@@ -143,6 +119,7 @@ const CompassScreen = () => {
         observedAt: 1,
         source: "cl_location" as const,
         error: null,
+        tiltDegrees: null,
       }
     : liveCompass;
 
@@ -158,40 +135,41 @@ const CompassScreen = () => {
     };
   }, []);
 
-  const locationIssue =
-    isQiblaMode && effectiveFix === null
-      ? (location.issue ?? CompassReliabilityIssue.LOCATION_REQUIRED)
-      : null;
-  const sensorIssue =
-    preference === CompassLocationPreference.ASK || locationIssue
-      ? null
-      : getSensorIssue(compass, isQiblaMode);
-  const advisorySensorIssue =
-    sensorIssue === CompassReliabilityIssue.SENSOR_UNCALIBRATED &&
-    compass.isValid &&
-    compass.accuracyDegrees !== null &&
-    Number.isFinite(compass.accuracyDegrees)
-      ? sensorIssue
-      : null;
-  const blockingIssue = locationIssue ?? (advisorySensorIssue ? null : sensorIssue);
-  const isStartingSensor = blockingIssue === CompassReliabilityIssue.SENSOR_STARTING;
-  const isLocating = isQiblaMode && location.isRefreshing && effectiveFix === null;
-  const isReady =
-    (isQiblaMode || isCompassOnly) &&
-    (!isQiblaMode || effectiveFix !== null) &&
-    blockingIssue === null;
+  const requiresTrueNorth = effectiveFix !== null;
+  const sensorIssue = getSensorIssue(compass, requiresTrueNorth);
 
-  // A Qibla bearing is true-north referenced; overlaying it on a magnetic heading would be
-  // wrong by the local declination. Qibla mode blocks earlier on this, compass-only just
-  // withholds Qibla and keeps showing the labelled heading.
-  const canDeriveQibla =
+  // Unusable accuracy drives the calibrate overlay, not a blocking card. Any native error
+  // that maps to the uncalibrated issue (sensor_unreliable, invalid_accuracy) counts.
+  const sensorUnreliable =
+    getNativeCompassReliabilityIssue(compass.error) === CompassReliabilityIssue.SENSOR_UNCALIBRATED;
+  /* eslint-disable react-hooks/refs -- hysteresis is a pure fn of the ref's own previous value,
+     mutated in place during render so each frame sees the latest reading without an extra effect tick */
+  const calibrateRawRef = useRef(false);
+  calibrateRawRef.current = getCalibrationOverlayVisible(
+    compass.accuracyDegrees,
+    sensorUnreliable,
+    calibrateRawRef.current
+  );
+  const showCalibrate = useDelayedFlag(calibrateRawRef.current, CALIBRATE_OVERLAY_DELAY_MS);
+
+  const tiltRawRef = useRef(false);
+  tiltRawRef.current = getTiltOverlayVisible(compass.tiltDegrees, tiltRawRef.current);
+  const showHoldFlat = useDelayedFlag(tiltRawRef.current, TILT_OVERLAY_DELAY_MS) && !showCalibrate;
+  /* eslint-enable react-hooks/refs */
+
+  const blockingIssue =
+    sensorIssue === CompassReliabilityIssue.SENSOR_UNCALIBRATED ? null : sensorIssue;
+  const isStartingSensor = blockingIssue === CompassReliabilityIssue.SENSOR_STARTING;
+  const isReady = blockingIssue === null;
+
+  const hasQibla =
     isReady && effectiveFix !== null && compass.northReference === CompassNorthReference.TRUE;
   const qiblaDirection =
-    canDeriveQibla && effectiveFix
+    hasQibla && effectiveFix
       ? calculateQiblaDirection(effectiveFix.latitude, effectiveFix.longitude)
       : null;
   const distanceKm =
-    canDeriveQibla && effectiveFix
+    hasQibla && effectiveFix
       ? calculateDistanceToMecca(effectiveFix.latitude, effectiveFix.longitude)
       : null;
   const bearingUncertainty =
@@ -201,7 +179,7 @@ const CompassScreen = () => {
   const canAlign =
     isReady &&
     qiblaDirection !== null &&
-    advisorySensorIssue === null &&
+    !showCalibrate &&
     canProvideAlignmentFeedback(compass.accuracyDegrees, bearingUncertainty);
   const proximityState: QiblaProximityState = canAlign
     ? getQiblaProximityState(compass.heading, qiblaDirection)
@@ -212,136 +190,98 @@ const CompassScreen = () => {
       previousHapticProximity.current = "searching";
       return;
     }
-
     const previous = previousHapticProximity.current;
     const next = getQiblaProximityState(compass.heading, qiblaDirection, previous);
     previousHapticProximity.current = next;
-    if (next === "aligned" && previous !== "aligned") {
-      void hapticMedium();
-    }
+    if (next === "aligned" && previous !== "aligned") void hapticMedium();
   }, [canAlign, compass.heading, hapticMedium, isReady, qiblaDirection]);
 
-  const reliabilityKey = `${preference}:${locationSource}:${blockingIssue ?? advisorySensorIssue ?? "ready"}:${compass.source}:${compass.northReference}`;
+  const reliabilityKey = `${locationSource}:${blockingIssue ?? "ready"}:${showCalibrate}:${compass.source}:${compass.northReference}`;
   const previousReliabilityKey = useRef<string | null>(null);
   useEffect(() => {
     if (previousReliabilityKey.current === reliabilityKey) return;
     previousReliabilityKey.current = reliabilityKey;
-
-    if (blockingIssue || advisorySensorIssue) {
-      log.w(
-        "Reliability",
-        `state=${blockingIssue ? "withheld" : "advisory"} issue=${blockingIssue ?? advisorySensorIssue} mode=${preference} source=${compass.source}`
-      );
-    } else if (isReady) {
-      log.i(
-        "Reliability",
-        `state=ready mode=${preference} location=${locationSource} northReference=${compass.northReference}`
-      );
-    }
+    log.i(
+      "Reliability",
+      `state=${blockingIssue ?? "ready"} calibrateOverlay=${showCalibrate} location=${locationSource} source=${compass.source} northReference=${compass.northReference}`
+    );
   }, [
     blockingIssue,
-    advisorySensorIssue,
     compass.northReference,
     compass.source,
-    isReady,
     locationSource,
-    preference,
     reliabilityKey,
+    showCalibrate,
   ]);
 
-  const chooseQibla = useCallback(() => {
+  const requestLocation = useCallback(() => {
     void hapticSelection();
-    void location.chooseQibla();
-  }, [hapticSelection, location]);
-  const chooseCompassOnly = useCallback(() => {
-    void hapticSelection();
-    location.chooseCompassOnly();
-  }, [hapticSelection, location]);
-  const refreshLocation = useCallback(() => {
-    void hapticSelection();
+    if (location.needsSettings) {
+      void location.openSettings();
+      return;
+    }
     void location.refresh();
-  }, [hapticSelection, location]);
-  const openSettings = useCallback(() => {
-    void hapticSelection();
-    void location.openSettings();
   }, [hapticSelection, location]);
   const retrySensor = useCallback(() => {
     void hapticSelection();
     setSensorRestartKey((value) => value + 1);
   }, [hapticSelection]);
+  const openDetails = useCallback(() => {
+    void hapticSelection();
+    setDetailsOpen(true);
+  }, [hapticSelection]);
 
-  const issueAction = useMemo(() => {
-    if (!blockingIssue) return null;
-    if (
-      settingsIssues.has(blockingIssue) ||
-      (blockingIssue === CompassReliabilityIssue.TRUE_NORTH_UNAVAILABLE && location.needsSettings)
-    ) {
-      return "settings" as const;
-    }
-    if (
-      locationIssues.has(blockingIssue) ||
-      blockingIssue === CompassReliabilityIssue.TRUE_NORTH_UNAVAILABLE
-    ) {
-      return "retry" as const;
-    }
-    return getCompassSensorIssueAction(blockingIssue);
-  }, [blockingIssue, location.needsSettings]);
-  const advisoryAction = getCompassSensorIssueAction(advisorySensorIssue);
-  const issueActionHandler =
-    issueAction === "settings"
-      ? openSettings
-      : blockingIssue &&
-          (locationIssues.has(blockingIssue) ||
-            blockingIssue === CompassReliabilityIssue.TRUE_NORTH_UNAVAILABLE)
-        ? refreshLocation
-        : retrySensor;
+  const turnDirection =
+    qiblaDirection === null ? null : getTurnDirection(compass.heading, qiblaDirection);
+  const hintText =
+    proximityState === "aligned"
+      ? t("compass.facingQibla")
+      : turnDirection === "right"
+        ? t("compass.hint.turnRight")
+        : turnDirection === "left"
+          ? t("compass.hint.turnLeft")
+          : "";
 
   const headingRounded = Math.round(compass.heading) % 360;
-  const headingText = formatNumberToLocale(`${headingRounded}`);
+  const headingText = `${formatNumberToLocale(`${headingRounded}`)}° ${getTranslatedCompassDirection(compass.heading, t)}`;
   const northReferenceLabel = t(
     compass.northReference === CompassNorthReference.MAGNETIC
       ? "compass.northReference.magnetic"
       : "compass.northReference.true"
   );
-  const cardinalText =
-    proximityState === "aligned"
-      ? t("compass.facingQibla")
-      : getTranslatedCompassDirection(compass.heading, t);
-  // Some devices report a heading without bounding its error. Showing ±0° there would claim
-  // perfect precision, so the margin is named as unknown instead.
   const sensorAccuracyText =
     compass.accuracyDegrees !== null && Number.isFinite(compass.accuracyDegrees)
       ? t("compass.accuracyDegrees", {
           degrees: formatNumberToLocale(`${Math.round(compass.accuracyDegrees)}`),
         })
       : t("compass.accuracyUnknown");
-  // The native layer can flag an unreliable sensor while still reporting a small error margin,
-  // so the advisory outranks the reported accuracy.
-  const sensorReliability = advisorySensorIssue
-    ? CompassSensorReliability.NEEDS_CALIBRATION
-    : getCompassSensorReliability(compass.accuracyDegrees);
-  const sensorReliabilityText = t(`compass.sensorReliability.${sensorReliability}`);
-  const savedLocationAge =
-    effectiveFix && locationSource === CompassLocationSource.SAVED
-      ? getCompassLocationAge(effectiveFix.timestamp)
-      : null;
-  const savedLocationAgeText = savedLocationAge
-    ? t(`compass.locationSavedAge.${savedLocationAge.unit}`, { count: savedLocationAge.value })
-    : null;
-  const locationAccuracyText = effectiveFix
-    ? t("compass.locationAccuracyMeters", {
-        meters: formatNumberToLocale(`${Math.round(effectiveFix.accuracyMeters)}`),
-      })
-    : null;
-  const qiblaDirectionText =
-    qiblaDirection === null
-      ? null
-      : `${formatNumberToLocale(`${Math.round(qiblaDirection) % 360}`)}°`;
+  const sensorReliabilityText = t(
+    `compass.sensorReliability.${getCompassSensorReliability(compass.accuracyDegrees)}`
+  );
   const distanceText =
     distanceKm === null
       ? null
       : `${formatNumberToLocale(`${Math.round(distanceKm)}`)} ${t("compass.km")}`;
+  const qiblaText =
+    qiblaDirection === null
+      ? null
+      : `${formatNumberToLocale(`${Math.round(qiblaDirection) % 360}`)}° ${getTranslatedCompassDirection(qiblaDirection, t)}`;
+  const savedAge =
+    effectiveFix && locationSource === CompassLocationSource.SAVED
+      ? getCompassLocationAge(effectiveFix.timestamp)
+      : null;
+  const locationText = effectiveFix
+    ? [
+        t("compass.locationAccuracyMeters", {
+          meters: formatNumberToLocale(`${Math.round(effectiveFix.accuracyMeters)}`),
+        }),
+        savedAge ? t(`compass.locationSavedAge.${savedAge.unit}`, { count: savedAge.value }) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
   const isNearKaaba = distanceKm !== null && distanceKm < 1;
+  const showOverlay = showCalibrate || showHoldFlat;
 
   return (
     <Background>
@@ -360,130 +300,74 @@ const CompassScreen = () => {
           paddingHorizontal="$6"
           paddingTop="$4"
           paddingBottom="$8">
-          {preference !== CompassLocationPreference.ASK && !isScreenshotMode && (
-            <CompassModeSwitch
-              isQiblaMode={isQiblaMode}
-              onChooseQibla={chooseQibla}
-              onChooseCompassOnly={chooseCompassOnly}
-            />
-          )}
-
-          {preference === CompassLocationPreference.ASK ? (
-            <CompassSetupCard
-              isRefreshing={location.isRefreshing}
-              onChooseQibla={chooseQibla}
-              onChooseCompassOnly={chooseCompassOnly}
-            />
-          ) : isLocating ? (
-            <Card
-              width="100%"
-              maxWidth={420}
-              padding="$6"
-              gap="$4"
-              alignItems="center"
-              accessibilityLiveRegion="polite">
-              <Icon as={LocateFixed} size="xl" color="$primary" />
+          {isStartingSensor ? (
+            <VStack alignItems="center" gap="$4" accessibilityLiveRegion="polite">
               <Spinner size="large" />
-              <Text size="lg" bold textAlign="center">
-                {t("compass.locating")}
-              </Text>
-              <Text size="sm" color="$typographySecondary" textAlign="center">
-                {t("compass.disclaimer")}
-              </Text>
-            </Card>
-          ) : isStartingSensor ? (
-            <Card
-              width="100%"
-              maxWidth={420}
-              padding="$6"
-              gap="$4"
-              alignItems="center"
-              accessibilityLiveRegion="polite">
-              <Spinner size="large" />
-              <Text size="lg" bold textAlign="center">
-                {t("compass.issue.sensor_starting.title")}
-              </Text>
               <Text color="$typographySecondary" textAlign="center">
                 {t("compass.issue.sensor_starting.body")}
               </Text>
-            </Card>
+            </VStack>
           ) : blockingIssue ? (
             <CompassIssueCard
               title={t(`compass.issue.${blockingIssue}.title`)}
               body={t(`compass.issue.${blockingIssue}.body`)}
-              action={issueAction}
-              isRefreshing={location.isRefreshing}
-              onAction={issueActionHandler}
+              action="retry"
+              onAction={retrySensor}
             />
-          ) : isReady ? (
+          ) : (
             <>
-              <VStack alignItems="center" gap="$1">
-                <Text
-                  color={proximityState === "aligned" ? "$primary" : "$typography"}
-                  size="4xl"
-                  bold
-                  accessibilityLabel={`${headingRounded} ${t("compass.currentDirection")}`}>
-                  {headingText}°
-                </Text>
-                <Text
-                  color={proximityState === "aligned" ? "$primary" : "$typographySecondary"}
-                  size="md"
-                  fontWeight={proximityState === "aligned" ? "600" : "400"}>
-                  {cardinalText}
-                </Text>
-              </VStack>
+              <Text
+                color={proximityState === "aligned" ? "$primary" : "$typographySecondary"}
+                size="lg"
+                fontWeight={proximityState === "aligned" ? "700" : "500"}
+                minHeight={28}
+                accessibilityLiveRegion="polite">
+                {hintText}
+              </Text>
 
-              <CompassDial
-                heading={compass.heading}
-                qiblaDirection={qiblaDirection}
-                proximityState={proximityState}
-                reduceMotion={reduceMotion}
-                accessibilityLabel={t("a11y.compass.dial", {
-                  heading: headingText,
-                  reference: northReferenceLabel,
-                })}
-                translateDirection={t}
-              />
-
-              <CompassInfoCard
-                isQiblaMode={isQiblaMode}
-                canRefreshLocation={isQiblaMode}
-                isSavedLocation={
-                  locationSource === CompassLocationSource.SAVED && qiblaDirection !== null
-                }
-                isRefreshing={location.isRefreshing}
-                needsSettings={location.needsSettings}
-                northReferenceLabel={northReferenceLabel}
-                sensorAccuracyText={sensorAccuracyText}
-                sensorReliabilityText={sensorReliabilityText}
-                savedLocationAgeText={savedLocationAgeText}
-                qiblaDirectionText={qiblaDirectionText}
-                qiblaCardinalText={
-                  qiblaDirection === null ? null : getTranslatedCompassDirection(qiblaDirection, t)
-                }
-                distanceText={distanceText}
-                locationAccuracyText={qiblaDirection !== null ? locationAccuracyText : null}
-                fallbackWarningTitle={
-                  locationSource === CompassLocationSource.SAVED && location.issue
-                    ? t(`compass.issue.${location.issue}.title`)
-                    : null
-                }
-                fallbackWarningBody={
-                  locationSource === CompassLocationSource.SAVED && location.issue
-                    ? t(`compass.issue.${location.issue}.body`)
-                    : null
-                }
-                onRefresh={refreshLocation}
-                onOpenSettings={openSettings}
-              />
-
-              {advisorySensorIssue && (
-                <CompassIssueCard
-                  title={t(`compass.issue.${advisorySensorIssue}.title`)}
-                  body={t(`compass.issue.${advisorySensorIssue}.body`)}
-                  action={advisoryAction}
-                  onAction={retrySensor}
+              <Box>
+                <CompassDial
+                  heading={compass.heading}
+                  qiblaDirection={qiblaDirection}
+                  proximityState={proximityState}
+                  reduceMotion={reduceMotion}
+                  dimmed={showOverlay}
+                  accessibilityLabel={t("a11y.compass.dial", {
+                    heading: `${headingRounded}`,
+                    reference: northReferenceLabel,
+                  })}
+                  translateDirection={t}
                 />
+                {showCalibrate && (
+                  <CompassOverlay variant="calibrate" reduceMotion={reduceMotion} />
+                )}
+                {showHoldFlat && <CompassOverlay variant="holdFlat" reduceMotion={reduceMotion} />}
+              </Box>
+
+              {distanceText !== null && (
+                <Text color="$typographySecondary" size="sm">
+                  {distanceText.concat(" · ", t("compass.details.distance"))}
+                </Text>
+              )}
+
+              {effectiveFix === null && (
+                <Pressable
+                  onPress={requestLocation}
+                  disabled={location.isRefreshing}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("a11y.compass.enableLocation")}
+                  style={{ minHeight: 44, justifyContent: "center" }}>
+                  <HStack alignItems="center" gap="$2">
+                    {location.isRefreshing ? (
+                      <Spinner size="small" />
+                    ) : (
+                      <Icon as={LocateFixed} size="sm" color="$primary" />
+                    )}
+                    <Text color="$primary" size="md" fontWeight="600">
+                      {location.isRefreshing ? t("compass.locating") : t("compass.enableLocation")}
+                    </Text>
+                  </HStack>
+                </Pressable>
               )}
 
               {isNearKaaba && (
@@ -491,10 +375,41 @@ const CompassScreen = () => {
                   {t("compass.nearKaaba")}
                 </Text>
               )}
+
+              <Pressable
+                onPress={openDetails}
+                accessibilityRole="button"
+                accessibilityLabel={t("compass.details.title")}
+                accessibilityHint={t("a11y.compass.details")}
+                style={{
+                  minWidth: 44,
+                  minHeight: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                <Icon as={Info} size="md" color="$typographySecondary" />
+              </Pressable>
             </>
-          ) : null}
+          )}
         </VStack>
       </ScrollView>
+
+      {/* Freeze content while closed: the fit-mode sheet re-measures on content change, and these
+          strings would otherwise churn on every sensor sample. */}
+      <CompassDetailsSheet
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        headingText={detailsOpen ? headingText : ""}
+        qiblaText={detailsOpen ? qiblaText : null}
+        distanceText={detailsOpen ? distanceText : null}
+        sensorAccuracyText={detailsOpen ? sensorAccuracyText : ""}
+        sensorReliabilityText={detailsOpen ? sensorReliabilityText : ""}
+        northReferenceText={detailsOpen ? northReferenceLabel : ""}
+        locationText={detailsOpen ? locationText : null}
+        isRefreshing={detailsOpen ? location.isRefreshing : false}
+        canRefreshLocation={!isScreenshotMode}
+        onRefreshLocation={requestLocation}
+      />
     </Background>
   );
 };
