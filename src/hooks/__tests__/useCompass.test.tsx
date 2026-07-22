@@ -98,6 +98,30 @@ describe("useCompass", () => {
     act(() => tree.unmount());
   });
 
+  it("passes a finite tilt through", async () => {
+    const tree = await renderHook();
+
+    act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: 32.5 }));
+
+    expect(latest().tiltDegrees).toBe(32.5);
+    act(() => tree.unmount());
+  });
+
+  it("normalizes missing or invalid tilt to null", async () => {
+    const tree = await renderHook();
+
+    act(() => mockHeadingListener?.(reliableEvent(now)));
+    expect(latest().tiltDegrees).toBeNull();
+
+    act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: Number.NaN }));
+    expect(latest().tiltDegrees).toBeNull();
+
+    act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: -3 }));
+    expect(latest().tiltDegrees).toBeNull();
+
+    act(() => tree.unmount());
+  });
+
   it("withholds the previous mode's sample while the native sensor restarts", async () => {
     const fix: CompassLocationFix = {
       latitude: 24.7136,

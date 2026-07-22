@@ -8,11 +8,15 @@ import { ExpoOrientationModule } from "expo-orientation";
 
 import type { CompassLocationFix } from "@/types/compass";
 import { AppLogger } from "@/utils/appLogger";
-import { MAX_HEADING_AGE_MS, MAX_HEADING_FUTURE_SKEW_MS } from "@/utils/compass";
+import { MAX_HEADING_AGE_MS, MAX_HEADING_FUTURE_SKEW_MS, angleDifference } from "@/utils/compass";
 
 const log = AppLogger.create("compass");
 const STARTUP_TIMEOUT_MS = 4_000;
 const DEBUG_SAMPLE_INTERVAL_MS = 1_000;
+// The fused provider can deliver samples faster than 50Hz; publishing every one re-renders the
+// whole screen per sample. Only meaningful changes (or a heartbeat) reach React state.
+const HEADING_PUBLISH_EPSILON_DEGREES = 0.2;
+const PUBLISH_HEARTBEAT_MS = 1_000;
 
 const orientationSources = new Set<OrientationSource>([
   "fop",
@@ -27,6 +31,7 @@ const northReferences = new Set<OrientationNorthReference>(["true", "magnetic", 
 export type CompassData = {
   heading: number;
   accuracyDegrees: number | null;
+  tiltDegrees: number | null;
   northReference: OrientationNorthReference;
   isAvailable: boolean;
   isActive: boolean;
@@ -46,6 +51,7 @@ type UseCompassOptions = {
 const initialData: CompassData = {
   heading: 0,
   accuracyDegrees: null,
+  tiltDegrees: null,
   northReference: "unknown",
   isAvailable: ExpoOrientationModule.isAvailable,
   isActive: false,
@@ -119,6 +125,16 @@ export const useCompass = ({
     let lastValidity: string | null = null;
     let lastDebugAt = 0;
     let staleTimeout: ReturnType<typeof setTimeout> | null = null;
+    let lastPublished: {
+      heading: number;
+      accuracyDegrees: number | null;
+      tiltDegrees: number | null;
+      northReference: OrientationNorthReference;
+      source: OrientationSource;
+      isValid: boolean;
+      error: string | null;
+    } | null = null;
+    let lastPublishedAt = 0;
 
     const timeout = setTimeout(() => {
       if (receivedEvent) return;
@@ -156,6 +172,13 @@ export const useCompass = ({
             Number.isFinite(event.accuracyDegrees) &&
             event.accuracyDegrees >= 0
               ? event.accuracyDegrees
+              : null;
+          const tiltDegrees =
+            typeof event?.tiltDegrees === "number" &&
+            Number.isFinite(event.tiltDegrees) &&
+            event.tiltDegrees >= 0 &&
+            event.tiltDegrees <= 180
+              ? event.tiltDegrees
               : null;
           const timestamp =
             typeof event?.timestamp === "number" && Number.isFinite(event.timestamp)
@@ -231,9 +254,38 @@ export const useCompass = ({
             lastDebugAt = now;
           }
 
-          setData({
-            heading: headingIsValid ? event.heading : 0,
+          const heading = headingIsValid ? event.heading : 0;
+          const nullabilityChanged = (a: number | null, b: number | null) =>
+            (a === null) !== (b === null) ||
+            (a !== null && b !== null && Math.round(a) !== Math.round(b));
+          const significant =
+            lastPublished === null ||
+            lastPublished.isValid !== isValid ||
+            lastPublished.error !== error ||
+            lastPublished.northReference !== northReference ||
+            lastPublished.source !== source ||
+            nullabilityChanged(lastPublished.accuracyDegrees, accuracyDegrees) ||
+            nullabilityChanged(lastPublished.tiltDegrees, tiltDegrees) ||
+            Math.abs(angleDifference(lastPublished.heading, heading)) >=
+              HEADING_PUBLISH_EPSILON_DEGREES ||
+            now - lastPublishedAt >= PUBLISH_HEARTBEAT_MS;
+          if (!significant) return;
+
+          lastPublished = {
+            heading,
             accuracyDegrees,
+            tiltDegrees,
+            northReference,
+            source,
+            isValid,
+            error,
+          };
+          lastPublishedAt = now;
+
+          setData({
+            heading,
+            accuracyDegrees,
+            tiltDegrees,
             northReference,
             isAvailable: error !== "sensor_unavailable" && error !== "module_unavailable",
             isActive: true,
