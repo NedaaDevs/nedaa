@@ -84,7 +84,7 @@ These are the differentiators that should anchor most marketing copy:
 ## Privacy & data stance
 
 - Prayer-time refreshes request **low-accuracy** location. High accuracy is requested only while the user initiates Qibla location acquisition to calculate the bearing; compass heading remains sensor-derived. These coordinates are not used for analytics or tracking.
-- The one precise Qibla fix is stored **on-device only** and expires after 24 hours. It is reused offline — including in compass-only mode, which shows Qibla from the saved fix but never itself requests location. Copy must not claim compass-only keeps no location; the accurate claim is that it never _requests_ location.
+- The one precise Qibla fix is stored **on-device only** and expires after 24 hours. It is reused offline. The compass screen never requests location on its own: without a fix it works as a plain compass, and the permission prompt appears only when the user taps "Enable location to see Qibla". Copy must not claim the compass keeps no location; the accurate claim is that it never requests location without an explicit tap.
 - No third-party advertising or tracking SDKs.
 - **No crash/telemetry SDK** (Sentry was removed 2026-06). Diagnostics are on-device log files only (per-domain, 30-day + 5 MB retention, local JS crash capture); nothing is uploaded — the user shares logs manually when reporting a problem. Marketing can lead with **"no telemetry, ever — diagnostics never leave your device."**
 - No user account, no cloud sync.

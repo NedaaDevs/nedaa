@@ -80,3 +80,4 @@ scripts/qul-metadata/
 
 # Local Crowdin CLI config (may hold a token) — never commit
 crowdin-cli.yml
+.superpowers/
