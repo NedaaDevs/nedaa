@@ -152,15 +152,6 @@ export const getNativeCompassReliabilityIssue = (
 ): CompassReliabilityIssueValue | null =>
   error ? (nativeCompassErrorIssues[error] ?? null) : null;
 
-export const getCompassSensorIssueAction = (
-  issue: CompassReliabilityIssueValue | null
-): "retry" | "calibrate" | null => {
-  if (issue === null) return null;
-  if (issue === CompassReliabilityIssue.SENSOR_ACCURACY_UNAVAILABLE) return null;
-  if (issue === CompassReliabilityIssue.SENSOR_UNCALIBRATED) return "calibrate";
-  return "retry";
-};
-
 type HeadingReliabilitySample = {
   heading: number;
   accuracyDegrees: number | null;
@@ -321,6 +312,64 @@ export const getQiblaProximityState = (
   }
   if (diff <= APPROACHING_THRESHOLD) return "approaching";
   return "searching";
+};
+
+export const HEADING_DISPLAY_DEADBAND_DEGREES = 0.8;
+export const CALIBRATION_OVERLAY_ENTER_DEGREES = 45;
+export const CALIBRATION_OVERLAY_EXIT_DEGREES = 35;
+export const TILT_OVERLAY_ENTER_DEGREES = 25;
+export const TILT_OVERLAY_EXIT_DEGREES = 20;
+
+/** Display-layer deadband: resting sensor noise must not move the dial. */
+export const applyHeadingDeadband = (
+  displayedHeading: number,
+  nextHeading: number,
+  deadbandDegrees = HEADING_DISPLAY_DEADBAND_DEGREES
+): number =>
+  Math.abs(angleDifference(displayedHeading, nextHeading)) > deadbandDegrees
+    ? nextHeading
+    : displayedHeading;
+
+export type TurnDirection = "left" | "right" | null;
+
+/** Shortest-arc guidance; null inside the aligned threshold. */
+export const getTurnDirection = (
+  heading: number,
+  qiblaDirection: number,
+  thresholdDegrees = ALIGNED_ENTER_THRESHOLD
+): TurnDirection => {
+  const diff = angleDifference(heading, qiblaDirection);
+  if (Math.abs(diff) <= thresholdDegrees) return null;
+  return diff > 0 ? "right" : "left";
+};
+
+/**
+ * The calibration overlay interrupts only for an unusable reading: the native
+ * unreliable flag, or a bounded error at/above the enter threshold. Hysteresis
+ * keeps it up until the error recovers to the exit threshold. Unknown accuracy
+ * is an absent estimate, not a bad one.
+ */
+export const getCalibrationOverlayVisible = (
+  accuracyDegrees: number | null,
+  sensorUnreliable: boolean,
+  previousVisible: boolean
+): boolean => {
+  if (sensorUnreliable) return true;
+  if (accuracyDegrees === null || !Number.isFinite(accuracyDegrees)) return false;
+  return previousVisible
+    ? accuracyDegrees > CALIBRATION_OVERLAY_EXIT_DEGREES
+    : accuracyDegrees >= CALIBRATION_OVERLAY_ENTER_DEGREES;
+};
+
+/** Missing tilt (iOS, older events) never shows the overlay. */
+export const getTiltOverlayVisible = (
+  tiltDegrees: number | null,
+  previousVisible: boolean
+): boolean => {
+  if (tiltDegrees === null || !Number.isFinite(tiltDegrees)) return false;
+  return previousVisible
+    ? tiltDegrees > TILT_OVERLAY_EXIT_DEGREES
+    : tiltDegrees >= TILT_OVERLAY_ENTER_DEGREES;
 };
 
 export const formatDistanceToMecca = (

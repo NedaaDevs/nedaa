@@ -12,7 +12,6 @@ import {
   canProvideAlignmentFeedback,
   calculateBearingUncertaintyDegrees,
   calculateQiblaDirection,
-  getCompassSensorIssueAction,
   getCompassLocationAge,
   getCompassSensorReliability,
   getHeadingReliabilityIssue,
@@ -20,6 +19,10 @@ import {
   getNativeCompassReliabilityIssue,
   getQiblaProximityState,
   unwrapHeading,
+  applyHeadingDeadband,
+  getCalibrationOverlayVisible,
+  getTiltOverlayVisible,
+  getTurnDirection,
 } from "@/utils/compass";
 
 const NOW = 1_750_000_000_000;
@@ -57,18 +60,16 @@ describe("compass reliability", () => {
     expect(issue).toBeNull();
   });
 
-  it("treats unavailable heading accuracy as terminal instead of calibratable", () => {
-    const issue = getNativeCompassReliabilityIssue("heading_accuracy_unavailable");
-
-    expect(issue).toBe(CompassReliabilityIssue.SENSOR_ACCURACY_UNAVAILABLE);
-    expect(getCompassSensorIssueAction(issue)).toBeNull();
+  it("treats unavailable heading accuracy as terminal", () => {
+    expect(getNativeCompassReliabilityIssue("heading_accuracy_unavailable")).toBe(
+      CompassReliabilityIssue.SENSOR_ACCURACY_UNAVAILABLE
+    );
   });
 
-  it("keeps a genuinely unreliable sensor calibratable", () => {
-    const issue = getNativeCompassReliabilityIssue("sensor_unreliable");
-
-    expect(issue).toBe(CompassReliabilityIssue.SENSOR_UNCALIBRATED);
-    expect(getCompassSensorIssueAction(issue)).toBe("calibrate");
+  it("maps a genuinely unreliable sensor to the uncalibrated issue", () => {
+    expect(getNativeCompassReliabilityIssue("sensor_unreliable")).toBe(
+      CompassReliabilityIssue.SENSOR_UNCALIBRATED
+    );
   });
 
   it("requires true north before showing a Qibla result", () => {
@@ -238,5 +239,77 @@ describe("compass reliability", () => {
       "approaching",
       "aligned",
     ]);
+  });
+});
+
+describe("applyHeadingDeadband", () => {
+  it("keeps the displayed heading for sub-deadband changes", () => {
+    expect(applyHeadingDeadband(100, 100.5)).toBe(100);
+  });
+
+  it("passes changes larger than the deadband through", () => {
+    expect(applyHeadingDeadband(100, 101.2)).toBe(101.2);
+  });
+
+  it("measures the change across the 0/360 wrap", () => {
+    expect(applyHeadingDeadband(359.9, 0.3)).toBe(359.9);
+    expect(applyHeadingDeadband(359.0, 0.3)).toBe(0.3);
+  });
+});
+
+describe("getTurnDirection", () => {
+  it("returns null when within the aligned threshold", () => {
+    expect(getTurnDirection(100, 103)).toBeNull();
+  });
+
+  it("returns right when the qibla is clockwise from the heading", () => {
+    expect(getTurnDirection(100, 150)).toBe("right");
+  });
+
+  it("returns left when the qibla is counter-clockwise from the heading", () => {
+    expect(getTurnDirection(100, 40)).toBe("left");
+  });
+
+  it("takes the shortest arc across north", () => {
+    expect(getTurnDirection(350, 20)).toBe("right");
+    expect(getTurnDirection(20, 350)).toBe("left");
+  });
+});
+
+describe("getCalibrationOverlayVisible", () => {
+  it("shows on the native unreliable flag regardless of accuracy", () => {
+    expect(getCalibrationOverlayVisible(10, true, false)).toBe(true);
+  });
+
+  it("shows when heading error reaches the enter threshold", () => {
+    expect(getCalibrationOverlayVisible(45, false, false)).toBe(true);
+  });
+
+  it("stays hidden below the enter threshold", () => {
+    expect(getCalibrationOverlayVisible(44, false, false)).toBe(false);
+  });
+
+  it("stays visible until error drops to the exit threshold", () => {
+    expect(getCalibrationOverlayVisible(40, false, true)).toBe(true);
+    expect(getCalibrationOverlayVisible(35, false, true)).toBe(false);
+  });
+
+  it("treats unknown accuracy as not-bad", () => {
+    expect(getCalibrationOverlayVisible(null, false, false)).toBe(false);
+    expect(getCalibrationOverlayVisible(null, false, true)).toBe(false);
+  });
+});
+
+describe("getTiltOverlayVisible", () => {
+  it("never shows without tilt data", () => {
+    expect(getTiltOverlayVisible(null, false)).toBe(false);
+    expect(getTiltOverlayVisible(null, true)).toBe(false);
+  });
+
+  it("enters above 25 degrees and exits below 20", () => {
+    expect(getTiltOverlayVisible(26, false)).toBe(true);
+    expect(getTiltOverlayVisible(24, false)).toBe(false);
+    expect(getTiltOverlayVisible(22, true)).toBe(true);
+    expect(getTiltOverlayVisible(19, true)).toBe(false);
   });
 });
