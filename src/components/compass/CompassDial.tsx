@@ -3,22 +3,32 @@ import { useWindowDimensions } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
-  withSequence,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { Circle, G, Line, Rect, Svg, Text as SvgText } from "react-native-svg";
+import { MotiView } from "moti";
+import { Circle, G, Line, Svg, Text as SvgText } from "react-native-svg";
 import { useTheme } from "tamagui";
 
+import {
+  KAABA_VIEWBOX_HEIGHT,
+  KAABA_VIEWBOX_WIDTH,
+  KaabaShapes,
+} from "@/components/compass/KaabaGlyph";
 import { Box } from "@/components/ui/box";
 import type { QiblaProximityState } from "@/utils/compass";
-import { unwrapHeading } from "@/utils/compass";
+import { applyHeadingDeadband, unwrapHeading } from "@/utils/compass";
 import { reshapeArabic } from "@/utils/reshaper";
 
 const VIEWBOX_SIZE = 300;
 const CENTER = VIEWBOX_SIZE / 2;
 const RADIUS = 110;
 const LETTER_DISTANCE = RADIUS - 20;
+const MARKER_SCALE = 0.6;
+const HERO_SIZE = 44;
+
+// Critically damped: no overshoot, settles fast, absorbs sample-rate jitter.
+const ROTATION_SPRING = { mass: 1, stiffness: 120, damping: 22 };
 
 const tickMarks = Array.from({ length: 36 }, (_, index) => {
   const angleDegrees = index * 10;
@@ -43,6 +53,7 @@ type CompassDialProps = {
   reduceMotion: boolean;
   accessibilityLabel: string;
   translateDirection: (key: string) => string;
+  dimmed?: boolean;
 };
 
 export const CompassDial = ({
@@ -52,94 +63,61 @@ export const CompassDial = ({
   reduceMotion,
   accessibilityLabel,
   translateDirection,
+  dimmed = false,
 }: CompassDialProps) => {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const dialSize = Math.min(VIEWBOX_SIZE, Math.max(200, width - 64));
   const rotationValue = useSharedValue(-heading);
+  const displayedHeading = useRef(heading);
   const unwrappedHeading = useRef(heading);
-  const ringPulse = useSharedValue(1);
+  const glow = useSharedValue(0);
   const isAligned = proximityState === "aligned";
 
   const colors = useMemo(
     () => ({
       primary: theme.primary.val,
       secondary: theme.typographySecondary.val,
-      contrast: theme.typographyContrast.val,
       north: theme.error.val,
     }),
     [theme]
   );
 
   useEffect(() => {
-    const nextHeading = unwrapHeading(unwrappedHeading.current, heading);
-    unwrappedHeading.current = nextHeading;
-    rotationValue.value = withTiming(-nextHeading, { duration: reduceMotion ? 0 : 150 });
+    const next = applyHeadingDeadband(displayedHeading.current, heading);
+    if (next === displayedHeading.current) return;
+    displayedHeading.current = next;
+    const nextUnwrapped = unwrapHeading(unwrappedHeading.current, next);
+    unwrappedHeading.current = nextUnwrapped;
+    rotationValue.value = reduceMotion
+      ? -nextUnwrapped
+      : withSpring(-nextUnwrapped, ROTATION_SPRING);
   }, [heading, reduceMotion, rotationValue]);
 
   useEffect(() => {
-    if (isAligned && !reduceMotion) {
-      ringPulse.value = withRepeat(
-        withSequence(withTiming(0.35, { duration: 900 }), withTiming(0.85, { duration: 900 })),
-        -1,
-        true
-      );
-    } else {
-      ringPulse.value = withTiming(0, { duration: reduceMotion ? 0 : 200 });
-    }
-  }, [isAligned, reduceMotion, ringPulse]);
+    const target = isAligned ? 1 : 0;
+    glow.value = reduceMotion ? target : withTiming(target, { duration: 250 });
+  }, [glow, isAligned, reduceMotion]);
 
   const compassRotationStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotationValue.value}deg` }],
   }));
-  const ringPulseStyle = useAnimatedStyle(() => ({ opacity: ringPulse.value }));
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value * 0.6 }));
 
-  const qiblaDotRadius =
-    proximityState === "aligned" ? 18 : proximityState === "approaching" ? 16 : 14;
   const ringColor = proximityState === "searching" ? colors.secondary : colors.primary;
-  const ringOpacity = proximityState === "approaching" ? 0.65 : 1;
-  const qiblaX =
-    qiblaDirection === null
-      ? 0
-      : CENTER + Math.sin((qiblaDirection * Math.PI) / 180) * (RADIUS + 15);
-  const qiblaY =
-    qiblaDirection === null
-      ? 0
-      : CENTER - Math.cos((qiblaDirection * Math.PI) / 180) * (RADIUS + 15);
+  const showRingMarker = qiblaDirection !== null && !isAligned;
+  const markerX =
+    qiblaDirection === null ? 0 : CENTER + Math.sin((qiblaDirection * Math.PI) / 180) * RADIUS;
+  const markerY =
+    qiblaDirection === null ? 0 : CENTER - Math.cos((qiblaDirection * Math.PI) / 180) * RADIUS;
+  const markerWidth = KAABA_VIEWBOX_WIDTH * MARKER_SCALE;
+  const markerHeight = KAABA_VIEWBOX_HEIGHT * MARKER_SCALE;
 
   const cardinals = [
-    {
-      key: "N",
-      x: CENTER,
-      y: CENTER - LETTER_DISTANCE,
-      anchor: "middle" as const,
-      color: colors.north,
-      fontSize: 18,
-    },
-    {
-      key: "S",
-      x: CENTER,
-      y: CENTER + LETTER_DISTANCE,
-      anchor: "middle" as const,
-      color: colors.secondary,
-      fontSize: 16,
-    },
-    {
-      key: "E",
-      x: CENTER + LETTER_DISTANCE + 5,
-      y: CENTER + 5,
-      anchor: "end" as const,
-      color: colors.secondary,
-      fontSize: 16,
-    },
-    {
-      key: "W",
-      x: CENTER - LETTER_DISTANCE - 5,
-      y: CENTER + 5,
-      anchor: "start" as const,
-      color: colors.secondary,
-      fontSize: 16,
-    },
+    { key: "N", x: CENTER, y: CENTER - LETTER_DISTANCE, color: colors.north, fontSize: 18 },
+    { key: "S", x: CENTER, y: CENTER + LETTER_DISTANCE, color: colors.secondary, fontSize: 16 },
+    { key: "E", x: CENTER + LETTER_DISTANCE, y: CENTER, color: colors.secondary, fontSize: 16 },
+    { key: "W", x: CENTER - LETTER_DISTANCE, y: CENTER, color: colors.secondary, fontSize: 16 },
   ];
 
   return (
@@ -148,12 +126,13 @@ export const CompassDial = ({
       height={dialSize + 14}
       alignItems="center"
       justifyContent="flex-end"
+      opacity={dimmed ? 0.4 : 1}
       accessible
       accessibilityLabel={accessibilityLabel}>
       <Animated.View
         pointerEvents="none"
         style={[
-          ringPulseStyle,
+          glowStyle,
           {
             position: "absolute",
             bottom: 0,
@@ -162,6 +141,11 @@ export const CompassDial = ({
             borderRadius: dialSize / 2,
             borderWidth: 3,
             borderColor: colors.primary,
+            shadowColor: colors.primary,
+            shadowOpacity: 0.6,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 0 },
+            elevation: 8,
           },
         ]}
       />
@@ -180,6 +164,27 @@ export const CompassDial = ({
         </Svg>
       </Box>
 
+      {isAligned && qiblaDirection !== null && (
+        <MotiView
+          testID="kaaba-hero"
+          pointerEvents="none"
+          {...(reduceMotion
+            ? {}
+            : {
+                from: { scale: 0.55, opacity: 0 },
+                animate: { scale: 1, opacity: 1 },
+                transition: { type: "spring", stiffness: 220, damping: 18 },
+              })}
+          style={{ position: "absolute", top: 22, zIndex: 11 }}>
+          <Svg
+            width={HERO_SIZE}
+            height={(HERO_SIZE * KAABA_VIEWBOX_HEIGHT) / KAABA_VIEWBOX_WIDTH}
+            viewBox={`0 0 ${KAABA_VIEWBOX_WIDTH} ${KAABA_VIEWBOX_HEIGHT}`}>
+            <KaabaShapes />
+          </Svg>
+        </MotiView>
+      )}
+
       <Animated.View
         pointerEvents="none"
         importantForAccessibility="no-hide-descendants"
@@ -192,7 +197,6 @@ export const CompassDial = ({
             stroke={ringColor}
             strokeWidth={2}
             fill="none"
-            opacity={ringOpacity}
           />
 
           {tickMarks.map((tick) => (
@@ -212,7 +216,7 @@ export const CompassDial = ({
               key={direction.key}
               x={direction.x}
               y={direction.y}
-              textAnchor={direction.anchor}
+              textAnchor="middle"
               alignmentBaseline="middle"
               fontSize={direction.fontSize}
               fontWeight="bold"
@@ -222,32 +226,32 @@ export const CompassDial = ({
             </SvgText>
           ))}
 
-          <Line
-            x1={CENTER}
-            y1={CENTER - 20}
-            x2={CENTER}
-            y2={CENTER + 20}
-            stroke={colors.secondary}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            opacity={0.4}
-          />
-          <Line
-            x1={CENTER - 20}
-            y1={CENTER}
-            x2={CENTER + 20}
-            y2={CENTER}
-            stroke={colors.secondary}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            opacity={0.4}
-          />
+          {isAligned && qiblaDirection !== null && (
+            <G testID="qibla-path-line">
+              <Line
+                x1={CENTER}
+                y1={CENTER}
+                x2={markerX}
+                y2={markerY}
+                stroke={colors.primary}
+                strokeWidth={3}
+                strokeLinecap="round"
+              />
+              <Circle cx={CENTER} cy={CENTER} r={5} fill={colors.primary} />
+            </G>
+          )}
 
-          {qiblaDirection !== null && (
-            <G>
-              <Circle cx={qiblaX} cy={qiblaY} r={qiblaDotRadius} fill={colors.primary} />
-              <G rotation={45} origin={`${qiblaX}, ${qiblaY}`}>
-                <Rect x={qiblaX - 6} y={qiblaY - 6} width={12} height={12} fill={colors.contrast} />
+          {showRingMarker && (
+            // Counter-rotate by the heading so the Kaaba stays upright while the ring turns.
+            <G
+              testID="kaaba-ring-marker"
+              x={markerX - markerWidth / 2}
+              y={markerY - markerHeight / 2}>
+              <G
+                rotation={heading}
+                origin={`${markerWidth / 2}, ${markerHeight / 2}`}
+                scale={MARKER_SCALE}>
+                <KaabaShapes />
               </G>
             </G>
           )}
