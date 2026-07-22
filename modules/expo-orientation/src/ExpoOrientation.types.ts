@@ -18,4 +18,6 @@ export type OrientationData = {
   timestamp: number;
   source: OrientationSource;
   error?: string;
+  /** Screen-plane deviation from horizontal in degrees (0 flat, 90 vertical); null when unknown. */
+  tiltDegrees?: number | null;
 };

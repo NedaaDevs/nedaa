@@ -50,6 +50,11 @@ class ExpoOrientationModule : Module() {
     @Volatile
     private var hasFopSample = false
 
+    @Volatile
+    private var fopTiltDegrees: Double? = null
+
+    private var fopTiltListener: SensorEventListener? = null
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private var fopWatchdog: Runnable? = null
 
@@ -143,6 +148,7 @@ class ExpoOrientationModule : Module() {
                     northReference = reference.northReference,
                     error = ERROR_INVALID_HEADING,
                     timestamp = sensorTimestampToEpoch(elapsedRealtimeNs),
+                    tiltDegrees = fopTiltDegrees,
                 )
                 return@start
             }
@@ -162,6 +168,7 @@ class ExpoOrientationModule : Module() {
                 northReference = NORTH_REFERENCE_TRUE,
                 source = SOURCE_FOP,
                 timestamp = sensorTimestampToEpoch(elapsedRealtimeNs),
+                tiltDegrees = fopTiltDegrees,
             )
         }
 
@@ -172,6 +179,23 @@ class ExpoOrientationModule : Module() {
         }
 
         Log.i(TAG, "Compass starting source=$SOURCE_FOP reference=$NORTH_REFERENCE_TRUE")
+
+        // FOP reports heading only; a UI-rate accelerometer feed supplies tilt for the
+        // hold-flat coaching without touching the heading pipeline.
+        val accelSensor = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (accelSensor != null) {
+            val tiltListener = object : SensorEventListener {
+                override fun onSensorChanged(event: SensorEvent) {
+                    if (!isCurrentSession(session, SOURCE_FOP)) return
+                    fopTiltDegrees = tiltDegreesFromGravity(event.values)
+                }
+
+                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+            }
+            fopTiltListener = tiltListener
+            sm.registerListener(tiltListener, accelSensor, SensorManager.SENSOR_DELAY_UI)
+        }
+
         scheduleFopWatchdog(sm, reference, session)
         return true
     }
@@ -197,6 +221,9 @@ class ExpoOrientationModule : Module() {
 
     private fun stopFop() {
         cancelFopWatchdog()
+        fopTiltListener?.let { sensorManager?.unregisterListener(it) }
+        fopTiltListener = null
+        fopTiltDegrees = null
         if (!isFopActive) return
         isFopActive = false
         hasFopSample = false
@@ -253,12 +280,15 @@ class ExpoOrientationModule : Module() {
                     return
                 }
 
+                val tiltDegrees = tiltDegreesFromRotationMatrix(rawRotationMatrix)
+
                 if (!getDisplayOrientation(rawRotationMatrix, displayRotationMatrix, orientation)) {
                     emitInvalid(
                         source = SOURCE_ROTATION_VECTOR,
                         northReference = reference.northReference,
                         error = ERROR_INVALID_HEADING,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -271,6 +301,7 @@ class ExpoOrientationModule : Module() {
                         northReference = reference.northReference,
                         error = ERROR_INVALID_HEADING,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -283,6 +314,7 @@ class ExpoOrientationModule : Module() {
                         northReference = reference.northReference,
                         error = ERROR_SENSOR_UNRELIABLE,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -296,6 +328,7 @@ class ExpoOrientationModule : Module() {
                     northReference = reference.northReference,
                     source = SOURCE_ROTATION_VECTOR,
                     timestamp = sensorTimestampToEpoch(event.timestamp),
+                    tiltDegrees = tiltDegrees,
                 )
             }
 
@@ -382,6 +415,9 @@ class ExpoOrientationModule : Module() {
                     return
                 }
 
+                // Tilt comes from the smoothed gravity vector; usable even when the matrix fails.
+                val tiltDegrees = tiltDegreesFromGravity(gravity)
+
                 val hasRotationMatrix = SensorManager.getRotationMatrix(
                     rawRotationMatrix,
                     null,
@@ -396,6 +432,7 @@ class ExpoOrientationModule : Module() {
                         northReference = reference.northReference,
                         error = ERROR_SENSOR_UNRELIABLE,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -408,6 +445,7 @@ class ExpoOrientationModule : Module() {
                         northReference = reference.northReference,
                         error = ERROR_INVALID_HEADING,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -422,6 +460,7 @@ class ExpoOrientationModule : Module() {
                         northReference = reference.northReference,
                         error = ERROR_SENSOR_UNRELIABLE,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -433,6 +472,7 @@ class ExpoOrientationModule : Module() {
                         northReference = reference.northReference,
                         error = ERROR_SENSOR_UNRELIABLE,
                         timestamp = sensorTimestampToEpoch(event.timestamp),
+                        tiltDegrees = tiltDegrees,
                     )
                     return
                 }
@@ -444,6 +484,7 @@ class ExpoOrientationModule : Module() {
                     northReference = reference.northReference,
                     source = SOURCE_ACCELEROMETER_MAGNETOMETER,
                     timestamp = sensorTimestampToEpoch(event.timestamp),
+                    tiltDegrees = tiltDegrees,
                 )
             }
 
@@ -565,6 +606,7 @@ class ExpoOrientationModule : Module() {
         northReference: String,
         source: String,
         timestamp: Long,
+        tiltDegrees: Double?,
     ) {
         lastInvalidError = null
         sendEvent(
@@ -576,6 +618,7 @@ class ExpoOrientationModule : Module() {
                 "isValid" to true,
                 "timestamp" to timestamp.toDouble(),
                 "source" to source,
+                "tiltDegrees" to tiltDegrees,
             ),
         )
     }
@@ -586,6 +629,7 @@ class ExpoOrientationModule : Module() {
         northReference: String,
         error: String,
         timestamp: Long = System.currentTimeMillis(),
+        tiltDegrees: Double? = null,
     ) {
         if (lastInvalidError == error) return
 
@@ -602,6 +646,7 @@ class ExpoOrientationModule : Module() {
                 "timestamp" to timestamp.toDouble(),
                 "source" to source,
                 "error" to error,
+                "tiltDegrees" to tiltDegrees,
             ),
         )
     }
@@ -649,6 +694,24 @@ class ExpoOrientationModule : Module() {
         )
         if (!magnitude.isFinite() || magnitude <= 0f) return false
         return kotlin.math.abs(magnitude - expected) > expected * FIELD_DEVIATION_TOLERANCE
+    }
+
+    /** Rotation-matrix element [8] is the cosine between the device z-axis and world up. */
+    private fun tiltDegreesFromRotationMatrix(rotationMatrix: FloatArray): Double? {
+        val cosTilt = rotationMatrix.getOrNull(8)?.toDouble() ?: return null
+        if (!cosTilt.isFinite()) return null
+        return Math.toDegrees(kotlin.math.acos(cosTilt.coerceIn(-1.0, 1.0)))
+    }
+
+    private fun tiltDegreesFromGravity(values: FloatArray): Double? {
+        if (values.size < 3) return null
+        val norm = kotlin.math.sqrt(
+            (values[0] * values[0] + values[1] * values[1] + values[2] * values[2]).toDouble(),
+        )
+        if (!norm.isFinite() || norm <= 0.0) return null
+        val cosTilt = values[2].toDouble() / norm
+        if (!cosTilt.isFinite()) return null
+        return Math.toDegrees(kotlin.math.acos(cosTilt.coerceIn(-1.0, 1.0)))
     }
 
     private fun normalizeHeading(degrees: Float): Float {
