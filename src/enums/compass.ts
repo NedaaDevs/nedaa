@@ -1,12 +1,3 @@
-export const CompassLocationPreference = {
-  ASK: "ask",
-  QIBLA: "qibla",
-  COMPASS_ONLY: "compass_only",
-} as const;
-
-export type CompassLocationPreferenceValue =
-  (typeof CompassLocationPreference)[keyof typeof CompassLocationPreference];
-
 export const CompassLocationSource = {
   FRESH: "fresh",
   SAVED: "saved",

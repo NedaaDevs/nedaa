@@ -5,7 +5,6 @@ import * as Location from "@/adapters/location";
 import { PlatformType } from "@/enums/app";
 import {
   CompassLocationPermissionAccuracy,
-  CompassLocationPreference,
   CompassLocationSource,
   CompassReliabilityIssue,
   type CompassLocationPermissionAccuracyValue,
@@ -40,10 +39,8 @@ type LocationViewState = {
 };
 
 export type CompassLocationResult = LocationViewState & {
-  preference: (typeof CompassLocationPreference)[keyof typeof CompassLocationPreference];
   isRefreshing: boolean;
-  chooseQibla: () => Promise<void>;
-  chooseCompassOnly: () => void;
+  /** Explicit user action; the only path that may show the permission prompt. */
   refresh: () => Promise<void>;
   openSettings: () => Promise<void>;
 };
@@ -216,8 +213,8 @@ const toCompassLocationFix = (location: Location.LocationObject): CompassLocatio
 };
 
 const getInitialView = (): LocationViewState => {
-  const { preference, lastVerifiedFix } = useCompassStore.getState();
-  if (preference === CompassLocationPreference.ASK || !lastVerifiedFix) return EMPTY_VIEW;
+  const { lastVerifiedFix } = useCompassStore.getState();
+  if (!lastVerifiedFix) return EMPTY_VIEW;
 
   const issue = getLocationReliabilityIssue(lastVerifiedFix, { isSaved: true });
   if (issue) return { ...EMPTY_VIEW, issue };
@@ -259,9 +256,7 @@ const getReliabilityCheckedView = (view: LocationViewState): LocationViewState =
 export const useCompassLocation = ({
   active = true,
 }: UseCompassLocationOptions = {}): CompassLocationResult => {
-  const preference = useCompassStore((state) => state.preference);
   const lastVerifiedFix = useCompassStore((state) => state.lastVerifiedFix);
-  const setPreference = useCompassStore((state) => state.setPreference);
   const setLastVerifiedFix = useCompassStore((state) => state.setLastVerifiedFix);
   const clearLastVerifiedFix = useCompassStore((state) => state.clearLastVerifiedFix);
 
@@ -271,13 +266,9 @@ export const useCompassLocation = ({
   const mountedRef = useRef(true);
   const requestIdRef = useRef(0);
   const activeRequestRef = useRef<ActiveRequest | null>(null);
-  const skipNextAutomaticRefreshRef = useRef(false);
 
   const canApplyRequest = useCallback(
-    (requestId: number) =>
-      mountedRef.current &&
-      requestIdRef.current === requestId &&
-      useCompassStore.getState().preference === CompassLocationPreference.QIBLA,
+    (requestId: number) => mountedRef.current && requestIdRef.current === requestId,
     []
   );
 
@@ -316,10 +307,6 @@ export const useCompassLocation = ({
 
   const performRefresh = useCallback(
     (allowPermissionPrompt: boolean): Promise<void> => {
-      if (useCompassStore.getState().preference !== CompassLocationPreference.QIBLA) {
-        return Promise.resolve();
-      }
-
       const activeRequest = activeRequestRef.current;
       if (activeRequest) return activeRequest.promise;
 
@@ -470,37 +457,6 @@ export const useCompassLocation = ({
     if (mountedRef.current) setIsRefreshing(false);
   }, []);
 
-  const chooseQibla = useCallback(async () => {
-    log.i("Mode", "Qibla mode selected");
-    // The explicit choice below already performs the first request. The store
-    // update also triggers the automatic Qibla-mode effect, so consume that
-    // first effect run instead of issuing a second fix immediately afterwards.
-    skipNextAutomaticRefreshRef.current = true;
-    setPreference(CompassLocationPreference.QIBLA);
-    await performRefresh(true);
-  }, [performRefresh, setPreference]);
-
-  const chooseCompassOnly = useCallback(() => {
-    log.i("Mode", "compass-only mode selected");
-    skipNextAutomaticRefreshRef.current = false;
-    invalidateRequests();
-    setPreference(CompassLocationPreference.COMPASS_ONLY);
-    const savedFix = useCompassStore.getState().lastVerifiedFix;
-    const savedIssue = savedFix ? getLocationReliabilityIssue(savedFix, { isSaved: true }) : null;
-    setView(
-      savedFix && savedIssue === null
-        ? {
-            ...EMPTY_VIEW,
-            fix: savedFix,
-            source: CompassLocationSource.SAVED,
-          }
-        : {
-            ...EMPTY_VIEW,
-            issue: savedIssue,
-          }
-    );
-  }, [invalidateRequests, setPreference]);
-
   const refresh = useCallback(async () => {
     await performRefresh(true);
   }, [performRefresh]);
@@ -537,10 +493,7 @@ export const useCompassLocation = ({
     if (!lastVerifiedFix) return;
     const issue = getLocationReliabilityIssue(lastVerifiedFix, { isSaved: true });
     if (!issue) {
-      if (
-        preference === CompassLocationPreference.COMPASS_ONLY &&
-        viewRef.current.fix !== lastVerifiedFix
-      ) {
+      if (viewRef.current.fix === null) {
         setView({
           ...EMPTY_VIEW,
           fix: lastVerifiedFix,
@@ -552,16 +505,11 @@ export const useCompassLocation = ({
 
     log.w("Location", `stored fix removed issue=${issue}`);
     clearLastVerifiedFix();
-  }, [clearLastVerifiedFix, lastVerifiedFix, preference]);
+  }, [clearLastVerifiedFix, lastVerifiedFix]);
 
   useEffect(() => {
-    if (preference !== CompassLocationPreference.QIBLA || !active) {
+    if (!active) {
       invalidateRequests();
-      return;
-    }
-
-    if (skipNextAutomaticRefreshRef.current) {
-      skipNextAutomaticRefreshRef.current = false;
       return;
     }
 
@@ -573,10 +521,10 @@ export const useCompassLocation = ({
     if (hasFreshFix) return;
 
     void performRefresh(false);
-  }, [active, invalidateRequests, performRefresh, preference]);
+  }, [active, invalidateRequests, performRefresh]);
 
   useEffect(() => {
-    if (preference === CompassLocationPreference.ASK || !view.fix) return;
+    if (!view.fix) return;
 
     const fix = view.fix;
     const source = view.source;
@@ -630,17 +578,13 @@ export const useCompassLocation = ({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [clearLastVerifiedFix, preference, view.fix, view.source]);
+  }, [clearLastVerifiedFix, view.fix, view.source]);
 
-  const exposedView =
-    preference === CompassLocationPreference.ASK ? EMPTY_VIEW : getReliabilityCheckedView(view);
+  const exposedView = getReliabilityCheckedView(view);
 
   return {
-    preference,
     ...exposedView,
     isRefreshing,
-    chooseQibla,
-    chooseCompassOnly,
     refresh,
     openSettings,
   };

@@ -1,11 +1,7 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 
-import {
-  CompassLocationPreference,
-  CompassLocationSource,
-  CompassReliabilityIssue,
-} from "@/enums/compass";
+import { CompassLocationSource, CompassReliabilityIssue } from "@/enums/compass";
 import { useCompassLocation } from "@/hooks/useCompassLocation";
 import { useCompassStore } from "@/stores/compass";
 import { MAX_FRESH_LOCATION_AGE_MS, MAX_SAVED_LOCATION_AGE_MS } from "@/utils/compass";
@@ -66,6 +62,20 @@ const flush = async () => {
   });
 };
 
+const undeterminedPermission = {
+  status: "undetermined",
+  granted: false,
+  canAskAgain: true,
+  expires: "never",
+};
+
+const deniedPermission = {
+  status: "denied",
+  granted: false,
+  canAskAgain: false,
+  expires: "never",
+};
+
 const grantedPermission = {
   status: "granted",
   granted: true,
@@ -97,10 +107,7 @@ describe("useCompassLocation", () => {
   beforeEach(() => {
     results.length = 0;
     jest.clearAllMocks();
-    useCompassStore.setState({
-      preference: CompassLocationPreference.ASK,
-      lastVerifiedFix: null,
-    });
+    useCompassStore.setState({ lastVerifiedFix: null });
   });
 
   afterEach(() => {
@@ -108,60 +115,53 @@ describe("useCompassLocation", () => {
     jest.restoreAllMocks();
   });
 
-  it("keeps first-use mode completely free of location API calls", async () => {
+  it("silently checks permission on mount without prompting", async () => {
+    mockGetForegroundPermissionsAsync.mockResolvedValue(undeterminedPermission);
     const tree = await renderHook();
+    await flush();
 
-    expect(latest().preference).toBe(CompassLocationPreference.ASK);
     expect(latest().source).toBe(CompassLocationSource.NONE);
-    expect(mockGetForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(mockGetForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
 
     act(() => tree.unmount());
   });
 
-  it("reuses a verified saved fix in compass-only mode without requesting or deleting location", async () => {
+  it("hydrates a valid saved fix as source saved without a silent fetch replacing it", async () => {
     const savedFix = {
       latitude: precisePosition.coords.latitude,
       longitude: precisePosition.coords.longitude,
       accuracyMeters: precisePosition.coords.accuracy,
       altitude: precisePosition.coords.altitude,
-      timestamp: precisePosition.timestamp,
+      timestamp: Date.now(),
     };
     useCompassStore.setState({ lastVerifiedFix: savedFix });
+    mockGetForegroundPermissionsAsync.mockResolvedValue(deniedPermission);
+
     const tree = await renderHook();
-
-    await act(async () => latest().chooseCompassOnly());
     await flush();
-
-    await act(async () => tree.update(<Probe active={false} />));
-    await act(async () => tree.update(<Probe active />));
 
     const result = latest();
     const persistedFix = useCompassStore.getState().lastVerifiedFix;
     act(() => tree.unmount());
 
-    expect(result.preference).toBe(CompassLocationPreference.COMPASS_ONLY);
-    expect(result.source).toBe(CompassLocationSource.SAVED);
     expect(result.fix).toEqual(savedFix);
-    expect(mockGetForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(result.source).toBe(CompassLocationSource.SAVED);
+    expect(persistedFix).toEqual(savedFix);
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
-    expect(persistedFix).toEqual(savedFix);
   });
 
-  it("requests permission only after Qibla is chosen and saves one high-accuracy fix", async () => {
-    mockGetForegroundPermissionsAsync.mockResolvedValue({
-      status: "undetermined",
-      granted: false,
-      canAskAgain: true,
-      expires: "never",
-    });
+  it("prompts for permission on refresh when undetermined and saves one high-accuracy fix", async () => {
+    mockGetForegroundPermissionsAsync.mockResolvedValue(undeterminedPermission);
     mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition();
     const tree = await renderHook();
+    await flush();
 
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
-    await act(async () => latest().chooseQibla());
+    await act(async () => latest().refresh());
     await flush();
 
     expect(mockRequestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
@@ -179,8 +179,7 @@ describe("useCompassLocation", () => {
     act(() => tree.unmount());
   });
 
-  it("refreshes Qibla only while the compass feature is active", async () => {
-    useCompassStore.setState({ preference: CompassLocationPreference.QIBLA });
+  it("acquires a location fix only while the compass feature is active", async () => {
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition();
@@ -215,10 +214,7 @@ describe("useCompassLocation", () => {
       altitude: 610,
       timestamp: Date.now() - 60_000,
     };
-    useCompassStore.setState({
-      preference: CompassLocationPreference.QIBLA,
-      lastVerifiedFix: savedFix,
-    });
+    useCompassStore.setState({ lastVerifiedFix: savedFix });
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockRejectedValue(new Error("Location request timed out"));
@@ -240,10 +236,7 @@ describe("useCompassLocation", () => {
       altitude: 610,
       timestamp: Date.now() - 60_000,
     };
-    useCompassStore.setState({
-      preference: CompassLocationPreference.QIBLA,
-      lastVerifiedFix: savedFix,
-    });
+    useCompassStore.setState({ lastVerifiedFix: savedFix });
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockRejectedValue(new Error("Location provider is disabled"));
@@ -258,8 +251,7 @@ describe("useCompassLocation", () => {
     act(() => tree.unmount());
   });
 
-  it("withholds Qibla location and requires settings for reduced accuracy permission", async () => {
-    useCompassStore.setState({ preference: CompassLocationPreference.QIBLA });
+  it("withholds location and requires settings for reduced accuracy permission", async () => {
     mockGetForegroundPermissionsAsync.mockResolvedValue({
       ...grantedPermission,
       ios: { scope: "whenInUse", accuracy: "reduced" },
@@ -278,7 +270,6 @@ describe("useCompassLocation", () => {
 
   it("rejects an inaccurate fresh result instead of persisting or displaying it", async () => {
     jest.useFakeTimers();
-    useCompassStore.setState({ preference: CompassLocationPreference.QIBLA });
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition({
@@ -304,7 +295,6 @@ describe("useCompassLocation", () => {
     const now = 1_750_000_000_000;
     jest.useFakeTimers();
     jest.setSystemTime(now);
-    useCompassStore.setState({ preference: CompassLocationPreference.QIBLA });
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition({ ...precisePosition, timestamp: now });
@@ -333,7 +323,6 @@ describe("useCompassLocation", () => {
 
   it("stops the native location watch when the foreground fix times out", async () => {
     jest.useFakeTimers();
-    useCompassStore.setState({ preference: CompassLocationPreference.QIBLA });
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockResolvedValue({ remove: mockRemoveLocationWatch });
@@ -353,7 +342,7 @@ describe("useCompassLocation", () => {
     act(() => tree.unmount());
   });
 
-  it("ignores an in-flight Qibla fix after the user switches to compass-only", async () => {
+  it("cancels an in-flight location fetch when the compass feature becomes inactive", async () => {
     let locationCallback!: (position: typeof precisePosition) => void;
     let resolveSubscription!: (subscription: { remove: typeof mockRemoveLocationWatch }) => void;
     const subscriptionPromise = new Promise<{ remove: typeof mockRemoveLocationWatch }>(
@@ -361,13 +350,7 @@ describe("useCompassLocation", () => {
         resolveSubscription = resolve;
       }
     );
-    mockGetForegroundPermissionsAsync.mockResolvedValue({
-      status: "undetermined",
-      granted: false,
-      canAskAgain: true,
-      expires: "never",
-    });
-    mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
+    mockGetForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockImplementation(
       (_options: unknown, callback: (position: typeof precisePosition) => void) => {
@@ -375,58 +358,49 @@ describe("useCompassLocation", () => {
         return subscriptionPromise;
       }
     );
-    const tree = await renderHook();
 
-    let qiblaPromise!: Promise<void>;
-    act(() => {
-      qiblaPromise = latest().chooseQibla();
-    });
+    const tree = await renderHook();
     await flush();
     expect(mockWatchPositionAsync).toHaveBeenCalledTimes(1);
 
-    act(() => latest().chooseCompassOnly());
+    await act(async () => tree.update(<Probe active={false} />));
     expect(mockRemoveLocationWatch).not.toHaveBeenCalled();
     resolveSubscription({ remove: mockRemoveLocationWatch });
     await flush();
     expect(mockRemoveLocationWatch).toHaveBeenCalledTimes(1);
-    locationCallback(precisePosition);
-    await act(async () => qiblaPromise);
 
-    expect(latest().preference).toBe(CompassLocationPreference.COMPASS_ONLY);
+    locationCallback(precisePosition);
+    await flush();
+
     expect(latest().source).toBe(CompassLocationSource.NONE);
     expect(latest().fix).toBeNull();
     expect(useCompassStore.getState().lastVerifiedFix).toBeNull();
     act(() => tree.unmount());
   });
 
-  it("does not start location acquisition after switching modes during permission", async () => {
+  it("does not start location acquisition when deactivated during a refresh's permission prompt", async () => {
     let resolvePermission!: (permission: typeof grantedPermission) => void;
     const permissionPromise = new Promise<typeof grantedPermission>((resolve) => {
       resolvePermission = resolve;
     });
-    mockGetForegroundPermissionsAsync.mockResolvedValue({
-      status: "undetermined",
-      granted: false,
-      canAskAgain: true,
-      expires: "never",
-    });
+    mockGetForegroundPermissionsAsync.mockResolvedValue(undeterminedPermission);
     mockRequestForegroundPermissionsAsync.mockReturnValue(permissionPromise);
     const tree = await renderHook();
+    await flush();
 
-    let qiblaPromise!: Promise<void>;
+    let refreshPromise!: Promise<void>;
     act(() => {
-      qiblaPromise = latest().chooseQibla();
+      refreshPromise = latest().refresh();
     });
     await flush();
     expect(mockRequestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
 
-    act(() => latest().chooseCompassOnly());
+    await act(async () => tree.update(<Probe active={false} />));
     resolvePermission(grantedPermission);
-    await act(async () => qiblaPromise);
+    await act(async () => refreshPromise);
 
     expect(mockHasServicesEnabledAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
-    expect(latest().preference).toBe(CompassLocationPreference.COMPASS_ONLY);
     act(() => tree.unmount());
   });
 });
