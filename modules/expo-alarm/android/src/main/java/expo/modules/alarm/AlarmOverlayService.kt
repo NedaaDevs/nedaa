@@ -31,6 +31,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.TextClock
 import android.widget.TextView
 import android.widget.Toast
 import java.util.UUID
@@ -51,20 +52,22 @@ class AlarmOverlayService : Service() {
         private val GRACE_TAP = mapOf("easy" to 10, "medium" to 15, "hard" to 20)
         private val GRACE_MATH = mapOf("easy" to 15, "medium" to 20, "hard" to 30)
 
-        // UI colors
-        private const val COLOR_BG = "#F0111827"
-        private const val COLOR_CARD_BG = "#FF1E293B"
-        private const val COLOR_PRIMARY = "#FF6366F1"
-        private const val COLOR_PRIMARY_LIGHT = "#FF818CF8"
-        private const val COLOR_SUCCESS = "#FF22C55E"
-        private const val COLOR_SUCCESS_LIGHT = "#FF4ADE80"
-        private const val COLOR_WARNING = "#FFFBBF24"
-        private const val COLOR_ERROR = "#FFEF4444"
-        private const val COLOR_SNOOZE = "#FFF59E0B"
-        private const val COLOR_TEXT = "#FFFFFFFF"
-        private const val COLOR_TEXT_MUTED = "#FF94A3B8"
-        private const val COLOR_INPUT_BG = "#FF334155"
-        private const val COLOR_DISABLED = "#FF475569"
+        // UI colors — Nedaa dark brand (tamagui.config.ts dark theme), always-dark overlay
+        private const val COLOR_BG = "#F0222831"            // darkBackground scrim
+        private const val COLOR_CARD_BG = "#FF393E46"       // darkBackgroundElevated
+        private const val COLOR_PRIMARY = "#FFE6C469"        // darkPrimary (gold)
+        private const val COLOR_PRIMARY_LIGHT = "#FFF0D89A"  // lighter gold
+        private const val COLOR_SUCCESS = "#FF22C55E"        // darkBorderSuccess
+        private const val COLOR_SUCCESS_LIGHT = "#FF4ADE80"  // tap success flash
+        private const val COLOR_WARNING = "#FFFCD34D"        // darkWarning
+        private const val COLOR_ERROR = "#FFEF4444"          // darkBorderError
+        private const val COLOR_SNOOZE = "#FF4B5563"         // darkSurfaceActive (secondary)
+        private const val COLOR_TEXT = "#FFFFFFFF"           // primary text on dark surfaces
+        private const val COLOR_TEXT_SECONDARY = "#FFE3E2CE" // darkTypographySecondary (off-white)
+        private const val COLOR_TEXT_ON_ACCENT = "#FF222831" // dark text on gold/green fills
+        private const val COLOR_TEXT_MUTED = "#FFB4B3A1"     // muted body text
+        private const val COLOR_INPUT_BG = "#FF4B5563"       // darkSurfaceActive input well
+        private const val COLOR_DISABLED = "#FF374151"       // darkSurfaceHover (disabled)
 
         private const val GRACE_UPDATE_INTERVAL_MS = 50L
         private const val AUTO_SNOOZE_TIMEOUT_MS = 15 * 60 * 1000L
@@ -404,11 +407,23 @@ class AlarmOverlayService : Service() {
             layoutParams = params
         }
 
+        // Header clock — native, self-updating; follows device 12/24-hour setting
+        val clockView = TextClock(this).apply {
+            format12Hour = "h:mm"
+            format24Hour = "HH:mm"
+            textSize = 56f
+            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
+            gravity = Gravity.CENTER
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            setPadding(0, 0, 0, (4 * dp).toInt())
+        }
+        card.addView(clockView)
+
         // Title
         val titleView = TextView(this).apply {
             text = title
             textSize = 28f
-            setTextColor(Color.parseColor(COLOR_TEXT))
+            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
             gravity = Gravity.CENTER
             typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
             setPadding(0, 0, 0, (8 * dp).toInt())
@@ -576,7 +591,7 @@ class AlarmOverlayService : Service() {
             text = getString(R.string.overlay_start_solving)
             textSize = 18f
             isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT))
+            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_PRIMARY))
                 cornerRadius = 16 * dp
@@ -638,7 +653,7 @@ class AlarmOverlayService : Service() {
             text = getString(R.string.overlay_tap_button)
             textSize = 18f
             isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT))
+            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_SUCCESS))
                 cornerRadius = 16 * dp
@@ -668,7 +683,7 @@ class AlarmOverlayService : Service() {
             text = getString(R.string.overlay_dismiss_button)
             textSize = 18f
             isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT))
+            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_SUCCESS))
                 cornerRadius = 16 * dp
@@ -737,7 +752,7 @@ class AlarmOverlayService : Service() {
             hint = getString(R.string.overlay_math_hint)
             textSize = 28f
             setTextColor(Color.parseColor(COLOR_TEXT))
-            setHintTextColor(Color.parseColor("#FF64748B"))
+            setHintTextColor(Color.parseColor("#FF8A897A"))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_INPUT_BG))
                 cornerRadius = 12 * dp
@@ -773,7 +788,7 @@ class AlarmOverlayService : Service() {
             text = getString(R.string.overlay_math_submit)
             textSize = 18f
             isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT))
+            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_PRIMARY))
                 cornerRadius = 16 * dp
