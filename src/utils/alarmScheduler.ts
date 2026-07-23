@@ -155,6 +155,29 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   return success ? id : null;
 }
 
+// One-off rehearsal alarm a few seconds out, routed through the normal fire path
+// for the given type so it reads the user's real per-type sound/volume/challenge.
+export const scheduleTestAlarm = async (
+  alarmType: ScheduledAlarmType,
+  secondsFromNow = 30
+): Promise<string | null> => {
+  const alarmStore = useAlarmStore.getState();
+
+  // Date.now() in the key keeps repeated tests from colliding on the same id.
+  const id = generateDeterministicUUID(`test_${alarmType}_${Date.now()}`);
+  const triggerDate = new Date(Date.now() + secondsFromNow * 1000);
+  const title = i18next.t("alarm.testAlarmTitle");
+
+  const success = await alarmStore.scheduleAlarm({
+    id,
+    triggerDate,
+    title,
+    alarmType,
+  });
+
+  return success ? id : null;
+};
+
 export async function completeAndRescheduleAlarm(alarmId: string): Promise<void> {
   const alarmStore = useAlarmStore.getState();
   const alarm = alarmStore.scheduledAlarms[alarmId];

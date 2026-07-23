@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Platform } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -8,6 +8,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
@@ -23,7 +24,7 @@ import {
   TimingSettings,
 } from "@/components/alarm";
 
-import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise } from "lucide-react-native";
+import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
 
 import * as ExpoAlarm from "expo-alarm";
 
@@ -31,7 +32,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
 import { useAlarmStore } from "@/stores/alarm";
 import { createAsyncLock } from "@/utils/asyncLock";
-import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
+import { scheduleFajrAlarm, scheduleFridayAlarm, scheduleTestAlarm } from "@/utils/alarmScheduler";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
 import { SOUND_ASSETS } from "@/constants/sounds";
@@ -91,6 +92,33 @@ const AlarmTypeSettingsScreen = () => {
 
   const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toggleLock = useRef(createAsyncLock()).current;
+
+  const TEST_ALARM_SECONDS = 30;
+  const [testState, setTestState] = useState<"idle" | "pending" | "failed">("idle");
+  const testTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    },
+    []
+  );
+
+  const handleTestAlarm = async () => {
+    if (testState === "pending") return;
+    hapticSelection();
+
+    if (testTimerRef.current) clearTimeout(testTimerRef.current);
+
+    const id = await scheduleTestAlarm(scheduledType, TEST_ALARM_SECONDS);
+    if (id) {
+      setTestState("pending");
+      testTimerRef.current = setTimeout(() => setTestState("idle"), TEST_ALARM_SECONDS * 1000);
+    } else {
+      setTestState("failed");
+      testTimerRef.current = setTimeout(() => setTestState("idle"), 3000);
+    }
+  };
 
   const debouncedReschedule = useCallback(() => {
     if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
@@ -289,6 +317,28 @@ const AlarmTypeSettingsScreen = () => {
                   value={settings.snooze}
                   onChange={(snooze) => handleChange({ snooze })}
                 />
+              </SettingsSection>
+
+              {/* Test Alarm: end-to-end rehearsal using the saved per-type settings */}
+              <SettingsSection title={t("alarm.settings.testAlarm")} icon={FlaskConical}>
+                <Button
+                  size="lg"
+                  minHeight={44}
+                  variant={testState === "idle" ? "solid" : "outline"}
+                  action={testState === "failed" ? "negative" : "primary"}
+                  disabled={testState === "pending"}
+                  onPress={handleTestAlarm}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("a11y.alarm.testAlarm", { seconds: TEST_ALARM_SECONDS })}
+                  accessibilityState={{ disabled: testState === "pending" }}>
+                  <Button.Text>
+                    {testState === "pending"
+                      ? t("alarm.settings.testAlarmPending", { seconds: TEST_ALARM_SECONDS })
+                      : testState === "failed"
+                        ? t("alarm.settings.testAlarmFailed")
+                        : t("alarm.settings.testAlarm")}
+                  </Button.Text>
+                </Button>
               </SettingsSection>
             </>
           )}
