@@ -67,12 +67,27 @@ public struct OpenNedaaAlarmIntent: LiveActivityIntent {
             )
         }
 
-        _ = await AlarmObserver.scheduleBypassBackup(
+        let scheduledBackupId = await AlarmObserver.scheduleBypassBackup(
             originalAlarmId: alarmId,
             alarmType: alarmType,
             title: alarmTitle,
             delay: 15
         )
+
+        // isCompleted was read before the backup was scheduled; JS may have completed
+        // the challenge during that window. If so, tear the fresh backup back down so
+        // it can't ring 15s after a successful dismissal.
+        if AlarmDatabase.shared.isCompleted(id: alarmId) {
+            if let scheduledBackupId = scheduledBackupId {
+                try? AlarmManager.shared.cancel(id: scheduledBackupId)
+                AlarmDatabase.shared.deleteAlarm(id: scheduledBackupId.uuidString.lowercased())
+            }
+            AlarmDatabase.shared.clearBypassState()
+            let center = UNUserNotificationCenter.current()
+            center.removePendingNotificationRequests(withIdentifiers: AlarmObserver.bypassNotificationIds)
+            plog.intent("Challenge completed during backup scheduling, backup cancelled")
+            return .result()
+        }
 
         await updateLiveActivityWithSound()
 

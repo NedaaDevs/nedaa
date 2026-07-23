@@ -53,8 +53,9 @@ public class ExpoAlarmModule: Module {
         Events("onPlaybackFinished")
 
         OnCreate {
-            // Settings were historically saved under "friday" while fired alarms look up
-            // "jummah"; rename once, keeping an existing "jummah" entry if both are present.
+            // Legacy entries are keyed "friday" but fired alarms look up "jummah"; rename,
+            // keeping an existing "jummah" entry if both are present. Idempotent per launch.
+            // TODO(jummah-migration): remove once the installed base has updated past 2.10.
             let defaults = UserDefaults.standard
             if let legacy = defaults.dictionary(forKey: "alarm_settings_friday") {
                 if defaults.dictionary(forKey: "alarm_settings_jummah") == nil {
@@ -232,7 +233,7 @@ public class ExpoAlarmModule: Module {
                     } catch {
                         self.withAlarmIds { $0.remove(id) }
                         AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()
-                        promise.resolve(true)
+                        promise.resolve(false)
                     }
                 }
                 return
@@ -260,6 +261,7 @@ public class ExpoAlarmModule: Module {
                         }
                     }
                     AlarmDatabase.shared.deleteAllBackups()
+                    AlarmDatabase.shared.deleteAllAlarms()
 
                     AlarmBackgroundTaskManager.shared.cancelWakeTask()
                     AlarmAudioManager.shared.stopQuietKeepAlive()

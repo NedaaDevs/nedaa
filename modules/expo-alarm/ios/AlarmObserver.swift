@@ -310,7 +310,29 @@ import AppIntents
         var metadata = AlarmDatabase.shared.getMetadata(for: alarmId)
         var originalAlarmId = alarmId
 
-        if metadata == nil {
+        // A backup is scheduled under its own UUID and carries its own alarms-row
+        // metadata, so a plain lookup resolves to the backup — not the alarm the JS
+        // store knows. Completion, Live Activity, and the deep link must all target
+        // the original alarm, whose id lives in the pending-challenge / bypass state.
+        let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
+        let isBackupAlarm = backupIds.contains(alarmId.lowercased())
+
+        if isBackupAlarm {
+            if let pending = AlarmDatabase.shared.getPendingChallenge(),
+               let pendingId = pending["alarmId"] as? String,
+               let pendingType = pending["alarmType"] as? String,
+               let pendingTitle = pending["title"] as? String {
+                originalAlarmId = pendingId
+                metadata = (alarmType: pendingType, title: pendingTitle)
+                plog.observer("Backup alerting, resolved original \(pendingId.prefix(8)) from pending challenge")
+            } else if let bypass = AlarmDatabase.shared.getBypassState() {
+                originalAlarmId = bypass.alarmId
+                metadata = (alarmType: bypass.alarmType, title: bypass.title)
+                plog.observer("Backup alerting, resolved original \(bypass.alarmId.prefix(8)) from bypass state")
+            } else {
+                plog.observer("Backup alerting but no original id found; falling back to backup id")
+            }
+        } else if metadata == nil {
             if let pending = AlarmDatabase.shared.getPendingChallenge(),
                let pendingId = pending["alarmId"] as? String,
                let pendingType = pending["alarmType"] as? String,
@@ -328,8 +350,7 @@ import AppIntents
 
         // Start vibration immediately for backup alarms (they fire via AlarmKit,
         // but we want vibration to start while system alarm is showing)
-        let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
-        if backupIds.contains(alarmId.lowercased()) {
+        if isBackupAlarm {
             plog.observer("Backup alarm alerting - starting vibration")
             DispatchQueue.main.async {
                 AlarmAudioManager.shared.startContinuousVibration()

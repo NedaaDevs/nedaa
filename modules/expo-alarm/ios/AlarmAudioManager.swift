@@ -169,8 +169,15 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         }
         let saved = UserDefaults.standard.float(forKey: savedVolumeKey)
         log("Restoring system volume to: \(saved)")
-        setSystemVolume(saved)
-        UserDefaults.standard.removeObject(forKey: savedVolumeKey)
+        setSystemVolume(saved) { [weak self] restored in
+            guard let self = self else { return }
+            if restored {
+                UserDefaults.standard.removeObject(forKey: self.savedVolumeKey)
+                self.log("System volume restored, saved key cleared")
+            } else {
+                self.log("No volume view to restore through; keeping saved volume for later")
+            }
+        }
     }
 
     @discardableResult
@@ -185,7 +192,9 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
                 options: []
             )
 
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            // .notifyOthersOnDeactivation only applies when deactivating; on activation
+            // it is meaningless, so activate with no options.
+            try session.setActive(true)
 
             if #available(iOS 15.0, *) {
                 try session.setPrefersNoInterruptionsFromSystemAlerts(true)
@@ -383,25 +392,33 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         }
     }
 
-    private func setSystemVolume(_ volume: Float) {
+    private func setSystemVolume(_ volume: Float, completion: ((Bool) -> Void)? = nil) {
         DispatchQueue.main.async { [weak self] in
-            guard let volumeView = self?.volumeView else { return }
+            guard let volumeView = self?.volumeView else {
+                completion?(false)
+                return
+            }
+            var didSet = false
             for subview in volumeView.subviews {
                 if let slider = subview as? UISlider {
                     slider.value = volume
+                    didSet = true
                     break
                 }
             }
+            completion?(didSet)
         }
     }
 
     func stopAll() {
         log("Stopping all audio effects")
+        // Stop keep-alive first so stopAlarmSound's !isKeepAliveActive guard passes and
+        // deactivates the session; otherwise the session is left active after stopAll.
+        stopQuietKeepAlive()
         stopAlarmSound()
         stopContinuousVibration()
         restoreSystemVolume()
         stopVolumeMonitoring()
-        stopQuietKeepAlive()
     }
 
     /// Plays alarm sound at inaudible volume (0.001) to keep app alive in background.
@@ -502,7 +519,7 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
                 mode: .default,
                 options: []
             )
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setActive(true)
         } catch {
             logError("Failed to reconfigure session: \(error)")
             logError("Continuing anyway - vibration still works, audio works in foreground")
