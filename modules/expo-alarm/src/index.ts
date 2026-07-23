@@ -163,6 +163,7 @@ export async function clearCompletedChallenges(): Promise<boolean> {
 
 // Completed queue (alarms completed via Android overlay, need JS processing)
 export interface CompletedAlarm {
+  id: number;
   alarmId: string;
   alarmType: string;
   title: string;
@@ -174,13 +175,24 @@ export async function getCompletedQueue(): Promise<CompletedAlarm[]> {
   return NativeModule.getCompletedQueue();
 }
 
-export async function clearCompletedQueue(): Promise<boolean> {
+// Clears the given queue row ids so concurrent overlay inserts survive to the
+// next drain. Falls back to clearing the whole table if the native module
+// predates the id-scoped variant, or when no ids are supplied.
+export async function clearCompletedQueue(ids?: number[]): Promise<boolean> {
   if (!isAvailable) return false;
+  if (ids && ids.length > 0) {
+    try {
+      return await NativeModule.clearCompletedQueueByIds(ids);
+    } catch {
+      return NativeModule.clearCompletedQueue();
+    }
+  }
   return NativeModule.clearCompletedQueue();
 }
 
 // Snooze queue (alarms snoozed via Android overlay, need JS processing)
 export interface SnoozedAlarm {
+  id: number;
   originalAlarmId: string;
   snoozeAlarmId: string;
   alarmType: string;
@@ -194,8 +206,18 @@ export async function getSnoozeQueue(): Promise<SnoozedAlarm[]> {
   return NativeModule.getSnoozeQueue();
 }
 
-export async function clearSnoozeQueue(): Promise<boolean> {
+// Clears the given queue row ids so concurrent overlay inserts survive to the
+// next drain. Falls back to clearing the whole table if the native module
+// predates the id-scoped variant, or when no ids are supplied.
+export async function clearSnoozeQueue(ids?: number[]): Promise<boolean> {
   if (!isAvailable) return false;
+  if (ids && ids.length > 0) {
+    try {
+      return await NativeModule.clearSnoozeQueueByIds(ids);
+    } catch {
+      return NativeModule.clearSnoozeQueue();
+    }
+  }
   return NativeModule.clearSnoozeQueue();
 }
 

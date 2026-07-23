@@ -67,12 +67,16 @@ async function processCompletedQueue() {
     const queue = await ExpoAlarm.getCompletedQueue();
     if (queue.length === 0) return;
 
+    // Clear by processed row id so a native overlay insert during these awaits
+    // survives to the next drain instead of being wiped unprocessed.
+    const processedIds: number[] = [];
     for (const item of queue) {
       handledAlarmIds.set(item.alarmId, Date.now());
       await completeAndRescheduleAlarm(item.alarmId);
+      processedIds.push(item.id);
     }
 
-    await ExpoAlarm.clearCompletedQueue();
+    await ExpoAlarm.clearCompletedQueue(processedIds);
   } catch (error) {
     alarmLog.e(
       "DeepLink",
@@ -91,6 +95,9 @@ async function processSnoozeQueue() {
     const queue = await getSnoozeQueue();
     if (queue.length === 0) return;
 
+    // Clear by processed row id so a native overlay insert during these awaits
+    // survives to the next drain instead of being wiped unprocessed.
+    const processedIds: number[] = [];
     for (const item of queue) {
       // Mark original alarm as handled
       handledAlarmIds.set(item.originalAlarmId, Date.now());
@@ -125,9 +132,11 @@ async function processSnoozeQueue() {
         title: item.title,
         triggerDate: new Date(item.snoozeEndTime),
       });
+
+      processedIds.push(item.id);
     }
 
-    await clearSnoozeQueue();
+    await clearSnoozeQueue(processedIds);
   } catch (error) {
     alarmLog.e(
       "DeepLink",

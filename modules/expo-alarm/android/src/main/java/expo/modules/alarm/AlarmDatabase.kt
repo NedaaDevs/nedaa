@@ -158,8 +158,9 @@ class AlarmDatabase private constructor(private val context: Context) :
         super.onOpen(db)
         db.enableWriteAheadLogging()
 
-        // Settings were historically saved under "friday" while fired alarms look up
-        // "jummah"; rename once, keeping an existing "jummah" row if both are present.
+        // Legacy rows are keyed "friday" but fired alarms look up "jummah"; rename,
+        // keeping an existing "jummah" row if both are present. Idempotent per open.
+        // TODO(jummah-migration): remove once the installed base has updated past 2.10.
         db.execSQL("UPDATE OR IGNORE alarm_settings SET alarm_type = 'jummah' WHERE alarm_type = 'friday'")
         db.execSQL("DELETE FROM alarm_settings WHERE alarm_type = 'friday'")
     }
@@ -404,6 +405,7 @@ class AlarmDatabase private constructor(private val context: Context) :
     }
 
     data class CompletedAlarmRecord(
+        val id: Long,
         val alarmId: String,
         val alarmType: String,
         val title: String,
@@ -413,17 +415,18 @@ class AlarmDatabase private constructor(private val context: Context) :
     fun getCompletedQueue(): List<CompletedAlarmRecord> {
         val queue = mutableListOf<CompletedAlarmRecord>()
         val cursor = readableDatabase.rawQuery(
-            "SELECT alarm_id, alarm_type, title, completed_at FROM completed_queue ORDER BY completed_at ASC",
+            "SELECT id, alarm_id, alarm_type, title, completed_at FROM completed_queue ORDER BY completed_at ASC",
             null
         )
         cursor.use {
             while (it.moveToNext()) {
                 queue.add(
                     CompletedAlarmRecord(
-                        alarmId = it.getString(0),
-                        alarmType = it.getString(1),
-                        title = it.getString(2),
-                        completedAt = it.getDouble(3)
+                        id = it.getLong(0),
+                        alarmId = it.getString(1),
+                        alarmType = it.getString(2),
+                        title = it.getString(3),
+                        completedAt = it.getDouble(4)
                     )
                 )
             }
@@ -433,6 +436,13 @@ class AlarmDatabase private constructor(private val context: Context) :
 
     fun clearCompletedQueue() {
         writableDatabase.delete("completed_queue", null, null)
+    }
+
+    fun clearCompletedQueue(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        val placeholders = ids.joinToString(",") { "?" }
+        val args = ids.map { it.toString() }.toTypedArray()
+        writableDatabase.delete("completed_queue", "id IN ($placeholders)", args)
     }
 
     // -- Snooze Queue (for JS to process on app open) --
@@ -458,6 +468,7 @@ class AlarmDatabase private constructor(private val context: Context) :
     }
 
     data class SnoozeQueueRecord(
+        val id: Long,
         val originalAlarmId: String,
         val snoozeAlarmId: String,
         val alarmType: String,
@@ -469,19 +480,20 @@ class AlarmDatabase private constructor(private val context: Context) :
     fun getSnoozeQueue(): List<SnoozeQueueRecord> {
         val queue = mutableListOf<SnoozeQueueRecord>()
         val cursor = readableDatabase.rawQuery(
-            "SELECT original_alarm_id, snooze_alarm_id, alarm_type, title, snooze_count, snooze_end_time FROM snooze_queue ORDER BY snoozed_at ASC",
+            "SELECT id, original_alarm_id, snooze_alarm_id, alarm_type, title, snooze_count, snooze_end_time FROM snooze_queue ORDER BY snoozed_at ASC",
             null
         )
         cursor.use {
             while (it.moveToNext()) {
                 queue.add(
                     SnoozeQueueRecord(
-                        originalAlarmId = it.getString(0),
-                        snoozeAlarmId = it.getString(1),
-                        alarmType = it.getString(2),
-                        title = it.getString(3),
-                        snoozeCount = it.getInt(4),
-                        snoozeEndTime = it.getDouble(5)
+                        id = it.getLong(0),
+                        originalAlarmId = it.getString(1),
+                        snoozeAlarmId = it.getString(2),
+                        alarmType = it.getString(3),
+                        title = it.getString(4),
+                        snoozeCount = it.getInt(5),
+                        snoozeEndTime = it.getDouble(6)
                     )
                 )
             }
@@ -491,6 +503,13 @@ class AlarmDatabase private constructor(private val context: Context) :
 
     fun clearSnoozeQueue() {
         writableDatabase.delete("snooze_queue", null, null)
+    }
+
+    fun clearSnoozeQueue(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        val placeholders = ids.joinToString(",") { "?" }
+        val args = ids.map { it.toString() }.toTypedArray()
+        writableDatabase.delete("snooze_queue", "id IN ($placeholders)", args)
     }
 
     // -- Alarm Settings --

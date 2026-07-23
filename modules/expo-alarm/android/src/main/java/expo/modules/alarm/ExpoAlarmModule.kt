@@ -140,6 +140,7 @@ class ExpoAlarmModule : Module() {
         AsyncFunction("getCompletedQueue") {
             db.getCompletedQueue().map { record ->
                 mapOf(
+                    "id" to record.id,
                     "alarmId" to record.alarmId,
                     "alarmType" to record.alarmType,
                     "title" to record.title,
@@ -153,10 +154,16 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        AsyncFunction("clearCompletedQueueByIds") { ids: List<Double> ->
+            db.clearCompletedQueue(ids.map { it.toLong() })
+            true
+        }
+
         // Snooze queue (for processing alarms snoozed via overlay)
         AsyncFunction("getSnoozeQueue") {
             db.getSnoozeQueue().map { record ->
                 mapOf(
+                    "id" to record.id,
                     "originalAlarmId" to record.originalAlarmId,
                     "snoozeAlarmId" to record.snoozeAlarmId,
                     "alarmType" to record.alarmType,
@@ -169,6 +176,11 @@ class ExpoAlarmModule : Module() {
 
         AsyncFunction("clearSnoozeQueue") {
             db.clearSnoozeQueue()
+            true
+        }
+
+        AsyncFunction("clearSnoozeQueueByIds") { ids: List<Double> ->
+            db.clearSnoozeQueue(ids.map { it.toLong() })
             true
         }
 
