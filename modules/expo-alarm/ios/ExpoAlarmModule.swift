@@ -338,6 +338,7 @@ public class ExpoAlarmModule: Module {
             alarmType: String,
             title: String,
             triggerTimestamp: Double,
+            initialState: String?,
             promise: Promise
         ) in
             if #available(iOS 16.2, *) {
@@ -360,7 +361,7 @@ public class ExpoAlarmModule: Module {
                     title: title,
                     triggerTime: triggerTime
                 )
-                let state = AlarmActivityAttributes.ContentState(state: "countdown", remainingSeconds: nil)
+                let state = AlarmActivityAttributes.ContentState(state: initialState ?? "countdown", remainingSeconds: nil)
 
                 do {
                     let activity = try Activity.request(

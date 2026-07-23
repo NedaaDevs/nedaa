@@ -87,6 +87,16 @@ struct AlarmLiveActivity: Widget {
                                 .background(Color.red)
                                 .cornerRadius(20)
                         }
+                    } else if context.state.state == "snoozed" {
+                        Link(destination: URL(string: "dev.nedaa.app://alarm?alarmId=\(context.attributes.alarmId)&alarmType=\(context.attributes.alarmType)")!) {
+                            Text("Wake Now")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color.purple)
+                                .cornerRadius(20)
+                        }
                     } else {
                         Text(context.attributes.triggerTime, style: .relative)
                             .font(.caption)
@@ -94,8 +104,8 @@ struct AlarmLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: context.attributes.title.contains("Snoozed") ? "zzz" : iconForAlarmType(context.attributes.alarmType))
-                    .foregroundColor(context.state.state == "firing" ? .red : (context.attributes.title.contains("Snoozed") ? .purple : colorForAlarmType(context.attributes.alarmType)))
+                Image(systemName: context.state.state == "snoozed" ? "zzz" : iconForAlarmType(context.attributes.alarmType))
+                    .foregroundColor(context.state.state == "firing" ? .red : (context.state.state == "snoozed" ? .purple : colorForAlarmType(context.attributes.alarmType)))
             } compactTrailing: {
                 if context.state.state == "firing" || context.isStale {
                     Image(systemName: "bell.fill")
@@ -104,11 +114,11 @@ struct AlarmLiveActivity: Widget {
                     Text(context.attributes.triggerTime, style: .timer)
                         .frame(width: 50)
                         .monospacedDigit()
-                        .foregroundColor(context.attributes.title.contains("Snoozed") ? .purple : .white)
+                        .foregroundColor(context.state.state == "snoozed" ? .purple : .white)
                 }
             } minimal: {
-                Image(systemName: (context.state.state == "firing" || context.isStale) ? "bell.fill" : (context.attributes.title.contains("Snoozed") ? "zzz" : iconForAlarmType(context.attributes.alarmType)))
-                    .foregroundColor((context.state.state == "firing" || context.isStale) ? .red : (context.attributes.title.contains("Snoozed") ? .purple : colorForAlarmType(context.attributes.alarmType)))
+                Image(systemName: (context.state.state == "firing" || context.isStale) ? "bell.fill" : (context.state.state == "snoozed" ? "zzz" : iconForAlarmType(context.attributes.alarmType)))
+                    .foregroundColor((context.state.state == "firing" || context.isStale) ? .red : (context.state.state == "snoozed" ? .purple : colorForAlarmType(context.attributes.alarmType)))
             }
             .widgetURL(URL(string: "dev.nedaa.app://alarm?alarmId=\(context.attributes.alarmId)&alarmType=\(context.attributes.alarmType)"))
         }
@@ -125,12 +135,16 @@ struct LockScreenView: View {
         context.state.state == "firing" || context.isStale
     }
 
+    private var isSnoozed: Bool {
+        context.state.state == "snoozed"
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             HStack(spacing: 16) {
-                Image(systemName: context.attributes.title.contains("Snoozed") ? "zzz" : iconForAlarmType(context.attributes.alarmType))
+                Image(systemName: isSnoozed ? "zzz" : iconForAlarmType(context.attributes.alarmType))
                     .font(.largeTitle)
-                    .foregroundColor(isFiringOrStale ? .red : (context.attributes.title.contains("Snoozed") ? .purple : colorForAlarmType(context.attributes.alarmType)))
+                    .foregroundColor(isFiringOrStale ? .red : (isSnoozed ? .purple : colorForAlarmType(context.attributes.alarmType)))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(context.attributes.title)
@@ -141,7 +155,7 @@ struct LockScreenView: View {
                         Text("Time to wake up!")
                             .font(.subheadline)
                             .foregroundColor(.orange)
-                    } else if context.attributes.title.contains("Snoozed") {
+                    } else if isSnoozed {
                         Text(context.attributes.triggerTime, style: .relative)
                             .font(.subheadline)
                             .foregroundColor(.purple)
@@ -169,6 +183,17 @@ struct LockScreenView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(Color.red)
+                        .cornerRadius(25)
+                }
+            } else if isSnoozed {
+                Link(destination: URL(string: "dev.nedaa.app://alarm?alarmId=\(context.attributes.alarmId)&alarmType=\(context.attributes.alarmType)")!) {
+                    Text("Wake Now")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.purple)
                         .cornerRadius(25)
                 }
             }

@@ -1706,6 +1706,34 @@
       }
     },
     "Time to wake up!": {},
+    "Wake Now": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استيقظ الآن"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake Now"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bangun Sekarang"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابھی اٹھیں"
+          }
+        }
+      }
+    },
     "today_progress": {
       "localizations": {
         "ar": {

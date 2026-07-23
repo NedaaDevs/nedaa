@@ -102,6 +102,7 @@ export interface StartLiveActivityParams {
   alarmType: AlarmType;
   title: string;
   triggerDate: Date;
+  state?: "countdown" | "snoozed";
 }
 
 export async function startLiveActivity(params: StartLiveActivityParams): Promise<string | null> {
@@ -110,7 +111,8 @@ export async function startLiveActivity(params: StartLiveActivityParams): Promis
     params.alarmId,
     params.alarmType,
     params.title,
-    params.triggerDate.getTime()
+    params.triggerDate.getTime(),
+    params.state ?? "countdown"
   );
 }
 

@@ -131,6 +131,7 @@ async function processSnoozeQueue() {
         alarmType: item.alarmType as ScheduledAlarmType,
         title: item.title,
         triggerDate: new Date(item.snoozeEndTime),
+        state: "snoozed",
       });
 
       processedIds.push(item.id);

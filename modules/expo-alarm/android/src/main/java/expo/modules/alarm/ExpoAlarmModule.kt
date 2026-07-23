@@ -295,7 +295,7 @@ class ExpoAlarmModule : Module() {
 
         // -- iOS-only stubs --
 
-        AsyncFunction("startLiveActivity") { _alarmId: String, _alarmType: String, _title: String, _triggerTimestamp: Double ->
+        AsyncFunction("startLiveActivity") { _alarmId: String, _alarmType: String, _title: String, _triggerTimestamp: Double, _state: String? ->
             null
         }
 

@@ -183,6 +183,7 @@ export const useAlarmStore = create<AlarmState>()(
               alarmType: alarm.alarmType,
               title: snoozeTitle,
               triggerDate: snoozeTime,
+              state: "snoozed",
             });
           } catch (error) {
             // Cosmetic (lock-screen countdown) — the snooze alarm itself is scheduled.
