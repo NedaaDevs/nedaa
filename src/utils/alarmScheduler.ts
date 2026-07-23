@@ -5,6 +5,31 @@ import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
+import { pickNextTrigger } from "@/utils/alarmTrigger";
+import { waitForHydration } from "@/utils/storeHydration";
+
+const ALARM_HYDRATION_TIMEOUT_MS = 5000;
+
+// Alarm stores rehydrate asynchronously; startup readers (scheduling, native
+// queue drain) must await this or they read defaults and lose recurrences.
+export const waitForAlarmStores = async (): Promise<void> => {
+  const onTimeout = () =>
+    alarmLog.w(
+      "Scheduler",
+      "waitForAlarmStores: hydration timed out — proceeding with current state"
+    );
+
+  await Promise.all([
+    waitForHydration(useAlarmStore.persist, {
+      timeoutMs: ALARM_HYDRATION_TIMEOUT_MS,
+      onTimeout,
+    }),
+    waitForHydration(useAlarmSettingsStore.persist, {
+      timeoutMs: ALARM_HYDRATION_TIMEOUT_MS,
+      onTimeout,
+    }),
+  ]);
+};
 
 export function getNextPrayerDate(
   prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha"
@@ -28,32 +53,13 @@ export function getNextPrayerDate(
   return null;
 }
 
-export function getNextFriday(): Date | null {
+function getFridayDhuhrCandidates(): Date[] {
   const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
 
-  const allTimings = [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].filter(Boolean);
-
-  for (const timing of allTimings) {
-    if (!timing) continue;
-
-    const dhuhrDate = new Date(timing.timings.dhuhr);
-    if (dhuhrDate.getDay() === 5 && dhuhrDate.getTime() > Date.now()) {
-      return dhuhrDate;
-    }
-  }
-
-  return null;
-}
-
-function applyTimingOffset(
-  prayerDate: Date,
-  timingMode: string | undefined,
-  minutesBefore: number | undefined
-): Date {
-  if (timingMode === "beforePrayerTime" && minutesBefore && minutesBefore > 0) {
-    return new Date(prayerDate.getTime() - minutesBefore * 60 * 1000);
-  }
-  return prayerDate;
+  return [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])]
+    .filter((timing): timing is NonNullable<typeof timing> => Boolean(timing))
+    .map((timing) => new Date(timing.timings.dhuhr))
+    .filter((dhuhrDate) => dhuhrDate.getDay() === 5);
 }
 
 export async function schedulePrayerAlarm(
@@ -73,24 +79,26 @@ export async function schedulePrayerAlarm(
     return null;
   }
 
-  const prayerDate = getNextPrayerDate(prayerName);
-  if (!prayerDate) {
-    alarmLog.w("Scheduler", `${alarmType}: no prayer data for ${prayerName} — alarm not scheduled`);
-    return null;
-  }
-
-  // Apply timing offset from settings
+  // Select by *trigger* time (prayer minus offset), not prayer time: right after a
+  // before-prayer alarm fires, today's prayer is still future but its trigger is past,
+  // and the next occurrence must come from tomorrow's data.
+  const { todayTimings, tomorrowTimings } = usePrayerTimesStore.getState();
   const timing = settingsType ? alarmSettings[settingsType]?.timing : null;
-  const triggerDate = applyTimingOffset(prayerDate, timing?.mode, timing?.minutesBefore);
+  const next = pickNextTrigger(
+    [todayTimings?.timings[prayerName], tomorrowTimings?.timings[prayerName]].map((iso) =>
+      iso ? new Date(iso) : null
+    ),
+    timing
+  );
 
-  // Ensure trigger date is in the future
-  if (triggerDate.getTime() <= Date.now()) {
+  if (!next) {
     alarmLog.w(
       "Scheduler",
-      `${alarmType}: computed trigger ${triggerDate.toISOString()} is in the past — skipped`
+      `${alarmType}: no future trigger for ${prayerName} — alarm not scheduled`
     );
     return null;
   }
+  const { triggerDate } = next;
 
   const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
   const title = i18next.t(`prayerTimes.${prayerName}`);
@@ -121,25 +129,16 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   if (!settings.enabled) return null;
 
   const alarmStore = useAlarmStore.getState();
-  const prayerDate = getNextFriday();
 
-  if (!prayerDate) return null;
+  // Friday always uses beforePrayerTime; selecting by trigger lets a passed offset
+  // roll over to the next Friday in the two-week window.
+  const next = pickNextTrigger(getFridayDhuhrCandidates(), settings.timing);
 
-  // Apply timing offset from settings (Friday always uses beforePrayerTime)
-  const triggerDate = applyTimingOffset(
-    prayerDate,
-    settings.timing?.mode,
-    settings.timing?.minutesBefore
-  );
-
-  // Ensure trigger date is in the future
-  if (triggerDate.getTime() <= Date.now()) {
-    alarmLog.w(
-      "Scheduler",
-      `jummah: computed trigger ${triggerDate.toISOString()} is in the past — skipped`
-    );
+  if (!next) {
+    alarmLog.w("Scheduler", "jummah: no future Friday trigger — alarm not scheduled");
     return null;
   }
+  const { triggerDate } = next;
 
   const id = generateDeterministicUUID(getAlarmKey(ScheduledAlarmType.JUMMAH, triggerDate));
   const title = i18next.t("prayerTimes.jumuah");

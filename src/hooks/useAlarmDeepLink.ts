@@ -5,7 +5,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { getSnoozeQueue, clearSnoozeQueue } from "expo-alarm";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
-import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
+import { completeAndRescheduleAlarm, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
 import { alarmLog } from "@/utils/alarmReport";
 
@@ -61,6 +61,9 @@ async function processCompletedQueue() {
   if (Platform.OS !== "android") return;
 
   try {
+    // Draining clears the native queue; without hydrated alarms the type can't
+    // resolve, so recurrence is lost while the evidence is consumed.
+    await waitForAlarmStores();
     const queue = await ExpoAlarm.getCompletedQueue();
     if (queue.length === 0) return;
 
@@ -84,6 +87,7 @@ async function processSnoozeQueue() {
   if (Platform.OS !== "android") return;
 
   try {
+    await waitForAlarmStores();
     const queue = await getSnoozeQueue();
     if (queue.length === 0) return;
 

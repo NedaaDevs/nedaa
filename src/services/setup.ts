@@ -10,7 +10,7 @@ import { useQadaStore } from "@/stores/qada";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 
 // Utils
-import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
+import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
@@ -33,6 +33,9 @@ export const appSetup = async (
     const { loadPrayerTimes } = prayerStore;
 
     await loadPrayerTimes();
+    // Gate scheduling on alarm-store rehydration; reading defaults here silently
+    // skips scheduling for the launch. Bounded so setup can never hang.
+    await waitForAlarmStores();
     await ensureAlarmsScheduled();
 
     // Check for city changes (if auto-update is enabled). Skipped in screenshot
