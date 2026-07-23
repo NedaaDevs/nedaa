@@ -3,7 +3,7 @@ import { View, XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
-import { QuranThemeType } from "@/enums/quran";
+import { MushafVersion, QuranThemeType } from "@/enums/quran";
 import { QURAN_THEME_COLORS, quranBodyInk } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { headerJuzLabel } from "@/utils/juz";
@@ -12,8 +12,8 @@ import {
   JUZ_NAME_LIGATURE_FONT,
   juzNameLigature,
   metadataFontFamily,
-  SURAH_NAME_LIGATURE_FONT,
   surahNameLigature,
+  surahNameLigatureFont,
 } from "@/utils/surahName";
 
 interface PageHeaderProps {
@@ -22,6 +22,8 @@ interface PageHeaderProps {
   surahNumber?: number | null;
   // null while the page is still downloading — header stays blank, not stale.
   juz: number | null;
+  // Picks the surah-name ligature font matching the page's script style.
+  version: MushafVersion;
   quranTheme: QuranThemeType;
   // Spread page side (unused for ordering — the print convention is fixed).
   side?: "left" | "right" | "single";
@@ -34,7 +36,14 @@ interface PageHeaderProps {
 // the physical right on every page, one uniform script on both sides (the
 // calligraphic name belongs to the surah frame band, not here). Hairline rule
 // on phones only.
-const PageHeader = ({ surahName, surahNumber, juz, quranTheme, topInset = 0 }: PageHeaderProps) => {
+const PageHeader = ({
+  surahName,
+  surahNumber,
+  juz,
+  version,
+  quranTheme,
+  topInset = 0,
+}: PageHeaderProps) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isLarge = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
@@ -44,9 +53,10 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme, topInset = 0 }: P
   // holders' digits — the ornament artwork keeps its gold tint, the text doesn't.
   const textColor = quranBodyInk(quranTheme);
 
-  // Arabic-script locales render both sides as the mushaf's calligraphic
-  // ligature glyphs (vocalized, matched style); Latin locales keep text.
-  const surahLig = surahNumber != null ? surahNameLigature(surahNumber) : null;
+  // Both sides render the mushaf's calligraphic ligature glyphs in every app
+  // locale — the running header belongs to the mushaf, not the UI. Localized
+  // text survives as the accessibility labels.
+  const surahLig = surahNumber != null ? surahNameLigature(surahNumber, version) : null;
   const juzLig = juz ? juzNameLigature(juz) : null;
   const surahText =
     surahNumber != null
@@ -70,14 +80,14 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme, topInset = 0 }: P
             accessibilityLabel={surahText}
             style={{
               color: textColor,
-              fontFamily: surahLig ? SURAH_NAME_LIGATURE_FONT : fontFamily,
+              fontFamily: surahLig ? surahNameLigatureFont(version) : fontFamily,
               fontSize: surahLig ? 20 : 14,
               // Calligraphic glyphs overflow the default text box — give them
               // headroom so marks/descenders don't clip.
               lineHeight: surahLig ? 30 : undefined,
               includeFontPadding: false,
             }}>
-            {surahLig ?? surahText}
+            {surahLig}
           </Text>
           <Text
             accessibilityLabel={juzText}
@@ -90,7 +100,7 @@ const PageHeader = ({ surahName, surahNumber, juz, quranTheme, topInset = 0 }: P
               // Optical lift — the juz glyph sits low in its em box.
               transform: juzLig ? [{ translateY: -2 }] : undefined,
             }}>
-            {juzLig ?? juzText}
+            {juzLig}
           </Text>
         </XStack>
       </View>

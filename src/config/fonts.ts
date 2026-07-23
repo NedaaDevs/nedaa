@@ -52,8 +52,11 @@ export const useLoadFonts = () => {
     UthmanicHafs: require("@/../assets/fonts/UthmanicHafs_V22.ttf"),
     // Quran text-reader body font: the flowing KFGQPC Hafs build (combining marks).
     Hafs: require("@/../assets/fonts/KFGQPC-HafsUthmanic.otf"),
-    // Calligraphic surah-name ligatures ("surahNNN surah-icon" → vocalized name glyph).
-    SurahNames: require("@/../assets/fonts/SurahNames.ttf"),
+    // Calligraphic surah-name ligatures, one font per mushaf version so the
+    // header script matches the page ("surahNNN[ surah-icon]" → vocalized name glyph).
+    "SurahNames-v1": require("@/../assets/fonts/SurahNames-v1.ttf"),
+    "SurahNames-v2": require("@/../assets/fonts/SurahNames-v2.ttf"),
+    "SurahNames-v4": require("@/../assets/fonts/SurahNames-v4.ttf"),
     // Juz-name ligatures + ornaments ("juzNNN" → vocalized juz name glyph).
     QuranCommon: require("@/../assets/fonts/QuranCommon.ttf"),
   });

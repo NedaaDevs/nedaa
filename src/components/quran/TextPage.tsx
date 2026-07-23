@@ -290,6 +290,7 @@ const TextPage = ({
           surahName={surahName}
           surahNumber={ayahs[0]?.surahNumber ?? null}
           juz={juz}
+          version={currentVersion}
           quranTheme={quranTheme}
         />
         <View style={[styles.column, styles.flowContent]}>{renderContent()}</View>
@@ -304,6 +305,7 @@ const TextPage = ({
         surahName={surahName}
         surahNumber={ayahs[0]?.surahNumber ?? null}
         juz={juz}
+        version={currentVersion}
         quranTheme={quranTheme}
         topInset={topInset}
       />

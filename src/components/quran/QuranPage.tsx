@@ -538,6 +538,7 @@ const QuranPage = ({
         surahName={headerSurah}
         surahNumber={headerSurahNumber}
         juz={pageAvailable ? juz : null}
+        version={version}
         quranTheme={quranTheme}
         side={side}
         topInset={topInset}
