@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { AccessibilityInfo, KeyboardAvoidingView } from "react-native";
+import { AccessibilityInfo, ScrollView } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
@@ -74,7 +74,11 @@ export default function AlarmTriggeredScreen() {
       <Theme name="dark">
         <StatusBar style="light" />
         <Background>
-          <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            automaticallyAdjustKeyboardInsets>
             {isSnoozed && snoozeEndTime ? (
               <SnoozedView
                 snoozeTimeRemaining={snoozeTimeRemaining}
@@ -97,7 +101,7 @@ export default function AlarmTriggeredScreen() {
                 onGraceExpire={handleGraceExpire}
               />
             )}
-          </KeyboardAvoidingView>
+          </ScrollView>
         </Background>
       </Theme>
     </>
