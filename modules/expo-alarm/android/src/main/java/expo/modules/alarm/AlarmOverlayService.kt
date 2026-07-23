@@ -156,6 +156,8 @@ class AlarmOverlayService : Service() {
     // Settings for restarting sound after grace
     private var alarmSound: String = "beep"
     private var alarmVolume: Float = 1.0f
+    private var gentleWakeUpEnabled: Boolean = false
+    private var gentleWakeUpDuration: Int = 3
     private var vibrationEnabled: Boolean = true
     private var vibrationPattern: String = "default"
 
@@ -215,6 +217,8 @@ class AlarmOverlayService : Service() {
         val settings = db.getAlarmSettings(alarmType)
         alarmSound = settings.sound.ifEmpty { "beep" }
         alarmVolume = settings.volume
+        gentleWakeUpEnabled = settings.gentleWakeUpEnabled
+        gentleWakeUpDuration = settings.gentleWakeUpDuration
         vibrationEnabled = settings.vibrationEnabled
         vibrationPattern = settings.vibrationPattern
     }
@@ -275,7 +279,7 @@ class AlarmOverlayService : Service() {
 
         // Restart alarm sound
         val audioManager = AlarmAudioManager.getInstance(this)
-        audioManager.startAlarmSound(alarmSound, alarmVolume)
+        audioManager.startAlarmSound(alarmSound, alarmVolume, gentleWakeUpEnabled, gentleWakeUpDuration)
         if (vibrationEnabled) {
             audioManager.startVibration(vibrationPattern)
         }

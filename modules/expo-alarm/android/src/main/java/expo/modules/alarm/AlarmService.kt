@@ -3,6 +3,7 @@ package expo.modules.alarm
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
@@ -32,7 +33,11 @@ class AlarmService : Service() {
                 putExtra(EXTRA_ALARM_TITLE, title)
                 putExtra(EXTRA_SOUND_NAME, soundName)
             }
-            context.startForegroundService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
 
         fun stop(context: Context) {
@@ -92,7 +97,12 @@ class AlarmService : Service() {
         audioManager.saveSystemVolume()
 
         val sound = if (settings.sound.isNotEmpty()) settings.sound else soundName
-        audioManager.startAlarmSound(sound, settings.volume)
+        audioManager.startAlarmSound(
+            sound,
+            settings.volume,
+            settings.gentleWakeUpEnabled,
+            settings.gentleWakeUpDuration
+        )
 
         if (settings.vibrationEnabled) {
             audioManager.startVibration(settings.vibrationPattern)

@@ -41,7 +41,11 @@ class AthanService : Service() {
                 putExtra(EXTRA_TITLE, title)
                 putExtra(EXTRA_STOP_LABEL, stopLabel)
             }
-            context.startForegroundService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
 
         fun stop(context: Context) {
@@ -57,6 +61,7 @@ class AthanService : Service() {
     private var mediaPlayer: MediaPlayer? = null
     private var currentAthanId: String? = null
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var audioFocusListener: AudioManager.OnAudioFocusChangeListener? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -157,27 +162,43 @@ class AthanService : Service() {
 
     private fun requestAudioFocus(athanId: String? = null): Boolean {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val attrs = buildAudioAttributes(athanId)
 
-        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-            .setAudioAttributes(attrs)
-            .setOnAudioFocusChangeListener { focusChange ->
+        // AudioFocusRequest is API 26; pre-O uses the stream-based request.
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                .setAudioAttributes(buildAudioAttributes(athanId))
+                .setOnAudioFocusChangeListener { focusChange ->
+                    Log.d(TAG, "Audio focus changed: $focusChange")
+                }
+                .build()
+            audioFocusRequest = request
+            audioManager.requestAudioFocus(request)
+        } else {
+            val listener = AudioManager.OnAudioFocusChangeListener { focusChange ->
                 Log.d(TAG, "Audio focus changed: $focusChange")
             }
-            .build()
-
-        audioFocusRequest = request
-        val result = audioManager.requestAudioFocus(request)
+            audioFocusListener = listener
+            @Suppress("DEPRECATION")
+            audioManager.requestAudioFocus(
+                listener,
+                getConfiguredAudioStream(athanId),
+                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+            )
+        }
         Log.d(TAG, "Audio focus request result: $result")
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
     private fun abandonAudioFocus() {
-        audioFocusRequest?.let {
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            audioManager.abandonAudioFocusRequest(it)
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+            audioFocusRequest = null
+        } else {
+            @Suppress("DEPRECATION")
+            audioFocusListener?.let { audioManager.abandonAudioFocus(it) }
+            audioFocusListener = null
         }
-        audioFocusRequest = null
     }
 
     private fun createAndStartPlayer(uri: Uri, athanId: String? = null) {

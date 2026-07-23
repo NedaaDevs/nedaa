@@ -8,6 +8,8 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -23,6 +25,11 @@ class AlarmAudioManager(private val context: Context) {
                 instance ?: AlarmAudioManager(context.applicationContext).also { instance = it }
             }
         }
+
+        // Gentle wake-up: ramp playback attenuation from this fraction of the target
+        // up to the target over the configured duration, one step per interval.
+        private const val RAMP_START_FRACTION = 0.2f
+        private const val RAMP_STEP_INTERVAL_MS = 1000L
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -31,6 +38,11 @@ class AlarmAudioManager(private val context: Context) {
     private var isVibrating = false
     private var volume: Float = 1.0f
     private var savedSystemVolume: Int? = null
+
+    // Gentle wake-up ramp runs on the service (main) thread via this Handler.
+    private val rampHandler = Handler(Looper.getMainLooper())
+    private var rampRunnable: Runnable? = null
+    private var rampGeneration = 0
 
     private fun getVibrator(): Vibrator {
         vibrator?.let { return it }
@@ -78,22 +90,36 @@ class AlarmAudioManager(private val context: Context) {
     }
 
     fun startAlarmSound(soundName: String): Boolean {
-        return startAlarmSound(soundName, 1.0f)
+        return startAlarmSound(soundName, 1.0f, false, 0)
+    }
+
+    fun startAlarmSound(soundName: String, volumeLevel: Float): Boolean {
+        return startAlarmSound(soundName, volumeLevel, false, 0)
     }
 
     @Synchronized
-    fun startAlarmSound(soundName: String, volumeLevel: Float): Boolean {
+    fun startAlarmSound(
+        soundName: String,
+        volumeLevel: Float,
+        gentleWakeUpEnabled: Boolean,
+        gentleWakeUpDurationMinutes: Int
+    ): Boolean {
         stopAlarmSound()
-        log("Starting alarm sound=$soundName volumeLevel=$volumeLevel")
+        log("Starting alarm sound=$soundName volumeLevel=$volumeLevel gentle=$gentleWakeUpEnabled/${gentleWakeUpDurationMinutes}min")
         try {
             volume = volumeLevel.coerceIn(0f, 1f)
 
-            // Set alarm stream volume based on setting (0.0-1.0 mapped to system range)
+            // Set alarm stream volume based on setting (0.0-1.0 mapped to system range).
+            // The gentle ramp modulates per-player attenuation only, never this stream,
+            // so it never fights saveSystemVolume/restoreSystemVolume.
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             val targetVol = (maxVol * volumeLevel).toInt().coerceIn(1, maxVol)
             audioManager.setStreamVolume(AudioManager.STREAM_ALARM, targetVol, 0)
             log("Set system alarm volume to $targetVol/$maxVol (from setting $volumeLevel)")
+
+            val gentleActive = gentleWakeUpEnabled && gentleWakeUpDurationMinutes > 0
+            val startVolume = if (gentleActive) volume * RAMP_START_FRACTION else volume
 
             if (soundName.startsWith("content://")) {
                 // System sound URI - use Ringtone API for better compatibility
@@ -101,7 +127,7 @@ class AlarmAudioManager(private val context: Context) {
                 systemRingtone = RingtoneManager.getRingtone(context, uri)?.apply {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                         isLooping = true
-                        volume = volumeLevel
+                        volume = startVolume
                     }
                     play()
                 }
@@ -112,12 +138,15 @@ class AlarmAudioManager(private val context: Context) {
                     systemRingtone = RingtoneManager.getRingtone(context, defaultUri)?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                             isLooping = true
-                            volume = volumeLevel
+                            volume = startVolume
                         }
                         play()
                     }
                 }
 
+                if (systemRingtone != null && gentleActive) {
+                    startVolumeRamp(volume, gentleWakeUpDurationMinutes)
+                }
                 return systemRingtone != null
             } else {
                 // Bundled resource - use MediaPlayer
@@ -137,7 +166,7 @@ class AlarmAudioManager(private val context: Context) {
                     )
                     setDataSource(context, uri)
                     isLooping = true
-                    setVolume(volume, volume)
+                    setVolume(startVolume, startVolume)
                     setOnPreparedListener { mp ->
                         mp.start()
                         log("MediaPlayer prepared and started")
@@ -149,10 +178,14 @@ class AlarmAudioManager(private val context: Context) {
                     prepareAsync()
                 }
 
+                if (gentleActive) {
+                    startVolumeRamp(volume, gentleWakeUpDurationMinutes)
+                }
                 return true
             }
         } catch (e: Exception) {
             log("Failed to start alarm sound: ${e.message}")
+            cancelVolumeRamp()
             mediaPlayer?.release()
             mediaPlayer = null
             systemRingtone?.stop()
@@ -161,8 +194,61 @@ class AlarmAudioManager(private val context: Context) {
         }
     }
 
+    // Steps the per-player attenuation from RAMP_START_FRACTION*target up to target,
+    // one step per RAMP_STEP_INTERVAL_MS, over the given duration. A generation token
+    // makes any step that survives a cancel a no-op, so nothing fires after stop.
+    private fun startVolumeRamp(targetAtten: Float, durationMinutes: Int) {
+        cancelVolumeRamp()
+        val durationMs = durationMinutes * 60_000L
+        val totalSteps = (durationMs / RAMP_STEP_INTERVAL_MS).toInt().coerceAtLeast(1)
+        val startAtten = targetAtten * RAMP_START_FRACTION
+        val generation = ++rampGeneration
+        var step = 0
+        log("Gentle wake-up ramp $startAtten -> $targetAtten over ${durationMinutes}min ($totalSteps steps)")
+        rampRunnable = object : Runnable {
+            override fun run() {
+                if (generation != rampGeneration) return
+                step++
+                val fraction = (step.toFloat() / totalSteps).coerceAtMost(1f)
+                applyPlaybackVolume(startAtten + (targetAtten - startAtten) * fraction)
+                if (fraction < 1f) {
+                    rampHandler.postDelayed(this, RAMP_STEP_INTERVAL_MS)
+                } else {
+                    rampRunnable = null
+                    log("Gentle wake-up ramp complete at $targetAtten")
+                }
+            }
+        }
+        rampHandler.postDelayed(rampRunnable!!, RAMP_STEP_INTERVAL_MS)
+    }
+
+    private fun cancelVolumeRamp() {
+        rampGeneration++
+        rampRunnable?.let { rampHandler.removeCallbacks(it) }
+        rampRunnable = null
+    }
+
+    // Applies attenuation to whichever player is active. Does not touch the `volume`
+    // field (the ramp target) or the STREAM_ALARM system volume.
+    private fun applyPlaybackVolume(atten: Float) {
+        val v = atten.coerceIn(0f, 1f)
+        try {
+            mediaPlayer?.setVolume(v, v)
+        } catch (e: Exception) {
+            log("applyPlaybackVolume mediaPlayer failed: ${e.message}")
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                systemRingtone?.volume = v
+            } catch (e: Exception) {
+                log("applyPlaybackVolume ringtone failed: ${e.message}")
+            }
+        }
+    }
+
     @Synchronized
     fun stopAlarmSound() {
+        cancelVolumeRamp()
         try {
             mediaPlayer?.let {
                 if (it.isPlaying) it.stop()
