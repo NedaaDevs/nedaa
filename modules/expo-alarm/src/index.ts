@@ -415,7 +415,7 @@ export interface NativeAlarmSettings {
   snoozeDuration: number;
 }
 
-export function openNativeSettings(alarmType: "fajr" | "friday"): boolean {
+export function openNativeSettings(alarmType: "fajr" | "jummah"): boolean {
   if (!isAvailable) return false;
   try {
     return NativeModule.openNativeSettings(alarmType);
@@ -425,7 +425,7 @@ export function openNativeSettings(alarmType: "fajr" | "friday"): boolean {
 }
 
 export async function getAlarmSettings(
-  alarmType: "fajr" | "friday"
+  alarmType: "fajr" | "jummah"
 ): Promise<NativeAlarmSettings | null> {
   if (!isAvailable) return null;
   try {
@@ -436,7 +436,7 @@ export async function getAlarmSettings(
 }
 
 export async function setAlarmSettings(
-  alarmType: "fajr" | "friday",
+  alarmType: "fajr" | "jummah",
   settings: Partial<NativeAlarmSettings>
 ): Promise<boolean> {
   if (!isAvailable) return false;
@@ -447,7 +447,7 @@ export async function setAlarmSettings(
   }
 }
 
-export function isAlarmTypeEnabled(alarmType: "fajr" | "friday"): boolean {
+export function isAlarmTypeEnabled(alarmType: "fajr" | "jummah"): boolean {
   if (!isAvailable) return false;
   try {
     return NativeModule.isAlarmTypeEnabled(alarmType);

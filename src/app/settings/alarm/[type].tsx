@@ -17,17 +17,18 @@ import {
   SoundPicker,
   VolumeSlider,
   ChallengePicker,
+  GentleWakeUpSettings,
   VibrationSettings,
   SnoozeSettings,
   TimingSettings,
 } from "@/components/alarm";
 
-import { Volume2, Brain, Vibrate, Clock, Timer } from "lucide-react-native";
+import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise } from "lucide-react-native";
 
 import * as ExpoAlarm from "expo-alarm";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { ScheduledAlarmType } from "@/enums/alarm";
+import { toScheduledAlarmType } from "@/utils/alarmTypes";
 import { useAlarmStore } from "@/stores/alarm";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
@@ -77,6 +78,9 @@ const AlarmTypeSettingsScreen = () => {
   const { t } = useTranslation();
   const { type } = useLocalSearchParams<{ type: string }>();
   const alarmType = type as AlarmType;
+  // Native settings storage and scheduled alarms are keyed by the scheduled type
+  // ("jummah"), not the settings key ("friday") — fire paths look up by it.
+  const scheduledType = toScheduledAlarmType(alarmType);
   const hapticSelection = useHaptic("selection");
 
   const settings = useAlarmSettingsStore((state) =>
@@ -89,15 +93,14 @@ const AlarmTypeSettingsScreen = () => {
   const debouncedReschedule = useCallback(() => {
     if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
     rescheduleTimerRef.current = setTimeout(async () => {
-      const cancelType = alarmType === "fajr" ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
-      await useAlarmStore.getState().cancelAlarmsByType(cancelType as ScheduledAlarmType);
+      await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
       if (alarmType === "fajr") {
         await scheduleFajrAlarm();
       } else {
         await scheduleFridayAlarm();
       }
     }, 500);
-  }, [alarmType]);
+  }, [alarmType, scheduledType]);
 
   const handleChange = (changes: Partial<AlarmTypeSettings>) => {
     updateSettings(alarmType, changes);
@@ -133,7 +136,7 @@ const AlarmTypeSettingsScreen = () => {
     }
 
     if (Object.keys(nativeSettings).length > 0) {
-      ExpoAlarm.setAlarmSettings(alarmType, nativeSettings).catch((e: unknown) =>
+      ExpoAlarm.setAlarmSettings(scheduledType, nativeSettings).catch((e: unknown) =>
         console.warn("Failed to sync alarm settings to native:", e)
       );
     }
@@ -155,9 +158,7 @@ const AlarmTypeSettingsScreen = () => {
           await scheduleFridayAlarm();
         }
       } else {
-        const cancelType =
-          alarmType === "fajr" ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
-        await useAlarmStore.getState().cancelAlarmsByType(cancelType);
+        await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
       }
     } catch {
       handleChange({ enabled: !enabled });
@@ -239,6 +240,19 @@ const AlarmTypeSettingsScreen = () => {
                   />
                 </VStack>
               </SettingsSection>
+
+              {/* Gentle Wake-Up Settings (Android-only: iOS alarm sound is OS-controlled) */}
+              {Platform.OS === "android" && (
+                <SettingsSection title={t("alarm.settings.gentleWakeUp")} icon={Sunrise}>
+                  <Text size="sm" color="$typographySecondary" marginBottom="$2">
+                    {t("alarm.settings.gentleWakeUpDescription")}
+                  </Text>
+                  <GentleWakeUpSettings
+                    value={settings.gentleWakeUp}
+                    onChange={(gentleWakeUp) => handleChange({ gentleWakeUp })}
+                  />
+                </SettingsSection>
+              )}
 
               {/* Challenge Settings */}
               <SettingsSection title={t("alarm.settings.challenge")} icon={Brain}>

@@ -53,6 +53,16 @@ public class ExpoAlarmModule: Module {
         Events("onPlaybackFinished")
 
         OnCreate {
+            // Settings were historically saved under "friday" while fired alarms look up
+            // "jummah"; rename once, keeping an existing "jummah" entry if both are present.
+            let defaults = UserDefaults.standard
+            if let legacy = defaults.dictionary(forKey: "alarm_settings_friday") {
+                if defaults.dictionary(forKey: "alarm_settings_jummah") == nil {
+                    defaults.set(legacy, forKey: "alarm_settings_jummah")
+                }
+                defaults.removeObject(forKey: "alarm_settings_friday")
+            }
+
             AlarmObserver.startObserving()
 
             #if canImport(AlarmKit)
@@ -102,7 +112,7 @@ public class ExpoAlarmModule: Module {
         }
 
         AsyncFunction("getAuthorizationStatus") { (promise: Promise) in
-            self.resolveAuthorizationStatus(promise: promise)
+            self.readAuthorizationStatus(promise: promise)
         }
 
         AsyncFunction("scheduleAlarm") { (
@@ -551,6 +561,27 @@ public class ExpoAlarmModule: Module {
     }
 
     // MARK: - Private Helpers
+
+    // Reads the current AlarmKit authorization without prompting; requestAuthorization
+    // is the only path that may present the system consent dialog.
+    private func readAuthorizationStatus(promise: Promise) {
+        #if canImport(AlarmKit)
+        if #available(iOS 26.1, *) {
+            switch AlarmManager.shared.authorizationState {
+            case .authorized:
+                promise.resolve("authorized")
+            case .denied:
+                promise.resolve("denied")
+            case .notDetermined:
+                promise.resolve("notDetermined")
+            @unknown default:
+                promise.resolve("notDetermined")
+            }
+            return
+        }
+        #endif
+        promise.resolve("denied")
+    }
 
     private func resolveAuthorizationStatus(promise: Promise) {
         #if canImport(AlarmKit)

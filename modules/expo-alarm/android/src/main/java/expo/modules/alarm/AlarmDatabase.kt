@@ -157,6 +157,11 @@ class AlarmDatabase private constructor(private val context: Context) :
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
         db.enableWriteAheadLogging()
+
+        // Settings were historically saved under "friday" while fired alarms look up
+        // "jummah"; rename once, keeping an existing "jummah" row if both are present.
+        db.execSQL("UPDATE OR IGNORE alarm_settings SET alarm_type = 'jummah' WHERE alarm_type = 'friday'")
+        db.execSQL("DELETE FROM alarm_settings WHERE alarm_type = 'friday'")
     }
 
     // -- Alarms --
