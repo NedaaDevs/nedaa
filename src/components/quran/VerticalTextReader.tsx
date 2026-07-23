@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { View, ViewToken } from "react-native";
-import Animated, { runOnUI } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
+import { scheduleOnUI } from "react-native-worklets";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -83,10 +84,10 @@ const VerticalTextReader = ({
     // While recitation drives the view the teleprompter creep parks entirely —
     // the page flips below do all the movement (stop → flip → stop).
     const parked = !!followTarget;
-    runOnUI(() => {
+    scheduleOnUI(() => {
       "worklet";
       maxOffset.value = parked ? 0 : Number.MAX_SAFE_INTEGER;
-    })();
+    });
     if (!followTarget) {
       lastFollowPageRef.current = 0;
       return;

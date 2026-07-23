@@ -24,4 +24,18 @@ module.exports = defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    // Type-aware pass flagging every use of an @deprecated API (e.g. reanimated's
+    // runOnUI). Warning, not error: deprecations are advisory until the dep that
+    // owns them is upgraded.
+    files: ["src/**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-deprecated": "warn",
+    },
+  },
 ]);

@@ -6,7 +6,7 @@ import Animated, {
   useFrameCallback,
   useSharedValue,
 } from "react-native-reanimated";
-import { runOnUI, scheduleOnRN } from "react-native-worklets";
+import { scheduleOnRN, scheduleOnUI } from "react-native-worklets";
 
 // Continuous "teleprompter" glide for a vertical list: each frame (UI thread)
 // advances an independent `target` by pxPerSec × frame time and scrollTo()s there.
@@ -106,12 +106,12 @@ export const useAutoScroll = <ItemT>({
   // UI worklet — writing a shared value off-render.
   useEffect(() => {
     if (playing) {
-      runOnUI(() => {
+      scheduleOnUI(() => {
         // A just-mounted list reports liveOffset 0 before its first scroll event;
         // fall back to the current page's offset so the glide doesn't start at the top.
         target.value =
           liveOffset.value === 0 && initialOffset > 0 ? initialOffset : liveOffset.value;
-      })();
+      });
     }
     frame.setActive(playing);
   }, [playing, frame, target, liveOffset, initialOffset]);
@@ -120,10 +120,10 @@ export const useAutoScroll = <ItemT>({
   // sync-to-recited) must move `target` too, or the frame loop drags the view back.
   const jumpTo = useCallback(
     (offset: number) => {
-      runOnUI(() => {
+      scheduleOnUI(() => {
         target.value = offset;
         scrollTo(animatedRef, 0, offset, false);
-      })();
+      });
     },
     [animatedRef, target]
   );
@@ -131,9 +131,9 @@ export const useAutoScroll = <ItemT>({
   // Re-seed the glide from the list's real position — for index-based jumps whose
   // pixel offset isn't knowable up front (variable-height text pages).
   const syncToLive = useCallback(() => {
-    runOnUI(() => {
+    scheduleOnUI(() => {
       target.value = liveOffset.value;
-    })();
+    });
   }, [liveOffset, target]);
 
   // liveOffset/layoutH are exposed so a follower (read-along) can decide, on the UI

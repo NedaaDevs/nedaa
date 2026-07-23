@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useWindowDimensions, View, ViewToken } from "react-native";
-import Animated, { runOnUI, scrollTo } from "react-native-reanimated";
+import Animated, { scrollTo } from "react-native-reanimated";
+import { scheduleOnUI } from "react-native-worklets";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -79,10 +80,10 @@ const VerticalReader = ({
   useEffect(() => {
     if (!followTarget) {
       lastFollowRef.current = "";
-      runOnUI(() => {
+      scheduleOnUI(() => {
         "worklet";
         maxOffset.value = Number.MAX_SAFE_INTEGER; // no recitation → uncapped glide
-      })();
+      });
       return;
     }
     const key = `${followTarget.page}:${followTarget.line}`;
@@ -97,7 +98,7 @@ const VerticalReader = ({
       "Follow",
       `${followTarget.surah}:${followTarget.ayah} p${followTarget.page} l${followTarget.line} lineTop=${Math.round(lineTop)}`
     );
-    runOnUI(() => {
+    scheduleOnUI(() => {
       "worklet";
       // While recitation drives the view, the teleprompter creep parks entirely —
       // all movement comes from the discrete nudge below (stop → glide → stop
@@ -110,7 +111,7 @@ const VerticalReader = ({
       const dest = Math.max(0, lineTop - view * 0.35);
       glideTarget.value = dest; // keep the auto-scroll glide in step with the follow
       scrollTo(animatedRef, 0, dest, true);
-    })();
+    });
   }, [
     followTarget,
     insets.top,
