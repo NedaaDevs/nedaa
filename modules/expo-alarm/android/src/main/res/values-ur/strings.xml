@@ -47,6 +47,7 @@
     <!-- Challenge options -->
     <string name="challenge_tap">ٹیپ</string>
     <string name="challenge_math">ریاضی</string>
+    <string name="challenge_dhikr">ذکر</string>
     <string name="difficulty_easy">آسان</string>
     <string name="difficulty_medium">درمیانہ</string>
     <string name="difficulty_hard">مشکل</string>
@@ -72,6 +73,12 @@
     <string name="overlay_math_submit">جمع کریں</string>
     <string name="overlay_math_wrong">غلط جواب، دوبارہ کوشش کریں</string>
     <string name="overlay_math_invalid">براہ کرم ایک نمبر درج کریں</string>
+
+    <!-- Overlay - Dhikr Challenge -->
+    <string name="overlay_dhikr_instruction_one">بند کرنے کے لیے 1 ذکر ٹائپ کریں</string>
+    <string name="overlay_dhikr_instruction_many">بند کرنے کے لیے %d ذکر ٹائپ کریں</string>
+    <string name="overlay_dhikr_progress">ذکر %1$d از %2$d</string>
+    <string name="overlay_dhikr_hint">یہاں ٹائپ کریں</string>
 
     <!-- Overlay - Start Solving -->
     <string name="overlay_start_solving">حل شروع کریں</string>

@@ -51,6 +51,27 @@ class AlarmOverlayService : Service() {
         // Grace period seconds (must match JS GRACE_PERIOD_SECONDS)
         private val GRACE_TAP = mapOf("easy" to 10, "medium" to 15, "hard" to 20)
         private val GRACE_MATH = mapOf("easy" to 15, "medium" to 20, "hard" to 30)
+        private val GRACE_DHIKR = mapOf("easy" to 20, "medium" to 30, "hard" to 45)
+
+        // Dhikr typing challenge pool (must match JS DHIKR_PHRASES)
+        private val DHIKR_EASY = listOf(
+            DhikrPhrase("سبحان الله", "Subhanallah"),
+            DhikrPhrase("الحمد لله", "Alhamdulillah"),
+            DhikrPhrase("الله أكبر", "Allahu Akbar")
+        )
+        private val DHIKR_MEDIUM = listOf(
+            DhikrPhrase("سبحان الله وبحمده", "Subhanallahi wa bihamdihi"),
+            DhikrPhrase("لا إله إلا الله", "La ilaha illa Allah"),
+            DhikrPhrase("أستغفر الله", "Astaghfirullah"),
+            DhikrPhrase("أعوذ بالله من الشيطان الرجيم", "A'udhu billahi minash shaytanir rajim")
+        )
+        private val DHIKR_HARD = listOf(
+            DhikrPhrase("لا حول ولا قوة إلا بالله", "La hawla wa la quwwata illa billah"),
+            DhikrPhrase(
+                "سبحان الله وبحمده سبحان الله العظيم",
+                "Subhanallahi wa bihamdihi subhanallahil azim"
+            )
+        )
 
         // UI colors — Nedaa dark brand (tamagui.config.ts dark theme), always-dark overlay
         private const val COLOR_BG = "#F0222831"            // darkBackground scrim
@@ -129,10 +150,22 @@ class AlarmOverlayService : Service() {
     private var currentMathAnswer: Int = 0
     private var completedMathChallenges: Int = 0
 
+    // Dhikr challenge state
+    private var dhikrArabicText: TextView? = null
+    private var dhikrTranslitText: TextView? = null
+    private var dhikrInput: EditText? = null
+    private var dhikrSubmitButton: Button? = null
+    private var dhikrProgressText: TextView? = null
+    private var currentDhikrPhrase: DhikrPhrase? = null
+    private var completedDhikrChallenges: Int = 0
+    private var lastDhikrIndex: Int = -1
+
     private var autoSnoozeRunnable: Runnable? = null
 
     // Grace period state
+    private var graceRow: LinearLayout? = null
     private var graceProgressBar: ProgressBar? = null
+    private var graceSecondsText: TextView? = null
     private var graceExpiredText: TextView? = null
     private var graceDurationMs: Long = 0
     private var graceStartTime: Long = 0
@@ -151,6 +184,7 @@ class AlarmOverlayService : Service() {
                 val progress = ((remaining.toFloat() / graceDurationMs) * 10000).toInt()
                 graceProgressBar?.progress = progress
                 updateGraceBarColor(remaining.toFloat() / graceDurationMs)
+                updateGraceSeconds(remaining)
                 graceHandler.postDelayed(this, GRACE_UPDATE_INTERVAL_MS)
             }
         }
@@ -163,6 +197,8 @@ class AlarmOverlayService : Service() {
     private var gentleWakeUpDuration: Int = 3
     private var vibrationEnabled: Boolean = true
     private var vibrationPattern: String = "default"
+
+    private data class DhikrPhrase(val arabic: String, val transliteration: String)
 
     override fun onCreate() {
         super.onCreate()
@@ -209,6 +245,7 @@ class AlarmOverlayService : Service() {
         graceDurationMs = when (type) {
             "tap" -> (GRACE_TAP[difficulty] ?: 10) * 1000L
             "math" -> (GRACE_MATH[difficulty] ?: 15) * 1000L
+            "dhikr" -> (GRACE_DHIKR[difficulty] ?: 20) * 1000L
             else -> 0L
         }
 
@@ -243,7 +280,9 @@ class AlarmOverlayService : Service() {
         // Reset the countdown
         graceStartTime = System.currentTimeMillis()
         graceProgressBar?.progress = 10000
-        graceProgressBar?.visibility = View.VISIBLE
+        updateGraceSeconds(graceDurationMs)
+        graceSecondsText?.visibility = View.VISIBLE
+        graceRow?.visibility = View.VISIBLE
 
         // If expired, silence alarm again
         if (graceExpired) {
@@ -278,6 +317,7 @@ class AlarmOverlayService : Service() {
 
         graceProgressBar?.progress = 0
         updateGraceBarColor(0f)
+        graceSecondsText?.visibility = View.GONE
         graceExpiredText?.visibility = View.VISIBLE
 
         // Restart alarm sound
@@ -297,7 +337,8 @@ class AlarmOverlayService : Service() {
         graceExpired = false
         graceTimerRunning = false
         graceStartTime = 0
-        graceProgressBar?.visibility = View.GONE
+        graceRow?.visibility = View.GONE
+        graceSecondsText?.visibility = View.GONE
         graceProgressBar?.progress = 10000
         graceExpiredText?.visibility = View.GONE
 
@@ -312,6 +353,18 @@ class AlarmOverlayService : Service() {
             else -> Color.parseColor(COLOR_ERROR)
         }
         graceProgressBar?.progressTintList = ColorStateList.valueOf(color)
+    }
+
+    // Numeric seconds readout beside the bar: muted, then warning/error in the final 5s.
+    private fun updateGraceSeconds(remainingMs: Long) {
+        val seconds = ((remainingMs + 999) / 1000).toInt()
+        val color = when {
+            remainingMs > 5000 -> Color.parseColor(COLOR_TEXT_MUTED)
+            remainingMs > 2000 -> Color.parseColor(COLOR_WARNING)
+            else -> Color.parseColor(COLOR_ERROR)
+        }
+        graceSecondsText?.text = "${seconds}s"
+        graceSecondsText?.setTextColor(color)
     }
 
     // --- Notification ---
@@ -348,6 +401,11 @@ class AlarmOverlayService : Service() {
                 getString(R.string.overlay_notification_math_one)
             } else {
                 getString(R.string.overlay_notification_math_many, challengeCount)
+            }
+            "dhikr" -> if (challengeCount == 1) {
+                getString(R.string.overlay_dhikr_instruction_one)
+            } else {
+                getString(R.string.overlay_dhikr_instruction_many, challengeCount)
             }
             "none" -> getString(R.string.overlay_notification_dismiss)
             else -> getString(R.string.overlay_notification_tap, requiredTaps)
@@ -430,23 +488,39 @@ class AlarmOverlayService : Service() {
         }
         card.addView(titleView)
 
-        // Grace period progress bar (hidden initially, shown on first interaction)
+        // Grace period bar + numeric seconds readout (hidden until first interaction)
         graceProgressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 10000
             progress = 10000
             progressTintList = ColorStateList.valueOf(Color.parseColor(COLOR_PRIMARY))
             progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#33FFFFFF"))
+            layoutParams = LinearLayout.LayoutParams(0, (4 * dp).toInt(), 1f)
+        }
+        graceSecondsText = TextView(this).apply {
+            textSize = 12f
+            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
+            gravity = Gravity.CENTER
+            minWidth = (28 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginStart = (8 * dp).toInt() }
+        }
+        graceRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             visibility = View.GONE
-            val params = LinearLayout.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                (4 * dp).toInt()
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 topMargin = (8 * dp).toInt()
                 bottomMargin = (4 * dp).toInt()
             }
-            layoutParams = params
+            addView(graceProgressBar)
+            addView(graceSecondsText)
         }
-        card.addView(graceProgressBar)
+        card.addView(graceRow)
 
         // Grace expired text (hidden initially)
         graceExpiredText = TextView(this).apply {
@@ -479,6 +553,7 @@ class AlarmOverlayService : Service() {
         }
         when (challengeType) {
             "math" -> buildMathChallengeUI(challengeContainer!!, dp)
+            "dhikr" -> buildDhikrChallengeUI(challengeContainer!!, dp)
             "none" -> buildDirectDismissUI(challengeContainer!!, dp)
             else -> buildTapChallengeUI(challengeContainer!!, dp)
         }
@@ -529,7 +604,7 @@ class AlarmOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
         }
 
-        val windowFlags = if (challengeType == "math") {
+        val windowFlags = if (challengeType == "math" || challengeType == "dhikr") {
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
@@ -573,6 +648,11 @@ class AlarmOverlayService : Service() {
                 getString(R.string.overlay_math_instruction_one)
             } else {
                 getString(R.string.overlay_math_instruction_many, challengeCount)
+            }
+            "dhikr" -> if (challengeCount == 1) {
+                getString(R.string.overlay_dhikr_instruction_one)
+            } else {
+                getString(R.string.overlay_dhikr_instruction_many, challengeCount)
             }
             "none" -> getString(R.string.overlay_dismiss_instruction)
             else -> getString(R.string.overlay_tap_instruction, requiredTaps)
@@ -806,6 +886,123 @@ class AlarmOverlayService : Service() {
         generateMathProblem()
     }
 
+    private fun buildDhikrChallengeUI(card: LinearLayout, dp: Float) {
+        val subtitleView = TextView(this).apply {
+            text = if (challengeCount == 1) {
+                getString(R.string.overlay_dhikr_instruction_one)
+            } else {
+                getString(R.string.overlay_dhikr_instruction_many, challengeCount)
+            }
+            textSize = 15f
+            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
+            gravity = Gravity.CENTER
+            setPadding(0, (8 * dp).toInt(), 0, (16 * dp).toInt())
+        }
+        card.addView(subtitleView)
+
+        if (challengeCount > 1) {
+            dhikrProgressText = TextView(this).apply {
+                text = getString(R.string.overlay_dhikr_progress, 1, challengeCount)
+                textSize = 13f
+                setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, (12 * dp).toInt())
+            }
+            card.addView(dhikrProgressText)
+        }
+
+        // Phrase display: Arabic large + transliteration beneath (copy target)
+        val phraseContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_INPUT_BG))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt(), (20 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = (20 * dp).toInt() }
+            layoutParams = params
+        }
+
+        dhikrArabicText = TextView(this).apply {
+            textSize = 34f
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            gravity = Gravity.CENTER
+            textDirection = View.TEXT_DIRECTION_RTL
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setPadding(0, 0, 0, (8 * dp).toInt())
+        }
+        phraseContainer.addView(dhikrArabicText)
+
+        dhikrTranslitText = TextView(this).apply {
+            textSize = 18f
+            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
+            gravity = Gravity.CENTER
+        }
+        phraseContainer.addView(dhikrTranslitText)
+        card.addView(phraseContainer)
+
+        dhikrInput = EditText(this).apply {
+            hint = getString(R.string.overlay_dhikr_hint)
+            textSize = 22f
+            setTextColor(Color.parseColor(COLOR_TEXT))
+            setHintTextColor(Color.parseColor("#FF8A897A"))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_INPUT_BG))
+                cornerRadius = 12 * dp
+            }
+            gravity = Gravity.CENTER
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = (16 * dp).toInt() }
+            layoutParams = params
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    onDhikrSubmitted()
+                    true
+                } else {
+                    false
+                }
+            }
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (!s.isNullOrEmpty()) onInteraction()
+                }
+            })
+        }
+        card.addView(dhikrInput)
+
+        dhikrSubmitButton = Button(this).apply {
+            text = getString(R.string.overlay_math_submit)
+            textSize = 18f
+            isAllCaps = false
+            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(COLOR_PRIMARY))
+                cornerRadius = 16 * dp
+            }
+            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = params
+            setOnClickListener { onDhikrSubmitted() }
+        }
+        card.addView(dhikrSubmitButton)
+
+        generateDhikrPhrase()
+    }
+
     // --- Challenge Logic ---
 
     private fun generateMathProblem() {
@@ -884,6 +1081,75 @@ class AlarmOverlayService : Service() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         graceHandler.postDelayed({
             setButtonColor(mathSubmitButton, COLOR_PRIMARY)
+        }, 500)
+    }
+
+    private fun dhikrPool(): List<DhikrPhrase> = when (challengeDifficulty) {
+        "medium" -> DHIKR_MEDIUM
+        "hard" -> DHIKR_HARD
+        else -> DHIKR_EASY
+    }
+
+    // Random phrase from the difficulty pool, avoiding an immediate repeat.
+    private fun generateDhikrPhrase() {
+        val pool = dhikrPool()
+        var index = Random.nextInt(pool.size)
+        if (pool.size > 1) {
+            while (index == lastDhikrIndex) index = Random.nextInt(pool.size)
+        }
+        lastDhikrIndex = index
+        val phrase = pool[index]
+        currentDhikrPhrase = phrase
+        dhikrArabicText?.text = phrase.arabic
+        dhikrTranslitText?.text = phrase.transliteration
+        dhikrInput?.setText("")
+        dhikrProgressText?.text = getString(R.string.overlay_dhikr_progress, completedDhikrChallenges + 1, challengeCount)
+    }
+
+    // Forgiving match: lowercase, strip Arabic diacritics + tatweel, keep only
+    // letters; accept the transliteration or the Arabic form. Mirrors JS normalizeDhikr.
+    private fun normalizeDhikr(input: String): String {
+        return input.lowercase()
+            .replace(Regex("[\\u064B-\\u0652\\u0670\\u0640]"), "")
+            .replace(Regex("[^\\p{L}]"), "")
+    }
+
+    private fun matchesDhikr(input: String, phrase: DhikrPhrase): Boolean {
+        val normalized = normalizeDhikr(input)
+        if (normalized.isEmpty()) return false
+        return normalized == normalizeDhikr(phrase.transliteration) ||
+                normalized == normalizeDhikr(phrase.arabic)
+    }
+
+    private fun onDhikrSubmitted() {
+        onInteraction()
+        val phrase = currentDhikrPhrase ?: return
+        val input = dhikrInput?.text?.toString() ?: ""
+
+        if (matchesDhikr(input, phrase)) {
+            completedDhikrChallenges++
+
+            if (completedDhikrChallenges >= challengeCount) {
+                completeAlarm()
+            } else {
+                setButtonColor(dhikrSubmitButton, COLOR_SUCCESS)
+                graceHandler.postDelayed({
+                    setButtonColor(dhikrSubmitButton, COLOR_PRIMARY)
+                    resetGraceForNextRound()
+                    generateDhikrPhrase()
+                }, 300)
+            }
+        } else {
+            showDhikrError(getString(R.string.overlay_math_wrong))
+            dhikrInput?.setText("")
+        }
+    }
+
+    private fun showDhikrError(message: String) {
+        setButtonColor(dhikrSubmitButton, COLOR_ERROR)
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        graceHandler.postDelayed({
+            setButtonColor(dhikrSubmitButton, COLOR_PRIMARY)
         }, 500)
     }
 

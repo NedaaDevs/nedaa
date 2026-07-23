@@ -124,7 +124,12 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
           num2: problem.num2,
         })}
         accessibilityLiveRegion="polite">
-        <Text size="4xl" bold color="$typography" textAlign="center">
+        <Text
+          size="4xl"
+          bold
+          color="$typography"
+          textAlign="center"
+          style={{ writingDirection: "ltr" }}>
           {problem.num1} {operationSymbol} {problem.num2} = ?
         </Text>
       </Box>

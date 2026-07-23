@@ -47,6 +47,7 @@
     <!-- Challenge options -->
     <string name="challenge_tap">Ketuk</string>
     <string name="challenge_math">Matematik</string>
+    <string name="challenge_dhikr">Zikir</string>
     <string name="difficulty_easy">Mudah</string>
     <string name="difficulty_medium">Sederhana</string>
     <string name="difficulty_hard">Sukar</string>
@@ -72,6 +73,12 @@
     <string name="overlay_math_submit">HANTAR</string>
     <string name="overlay_math_wrong">Jawapan salah, cuba lagi</string>
     <string name="overlay_math_invalid">Sila masukkan nombor</string>
+
+    <!-- Overlay - Dhikr Challenge -->
+    <string name="overlay_dhikr_instruction_one">Taip 1 zikir untuk tutup</string>
+    <string name="overlay_dhikr_instruction_many">Taip %d zikir untuk tutup</string>
+    <string name="overlay_dhikr_progress">Zikir %1$d daripada %2$d</string>
+    <string name="overlay_dhikr_hint">Taip di sini</string>
 
     <!-- Overlay - Start Solving -->
     <string name="overlay_start_solving">MULA SELESAIKAN</string>

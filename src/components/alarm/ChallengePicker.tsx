@@ -24,6 +24,7 @@ const CHALLENGE_TYPES: { value: ChallengeType; label: string }[] = [
   { value: "none", label: "alarm.challenge.none" },
   { value: "tap", label: "alarm.challenge.tap" },
   { value: "math", label: "alarm.challenge.math" },
+  { value: "dhikr", label: "alarm.challenge.dhikr" },
 ];
 
 const CHALLENGE_DIFFICULTIES: { value: ChallengeDifficulty; label: string }[] = [

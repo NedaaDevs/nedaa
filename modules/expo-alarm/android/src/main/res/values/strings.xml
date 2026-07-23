@@ -47,6 +47,7 @@
     <!-- Challenge options -->
     <string name="challenge_tap">Tap</string>
     <string name="challenge_math">Math</string>
+    <string name="challenge_dhikr">Dhikr</string>
     <string name="difficulty_easy">Easy</string>
     <string name="difficulty_medium">Medium</string>
     <string name="difficulty_hard">Hard</string>
@@ -72,6 +73,12 @@
     <string name="overlay_math_submit">SUBMIT</string>
     <string name="overlay_math_wrong">Wrong answer, try again!</string>
     <string name="overlay_math_invalid">Please enter a number</string>
+
+    <!-- Overlay - Dhikr Challenge -->
+    <string name="overlay_dhikr_instruction_one">Type 1 dhikr to dismiss</string>
+    <string name="overlay_dhikr_instruction_many">Type %d dhikr to dismiss</string>
+    <string name="overlay_dhikr_progress">Dhikr %1$d of %2$d</string>
+    <string name="overlay_dhikr_hint">Type here</string>
 
     <!-- Overlay - Snooze -->
     <string name="overlay_snooze_button">SNOOZE (%d left)</string>

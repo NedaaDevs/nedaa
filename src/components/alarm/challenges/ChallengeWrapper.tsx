@@ -10,9 +10,11 @@ import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 
 import TapChallenge from "./TapChallenge";
 import MathChallenge from "./MathChallenge";
+import DhikrChallenge from "./DhikrChallenge";
 import NoneChallenge from "./NoneChallenge";
 
 import { ChallengeConfig, GRACE_PERIOD_SECONDS } from "@/types/alarm";
+import { useHaptic } from "@/hooks/useHaptic";
 
 type Props = {
   config: ChallengeConfig;
@@ -39,6 +41,9 @@ function getChallengeInstruction(
   if (type === "math") {
     return t("alarm.challenge.mathInstruction", { count });
   }
+  if (type === "dhikr") {
+    return t("alarm.challenge.dhikrInstruction", { count });
+  }
   return t("alarm.challenge.dismissInstruction");
 }
 
@@ -46,6 +51,7 @@ type GraceState = "idle" | "active" | "expired";
 
 const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGraceExpire }) => {
   const { t } = useTranslation();
+  const hapticWarning = useHaptic("warning");
   const [started, setStarted] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [challengeKey, setChallengeKey] = useState(0);
@@ -59,6 +65,8 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
   const graceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const graceStartTimeRef = useRef<number>(0);
   const graceExpiredRef = useRef(false);
+  // Fires the final-5s warning haptic once, re-armed on each grace cycle reset.
+  const graceWarnedRef = useRef(false);
 
   const clearGraceTimer = useCallback(() => {
     if (graceTimerRef.current) {
@@ -72,8 +80,9 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
 
     const wasIdle = graceStartTimeRef.current === 0;
 
-    // Reset the countdown
+    // Reset the countdown and re-arm the final-5s warning haptic
     graceStartTimeRef.current = Date.now();
+    graceWarnedRef.current = false;
     setGraceRemaining(graceDuration);
 
     // If expired, silence alarm again
@@ -93,6 +102,11 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
         const remaining = Math.max(0, graceDuration - elapsed);
         setGraceRemaining(remaining);
 
+        if (remaining <= 5 && remaining > 0 && !graceWarnedRef.current) {
+          graceWarnedRef.current = true;
+          hapticWarning();
+        }
+
         if (remaining <= 0) {
           clearGraceTimer();
           graceExpiredRef.current = true;
@@ -101,7 +115,7 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
         }
       }, 100);
     }
-  }, [graceDuration, clearGraceTimer, onGraceStart, onGraceExpire]);
+  }, [graceDuration, clearGraceTimer, onGraceStart, onGraceExpire, hapticWarning]);
 
   useEffect(() => {
     return clearGraceTimer;
@@ -133,6 +147,7 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
       clearGraceTimer();
       graceStartTimeRef.current = 0;
       graceExpiredRef.current = false;
+      graceWarnedRef.current = false;
       setGraceState("idle");
       setGraceRemaining(graceDuration);
       setChallengeKey((prev) => prev + 1);
@@ -141,6 +156,10 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
 
   const graceProgress = graceDuration > 0 ? (graceRemaining / graceDuration) * 100 : 0;
   const graceColor = graceProgress > 30 ? "$primary" : graceProgress > 10 ? "$warning" : "$error";
+  const graceSeconds = Math.ceil(graceRemaining);
+  const graceSecondsColor =
+    graceRemaining <= 2 ? "$error" : graceRemaining <= 5 ? "$warning" : "$typographySecondary";
+  const inGraceFinalStretch = graceState === "active" && graceRemaining <= 5;
 
   return (
     <VStack gap="$4" width="100%">
@@ -168,13 +187,30 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
 
       {graceDuration > 0 && graceState !== "idle" && (
         <VStack gap="$1">
-          <Progress
-            value={graceProgress}
-            size="xs"
-            accessibilityLabel={t("a11y.alarm.graceTimer")}
-            accessibilityValue={{ min: 0, max: 100, now: graceProgress }}>
-            <ProgressFilledTrack bg={graceColor} />
-          </Progress>
+          <HStack alignItems="center" gap="$2">
+            <Progress
+              flex={1}
+              width="auto"
+              value={graceProgress}
+              size="xs"
+              accessibilityLabel={t("a11y.alarm.graceTimer")}
+              accessibilityValue={{ min: 0, max: 100, now: graceProgress }}>
+              <ProgressFilledTrack bg={graceColor} />
+            </Progress>
+            {graceState === "active" && (
+              <Text
+                size="xs"
+                color={graceSecondsColor}
+                minWidth={26}
+                textAlign="center"
+                accessibilityLiveRegion={inGraceFinalStretch ? "polite" : "none"}
+                accessibilityLabel={
+                  inGraceFinalStretch ? t("a11y.alarm.graceFinalWarning") : undefined
+                }>
+                {`${graceSeconds}s`}
+              </Text>
+            )}
+          </HStack>
           {graceState === "expired" && (
             <Text size="xs" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
               {t("alarm.grace.expired")}
@@ -201,6 +237,13 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
         />
       ) : type === "math" ? (
         <MathChallenge
+          key={challengeKey}
+          difficulty={difficulty}
+          onComplete={handleChallengeComplete}
+          onInteraction={handleInteraction}
+        />
+      ) : type === "dhikr" ? (
+        <DhikrChallenge
           key={challengeKey}
           difficulty={difficulty}
           onComplete={handleChallengeComplete}

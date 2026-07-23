@@ -2,7 +2,7 @@ export type AlarmType = "fajr" | "friday";
 
 export type TimingMode = "atPrayerTime" | "beforePrayerTime";
 
-export type ChallengeType = "tap" | "math" | "none";
+export type ChallengeType = "tap" | "math" | "dhikr" | "none";
 
 export type ChallengeDifficulty = "easy" | "medium" | "hard";
 
@@ -129,7 +129,7 @@ export const SNOOZE_MAX_COUNTS: SnoozeMaxCount[] = [1, 2, 3];
 
 export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math"];
+export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math", "dhikr"];
 
 export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "hard"];
 
@@ -139,4 +139,39 @@ export const GRACE_PERIOD_SECONDS: Record<
 > = {
   tap: { easy: 10, medium: 15, hard: 20 },
   math: { easy: 15, medium: 20, hard: 30 },
+  dhikr: { easy: 20, medium: 30, hard: 45 },
+};
+
+export interface DhikrPhrase {
+  arabic: string;
+  transliteration: string;
+}
+
+// Dhikr typing challenge pool by difficulty. Arabic + transliteration are
+// locale-independent content; the Android overlay mirrors this pool in Kotlin.
+export const DHIKR_PHRASES: Record<ChallengeDifficulty, DhikrPhrase[]> = {
+  easy: [
+    { arabic: "سبحان الله", transliteration: "Subhanallah" },
+    { arabic: "الحمد لله", transliteration: "Alhamdulillah" },
+    { arabic: "الله أكبر", transliteration: "Allahu Akbar" },
+  ],
+  medium: [
+    { arabic: "سبحان الله وبحمده", transliteration: "Subhanallahi wa bihamdihi" },
+    { arabic: "لا إله إلا الله", transliteration: "La ilaha illa Allah" },
+    { arabic: "أستغفر الله", transliteration: "Astaghfirullah" },
+    {
+      arabic: "أعوذ بالله من الشيطان الرجيم",
+      transliteration: "A'udhu billahi minash shaytanir rajim",
+    },
+  ],
+  hard: [
+    {
+      arabic: "لا حول ولا قوة إلا بالله",
+      transliteration: "La hawla wa la quwwata illa billah",
+    },
+    {
+      arabic: "سبحان الله وبحمده سبحان الله العظيم",
+      transliteration: "Subhanallahi wa bihamdihi subhanallahil azim",
+    },
+  ],
 };

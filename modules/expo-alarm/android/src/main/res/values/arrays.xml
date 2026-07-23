@@ -44,11 +44,13 @@
     <string-array name="challenge_type_entries">
         <item>@string/challenge_tap</item>
         <item>@string/challenge_math</item>
+        <item>@string/challenge_dhikr</item>
     </string-array>
 
     <string-array name="challenge_type_values">
         <item>tap</item>
         <item>math</item>
+        <item>dhikr</item>
     </string-array>
 
     <!-- Challenge difficulty -->
