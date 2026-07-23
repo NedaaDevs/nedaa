@@ -36,8 +36,11 @@ import {
 } from "lucide-react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
+import { SOUND_ASSETS } from "@/constants/sounds";
+import { AlarmTypeSettings } from "@/types/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStore } from "@/stores/alarm";
+import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -133,9 +136,23 @@ const formatAlarmTime = (
   return t("alarm.settings.firesAt", { day, time });
 };
 
+// One-line config digest: challenge type (+count) · sound name.
+const formatConfigSummary = (
+  settings: AlarmTypeSettings,
+  t: (key: string, options?: Record<string, string | number>) => string
+): string => {
+  const { challenge, sound } = settings;
+  const challengeLabel = t(`alarm.challenge.${challenge.type}`);
+  const countPart = challenge.type !== "none" && challenge.count > 1 ? ` ×${challenge.count}` : "";
+  const asset = SOUND_ASSETS[sound as keyof typeof SOUND_ASSETS];
+  const soundName = asset ? t(asset.label) : t("alarm.settings.systemSound");
+  return `${challengeLabel}${countPart} · ${soundName}`;
+};
+
 const AlarmSettings = () => {
   const { t, i18n } = useTranslation();
   const { fajr, friday } = useAlarmSettingsStore();
+  const fajrStreak = useAlarmStreakStore((s) => s.streak);
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
   const fajrAlarm = Object.values(scheduledAlarms).find(
     (a) => a.alarmType === ScheduledAlarmType.FAJR
@@ -194,8 +211,14 @@ const AlarmSettings = () => {
   const currentPermission = pendingPermissions[0];
   const totalCount = permissions.length;
 
-  const buildIOSPermission = useCallback(
-    (granted: boolean, isDenied: boolean): PermissionItem => ({
+  // Named function expression so the recursive onRequest rebuild resolves via
+  // the function's own binding, not the outer const (which is still
+  // initializing at that point in the closure).
+  const buildIOSPermission = useCallback(function buildIOSPermission(
+    granted: boolean,
+    isDenied: boolean
+  ): PermissionItem {
+    return {
       id: "alarmkit",
       icon: Bell,
       titleKey: "alarm.permission.ios.alarmkit.title",
@@ -211,9 +234,8 @@ const AlarmSettings = () => {
         }
         setPermissions([buildIOSPermission(nowGranted, nowDenied)]);
       },
-    }),
-    []
-  );
+    };
+  }, []);
 
   const checkAllPermissions = useCallback(async () => {
     setIsCheckingPermissions(true);
@@ -312,6 +334,8 @@ const AlarmSettings = () => {
       enabled: fajr.enabled,
       firesAt:
         fajr.enabled && fajrAlarm ? formatAlarmTime(fajrAlarm.triggerTime, t, i18n.language) : null,
+      configSummary: formatConfigSummary(fajr, t),
+      streakLabel: fajrStreak >= 2 ? t("alarm.settings.streakStat", { count: fajrStreak }) : null,
     },
     {
       type: "friday",
@@ -323,6 +347,8 @@ const AlarmSettings = () => {
         friday.enabled && jummahAlarm
           ? formatAlarmTime(jummahAlarm.triggerTime, t, i18n.language)
           : null,
+      configSummary: formatConfigSummary(friday, t),
+      streakLabel: null,
     },
   ];
 
@@ -429,7 +455,7 @@ const AlarmSettings = () => {
               <Box key={alarm.type}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={alarm.title}
+                  accessibilityLabel={`${alarm.title}. ${alarm.configSummary}`}
                   padding="$4"
                   borderRadius="$6"
                   backgroundColor="$backgroundSecondary"
@@ -464,9 +490,21 @@ const AlarmSettings = () => {
                         <Text size="sm" color="$typographySecondary" numberOfLines={2}>
                           {alarm.description}
                         </Text>
+                        <Text
+                          size="xs"
+                          color="$typographySecondary"
+                          numberOfLines={1}
+                          marginTop="$1">
+                          {alarm.configSummary}
+                        </Text>
                         {alarm.firesAt && (
                           <Text size="xs" color="$primary" marginTop="$1">
                             {alarm.firesAt}
+                          </Text>
+                        )}
+                        {alarm.streakLabel && (
+                          <Text size="xs" color="$warning" marginTop="$1">
+                            {alarm.streakLabel}
                           </Text>
                         )}
                       </VStack>

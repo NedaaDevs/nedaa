@@ -21,6 +21,7 @@ import { Icon } from "@/components/ui/icon";
 
 import AthkarCard from "@/components/athkar/AthkarCard";
 import LongPressHint from "@/components/athkar/LongPressHint";
+import StreakShareButton from "@/components/StreakShareButton";
 
 // Store
 import { useAthkarStore } from "@/stores/athkar";
@@ -308,6 +309,8 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
                 </HStack>
               </HStack>
             </VStack>
+
+            {streakDays >= 2 && <StreakShareButton variant="athkar" count={streakDays} />}
           </HStack>
 
           <Text size="sm" color="$typographySecondary">

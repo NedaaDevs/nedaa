@@ -1,6 +1,7 @@
 import i18next from "@/localization/i18n";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
+import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -183,6 +184,12 @@ export async function completeAndRescheduleAlarm(alarmId: string): Promise<void>
   const alarm = alarmStore.scheduledAlarms[alarmId];
 
   await alarmStore.completeAlarm(alarmId);
+
+  // Waking for Fajr grows the streak; the store's freshness guard drops the
+  // stale-alarm auto-completion path so a skipped Fajr never counts.
+  if (alarm?.alarmType === ScheduledAlarmType.FAJR) {
+    useAlarmStreakStore.getState().recordFajrSuccess(alarm.triggerTime);
+  }
 
   try {
     if (alarm?.alarmType === ScheduledAlarmType.FAJR) {

@@ -20,6 +20,9 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { useAlarmStreakStore } from "@/stores/alarmStreak";
+import { useAthkarStore } from "@/stores/athkar";
+import StreakShareButton from "@/components/StreakShareButton";
 
 import {
   ChallengeType,
@@ -42,6 +45,9 @@ const AlarmDebugScreen = () => {
   const [scheduledAlarms, setScheduledAlarms] = useState<string[]>([]);
   const [alarmKitAlarms, setAlarmKitAlarms] = useState<ExpoAlarm.AlarmKitAlarm[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const fajrStreak = useAlarmStreakStore((s) => s.streak);
+  const fajrBestStreak = useAlarmStreakStore((s) => s.bestStreak);
+  const athkarStreak = useAthkarStore((s) => s.streak.currentStreak);
   const [persistentLog, setPersistentLog] = useState<string>("");
 
   const [isBatteryExempt, setIsBatteryExempt] = useState<boolean | null>(null);
@@ -62,10 +68,6 @@ const AlarmDebugScreen = () => {
   const { scheduleAlarm, cancelAllAlarms } = useAlarmStore();
   const { fajr: fajrSettings, updateSettings } = useAlarmSettingsStore();
   const { todayTimings } = usePrayerTimesStore();
-
-  useEffect(() => {
-    checkStatus();
-  }, []);
 
   const fetchPersistentLog = () => {
     const log = ExpoAlarm.getPersistentLog();
@@ -150,6 +152,10 @@ const AlarmDebugScreen = () => {
     }
   };
 
+  useEffect(() => {
+    checkStatus();
+  }, []);
+
   const handleRequestAuth = async () => {
     try {
       const status = await ExpoAlarm.requestAuthorization();
@@ -198,8 +204,10 @@ const AlarmDebugScreen = () => {
     try {
       applyTestSettings();
 
-      const id = generateDeterministicUUID(`debug_${Date.now()}`);
-      const triggerDate = new Date(Date.now() + seconds * 1000);
+      // eslint-disable-next-line react-hooks/purity -- debug-only, runs from onPress, never during render
+      const now = Date.now();
+      const id = generateDeterministicUUID(`debug_${now}`);
+      const triggerDate = new Date(now + seconds * 1000);
 
       const success = await scheduleAlarm({
         id,
@@ -654,6 +662,58 @@ const AlarmDebugScreen = () => {
                     <Button.Text textTransform="capitalize">{type}</Button.Text>
                   </Button>
                 ))}
+              </HStack>
+            </VStack>
+          </Card>
+
+          {/* Streak Sharing */}
+          <Card padding="$4">
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Streak Sharing
+              </Text>
+
+              <Text size="xs" color="$typographySecondary">
+                Real share preview at any count — bypasses the streak≥2 gate on the live screens.
+              </Text>
+
+              <HStack justifyContent="space-between" alignItems="center">
+                <VStack>
+                  <Text size="sm" color="$typography">
+                    Fajr streak: {fajrStreak} (best {fajrBestStreak})
+                  </Text>
+                  <HStack gap="$2" marginTop="$1">
+                    {[3, 7, 30].map((n) => (
+                      <Button
+                        key={n}
+                        size="xs"
+                        variant="outline"
+                        onPress={() =>
+                          useAlarmStreakStore.setState({
+                            streak: n,
+                            bestStreak: Math.max(fajrBestStreak, n),
+                          })
+                        }>
+                        <Button.Text>{n}d</Button.Text>
+                      </Button>
+                    ))}
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      action="negative"
+                      onPress={() => useAlarmStreakStore.setState({ streak: 0 })}>
+                      <Button.Text>Reset</Button.Text>
+                    </Button>
+                  </HStack>
+                </VStack>
+                <StreakShareButton variant="fajr" count={fajrStreak} />
+              </HStack>
+
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text size="sm" color="$typography">
+                  Athkar streak: {athkarStreak}
+                </Text>
+                <StreakShareButton variant="athkar" count={athkarStreak} />
               </HStack>
             </VStack>
           </Card>
