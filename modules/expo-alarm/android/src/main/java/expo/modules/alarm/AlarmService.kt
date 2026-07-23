@@ -12,7 +12,9 @@ class AlarmService : Service() {
 
     companion object {
         private const val WAKE_LOCK_TAG = "nedaa:alarm_wake_lock"
-        private const val WAKE_LOCK_TIMEOUT_MS = 10L * 60 * 1000 // 10 minutes
+        // Must outlast AlarmOverlayService.AUTO_SNOOZE_TIMEOUT_MS (15 min); without
+        // overlay permission nothing else keeps the CPU awake for auto-snooze.
+        private const val WAKE_LOCK_TIMEOUT_MS = 16L * 60 * 1000 // 16 minutes
 
         const val ACTION_START = "expo.modules.alarm.ACTION_START"
         const val ACTION_STOP = "expo.modules.alarm.ACTION_STOP"

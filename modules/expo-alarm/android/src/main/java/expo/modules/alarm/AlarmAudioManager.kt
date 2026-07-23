@@ -33,6 +33,7 @@ class AlarmAudioManager(private val context: Context) {
     }
 
     private var mediaPlayer: MediaPlayer? = null
+    private var mediaPlayerGeneration = 0
     private var systemRingtone: Ringtone? = null
     private var vibrator: Vibrator? = null
     private var isVibrating = false
@@ -67,6 +68,15 @@ class AlarmAudioManager(private val context: Context) {
     @Synchronized
     fun saveSystemVolume() {
         if (savedSystemVolume != null) return
+        // A pref value surviving from a session that never restored means the stream
+        // is still forced high; adopt the persisted user volume rather than reading
+        // (and re-saving) the forced-high current volume over it.
+        val persisted = prefs.getInt(PREF_SAVED_VOLUME, -1).takeIf { it >= 0 }
+        if (persisted != null) {
+            savedSystemVolume = persisted
+            log("Adopted persisted system volume: $persisted")
+            return
+        }
         val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         savedSystemVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
         prefs.edit().putInt(PREF_SAVED_VOLUME, savedSystemVolume!!).apply()
@@ -157,6 +167,10 @@ class AlarmAudioManager(private val context: Context) {
                 }
                 val uri = Uri.parse("android.resource://${context.packageName}/$resId")
 
+                // A stop (or a newer start) can run between prepareAsync and the queued
+                // onPrepared; a generation token plus identity check make the callback a
+                // no-op so start() never lands on a released or superseded player.
+                val generation = ++mediaPlayerGeneration
                 mediaPlayer = MediaPlayer().apply {
                     setAudioAttributes(
                         AudioAttributes.Builder()
@@ -168,10 +182,16 @@ class AlarmAudioManager(private val context: Context) {
                     isLooping = true
                     setVolume(startVolume, startVolume)
                     setOnPreparedListener { mp ->
-                        mp.start()
-                        log("MediaPlayer prepared and started")
+                        if (generation != mediaPlayerGeneration || mp !== mediaPlayer) return@setOnPreparedListener
+                        try {
+                            mp.start()
+                            log("MediaPlayer prepared and started")
+                        } catch (e: Exception) {
+                            log("MediaPlayer start failed: ${e.message}")
+                        }
                     }
                     setOnErrorListener { _, what, extra ->
+                        if (generation != mediaPlayerGeneration) return@setOnErrorListener false
                         log("MediaPlayer error: what=$what extra=$extra")
                         false
                     }
@@ -249,6 +269,8 @@ class AlarmAudioManager(private val context: Context) {
     @Synchronized
     fun stopAlarmSound() {
         cancelVolumeRamp()
+        // Invalidate any in-flight prepareAsync callback before releasing the player.
+        mediaPlayerGeneration++
         try {
             mediaPlayer?.let {
                 if (it.isPlaying) it.stop()
