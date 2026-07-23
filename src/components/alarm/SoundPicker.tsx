@@ -43,6 +43,10 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
   const [, setSystemSoundsLoaded] = useState(false);
   const [isPreviewingSystem, setIsPreviewingSystem] = useState(false);
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // True only while THIS component is driving a system-sound preview, so cleanup
+  // never stops a live alarm (or another screen's preview) it didn't start.
+  const ownsPreviewRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     ExpoAlarm.getSystemAlarmSounds().then((sounds) => {
@@ -65,6 +69,7 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
 
   useEffect(() => {
     const subscription = ExpoAlarm.addListener("onPlaybackFinished", () => {
+      ownsPreviewRef.current = false;
       setIsPreviewingSystem(false);
       if (previewTimeoutRef.current) {
         clearTimeout(previewTimeoutRef.current);
@@ -75,11 +80,18 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (previewTimeoutRef.current) {
         clearTimeout(previewTimeoutRef.current);
       }
-      ExpoAlarm.stopAlarmSound();
+      // Only silence audio this component actually started — otherwise an
+      // in-progress alarm would be stopped just by leaving this screen.
+      if (ownsPreviewRef.current) {
+        ExpoAlarm.stopAlarmSound();
+        ownsPreviewRef.current = false;
+      }
     };
   }, []);
 
@@ -103,19 +115,28 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
     if (isSystemSound(value)) {
       if (isPreviewingSystem) {
         await ExpoAlarm.stopAlarmSound();
+        ownsPreviewRef.current = false;
         setIsPreviewingSystem(false);
       } else {
         await stopPreview();
         await ExpoAlarm.startAlarmSound(value);
+        // Unmounted mid-await: stop what we just started, install nothing.
+        if (!isMountedRef.current) {
+          await ExpoAlarm.stopAlarmSound();
+          return;
+        }
+        ownsPreviewRef.current = true;
         setIsPreviewingSystem(true);
         previewTimeoutRef.current = setTimeout(async () => {
           await ExpoAlarm.stopAlarmSound();
-          setIsPreviewingSystem(false);
+          ownsPreviewRef.current = false;
+          if (isMountedRef.current) setIsPreviewingSystem(false);
         }, 5000);
       }
     } else {
       if (isPreviewingSystem) {
         await ExpoAlarm.stopAlarmSound();
+        ownsPreviewRef.current = false;
         setIsPreviewingSystem(false);
       }
       if (isPlayingSound(NOTIFICATION_TYPE.PRAYER, value)) {

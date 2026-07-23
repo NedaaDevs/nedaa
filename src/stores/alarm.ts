@@ -2,15 +2,21 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import * as ExpoAlarm from "expo-alarm";
+import i18next from "@/localization/i18n";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
 import { generateDeterministicUUID, getSnoozeKey } from "@/utils/alarmId";
+import { toSettingsAlarmType } from "@/utils/alarmTypes";
 import { alarmLog } from "@/utils/alarmReport";
+import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 
 export interface ScheduledAlarm {
   alarmId: string;
   alarmType: ScheduledAlarmType;
   title: string;
+  // Original (unsuffixed) title, carried across snoozes; the snoozed-count
+  // suffix is rebuilt from i18n on top of it each time.
+  baseTitle?: string;
   triggerTime: number;
   liveActivityId: string | null;
   snoozeCount: number;
@@ -31,6 +37,7 @@ interface AlarmState {
     title: string;
     alarmType: ScheduledAlarmType;
     snoozeCount?: number;
+    baseTitle?: string;
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
@@ -48,7 +55,7 @@ export const useAlarmStore = create<AlarmState>()(
       (set, get) => ({
         scheduledAlarms: {},
 
-        scheduleAlarm: async ({ id, triggerDate, title, alarmType, snoozeCount }) => {
+        scheduleAlarm: async ({ id, triggerDate, title, alarmType, snoozeCount, baseTitle }) => {
           try {
             const success = await ExpoAlarm.scheduleAlarm({
               id,
@@ -73,6 +80,7 @@ export const useAlarmStore = create<AlarmState>()(
                   alarmId: id,
                   alarmType,
                   title,
+                  baseTitle: baseTitle ?? title,
                   triggerTime: triggerDate.getTime(),
                   liveActivityId: null,
                   snoozeCount: snoozeCount ?? 0,
@@ -117,16 +125,26 @@ export const useAlarmStore = create<AlarmState>()(
           if (!alarm) return null;
 
           const { MAX_SNOOZES, SNOOZE_MINUTES } = ALARM_DEFAULTS;
-          if (alarm.snoozeCount >= MAX_SNOOZES) return null;
+          // The snooze cap is the user's per-type setting; the UI offers Snooze from
+          // the same value, so gate and display must both read it.
+          const settingsType = toSettingsAlarmType(alarm.alarmType);
+          const maxSnoozes = settingsType
+            ? useAlarmSettingsStore.getState()[settingsType].snooze.maxCount
+            : MAX_SNOOZES;
+          if (alarm.snoozeCount >= maxSnoozes) return null;
 
           const duration = snoozeDurationMinutes ?? SNOOZE_MINUTES;
           const snoozeTime = new Date(Date.now() + duration * 60 * 1000);
-          const baseTitle = alarm.title.replace(/\s*\(Snoozed \d+\/\d+\)$/, "");
+          const baseTitle = alarm.baseTitle ?? alarm.title;
           const newSnoozeCount = alarm.snoozeCount + 1;
           const snoozeId = generateDeterministicUUID(
             getSnoozeKey(alarm.alarmType, snoozeTime, newSnoozeCount)
           );
-          const snoozeTitle = `${baseTitle} (Snoozed ${newSnoozeCount}/${MAX_SNOOZES})`;
+          const snoozeTitle = i18next.t("alarm.snoozedTitle", {
+            title: baseTitle,
+            count: newSnoozeCount,
+            max: maxSnoozes,
+          });
 
           ExpoAlarm.stopAllAlarmEffects();
           await ExpoAlarm.cancelAlarm(alarmId);
@@ -139,13 +157,16 @@ export const useAlarmStore = create<AlarmState>()(
             title: snoozeTitle,
             alarmType: alarm.alarmType,
             snoozeCount: newSnoozeCount,
+            baseTitle,
           });
           if (!rescheduled) {
-            // The old alarm is already cancelled — a failed snooze means no alarm at all.
+            // Reschedule refused: keep the original store record so past-due detection
+            // can still surface it. Returning null shows no snooze countdown in the UI.
             alarmLog.e(
               "Store",
-              `snooze: rescheduling ${alarm.alarmType} failed — alarm ${alarmId} is gone with no replacement`
+              `snooze: rescheduling ${alarm.alarmType} failed — keeping original alarm ${alarmId}`
             );
+            return null;
           }
 
           // Remove the old alarm from store (new snooze alarm replaces it)

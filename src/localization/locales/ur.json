@@ -247,6 +247,7 @@
   "alarm.settings.vibration": "وائبریشن",
   "alarm.settings.volume": "والیوم",
   "alarm.snoozed": "سنوز کیا گیا",
+  "alarm.snoozedTitle": "{{title}} (سنوز {{count}}/{{max}})",
   "alarm.snoozeWithCount": "سنوز ({{count}} باقی)",
   "alarm.types.custom": "الارم",
   "alarm.types.fajr": "فجر الارم",

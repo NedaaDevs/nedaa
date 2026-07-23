@@ -1,4 +1,4 @@
-import { toScheduledAlarmType } from "@/utils/alarmTypes";
+import { toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import { ScheduledAlarmType } from "@/enums/alarm";
 
 describe("toScheduledAlarmType", () => {
@@ -11,5 +11,19 @@ describe("toScheduledAlarmType", () => {
 
   it("maps fajr to fajr", () => {
     expect(toScheduledAlarmType("fajr")).toBe(ScheduledAlarmType.FAJR);
+  });
+});
+
+describe("toSettingsAlarmType", () => {
+  it("maps the jummah scheduled type back to the friday settings key", () => {
+    expect(toSettingsAlarmType(ScheduledAlarmType.JUMMAH)).toBe("friday");
+  });
+
+  it("maps fajr to fajr", () => {
+    expect(toSettingsAlarmType(ScheduledAlarmType.FAJR)).toBe("fajr");
+  });
+
+  it("returns null for custom (no per-type user settings)", () => {
+    expect(toSettingsAlarmType(ScheduledAlarmType.CUSTOM)).toBeNull();
   });
 });

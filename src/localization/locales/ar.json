@@ -254,6 +254,7 @@
   "alarm.settings.vibration": "الاهتزاز",
   "alarm.settings.volume": "مستوى الصوت",
   "alarm.snoozed": "تم التأجيل",
+  "alarm.snoozedTitle": "{{title}} (مؤجّل {{count}}/{{max}})",
   "alarm.snoozeWithCount": "غفوة ({{count}} متبقية)",
   "alarm.types.custom": "منبه",
   "alarm.types.fajr": "منبه الفجر",

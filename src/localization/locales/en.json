@@ -254,6 +254,7 @@
   "alarm.settings.vibration": "Vibration",
   "alarm.settings.volume": "Volume",
   "alarm.snoozed": "Snoozed",
+  "alarm.snoozedTitle": "{{title}} (Snoozed {{count}}/{{max}})",
   "alarm.snoozeWithCount": "Snooze ({{count}} left)",
   "alarm.types.custom": "Alarm",
   "alarm.types.fajr": "Fajr Alarm",

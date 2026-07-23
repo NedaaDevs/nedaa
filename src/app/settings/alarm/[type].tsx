@@ -30,6 +30,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
 import { useAlarmStore } from "@/stores/alarm";
+import { createAsyncLock } from "@/utils/asyncLock";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -89,6 +90,7 @@ const AlarmTypeSettingsScreen = () => {
   const updateSettings = useAlarmSettingsStore((state) => state.updateSettings);
 
   const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toggleLock = useRef(createAsyncLock()).current;
 
   const debouncedReschedule = useCallback(() => {
     if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
@@ -146,23 +148,31 @@ const AlarmTypeSettingsScreen = () => {
     }
   };
 
-  const handleEnabledToggle = async (enabled: boolean) => {
+  const handleEnabledToggle = (enabled: boolean) => {
     hapticSelection();
-    handleChange({ enabled });
 
-    try {
-      if (enabled) {
-        if (alarmType === "fajr") {
-          await scheduleFajrAlarm();
+    // Serialize toggles: a disable interleaving with a pending enable's scheduleAlarm
+    // sees no stored alarm yet, finishes, then the enable inserts one that fires
+    // while the UI reads Off.
+    toggleLock(async () => {
+      handleChange({ enabled });
+
+      try {
+        if (enabled) {
+          const id = alarmType === "fajr" ? await scheduleFajrAlarm() : await scheduleFridayAlarm();
+          // enabled is already true in the store (handleChange ran synchronously), so
+          // a null here is a real failure (native refusal / no prayer data), not the
+          // settings-disabled early return — revert to Off.
+          if (id === null) {
+            handleChange({ enabled: false });
+          }
         } else {
-          await scheduleFridayAlarm();
+          await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
         }
-      } else {
-        await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
+      } catch {
+        handleChange({ enabled: !enabled });
       }
-    } catch {
-      handleChange({ enabled: !enabled });
-    }
+    });
   };
 
   const title =

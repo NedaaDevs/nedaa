@@ -6,6 +6,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
 import { pickNextTrigger } from "@/utils/alarmTrigger";
+import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
 
 const ALARM_HYDRATION_TIMEOUT_MS = 5000;
@@ -58,8 +59,9 @@ function getFridayDhuhrCandidates(): Date[] {
 
   return [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])]
     .filter((timing): timing is NonNullable<typeof timing> => Boolean(timing))
-    .map((timing) => new Date(timing.timings.dhuhr))
-    .filter((dhuhrDate) => dhuhrDate.getDay() === 5);
+    .map((timing) => ({ dhuhrDate: new Date(timing.timings.dhuhr), timeZone: timing.timezone }))
+    .filter(({ dhuhrDate, timeZone }) => isFridayInTimeZone(dhuhrDate, timeZone))
+    .map(({ dhuhrDate }) => dhuhrDate);
 }
 
 export async function schedulePrayerAlarm(

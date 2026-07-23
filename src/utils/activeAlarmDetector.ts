@@ -24,7 +24,7 @@ async function autoCompleteStaleAlarm(alarmId: string): Promise<void> {
 
 export async function detectActiveAlarm(
   scheduledAlarms: Record<string, ScheduledAlarm>,
-  handledIds?: Set<string>,
+  handledIds?: { has(id: string): boolean },
   retryCount = 0
 ): Promise<ActiveAlarmInfo | null> {
   // Check completed queue first to avoid showing challenge for already-completed alarms
