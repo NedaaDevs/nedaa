@@ -204,7 +204,7 @@ const QuranListenScreen = () => {
           })}
         </VStack>
       </ScrollView>
-      <QuranMiniPlayer />
+      <QuranMiniPlayer padBottomInset />
     </Background>
   );
 };

@@ -178,7 +178,7 @@ const QuranListenSurahsScreen = () => {
           />
         )}
       />
-      <QuranMiniPlayer />
+      <QuranMiniPlayer padBottomInset />
 
       <DownloadsDrawer
         open={drawerOpen}

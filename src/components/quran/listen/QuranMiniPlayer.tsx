@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "tamagui";
 import { useTranslation } from "react-i18next";
 import {
@@ -72,9 +73,14 @@ const fracFromX = (x: number, width: number, rtl: boolean): number => {
 };
 
 // Pinned transport bar, shown whenever a queue is active.
-export const QuranMiniPlayer = () => {
+// `padBottomInset` pads the bottom safe-area inset (home indicator / Android nav
+// bar) — the root SafeAreaView drops the bottom edge, so a mount at the raw
+// screen bottom must opt in. Leave off when something below (the tab bar)
+// already supplies that inset.
+export const QuranMiniPlayer = ({ padBottomInset = false }: { padBottomInset?: boolean }) => {
   const { t, i18n } = useTranslation();
   const { isRTL } = useRTL();
+  const insets = useSafeAreaInsets();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
   const listenRecitationId = useQuranAudioStore((s) => s.listenRecitationId);
@@ -210,7 +216,7 @@ export const QuranMiniPlayer = () => {
       gap="$2"
       paddingHorizontal="$4"
       paddingTop="$3"
-      paddingBottom="$4"
+      paddingBottom={padBottomInset ? Math.max(insets.bottom, 16) : "$4"}
       backgroundColor="$backgroundSecondary"
       borderTopWidth={1}
       borderColor="$backgroundInteractive">

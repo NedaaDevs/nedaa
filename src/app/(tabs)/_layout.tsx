@@ -46,13 +46,18 @@ const TabsLayout = () => {
   return (
     <Tabs
       key={`tabs-${mode}`}
-      tabBar={(props: BottomTabBarProps) => (
-        <Box backgroundColor="$backgroundSecondary">
-          {!readerActive && <QuranMiniPlayer />}
-          <MiniPlayerBar />
-          <BottomTabBar {...props} />
-        </Box>
-      )}
+      tabBar={(props: BottomTabBarProps) => {
+        // The quran tab hides the tab bar (display: none), leaving the mini
+        // player as the bottom-most element — it must pad the bottom inset then.
+        const tabBarHidden = props.state.routes[props.state.index].name === "quran";
+        return (
+          <Box backgroundColor="$backgroundSecondary">
+            {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
+            <MiniPlayerBar />
+            <BottomTabBar {...props} />
+          </Box>
+        );
+      }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary.val,
