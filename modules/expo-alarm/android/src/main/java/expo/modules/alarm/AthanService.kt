@@ -181,7 +181,7 @@ class AthanService : Service() {
             @Suppress("DEPRECATION")
             audioManager.requestAudioFocus(
                 listener,
-                getConfiguredAudioStream(athanId),
+                if (getConfiguredAudioStream(athanId) == "ringer") AudioManager.STREAM_RING else AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
             )
         }
