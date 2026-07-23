@@ -1,5 +1,7 @@
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { StatusBar } from "expo-status-bar";
+import { Theme } from "tamagui";
 
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -66,47 +68,50 @@ export default function AlarmCompleteScreen() {
           presentation: "fullScreenModal",
         }}
       />
-      <Background>
-        <VStack flex={1} alignItems="center" justifyContent="center" padding="$6" gap="$5">
-          <Card padding="$8" width="100%" maxWidth={384} alignItems="center">
-            <VStack gap="$4" alignItems="center" width="100%">
-              <Icon as={content.icon} size="xl" color={resolvedColor} />
+      <Theme name="dark">
+        <StatusBar style="light" />
+        <Background>
+          <VStack flex={1} alignItems="center" justifyContent="center" padding="$6" gap="$5">
+            <Card padding="$8" width="100%" maxWidth={384} alignItems="center">
+              <VStack gap="$4" alignItems="center" width="100%">
+                <Icon as={content.icon} size="xl" color={resolvedColor} />
 
-              <Text
-                size="2xl"
-                bold
-                color="$typography"
-                textAlign="center"
-                accessibilityRole="header">
-                {t(content.titleKey)}
-              </Text>
+                <Text
+                  size="2xl"
+                  bold
+                  color="$typography"
+                  textAlign="center"
+                  accessibilityRole="header">
+                  {t(content.titleKey)}
+                </Text>
 
-              <Text textAlign="center" color="$typographySecondary">
-                {t(content.subtitleKey)}
-              </Text>
+                <Text textAlign="center" color="$typographySecondary">
+                  {t(content.subtitleKey)}
+                </Text>
 
-              <Text
-                textAlign="center"
-                size="lg"
-                fontWeight="500"
-                color="$success"
-                fontStyle="italic"
-                marginTop="$2">
-                {t("alarm.complete.encouragement")}
-              </Text>
+                <Text
+                  textAlign="center"
+                  size="lg"
+                  fontWeight="500"
+                  color="$success"
+                  fontStyle="italic"
+                  marginTop="$2">
+                  {t("alarm.complete.encouragement")}
+                </Text>
 
-              <Button
-                size="lg"
-                width="100%"
-                marginTop="$4"
-                onPress={handleGoHome}
-                accessibilityLabel={t("a11y.goHome")}>
-                <Button.Text>{t("alarm.complete.goHome")}</Button.Text>
-              </Button>
-            </VStack>
-          </Card>
-        </VStack>
-      </Background>
+                <Button
+                  size="lg"
+                  width="100%"
+                  marginTop="$4"
+                  onPress={handleGoHome}
+                  accessibilityLabel={t("a11y.goHome")}>
+                  <Button.Text>{t("alarm.complete.goHome")}</Button.Text>
+                </Button>
+              </VStack>
+            </Card>
+          </VStack>
+        </Background>
+      </Theme>
     </>
   );
 }

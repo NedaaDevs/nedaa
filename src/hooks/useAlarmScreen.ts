@@ -167,3 +167,25 @@ export function formatTimeRemaining(seconds: number) {
   const secs = seconds % 60;
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
+
+// Current device time, re-rendering once per minute (aligned to the minute
+// boundary). No second-level ticking.
+export const useMinuteClock = (): Date => {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const msToNextMinute = 60_000 - (Date.now() % 60_000);
+    const timeout = setTimeout(() => {
+      setNow(new Date());
+      interval = setInterval(() => setNow(new Date()), 60_000);
+    }, msToNextMinute);
+
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
+  return now;
+};

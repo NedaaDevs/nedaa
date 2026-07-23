@@ -115,7 +115,9 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
       <Box
         padding="$6"
         borderRadius="$6"
-        backgroundColor={isWrong ? "$backgroundError" : "$backgroundMuted"}
+        backgroundColor="$backgroundMuted"
+        borderWidth={2}
+        borderColor={isWrong ? "$borderError" : "transparent"}
         accessibilityLabel={t("a11y.alarm.mathProblem", {
           num1: problem.num1,
           operation: operationSymbol,
