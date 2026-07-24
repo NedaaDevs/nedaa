@@ -1,6 +1,6 @@
 import { FC, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BackHandler, Linking } from "react-native";
+import { ActivityIndicator, BackHandler, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
@@ -14,7 +14,7 @@ import * as MailComposer from "expo-mail-composer";
 import * as Clipboard from "expo-clipboard";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useTheme } from "tamagui";
-import { Share2, ClipboardCopy } from "lucide-react-native";
+import { Send, Share2, ClipboardCopy } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -24,6 +24,8 @@ import { Icon, MailIcon } from "@/components/ui/icon";
 import { MessageToast } from "@/components/feedback";
 import { useRTL } from "@/contexts/RTLContext";
 import { AppLogger } from "@/utils/appLogger";
+import { submitFeedback, generateClientKey, utf8ByteLength } from "@/services/feedback";
+import { Report, Attachment, type ReportType, type OutgoingAttachment } from "@/types/feedback";
 
 interface ReportProblemModalProps {
   isOpen: boolean;
@@ -35,15 +37,24 @@ interface ReportProblemModalProps {
   getSummaryText: () => Promise<string>;
   // Base name for the generated .log file (e.g. "alarm", "audio", "report").
   baseName?: string;
+  // `area` tag sent with a direct submission (e.g. "alarms", "athkar") — lets the
+  // backend route the report without the user picking it manually.
+  feedbackArea?: string;
+  // Report type for a direct submission — "report a problem" is a bug by definition.
+  feedbackType?: ReportType;
   // Deprecated/ignored — Copy now uses getReportText so the user's note is included.
   // Kept optional so existing callers that still pass it type-check.
   onCopy?: () => Promise<void> | void;
 }
 
+type SubmitStatus = "idle" | "submitting" | "error";
+
 // One reusable "Report a problem" bottom sheet (alarm, athkar audio, app logs). The
-// user describes the issue; channels carry the right payload: Email attaches the full
-// .log + a summary body, "Share file" sends the .log via the OS sheet, WhatsApp/Telegram
-// send the summary text (no file), Copy puts the full report on the clipboard.
+// user describes the issue; the primary action submits directly to Nedaa's servers
+// (same backend as Settings → Feedback). Other channels stay available below it:
+// Email attaches the full .log + a summary body, "Share file" sends the .log via the
+// OS sheet, WhatsApp/Telegram send the summary text (no file), Copy puts the full
+// report on the clipboard.
 const ReportProblemModal: FC<ReportProblemModalProps> = ({
   isOpen,
   onClose,
@@ -51,6 +62,8 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   getReportText,
   getSummaryText,
   baseName = "report",
+  feedbackArea,
+  feedbackType = Report.BUG,
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
@@ -58,6 +71,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const [description, setDescription] = useState("");
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
 
   const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
   const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
@@ -84,6 +98,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
 
   const handleDismiss = useCallback(() => {
     setDescription("");
+    setSubmitStatus("idle");
     onClose();
   }, [onClose]);
 
@@ -107,6 +122,35 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
       full: desc ? `User note:\n${desc}\n\n${report}` : report,
       sum: desc ? `${desc}\n\n${summary}` : summary,
     };
+  };
+
+  // Primary action: post straight to Nedaa's servers (same backend as Settings →
+  // Feedback), skipping the OS share sheet entirely. Stays open on failure so the
+  // user can retry or fall back to one of the channels below instead.
+  const handleDirectSubmit = async () => {
+    setSubmitStatus("submitting");
+    try {
+      const { full, sum } = await compose();
+      const attachment: OutgoingAttachment = {
+        kind: Attachment.LOGS,
+        mime: "text/plain",
+        bytes: utf8ByteLength(full),
+        body: full,
+      };
+      await submitFeedback({
+        type: feedbackType,
+        message: sum,
+        area: feedbackArea,
+        attachments: [attachment],
+        clientKey: generateClientKey(),
+      });
+      setSubmitStatus("idle");
+      MessageToast.showSuccess(t("settings.shareLogs.submitted"));
+      onClose();
+    } catch (e) {
+      console.error("Failed to submit report directly:", e);
+      setSubmitStatus("error");
+    }
   };
 
   const handleEmail = async () => {
@@ -232,6 +276,46 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
               fontSize: 15,
             }}
           />
+
+          <Pressable
+            minHeight={52}
+            paddingHorizontal="$4"
+            borderRadius="$4"
+            backgroundColor="$accentPrimary"
+            opacity={submitStatus === "submitting" ? 0.7 : 1}
+            onPress={submitStatus === "submitting" ? undefined : handleDirectSubmit}
+            accessibilityRole="button"
+            accessibilityLabel={t(
+              submitStatus === "submitting"
+                ? "settings.shareLogs.sending"
+                : "settings.shareLogs.submitDirect"
+            )}
+            accessibilityState={{ disabled: submitStatus === "submitting" }}>
+            <HStack alignItems="center" justifyContent="center" width="100%" gap="$2">
+              {submitStatus === "submitting" ? (
+                <ActivityIndicator size="small" color={theme.typographyContrast?.val} />
+              ) : (
+                <Icon as={Send} size="lg" color="$typographyContrast" />
+              )}
+              <Text size="md" fontWeight="700" color="$typographyContrast">
+                {t(
+                  submitStatus === "submitting"
+                    ? "settings.shareLogs.sending"
+                    : "settings.shareLogs.submitDirect"
+                )}
+              </Text>
+            </HStack>
+          </Pressable>
+
+          {submitStatus === "error" && (
+            <Text size="xs" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
+              {t("settings.shareLogs.submitFailed")}
+            </Text>
+          )}
+
+          <Text size="xs" color="$typographySecondary" textAlign="center">
+            {t("settings.shareLogs.orShareVia")}
+          </Text>
 
           <VStack gap="$1">
             {row(

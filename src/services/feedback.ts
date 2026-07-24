@@ -43,7 +43,7 @@ export interface FeedbackReceipt {
 }
 
 // UTF-8 byte length without TextEncoder (not guaranteed in Hermes). Surrogate pairs count as 4.
-const utf8ByteLength = (s: string): number => {
+export const utf8ByteLength = (s: string): number => {
   let bytes = 0;
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);

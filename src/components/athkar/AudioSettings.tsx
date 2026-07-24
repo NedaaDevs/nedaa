@@ -486,6 +486,7 @@ const AudioSettings: FC = () => {
         emailSubject="Nedaa: Athkar Audio"
         getReportText={getReportText}
         getSummaryText={getSummaryText}
+        feedbackArea="athkar"
         onCopy={() => athkarLog.copyLog()}
       />
     </>

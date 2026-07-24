@@ -608,6 +608,7 @@ const AlarmSettings = () => {
             emailSubject={emailSubject}
             getReportText={getReportText}
             getSummaryText={getSummaryText}
+            feedbackArea="alarms"
             onCopy={handleCopy}
           />
         </VStack>
