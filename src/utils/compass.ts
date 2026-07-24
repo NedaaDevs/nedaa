@@ -343,6 +343,53 @@ export const getQiblaProximityState = (
   return "searching";
 };
 
+export const DETENT_SPACING_DEGREES = 45;
+export const DETENT_HYSTERESIS_DEGREES = 4;
+const DETENT_COUNT = 360 / DETENT_SPACING_DEGREES;
+
+/**
+ * Maps a heading to one of eight cardinal/ordinal detents. Hysteresis holds the
+ * current detent until the heading clears the boundary by a margin, so resting
+ * jitter never rattles the detent-crossing haptic.
+ */
+export const getDetentIndex = (
+  heading: number,
+  previousIndex: number | null,
+  hysteresisDegrees = DETENT_HYSTERESIS_DEGREES
+): number => {
+  const nominal =
+    ((Math.round(heading / DETENT_SPACING_DEGREES) % DETENT_COUNT) + DETENT_COUNT) % DETENT_COUNT;
+  if (previousIndex === null) return nominal;
+
+  const distanceFromPrevious = Math.abs(
+    angleDifference(heading, previousIndex * DETENT_SPACING_DEGREES)
+  );
+  return distanceFromPrevious > DETENT_SPACING_DEGREES / 2 + hysteresisDegrees
+    ? nominal
+    : previousIndex;
+};
+
+/** Discrete escalation toward the Qibla: 0 far, 1 approaching, 2 near, 3 locked. */
+export type QiblaHapticStep = 0 | 1 | 2 | 3;
+
+const QIBLA_HAPTIC_NEAR_DEGREES = 9;
+
+/**
+ * Rising steps drive the approach haptics; the locked step keeps the aligned
+ * hysteresis so a heading resting near the boundary does not re-fire the lock.
+ */
+export const getQiblaHapticStep = (
+  offsetDegrees: number,
+  previousStep: QiblaHapticStep
+): QiblaHapticStep => {
+  const diff = Math.abs(offsetDegrees);
+  if (diff <= ALIGNED_ENTER_THRESHOLD) return 3;
+  if (previousStep === 3 && diff <= ALIGNED_EXIT_THRESHOLD) return 3;
+  if (diff <= QIBLA_HAPTIC_NEAR_DEGREES) return 2;
+  if (diff <= APPROACHING_THRESHOLD) return 1;
+  return 0;
+};
+
 export const HEADING_DISPLAY_DEADBAND_DEGREES = 0.8;
 export const CALIBRATION_OVERLAY_ENTER_DEGREES = 45;
 export const CALIBRATION_OVERLAY_EXIT_DEGREES = 35;

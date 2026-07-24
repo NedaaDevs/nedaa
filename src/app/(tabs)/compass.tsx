@@ -31,6 +31,7 @@ import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import type { CompassLocationFix } from "@/types/compass";
 import { AppLogger } from "@/utils/appLogger";
 import {
+  angleDifference,
   calculateBearingUncertaintyDegrees,
   calculateDistanceToMecca,
   calculateQiblaDirection,
@@ -38,12 +39,15 @@ import {
   getCalibrationOverlayVisible,
   getCompassLocationAge,
   getCompassSensorReliability,
+  getDetentIndex,
   getHeadingReliabilityIssue,
   getNativeCompassReliabilityIssue,
+  getQiblaHapticStep,
   getQiblaProximityState,
   getTiltOverlayVisible,
   getTranslatedCompassDirection,
   getTurnDirection,
+  type QiblaHapticStep,
   type QiblaProximityState,
 } from "@/utils/compass";
 import { formatNumberToLocale } from "@/utils/number";
@@ -84,12 +88,14 @@ const CompassScreen = () => {
     active: isFocused && isAppActive && !isScreenshotMode,
   });
   const hapticSelection = useHaptic("selection");
+  const hapticLight = useHaptic("light");
   const hapticMedium = useHaptic("medium");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [sensorRestartKey, setSensorRestartKey] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [compassOnly, setCompassOnly] = useState(false);
-  const previousHapticProximity = useRef<QiblaProximityState>("searching");
+  const previousHapticStep = useRef<QiblaHapticStep>(0);
+  const previousDetentIndex = useRef<number | null>(null);
 
   const effectiveFix: CompassLocationFix | null = qiblaSeed
     ? {
@@ -191,16 +197,53 @@ const CompassScreen = () => {
     ? getQiblaProximityState(compass.heading, qiblaDirection)
     : "searching";
 
+  // Motion haptics: ambient detent ticks give the dial a notched feel while searching,
+  // a light ladder escalates toward the Qibla, and a medium pulse marks the lock. Detents
+  // yield to the approach cues near the target so the two never overlap. useHaptic is a
+  // no-op when the global haptics preference is off.
   useEffect(() => {
-    if (!isReady || !canAlign || qiblaDirection === null) {
-      previousHapticProximity.current = "searching";
+    const active = isReady && compass.isValid && !showCalibrate && !showHoldFlat;
+    if (!active) {
+      previousHapticStep.current = 0;
+      previousDetentIndex.current = null;
       return;
     }
-    const previous = previousHapticProximity.current;
-    const next = getQiblaProximityState(compass.heading, qiblaDirection, previous);
-    previousHapticProximity.current = next;
-    if (next === "aligned" && previous !== "aligned") void hapticMedium();
-  }, [canAlign, compass.heading, hapticMedium, isReady, qiblaDirection]);
+
+    let nearQibla = false;
+    if (canAlign && qiblaDirection !== null) {
+      const previousStep = previousHapticStep.current;
+      const step = getQiblaHapticStep(
+        angleDifference(compass.heading, qiblaDirection),
+        previousStep
+      );
+      previousHapticStep.current = step;
+      nearQibla = step > 0;
+      if (step > previousStep) void (step >= 3 ? hapticMedium() : hapticLight());
+    } else {
+      previousHapticStep.current = 0;
+    }
+
+    const nextDetent = getDetentIndex(compass.heading, previousDetentIndex.current);
+    if (
+      !nearQibla &&
+      previousDetentIndex.current !== null &&
+      nextDetent !== previousDetentIndex.current
+    ) {
+      void hapticSelection();
+    }
+    previousDetentIndex.current = nextDetent;
+  }, [
+    canAlign,
+    compass.heading,
+    compass.isValid,
+    hapticLight,
+    hapticMedium,
+    hapticSelection,
+    isReady,
+    qiblaDirection,
+    showCalibrate,
+    showHoldFlat,
+  ]);
 
   const reliabilityKey = `${locationSource}:${blockingIssue ?? "ready"}:${showCalibrate}:${compass.source}:${compass.northReference}`;
   const previousReliabilityKey = useRef<string | null>(null);

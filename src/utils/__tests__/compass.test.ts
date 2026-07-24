@@ -18,6 +18,8 @@ import {
   getLocationReliabilityIssue,
   getNativeCompassReliabilityIssue,
   getQiblaProximityState,
+  getDetentIndex,
+  getQiblaHapticStep,
   unwrapHeading,
   applyDeclinationCorrection,
   applyHeadingDeadband,
@@ -101,6 +103,45 @@ describe("compass reliability", () => {
     );
 
     expect(issue).toBeNull();
+  });
+
+  describe("getDetentIndex", () => {
+    it("maps headings to the nearest of eight 45-degree detents on first read", () => {
+      expect(getDetentIndex(0, null)).toBe(0);
+      expect(getDetentIndex(45, null)).toBe(1);
+      expect(getDetentIndex(90, null)).toBe(2);
+      expect(getDetentIndex(180, null)).toBe(4);
+      expect(getDetentIndex(315, null)).toBe(7);
+    });
+
+    it("holds the current detent until the heading clears the boundary plus hysteresis", () => {
+      // Boundary between detent 0 and 1 is at 22.5°; with 4° hysteresis the switch is at 26.5°.
+      expect(getDetentIndex(26, 0)).toBe(0);
+      expect(getDetentIndex(27, 0)).toBe(1);
+    });
+
+    it("switches across north without a phantom detent", () => {
+      expect(getDetentIndex(359, 0)).toBe(0);
+      expect(getDetentIndex(330, 0)).toBe(7);
+    });
+  });
+
+  describe("getQiblaHapticStep", () => {
+    it("climbs the ladder as the heading closes on the Qibla", () => {
+      expect(getQiblaHapticStep(20, 0)).toBe(0);
+      expect(getQiblaHapticStep(15, 0)).toBe(1);
+      expect(getQiblaHapticStep(9, 0)).toBe(2);
+      expect(getQiblaHapticStep(5, 0)).toBe(3);
+    });
+
+    it("uses the absolute offset regardless of turn direction", () => {
+      expect(getQiblaHapticStep(-15, 0)).toBe(1);
+    });
+
+    it("holds the locked step until the heading drifts past the exit threshold", () => {
+      expect(getQiblaHapticStep(7, 3)).toBe(3);
+      expect(getQiblaHapticStep(8.5, 3)).toBe(2);
+    });
   });
 
   describe("applyDeclinationCorrection", () => {
