@@ -1,0 +1,84 @@
+# Controls what `eas build` uploads to the build servers.
+#
+# When this file exists, EAS ignores ALL .gitignore files (root, ios/, android/,
+# modules/*). Everything that must stay out of the build archive has to be
+# declared here — including the native build-artifact rules those .gitignore
+# files normally provide.
+
+# --- Dependencies & VCS (node_modules is auto-stripped by EAS, but this also
+# --- removes NESTED node_modules such as scripts/screenshots/node_modules) ---
+node_modules/
+.git/
+.worktrees/
+
+# --- OS / editor ---
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# --- JS / Expo / Metro / Tamagui build outputs ---
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.tsbuildinfo
+.metro-health-check*
+.tamagui/
+*.jsbundle
+.yarn/
+
+# --- Native build artifacts (unanchored so they match at any depth, exactly
+# --- like the ios/.gitignore + android/.gitignore rules they replace) ---
+build/
+.gradle/
+.cxx/
+.kotlin/
+Pods/
+DerivedData/
+xcuserdata/
+project.xcworkspace/
+*.xcuserstate
+*.hmap
+.xcode.env.local
+android/local.properties
+
+# --- HMS config: injected at build time by the eas-build-pre-install hook ---
+agconnect-services.json
+android/app/agconnect-services.json
+
+# --- Signing material / credentials (never upload) ---
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+google-service-account.json
+crowdin-cli.yml
+
+# --- Local env files ---
+.env
+.env.local
+.env*.local
+
+# --- Not build inputs: local build outputs, temp, data, docs, website, store assets ---
+builds/
+tmp/
+local-data/
+website-v2/
+docs/
+fastlane/
+
+# --- Locally-run tooling (screenshot + Quran content generation) ---
+scripts/screenshots/
+scripts/mutashabihat/
+scripts/qul-metadata/
+scripts/build-mutashabihat.ts
+scripts/build-quran-metadata.ts
+scripts/normalize-quran-fts.py
+
+# --- Agent / workflow local dirs ---
+.claude/
+.superpowers/
+.agent*
