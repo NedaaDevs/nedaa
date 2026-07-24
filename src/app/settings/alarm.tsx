@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ScrollView, Platform, Linking } from "react-native";
+import { ScrollView, Platform, Linking, View } from "react-native";
 import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
 import * as Application from "expo-application";
@@ -21,6 +21,7 @@ import ReportProblemModal from "@/components/ReportProblemModal";
 
 import {
   ChevronRight,
+  ChevronLeft,
   Sun,
   Calendar,
   Bell,
@@ -554,50 +555,72 @@ const AlarmSettings = () => {
             </Box>
           )}
 
-          <Modal isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} size="md">
+          <Modal isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} size="sm">
             <ModalBackdrop />
             <ModalContent>
               <ModalBody>
-                <Text
-                  size="lg"
-                  fontWeight="600"
-                  color="$typography"
-                  textAlign="center"
-                  marginBottom="$4">
-                  {t("alarm.report.title")}
-                </Text>
-                <VStack gap="$2">
-                  {issueOptions.map((option) => (
-                    <Pressable
-                      key={option.category}
-                      accessibilityRole="button"
-                      accessibilityLabel={t(option.labelKey)}
-                      minHeight={44}
-                      paddingHorizontal="$3"
-                      borderRadius="$6"
-                      onPress={() => handleCategorySelect(option.category)}>
-                      <HStack alignItems="center" width="100%" gap="$3">
-                        <Icon as={option.icon} size="md" color="$typographySecondary" />
-                        <Text size="md" color="$typography">
-                          {t(option.labelKey)}
-                        </Text>
-                      </HStack>
-                    </Pressable>
-                  ))}
-                </VStack>
+                {/* Re-apply direction inside the Dialog portal — it renders outside the
+                    RTLProvider's direction wrapper, so flex rows don't flip otherwise. */}
+                <View style={{ direction: isRTL ? "rtl" : "ltr", width: "100%" }}>
+                  <VStack gap="$3" paddingVertical="$3">
+                    <Text size="lg" fontWeight="700" color="$typography" textAlign="center">
+                      {t("alarm.report.title")}
+                    </Text>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t("common.cancel")}
-                  marginTop="$4"
-                  minHeight={44}
-                  justifyContent="center"
-                  alignItems="center"
-                  onPress={() => setCategoryModalOpen(false)}>
-                  <Text size="sm" color="$typographySecondary">
-                    {t("common.cancel")}
-                  </Text>
-                </Pressable>
+                    <VStack gap="$1">
+                      {issueOptions.map((option) => (
+                        <Pressable
+                          key={option.category}
+                          accessibilityRole="button"
+                          accessibilityLabel={t(option.labelKey)}
+                          onPress={() => handleCategorySelect(option.category)}
+                          minHeight={56}
+                          paddingHorizontal="$2"
+                          borderRadius="$4"
+                          pressStyle={{ backgroundColor: "$backgroundHover" }}>
+                          <HStack alignItems="center" width="100%" gap="$3">
+                            <HStack alignItems="center" gap="$3" flex={1}>
+                              <Box
+                                width={40}
+                                height={40}
+                                borderRadius={20}
+                                backgroundColor="$primarySubtle"
+                                alignItems="center"
+                                justifyContent="center">
+                                <Icon as={option.icon} size="sm" color="$primary" />
+                              </Box>
+                              <Text size="md" fontWeight="500" color="$typography">
+                                {t(option.labelKey)}
+                              </Text>
+                            </HStack>
+                            <Icon
+                              as={isRTL ? ChevronLeft : ChevronRight}
+                              size="sm"
+                              color="$typographySecondary"
+                            />
+                          </HStack>
+                        </Pressable>
+                      ))}
+                    </VStack>
+
+                    <Divider marginVertical="$1" />
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t("common.cancel")}
+                      onPress={() => setCategoryModalOpen(false)}
+                      minHeight={48}
+                      borderRadius="$4"
+                      backgroundColor="$backgroundMuted"
+                      justifyContent="center"
+                      alignItems="center"
+                      pressStyle={{ backgroundColor: "$backgroundHover" }}>
+                      <Text size="md" fontWeight="600" color="$primary">
+                        {t("common.cancel")}
+                      </Text>
+                    </Pressable>
+                  </VStack>
+                </View>
               </ModalBody>
             </ModalContent>
           </Modal>

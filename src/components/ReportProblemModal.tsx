@@ -1,6 +1,6 @@
 import { FC, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, BackHandler, Linking } from "react-native";
+import { ActivityIndicator, BackHandler, Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
@@ -282,6 +282,8 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
             paddingHorizontal="$4"
             borderRadius="$4"
             backgroundColor="$accentPrimary"
+            alignItems="center"
+            justifyContent="center"
             opacity={submitStatus === "submitting" ? 0.7 : 1}
             onPress={submitStatus === "submitting" ? undefined : handleDirectSubmit}
             accessibilityRole="button"
@@ -291,13 +293,20 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
                 : "settings.shareLogs.submitDirect"
             )}
             accessibilityState={{ disabled: submitStatus === "submitting" }}>
-            <HStack alignItems="center" justifyContent="center" width="100%" gap="$2">
+            <HStack alignItems="center" gap="$2">
               {submitStatus === "submitting" ? (
                 <ActivityIndicator size="small" color={theme.typographyContrast?.val} />
               ) : (
                 <Icon as={Send} size="lg" color="$typographyContrast" />
               )}
-              <Text size="md" fontWeight="700" color="$typographyContrast">
+              <Text
+                size="md"
+                fontWeight="700"
+                color="$typographyContrast"
+                textAlign="center"
+                // Balance the Android-only paddingEnd the Text component adds for
+                // Arabic glyph measurement, so the label stays centered in this row.
+                style={Platform.OS === "android" ? { paddingStart: 8 } : undefined}>
                 {t(
                   submitStatus === "submitting"
                     ? "settings.shareLogs.sending"
