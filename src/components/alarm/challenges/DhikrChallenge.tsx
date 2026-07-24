@@ -12,14 +12,19 @@ import { ChallengeDifficulty, DhikrPhrase } from "@/types/alarm";
 import { matchesDhikr, pickDhikrPhrase } from "@/utils/dhikrChallenge";
 import { useHaptic } from "@/hooks/useHaptic";
 
+// Wrong submissions before the phrase resets — lets a typo be fixed in place
+// instead of losing the attempt on every miss. Mirrored in the Android
+// overlay's onDhikrSubmitted.
+const STRIKE_THRESHOLD = 3;
+
 type Props = {
   difficulty: ChallengeDifficulty;
   onComplete: () => void;
   onInteraction?: () => void;
 };
 
-// Remembered across the wrapper's per-round remounts so a new round avoids the
-// phrase just shown.
+// Remembered across the wrapper's per-round remounts (and mid-round strike
+// resets) so the next phrase avoids the one just shown.
 let lastDhikrPhrase: DhikrPhrase | null = null;
 
 const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
@@ -28,7 +33,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
   const hapticSuccess = useHaptic("success");
   const hapticError = useHaptic("error");
 
-  const [phrase] = useState<DhikrPhrase>(() => {
+  const [phrase, setPhrase] = useState<DhikrPhrase>(() => {
     const picked = pickDhikrPhrase(difficulty, lastDhikrPhrase);
     lastDhikrPhrase = picked;
     return picked;
@@ -36,6 +41,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
 
   const [userInput, setUserInput] = useState("");
   const [isWrong, setIsWrong] = useState(false);
+  const [strikeCount, setStrikeCount] = useState(0);
 
   const handleSubmit = useCallback(() => {
     onInteraction?.();
@@ -47,10 +53,32 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
     } else {
       hapticError();
       setIsWrong(true);
-      setUserInput("");
+
+      const nextStrikes = strikeCount + 1;
+      if (nextStrikes >= STRIKE_THRESHOLD) {
+        // Too many misses on this phrase — fresh phrase, clean slate.
+        setStrikeCount(0);
+        setUserInput("");
+        const picked = pickDhikrPhrase(difficulty, phrase);
+        lastDhikrPhrase = picked;
+        setPhrase(picked);
+      } else {
+        // Keep the same phrase and typed text so a typo can be fixed in place.
+        setStrikeCount(nextStrikes);
+      }
+
       setTimeout(() => setIsWrong(false), 500);
     }
-  }, [userInput, phrase, onComplete, onInteraction, hapticSuccess, hapticError]);
+  }, [
+    userInput,
+    phrase,
+    strikeCount,
+    difficulty,
+    onComplete,
+    onInteraction,
+    hapticSuccess,
+    hapticError,
+  ]);
 
   return (
     <VStack gap="$4" alignItems="center" width="100%">
@@ -96,6 +124,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
         placeholder={t("alarm.challenge.dhikrPlaceholder")}
         placeholderTextColor={theme.placeholderColor.val}
         accessibilityLabel={t("alarm.challenge.dhikrPlaceholder")}
+        contextMenuHidden
         autoFocus
         style={{
           width: "100%",

@@ -22,7 +22,10 @@ import android.provider.Settings
 import android.text.InputType
 import android.text.TextWatcher
 import android.text.Editable
+import android.view.ActionMode
 import android.view.Gravity
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -47,6 +50,10 @@ class AlarmOverlayService : Service() {
         private const val TAPS_EASY = 5
         private const val TAPS_MEDIUM = 10
         private const val TAPS_HARD = 20
+
+        // Wrong-submission tolerance before the input clears + a fresh problem/phrase.
+        // Mirrors STRIKE_THRESHOLD in MathChallenge.tsx / DhikrChallenge.tsx — keep in sync.
+        private const val STRIKE_THRESHOLD = 3
 
         // Grace period seconds (must match JS GRACE_PERIOD_SECONDS)
         private val GRACE_TAP = mapOf("easy" to 10, "medium" to 15, "hard" to 20)
@@ -149,6 +156,7 @@ class AlarmOverlayService : Service() {
     private var mathProgressText: TextView? = null
     private var currentMathAnswer: Int = 0
     private var completedMathChallenges: Int = 0
+    private var mathStrikeCount: Int = 0
 
     // Dhikr challenge state
     private var dhikrArabicText: TextView? = null
@@ -158,6 +166,7 @@ class AlarmOverlayService : Service() {
     private var dhikrProgressText: TextView? = null
     private var currentDhikrPhrase: DhikrPhrase? = null
     private var completedDhikrChallenges: Int = 0
+    private var dhikrStrikeCount: Int = 0
     private var lastDhikrIndex: Int = -1
 
     private var autoSnoozeRunnable: Runnable? = null
@@ -840,6 +849,14 @@ class AlarmOverlayService : Service() {
             gravity = Gravity.CENTER
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
             imeOptions = EditorInfo.IME_ACTION_DONE
+            // Block long-press select/paste menu and the floating paste bubble.
+            isLongClickable = false
+            customInsertionActionModeCallback = object : ActionMode.Callback {
+                override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = false
+                override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = false
+                override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?) = false
+                override fun onDestroyActionMode(mode: ActionMode?) {}
+            }
             setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt())
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -957,6 +974,15 @@ class AlarmOverlayService : Service() {
             gravity = Gravity.CENTER
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             imeOptions = EditorInfo.IME_ACTION_DONE
+            // Block long-press select/paste menu and the floating paste bubble.
+            // IME predictive-word taps still insert normally (not an OS paste path).
+            isLongClickable = false
+            customInsertionActionModeCallback = object : ActionMode.Callback {
+                override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = false
+                override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = false
+                override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?) = false
+                override fun onDestroyActionMode(mode: ActionMode?) {}
+            }
             setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt())
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -1063,6 +1089,7 @@ class AlarmOverlayService : Service() {
                 completeAlarm()
             } else {
                 // Success feedback then next problem
+                mathStrikeCount = 0
                 setButtonColor(mathSubmitButton, COLOR_SUCCESS)
                 graceHandler.postDelayed({
                     setButtonColor(mathSubmitButton, COLOR_PRIMARY)
@@ -1072,7 +1099,13 @@ class AlarmOverlayService : Service() {
             }
         } else {
             showMathError(getString(R.string.overlay_math_wrong))
-            mathAnswerInput?.setText("")
+            mathStrikeCount++
+            if (mathStrikeCount >= STRIKE_THRESHOLD) {
+                // Give up on this problem: fresh start.
+                mathStrikeCount = 0
+                mathAnswerInput?.setText("")
+                generateMathProblem()
+            }
         }
     }
 
@@ -1132,6 +1165,7 @@ class AlarmOverlayService : Service() {
             if (completedDhikrChallenges >= challengeCount) {
                 completeAlarm()
             } else {
+                dhikrStrikeCount = 0
                 setButtonColor(dhikrSubmitButton, COLOR_SUCCESS)
                 graceHandler.postDelayed({
                     setButtonColor(dhikrSubmitButton, COLOR_PRIMARY)
@@ -1141,7 +1175,13 @@ class AlarmOverlayService : Service() {
             }
         } else {
             showDhikrError(getString(R.string.overlay_math_wrong))
-            dhikrInput?.setText("")
+            dhikrStrikeCount++
+            if (dhikrStrikeCount >= STRIKE_THRESHOLD) {
+                // Give up on this phrase: fresh start.
+                dhikrStrikeCount = 0
+                dhikrInput?.setText("")
+                generateDhikrPhrase()
+            }
         }
     }
 

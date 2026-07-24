@@ -11,6 +11,11 @@ import { Box } from "@/components/ui/box";
 import { ChallengeDifficulty, CHALLENGE_DIFFICULTY_CONFIG } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
 
+// Wrong submissions before the problem resets — lets a fat-fingered digit be
+// fixed in place instead of losing the attempt on every miss. Mirrored in the
+// Android overlay's onMathAnswerSubmitted.
+const STRIKE_THRESHOLD = 3;
+
 type Operation = "+" | "-" | "*";
 
 interface MathProblem {
@@ -69,6 +74,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
   const [problem, setProblem] = useState<MathProblem>(() => generateProblem(difficulty));
   const [userAnswer, setUserAnswer] = useState("");
   const [isWrong, setIsWrong] = useState(false);
+  const [strikeCount, setStrikeCount] = useState(0);
 
   const handleSubmit = useCallback(() => {
     onInteraction?.();
@@ -81,13 +87,24 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
     } else {
       hapticError();
       setIsWrong(true);
-      setUserAnswer("");
-      setProblem(generateProblem(difficulty));
+
+      const nextStrikes = strikeCount + 1;
+      if (nextStrikes >= STRIKE_THRESHOLD) {
+        // Too many misses on this problem — fresh problem, clean slate.
+        setStrikeCount(0);
+        setUserAnswer("");
+        setProblem(generateProblem(difficulty));
+      } else {
+        // Keep the same problem and typed text so a typo can be fixed in place.
+        setStrikeCount(nextStrikes);
+      }
+
       setTimeout(() => setIsWrong(false), 500);
     }
   }, [
     userAnswer,
     problem.answer,
+    strikeCount,
     difficulty,
     onComplete,
     onInteraction,
@@ -144,6 +161,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
         placeholder={t("alarm.challenge.enterAnswer")}
         placeholderTextColor={theme.placeholderColor.val}
         accessibilityLabel={t("alarm.challenge.enterAnswer")}
+        contextMenuHidden
         autoFocus
         style={{
           width: "100%",
