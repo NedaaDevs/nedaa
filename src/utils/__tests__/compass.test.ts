@@ -19,6 +19,7 @@ import {
   getNativeCompassReliabilityIssue,
   getQiblaProximityState,
   unwrapHeading,
+  applyDeclinationCorrection,
   applyHeadingDeadband,
   getCalibrationOverlayVisible,
   getTiltOverlayVisible,
@@ -85,6 +86,59 @@ describe("compass reliability", () => {
     );
 
     expect(issue).toBe(CompassReliabilityIssue.TRUE_NORTH_UNAVAILABLE);
+  });
+
+  it("accepts a computed true-north heading for the Qibla result", () => {
+    const issue = getHeadingReliabilityIssue(
+      {
+        heading: 127,
+        accuracyDegrees: 8,
+        isValid: true,
+        northReference: CompassNorthReference.TRUE_COMPUTED,
+        timestamp: NOW - 100,
+      },
+      { now: NOW, requiresTrueNorth: true }
+    );
+
+    expect(issue).toBeNull();
+  });
+
+  describe("applyDeclinationCorrection", () => {
+    it("rotates a magnetic heading to computed true north", () => {
+      const result = applyDeclinationCorrection(127, CompassNorthReference.MAGNETIC, 3.5);
+
+      expect(result.northReference).toBe(CompassNorthReference.TRUE_COMPUTED);
+      expect(result.heading).toBeCloseTo(130.5, 6);
+    });
+
+    it("normalizes a correction that crosses north", () => {
+      const wrapForward = applyDeclinationCorrection(359, CompassNorthReference.MAGNETIC, 4);
+      const wrapBackward = applyDeclinationCorrection(2, CompassNorthReference.MAGNETIC, -5);
+
+      expect(wrapForward.heading).toBeCloseTo(3, 6);
+      expect(wrapBackward.heading).toBeCloseTo(357, 6);
+    });
+
+    it("leaves a magnetic heading untouched when declination is unavailable", () => {
+      const result = applyDeclinationCorrection(127, CompassNorthReference.MAGNETIC, null);
+
+      expect(result.northReference).toBe(CompassNorthReference.MAGNETIC);
+      expect(result.heading).toBe(127);
+    });
+
+    it("never overrides a native true-north heading", () => {
+      const result = applyDeclinationCorrection(127, CompassNorthReference.TRUE, 3.5);
+
+      expect(result.northReference).toBe(CompassNorthReference.TRUE);
+      expect(result.heading).toBe(127);
+    });
+
+    it("does not synthesize true north from an unknown reference", () => {
+      const result = applyDeclinationCorrection(127, CompassNorthReference.UNKNOWN, 3.5);
+
+      expect(result.northReference).toBe(CompassNorthReference.UNKNOWN);
+      expect(result.heading).toBe(127);
+    });
   });
 
   it.each([

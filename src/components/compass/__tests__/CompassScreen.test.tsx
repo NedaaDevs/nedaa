@@ -273,7 +273,37 @@ describe("CompassScreen Qibla reliability", () => {
     expect(issueProps).toEqual(
       expect.objectContaining({
         title: "compass.issue.sensor_unavailable.title",
+        secondaryAction: null,
       })
     );
+  });
+
+  it("offers a compass-only escape hatch when true north is unavailable and honors it", async () => {
+    mockUseCompass.mockReturnValue({
+      ...reliableCompass,
+      northReference: CompassNorthReference.MAGNETIC,
+    });
+
+    const tree = await renderScreen();
+    const issueProps = mockCompassIssueCard.mock.calls[0]?.[0];
+
+    expect(mockCompassDial).not.toHaveBeenCalled();
+    expect(issueProps).toEqual(
+      expect.objectContaining({
+        title: "compass.issue.true_north_unavailable.title",
+        secondaryAction: "compassOnly",
+      })
+    );
+
+    await act(async () => {
+      (issueProps?.onSecondaryAction as () => void)();
+    });
+    const dialProps = mockCompassDial.mock.calls[0]?.[0];
+    act(() => tree.unmount());
+
+    // Choosing compass-only relaxes the true-north gate: the magnetic dial renders
+    // with no Qibla direction rather than staying blocked.
+    expect(mockCompassDial).toHaveBeenCalled();
+    expect(dialProps).toEqual(expect.objectContaining({ qiblaDirection: null }));
   });
 });

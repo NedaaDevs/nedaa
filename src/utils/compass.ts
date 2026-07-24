@@ -2,6 +2,7 @@ import {
   CompassNorthReference,
   CompassReliabilityIssue,
   CompassSensorReliability,
+  type CompassNorthReferenceValue,
   type CompassReliabilityIssueValue,
   type CompassSensorReliabilityValue,
 } from "@/enums/compass";
@@ -205,11 +206,39 @@ export const getHeadingReliabilityIssue = (
       : CompassReliabilityIssue.SENSOR_INVALID;
   }
 
-  if (requiresTrueNorth && sample.northReference !== CompassNorthReference.TRUE) {
+  if (
+    requiresTrueNorth &&
+    sample.northReference !== CompassNorthReference.TRUE &&
+    sample.northReference !== CompassNorthReference.TRUE_COMPUTED
+  ) {
     return CompassReliabilityIssue.TRUE_NORTH_UNAVAILABLE;
   }
 
   return null;
+};
+
+/**
+ * Rotates a magnetic heading onto true north using the local declination when the
+ * platform cannot resolve true north itself. A native true reading is authoritative
+ * and never overridden; a missing declination leaves the heading magnetic.
+ */
+export const applyDeclinationCorrection = (
+  heading: number,
+  northReference: CompassNorthReferenceValue,
+  declinationDeg: number | null
+): { heading: number; northReference: CompassNorthReferenceValue } => {
+  if (
+    northReference !== CompassNorthReference.MAGNETIC ||
+    declinationDeg === null ||
+    !Number.isFinite(declinationDeg)
+  ) {
+    return { heading, northReference };
+  }
+
+  return {
+    heading: (((heading + declinationDeg) % 360) + 360) % 360,
+    northReference: CompassNorthReference.TRUE_COMPUTED,
+  };
 };
 
 /**

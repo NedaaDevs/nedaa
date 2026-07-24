@@ -1,3 +1,4 @@
+import { Pressable } from "react-native";
 import { RefreshCw, Settings, TriangleAlert } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -11,16 +12,20 @@ type CompassIssueCardProps = {
   title: string;
   body: string;
   action: "retry" | "settings" | null;
+  secondaryAction?: "compassOnly" | null;
   isRefreshing?: boolean;
   onAction?: () => void;
+  onSecondaryAction?: () => void;
 };
 
 export const CompassIssueCard = ({
   title,
   body,
   action,
+  secondaryAction = null,
   isRefreshing = false,
   onAction,
+  onSecondaryAction,
 }: CompassIssueCardProps) => {
   const { t } = useTranslation();
   const actionLabel =
@@ -64,6 +69,19 @@ export const CompassIssueCard = ({
           {isRefreshing ? <Button.Spinner /> : <Button.Icon as={ActionIcon} />}
           <Button.Text>{actionLabel}</Button.Text>
         </Button>
+      )}
+
+      {secondaryAction && onSecondaryAction && (
+        <Pressable
+          onPress={onSecondaryAction}
+          accessibilityRole="button"
+          accessibilityLabel={t("a11y.compass.compassOnly")}
+          accessibilityHint={t("a11y.compass.compassOnlyHint")}
+          style={{ minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+          <Text color="$primary" fontWeight="600">
+            {t("compass.action.compassOnly")}
+          </Text>
+        </Pressable>
       )}
     </Card>
   );

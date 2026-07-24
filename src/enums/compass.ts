@@ -18,6 +18,7 @@ export type CompassLocationPermissionAccuracyValue =
 
 export const CompassNorthReference = {
   TRUE: "true",
+  TRUE_COMPUTED: "true_computed",
   MAGNETIC: "magnetic",
   UNKNOWN: "unknown",
 } as const;

@@ -6,9 +6,16 @@ import type {
 } from "expo-orientation";
 import { ExpoOrientationModule } from "expo-orientation";
 
+import { type CompassNorthReferenceValue } from "@/enums/compass";
 import type { CompassLocationFix } from "@/types/compass";
 import { AppLogger } from "@/utils/appLogger";
-import { MAX_HEADING_AGE_MS, MAX_HEADING_FUTURE_SKEW_MS, angleDifference } from "@/utils/compass";
+import {
+  MAX_HEADING_AGE_MS,
+  MAX_HEADING_FUTURE_SKEW_MS,
+  angleDifference,
+  applyDeclinationCorrection,
+} from "@/utils/compass";
+import { getMagneticDeclination } from "@/utils/wmm";
 
 const log = AppLogger.create("compass");
 const STARTUP_TIMEOUT_MS = 4_000;
@@ -32,7 +39,7 @@ export type CompassData = {
   heading: number;
   accuracyDegrees: number | null;
   tiltDegrees: number | null;
-  northReference: OrientationNorthReference;
+  northReference: CompassNorthReferenceValue;
   isAvailable: boolean;
   isActive: boolean;
   isValid: boolean;
@@ -120,6 +127,25 @@ export const useCompass = ({
 
     log.i("Session", `starting sensor; locationReference=${hasLocation ? "provided" : "none"}`);
 
+    // Declination depends only on location and date, so resolve it once per session and
+    // reuse it to rotate every magnetic sample onto true north. Null past the model's
+    // validity window; the reading then stays magnetic and the Qibla result is withheld.
+    const declination =
+      typeof latitude === "number" &&
+      Number.isFinite(latitude) &&
+      typeof longitude === "number" &&
+      Number.isFinite(longitude)
+        ? getMagneticDeclination(latitude, longitude, altitude ?? null, new Date())
+        : null;
+    if (hasLocation) {
+      log.i(
+        "Declination",
+        declination !== null
+          ? `applied ${declination.toFixed(1)}° for computed true north`
+          : "model unavailable; using sensor reference only"
+      );
+    }
+
     let receivedEvent = false;
     let lastSource: OrientationSource = "unknown";
     let lastValidity: string | null = null;
@@ -129,7 +155,7 @@ export const useCompass = ({
       heading: number;
       accuracyDegrees: number | null;
       tiltDegrees: number | null;
-      northReference: OrientationNorthReference;
+      northReference: CompassNorthReferenceValue;
       source: OrientationSource;
       isValid: boolean;
       error: string | null;
@@ -159,7 +185,7 @@ export const useCompass = ({
           }
 
           const source = orientationSources.has(event?.source) ? event.source : "unknown";
-          const northReference = northReferences.has(event?.northReference)
+          const sensorNorthReference = northReferences.has(event?.northReference)
             ? event.northReference
             : "unknown";
           const headingIsValid =
@@ -201,6 +227,11 @@ export const useCompass = ({
                   : !timestampIsValid
                     ? "invalid_timestamp"
                     : null;
+
+          const rawHeading = headingIsValid ? event.heading : 0;
+          const { heading, northReference } = isValid
+            ? applyDeclinationCorrection(rawHeading, sensorNorthReference, declination)
+            : { heading: rawHeading, northReference: sensorNorthReference };
 
           if (staleTimeout) clearTimeout(staleTimeout);
           if (isValid) {
@@ -254,7 +285,6 @@ export const useCompass = ({
             lastDebugAt = now;
           }
 
-          const heading = headingIsValid ? event.heading : 0;
           const nullabilityChanged = (a: number | null, b: number | null) =>
             (a === null) !== (b === null) ||
             (a !== null && b !== null && Math.round(a) !== Math.round(b));

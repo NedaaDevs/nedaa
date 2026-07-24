@@ -88,6 +88,7 @@ const CompassScreen = () => {
   const [reduceMotion, setReduceMotion] = useState(false);
   const [sensorRestartKey, setSensorRestartKey] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [compassOnly, setCompassOnly] = useState(false);
   const previousHapticProximity = useRef<QiblaProximityState>("searching");
 
   const effectiveFix: CompassLocationFix | null = qiblaSeed
@@ -135,7 +136,10 @@ const CompassScreen = () => {
     };
   }, []);
 
-  const requiresTrueNorth = effectiveFix !== null;
+  // Compass-only mode is the user's escape hatch when true north cannot be resolved
+  // (native heading magnetic and the declination model unavailable): drop the Qibla
+  // requirement and show the magnetic dial rather than a blocking card.
+  const requiresTrueNorth = effectiveFix !== null && !compassOnly;
   const sensorIssue = getSensorIssue(compass, requiresTrueNorth);
 
   // Unusable accuracy drives the calibrate overlay, not a blocking card. Any native error
@@ -162,8 +166,10 @@ const CompassScreen = () => {
   const isStartingSensor = blockingIssue === CompassReliabilityIssue.SENSOR_STARTING;
   const isReady = blockingIssue === null;
 
-  const hasQibla =
-    isReady && effectiveFix !== null && compass.northReference === CompassNorthReference.TRUE;
+  const hasTrueNorth =
+    compass.northReference === CompassNorthReference.TRUE ||
+    compass.northReference === CompassNorthReference.TRUE_COMPUTED;
+  const hasQibla = isReady && effectiveFix !== null && hasTrueNorth;
   const qiblaDirection =
     hasQibla && effectiveFix
       ? calculateQiblaDirection(effectiveFix.latitude, effectiveFix.longitude)
@@ -226,6 +232,10 @@ const CompassScreen = () => {
     void hapticSelection();
     setSensorRestartKey((value) => value + 1);
   }, [hapticSelection]);
+  const enableCompassOnly = useCallback(() => {
+    void hapticSelection();
+    setCompassOnly(true);
+  }, [hapticSelection]);
   const openDetails = useCallback(() => {
     void hapticSelection();
     setDetailsOpen(true);
@@ -247,7 +257,9 @@ const CompassScreen = () => {
   const northReferenceLabel = t(
     compass.northReference === CompassNorthReference.MAGNETIC
       ? "compass.northReference.magnetic"
-      : "compass.northReference.true"
+      : compass.northReference === CompassNorthReference.TRUE_COMPUTED
+        ? "compass.northReference.trueComputed"
+        : "compass.northReference.true"
   );
   const sensorAccuracyText =
     compass.accuracyDegrees !== null && Number.isFinite(compass.accuracyDegrees)
@@ -313,6 +325,12 @@ const CompassScreen = () => {
               body={t(`compass.issue.${blockingIssue}.body`)}
               action="retry"
               onAction={retrySensor}
+              secondaryAction={
+                blockingIssue === CompassReliabilityIssue.TRUE_NORTH_UNAVAILABLE
+                  ? "compassOnly"
+                  : null
+              }
+              onSecondaryAction={enableCompassOnly}
             />
           ) : (
             <>

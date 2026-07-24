@@ -41,7 +41,8 @@
     "preset": "jest-expo",
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/scripts/"
+      "/scripts/",
+      "/fixtures/"
     ]
   },
   "dependencies": {
