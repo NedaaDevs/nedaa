@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 import org.json.JSONObject
 
 class AthanScheduler(private val context: Context) {
@@ -35,7 +34,7 @@ class AthanScheduler(private val context: Context) {
         stopLabel: String
     ): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-            Log.w(TAG, "Cannot schedule exact alarms")
+            AlarmLogger.getInstance(context).w(TAG, "Cannot schedule exact alarms")
             return false
         }
 
@@ -62,7 +61,7 @@ class AthanScheduler(private val context: Context) {
         )
 
         persistAthan(id, triggerTimeMs, prayerId, soundName, title, stopLabel)
-        Log.d(TAG, "Scheduled athan $id for $prayerId at $triggerTimeMs")
+        AlarmLogger.getInstance(context).d(TAG, "Scheduled athan $id for $prayerId at $triggerTimeMs")
         return true
     }
 
@@ -91,7 +90,7 @@ class AthanScheduler(private val context: Context) {
 
     fun cancelAllPersisted() {
         val ids = synchronized(storeLock) { readStore().keys().asSequence().toList() }
-        Log.d(TAG, "Cancelling ${ids.size} persisted athans")
+        AlarmLogger.getInstance(context).d(TAG, "Cancelling ${ids.size} persisted athans")
         for (id in ids) {
             cancelAthan(id)
         }
@@ -120,7 +119,7 @@ class AthanScheduler(private val context: Context) {
                 }
             }
             writeStore(store)
-            Log.d(TAG, "Pruned $pruned stale athans, ${survivors.size} to restore")
+            AlarmLogger.getInstance(context).d(TAG, "Pruned $pruned stale athans, ${survivors.size} to restore")
             survivors
         }
 
@@ -137,10 +136,10 @@ class AthanScheduler(private val context: Context) {
                 )
                 if (ok) restored++
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to restore athan ${spec.optString("id")}: ${e.message}")
+                AlarmLogger.getInstance(context).e(TAG, "Failed to restore athan ${spec.optString("id")}: ${e.message}")
             }
         }
-        Log.d(TAG, "Restored $restored/${restorable.size} athans")
+        AlarmLogger.getInstance(context).d(TAG, "Restored $restored/${restorable.size} athans")
     }
 
     private fun persistAthan(
@@ -181,7 +180,7 @@ class AthanScheduler(private val context: Context) {
         return try {
             JSONObject(raw)
         } catch (e: Exception) {
-            Log.w(TAG, "Corrupt athan store, resetting: ${e.message}")
+            AlarmLogger.getInstance(context).w(TAG, "Corrupt athan store, resetting: ${e.message}")
             JSONObject()
         }
     }

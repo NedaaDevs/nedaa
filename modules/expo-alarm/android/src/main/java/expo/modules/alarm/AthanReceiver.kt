@@ -3,7 +3,6 @@ package expo.modules.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 
 class AthanReceiver : BroadcastReceiver() {
 
@@ -23,7 +22,7 @@ class AthanReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: prayerId.replaceFirstChar { it.uppercase() }
         val stopLabel = intent.getStringExtra(EXTRA_STOP_LABEL) ?: "Stop"
 
-        Log.d(TAG, "Received athan broadcast: prayer=$prayerId, sound=$soundName")
+        AlarmLogger.getInstance(context).d(TAG, "Received athan broadcast: prayer=$prayerId, sound=$soundName")
         AthanService.start(context, athanId, prayerId, soundName, title, stopLabel)
     }
 }

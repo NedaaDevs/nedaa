@@ -110,8 +110,12 @@ class AlarmService : Service() {
             audioManager.startVibration(settings.vibrationPattern)
         }
 
+        AlarmLogger.getInstance(this).d("AlarmService", "Alarm ringing: id=$alarmId type=$alarmType sound=$sound")
+
         if (Settings.canDrawOverlays(this)) {
             AlarmOverlayService.start(this, alarmId, alarmType, title)
+        } else {
+            AlarmLogger.getInstance(this).w("AlarmService", "Overlay permission missing — skipping full-screen challenge overlay for id=$alarmId type=$alarmType")
         }
     }
 

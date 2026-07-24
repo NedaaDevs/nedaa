@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.util.Log
 
 class AthanService : Service() {
 
@@ -88,7 +87,7 @@ class AthanService : Service() {
 
     private fun buildAudioAttributes(athanId: String? = null): AudioAttributes {
         val stream = getConfiguredAudioStream(athanId)
-        Log.d(TAG, "Building audio attributes for stream: $stream")
+        AlarmLogger.getInstance(this@AthanService).d(TAG, "Building audio attributes for stream: $stream")
         return if (stream == "ringer") {
             AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
@@ -111,9 +110,9 @@ class AthanService : Service() {
     }
 
     private fun startAthan(athanId: String, soundName: String, title: String, stopLabel: String) {
-        Log.d(TAG, "Starting athan: title=$title, sound=$soundName")
+        AlarmLogger.getInstance(this@AthanService).d(TAG, "Starting athan: title=$title, sound=$soundName")
         if (isRunning) {
-            Log.d(TAG, "Already playing, stopping current playback first")
+            AlarmLogger.getInstance(this@AthanService).d(TAG, "Already playing, stopping current playback first")
             stopPlayback()
         }
 
@@ -127,7 +126,7 @@ class AthanService : Service() {
 
         val stream = getConfiguredAudioStream(athanId)
         if (stream == "media" && isDeviceSilenced()) {
-            Log.d(TAG, "Device is silenced and stream is media, skipping audio playback")
+            AlarmLogger.getInstance(this@AthanService).d(TAG, "Device is silenced and stream is media, skipping audio playback")
             stopAthan()
             return
         }
@@ -139,7 +138,7 @@ class AthanService : Service() {
                 startFromResource(soundName, athanId)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start athan playback: ${e.message}")
+            AlarmLogger.getInstance(this@AthanService).e(TAG, "Failed to start athan playback: ${e.message}")
             stopAthan()
         }
     }
@@ -168,14 +167,14 @@ class AthanService : Service() {
             val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                 .setAudioAttributes(buildAudioAttributes(athanId))
                 .setOnAudioFocusChangeListener { focusChange ->
-                    Log.d(TAG, "Audio focus changed: $focusChange")
+                    AlarmLogger.getInstance(this@AthanService).d(TAG, "Audio focus changed: $focusChange")
                 }
                 .build()
             audioFocusRequest = request
             audioManager.requestAudioFocus(request)
         } else {
             val listener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-                Log.d(TAG, "Audio focus changed: $focusChange")
+                AlarmLogger.getInstance(this@AthanService).d(TAG, "Audio focus changed: $focusChange")
             }
             audioFocusListener = listener
             @Suppress("DEPRECATION")
@@ -185,7 +184,7 @@ class AthanService : Service() {
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
             )
         }
-        Log.d(TAG, "Audio focus request result: $result")
+        AlarmLogger.getInstance(this@AthanService).d(TAG, "Audio focus request result: $result")
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
@@ -204,7 +203,7 @@ class AthanService : Service() {
     private fun createAndStartPlayer(uri: Uri, athanId: String? = null) {
         val focusGranted = requestAudioFocus(athanId)
         val stream = getConfiguredAudioStream(athanId)
-        Log.d(TAG, "Audio focus granted: $focusGranted, proceeding with stream=$stream")
+        AlarmLogger.getInstance(this@AthanService).d(TAG, "Audio focus granted: $focusGranted, proceeding with stream=$stream")
 
         val attrs = buildAudioAttributes(athanId)
 
@@ -213,16 +212,16 @@ class AthanService : Service() {
             setDataSource(this@AthanService, uri)
             isLooping = false
             setOnCompletionListener {
-                Log.d(TAG, "Playback completed naturally")
+                AlarmLogger.getInstance(this@AthanService).d(TAG, "Playback completed naturally")
                 stopAthan()
             }
             setOnErrorListener { _, what, extra ->
-                Log.e(TAG, "MediaPlayer error: what=$what, extra=$extra")
+                AlarmLogger.getInstance(this@AthanService).e(TAG, "MediaPlayer error: what=$what, extra=$extra")
                 stopAthan()
                 true
             }
             setOnPreparedListener { mp ->
-                Log.d(TAG, "MediaPlayer prepared, duration=${mp.duration}ms, starting playback")
+                AlarmLogger.getInstance(this@AthanService).d(TAG, "MediaPlayer prepared, duration=${mp.duration}ms, starting playback")
                 mp.start()
             }
             prepareAsync()
@@ -235,12 +234,14 @@ class AthanService : Service() {
                 if (it.isPlaying) it.stop()
                 it.release()
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this@AthanService).e(TAG, "Failed to stop/release MediaPlayer", e)
+        }
         mediaPlayer = null
     }
 
     private fun stopAthan() {
-        Log.d(TAG, "Stopping athan service")
+        AlarmLogger.getInstance(this@AthanService).d(TAG, "Stopping athan service")
         stopPlayback()
         abandonAudioFocus()
         AthanNotificationManager(this).cancelNotification()
@@ -266,7 +267,9 @@ class AthanService : Service() {
     private fun releaseWakeLock() {
         try {
             wakeLock?.let { if (it.isHeld) it.release() }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            AlarmLogger.getInstance(this@AthanService).e(TAG, "Failed to release wake lock", e)
+        }
         wakeLock = null
     }
 

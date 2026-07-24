@@ -39,7 +39,10 @@ class AlarmScheduler(private val context: Context) {
         soundName: String,
         snoozeCount: Int = 0
     ): Boolean {
-        if (!canScheduleExactAlarms()) return false
+        if (!canScheduleExactAlarms()) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Exact alarm permission denied — cannot schedule id=$id type=$alarmType")
+            return false
+        }
 
         // Save to database
         val db = AlarmDatabase.getInstance(context)

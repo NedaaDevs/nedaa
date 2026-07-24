@@ -109,7 +109,9 @@ export const useAlarmStore = create<AlarmState>()(
           await ExpoAlarm.endAllLiveActivities();
           ExpoAlarm.markAlarmCompleted(alarmId);
 
-          if (!alarm) {
+          if (alarm) {
+            alarmLog.i("Store", `completed ${alarm.alarmType} alarm ${alarmId}`);
+          } else {
             alarmLog.w("Store", `completeAlarm: alarm ${alarmId} not found in store`);
           }
 
@@ -190,6 +192,11 @@ export const useAlarmStore = create<AlarmState>()(
             alarmLog.w("Store", `snooze: live activity failed: ${(error as Error).message}`);
           }
 
+          alarmLog.i(
+            "Store",
+            `snoozed ${alarm.alarmType} ${newSnoozeCount}/${maxSnoozes} until ${snoozeTime.toISOString()}`
+          );
+
           return {
             snoozeId,
             snoozeEndTime: snoozeTime,
@@ -198,8 +205,12 @@ export const useAlarmStore = create<AlarmState>()(
         },
 
         cancelAlarm: async (alarmId) => {
-          await ExpoAlarm.cancelAlarm(alarmId);
-          ExpoAlarm.deleteAlarmFromDB(alarmId);
+          try {
+            await ExpoAlarm.cancelAlarm(alarmId);
+            ExpoAlarm.deleteAlarmFromDB(alarmId);
+          } catch (error) {
+            alarmLog.e("Store", `cancelAlarm: native cancel failed for ${alarmId}`, error as Error);
+          }
 
           set((state) => {
             const newAlarms = { ...state.scheduledAlarms };
@@ -215,8 +226,16 @@ export const useAlarmStore = create<AlarmState>()(
           );
 
           for (const alarm of toCancel) {
-            await ExpoAlarm.cancelAlarm(alarm.alarmId);
-            ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
+            try {
+              await ExpoAlarm.cancelAlarm(alarm.alarmId);
+              ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
+            } catch (error) {
+              alarmLog.e(
+                "Store",
+                `cancelAlarmsByType: native cancel failed for ${alarm.alarmId} (${alarmType})`,
+                error as Error
+              );
+            }
           }
 
           set((state) => {
@@ -229,9 +248,13 @@ export const useAlarmStore = create<AlarmState>()(
         },
 
         cancelAllAlarms: async () => {
-          await ExpoAlarm.cancelAllAlarms();
-          await ExpoAlarm.cancelAllBackups();
-          await ExpoAlarm.endAllLiveActivities();
+          try {
+            await ExpoAlarm.cancelAllAlarms();
+            await ExpoAlarm.cancelAllBackups();
+            await ExpoAlarm.endAllLiveActivities();
+          } catch (error) {
+            alarmLog.e("Store", "cancelAllAlarms: native cancel failed", error as Error);
+          }
           set({ scheduledAlarms: {} });
         },
 

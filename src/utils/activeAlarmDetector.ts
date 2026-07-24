@@ -57,11 +57,17 @@ export async function detectActiveAlarm(
         source: "pending-challenge",
       };
     }
-  } catch {
+  } catch (e) {
     if (retryCount < 2) {
       await new Promise((resolve) => setTimeout(resolve, 500));
       return detectActiveAlarm(scheduledAlarms, handledIds, retryCount + 1);
     }
+    // Exhausted retries — this is the "can't detect a firing alarm" failure mode
+    // the detector exists to catch, so it must be recorded, not swallowed.
+    alarmLog.e(
+      "Detector",
+      `getPendingChallenge failed after retries: ${(e as Error)?.message ?? e}`
+    );
   }
 
   // Check past-due alarms

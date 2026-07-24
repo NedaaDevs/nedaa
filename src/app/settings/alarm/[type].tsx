@@ -33,6 +33,7 @@ import { toScheduledAlarmType } from "@/utils/alarmTypes";
 import { useAlarmStore } from "@/stores/alarm";
 import { createAsyncLock } from "@/utils/asyncLock";
 import { scheduleFajrAlarm, scheduleFridayAlarm, scheduleTestAlarm } from "@/utils/alarmScheduler";
+import { alarmLog } from "@/utils/alarmReport";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
 import { SOUND_ASSETS } from "@/constants/sounds";
@@ -167,7 +168,7 @@ const AlarmTypeSettingsScreen = () => {
 
     if (Object.keys(nativeSettings).length > 0) {
       ExpoAlarm.setAlarmSettings(scheduledType, nativeSettings).catch((e: unknown) =>
-        console.warn("Failed to sync alarm settings to native:", e)
+        alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`, e as Error)
       );
     }
 

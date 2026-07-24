@@ -98,6 +98,25 @@ export async function getAlarmDiagnosticReport(category?: IssueCategory): Promis
   }
   sections.push("");
 
+  // iOS OSLog entries (AlarmObserver, audio, intents) live separately from the
+  // persistent file above; on Android this returns nothing and the section is skipped.
+  try {
+    const nativeEntries = await ExpoAlarm.getNativeLogs();
+    if (nativeEntries.length > 0) {
+      sections.push("--- Native OSLog ---");
+      for (const entry of nativeEntries) {
+        const suffix = entry.error ? ` | ${entry.error}` : "";
+        sections.push(
+          `${entry.timestamp} [${entry.level}] ${entry.category}: ${entry.message}${suffix}`
+        );
+      }
+      sections.push("");
+    }
+  } catch (e) {
+    sections.push(`--- Native OSLog (error: ${e}) ---`);
+    sections.push("");
+  }
+
   sections.push("--- App Logs ---");
   try {
     const logText = await log.getLogText();
