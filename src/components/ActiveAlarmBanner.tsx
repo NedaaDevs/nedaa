@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { HStack } from "@/components/ui/hstack";
@@ -11,12 +11,11 @@ import { Bell, ChevronRight } from "lucide-react-native";
 
 import { useAlarmStore } from "@/stores/alarm";
 import { detectActiveAlarm, type ActiveAlarmInfo } from "@/utils/activeAlarmDetector";
-import { navigateToAlarm } from "@/hooks/useAlarmDeepLink";
-import { useRTL } from "@/contexts/RTLContext";
+import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
+import { navigateToAlarm, markAlarmHandled } from "@/hooks/useAlarmDeepLink";
 
 export default function ActiveAlarmBanner() {
   const { t } = useTranslation();
-  const { isRTL } = useRTL();
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarmInfo | null>(null);
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
 
@@ -39,8 +38,19 @@ export default function ActiveAlarmBanner() {
 
   if (!activeAlarm) return null;
 
-  const handlePress = () => {
-    navigateToAlarm(activeAlarm.alarmId, activeAlarm.alarmType, "banner-tap");
+  const handlePress = async () => {
+    // iOS: the /alarm screen is the challenge UI, so navigate there.
+    if (Platform.OS !== "android") {
+      navigateToAlarm(activeAlarm.alarmId, activeAlarm.alarmType, "banner-tap");
+      return;
+    }
+    // Android dismissal is the native overlay, not a JS screen. The banner is a
+    // recovery affordance for a challenge left pending (overlay permission missing,
+    // or dismissed from the notification): the alarm already rang, so a tap clears
+    // it (matching the "tap to dismiss" label) and reschedules a recurring alarm.
+    markAlarmHandled(activeAlarm.alarmId);
+    setActiveAlarm(null);
+    await completeAndRescheduleAlarm(activeAlarm.alarmId);
   };
 
   return (
