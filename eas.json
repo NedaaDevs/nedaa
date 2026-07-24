@@ -21,6 +21,13 @@
       "env": {
         "BUILD_VARIANT": "hms"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
