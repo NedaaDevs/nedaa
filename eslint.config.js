@@ -38,4 +38,13 @@ module.exports = defineConfig([
       "@typescript-eslint/no-deprecated": "warn",
     },
   },
+  {
+    // Test suites still render through react-test-renderer, deprecated in React 19.
+    // Silence the deprecation for tests until they move to
+    // @testing-library/react-native; production code keeps the check.
+    files: ["src/**/__tests__/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-deprecated": "off",
+    },
+  },
 ]);
