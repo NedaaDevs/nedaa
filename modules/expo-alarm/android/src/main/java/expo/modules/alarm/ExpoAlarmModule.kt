@@ -58,7 +58,7 @@ class ExpoAlarmModule : Module() {
 
         // -- Scheduling --
 
-        AsyncFunction("scheduleAlarm") { id: String, triggerTimestamp: Double, title: String, alarmType: String, sound: String, _dismissText: String, _openText: String, promise: Promise ->
+        AsyncFunction("scheduleAlarm") { id: String, triggerTimestamp: Double, title: String, alarmType: String, sound: String, _dismissText: String, _openText: String, _countdown: Boolean, promise: Promise ->
             try {
                 val triggerMs = triggerTimestamp.toLong()
                 val soundName = if (sound.isNotEmpty()) sound else "beep"

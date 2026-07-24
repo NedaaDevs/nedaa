@@ -124,6 +124,7 @@ public class ExpoAlarmModule: Module {
             sound: String,
             dismissText: String,
             openText: String,
+            countdown: Bool,
             promise: Promise
         ) in
             #if canImport(AlarmKit)
@@ -148,30 +149,56 @@ public class ExpoAlarmModule: Module {
                             stopButton: stopButton
                         )
 
-                        let presentation = AlarmPresentation(
-                            alert: alertPresentation
-                        )
-
-                        let attributes = AlarmAttributes<NedaaAlarmMetadata>(
-                            presentation: presentation,
-                            tintColor: alarmType == "fajr" ? .orange : .green
-                        )
-
                         let stopIntent = OpenNedaaAlarmIntent(alarmId: id, alarmType: alarmType, title: title)
-
-                        let config = AlarmManager.AlarmConfiguration.alarm(
-                            schedule: schedule,
-                            attributes: attributes,
-                            stopIntent: stopIntent,
-                            sound: .default
-                        )
 
                         guard let alarmUUID = UUID(uuidString: id) else {
                             promise.reject("ERR_INVALID_UUID", "Invalid alarm ID: \(id)")
                             return
                         }
                         try? AlarmManager.shared.cancel(id: alarmUUID)
-                        _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
+
+                        if countdown {
+                            // Preview alarm: render a live countdown in the Dynamic Island /
+                            // lock screen before firing, then present the alert with Stop.
+                            let countdownDuration = Alarm.CountdownDuration(
+                                preAlert: max(secondsUntilAlarm, 1),
+                                postAlert: 300
+                            )
+                            let countdownPresentation = AlarmPresentation.Countdown(
+                                title: LocalizedStringResource(stringLiteral: title)
+                            )
+                            let presentation = AlarmPresentation(
+                                alert: alertPresentation,
+                                countdown: countdownPresentation
+                            )
+                            let attributes = AlarmAttributes<NedaaAlarmMetadata>(
+                                presentation: presentation,
+                                tintColor: alarmType == "fajr" ? .orange : .green
+                            )
+                            let config = AlarmManager.AlarmConfiguration(
+                                countdownDuration: countdownDuration,
+                                schedule: schedule,
+                                attributes: attributes,
+                                stopIntent: stopIntent,
+                                sound: .default
+                            )
+                            _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
+                        } else {
+                            let presentation = AlarmPresentation(
+                                alert: alertPresentation
+                            )
+                            let attributes = AlarmAttributes<NedaaAlarmMetadata>(
+                                presentation: presentation,
+                                tintColor: alarmType == "fajr" ? .orange : .green
+                            )
+                            let config = AlarmManager.AlarmConfiguration.alarm(
+                                schedule: schedule,
+                                attributes: attributes,
+                                stopIntent: stopIntent,
+                                sound: .default
+                            )
+                            _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
+                        }
 
                         self.withAlarmIds { $0.insert(id) }
 

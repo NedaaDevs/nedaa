@@ -38,6 +38,7 @@ interface AlarmState {
     alarmType: ScheduledAlarmType;
     snoozeCount?: number;
     baseTitle?: string;
+    countdown?: boolean;
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
@@ -55,13 +56,22 @@ export const useAlarmStore = create<AlarmState>()(
       (set, get) => ({
         scheduledAlarms: {},
 
-        scheduleAlarm: async ({ id, triggerDate, title, alarmType, snoozeCount, baseTitle }) => {
+        scheduleAlarm: async ({
+          id,
+          triggerDate,
+          title,
+          alarmType,
+          snoozeCount,
+          baseTitle,
+          countdown,
+        }) => {
           try {
             const success = await ExpoAlarm.scheduleAlarm({
               id,
               triggerDate,
               title,
               alarmType,
+              countdown,
             });
 
             if (!success) {

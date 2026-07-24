@@ -32,7 +32,11 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
 import { useAlarmStore } from "@/stores/alarm";
 import { createAsyncLock } from "@/utils/asyncLock";
-import { scheduleFajrAlarm, scheduleFridayAlarm, scheduleTestAlarm } from "@/utils/alarmScheduler";
+import {
+  scheduleFajrAlarm,
+  scheduleFridayAlarm,
+  schedulePreviewAlarm,
+} from "@/utils/alarmScheduler";
 import { alarmLog } from "@/utils/alarmReport";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -94,30 +98,42 @@ const AlarmTypeSettingsScreen = () => {
   const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toggleLock = useRef(createAsyncLock()).current;
 
-  const TEST_ALARM_SECONDS = 30;
-  const [testState, setTestState] = useState<"idle" | "pending" | "failed">("idle");
-  const testTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const PREVIEW_ALARM_SECONDS = 30;
+  const [previewState, setPreviewState] = useState<"idle" | "pending" | "failed">("idle");
+  // Seconds left in the pending window, ticked down live for the button label.
+  const [previewRemaining, setPreviewRemaining] = useState(PREVIEW_ALARM_SECONDS);
+  const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewFailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(
-    () => () => {
-      if (testTimerRef.current) clearTimeout(testTimerRef.current);
-    },
-    []
-  );
+  const clearPreviewTimers = () => {
+    if (previewIntervalRef.current) clearInterval(previewIntervalRef.current);
+    if (previewFailTimerRef.current) clearTimeout(previewFailTimerRef.current);
+  };
 
-  const handleTestAlarm = async () => {
-    if (testState === "pending") return;
+  useEffect(() => clearPreviewTimers, []);
+
+  const handlePreviewAlarm = async () => {
+    if (previewState === "pending") return;
     hapticSelection();
+    clearPreviewTimers();
 
-    if (testTimerRef.current) clearTimeout(testTimerRef.current);
-
-    const id = await scheduleTestAlarm(scheduledType, TEST_ALARM_SECONDS);
+    const id = await schedulePreviewAlarm(scheduledType, PREVIEW_ALARM_SECONDS);
     if (id) {
-      setTestState("pending");
-      testTimerRef.current = setTimeout(() => setTestState("idle"), TEST_ALARM_SECONDS * 1000);
+      setPreviewState("pending");
+      setPreviewRemaining(PREVIEW_ALARM_SECONDS);
+      const startedAt = Date.now();
+      previewIntervalRef.current = setInterval(() => {
+        const left = Math.round(PREVIEW_ALARM_SECONDS - (Date.now() - startedAt) / 1000);
+        if (left <= 0) {
+          clearPreviewTimers();
+          setPreviewState("idle");
+        } else {
+          setPreviewRemaining(left);
+        }
+      }, 1000);
     } else {
-      setTestState("failed");
-      testTimerRef.current = setTimeout(() => setTestState("idle"), 3000);
+      setPreviewState("failed");
+      previewFailTimerRef.current = setTimeout(() => setPreviewState("idle"), 3000);
     }
   };
 
@@ -320,24 +336,29 @@ const AlarmTypeSettingsScreen = () => {
                 />
               </SettingsSection>
 
-              {/* Test Alarm: end-to-end rehearsal using the saved per-type settings */}
-              <SettingsSection title={t("alarm.settings.testAlarm")} icon={FlaskConical}>
+              {/* Preview Alarm: end-to-end rehearsal using the saved per-type settings */}
+              <SettingsSection title={t("alarm.settings.previewAlarm")} icon={FlaskConical}>
+                <Text size="sm" color="$typographySecondary" marginBottom="$2">
+                  {t("alarm.settings.previewAlarmHint")}
+                </Text>
                 <Button
                   size="lg"
                   minHeight={44}
-                  variant={testState === "idle" ? "solid" : "outline"}
-                  action={testState === "failed" ? "negative" : "primary"}
-                  disabled={testState === "pending"}
-                  onPress={handleTestAlarm}
+                  variant={previewState === "idle" ? "solid" : "outline"}
+                  action={previewState === "failed" ? "negative" : "primary"}
+                  disabled={previewState === "pending"}
+                  onPress={handlePreviewAlarm}
                   accessibilityRole="button"
-                  accessibilityLabel={t("a11y.alarm.testAlarm", { seconds: TEST_ALARM_SECONDS })}
-                  accessibilityState={{ disabled: testState === "pending" }}>
+                  accessibilityLabel={t("a11y.alarm.previewAlarm", {
+                    seconds: PREVIEW_ALARM_SECONDS,
+                  })}
+                  accessibilityState={{ disabled: previewState === "pending" }}>
                   <Button.Text>
-                    {testState === "pending"
-                      ? t("alarm.settings.testAlarmPending", { seconds: TEST_ALARM_SECONDS })
-                      : testState === "failed"
-                        ? t("alarm.settings.testAlarmFailed")
-                        : t("alarm.settings.testAlarm")}
+                    {previewState === "pending"
+                      ? t("alarm.settings.previewAlarmPending", { seconds: previewRemaining })
+                      : previewState === "failed"
+                        ? t("alarm.settings.previewAlarmFailed")
+                        : t("alarm.settings.previewAlarm")}
                   </Button.Text>
                 </Button>
               </SettingsSection>

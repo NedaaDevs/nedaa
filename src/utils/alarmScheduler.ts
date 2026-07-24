@@ -158,22 +158,25 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
 
 // One-off rehearsal alarm a few seconds out, routed through the normal fire path
 // for the given type so it reads the user's real per-type sound/volume/challenge.
-export const scheduleTestAlarm = async (
+// countdown:true asks iOS to show a live pre-fire countdown (Dynamic Island / lock
+// screen) so the user can close the app and watch it approach.
+export const schedulePreviewAlarm = async (
   alarmType: ScheduledAlarmType,
   secondsFromNow = 30
 ): Promise<string | null> => {
   const alarmStore = useAlarmStore.getState();
 
-  // Date.now() in the key keeps repeated tests from colliding on the same id.
-  const id = generateDeterministicUUID(`test_${alarmType}_${Date.now()}`);
+  // Date.now() in the key keeps repeated previews from colliding on the same id.
+  const id = generateDeterministicUUID(`preview_${alarmType}_${Date.now()}`);
   const triggerDate = new Date(Date.now() + secondsFromNow * 1000);
-  const title = i18next.t("alarm.testAlarmTitle");
+  const title = i18next.t("alarm.previewAlarmTitle");
 
   const success = await alarmStore.scheduleAlarm({
     id,
     triggerDate,
     title,
     alarmType,
+    countdown: true,
   });
 
   return success ? id : null;

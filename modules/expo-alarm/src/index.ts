@@ -12,6 +12,9 @@ export interface ScheduleAlarmParams {
   sound?: string;
   dismissText?: string;
   openText?: string;
+  // iOS only: present a live countdown (Dynamic Island / lock screen) before the
+  // alarm fires. Used by the preview alarm; ignored on Android.
+  countdown?: boolean;
 }
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
@@ -68,7 +71,8 @@ export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolea
     params.alarmType,
     params.sound ?? "",
     params.dismissText ?? "",
-    params.openText ?? ""
+    params.openText ?? "",
+    params.countdown ?? false
   );
 }
 
