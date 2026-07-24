@@ -64,16 +64,16 @@ export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolea
     return false;
   }
 
-  return NativeModule.scheduleAlarm(
-    params.id,
-    params.triggerDate.getTime(),
-    params.title,
-    params.alarmType,
-    params.sound ?? "",
-    params.dismissText ?? "",
-    params.openText ?? "",
-    params.countdown ?? false
-  );
+  return NativeModule.scheduleAlarm({
+    id: params.id,
+    triggerTimestamp: params.triggerDate.getTime(),
+    title: params.title,
+    alarmType: params.alarmType,
+    sound: params.sound ?? "",
+    dismissText: params.dismissText ?? "",
+    openText: params.openText ?? "",
+    countdown: params.countdown ?? false,
+  });
 }
 
 export async function cancelAlarm(id: string): Promise<boolean> {

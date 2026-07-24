@@ -17,6 +17,21 @@ import androidx.core.content.ContextCompat
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.records.Field
+import expo.modules.kotlin.records.Record
+
+// dismissText/openText/countdown are iOS AlarmKit presentation hints; kept here
+// for a shared cross-platform shape but unused on Android.
+class ScheduleAlarmOptions : Record {
+    @Field val id: String = ""
+    @Field val triggerTimestamp: Double = 0.0
+    @Field val title: String = ""
+    @Field val alarmType: String = ""
+    @Field val sound: String = ""
+    @Field val dismissText: String = ""
+    @Field val openText: String = ""
+    @Field val countdown: Boolean = false
+}
 
 class ExpoAlarmModule : Module() {
 
@@ -58,12 +73,12 @@ class ExpoAlarmModule : Module() {
 
         // -- Scheduling --
 
-        AsyncFunction("scheduleAlarm") { id: String, triggerTimestamp: Double, title: String, alarmType: String, sound: String, _dismissText: String, _openText: String, _countdown: Boolean, promise: Promise ->
+        AsyncFunction("scheduleAlarm") { options: ScheduleAlarmOptions, promise: Promise ->
             try {
-                val triggerMs = triggerTimestamp.toLong()
-                val soundName = if (sound.isNotEmpty()) sound else "beep"
+                val triggerMs = options.triggerTimestamp.toLong()
+                val soundName = if (options.sound.isNotEmpty()) options.sound else "beep"
 
-                val scheduled = scheduler.scheduleAlarm(id, triggerMs, alarmType, title, soundName)
+                val scheduled = scheduler.scheduleAlarm(options.id, triggerMs, options.alarmType, options.title, soundName)
                 promise.resolve(scheduled)
             } catch (e: Exception) {
                 promise.reject("SCHEDULE_ERROR", e.message, e)

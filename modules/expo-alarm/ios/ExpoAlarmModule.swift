@@ -36,6 +36,19 @@ public struct AlarmActivityAttributes: ActivityAttributes {
     }
 }
 
+// sound/openText are unused on iOS (sound is always .default); kept for a
+// shared cross-platform shape.
+struct ScheduleAlarmOptions: Record {
+    @Field var id: String = ""
+    @Field var triggerTimestamp: Double = 0
+    @Field var title: String = ""
+    @Field var alarmType: String = ""
+    @Field var sound: String = ""
+    @Field var dismissText: String = ""
+    @Field var openText: String = ""
+    @Field var countdown: Bool = false
+}
+
 public class ExpoAlarmModule: Module {
 
     private var _scheduledAlarmIds: Set<String> = []
@@ -116,18 +129,14 @@ public class ExpoAlarmModule: Module {
             self.readAuthorizationStatus(promise: promise)
         }
 
-        AsyncFunction("scheduleAlarm") { (
-            id: String,
-            triggerTimestamp: Double,
-            title: String,
-            alarmType: String,
-            sound: String,
-            dismissText: String,
-            openText: String,
-            countdown: Bool,
-            promise: Promise
-        ) in
+        AsyncFunction("scheduleAlarm") { (options: ScheduleAlarmOptions, promise: Promise) in
             #if canImport(AlarmKit)
+            let id = options.id
+            let triggerTimestamp = options.triggerTimestamp
+            let title = options.title
+            let alarmType = options.alarmType
+            let dismissText = options.dismissText
+            let countdown = options.countdown
             if #available(iOS 26.1, *) {
                 Task {
                     do {

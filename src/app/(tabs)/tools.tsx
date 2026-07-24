@@ -12,6 +12,7 @@ import { HStack } from "@/components/ui/hstack";
 import TopBar from "@/components/TopBar";
 
 import {
+  AlarmClock,
   Compass,
   CalendarRange,
   CalendarCheck,
@@ -34,6 +35,13 @@ type ToolItem = {
 };
 
 const TOOLS: ToolItem[] = [
+  {
+    id: "alarm",
+    titleKey: "tools.alarm.title",
+    subtitleKey: "tools.alarm.subtitle",
+    icon: AlarmClock,
+    route: "/settings/alarm",
+  },
   {
     id: "umrah-guide",
     titleKey: "tools.umrahGuide.title",
