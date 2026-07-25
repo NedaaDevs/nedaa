@@ -1,12 +1,10 @@
 import { useColorScheme } from "react-native";
-import { XStack, YStack } from "tamagui";
+import { XStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
-import { Text } from "@/components/ui/text";
 import { QuranTheme, QuranThemeType } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
 import { useAppStore } from "@/stores/app";
-import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import ThemePreviewCard from "@/components/quran/settings/ThemePreviewCard";
 
 // Explicit reader papers (override). Nedaa is handled separately as the
@@ -19,7 +17,6 @@ const EXPLICIT: { theme: QuranThemeType; labelKey: string }[] = [
 
 const ReadingThemeSwatches = () => {
   const { t } = useTranslation();
-  const chrome = useQuranChromeColors();
   const quranTheme = useQuranStore((s) => s.quranTheme);
   const override = useQuranStore((s) => s.quranThemeOverride);
   const setQuranTheme = useQuranStore((s) => s.setQuranTheme);
@@ -31,32 +28,29 @@ const ReadingThemeSwatches = () => {
   const nedaaPreview = appIsDark ? QuranTheme.NEDAA_DARK : QuranTheme.NEDAA_LIGHT;
 
   return (
-    <YStack gap="$2.5">
-      <Text fontSize={13} fontWeight="700" color={chrome.subtleText}>
-        {t("quran.settings.readingTheme")}
-      </Text>
-      <XStack flexWrap="wrap" columnGap="$3" rowGap="$3" justifyContent="space-between">
+    <XStack
+      columnGap="$2"
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t("quran.settings.readingTheme")}>
+      <ThemePreviewCard
+        theme={nedaaPreview}
+        label={t("quran.settings.themeNedaa")}
+        badge={t("quran.settings.themeAuto")}
+        selected={!override}
+        onPress={setQuranThemeAuto}
+        compact
+      />
+      {EXPLICIT.map((e) => (
         <ThemePreviewCard
-          theme={nedaaPreview}
-          label={t("quran.settings.themeNedaa")}
-          badge={t("quran.settings.themeAuto")}
-          selected={!override}
-          onPress={setQuranThemeAuto}
+          key={e.theme}
+          theme={e.theme}
+          label={t(e.labelKey)}
+          selected={override && quranTheme === e.theme}
+          onPress={() => setQuranTheme(e.theme)}
+          compact
         />
-        {EXPLICIT.map((e) => (
-          <ThemePreviewCard
-            key={e.theme}
-            theme={e.theme}
-            label={t(e.labelKey)}
-            selected={override && quranTheme === e.theme}
-            onPress={() => setQuranTheme(e.theme)}
-          />
-        ))}
-      </XStack>
-      <Text fontSize={12} color={chrome.subtleText} lineHeight={17} marginTop="$1">
-        {t("quran.settings.themeNote")}
-      </Text>
-    </YStack>
+      ))}
+    </XStack>
   );
 };
 

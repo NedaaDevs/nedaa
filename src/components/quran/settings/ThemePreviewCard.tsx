@@ -16,12 +16,21 @@ interface ThemePreviewCardProps {
   badge?: string;
   selected: boolean;
   onPress: () => void;
+  // Single-row layout: quarter width, shorter card, badge shown as a dot.
+  compact?: boolean;
 }
 
 // A tappable card showing a miniature mushaf page in the theme's real colours —
 // paper background, ink lines, an ayah-marker dot — so the picker shows what you
 // get rather than an abstract swatch.
-const ThemePreviewCard = ({ theme, label, badge, selected, onPress }: ThemePreviewCardProps) => {
+const ThemePreviewCard = ({
+  theme,
+  label,
+  badge,
+  selected,
+  onPress,
+  compact,
+}: ThemePreviewCardProps) => {
   const c = QURAN_THEME_COLORS[theme];
   const chrome = useQuranChromeColors();
   const ink = c.textTint ?? c.headerColor;
@@ -31,11 +40,11 @@ const ThemePreviewCard = ({ theme, label, badge, selected, onPress }: ThemePrevi
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={label}
-      style={{ width: "47%" }}>
+      accessibilityLabel={badge ? `${label}, ${badge}` : label}
+      style={{ width: compact ? "23%" : "47%" }}>
       <YStack gap="$1.5">
         <YStack
-          height={88}
+          height={compact ? 56 : 88}
           borderRadius={12}
           borderWidth={2}
           borderColor={selected ? chrome.accent : chrome.cardBorder}
@@ -44,7 +53,7 @@ const ThemePreviewCard = ({ theme, label, badge, selected, onPress }: ThemePrevi
           justifyContent="center"
           gap="$2"
           overflow="hidden">
-          {LINES.map((w, i) => (
+          {(compact ? LINES.slice(0, 2) : LINES).map((w, i) => (
             <XStack key={i} alignItems="center" justifyContent="flex-end" gap={5}>
               {i === 1 && (
                 <View width={9} height={9} borderRadius={5} backgroundColor={c.markerColor} />
@@ -60,17 +69,25 @@ const ThemePreviewCard = ({ theme, label, badge, selected, onPress }: ThemePrevi
           ))}
         </YStack>
         <XStack alignItems="center" gap="$1.5">
-          <Text fontSize={13} fontWeight="600" color={selected ? chrome.accent : chrome.text}>
+          <Text
+            fontSize={compact ? 11 : 13}
+            fontWeight="600"
+            color={selected ? chrome.accent : chrome.text}
+            numberOfLines={1}>
             {label}
           </Text>
           {badge ? (
-            <Text
-              fontSize={10}
-              fontWeight="700"
-              color={chrome.subtleText}
-              textTransform="uppercase">
-              {badge}
-            </Text>
+            compact ? (
+              <View width={4} height={4} borderRadius={2} backgroundColor={chrome.subtleText} />
+            ) : (
+              <Text
+                fontSize={10}
+                fontWeight="700"
+                color={chrome.subtleText}
+                textTransform="uppercase">
+                {badge}
+              </Text>
+            )
           ) : null}
         </XStack>
       </YStack>
