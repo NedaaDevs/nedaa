@@ -49,21 +49,19 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
   const chrome = useQuranChromeColors();
   const reduceMotion = useReducedMotion();
 
-  const {
-    versionDownloads,
-    readerMode,
-    fontSize,
-    spreadPreference,
-    scrollDirection,
-    readAlongGranularity,
-    showMutashabihatMarkers,
-    setReaderMode,
-    setFontSize,
-    setSpreadPreference,
-    setScrollDirection,
-    setReadAlongGranularity,
-    setShowMutashabihatMarkers,
-  } = useQuranStore();
+  const versionDownloads = useQuranStore((s) => s.versionDownloads);
+  const readerMode = useQuranStore((s) => s.readerMode);
+  const fontSize = useQuranStore((s) => s.fontSize);
+  const spreadPreference = useQuranStore((s) => s.spreadPreference);
+  const scrollDirection = useQuranStore((s) => s.scrollDirection);
+  const readAlongGranularity = useQuranStore((s) => s.readAlongGranularity);
+  const showMutashabihatMarkers = useQuranStore((s) => s.showMutashabihatMarkers);
+  const setReaderMode = useQuranStore((s) => s.setReaderMode);
+  const setFontSize = useQuranStore((s) => s.setFontSize);
+  const setSpreadPreference = useQuranStore((s) => s.setSpreadPreference);
+  const setScrollDirection = useQuranStore((s) => s.setScrollDirection);
+  const setReadAlongGranularity = useQuranStore((s) => s.setReadAlongGranularity);
+  const setShowMutashabihatMarkers = useQuranStore((s) => s.setShowMutashabihatMarkers);
 
   const { width, height } = useWindowDimensions();
   const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
