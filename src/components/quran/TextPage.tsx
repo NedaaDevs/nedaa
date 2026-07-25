@@ -12,7 +12,12 @@ import {
   QuranThemeType,
   ReadAlongGranularity,
 } from "@/enums/quran";
-import { BUNDLED_ORNAMENT_META, QURAN_THEME_COLORS, QURAN_TEXT_FONT } from "@/constants/Quran";
+import {
+  BUNDLED_ORNAMENT_META,
+  QURAN_THEME_COLORS,
+  QURAN_TEXT_FONT,
+  quranBodyInk,
+} from "@/constants/Quran";
 import SurahFrame from "@/components/quran/SurahFrame";
 import { effectiveOrnamentStyle } from "@/utils/quranOrnaments";
 import { AyahTextData } from "@/types/quran";
@@ -24,7 +29,7 @@ import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
 import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import { juzForPage } from "@/utils/juz";
-import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
+import { localizedSurahName } from "@/utils/surahName";
 import AyahText from "@/components/quran/AyahText";
 import PageHeader from "@/components/quran/PageHeader";
 import PageNumber from "@/components/quran/PageNumber";
@@ -215,7 +220,7 @@ const TextPage = ({
                 label={`${t("quran.goto.surah")} ${localizedSurahName(surah)}`}
                 panel={surahFrameAssetMeta?.panel}
                 aspect={surahFrameAssetMeta?.aspect}
-                labelColor={themeColors.headerColor}
+                labelColor={quranBodyInk(quranTheme)}
               />
             </View>
             {!NO_BASMALA_SURAHS.includes(surah) && (
@@ -223,7 +228,7 @@ const TextPage = ({
                 style={[
                   styles.basmala,
                   {
-                    color: themeColors.textTint ?? "#000",
+                    color: quranBodyInk(quranTheme),
                     fontSize: fontSize * 0.85,
                     fontFamily: QURAN_TEXT_FONT,
                   },
@@ -241,7 +246,7 @@ const TextPage = ({
           style={{
             fontSize,
             lineHeight: fontSize * 2,
-            color: themeColors.textTint ?? "#000",
+            color: quranBodyInk(quranTheme),
             fontFamily: QURAN_TEXT_FONT,
             textAlign: "justify",
             writingDirection: "rtl",

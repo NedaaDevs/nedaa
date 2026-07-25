@@ -4,11 +4,13 @@ import { Text } from "react-native";
 import { BookmarkColor, HighlightColor, QuranThemeType } from "@/enums/quran";
 import {
   QURAN_THEME_COLORS,
-  HIGHLIGHT_COLORS,
   BOOKMARK_COLORS,
+  ORNAMENT_INKS,
   highlightTint,
+  quranBodyInk,
   toArabicDigits,
 } from "@/constants/Quran";
+import { ornamentThemeSlot } from "@/utils/quranOrnaments";
 import { WAQF_CHARS, waqfIdForChar } from "@/services/guide-content";
 
 interface AyahTextProps {
@@ -68,9 +70,10 @@ const AyahText = ({
     : isHighlighted || isFlashing
       ? themeColors.highlightColor
       : undefined;
-  const markerColor = highlightColor
-    ? HIGHLIGHT_COLORS[highlightColor].solid
-    : themeColors.markerColor;
+  const numberColor = quranBodyInk(quranTheme);
+  // Ornament gold, the same ink the mushaf medallions carry — the paper theme's
+  // markerColor follows the app accent on Nedaa papers.
+  const bracketColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
 
   // Split into word tokens so waqf-bearing words are tappable and the recited word
   // can be tinted. Whole words stay intact, so Arabic shaping and the combining
@@ -127,8 +130,8 @@ const AyahText = ({
         background ? { backgroundColor: background } : null,
         // Whole-verse read-along tint (verse granularity, or the word-mode fallback
         // for untrackable verses). In word mode a single word is tinted inside
-        // verseNodes instead, so don't colour the whole span. The ﴾number﴿ keeps
-        // its own marker colour.
+        // verseNodes instead, so don't colour the whole span. The ﴾number﴿ sets
+        // its own colours.
         isReadAlong && readAlongWordIndex == null ? { color: themeColors.markerColor } : null,
       ]}>
       {verseNodes}
@@ -137,7 +140,12 @@ const AyahText = ({
           {` ${num} `}
         </Text>
       ) : (
-        <Text style={{ color: markerColor }}>{` ﴿${num}﴾ `}</Text>
+        // Gold brackets, body-ink digit.
+        <Text style={{ color: bracketColor }}>
+          {" ﴿"}
+          <Text style={{ color: numberColor }}>{num}</Text>
+          {"﴾ "}
+        </Text>
       )}
       {hasSimilar ? <Text style={{ color: themeColors.markerColor }}>{"• "}</Text> : null}
     </Text>
