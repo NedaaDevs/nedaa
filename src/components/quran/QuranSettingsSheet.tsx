@@ -25,6 +25,7 @@ import {
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
 import { useQuranStore } from "@/stores/quran";
+import { useDebugModeStore } from "@/stores/debugMode";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import {
   Section,
@@ -68,6 +69,8 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
   const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
 
   // Testing aid: wipe all downloaded editions + content and return to setup.
+  // Debug-only, since it destroys hundreds of MB of downloads irreversibly.
+  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const [resetting, setResetting] = useState(false);
   const handleResetAll = () => {
     Alert.alert(
@@ -259,22 +262,23 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
               </Pressable>
             </Section>
 
-            {/* TODO(mutashabihat): remove this Maintenance section before the public
-                App Store release — testing-only DB reset, visible in prod builds too. */}
-            <Section title="Maintenance" chrome={chrome}>
-              <Pressable
-                onPress={handleResetAll}
-                disabled={resetting}
-                accessibilityRole="button"
-                accessibilityLabel="Reset all Quran data">
-                <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
-                  <RotateCcw size={16} color={chrome.accentWarning} />
-                  <Text fontSize={15} color={chrome.accentWarning} fontWeight="600">
-                    {resetting ? "Resetting…" : "Reset all Quran data (testing)"}
-                  </Text>
-                </XStack>
-              </Pressable>
-            </Section>
+            {/* Testing-only DB reset, behind the 7-tap debug flag. */}
+            {isDebugMode && (
+              <Section title="Maintenance" chrome={chrome}>
+                <Pressable
+                  onPress={handleResetAll}
+                  disabled={resetting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reset all Quran data">
+                  <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
+                    <RotateCcw size={16} color={chrome.accentWarning} />
+                    <Text fontSize={15} color={chrome.accentWarning} fontWeight="600">
+                      {resetting ? "Resetting…" : "Reset all Quran data (testing)"}
+                    </Text>
+                  </XStack>
+                </Pressable>
+              </Section>
+            )}
           </YStack>
         </ScrollView>
       </Animated.View>
