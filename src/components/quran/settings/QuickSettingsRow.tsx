@@ -1,6 +1,7 @@
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
+import { Text } from "@/components/ui/text";
 import { ReaderViewMode, ScrollDirection } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
 import type { QuranChromeColors } from "@/hooks/useQuranChromeColors";
@@ -21,7 +22,9 @@ const QuickSettingsRow = ({ chrome }: { chrome: QuranChromeColors }) => {
     <YStack gap="$3" paddingBottom="$4">
       <ReadingThemeSwatches />
 
-      <XStack gap="$2" alignItems="center">
+      {/* Pills bottom-align so the scroll control's caption sits above the row
+          rather than pushing its pill out of line with the mode pill. */}
+      <XStack gap="$2" alignItems="flex-end">
         <YStack flex={1}>
           <Segmented
             chrome={chrome}
@@ -35,7 +38,11 @@ const QuickSettingsRow = ({ chrome }: { chrome: QuranChromeColors }) => {
           />
         </YStack>
 
-        <YStack width={96}>
+        <YStack width={96} gap="$1.5">
+          {/* The segments are icon-only, so the caption carries their meaning. */}
+          <Text fontSize={11} color={chrome.subtleText} textAlign="center" numberOfLines={1}>
+            {t("quran.settings.scrollDirection")}
+          </Text>
           <Segmented
             chrome={chrome}
             compact
