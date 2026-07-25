@@ -177,13 +177,17 @@ export const quranBodyInk = (theme: QuranThemeType): `#${string}` =>
 // medallions render one size regardless of each page's fitted font.
 export const MARKER_BOX_SOURCE_PX = 112;
 
+// scaleMultiplier below 1 shrinks the medallion inside its nominal box, leaving
+// a proportional gap between the ornament and the surrounding script at any page
+// size. The digit and inner wash derive from the medallion's height, so they
+// scale with it.
 export const MARKER_ADJUSTMENTS: Record<
   MushafVersion,
   { scaleMultiplier: number; offsetX: number; offsetY: number; fontSizeMultiplier: number }
 > = {
-  [MushafVersion.V1]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
-  [MushafVersion.V2]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
-  [MushafVersion.V4]: { scaleMultiplier: 1.0, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V1]: { scaleMultiplier: 0.85, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V2]: { scaleMultiplier: 0.85, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
+  [MushafVersion.V4]: { scaleMultiplier: 0.85, offsetX: 0, offsetY: 0, fontSizeMultiplier: 0.5 },
 } as const;
 
 // Surah-frame placement trims, keyed style → edition: the frame art is shared,
