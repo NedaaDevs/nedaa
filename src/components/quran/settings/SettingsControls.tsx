@@ -65,25 +65,38 @@ export const Segmented = <T extends string>({
   onSelect,
   chrome,
   compact,
+  label,
 }: {
   options: { value: T; label: string; icon?: SegmentIcon }[];
   selected: T;
   onSelect: (value: T) => void;
   chrome: QuranChromeColors;
   compact?: boolean;
+  label?: string;
 }) => (
-  <XStack gap="$1" backgroundColor={chrome.cardBorder} borderRadius={10} padding={2}>
-    {options.map(({ value, label, icon }) => {
+  <XStack
+    gap="$1"
+    backgroundColor={chrome.cardBorder}
+    borderRadius={10}
+    padding={2}
+    accessibilityRole="radiogroup"
+    accessibilityLabel={label}>
+    {options.map(({ value, label: optionLabel, icon }) => {
       const active = value === selected;
-      const textColor = active ? "#fff" : chrome.subtleText;
+      // The active fill is the accent, so its contrast partner is the app
+      // surface — white in light mode, near-black in dark.
+      const textColor = active ? chrome.background : chrome.subtleText;
       return (
         <Pressable
           key={value}
           onPress={() => onSelect(value)}
           accessibilityRole="radio"
           accessibilityState={{ selected: active }}
+          accessibilityLabel={optionLabel}
           style={{ flex: 1 }}>
           <YStack
+            minHeight={44}
+            justifyContent="center"
             paddingHorizontal={compact ? "$2.5" : "$3.5"}
             paddingVertical={icon ? "$2" : "$1.5"}
             borderRadius={8}
@@ -92,7 +105,7 @@ export const Segmented = <T extends string>({
             backgroundColor={active ? chrome.accent : "transparent"}>
             {icon?.({ active, color: textColor })}
             <Text fontSize={compact ? 12 : 13} fontWeight="600" color={textColor}>
-              {label}
+              {optionLabel}
             </Text>
           </YStack>
         </Pressable>
