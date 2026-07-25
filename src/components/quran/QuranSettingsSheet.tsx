@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -10,32 +9,14 @@ import Animated, {
 import { XStack, YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { Download, Minus, Plus, RotateCcw, X } from "lucide-react-native";
+import { X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
-import { Switch } from "@/components/ui/switch";
-import {
-  MushafVersion,
-  DownloadStatus,
-  ReaderViewMode,
-  ReadAlongGranularity,
-  ScrollDirection,
-  SpreadPreference,
-} from "@/enums/quran";
-import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
-import { LARGE_DEVICE_MIN_DP } from "@/utils/readerSpread";
-import { useQuranStore } from "@/stores/quran";
-import { useDebugModeStore } from "@/stores/debugMode";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
-import {
-  Section,
-  SettingRow,
-  Segmented,
-  Stepper,
-} from "@/components/quran/settings/SettingsControls";
-import { ScrollDirectionIcon } from "@/components/quran/settings/ScrollDirectionIcon";
-import ReadingThemeSwatches from "@/components/quran/settings/ReadingThemeSwatches";
-import LibraryRow from "@/components/quran/settings/LibraryRow";
+import QuickSettingsRow from "@/components/quran/settings/QuickSettingsRow";
+import MushafSection from "@/components/quran/settings/MushafSection";
+import ReaderOptionsSection from "@/components/quran/settings/ReaderOptionsSection";
+import MaintenanceSection from "@/components/quran/settings/MaintenanceSection";
 
 interface QuranSettingsSheetProps {
   onClose: () => void;
@@ -49,65 +30,22 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
   const chrome = useQuranChromeColors();
   const reduceMotion = useReducedMotion();
 
-  const versionDownloads = useQuranStore((s) => s.versionDownloads);
-  const readerMode = useQuranStore((s) => s.readerMode);
-  const fontSize = useQuranStore((s) => s.fontSize);
-  const spreadPreference = useQuranStore((s) => s.spreadPreference);
-  const scrollDirection = useQuranStore((s) => s.scrollDirection);
-  const readAlongGranularity = useQuranStore((s) => s.readAlongGranularity);
-  const showMutashabihatMarkers = useQuranStore((s) => s.showMutashabihatMarkers);
-  const setReaderMode = useQuranStore((s) => s.setReaderMode);
-  const setFontSize = useQuranStore((s) => s.setFontSize);
-  const setSpreadPreference = useQuranStore((s) => s.setSpreadPreference);
-  const setScrollDirection = useQuranStore((s) => s.setScrollDirection);
-  const setReadAlongGranularity = useQuranStore((s) => s.setReadAlongGranularity);
-  const setShowMutashabihatMarkers = useQuranStore((s) => s.setShowMutashabihatMarkers);
-
-  const { width, height } = useWindowDimensions();
-  const isLargeDevice = Math.min(width, height) >= LARGE_DEVICE_MIN_DP;
-
-  // Testing aid: wipe all downloaded editions + content and return to setup.
-  // Debug-only, since it destroys hundreds of MB of downloads irreversibly.
-  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
-  const [resetting, setResetting] = useState(false);
-  const handleResetAll = () => {
-    Alert.alert(
-      "Reset all Quran data?",
-      "Deletes downloaded editions and content. You'll return to setup.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: async () => {
-            setResetting(true);
-            try {
-              await onResetAll();
-              // onResetAll closes the sheet, so no success state to clear here.
-            } catch (e) {
-              setResetting(false);
-              Alert.alert("Reset failed", String(e));
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const libraryVersions = Object.entries(versionDownloads)
-    .filter(([, s]) => s?.status && s.status !== DownloadStatus.IDLE)
-    .map(([v, s]) => ({ version: v as MushafVersion, state: s! }));
-
   return (
     <>
       <Animated.View
         entering={reduceMotion ? undefined : FadeIn.duration(200)}
         exiting={reduceMotion ? undefined : FadeOut.duration(200)}
         style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t("common.close")}
+        />
       </Animated.View>
 
       <Animated.View
+        accessibilityViewIsModal
         entering={reduceMotion ? undefined : SlideInDown.duration(240)}
         exiting={reduceMotion ? undefined : SlideOutDown.duration(200)}
         style={[
@@ -115,7 +53,7 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
           { backgroundColor: chrome.background, paddingBottom: insets.bottom + 8 },
         ]}>
         <XStack justifyContent="space-between" alignItems="center" paddingBottom="$3">
-          <Text fontSize={18} fontWeight="700">
+          <Text fontSize={18} fontWeight="700" accessibilityRole="header">
             {t("quran.settings.title")}
           </Text>
           <Pressable
@@ -135,148 +73,13 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore, onResetAll }: QuranSettin
           </Pressable>
         </XStack>
 
+        <QuickSettingsRow chrome={chrome} />
+
         <ScrollView showsVerticalScrollIndicator={false}>
           <YStack gap="$5">
-            <ReadingThemeSwatches />
-
-            <Section title={t("quran.settings.display")} chrome={chrome}>
-              <SettingRow label={t("quran.settings.readerMode")} chrome={chrome} stacked>
-                <Segmented
-                  chrome={chrome}
-                  options={[
-                    { value: ReaderViewMode.MADINAH, label: t("quran.settings.modeMushaf") },
-                    { value: ReaderViewMode.TEXT, label: t("quran.settings.modeText") },
-                  ]}
-                  selected={readerMode}
-                  onSelect={setReaderMode}
-                />
-              </SettingRow>
-
-              {readerMode === ReaderViewMode.TEXT && (
-                <SettingRow label={t("quran.settings.fontSize")} chrome={chrome}>
-                  <XStack
-                    alignItems="center"
-                    gap="$3"
-                    backgroundColor={chrome.cardBorder}
-                    borderRadius={10}
-                    paddingHorizontal="$2"
-                    paddingVertical="$1">
-                    <Stepper
-                      icon={Minus}
-                      disabled={fontSize <= FONT_SIZE_MIN}
-                      onPress={() => setFontSize(fontSize - FONT_SIZE_STEP)}
-                      chrome={chrome}
-                      label={t("a11y.decrease", { defaultValue: "Decrease" })}
-                    />
-                    <Text fontSize={14} fontWeight="600" minWidth={28} textAlign="center">
-                      {fontSize}
-                    </Text>
-                    <Stepper
-                      icon={Plus}
-                      disabled={fontSize >= FONT_SIZE_MAX}
-                      onPress={() => setFontSize(fontSize + FONT_SIZE_STEP)}
-                      chrome={chrome}
-                      label={t("a11y.increase", { defaultValue: "Increase" })}
-                    />
-                  </XStack>
-                </SettingRow>
-              )}
-
-              <SettingRow label={t("quran.settings.scrollDirection")} chrome={chrome} stacked>
-                <Segmented
-                  chrome={chrome}
-                  options={[
-                    {
-                      value: ScrollDirection.HORIZONTAL,
-                      label: t("quran.settings.scrollHorizontal"),
-                      icon: ({ color }) => (
-                        <ScrollDirectionIcon direction={ScrollDirection.HORIZONTAL} color={color} />
-                      ),
-                    },
-                    {
-                      value: ScrollDirection.VERTICAL,
-                      label: t("quran.settings.scrollVertical"),
-                      icon: ({ color }) => (
-                        <ScrollDirectionIcon direction={ScrollDirection.VERTICAL} color={color} />
-                      ),
-                    },
-                  ]}
-                  selected={scrollDirection}
-                  onSelect={setScrollDirection}
-                />
-              </SettingRow>
-
-              {isLargeDevice && scrollDirection === ScrollDirection.HORIZONTAL && (
-                <SettingRow label={t("quran.settings.twoPageSpread")} chrome={chrome} stacked>
-                  <Segmented
-                    chrome={chrome}
-                    options={[
-                      { value: SpreadPreference.AUTO, label: t("quran.settings.spreadAuto") },
-                      { value: SpreadPreference.ON, label: t("quran.settings.spreadOn") },
-                      { value: SpreadPreference.OFF, label: t("quran.settings.spreadOff") },
-                    ]}
-                    selected={spreadPreference}
-                    onSelect={setSpreadPreference}
-                  />
-                </SettingRow>
-              )}
-
-              <SettingRow label={t("quran.settings.readAlongHighlight")} chrome={chrome} stacked>
-                <Segmented
-                  chrome={chrome}
-                  options={[
-                    { value: ReadAlongGranularity.WORD, label: t("quran.settings.highlightWord") },
-                    { value: ReadAlongGranularity.AYAH, label: t("quran.settings.highlightAyah") },
-                  ]}
-                  selected={readAlongGranularity}
-                  onSelect={setReadAlongGranularity}
-                />
-              </SettingRow>
-
-              <SettingRow label={t("quran.settings.showMutashabihatMarkers")} chrome={chrome}>
-                <Switch
-                  value={showMutashabihatMarkers}
-                  onValueChange={setShowMutashabihatMarkers}
-                  accessibilityLabel={t("quran.settings.showMutashabihatMarkers")}
-                />
-              </SettingRow>
-            </Section>
-
-            <Section title={t("quran.settings.library")} chrome={chrome}>
-              {libraryVersions.map(({ version, state }) => (
-                <LibraryRow key={version} version={version} state={state} onClose={onClose} />
-              ))}
-
-              <Pressable
-                onPress={onDownloadMore}
-                accessibilityRole="button"
-                accessibilityLabel={t("quran.settings.downloadMore")}>
-                <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
-                  <Download size={16} color={chrome.accent} />
-                  <Text fontSize={15} color={chrome.accent} fontWeight="600">
-                    {t("quran.settings.downloadMore")}
-                  </Text>
-                </XStack>
-              </Pressable>
-            </Section>
-
-            {/* Testing-only DB reset, behind the 7-tap debug flag. */}
-            {isDebugMode && (
-              <Section title="Maintenance" chrome={chrome}>
-                <Pressable
-                  onPress={handleResetAll}
-                  disabled={resetting}
-                  accessibilityRole="button"
-                  accessibilityLabel="Reset all Quran data">
-                  <XStack alignItems="center" gap="$2" paddingVertical="$3" paddingHorizontal="$3">
-                    <RotateCcw size={16} color={chrome.accentWarning} />
-                    <Text fontSize={15} color={chrome.accentWarning} fontWeight="600">
-                      {resetting ? "Resetting…" : "Reset all Quran data (testing)"}
-                    </Text>
-                  </XStack>
-                </Pressable>
-              </Section>
-            )}
+            <MushafSection chrome={chrome} onDownloadMore={onDownloadMore} onClose={onClose} />
+            <ReaderOptionsSection chrome={chrome} />
+            <MaintenanceSection chrome={chrome} onResetAll={onResetAll} />
           </YStack>
         </ScrollView>
       </Animated.View>

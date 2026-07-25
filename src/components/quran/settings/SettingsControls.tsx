@@ -66,6 +66,7 @@ export const Segmented = <T extends string>({
   chrome,
   compact,
   label,
+  iconOnly,
 }: {
   options: { value: T; label: string; icon?: SegmentIcon }[];
   selected: T;
@@ -73,6 +74,9 @@ export const Segmented = <T extends string>({
   chrome: QuranChromeColors;
   compact?: boolean;
   label?: string;
+  // Drops the visible text, keeping it as each segment's accessibility label —
+  // for narrow slots where a translated label would wrap.
+  iconOnly?: boolean;
 }) => (
   <XStack
     gap="$1"
@@ -104,9 +108,15 @@ export const Segmented = <T extends string>({
             gap={icon ? "$1.5" : undefined}
             backgroundColor={active ? chrome.accent : "transparent"}>
             {icon?.({ active, color: textColor })}
-            <Text fontSize={compact ? 12 : 13} fontWeight="600" color={textColor}>
-              {optionLabel}
-            </Text>
+            {!iconOnly && (
+              <Text
+                fontSize={compact ? 12 : 13}
+                fontWeight="600"
+                color={textColor}
+                numberOfLines={1}>
+                {optionLabel}
+              </Text>
+            )}
           </YStack>
         </Pressable>
       );
