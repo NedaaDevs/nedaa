@@ -25,6 +25,7 @@ import StreakShareButton from "@/components/StreakShareButton";
 
 // Store
 import { useAthkarStore } from "@/stores/athkar";
+import { useDebugModeStore } from "@/stores/debugMode";
 
 // Types
 import type { AthkarType } from "@/types/athkar";
@@ -118,6 +119,11 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
   // Get streak data from store
   const streakDays = streak.currentStreak;
   const longestStreak = streak.longestStreak || 0;
+
+  // Sharing needs a streak worth sharing; debug mode drops the floor so the
+  // card can be previewed at any count.
+  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
+  const canShareStreak = streakDays >= 2 || isDebugMode;
 
   // Clean up timers
   const clearTimers = () => {
@@ -310,7 +316,7 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
               </HStack>
             </VStack>
 
-            {streakDays >= 2 && <StreakShareButton variant="athkar" count={streakDays} />}
+            {canShareStreak && <StreakShareButton variant="athkar" count={streakDays} />}
           </HStack>
 
           <Text size="sm" color="$typographySecondary">

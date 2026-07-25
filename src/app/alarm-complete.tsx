@@ -17,6 +17,7 @@ import { Sun, Building2, CircleCheck } from "lucide-react-native";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
+import { useDebugModeStore } from "@/stores/debugMode";
 
 // Well-established morning adhkar, shown in Arabic across every locale with a
 // localized translation below it. Invariant scripture, so it lives here rather
@@ -68,7 +69,11 @@ export default function AlarmCompleteScreen() {
   const resolvedColor = COLOR_MAP[content.colorClass] ?? "$typography";
 
   const streak = useAlarmStreakStore((state) => state.streak);
-  const showStreak = isFajr && streak >= 2;
+
+  // A one-day streak isn't worth celebrating; debug mode drops the floor so the
+  // row and its share card can be previewed at any count.
+  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
+  const showStreak = isFajr && (streak >= 2 || isDebugMode);
 
   // Minutes until sunrise, resolved once on mount from today's timings via a
   // lazy initializer (not a render-time computation) since it reads the clock.
