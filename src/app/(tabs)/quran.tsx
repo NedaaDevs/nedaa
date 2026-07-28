@@ -39,7 +39,7 @@ import VersionSelectionScreen from "@/components/quran/VersionSelectionScreen";
 import DownloadProgressScreen from "@/components/quran/DownloadProgressScreen";
 import DownloadBanner from "@/components/quran/DownloadBanner";
 import DarkOfferBanner from "@/components/quran/DarkOfferBanner";
-import FontSizeControls from "@/components/quran/FontSizeControls";
+import TextSizeControl from "@/components/quran/TextSizeControl";
 import HighlightLegend from "@/components/quran/HighlightLegend";
 import SurahInfoCard from "@/components/quran/SurahInfoCard";
 import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/QuranSearchOverlay";
@@ -401,6 +401,15 @@ const QuranScreen = () => {
               {/* Hidden while read-along drives the viewport — one thing scrolls
               at a time. Unmounted rather than faded so the audio control closes
               the gap instead of sitting under dead space. */}
+              {/* Always on in text mode — a reader who needs a larger size
+                  shouldn't have to summon the chrome to find the control. */}
+              {readerMode === ReaderViewMode.TEXT && (
+                <TextSizeControl
+                  fontSize={fontSize}
+                  onFontSizeChange={setFontSize}
+                  quranTheme={quranTheme}
+                />
+              )}
               {!readAlong && <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />}
               <ReaderAudioControl
                 quranTheme={quranTheme}
@@ -481,13 +490,6 @@ const QuranScreen = () => {
                     </Pressable>
                   ) : (
                     <YStack flex={1} />
-                  )}
-                  {readerMode === ReaderViewMode.TEXT && (
-                    <FontSizeControls
-                      fontSize={fontSize}
-                      onFontSizeChange={setFontSize}
-                      color={themeColors.headerColor}
-                    />
                   )}
                   {isColoredVersion(currentVersion) && readerMode !== ReaderViewMode.TEXT && (
                     <Pressable
