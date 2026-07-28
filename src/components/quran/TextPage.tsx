@@ -163,7 +163,13 @@ const TextPage = ({
       const juzNumber = juzForPage(page);
       setAyahs(pageAyahs);
       setJuz(juzNumber);
-      AccessibilityInfo.announceForAccessibility(`Page ${page}, Juz ${juzNumber}`);
+      AccessibilityInfo.announceForAccessibility(
+        t("a11y.quran.pageInfo", {
+          page,
+          surah: localizedSurahName(pageAyahs[0]?.surahNumber ?? 1),
+          juz: juzNumber,
+        })
+      );
 
       if (pageAyahs.length > 0) {
         setSurahName(localizedSurahName(pageAyahs[0].surahNumber));
@@ -172,7 +178,7 @@ const TextPage = ({
     loadData();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHighlightedAyah(null);
-  }, [page]);
+  }, [page, t]);
 
   const handleLongPress = useCallback(
     (surahNumber: number, ayahNumber: number) => {
