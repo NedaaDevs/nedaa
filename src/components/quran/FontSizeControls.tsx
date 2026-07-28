@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet } from "react-native";
-import { XStack } from "tamagui";
+import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { Minus, Plus } from "lucide-react-native";
 
@@ -12,12 +12,15 @@ interface FontSizeControlsProps {
   onFontSizeChange: (size: number) => void;
   // Ink colour for icons/label; defaults to white for dark surfaces.
   color?: `#${string}`;
+  // Volume-rocker layout: increase on top, decrease below.
+  vertical?: boolean;
 }
 
 const FontSizeControls = ({
   fontSize,
   onFontSizeChange,
   color = "#fff",
+  vertical,
 }: FontSizeControlsProps) => {
   const { t } = useTranslation();
   const haptic = useHaptic("light");
@@ -37,35 +40,52 @@ const FontSizeControls = ({
     onFontSizeChange(fontSize + FONT_SIZE_STEP);
   };
 
-  return (
+  const plus = (
+    <Pressable
+      onPress={increase}
+      disabled={!canIncrease}
+      accessibilityRole="button"
+      accessibilityLabel={t("a11y.quran.increaseFontSize")}
+      style={[styles.button, !canIncrease && styles.disabled]}>
+      <Plus color={color} size={vertical ? 20 : 16} />
+    </Pressable>
+  );
+
+  const value = (
+    <Text
+      color={color}
+      fontSize={12}
+      fontWeight="600"
+      minWidth={22}
+      textAlign="center"
+      accessibilityLabel={t("a11y.quran.fontSize", { size: fontSize })}>
+      {fontSize}
+    </Text>
+  );
+
+  const minus = (
+    <Pressable
+      onPress={decrease}
+      disabled={!canDecrease}
+      accessibilityRole="button"
+      accessibilityLabel={t("a11y.quran.decreaseFontSize")}
+      style={[styles.button, !canDecrease && styles.disabled]}>
+      <Minus color={color} size={vertical ? 20 : 16} />
+    </Pressable>
+  );
+
+  // Rocker order: up increases, matching a volume key.
+  return vertical ? (
+    <YStack alignItems="center">
+      {plus}
+      {value}
+      {minus}
+    </YStack>
+  ) : (
     <XStack alignItems="center">
-      <Pressable
-        onPress={decrease}
-        disabled={!canDecrease}
-        accessibilityRole="button"
-        accessibilityLabel={t("a11y.quran.decreaseFontSize")}
-        style={[styles.button, !canDecrease && styles.disabled]}>
-        <Minus color={color} size={16} />
-      </Pressable>
-
-      <Text
-        color={color}
-        fontSize={12}
-        fontWeight="600"
-        minWidth={22}
-        textAlign="center"
-        accessibilityLabel={t("a11y.quran.fontSize", { size: fontSize })}>
-        {fontSize}
-      </Text>
-
-      <Pressable
-        onPress={increase}
-        disabled={!canIncrease}
-        accessibilityRole="button"
-        accessibilityLabel={t("a11y.quran.increaseFontSize")}
-        style={[styles.button, !canIncrease && styles.disabled]}>
-        <Plus color={color} size={16} />
-      </Pressable>
+      {minus}
+      {value}
+      {plus}
     </XStack>
   );
 };

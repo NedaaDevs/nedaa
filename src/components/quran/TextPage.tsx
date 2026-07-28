@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AccessibilityInfo,
-  I18nManager,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  StyleSheet,
-} from "react-native";
+import { AccessibilityInfo, Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { YStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -266,9 +258,8 @@ const TextPage = ({
               color: quranBodyInk(quranTheme),
               fontFamily: QURAN_TEXT_FONT,
               // Scripture is Arabic in every app locale, so it always sits flush
-              // right. RN swaps physical left/right under forceRTL, so the value
-              // is inverted there to keep the visual edge fixed.
-              textAlign: I18nManager.isRTL ? "left" : "right",
+              // right regardless of the UI direction.
+              textAlign: "right",
               writingDirection: "rtl",
               marginBottom: fontSize * 0.6,
             }}>

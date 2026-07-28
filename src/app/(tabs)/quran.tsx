@@ -101,6 +101,8 @@ const QuranScreen = () => {
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const [showOverlay, setShowOverlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  // Entering text mode shows the size rocker briefly, then it follows the chrome.
+  const [sizeHintVisible, setSizeHintVisible] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [actionAyah, setActionAyah] = useState<{ surah: number; ayah: number } | null>(null);
   const [infoSurah, setInfoSurah] = useState<number | null>(null);
@@ -147,6 +149,16 @@ const QuranScreen = () => {
     // never lingers when the user comes back later.
     if (!showReader) setJumpReturn(null);
   }, [showReader, setReaderActive, setJumpReturn]);
+
+  // Arriving in text mode reveals the size rocker for a few seconds so it's
+  // discoverable, after which it follows the chrome like every other control.
+  useEffect(() => {
+    if (readerMode !== ReaderViewMode.TEXT) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSizeHintVisible(true);
+    const id = setTimeout(() => setSizeHintVisible(false), 3500);
+    return () => clearTimeout(id);
+  }, [readerMode]);
 
   // The "return" pill auto-dismisses a few seconds after a jump, so it doesn't
   // linger once you've settled on the new verse; tap it before then to go back.
@@ -401,15 +413,6 @@ const QuranScreen = () => {
               {/* Hidden while read-along drives the viewport — one thing scrolls
               at a time. Unmounted rather than faded so the audio control closes
               the gap instead of sitting under dead space. */}
-              {/* Always on in text mode — a reader who needs a larger size
-                  shouldn't have to summon the chrome to find the control. */}
-              {readerMode === ReaderViewMode.TEXT && (
-                <TextSizeControl
-                  fontSize={fontSize}
-                  onFontSizeChange={setFontSize}
-                  quranTheme={quranTheme}
-                />
-              )}
               {!readAlong && <AutoScrollControl quranTheme={quranTheme} visible={showOverlay} />}
               <ReaderAudioControl
                 quranTheme={quranTheme}
@@ -432,6 +435,27 @@ const QuranScreen = () => {
               )}
             </YStack>
           )}
+
+          {/* Reading-size rocker: down the side, clear of the centred controls.
+              Rides the chrome, and shows itself once on entry so it's findable. */}
+          {readerMode === ReaderViewMode.TEXT &&
+            !actionAyah &&
+            infoSurah == null &&
+            !guideSheet && (
+              <YStack
+                position="absolute"
+                left={12}
+                bottom={insets.bottom + 96}
+                zIndex={12}
+                pointerEvents="box-none">
+                <TextSizeControl
+                  fontSize={fontSize}
+                  onFontSizeChange={setFontSize}
+                  quranTheme={quranTheme}
+                  visible={showOverlay || sizeHintVisible}
+                />
+              </YStack>
+            )}
 
           {showOverlay && (
             <>
