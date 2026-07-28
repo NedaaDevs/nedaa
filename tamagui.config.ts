@@ -206,8 +206,8 @@ const tokens = createTokens({
     // Light theme colors
     lightPrimary: "#1C5D85",
     lightSecondary: "#1C5D7D",
-    lightTypography: "#1C5D85",
-    lightTypographySecondary: "#4B5563",
+    lightTypography: "#101828",
+    lightTypographySecondary: "#475467",
     lightTypographyContrast: "#FFFFFF",
     lightBackground: "#F5F7FA",
     lightBackgroundSecondary: "#FFFFFF",
@@ -235,8 +235,8 @@ const tokens = createTokens({
     // Dark theme colors
     darkPrimary: "#E6C469",
     darkSecondary: "#D4BA76",
-    darkTypography: "#E6C469",
-    darkTypographySecondary: "#E3E2CE",
+    darkTypography: "#F2F4F7",
+    darkTypographySecondary: "#AEB6C2",
     darkTypographyContrast: "#FFFFFF",
     darkBackground: "#222831",
     darkBackgroundSecondary: "#393E46",
