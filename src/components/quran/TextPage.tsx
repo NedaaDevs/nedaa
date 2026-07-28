@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { YStack } from "tamagui";
+import { Gesture, GestureDetector, type GestureType } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
@@ -52,6 +53,9 @@ interface TextPageProps {
   onSurahLongPress?: (surah: number) => void;
   onWaqfPress?: (signId: string) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
+  // The reader's chrome-toggle tap. A verse tap blocks it so selecting a verse
+  // doesn't also toggle the chrome.
+  chromeTapRef?: React.RefObject<GestureType | undefined>;
 }
 
 const BASMALA =
@@ -70,6 +74,7 @@ const TextPage = ({
   onSurahLongPress,
   onWaqfPress,
   selectedAyah,
+  chromeTapRef,
 }: TextPageProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -243,42 +248,47 @@ const TextPage = ({
 
       for (const ayah of group) {
         const ra = readAlongFor(surah, ayah.ayahNumber);
+        const verseTap = Gesture.Tap()
+          .runOnJS(true)
+          .onEnd(() => handleLongPress(surah, ayah.ayahNumber));
+        if (chromeTapRef) verseTap.blocksExternalGesture(chromeTapRef);
         blocks.push(
-          <Text
-            key={`verse-${surah}-${ayah.ayahNumber}`}
-            style={{
-              fontSize,
-              lineHeight: fontSize * 2,
-              color: quranBodyInk(quranTheme),
-              fontFamily: QURAN_TEXT_FONT,
-              // Arabic content in every app locale, so alignment follows the
-              // script rather than the UI direction.
-              textAlign: "right",
-              writingDirection: "rtl",
-              marginBottom: fontSize * 0.6,
-            }}>
-            <AyahText
-              surahNumber={surah}
-              ayahNumber={ayah.ayahNumber}
-              text={ayah.text}
-              quranTheme={quranTheme}
-              isHighlighted={
-                highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
-              }
-              isReadAlong={ra.whole}
-              readAlongWordIndex={ra.wordIndex}
-              isFlashing={
-                flashAyah?.surah === surah &&
-                flashAyah?.ayah === ayah.ayahNumber &&
-                !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
-              }
-              highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
-              bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
-              hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
-              onLongPress={handleLongPress}
-              onWaqfPress={onWaqfPress}
-            />
-          </Text>
+          <GestureDetector key={`verse-${surah}-${ayah.ayahNumber}`} gesture={verseTap}>
+            <Text
+              style={{
+                fontSize,
+                lineHeight: fontSize * 2,
+                color: quranBodyInk(quranTheme),
+                fontFamily: QURAN_TEXT_FONT,
+                // Arabic content in every app locale, so alignment follows the
+                // script rather than the UI direction.
+                textAlign: "right",
+                writingDirection: "rtl",
+                marginBottom: fontSize * 0.6,
+              }}>
+              <AyahText
+                surahNumber={surah}
+                ayahNumber={ayah.ayahNumber}
+                text={ayah.text}
+                quranTheme={quranTheme}
+                isHighlighted={
+                  highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
+                }
+                isReadAlong={ra.whole}
+                readAlongWordIndex={ra.wordIndex}
+                isFlashing={
+                  flashAyah?.surah === surah &&
+                  flashAyah?.ayah === ayah.ayahNumber &&
+                  !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
+                }
+                highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+                bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+                hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
+                onLongPress={handleLongPress}
+                onWaqfPress={onWaqfPress}
+              />
+            </Text>
+          </GestureDetector>
         );
       }
     }

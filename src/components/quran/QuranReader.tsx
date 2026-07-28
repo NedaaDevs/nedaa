@@ -4,7 +4,7 @@ models plain React state, not worklets. */
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useWindowDimensions, StyleSheet, View, ScrollView, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import { GestureDetector, Gesture, type GestureType } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
@@ -227,12 +227,20 @@ const QuranReader = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followTarget, isVertical, isSpread, currentUnit, safePage, commitUnit]);
 
-  const tapGesture = Gesture.Tap().onEnd(() => {
-    "worklet";
-    if (onTap) {
-      scheduleOnRN(onTap);
-    }
-  });
+  // Verse taps in text mode arbitrate against this gesture, so it needs an
+  // identity they can name.
+  const chromeTapRef = useRef<GestureType | undefined>(undefined);
+  const tapGesture = Gesture.Tap()
+    // Gesture-handler stores the ref object and assigns it on mount; it doesn't
+    // read .current here.
+    // eslint-disable-next-line react-hooks/refs
+    .withRef(chromeTapRef)
+    .onEnd(() => {
+      "worklet";
+      if (onTap) {
+        scheduleOnRN(onTap);
+      }
+    });
 
   const panGestureBase = Gesture.Pan().minDistance(15).cancelsTouchesInView(false);
 
@@ -411,6 +419,7 @@ const QuranReader = ({
             onSurahLongPress={onSurahLongPress}
             onWaqfPress={onWaqfPress}
             selectedAyah={selectedAyah}
+            chromeTapRef={chromeTapRef}
           />
         ))}
         {__DEV__ && DEBUG_READER_GUIDES && <ReaderDebugGuides />}
@@ -439,6 +448,9 @@ interface PageSlotProps {
   onSurahLongPress?: (surah: number) => void;
   onWaqfPress?: (signId: string) => void;
   selectedAyah?: { surah: number; ayah: number } | null;
+  // Text mode's verse taps block this gesture so selecting a verse doesn't also
+  // toggle the chrome.
+  chromeTapRef?: React.RefObject<GestureType | undefined>;
 }
 
 const PageSlot = ({
@@ -461,6 +473,7 @@ const PageSlot = ({
   onSurahLongPress,
   onWaqfPress,
   selectedAyah,
+  chromeTapRef,
 }: PageSlotProps) => {
   const animatedStyle = useAnimatedStyle(() => {
     // unitOffset: 0 = current, -1 = next, +1 = prev; dragOffset: -1..1 drag.
@@ -524,6 +537,7 @@ const PageSlot = ({
               onSurahLongPress={onSurahLongPress}
               onWaqfPress={onWaqfPress}
               selectedAyah={selectedAyah}
+              chromeTapRef={chromeTapRef}
             />
           ) : (
             <QuranPage

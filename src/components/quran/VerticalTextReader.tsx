@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { View, ViewToken } from "react-native";
 import Animated from "react-native-reanimated";
 import { scheduleOnUI } from "react-native-worklets";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, type GestureType } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QuranThemeType } from "@/enums/quran";
@@ -104,10 +104,16 @@ const VerticalTextReader = ({
   // A single tap toggles the reader chrome (top bar / page slider), same as the
   // page-turn reader. Runs on JS so it can call the prop directly; coexists with
   // the list's native scroll (fires only on a tap, not a drag).
+  // Verse taps arbitrate against this gesture, so it needs an identity they can name.
+  const chromeTapRef = useRef<GestureType | undefined>(undefined);
   const tapGesture = useMemo(
     () =>
       Gesture.Tap()
         .runOnJS(true)
+        // Gesture-handler stores the ref object and assigns it on mount; it
+        // doesn't read .current here.
+        // eslint-disable-next-line react-hooks/refs
+        .withRef(chromeTapRef)
         .onEnd(() => onTap?.()),
     [onTap]
   );
@@ -181,6 +187,7 @@ const VerticalTextReader = ({
         onSurahLongPress={onSurahLongPress}
         onWaqfPress={onWaqfPress}
         selectedAyah={selectedAyah}
+        chromeTapRef={chromeTapRef}
       />
     ),
     [width, quranTheme, fontSize, onAyahLongPress, onSurahLongPress, onWaqfPress, selectedAyah]
