@@ -1,4 +1,5 @@
 import { usePreferencesStore } from "@/stores/preferences";
+import { getUserAgent } from "@/utils/userAgent";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -18,7 +19,7 @@ export const trackPlay = (recitationId: string): void => {
     lastFired.set(recitationId, now);
     fetch(`${API_URL}/quran/plays`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "User-Agent": getUserAgent() },
       body: JSON.stringify({ recitationId }),
     }).catch(() => {});
   } catch {

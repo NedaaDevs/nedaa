@@ -6,6 +6,7 @@ import type {
   OutgoingAttachment,
   UploadSlot,
 } from "@/types/feedback";
+import { getUserAgent } from "@/utils/userAgent";
 
 // The base already includes the /v3 prefix (see .env EXPO_PUBLIC_API_URL).
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -41,7 +42,11 @@ export const createFeedbackDraft = async (
 ): Promise<CreateReportResponse> => {
   const res = await fetch(`${requireBase()}/feedback-reports/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "User-Agent": getUserAgent(),
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new FeedbackApiError("create", res.status, await readDetail(res));
@@ -57,7 +62,12 @@ export const uploadFeedbackAttachment = async (
   attachment: OutgoingAttachment
 ): Promise<void> => {
   // Content-Type must match what the URL was signed with; slot.headers carries it.
-  const headers = { "Content-Type": attachment.mime, ...slot.headers };
+  // User-Agent is not part of the S3/R2 signature, so it's safe to append.
+  const headers = {
+    "Content-Type": attachment.mime,
+    "User-Agent": getUserAgent(),
+    ...slot.headers,
+  };
 
   if (typeof attachment.body === "string") {
     const res = await fetch(slot.url, { method: "PUT", headers, body: attachment.body });
@@ -79,7 +89,11 @@ export const uploadFeedbackAttachment = async (
 export const submitFeedbackReport = async (id: string, submitToken: string): Promise<void> => {
   const res = await fetch(`${requireBase()}/feedback-reports/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "User-Agent": getUserAgent(),
+    },
     body: JSON.stringify({ submitToken }),
   });
   if (!res.ok) throw new FeedbackApiError("submit", res.status, await readDetail(res));

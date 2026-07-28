@@ -22,6 +22,7 @@ import { planEditionDownload, type InstalledVersions } from "@/services/quran-do
 import { trackDownload } from "@/services/quran-download-stats";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
+import { getUserAgent } from "@/utils/userAgent";
 import type { DownloadProgress, QuranManifestVersion } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
@@ -267,6 +268,7 @@ const downloadAndExtractBundle = async (
 
     const taskOptions: DownloadTaskOptions = {
       signal: active.controller.signal,
+      headers: { "User-Agent": getUserAgent() },
       onProgress: ({ bytesWritten, totalBytes }) => {
         // Server may omit Content-Length (totalBytes === -1); fall back to the
         // size declared in the manifest so the bar still advances.

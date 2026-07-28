@@ -28,6 +28,7 @@ import {
 } from "@/types/quran-audio";
 import { localizedSurahName } from "@/utils/surahName";
 import { resolveNowPlayingArtwork } from "@/utils/nowPlayingArtwork";
+import { getUserAgent } from "@/utils/userAgent";
 import { AppLogger } from "@/utils/appLogger";
 import i18n from "@/localization/i18n";
 
@@ -181,7 +182,7 @@ class QuranAudioPlayer {
       const manifest = await QuranManifestService.fetchManifest();
       if (!recitation || !manifest) return;
       await fetch(remoteSurahUrl(manifest.baseUrl, recitation, 1), {
-        headers: { Range: "bytes=0-1" },
+        headers: { Range: "bytes=0-1", "User-Agent": getUserAgent() },
       });
     } catch {
       // warm-up only; playback fetches for itself

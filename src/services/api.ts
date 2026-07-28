@@ -8,6 +8,7 @@ import type { TData, RequestMethod, Response } from "@/types/api";
 import { NetworkStatusBanner } from "@/components/feedback/NetworkStatusBanner";
 
 import i18n from "@/localization/i18n";
+import { getUserAgent } from "@/utils/userAgent";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -18,6 +19,7 @@ const apiInstance = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
     "Access-Control-Allow-Origin": "*",
+    "User-Agent": getUserAgent(),
   },
   validateStatus: (status) => status >= 200 && status < 300,
 });
@@ -56,6 +58,7 @@ const makeApiRequest = (
       "Content-Type": contentType,
       Accept: "application/json",
       "Access-Control-Allow-Origin": "*",
+      "User-Agent": getUserAgent(),
     },
     validateStatus: function (status: number) {
       return status >= 200 && status < 300;
@@ -147,7 +150,14 @@ export const downloadFile = async (
   }
 
   try {
-    await File.downloadFileAsync(url, destination, { idempotent: true, headers, signal, onProgress });
+    // Caller headers win over the default UA so a specific call can override if ever needed.
+    const mergedHeaders = { "User-Agent": getUserAgent(), ...headers };
+    await File.downloadFileAsync(url, destination, {
+      idempotent: true,
+      headers: mergedHeaders,
+      signal,
+      onProgress,
+    });
     return { success: true, uri: destination.uri };
   } catch (error) {
     try {

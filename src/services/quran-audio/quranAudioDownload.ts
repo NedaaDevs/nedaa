@@ -4,6 +4,7 @@ import { unzip } from "react-native-zip-archive";
 import type { QuranRecitation } from "@/types/quran-audio";
 import { remoteSurahUrl } from "@/services/quran-audio/quranAudioUrl";
 import { AppLogger } from "@/utils/appLogger";
+import { getUserAgent } from "@/utils/userAgent";
 
 const log = AppLogger.create("quran-download");
 const ROOT = "quran-audio";
@@ -70,7 +71,9 @@ const downloadSurah = async (
   if (!dir.exists) dir.create({ intermediates: true });
   const zipFile = new File(dir, `${surah}.zip`);
   try {
-    await File.downloadFileAsync(surahBundleUrl(baseUrl, recitation, surah), zipFile);
+    await File.downloadFileAsync(surahBundleUrl(baseUrl, recitation, surah), zipFile, {
+      headers: { "User-Agent": getUserAgent() },
+    });
     log.i(
       "Download",
       `surah ${surah} zip=${zipFile.exists ? zipFile.size : "MISSING"}b → unzip to ${dir.uri}`
@@ -169,6 +172,7 @@ const downloadSurahFile = async (
   const url = remoteSurahUrl(baseUrl, recitation, surah);
   const key = taskKey(recitation.id, surah);
   const options: DownloadTaskOptions = {
+    headers: { "User-Agent": getUserAgent() },
     onProgress: ({ bytesWritten, totalBytes }) =>
       onProgress?.(totalBytes > 0 ? bytesWritten / totalBytes : 0),
   };

@@ -1,5 +1,6 @@
 import { QuranManifestService } from "@/services/quran-manifest";
 import { AppLogger } from "@/utils/appLogger";
+import { getUserAgent } from "@/utils/userAgent";
 import type { QuranRecitation, WordSegment, AyahSegmentMap } from "@/types/quran-audio";
 
 const log = AppLogger.create("quran-timings");
@@ -72,7 +73,7 @@ const load = async (recitation: QuranRecitation): Promise<AyahSegmentMap | null>
       const manifest = await QuranManifestService.fetchManifest();
       if (!manifest) return null;
       const url = `${manifest.baseUrl.replace(/\/$/, "")}/${recitation.timings!.url.replace(/^\//, "")}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: { "User-Agent": getUserAgent() } });
       if (!res.ok) {
         log.w("Timings", `fetch ${res.status} for ${recitation.id}`);
         return null;

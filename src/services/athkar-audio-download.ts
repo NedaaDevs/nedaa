@@ -3,6 +3,7 @@ import { File, Directory, Paths } from "expo-file-system";
 import { AthkarDB } from "@/services/athkar-db";
 import { AUDIO_STORAGE, getThikrId } from "@/constants/AthkarAudio";
 import { AppLogger } from "@/utils/appLogger";
+import { getUserAgent } from "@/utils/userAgent";
 import type { ReciterManifest } from "@/types/athkar-audio";
 
 const log = AppLogger.create("athkar-audio");
@@ -45,7 +46,9 @@ const downloadFile = async (
     }
 
     // Download
-    await File.downloadFileAsync(url, localFile);
+    await File.downloadFileAsync(url, localFile, {
+      headers: { "User-Agent": getUserAgent() },
+    });
 
     // Record in DB
     await AthkarDB.insertAudioDownload(reciterId, thikrId, localFile.uri, size);

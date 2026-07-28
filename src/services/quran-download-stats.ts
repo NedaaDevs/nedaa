@@ -1,5 +1,6 @@
 import { usePreferencesStore } from "@/stores/preferences";
 import { MushafVersion } from "@/enums/quran";
+import { getUserAgent } from "@/utils/userAgent";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -19,7 +20,7 @@ export const trackDownload = (version: MushafVersion): void => {
     lastFired.set(version, now);
     fetch(`${API_URL}/quran/downloads`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "User-Agent": getUserAgent() },
       body: JSON.stringify({ version }),
     }).catch(() => {});
   } catch {

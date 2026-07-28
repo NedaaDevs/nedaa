@@ -6,6 +6,7 @@ import { unzip } from "react-native-zip-archive";
 import { QURAN_DB_NAME } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
+import { getUserAgent } from "@/utils/userAgent";
 import { MushafVersion, LineType, SajdaType, RevelationPlace } from "@/enums/quran";
 import { GlyphBound, LineMetadata, SurahMeta, AyahMetadata } from "@/types/quran";
 import { MutashabihatGroup } from "@/types/mutashabihat";
@@ -128,7 +129,9 @@ const installContentDb = async (
   const slug = destName.replace(/[^a-zA-Z0-9]/g, "_");
   const zipFile = new File(Paths.cache, `quran-content-${slug}.zip`);
   if (zipFile.exists) zipFile.delete();
-  const downloaded = await new DownloadTask(content.url, zipFile).downloadAsync();
+  const downloaded = await new DownloadTask(content.url, zipFile, {
+    headers: { "User-Agent": getUserAgent() },
+  }).downloadAsync();
   if (!downloaded) throw new Error("[QuranContentDB] content DB download failed");
 
   const extractDir = new Directory(Paths.cache, `quran-content-${slug}`);
