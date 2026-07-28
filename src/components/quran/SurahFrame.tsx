@@ -4,12 +4,7 @@ import { Image, Text, View } from "react-native";
 import { ORNAMENT_INKS, OrnamentPanel } from "@/constants/Quran";
 import { MushafVersion, OrnamentAsset, OrnamentCategory, QuranThemeType } from "@/enums/quran";
 import { ornamentThemeSlot, resolveOrnamentImage } from "@/utils/quranOrnaments";
-import {
-  isArabicScript,
-  metadataFontFamily,
-  surahNameLigature,
-  surahNameLigatureFont,
-} from "@/utils/surahName";
+import { metadataFontFamily, surahNameLigature, surahNameLigatureFont } from "@/utils/surahName";
 
 // Soft wash filling the frame's whole plaque. Opacity as a hex suffix (~12%).
 const FILL_ALPHA = "1F";
@@ -64,9 +59,7 @@ const SurahFrame = ({
       ),
     [quranTheme, version, styleId]
   );
-  // Arabic-script locales render the calligraphic vocalized name glyph, like
-  // the baked band on MADINAH pages; Latin locales keep the transliteration.
-  const ligature = label && isArabicScript() ? surahNameLigature(surahNumber, version) : null;
+  const ligature = label ? surahNameLigature(surahNumber, version) : null;
   const inkColor = ORNAMENT_INKS[ornamentThemeSlot(quranTheme)];
   // The <Image> below is `resizeMode="contain"`, so its drawn rect is
   // letterboxed inside width×height. Mirror that math here so the wash sits
