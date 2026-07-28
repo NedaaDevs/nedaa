@@ -1,7 +1,7 @@
 import React from "react";
 import { Platform } from "react-native";
 import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
-import { PlatformType } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 
 // Font size + line height mapping (from tamagui.config.ts font definitions).
@@ -35,6 +35,21 @@ const SIZE_MAP: Record<string, string> = {
 
 type TextSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
 
+// Arabic-script locales. Tracking these breaks cursive joins (CSS Text 3 §7.2.1),
+// and React Native spaces glyphs uniformly with no cursive-elongation fallback.
+const CURSIVE_LOCALES: readonly string[] = [AppLocale.AR, AppLocale.UR];
+
+// Large type set at zero tracking reads untuned, so tighten as size grows.
+// Keyed off the resolved pixel size so an explicit `fontSize` is covered too.
+const resolveLetterSpacing = (fontSize: number | undefined): number | undefined => {
+  if (fontSize == null || CURSIVE_LOCALES.includes(i18n.language)) return undefined;
+  if (fontSize >= 48) return -1;
+  if (fontSize >= 36) return -0.6;
+  if (fontSize >= 30) return -0.4;
+  if (fontSize >= 24) return -0.2;
+  return undefined;
+};
+
 type TextProps = TamaguiTextProps & {
   bold?: boolean;
   fontWeight?: TamaguiTextProps["fontWeight"];
@@ -45,6 +60,8 @@ type TextProps = TamaguiTextProps & {
   italic?: boolean;
   highlight?: boolean;
   size?: TextSize;
+  /** Tabular figures, so digits keep a fixed advance width in aligned columns. */
+  numeric?: boolean;
 };
 
 const resolveFontWeight = (
@@ -81,6 +98,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       italic,
       highlight,
       size = "md",
+      numeric,
       style,
       ...props
     },
@@ -98,6 +116,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         fontFamily="$body"
         fontWeight={resolvedWeight}
         color="$typography"
+        letterSpacing={resolveLetterSpacing(resolvedFontSize)}
         numberOfLines={isTruncated ? 1 : undefined}
         {...props}
         fontSize={resolvedFontSize}
@@ -112,6 +131,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
           italic && { fontStyle: "italic" as const },
           highlight && { backgroundColor: theme.backgroundWarning.val },
           sub && { fontSize: 12 },
+          numeric && { fontVariant: ["tabular-nums" as const] },
           style,
         ]}
       />

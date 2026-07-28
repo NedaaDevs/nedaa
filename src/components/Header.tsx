@@ -226,7 +226,7 @@ const Header = () => {
           />
 
           <VStack alignItems="center" gap="$1">
-            <Text size="2xl" fontWeight="600" color="$accentPrimary" textAlign="center">
+            <Text size="2xl" numeric fontWeight="600" color="$accentPrimary" textAlign="center">
               {!showOtherTiming && timerMode === "iqama" && previousPrayer
                 ? formattedPrayerTime(previousPrayer.time)
                 : formattedPrayerTime(timing.time)}
@@ -237,7 +237,7 @@ const Header = () => {
               paddingVertical="$0.5"
               borderRadius={999}
               backgroundColor="$backgroundInteractive">
-              <Text size="sm" textAlign="center" color="$typography">
+              <Text size="sm" numeric textAlign="center" color="$typography">
                 {showOtherTiming ? otherTimingDisplay : timerDisplay}
               </Text>
             </Box>

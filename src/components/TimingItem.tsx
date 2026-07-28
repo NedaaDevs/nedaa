@@ -73,6 +73,7 @@ const TimingItem = ({ name, time, icon, isNext = false }: Props) => {
 
         <Text
           size="xl"
+          numeric
           fontWeight={isNext ? "700" : "500"}
           color={isNext ? "$typographyContrast" : "$primary"}>
           {formattedPrayerTime(time)}
