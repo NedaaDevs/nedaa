@@ -64,7 +64,7 @@ const TopBar = ({
     <Box
       paddingHorizontal="$5"
       paddingVertical="$4"
-      backgroundColor="$background"
+      backgroundColor="$topBarBg"
       borderBottomWidth={1}
       borderBottomColor="$outline">
       <HStack justifyContent="space-between" alignItems="center" width="100%">
@@ -80,19 +80,19 @@ const TopBar = ({
               justifyContent="center"
               accessibilityRole="button"
               accessibilityLabel={t("a11y.back")}>
-              <Icon as={BackArrow} size="lg" color="$typography" />
+              <Icon as={BackArrow} size="lg" color="$topBarFg" />
             </Pressable>
           )}
 
           {onTitlePress ? (
             // TODO(quran-gate): remove onTitlePress wrapper at 2.10.0
             <Pressable onPress={onTitlePress} accessible={false} flexShrink={1}>
-              <Text size="2xl" bold color="$typography" accessibilityRole="header">
+              <Text size="2xl" bold color="$topBarFg" accessibilityRole="header">
                 {t(title)}
               </Text>
             </Pressable>
           ) : (
-            <Text size="2xl" bold color="$typography" accessibilityRole="header">
+            <Text size="2xl" bold color="$topBarFg" accessibilityRole="header">
               {t(title)}
             </Text>
           )}
@@ -109,7 +109,7 @@ const TopBar = ({
               justifyContent="center"
               accessibilityRole="button"
               accessibilityLabel={rightIconLabel}>
-              <Icon as={icon} size="lg" color="$typography" />
+              <Icon as={icon} size="lg" color="$topBarFg" />
             </Pressable>
           </Link>
         )}
@@ -125,7 +125,7 @@ const TopBar = ({
             justifyContent="center"
             accessibilityRole="button"
             accessibilityLabel={rightIconLabel}>
-            <Icon as={icon} size="lg" color="$typography" />
+            <Icon as={icon} size="lg" color="$topBarFg" />
           </Pressable>
         )}
       </HStack>

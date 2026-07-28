@@ -6,6 +6,8 @@ export type AppState = {
   locale: AppLocale;
   direction: AppDirection;
   mode: AppMode;
+  // Opt-in Classic palette. Colours only — layout and geometry are unaffected.
+  classicColors: boolean;
   loadingMessage: string;
   showLoadingOverlay: boolean;
   hijriDaysOffset: number;
@@ -13,6 +15,7 @@ export type AppState = {
   setIsFirstRun: (status: boolean) => void;
   setLocale: (lang: AppLocale) => void;
   setMode: (mode: AppMode) => void;
+  setClassicColors: (on: boolean) => void;
   setHijirOffset: (offset: number) => void;
   dismissedFeatureCards: string[];
   dismissFeatureCards: (ids: string[]) => void;

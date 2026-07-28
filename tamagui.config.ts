@@ -317,6 +317,13 @@ const lightTheme = {
   primarySubtle: "rgba(28, 93, 133, 0.1)",
   warningSubtle: "rgba(217, 119, 6, 0.05)",
 
+  // The app bar. Its own keys so Classic can paint a solid brand bar with white
+  // chrome while the default theme uses a page-coloured bar with ink chrome — no
+  // conditional in TopBar. Not $typographyContrast, which means "text on a solid
+  // fill" and is still needed elsewhere.
+  topBarBg: tokens.color.lightBackground,
+  topBarFg: tokens.color.lightTypography,
+
   // Semantic aliases for Tamagui built-in components
   color: tokens.color.lightTypography,
   borderColor: tokens.color.lightOutline,
@@ -375,11 +382,53 @@ const darkTheme = {
   primarySubtle: "rgba(230, 196, 105, 0.1)",
   warningSubtle: "rgba(252, 211, 77, 0.05)",
 
+  topBarBg: tokens.color.darkBackground,
+  topBarFg: tokens.color.darkTypography,
+
   // Semantic aliases for Tamagui built-in components
   color: tokens.color.darkTypography,
   borderColor: tokens.color.darkOutline,
   shadowColor: "rgba(0, 0, 0, 0.3)",
   placeholderColor: tokens.color.darkTypographySecondary,
+};
+
+// Classic — the pre-2.10 palette, kept as a permanent option for people who
+// preferred the brand-coloured ink and app bar. Colours only: Classic still gets
+// the current radii, tracking and layout, so it is "classic colours", not the
+// old app. Only the keys that differ are overridden.
+const CLASSIC_LIGHT_INK = "#1C5D85";
+const CLASSIC_DARK_INK = "#E6C469";
+
+const classicLightTheme = {
+  ...lightTheme,
+
+  typography: CLASSIC_LIGHT_INK,
+  typographySecondary: "#4B5563",
+  color: CLASSIC_LIGHT_INK,
+  colorHover: CLASSIC_LIGHT_INK,
+  colorPress: CLASSIC_LIGHT_INK,
+  colorFocus: CLASSIC_LIGHT_INK,
+  placeholderColor: "#4B5563",
+
+  // The solid brand app bar with white chrome.
+  topBarBg: CLASSIC_LIGHT_INK,
+  topBarFg: tokens.color.lightTypographyContrast,
+  backgroundElevated: CLASSIC_LIGHT_INK,
+};
+
+const classicDarkTheme = {
+  ...darkTheme,
+
+  typography: CLASSIC_DARK_INK,
+  typographySecondary: "#E3E2CE",
+  color: CLASSIC_DARK_INK,
+  colorHover: CLASSIC_DARK_INK,
+  colorPress: CLASSIC_DARK_INK,
+  colorFocus: CLASSIC_DARK_INK,
+  placeholderColor: "#E3E2CE",
+
+  topBarBg: tokens.color.darkBackgroundElevated,
+  topBarFg: tokens.color.darkTypographyContrast,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
@@ -430,6 +479,10 @@ const config = createTamagui({
   themes: {
     light: lightTheme,
     dark: darkTheme,
+    // Top-level, not sub-themes — avoids any ambiguity about Tamagui's `_`
+    // sub-theme resolution.
+    classicLight: classicLightTheme,
+    classicDark: classicDarkTheme,
   },
   fonts: {
     heading: asapFont,

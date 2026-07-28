@@ -1461,6 +1461,8 @@
   "settings.preferences.iqamaCountUp.title": "Iqama Timer",
   "settings.preferences.largeControls.description": "Bigger playback and scroll buttons in the Quran reader",
   "settings.preferences.largeControls.title": "Larger reader controls",
+  "settings.themes.classic.description": "The original blue and gold palette. Affects colours only — layout is unchanged.",
+  "settings.themes.classic.title": "Classic colours",
   "settings.preferences.openingTab.description": "Which tab the app starts on",
   "settings.preferences.openingTab.title": "Opening screen",
   "settings.preferences.title": "Preferences",
