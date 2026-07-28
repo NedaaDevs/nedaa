@@ -22,7 +22,6 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Divider } from "@/components/ui/divider";
 import { Pressable } from "@/components/ui/pressable";
 import PreviousPrayer from "@/components/PreviousPrayer";
 import { SkeletonText } from "@/components/ui/skeleton";
@@ -216,14 +215,6 @@ const Header = () => {
                 : t(timingName)}
             </Text>
           </Box>
-
-          <Divider
-            orientation="vertical"
-            height={40}
-            width={1}
-            marginHorizontal="$3"
-            backgroundColor="$outline"
-          />
 
           <VStack alignItems="center" gap="$1">
             <Text size="2xl" numeric fontWeight="600" color="$accentPrimary" textAlign="center">
