@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { View, ViewToken } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useSharedValue } from "react-native-reanimated";
 import { scheduleOnUI } from "react-native-worklets";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import { QURAN_THEME_COLORS, TOTAL_PAGES } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useAudioFollowTarget } from "@/hooks/useAudioFollowTarget";
+import { pinchFontSize } from "@/utils/readerMeasure";
 import TextPage from "@/components/quran/TextPage";
 
 // Every mushaf page number, hoisted so the list data isn't reallocated per render.
@@ -27,6 +28,7 @@ interface VerticalTextReaderProps {
   quranTheme: QuranThemeType;
   fontSize: number;
   onPageChange: (page: number) => void;
+  onFontSizeChange?: (size: number) => void;
   onTap?: () => void;
   onAyahLongPress?: (surah: number, ayah: number) => void;
   onSurahLongPress?: (surah: number) => void;
@@ -44,6 +46,7 @@ const VerticalTextReader = ({
   quranTheme,
   fontSize,
   onPageChange,
+  onFontSizeChange,
   onTap,
   onAyahLongPress,
   onSurahLongPress,
@@ -111,6 +114,31 @@ const VerticalTextReader = ({
         .onEnd(() => onTap?.()),
     [onTap]
   );
+
+  // Pinch scales the reading size against the size the pinch began at, snapped to
+  // the same steps the +/− buttons use; lastApplied throttles a drag to one
+  // update per step rather than one per frame.
+  // Plain values (not useMemo): the React Compiler memoizes them, and keeping the
+  // shared values out of a hook dependency list avoids the immutability rule that
+  // fires when a value passed to a hook is then mutated.
+  const pinchBase = useSharedValue(fontSize);
+  const lastApplied = useSharedValue(fontSize);
+  const pinchGesture = Gesture.Pinch()
+    .runOnJS(true)
+    .onBegin(() => {
+      pinchBase.value = fontSize;
+      lastApplied.value = fontSize;
+    })
+    .onUpdate((e) => {
+      const next = pinchFontSize(pinchBase.value, e.scale);
+      if (next === lastApplied.value) return;
+      lastApplied.value = next;
+      onFontSizeChange?.(next);
+    });
+
+  // Simultaneous, not exclusive: a pinch must not have to beat the chrome tap,
+  // and the list keeps its own scroll either way.
+  const readerGestures = Gesture.Simultaneous(tapGesture, pinchGesture);
 
   // Report the top visible page so the store (header + resume) stays in sync.
   // onViewableItemsChanged must be referentially stable, so read the latest
@@ -187,7 +215,7 @@ const VerticalTextReader = ({
   );
 
   return (
-    <GestureDetector gesture={tapGesture}>
+    <GestureDetector gesture={readerGestures}>
       <Animated.FlatList
         ref={animatedRef}
         data={ALL_PAGES}

@@ -360,6 +360,7 @@ const QuranReader = ({
             quranTheme={quranTheme}
             fontSize={fontSize}
             onPageChange={onPageChange}
+            onFontSizeChange={onFontSizeChange}
             onTap={onTap}
             onAyahLongPress={onAyahLongPress}
             onSurahLongPress={onSurahLongPress}
