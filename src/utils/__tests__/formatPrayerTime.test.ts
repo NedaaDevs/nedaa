@@ -1,15 +1,6 @@
 import { clockFormat, formatPrayerTime } from "@/utils/date";
 import { AppLocale } from "@/enums/app";
 
-// utils/date re-exports hijri-native, which ships untransformed ESM. Stubbing
-// the native module lets the real date utils load; nothing here touches Hijri.
-// Babel hoists jest.mock above the imports above.
-jest.mock("hijri-native", () => ({
-  today: () => ({ year: 1448, month: 1, day: 1 }),
-  addDays: (d: unknown) => d,
-  toGregorian: () => ({ year: 2026, month: 7, day: 28 }),
-}));
-
 // Afternoon in Riyadh (UTC+3), so the 12- and 24-hour renderings differ and the
 // timezone shift is observable.
 const ISO = "2026-07-28T14:05:00.000Z";
