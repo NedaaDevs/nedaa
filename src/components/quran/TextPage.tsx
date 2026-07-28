@@ -29,6 +29,7 @@ import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE, QURAN_QUEUE_KIND } from "@/types/quran-audio";
 import { useMutashabihatKeys } from "@/hooks/useMutashabihatKeys";
 import { juzForPage } from "@/utils/juz";
+import { readerColumnWidth } from "@/utils/readerMeasure";
 import { localizedSurahName } from "@/utils/surahName";
 import AyahText from "@/components/quran/AyahText";
 import PageHeader from "@/components/quran/PageHeader";
@@ -240,47 +241,46 @@ const TextPage = ({
         );
       }
 
-      blocks.push(
-        <Text
-          key={`surah-flow-${surah}`}
-          style={{
-            fontSize,
-            lineHeight: fontSize * 2,
-            color: quranBodyInk(quranTheme),
-            fontFamily: QURAN_TEXT_FONT,
-            textAlign: "justify",
-            writingDirection: "rtl",
-            marginBottom: 14,
-          }}>
-          {group.map((ayah) => {
-            const ra = readAlongFor(surah, ayah.ayahNumber);
-            return (
-              <AyahText
-                key={`${surah}-${ayah.ayahNumber}`}
-                surahNumber={surah}
-                ayahNumber={ayah.ayahNumber}
-                text={ayah.text}
-                quranTheme={quranTheme}
-                isHighlighted={
-                  highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
-                }
-                isReadAlong={ra.whole}
-                readAlongWordIndex={ra.wordIndex}
-                isFlashing={
-                  flashAyah?.surah === surah &&
-                  flashAyah?.ayah === ayah.ayahNumber &&
-                  !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
-                }
-                highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
-                bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
-                hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
-                onLongPress={handleLongPress}
-                onWaqfPress={onWaqfPress}
-              />
-            );
-          })}
-        </Text>
-      );
+      for (const ayah of group) {
+        const ra = readAlongFor(surah, ayah.ayahNumber);
+        blocks.push(
+          <Text
+            key={`verse-${surah}-${ayah.ayahNumber}`}
+            style={{
+              fontSize,
+              lineHeight: fontSize * 2,
+              color: quranBodyInk(quranTheme),
+              fontFamily: QURAN_TEXT_FONT,
+              // Arabic content in every app locale, so alignment follows the
+              // script rather than the UI direction.
+              textAlign: "right",
+              writingDirection: "rtl",
+              marginBottom: fontSize * 0.6,
+            }}>
+            <AyahText
+              surahNumber={surah}
+              ayahNumber={ayah.ayahNumber}
+              text={ayah.text}
+              quranTheme={quranTheme}
+              isHighlighted={
+                highlightedAyah?.surah === surah && highlightedAyah?.ayah === ayah.ayahNumber
+              }
+              isReadAlong={ra.whole}
+              readAlongWordIndex={ra.wordIndex}
+              isFlashing={
+                flashAyah?.surah === surah &&
+                flashAyah?.ayah === ayah.ayahNumber &&
+                !highlightMap.has(`${surah}:${ayah.ayahNumber}`)
+              }
+              highlightColor={highlightMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+              bookmarkColor={bookmarkMap.get(`${surah}:${ayah.ayahNumber}`) ?? null}
+              hasSimilar={mutashabihatKeys.has(`${surah}:${ayah.ayahNumber}`)}
+              onLongPress={handleLongPress}
+              onWaqfPress={onWaqfPress}
+            />
+          </Text>
+        );
+      }
     }
 
     return blocks;
@@ -298,7 +298,14 @@ const TextPage = ({
           version={currentVersion}
           quranTheme={quranTheme}
         />
-        <View style={[styles.column, styles.flowContent]}>{renderContent()}</View>
+        <View
+          style={[
+            styles.column,
+            styles.flowContent,
+            { maxWidth: readerColumnWidth(fontSize, width) },
+          ]}>
+          {renderContent()}
+        </View>
         <PageNumber page={page} quranTheme={quranTheme} version={currentVersion} />
       </YStack>
     );
@@ -324,7 +331,9 @@ const TextPage = ({
         showsVerticalScrollIndicator={false}>
         {/* Cap the reading column so lines stay a comfortable length on wide
             screens; phones (narrower than the cap) are unaffected. */}
-        <View style={styles.column}>{renderContent()}</View>
+        <View style={[styles.column, { maxWidth: readerColumnWidth(fontSize, width) }]}>
+          {renderContent()}
+        </View>
       </ScrollView>
 
       <PageNumber page={page} quranTheme={quranTheme} version={currentVersion} />
@@ -341,7 +350,6 @@ const styles = StyleSheet.create({
   },
   column: {
     width: "100%",
-    maxWidth: 720,
     alignSelf: "center",
   },
   flowContent: {
