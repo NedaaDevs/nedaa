@@ -444,7 +444,7 @@ const QuranScreen = () => {
             !guideSheet && (
               <YStack
                 position="absolute"
-                left={12}
+                right={12}
                 bottom={insets.bottom + 96}
                 zIndex={12}
                 pointerEvents="box-none">
