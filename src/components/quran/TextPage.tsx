@@ -257,8 +257,6 @@ const TextPage = ({
               lineHeight: fontSize * 2,
               color: quranBodyInk(quranTheme),
               fontFamily: QURAN_TEXT_FONT,
-              // Scripture is Arabic in every app locale, so it always sits flush
-              // right regardless of the UI direction.
               textAlign: "right",
               writingDirection: "rtl",
               marginBottom: fontSize * 0.6,
