@@ -1463,6 +1463,8 @@
   "settings.preferences.largeControls.title": "Larger reader controls",
   "settings.preferences.title": "Preferences",
   "settings.preferences.usageStats.body": "When this is on, Nedaa shares anonymous usage data — like which reciters and features are used most — so we can see what people find useful and decide what to add next.\n\nNo personal information is ever sent, and nothing is tied to you.\n\nFor example, we might learn that a reciter like Abdullah Khayat was played — but never who played it.\n\nYou can turn this off any time.",
+  "settings.preferences.use24HourTime.description": "Show prayer times as 17:30 instead of 5:30 PM",
+  "settings.preferences.use24HourTime.title": "24-hour time",
   "settings.preferences.usageStats.title": "Share anonymous usage stats",
   "settings.preferences.westernNumerals.description": "Use Western numerals (1, 2, 3) instead of Arabic numerals (١، ٢، ٣)",
   "settings.preferences.westernNumerals.title": "Western Numerals",

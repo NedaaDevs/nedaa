@@ -1412,6 +1412,8 @@
   "settings.preferences.haptics.title": "ہیپٹک فیڈبیک",
   "settings.preferences.largeControls.description": "قرآن ریڈر میں پلے بیک اور اسکرول کے بڑے بٹن",
   "settings.preferences.largeControls.title": "ریڈر کے بڑے کنٹرول",
+  "settings.preferences.use24HourTime.description": "نماز کے اوقات 5:30 PM کے بجائے 17:30 کے طور پر دکھائیں",
+  "settings.preferences.use24HourTime.title": "24 گھنٹے کا وقت",
   "settings.preferences.importantDays.description": "ہوم اسکرین پر آنے والی اسلامی مناسبتیں دکھائیں",
   "settings.preferences.importantDays.title": "ہوم پر اسلامی مناسبتیں",
   "settings.preferences.iqamaCountUp.description": "اذان کے بعد اقامت کا وقت دکھائیں",

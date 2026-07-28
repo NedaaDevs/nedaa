@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { Theme } from "tamagui";
 import { format, parseISO } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { VStack } from "@/components/ui/vstack";
@@ -26,7 +25,8 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAppStore } from "@/stores/app";
-import { getDateLocale } from "@/utils/date";
+import { clockFormat, formatPrayerTime, getDateLocale } from "@/utils/date";
+import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
@@ -36,8 +36,12 @@ const PRAYER_BY_ALARM: Partial<Record<string, { nameKey: string; timing: PrayerN
   [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: "dhuhr" },
 };
 
-const localeTime = (date: Date, locale: ReturnType<typeof useAppStore.getState>["locale"]) =>
-  formatNumberToLocale(format(date, "h:mm a", { locale: getDateLocale(locale) }));
+const localeTime = (
+  date: Date,
+  locale: ReturnType<typeof useAppStore.getState>["locale"],
+  use24HourTime: boolean
+) =>
+  formatNumberToLocale(format(date, clockFormat(use24HourTime), { locale: getDateLocale(locale) }));
 
 export default function AlarmTriggeredScreen() {
   const { alarmType, alarmId } = useLocalSearchParams<{
@@ -186,6 +190,7 @@ function ActiveAlarmView({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const locale = useAppStore((state) => state.locale);
+  const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
   const now = useMinuteClock();
 
   const triggerTime = useAlarmStore((state) => state.getAlarm(alarmId)?.triggerTime);
@@ -215,12 +220,10 @@ function ActiveAlarmView({
         ? entry
         : closest
     );
-    return formatNumberToLocale(
-      formatInTimeZone(parseISO(best.iso), best.tz, "h:mm a", { locale: getDateLocale(locale) })
-    );
-  }, [prayer, todayTimings, tomorrowTimings, triggerTime, locale]);
+    return formatNumberToLocale(formatPrayerTime(best.iso, best.tz, { locale, use24HourTime }));
+  }, [prayer, todayTimings, tomorrowTimings, triggerTime, locale, use24HourTime]);
 
-  const clock = localeTime(now, locale);
+  const clock = localeTime(now, locale, use24HourTime);
 
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility(

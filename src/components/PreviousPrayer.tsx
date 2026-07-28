@@ -1,16 +1,16 @@
 import { parseISO, formatDistance, differenceInMinutes } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale, isFriday, timeZonedNow } from "@/utils/date";
+import { formatPrayerTime, getDateLocale, isFriday, timeZonedNow } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { usePreferencesStore } from "@/stores/preferences";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -23,6 +23,7 @@ const PreviousPrayer = () => {
   const { locale } = useAppStore();
   const { locationDetails } = useLocationStore();
   const { todayTimings, getPreviousPrayer } = usePrayerTimesStore();
+  const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
   const [timeElapsed, setTimeElapsed] = useState("");
   const [showPrevious, setShowPrevious] = useState(false);
 
@@ -60,14 +61,10 @@ const PreviousPrayer = () => {
     };
   }, [previousPrayer, locale, locationDetails.timezone]);
 
-  const formattedPrayerTime = (date: string) => {
-    const parsedDate = parseISO(date);
-    return formatNumberToLocale(
-      formatInTimeZone(parsedDate, locationDetails.timezone, "h:mm a", {
-        locale: getDateLocale(locale),
-      })
+  const formattedPrayerTime = (date: string) =>
+    formatNumberToLocale(
+      formatPrayerTime(date, locationDetails.timezone, { locale, use24HourTime })
     );
-  };
 
   if (!todayTimings || !showPrevious || !previousPrayer) return null;
 

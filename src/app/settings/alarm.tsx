@@ -43,6 +43,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
+import { usePreferencesStore } from "@/stores/preferences";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -104,7 +105,8 @@ const openNotificationSettings = () => {
 const formatAlarmTime = (
   triggerTime: number,
   t: (key: string, options?: Record<string, string>) => string,
-  locale: string
+  locale: string,
+  use24HourTime: boolean
 ): string | null => {
   if (!triggerTime) return null;
   const triggerDate = new Date(triggerTime);
@@ -131,7 +133,7 @@ const formatAlarmTime = (
   const time = triggerDate.toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
-    hour12: true,
+    hour12: !use24HourTime,
   });
 
   return t("alarm.settings.firesAt", { day, time });
@@ -163,6 +165,7 @@ const AlarmSettings = () => {
   );
   const { isRTL } = useRTL();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
+  const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
 
@@ -334,7 +337,9 @@ const AlarmSettings = () => {
       icon: Sun,
       enabled: fajr.enabled,
       firesAt:
-        fajr.enabled && fajrAlarm ? formatAlarmTime(fajrAlarm.triggerTime, t, i18n.language) : null,
+        fajr.enabled && fajrAlarm
+          ? formatAlarmTime(fajrAlarm.triggerTime, t, i18n.language, use24HourTime)
+          : null,
       configSummary: formatConfigSummary(fajr, t),
       streakLabel: fajrStreak >= 2 ? t("alarm.settings.streakStat", { count: fajrStreak }) : null,
     },
@@ -346,7 +351,7 @@ const AlarmSettings = () => {
       enabled: friday.enabled,
       firesAt:
         friday.enabled && jummahAlarm
-          ? formatAlarmTime(jummahAlarm.triggerTime, t, i18n.language)
+          ? formatAlarmTime(jummahAlarm.triggerTime, t, i18n.language, use24HourTime)
           : null,
       configSummary: formatConfigSummary(friday, t),
       streakLabel: null,

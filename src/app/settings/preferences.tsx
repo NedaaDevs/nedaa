@@ -74,6 +74,8 @@ const PreferencesSettings = () => {
   const {
     useWesternNumerals,
     setUseWesternNumerals,
+    use24HourTime,
+    setUse24HourTime,
     countdownEnabled,
     setCountdownEnabled,
     countdownMinutes,
@@ -110,6 +112,13 @@ const PreferencesSettings = () => {
               onValueChange={setUseWesternNumerals}
             />
           )}
+
+          <SettingsToggleRow
+            titleKey="settings.preferences.use24HourTime.title"
+            descriptionKey="settings.preferences.use24HourTime.description"
+            value={use24HourTime}
+            onValueChange={setUse24HourTime}
+          />
 
           <SettingsToggleRow
             titleKey="settings.preferences.countdown.title"

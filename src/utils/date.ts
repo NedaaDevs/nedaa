@@ -1,5 +1,5 @@
-import { addDays, format, parse, subDays } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { addDays, format, parse, parseISO, subDays } from "date-fns";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { ar, enUS, ms } from "date-fns/locale";
 
 // Enums
@@ -133,4 +133,32 @@ export const formatTime24Hour = (hour: number, minute: number) => {
 export const formatTime12Hour = (hour: number, minute: number) => {
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${displayHour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+};
+
+/**
+ * The one place the clock format string lives. Use this rather than writing
+ * "h:mm a" at a call site, so the 24-hour preference reaches every time display.
+ * @param {boolean} use24HourTime - The user's clock-format preference
+ * @returns {string} - A date-fns format string
+ */
+export const clockFormat = (use24HourTime: boolean): string => (use24HourTime ? "HH:mm" : "h:mm a");
+
+/**
+ * Clock time for a prayer or adhan in the user's chosen 12- or 24-hour format.
+ * Digits come out Latin; wrap the result in formatNumberToLocale to render the
+ * locale's numerals. Kept free of store reads so it stays pure and testable.
+ * @param {string | Date} date - ISO string or Date to format
+ * @param {string} timezone - IANA timezone the time belongs to
+ * @param {object} options - Active locale and the 24-hour preference
+ * @returns {string} - Formatted string, e.g. "5:05 PM" or "17:05"
+ */
+export const formatPrayerTime = (
+  date: string | Date,
+  timezone: string,
+  options: { locale: AppLocale; use24HourTime: boolean }
+): string => {
+  const parsed = typeof date === "string" ? parseISO(date) : date;
+  return formatInTimeZone(parsed, timezone, clockFormat(options.use24HourTime), {
+    locale: getDateLocale(options.locale),
+  });
 };

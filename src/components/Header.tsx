@@ -1,11 +1,10 @@
 import { format, parseISO, formatDistance } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useMemo } from "react";
 
 // Utils
-import { getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
+import { formatPrayerTime, getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -35,7 +34,7 @@ const Header = () => {
   const { localizedLocation, locationDetails } = useLocationStore();
   const { todayTimings, getNextPrayer, getNextOtherTiming, getPreviousPrayer } =
     usePrayerTimesStore();
-  const { useWesternNumerals } = usePreferencesStore();
+  const { useWesternNumerals, use24HourTime } = usePreferencesStore();
 
   const [showOtherTiming, setShowOtherTiming] = useState(false);
 
@@ -115,14 +114,8 @@ const Header = () => {
 
   const formattedDateDetails = `${formattedDay} ${hijriMonth} ${formattedYear}`;
 
-  const formattedPrayerTime = (date: string) => {
-    const parsedDate = parseISO(date);
-    return formatNum(
-      formatInTimeZone(parsedDate, locationDetails.timezone, "h:mm a", {
-        locale: getDateLocale(locale),
-      })
-    );
-  };
+  const formattedPrayerTime = (date: string) =>
+    formatNum(formatPrayerTime(date, locationDetails.timezone, { locale, use24HourTime }));
 
   if (!todayTimings || !timing) {
     return (

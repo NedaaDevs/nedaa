@@ -7,11 +7,10 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 
 import { Sun } from "lucide-react-native";
-import { parseISO } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
-import { getDateLocale } from "@/utils/date";
+import { formatPrayerTime } from "@/utils/date";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
+import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 
 interface Props {
@@ -30,16 +29,12 @@ const TimingItem = ({ name, time, icon, isNext = false, showDivider = true }: Pr
 
   const { locale } = useAppStore();
   const { locationDetails } = useLocationStore();
+  const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
 
-  const formattedPrayerTime = (date: string) => {
-    const parsedDate = parseISO(date);
-
-    return formatNumberToLocale(
-      formatInTimeZone(parsedDate, locationDetails.timezone, "h:mm a", {
-        locale: getDateLocale(locale),
-      })
+  const formattedPrayerTime = (date: string) =>
+    formatNumberToLocale(
+      formatPrayerTime(date, locationDetails.timezone, { locale, use24HourTime })
     );
-  };
 
   return (
     <Box>
