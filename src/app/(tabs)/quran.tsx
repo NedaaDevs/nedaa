@@ -445,7 +445,7 @@ const QuranScreen = () => {
               <YStack
                 position="absolute"
                 right={12}
-                bottom={insets.bottom + 96}
+                bottom={insets.bottom + 148}
                 zIndex={12}
                 pointerEvents="box-none">
                 <TextSizeControl
