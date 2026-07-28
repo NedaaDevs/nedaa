@@ -196,7 +196,9 @@ export default function UmrahOverviewScreen() {
         paddingHorizontal="$4"
         paddingVertical="$3"
         paddingBottom={Math.max(insets.bottom, 12)}
-        backgroundColor="$backgroundElevated">
+        backgroundColor="$backgroundElevated"
+        borderTopWidth={1}
+        borderTopColor="$outline">
         {activeProgress ? (
           <HStack gap="$3">
             <Button

@@ -61,7 +61,12 @@ const TopBar = ({
   };
 
   return (
-    <Box paddingHorizontal="$5" paddingVertical="$4" backgroundColor="$backgroundElevated">
+    <Box
+      paddingHorizontal="$5"
+      paddingVertical="$4"
+      backgroundColor="$background"
+      borderBottomWidth={1}
+      borderBottomColor="$outline">
       <HStack justifyContent="space-between" alignItems="center" width="100%">
         <HStack alignItems="center" gap="$3" flexShrink={1}>
           {backOnClick && (
@@ -75,19 +80,19 @@ const TopBar = ({
               justifyContent="center"
               accessibilityRole="button"
               accessibilityLabel={t("a11y.back")}>
-              <Icon as={BackArrow} size="lg" color="$typographyContrast" />
+              <Icon as={BackArrow} size="lg" color="$typography" />
             </Pressable>
           )}
 
           {onTitlePress ? (
             // TODO(quran-gate): remove onTitlePress wrapper at 2.10.0
             <Pressable onPress={onTitlePress} accessible={false} flexShrink={1}>
-              <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
+              <Text size="2xl" bold color="$typography" accessibilityRole="header">
                 {t(title)}
               </Text>
             </Pressable>
           ) : (
-            <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
+            <Text size="2xl" bold color="$typography" accessibilityRole="header">
               {t(title)}
             </Text>
           )}
@@ -104,7 +109,7 @@ const TopBar = ({
               justifyContent="center"
               accessibilityRole="button"
               accessibilityLabel={rightIconLabel}>
-              <Icon as={icon} size="lg" color="$typographyContrast" />
+              <Icon as={icon} size="lg" color="$typography" />
             </Pressable>
           </Link>
         )}
@@ -120,7 +125,7 @@ const TopBar = ({
             justifyContent="center"
             accessibilityRole="button"
             accessibilityLabel={rightIconLabel}>
-            <Icon as={icon} size="lg" color="$typographyContrast" />
+            <Icon as={icon} size="lg" color="$typography" />
           </Pressable>
         )}
       </HStack>

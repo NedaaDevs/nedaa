@@ -174,13 +174,17 @@ export default function StepScreen() {
         paddingHorizontal="$4"
         paddingVertical="$3"
         paddingBottom={Math.max(insets.bottom, 12)}
-        backgroundColor="$backgroundElevated">
+        backgroundColor="$backgroundElevated"
+        borderTopWidth={1}
+        borderTopColor="$outline">
         <HStack gap="$3" alignItems="center">
           <Pressable
             onPress={handlePrevious}
             padding="$3"
             borderRadius="$3"
-            backgroundColor="$backgroundSecondary"
+            backgroundColor="$backgroundInteractive"
+            borderWidth={1}
+            borderColor="$outline"
             minWidth={48}
             minHeight={48}
             alignItems="center"

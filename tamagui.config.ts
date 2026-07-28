@@ -211,7 +211,7 @@ const tokens = createTokens({
     lightTypographyContrast: "#FFFFFF",
     lightBackground: "#F5F7FA",
     lightBackgroundSecondary: "#FFFFFF",
-    lightBackgroundElevated: "#1C5D85",
+    lightBackgroundElevated: "#FFFFFF",
     lightBackgroundInteractive: "#F5F7FA",
     lightOutline: "#E2E8F0",
     lightOutlineAccent: "#1C5D85",
