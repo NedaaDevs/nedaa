@@ -1410,6 +1410,8 @@
   "settings.preferences.countdown.title": "الٹی گنتی",
   "settings.preferences.haptics.description": "تعاملات کے لیے وائبریشن فیڈبیک",
   "settings.preferences.haptics.title": "ہیپٹک فیڈبیک",
+  "settings.preferences.largeControls.description": "قرآن ریڈر میں پلے بیک اور اسکرول کے بڑے بٹن",
+  "settings.preferences.largeControls.title": "ریڈر کے بڑے کنٹرول",
   "settings.preferences.importantDays.description": "ہوم اسکرین پر آنے والی اسلامی مناسبتیں دکھائیں",
   "settings.preferences.importantDays.title": "ہوم پر اسلامی مناسبتیں",
   "settings.preferences.iqamaCountUp.description": "اذان کے بعد اقامت کا وقت دکھائیں",

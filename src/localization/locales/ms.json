@@ -1410,6 +1410,8 @@
   "settings.preferences.countdown.title": "Undur Waktu Solat",
   "settings.preferences.haptics.description": "Getaran maklum balas untuk interaksi",
   "settings.preferences.haptics.title": "Maklum Balas Haptik",
+  "settings.preferences.largeControls.description": "Butang main dan tatal lebih besar dalam Pembaca Al-Quran",
+  "settings.preferences.largeControls.title": "Kawalan pembaca lebih besar",
   "settings.preferences.importantDays.description": "Tunjukkan peristiwa Islam yang akan datang pada skrin Utama",
   "settings.preferences.importantDays.title": "Peristiwa Islam di Skrin Utama",
   "settings.preferences.iqamaCountUp.description": "Paparkan masa berlalu selepas azan untuk iqamah",

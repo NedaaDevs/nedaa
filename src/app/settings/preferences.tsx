@@ -9,12 +9,11 @@ import { Background } from "@/components/ui/background";
 import TopBar from "@/components/TopBar";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { Switch } from "@/components/ui/switch";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { InfoSheet } from "@/components/InfoSheet";
+import SettingsToggleRow from "@/components/settings/SettingsToggleRow";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -70,6 +69,8 @@ const DurationPicker = ({
 const PreferencesSettings = () => {
   const { t } = useTranslation();
   const { locale } = useAppStore();
+  // TODO(quran-gate): remove at 2.10.0
+  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
   const {
     useWesternNumerals,
     setUseWesternNumerals,
@@ -102,200 +103,92 @@ const PreferencesSettings = () => {
         <VStack padding="$4" gap="$4">
           {/* Western Numerals - only show for Arabic locale */}
           {isArabic && (
-            <Box
-              backgroundColor="$backgroundSecondary"
-              borderRadius="$6"
-              padding="$4"
-              flexDirection="row"
-              alignItems="center">
-              <HStack justifyContent="space-between" alignItems="center" width="100%">
-                <VStack flexShrink={1} marginEnd="$4">
-                  <Text fontWeight="500" color="$typography">
-                    {t("settings.preferences.westernNumerals.title")}
-                  </Text>
-                  <Text size="sm" color="$typographySecondary" marginTop="$1">
-                    {t("settings.preferences.westernNumerals.description")}
-                  </Text>
-                </VStack>
-                <Switch
-                  value={useWesternNumerals}
-                  onValueChange={setUseWesternNumerals}
-                  accessibilityLabel={t("settings.preferences.westernNumerals.title")}
-                />
-              </HStack>
-            </Box>
+            <SettingsToggleRow
+              titleKey="settings.preferences.westernNumerals.title"
+              descriptionKey="settings.preferences.westernNumerals.description"
+              value={useWesternNumerals}
+              onValueChange={setUseWesternNumerals}
+            />
           )}
 
-          {/* Prayer Countdown */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
-            <VStack gap="$3">
-              <Box flexDirection="row" alignItems="center">
-                <HStack justifyContent="space-between" alignItems="center" width="100%">
-                  <VStack flexShrink={1} marginEnd="$4">
-                    <Text fontWeight="500" color="$typography">
-                      {t("settings.preferences.countdown.title")}
-                    </Text>
-                    <Text size="sm" color="$typographySecondary" marginTop="$1">
-                      {t("settings.preferences.countdown.description")}
-                    </Text>
-                  </VStack>
-                  <Switch
-                    value={countdownEnabled}
-                    onValueChange={setCountdownEnabled}
-                    accessibilityLabel={t("settings.preferences.countdown.title")}
-                  />
-                </HStack>
-              </Box>
-
-              {countdownEnabled && (
-                <DurationPicker
-                  value={countdownMinutes}
-                  onChange={setCountdownMinutes}
-                  options={[15, 30, 45, 60]}
-                  labelKey="settings.preferences.countdown.minutes"
-                />
-              )}
-            </VStack>
-          </Box>
-
-          {/* Iqama Count-Up */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
-            <VStack gap="$3">
-              <Box flexDirection="row" alignItems="center">
-                <HStack justifyContent="space-between" alignItems="center" width="100%">
-                  <VStack flexShrink={1} marginEnd="$4">
-                    <Text fontWeight="500" color="$typography">
-                      {t("settings.preferences.iqamaCountUp.title")}
-                    </Text>
-                    <Text size="sm" color="$typographySecondary" marginTop="$1">
-                      {t("settings.preferences.iqamaCountUp.description")}
-                    </Text>
-                  </VStack>
-                  <Switch
-                    value={iqamaCountUpEnabled}
-                    onValueChange={setIqamaCountUpEnabled}
-                    accessibilityLabel={t("settings.preferences.iqamaCountUp.title")}
-                  />
-                </HStack>
-              </Box>
-
-              {iqamaCountUpEnabled && (
-                <DurationPicker
-                  value={iqamaCountUpMinutes}
-                  onChange={setIqamaCountUpMinutes}
-                  options={[10, 15, 20, 30]}
-                  labelKey="settings.preferences.iqamaCountUp.minutes"
-                />
-              )}
-            </VStack>
-          </Box>
-
-          {/* Haptic Feedback */}
-          <Box
-            backgroundColor="$backgroundSecondary"
-            borderRadius="$6"
-            padding="$4"
-            flexDirection="row"
-            alignItems="center">
-            <HStack justifyContent="space-between" alignItems="center" width="100%">
-              <VStack flexShrink={1} marginEnd="$4">
-                <Text fontWeight="500" color="$typography">
-                  {t("settings.preferences.haptics.title")}
-                </Text>
-                <Text size="sm" color="$typographySecondary" marginTop="$1">
-                  {t("settings.preferences.haptics.description")}
-                </Text>
-              </VStack>
-              <Switch
-                value={hapticsEnabled}
-                onValueChange={setHapticsEnabled}
-                accessibilityLabel={t("settings.preferences.haptics.title")}
+          <SettingsToggleRow
+            titleKey="settings.preferences.countdown.title"
+            descriptionKey="settings.preferences.countdown.description"
+            value={countdownEnabled}
+            onValueChange={setCountdownEnabled}>
+            {countdownEnabled && (
+              <DurationPicker
+                value={countdownMinutes}
+                onChange={setCountdownMinutes}
+                options={[15, 30, 45, 60]}
+                labelKey="settings.preferences.countdown.minutes"
               />
-            </HStack>
-          </Box>
+            )}
+          </SettingsToggleRow>
 
-          {/* Larger controls (accessibility) */}
-          <Box
-            backgroundColor="$backgroundSecondary"
-            borderRadius="$6"
-            padding="$4"
-            flexDirection="row"
-            alignItems="center">
-            <HStack justifyContent="space-between" alignItems="center" width="100%">
-              <VStack flexShrink={1} marginEnd="$4">
-                <Text fontWeight="500" color="$typography">
-                  {t("settings.preferences.largeControls.title")}
-                </Text>
-                <Text size="sm" color="$typographySecondary" marginTop="$1">
-                  {t("settings.preferences.largeControls.description")}
-                </Text>
-              </VStack>
-              <Switch
-                value={largeControls}
-                onValueChange={setLargeControls}
-                accessibilityLabel={t("settings.preferences.largeControls.title")}
+          <SettingsToggleRow
+            titleKey="settings.preferences.iqamaCountUp.title"
+            descriptionKey="settings.preferences.iqamaCountUp.description"
+            value={iqamaCountUpEnabled}
+            onValueChange={setIqamaCountUpEnabled}>
+            {iqamaCountUpEnabled && (
+              <DurationPicker
+                value={iqamaCountUpMinutes}
+                onChange={setIqamaCountUpMinutes}
+                options={[10, 15, 20, 30]}
+                labelKey="settings.preferences.iqamaCountUp.minutes"
               />
-            </HStack>
-          </Box>
+            )}
+          </SettingsToggleRow>
 
-          {/* Important Days on Home */}
-          <Box
-            backgroundColor="$backgroundSecondary"
-            borderRadius="$6"
-            padding="$4"
-            flexDirection="row"
-            alignItems="center">
-            <HStack justifyContent="space-between" alignItems="center" width="100%">
-              <VStack flexShrink={1} marginEnd="$4">
-                <Text fontWeight="500" color="$typography">
-                  {t("settings.preferences.importantDays.title")}
-                </Text>
-                <Text size="sm" color="$typographySecondary" marginTop="$1">
-                  {t("settings.preferences.importantDays.description")}
-                </Text>
-              </VStack>
-              <Switch
-                value={showImportantDaysOnHome}
-                onValueChange={setShowImportantDaysOnHome}
-                accessibilityLabel={t("settings.preferences.importantDays.title")}
-              />
-            </HStack>
-          </Box>
+          <SettingsToggleRow
+            titleKey="settings.preferences.haptics.title"
+            descriptionKey="settings.preferences.haptics.description"
+            value={hapticsEnabled}
+            onValueChange={setHapticsEnabled}
+          />
+
+          {/* Only affects the Quran reader's scroll and audio controls, so it is
+              hidden until the reader is available.
+              TODO(quran-gate): drop the condition at 2.10.0 (feature public). */}
+          {quranUnlocked && (
+            <SettingsToggleRow
+              titleKey="settings.preferences.largeControls.title"
+              descriptionKey="settings.preferences.largeControls.description"
+              value={largeControls}
+              onValueChange={setLargeControls}
+            />
+          )}
+
+          <SettingsToggleRow
+            titleKey="settings.preferences.importantDays.title"
+            descriptionKey="settings.preferences.importantDays.description"
+            value={showImportantDaysOnHome}
+            onValueChange={setShowImportantDaysOnHome}
+          />
 
           {/* Usage stats — keep this row LAST; add new preferences above it.
               Detail lives in the info sheet (tap the ⓘ), not inline. */}
-          <Box
-            backgroundColor="$backgroundSecondary"
-            borderRadius="$6"
-            padding="$4"
-            flexDirection="row"
-            alignItems="center">
-            <HStack justifyContent="space-between" alignItems="center" width="100%">
-              <HStack flex={1} marginEnd="$4" alignItems="center" gap="$1.5" flexWrap="nowrap">
-                <Text fontWeight="500" color="$typography" flexShrink={1}>
-                  {t("settings.preferences.usageStats.title")}
-                </Text>
-                {/* Override the 44×44 tap-target minimums so the icon sizes to
-                    itself and centers with the title; hitSlop keeps it tappable. */}
-                <Pressable
-                  minWidth={0}
-                  minHeight={0}
-                  alignSelf="center"
-                  flexShrink={0}
-                  onPress={() => usageInfoRef.current?.present()}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("settings.preferences.usageStats.title")}>
-                  <Icon as={Info} size="sm" color="$typographySecondary" />
-                </Pressable>
-              </HStack>
-              <Switch
-                value={shareUsageStats}
-                onValueChange={setShareUsageStats}
-                accessibilityLabel={t("settings.preferences.usageStats.title")}
-              />
-            </HStack>
-          </Box>
+          <SettingsToggleRow
+            titleKey="settings.preferences.usageStats.title"
+            value={shareUsageStats}
+            onValueChange={setShareUsageStats}
+            titleAccessory={
+              // Override the 44×44 tap-target minimums so the icon sizes to
+              // itself and centers with the title; hitSlop keeps it tappable.
+              <Pressable
+                minWidth={0}
+                minHeight={0}
+                alignSelf="center"
+                flexShrink={0}
+                onPress={() => usageInfoRef.current?.present()}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel={t("settings.preferences.usageStats.title")}>
+                <Icon as={Info} size="sm" color="$typographySecondary" />
+              </Pressable>
+            }
+          />
         </VStack>
         <InfoSheet
           ref={usageInfoRef}
