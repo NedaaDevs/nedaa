@@ -14,6 +14,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { InfoSheet } from "@/components/InfoSheet";
 import SettingsToggleRow from "@/components/settings/SettingsToggleRow";
+import SettingsChoiceRow from "@/components/settings/SettingsChoiceRow";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -21,6 +22,10 @@ import { usePreferencesStore } from "@/stores/preferences";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+import { isAthkarSupported } from "@/utils/athkar";
+
+// Enums
+import { OpeningTab } from "@/enums/app";
 
 const DurationPicker = ({
   value,
@@ -76,6 +81,8 @@ const PreferencesSettings = () => {
     setUseWesternNumerals,
     use24HourTime,
     setUse24HourTime,
+    openingTab,
+    setOpeningTab,
     countdownEnabled,
     setCountdownEnabled,
     countdownMinutes,
@@ -98,6 +105,18 @@ const PreferencesSettings = () => {
 
   const isArabic = locale.startsWith("ar");
 
+  // Only offer tabs this user can actually reach — Athkar depends on locale and
+  // Quran on the unlock, and both are hidden from the tab bar when unavailable.
+  const openingTabOptions = [
+    { value: OpeningTab.HOME, labelKey: "a11y.tab.home" },
+    ...(isAthkarSupported(locale)
+      ? [{ value: OpeningTab.ATHKAR, labelKey: "a11y.tab.athkar" }]
+      : []),
+    // TODO(quran-gate): drop the condition at 2.10.0 (feature public).
+    ...(quranUnlocked ? [{ value: OpeningTab.QURAN, labelKey: "a11y.tab.quran" }] : []),
+    { value: OpeningTab.TOOLS, labelKey: "a11y.tab.tools" },
+  ];
+
   return (
     <Background>
       <TopBar title="settings.preferences.title" backOnClick />
@@ -112,6 +131,14 @@ const PreferencesSettings = () => {
               onValueChange={setUseWesternNumerals}
             />
           )}
+
+          <SettingsChoiceRow
+            titleKey="settings.preferences.openingTab.title"
+            descriptionKey="settings.preferences.openingTab.description"
+            value={openingTab}
+            onChange={setOpeningTab}
+            options={openingTabOptions}
+          />
 
           <SettingsToggleRow
             titleKey="settings.preferences.use24HourTime.title"

@@ -1461,6 +1461,8 @@
   "settings.preferences.iqamaCountUp.title": "Iqama Timer",
   "settings.preferences.largeControls.description": "Bigger playback and scroll buttons in the Quran reader",
   "settings.preferences.largeControls.title": "Larger reader controls",
+  "settings.preferences.openingTab.description": "Which tab the app starts on",
+  "settings.preferences.openingTab.title": "Opening screen",
   "settings.preferences.title": "Preferences",
   "settings.preferences.usageStats.body": "When this is on, Nedaa shares anonymous usage data — like which reciters and features are used most — so we can see what people find useful and decide what to add next.\n\nNo personal information is ever sent, and nothing is tied to you.\n\nFor example, we might learn that a reciter like Abdullah Khayat was played — but never who played it.\n\nYou can turn this off any time.",
   "settings.preferences.use24HourTime.description": "Show prayer times as 17:30 instead of 5:30 PM",

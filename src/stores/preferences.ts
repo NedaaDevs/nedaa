@@ -2,6 +2,7 @@ import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { getLocales } from "expo-localization";
+import { OpeningTab, type OpeningTabValue } from "@/enums/app";
 
 // Seeds the initial 24-hour setting from the device clock; once the user
 // touches the toggle the persisted value takes over.
@@ -11,6 +12,8 @@ type PreferencesState = {
   useWesternNumerals: boolean;
   // Clock format for prayer and adhan times. Seeded from the device on first run.
   use24HourTime: boolean;
+  // Tab the app lands on at launch.
+  openingTab: OpeningTabValue;
   countdownEnabled: boolean;
   countdownMinutes: number;
   iqamaCountUpEnabled: boolean;
@@ -25,6 +28,7 @@ type PreferencesState = {
 
   setUseWesternNumerals: (value: boolean) => void;
   setUse24HourTime: (value: boolean) => void;
+  setOpeningTab: (value: OpeningTabValue) => void;
   setCountdownEnabled: (value: boolean) => void;
   setCountdownMinutes: (value: number) => void;
   setIqamaCountUpEnabled: (value: boolean) => void;
@@ -40,6 +44,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set) => ({
       useWesternNumerals: false,
       use24HourTime: deviceUses24HourClock(),
+      openingTab: OpeningTab.HOME,
       countdownEnabled: false,
       countdownMinutes: 60,
       iqamaCountUpEnabled: false,
@@ -51,6 +56,7 @@ export const usePreferencesStore = create<PreferencesState>()(
 
       setUseWesternNumerals: (value) => set({ useWesternNumerals: value }),
       setUse24HourTime: (value) => set({ use24HourTime: value }),
+      setOpeningTab: (value) => set({ openingTab: value }),
       setCountdownEnabled: (value) => set({ countdownEnabled: value }),
       setCountdownMinutes: (value) => set({ countdownMinutes: value }),
       setIqamaCountUpEnabled: (value) => set({ iqamaCountUpEnabled: value }),

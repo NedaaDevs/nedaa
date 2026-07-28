@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Tabs } from "expo-router";
+import { Tabs, router, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBar, BottomTabBarProps } from "expo-router/js-tabs";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,10 @@ import { useTranslation } from "react-i18next";
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
+import { usePreferencesStore } from "@/stores/preferences";
+
+// Enums
+import { OpeningTab, type OpeningTabValue } from "@/enums/app";
 
 // Services
 import { QuranContentDB } from "@/services/quran-content-db";
@@ -25,6 +29,17 @@ import { isAthkarSupported } from "@/utils/athkar";
 // Hooks
 import { useTheme } from "tamagui";
 
+const OPENING_TAB_ROUTE: Record<Exclude<OpeningTabValue, "index">, Href> = {
+  [OpeningTab.ATHKAR]: "/(tabs)/athkar",
+  [OpeningTab.QURAN]: "/(tabs)/quran",
+  [OpeningTab.TOOLS]: "/(tabs)/tools",
+};
+
+// Honoured once per app launch. This layout remounts whenever the theme changes
+// (key={`tabs-${mode}`}), and re-navigating then would yank the user out of
+// whatever tab they were on.
+let openingTabApplied = false;
+
 const TabsLayout = () => {
   const { locale, mode } = useAppStore();
   // TODO(quran-gate): remove at 2.10.0
@@ -42,6 +57,32 @@ const TabsLayout = () => {
   useEffect(() => {
     if (quranUnlocked) void QuranContentDB.openQuranDb();
   }, [quranUnlocked]);
+
+  // Land on the user's chosen tab. The preference is persisted, so wait for
+  // rehydration or the stored choice is missed on a cold start.
+  useEffect(() => {
+    if (openingTabApplied) return;
+
+    const apply = () => {
+      if (openingTabApplied) return;
+      openingTabApplied = true;
+
+      const tab = usePreferencesStore.getState().openingTab;
+      if (tab === OpeningTab.HOME) return;
+      // A tab can become unreachable after it was chosen — the locale changed,
+      // or Quran was re-locked. Fall back to home rather than a hidden route.
+      if (tab === OpeningTab.ATHKAR && !isAthkarSupported(locale)) return;
+      if (tab === OpeningTab.QURAN && !quranUnlocked) return;
+
+      router.replace(OPENING_TAB_ROUTE[tab]);
+    };
+
+    if (usePreferencesStore.persist.hasHydrated()) {
+      apply();
+      return;
+    }
+    return usePreferencesStore.persist.onFinishHydration(apply);
+  }, [locale, quranUnlocked]);
 
   return (
     <Tabs

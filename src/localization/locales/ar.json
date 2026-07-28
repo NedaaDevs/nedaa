@@ -1510,6 +1510,8 @@
   "settings.preferences.iqamaCountUp.title": "مؤقّت الإقامة",
   "settings.preferences.largeControls.description": "أزرار تشغيل وتمرير أكبر في قارئ القرآن",
   "settings.preferences.largeControls.title": "عناصر تحكم أكبر في القارئ",
+  "settings.preferences.openingTab.description": "التبويب الذي يفتح عليه التطبيق",
+  "settings.preferences.openingTab.title": "شاشة البداية",
   "settings.preferences.title": "التفضيلات",
   "settings.preferences.usageStats.body": "عند تفعيل هذا الخيار، يشارك تطبيق نداء بيانات استخدام مجهولة — مثل القرّاء والميزات الأكثر استخدامًا — لنعرف ما يجده الناس مفيدًا ونقرّر ما نضيفه لاحقًا.\n\nلا تُرسَل أي معلومات شخصية أبدًا، ولا يُربَط أي شيء بك.\n\nعلى سبيل المثال، قد نعرف أنّ قارئًا مثل عبد الله خياط قد شُغِّل، لكن لا نعرف من شغّله.\n\nيمكنك إيقاف هذا الخيار في أي وقت.",
   "settings.preferences.use24HourTime.description": "عرض المواقيت بصيغة ١٧:٣٠ بدلًا من ٥:٣٠ م",
