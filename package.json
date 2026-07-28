@@ -22,6 +22,7 @@
     "clean:derived": "./scripts/clean-derived.sh",
     "clean:pods": "./scripts/clean-pods.sh",
     "clean:all": "./scripts/clean-all.sh",
+    "fix:android:modules": "./scripts/fix-stale-expo-modules.sh",
     "reinstall:ios": "./scripts/reinstall-ios.sh",
     "nuke": "./scripts/nuke.sh",
     "build:android": "bun run build:android:gms",
