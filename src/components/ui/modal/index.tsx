@@ -4,7 +4,7 @@ import type { GetProps } from "tamagui";
 import { ScrollView, View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { useRTL } from "@/contexts/RTLContext";
+import { RTLContext, useRTL } from "@/contexts/RTLContext";
 
 // --- Modal size context ---
 
@@ -22,17 +22,26 @@ type ModalProps = {
 };
 
 const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", children }) => {
+  // Read here, above the portal, where the app's providers are still in scope.
+  const rtl = useRTL();
+
   return (
-    <ModalSizeContext value={size}>
-      <Dialog
-        modal
-        open={isOpen}
-        onOpenChange={(open: boolean) => {
-          if (!open) onClose?.();
-        }}>
-        {isOpen && <Dialog.Portal>{children}</Dialog.Portal>}
-      </Dialog>
-    </ModalSizeContext>
+    <Dialog
+      modal
+      open={isOpen}
+      onOpenChange={(open: boolean) => {
+        if (!open) onClose?.();
+      }}>
+      {isOpen && (
+        <Dialog.Portal>
+          {/* A portal renders outside this subtree, so contexts are re-provided inside
+              it — otherwise ModalContent silently falls back to the defaults. */}
+          <ModalSizeContext value={size}>
+            <RTLContext value={rtl}>{children}</RTLContext>
+          </ModalSizeContext>
+        </Dialog.Portal>
+      )}
+    </Dialog>
   );
 };
 Modal.displayName = "Modal";
@@ -70,7 +79,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ children }) => {
       padding="$0"
       width="90%"
       maxWidth={SIZE_MAX_WIDTH[size]}>
-      {/* Portalled out of RTLProvider's wrapper, so the direction is re-applied here. */}
+      {/* RTLProvider's direction wrapper is a native view and does not reach a portal. */}
       <RNView style={{ direction, width: "100%" }}>{children}</RNView>
     </Dialog.Content>
   );
