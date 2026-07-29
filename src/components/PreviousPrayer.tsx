@@ -17,6 +17,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 
 const PreviousPrayer = () => {
   const { t } = useTranslation();
@@ -27,7 +28,8 @@ const PreviousPrayer = () => {
   const [timeElapsed, setTimeElapsed] = useState("");
   const [showPrevious, setShowPrevious] = useState(false);
 
-  const previousPrayer = todayTimings ? getPreviousPrayer() : null;
+  const now = useMinuteClock();
+  const previousPrayer = todayTimings ? getPreviousPrayer(now) : null;
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;

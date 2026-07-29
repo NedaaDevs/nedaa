@@ -59,10 +59,12 @@ export type PrayerTimesStore = {
   getProviders: () => Promise<Provider[]>;
   getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<boolean>;
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
-  getNextPrayer: () => Prayer | null;
-  getNextOtherTiming: () => OtherTiming | null;
-  getPreviousPrayer: () => Prayer | null;
-  getPreviousOtherTiming: () => OtherTiming | null;
+  // `now` is a parameter so callers that re-render on a clock tick recompute; without
+  // it the result is memoized against inputs that never change.
+  getNextPrayer: (now?: Date) => Prayer | null;
+  getNextOtherTiming: (now?: Date) => OtherTiming | null;
+  getPreviousPrayer: (now?: Date) => Prayer | null;
+  getPreviousOtherTiming: (now?: Date) => OtherTiming | null;
   cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
   clearError: () => void;
 };
@@ -315,10 +317,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             useAppStore.getState().setLoadingState(false);
           }
         },
-        getNextPrayer: () => {
+        getNextPrayer: (now = new Date()) => {
           const state = get();
           // Real instant: stored times already carry the location's offset.
-          const now = new Date();
 
           if (!state.todayTimings) return null;
 
@@ -333,9 +334,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
           return null;
         },
-        getPreviousPrayer: () => {
+        getPreviousPrayer: (now = new Date()) => {
           const state = get();
-          const now = new Date();
 
           if (!state.todayTimings) return null;
 
@@ -350,11 +350,10 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
           return null;
         },
-        getNextOtherTiming: () => {
+        getNextOtherTiming: (now = new Date()) => {
           const state = get();
           if (!state.todayTimings?.otherTimings) return null;
 
-          const now = new Date();
           const today = toOtherTimings(state.todayTimings);
 
           const nextToday = firstAfter(today, now);
@@ -369,9 +368,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           return earliest(today);
         },
         // Mirrors getPreviousPrayer, for the home arc's other-timing window.
-        getPreviousOtherTiming: () => {
+        getPreviousOtherTiming: (now = new Date()) => {
           const state = get();
-          const now = new Date();
 
           if (!state.todayTimings?.otherTimings) return null;
 

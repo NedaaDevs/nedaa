@@ -17,7 +17,8 @@ import { Icon } from "@/components/ui/icon";
 import { Clock } from "lucide-react-native";
 
 import { ALARM_TYPE_META } from "@/constants/Alarm";
-import { useAlarmScreen, formatTimeRemaining, useMinuteClock } from "@/hooks/useAlarmScreen";
+import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { ChallengeWrapper } from "@/components/alarm/challenges";
 import { ChallengeConfig } from "@/types/alarm";
 import { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";

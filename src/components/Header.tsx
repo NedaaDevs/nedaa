@@ -16,6 +16,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 
 // Hooks
 import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 // Components
@@ -66,13 +67,14 @@ const Header = () => {
 
   const screenshotSeed = useScreenshotSeed("prayer-times");
 
-  const nextPrayer = todayTimings ? getNextPrayer() : null;
-  const nextOtherTiming = todayTimings ? getNextOtherTiming() : null;
-  const previousPrayer = todayTimings ? getPreviousPrayer() : null;
-  const previousOtherTiming = todayTimings ? getPreviousOtherTiming() : null;
+  // Ticks the clock so these recompute at a prayer boundary, not just on new timings.
+  const now = useMinuteClock();
+  const nextPrayer = todayTimings ? getNextPrayer(now) : null;
+  const nextOtherTiming = todayTimings ? getNextOtherTiming(now) : null;
+  const previousPrayer = todayTimings ? getPreviousPrayer(now) : null;
+  const previousOtherTiming = todayTimings ? getPreviousOtherTiming(now) : null;
   // zonedNow for wall-clock display, now for comparing against stored times.
   const zonedNow = timeZonedNow(locationDetails.timezone);
-  const now = new Date();
   const todayHijri = HijriNative.today(locationDetails.timezone);
 
   // localizedLocation is the locale-aware source (in screenshot mode it is

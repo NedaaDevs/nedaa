@@ -7,6 +7,7 @@ import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { EmptyState } from "@/components/feedback";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 
 // Icons
 import { Sun, Sunset, Sunrise, Moon, CloudSun } from "lucide-react-native";
@@ -35,7 +36,8 @@ const prayerIcons: Record<PrayerName, React.ElementType> = {
 const PrayerTimesList = () => {
   const { todayTimings, hasError, isLoading, getNextPrayer, loadPrayerTimes, clearError } =
     usePrayerTimesStore();
-  const nextPrayer = todayTimings ? getNextPrayer() : null;
+  const now = useMinuteClock();
+  const nextPrayer = todayTimings ? getNextPrayer(now) : null;
   // Past Isha, getNextPrayer() rolls over to tomorrow's Fajr. Marking today's
   // first row "next" would be wrong, so the whole day reads as done instead.
   const nextIsTomorrow = !!nextPrayer && !!todayTimings && nextPrayer.date !== todayTimings.date;
