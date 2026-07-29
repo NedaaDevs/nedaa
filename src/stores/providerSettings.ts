@@ -202,6 +202,9 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
               } as ProviderSettings,
             },
             isModified: true,
+            // The edit is on disk the moment it is made, so the times are out of
+            // step with it until the apply pipeline runs — including across a kill.
+            pendingReapply: true,
             error: null,
           }));
         },
@@ -245,7 +248,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
           }));
         },
 
-        markSettingsApplied: () => set({ isModified: false }),
+        markSettingsApplied: () => set({ isModified: false, pendingReapply: false }),
 
         clearPendingReapply: () => set({ pendingReapply: false }),
       }),

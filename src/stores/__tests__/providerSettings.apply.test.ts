@@ -30,6 +30,22 @@ describe("provider settings apply lifecycle", () => {
     expect(useProviderSettingsStore.getState().isModified).toBe(false);
   });
 
+  test("an edit requests a reapply, so an abandoned change is reconciled at next launch", () => {
+    useProviderSettingsStore.setState({ pendingReapply: false });
+
+    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+
+    expect(useProviderSettingsStore.getState().pendingReapply).toBe(true);
+  });
+
+  test("markSettingsApplied clears the reapply request", () => {
+    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+
+    useProviderSettingsStore.getState().markSettingsApplied();
+
+    expect(useProviderSettingsStore.getState().pendingReapply).toBe(false);
+  });
+
   test("saveSettings still persists the edit it was given", async () => {
     useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
 

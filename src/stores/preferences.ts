@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { getLocales } from "expo-localization";
+import { getCalendars } from "expo-localization";
 import { OpeningTab, type OpeningTabValue } from "@/enums/app";
 
 // Seeds the initial 24-hour setting from the device clock; once the user
 // touches the toggle the persisted value takes over.
-const deviceUses24HourClock = (): boolean => getLocales()[0]?.uses24hourClock ?? false;
+const deviceUses24HourClock = (): boolean => getCalendars()[0]?.uses24hourClock ?? false;
 
 type PreferencesState = {
   useWesternNumerals: boolean;

@@ -29,6 +29,7 @@ export const TuningStepper: FC<Props> = ({ label, value, onChange, disabled = fa
   const atMin = value <= -TUNING_LIMIT;
 
   const step = (delta: number) => {
+    if (disabled) return;
     const next = value + delta;
     if (next > TUNING_LIMIT || next < -TUNING_LIMIT) return;
     onChange(next);

@@ -141,6 +141,18 @@ describe("TuningStepper", () => {
     expect(tree.root.findByProps({ testID: "tuning-controls" }).props.flexDirection).toBe("row");
   });
 
+  test("ignores the reader's adjust action while disabled", () => {
+    const { tree, onChange } = render({ value: 1, disabled: true });
+
+    act(() => {
+      tree.root
+        .findByProps({ testID: "tuning-stepper" })
+        .props.onAccessibilityAction({ nativeEvent: { actionName: "increment" } });
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   test("marks the limit-reached control as disabled for assistive tech", () => {
     const { tree } = render({ value: TUNING_LIMIT });
 
