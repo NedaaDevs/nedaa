@@ -1,6 +1,7 @@
 // Enum
 import type { LocalPermissionStatus } from "@/enums/location";
 import { KAABA_COORDINATES } from "@/utils/compass";
+import type { CityCountry, CityRegion, LocalizedNames } from "@/types/cities";
 
 export type LocationObjectCoords = {
   latitude: number;
@@ -91,4 +92,22 @@ export const initialLocationDetails: LocationDetails = {
   timezone: "Asia/Riyadh",
   error: null,
   isLoading: false,
+};
+
+/**
+ * A location the user chose rather than one read from the device. Carries its own
+ * timezone because prayer times are computed against it, and every name part keeps
+ * its localized variants so the label can be rendered in any app locale.
+ */
+export type ManualLocation = {
+  /** GeoNames id, or null when the coordinates were typed or pinned directly. */
+  cityId: number | null;
+  name: string;
+  names: LocalizedNames;
+  region: CityRegion | null;
+  countryCode: string;
+  country: CityCountry;
+  latitude: number;
+  longitude: number;
+  timezone: string;
 };
