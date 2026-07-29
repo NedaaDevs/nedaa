@@ -10,7 +10,6 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
-import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react-native";
@@ -175,17 +174,12 @@ export default function StepScreen() {
         paddingHorizontal="$4"
         paddingVertical="$3"
         paddingBottom={Math.max(insets.bottom, 12)}
-        backgroundColor="$backgroundElevated"
-        borderTopWidth={1}
-        borderTopColor="$outline">
+        backgroundColor="$backgroundElevated">
         <HStack gap="$3" alignItems="center">
-          <Pressable
+          <Card.Pressable
             onPress={handlePrevious}
             padding="$3"
             borderRadius="$3"
-            backgroundColor="$backgroundInteractive"
-            borderWidth={1}
-            borderColor="$outline"
             minWidth={48}
             minHeight={48}
             alignItems="center"
@@ -193,7 +187,7 @@ export default function StepScreen() {
             accessibilityRole="button"
             accessibilityLabel={isFirstStep ? t("umrah.overview") : t("a11y.back")}>
             <Icon as={PrevIcon} size="md" color="$typography" />
-          </Pressable>
+          </Card.Pressable>
 
           <Button
             flex={1}

@@ -54,7 +54,6 @@ export const useAppStore = create<AppState>()(
           hasHydrated: false,
           locale: initialLanguage,
           mode: Appearance.getColorScheme() as AppMode,
-          classicColors: false,
           direction: initialDirection,
           loadingMessage: "",
           showLoadingOverlay: false,
@@ -83,10 +82,6 @@ export const useAppStore = create<AppState>()(
 
           setMode: (mode: AppMode) => {
             set({ mode });
-          },
-
-          setClassicColors: (on: boolean) => {
-            set({ classicColors: on });
           },
 
           setLoadingState: (loading: boolean, message?: string) => {
@@ -119,7 +114,6 @@ export const useAppStore = create<AppState>()(
             isFirstRun: state.isFirstRun,
             locale: state.locale,
             mode: state.mode,
-            classicColors: state.classicColors,
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
             // TODO(quran-gate): remove at 2.10.0

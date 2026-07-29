@@ -65,14 +65,6 @@ describe("prayer getters honour an injected clock", () => {
     expect(usePrayerTimesStore.getState().getNextOtherTiming(beforeSunrise)?.name).toBe("sunrise");
   });
 
-  test("getPreviousOtherTiming honours the given moment", () => {
-    const afterSunrise = new Date("2026-07-29T07:00:00Z");
-
-    expect(usePrayerTimesStore.getState().getPreviousOtherTiming(afterSunrise)?.name).toBe(
-      "sunrise"
-    );
-  });
-
   test("past the last prayer, the next one comes from tomorrow", () => {
     const lateNight = new Date("2026-07-29T22:00:00Z");
 

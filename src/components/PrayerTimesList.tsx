@@ -3,18 +3,16 @@ import { ScrollView } from "react-native";
 // Components
 import TimingItem from "@/components/TimingItem";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
-import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { EmptyState } from "@/components/feedback";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 
 // Icons
-import { Sun, Sunset, Sunrise, Moon, CloudSun } from "lucide-react-native";
+import { Sun, Sunset, Sunrise, Moon } from "lucide-react-native";
 
 // Utils
 import { isFriday } from "@/utils/date";
-import { timingRowState } from "@/utils/timingRows";
 
 // Types
 import { PrayerName } from "@/types/prayerTimes";
@@ -28,7 +26,7 @@ import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 const prayerIcons: Record<PrayerName, React.ElementType> = {
   fajr: Sunrise,
   dhuhr: Sun,
-  asr: CloudSun,
+  asr: Sun,
   maghrib: Sunset,
   isha: Moon,
 };
@@ -38,8 +36,8 @@ const PrayerTimesList = () => {
     usePrayerTimesStore();
   const now = useMinuteClock();
   const nextPrayer = todayTimings ? getNextPrayer(now) : null;
-  // Past Isha, getNextPrayer() rolls over to tomorrow's Fajr. Marking today's
-  // first row "next" would be wrong, so the whole day reads as done instead.
+  // Past Isha, getNextPrayer rolls over to tomorrow's Fajr. Highlighting today's
+  // first row would be wrong, so nothing is marked next.
   const nextIsTomorrow = !!nextPrayer && !!todayTimings && nextPrayer.date !== todayTimings.date;
   const screenshotSeed = useScreenshotSeed("prayer-times");
   const displayNextPrayerName: string | null = screenshotSeed?.nextPrayer
@@ -47,15 +45,6 @@ const PrayerTimesList = () => {
     : nextIsTomorrow
       ? null
       : (nextPrayer?.name ?? null);
-
-  const prayerNames = todayTimings ? Object.keys(todayTimings.timings) : [];
-  // Everything before the next prayer has passed; everything after is still to come.
-  // With no next prayer today, the whole list is behind us.
-  const nextIndex = displayNextPrayerName
-    ? prayerNames.indexOf(displayNextPrayerName)
-    : nextIsTomorrow
-      ? prayerNames.length
-      : -1;
 
   const handleRetry = async () => {
     clearError();
@@ -79,20 +68,17 @@ const PrayerTimesList = () => {
           paddingTop: 10,
         }}
         showsVerticalScrollIndicator={false}>
-        <Card variant="grouped" marginHorizontal="$4">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Box key={`prayer-skeleton-${index}`}>
-              <HStack padding="$4" justifyContent="space-between" alignItems="center">
-                <HStack alignItems="center" gap="$3">
-                  <Skeleton variant="circular" style={{ height: 18, width: 18 }} />
-                  <SkeletonText style={{ height: 20, width: 72 }} />
-                </HStack>
-                <SkeletonText style={{ height: 20, width: 64 }} />
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Card key={`prayer-skeleton-${index}`} margin="$2" borderRadius="$4">
+            <HStack justifyContent="space-between" alignItems="center">
+              <HStack alignItems="center" gap="$3">
+                <Skeleton variant="circular" style={{ height: 24, width: 24 }} />
+                <SkeletonText style={{ height: 24, width: 72 }} />
               </HStack>
-              {index < 4 && <Card.Divider marginStart={46} />}
-            </Box>
-          ))}
-        </Card>
+              <SkeletonText style={{ height: 24, width: 72 }} />
+            </HStack>
+          </Card>
+        ))}
       </ScrollView>
     );
   }
@@ -111,26 +97,24 @@ const PrayerTimesList = () => {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
         scrollEnabled={true}>
-        <Card variant="grouped" marginHorizontal="$4">
-          {Object.entries(todayTimings.timings).map(([prayer, time], index, rows) => {
-            const prayerName = prayer as PrayerName;
-            const name =
-              prayerName === "dhuhr" && isFriday(todayTimings.timezone)
-                ? "prayerTimes.jumuah"
-                : `prayerTimes.${prayerName}`;
+        {Object.entries(todayTimings.timings).map(([prayer, time]) => {
+          const prayerName = prayer as PrayerName;
+          const isNext = displayNextPrayerName === prayer;
+          const name =
+            prayerName === "dhuhr" && isFriday(todayTimings.timezone)
+              ? "prayerTimes.jumuah"
+              : `prayerTimes.${prayerName}`;
 
-            return (
-              <TimingItem
-                key={prayerName}
-                name={name}
-                time={time}
-                icon={prayerIcons[prayerName]}
-                state={timingRowState(index, nextIndex)}
-                showDivider={index < rows.length - 1}
-              />
-            );
-          })}
-        </Card>
+          return (
+            <TimingItem
+              key={prayerName}
+              name={name}
+              time={time}
+              icon={prayerIcons[prayerName]}
+              isNext={isNext}
+            />
+          );
+        })}
       </ScrollView>
     )
   );

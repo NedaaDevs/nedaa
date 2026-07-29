@@ -66,7 +66,6 @@ export type PrayerTimesStore = {
   getNextPrayer: (now?: Date) => Prayer | null;
   getNextOtherTiming: (now?: Date) => OtherTiming | null;
   getPreviousPrayer: (now?: Date) => Prayer | null;
-  getPreviousOtherTiming: (now?: Date) => OtherTiming | null;
   cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
   clearError: () => void;
 };
@@ -374,22 +373,6 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
           // No upcoming timing rather than one already past, which would render a
           // zero countdown beside an elapsed timestamp.
-          return null;
-        },
-        // Mirrors getPreviousPrayer, for the home arc's other-timing window.
-        getPreviousOtherTiming: (now = new Date()) => {
-          const state = get();
-
-          if (!state.todayTimings?.otherTimings) return null;
-
-          const lastToday = lastBefore(toOtherTimings(state.todayTimings), now);
-          if (lastToday) return lastToday;
-
-          if (state.yesterdayTimings?.otherTimings) {
-            const yesterday = toOtherTimings(state.yesterdayTimings);
-            return lastBefore(yesterday, now) ?? latest(yesterday);
-          }
-
           return null;
         },
         cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {

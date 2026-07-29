@@ -1,6 +1,5 @@
 import React from "react";
 import { Switch as TSwitch, useTheme, useThemeName } from "tamagui";
-import { isDarkTheme } from "@/utils/appearance";
 
 type SwitchSize = "sm" | "md" | "lg";
 
@@ -23,7 +22,7 @@ const Switch = React.forwardRef<any, SwitchProps>(
   ({ value, onValueChange, size = "md", disabled, style, ...props }, ref) => {
     const theme = useTheme();
     const themeName = useThemeName();
-    const isDark = isDarkTheme(themeName);
+    const isDark = themeName === "dark";
 
     return (
       <TSwitch

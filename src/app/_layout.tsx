@@ -20,7 +20,7 @@ import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
-import { isDarkTheme, nativeColorSchemeFor, resolveThemeName } from "@/utils/appearance";
+import { nativeColorSchemeFor } from "@/utils/appearance";
 
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
@@ -96,7 +96,7 @@ function AppShell() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
-          <StatusBar style={isDarkTheme(themeName) ? "light" : "dark"} />
+          <StatusBar style={themeName === "dark" ? "light" : "dark"} />
           <ToastProvider />
           <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
@@ -132,7 +132,7 @@ function AppShell() {
 }
 
 export default function RootLayout() {
-  const { mode, locale, hasHydrated, classicColors } = useAppStore();
+  const { mode, locale, hasHydrated } = useAppStore();
   const systemScheme = useColorScheme();
 
   const [fontsLoaded, fontError] = useLoadFonts();
@@ -165,7 +165,14 @@ export default function RootLayout() {
     return null;
   }
 
-  const resolvedTheme = resolveThemeName(mode, systemScheme, classicColors);
+  const resolvedTheme =
+    mode === "system"
+      ? systemScheme === "dark"
+        ? "dark"
+        : "light"
+      : mode === "dark"
+        ? "dark"
+        : "light";
 
   const isArabicScript = locale === "ar" || locale === "ur";
 

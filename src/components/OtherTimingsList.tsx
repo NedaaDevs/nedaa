@@ -3,7 +3,6 @@ import { ScrollView } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 
 import TimingItem from "@/components/TimingItem";
@@ -14,12 +13,11 @@ import { Sunset, Sunrise, Moon, ClockAlert, MoonStar } from "lucide-react-native
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
-// Utils
-import { timingRowState } from "@/utils/timingRows";
+// Hooks
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 
 // Types
 import { OtherTimingName } from "@/types/prayerTimes";
-import { useMinuteClock } from "@/hooks/useMinuteClock";
 
 const translationKey: Record<OtherTimingName, string> = {
   sunrise: "sunrise",
@@ -74,11 +72,6 @@ const OtherTimingsList = () => {
     ([, timeA], [, timeB]) => new Date(timeA).getTime() - new Date(timeB).getTime()
   );
 
-  // No next timing means every one of today's has passed.
-  const nextIndex = nextTimingName
-    ? sortedEntries.findIndex(([timing]) => timing === nextTimingName)
-    : sortedEntries.length;
-
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -92,22 +85,20 @@ const OtherTimingsList = () => {
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled={true}
       scrollEnabled={true}>
-      <Card variant="grouped" marginHorizontal="$4">
-        {sortedEntries.map(([timing, time], index, rows) => {
-          const timingName = timing as OtherTimingName;
+      {sortedEntries.map(([timing, time]) => {
+        const timingName = timing as OtherTimingName;
+        const isNext = timingName === nextTimingName;
 
-          return (
-            <TimingItem
-              key={timingName}
-              name={t(`otherTimings.${translationKey[timingName]}`)}
-              time={time}
-              icon={otherTimingIcons[timingName]}
-              state={timingRowState(index, nextIndex)}
-              showDivider={index < rows.length - 1}
-            />
-          );
-        })}
-      </Card>
+        return (
+          <TimingItem
+            key={timingName}
+            name={t(`otherTimings.${translationKey[timingName]}`)}
+            time={time}
+            icon={otherTimingIcons[timingName]}
+            isNext={isNext}
+          />
+        );
+      })}
     </ScrollView>
   );
 };

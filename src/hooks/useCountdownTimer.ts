@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { parseISO, differenceInSeconds } from "date-fns";
+import { parseISO, differenceInSeconds, formatDistance } from "date-fns";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { formatHoursMinutes } from "@/utils/countdown";
+import { getDateLocale } from "@/utils/date";
 
 // Stores
 import { usePreferencesStore } from "@/stores/preferences";
+import { useAppStore } from "@/stores/app";
 
 // Types
 import type { Prayer } from "@/types/prayerTimes";
@@ -26,6 +27,7 @@ export const useCountdownTimer = (
   // Real instant: stored times already carry the location's offset.
   const [now, setNow] = useState(() => new Date());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { locale } = useAppStore();
   const { countdownEnabled, countdownMinutes, iqamaCountUpEnabled, iqamaCountUpMinutes } =
     usePreferencesStore();
 
@@ -83,11 +85,6 @@ export const useCountdownTimer = (
     return formatNumberToLocale(raw);
   }, []);
 
-  const formatHMM = useCallback(
-    (totalSeconds: number): string => formatNumberToLocale(formatHoursMinutes(totalSeconds)),
-    []
-  );
-
   const display = useMemo((): string => {
     if (timerMode === "countdown" && nextPrayer) {
       const nextTime = parseISO(nextPrayer.time);
@@ -103,11 +100,15 @@ export const useCountdownTimer = (
 
     if (nextPrayer) {
       const nextTime = parseISO(nextPrayer.time);
-      return formatHMM(differenceInSeconds(nextTime, now));
+      const timeRemaining = formatDistance(nextTime, now, {
+        addSuffix: false,
+        locale: getDateLocale(locale),
+      });
+      return formatNumberToLocale(timeRemaining);
     }
 
     return "";
-  }, [timerMode, now, nextPrayer, previousPrayer, formatMMSS, formatHMM]);
+  }, [timerMode, now, nextPrayer, previousPrayer, locale, formatMMSS]);
 
   const iqamaPrayerName = useMemo((): string | null => {
     if (timerMode === "iqama" && previousPrayer) {

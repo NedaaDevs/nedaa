@@ -86,14 +86,8 @@ const TimePicker = ({
         borderWidth={1}
         borderColor="$outline">
         {/* Current Time Display */}
-        <Box
-          backgroundColor="$backgroundInteractive"
-          borderRadius="$7"
-          padding="$5"
-          marginBottom="$6"
-          borderWidth={1}
-          borderColor="$outline">
-          <Text color="$typography" textAlign="center" size="3xl" bold>
+        <Box backgroundColor="$backgroundElevated" borderRadius="$7" padding="$5" marginBottom="$6">
+          <Text color="$typographyContrast" textAlign="center" size="3xl" bold>
             {use12HourFormat
               ? formatTime12Hour(selectedHour, selectedMinute)
               : formatTime24Hour(selectedHour, selectedMinute)}

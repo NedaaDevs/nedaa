@@ -180,15 +180,15 @@ const tokens = createTokens({
     0: 0,
     1: 2,
     2: 4,
-    3: 8,
-    4: 12,
-    5: 14,
-    6: 16,
-    7: 20,
-    8: 24,
-    9: 28,
+    3: 6,
+    4: 8,
+    5: 10,
+    6: 12,
+    7: 16,
+    8: 20,
+    9: 24,
     10: 999,
-    true: 12,
+    true: 8,
   },
   zIndex: {
     0: 0,
@@ -206,24 +206,18 @@ const tokens = createTokens({
     // Light theme colors
     lightPrimary: "#1C5D85",
     lightSecondary: "#1C5D7D",
-    lightTypography: "#101828",
-    lightTypographySecondary: "#4A5B6E",
+    lightTypography: "#1C5D85",
+    lightTypographySecondary: "#4B5563",
     lightTypographyContrast: "#FFFFFF",
-    // The surface ramp. The ground sits at 93% rather than 98% so white cards
-    // have something to sit against and elevation reads without shadows.
-    lightBackground: "#E7EDF3",
+    lightBackground: "#F5F7FA",
     lightBackgroundSecondary: "#FFFFFF",
-    lightBackgroundElevated: "#FFFFFF",
-    // The chip surface: icon chips, inputs, progress tracks, unselected states.
-    lightBackgroundInteractive: "#D9E3ED",
-    lightOutline: "#CFDBE6",
+    lightBackgroundElevated: "#1C5D85",
+    lightBackgroundInteractive: "#F5F7FA",
+    lightOutline: "#E2E8F0",
     lightOutlineAccent: "#1C5D85",
-    lightSurfaceHover: "#EFF3F7",
-    lightSurfaceActive: "#DDE6EE",
+    lightSurfaceHover: "#F9FAFB",
+    lightSurfaceActive: "#F3F4F6",
     lightAccentPrimary: "#1C5D7D",
-    // Time and progress — the arc's travelled portion. A surface and graphic
-    // colour, not a text colour: it fails AA on white at body size.
-    lightSun: "#DE9B3C",
     lightError: "#B91C1C",
     lightSuccess: "#15803D",
     lightWarning: "#92400E",
@@ -241,20 +235,18 @@ const tokens = createTokens({
     // Dark theme colors
     darkPrimary: "#E6C469",
     darkSecondary: "#D4BA76",
-    darkTypography: "#F2F4F7",
-    darkTypographySecondary: "#AEB6C2",
+    darkTypography: "#E6C469",
+    darkTypographySecondary: "#E3E2CE",
     darkTypographyContrast: "#FFFFFF",
-    // Four-step ramp: ground → card → chip → elevated.
-    darkBackground: "#1A2029",
-    darkBackgroundSecondary: "#252D38",
+    darkBackground: "#222831",
+    darkBackgroundSecondary: "#393E46",
     darkBackgroundElevated: "#393E46",
-    darkBackgroundInteractive: "#2F3945",
-    darkOutline: "#333F4D",
+    darkBackgroundInteractive: "#222831",
+    darkOutline: "rgba(255, 255, 255, 0.1)",
     darkOutlineAccent: "#E6C469",
-    darkSurfaceHover: "#313B48",
-    darkSurfaceActive: "#3C4757",
+    darkSurfaceHover: "#374151",
+    darkSurfaceActive: "#4B5563",
     darkAccentPrimary: "#E6C469",
-    darkSun: "#E6B45E",
     darkError: "#FCA5A5",
     darkSuccess: "#86EFAC",
     darkWarning: "#FCD34D",
@@ -316,7 +308,6 @@ const lightTheme = {
   surfaceActive: tokens.color.lightSurfaceActive,
 
   accentPrimary: tokens.color.lightAccentPrimary,
-  sun: tokens.color.lightSun,
 
   error: tokens.color.lightError,
   success: tokens.color.lightSuccess,
@@ -325,13 +316,6 @@ const lightTheme = {
 
   primarySubtle: "rgba(28, 93, 133, 0.1)",
   warningSubtle: "rgba(217, 119, 6, 0.05)",
-
-  // The app bar. Its own keys so Classic can paint a solid brand bar with white
-  // chrome while the default theme uses a page-coloured bar with ink chrome — no
-  // conditional in TopBar. Not $typographyContrast, which means "text on a solid
-  // fill" and is still needed elsewhere.
-  topBarBg: tokens.color.lightBackground,
-  topBarFg: tokens.color.lightTypography,
 
   // Semantic aliases for Tamagui built-in components
   color: tokens.color.lightTypography,
@@ -382,7 +366,6 @@ const darkTheme = {
   surfaceActive: tokens.color.darkSurfaceActive,
 
   accentPrimary: tokens.color.darkAccentPrimary,
-  sun: tokens.color.darkSun,
 
   error: tokens.color.darkError,
   success: tokens.color.darkSuccess,
@@ -392,52 +375,11 @@ const darkTheme = {
   primarySubtle: "rgba(230, 196, 105, 0.1)",
   warningSubtle: "rgba(252, 211, 77, 0.05)",
 
-  topBarBg: tokens.color.darkBackground,
-  topBarFg: tokens.color.darkTypography,
-
   // Semantic aliases for Tamagui built-in components
   color: tokens.color.darkTypography,
   borderColor: tokens.color.darkOutline,
   shadowColor: "rgba(0, 0, 0, 0.3)",
   placeholderColor: tokens.color.darkTypographySecondary,
-};
-
-// Classic — the pre-2.10 palette, kept as a permanent option for people who
-// preferred the brand-coloured ink and app bar. Colours only: Classic still gets
-// the current radii, tracking and layout, so it is "classic colours", not the
-// old app. Only the keys that differ are overridden.
-const CLASSIC_LIGHT_INK = "#1C5D85";
-const CLASSIC_DARK_INK = "#E6C469";
-
-const classicLightTheme = {
-  ...lightTheme,
-
-  typography: CLASSIC_LIGHT_INK,
-  typographySecondary: "#4B5563",
-  color: CLASSIC_LIGHT_INK,
-  colorHover: CLASSIC_LIGHT_INK,
-  colorPress: CLASSIC_LIGHT_INK,
-  colorFocus: CLASSIC_LIGHT_INK,
-  placeholderColor: "#4B5563",
-
-  // The solid brand app bar with white chrome.
-  topBarBg: CLASSIC_LIGHT_INK,
-  topBarFg: tokens.color.lightTypographyContrast,
-};
-
-const classicDarkTheme = {
-  ...darkTheme,
-
-  typography: CLASSIC_DARK_INK,
-  typographySecondary: "#E3E2CE",
-  color: CLASSIC_DARK_INK,
-  colorHover: CLASSIC_DARK_INK,
-  colorPress: CLASSIC_DARK_INK,
-  colorFocus: CLASSIC_DARK_INK,
-  placeholderColor: "#E3E2CE",
-
-  topBarBg: tokens.color.darkBackgroundElevated,
-  topBarFg: tokens.color.darkTypographyContrast,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
@@ -488,10 +430,6 @@ const config = createTamagui({
   themes: {
     light: lightTheme,
     dark: darkTheme,
-    // Top-level, not sub-themes — avoids any ambiguity about Tamagui's `_`
-    // sub-theme resolution.
-    classicLight: classicLightTheme,
-    classicDark: classicDarkTheme,
   },
   fonts: {
     heading: asapFont,
