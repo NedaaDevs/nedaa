@@ -1,4 +1,4 @@
-import { format, parseISO, formatDistance } from "date-fns";
+import { format, parseISO, differenceInSeconds } from "date-fns";
 
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 // Utils
 import { formatPrayerTime, getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
 import { prayerElapsedFraction } from "@/utils/prayerArc";
+import { formatHoursMinutes } from "@/utils/countdown";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -107,15 +108,12 @@ const Header = () => {
     return str;
   };
 
+  // Same H:MM as the prayer countdown — this shares the hero, so a phrase here
+  // and digits there would read as two different things in one place.
   const otherTimingDisplay = useMemo(() => {
     if (!nextOtherTiming) return "";
-    const otherTime = parseISO(nextOtherTiming.time);
-    return formatNum(
-      formatDistance(otherTime, now, {
-        addSuffix: false,
-        locale: getDateLocale(locale),
-      })
-    );
+    const seconds = differenceInSeconds(parseISO(nextOtherTiming.time), now);
+    return formatNum(formatHoursMinutes(seconds));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- formatNum is stable within same locale/useWesternNumerals values
   }, [nextOtherTiming, now, locale, useWesternNumerals]);
 

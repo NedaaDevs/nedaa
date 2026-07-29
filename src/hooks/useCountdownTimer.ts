@@ -3,6 +3,7 @@ import { parseISO, differenceInSeconds } from "date-fns";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+import { formatHoursMinutes } from "@/utils/countdown";
 
 // Stores
 import { usePreferencesStore } from "@/stores/preferences";
@@ -84,15 +85,10 @@ export const useCountdownTimer = (
     return formatNumberToLocale(raw);
   }, []);
 
-  // Digits rather than a phrase: the home hero sets this at display size, where
-  // "about 2 hours" wraps, and h:mm needs no unit words to translate.
-  const formatHMM = useCallback((totalSeconds: number): string => {
-    const absSeconds = Math.max(0, Math.floor(totalSeconds));
-    const hours = Math.floor(absSeconds / 3600);
-    const mins = Math.floor((absSeconds % 3600) / 60);
-    const raw = `${hours}:${mins.toString().padStart(2, "0")}`;
-    return formatNumberToLocale(raw);
-  }, []);
+  const formatHMM = useCallback(
+    (totalSeconds: number): string => formatNumberToLocale(formatHoursMinutes(totalSeconds)),
+    []
+  );
 
   const display = useMemo((): string => {
     if (timerMode === "countdown" && nextPrayer) {
