@@ -207,17 +207,23 @@ const tokens = createTokens({
     lightPrimary: "#1C5D85",
     lightSecondary: "#1C5D7D",
     lightTypography: "#101828",
-    lightTypographySecondary: "#475467",
+    lightTypographySecondary: "#4A5B6E",
     lightTypographyContrast: "#FFFFFF",
-    lightBackground: "#F5F7FA",
+    // The surface ramp. The ground sits at 93% rather than 98% so white cards
+    // have something to sit against and elevation reads without shadows.
+    lightBackground: "#E7EDF3",
     lightBackgroundSecondary: "#FFFFFF",
     lightBackgroundElevated: "#FFFFFF",
-    lightBackgroundInteractive: "#F5F7FA",
-    lightOutline: "#E2E8F0",
+    // The chip surface: icon chips, inputs, progress tracks, unselected states.
+    lightBackgroundInteractive: "#D9E3ED",
+    lightOutline: "#CFDBE6",
     lightOutlineAccent: "#1C5D85",
-    lightSurfaceHover: "#F9FAFB",
-    lightSurfaceActive: "#F3F4F6",
+    lightSurfaceHover: "#EFF3F7",
+    lightSurfaceActive: "#DDE6EE",
     lightAccentPrimary: "#1C5D7D",
+    // Time and progress — the arc's travelled portion. A surface and graphic
+    // colour, not a text colour: it fails AA on white at body size.
+    lightSun: "#DE9B3C",
     lightError: "#B91C1C",
     lightSuccess: "#15803D",
     lightWarning: "#92400E",
@@ -238,15 +244,17 @@ const tokens = createTokens({
     darkTypography: "#F2F4F7",
     darkTypographySecondary: "#AEB6C2",
     darkTypographyContrast: "#FFFFFF",
-    darkBackground: "#222831",
-    darkBackgroundSecondary: "#393E46",
+    // Four-step ramp: ground → card → chip → elevated.
+    darkBackground: "#1A2029",
+    darkBackgroundSecondary: "#252D38",
     darkBackgroundElevated: "#393E46",
-    darkBackgroundInteractive: "#222831",
-    darkOutline: "rgba(255, 255, 255, 0.1)",
+    darkBackgroundInteractive: "#2F3945",
+    darkOutline: "#333F4D",
     darkOutlineAccent: "#E6C469",
-    darkSurfaceHover: "#374151",
-    darkSurfaceActive: "#4B5563",
+    darkSurfaceHover: "#313B48",
+    darkSurfaceActive: "#3C4757",
     darkAccentPrimary: "#E6C469",
+    darkSun: "#E6B45E",
     darkError: "#FCA5A5",
     darkSuccess: "#86EFAC",
     darkWarning: "#FCD34D",
@@ -308,6 +316,7 @@ const lightTheme = {
   surfaceActive: tokens.color.lightSurfaceActive,
 
   accentPrimary: tokens.color.lightAccentPrimary,
+  sun: tokens.color.lightSun,
 
   error: tokens.color.lightError,
   success: tokens.color.lightSuccess,
@@ -373,6 +382,7 @@ const darkTheme = {
   surfaceActive: tokens.color.darkSurfaceActive,
 
   accentPrimary: tokens.color.darkAccentPrimary,
+  sun: tokens.color.darkSun,
 
   error: tokens.color.darkError,
   success: tokens.color.darkSuccess,

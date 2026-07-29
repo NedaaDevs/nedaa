@@ -36,16 +36,15 @@ const PrayerProgressArc = ({ progress, size = 240, strokeWidth = 4, children }: 
         <Svg width={size} height={size}>
           <Path
             d={track}
-            stroke={theme.accentPrimary.val}
+            stroke={theme.outline.val}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             fill="none"
-            opacity={0.15}
           />
           {filled && (
             <Path
               d={filled}
-              stroke={theme.accentPrimary.val}
+              stroke={theme.sun.val}
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               fill="none"
