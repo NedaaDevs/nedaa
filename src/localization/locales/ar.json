@@ -77,6 +77,7 @@
   "a11y.notification.customize": "تخصيص إشعار {{name}}",
   "a11y.notification.customizeHint": "يفتح إعدادات الإشعارات لهذه الصلاة",
   "a11y.prayerRow": "{{name}} في {{time}}",
+  "a11y.prayerRowDone": "{{name}} في {{time}}، انقضى",
   "a11y.prayerRowNext": "الصلاة التالية: {{name}} في {{time}}",
   "a11y.qada.completeAllHint": "يكمل جميع الأيام المتبقية في هذا الإدخال",
   "a11y.qada.completeOneHint": "يكمل يومًا واحدًا من هذا الإدخال",
@@ -884,6 +885,7 @@
     "isha": "العشاء",
     "jumuah": "الجمعة",
     "maghrib": "المغرب",
+    "next": "التالية",
     "noData": "لا توجد أوقات صلاة متاحة",
     "noDataDescription": "بيانات أوقات الصلاة غير متاحة. يرجى المحاولة مرة أخرى.",
     "title": "أوقات الصلاة"

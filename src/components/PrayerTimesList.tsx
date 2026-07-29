@@ -13,6 +13,7 @@ import { Sun, Sunset, Sunrise, Moon, CloudSun } from "lucide-react-native";
 
 // Utils
 import { isFriday } from "@/utils/date";
+import { timingRowState } from "@/utils/timingRows";
 
 // Types
 import { PrayerName } from "@/types/prayerTimes";
@@ -35,10 +36,24 @@ const PrayerTimesList = () => {
   const { todayTimings, hasError, isLoading, getNextPrayer, loadPrayerTimes, clearError } =
     usePrayerTimesStore();
   const nextPrayer = todayTimings ? getNextPrayer() : null;
+  // Past Isha, getNextPrayer() rolls over to tomorrow's Fajr. Marking today's
+  // first row "next" would be wrong, so the whole day reads as done instead.
+  const nextIsTomorrow = !!nextPrayer && !!todayTimings && nextPrayer.date !== todayTimings.date;
   const screenshotSeed = useScreenshotSeed("prayer-times");
   const displayNextPrayerName: string | null = screenshotSeed?.nextPrayer
     ? screenshotSeed.nextPrayer.toLowerCase()
-    : (nextPrayer?.name ?? null);
+    : nextIsTomorrow
+      ? null
+      : (nextPrayer?.name ?? null);
+
+  const prayerNames = todayTimings ? Object.keys(todayTimings.timings) : [];
+  // Everything before the next prayer has passed; everything after is still to come.
+  // With no next prayer today, the whole list is behind us.
+  const nextIndex = displayNextPrayerName
+    ? prayerNames.indexOf(displayNextPrayerName)
+    : nextIsTomorrow
+      ? prayerNames.length
+      : -1;
 
   const handleRetry = async () => {
     clearError();
@@ -97,7 +112,6 @@ const PrayerTimesList = () => {
         <Card variant="grouped" marginHorizontal="$4">
           {Object.entries(todayTimings.timings).map(([prayer, time], index, rows) => {
             const prayerName = prayer as PrayerName;
-            const isNext = displayNextPrayerName === prayer;
             const name =
               prayerName === "dhuhr" && isFriday(todayTimings.timezone)
                 ? "prayerTimes.jumuah"
@@ -109,7 +123,7 @@ const PrayerTimesList = () => {
                 name={name}
                 time={time}
                 icon={prayerIcons[prayerName]}
-                isNext={isNext}
+                state={timingRowState(index, nextIndex)}
                 showDivider={index < rows.length - 1}
               />
             );

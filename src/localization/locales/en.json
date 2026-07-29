@@ -77,6 +77,7 @@
   "a11y.notification.customize": "Customize {{name}} notification",
   "a11y.notification.customizeHint": "Opens notification settings for this prayer",
   "a11y.prayerRow": "{{name}} at {{time}}",
+  "a11y.prayerRowDone": "{{name}} at {{time}}, passed",
   "a11y.prayerRowNext": "Next prayer: {{name}} at {{time}}",
   "a11y.qada.completeAllHint": "Completes all remaining days in this entry",
   "a11y.qada.completeOneHint": "Completes one day from this entry",
@@ -850,6 +851,7 @@
     "isha": "Isha",
     "jumuah": "Jumu'ah",
     "maghrib": "Maghrib",
+    "next": "Next",
     "noData": "No Prayer Times Available",
     "noDataDescription": "Prayer times data is not available. Please try refreshing.",
     "title": "Prayer Times"

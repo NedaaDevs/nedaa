@@ -14,6 +14,9 @@ import { Sunset, Sunrise, Moon, ClockAlert, MoonStar } from "lucide-react-native
 // Stores
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
+// Utils
+import { timingRowState } from "@/utils/timingRows";
+
 // Types
 import { OtherTimingName } from "@/types/prayerTimes";
 
@@ -70,6 +73,11 @@ const OtherTimingsList = () => {
     ([, timeA], [, timeB]) => new Date(timeA).getTime() - new Date(timeB).getTime()
   );
 
+  // No next timing means every one of today's has passed.
+  const nextIndex = nextTimingName
+    ? sortedEntries.findIndex(([timing]) => timing === nextTimingName)
+    : sortedEntries.length;
+
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -86,7 +94,6 @@ const OtherTimingsList = () => {
       <Card variant="grouped" marginHorizontal="$4">
         {sortedEntries.map(([timing, time], index, rows) => {
           const timingName = timing as OtherTimingName;
-          const isNext = timingName === nextTimingName;
 
           return (
             <TimingItem
@@ -94,7 +101,7 @@ const OtherTimingsList = () => {
               name={t(`otherTimings.${translationKey[timingName]}`)}
               time={time}
               icon={otherTimingIcons[timingName]}
-              isNext={isNext}
+              state={timingRowState(index, nextIndex)}
               showDivider={index < rows.length - 1}
             />
           );

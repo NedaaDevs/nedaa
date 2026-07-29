@@ -68,6 +68,7 @@
   "a11y.notification.customize": "{{name}} کی اطلاع کو اپنی مرضی کے مطابق بنائیں",
   "a11y.notification.customizeHint": "اس نماز کے لیے اطلاع کی ترتیبات کھولتا ہے",
   "a11y.prayerRow": "{{name}} بجے {{time}}",
+  "a11y.prayerRowDone": "{{name}} بوقت {{time}}، گزر چکا",
   "a11y.prayerRowNext": "اگلی نماز: {{name}} بجے {{time}}",
   "a11y.qada.completeAllHint": "اس اندراج کے تمام باقی دن مکمل کرتا ہے",
   "a11y.qada.completeOneHint": "اس اندراج سے ایک دن مکمل کرتا ہے",
@@ -804,6 +805,7 @@
     "isha": "عشاء",
     "jumuah": "جمعہ",
     "maghrib": "مغرب",
+    "next": "اگلی",
     "noData": "نماز کے اوقات دستیاب نہیں ہیں",
     "noDataDescription": "نماز کے اوقات کا ڈیٹا دستیاب نہیں ہے۔ براہ کرم دوبارہ کوشش کریں۔",
     "title": "نماز کے اوقات"

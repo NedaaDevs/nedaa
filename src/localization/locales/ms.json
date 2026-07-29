@@ -68,6 +68,7 @@
   "a11y.notification.customize": "Sesuaikan pemberitahuan {{name}}",
   "a11y.notification.customizeHint": "Buka tetapan pemberitahuan untuk solat ini",
   "a11y.prayerRow": "{{name}} pada {{time}}",
+  "a11y.prayerRowDone": "{{name}} pada {{time}}, telah berlalu",
   "a11y.prayerRowNext": "Solat seterusnya: {{name}} pada {{time}}",
   "a11y.qada.completeAllHint": "Melengkapkan semua hari yang berbaki dalam entri ini",
   "a11y.qada.completeOneHint": "Melengkapkan satu hari daripada entri ini",
@@ -804,6 +805,7 @@
     "isha": "Isyak",
     "jumuah": "Jumaat",
     "maghrib": "Maghrib",
+    "next": "Seterusnya",
     "noData": "Tiada Waktu Solat Tersedia",
     "noDataDescription": "Data waktu solat tidak tersedia. Sila cuba muat semula.",
     "title": "Waktu Solat"
