@@ -9,7 +9,7 @@ import { ProviderSettings } from "@/components/ProviderSettings";
 const AdvanceSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.advance.title" href="/settings/advance" backOnClick />
+      <TopBar title="settings.advance.provider.title" href="/settings/advance" backOnClick />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
         keyboardShouldPersistTaps="handled">

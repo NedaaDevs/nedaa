@@ -21,13 +21,17 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Stores
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
+// Utils
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("prayertimes");
+
 export const MidnightModeSettings: FC = () => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
   const { settings, updateSettings } = useAladhanSettings();
   const { isLoading } = useProviderSettingsStore();
 
-  const [, setIsChangingMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const midnightModes = PRAYER_TIME_PROVIDERS.ALADHAN.midnightModes;
@@ -45,16 +49,17 @@ export const MidnightModeSettings: FC = () => {
     hapticSelection();
     try {
       setError(null);
-      setIsChangingMode(true);
       const id = parseInt(modeId, 10);
       if (midnightModes.some((mode) => mode.id === id)) {
         await updateSettings({ midnightMode: id as AladhanMidnightModeId });
       }
     } catch (err) {
       setError(t("errors.failedToChangeMidnightMode"));
-      console.error("Error changing midnight mode:", err);
-    } finally {
-      setIsChangingMode(false);
+      log.e(
+        "MidnightMode",
+        "changing midnight mode failed",
+        err instanceof Error ? err : undefined
+      );
     }
   };
 

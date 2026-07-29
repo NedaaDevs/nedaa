@@ -21,13 +21,17 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Stores
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
+// Utils
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("prayertimes");
+
 export const MethodSettings: FC = () => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
   const { settings, updateSettings } = useAladhanSettings();
   const { isLoading } = useProviderSettingsStore();
 
-  const [, setIsChangingMethod] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const methods = PRAYER_TIME_PROVIDERS.ALADHAN.methods;
@@ -45,16 +49,13 @@ export const MethodSettings: FC = () => {
     hapticSelection();
     try {
       setError(null);
-      setIsChangingMethod(true);
       const id = parseInt(methodId, 10);
       if (methods.some((method) => method.id === id)) {
         await updateSettings({ method: id as AladhanMethodId });
       }
     } catch (err) {
       setError(t("errors.failedToChangeMethod"));
-      console.error("Error changing method:", err);
-    } finally {
-      setIsChangingMethod(false);
+      log.e("Method", "changing calculation method failed", err instanceof Error ? err : undefined);
     }
   };
 

@@ -21,13 +21,17 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Stores
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
+// Utils
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("prayertimes");
+
 export const SchoolSettings: FC = () => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
   const { settings, updateSettings } = useAladhanSettings();
   const { isLoading } = useProviderSettingsStore();
 
-  const [, setIsChangingSchool] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const schools = PRAYER_TIME_PROVIDERS.ALADHAN.schools;
@@ -45,16 +49,13 @@ export const SchoolSettings: FC = () => {
     hapticSelection();
     try {
       setError(null);
-      setIsChangingSchool(true);
       const id = parseInt(schoolId, 10);
       if (schools.some((school) => school.id === id)) {
         await updateSettings({ madhab: id as AladhanMadhabId });
       }
     } catch (err) {
       setError(t("errors.failedToChangeSchool"));
-      console.error("Error changing school:", err);
-    } finally {
-      setIsChangingSchool(false);
+      log.e("School", "changing school failed", err instanceof Error ? err : undefined);
     }
   };
 

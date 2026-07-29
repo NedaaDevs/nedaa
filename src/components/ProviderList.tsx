@@ -1,4 +1,4 @@
-import React, { FC, useState, useMemo } from "react";
+import React, { FC, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
@@ -19,9 +19,6 @@ export const ProviderList: FC = () => {
   const { isGettingProviders, providers, selectedProvider } = usePrayerTimesStore();
   const hapticSelection = useHaptic("selection");
 
-  const [, setIsChangingProvider] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const providerItems = useMemo(
     () =>
       providers.map((provider) => ({
@@ -31,17 +28,10 @@ export const ProviderList: FC = () => {
     [providers]
   );
 
-  const handleProviderChange = async (providerId: string) => {
+  // Selection is not wired to a store yet, so the picker is display-only. It stays
+  // hidden until a second provider exists (ProviderSettings gates on that).
+  const handleProviderChange = () => {
     hapticSelection();
-    try {
-      setError(null);
-      setIsChangingProvider(true);
-    } catch (err) {
-      setError(t("errors.failedToChangeProvider"));
-      console.error("Error changing provider:", err);
-    } finally {
-      setIsChangingProvider(false);
-    }
   };
 
   if (isGettingProviders) {
@@ -80,14 +70,6 @@ export const ProviderList: FC = () => {
       <Text size="lg" fontWeight="600" marginBottom="$4" color="$typography">
         {t("providers.title")}
       </Text>
-
-      {error && (
-        <Card padding="$3" marginBottom="$4" borderWidth={1} borderColor="$error">
-          <Text size="sm" color="$error">
-            {error}
-          </Text>
-        </Card>
-      )}
 
       <Select
         selectedValue={(selectedProvider && selectedProvider.id) ?? undefined}

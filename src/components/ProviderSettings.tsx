@@ -17,6 +17,11 @@ import { Pressable } from "@/components/ui/pressable";
 import { ProviderList } from "@/components/ProviderList";
 import AladhanSettings from "@/components/AladhanSettings";
 
+// Utils
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("prayertimes");
+
 export const ProviderSettings: FC = () => {
   const { t } = useTranslation();
   const { isGettingProviders, providers, getProviders } = usePrayerTimesStore();
@@ -31,7 +36,7 @@ export const ProviderSettings: FC = () => {
         await getProviders();
       } catch (err) {
         setError(t("errors.failedToLoadProviders"));
-        console.error("Error fetching providers:", err);
+        log.e("Providers", "loading providers failed", err instanceof Error ? err : undefined);
       }
     };
     fetchProviders();
@@ -42,7 +47,7 @@ export const ProviderSettings: FC = () => {
   const handleRetry = () => {
     getProviders().catch((err) => {
       setError(t("errors.failedToLoadProviders"));
-      console.error("Error retrying provider fetch:", err);
+      log.e("Providers", "retrying provider load failed", err instanceof Error ? err : undefined);
     });
   };
 
@@ -84,7 +89,8 @@ export const ProviderSettings: FC = () => {
 
   return (
     <Box>
-      {providers.length > 0 && <ProviderList />}
+      {/* A one-option chooser is noise; the picker earns its place at two providers. */}
+      {providers.length > 1 && <ProviderList />}
       {renderProviderSettings()}
     </Box>
   );
