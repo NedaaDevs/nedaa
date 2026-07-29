@@ -146,6 +146,8 @@ describe("prayer-time location fail-safe", () => {
     // The fix was never verified, so the app keeps trying to acquire a real one.
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
     expect(useLocationStore.getState().lastKnownCoords).toBeNull();
+    // Flagged, so the screen can say the times are not for where the user is.
+    expect(usePrayerTimesStore.getState().usingDefaultLocation).toBe(true);
   });
 
   it("preserves a verified persisted location when a refresh fails", async () => {

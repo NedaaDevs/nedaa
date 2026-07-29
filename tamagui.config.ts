@@ -423,7 +423,6 @@ const classicLightTheme = {
   // The solid brand app bar with white chrome.
   topBarBg: CLASSIC_LIGHT_INK,
   topBarFg: tokens.color.lightTypographyContrast,
-  backgroundElevated: CLASSIC_LIGHT_INK,
 };
 
 const classicDarkTheme = {

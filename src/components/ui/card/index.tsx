@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { withStaticProperties } from "@tamagui/helpers";
 import { styled, YStack } from "tamagui";
 import type { GetProps } from "tamagui";
@@ -58,7 +59,7 @@ const CardFrame = styled(YStack, {
 
 // Tappable card. Mirrors the `Pressable` primitive's touch behaviour so a
 // hand-rolled `<Pressable>` surface swaps over without changing feel.
-const CardPressable = styled(CardFrame, {
+const CardPressableFrame = styled(CardFrame, {
   name: "CardPressable",
   role: "button",
   minHeight: 44,
@@ -76,6 +77,21 @@ const CardPressable = styled(CardFrame, {
   } as const,
 });
 
+/** Same reason as the `Pressable` primitive: the `disabled` variant only dims. */
+const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
+  ({ onPress, onLongPress, disabled, accessibilityState, ...props }, ref) => (
+    <CardPressableFrame
+      ref={ref}
+      disabled={disabled}
+      onPress={disabled ? undefined : onPress}
+      onLongPress={disabled ? undefined : onLongPress}
+      accessibilityState={{ disabled: Boolean(disabled), ...accessibilityState }}
+      {...props}
+    />
+  )
+);
+CardPressable.displayName = "CardPressable";
+
 // Hairline between rows of a `grouped` card. Pass `marginStart` to inset it so
 // it aligns with the row's text rather than running full-bleed.
 const CardDivider = styled(YStack, {
@@ -90,4 +106,4 @@ export const Card = withStaticProperties(CardFrame, {
 });
 
 export type CardProps = GetProps<typeof CardFrame>;
-export type CardPressableProps = GetProps<typeof CardPressable>;
+export type CardPressableProps = GetProps<typeof CardPressableFrame>;

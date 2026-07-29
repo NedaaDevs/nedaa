@@ -45,6 +45,8 @@ const log = AppLogger.create("prayertimes");
 
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
+  /** The times on screen were computed from the default coordinates, not the user's. */
+  usingDefaultLocation: boolean;
   isLoading: boolean;
   isGettingProviders: boolean;
   hasError: boolean;
@@ -102,6 +104,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
       (set, get) => ({
         selectedProvider: null,
         didGetCurrentLocation: false,
+        usingDefaultLocation: false,
         isLoading: false,
         isGettingProviders: false,
         hasError: false,
@@ -222,7 +225,11 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               log.w("Load", "no verified coordinates; using the default location");
             }
 
-            set({ didGetCurrentLocation: lastKnownCoords !== null });
+            set({
+              didGetCurrentLocation: lastKnownCoords !== null,
+              // Surfaced in the UI: the times on screen are not for where the user is.
+              usingDefaultLocation: lastKnownCoords === null,
+            });
             // Get yesterday, today, tomorrow dates
             const now = timeZonedNow(locationDetails.timezone);
             const yesterday = dateToInt(subDays(now, 1));
@@ -365,7 +372,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             return firstAfter(tomorrow, now) ?? earliest(tomorrow);
           }
 
-          return earliest(today);
+          // No upcoming timing rather than one already past, which would render a
+          // zero countdown beside an elapsed timestamp.
+          return null;
         },
         // Mirrors getPreviousPrayer, for the home arc's other-timing window.
         getPreviousOtherTiming: (now = new Date()) => {

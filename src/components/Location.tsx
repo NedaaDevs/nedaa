@@ -28,6 +28,7 @@ import { MapPin, RefreshCw, Info, X } from "lucide-react-native";
 
 // Stores
 import { useLocationStore } from "@/stores/location";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Utils
 import { checkLocationPermission, requestLocationPermission } from "@/utils/location";
@@ -145,6 +146,7 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
 const KeepLocationUpdated = () => {
   const { becameActiveAt } = useAppVisibility();
   const { t } = useTranslation();
+  const usingDefaultLocation = usePrayerTimesStore((state) => state.usingDefaultLocation);
   const hapticMedium = useHaptic("medium");
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
@@ -225,6 +227,17 @@ const KeepLocationUpdated = () => {
 
   return (
     <VStack flex={1} gap="$3">
+      {usingDefaultLocation && (
+        <Card variant="grouped" marginTop="$2" borderWidth={1} borderColor="$borderWarning">
+          <HStack alignItems="center" gap="$3" padding="$4">
+            <Icon as={Info} color="$warning" size="md" />
+            <Text size="sm" color="$typography" flex={1}>
+              {t("location.permission.deniedMessage")}
+            </Text>
+          </HStack>
+        </Card>
+      )}
+
       {/* Current Location Section */}
       <Card variant="grouped" marginTop="$2">
         <Pressable

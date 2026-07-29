@@ -19,6 +19,7 @@ import { timingRowState } from "@/utils/timingRows";
 
 // Types
 import { OtherTimingName } from "@/types/prayerTimes";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 
 const translationKey: Record<OtherTimingName, string> = {
   sunrise: "sunrise",
@@ -41,6 +42,7 @@ const otherTimingIcons: Record<OtherTimingName, React.ElementType> = {
 const OtherTimingsList = () => {
   const { todayTimings } = usePrayerTimesStore();
   const { t } = useTranslation();
+  const now = useMinuteClock();
 
   if (!todayTimings || !todayTimings.otherTimings) {
     return (
@@ -51,7 +53,6 @@ const OtherTimingsList = () => {
   }
 
   const findNext = () => {
-    const now = new Date();
     const timings = Object.entries(todayTimings.otherTimings);
 
     const timingsWithDates = timings.map(([name, time]) => ({
