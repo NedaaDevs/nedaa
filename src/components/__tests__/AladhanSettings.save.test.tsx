@@ -47,12 +47,33 @@ jest.mock("@/components/ui/button", () => {
   return { Button: MockButton };
 });
 
-jest.mock("@/components/AladhanSettings/MethodSettings", () => ({ MethodSettings: () => null }));
-jest.mock("@/components/AladhanSettings/SchoolSettings", () => ({ SchoolSettings: () => null }));
-jest.mock("@/components/AladhanSettings/MidnightModeSettings", () => ({
-  MidnightModeSettings: () => null,
-}));
+jest.mock("@/components/AladhanSettings/SettingSection", () => ({ SettingSection: () => null }));
 jest.mock("@/components/AladhanSettings/TuningSettings", () => ({ TuningSettings: () => null }));
+
+jest.mock("@/components/ui/card", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View: RNView } = require("react-native");
+  return { Card: RNView };
+});
+
+jest.mock("@/components/ui/spinner", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View: RNView } = require("react-native");
+  return { Spinner: RNView };
+});
+
+jest.mock("@/components/ui/text", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text: RNText } = require("react-native");
+  return { Text: RNText };
+});
+
+jest.mock("@/hooks/useProviderSettings", () => ({
+  useAladhanSettings: () => ({
+    settings: { method: 3, madhab: 1, midnightMode: 0 },
+    updateSettings: jest.fn(),
+  }),
+}));
 
 jest.mock("@/stores/prayerTimes", () => ({
   usePrayerTimesStore: () => ({
