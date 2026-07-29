@@ -338,6 +338,12 @@ export const useLocationStore = create<LocationStore>()(
             return;
           }
 
+          // A city the user chose is never second-guessed against the device position;
+          // the prompt belongs to the mode that is actually tracking the device.
+          if (state.locationMode === LocationMode.MANUAL) {
+            return;
+          }
+
           try {
             const currentLocation = await getLocationWithTimeout();
 

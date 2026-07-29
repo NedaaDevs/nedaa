@@ -32,6 +32,7 @@ import { useAppStore } from "@/stores/app";
 import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
 import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
+import { LocationMode } from "@/enums/location";
 import { AppLogger } from "@/utils/appLogger";
 
 // Adapters
@@ -205,8 +206,15 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             set({ hasError: false, errorMessage: "" });
             useAppStore.getState().setLoadingState(true, i18n.t("common.loadingPrayerTimes"));
 
-            // If we haven't already got the current location, acquire it before reading prayer data.
-            if (!get().didGetCurrentLocation && (await checkLocationPermission()).granted) {
+            // If we haven't already got the current location, acquire it before reading prayer
+            // data. A manual location is authoritative, so reading the device position would
+            // override the user's choice — and the permission is not even consulted, which is
+            // what lets the app run without ever touching location services.
+            if (
+              !get().didGetCurrentLocation &&
+              locationStore.getState().locationMode === LocationMode.DEVICE &&
+              (await checkLocationPermission()).granted
+            ) {
               try {
                 await locationStore.getState().initializeLocation();
               } catch (error) {
