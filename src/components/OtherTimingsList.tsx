@@ -3,6 +3,7 @@ import { ScrollView } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 
 import TimingItem from "@/components/TimingItem";
@@ -82,20 +83,23 @@ const OtherTimingsList = () => {
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled={true}
       scrollEnabled={true}>
-      {sortedEntries.map(([timing, time]) => {
-        const timingName = timing as OtherTimingName;
-        const isNext = timingName === nextTimingName;
+      <Card variant="grouped" marginHorizontal="$4">
+        {sortedEntries.map(([timing, time], index, rows) => {
+          const timingName = timing as OtherTimingName;
+          const isNext = timingName === nextTimingName;
 
-        return (
-          <TimingItem
-            key={timingName}
-            name={t(`otherTimings.${translationKey[timingName]}`)}
-            time={time}
-            icon={otherTimingIcons[timingName]}
-            isNext={isNext}
-          />
-        );
-      })}
+          return (
+            <TimingItem
+              key={timingName}
+              name={t(`otherTimings.${translationKey[timingName]}`)}
+              time={time}
+              icon={otherTimingIcons[timingName]}
+              isNext={isNext}
+              showDivider={index < rows.length - 1}
+            />
+          );
+        })}
+      </Card>
     </ScrollView>
   );
 };
