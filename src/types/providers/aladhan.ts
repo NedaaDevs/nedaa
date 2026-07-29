@@ -123,21 +123,13 @@ export type AladhanLatitudeAdjustment = LatitudeAdjustments[number];
  * Imsak, Fajr, Sunrise, Dhuhr, Asr, Maghrib, Sunset, Isha, Midnight
  */
 export type AladhanPrayerTimeName =
-  | "imsak"
-  | "fajr"
-  | "sunrise"
-  | "dhuhr"
-  | "asr"
-  | "maghrib"
-  | "sunset"
-  | "isha"
-  | "midnight";
+  "imsak" | "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "sunset" | "isha" | "midnight";
 
 /**
  * Prayer time adjustments in minutes
  * @example { imsak: 5, fajr: 3, sunrise: 5, dhuhr: 7, asr: 9, maghrib: -1, sunset: 0, isha: 8, midnight: -6 }
  */
-export type AladhanTuning = AlAdhan["tuning"];
+export type AladhanTuning = Record<AladhanPrayerTimeName, number>;
 
 /**
  * Tuning string format for API requests
