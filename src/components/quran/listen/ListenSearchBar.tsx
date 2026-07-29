@@ -52,6 +52,7 @@ export const ListenSearchBar = ({ value, onChangeText, placeholder }: Props) => 
             borderRadius={11}
             alignItems="center"
             justifyContent="center"
+            // eslint-disable-next-line no-restricted-syntax -- circular clear button, not a card surface
             backgroundColor="$backgroundSecondary">
             <Icon as={X} size="xs" color="$typographySecondary" />
           </VStack>

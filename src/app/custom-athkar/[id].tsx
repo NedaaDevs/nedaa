@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -177,13 +178,12 @@ export default function EditCustomAthkarScreen() {
             <Text size="sm" fontWeight="600" color="$typographySecondary" textTransform="uppercase">
               {t("athkar.customAthkar.titleLabel")}
             </Text>
-            <Box
+            <Card
               borderWidth={1}
               borderColor="$outline"
               borderRadius="$4"
               paddingHorizontal="$3"
-              paddingVertical="$2"
-              backgroundColor="$backgroundSecondary">
+              paddingVertical="$2">
               <RNTextInput
                 value={title}
                 onChangeText={setTitle}
@@ -191,7 +191,7 @@ export default function EditCustomAthkarScreen() {
                 style={{ fontSize: 16, minHeight: 44 }}
                 accessibilityLabel={t("athkar.customAthkar.titleLabel")}
               />
-            </Box>
+            </Card>
           </VStack>
 
           {/* Thikirs Section */}
@@ -201,13 +201,13 @@ export default function EditCustomAthkarScreen() {
             </Text>
 
             {drafts.map((draft) => (
-              <VStack
+              <Card
                 key={draft.key}
                 borderWidth={1}
                 borderColor={expandedKey === draft.key ? "$primary" : "$outline"}
                 borderRadius="$4"
                 overflow="hidden"
-                backgroundColor="$backgroundSecondary">
+                padding={0}>
                 {expandedKey === draft.key ? (
                   <VStack padding="$3" gap="$3">
                     <RNTextInput
@@ -306,7 +306,7 @@ export default function EditCustomAthkarScreen() {
                     </HStack>
                   </Pressable>
                 )}
-              </VStack>
+              </Card>
             ))}
 
             <Pressable

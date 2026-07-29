@@ -2,11 +2,11 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Pressable } from "@/components/ui/pressable";
+import { Card } from "@/components/ui/card";
 
 // Components
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
@@ -89,7 +89,7 @@ const Settings = () => {
         {/* Notification Settings Section */}
         <VStack gap="$3">
           {/* Morning Athkar Notification */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+          <Card borderRadius="$6" padding="$4">
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
@@ -136,10 +136,10 @@ const Settings = () => {
                 </VStack>
               )}
             </VStack>
-          </Box>
+          </Card>
 
           {/* Evening Athkar Notification */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+          <Card borderRadius="$6" padding="$4">
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
@@ -186,7 +186,7 @@ const Settings = () => {
                 </VStack>
               )}
             </VStack>
-          </Box>
+          </Card>
         </VStack>
 
         <Divider marginVertical="$4" />
@@ -212,7 +212,7 @@ const Settings = () => {
           </Box> */}
 
           {/* Show streak Setting */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+          <Card borderRadius="$6" padding="$4">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
                 <Text fontWeight="500" color="$typography">
@@ -228,11 +228,11 @@ const Settings = () => {
                 accessibilityLabel={t("settings.athkar.showStreak.title")}
               />
             </HStack>
-          </Box>
+          </Card>
 
           {/* Show Translation Setting — only for non-Arabic locales */}
           {!isArabic && (
-            <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <Card borderRadius="$6" padding="$4">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
                   <Text fontWeight="500" color="$typography">
@@ -248,11 +248,11 @@ const Settings = () => {
                   accessibilityLabel={t("settings.athkar.showTranslation.title")}
                 />
               </HStack>
-            </Box>
+            </Card>
           )}
 
           {/* Enable short version Setting */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+          <Card borderRadius="$6" padding="$4">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
                 <Text fontWeight="500" color="$typography">
@@ -272,18 +272,17 @@ const Settings = () => {
                 accessibilityLabel={t("settings.athkar.shortVersion.title")}
               />
             </HStack>
-          </Box>
+          </Card>
         </VStack>
       </VStack>
 
       {/* Audio Settings Link */}
       <VStack padding="$4" gap="$3">
         <Divider />
-        <Pressable
+        <Card.Pressable
           onPress={() => router.push("/settings/athkar-audio" as any)}
           accessibilityRole="button"
           accessibilityLabel={t("settings.athkarAudio.title")}
-          backgroundColor="$backgroundSecondary"
           borderRadius="$6"
           padding="$4">
           <HStack justifyContent="space-between" alignItems="center">
@@ -305,7 +304,7 @@ const Settings = () => {
               style={isRTL ? { transform: [{ rotate: "180deg" }] } : undefined}
             />
           </HStack>
-        </Pressable>
+        </Card.Pressable>
       </VStack>
 
       <TimePicker

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import { Card } from "@/components/ui/card";
 import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_ORDER, QURAN_TEXT_FONT } from "@/constants/Quran";
 import { HighlightColor } from "@/enums/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
@@ -173,8 +174,7 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
                         surah: it.surah,
                         ayah: it.ayah,
                       })}>
-                      <YStack
-                        backgroundColor="$backgroundSecondary"
+                      <Card
                         borderRadius={14}
                         borderWidth={1}
                         borderColor="$borderColor"
@@ -213,7 +213,7 @@ export const HighlightsTab = ({ onNavigate }: { onNavigate: (page: number) => vo
                             {`${localizedSurahName(it.surah)}: ${formatNumberToLocale(String(it.ayah))}`}
                           </Text>
                         </XStack>
-                      </YStack>
+                      </Card>
                     </Pressable>
                   ))}
               </YStack>

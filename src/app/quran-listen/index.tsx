@@ -6,6 +6,7 @@ import { ChevronRight, ChevronLeft, Check, FlaskConical } from "lucide-react-nat
 import { keyboardFilter } from "miftah";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -179,18 +180,18 @@ const QuranListenScreen = () => {
                     {/* Dev/debug-only rows: unpublished reciters need testing before
                     release, so flag them (hardcoded — never user-facing). */}
                     {!rec.published ? (
-                      <HStack
+                      <Card
                         alignItems="center"
                         gap="$1"
                         paddingHorizontal="$2"
                         paddingVertical="$0.5"
                         borderRadius="$2"
-                        backgroundColor="$backgroundSecondary">
+                        flexDirection="row">
                         <Icon as={FlaskConical} size="xs" color="$warning" />
                         <Text size="xs" fontWeight="600" color="$warning">
                           Unpublished
                         </Text>
-                      </HStack>
+                      </Card>
                     ) : null}
                     <Icon
                       as={selected ? Check : isRTL ? ChevronLeft : ChevronRight}

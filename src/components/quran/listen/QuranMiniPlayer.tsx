@@ -20,6 +20,7 @@ import {
 } from "lucide-react-native";
 
 import { VStack } from "@/components/ui/vstack";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
@@ -212,12 +213,12 @@ export const QuranMiniPlayer = ({ padBottomInset = false }: { padBottomInset?: b
   );
 
   return (
-    <VStack
+    <Card
       gap="$2"
       paddingHorizontal="$4"
       paddingTop="$3"
       paddingBottom={padBottomInset ? Math.max(insets.bottom, 16) : "$4"}
-      backgroundColor="$backgroundSecondary"
+      borderRadius={0}
       borderTopWidth={1}
       borderColor="$backgroundInteractive">
       {/* Now-playing info + stop */}
@@ -417,6 +418,6 @@ export const QuranMiniPlayer = ({ padBottomInset = false }: { padBottomInset?: b
           </VStack>
         </ActionsheetContent>
       </Actionsheet>
-    </VStack>
+    </Card>
   );
 };

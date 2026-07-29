@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -133,7 +134,7 @@ const MyAthkarList: FC = () => {
               onPress={() => setSelectedGroup({ type: "hisn", group })}
               accessibilityRole="button"
               accessibilityLabel={isArabic ? group.titleAr : group.titleEn}>
-              <Box padding="$4" borderRadius="$6" backgroundColor="$backgroundSecondary">
+              <Card padding="$4" borderRadius="$6">
                 <HStack justifyContent="space-between" alignItems="center">
                   <VStack flex={1} gap="$1">
                     <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>
@@ -149,7 +150,7 @@ const MyAthkarList: FC = () => {
                     color="$typographySecondary"
                   />
                 </HStack>
-              </Box>
+              </Card>
             </Pressable>
           );
         })}
@@ -167,7 +168,7 @@ const MyAthkarList: FC = () => {
               onPress={() => setSelectedGroup({ type: "custom", group })}
               accessibilityRole="button"
               accessibilityLabel={group.title}>
-              <Box padding="$4" borderRadius="$6" backgroundColor="$backgroundSecondary">
+              <Card padding="$4" borderRadius="$6">
                 <HStack justifyContent="space-between" alignItems="center">
                   <VStack flex={1} gap="$1">
                     <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>
@@ -183,7 +184,7 @@ const MyAthkarList: FC = () => {
                     color="$typographySecondary"
                   />
                 </HStack>
-              </Box>
+              </Card>
             </Pressable>
           );
         })}

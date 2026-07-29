@@ -11,6 +11,7 @@ import {
   ActionsheetScrollView,
 } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -87,7 +88,7 @@ const AthkarDetailSheet: FC<Props> = ({
             </Text>
 
             {/* Arabic Text */}
-            <Box padding="$4" borderRadius="$4" backgroundColor="$backgroundSecondary">
+            <Card padding="$4" borderRadius="$4">
               <Text
                 size="2xl"
                 style={{ writingDirection: "rtl", lineHeight: 40 }}
@@ -95,7 +96,7 @@ const AthkarDetailSheet: FC<Props> = ({
                 color="$typography">
                 {arabicText}
               </Text>
-            </Box>
+            </Card>
 
             {/* Transliteration */}
             {transliteration !== "" && (

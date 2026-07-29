@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Search, X } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { TOTAL_PAGES, QURAN_FONT_FAMILY } from "@/constants/Quran";
 import { QuranContentDB, type AyahSearchHit } from "@/services/quran-content-db";
@@ -113,11 +114,11 @@ export const BrowseIndex = ({
     <YStack flex={1}>
       {/* Search */}
       <XStack alignItems="center" gap="$2" paddingHorizontal="$3" paddingVertical="$2">
-        <XStack
+        <Card
           flex={1}
           alignItems="center"
           gap="$2"
-          backgroundColor="$backgroundSecondary"
+          flexDirection="row"
           borderWidth={1}
           borderColor="$borderColor"
           borderRadius="$4"
@@ -143,7 +144,7 @@ export const BrowseIndex = ({
               <X color={chrome.subtleText} size={16} />
             </Pressable>
           )}
-        </XStack>
+        </Card>
       </XStack>
 
       {!q && (
@@ -360,9 +361,10 @@ const SurahRow = ({
           width={34}
           height={34}
           borderRadius={17}
-          backgroundColor="$backgroundSecondary"
           alignItems="center"
-          justifyContent="center">
+          justifyContent="center"
+          // eslint-disable-next-line no-restricted-syntax -- circular number badge, not a card surface
+          backgroundColor="$backgroundSecondary">
           <Text fontSize={13} fontWeight="700" color={chrome.accent}>
             {formatNumberToLocale(String(surah.number))}
           </Text>
@@ -407,7 +409,7 @@ const DivisionRow = ({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${title} · ${subtitle}`}>
-      <XStack
+      <Card
         alignItems="center"
         gap="$3"
         padding="$3"
@@ -415,7 +417,7 @@ const DivisionRow = ({
         borderWidth={1}
         borderColor="$borderColor"
         borderRadius={14}
-        backgroundColor="$backgroundSecondary">
+        flexDirection="row">
         <YStack
           width={40}
           height={40}
@@ -440,7 +442,7 @@ const DivisionRow = ({
           </Text>
         </YStack>
         <Chevron color={chrome.subtleText} size={18} />
-      </XStack>
+      </Card>
     </Pressable>
   );
 };

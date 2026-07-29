@@ -8,6 +8,7 @@ import { promptReviewIfEligible } from "@/utils/reviewPrompt";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -62,6 +63,7 @@ export const AthkarFocusCompletion = ({
             height={48}
             padding={0}
             borderRadius={999}
+            // eslint-disable-next-line no-restricted-syntax -- circular icon button, not a card surface
             backgroundColor="$backgroundSecondary"
             opacity={0.8}>
             <Icon size="md" color="$typography" as={X} />
@@ -107,11 +109,7 @@ export const AthkarFocusCompletion = ({
               </VStack>
 
               {/* Session Stats */}
-              <Box
-                backgroundColor="$backgroundSecondary"
-                padding="$6"
-                borderRadius="$6"
-                width="100%">
+              <Card padding="$6" borderRadius="$6" width="100%">
                 <VStack gap="$3" alignItems="center">
                   <Text color="$typographySecondary" fontWeight="500">
                     {t("athkar.focus.sessionComplete")}
@@ -135,7 +133,7 @@ export const AthkarFocusCompletion = ({
                     </VStack>
                   </HStack>
                 </VStack>
-              </Box>
+              </Card>
 
               {/* Finish Button */}
               <Button

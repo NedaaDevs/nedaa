@@ -18,6 +18,7 @@ import {
   ActionsheetDragIndicatorWrapper,
 } from "@/components/ui/actionsheet";
 import { VStack } from "@/components/ui/vstack";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
@@ -209,14 +210,14 @@ export const ReaderReciterSheet = ({
                   {t("quran.reader.downloadedSurahs")}
                 </Text>
                 {downloads.map(({ surah, bytes }) => (
-                  <HStack
+                  <Card
                     key={surah}
                     alignItems="center"
                     gap="$3"
                     paddingVertical="$1.5"
                     paddingHorizontal="$3"
                     borderRadius="$3"
-                    backgroundColor="$backgroundSecondary">
+                    flexDirection="row">
                     <Text size="sm" fontWeight="600" color="$typography" flex={1}>
                       {localizedSurahName(surah)}
                     </Text>
@@ -230,7 +231,7 @@ export const ReaderReciterSheet = ({
                       hitSlop={8}>
                       <Icon as={Trash2} size="sm" color="$typographySecondary" />
                     </Pressable>
-                  </HStack>
+                  </Card>
                 ))}
               </VStack>
             ) : null}

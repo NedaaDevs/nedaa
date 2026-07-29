@@ -13,6 +13,7 @@ import {
   ActionsheetScrollView,
 } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -255,10 +256,10 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
 
         <VStack gap="$3" padding="$4" width="100%">
           {/* Search Input */}
-          <HStack
+          <Card
             gap="$2"
             alignItems="center"
-            backgroundColor="$backgroundSecondary"
+            flexDirection="row"
             borderRadius="$4"
             paddingHorizontal="$3"
             height={44}>
@@ -280,7 +281,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
               autoCapitalize="none"
               accessibilityLabel={t("athkar.myAthkar.search")}
             />
-          </HStack>
+          </Card>
 
           {/* Back to categories */}
           {viewMode === "category-detail" && selectedCategory && (
@@ -311,10 +312,10 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                   onPress={() => handleCategoryPress(cat)}
                   accessibilityRole="button"
                   accessibilityLabel={isArabic ? cat.titleAr : cat.titleEn}>
-                  <HStack
+                  <Card
                     padding="$4"
                     borderRadius="$4"
-                    backgroundColor="$backgroundSecondary"
+                    flexDirection="row"
                     justifyContent="space-between"
                     alignItems="center"
                     marginBottom="$2">
@@ -332,7 +333,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                       size="sm"
                       color="$typographySecondary"
                     />
-                  </HStack>
+                  </Card>
                 </Pressable>
               ))}
 
@@ -378,14 +379,14 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
 
         {/* Batch Add Button */}
         {selectedItems.size > 0 && (
-          <Box
+          <Card
             position="absolute"
             bottom={0}
             left={0}
             right={0}
             padding="$4"
             paddingBottom="$6"
-            backgroundColor="$backgroundSecondary"
+            borderRadius={0}
             borderTopWidth={1}
             borderTopColor="$outline">
             <Button
@@ -400,7 +401,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                 {t("athkar.myAthkar.add")} ({selectedItems.size})
               </Button.Text>
             </Button>
-          </Box>
+          </Card>
         )}
       </ActionsheetContent>
     </Actionsheet>

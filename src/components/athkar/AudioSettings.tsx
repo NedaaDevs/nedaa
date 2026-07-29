@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import * as Application from "expo-application";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -357,7 +358,7 @@ const AudioSettings: FC = () => {
             <Text size="sm" fontWeight="600" color="$typographySecondary">
               {t("settings.athkarAudio.accessibility")}
             </Text>
-            <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <Card borderRadius="$6" padding="$4">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
                   <Text fontWeight="500" color="$typography">
@@ -373,7 +374,7 @@ const AudioSettings: FC = () => {
                   accessibilityLabel={t("settings.athkarAudio.comfortMode")}
                 />
               </HStack>
-            </Box>
+            </Card>
           </VStack>
 
           <Divider />
@@ -383,7 +384,7 @@ const AudioSettings: FC = () => {
             <Text size="sm" fontWeight="600" color="$typographySecondary">
               {t("settings.athkarAudio.storage")}
             </Text>
-            <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+            <Card borderRadius="$6" padding="$4">
               <VStack gap="$3">
                 {storageBreakdown.length === 0 ? (
                   <Text size="sm" color="$typographySecondary">
@@ -436,7 +437,7 @@ const AudioSettings: FC = () => {
                   </>
                 )}
               </VStack>
-            </Box>
+            </Card>
           </VStack>
 
           <Divider />

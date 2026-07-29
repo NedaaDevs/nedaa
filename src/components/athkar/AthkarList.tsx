@@ -283,7 +283,7 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
       )}
       {/* Streak Card */}
       {settings.showStreak && (
-        <Card padding="$4" backgroundColor="$backgroundSecondary">
+        <Card padding="$4">
           <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
             <VStack gap="$3" flex={1}>
               <HStack justifyContent="space-between" alignItems="center">

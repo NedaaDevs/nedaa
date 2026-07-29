@@ -21,6 +21,7 @@ import Svg, { Circle } from "react-native-svg";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -772,6 +773,7 @@ const AthkarFocusScreen = () => {
                 height={48}
                 padding={0}
                 borderRadius={999}
+                // eslint-disable-next-line no-restricted-syntax -- circular icon button, not a card surface
                 backgroundColor="$backgroundSecondary"
                 opacity={0.6}>
                 <Icon size="sm" color="$typographySecondary" as={CircleHelp} />
@@ -788,6 +790,7 @@ const AthkarFocusScreen = () => {
             height={48}
             padding={0}
             borderRadius={999}
+            // eslint-disable-next-line no-restricted-syntax -- circular icon button, not a card surface
             backgroundColor="$backgroundSecondary"
             opacity={0.8}>
             <Icon size="md" color="$typography" as={X} />
@@ -1086,7 +1089,7 @@ const AthkarFocusScreen = () => {
 
         {/* Restore audio button — shown after dismissing */}
         {showAudioControls && audioDismissed && (
-          <Pressable
+          <Card.Pressable
             onPress={() => setAudioDismissed(false)}
             position="absolute"
             bottom={insets.bottom + 16}
@@ -1094,13 +1097,13 @@ const AthkarFocusScreen = () => {
             width={48}
             height={48}
             borderRadius={24}
-            backgroundColor="$backgroundSecondary"
+            padding={0}
             alignItems="center"
             justifyContent="center"
             opacity={0.7}
             accessibilityLabel={t("athkar.audio.expand", { defaultValue: "Show audio controls" })}>
             <Icon as={Play} size="md" color="$primary" />
-          </Pressable>
+          </Card.Pressable>
         )}
       </Box>
 
