@@ -1,6 +1,9 @@
 // Types
 import type { AladhanTuning, AladhanPrayerTimeName } from "@/types/providers/aladhan";
 
+// Utils
+import { formatNumberToLocale } from "@/utils/number";
+
 type Translate = (key: string) => string;
 
 /** The API accepts ±30 minutes per timing. */
@@ -38,13 +41,20 @@ export const clampTuning = (value: number) =>
 
 export const formatOffset = (value: number) => `${value > 0 ? "+" : ""}${value}`;
 
-/** "Fajr +2, Isha -3" for the collapsed row. Null when nothing is adjusted. */
+// A directional isolate keeps the sign beside its digits inside Arabic text, where
+// bidi would otherwise reorder the run.
+const isolateLtr = (text: string) => `⁦${text}⁩`;
+
+/** "Fajr +2 · Isha -3" for the collapsed row. Null when nothing is adjusted. */
 export const summariseTuning = (tuning: AladhanTuning, t: Translate): string | null => {
   const adjusted = TUNED_PRAYERS.filter((prayer) => (tuning[prayer] ?? 0) !== 0);
 
   if (adjusted.length === 0) return null;
 
   return adjusted
-    .map((prayer) => `${t(prayerNameKey(prayer))} ${formatOffset(tuning[prayer] as number)}`)
-    .join(", ");
+    .map((prayer) => {
+      const offset = formatNumberToLocale(formatOffset(tuning[prayer] as number));
+      return `${t(prayerNameKey(prayer))} ${isolateLtr(offset)}`;
+    })
+    .join(" · ");
 };

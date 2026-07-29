@@ -40,10 +40,6 @@ jest.mock("@/components/ui/pressable", () => {
   return { Pressable: RNView };
 });
 
-jest.mock("@/contexts/RTLContext", () => ({
-  useRTL: () => ({ isRTL: false, direction: "ltr" }),
-}));
-
 jest.mock("@/utils/number", () => ({ formatNumberToLocale: (s: string) => s }));
 
 jest.mock("@/components/ui/icon", () => {

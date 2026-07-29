@@ -28,12 +28,6 @@ jest.mock("@/components/ui/pressable", () => {
   return { Pressable: RNView };
 });
 
-let mockIsRTL = false;
-
-jest.mock("@/contexts/RTLContext", () => ({
-  useRTL: () => ({ isRTL: mockIsRTL, direction: mockIsRTL ? "rtl" : "ltr" }),
-}));
-
 jest.mock("@/utils/number", () => ({ formatNumberToLocale: (s: string) => s }));
 
 jest.mock("@/components/ui/icon", () => {
@@ -58,10 +52,6 @@ const press = (tree: renderer.ReactTestRenderer, testID: string) => {
 };
 
 describe("TuningStepper", () => {
-  beforeEach(() => {
-    mockIsRTL = false;
-  });
-
   test("adds a minute when incremented", () => {
     const { tree, onChange } = render({ value: 2 });
 
@@ -149,16 +139,6 @@ describe("TuningStepper", () => {
     const { tree } = render();
 
     expect(tree.root.findByProps({ testID: "tuning-controls" }).props.flexDirection).toBe("row");
-  });
-
-  test("reverses the controls under an RTL layout", () => {
-    mockIsRTL = true;
-
-    const { tree } = render();
-
-    expect(tree.root.findByProps({ testID: "tuning-controls" }).props.flexDirection).toBe(
-      "row-reverse"
-    );
   });
 
   test("marks the limit-reached control as disabled for assistive tech", () => {

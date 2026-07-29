@@ -1,8 +1,5 @@
 import { FC } from "react";
 
-// Hooks
-import { useRTL } from "@/contexts/RTLContext";
-
 // Components
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -28,8 +25,6 @@ type Props = {
 
 /** The whole control is one adjustable; the buttons stay out of the a11y tree. */
 export const TuningStepper: FC<Props> = ({ label, value, onChange, disabled = false }) => {
-  const { isRTL } = useRTL();
-
   const atMax = value >= TUNING_LIMIT;
   const atMin = value <= -TUNING_LIMIT;
 
@@ -56,7 +51,7 @@ export const TuningStepper: FC<Props> = ({ label, value, onChange, disabled = fa
 
       <HStack
         testID="tuning-controls"
-        flexDirection={isRTL ? "row-reverse" : "row"}
+        flexDirection="row"
         alignItems="center"
         gap="$2"
         alignSelf="flex-start">
