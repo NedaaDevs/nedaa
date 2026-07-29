@@ -8,6 +8,7 @@ import type { NotificationStore } from "@/stores/notification";
 import { useLocationStore } from "@/stores/location";
 import { useQadaStore } from "@/stores/qada";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
+import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/providerSettings";
 
 // Utils
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
@@ -32,7 +33,13 @@ export const appSetup = async (
   try {
     const { loadPrayerTimes } = prayerStore;
 
-    await loadPrayerTimes();
+    // A pending reapply forces the refetch, since cached times satisfy a normal load.
+    // The flag clears only once the fetch lands, so an interrupted launch retries.
+    const pendingReapply = await awaitPendingReapply();
+    await loadPrayerTimes(pendingReapply);
+    if (pendingReapply) {
+      useProviderSettingsStore.getState().clearPendingReapply();
+    }
     // Gate scheduling on alarm-store rehydration; reading defaults here silently
     // skips scheduling for the launch. Bounded so setup can never hang.
     await waitForAlarmStores();

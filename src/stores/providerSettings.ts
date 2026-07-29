@@ -8,6 +8,10 @@ import { PRAYER_TIME_PROVIDERS, ProviderKey } from "@/constants/providers";
 // Types
 import type { AladhanSettings } from "@/types/providers/aladhan";
 
+// Utils
+import { waitForHydration } from "@/utils/storeHydration";
+import { AppLogger } from "@/utils/appLogger";
+
 type ProviderSettings = AladhanSettings; // | SecondProviderSettings
 
 /**
@@ -26,6 +30,13 @@ interface ProviderSettingsState {
   isModified: boolean;
   isLoading: boolean;
   error: string | null;
+
+  /**
+   * Requests one forced prayer-times refetch at next launch, reconciling stored
+   * settings with times that may not reflect them. Persisted so the reconcile
+   * survives a launch that fails or is killed early.
+   */
+  pendingReapply: boolean;
 }
 
 interface ProviderSettingsActions {
@@ -63,6 +74,18 @@ interface ProviderSettingsActions {
    * Reset current provider to defaults
    */
   resetCurrentSettings: () => void;
+
+  /**
+   * Clear the dirty flag once the settings have reached the times — refetch,
+   * notifications, alarms and widgets all done. Until then the edit is pending, and
+   * the flag keeps the save affordance on screen across navigation.
+   */
+  markSettingsApplied: () => void;
+
+  /**
+   * Clear the reapply flag once the forced refetch has succeeded.
+   */
+  clearPendingReapply: () => void;
 }
 
 type ProviderSettingsStore = ProviderSettingsState & ProviderSettingsActions;
@@ -100,6 +123,37 @@ const initialState: ProviderSettingsState = {
   isModified: false,
   isLoading: false,
   error: null,
+  pendingReapply: false,
+};
+
+type PersistedProviderSettings = {
+  currentProviderId: number | string;
+  allSettings: Record<string, any>;
+  pendingReapply?: boolean;
+};
+
+const V0_PROVIDER_ID_MAP: Record<string, string> = { "1": "aladhan" };
+
+/**
+ * Only runs for a persisted version behind the current one, so every path requests a
+ * reapply: such an install's times are not guaranteed to reflect its stored settings.
+ */
+export const migrateProviderSettings = (persisted: any, version: number) => {
+  const old = persisted as PersistedProviderSettings;
+
+  if (version === 0) {
+    const newId =
+      typeof old.currentProviderId === "number"
+        ? V0_PROVIDER_ID_MAP[String(old.currentProviderId)] || "aladhan"
+        : old.currentProviderId;
+    const newSettings: Record<string, any> = {};
+    for (const [key, value] of Object.entries(old.allSettings)) {
+      newSettings[V0_PROVIDER_ID_MAP[key] || key] = value;
+    }
+    return { ...old, currentProviderId: newId, allSettings: newSettings, pendingReapply: true };
+  }
+
+  return { ...old, pendingReapply: true };
 };
 
 export const useProviderSettingsStore = create<ProviderSettingsStore>()(
@@ -168,12 +222,13 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
               throw new Error("No settings found for current provider");
             }
 
+            // isModified survives the save. The settings only reach the user once the
+            // caller's apply pipeline lands, and markSettingsApplied ends that.
             set({
               allSettings: {
                 ...state.allSettings,
                 [state.currentProviderId]: currentSettings,
               },
-              isModified: false,
               isLoading: false,
             });
           } catch (error) {
@@ -195,39 +250,45 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
             error: null,
           }));
         },
+
+        markSettingsApplied: () => set({ isModified: false }),
+
+        clearPendingReapply: () => set({ pendingReapply: false }),
       }),
       {
         name: "provider-settings",
-        version: 1,
+        version: 2,
         storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
           currentProviderId: state.currentProviderId,
           allSettings: state.allSettings,
+          pendingReapply: state.pendingReapply,
         }),
-        migrate: (persisted: any, version: number) => {
-          if (version === 0) {
-            const old = persisted as {
-              currentProviderId: number | string;
-              allSettings: Record<string, any>;
-            };
-            const ID_MAP: Record<string, string> = { "1": "aladhan" };
-            const newId =
-              typeof old.currentProviderId === "number"
-                ? ID_MAP[String(old.currentProviderId)] || "aladhan"
-                : old.currentProviderId;
-            const newSettings: Record<string, any> = {};
-            for (const [key, value] of Object.entries(old.allSettings)) {
-              const mappedKey = ID_MAP[key] || key;
-              newSettings[mappedKey] = value;
-            }
-            return { ...old, currentProviderId: newId, allSettings: newSettings };
-          }
-          return persisted;
-        },
+        migrate: migrateProviderSettings,
       }
     ),
     { name: "ProviderSettings" }
   )
 );
+
+const HYDRATION_TIMEOUT_MS = 5000;
+
+/**
+ * Reads the reapply flag once the store has rehydrated. Read synchronously at startup
+ * the store still holds its defaults, which reports no reapply is due. The flag stays
+ * persisted on timeout, so the next launch tries again.
+ */
+export const awaitPendingReapply = async (): Promise<boolean> => {
+  await waitForHydration(useProviderSettingsStore.persist, {
+    timeoutMs: HYDRATION_TIMEOUT_MS,
+    onTimeout: () =>
+      AppLogger.create("prayertimes").w(
+        "Settings",
+        "provider settings hydration timed out — deferring the reapply to the next launch"
+      ),
+  });
+
+  return useProviderSettingsStore.getState().pendingReapply;
+};
 
 export default useProviderSettingsStore;

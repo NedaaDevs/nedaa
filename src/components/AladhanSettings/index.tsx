@@ -30,7 +30,7 @@ const AladhanSettings: FC = () => {
   const { t } = useTranslation();
   const hapticSuccess = useHaptic("success");
   const { isLoading: isFetchingPrayers, loadPrayerTimes } = usePrayerTimesStore();
-  const { isLoading, isModified, saveSettings } = useProviderSettingsStore();
+  const { isLoading, isModified, saveSettings, markSettingsApplied } = useProviderSettingsStore();
   const { scheduleAllNotifications } = useNotificationStore();
 
   // Keeps the save affordance on screen after a failed refetch so the change can be retried.
@@ -48,6 +48,10 @@ const AladhanSettings: FC = () => {
       await rescheduleAllAlarms();
 
       reloadPrayerWidgets();
+
+      // Last: until this runs the edit is pending, and the store keeps the save
+      // affordance on screen even if the user navigates away and back.
+      markSettingsApplied();
 
       setSaveFailed(false);
       hapticSuccess();
