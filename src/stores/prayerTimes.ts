@@ -30,7 +30,7 @@ import { useAppStore } from "@/stores/app";
 
 // Utils
 import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
-import { firstAfter, lastBefore } from "@/utils/prayerSelection";
+import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -321,8 +321,11 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           if (nextToday) return nextToday;
 
           // Every prayer today has passed, so the next one belongs to tomorrow.
+          // Fall back to tomorrow's first prayer even if it too reads as past —
+          // cached data can lag the clock, and returning null blanks the screen.
           if (state.tomorrowTimings) {
-            return firstAfter(toPrayers(state.tomorrowTimings), now) ?? null;
+            const tomorrow = toPrayers(state.tomorrowTimings);
+            return firstAfter(tomorrow, now) ?? earliest(tomorrow);
           }
 
           return null;
@@ -336,9 +339,12 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           const lastToday = lastBefore(toPrayers(state.todayTimings), now);
           if (lastToday) return lastToday;
 
-          // Before the first prayer of the day, so the previous one is yesterday's Isha.
+          // Before the first prayer of the day, so the previous one is yesterday's
+          // Isha. Same reasoning as above: take the last one even if the cached
+          // day sits ahead of the clock.
           if (state.yesterdayTimings) {
-            return lastBefore(toPrayers(state.yesterdayTimings), now) ?? null;
+            const yesterday = toPrayers(state.yesterdayTimings);
+            return lastBefore(yesterday, now) ?? latest(yesterday);
           }
 
           return null;

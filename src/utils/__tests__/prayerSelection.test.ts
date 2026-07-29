@@ -1,7 +1,7 @@
 import { toZonedTime } from "date-fns-tz";
 import { parseISO } from "date-fns";
 
-import { firstAfter, lastBefore } from "@/utils/prayerSelection";
+import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 
 // Kuala Lumpur (UTC+8) prayer times for one day, as stored: ISO 8601 with offset.
 const KL = [
@@ -23,6 +23,23 @@ describe("prayer selection", () => {
   it("returns null once the day is over, so callers can roll to the next day", () => {
     expect(firstAfter(KL, parseISO("2026-07-29T23:00:00+08:00"))).toBeNull();
     expect(lastBefore(KL, parseISO("2026-07-29T04:00:00+08:00"))).toBeNull();
+  });
+
+  /**
+   * The adjacent-day fallbacks are deliberately not time-filtered. If cached
+   * timings lag the clock every entry reads as past, and a null here leaves the
+   * home screen stuck on its loading skeleton with nothing to render.
+   */
+  it("still yields a timing when the whole cached day is already behind us", () => {
+    const wayLater = parseISO("2026-08-05T12:00:00+08:00");
+    expect(firstAfter(KL, wayLater)).toBeNull();
+    expect(earliest(KL)?.name).toBe("fajr");
+    expect(latest(KL)?.name).toBe("isha");
+  });
+
+  it("returns null from the fallbacks only when there is genuinely nothing", () => {
+    expect(earliest([])).toBeNull();
+    expect(latest([])).toBeNull();
   });
 
   it("orders by instant, not by the order entries arrive in", () => {

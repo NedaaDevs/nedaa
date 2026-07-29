@@ -33,3 +33,16 @@ export const lastBefore = <T extends TimingLike>(entries: T[], now: Date): T | n
   }
   return null;
 };
+
+/**
+ * Earliest / latest entry regardless of `now`.
+ *
+ * These back the adjacent-day fallbacks. They must not be time-filtered: when
+ * cached data lags behind the clock, every entry can sit in the past, and
+ * returning null there leaves the home screen with nothing to render at all.
+ */
+export const earliest = <T extends TimingLike>(entries: T[]): T | null =>
+  sortByInstant(entries)[0] ?? null;
+
+export const latest = <T extends TimingLike>(entries: T[]): T | null =>
+  sortByInstant(entries).at(-1) ?? null;
