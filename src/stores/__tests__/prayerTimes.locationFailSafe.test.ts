@@ -116,30 +116,36 @@ describe("prayer-time location fail-safe", () => {
     jest.restoreAllMocks();
   });
 
-  it("does not mark location acquired or refresh prayer times after acquisition fails", async () => {
+  it("does not mark location acquired when acquisition fails", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).rejects.toThrow(
-      "HMS location unavailable"
-    );
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
 
+    // Still false, so a real fix is attempted again on the next load.
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
     expect(useLocationStore.getState().lastKnownCoords).toBeNull();
-    expect(refreshPrayerTimes).not.toHaveBeenCalled();
   });
 
-  it("does not refresh prayer times from the unverified default Mecca coordinates", async () => {
+  /**
+   * Declining the permission must not leave the app empty: an app that shows no
+   * prayer times without location is both unusable and a store-review risk. The
+   * default coordinates (Makkah) stand in until the user sets a location.
+   */
+  it("falls back to the default location when the permission is declined", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canRequestAgain: false });
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).rejects.toThrow();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
 
+    expect(usePrayerTimesStore.getState().hasError).toBe(false);
+    expect(refreshPrayerTimes).toHaveBeenCalled();
+    // The fix was never verified, so the app keeps trying to acquire a real one.
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
-    expect(refreshPrayerTimes).not.toHaveBeenCalled();
+    expect(useLocationStore.getState().lastKnownCoords).toBeNull();
   });
 
   it("preserves a verified persisted location when a refresh fails", async () => {
@@ -236,7 +242,13 @@ describe("prayer-time location fail-safe", () => {
     });
   });
 
-  it("persists a fresh fix but blocks prayer loading when its timezone is unresolved", async () => {
+  /**
+   * The fix itself is good — only its timezone failed to resolve. Loading still
+   * proceeds against those coordinates, and `getAndStorePrayerTimes` corrects the
+   * zone from the API response, which carries it. The fix stays unverified so a
+   * later load retries geocoding.
+   */
+  it("persists a fresh fix and still loads when its timezone is unresolved", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
     const acquiredLocation = {
       coords: {
@@ -254,12 +266,12 @@ describe("prayer-time location fail-safe", () => {
     mockReverseGeocodeApi.mockRejectedValue(new Error("API geocoder unavailable"));
     jest.spyOn(console, "error").mockImplementation();
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).rejects.toThrow();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
 
     expect(useLocationStore.getState().locationDetails.coords).toEqual(acquiredLocation.coords);
     expect(useLocationStore.getState().lastKnownCoords).toBeNull();
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
-    expect(refreshPrayerTimes).not.toHaveBeenCalled();
+    expect(refreshPrayerTimes).toHaveBeenCalled();
   });
 
   it("restores a verified saved location when a new fix has no resolved timezone", async () => {

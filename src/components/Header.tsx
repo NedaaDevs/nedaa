@@ -87,7 +87,10 @@ const Header = () => {
   const hijriDate =
     hijriDaysOffset !== 0 ? HijriNative.addDays(todayHijri, hijriDaysOffset) : todayHijri;
 
-  const timing = showOtherTiming ? nextOtherTiming : displayNextPrayer;
+  // Toggling to the other timings must never blank the card: if there is no next
+  // one to show, stay on the prayer rather than falling through to the skeleton.
+  const showingOther = showOtherTiming && nextOtherTiming != null;
+  const timing = showingOther ? nextOtherTiming : displayNextPrayer;
 
   const {
     mode: timerMode,
@@ -150,7 +153,7 @@ const Header = () => {
     lastthird: "lastThird",
   };
 
-  const timingName = showOtherTiming
+  const timingName = showingOther
     ? `otherTimings.${translationKey[timing.name as OtherTimingName]}`
     : timing.name === "dhuhr" && isFriday(locationDetails.timezone)
       ? "prayerTimes.jumuah"
@@ -163,16 +166,16 @@ const Header = () => {
       : 0;
 
   const headlineName =
-    !showOtherTiming && timerMode === "iqama" && iqamaPrayerName
+    !showingOther && timerMode === "iqama" && iqamaPrayerName
       ? `${t(`prayerTimes.${iqamaPrayerName}`)} - ${t("header.iqama")}`
       : t(timingName);
 
   const headlineTime =
-    !showOtherTiming && timerMode === "iqama" && previousPrayer
+    !showingOther && timerMode === "iqama" && previousPrayer
       ? formattedPrayerTime(previousPrayer.time)
       : formattedPrayerTime(timing.time);
 
-  const countdown = showOtherTiming ? otherTimingDisplay : timerDisplay;
+  const countdown = showingOther ? otherTimingDisplay : timerDisplay;
 
   return (
     <Box margin="$1" borderRadius="$7">
@@ -202,7 +205,7 @@ const Header = () => {
         accessibilityRole="button"
         accessibilityLabel={t("a11y.header.nextPrayer", {
           name: t(timingName),
-          time: showOtherTiming ? otherTimingDisplay : formattedPrayerTime(timing.time),
+          time: showingOther ? otherTimingDisplay : formattedPrayerTime(timing.time),
           countdown,
         })}
         accessibilityHint={t("a11y.header.toggleTimings")}>

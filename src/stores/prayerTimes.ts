@@ -74,6 +74,13 @@ const toPrayers = (day: DayPrayerTimes): Prayer[] =>
     date: day.date,
   }));
 
+const toOtherTimings = (day: DayPrayerTimes): OtherTiming[] =>
+  Object.entries(day.otherTimings).map(([name, time]) => ({
+    name: name as OtherTimingName,
+    time,
+    date: day.date,
+  }));
+
 const getTwoWeeksDateRange = (timezone: string) => {
   const now = timeZonedNow(timezone);
 
@@ -198,23 +205,24 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               try {
                 await locationStore.getState().initializeLocation();
               } catch (error) {
-                if (!locationStore.getState().lastKnownCoords) {
-                  throw error;
-                }
                 log.w(
                   "Load",
-                  `current location failed; using verified saved coordinates: ${(error as Error)?.message ?? error}`
+                  `current location failed; falling back to saved or default coordinates: ${(error as Error)?.message ?? error}`
                 );
               }
             }
 
             const { locationDetails, lastKnownCoords } = locationStore.getState();
+            // No verified fix — permission declined, or acquisition failed with nothing
+            // saved. locationDetails.coords defaults to Makkah, so prayer times still
+            // load rather than leaving the app empty; the user can set their location
+            // in settings, and didGetCurrentLocation stays false so a real fix is still
+            // attempted on later loads.
             if (!lastKnownCoords) {
-              set({ didGetCurrentLocation: false });
-              throw new Error(locationDetails.error || i18n.t("location.permission.deniedMessage"));
+              log.w("Load", "no verified coordinates; using the default location");
             }
 
-            set({ didGetCurrentLocation: true });
+            set({ didGetCurrentLocation: lastKnownCoords !== null });
             // Get yesterday, today, tomorrow dates
             const now = timeZonedNow(locationDetails.timezone);
             const yesterday = dateToInt(subDays(now, 1));
@@ -354,29 +362,20 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           if (!state.todayTimings?.otherTimings) return null;
 
           const now = new Date();
-          const timings = Object.entries(state.todayTimings.otherTimings);
+          const today = toOtherTimings(state.todayTimings);
 
-          // Convert all timings to Date objects with their names
-          const timingsWithDates = timings.map(([name, time]) => ({
-            name: name as OtherTimingName,
-            time,
-            date: new Date(time),
-          }));
+          const nextToday = firstAfter(today, now);
+          if (nextToday) return nextToday;
 
-          // Sort by time
-          timingsWithDates.sort((a, b) => a.date.getTime() - b.date.getTime());
+          // Today's are all behind us, so the next one is tomorrow's first. Same
+          // rule as the prayers: never return null while a day's data exists, or
+          // the home screen has nothing to show and falls back to its skeleton.
+          if (state.tomorrowTimings?.otherTimings) {
+            const tomorrow = toOtherTimings(state.tomorrowTimings);
+            return firstAfter(tomorrow, now) ?? earliest(tomorrow);
+          }
 
-          // Find the next timing after current time
-          const nextTiming = timingsWithDates.find((timing) => timing.date > now);
-
-          // If no timing is found for today, the first timing of tomorrow would be next
-          return nextTiming
-            ? {
-                name: nextTiming.name,
-                time: nextTiming.time,
-                date: state.todayTimings.date,
-              }
-            : null;
+          return earliest(today);
         },
         cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {
           try {
