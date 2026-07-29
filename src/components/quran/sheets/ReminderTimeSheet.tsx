@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, View } from "react-native";
-import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
+import { useRTL } from "@/contexts/RTLContext";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import appStore from "@/stores/app";
 
@@ -24,6 +25,7 @@ type Props = {
 // iOS shows an inline spinner in a bottom card; Android uses its native dialog.
 export const ReminderTimeSheet = ({ visible, title, hour, minute, onConfirm, onClose }: Props) => {
   const { t } = useTranslation();
+  const { direction } = useRTL();
   const chrome = useQuranChromeColors();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState(() => toDate(hour, minute));
@@ -40,17 +42,19 @@ export const ReminderTimeSheet = ({ visible, title, hour, minute, onConfirm, onC
         value={draft}
         mode="time"
         display="default"
-        onChange={(event: DateTimePickerEvent, date?: Date) => {
+        onValueChange={(_event, date) => {
           onClose();
-          if (event.type === "set" && date) onConfirm(date.getHours(), date.getMinutes());
+          onConfirm(date.getHours(), date.getMinutes());
         }}
+        onDismiss={onClose}
       />
     );
   }
 
   return (
     <Modal transparent visible animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose}>
+      {/* A native modal hosts its children outside RTLProvider's direction wrapper. */}
+      <Pressable style={[styles.scrim, { direction }]} onPress={onClose}>
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={[
@@ -68,7 +72,7 @@ export const ReminderTimeSheet = ({ visible, title, hour, minute, onConfirm, onC
               display="spinner"
               locale={appStore.getState().locale}
               textColor={chrome.text}
-              onChange={(_event: DateTimePickerEvent, date?: Date) => date && setDraft(date)}
+              onValueChange={(_event, date) => setDraft(date)}
             />
           </View>
 

@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Modal, ScrollView, TouchableOpacity, View, StyleSheet } from "react-native";
-import { Text, useTheme } from "tamagui";
+import { useTheme } from "tamagui";
+import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
+import { useRTL } from "@/contexts/RTLContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type SelectItem = {
@@ -38,6 +40,7 @@ const Select: React.FC<SelectProps> = ({
   const scrollRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { direction } = useRTL();
   const allItems = useMemo(() => items ?? groups?.flatMap((g) => g.items) ?? [], [items, groups]);
 
   const selectedLabel = useMemo(
@@ -86,7 +89,8 @@ const Select: React.FC<SelectProps> = ({
       </Pressable>
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={styles.modalContainer}>
+        {/* A native modal hosts its children outside RTLProvider's direction wrapper. */}
+        <View style={[styles.modalContainer, { direction }]}>
           <TouchableOpacity
             style={styles.backdrop}
             activeOpacity={1}
