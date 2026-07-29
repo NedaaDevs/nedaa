@@ -1,8 +1,10 @@
 import React, { use } from "react";
 import { styled, View, XStack, YStack, Dialog } from "tamagui";
 import type { GetProps } from "tamagui";
-import { ScrollView } from "react-native";
+import { ScrollView, View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
+
+import { useRTL } from "@/contexts/RTLContext";
 
 // --- Modal size context ---
 
@@ -58,6 +60,7 @@ type ModalContentProps = {
 
 const ModalContent: React.FC<ModalContentProps> = ({ children }) => {
   const size = use(ModalSizeContext);
+  const { direction } = useRTL();
 
   return (
     <Dialog.Content
@@ -67,7 +70,8 @@ const ModalContent: React.FC<ModalContentProps> = ({ children }) => {
       padding="$0"
       width="90%"
       maxWidth={SIZE_MAX_WIDTH[size]}>
-      {children}
+      {/* Portalled out of RTLProvider's wrapper, so the direction is re-applied here. */}
+      <RNView style={{ direction, width: "100%" }}>{children}</RNView>
     </Dialog.Content>
   );
 };

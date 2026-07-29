@@ -1,5 +1,8 @@
 import { FC } from "react";
 
+// Hooks
+import { useRTL } from "@/contexts/RTLContext";
+
 // Components
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -12,6 +15,9 @@ import { Minus, Plus } from "lucide-react-native";
 // Config
 import { TUNING_LIMIT, formatOffset } from "@/components/AladhanSettings/tuning";
 
+// Utils
+import { formatNumberToLocale } from "@/utils/number";
+
 type Props = {
   label: string;
   value: number;
@@ -20,14 +26,15 @@ type Props = {
 };
 
 /**
- * A bounded integer wants a stepper, not a 61-row picker. Row direction flips with the
- * layout, which keeps the minus on the logical start side without branching on RTL.
+ * A bounded integer wants a stepper, not a 61-row picker.
  *
  * The row is the adjustable: screen readers step it with their own increment/decrement
- * gesture, so the buttons stay out of the accessibility tree rather than announcing
+ * gesture, so the buttons opt out of the accessibility tree rather than announcing
  * themselves twice per prayer.
  */
 export const TuningStepper: FC<Props> = ({ label, value, onChange, disabled = false }) => {
+  const { isRTL } = useRTL();
+
   const atMax = value >= TUNING_LIMIT;
   const atMin = value <= -TUNING_LIMIT;
 
@@ -40,8 +47,11 @@ export const TuningStepper: FC<Props> = ({ label, value, onChange, disabled = fa
   return (
     <HStack
       testID="tuning-stepper"
+      flexDirection={isRTL ? "row-reverse" : "row"}
       alignItems="center"
       justifyContent="space-between"
+      gap="$3"
+      minHeight={44}
       accessibilityRole="adjustable"
       accessibilityLabel={label}
       accessibilityValue={{ min: -TUNING_LIMIT, max: TUNING_LIMIT, now: value }}
@@ -49,48 +59,53 @@ export const TuningStepper: FC<Props> = ({ label, value, onChange, disabled = fa
       onAccessibilityAction={({ nativeEvent }) =>
         step(nativeEvent.actionName === "increment" ? 1 : -1)
       }>
-      <Text size="md" fontWeight="500" color="$typography" flex={1}>
+      <Text size="md" fontWeight="500" color="$typography" flexShrink={1}>
         {label}
       </Text>
 
-      <HStack alignItems="center" gap="$2">
+      <HStack
+        flexDirection={isRTL ? "row-reverse" : "row"}
+        alignItems="center"
+        gap="$2"
+        flexShrink={0}>
         <Pressable
           testID="tuning-decrement"
           onPress={() => step(-1)}
           disabled={disabled || atMin}
-          width={44}
-          height={44}
+          minWidth={44}
+          minHeight={44}
           alignItems="center"
           justifyContent="center"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
+          hitSlop={8}
+          accessible={false}
           accessibilityState={{ disabled: disabled || atMin }}>
-          <Icon as={Minus} size={18} color={atMin ? "$typographySecondary" : "$accentPrimary"} />
+          <Icon as={Minus} size="md" color={atMin ? "$typographySecondary" : "$accentPrimary"} />
         </Pressable>
 
-        {/* Fixed width so the row does not jog as the digits change. */}
+        {/* Offsets are signed, so the run stays LTR even in an RTL layout. */}
         <Text
           size="md"
           numeric
           fontWeight="600"
           color="$typography"
           textAlign="center"
-          minWidth={44}>
-          {formatOffset(value)}
+          minWidth={40}
+          style={{ writingDirection: "ltr" }}>
+          {formatNumberToLocale(formatOffset(value))}
         </Text>
 
         <Pressable
           testID="tuning-increment"
           onPress={() => step(1)}
           disabled={disabled || atMax}
-          width={44}
-          height={44}
+          minWidth={44}
+          minHeight={44}
           alignItems="center"
           justifyContent="center"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
+          hitSlop={8}
+          accessible={false}
           accessibilityState={{ disabled: disabled || atMax }}>
-          <Icon as={Plus} size={18} color={atMax ? "$typographySecondary" : "$accentPrimary"} />
+          <Icon as={Plus} size="md" color={atMax ? "$typographySecondary" : "$accentPrimary"} />
         </Pressable>
       </HStack>
     </HStack>
