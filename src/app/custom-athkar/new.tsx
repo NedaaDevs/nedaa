@@ -150,7 +150,6 @@ export default function NewCustomAthkarScreen() {
             <Card
               borderWidth={1}
               borderColor="$outline"
-              borderRadius="$4"
               paddingHorizontal="$3"
               paddingVertical="$2">
               <RNTextInput
@@ -175,7 +174,6 @@ export default function NewCustomAthkarScreen() {
                 key={draft.key}
                 borderWidth={1}
                 borderColor={expandedKey === draft.key ? "$primary" : "$outline"}
-                borderRadius="$4"
                 overflow="hidden"
                 padding={0}>
                 {expandedKey === draft.key ? (

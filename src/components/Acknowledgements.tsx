@@ -59,7 +59,7 @@ const Acknowledgements = () => {
         {quranUnlocked &&
           CREDITS.map((credit, index) => (
             <Animated.View key={credit.titleKey} entering={enter(index)}>
-              <Card padding="$5" borderRadius="$4" borderWidth={1} borderColor="$borderColor">
+              <Card padding="$5" borderWidth={1} borderColor="$borderColor">
                 <VStack gap="$3.5">
                   <HStack alignItems="center" gap="$3">
                     <Box
@@ -116,7 +116,7 @@ const Acknowledgements = () => {
             mixed-script list needs no RTL/LTR alignment. */}
         {SHOW_CONTRIBUTORS && (
           <Animated.View entering={enter(creditsCount)}>
-            <Card padding="$5" borderRadius="$4" borderWidth={1} borderColor="$borderColor">
+            <Card padding="$5" borderWidth={1} borderColor="$borderColor">
               <VStack gap="$3.5">
                 <Pressable
                   onPress={toggleContributors}
@@ -163,7 +163,7 @@ const Acknowledgements = () => {
         {/* Closing: gratitude to the sources and the user, then an open invite
             to contribute (any kind of help), routing to the Contact screen. */}
         <Animated.View entering={enter(SHOW_CONTRIBUTORS ? creditsCount + 1 : creditsCount)}>
-          <Card padding="$5" borderRadius="$4" borderWidth={1} borderColor="$borderColor">
+          <Card padding="$5" borderWidth={1} borderColor="$borderColor">
             <VStack gap="$4">
               <Text size="md" color="$typography" lineHeight={24}>
                 {t("settings.acknowledgements.thanks")}

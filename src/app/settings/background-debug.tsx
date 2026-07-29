@@ -118,7 +118,7 @@ const BackgroundDebugScreen = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1} padding="$4" gap="$3">
           {/* Status Card */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Background Task Status
@@ -171,7 +171,7 @@ const BackgroundDebugScreen = () => {
           </Card>
 
           {/* Controls */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Controls
@@ -210,7 +210,7 @@ const BackgroundDebugScreen = () => {
 
           {/* Last Result */}
           {lastResult && (
-            <Card padding="$4" backgroundColor="$backgroundMuted">
+            <Card backgroundColor="$backgroundMuted">
               <VStack gap="$2">
                 <Text size="sm" fontWeight="600" color="$typography">
                   Last Result
@@ -223,7 +223,7 @@ const BackgroundDebugScreen = () => {
           )}
 
           {/* Log List */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <HStack
                 justifyContent="space-between"

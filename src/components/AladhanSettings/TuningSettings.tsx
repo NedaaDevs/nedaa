@@ -162,7 +162,7 @@ export const TuningSettings: FC = () => {
         </Text>
 
         {/* Input-like button to open tuning modal */}
-        <Card padding={0} borderRadius="$6">
+        <Card variant="grouped">
           <Pressable
             onPress={openTuningModal}
             disabled={isLoading}

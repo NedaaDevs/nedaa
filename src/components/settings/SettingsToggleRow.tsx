@@ -35,7 +35,7 @@ const SettingsToggleRow = ({
   const { t } = useTranslation();
 
   return (
-    <Card borderRadius="$6">
+    <Card>
       <VStack gap="$3">
         <HStack justifyContent="space-between" alignItems="center" width="100%">
           <VStack flexShrink={1} marginEnd="$4">

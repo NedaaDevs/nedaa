@@ -512,7 +512,6 @@ const FeedbackScreen = () => {
                         disabled={submitting}
                         borderWidth={1}
                         borderColor="$borderColor"
-                        borderRadius="$4"
                         paddingVertical="$3"
                         paddingHorizontal="$3"
                         accessibilityRole="button"

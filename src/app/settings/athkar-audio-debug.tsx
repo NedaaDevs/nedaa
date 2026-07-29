@@ -105,7 +105,7 @@ const AthkarAudioDebugScreen = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack padding="$4" gap="$4">
           {/* Audio Status */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 {t("settings.athkarAudio.debug.audioStatus")}
@@ -149,7 +149,7 @@ const AthkarAudioDebugScreen = () => {
           </Card>
 
           {/* Session */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 {t("settings.athkarAudio.debug.session")}
@@ -183,7 +183,7 @@ const AthkarAudioDebugScreen = () => {
           </Card>
 
           {/* Storage */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 {t("settings.athkarAudio.storage")}
@@ -222,7 +222,7 @@ const AthkarAudioDebugScreen = () => {
           {/* Daily-init race-fix probe (dev-only). Seeds a partial 3-row state
               on a synthetic future date, runs initializeDailyItems, asserts
               back-fill brought it to the expected total, cleans up. */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Daily-init race fix
@@ -247,7 +247,7 @@ const AthkarAudioDebugScreen = () => {
           </Card>
 
           {/* Log */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">

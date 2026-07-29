@@ -79,7 +79,7 @@ const CompletionSummary = ({ record }: Props) => {
         animate={{ opacity: 1, translateY: 0 }}
         transition={{ type: "timing", duration: 400, delay: 700 }}
         style={{ width: "100%" }}>
-        <Card padding="$4" borderRadius="$4" width="100%">
+        <Card width="100%">
           <VStack gap="$3">
             {stats.map((stat, index) => (
               <HStack key={index} justifyContent="space-between" alignItems="center">

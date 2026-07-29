@@ -66,7 +66,7 @@ export const MidnightModeSettings: FC = () => {
         <Text fontSize="$5" fontWeight="600" marginBottom="$4" color="$typography">
           {t("providers.aladhan.midnightMode.title")}
         </Text>
-        <Card borderRadius="$6" padding="$6" alignItems="center">
+        <Card padding="$6" alignItems="center">
           <Spinner size="small" />
           <Text fontSize="$2" color="$typographySecondary" marginTop="$3">
             {t("common.loading")}
@@ -83,7 +83,7 @@ export const MidnightModeSettings: FC = () => {
       </Text>
 
       {error && (
-        <Card borderRadius="$4" padding="$3" marginBottom="$4" borderWidth={1} borderColor="$error">
+        <Card padding="$3" marginBottom="$4" borderWidth={1} borderColor="$error">
           <Text fontSize="$2" color="$error">
             {error}
           </Text>

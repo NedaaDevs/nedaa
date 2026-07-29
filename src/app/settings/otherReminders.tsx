@@ -93,8 +93,7 @@ const OtherRemindersSettings = () => {
                 {t(group.titleKey)}
               </Text>
 
-              {/* Grouped Card */}
-              <Card padding={0} marginHorizontal="$4" borderRadius="$4" overflow="hidden">
+              <Card variant="grouped" marginHorizontal="$4">
                 {group.items.map((timingId, index) => (
                   <Box key={timingId}>
                     <HStack

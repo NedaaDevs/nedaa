@@ -85,7 +85,7 @@ const QuranAudioDebugScreen = () => {
       <ScrollView contentContainerStyle={{ padding: 12 }}>
         <VStack gap="$3">
           {/* Live player state */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$2">
               <Text size="lg" fontWeight="600" color="$typography">
                 Player state
@@ -120,7 +120,7 @@ const QuranAudioDebugScreen = () => {
           </Card>
 
           {/* Raw nitro auto-advance spike */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Nitro auto-advance spike
@@ -139,7 +139,7 @@ const QuranAudioDebugScreen = () => {
           </Card>
 
           {/* Drive the real player */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Player controls
@@ -202,7 +202,7 @@ const QuranAudioDebugScreen = () => {
           </Card>
 
           {/* Spike event log */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$2">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">

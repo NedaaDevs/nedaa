@@ -112,7 +112,7 @@ const HijriConverterScreen = () => {
         <TopBar title={t("tools.hijriConverter.title")} href="/(tabs)/tools" backOnClick />
 
         <Box padding="$4">
-          <Card padding="$5" borderRadius="$6">
+          <Card padding="$5">
             <Text
               size="md"
               fontWeight="600"
@@ -139,7 +139,6 @@ const HijriConverterScreen = () => {
                     <Card.Pressable
                       onPress={() => setShowGregorianPicker(true)}
                       padding="$3"
-                      borderRadius="$4"
                       accessibilityRole="button"
                       accessibilityLabel={formatNumberToLocale(
                         format(gregorianDate, "dd MMMM yyyy", { locale: getDateLocale(locale) })
@@ -191,7 +190,7 @@ const HijriConverterScreen = () => {
             </Card.Pressable>
           </Box>
 
-          <Card padding="$5" borderRadius="$6">
+          <Card padding="$5">
             <Text
               size="md"
               fontWeight="600"

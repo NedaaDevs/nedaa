@@ -339,7 +339,6 @@ const QadaSettings = () => {
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
                     accessibilityLabel={option.label}
-                    borderRadius="$6"
                     borderWidth={1}
                     borderColor={isSelected ? "$primary" : "$outline"}>
                     <HStack alignItems="center" justifyContent="space-between">
@@ -484,7 +483,6 @@ const QadaSettings = () => {
                 accessibilityLabel={t("a11y.qada.selectDate")}
                 borderWidth={1}
                 borderColor="$outline"
-                borderRadius="$4"
                 paddingHorizontal="$4"
                 paddingVertical="$3"
                 minHeight={48}
@@ -571,7 +569,7 @@ const QadaSettings = () => {
               </Pressable>
 
               {/* Privacy Example */}
-              <Card padding="$3" borderRadius="$6" borderWidth={1} borderColor="$outline">
+              <Card padding="$3" borderWidth={1} borderColor="$outline">
                 <VStack gap="$1">
                   <Text size="xs" fontWeight="500" color="$typographySecondary">
                     {tempPrivacyMode ? t("qada.privacyEnabled") : t("qada.privacyDisabled")} -{" "}

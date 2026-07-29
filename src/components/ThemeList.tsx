@@ -47,7 +47,7 @@ const ThemeList = () => {
   };
 
   return (
-    <Card variant="grouped" borderRadius="$4" marginTop="$2">
+    <Card variant="grouped" marginTop="$2">
       <ActionsheetFlatList
         data={modeData}
         renderItem={({ item, index }: any) => (

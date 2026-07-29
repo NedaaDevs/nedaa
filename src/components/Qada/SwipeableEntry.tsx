@@ -268,8 +268,6 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
         {/* Entry content — slides to reveal actions */}
         <Animated.View style={[contentStyle, { direction: isRTL ? "rtl" : "ltr" }]}>
           <Card
-            borderRadius="$6"
-            padding="$4"
             accessibilityRole="button"
             accessibilityLabel={t("a11y.qada.entry", {
               count: entry.count,

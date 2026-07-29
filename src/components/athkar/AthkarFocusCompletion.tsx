@@ -109,7 +109,7 @@ export const AthkarFocusCompletion = ({
               </VStack>
 
               {/* Session Stats */}
-              <Card padding="$6" borderRadius="$6" width="100%">
+              <Card padding="$6" width="100%">
                 <VStack gap="$3" alignItems="center">
                   <Text color="$typographySecondary" fontWeight="500">
                     {t("athkar.focus.sessionComplete")}

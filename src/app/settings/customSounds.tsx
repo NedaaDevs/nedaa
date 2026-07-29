@@ -211,7 +211,7 @@ export default function CustomSoundsScreen() {
       <ScrollView style={{ flex: 1 }}>
         <VStack gap="$4" padding="$4">
           {/* Info Card */}
-          <Card padding="$5" borderRadius="$6" borderWidth={1} borderColor="$outline">
+          <Card padding="$5" borderWidth={1} borderColor="$outline">
             <HStack gap="$3" alignItems="flex-start">
               <Box
                 width={40}
@@ -271,7 +271,7 @@ export default function CustomSoundsScreen() {
 
           {/* Custom Sounds List */}
           {customSounds.length === 0 ? (
-            <Card padding="$7" borderRadius="$6" borderWidth={1} borderColor="$outline">
+            <Card padding="$7" borderWidth={1} borderColor="$outline">
               <VStack gap="$3" alignItems="center">
                 <Box
                   width={64}
@@ -293,12 +293,7 @@ export default function CustomSoundsScreen() {
           ) : (
             <VStack gap="$3">
               {customSounds.map((sound) => (
-                <Card
-                  key={sound.id}
-                  padding="$4"
-                  borderRadius="$6"
-                  borderWidth={1}
-                  borderColor="$outline">
+                <Card key={sound.id} borderWidth={1} borderColor="$outline">
                   <HStack gap="$3" alignItems="flex-start">
                     <Pressable
                       onPress={() => handleSoundPreview(sound)}

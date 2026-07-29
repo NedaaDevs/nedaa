@@ -119,7 +119,7 @@ const NotificationTypePanel: FC<Props> = ({
 
   return (
     <>
-      <Card variant="grouped" borderRadius="$4" marginHorizontal="$4">
+      <Card variant="grouped" marginHorizontal="$4">
         {/* Header */}
         <Pressable
           onPress={handleToggle}

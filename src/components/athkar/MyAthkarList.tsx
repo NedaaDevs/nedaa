@@ -134,7 +134,7 @@ const MyAthkarList: FC = () => {
               onPress={() => setSelectedGroup({ type: "hisn", group })}
               accessibilityRole="button"
               accessibilityLabel={isArabic ? group.titleAr : group.titleEn}>
-              <Card padding="$4" borderRadius="$6">
+              <Card>
                 <HStack justifyContent="space-between" alignItems="center">
                   <VStack flex={1} gap="$1">
                     <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>
@@ -168,7 +168,7 @@ const MyAthkarList: FC = () => {
               onPress={() => setSelectedGroup({ type: "custom", group })}
               accessibilityRole="button"
               accessibilityLabel={group.title}>
-              <Card padding="$4" borderRadius="$6">
+              <Card>
                 <HStack justifyContent="space-between" alignItems="center">
                   <VStack flex={1} gap="$1">
                     <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>

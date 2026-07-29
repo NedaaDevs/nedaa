@@ -226,7 +226,7 @@ const KeepLocationUpdated = () => {
   return (
     <VStack flex={1} gap="$3">
       {/* Current Location Section */}
-      <Card padding={0} marginTop="$2" borderRadius="$4">
+      <Card variant="grouped" marginTop="$2">
         <Pressable
           onPress={handleManualRefresh}
           disabled={updateState.isUpdating}
@@ -275,7 +275,7 @@ const KeepLocationUpdated = () => {
       </Card>
 
       {/* Keep Location Updated Setting */}
-      <Card padding={0} borderRadius="$4">
+      <Card variant="grouped">
         <Box paddingVertical="$4" paddingHorizontal="$5">
           <HStack justifyContent="space-between" alignItems="center" width="100%">
             <HStack alignItems="center" flex={1} gap="$2">
@@ -307,7 +307,7 @@ const KeepLocationUpdated = () => {
       <InfoModal isVisible={showInfoModal} onClose={() => setShowInfoModal(false)} />
 
       {__DEV__ && (
-        <Card borderRadius="$4" padding="$4">
+        <Card>
           <Button
             size="sm"
             variant="outline"

@@ -358,7 +358,7 @@ const AudioSettings: FC = () => {
             <Text size="sm" fontWeight="600" color="$typographySecondary">
               {t("settings.athkarAudio.accessibility")}
             </Text>
-            <Card borderRadius="$6" padding="$4">
+            <Card>
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
                   <Text fontWeight="500" color="$typography">
@@ -384,7 +384,7 @@ const AudioSettings: FC = () => {
             <Text size="sm" fontWeight="600" color="$typographySecondary">
               {t("settings.athkarAudio.storage")}
             </Text>
-            <Card borderRadius="$6" padding="$4">
+            <Card>
               <VStack gap="$3">
                 {storageBreakdown.length === 0 ? (
                   <Text size="sm" color="$typographySecondary">

@@ -55,7 +55,6 @@ const UmrahResumeBanner = () => {
         marginHorizontal="$2"
         marginBottom="$2"
         padding="$3"
-        borderRadius="$4"
         accessibilityRole="button"
         accessibilityLabel={t("umrah.resumeBanner.a11yLabel", {
           stage: t(currentStage.titleKey),

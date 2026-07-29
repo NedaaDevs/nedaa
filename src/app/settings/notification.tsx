@@ -231,7 +231,7 @@ const NotificationSettings = () => {
         contentContainerStyle={{ paddingBottom: 20 }}>
         <VStack flex={1} gap="$3">
           {/* Master Toggle */}
-          <Card padding={0} marginHorizontal="$4" marginTop="$4" borderRadius="$4">
+          <Card variant="grouped" marginHorizontal="$4" marginTop="$4">
             <HStack padding="$4" justifyContent="space-between" alignItems="center">
               <VStack flex={1}>
                 <Text size="lg" fontWeight="600" color="$typography">

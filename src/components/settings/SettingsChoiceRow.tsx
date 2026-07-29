@@ -34,7 +34,7 @@ const SettingsChoiceRow = <T extends string>({
   const { t } = useTranslation();
 
   return (
-    <Card borderRadius="$6">
+    <Card>
       <VStack gap="$3">
         <VStack>
           <Text fontWeight="500" color="$typography">

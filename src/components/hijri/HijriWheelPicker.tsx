@@ -102,7 +102,6 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
           flex={1}
           onPress={() => setActiveSheet("day")}
           padding="$3"
-          borderRadius="$4"
           flexDirection="row"
           alignItems="center"
           justifyContent="space-between"
@@ -118,7 +117,6 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
           flex={2}
           onPress={() => setActiveSheet("month")}
           padding="$3"
-          borderRadius="$4"
           flexDirection="row"
           alignItems="center"
           justifyContent="space-between"
@@ -134,7 +132,6 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
           flex={1}
           onPress={() => setActiveSheet("year")}
           padding="$3"
-          borderRadius="$4"
           flexDirection="row"
           alignItems="center"
           justifyContent="space-between"

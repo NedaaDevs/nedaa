@@ -107,7 +107,7 @@ const HijriSettings = () => {
       <TopBar title={t("settings.hijri.date.title")} href="/settings/advance" backOnClick />
 
       <Box flex={1} padding="$4">
-        <Card padding="$6" borderRadius="$6" marginBottom="$6">
+        <Card padding="$6" marginBottom="$6">
           <HStack
             alignItems="center"
             justifyContent="center"
@@ -132,8 +132,6 @@ const HijriSettings = () => {
 
         <Card.Pressable
           onPress={() => setShowActionSheet(true)}
-          padding="$4"
-          borderRadius="$4"
           flexDirection="row"
           alignItems="center"
           accessibilityRole="button"

@@ -86,7 +86,7 @@ const StepCard = ({ step }: Props) => {
           accessibilityRole="button"
           accessibilityLabel={`${t(step.titleKey)} — ${t("a11y.umrah.viewReference")}`}
           accessibilityHint={t("a11y.umrah.opensGuideHint")}>
-          <Card padding="$6" borderRadius="$4" style={{ borderCurve: "continuous" }}>
+          <Card padding="$6" style={{ borderCurve: "continuous" }}>
             <VStack gap="$3" alignItems="center">
               <Text size="xl" fontWeight="700" color="$typography" textAlign="center">
                 {t(step.titleKey)}
@@ -113,7 +113,7 @@ const StepCard = ({ step }: Props) => {
   if (step.type === "instruction") {
     return (
       <Box flex={1} justifyContent="center" paddingHorizontal="$4">
-        <Card padding="$6" borderRadius="$4">
+        <Card padding="$6">
           <VStack gap="$3" alignItems="center">
             <Text size="xl" fontWeight="700" color="$typography" textAlign="center">
               {t(step.titleKey)}
@@ -183,13 +183,7 @@ const StepCard = ({ step }: Props) => {
                 {/* Front — Arabic */}
                 <Animated.View
                   style={[{ position: "absolute", width: "100%", minHeight: 180 }, frontStyle]}>
-                  <Card
-                    flex={1}
-                    padding="$4"
-                    borderRadius="$4"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight={180}>
+                  <Card flex={1} justifyContent="center" alignItems="center" minHeight={180}>
                     <Text
                       size="xl"
                       color="$typography"
@@ -204,13 +198,7 @@ const StepCard = ({ step }: Props) => {
                 {/* Back — locale-aware */}
                 <Animated.View
                   style={[{ position: "absolute", width: "100%", minHeight: 180 }, backStyle]}>
-                  <Card
-                    flex={1}
-                    padding="$4"
-                    borderRadius="$4"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight={180}>
+                  <Card flex={1} justifyContent="center" alignItems="center" minHeight={180}>
                     <VStack gap="$2" alignItems="center">
                       <FlipBackContent step={step} locale={locale} isArabic={isArabic} />
                     </VStack>
@@ -283,7 +271,6 @@ const StepCard = ({ step }: Props) => {
                 <Card
                   flex={1}
                   padding="$6"
-                  borderRadius="$4"
                   justifyContent="center"
                   alignItems="center"
                   minHeight={240}>
@@ -304,7 +291,6 @@ const StepCard = ({ step }: Props) => {
                 <Card
                   flex={1}
                   padding="$6"
-                  borderRadius="$4"
                   justifyContent="center"
                   alignItems="center"
                   minHeight={240}>

@@ -5,14 +5,16 @@ import type { GetProps } from "tamagui";
 const CardFrame = styled(YStack, {
   name: "Card",
   backgroundColor: "$backgroundSecondary",
-  borderRadius: "$4",
+  borderRadius: "$6",
   padding: "$4",
 
   variants: {
+    // Radius climbs with padding so a card reads at the same "softness" at any
+    // size. md is the default and matches the grouped list radius.
     size: {
-      sm: { padding: "$3", borderRadius: "$3" },
-      md: { padding: "$4", borderRadius: "$4" },
-      lg: { padding: "$6", borderRadius: "$6" },
+      sm: { padding: "$3", borderRadius: "$4" },
+      md: { padding: "$4", borderRadius: "$6" },
+      lg: { padding: "$6", borderRadius: "$7" },
     },
     variant: {
       // Flat surface. The default: surfaces separate from the page by radius and

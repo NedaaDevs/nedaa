@@ -9,7 +9,6 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon, MailIcon } from "@/components/ui/icon";
@@ -121,25 +120,27 @@ const MailClientsList = ({ onClose }: Props) => {
 
   if (loading) {
     return (
-      <Card
+      <Box
         width="100%"
         height={240}
         alignItems="center"
         justifyContent="center"
-        padding={0}
-        borderRadius={0}>
+        // eslint-disable-next-line no-restricted-syntax -- sheet frame, owns its own surface
+        backgroundColor="$backgroundSecondary">
         <Text color="$typography">{t("loading")}</Text>
-      </Card>
+      </Box>
     );
   }
 
   return (
-    <Card
+    <Box
       width="100%"
       paddingHorizontal="$4"
       paddingVertical="$5"
       borderTopLeftRadius="$7"
-      borderTopRightRadius="$7">
+      borderTopRightRadius="$7"
+      // eslint-disable-next-line no-restricted-syntax -- sheet frame, owns its own surface
+      backgroundColor="$backgroundSecondary">
       <Box width="100%" flexDirection="column" alignItems="center" marginBottom="$4">
         <Text size="xl" fontWeight="600" color="$typography">
           {t("email.clients.selectClient")}
@@ -199,7 +200,7 @@ const MailClientsList = ({ onClose }: Props) => {
           </Text>
         </Pressable>
       </Box>
-    </Card>
+    </Box>
   );
 };
 

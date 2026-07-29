@@ -50,7 +50,7 @@ export const ProviderList: FC = () => {
         <Text size="lg" fontWeight="600" marginBottom="$4" color="$typography">
           {t("providers.title")}
         </Text>
-        <Card borderRadius="$6" padding="$6" alignItems="center">
+        <Card padding="$6" alignItems="center">
           <Spinner size="small" />
           <Text size="sm" color="$typographySecondary" marginTop="$3">
             {t("common.loading")}
@@ -66,7 +66,7 @@ export const ProviderList: FC = () => {
         <Text size="lg" fontWeight="600" marginBottom="$4" color="$typography">
           {t("providers.title")}
         </Text>
-        <Card borderRadius="$6" padding="$6">
+        <Card padding="$6">
           <Text size="sm" color="$typographySecondary" textAlign="center">
             {t("providers.noProvidersAvailable")}
           </Text>
@@ -82,7 +82,7 @@ export const ProviderList: FC = () => {
       </Text>
 
       {error && (
-        <Card borderRadius="$4" padding="$3" marginBottom="$4" borderWidth={1} borderColor="$error">
+        <Card padding="$3" marginBottom="$4" borderWidth={1} borderColor="$error">
           <Text size="sm" color="$error">
             {error}
           </Text>

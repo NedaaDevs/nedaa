@@ -463,8 +463,6 @@ const AlarmSettings = () => {
                 <Card.Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`${alarm.title}. ${alarm.configSummary}`}
-                  padding="$4"
-                  borderRadius="$6"
                   margin="$2"
                   onPress={() => router.push(`/settings/alarm/${alarm.type}` as any)}>
                   <HStack justifyContent="space-between" alignItems="center">

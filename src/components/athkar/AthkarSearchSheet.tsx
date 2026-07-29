@@ -256,13 +256,7 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
 
         <VStack gap="$3" padding="$4" width="100%">
           {/* Search Input */}
-          <Card
-            gap="$2"
-            alignItems="center"
-            flexDirection="row"
-            borderRadius="$4"
-            paddingHorizontal="$3"
-            height={44}>
+          <Card gap="$2" alignItems="center" flexDirection="row" paddingHorizontal="$3" height={44}>
             <Icon as={Search} size="sm" color="$typographySecondary" />
             {/* Plain RN TextInput, not the styled Input: the styled wrapper's text
                 renders invisibly inside the sheet on Android. */}
@@ -313,8 +307,6 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
                   accessibilityRole="button"
                   accessibilityLabel={isArabic ? cat.titleAr : cat.titleEn}>
                   <Card
-                    padding="$4"
-                    borderRadius="$4"
                     flexDirection="row"
                     justifyContent="space-between"
                     alignItems="center"
@@ -384,7 +376,6 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
             bottom={0}
             left={0}
             right={0}
-            padding="$4"
             paddingBottom="$6"
             borderRadius={0}
             borderTopWidth={1}

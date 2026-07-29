@@ -31,7 +31,7 @@ const DiagnosticsDebugScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1} padding="$4" gap="$3">
-          <Card padding="$4" backgroundColor="$backgroundMuted">
+          <Card backgroundColor="$backgroundMuted">
             <Text size="sm" color="$typographySecondary" lineHeight={20}>
               Triggers kill or freeze the app on purpose. After a crash/ANR, relaunch — it lands in
               the crash log and shows the report prompt. iOS native crash/hang need a
@@ -40,7 +40,7 @@ const DiagnosticsDebugScreen = () => {
             </Text>
           </Card>
 
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="md" fontWeight="600" color="$typography">
                 {armed ? "Tap a trigger" : "Arm to enable triggers"}

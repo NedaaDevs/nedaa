@@ -40,8 +40,6 @@ const ImportantDaysScreen = () => {
           {/* Hero: the closest occasion */}
           {closest && (
             <Card
-              borderRadius="$6"
-              padding="$4"
               accessibilityLabel={`${t(closest.i18nKey)}, ${remainingLabel(closest.daysRemaining)}, ${hijriLabel(closest)}, ${expectedLabel(closest.expectedGregorian)}`}>
               <HStack justifyContent="space-between" alignItems="center">
                 <HStack alignItems="center" gap="$3" flexShrink={1} marginEnd="$3">
@@ -87,7 +85,7 @@ const ImportantDaysScreen = () => {
           )}
 
           {/* The rest: compact rows with quiet countdown pills */}
-          <Card borderRadius="$6" paddingHorizontal="$4">
+          <Card paddingHorizontal="$4">
             {rest.map((day, i) => (
               <HStack
                 key={day.id}

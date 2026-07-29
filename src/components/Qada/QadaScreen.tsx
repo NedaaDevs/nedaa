@@ -238,7 +238,7 @@ const QadaScreen = () => {
         {/* Progress Dashboard */}
         <VStack paddingHorizontal="$4" paddingTop="$6" paddingBottom="$4" gap="$5">
           {/* Progress Card */}
-          <Card borderRadius="$6" padding="$6">
+          <Card padding="$6">
             <VStack gap="$4" alignItems="center">
               {/* Main Stats */}
               <VStack gap="$2" alignItems="center" width="100%">
@@ -348,7 +348,7 @@ const QadaScreen = () => {
                 ))}
               </VStack>
 
-              <Card opacity={0.8} borderRadius="$4" padding="$3">
+              <Card opacity={0.8} padding="$3">
                 <Text size="xs" color="$typographySecondary" textAlign="center">
                   {t("qada.swipeHintFull")}
                 </Text>

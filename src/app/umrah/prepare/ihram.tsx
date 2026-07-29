@@ -127,7 +127,7 @@ export default function IhramScreen() {
                 <Text size="md" fontWeight="600" color="$typography">
                   {t("umrah.prepare.ihram.niyyahTitle")}
                 </Text>
-                <Card padding="$4" borderRadius="$3" style={{ borderCurve: "continuous" }}>
+                <Card borderRadius="$3" style={{ borderCurve: "continuous" }}>
                   <Text
                     size="lg"
                     fontWeight="600"
@@ -148,7 +148,7 @@ export default function IhramScreen() {
                 <Text size="sm" color="$typographySecondary">
                   {t("umrah.prepare.ihram.ishtiraatDesc")}
                 </Text>
-                <Card padding="$4" borderRadius="$3" style={{ borderCurve: "continuous" }}>
+                <Card borderRadius="$3" style={{ borderCurve: "continuous" }}>
                   <Text
                     size="lg"
                     fontWeight="600"

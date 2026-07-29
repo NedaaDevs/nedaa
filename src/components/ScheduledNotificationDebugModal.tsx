@@ -8,7 +8,6 @@ import { listScheduledNotifications } from "@/utils/notifications";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -144,13 +143,14 @@ export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
         alignItems="center"
         justifyContent="flex-end"
         padding="$4">
-        <Card
-          padding={0}
+        <Box
           borderTopLeftRadius="$8"
           borderTopRightRadius="$8"
           width="100%"
           maxHeight="85%"
-          minHeight="70%">
+          minHeight="70%"
+          // eslint-disable-next-line no-restricted-syntax -- sheet frame, owns its own surface
+          backgroundColor="$backgroundSecondary">
           {/* Header */}
           <Box padding="$6" borderBottomWidth={1} borderColor="$outline">
             <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
@@ -266,7 +266,7 @@ export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
               </Button>
             </VStack>
           </Box>
-        </Card>
+        </Box>
       </Box>
     </Modal>
   );

@@ -104,7 +104,6 @@ const ImportantDaysCard = () => {
             await selectionHaptic();
             router.push("/important-days");
           }}
-          borderRadius="$6"
           minHeight={72}
           accessibilityRole="button"
           accessibilityLabel={`${t(item.i18nKey)}, ${remainingLabel(item.daysRemaining)}, ${hijriLabel(item)}`}

@@ -59,7 +59,6 @@ export default function PrepareIndexScreen() {
               accessibilityLabel={`${t(card.titleKey)}, ${t(card.subtitleKey)}`}
               accessibilityHint={t("a11y.umrah.opensGuideHint")}>
               <Card
-                padding="$4"
                 borderRadius="$3"
                 flexDirection="row"
                 style={{ borderCurve: "continuous" }}

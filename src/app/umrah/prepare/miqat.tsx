@@ -95,7 +95,6 @@ export default function MiqatScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t("umrah.prepare.miqat.fromOutside")}>
                 <Card
-                  padding="$4"
                   borderRadius="$3"
                   flexDirection="row"
                   style={{ borderCurve: "continuous" }}
@@ -114,7 +113,6 @@ export default function MiqatScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t("umrah.prepare.miqat.fromInside")}>
                 <Card
-                  padding="$4"
                   borderRadius="$3"
                   flexDirection="row"
                   style={{ borderCurve: "continuous" }}
@@ -155,7 +153,6 @@ export default function MiqatScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t(key)}>
                   <Card
-                    padding="$4"
                     borderRadius="$3"
                     flexDirection="row"
                     style={{ borderCurve: "continuous" }}
@@ -201,7 +198,6 @@ export default function MiqatScreen() {
 
               <Card
                 padding="$5"
-                borderRadius="$4"
                 style={{ borderCurve: "continuous" }}
                 gap="$3"
                 alignItems="center"

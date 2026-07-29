@@ -307,7 +307,7 @@ const AlarmDebugScreen = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1} padding="$4" gap="$3">
           {/* Status Card */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Module Status
@@ -384,7 +384,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Authorization */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Authorization
@@ -397,7 +397,7 @@ const AlarmDebugScreen = () => {
 
           {/* Android Permissions */}
           {Platform.OS === "android" && (
-            <Card padding="$4" borderWidth={2} borderColor="$warning">
+            <Card borderWidth={2} borderColor="$warning">
               <VStack gap="$3">
                 <Text size="lg" fontWeight="600" color="$typography">
                   Android Permissions
@@ -486,7 +486,7 @@ const AlarmDebugScreen = () => {
           )}
 
           {/* Test Alarm Settings */}
-          <Card padding="$4" borderWidth={2} borderColor="$primary">
+          <Card borderWidth={2} borderColor="$primary">
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">
@@ -621,7 +621,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Schedule Test Alarms */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Schedule Test Alarm
@@ -646,7 +646,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Test Success Screen */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Success Screen
@@ -667,7 +667,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Streak Sharing */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Streak Sharing
@@ -719,7 +719,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Prayer Time Alarm */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <Text size="lg" fontWeight="600" color="$typography">
                 Prayer Time Alarm
@@ -736,7 +736,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Scheduled Alarms */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">
@@ -777,7 +777,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* AlarmKit Verification (System Level) */}
-          <Card padding="$4">
+          <Card>
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">
@@ -845,7 +845,7 @@ const AlarmDebugScreen = () => {
 
           {/* Last Result */}
           {lastResult && (
-            <Card padding="$4" backgroundColor="$backgroundMuted">
+            <Card backgroundColor="$backgroundMuted">
               <VStack gap="$2">
                 <Text size="sm" fontWeight="600" color="$typography">
                   Last Result
@@ -858,7 +858,7 @@ const AlarmDebugScreen = () => {
           )}
 
           {/* Full Debug Log Export */}
-          <Card padding="$4" borderWidth={2} borderColor="$info">
+          <Card borderWidth={2} borderColor="$info">
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">
@@ -885,7 +885,7 @@ const AlarmDebugScreen = () => {
           </Card>
 
           {/* Persistent Log (survives app kills) */}
-          <Card padding="$4" borderWidth={2} borderColor="$warning">
+          <Card borderWidth={2} borderColor="$warning">
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <Text size="lg" fontWeight="600" color="$typography">

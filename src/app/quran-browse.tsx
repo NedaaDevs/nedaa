@@ -121,7 +121,6 @@ export const BrowseIndex = ({
           flexDirection="row"
           borderWidth={1}
           borderColor="$borderColor"
-          borderRadius="$4"
           paddingHorizontal="$3"
           height={44}>
           <Search color={chrome.subtleText} size={18} />

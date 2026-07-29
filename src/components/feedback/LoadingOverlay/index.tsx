@@ -40,7 +40,7 @@ const LoadingOverlay: FC<Props> = ({
   return (
     <Modal isOpen={visible} onClose={() => {}} size="full">
       <Box flex={1} alignItems="center" justifyContent="center" padding="$6">
-        <Card borderRadius="$6" padding="$8" maxWidth={384} width="100%">
+        <Card padding="$8" maxWidth={384} width="100%">
           <VStack alignItems="center" gap="$6">
             {/* Spinner */}
             <Spinner size="large" />

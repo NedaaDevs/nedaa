@@ -120,7 +120,7 @@ const Header = () => {
   if (!todayTimings || !timing) {
     return (
       <Box margin="$1" borderRadius="$7">
-        <Card padding="$3" borderRadius="$6" marginHorizontal="$2" marginTop="$1">
+        <Card padding="$3" marginHorizontal="$2" marginTop="$1">
           <VStack alignItems="center" marginVertical="$3" gap="$2">
             <SkeletonText style={{ height: 28, width: 128 }} />
             <SkeletonText style={{ height: 20, width: 160 }} />
@@ -182,7 +182,6 @@ const Header = () => {
 
       <Card.Pressable
         padding="$6"
-        borderRadius="$6"
         marginHorizontal="$1"
         marginTop="$2"
         marginBottom="$2"

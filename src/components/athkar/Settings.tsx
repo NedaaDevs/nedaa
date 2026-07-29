@@ -89,7 +89,7 @@ const Settings = () => {
         {/* Notification Settings Section */}
         <VStack gap="$3">
           {/* Morning Athkar Notification */}
-          <Card borderRadius="$6" padding="$4">
+          <Card>
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
@@ -139,7 +139,7 @@ const Settings = () => {
           </Card>
 
           {/* Evening Athkar Notification */}
-          <Card borderRadius="$6" padding="$4">
+          <Card>
             <VStack gap="$3">
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
@@ -212,7 +212,7 @@ const Settings = () => {
           </Box> */}
 
           {/* Show streak Setting */}
-          <Card borderRadius="$6" padding="$4">
+          <Card>
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
                 <Text fontWeight="500" color="$typography">
@@ -232,7 +232,7 @@ const Settings = () => {
 
           {/* Show Translation Setting — only for non-Arabic locales */}
           {!isArabic && (
-            <Card borderRadius="$6" padding="$4">
+            <Card>
               <HStack justifyContent="space-between" alignItems="center">
                 <VStack flex={1} marginEnd="$4">
                   <Text fontWeight="500" color="$typography">
@@ -252,7 +252,7 @@ const Settings = () => {
           )}
 
           {/* Enable short version Setting */}
-          <Card borderRadius="$6" padding="$4">
+          <Card>
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
                 <Text fontWeight="500" color="$typography">
@@ -282,9 +282,7 @@ const Settings = () => {
         <Card.Pressable
           onPress={() => router.push("/settings/athkar-audio" as any)}
           accessibilityRole="button"
-          accessibilityLabel={t("settings.athkarAudio.title")}
-          borderRadius="$6"
-          padding="$4">
+          accessibilityLabel={t("settings.athkarAudio.title")}>
           <HStack justifyContent="space-between" alignItems="center">
             <HStack alignItems="center" gap="$3" flex={1}>
               <Icon as={Volume2} size="md" color="$primary" />

@@ -88,7 +88,7 @@ const AthkarDetailSheet: FC<Props> = ({
             </Text>
 
             {/* Arabic Text */}
-            <Card padding="$4" borderRadius="$4">
+            <Card>
               <Text
                 size="2xl"
                 style={{ writingDirection: "rtl", lineHeight: 40 }}
