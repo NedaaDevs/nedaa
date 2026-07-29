@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 // Components
 import { ActionsheetFlatList } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
@@ -46,7 +47,7 @@ const ThemeList = () => {
   };
 
   return (
-    <Box backgroundColor="$backgroundSecondary" marginTop="$2" borderRadius="$4">
+    <Card variant="grouped" borderRadius="$4" marginTop="$2">
       <ActionsheetFlatList
         data={modeData}
         renderItem={({ item, index }: any) => (
@@ -76,7 +77,7 @@ const ThemeList = () => {
         )}
         keyExtractor={(item: any) => item.id}
       />
-    </Box>
+    </Card>
   );
 };
 

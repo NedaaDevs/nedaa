@@ -5,7 +5,7 @@ import { ScrollView } from "react-native";
 import { Background } from "@/components/ui/background";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { Pressable } from "@/components/ui/pressable";
+import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -107,11 +107,8 @@ export default function ToolsScreen() {
           <HStack flexWrap="wrap" gap="$2">
             {TOOLS.map((tool) => (
               <Box key={tool.id} width="48.5%">
-                <Pressable
+                <Card.Pressable
                   onPress={() => handleToolPress(tool.route)}
-                  padding="$4"
-                  borderRadius="$4"
-                  backgroundColor="$backgroundSecondary"
                   height={150}
                   justifyContent="space-between"
                   accessibilityRole="button"
@@ -139,7 +136,7 @@ export default function ToolsScreen() {
                       <ProgressRing progress={tool.getProgress?.() ?? 0} size="sm" />
                     </Box>
                   )}
-                </Pressable>
+                </Card.Pressable>
               </Box>
             ))}
           </HStack>

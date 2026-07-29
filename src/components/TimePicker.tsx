@@ -4,6 +4,7 @@ import { ScrollView } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -77,8 +78,7 @@ const TimePicker = ({
       alignItems="center"
       accessibilityRole="none"
       accessibilityViewIsModal={true}>
-      <Box
-        backgroundColor="$backgroundSecondary"
+      <Card
         borderRadius="$8"
         padding="$6"
         marginHorizontal="$4"
@@ -246,7 +246,7 @@ const TimePicker = ({
             </Button.Text>
           </Button>
         </VStack>
-      </Box>
+      </Card>
     </Box>
   );
 };

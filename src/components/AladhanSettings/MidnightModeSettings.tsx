@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 // Components
 import { Select } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { Spinner } from "@/components/ui/spinner";
@@ -65,16 +66,12 @@ export const MidnightModeSettings: FC = () => {
         <Text fontSize="$5" fontWeight="600" marginBottom="$4" color="$typography">
           {t("providers.aladhan.midnightMode.title")}
         </Text>
-        <Box
-          backgroundColor="$backgroundSecondary"
-          borderRadius="$6"
-          padding="$6"
-          alignItems="center">
+        <Card borderRadius="$6" padding="$6" alignItems="center">
           <Spinner size="small" />
           <Text fontSize="$2" color="$typographySecondary" marginTop="$3">
             {t("common.loading")}
           </Text>
-        </Box>
+        </Card>
       </Box>
     );
   }
@@ -86,17 +83,11 @@ export const MidnightModeSettings: FC = () => {
       </Text>
 
       {error && (
-        <Box
-          backgroundColor="$backgroundSecondary"
-          borderRadius="$4"
-          padding="$3"
-          marginBottom="$4"
-          borderWidth={1}
-          borderColor="$error">
+        <Card borderRadius="$4" padding="$3" marginBottom="$4" borderWidth={1} borderColor="$error">
           <Text fontSize="$2" color="$error">
             {error}
           </Text>
-        </Box>
+        </Card>
       )}
 
       <Select

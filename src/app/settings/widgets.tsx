@@ -10,6 +10,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -167,11 +168,7 @@ const WidgetCard = ({
   };
 
   return (
-    <Box
-      borderRadius="$7"
-      backgroundColor="$backgroundSecondary"
-      borderWidth={1}
-      borderColor="$outline">
+    <Card variant="grouped" borderRadius="$7" borderWidth={1} borderColor="$outline">
       {/* Header row - tappable */}
       <Pressable
         onPress={toggleExpand}
@@ -218,7 +215,7 @@ const WidgetCard = ({
           </Button>
         </VStack>
       )}
-    </Box>
+    </Card>
   );
 };
 
@@ -276,11 +273,10 @@ const WidgetSettings = () => {
 
           {/* iOS info note */}
           {Platform.OS === PlatformType.IOS && (
-            <HStack
+            <Card
+              flexDirection="row"
               gap="$3"
-              padding="$4"
               borderRadius="$7"
-              backgroundColor="$backgroundSecondary"
               borderWidth={1}
               borderColor="$outline"
               alignItems="flex-start">
@@ -288,11 +284,11 @@ const WidgetSettings = () => {
               <Text size="sm" flex={1}>
                 {t("settings.widgets.iosNote")}
               </Text>
-            </HStack>
+            </Card>
           )}
 
           {/* Manual escape hatch: rebuild every widget timeline from current data. */}
-          <Pressable
+          <Card.Pressable
             onPress={() => {
               // WidgetKit reloads have no completion callback, so "refreshed" means
               // the request was submitted — but a missing native module is a
@@ -305,9 +301,7 @@ const WidgetSettings = () => {
               refreshAllWidgets();
               showToast(t("settings.widgets.refreshed"), "success");
             }}
-            padding="$4"
             borderRadius="$7"
-            backgroundColor="$backgroundSecondary"
             borderWidth={1}
             borderColor="$outline"
             accessibilityRole="button"
@@ -323,7 +317,7 @@ const WidgetSettings = () => {
                 </Text>
               </VStack>
             </HStack>
-          </Pressable>
+          </Card.Pressable>
 
           {/* Battery optimization banner (Android only) */}
           {Platform.OS === PlatformType.ANDROID && !batteryOptDisabled && (
@@ -351,12 +345,12 @@ const WidgetSettings = () => {
           )}
 
           {Platform.OS === PlatformType.ANDROID && batteryOptDisabled && (
-            <HStack
+            <Card
+              flexDirection="row"
               gap="$2"
               paddingHorizontal="$4"
               paddingVertical="$3"
               borderRadius="$7"
-              backgroundColor="$backgroundSecondary"
               borderWidth={1}
               borderColor="$outline"
               alignItems="center">
@@ -364,7 +358,7 @@ const WidgetSettings = () => {
               <Text size="xs" color="$typographySecondary" flex={1}>
                 {t("settings.widgets.batteryOptDone")}
               </Text>
-            </HStack>
+            </Card>
           )}
 
           {/* Android widget list */}

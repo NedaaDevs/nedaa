@@ -4,6 +4,7 @@ import { ScrollView } from "react-native";
 import TimingItem from "@/components/TimingItem";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { EmptyState } from "@/components/feedback";
 
@@ -61,11 +62,7 @@ const PrayerTimesList = () => {
           paddingTop: 10,
         }}
         showsVerticalScrollIndicator={false}>
-        <Box
-          marginHorizontal="$4"
-          borderRadius="$6"
-          overflow="hidden"
-          backgroundColor="$backgroundSecondary">
+        <Card variant="grouped" marginHorizontal="$4">
           {Array.from({ length: 5 }).map((_, index) => (
             <Box key={`prayer-skeleton-${index}`}>
               <HStack padding="$4" justifyContent="space-between" alignItems="center">
@@ -75,10 +72,10 @@ const PrayerTimesList = () => {
                 </HStack>
                 <SkeletonText style={{ height: 20, width: 64 }} />
               </HStack>
-              {index < 4 && <Box height={1} backgroundColor="$outline" marginStart={46} />}
+              {index < 4 && <Card.Divider marginStart={46} />}
             </Box>
           ))}
-        </Box>
+        </Card>
       </ScrollView>
     );
   }
@@ -97,11 +94,7 @@ const PrayerTimesList = () => {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
         scrollEnabled={true}>
-        <Box
-          marginHorizontal="$4"
-          borderRadius="$6"
-          overflow="hidden"
-          backgroundColor="$backgroundSecondary">
+        <Card variant="grouped" marginHorizontal="$4">
           {Object.entries(todayTimings.timings).map(([prayer, time], index, rows) => {
             const prayerName = prayer as PrayerName;
             const isNext = displayNextPrayerName === prayer;
@@ -121,7 +114,7 @@ const PrayerTimesList = () => {
               />
             );
           })}
-        </Box>
+        </Card>
       </ScrollView>
     )
   );

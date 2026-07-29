@@ -4,6 +4,7 @@ import { router } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -45,11 +46,7 @@ const AthanPlaybackSettings = () => {
         contentContainerStyle={{ paddingBottom: 20 }}>
         <VStack flex={1} gap="$3" paddingTop="$4">
           {/* Full Athan Playback */}
-          <Box
-            backgroundColor="$backgroundSecondary"
-            marginHorizontal="$4"
-            borderRadius="$4"
-            padding="$4">
+          <Card marginHorizontal="$4">
             <HStack justifyContent="space-between" alignItems="center">
               <HStack gap="$3" alignItems="center" flex={1}>
                 <Icon color="$primary" size="lg" as={Play} />
@@ -72,15 +69,11 @@ const AthanPlaybackSettings = () => {
                 accessibilityLabel={t("notification.fullAthanPlayback")}
               />
             </HStack>
-          </Box>
+          </Card>
 
           {/* Respect Silent Mode (only when full athan is on) */}
           {fullAthanPlayback && (
-            <Box
-              backgroundColor="$backgroundSecondary"
-              marginHorizontal="$4"
-              borderRadius="$4"
-              padding="$4">
+            <Card marginHorizontal="$4">
               <HStack justifyContent="space-between" alignItems="center">
                 <HStack gap="$3" alignItems="center" flex={1}>
                   <Icon color="$primary" size="lg" as={VolumeX} />
@@ -103,15 +96,11 @@ const AthanPlaybackSettings = () => {
                   accessibilityLabel={t("notification.respectSilentMode")}
                 />
               </HStack>
-            </Box>
+            </Card>
           )}
 
           {/* Full Iqama Playback */}
-          <Box
-            backgroundColor="$backgroundSecondary"
-            marginHorizontal="$4"
-            borderRadius="$4"
-            padding="$4">
+          <Card marginHorizontal="$4">
             <HStack justifyContent="space-between" alignItems="center">
               <HStack gap="$3" alignItems="center" flex={1}>
                 <Icon color="$primary" size="lg" as={Play} />
@@ -134,15 +123,11 @@ const AthanPlaybackSettings = () => {
                 accessibilityLabel={t("notification.fullIqamaPlayback")}
               />
             </HStack>
-          </Box>
+          </Card>
 
           {/* Iqama Respect Silent Mode */}
           {fullIqamaPlayback && (
-            <Box
-              backgroundColor="$backgroundSecondary"
-              marginHorizontal="$4"
-              borderRadius="$4"
-              padding="$4">
+            <Card marginHorizontal="$4">
               <HStack justifyContent="space-between" alignItems="center">
                 <HStack gap="$3" alignItems="center" flex={1}>
                   <Icon color="$primary" size="lg" as={VolumeX} />
@@ -165,7 +150,7 @@ const AthanPlaybackSettings = () => {
                   accessibilityLabel={t("notification.iqamaRespectSilentMode")}
                 />
               </HStack>
-            </Box>
+            </Card>
           )}
 
           {/* Custom Sounds */}

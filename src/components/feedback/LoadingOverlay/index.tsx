@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 // Components
 import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -39,12 +40,7 @@ const LoadingOverlay: FC<Props> = ({
   return (
     <Modal isOpen={visible} onClose={() => {}} size="full">
       <Box flex={1} alignItems="center" justifyContent="center" padding="$6">
-        <Box
-          backgroundColor="$backgroundSecondary"
-          borderRadius="$6"
-          padding="$8"
-          maxWidth={384}
-          width="100%">
+        <Card borderRadius="$6" padding="$8" maxWidth={384} width="100%">
           <VStack alignItems="center" gap="$6">
             {/* Spinner */}
             <Spinner size="large" />
@@ -94,7 +90,7 @@ const LoadingOverlay: FC<Props> = ({
               </Button>
             )}
           </VStack>
-        </Box>
+        </Card>
       </Box>
     </Modal>
   );

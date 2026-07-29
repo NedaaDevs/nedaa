@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import * as Application from "expo-application";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -459,12 +460,11 @@ const AlarmSettings = () => {
           <VStack marginHorizontal="$2">
             {alarmTypes.map((alarm, index) => (
               <Box key={alarm.type}>
-                <Pressable
+                <Card.Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`${alarm.title}. ${alarm.configSummary}`}
                   padding="$4"
                   borderRadius="$6"
-                  backgroundColor="$backgroundSecondary"
                   margin="$2"
                   onPress={() => router.push(`/settings/alarm/${alarm.type}` as any)}>
                   <HStack justifyContent="space-between" alignItems="center">
@@ -523,7 +523,7 @@ const AlarmSettings = () => {
                       style={isRTL ? { transform: [{ rotate: "180deg" }] } : undefined}
                     />
                   </HStack>
-                </Pressable>
+                </Card.Pressable>
 
                 {index < alarmTypes.length - 1 && <Divider marginHorizontal="$6" />}
               </Box>

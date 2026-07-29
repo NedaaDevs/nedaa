@@ -226,7 +226,7 @@ const KeepLocationUpdated = () => {
   return (
     <VStack flex={1} gap="$3">
       {/* Current Location Section */}
-      <Box backgroundColor="$backgroundSecondary" marginTop="$2" borderRadius="$4">
+      <Card padding={0} marginTop="$2" borderRadius="$4">
         <Pressable
           onPress={handleManualRefresh}
           disabled={updateState.isUpdating}
@@ -272,10 +272,10 @@ const KeepLocationUpdated = () => {
             </Text>
           </Box>
         )}
-      </Box>
+      </Card>
 
       {/* Keep Location Updated Setting */}
-      <Box backgroundColor="$backgroundSecondary" borderRadius="$4">
+      <Card padding={0} borderRadius="$4">
         <Box paddingVertical="$4" paddingHorizontal="$5">
           <HStack justifyContent="space-between" alignItems="center" width="100%">
             <HStack alignItems="center" flex={1} gap="$2">
@@ -302,12 +302,12 @@ const KeepLocationUpdated = () => {
             />
           </HStack>
         </Box>
-      </Box>
+      </Card>
 
       <InfoModal isVisible={showInfoModal} onClose={() => setShowInfoModal(false)} />
 
       {__DEV__ && (
-        <Box backgroundColor="$backgroundSecondary" borderRadius="$4" padding="$4">
+        <Card borderRadius="$4" padding="$4">
           <Button
             size="sm"
             variant="outline"
@@ -324,7 +324,7 @@ const KeepLocationUpdated = () => {
             accessibilityLabel="Simulate city change">
             <Button.Text>DEV: Simulate City Change</Button.Text>
           </Button>
-        </Box>
+        </Card>
       )}
     </VStack>
   );

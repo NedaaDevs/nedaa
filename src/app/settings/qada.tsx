@@ -22,6 +22,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
@@ -332,17 +333,15 @@ const QadaSettings = () => {
               ].map((option) => {
                 const isSelected = tempReminderType === option.value;
                 return (
-                  <Pressable
+                  <Card.Pressable
                     key={option.value}
                     onPress={() => setTempReminderType(option.value as any)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
                     accessibilityLabel={option.label}
-                    padding="$4"
                     borderRadius="$6"
                     borderWidth={1}
-                    borderColor={isSelected ? "$primary" : "$outline"}
-                    backgroundColor="$backgroundSecondary">
+                    borderColor={isSelected ? "$primary" : "$outline"}>
                     <HStack alignItems="center" justifyContent="space-between">
                       <HStack alignItems="center" flex={1} gap="$3">
                         <Icon
@@ -368,13 +367,14 @@ const QadaSettings = () => {
                             width={10}
                             height={10}
                             borderRadius={999}
+                            // eslint-disable-next-line no-restricted-syntax -- radio dot fill, not a card surface
                             backgroundColor="$backgroundSecondary"
                             margin="auto"
                           />
                         )}
                       </Box>
                     </HStack>
-                  </Pressable>
+                  </Card.Pressable>
                 );
               })}
             </VStack>
@@ -478,11 +478,10 @@ const QadaSettings = () => {
               <Text size="sm" fontWeight="500" color="$typography" marginBottom="$1">
                 {t("qada.customDate")}
               </Text>
-              <Pressable
+              <Card.Pressable
                 onPress={() => setShowDatePicker(true)}
                 accessibilityRole="button"
                 accessibilityLabel={t("a11y.qada.selectDate")}
-                backgroundColor="$backgroundSecondary"
                 borderWidth={1}
                 borderColor="$outline"
                 borderRadius="$4"
@@ -506,7 +505,7 @@ const QadaSettings = () => {
                   </Text>
                   <Icon as={CalendarDays} size="sm" color="$typographySecondary" />
                 </HStack>
-              </Pressable>
+              </Card.Pressable>
               {tempCustomDate && new Date(tempCustomDate) < new Date() && (
                 <HStack alignItems="center" marginTop="$1" gap="$1">
                   <Icon as={Info} size="xs" color="$warning" />
@@ -572,12 +571,7 @@ const QadaSettings = () => {
               </Pressable>
 
               {/* Privacy Example */}
-              <Box
-                padding="$3"
-                backgroundColor="$backgroundSecondary"
-                borderRadius="$6"
-                borderWidth={1}
-                borderColor="$outline">
+              <Card padding="$3" borderRadius="$6" borderWidth={1} borderColor="$outline">
                 <VStack gap="$1">
                   <Text size="xs" fontWeight="500" color="$typographySecondary">
                     {tempPrivacyMode ? t("qada.privacyEnabled") : t("qada.privacyDisabled")} -{" "}
@@ -591,7 +585,7 @@ const QadaSettings = () => {
                         )}
                   </Text>
                 </VStack>
-              </Box>
+              </Card>
             </VStack>
           )}
 

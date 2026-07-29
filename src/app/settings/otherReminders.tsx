@@ -5,6 +5,7 @@ import { parseISO, addMinutes } from "date-fns";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -93,11 +94,7 @@ const OtherRemindersSettings = () => {
               </Text>
 
               {/* Grouped Card */}
-              <Box
-                backgroundColor="$backgroundSecondary"
-                marginHorizontal="$4"
-                borderRadius="$4"
-                overflow="hidden">
+              <Card padding={0} marginHorizontal="$4" borderRadius="$4" overflow="hidden">
                 {group.items.map((timingId, index) => (
                   <Box key={timingId}>
                     <HStack
@@ -223,7 +220,7 @@ const OtherRemindersSettings = () => {
                     )}
                   </Box>
                 ))}
-              </Box>
+              </Card>
 
               {/* Section Footer */}
               {group.descriptionKey && (

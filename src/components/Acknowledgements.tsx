@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -58,12 +59,7 @@ const Acknowledgements = () => {
         {quranUnlocked &&
           CREDITS.map((credit, index) => (
             <Animated.View key={credit.titleKey} entering={enter(index)}>
-              <Box
-                padding="$5"
-                borderRadius="$4"
-                backgroundColor="$backgroundSecondary"
-                borderWidth={1}
-                borderColor="$borderColor">
+              <Card padding="$5" borderRadius="$4" borderWidth={1} borderColor="$borderColor">
                 <VStack gap="$3.5">
                   <HStack alignItems="center" gap="$3">
                     <Box
@@ -112,7 +108,7 @@ const Acknowledgements = () => {
                     ))}
                   </HStack>
                 </VStack>
-              </Box>
+              </Card>
             </Animated.View>
           ))}
 
@@ -120,12 +116,7 @@ const Acknowledgements = () => {
             mixed-script list needs no RTL/LTR alignment. */}
         {SHOW_CONTRIBUTORS && (
           <Animated.View entering={enter(creditsCount)}>
-            <Box
-              padding="$5"
-              borderRadius="$4"
-              backgroundColor="$backgroundSecondary"
-              borderWidth={1}
-              borderColor="$borderColor">
+            <Card padding="$5" borderRadius="$4" borderWidth={1} borderColor="$borderColor">
               <VStack gap="$3.5">
                 <Pressable
                   onPress={toggleContributors}
@@ -165,19 +156,14 @@ const Acknowledgements = () => {
                   </VStack>
                 )}
               </VStack>
-            </Box>
+            </Card>
           </Animated.View>
         )}
 
         {/* Closing: gratitude to the sources and the user, then an open invite
             to contribute (any kind of help), routing to the Contact screen. */}
         <Animated.View entering={enter(SHOW_CONTRIBUTORS ? creditsCount + 1 : creditsCount)}>
-          <Box
-            padding="$5"
-            borderRadius="$4"
-            backgroundColor="$backgroundSecondary"
-            borderWidth={1}
-            borderColor="$borderColor">
+          <Card padding="$5" borderRadius="$4" borderWidth={1} borderColor="$borderColor">
             <VStack gap="$4">
               <Text size="md" color="$typography" lineHeight={24}>
                 {t("settings.acknowledgements.thanks")}
@@ -207,7 +193,7 @@ const Acknowledgements = () => {
                 </HStack>
               </Pressable>
             </VStack>
-          </Box>
+          </Card>
         </Animated.View>
       </VStack>
     </ScrollView>

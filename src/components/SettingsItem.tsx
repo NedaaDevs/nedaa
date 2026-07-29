@@ -7,6 +7,7 @@ import { useRTL } from "@/contexts/RTLContext";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
@@ -35,7 +36,7 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
   const a11yLabel = currentValue ? t("a11y.settingsItem", { name, value: currentValue }) : name;
 
   return (
-    <Box margin="$2" padding="$5" borderRadius="$4" backgroundColor="$backgroundSecondary">
+    <Card margin="$2" padding="$5">
       <Link href={path} asChild>
         <Pressable
           flexDirection="row"
@@ -70,7 +71,7 @@ const SettingsItem = ({ name, path, icon, currentValue, rtl }: Props) => {
           </HStack>
         </Pressable>
       </Link>
-    </Box>
+    </Card>
   );
 };
 

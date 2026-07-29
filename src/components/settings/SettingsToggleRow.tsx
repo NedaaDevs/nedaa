@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
-import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -35,7 +35,7 @@ const SettingsToggleRow = ({
   const { t } = useTranslation();
 
   return (
-    <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+    <Card borderRadius="$6">
       <VStack gap="$3">
         <HStack justifyContent="space-between" alignItems="center" width="100%">
           <VStack flexShrink={1} marginEnd="$4">
@@ -55,7 +55,7 @@ const SettingsToggleRow = ({
         </HStack>
         {children}
       </VStack>
-    </Box>
+    </Card>
   );
 };
 

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 // Components
-import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -34,7 +34,7 @@ const SettingsChoiceRow = <T extends string>({
   const { t } = useTranslation();
 
   return (
-    <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$4">
+    <Card borderRadius="$6">
       <VStack gap="$3">
         <VStack>
           <Text fontWeight="500" color="$typography">
@@ -77,7 +77,7 @@ const SettingsChoiceRow = <T extends string>({
           })}
         </HStack>
       </VStack>
-    </Box>
+    </Card>
   );
 };
 

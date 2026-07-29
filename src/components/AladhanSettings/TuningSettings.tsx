@@ -16,6 +16,7 @@ import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -161,7 +162,7 @@ export const TuningSettings: FC = () => {
         </Text>
 
         {/* Input-like button to open tuning modal */}
-        <Box backgroundColor="$backgroundSecondary" borderRadius="$6">
+        <Card padding={0} borderRadius="$6">
           <Pressable
             onPress={openTuningModal}
             disabled={isLoading}
@@ -184,7 +185,7 @@ export const TuningSettings: FC = () => {
 
             <Icon as={ChevronDownIcon} size={16} color="$accentPrimary" />
           </Pressable>
-        </Box>
+        </Card>
       </Box>
 
       {/* Tuning Modal */}

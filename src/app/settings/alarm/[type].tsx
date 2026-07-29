@@ -55,12 +55,7 @@ type SettingsSectionProps = {
 };
 
 const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
-  <Card
-    marginHorizontal="$4"
-    marginBottom="$4"
-    padding="$4"
-    borderRadius="$8"
-    backgroundColor="$backgroundSecondary">
+  <Card marginHorizontal="$4" marginBottom="$4" padding="$4" borderRadius="$8">
     <VStack gap="$3">
       <HStack alignItems="center" gap="$2">
         <Box
@@ -234,12 +229,7 @@ const AlarmTypeSettingsScreen = () => {
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1} paddingTop="$4">
           {/* Enable Toggle */}
-          <Card
-            marginHorizontal="$4"
-            marginBottom="$4"
-            padding="$4"
-            borderRadius="$8"
-            backgroundColor="$backgroundSecondary">
+          <Card marginHorizontal="$4" marginBottom="$4" padding="$4" borderRadius="$8">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
                 <Text size="lg" fontWeight="600" color="$typography">

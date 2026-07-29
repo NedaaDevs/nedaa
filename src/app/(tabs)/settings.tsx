@@ -23,6 +23,7 @@ import { useTheme } from "tamagui";
 // Components
 import { Background } from "@/components/ui/background";
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
@@ -327,7 +328,7 @@ const SettingsScreen = () => {
 
         {/* Rate & Share */}
         <HStack marginHorizontal="$2" marginTop="$2" gap="$2">
-          <Box flex={1} padding="$4" borderRadius="$4" backgroundColor="$backgroundSecondary">
+          <Card flex={1}>
             <Pressable
               onPress={handleRate}
               alignItems="center"
@@ -358,8 +359,8 @@ const SettingsScreen = () => {
                 </Animated.View>
               )}
             </Pressable>
-          </Box>
-          <Box flex={1} padding="$4" borderRadius="$4" backgroundColor="$backgroundSecondary">
+          </Card>
+          <Card flex={1}>
             <Pressable
               onPress={handleShare}
               onLongPress={handleShareLongPress}
@@ -394,7 +395,7 @@ const SettingsScreen = () => {
                 </Animated.View>
               )}
             </Pressable>
-          </Box>
+          </Card>
         </HStack>
 
         {/* Footer */}

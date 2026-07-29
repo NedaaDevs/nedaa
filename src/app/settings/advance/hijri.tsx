@@ -8,10 +8,10 @@ import { useLocationStore } from "@/stores/location";
 
 // Components
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
 import {
@@ -107,11 +107,7 @@ const HijriSettings = () => {
       <TopBar title={t("settings.hijri.date.title")} href="/settings/advance" backOnClick />
 
       <Box flex={1} padding="$4">
-        <Box
-          backgroundColor="$backgroundSecondary"
-          padding="$6"
-          borderRadius="$6"
-          marginBottom="$6">
+        <Card padding="$6" borderRadius="$6" marginBottom="$6">
           <HStack
             alignItems="center"
             justifyContent="center"
@@ -128,15 +124,14 @@ const HijriSettings = () => {
               </Text>
             </VStack>
           </HStack>
-        </Box>
+        </Card>
 
         <Text size="xl" fontWeight="600" color="$typography" marginBottom="$4">
           {t("settings.hijri.date.adjustmentTitle")}
         </Text>
 
-        <Pressable
+        <Card.Pressable
           onPress={() => setShowActionSheet(true)}
-          backgroundColor="$backgroundSecondary"
           padding="$4"
           borderRadius="$4"
           flexDirection="row"
@@ -154,7 +149,7 @@ const HijriSettings = () => {
             </VStack>
             <Icon as={ChevronDown} color="$typographySecondary" size="lg" />
           </HStack>
-        </Pressable>
+        </Card.Pressable>
       </Box>
 
       <Actionsheet isOpen={showActionSheet} onClose={() => setShowActionSheet(false)}>

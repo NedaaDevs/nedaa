@@ -21,7 +21,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import { Pressable } from "@/components/ui/pressable";
+import { Card } from "@/components/ui/card";
 import PreviousPrayer from "@/components/PreviousPrayer";
 import { SkeletonText } from "@/components/ui/skeleton";
 
@@ -120,17 +120,12 @@ const Header = () => {
   if (!todayTimings || !timing) {
     return (
       <Box margin="$1" borderRadius="$7">
-        <Box
-          padding="$3"
-          borderRadius="$6"
-          marginHorizontal="$2"
-          marginTop="$1"
-          backgroundColor="$backgroundSecondary">
+        <Card padding="$3" borderRadius="$6" marginHorizontal="$2" marginTop="$1">
           <VStack alignItems="center" marginVertical="$3" gap="$2">
             <SkeletonText style={{ height: 28, width: 128 }} />
             <SkeletonText style={{ height: 20, width: 160 }} />
           </VStack>
-        </Box>
+        </Card>
       </Box>
     );
   }
@@ -185,9 +180,8 @@ const Header = () => {
 
       <PreviousPrayer />
 
-      <Pressable
+      <Card.Pressable
         padding="$6"
-        backgroundColor="$backgroundSecondary"
         borderRadius="$6"
         marginHorizontal="$1"
         marginTop="$2"
@@ -227,7 +221,7 @@ const Header = () => {
             </Box>
           </VStack>
         </HStack>
-      </Pressable>
+      </Card.Pressable>
     </Box>
   );
 };

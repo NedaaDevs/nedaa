@@ -316,7 +316,7 @@ const FeedbackScreen = () => {
           {/* Diagnostics (crash/bug) */}
           {supportsLogs ? (
             <Animated.View entering={enter(3)}>
-              <Card padding="$3" backgroundColor="$backgroundSecondary">
+              <Card padding="$3">
                 <VStack gap="$2">
                   <HStack alignItems="center" justifyContent="space-between" gap="$3">
                     <HStack gap="$2" alignItems="center" flexShrink={1}>
@@ -507,12 +507,11 @@ const FeedbackScreen = () => {
                         </Pressable>
                       </HStack>
                     ) : (
-                      <Pressable
+                      <Card.Pressable
                         onPress={onPickImage}
                         disabled={submitting}
                         borderWidth={1}
                         borderColor="$borderColor"
-                        backgroundColor="$backgroundSecondary"
                         borderRadius="$4"
                         paddingVertical="$3"
                         paddingHorizontal="$3"
@@ -524,7 +523,7 @@ const FeedbackScreen = () => {
                             {t("feedback.image.add")}
                           </Text>
                         </HStack>
-                      </Pressable>
+                      </Card.Pressable>
                     )}
                     {imageError ? (
                       <Text size="xs" color="$error" accessibilityLiveRegion="polite">

@@ -8,6 +8,7 @@ import { listScheduledNotifications } from "@/utils/notifications";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -143,8 +144,8 @@ export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
         alignItems="center"
         justifyContent="flex-end"
         padding="$4">
-        <Box
-          backgroundColor="$backgroundSecondary"
+        <Card
+          padding={0}
           borderTopLeftRadius="$8"
           borderTopRightRadius="$8"
           width="100%"
@@ -265,7 +266,7 @@ export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
               </Button>
             </VStack>
           </Box>
-        </Box>
+        </Card>
       </Box>
     </Modal>
   );

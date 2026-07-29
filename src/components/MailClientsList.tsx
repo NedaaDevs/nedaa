@@ -9,6 +9,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon, MailIcon } from "@/components/ui/icon";
@@ -120,23 +121,23 @@ const MailClientsList = ({ onClose }: Props) => {
 
   if (loading) {
     return (
-      <Box
+      <Card
         width="100%"
         height={240}
         alignItems="center"
         justifyContent="center"
-        backgroundColor="$backgroundSecondary">
+        padding={0}
+        borderRadius={0}>
         <Text color="$typography">{t("loading")}</Text>
-      </Box>
+      </Card>
     );
   }
 
   return (
-    <Box
+    <Card
       width="100%"
       paddingHorizontal="$4"
       paddingVertical="$5"
-      backgroundColor="$backgroundSecondary"
       borderTopLeftRadius="$7"
       borderTopRightRadius="$7">
       <Box width="100%" flexDirection="column" alignItems="center" marginBottom="$4">
@@ -198,7 +199,7 @@ const MailClientsList = ({ onClose }: Props) => {
           </Text>
         </Pressable>
       </Box>
-    </Box>
+    </Card>
   );
 };
 

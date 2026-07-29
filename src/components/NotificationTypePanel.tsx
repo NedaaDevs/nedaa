@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -118,7 +119,7 @@ const NotificationTypePanel: FC<Props> = ({
 
   return (
     <>
-      <Box backgroundColor="$backgroundSecondary" marginHorizontal="$4" borderRadius="$4">
+      <Card variant="grouped" borderRadius="$4" marginHorizontal="$4">
         {/* Header */}
         <Pressable
           onPress={handleToggle}
@@ -194,7 +195,9 @@ const NotificationTypePanel: FC<Props> = ({
                         onPress={() => openCustomization(prayer.id)}
                         accessibilityRole="button"
                         padding="$2"
-                        accessibilityLabel={t("a11y.notification.customize", { name: t(prayer.name) })}
+                        accessibilityLabel={t("a11y.notification.customize", {
+                          name: t(prayer.name),
+                        })}
                         accessibilityHint={t("a11y.notification.customizeHint")}>
                         <Icon color="$typographySecondary" size="md" as={Settings} />
                       </Pressable>
@@ -205,7 +208,7 @@ const NotificationTypePanel: FC<Props> = ({
             }
           </VStack>
         )}
-      </Box>
+      </Card>
 
       {/* Customization Modal */}
       {modalPrayer && (

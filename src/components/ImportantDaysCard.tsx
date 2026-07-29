@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { Pressable } from "@/components/ui/pressable";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 
@@ -99,14 +99,12 @@ const ImportantDaysCard = () => {
   return (
     <VStack paddingHorizontal="$4" paddingBottom="$2" gap="$1">
       <GestureDetector gesture={flings}>
-        <Pressable
+        <Card.Pressable
           onPress={async () => {
             await selectionHaptic();
             router.push("/important-days");
           }}
-          padding="$4"
           borderRadius="$6"
-          backgroundColor="$backgroundSecondary"
           minHeight={72}
           accessibilityRole="button"
           accessibilityLabel={`${t(item.i18nKey)}, ${remainingLabel(item.daysRemaining)}, ${hijriLabel(item)}`}
@@ -140,7 +138,7 @@ const ImportantDaysCard = () => {
               )}
             </HStack>
           </Animated.View>
-        </Pressable>
+        </Card.Pressable>
       </GestureDetector>
       <HStack justifyContent="center" gap="$1" accessibilityElementsHidden>
         {days.map((d, i) => (
