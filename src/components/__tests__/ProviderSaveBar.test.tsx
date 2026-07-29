@@ -1,33 +1,44 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 
-import AladhanSettings from "@/components/AladhanSettings";
+import { ProviderSaveBar } from "@/components/ProviderSaveBar";
 
 const mockLoadPrayerTimes = jest.fn(() => Promise.resolve());
-// Mirrors the store: the dirty flag survives the save and is cleared by the caller
-// once the whole apply pipeline has landed.
-let mockIsModified = true;
 const mockSaveSettings = jest.fn(() => Promise.resolve());
-const mockMarkSettingsApplied = jest.fn(() => {
-  mockIsModified = false;
-});
+const mockMarkSettingsApplied = jest.fn();
 const mockScheduleNotifications = jest.fn(() => Promise.resolve());
 const mockRescheduleAlarms = jest.fn(() => Promise.resolve());
 const mockReloadPrayerWidgets = jest.fn();
 const mockShowError = jest.fn();
 
+let mockIsModified = true;
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock("@/hooks/useHaptic", () => ({
-  useHaptic: () => jest.fn(),
+jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
 }));
 
 jest.mock("@/components/ui/box", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View: RNView } = require("react-native");
   return { Box: RNView };
+});
+
+jest.mock("@/components/ui/hstack", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View: RNView } = require("react-native");
+  return { HStack: RNView };
+});
+
+jest.mock("@/components/ui/text", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text: RNText } = require("react-native");
+  return { Text: RNText };
 });
 
 jest.mock("@/components/ui/button", () => {
@@ -47,32 +58,8 @@ jest.mock("@/components/ui/button", () => {
   return { Button: MockButton };
 });
 
-jest.mock("@/components/AladhanSettings/SettingSection", () => ({ SettingSection: () => null }));
-jest.mock("@/components/AladhanSettings/TuningSettings", () => ({ TuningSettings: () => null }));
-
-jest.mock("@/components/ui/card", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View: RNView } = require("react-native");
-  return { Card: RNView };
-});
-
-jest.mock("@/components/ui/spinner", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View: RNView } = require("react-native");
-  return { Spinner: RNView };
-});
-
-jest.mock("@/components/ui/text", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Text: RNText } = require("react-native");
-  return { Text: RNText };
-});
-
-jest.mock("@/hooks/useProviderSettings", () => ({
-  useAladhanSettings: () => ({
-    settings: { method: 3, madhab: 1, midnightMode: 0 },
-    updateSettings: jest.fn(),
-  }),
+jest.mock("@/components/feedback", () => ({
+  MessageToast: { showError: (...args: unknown[]) => mockShowError(...args) },
 }));
 
 jest.mock("@/stores/prayerTimes", () => ({
@@ -86,15 +73,9 @@ jest.mock("@/stores/providerSettings", () => ({
   useProviderSettingsStore: () => ({
     isLoading: false,
     isModified: mockIsModified,
-    saveSettings: (...args: unknown[]) => mockSaveSettings(...(args as [])),
+    saveSettings: () => mockSaveSettings(),
     markSettingsApplied: () => mockMarkSettingsApplied(),
   }),
-}));
-
-jest.mock("@/utils/appLogger", () => ({
-  AppLogger: {
-    create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }),
-  },
 }));
 
 jest.mock("@/stores/notification", () => ({
@@ -109,14 +90,14 @@ jest.mock("../../../modules/expo-widget/src", () => ({
   reloadPrayerWidgets: (...args: unknown[]) => mockReloadPrayerWidgets(...args),
 }));
 
-jest.mock("@/components/feedback", () => ({
-  MessageToast: { showError: (...args: unknown[]) => mockShowError(...args) },
+jest.mock("@/utils/appLogger", () => ({
+  AppLogger: { create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
 }));
 
-const renderSettings = async () => {
+const render = async () => {
   let tree!: renderer.ReactTestRenderer;
   await act(async () => {
-    tree = renderer.create(<AladhanSettings />);
+    tree = renderer.create(<ProviderSaveBar />);
   });
   return tree;
 };
@@ -127,14 +108,28 @@ const pressSave = async (tree: renderer.ReactTestRenderer) => {
   });
 };
 
-describe("AladhanSettings save", () => {
+describe("ProviderSaveBar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockIsModified = true;
   });
 
+  it("stays hidden while there is nothing to apply", async () => {
+    mockIsModified = false;
+
+    const tree = await render();
+
+    expect(tree.root.findAllByProps({ testID: "provider-save-bar" })).toHaveLength(0);
+  });
+
+  it("appears once the settings are modified", async () => {
+    const tree = await render();
+
+    expect(tree.root.findAllByProps({ testID: "provider-save-bar" }).length).toBeGreaterThan(0);
+  });
+
   it("refetches prayer times on every save, not just the first", async () => {
-    const tree = await renderSettings();
+    const tree = await render();
 
     await pressSave(tree);
     await pressSave(tree);
@@ -143,28 +138,28 @@ describe("AladhanSettings save", () => {
     expect(mockLoadPrayerTimes).toHaveBeenNthCalledWith(2, true);
   });
 
-  it("surfaces an error and keeps save available when the refetch fails", async () => {
-    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("offline"));
-
-    const tree = await renderSettings();
-    await pressSave(tree);
-
-    expect(mockShowError).toHaveBeenCalledWith("providers.saveFailed");
-    expect(tree.root.findAllByProps({ testID: "save-button" }).length).toBeGreaterThan(0);
-  });
-
   it("marks the settings applied once the whole pipeline has landed", async () => {
-    const tree = await renderSettings();
+    const tree = await render();
 
     await pressSave(tree);
 
     expect(mockMarkSettingsApplied).toHaveBeenCalledTimes(1);
   });
 
+  it("surfaces an error and stays on screen when the refetch fails", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("offline"));
+
+    const tree = await render();
+    await pressSave(tree);
+
+    expect(mockShowError).toHaveBeenCalledWith("providers.saveFailed");
+    expect(tree.root.findAllByProps({ testID: "save-button" }).length).toBeGreaterThan(0);
+  });
+
   it("leaves the settings unapplied when the refetch fails", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("offline"));
 
-    const tree = await renderSettings();
+    const tree = await render();
     await pressSave(tree);
 
     expect(mockMarkSettingsApplied).not.toHaveBeenCalled();
@@ -173,7 +168,7 @@ describe("AladhanSettings save", () => {
   it("leaves the settings unapplied when rescheduling alarms fails", async () => {
     mockRescheduleAlarms.mockRejectedValueOnce(new Error("alarm store unavailable"));
 
-    const tree = await renderSettings();
+    const tree = await render();
     await pressSave(tree);
 
     expect(mockMarkSettingsApplied).not.toHaveBeenCalled();

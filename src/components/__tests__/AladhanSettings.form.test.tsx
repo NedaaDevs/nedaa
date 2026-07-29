@@ -46,43 +46,11 @@ jest.mock("@/components/ui/select", () => {
   };
 });
 
-jest.mock("@/components/ui/button", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View: RNView } = require("react-native");
-  const MockButton = ({ children }: any) => <RNView>{children}</RNView>;
-  const MockButtonText = ({ children }: any) => <RNView>{children}</RNView>;
-  MockButtonText.displayName = "MockButtonText";
-  const MockButtonSpinner = () => <RNView />;
-  MockButtonSpinner.displayName = "MockButtonSpinner";
-  MockButton.Text = MockButtonText;
-  MockButton.Spinner = MockButtonSpinner;
-  return { Button: MockButton };
-});
-
 jest.mock("@/components/AladhanSettings/TuningSettings", () => ({ TuningSettings: () => null }));
-jest.mock("@/components/feedback", () => ({ MessageToast: { showError: jest.fn() } }));
-
-jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: () => ({ isLoading: false, loadPrayerTimes: jest.fn() }),
-}));
-
 jest.mock("@/stores/providerSettings", () => ({
   useProviderSettingsStore: () => ({
     isLoading: mockIsLoading,
-    isModified: false,
-    saveSettings: jest.fn(),
-    markSettingsApplied: jest.fn(),
   }),
-}));
-
-jest.mock("@/stores/notification", () => ({
-  useNotificationStore: () => ({ scheduleAllNotifications: jest.fn() }),
-}));
-
-jest.mock("@/utils/alarmScheduler", () => ({ rescheduleAllAlarms: jest.fn() }));
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
-jest.mock("@/utils/appLogger", () => ({
-  AppLogger: { create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
 }));
 
 jest.mock("@/hooks/useProviderSettings", () => ({

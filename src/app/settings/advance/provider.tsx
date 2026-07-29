@@ -5,6 +5,7 @@ import { Background } from "@/components/ui/background";
 
 import TopBar from "@/components/TopBar";
 import { ProviderSettings } from "@/components/ProviderSettings";
+import { ProviderSaveBar } from "@/components/ProviderSaveBar";
 
 const AdvanceSettings = () => {
   return (
@@ -15,6 +16,8 @@ const AdvanceSettings = () => {
         keyboardShouldPersistTaps="handled">
         <ProviderSettings />
       </ScrollView>
+      {/* Outside the ScrollView: the bar stays reachable wherever the user is editing. */}
+      <ProviderSaveBar />
     </Background>
   );
 };
