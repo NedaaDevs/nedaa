@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 
 // Utils
 import { formatPrayerTime, getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
+import { prayerElapsedFraction } from "@/utils/prayerArc";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -22,8 +23,13 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Card } from "@/components/ui/card";
+import { Icon } from "@/components/ui/icon";
+import { Pressable } from "@/components/ui/pressable";
 import PreviousPrayer from "@/components/PreviousPrayer";
+import PrayerProgressArc from "@/components/PrayerProgressArc";
 import { SkeletonText } from "@/components/ui/skeleton";
+
+import { MapPin } from "lucide-react-native";
 
 // Types
 import { OtherTimingName, PrayerName } from "@/types/prayerTimes";
@@ -145,82 +151,73 @@ const Header = () => {
       ? "prayerTimes.jumuah"
       : `prayerTimes.${timing.name}`;
 
+  // How far through the current prayer window we are, for the arc.
+  const elapsedFraction =
+    previousPrayer && displayNextPrayer
+      ? prayerElapsedFraction(parseISO(previousPrayer.time), parseISO(displayNextPrayer.time), now)
+      : 0;
+
+  const headlineName =
+    !showOtherTiming && timerMode === "iqama" && iqamaPrayerName
+      ? `${t(`prayerTimes.${iqamaPrayerName}`)} - ${t("header.iqama")}`
+      : t(timingName);
+
+  const headlineTime =
+    !showOtherTiming && timerMode === "iqama" && previousPrayer
+      ? formattedPrayerTime(previousPrayer.time)
+      : formattedPrayerTime(timing.time);
+
+  const countdown = showOtherTiming ? otherTimingDisplay : timerDisplay;
+
   return (
     <Box margin="$1" borderRadius="$7">
-      <Box padding="$3" borderRadius="$6" marginHorizontal="$2" marginTop="$1">
-        <VStack alignItems="center" gap="$0.5">
-          <Text size="xl" bold color="$typography" textAlign="center" width="100%">
-            {dayName}
+      {/* Two condensed lines: where you are, then what day it is. */}
+      <VStack alignItems="center" marginTop="$2" gap="$1">
+        <HStack alignItems="center" gap="$1.5" paddingHorizontal="$4">
+          <Icon as={MapPin} size="sm" color="$typographySecondary" />
+          <Text size="sm" fontWeight="600" color="$typography" numberOfLines={1}>
+            {displayCity}
           </Text>
-          <Text size="md" color="$typographySecondary" textAlign="center" width="100%">
-            {formattedDateDetails}
-          </Text>
-        </VStack>
-      </Box>
-
-      <VStack alignItems="center" marginVertical="$1" gap="$0.5">
+        </HStack>
         <Text
-          size="lg"
-          fontWeight="600"
-          color="$typography"
-          textAlign="center"
-          paddingHorizontal="$2"
-          numberOfLines={1}>
-          {displayCity}
-        </Text>
-        <Text
-          size="sm"
+          size="xs"
           color="$typographySecondary"
+          textTransform="uppercase"
           textAlign="center"
-          paddingHorizontal="$2"
+          paddingHorizontal="$4"
           numberOfLines={1}>
-          {localizedLocation.country ?? locationDetails.address?.country}
+          {`${dayName} · ${formattedDateDetails}`}
         </Text>
       </VStack>
 
-      <PreviousPrayer />
-
-      <Card.Pressable
-        padding="$6"
-        marginHorizontal="$1"
+      <Pressable
+        alignItems="center"
         marginTop="$2"
-        marginBottom="$2"
         onPress={handleBoxClick}
         accessibilityRole="button"
         accessibilityLabel={t("a11y.header.nextPrayer", {
           name: t(timingName),
           time: showOtherTiming ? otherTimingDisplay : formattedPrayerTime(timing.time),
-          countdown: showOtherTiming ? otherTimingDisplay : timerDisplay,
+          countdown,
         })}
         accessibilityHint={t("a11y.header.toggleTimings")}>
-        <HStack justifyContent="space-between" alignItems="center" width="100%">
-          <Box flexShrink={1}>
-            <Text size="2xl" bold color="$accentPrimary">
-              {!showOtherTiming && timerMode === "iqama" && iqamaPrayerName
-                ? `${t(`prayerTimes.${iqamaPrayerName}`)} - ${t("header.iqama")}`
-                : t(timingName)}
+        <PrayerProgressArc progress={elapsedFraction}>
+          <VStack alignItems="center" gap="$1" paddingHorizontal="$8">
+            <Text size="lg" fontWeight="600" color="$accentPrimary" numberOfLines={1}>
+              {headlineName}
             </Text>
-          </Box>
-
-          <VStack alignItems="center" gap="$1">
-            <Text size="2xl" numeric fontWeight="600" color="$accentPrimary" textAlign="center">
-              {!showOtherTiming && timerMode === "iqama" && previousPrayer
-                ? formattedPrayerTime(previousPrayer.time)
-                : formattedPrayerTime(timing.time)}
+            {/* The hero. Presence comes from scale, not weight. */}
+            <Text fontSize={48} numeric fontWeight="500" color="$typography" textAlign="center">
+              {countdown}
             </Text>
-
-            <Box
-              paddingHorizontal="$3"
-              paddingVertical="$0.5"
-              borderRadius={999}
-              backgroundColor="$backgroundInteractive">
-              <Text size="sm" numeric textAlign="center" color="$typography">
-                {showOtherTiming ? otherTimingDisplay : timerDisplay}
-              </Text>
-            </Box>
+            <Text size="md" numeric fontWeight="600" color="$accentPrimary">
+              {headlineTime}
+            </Text>
           </VStack>
-        </HStack>
-      </Card.Pressable>
+        </PrayerProgressArc>
+      </Pressable>
+
+      <PreviousPrayer />
     </Box>
   );
 };

@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { parseISO, differenceInSeconds, formatDistance } from "date-fns";
+import { parseISO, differenceInSeconds } from "date-fns";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale, timeZonedNow } from "@/utils/date";
+import { timeZonedNow } from "@/utils/date";
 
 // Stores
 import { usePreferencesStore } from "@/stores/preferences";
-import { useAppStore } from "@/stores/app";
 
 // Types
 import type { Prayer } from "@/types/prayerTimes";
@@ -27,7 +26,6 @@ export const useCountdownTimer = (
 ): TimerResult => {
   const [now, setNow] = useState(() => timeZonedNow(timezone));
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { locale } = useAppStore();
   const { countdownEnabled, countdownMinutes, iqamaCountUpEnabled, iqamaCountUpMinutes } =
     usePreferencesStore();
 
@@ -85,6 +83,16 @@ export const useCountdownTimer = (
     return formatNumberToLocale(raw);
   }, []);
 
+  // Digits rather than a phrase: the home hero sets this at display size, where
+  // "about 2 hours" wraps, and h:mm needs no unit words to translate.
+  const formatHMM = useCallback((totalSeconds: number): string => {
+    const absSeconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(absSeconds / 3600);
+    const mins = Math.floor((absSeconds % 3600) / 60);
+    const raw = `${hours}:${mins.toString().padStart(2, "0")}`;
+    return formatNumberToLocale(raw);
+  }, []);
+
   const display = useMemo((): string => {
     if (timerMode === "countdown" && nextPrayer) {
       const nextTime = parseISO(nextPrayer.time);
@@ -100,15 +108,11 @@ export const useCountdownTimer = (
 
     if (nextPrayer) {
       const nextTime = parseISO(nextPrayer.time);
-      const timeRemaining = formatDistance(nextTime, now, {
-        addSuffix: false,
-        locale: getDateLocale(locale),
-      });
-      return formatNumberToLocale(timeRemaining);
+      return formatHMM(differenceInSeconds(nextTime, now));
     }
 
     return "";
-  }, [timerMode, now, nextPrayer, previousPrayer, locale, formatMMSS]);
+  }, [timerMode, now, nextPrayer, previousPrayer, formatMMSS, formatHMM]);
 
   const iqamaPrayerName = useMemo((): string | null => {
     if (timerMode === "iqama" && previousPrayer) {
