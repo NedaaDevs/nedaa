@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { Background } from "@/components/ui/background";
-import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -94,10 +94,10 @@ export default function MiqatScreen() {
                 onPress={() => handleOriginSelect(false)}
                 accessibilityRole="button"
                 accessibilityLabel={t("umrah.prepare.miqat.fromOutside")}>
-                <HStack
+                <Card
                   padding="$4"
                   borderRadius="$3"
-                  backgroundColor="$backgroundSecondary"
+                  flexDirection="row"
                   style={{ borderCurve: "continuous" }}
                   alignItems="center"
                   gap="$3">
@@ -106,17 +106,17 @@ export default function MiqatScreen() {
                     {t("umrah.prepare.miqat.fromOutside")}
                   </Text>
                   <Icon as={ChevronRight} size="sm" color="$typographySecondary" />
-                </HStack>
+                </Card>
               </Pressable>
 
               <Pressable
                 onPress={() => handleOriginSelect(true)}
                 accessibilityRole="button"
                 accessibilityLabel={t("umrah.prepare.miqat.fromInside")}>
-                <HStack
+                <Card
                   padding="$4"
                   borderRadius="$3"
-                  backgroundColor="$backgroundSecondary"
+                  flexDirection="row"
                   style={{ borderCurve: "continuous" }}
                   alignItems="center"
                   gap="$3">
@@ -125,14 +125,10 @@ export default function MiqatScreen() {
                     {t("umrah.prepare.miqat.fromInside")}
                   </Text>
                   <Icon as={ChevronRight} size="sm" color="$typographySecondary" />
-                </HStack>
+                </Card>
               </Pressable>
 
-              <Box
-                padding="$3"
-                borderRadius="$3"
-                backgroundColor="$backgroundSecondary"
-                style={{ borderCurve: "continuous" }}>
+              <Card padding="$3" borderRadius="$3" style={{ borderCurve: "continuous" }}>
                 <HStack alignItems="center" gap="$2">
                   <Icon as={Plane} size="sm" color="$typographySecondary" />
                   <VStack flex={1} gap="$0.5">
@@ -144,7 +140,7 @@ export default function MiqatScreen() {
                     </Text>
                   </VStack>
                 </HStack>
-              </Box>
+              </Card>
             </VStack>
           </Animated.View>
         )}
@@ -158,10 +154,10 @@ export default function MiqatScreen() {
                   onPress={() => handleDirectionSelect(miqat)}
                   accessibilityRole="button"
                   accessibilityLabel={t(key)}>
-                  <HStack
+                  <Card
                     padding="$4"
                     borderRadius="$3"
-                    backgroundColor="$backgroundSecondary"
+                    flexDirection="row"
                     style={{ borderCurve: "continuous" }}
                     alignItems="center"
                     gap="$3">
@@ -179,7 +175,7 @@ export default function MiqatScreen() {
                       </Text>
                     </VStack>
                     <Icon as={ChevronRight} size="sm" color="$typographySecondary" />
-                  </HStack>
+                  </Card>
                 </Pressable>
               ))}
 
@@ -203,10 +199,9 @@ export default function MiqatScreen() {
                 {t("umrah.prepare.miqat.result")}
               </Text>
 
-              <Box
+              <Card
                 padding="$5"
                 borderRadius="$4"
-                backgroundColor="$backgroundSecondary"
                 style={{ borderCurve: "continuous" }}
                 gap="$3"
                 alignItems="center"
@@ -235,7 +230,7 @@ export default function MiqatScreen() {
                     {t("umrah.prepare.miqat.insideResult")}
                   </Text>
                 )}
-              </Box>
+              </Card>
 
               <Button
                 size="lg"

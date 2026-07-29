@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -126,11 +127,7 @@ export default function IhramScreen() {
                 <Text size="md" fontWeight="600" color="$typography">
                   {t("umrah.prepare.ihram.niyyahTitle")}
                 </Text>
-                <Box
-                  padding="$4"
-                  borderRadius="$3"
-                  backgroundColor="$backgroundSecondary"
-                  style={{ borderCurve: "continuous" }}>
+                <Card padding="$4" borderRadius="$3" style={{ borderCurve: "continuous" }}>
                   <Text
                     size="lg"
                     fontWeight="600"
@@ -139,7 +136,7 @@ export default function IhramScreen() {
                     selectable>
                     {t("umrah.prepare.ihram.niyyahText")}
                   </Text>
-                </Box>
+                </Card>
               </VStack>
 
               <Divider />
@@ -151,11 +148,7 @@ export default function IhramScreen() {
                 <Text size="sm" color="$typographySecondary">
                   {t("umrah.prepare.ihram.ishtiraatDesc")}
                 </Text>
-                <Box
-                  padding="$4"
-                  borderRadius="$3"
-                  backgroundColor="$backgroundSecondary"
-                  style={{ borderCurve: "continuous" }}>
+                <Card padding="$4" borderRadius="$3" style={{ borderCurve: "continuous" }}>
                   <Text
                     size="lg"
                     fontWeight="600"
@@ -164,7 +157,7 @@ export default function IhramScreen() {
                     selectable>
                     {t("umrah.prepare.ihram.ishtiraatText")}
                   </Text>
-                </Box>
+                </Card>
               </VStack>
             </VStack>
           </Animated.View>

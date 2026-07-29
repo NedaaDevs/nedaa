@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import TopBar from "@/components/TopBar";
 import { SwipeableEntry } from "@/components/Qada/SwipeableEntry";
 import { Text } from "@/components/ui/text";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -237,7 +238,7 @@ const QadaScreen = () => {
         {/* Progress Dashboard */}
         <VStack paddingHorizontal="$4" paddingTop="$6" paddingBottom="$4" gap="$5">
           {/* Progress Card */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" padding="$6">
+          <Card borderRadius="$6" padding="$6">
             <VStack gap="$4" alignItems="center">
               {/* Main Stats */}
               <VStack gap="$2" alignItems="center" width="100%">
@@ -313,7 +314,7 @@ const QadaScreen = () => {
                 </Text>
               )}
             </VStack>
-          </Box>
+          </Card>
 
           {/* Add Button */}
           <Button
@@ -347,15 +348,11 @@ const QadaScreen = () => {
                 ))}
               </VStack>
 
-              <Box
-                backgroundColor="$backgroundSecondary"
-                opacity={0.8}
-                borderRadius="$4"
-                padding="$3">
+              <Card opacity={0.8} borderRadius="$4" padding="$3">
                 <Text size="xs" color="$typographySecondary" textAlign="center">
                   {t("qada.swipeHintFull")}
                 </Text>
-              </Box>
+              </Card>
             </VStack>
           )}
 
@@ -391,8 +388,9 @@ const QadaScreen = () => {
               <Box
                 width={80}
                 height={80}
-                backgroundColor="$backgroundSecondary"
                 borderRadius={999}
+                // eslint-disable-next-line no-restricted-syntax -- circular icon well, not a card surface
+                backgroundColor="$backgroundSecondary"
                 alignItems="center"
                 justifyContent="center">
                 <Icon as={CalendarDays} color="$typographySecondary" size="xl" />

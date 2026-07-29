@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
@@ -216,11 +217,10 @@ export default function StepScreen() {
           </Button>
 
           {!isLastStep && (
-            <Pressable
+            <Card.Pressable
               onPress={handleOverview}
               padding="$3"
               borderRadius="$3"
-              backgroundColor="$backgroundSecondary"
               minWidth={48}
               minHeight={48}
               alignItems="center"
@@ -230,7 +230,7 @@ export default function StepScreen() {
               <Text size="xs" color="$typographySecondary">
                 {t("umrah.overview")}
               </Text>
-            </Pressable>
+            </Card.Pressable>
           )}
         </HStack>
       </Box>

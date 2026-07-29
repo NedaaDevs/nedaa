@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import { MotiView } from "moti";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
-import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
@@ -29,12 +29,7 @@ const StageChecklist = ({ items, checklistState, onToggle }: Props) => {
             accessibilityRole="checkbox"
             accessibilityState={{ checked }}
             accessibilityLabel={t(item)}>
-            <HStack
-              gap="$3"
-              alignItems="center"
-              padding="$3"
-              borderRadius="$3"
-              backgroundColor="$backgroundSecondary">
+            <Card gap="$3" alignItems="center" padding="$3" borderRadius="$3" flexDirection="row">
               <Box
                 width={28}
                 height={28}
@@ -60,7 +55,7 @@ const StageChecklist = ({ items, checklistState, onToggle }: Props) => {
                 textDecorationLine={checked ? "line-through" : "none"}>
                 {t(item)}
               </Text>
-            </HStack>
+            </Card>
           </Pressable>
         );
       })}

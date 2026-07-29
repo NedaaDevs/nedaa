@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -33,11 +33,10 @@ const HadithReference = ({ hadithSource, hadithTranslation }: Props) => {
       accessibilityLabel={`${t("umrah.hadithSource")}: ${hadithTranslation || hadithSource}`}
       accessibilityHint={t("a11y.umrah.expandSourceHint")}
       accessibilityState={{ expanded }}>
-      <Box
+      <Card
         paddingHorizontal="$3"
         paddingVertical="$2.5"
         borderRadius="$2"
-        backgroundColor="$backgroundSecondary"
         style={{ borderCurve: "continuous", minHeight: 44 }}>
         <HStack alignItems="center" gap="$2">
           <Icon as={BookOpen} size="xs" color="$typographySecondary" />
@@ -59,7 +58,7 @@ const HadithReference = ({ hadithSource, hadithTranslation }: Props) => {
             )}
           </VStack>
         )}
-      </Box>
+      </Card>
     </Pressable>
   );
 };

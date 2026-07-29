@@ -2,10 +2,10 @@ import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import TopBar from "@/components/TopBar";
 
@@ -75,16 +75,15 @@ export default function ProhibitionsScreen() {
           </VStack>
         ))}
 
-        <Box
+        <Card
           padding="$3"
           borderRadius="$3"
-          backgroundColor="$backgroundSecondary"
           style={{ borderCurve: "continuous" }}
           accessibilityRole="summary">
           <Text size="xs" color="$typographySecondary">
             {t("umrah.prepare.prohibitions.fidyah")}
           </Text>
-        </Box>
+        </Card>
       </ScrollView>
     </Background>
   );
@@ -96,10 +95,10 @@ const ProhibitionItem = ({ item, isArabic }: { item: IhramProhibition; isArabic:
   const description = isArabic ? item.descriptionAr : item.descriptionEn;
 
   return (
-    <HStack
+    <Card
       padding="$3"
       borderRadius="$3"
-      backgroundColor="$backgroundSecondary"
+      flexDirection="row"
       style={{ borderCurve: "continuous" }}
       alignItems="center"
       gap="$3"
@@ -125,6 +124,6 @@ const ProhibitionItem = ({ item, isArabic }: { item: IhramProhibition; isArabic:
           {description}
         </Text>
       </VStack>
-    </HStack>
+    </Card>
   );
 };

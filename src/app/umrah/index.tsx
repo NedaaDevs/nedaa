@@ -5,6 +5,7 @@ import { Alert, Linking, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
@@ -149,11 +150,7 @@ export default function UmrahOverviewScreen() {
               {t("umrah.history.title")}
             </Text>
             {history.map((record) => (
-              <Box
-                key={record.id}
-                padding="$3"
-                borderRadius="$3"
-                backgroundColor="$backgroundSecondary">
+              <Card key={record.id} padding="$3" borderRadius="$3">
                 <HStack justifyContent="space-between" alignItems="center">
                   <HStack alignItems="center" gap="$2">
                     <Icon as={Calendar} size="sm" color="$typographySecondary" />
@@ -168,7 +165,7 @@ export default function UmrahOverviewScreen() {
                     </Text>
                   </HStack>
                 </HStack>
-              </Box>
+              </Card>
             ))}
           </VStack>
         )}

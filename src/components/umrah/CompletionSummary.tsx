@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { MotiView } from "moti";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -78,7 +79,7 @@ const CompletionSummary = ({ record }: Props) => {
         animate={{ opacity: 1, translateY: 0 }}
         transition={{ type: "timing", duration: 400, delay: 700 }}
         style={{ width: "100%" }}>
-        <Box padding="$4" borderRadius="$4" backgroundColor="$backgroundSecondary" width="100%">
+        <Card padding="$4" borderRadius="$4" width="100%">
           <VStack gap="$3">
             {stats.map((stat, index) => (
               <HStack key={index} justifyContent="space-between" alignItems="center">
@@ -94,7 +95,7 @@ const CompletionSummary = ({ record }: Props) => {
               </HStack>
             ))}
           </VStack>
-        </Box>
+        </Card>
       </MotiView>
     </VStack>
   );

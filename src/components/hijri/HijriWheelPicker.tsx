@@ -6,8 +6,8 @@ import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
 
 import { HStack } from "@/components/ui/hstack";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
-import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import {
   Actionsheet,
@@ -98,10 +98,9 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
   return (
     <>
       <HStack gap="$3">
-        <Pressable
+        <Card.Pressable
           flex={1}
           onPress={() => setActiveSheet("day")}
-          backgroundColor="$backgroundSecondary"
           padding="$3"
           borderRadius="$4"
           flexDirection="row"
@@ -113,12 +112,11 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
             {formattedDay}
           </Text>
           <Icon as={ChevronDown} color="$typographySecondary" size="sm" />
-        </Pressable>
+        </Card.Pressable>
 
-        <Pressable
+        <Card.Pressable
           flex={2}
           onPress={() => setActiveSheet("month")}
-          backgroundColor="$backgroundSecondary"
           padding="$3"
           borderRadius="$4"
           flexDirection="row"
@@ -130,12 +128,11 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
             {currentMonthLabel}
           </Text>
           <Icon as={ChevronDown} color="$typographySecondary" size="sm" />
-        </Pressable>
+        </Card.Pressable>
 
-        <Pressable
+        <Card.Pressable
           flex={1}
           onPress={() => setActiveSheet("year")}
-          backgroundColor="$backgroundSecondary"
           padding="$3"
           borderRadius="$4"
           flexDirection="row"
@@ -147,7 +144,7 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
             {formattedYear}
           </Text>
           <Icon as={ChevronDown} color="$typographySecondary" size="sm" />
-        </Pressable>
+        </Card.Pressable>
       </HStack>
 
       <Actionsheet isOpen={activeSheet === "day"} onClose={() => setActiveSheet(null)}>

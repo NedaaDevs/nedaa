@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "expo-router";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
@@ -23,11 +24,10 @@ const PrepareCard = ({ titleKey, subtitleKey, icon: IconComponent, href }: Props
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t("a11y.umrah.prepareCard", { title: t(titleKey) })}>
-        <Box
+        <Card
           width={140}
           padding="$3"
           borderRadius="$3"
-          backgroundColor="$backgroundSecondary"
           style={{ borderCurve: "continuous" }}
           gap="$2">
           <Box
@@ -49,7 +49,7 @@ const PrepareCard = ({ titleKey, subtitleKey, icon: IconComponent, href }: Props
               {t(subtitleKey)}
             </Text>
           </VStack>
-        </Box>
+        </Card>
       </Pressable>
     </Link>
   );

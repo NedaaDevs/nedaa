@@ -13,6 +13,7 @@ import { useTheme } from "tamagui";
 
 // Components
 import { Text } from "@/components/ui/text";
+import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -266,8 +267,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
 
         {/* Entry content — slides to reveal actions */}
         <Animated.View style={[contentStyle, { direction: isRTL ? "rtl" : "ltr" }]}>
-          <Box
-            backgroundColor="$backgroundSecondary"
+          <Card
             borderRadius="$6"
             padding="$4"
             accessibilityRole="button"
@@ -311,7 +311,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
                 </VStack>
               </HStack>
             </HStack>
-          </Box>
+          </Card>
         </Animated.View>
       </Animated.View>
     </GestureDetector>

@@ -10,6 +10,7 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import TopBar from "@/components/TopBar";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -111,7 +112,7 @@ const HijriConverterScreen = () => {
         <TopBar title={t("tools.hijriConverter.title")} href="/(tabs)/tools" backOnClick />
 
         <Box padding="$4">
-          <Box backgroundColor="$backgroundSecondary" padding="$5" borderRadius="$6">
+          <Card padding="$5" borderRadius="$6">
             <Text
               size="md"
               fontWeight="600"
@@ -135,9 +136,8 @@ const HijriConverterScreen = () => {
                   />
                 ) : (
                   <>
-                    <Pressable
+                    <Card.Pressable
                       onPress={() => setShowGregorianPicker(true)}
-                      backgroundColor="$backgroundSecondary"
                       padding="$3"
                       borderRadius="$4"
                       accessibilityRole="button"
@@ -151,7 +151,7 @@ const HijriConverterScreen = () => {
                           })
                         )}
                       </Text>
-                    </Pressable>
+                    </Card.Pressable>
                     {showGregorianPicker && (
                       <DateTimePicker
                         value={gregorianDate}
@@ -170,14 +170,13 @@ const HijriConverterScreen = () => {
             ) : (
               <HijriWheelPicker value={hijriDate} onChange={setHijriDate} />
             )}
-          </Box>
+          </Card>
 
           <Box alignItems="center" marginVertical="$3">
-            <Pressable
+            <Card.Pressable
               onPress={handleSwap}
               padding="$3"
               borderRadius="$10"
-              backgroundColor="$backgroundSecondary"
               minWidth={44}
               minHeight={44}
               alignItems="center"
@@ -189,10 +188,10 @@ const HijriConverterScreen = () => {
                 transition={{ type: "timing", duration: 300 }}>
                 <Icon as={ArrowUpDown} color="$accentPrimary" size="lg" />
               </MotiView>
-            </Pressable>
+            </Card.Pressable>
           </Box>
 
-          <Box backgroundColor="$backgroundSecondary" padding="$5" borderRadius="$6">
+          <Card padding="$5" borderRadius="$6">
             <Text
               size="md"
               fontWeight="600"
@@ -209,7 +208,7 @@ const HijriConverterScreen = () => {
               accessibilityLabel={t("a11y.hijriConverter.result", { date: formattedResult })}>
               {formattedResult}
             </Text>
-          </Box>
+          </Card>
 
           {hijriDaysOffset !== 0 && direction === "gregorianToHijri" && (
             <HStack marginTop="$3" gap="$2" alignItems="center">

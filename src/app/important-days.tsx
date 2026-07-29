@@ -4,6 +4,7 @@ import { ScrollView } from "react-native";
 import { CalendarDays } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
+import { Card } from "@/components/ui/card";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -38,8 +39,7 @@ const ImportantDaysScreen = () => {
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           {/* Hero: the closest occasion */}
           {closest && (
-            <Box
-              backgroundColor="$backgroundSecondary"
+            <Card
               borderRadius="$6"
               padding="$4"
               accessibilityLabel={`${t(closest.i18nKey)}, ${remainingLabel(closest.daysRemaining)}, ${hijriLabel(closest)}, ${expectedLabel(closest.expectedGregorian)}`}>
@@ -83,11 +83,11 @@ const ImportantDaysScreen = () => {
                   )}
                 </VStack>
               </HStack>
-            </Box>
+            </Card>
           )}
 
           {/* The rest: compact rows with quiet countdown pills */}
-          <Box backgroundColor="$backgroundSecondary" borderRadius="$6" paddingHorizontal="$4">
+          <Card borderRadius="$6" paddingHorizontal="$4">
             {rest.map((day, i) => (
               <HStack
                 key={day.id}
@@ -117,7 +117,7 @@ const ImportantDaysScreen = () => {
                 </Box>
               </HStack>
             ))}
-          </Box>
+          </Card>
 
           <Text size="xs" color="$typographySecondary" textAlign="center" paddingVertical="$2">
             {t("importantDays.disclaimer")}

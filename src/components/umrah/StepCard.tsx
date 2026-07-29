@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -85,11 +86,7 @@ const StepCard = ({ step }: Props) => {
           accessibilityRole="button"
           accessibilityLabel={`${t(step.titleKey)} — ${t("a11y.umrah.viewReference")}`}
           accessibilityHint={t("a11y.umrah.opensGuideHint")}>
-          <Box
-            padding="$6"
-            borderRadius="$4"
-            backgroundColor="$backgroundSecondary"
-            style={{ borderCurve: "continuous" }}>
+          <Card padding="$6" borderRadius="$4" style={{ borderCurve: "continuous" }}>
             <VStack gap="$3" alignItems="center">
               <Text size="xl" fontWeight="700" color="$typography" textAlign="center">
                 {t(step.titleKey)}
@@ -106,7 +103,7 @@ const StepCard = ({ step }: Props) => {
                 </Text>
               </HStack>
             </VStack>
-          </Box>
+          </Card>
         </Pressable>
       </Box>
     );
@@ -116,7 +113,7 @@ const StepCard = ({ step }: Props) => {
   if (step.type === "instruction") {
     return (
       <Box flex={1} justifyContent="center" paddingHorizontal="$4">
-        <Box padding="$6" borderRadius="$4" backgroundColor="$backgroundSecondary">
+        <Card padding="$6" borderRadius="$4">
           <VStack gap="$3" alignItems="center">
             <Text size="xl" fontWeight="700" color="$typography" textAlign="center">
               {t(step.titleKey)}
@@ -127,7 +124,7 @@ const StepCard = ({ step }: Props) => {
               </Text>
             )}
           </VStack>
-        </Box>
+        </Card>
       </Box>
     );
   }
@@ -186,11 +183,10 @@ const StepCard = ({ step }: Props) => {
                 {/* Front — Arabic */}
                 <Animated.View
                   style={[{ position: "absolute", width: "100%", minHeight: 180 }, frontStyle]}>
-                  <Box
+                  <Card
                     flex={1}
                     padding="$4"
                     borderRadius="$4"
-                    backgroundColor="$backgroundSecondary"
                     justifyContent="center"
                     alignItems="center"
                     minHeight={180}>
@@ -202,24 +198,23 @@ const StepCard = ({ step }: Props) => {
                       selectable>
                       {step.dua.arabic}
                     </Text>
-                  </Box>
+                  </Card>
                 </Animated.View>
 
                 {/* Back — locale-aware */}
                 <Animated.View
                   style={[{ position: "absolute", width: "100%", minHeight: 180 }, backStyle]}>
-                  <Box
+                  <Card
                     flex={1}
                     padding="$4"
                     borderRadius="$4"
-                    backgroundColor="$backgroundSecondary"
                     justifyContent="center"
                     alignItems="center"
                     minHeight={180}>
                     <VStack gap="$2" alignItems="center">
                       <FlipBackContent step={step} locale={locale} isArabic={isArabic} />
                     </VStack>
-                  </Box>
+                  </Card>
                 </Animated.View>
 
                 {!hasSeenFlipHint && <FlipHint />}
@@ -285,11 +280,10 @@ const StepCard = ({ step }: Props) => {
               {/* Front — Arabic */}
               <Animated.View
                 style={[{ position: "absolute", width: "100%", minHeight: 240 }, frontStyle]}>
-                <Box
+                <Card
                   flex={1}
                   padding="$6"
                   borderRadius="$4"
-                  backgroundColor="$backgroundSecondary"
                   justifyContent="center"
                   alignItems="center"
                   minHeight={240}>
@@ -301,24 +295,23 @@ const StepCard = ({ step }: Props) => {
                     selectable>
                     {step.dua.arabic}
                   </Text>
-                </Box>
+                </Card>
               </Animated.View>
 
               {/* Back — locale-aware */}
               <Animated.View
                 style={[{ position: "absolute", width: "100%", minHeight: 240 }, backStyle]}>
-                <Box
+                <Card
                   flex={1}
                   padding="$6"
                   borderRadius="$4"
-                  backgroundColor="$backgroundSecondary"
                   justifyContent="center"
                   alignItems="center"
                   minHeight={240}>
                   <VStack gap="$3" alignItems="center">
                     <FlipBackContent step={step} locale={locale} isArabic={isArabic} />
                   </VStack>
-                </Box>
+                </Card>
               </Animated.View>
 
               {!hasSeenFlipHint && <FlipHint />}
