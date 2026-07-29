@@ -1,3 +1,5 @@
+import { ScrollView } from "react-native";
+
 // Components
 import { Background } from "@/components/ui/background";
 
@@ -8,7 +10,11 @@ const AdvanceSettings = () => {
   return (
     <Background>
       <TopBar title="settings.advance.title" href="/settings/advance" backOnClick />
-      <ProviderSettings />
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled">
+        <ProviderSettings />
+      </ScrollView>
     </Background>
   );
 };
