@@ -4,7 +4,12 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import * as Location from "@/adapters/location";
 
 // Types
-import { initialLocationDetails, type LocationDetails } from "@/types/location";
+import {
+  initialLocationDetails,
+  type LocationDetails,
+  type ManualLocation,
+} from "@/types/location";
+import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
 
@@ -41,6 +46,8 @@ export type LocationStore = {
   } | null;
   cityChangeDetected: boolean;
   autoUpdateLocation: boolean;
+  locationMode: LocationModeValue;
+  manualLocation: ManualLocation | null;
   showCityChangeModal: boolean;
   pendingCityChange: {
     currentCity: string;
@@ -55,6 +62,8 @@ export type LocationStore = {
   setTimezone: (tz: string) => Promise<void>;
   checkAndPromptCityChange: () => Promise<void>;
   dismissCityChangeModal: () => void;
+  setManualLocation: (location: ManualLocation) => void;
+  clearManualLocation: () => void;
 };
 
 export const useLocationStore = create<LocationStore>()(
@@ -71,6 +80,8 @@ export const useLocationStore = create<LocationStore>()(
         autoUpdateLocation: true,
         showCityChangeModal: false,
         pendingCityChange: null,
+        locationMode: LocationMode.DEVICE,
+        manualLocation: null,
         // Initialize location when permission is granted
         initializeLocation: async () => {
           const previousState = get();
@@ -382,6 +393,40 @@ export const useLocationStore = create<LocationStore>()(
             cityChangeDetected: false,
           });
         },
+
+        // lastKnownCoords is what marks a position prayer-ready; without it the prayer
+        // times store keeps reporting the default Makkah fallback.
+        setManualLocation: (location) => {
+          set((state) => ({
+            locationMode: LocationMode.MANUAL,
+            manualLocation: location,
+            locationDetails: {
+              ...state.locationDetails,
+              coords: {
+                ...state.locationDetails.coords,
+                latitude: location.latitude,
+                longitude: location.longitude,
+                accuracy: null,
+              },
+              address: { country: location.country.name, city: location.name },
+              timezone: location.timezone,
+              error: null,
+              isLoading: false,
+            },
+            localizedLocation: { country: location.country.name, city: location.name },
+            lastKnownCoords: { latitude: location.latitude, longitude: location.longitude },
+          }));
+          log.i("Manual", `manual location set to ${location.name} (${location.timezone})`);
+        },
+
+        clearManualLocation: () => {
+          set({
+            locationMode: LocationMode.DEVICE,
+            manualLocation: null,
+            lastKnownCoords: null,
+          });
+          log.i("Manual", "manual location cleared; the device location will be used");
+        },
       }),
       {
         name: "location-storage",
@@ -392,6 +437,8 @@ export const useLocationStore = create<LocationStore>()(
           lastKnownCoords: state.lastKnownCoords,
           isLocationPermissionGranted: state.isLocationPermissionGranted,
           autoUpdateLocation: state.autoUpdateLocation,
+          locationMode: state.locationMode,
+          manualLocation: state.manualLocation,
         }),
       }
     ),
