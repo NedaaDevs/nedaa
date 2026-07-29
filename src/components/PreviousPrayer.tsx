@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { formatPrayerTime, getDateLocale, isFriday, timeZonedNow } from "@/utils/date";
+import { formatPrayerTime, getDateLocale, isFriday } from "@/utils/date";
 
 // Stores
 import { useAppStore } from "@/stores/app";
@@ -34,7 +34,9 @@ const PreviousPrayer = () => {
 
     if (previousPrayer) {
       const checkAndUpdateTimer = () => {
-        const currentTime = timeZonedNow(locationDetails.timezone);
+        // A real instant: prayer times carry the location's offset, so this
+        // comparison must not be shifted by the device's zone.
+        const currentTime = new Date();
         const prayerTime = parseISO(previousPrayer.time);
         const minutesSincePrayer = differenceInMinutes(currentTime, prayerTime);
 

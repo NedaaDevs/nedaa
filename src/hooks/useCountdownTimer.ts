@@ -3,7 +3,6 @@ import { parseISO, differenceInSeconds } from "date-fns";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
-import { timeZonedNow } from "@/utils/date";
 
 // Stores
 import { usePreferencesStore } from "@/stores/preferences";
@@ -21,10 +20,12 @@ type TimerResult = {
 
 export const useCountdownTimer = (
   nextPrayer: Prayer | null,
-  previousPrayer: Prayer | null,
-  timezone: string
+  previousPrayer: Prayer | null
 ): TimerResult => {
-  const [now, setNow] = useState(() => timeZonedNow(timezone));
+  // A real instant, not timeZonedNow(): every comparison below is against a
+  // stored time that already carries the location's UTC offset, so the device's
+  // own timezone must not enter into it.
+  const [now, setNow] = useState(() => new Date());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { countdownEnabled, countdownMinutes, iqamaCountUpEnabled, iqamaCountUpMinutes } =
     usePreferencesStore();
@@ -65,7 +66,7 @@ export const useCountdownTimer = (
     const intervalMs = timerMode === "general" ? 30_000 : 1_000;
 
     intervalRef.current = setInterval(() => {
-      setNow(timeZonedNow(timezone));
+      setNow(new Date());
     }, intervalMs);
 
     return () => {
@@ -73,7 +74,7 @@ export const useCountdownTimer = (
         clearInterval(intervalRef.current);
       }
     };
-  }, [timerMode, timezone]);
+  }, [timerMode]);
 
   const formatMMSS = useCallback((totalSeconds: number): string => {
     const absSeconds = Math.abs(Math.floor(totalSeconds));

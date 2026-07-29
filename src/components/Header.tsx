@@ -63,7 +63,12 @@ const Header = () => {
   const nextPrayer = todayTimings ? getNextPrayer() : null;
   const nextOtherTiming = todayTimings ? getNextOtherTiming() : null;
   const previousPrayer = todayTimings ? getPreviousPrayer() : null;
-  const now = timeZonedNow(locationDetails.timezone);
+  // Two different notions of "now", and they are not interchangeable.
+  // zonedNow reads as the location's wall clock — right for naming the day.
+  // now is a real instant — right for anything compared against a stored time,
+  // which already carries the location's UTC offset.
+  const zonedNow = timeZonedNow(locationDetails.timezone);
+  const now = new Date();
   const todayHijri = HijriNative.today(locationDetails.timezone);
 
   // localizedLocation is the locale-aware source (in screenshot mode it is
@@ -88,7 +93,7 @@ const Header = () => {
     mode: timerMode,
     display: timerDisplay,
     iqamaPrayerName,
-  } = useCountdownTimer(displayNextPrayer, previousPrayer, locationDetails.timezone);
+  } = useCountdownTimer(displayNextPrayer, previousPrayer);
 
   // Local wrapper so React Compiler tracks locale + useWesternNumerals as dependencies
   const formatNum = (str: string) => {
@@ -111,7 +116,7 @@ const Header = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- formatNum is stable within same locale/useWesternNumerals values
   }, [nextOtherTiming, now, locale, useWesternNumerals]);
 
-  const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
+  const dayName = format(zonedNow, "EEEE", { locale: getDateLocale(locale) });
 
   const hijriMonth = t(`hijriMonths.${hijriDate.month - 1}`);
 

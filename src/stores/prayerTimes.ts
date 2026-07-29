@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { addDays, compareAsc, format, parseISO, subDays } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
 
 import i18n from "@/localization/i18n";
 
@@ -30,6 +30,7 @@ import { useAppStore } from "@/stores/app";
 
 // Utils
 import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
+import { firstAfter, lastBefore } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -64,6 +65,14 @@ export type PrayerTimesStore = {
   cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
   clearError: () => void;
 };
+
+// A day's stored timings as comparable prayer entries.
+const toPrayers = (day: DayPrayerTimes): Prayer[] =>
+  Object.entries(day.timings).map(([name, time]) => ({
+    name: name as PrayerName,
+    time,
+    date: day.date,
+  }));
 
 const getTwoWeeksDateRange = (timezone: string) => {
   const now = timeZonedNow(timezone);
@@ -301,79 +310,35 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
         },
         getNextPrayer: () => {
-          // TODO: Recheck this and previous prayer and the way we sort, prase and compare dates if we can avoid any unnecessary steps
           const state = get();
-          const timezone = locationStore.getState().locationDetails.timezone;
-          const now = timeZonedNow(timezone);
+          // A real instant, not timeZonedNow(): the stored times already carry the
+          // location's offset, so the comparison must not involve the device zone.
+          const now = new Date();
 
           if (!state.todayTimings) return null;
 
-          // Check today's prayers first
-          const todayPrayers = Object.entries(state.todayTimings.timings)
-            .map(([name, time]) => ({
-              name: name as PrayerName,
-              time,
-              date: state.todayTimings!.date,
-            }))
-            .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
+          const nextToday = firstAfter(toPrayers(state.todayTimings), now);
+          if (nextToday) return nextToday;
 
-          // Find the next prayer today
-          const nextPrayer = todayPrayers.find(
-            (prayer) => compareAsc(now, parseISO(prayer.time)) === -1
-          );
-
-          if (nextPrayer) return nextPrayer;
-
-          // If no prayer found today and we have tomorrow's prayers,
-          // return the first prayer of tomorrow
+          // Every prayer today has passed, so the next one belongs to tomorrow.
           if (state.tomorrowTimings) {
-            const tomorrowPrayers = Object.entries(state.tomorrowTimings.timings)
-              .map(([name, time]) => ({
-                name: name as PrayerName,
-                time,
-                date: state.tomorrowTimings!.date,
-              }))
-              .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
-
-            return tomorrowPrayers[0];
+            return firstAfter(toPrayers(state.tomorrowTimings), now) ?? null;
           }
 
           return null;
         },
         getPreviousPrayer: () => {
           const state = get();
-          const timezone = locationStore.getState().locationDetails.timezone;
-          const now = timeZonedNow(timezone);
+          const now = new Date();
 
           if (!state.todayTimings) return null;
 
-          const todayPrayers = Object.entries(state.todayTimings.timings)
-            .map(([name, time]) => ({
-              name: name as PrayerName,
-              time,
-              date: state.todayTimings!.date,
-            }))
-            .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
+          const lastToday = lastBefore(toPrayers(state.todayTimings), now);
+          if (lastToday) return lastToday;
 
-          // Find the last prayer that has already passed
-          const previousPrayer = [...todayPrayers]
-            .reverse()
-            .find((prayer) => compareAsc(parseISO(prayer.time), now) === -1);
-
-          if (previousPrayer) return previousPrayer;
-
-          // If no previous prayer found today (meaning we're before the first prayer of the day)
-          // and we have yesterday's prayers, return the last prayer from yesterday(Isha)
+          // Before the first prayer of the day, so the previous one is yesterday's Isha.
           if (state.yesterdayTimings) {
-            const yesterdayPrayers = Object.entries(state.yesterdayTimings.timings)
-              .map(([name, time]) => ({
-                name: name as PrayerName,
-                time,
-                date: state.yesterdayTimings!.date,
-              }))
-              .sort((a, b) => compareAsc(parseISO(a.time), parseISO(b.time)));
-
-            return yesterdayPrayers[yesterdayPrayers.length - 1];
+            return lastBefore(toPrayers(state.yesterdayTimings), now) ?? null;
           }
 
           return null;
