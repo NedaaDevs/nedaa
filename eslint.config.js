@@ -47,4 +47,35 @@ module.exports = defineConfig([
       "@typescript-eslint/no-deprecated": "off",
     },
   },
+  {
+    // Card owns the surface treatment (background, radius, elevation). Painting
+    // $backgroundSecondary by hand is what drove the radius and padding drift
+    // Card exists to fix. The ui/ primitives and the player/tab chrome that
+    // legitimately paint their own surface are exempt below.
+    files: ["src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: 'JSXAttribute[name.name="backgroundColor"][value.value="$backgroundSecondary"]',
+          message:
+            "Use <Card> (or Card.Pressable) instead of painting $backgroundSecondary by hand.",
+        },
+      ],
+    },
+  },
+  {
+    // Primitives and chrome that own their surface: the ui/ building blocks, the
+    // tab bar, and the audio player bars and sheet frames.
+    files: [
+      "src/components/ui/**/*.tsx",
+      "src/app/(tabs)/_layout.tsx",
+      "src/components/athkar/AudioControls.tsx",
+      "src/components/athkar/MiniPlayerBar.tsx",
+      "src/components/athkar/PlayerBottomSheet.tsx",
+    ],
+    rules: {
+      "no-restricted-syntax": "off",
+    },
+  },
 ]);
