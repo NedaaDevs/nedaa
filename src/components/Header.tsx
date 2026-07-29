@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 
 // Utils
 import { formatPrayerTime, getDateLocale, isFriday, timeZonedNow, HijriNative } from "@/utils/date";
-import { prayerElapsedFraction } from "@/utils/prayerArc";
+import { elapsedWindowFraction } from "@/utils/prayerArc";
 import { formatHoursMinutes } from "@/utils/countdown";
 
 // Stores
@@ -39,8 +39,13 @@ const Header = () => {
   const { t } = useTranslation();
   const { locale, hijriDaysOffset } = useAppStore();
   const { localizedLocation, locationDetails } = useLocationStore();
-  const { todayTimings, getNextPrayer, getNextOtherTiming, getPreviousPrayer } =
-    usePrayerTimesStore();
+  const {
+    todayTimings,
+    getNextPrayer,
+    getNextOtherTiming,
+    getPreviousPrayer,
+    getPreviousOtherTiming,
+  } = usePrayerTimesStore();
   const { useWesternNumerals, use24HourTime } = usePreferencesStore();
 
   const [showOtherTiming, setShowOtherTiming] = useState(false);
@@ -64,10 +69,8 @@ const Header = () => {
   const nextPrayer = todayTimings ? getNextPrayer() : null;
   const nextOtherTiming = todayTimings ? getNextOtherTiming() : null;
   const previousPrayer = todayTimings ? getPreviousPrayer() : null;
-  // Two different notions of "now", and they are not interchangeable.
-  // zonedNow reads as the location's wall clock — right for naming the day.
-  // now is a real instant — right for anything compared against a stored time,
-  // which already carries the location's UTC offset.
+  const previousOtherTiming = todayTimings ? getPreviousOtherTiming() : null;
+  // zonedNow for wall-clock display, now for comparing against stored times.
   const zonedNow = timeZonedNow(locationDetails.timezone);
   const now = new Date();
   const todayHijri = HijriNative.today(locationDetails.timezone);
@@ -88,8 +91,7 @@ const Header = () => {
   const hijriDate =
     hijriDaysOffset !== 0 ? HijriNative.addDays(todayHijri, hijriDaysOffset) : todayHijri;
 
-  // Toggling to the other timings must never blank the card: if there is no next
-  // one to show, stay on the prayer rather than falling through to the skeleton.
+  // Stay on the prayer when there is no other timing, rather than blanking the card.
   const showingOther = showOtherTiming && nextOtherTiming != null;
   const timing = showingOther ? nextOtherTiming : displayNextPrayer;
 
@@ -108,8 +110,7 @@ const Header = () => {
     return str;
   };
 
-  // Same H:MM as the prayer countdown — this shares the hero, so a phrase here
-  // and digits there would read as two different things in one place.
+  // Same H:MM as the prayer countdown; they share the hero.
   const otherTimingDisplay = useMemo(() => {
     if (!nextOtherTiming) return "";
     const seconds = differenceInSeconds(parseISO(nextOtherTiming.time), now);
@@ -157,10 +158,12 @@ const Header = () => {
       ? "prayerTimes.jumuah"
       : `prayerTimes.${timing.name}`;
 
-  // How far through the current prayer window we are, for the arc.
+  // The arc wraps the countdown, so it measures whichever window is displayed.
+  const windowFrom = showingOther ? previousOtherTiming : previousPrayer;
+  const windowTo = showingOther ? nextOtherTiming : displayNextPrayer;
   const elapsedFraction =
-    previousPrayer && displayNextPrayer
-      ? prayerElapsedFraction(parseISO(previousPrayer.time), parseISO(displayNextPrayer.time), now)
+    windowFrom && windowTo
+      ? elapsedWindowFraction(parseISO(windowFrom.time), parseISO(windowTo.time), now)
       : 0;
 
   const headlineName =

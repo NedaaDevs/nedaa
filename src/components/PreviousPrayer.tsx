@@ -34,8 +34,7 @@ const PreviousPrayer = () => {
 
     if (previousPrayer) {
       const checkAndUpdateTimer = () => {
-        // A real instant: prayer times carry the location's offset, so this
-        // comparison must not be shifted by the device's zone.
+        // Real instant: prayer times carry the location's offset.
         const currentTime = new Date();
         const prayerTime = parseISO(previousPrayer.time);
         const minutesSincePrayer = differenceInMinutes(currentTime, prayerTime);

@@ -1,11 +1,5 @@
-/**
- * Geometry for the home-screen prayer arc.
- *
- * The arc is a bowl opening downward: it starts at the lower left, sweeps
- * clockwise over the top, and ends at the lower right. Progress always runs
- * left to right — it tracks the sun, not the reading direction, so it must not
- * mirror under RTL.
- */
+// Bowl-shaped arc: lower left, clockwise over the top, lower right. Progress
+// runs left to right and must not mirror under RTL — it tracks the sun.
 
 export const ARC_START_DEG = 150;
 export const ARC_SWEEP_DEG = 240;
@@ -19,10 +13,7 @@ const polar = (cx: number, cy: number, radius: number, degrees: number) => {
   };
 };
 
-/**
- * A single SVG arc command. One command can't express a full circle, so the
- * sweep is capped just short of it.
- */
+// Sweep is capped just short of 360: one arc command can't express a full circle.
 export const arcPath = (
   cx: number,
   cy: number,
@@ -37,13 +28,8 @@ export const arcPath = (
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
 };
 
-/**
- * How far the current moment sits between two prayers, clamped to 0–1.
- *
- * Returns 0 for a non-positive window, which covers missing data and the case
- * where both timings resolve to the same instant.
- */
-export const prayerElapsedFraction = (from: Date, to: Date, now: Date): number => {
+// Position between two timings, clamped to 0–1. A non-positive window gives 0.
+export const elapsedWindowFraction = (from: Date, to: Date, now: Date): number => {
   const start = from.getTime();
   const end = to.getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;

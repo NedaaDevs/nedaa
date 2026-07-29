@@ -1,30 +1,30 @@
-import { ARC_START_DEG, ARC_SWEEP_DEG, arcPath, prayerElapsedFraction } from "@/utils/prayerArc";
+import { ARC_START_DEG, ARC_SWEEP_DEG, arcPath, elapsedWindowFraction } from "@/utils/prayerArc";
 
 const at = (iso: string) => new Date(iso);
 
-describe("prayerElapsedFraction", () => {
+describe("elapsedWindowFraction", () => {
   const from = at("2026-07-29T12:00:00Z");
   const to = at("2026-07-29T16:00:00Z");
 
   it("reports the share of the window that has elapsed", () => {
-    expect(prayerElapsedFraction(from, to, at("2026-07-29T13:00:00Z"))).toBeCloseTo(0.25);
-    expect(prayerElapsedFraction(from, to, at("2026-07-29T14:00:00Z"))).toBeCloseTo(0.5);
+    expect(elapsedWindowFraction(from, to, at("2026-07-29T13:00:00Z"))).toBeCloseTo(0.25);
+    expect(elapsedWindowFraction(from, to, at("2026-07-29T14:00:00Z"))).toBeCloseTo(0.5);
   });
 
   it("clamps outside the window rather than running past the arc", () => {
-    expect(prayerElapsedFraction(from, to, at("2026-07-29T09:00:00Z"))).toBe(0);
-    expect(prayerElapsedFraction(from, to, at("2026-07-29T20:00:00Z"))).toBe(1);
+    expect(elapsedWindowFraction(from, to, at("2026-07-29T09:00:00Z"))).toBe(0);
+    expect(elapsedWindowFraction(from, to, at("2026-07-29T20:00:00Z"))).toBe(1);
   });
 
   it("returns 0 for a window that is empty or inverted", () => {
-    expect(prayerElapsedFraction(to, from, at("2026-07-29T14:00:00Z"))).toBe(0);
-    expect(prayerElapsedFraction(from, from, at("2026-07-29T14:00:00Z"))).toBe(0);
+    expect(elapsedWindowFraction(to, from, at("2026-07-29T14:00:00Z"))).toBe(0);
+    expect(elapsedWindowFraction(from, from, at("2026-07-29T14:00:00Z"))).toBe(0);
   });
 
   it("spans midnight, so the pre-Fajr window works", () => {
     const isha = at("2026-07-29T20:00:00Z");
     const fajr = at("2026-07-30T04:00:00Z");
-    expect(prayerElapsedFraction(isha, fajr, at("2026-07-30T00:00:00Z"))).toBeCloseTo(0.5);
+    expect(elapsedWindowFraction(isha, fajr, at("2026-07-30T00:00:00Z"))).toBeCloseTo(0.5);
   });
 });
 

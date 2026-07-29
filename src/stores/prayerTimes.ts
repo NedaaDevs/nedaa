@@ -62,6 +62,7 @@ export type PrayerTimesStore = {
   getNextPrayer: () => Prayer | null;
   getNextOtherTiming: () => OtherTiming | null;
   getPreviousPrayer: () => Prayer | null;
+  getPreviousOtherTiming: () => OtherTiming | null;
   cleanupOldData: (olderThanDays?: number) => Promise<boolean>;
   clearError: () => void;
 };
@@ -213,11 +214,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             }
 
             const { locationDetails, lastKnownCoords } = locationStore.getState();
-            // No verified fix — permission declined, or acquisition failed with nothing
-            // saved. locationDetails.coords defaults to Makkah, so prayer times still
-            // load rather than leaving the app empty; the user can set their location
-            // in settings, and didGetCurrentLocation stays false so a real fix is still
-            // attempted on later loads.
+            // No verified fix. coords default to Makkah so times still load, and
+            // didGetCurrentLocation stays false so a real fix is retried later.
             if (!lastKnownCoords) {
               log.w("Load", "no verified coordinates; using the default location");
             }
@@ -319,8 +317,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         },
         getNextPrayer: () => {
           const state = get();
-          // A real instant, not timeZonedNow(): the stored times already carry the
-          // location's offset, so the comparison must not involve the device zone.
+          // Real instant: stored times already carry the location's offset.
           const now = new Date();
 
           if (!state.todayTimings) return null;
@@ -328,9 +325,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           const nextToday = firstAfter(toPrayers(state.todayTimings), now);
           if (nextToday) return nextToday;
 
-          // Every prayer today has passed, so the next one belongs to tomorrow.
-          // Fall back to tomorrow's first prayer even if it too reads as past —
-          // cached data can lag the clock, and returning null blanks the screen.
+          // Tomorrow's first, even if it reads as past: null would blank the screen.
           if (state.tomorrowTimings) {
             const tomorrow = toPrayers(state.tomorrowTimings);
             return firstAfter(tomorrow, now) ?? earliest(tomorrow);
@@ -347,9 +342,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           const lastToday = lastBefore(toPrayers(state.todayTimings), now);
           if (lastToday) return lastToday;
 
-          // Before the first prayer of the day, so the previous one is yesterday's
-          // Isha. Same reasoning as above: take the last one even if the cached
-          // day sits ahead of the clock.
+          // Before the day's first prayer, so the previous one is yesterday's Isha.
           if (state.yesterdayTimings) {
             const yesterday = toPrayers(state.yesterdayTimings);
             return lastBefore(yesterday, now) ?? latest(yesterday);
@@ -367,15 +360,30 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           const nextToday = firstAfter(today, now);
           if (nextToday) return nextToday;
 
-          // Today's are all behind us, so the next one is tomorrow's first. Same
-          // rule as the prayers: never return null while a day's data exists, or
-          // the home screen has nothing to show and falls back to its skeleton.
+          // Tomorrow's first; same never-null rule as the prayers.
           if (state.tomorrowTimings?.otherTimings) {
             const tomorrow = toOtherTimings(state.tomorrowTimings);
             return firstAfter(tomorrow, now) ?? earliest(tomorrow);
           }
 
           return earliest(today);
+        },
+        // Mirrors getPreviousPrayer, for the home arc's other-timing window.
+        getPreviousOtherTiming: () => {
+          const state = get();
+          const now = new Date();
+
+          if (!state.todayTimings?.otherTimings) return null;
+
+          const lastToday = lastBefore(toOtherTimings(state.todayTimings), now);
+          if (lastToday) return lastToday;
+
+          if (state.yesterdayTimings?.otherTimings) {
+            const yesterday = toOtherTimings(state.yesterdayTimings);
+            return lastBefore(yesterday, now) ?? latest(yesterday);
+          }
+
+          return null;
         },
         cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {
           try {

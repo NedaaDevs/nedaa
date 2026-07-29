@@ -47,8 +47,7 @@ const TimingItem = ({
       formatPrayerTime(date, locationDetails.timezone, { locale, use24HourTime })
     );
 
-  // State can't ride on colour alone: done rows carry a check, next rows a badge.
-  // Keep those in step with the a11y label.
+  // State can't ride on colour alone: done gets a check, next a badge.
   const contentColor = isNext ? "$accentPrimary" : isDone ? "$typographySecondary" : "$typography";
   const weight = isNext ? "700" : isDone ? "400" : "500";
   const a11yKey = isNext ? "a11y.prayerRowNext" : isDone ? "a11y.prayerRowDone" : "a11y.prayerRow";

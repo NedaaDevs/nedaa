@@ -6,17 +6,14 @@ import { Box } from "@/components/ui/box";
 import { ARC_START_DEG, ARC_SWEEP_DEG, arcPath } from "@/utils/prayerArc";
 
 type Props = {
-  /** Elapsed share of the window between the previous and next prayer, 0–1. */
+  /** Elapsed share of the current timing window, 0–1. */
   progress: number;
   size?: number;
   strokeWidth?: number;
   children?: ReactNode;
 };
 
-/**
- * The window between two prayers, drawn as a bowl-shaped arc with the countdown
- * inside it. The arc is the container, so the content needs no card of its own.
- */
+// The arc is the container for the countdown, so the content needs no card.
 const PrayerProgressArc = ({ progress, size = 240, strokeWidth = 4, children }: Props) => {
   const theme = useTheme();
   const center = size / 2;
@@ -24,8 +21,7 @@ const PrayerProgressArc = ({ progress, size = 240, strokeWidth = 4, children }: 
 
   const track = arcPath(center, center, radius, ARC_START_DEG, ARC_SWEEP_DEG);
   const elapsed = Math.min(Math.max(progress, 0), 1);
-  // A zero-length arc still paints a round cap, which reads as progress that
-  // hasn't happened yet.
+  // A zero-length arc still paints a round cap, which reads as progress.
   const filled =
     elapsed > 0 ? arcPath(center, center, radius, ARC_START_DEG, ARC_SWEEP_DEG * elapsed) : null;
 

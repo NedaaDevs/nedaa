@@ -1,20 +1,7 @@
 import { compareAsc, parseISO } from "date-fns";
 
-/**
- * Picking the current/next timing from a day's entries.
- *
- * Prayer times are stored as ISO 8601 strings carrying the location's UTC offset,
- * so `parseISO` yields an absolute instant. Comparing those against a plain
- * `new Date()` — also an absolute instant — keeps the answer independent of the
- * device's timezone.
- *
- * Do NOT compare against `timeZonedNow()`. That returns a Date whose *local*
- * fields have been shifted to read as the target zone's wall clock, which is
- * right for formatting and for deciding which calendar day to load, but is the
- * wrong instant by (location offset − device offset). Comparing it against a
- * real instant makes prayers appear passed early for anyone whose device clock
- * isn't set to the location's zone.
- */
+// Stored times carry the location's UTC offset, so compare against a real
+// `new Date()`. `timeZonedNow()` is shifted and would skew these by the device zone.
 
 type TimingLike = { time: string };
 
@@ -34,13 +21,8 @@ export const lastBefore = <T extends TimingLike>(entries: T[], now: Date): T | n
   return null;
 };
 
-/**
- * Earliest / latest entry regardless of `now`.
- *
- * These back the adjacent-day fallbacks. They must not be time-filtered: when
- * cached data lags behind the clock, every entry can sit in the past, and
- * returning null there leaves the home screen with nothing to render at all.
- */
+// Adjacent-day fallbacks. Not time-filtered: stale cached data can put every
+// entry in the past, and null there leaves the home screen with nothing to render.
 export const earliest = <T extends TimingLike>(entries: T[]): T | null =>
   sortByInstant(entries)[0] ?? null;
 

@@ -23,9 +23,7 @@ export const useCountdownTimer = (
   nextPrayer: Prayer | null,
   previousPrayer: Prayer | null
 ): TimerResult => {
-  // A real instant, not timeZonedNow(): every comparison below is against a
-  // stored time that already carries the location's UTC offset, so the device's
-  // own timezone must not enter into it.
+  // Real instant: stored times already carry the location's offset.
   const [now, setNow] = useState(() => new Date());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { countdownEnabled, countdownMinutes, iqamaCountUpEnabled, iqamaCountUpMinutes } =
