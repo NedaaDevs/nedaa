@@ -1,4 +1,4 @@
-import { FC, useState, useCallback } from "react";
+import { FC, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 
@@ -13,7 +13,7 @@ import { Icon } from "@/components/ui/icon";
 
 import { Plus, ChevronRight, ChevronLeft } from "lucide-react-native";
 
-import { useMyAthkarStore } from "@/stores/my-athkar";
+import { useMyAthkarStore, groupMyAthkarByCategory } from "@/stores/my-athkar";
 import { useCustomAthkarStore } from "@/stores/custom-athkar";
 import { useInitializeAthkarStores } from "@/hooks/useInitializeAthkarStores";
 
@@ -37,9 +37,9 @@ const MyAthkarList: FC = () => {
   const { isMyAthkarInit: hisnInitialized, isCustomInit: customInitialized } =
     useInitializeAthkarStores();
 
-  const getGroupedByCategory = useMyAthkarStore((s) => s.getGroupedByCategory);
   const hisnItems = useMyAthkarStore((s) => s.items);
   const hisnProgress = useMyAthkarStore((s) => s.progress);
+  const hisnDisplayData = useMyAthkarStore((s) => s.displayData);
 
   const customGroups = useCustomAthkarStore((s) => s.groups);
   const customItems = useCustomAthkarStore((s) => s.items);
@@ -52,6 +52,13 @@ const MyAthkarList: FC = () => {
   const isRTL = i18n.dir() === "rtl";
 
   const handleBack = useCallback(() => setSelectedGroup(null), []);
+
+  // Grouping builds a fresh array, so it is memoized on its inputs rather than
+  // selected; the getter alone is a stable reference and would never recompute.
+  const hisnGroups = useMemo(
+    () => groupMyAthkarByCategory(hisnItems, hisnDisplayData),
+    [hisnItems, hisnDisplayData]
+  );
 
   if (!hisnInitialized || !customInitialized) {
     return (
@@ -90,8 +97,6 @@ const MyAthkarList: FC = () => {
       </>
     );
   }
-
-  const hisnGroups = getGroupedByCategory();
 
   return (
     <>

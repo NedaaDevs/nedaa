@@ -47,6 +47,9 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { batchAddItems, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
+  // Subscribed, so the checkmarks follow the collection; isSourceAdded is a stable
+  // reference and reads through it would not recompute during render.
+  const myAthkarItems = useMyAthkarStore((state) => state.items);
   const hapticSuccess = useHaptic("success");
   const hapticSelection = useHaptic("selection");
 
@@ -176,10 +179,15 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
     return Array.from(groups.values());
   }, [searchResults]);
 
+  const addedSourceIds = useMemo(
+    () => new Set(myAthkarItems.map((item) => item.sourceAthkarId)),
+    [myAthkarItems]
+  );
+
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
 
   const renderAthkarCheckItem = (item: HisnAthkar | HisnSearchResult) => {
-    const isAdded = isSourceAdded(item.id);
+    const isAdded = addedSourceIds.has(item.id);
     const isSelected = selectedItems.has(item.id);
     const checked = isAdded || isSelected;
 

@@ -20,14 +20,15 @@ const UmrahResumeBanner = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
-  const { activeProgress, getProgressFraction, resetProgress } = useUmrahGuideStore();
+  const { activeProgress, resetProgress } = useUmrahGuideStore();
+  // Called inside the selector so it re-runs on every store change.
+  const progress = useUmrahGuideStore((state) => state.getProgressFraction());
 
   if (!activeProgress) return null;
 
   const currentStage = UMRAH_STAGES[activeProgress.currentStageIndex];
   if (!currentStage) return null;
 
-  const progress = getProgressFraction();
   const handlePress = async () => {
     await selectionHaptic();
     router.push("/umrah" as any);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
@@ -16,8 +16,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [snoozeEndTime, setSnoozeEndTime] = useState<Date | null>(null);
   const [snoozeTimeRemaining, setSnoozeTimeRemaining] = useState(0);
 
-  const { snoozeAlarm, getAlarm } = useAlarmStore();
-  const alarm = useMemo(() => getAlarm(alarmId), [alarmId, getAlarm]);
+  const snoozeAlarm = useAlarmStore((state) => state.snoozeAlarm);
+  // Selected so the snooze count on screen follows the store.
+  const alarm = useAlarmStore((state) => state.scheduledAlarms[alarmId]);
 
   const settingsType = alarmType === ScheduledAlarmType.JUMMAH ? "friday" : "fajr";
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);

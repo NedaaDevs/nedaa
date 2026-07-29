@@ -102,7 +102,9 @@ export default function ToolsScreen() {
   const { isRTL } = useRTL();
   const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-  const { activeProgress, getProgressFraction } = useUmrahGuideStore();
+  const activeProgress = useUmrahGuideStore((state) => state.activeProgress);
+  // Called inside the selector so it re-runs on every store change.
+  const umrahProgress = useUmrahGuideStore((state) => state.getProgressFraction());
   const { fajr, friday } = useAlarmSettingsStore();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
@@ -151,7 +153,7 @@ export default function ToolsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`${t("tools.umrahGuide.title")}, ${continueLabel}`}
                 accessibilityHint={t("a11y.tools.continueHint")}>
-                <ProgressRing progress={getProgressFraction()} size="md" />
+                <ProgressRing progress={umrahProgress} size="md" />
                 <VStack flex={1} gap="$0.5">
                   <Text size="md" fontWeight="600" color="$typography">
                     {t("tools.umrahGuide.title")}

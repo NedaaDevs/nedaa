@@ -66,6 +66,33 @@ const debouncedDailyUpdate = createDebouncedQueue(
   300
 );
 
+/** Groups saved athkar by their source category. Pure, so callers can memoize it. */
+export const groupMyAthkarByCategory = (
+  items: MyAthkarItem[],
+  displayData: Map<number, DisplayEntry>
+): MyAthkarCategoryGroup[] => {
+  const groupMap = new Map<number, MyAthkarCategoryGroup>();
+
+  for (const item of items) {
+    const display = displayData.get(item.sourceAthkarId);
+    if (!display) continue;
+
+    let group = groupMap.get(item.sourceCategoryId);
+    if (!group) {
+      group = {
+        categoryId: item.sourceCategoryId,
+        titleAr: display.categoryTitleAr,
+        titleEn: display.categoryTitleEn,
+        items: [],
+      };
+      groupMap.set(item.sourceCategoryId, group);
+    }
+    group.items.push(item);
+  }
+
+  return Array.from(groupMap.values());
+};
+
 export const useMyAthkarStore = create<MyAthkarStore>()(
   devtools(
     (set, get) => ({
@@ -237,26 +264,7 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
 
       getGroupedByCategory: () => {
         const { items, displayData } = get();
-        const groupMap = new Map<number, MyAthkarCategoryGroup>();
-
-        for (const item of items) {
-          const display = displayData.get(item.sourceAthkarId);
-          if (!display) continue;
-
-          let group = groupMap.get(item.sourceCategoryId);
-          if (!group) {
-            group = {
-              categoryId: item.sourceCategoryId,
-              titleAr: display.categoryTitleAr,
-              titleEn: display.categoryTitleEn,
-              items: [],
-            };
-            groupMap.set(item.sourceCategoryId, group);
-          }
-          group.items.push(item);
-        }
-
-        return Array.from(groupMap.values());
+        return groupMyAthkarByCategory(items, displayData);
       },
 
       incrementCount: (myAthkarId) => {
