@@ -14,9 +14,8 @@ export type ApplyProviderSettingsDeps = {
 };
 
 /**
- * A setting only reaches the user once the times are refetched with it and everything
- * downstream is rescheduled, so the whole run has to succeed before the edit counts as
- * applied. Throws the first step's failure, leaving the settings dirty for a retry.
+ * Every step must succeed before the edit counts as applied. Throws on the first
+ * failure, leaving the settings dirty for a retry.
  */
 export const applyProviderSettings = async (
   deps: ApplyProviderSettingsDeps,

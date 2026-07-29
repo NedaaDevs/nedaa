@@ -32,9 +32,8 @@ interface ProviderSettingsState {
   error: string | null;
 
   /**
-   * Requests one forced prayer-times refetch at next launch, reconciling stored
-   * settings with times that may not reflect them. Persisted so the reconcile
-   * survives a launch that fails or is killed early.
+   * Requests one forced refetch at next launch, for settings whose times may not
+   * reflect them. Persisted so it survives a launch that fails or is killed early.
    */
   pendingReapply: boolean;
 }
@@ -75,11 +74,7 @@ interface ProviderSettingsActions {
    */
   resetCurrentSettings: () => void;
 
-  /**
-   * Clear the dirty flag once the settings have reached the times — refetch,
-   * notifications, alarms and widgets all done. Until then the edit is pending, and
-   * the flag keeps the save affordance on screen across navigation.
-   */
+  /** Clears the dirty flag once the settings have reached the times. */
   markSettingsApplied: () => void;
 
   /**
@@ -222,8 +217,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
               throw new Error("No settings found for current provider");
             }
 
-            // isModified survives the save. The settings only reach the user once the
-            // caller's apply pipeline lands, and markSettingsApplied ends that.
+            // isModified is the caller's to clear, once the apply pipeline lands.
             set({
               allSettings: {
                 ...state.allSettings,

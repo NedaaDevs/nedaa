@@ -7,14 +7,19 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AladhanSettings } from "@/types/providers/aladhan";
 
 export const useAladhanSettings = () => {
-  const { isModified, currentProviderId, updateCurrentSettings, getCurrentSettings } =
-    useProviderSettingsStore();
+  const currentProviderId = useProviderSettingsStore((state) => state.currentProviderId);
+  const isModified = useProviderSettingsStore((state) => state.isModified);
+  const updateCurrentSettings = useProviderSettingsStore((state) => state.updateCurrentSettings);
+
+  // Must be a selector: React Compiler freezes values read through the store's own
+  // getters, whose identity never changes.
+  const settings = useProviderSettingsStore(
+    (state) => state.allSettings[state.currentProviderId]
+  ) as AladhanSettings | undefined;
 
   if (currentProviderId !== PRAYER_TIME_PROVIDERS.ALADHAN.id) {
     throw new Error("useAladhanSettings called when Aladhan is not the current provider");
   }
-
-  const settings = getCurrentSettings<AladhanSettings>();
 
   return {
     settings,

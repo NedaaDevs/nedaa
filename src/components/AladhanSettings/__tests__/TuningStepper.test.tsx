@@ -10,6 +10,12 @@ jest.mock("@/components/ui/hstack", () => {
   return { HStack: RNView };
 });
 
+jest.mock("@/components/ui/vstack", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View: RNView } = require("react-native");
+  return { VStack: RNView };
+});
+
 jest.mock("@/components/ui/text", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text: RNText } = require("react-native");
@@ -139,18 +145,18 @@ describe("TuningStepper", () => {
     expect(tree.root.findByProps({ testID: "tuning-increment" }).props.accessible).toBe(false);
   });
 
-  test("lays the row out horizontally", () => {
+  test("lays the controls out horizontally under the label", () => {
     const { tree } = render();
 
-    expect(tree.root.findByProps({ testID: "tuning-stepper" }).props.flexDirection).toBe("row");
+    expect(tree.root.findByProps({ testID: "tuning-controls" }).props.flexDirection).toBe("row");
   });
 
-  test("reverses the row under an RTL layout", () => {
+  test("reverses the controls under an RTL layout", () => {
     mockIsRTL = true;
 
     const { tree } = render();
 
-    expect(tree.root.findByProps({ testID: "tuning-stepper" }).props.flexDirection).toBe(
+    expect(tree.root.findByProps({ testID: "tuning-controls" }).props.flexDirection).toBe(
       "row-reverse"
     );
   });

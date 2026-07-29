@@ -35,11 +35,7 @@ const STEP_KEYS: Record<ApplyStep, string> = {
   alarms: "location.update.step.alarms",
 };
 
-/**
- * Pinned to the bottom of the provider settings screen rather than sitting above the
- * form, so making an edit no longer pushes every section down, and the control stays
- * reachable from wherever the user is editing.
- */
+/** Pinned below the form so it stays reachable wherever the user is editing. */
 export const ProviderSaveBar: FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

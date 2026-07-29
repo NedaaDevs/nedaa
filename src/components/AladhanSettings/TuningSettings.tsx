@@ -93,7 +93,6 @@ export const TuningSettings: FC = () => {
               <Text fontSize="$2" color="$typographySecondary">
                 {t("providers.aladhan.tuning.inputLabel")}
               </Text>
-              {/* Names the adjusted prayers rather than counting them. */}
               <Text fontSize="$4" fontWeight="500" color="$typography">
                 {summary ?? t("providers.aladhan.tuning.noAdjustments")}
               </Text>
@@ -117,7 +116,6 @@ export const TuningSettings: FC = () => {
             </Text>
           </ModalHeader>
 
-          {/* Steppers render cheaply, so the body needs no deferral to open smoothly. */}
           <ModalBody>
             <Box paddingVertical="$4">
               <Text fontSize="$2" color="$typographySecondary" marginBottom="$4">

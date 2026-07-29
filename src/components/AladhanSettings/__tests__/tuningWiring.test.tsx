@@ -22,6 +22,12 @@ jest.mock("@/components/ui/hstack", () => {
   return { HStack: RNView };
 });
 
+jest.mock("@/components/ui/vstack", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View: RNView } = require("react-native");
+  return { VStack: RNView };
+});
+
 jest.mock("@/components/ui/text", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text: RNText } = require("react-native");
