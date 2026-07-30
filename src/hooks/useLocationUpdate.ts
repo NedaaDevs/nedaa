@@ -4,6 +4,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useNotificationStore } from "@/stores/notification";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
+import type { ManualLocation } from "@/types/location";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 
 export type UpdateStep = "location" | "prayerTimes" | "notifications" | "alarms" | "done";
@@ -42,30 +43,49 @@ export const useLocationUpdate = () => {
     }
   };
 
-  const executeUpdate = useCallback(async () => {
-    setUpdateState({ isUpdating: true, currentStep: null, error: null });
+  /**
+   * Everything after the coordinates is identical whether they came from the device or
+   * from a city the user picked, so only the first step differs. A step that throws
+   * stops the pipeline, leaving the failure on screen rather than half-applying it.
+   */
+  const runPipeline = useCallback(
+    async (setCoordinates: () => Promise<void>) => {
+      setUpdateState({ isUpdating: true, currentStep: null, error: null });
 
-    try {
-      await runStep("location", () => locationStore.updateCurrentLocation());
-      await runStep("prayerTimes", () => prayerTimesStore.loadPrayerTimes(true));
-      await runStep("notifications", () => notificationStore.scheduleAllNotifications());
-      await runStep("alarms", () => rescheduleAllAlarms());
+      try {
+        await runStep("location", setCoordinates);
+        await runStep("prayerTimes", () => prayerTimesStore.loadPrayerTimes(true));
+        await runStep("notifications", () => notificationStore.scheduleAllNotifications());
+        await runStep("alarms", () => rescheduleAllAlarms());
 
-      reloadPrayerWidgets();
+        reloadPrayerWidgets();
 
-      setUpdateState({ isUpdating: false, currentStep: "done", error: null });
+        setUpdateState({ isUpdating: false, currentStep: "done", error: null });
 
-      setTimeout(() => {
-        setUpdateState(initialState);
-      }, 2000);
-    } catch {
-      // Error already captured in runStep
-    }
-  }, [locationStore, prayerTimesStore, notificationStore]);
+        setTimeout(() => {
+          setUpdateState(initialState);
+        }, 2000);
+      } catch {
+        // Error already captured in runStep
+      }
+    },
+    [prayerTimesStore, notificationStore]
+  );
+
+  const executeUpdate = useCallback(
+    () => runPipeline(() => locationStore.updateCurrentLocation()),
+    [runPipeline, locationStore]
+  );
+
+  const applyManualLocation = useCallback(
+    (location: ManualLocation) =>
+      runPipeline(async () => locationStore.setManualLocation(location)),
+    [runPipeline, locationStore]
+  );
 
   const retry = useCallback(() => {
     executeUpdate();
   }, [executeUpdate]);
 
-  return { updateState, executeUpdate, retry };
+  return { updateState, executeUpdate, applyManualLocation, retry };
 };
