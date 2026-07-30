@@ -301,6 +301,8 @@ export const useNotificationStore = create<NotificationStore>()(
             if (result.success) {
               set({ lastScheduledDate: new Date().toISOString() });
               console.log(`Scheduled ${result.scheduledCount} notifications`);
+            } else if (result.skipReason) {
+              console.warn(`[Notification Store] Nothing scheduled: ${result.skipReason}`);
             } else {
               console.error("Failed to schedule notifications:", result.error);
             }

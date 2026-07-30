@@ -39,6 +39,7 @@ import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
+import { SchedulingSkipReason, type SchedulingSkipReasonValue } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
 // Stores
@@ -68,10 +69,13 @@ type SchedulingOptions = {
   timezone: string;
 };
 
+// `skipReason` marks an expected no-op (nothing to schedule); `error` marks a
+// genuine failure. Callers log the two at different levels.
 type SchedulingResult = {
   success: boolean;
   scheduledCount: number;
   error?: Error;
+  skipReason?: SchedulingSkipReasonValue;
 };
 
 type NotificationScheduleItem = {
@@ -317,7 +321,7 @@ export const scheduleAllNotifications = async (
     return {
       success: false,
       scheduledCount: 0,
-      error: new Error("Notification permission not granted"),
+      skipReason: SchedulingSkipReason.PERMISSION_NOT_GRANTED,
     };
   }
 
@@ -326,6 +330,7 @@ export const scheduleAllNotifications = async (
     return {
       success: false,
       scheduledCount: 0,
+      skipReason: SchedulingSkipReason.NO_PRAYER_TIMES,
     };
   }
 
