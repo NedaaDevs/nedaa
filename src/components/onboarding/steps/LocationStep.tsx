@@ -52,8 +52,11 @@ const LocationStep = ({ onNext }: LocationStepProps) => {
     return (
       <VStack flex={1}>
         <HStack alignItems="center" gap="$2" paddingHorizontal="$3" paddingTop="$2">
+          {/* The picker is only reachable after a decline, so backing out of it returns
+              there rather than to the initial prompt — re-offering the permission would
+              just re-deny it silently on iOS. */}
           <Pressable
-            onPress={() => setMode(isCoordinates ? StepMode.PICKER : StepMode.PROMPT)}
+            onPress={() => setMode(isCoordinates ? StepMode.PICKER : StepMode.DENIED)}
             minWidth={44}
             minHeight={44}
             alignItems="center"
@@ -99,8 +102,33 @@ const LocationStep = ({ onNext }: LocationStepProps) => {
         </Text>
       </VStack>
 
+      {/* Sharing the device location is the only action offered up front; picking a city
+          is the answer to a decline, not a competing choice that invites one. */}
       <VStack gap="$3" alignItems="center" width="100%">
-        {!isDenied && (
+        {isDenied ? (
+          <>
+            <Button
+              onPress={() => setMode(StepMode.PICKER)}
+              size="lg"
+              paddingHorizontal="$8"
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.onboarding.location.chooseCity")}>
+              <Button.Text fontWeight="500">{t("onboarding.location.chooseCity")}</Button.Text>
+            </Button>
+
+            <Pressable
+              onPress={onNext}
+              minHeight={44}
+              paddingHorizontal="$4"
+              justifyContent="center"
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.onboarding.location.skip")}>
+              <Text size="sm" color="$typographySecondary">
+                {t("onboarding.location.skip")}
+              </Text>
+            </Pressable>
+          </>
+        ) : (
           <Button
             onPress={handleAllow}
             size="lg"
@@ -109,30 +137,6 @@ const LocationStep = ({ onNext }: LocationStepProps) => {
             accessibilityLabel={t("onboarding.location.allow")}>
             <Button.Text fontWeight="500">{t("onboarding.location.allow")}</Button.Text>
           </Button>
-        )}
-
-        <Button
-          onPress={() => setMode(StepMode.PICKER)}
-          size="lg"
-          variant={isDenied ? "solid" : "outline"}
-          paddingHorizontal="$8"
-          accessibilityRole="button"
-          accessibilityLabel={t("a11y.onboarding.location.chooseCity")}>
-          <Button.Text fontWeight="500">{t("onboarding.location.chooseCity")}</Button.Text>
-        </Button>
-
-        {isDenied && (
-          <Pressable
-            onPress={onNext}
-            minHeight={44}
-            paddingHorizontal="$4"
-            justifyContent="center"
-            accessibilityRole="button"
-            accessibilityLabel={t("a11y.onboarding.location.skip")}>
-            <Text size="sm" color="$typographySecondary">
-              {t("onboarding.location.skip")}
-            </Text>
-          </Pressable>
         )}
       </VStack>
     </VStack>

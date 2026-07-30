@@ -111,11 +111,21 @@ describe("onboarding location step", () => {
     mockPicker.onDone = undefined;
     mockPicker.onEnterCoordinates = undefined;
     mockCoordinates.rendered = false;
+    mockRequestPermission.mockResolvedValue({ granted: false });
   });
 
-  test("offers the manual path alongside sharing location", async () => {
+  /** Declining is the only route to the manual path, so most cases start there. */
+  const declineAndOpenPicker = async (tree: renderer.ReactTestRenderer) => {
+    await press(tree, "onboarding.location.allow");
+    await press(tree, "a11y.onboarding.location.chooseCity");
+  };
+
+  test("offers only the permission request up front", async () => {
     const { tree } = await render();
-    expect(visibleText(tree)).toContain("onboarding.location.chooseCity");
+
+    expect(visibleText(tree)).toContain("onboarding.location.allow");
+    // Offering the manual path here would invite a decline rather than answer one.
+    expect(visibleText(tree)).not.toContain("onboarding.location.chooseCity");
   });
 
   test("advances when the permission is granted", async () => {
@@ -128,7 +138,6 @@ describe("onboarding location step", () => {
   });
 
   test("does not advance when the permission is declined", async () => {
-    mockRequestPermission.mockResolvedValue({ granted: false });
     const { tree, onNext } = await render();
 
     await press(tree, "onboarding.location.allow");
@@ -139,7 +148,6 @@ describe("onboarding location step", () => {
   });
 
   test("offers both the picker and an explicit skip after a decline", async () => {
-    mockRequestPermission.mockResolvedValue({ granted: false });
     const { tree } = await render();
 
     await press(tree, "onboarding.location.allow");
@@ -148,19 +156,19 @@ describe("onboarding location step", () => {
     expect(visibleText(tree)).toContain("onboarding.location.skip");
   });
 
-  test("opens the picker without ever requesting the permission", async () => {
+  test("opening the picker does not request the permission a second time", async () => {
     const { tree } = await render();
 
-    await press(tree, "a11y.onboarding.location.chooseCity");
+    await declineAndOpenPicker(tree);
 
     expect(mockPicker.rendered).toBe(true);
-    expect(mockRequestPermission).not.toHaveBeenCalled();
+    expect(mockRequestPermission).toHaveBeenCalledTimes(1);
   });
 
   test("advances once a city has been chosen", async () => {
     const { tree, onNext } = await render();
 
-    await press(tree, "a11y.onboarding.location.chooseCity");
+    await declineAndOpenPicker(tree);
     await act(async () => {
       mockPicker.onDone?.();
     });
@@ -169,7 +177,6 @@ describe("onboarding location step", () => {
   });
 
   test("skipping after a decline advances without a location", async () => {
-    mockRequestPermission.mockResolvedValue({ granted: false });
     const { tree, onNext } = await render();
 
     await press(tree, "onboarding.location.allow");
@@ -181,7 +188,7 @@ describe("onboarding location step", () => {
   test("coordinate entry is reachable from the picker", async () => {
     const { tree } = await render();
 
-    await press(tree, "a11y.onboarding.location.chooseCity");
+    await declineAndOpenPicker(tree);
     await act(async () => {
       mockPicker.onEnterCoordinates?.();
     });
@@ -192,7 +199,7 @@ describe("onboarding location step", () => {
   test("backing out of coordinate entry returns to the picker, not the prompt", async () => {
     const { tree } = await render();
 
-    await press(tree, "a11y.onboarding.location.chooseCity");
+    await declineAndOpenPicker(tree);
     await act(async () => {
       mockPicker.onEnterCoordinates?.();
     });
@@ -202,12 +209,12 @@ describe("onboarding location step", () => {
     expect(mockPicker.rendered).toBe(true);
   });
 
-  test("the picker can be backed out of, returning to the prompt", async () => {
+  test("backing out of the picker returns to the declined prompt", async () => {
     const { tree } = await render();
 
-    await press(tree, "a11y.onboarding.location.chooseCity");
+    await declineAndOpenPicker(tree);
     await press(tree, "a11y.back");
 
-    expect(visibleText(tree)).toContain("onboarding.location.title");
+    expect(visibleText(tree)).toContain("onboarding.location.deniedTitle");
   });
 });
