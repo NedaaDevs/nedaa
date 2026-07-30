@@ -3,6 +3,8 @@ import { PermissionStatus } from "expo-notifications";
 
 import { checkPermissions } from "@/utils/notifications";
 import { checkLocationPermission } from "@/utils/location";
+import { useLocationStore } from "@/stores/location";
+import { LocationMode } from "@/enums/location";
 
 import WelcomeStep from "./steps/WelcomeStep";
 import NotificationsStep from "./steps/NotificationsStep";
@@ -35,6 +37,8 @@ const allSteps: {
     id: "location",
     component: LocationStep,
     shouldShow: async () => {
+      // A city the user already picked is a location, so there is nothing left to ask.
+      if (useLocationStore.getState().locationMode === LocationMode.MANUAL) return false;
       const { granted } = await checkLocationPermission();
       return !granted;
     },

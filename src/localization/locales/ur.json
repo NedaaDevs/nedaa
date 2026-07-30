@@ -829,6 +829,10 @@
   "onboarding.welcome.getStarted": "شروع کریں",
   "onboarding.welcome.tagline": "آپ کا نماز کا ساتھی",
   "onboarding.welcome.title": "ندآء میں خوش آمدید",
+  "onboarding.location.chooseCity": "اس کے بجائے میرا شہر منتخب کریں",
+  "onboarding.location.deniedTitle": "مقام تک رسائی نہیں",
+  "onboarding.location.deniedBody": "آپ اس کے بجائے اپنا شہر منتخب کر سکتے ہیں، اور اسے کسی بھی وقت ترتیبات میں تبدیل کر سکتے ہیں۔",
+  "onboarding.location.skip": "ابھی چھوڑ دیں",
   "otherTimings": {
     "firstThird": "پہلا تہائی",
     "imsak": "امساک",
@@ -1721,5 +1725,7 @@
   "widget_imsak": "امساک",
   "widget_ramadan_day": "رمضان کا %d واں دن",
   "widget_show_ramadan_labels": "رمضان لیبل دکھائیں",
-  "widget_suhoor": "سحری"
+  "widget_suhoor": "سحری",
+  "a11y.onboarding.location.chooseCity": "مقام شیئر کرنے کے بجائے اپنا شہر منتخب کریں",
+  "a11y.onboarding.location.skip": "ابھی مقام منتخب کرنا چھوڑ دیں"
 }
