@@ -49,7 +49,7 @@ export const useLocationUpdate = () => {
    * stops the pipeline, leaving the failure on screen rather than half-applying it.
    */
   const runPipeline = useCallback(
-    async (setCoordinates: () => Promise<void>) => {
+    async (setCoordinates: () => Promise<void>): Promise<boolean> => {
       setUpdateState({ isUpdating: true, currentStep: null, error: null });
 
       try {
@@ -65,8 +65,11 @@ export const useLocationUpdate = () => {
         setTimeout(() => {
           setUpdateState(initialState);
         }, 2000);
+        return true;
       } catch {
-        // Error already captured in runStep
+        // Error already captured in runStep. Reported as a return value because the
+        // caller cannot read the fresh updateState from inside the same render.
+        return false;
       }
     },
     [prayerTimesStore, notificationStore]

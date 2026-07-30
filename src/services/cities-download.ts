@@ -81,6 +81,8 @@ export const downloadCitiesPack = async ({
     if (sidecar.exists) sidecar.delete();
   }
 
-  staging.move(target);
+  // Awaited because the native side relocates on a background dispatcher; reading the
+  // destination in the same tick would otherwise see a file that has not landed.
+  await staging.move(target);
   log.i("CitiesDB", `installed full pack v${CITIES_PACK_VERSION} (${target.size} bytes)`);
 };

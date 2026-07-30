@@ -154,13 +154,28 @@ describe("applyManualLocation", () => {
   });
 
   it("reports success so the caller can dismiss the picker", async () => {
+    let applied: boolean | undefined;
+
     await mountProbe();
     await act(async () => {
-      await latest().applyManualLocation(RIYADH);
+      applied = await latest().applyManualLocation(RIYADH);
     });
 
+    expect(applied).toBe(true);
     expect(latest().updateState.error).toBeNull();
     expect(latest().updateState.currentStep).toBe("done");
+  });
+
+  it("reports failure so the caller keeps the picker open", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
+    let applied: boolean | undefined;
+
+    await mountProbe();
+    await act(async () => {
+      applied = await latest().applyManualLocation(RIYADH);
+    });
+
+    expect(applied).toBe(false);
   });
 
   it("reports the failing step when the prayer-times refresh throws", async () => {
