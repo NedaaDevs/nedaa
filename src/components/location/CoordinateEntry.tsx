@@ -35,6 +35,65 @@ type ResolvedNearest = {
   nearest: NearestCity | null;
 };
 
+type CoordinateFieldProps = {
+  label: string;
+  /** The permitted span, shown beside the label so the limit is known before typing. */
+  range: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  isInvalid: boolean;
+  errorText: string;
+  accessibilityLabel: string;
+};
+
+/**
+ * One full-width coordinate field. Full width rather than a half-width pair because the
+ * localized labels are long and a coordinate needs room for seven or eight characters.
+ */
+const CoordinateField = ({
+  label,
+  range,
+  value,
+  onChangeText,
+  isInvalid,
+  errorText,
+  accessibilityLabel,
+}: CoordinateFieldProps) => (
+  <VStack gap="$2">
+    <HStack justifyContent="space-between" alignItems="center">
+      <Text size="sm" fontWeight="600" color="$typography">
+        {label}
+      </Text>
+      <Text size="xs" color="$typographySecondary">
+        {range}
+      </Text>
+    </HStack>
+
+    <Card variant="grouped" borderWidth={isInvalid ? 1 : 0} borderColor="$borderError">
+      <Input
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType="numbers-and-punctuation"
+        autoCorrect={false}
+        placeholder="0.0000"
+        borderWidth={0}
+        backgroundColor="transparent"
+        height={52}
+        fontSize={20}
+        paddingHorizontal="$4"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{ disabled: false }}
+      />
+    </Card>
+
+    {isInvalid && (
+      <Text size="xs" color="$error">
+        {errorText}
+      </Text>
+    )}
+  </VStack>
+);
+
 /**
  * Typed coordinates for anywhere the city list does not reach. The coordinates are the
  * user's own; the nearest city supplies only the timezone and a readable label, and
@@ -53,7 +112,6 @@ const CoordinateEntry = ({ onDone }: CoordinateEntryProps) => {
   const latitude = parseCoordinate(latitudeText, CoordinateAxis.LATITUDE);
   const longitude = parseCoordinate(longitudeText, CoordinateAxis.LONGITUDE);
   const isValid = latitude !== null && longitude !== null;
-  const isIncomplete = latitudeText.trim() === "" || longitudeText.trim() === "";
 
   useEffect(() => {
     if (latitude === null || longitude === null) return;
@@ -99,48 +157,32 @@ const CoordinateEntry = ({ onDone }: CoordinateEntryProps) => {
   };
 
   return (
-    <VStack gap="$3" padding="$4">
-      <HStack gap="$3">
-        <VStack flex={1} gap="$1">
-          <Text size="sm" color="$typographySecondary">
-            {t("location.coordinates.latitude")}
-          </Text>
-          <Card variant="grouped">
-            <Input
-              value={latitudeText}
-              onChangeText={setLatitudeText}
-              keyboardType="numbers-and-punctuation"
-              autoCorrect={false}
-              borderWidth={0}
-              backgroundColor="transparent"
-              accessibilityLabel={t("a11y.location.coordinates.latitude")}
-            />
-          </Card>
-        </VStack>
+    <VStack gap="$4" padding="$4">
+      <Text size="sm" color="$typographySecondary">
+        {t("location.coordinates.description")}
+      </Text>
 
-        <VStack flex={1} gap="$1">
-          <Text size="sm" color="$typographySecondary">
-            {t("location.coordinates.longitude")}
-          </Text>
-          <Card variant="grouped">
-            <Input
-              value={longitudeText}
-              onChangeText={setLongitudeText}
-              keyboardType="numbers-and-punctuation"
-              autoCorrect={false}
-              borderWidth={0}
-              backgroundColor="transparent"
-              accessibilityLabel={t("a11y.location.coordinates.longitude")}
-            />
-          </Card>
-        </VStack>
-      </HStack>
+      <VStack gap="$4">
+        <CoordinateField
+          label={t("location.coordinates.latitude")}
+          range={t("location.coordinates.latitudeRange")}
+          value={latitudeText}
+          onChangeText={setLatitudeText}
+          isInvalid={latitudeText.trim() !== "" && latitude === null}
+          errorText={t("location.coordinates.latitudeInvalid")}
+          accessibilityLabel={t("a11y.location.coordinates.latitude")}
+        />
 
-      {!isIncomplete && !isValid && (
-        <Text size="sm" color="$error">
-          {t("location.coordinates.invalid")}
-        </Text>
-      )}
+        <CoordinateField
+          label={t("location.coordinates.longitude")}
+          range={t("location.coordinates.longitudeRange")}
+          value={longitudeText}
+          onChangeText={setLongitudeText}
+          isInvalid={longitudeText.trim() !== "" && longitude === null}
+          errorText={t("location.coordinates.longitudeInvalid")}
+          accessibilityLabel={t("a11y.location.coordinates.longitude")}
+        />
+      </VStack>
 
       {isValid && (
         <Card variant="grouped">
