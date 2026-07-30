@@ -29,9 +29,11 @@ describe("shouldOfferFullPack", () => {
 
 describe("citiesPackUrl", () => {
   test("builds a versioned CDN path", () => {
-    expect(citiesPackUrl("2026-07-29")).toBe(
-      "https://cdn.nedaa.dev/cities/2026-07-29/cities.db.gz"
-    );
+    expect(citiesPackUrl("v1")).toBe("https://cdn.nedaa.dev/cities/v1/cities.db.gz");
+  });
+
+  test("keeps older packs reachable at their own path", () => {
+    expect(citiesPackUrl("v2")).toBe("https://cdn.nedaa.dev/cities/v2/cities.db.gz");
   });
 
   test("uses the configured pack version by default", () => {
@@ -40,8 +42,8 @@ describe("citiesPackUrl", () => {
 });
 
 describe("pack constants", () => {
-  test("the declared version looks like an ISO date, matching what the build script writes", () => {
-    expect(CITIES_PACK_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  test("the declared version is a v-prefixed artifact version, as the build script writes", () => {
+    expect(CITIES_PACK_VERSION).toMatch(/^v\d+$/);
   });
 
   test("the declared size is close to the built artifact, so the disclosure is honest", () => {

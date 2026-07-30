@@ -24,6 +24,10 @@ const SEED_DB_PATH = "assets/db/cities-seed.db";
 const FULL_DB_PATH = `${DUMP_DIR}/cities.db`;
 const SEED_CITY_COUNT = 2500;
 
+// Artifact version, not a data date: bump to v2, v3, … whenever a new pack is uploaded.
+// It must match CITIES_PACK_VERSION in src/constants/Cities.ts and the CDN path.
+const PACK_VERSION = "v1";
+
 const DUMPS = [
   "cities5000.zip",
   "alternateNamesV2.zip",
@@ -225,8 +229,6 @@ const build = async (
   console.log(`${outPath}: ${selected.length} cities, ${localizedCount} localized names`);
 };
 
-const version = new Date().toISOString().slice(0, 10);
-
 await ensureDumps();
 
 console.log("parsing cities");
@@ -247,11 +249,19 @@ const localized = await collectLocalizedNames(
   ])
 );
 
-await build(SEED_DB_PATH, SEED_CITY_COUNT, version, cities, admin1Rows, countryRows, localized);
-await build(FULL_DB_PATH, null, version, cities, admin1Rows, countryRows, localized);
+await build(
+  SEED_DB_PATH,
+  SEED_CITY_COUNT,
+  PACK_VERSION,
+  cities,
+  admin1Rows,
+  countryRows,
+  localized
+);
+await build(FULL_DB_PATH, null, PACK_VERSION, cities, admin1Rows, countryRows, localized);
 await $`gzip -9kf ${FULL_DB_PATH}`;
 
-console.log(`\nversion ${version}`);
-console.log(`set CITIES_PACK_VERSION in src/constants/Cities.ts to "${version}"`);
-console.log(`upload ${FULL_DB_PATH}.gz to cdn.nedaa.dev/cities/${version}/cities.db.gz`);
+console.log(`\nversion ${PACK_VERSION}`);
+console.log(`set CITIES_PACK_VERSION in src/constants/Cities.ts to "${PACK_VERSION}"`);
+console.log(`upload ${FULL_DB_PATH}.gz to cdn.nedaa.dev/cities/${PACK_VERSION}/cities.db.gz`);
 console.log("serve it with Content-Encoding: gzip, or SQLite cannot open the download");

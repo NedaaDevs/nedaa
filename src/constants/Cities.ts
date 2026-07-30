@@ -1,8 +1,9 @@
 /**
- * Matches the `meta.version` row in the uploaded pack. Bump this together with every
- * upload — `bun run build:cities` prints the value and the CDN path to use.
+ * Artifact version of the cities pack, matching its `meta.version` row and its CDN
+ * path. Bump to v2, v3, … with every upload — `bun run build:cities` prints the value
+ * and the path to use.
  */
-export const CITIES_PACK_VERSION = "2026-07-29" as const;
+export const CITIES_PACK_VERSION = "v1" as const;
 
 export const CITIES_CDN_BASE = "https://cdn.nedaa.dev/cities" as const;
 
