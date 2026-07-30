@@ -1341,6 +1341,8 @@
   "settings.acknowledgements.recitation.title": "Bacaan",
   "settings.acknowledgements.thanks": "Kami ingin berterima kasih kepada projek dan individu yang usahanya menjadi asas Nedaa — dan kami ingin berterima kasih kepada anda kerana menggunakan aplikasi ini.",
   "settings.acknowledgements.title": "Penghargaan",
+  "settings.acknowledgements.cities.title": "Data bandar",
+  "settings.acknowledgements.cities.body": "Nama bandar, wilayah dan negara dengan koordinat dan zon waktunya, digunakan apabila anda memilih lokasi secara manual. Dilesenkan di bawah CC BY 4.0.",
   "settings.advance.hijri.title": "Pembetulan Tarikh Hijri",
   "settings.advance.provider.selectPlaceholder": "Pilih pembekal waktu solat",
   "settings.advance.provider.title": "Pembekal Waktu Solat",

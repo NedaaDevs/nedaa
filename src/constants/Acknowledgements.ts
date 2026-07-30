@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react-native";
-import { BookText, Database, AudioLines } from "lucide-react-native";
+import { BookText, Database, AudioLines, MapPin } from "lucide-react-native";
 
 // A source we credit. `body` describes the contribution; `links` are the
 // canonical homepages, opened in an in-app browser. Link labels are proper
@@ -10,6 +10,16 @@ export type Credit = {
   bodyKey: string;
   links: { label: string; href: string }[];
 };
+
+// Sources the whole app depends on, credited regardless of which features are enabled.
+export const GENERAL_CREDITS: Credit[] = [
+  {
+    icon: MapPin,
+    titleKey: "settings.acknowledgements.cities.title",
+    bodyKey: "settings.acknowledgements.cities.body",
+    links: [{ label: "GeoNames", href: "https://www.geonames.org" }],
+  },
+];
 
 export const CREDITS: Credit[] = [
   {

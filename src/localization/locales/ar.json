@@ -1430,6 +1430,8 @@
   "settings.acknowledgements.recitation.title": "التلاوة",
   "settings.acknowledgements.thanks": "نود أن نشكر المشاريع والأشخاص الذين بُني نداء على جهودهم — ونود أيضا أن نشكرك على استخدامك للتطبيق.",
   "settings.acknowledgements.title": "شكر وتقدير",
+  "settings.acknowledgements.cities.title": "بيانات المدن",
+  "settings.acknowledgements.cities.body": "أسماء المدن والمناطق والدول مع إحداثياتها ومناطقها الزمنية، تُستخدم عند اختيار موقعك يدويًا. مرخّصة بموجب CC BY 4.0.",
   "settings.advance.hijri.title": "تصحيح التاريخ الهجري",
   "settings.advance.provider.selectPlaceholder": "اختر مزود أوقات الصلاة",
   "settings.advance.provider.title": "مزود أوقات الصلاة",

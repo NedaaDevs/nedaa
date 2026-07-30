@@ -1385,6 +1385,8 @@
   "settings.acknowledgements.recitation.title": "Recitation",
   "settings.acknowledgements.thanks": "We'd like to thank the projects and people whose work Nedaa is built on — and we'd like to thank you for using the app.",
   "settings.acknowledgements.title": "Acknowledgements",
+  "settings.acknowledgements.cities.title": "City data",
+  "settings.acknowledgements.cities.body": "City, region and country names with their coordinates and time zones, used when you choose your location manually. Licensed under CC BY 4.0.",
   "settings.advance.hijri.title": "Hijri Date Correction",
   "settings.advance.provider.selectPlaceholder": "Select prayer times provider",
   "settings.advance.provider.title": "Prayer Times Provider",
