@@ -48,6 +48,8 @@ export type LocationStore = {
   autoUpdateLocation: boolean;
   locationMode: LocationModeValue;
   manualLocation: ManualLocation | null;
+  /** When the city was chosen; the observation time of the stand-in Qibla fix. */
+  manualLocationChosenAt: number | null;
   showCityChangeModal: boolean;
   pendingCityChange: {
     currentCity: string;
@@ -82,6 +84,7 @@ export const useLocationStore = create<LocationStore>()(
         pendingCityChange: null,
         locationMode: LocationMode.DEVICE,
         manualLocation: null,
+        manualLocationChosenAt: null,
         // Initialize location when permission is granted
         initializeLocation: async () => {
           const previousState = get();
@@ -406,6 +409,7 @@ export const useLocationStore = create<LocationStore>()(
           set((state) => ({
             locationMode: LocationMode.MANUAL,
             manualLocation: location,
+            manualLocationChosenAt: Date.now(),
             locationDetails: {
               ...state.locationDetails,
               coords: {
@@ -429,6 +433,7 @@ export const useLocationStore = create<LocationStore>()(
           set({
             locationMode: LocationMode.DEVICE,
             manualLocation: null,
+            manualLocationChosenAt: null,
             lastKnownCoords: null,
           });
           log.i("Manual", "manual location cleared; the device location will be used");
@@ -445,6 +450,7 @@ export const useLocationStore = create<LocationStore>()(
           autoUpdateLocation: state.autoUpdateLocation,
           locationMode: state.locationMode,
           manualLocation: state.manualLocation,
+          manualLocationChosenAt: state.manualLocationChosenAt,
         }),
       }
     ),

@@ -7,6 +7,7 @@ import {
   type CompassSensorReliabilityValue,
 } from "@/enums/compass";
 import type { CompassLocationFix } from "@/types/compass";
+import type { ManualLocation } from "@/types/location";
 
 export const KAABA_COORDINATES = {
   latitude: 21.422487,
@@ -457,6 +458,23 @@ export const formatDistanceToMecca = (
   const rounded = Math.round(distance);
   return `${rounded.toLocaleString()} ${unit}`;
 };
+
+/**
+ * Reported accuracy for a chosen city, so the reading is never presented as a measured
+ * fix. City-scale precision is ample for a Qibla bearing: the angular error is roughly
+ * the positional offset divided by the distance to Makkah, so being 10km out at
+ * 5,000km costs about 0.1°. It only matters within about 100km of Makkah.
+ */
+export const MANUAL_LOCATION_ACCURACY_METERS = 5000;
+
+/** A location the user chose, expressed as the fix shape the compass screen consumes. */
+export const manualLocationToFix = (manual: ManualLocation, now: number): CompassLocationFix => ({
+  latitude: manual.latitude,
+  longitude: manual.longitude,
+  accuracyMeters: MANUAL_LOCATION_ACCURACY_METERS,
+  altitude: null,
+  timestamp: now,
+});
 
 // Helper functions
 const toRadians = (degrees: number): number => degrees * (Math.PI / 180);

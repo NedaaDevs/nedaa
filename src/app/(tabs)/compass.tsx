@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo, Pressable, ScrollView } from "react-native";
 import { useIsFocused } from "expo-router/react-navigation";
 import { Info, LocateFixed } from "lucide-react-native";
@@ -20,14 +20,17 @@ import {
   CompassLocationSource,
   CompassNorthReference,
   CompassReliabilityIssue,
+  type CompassLocationSourceValue,
   type CompassReliabilityIssueValue,
 } from "@/enums/compass";
+import { LocationMode } from "@/enums/location";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useCompass } from "@/hooks/useCompass";
 import { useCompassLocation } from "@/hooks/useCompassLocation";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
+import { useLocationStore } from "@/stores/location";
 import type { CompassLocationFix } from "@/types/compass";
 import { AppLogger } from "@/utils/appLogger";
 import {
@@ -35,6 +38,7 @@ import {
   calculateBearingUncertaintyDegrees,
   calculateDistanceToMecca,
   calculateQiblaDirection,
+  manualLocationToFix,
   canProvideAlignmentFeedback,
   getCalibrationOverlayVisible,
   getCompassLocationAge,
@@ -96,6 +100,22 @@ const CompassScreen = () => {
   const [compassOnly, setCompassOnly] = useState(false);
   const previousHapticStep = useRef<QiblaHapticStep>(0);
   const previousDetentIndex = useRef<number | null>(null);
+  const locationMode = useLocationStore((state) => state.locationMode);
+  const manualLocation = useLocationStore((state) => state.manualLocation);
+  const manualChosenAt = useLocationStore((state) => state.manualLocationChosenAt);
+
+  // A chosen city stands in when no device fix is available, so the Qibla still works
+  // for someone who never granted location permission. A live fix still wins: it is
+  // precise, whereas a city centre is only accurate to a few kilometres. The fix is
+  // stamped with when the city was chosen, which keeps it stable across renders — a
+  // fix rebuilt every frame would restart the compass sensor.
+  const manualFix = useMemo(
+    () =>
+      locationMode === LocationMode.MANUAL && manualLocation && manualChosenAt !== null
+        ? manualLocationToFix(manualLocation, manualChosenAt)
+        : null,
+    [locationMode, manualLocation, manualChosenAt]
+  );
 
   const effectiveFix: CompassLocationFix | null = qiblaSeed
     ? {
@@ -105,8 +125,15 @@ const CompassScreen = () => {
         altitude: null,
         timestamp: 1,
       }
-    : location.fix;
-  const locationSource = qiblaSeed ? CompassLocationSource.FRESH : location.source;
+    : (location.fix ?? manualFix);
+
+  // A manual stand-in reports as SAVED: usable for a bearing, but not a live reading.
+  const resolveLocationSource = (): CompassLocationSourceValue => {
+    if (qiblaSeed) return CompassLocationSource.FRESH;
+    if (location.fix) return location.source;
+    return manualFix ? CompassLocationSource.SAVED : location.source;
+  };
+  const locationSource = resolveLocationSource();
 
   const compassPaused = isScreenshotMode || !isFocused || !isAppActive;
   const liveCompass = useCompass({

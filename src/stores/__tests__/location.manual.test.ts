@@ -98,6 +98,23 @@ describe("manual location", () => {
     expect(useLocationStore.getState().locationDetails.timezone).toBe("Asia/Riyadh");
   });
 
+  test("setManualLocation stamps when the city was chosen, for the Qibla stand-in fix", () => {
+    const before = Date.now();
+    useLocationStore.getState().setManualLocation(LAHORE);
+    const chosenAt = useLocationStore.getState().manualLocationChosenAt;
+
+    expect(chosenAt).not.toBeNull();
+    expect(chosenAt!).toBeGreaterThanOrEqual(before);
+    expect(chosenAt!).toBeLessThanOrEqual(Date.now());
+  });
+
+  test("clearManualLocation drops the chosen-at stamp with the city", () => {
+    useLocationStore.getState().setManualLocation(LAHORE);
+    useLocationStore.getState().clearManualLocation();
+
+    expect(useLocationStore.getState().manualLocationChosenAt).toBeNull();
+  });
+
   test("clearManualLocation returns to device mode and drops the saved city", () => {
     useLocationStore.getState().setManualLocation(LAHORE);
     useLocationStore.getState().clearManualLocation();

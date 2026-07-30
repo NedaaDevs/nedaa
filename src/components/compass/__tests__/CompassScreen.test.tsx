@@ -99,6 +99,11 @@ jest.mock("@/utils/appLogger", () => ({
     create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }),
   },
 }));
+jest.mock("@/stores/location", () => ({
+  useLocationStore: (selector: (state: unknown) => unknown) =>
+    selector({ locationMode: "device", manualLocation: null, manualLocationChosenAt: null }),
+}));
+
 jest.mock("@/utils/number", () => ({
   formatNumberToLocale: (value: string) => value,
 }));
