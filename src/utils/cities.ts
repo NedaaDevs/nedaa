@@ -1,4 +1,10 @@
-import { CITY_LANGS, type CityLang, type CityRecord, type LocalizedNames } from "@/types/cities";
+import {
+  CITY_LANGS,
+  type CityCountry,
+  type CityLang,
+  type CityRegion,
+  type LocalizedNames,
+} from "@/types/cities";
 
 // i18next reports the active language as a tag that may carry a region ("ar-SA"),
 // while the cities data is keyed by base language.
@@ -25,13 +31,21 @@ export type CityLabel = {
 };
 
 /**
+ * The parts a label is built from. Kept to exactly what is read so both a search
+ * result and a stored manual location satisfy it without sharing a wider type.
+ */
+export type CityLabelSource = {
+  name: string;
+  names?: LocalizedNames;
+  country: CityCountry;
+  region: CityRegion | null;
+};
+
+/**
  * Each part resolves independently, so a city with a localized name but an
  * untranslated region still reads correctly rather than falling back wholesale.
  */
-export const formatCityLabel = (
-  record: CityRecord & { names?: LocalizedNames },
-  locale: string
-): CityLabel => {
+export const formatCityLabel = (record: CityLabelSource, locale: string): CityLabel => {
   const city = resolveLocalizedName(record.name, record.names, locale);
   const country = resolveLocalizedName(record.country.name, record.country.names, locale);
   const region = record.region

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Platform } from "react-native";
+import { router } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -32,6 +33,10 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Utils
 import { checkLocationPermission, requestLocationPermission } from "@/utils/location";
+import { formatCityLabel } from "@/utils/cities";
+
+// Enums
+import { LocationMode } from "@/enums/location";
 
 // Hooks
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
@@ -51,10 +56,12 @@ const PermissionRequestView = ({
   canAskPermission,
   onRequestPermission,
   onOpenSettings,
+  onChooseCity,
 }: {
   canAskPermission: boolean;
   onRequestPermission: () => void;
   onOpenSettings: () => void;
+  onChooseCity: () => void;
 }) => {
   const { t } = useTranslation();
 
@@ -97,6 +104,20 @@ const PermissionRequestView = ({
               </Button>
             </VStack>
           )}
+
+          {/* The screen is otherwise a dead end for anyone who will not grant permission. */}
+          <Pressable
+            onPress={onChooseCity}
+            minHeight={44}
+            paddingHorizontal="$4"
+            justifyContent="center"
+            accessibilityRole="button"
+            accessibilityLabel={t("a11y.location.manual.chooseCity")}
+            accessibilityHint={t("a11y.location.manual.chooseCityHint")}>
+            <Text size="sm" color="$accentPrimary" textAlign="center">
+              {t("location.manual.chooseCity")}
+            </Text>
+          </Pressable>
         </VStack>
       </Card>
     </VStack>
@@ -143,9 +164,11 @@ const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => 
   );
 };
 
+const openCityPicker = () => router.push("/settings/location-picker");
+
 const KeepLocationUpdated = () => {
   const { becameActiveAt } = useAppVisibility();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const usingDefaultLocation = usePrayerTimesStore((state) => state.usingDefaultLocation);
   const hapticMedium = useHaptic("medium");
   const hapticSelection = useHaptic("selection");
@@ -153,6 +176,9 @@ const KeepLocationUpdated = () => {
 
   const { localizedLocation, locationDetails, autoUpdateLocation, setAutoUpdateLocation } =
     useLocationStore();
+  const locationMode = useLocationStore((state) => state.locationMode);
+  const manualLocation = useLocationStore((state) => state.manualLocation);
+  const clearManualLocation = useLocationStore((state) => state.clearManualLocation);
 
   const { updateState, executeUpdate, retry } = useLocationUpdate();
 
@@ -215,12 +241,68 @@ const KeepLocationUpdated = () => {
     return <LoadingView />;
   }
 
+  // A chosen city is shown whatever the permission state, since manual mode is a
+  // standing choice rather than a fallback for a missing permission.
+  if (locationMode === LocationMode.MANUAL && manualLocation) {
+    const label = formatCityLabel(manualLocation, i18n.language);
+
+    return (
+      <VStack flex={1} gap="$3">
+        <Card variant="grouped" marginTop="$2">
+          <VStack padding="$5" gap="$1">
+            <Text size="sm" color="$typographySecondary">
+              {t("location.manual.title")}
+            </Text>
+            <Text size="xl" fontWeight="600" color="$typography">
+              {label.city}
+            </Text>
+            <Text size="sm" color="$typographySecondary">
+              {label.secondary}
+            </Text>
+          </VStack>
+        </Card>
+
+        <Card variant="grouped">
+          <HStack alignItems="center" gap="$3" padding="$4">
+            <Icon as={Info} color="$info" size="md" />
+            <Text size="sm" color="$typography" flex={1}>
+              {t("location.manual.notice")}
+            </Text>
+          </HStack>
+        </Card>
+
+        <Card variant="grouped">
+          <Pressable
+            onPress={openCityPicker}
+            minHeight={44}
+            padding="$4"
+            accessibilityRole="button"
+            accessibilityLabel={t("a11y.location.manual.change")}>
+            <Text color="$accentPrimary">{t("location.manual.change")}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              hapticMedium();
+              clearManualLocation();
+            }}
+            minHeight={44}
+            padding="$4"
+            accessibilityRole="button"
+            accessibilityLabel={t("a11y.location.manual.useDevice")}>
+            <Text color="$accentPrimary">{t("location.manual.useDevice")}</Text>
+          </Pressable>
+        </Card>
+      </VStack>
+    );
+  }
+
   if (!hasPermission) {
     return (
       <PermissionRequestView
         canAskPermission={canAskPermission}
         onRequestPermission={handleRequestPermission}
         onOpenSettings={openAppSettings}
+        onChooseCity={openCityPicker}
       />
     );
   }
@@ -315,6 +397,21 @@ const KeepLocationUpdated = () => {
             />
           </HStack>
         </Box>
+      </Card>
+
+      {/* Manual selection is available even with permission granted, for travellers and
+          for anyone who wants times for a city other than the one they are in. */}
+      <Card variant="grouped">
+        <Pressable
+          onPress={openCityPicker}
+          minHeight={44}
+          paddingVertical="$4"
+          paddingHorizontal="$5"
+          accessibilityRole="button"
+          accessibilityLabel={t("a11y.location.manual.chooseCity")}
+          accessibilityHint={t("a11y.location.manual.chooseCityHint")}>
+          <Text color="$accentPrimary">{t("location.manual.chooseCity")}</Text>
+        </Pressable>
       </Card>
 
       <InfoModal isVisible={showInfoModal} onClose={() => setShowInfoModal(false)} />
