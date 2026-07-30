@@ -69,3 +69,52 @@ export const boundingBoxFor = (
     maxLng: longitude + lngSpan,
   };
 };
+
+const ARABIC_INDIC_ZERO = 0x0660;
+const EXTENDED_ARABIC_INDIC_ZERO = 0x06f0;
+/** Arabic decimal separator, produced by Arabic and Urdu keyboards. */
+const ARABIC_DECIMAL_SEPARATOR = "٫";
+
+/**
+ * Rewrites Arabic-Indic and extended Arabic-Indic digits — and the Arabic decimal
+ * separator — as their ASCII equivalents, so a coordinate typed on an Arabic or Urdu
+ * keyboard parses the same as one typed on a Latin keyboard.
+ */
+const toAsciiNumerals = (text: string): string =>
+  [...text]
+    .map((character) => {
+      if (character === ARABIC_DECIMAL_SEPARATOR) return ".";
+
+      const code = character.charCodeAt(0);
+      if (code >= ARABIC_INDIC_ZERO && code <= ARABIC_INDIC_ZERO + 9) {
+        return String(code - ARABIC_INDIC_ZERO);
+      }
+      if (code >= EXTENDED_ARABIC_INDIC_ZERO && code <= EXTENDED_ARABIC_INDIC_ZERO + 9) {
+        return String(code - EXTENDED_ARABIC_INDIC_ZERO);
+      }
+      return character;
+    })
+    .join("");
+
+export const CoordinateAxis = {
+  LATITUDE: "latitude",
+  LONGITUDE: "longitude",
+} as const;
+
+export type CoordinateAxisValue = (typeof CoordinateAxis)[keyof typeof CoordinateAxis];
+
+const AXIS_LIMIT: Record<CoordinateAxisValue, number> = {
+  [CoordinateAxis.LATITUDE]: 90,
+  [CoordinateAxis.LONGITUDE]: 180,
+};
+
+/** Decimal degrees, or null when the text is not a coordinate within the axis range. */
+export const parseCoordinate = (text: string, axis: CoordinateAxisValue): number | null => {
+  const normalized = toAsciiNumerals(text).trim();
+  if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) return null;
+
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) return null;
+
+  return Math.abs(value) <= AXIS_LIMIT[axis] ? value : null;
+};
