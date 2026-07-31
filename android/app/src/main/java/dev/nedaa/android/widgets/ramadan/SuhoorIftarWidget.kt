@@ -71,15 +71,17 @@ class SuhoorIftarWidget : GlanceAppWidget() {
     }
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val days = ImportantDaysDataService(context).getUpcoming(10)
-        val ramadanDay = days.firstOrNull { it.id == "ramadan" }
-        val inRamadan = isRamadan(days)
-        val todaysPrayers = if (inRamadan) PrayerDataService(context).getTodaysPrayerTimes() else null
-        val fajr = todaysPrayers?.prayers?.firstOrNull { it.name == PrayerData.FAJR }
-        val maghrib = todaysPrayers?.prayers?.firstOrNull { it.name == PrayerData.MAGHRIB }
-        val config = WidgetConfig.get(context)
-
         provideContent {
+            // Loaded per composition: a warm session recomposes without re-entering
+            // provideGlance, so values read out here would redraw stale.
+            val days = ImportantDaysDataService(context).getUpcoming(10)
+            val ramadanDay = days.firstOrNull { it.id == "ramadan" }
+            val inRamadan = isRamadan(days)
+            val todaysPrayers = if (inRamadan) PrayerDataService(context).getTodaysPrayerTimes() else null
+            val fajr = todaysPrayers?.prayers?.firstOrNull { it.name == PrayerData.FAJR }
+            val maghrib = todaysPrayers?.prayers?.firstOrNull { it.name == PrayerData.MAGHRIB }
+            val config = WidgetConfig.get(context)
+
             NedaaWidgetTheme {
                 val size = LocalSize.current
                 Box(

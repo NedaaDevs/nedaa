@@ -93,16 +93,19 @@ class HijriDateWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(WidgetSizes.COMPACT))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val config = WidgetConfig.get(context)
-        // hijriLabel from the DB is a JS-computed payload already localized to the app's
-        // locale/numerals; the on-device fallback is the only Kotlin-computed case that
-        // needs config applied here.
-        val hijriLabel = HijriTodayService(context).get()
-            ?: config.localizeNumber(computeHijriLabelFallback(config.locale))
-        val gregorianLabel = config.localizeNumber(
-            SimpleDateFormat("d MMM yyyy", config.locale).format(Date())
-        )
         provideContent {
+            // Loaded per composition: a warm session recomposes without re-entering
+            // provideGlance, so values read out here would redraw stale.
+            val config = WidgetConfig.get(context)
+            // hijriLabel from the DB is a JS-computed payload already localized to the app's
+            // locale/numerals; the on-device fallback is the only Kotlin-computed case that
+            // needs config applied here.
+            val hijriLabel = HijriTodayService(context).get()
+                ?: config.localizeNumber(computeHijriLabelFallback(config.locale))
+            val gregorianLabel = config.localizeNumber(
+                SimpleDateFormat("d MMM yyyy", config.locale).format(Date())
+            )
+
             NedaaWidgetTheme {
                 Box(
                     modifier = GlanceModifier

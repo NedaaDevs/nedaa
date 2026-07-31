@@ -18,8 +18,8 @@ class AthkarWidgetMedium : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(WidgetSizes.COMPACT, WidgetSizes.MEDIUM))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val config = WidgetConfig.get(context)
         provideContent {
+            val config = WidgetConfig.get(context)
             val session = promotedAthkarSession(context)
             val (completed, total) = sessionAthkarProgress(context, session)
             val summary = AthkarDataService(context).getAthkarSummary()

@@ -56,13 +56,15 @@ class AllPrayersWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(WidgetSizes.MEDIUM, WidgetSizes.WIDE))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val prayerService = PrayerDataService(context)
-        val dayPrayers = prayerService.getTodaysPrayerTimes(showSunrise = true)
-        val nextPrayer = prayerService.getNextPrayer(showSunrise = true)
-        val previousPrayer = prayerService.getPreviousPrayer(showSunrise = true)
-        val config = WidgetConfig.get(context)
-
         provideContent {
+            // Loaded per composition: a warm session recomposes without re-entering
+            // provideGlance, so values read out here would redraw stale.
+            val prayerService = PrayerDataService(context)
+            val dayPrayers = prayerService.getTodaysPrayerTimes(showSunrise = true)
+            val nextPrayer = prayerService.getNextPrayer(showSunrise = true)
+            val previousPrayer = prayerService.getPreviousPrayer(showSunrise = true)
+            val config = WidgetConfig.get(context)
+
             NedaaWidgetTheme {
                 val size = LocalSize.current
                 val isMedium = size.height >= WidgetSizes.MEDIUM.height

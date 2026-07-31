@@ -19,8 +19,8 @@ class QadaWidgetMedium : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(WidgetSizes.COMPACT, WidgetSizes.MEDIUM))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val config = WidgetConfig.get(context)
         provideContent {
+            val config = WidgetConfig.get(context)
             val qadaService = QadaDataService(context)
             val summary = qadaService.getQadaSummary()
             val ramadanDeadline = ramadanDeadlineLine(context, config)
