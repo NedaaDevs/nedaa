@@ -14,8 +14,19 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
+import { Spinner } from "@/components/ui/spinner";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useToastStore } from "@/stores/toast";
+
+import { refreshWidgets, CONFIRM_TIMEOUT_MS } from "@/services/widgetRefresh";
+import {
+  getPlacedWidgetCount,
+  getWidgetLastRenderedAt,
+  isWidgetRefreshAvailable,
+  triggerWidgetReload,
+} from "@/services/widgetBridge";
+
+import type { WidgetRefreshResult } from "@/services/widgetRefresh";
 
 // Icons
 import {
@@ -41,8 +52,6 @@ import {
   requestDisableBatteryOptimization,
   type WidgetType,
 } from "expo-widgets";
-import { refreshAllWidgets } from "../../../modules/expo-widgets/src";
-import { reloadAllWidgets, isWidgetReloadAvailable } from "../../../modules/expo-widget/src";
 import { PlatformType } from "@/enums/app";
 
 type WidgetItem = {
@@ -219,6 +228,13 @@ const WidgetCard = ({
   );
 };
 
+const REFRESH_TOASTS = {
+  confirmed: { key: "settings.widgets.refreshConfirmed", type: "success" },
+  pending: { key: "settings.widgets.refreshPending", type: "info" },
+  "none-placed": { key: "settings.widgets.refreshNonePlaced", type: "info" },
+  unavailable: { key: "settings.widgets.refreshFailed", type: "error" },
+} as const satisfies Record<WidgetRefreshResult, { key: string; type: string }>;
+
 const WidgetSettings = () => {
   const { t } = useTranslation();
   let canPin = false;
@@ -259,6 +275,30 @@ const WidgetSettings = () => {
     requestDisableBatteryOptimization();
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    // Outlives the poll window so the outcome replaces it rather than following a
+    // gap of silence — the pending path runs slightly past the deadline itself.
+    showToast(t("settings.widgets.refreshStarted"), "muted", undefined, CONFIRM_TIMEOUT_MS + 2000);
+    try {
+      const result = await refreshWidgets({
+        isReloadAvailable: isWidgetRefreshAvailable,
+        getPlacedWidgetCount,
+        getLastRenderedAt: getWidgetLastRenderedAt,
+        reload: triggerWidgetReload,
+        now: Date.now,
+        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      });
+      const toast = REFRESH_TOASTS[result];
+      showToast(t(toast.key), toast.type);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing, showToast, t]);
+
   return (
     <Background>
       <TopBar title="settings.widgets.title" backOnClick />
@@ -289,25 +329,20 @@ const WidgetSettings = () => {
 
           {/* Manual escape hatch: rebuild every widget timeline from current data. */}
           <Card.Pressable
-            onPress={() => {
-              // WidgetKit reloads have no completion callback, so "refreshed" means
-              // the request was submitted — but a missing native module is a
-              // detectable failure and must not report success.
-              if (Platform.OS === PlatformType.IOS && !isWidgetReloadAvailable()) {
-                showToast(t("settings.widgets.refreshFailed"), "error");
-                return;
-              }
-              reloadAllWidgets();
-              refreshAllWidgets();
-              showToast(t("settings.widgets.refreshed"), "success");
-            }}
+            onPress={handleRefresh}
+            disabled={refreshing}
             borderRadius="$7"
             borderWidth={1}
             borderColor="$outline"
             accessibilityRole="button"
+            accessibilityState={{ disabled: refreshing }}
             accessibilityLabel={t("settings.widgets.refreshNow")}>
             <HStack gap="$3" alignItems="center">
-              <Icon as={RotateCcw} size="sm" color="$primary" />
+              {refreshing ? (
+                <Spinner size="small" color="$primary" />
+              ) : (
+                <Icon as={RotateCcw} size="sm" color="$primary" />
+              )}
               <VStack flex={1} gap="$0.5">
                 <Text size="sm" fontWeight="600">
                   {t("settings.widgets.refreshNow")}
