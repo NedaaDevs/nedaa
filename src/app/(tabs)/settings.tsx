@@ -51,6 +51,7 @@ import {
   Activity,
   Award,
   Bug,
+  Layers,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -311,6 +312,11 @@ const SettingsScreen = () => {
               name="Diagnostics Debug"
               path={"/settings/diagnostics-debug" as any}
               icon={Bug}
+            />
+            <SettingsItem
+              name="Widgets Debug"
+              path={"/settings/widgets-debug" as any}
+              icon={Layers}
             />
           </>
         )}
