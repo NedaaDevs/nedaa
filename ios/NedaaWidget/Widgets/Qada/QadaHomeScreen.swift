@@ -89,6 +89,7 @@ struct QadaHomeScreenProvider: TimelineProvider {
     }
     
     func getTimeline(in context: Context, completion: @escaping (Timeline<QadaHomeScreenEntry>) -> Void) {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "QadaHomeScreen") }
         let currentDate = Date()
         let entry = createEntry(for: currentDate)
 

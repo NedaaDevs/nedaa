@@ -20,6 +20,7 @@ struct NedaaLauncherProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NedaaLauncherEntry>) -> Void) {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "NedaaLauncherWidget") }
         let entry = NedaaLauncherEntry(date: Date())
         completion(Timeline(entries: [entry], policy: .never))
     }

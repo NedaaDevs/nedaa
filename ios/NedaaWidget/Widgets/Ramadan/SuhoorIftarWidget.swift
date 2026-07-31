@@ -85,6 +85,7 @@ struct SuhoorIftarProvider: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: SuhoorIftarConfigurationIntent, in context: Context) async -> Timeline<SuhoorIftarEntry> {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "SuhoorIftarWidget") }
         let currentDate = Date()
         let isRamadan = PrayerTimelineUtils.isRamadan(currentDate)
 

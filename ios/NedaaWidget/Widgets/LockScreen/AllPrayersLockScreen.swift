@@ -96,6 +96,10 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
+        // This provider backs both halves; neither protocol exposes the widget's kind.
+        if !context.isPreview {
+            WidgetHeartbeat.stamp(kind: isFirstHalf ? "MorningPrayerWidget" : "EveningPrayerWidget")
+        }
         let currentDate = Date()
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer

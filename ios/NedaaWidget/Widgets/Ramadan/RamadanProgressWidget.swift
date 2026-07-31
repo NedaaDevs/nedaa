@@ -99,6 +99,7 @@ struct RamadanProgressProvider: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: RamadanProgressConfigurationIntent, in context: Context) async -> Timeline<RamadanProgressEntry> {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "RamadanProgressWidget") }
         let currentDate = Date()
         let isRamadan = PrayerTimelineUtils.isRamadan(currentDate)
 

@@ -89,6 +89,7 @@ struct PrayerAthkarProvider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: PrayerAthkarConfigurationIntent, in context: Context) async -> Timeline<PrayerAthkarEntry> {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "PrayerAthkarWidget") }
         let currentDate = Date()
         let entry = createEntry(for: currentDate, configuration: configuration)
         

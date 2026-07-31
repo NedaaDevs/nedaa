@@ -78,6 +78,7 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> Timeline<PrayerCountdownEntry> {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "PrayerCountdownLockScreenWidget") }
         let currentDate = Date()
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
@@ -276,6 +277,7 @@ struct InlinePrayerProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerCountdownEntry>) -> Void) {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "InlinePrayerWidget") }
         let currentDate = Date()
 
         guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false) else {

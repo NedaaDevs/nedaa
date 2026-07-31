@@ -29,6 +29,7 @@ struct CombinedPrayerProvider: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "AllPrayersCombinedWidget") }
         let currentDate = Date()
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer

@@ -64,6 +64,7 @@ struct ImportantDaysProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ImportantDaysEntry>) -> Void) {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "ImportantDaysWidget") }
         let now = Date()
         let days = dataService.getUpcomingImportantDays()
 

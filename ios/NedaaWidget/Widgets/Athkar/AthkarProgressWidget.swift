@@ -37,6 +37,7 @@ struct AthkarProgressProvider: TimelineProvider {
     }
     
     func getTimeline(in context: Context, completion: @escaping (Timeline<AthkarProgressEntry>) -> Void) {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "AthkarProgressWidget") }
         let currentDate = Date()
         let entry = createEntry(for: currentDate)
         

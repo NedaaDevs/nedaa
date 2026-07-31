@@ -145,6 +145,7 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: PrayerTimesConfigurationIntent, in context: Context) async -> Timeline<PrayerHomeScreenEntry> {
+        if !context.isPreview { WidgetHeartbeat.stamp(kind: "PrayerTimesHomeScreen") }
         let currentDate = Date()
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
