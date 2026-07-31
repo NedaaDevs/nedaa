@@ -11,17 +11,33 @@ type ToastState = {
   hideToast: () => void;
 };
 
+// One toast surface, so one pending dismissal. Held outside the store because it
+// is scheduling state, not rendered state.
+let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+const cancelPendingHide = () => {
+  if (hideTimer) clearTimeout(hideTimer);
+  hideTimer = null;
+};
+
 export const useToastStore = create<ToastState>((set) => ({
   message: "",
   title: "",
   type: "muted",
-  duration: 3000,
   isVisible: false,
-  showToast: (message, type, title, duration) => {
+  // Callers that omit a duration get the standard dwell time; without the default
+  // the timeout fires on the next tick and the toast never renders a visible frame.
+  showToast: (message, type, title, duration = 3000) => {
+    // The previous message's dismissal would otherwise cut this one short.
+    cancelPendingHide();
     set({ message, type, title, isVisible: true });
-    setTimeout(() => {
+    hideTimer = setTimeout(() => {
+      hideTimer = null;
       set({ isVisible: false });
     }, duration);
   },
-  hideToast: () => set({ isVisible: false }),
+  hideToast: () => {
+    cancelPendingHide();
+    set({ isVisible: false });
+  },
 }));
