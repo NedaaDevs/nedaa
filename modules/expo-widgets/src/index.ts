@@ -37,6 +37,21 @@ export async function refreshAllWidgets(): Promise<void> {
   return NativeModule.refreshAllWidgets();
 }
 
+// False when the native module is absent (stale dev client or bad build), in which
+// case every call below is a silent no-op.
+export const isWidgetsModuleAvailable = (): boolean => NativeModule != null;
+
+// 0 when no widget has rendered yet.
+export const getWidgetLastRenderedAt = (): number => {
+  if (Platform.OS !== "android" || !NativeModule) return 0;
+  return NativeModule.getWidgetLastRenderedAt();
+};
+
+export const getPlacedWidgetCount = (): number => {
+  if (Platform.OS !== "android" || !NativeModule) return 0;
+  return NativeModule.getPlacedWidgetCount();
+};
+
 export function isBatteryOptimizationDisabled(): boolean {
   if (Platform.OS !== "android" || !NativeModule) return true;
   return NativeModule.isBatteryOptimizationDisabled();

@@ -11,6 +11,10 @@ import android.provider.Settings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
+// Addressed by name so this module needs no reference to the app's widget classes.
+private const val WIDGET_PREFS = "nedaa_widgets"
+private const val KEY_LAST_RENDER = "widgetLastRenderedAt"
+
 class ExpoWidgetsModule : Module() {
 
     private val context: Context
@@ -85,6 +89,19 @@ class ExpoWidgetsModule : Module() {
                 }
             }
             return@AsyncFunction null
+        }
+
+        Function("getWidgetLastRenderedAt") {
+            return@Function context
+                .getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE)
+                .getLong(KEY_LAST_RENDER, 0L)
+        }
+
+        Function("getPlacedWidgetCount") {
+            val mgr = AppWidgetManager.getInstance(context)
+            return@Function widgetReceiverMap.values.sumOf { className ->
+                mgr.getAppWidgetIds(ComponentName(context.packageName, className)).size
+            }
         }
 
         Function("isBatteryOptimizationDisabled") {

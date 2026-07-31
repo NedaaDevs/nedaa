@@ -10,6 +10,7 @@ import androidx.glance.color.ColorProvider as DayNightColorProvider
 /** Material You dynamic color on Android 12+; NedaaColors-derived palette otherwise. All widgets wrap their content in this. */
 @Composable
 fun NedaaWidgetTheme(content: @Composable () -> Unit) {
+    WidgetRenderHeartbeat()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         GlanceTheme(content = content)
     } else {
