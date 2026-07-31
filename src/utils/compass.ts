@@ -101,6 +101,13 @@ export const MAX_HEADING_FUTURE_SKEW_MS = 1_000;
 export const MAX_FRESH_LOCATION_AGE_MS = 2 * 60 * 1_000;
 export const MAX_SAVED_LOCATION_AGE_MS = 24 * 60 * 60 * 1_000;
 
+/**
+ * How far a fix may drift before the declination behind the heading is worth recomputing.
+ * 0.1° is about 11km of latitude, over which declination moves by well under a degree away
+ * from the magnetic poles, where the field turns fastest.
+ */
+export const DECLINATION_DRIFT_DEGREES = 0.1;
+
 export type CompassLocationAge = {
   unit: "now" | "minutes" | "hours";
   value: number;

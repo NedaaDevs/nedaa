@@ -139,6 +139,7 @@ const CompassScreen = () => {
   const liveCompass = useCompass({
     paused: compassPaused,
     location: effectiveFix,
+    locationFromProvider: location.fix !== null,
     restartKey: sensorRestartKey,
   });
   const compass = qiblaSeed

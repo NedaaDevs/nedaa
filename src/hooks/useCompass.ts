@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   OrientationData,
   OrientationNorthReference,
@@ -10,6 +10,8 @@ import { type CompassNorthReferenceValue } from "@/enums/compass";
 import type { CompassLocationFix } from "@/types/compass";
 import { AppLogger } from "@/utils/appLogger";
 import {
+  DECLINATION_DRIFT_DEGREES,
+  MAX_FRESH_LOCATION_AGE_MS,
   MAX_HEADING_AGE_MS,
   MAX_HEADING_FUTURE_SKEW_MS,
   angleDifference,
@@ -52,6 +54,11 @@ export type CompassData = {
 type UseCompassOptions = {
   paused?: boolean;
   location?: CompassLocationFix | null;
+  /**
+   * Whether the fix came from the platform's location provider. A chosen city is stamped with
+   * when it was picked, which says nothing about the provider holding a location of its own.
+   */
+  locationFromProvider?: boolean;
   restartKey?: number;
 };
 
@@ -76,20 +83,42 @@ type CompassState = CompassData & {
 export const useCompass = ({
   paused = false,
   location = null,
+  locationFromProvider = false,
   restartKey = 0,
 }: UseCompassOptions = {}): CompassData => {
-  const latitude = location?.latitude;
-  const longitude = location?.longitude;
-  const altitude = location?.altitude;
-  const locationTimestamp = location?.timestamp;
-  const sessionKey = [
-    paused ? "paused" : "active",
-    latitude ?? "no-latitude",
-    longitude ?? "no-longitude",
-    altitude ?? "no-altitude",
-    locationTimestamp ?? "no-location-time",
-    restartKey,
-  ].join(":");
+  const anchorRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const fixRef = useRef(location);
+  // Set by the session effect: whether native would have rejected the starting fix as stale.
+  const startedStaleRef = useRef(false);
+  const retriedForRef = useRef<number | null>(null);
+  const [fusedRetry, setFusedRetry] = useState(0);
+
+  /* eslint-disable react-hooks/refs -- the anchor is hysteresis over its own previous value,
+     mutated in place during render so the session key settles without an extra effect tick */
+  // Restarting the sensor discards the platform's heading calibration, so the session keeps
+  // an anchor position and re-anchors only when declination could have changed.
+  const hasCoordinates =
+    location !== null && Number.isFinite(location.latitude) && Number.isFinite(location.longitude);
+  const anchor = anchorRef.current;
+  if (!hasCoordinates) {
+    anchorRef.current = null;
+  } else if (
+    anchor === null ||
+    Math.abs(location.latitude - anchor.latitude) > DECLINATION_DRIFT_DEGREES ||
+    Math.abs(location.longitude - anchor.longitude) > DECLINATION_DRIFT_DEGREES
+  ) {
+    anchorRef.current = { latitude: location.latitude, longitude: location.longitude };
+  }
+
+  // Read at start, so the session key can ignore a fix without the effect going stale.
+  fixRef.current = location;
+
+  const anchorKey = anchorRef.current
+    ? `${anchorRef.current.latitude}:${anchorRef.current.longitude}`
+    : "no-location";
+  /* eslint-enable react-hooks/refs */
+
+  const sessionKey = [paused ? "paused" : "active", anchorKey, fusedRetry, restartKey].join(":");
   const [data, setData] = useState<CompassState>({ ...initialData, sessionKey: "" });
 
   useEffect(() => {
@@ -119,24 +148,24 @@ export const useCompass = ({
       return;
     }
 
+    const fix = fixRef.current;
     const hasLocation =
-      typeof latitude === "number" &&
-      Number.isFinite(latitude) &&
-      typeof longitude === "number" &&
-      Number.isFinite(longitude);
+      fix !== null && Number.isFinite(fix.latitude) && Number.isFinite(fix.longitude);
+    // Only a provider fix carries a real fix time; a chosen city is stamped with when it was
+    // picked, so passing that on would let native read it as evidence of a live location.
+    const fixTimestamp =
+      locationFromProvider && fix !== null && Number.isFinite(fix.timestamp) ? fix.timestamp : null;
+    startedStaleRef.current =
+      fixTimestamp !== null && Date.now() - fixTimestamp > MAX_FRESH_LOCATION_AGE_MS;
 
     log.i("Session", `starting sensor; locationReference=${hasLocation ? "provided" : "none"}`);
 
     // Declination depends only on location and date, so resolve it once per session and
     // reuse it to rotate every magnetic sample onto true north. Null past the model's
     // validity window; the reading then stays magnetic and the Qibla result is withheld.
-    const declination =
-      typeof latitude === "number" &&
-      Number.isFinite(latitude) &&
-      typeof longitude === "number" &&
-      Number.isFinite(longitude)
-        ? getMagneticDeclination(latitude, longitude, altitude ?? null, new Date())
-        : null;
+    const declination = hasLocation
+      ? getMagneticDeclination(fix.latitude, fix.longitude, fix.altitude, new Date())
+      : null;
     if (hasLocation) {
       log.i(
         "Declination",
@@ -330,11 +359,11 @@ export const useCompass = ({
       );
 
       const startupInfo = ExpoOrientationModule.startWatching({
-        ...(hasLocation ? { latitude, longitude } : {}),
-        ...(typeof altitude === "number" && Number.isFinite(altitude) ? { altitude } : {}),
-        ...(typeof locationTimestamp === "number" && Number.isFinite(locationTimestamp)
-          ? { locationTimestamp }
+        ...(hasLocation ? { latitude: fix.latitude, longitude: fix.longitude } : {}),
+        ...(fix !== null && typeof fix.altitude === "number" && Number.isFinite(fix.altitude)
+          ? { altitude: fix.altitude }
           : {}),
+        ...(fixTimestamp !== null ? { locationTimestamp: fixTimestamp } : {}),
       });
       if (startupInfo) {
         log.i("Session", `native start: ${startupInfo}`);
@@ -358,7 +387,23 @@ export const useCompass = ({
         sessionKey,
       });
     }
-  }, [paused, latitude, longitude, altitude, locationTimestamp, restartKey, sessionKey]);
+  }, [paused, sessionKey, locationFromProvider]);
+
+  // Native declines the fused provider when the fix it started from is stale, leaving the
+  // session on the raw sensor. A provider fix that arrives fresh earns one restart to reach
+  // it; a session that already started fresh never retries, so a device that simply has no
+  // fused provider is not restarted for every fix.
+  useEffect(() => {
+    if (paused || !startedStaleRef.current) return;
+    if (!locationFromProvider || location === null) return;
+    if (retriedForRef.current === location.timestamp) return;
+    if (Date.now() - location.timestamp > MAX_FRESH_LOCATION_AGE_MS) return;
+    retriedForRef.current = location.timestamp;
+    // Only the session effect knows what the fix it started from was, so the retry cannot be
+    // derived during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFusedRetry((retry) => retry + 1);
+  }, [paused, locationFromProvider, location]);
 
   const { sessionKey: dataSessionKey, ...compassData } = data;
   if (dataSessionKey !== sessionKey) {
