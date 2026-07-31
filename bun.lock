@@ -57,6 +57,7 @@
         "expo-system-ui": "~57.0.1",
         "expo-task-manager": "~57.0.6",
         "expo-web-browser": "~57.0.2",
+        "expo-widget": "file:./modules/expo-widget",
         "expo-widgets": "file:./modules/expo-widgets",
         "hijri-native": "0.2.0",
         "i18next": "^26.3.0",
@@ -1490,6 +1491,8 @@
     "expo-updates-interface": ["expo-updates-interface@57.0.1", "", { "peerDependencies": { "expo": "*" } }, "sha512-+LUWwJ0gf/TEKMVdQAw/Gjih4dvrk+URgy24X9qEGKuuMDZqjBRm9T4yQyBVALGL5TTdPUaB6ILxx3lshm3pwQ=="],
 
     "expo-web-browser": ["expo-web-browser@57.0.2", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-3vl5kvd7PB48ub6PpNIJUuPxO8xVa6D8RnIgNba6SXRwqFprOfeEZgwTgtm41kz0AAtvMOztUVNEUkwrHKjqMQ=="],
+
+    "expo-widget": ["expo-widget@file:modules/expo-widget", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }],
 
     "expo-widgets": ["expo-widgets@file:modules/expo-widgets", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }],
 

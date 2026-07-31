@@ -100,6 +100,7 @@
     "expo-system-ui": "~57.0.1",
     "expo-task-manager": "~57.0.6",
     "expo-web-browser": "~57.0.2",
+    "expo-widget": "file:./modules/expo-widget",
     "expo-widgets": "file:./modules/expo-widgets",
     "hijri-native": "0.2.0",
     "i18next": "^26.3.0",
@@ -165,6 +166,7 @@
   "expo": {
     "install": {
       "exclude": [
+        "expo-widget",
         "expo-widgets"
       ]
     }
