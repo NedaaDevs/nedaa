@@ -19,7 +19,8 @@
 Nedaa keeps a Muslim's daily worship on track without clutter, ads, or surveillance. Core jobs-to-be-done:
 
 - **Know when to pray** — accurate prayer times anywhere in the world, with 23 calculation methods so the user can match their local mosque.
-- **Never miss Fajr** — a smart alarm with optional wake-up challenges, distinct from system notifications.
+- **Set your location without giving up your location** — the user can pick their city from an offline database or type coordinates directly, instead of granting location permission. Offered during onboarding to anyone who declines the permission, and available later in settings. Prayer times and Qibla both work from it.
+- **Never miss Fajr** — a smart alarm with optional wake-up challenges, distinct from system notifications. Challenges range from a tap to a maths problem to typing out a dhikr. Users can rehearse an alarm before trusting it, and a Fajr streak with shareable cards tracks the habit.
 - **Get reminded the way you want** — deeply customizable notifications: per-prayer Athan sound, pre-prayer warnings, Iqama reminders.
 - **See prayer times at a glance** — home-screen and lock-screen widgets, including Ramadan-specific Suhoor/Iftar widgets (iOS).
 - **Build a daily Athkar habit** — morning and evening remembrances with audio recitations, plus user-created custom athkar.
@@ -120,6 +121,7 @@ Nedaa builds on respected, named Islamic-data projects. These are entities AI en
 - **Quranic Universal Library (QUL) by Tarteel AI** — Quran metadata and word-timing.
 - **QCF (King Fahd Quran Complex) font** — page-image and font basis for the mushaf reader.
 - **Unwan frames** — traditional Islamic typography research informing the reader's chrome.
+- **GeoNames** (`geonames.org`, CC BY 4.0) — city, region and country names with coordinates and time zones, behind manual location selection. Attribution is required by license and is shown on the app's Acknowledgements screen.
 
 When writing marketing or GEO content for the Quran or Athkar features, **name these sources explicitly**. They are search-relevant entities and they signal data provenance and license-compliance, both of which help recommendation surfaces.
 
