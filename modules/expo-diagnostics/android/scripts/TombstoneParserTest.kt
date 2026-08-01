@@ -51,9 +51,12 @@ private class ProtoWriter {
   }
 }
 
-private fun ProtoWriter.frame(pc: Long, fn: String?, fnOffset: Long, file: String, buildId: String?) {
+// Encodes rel_pc (field 1) plus a decoy absolute pc (field 2) so the tests prove the
+// parser reads the symbolication-relevant field, not the ASLR-randomized one.
+private fun ProtoWriter.frame(relPc: Long, fn: String?, fnOffset: Long, file: String, buildId: String?) {
   message(4) {
-    varint(2, pc)
+    varint(1, relPc)
+    varint(2, relPc + 0x7000000000L)
     if (fn != null) {
       string(4, fn)
       varint(5, fnOffset)
@@ -151,6 +154,31 @@ fun main() {
   check("garbage: null", TombstoneParser.format(byteArrayOf(0x1F, -1, -1, -1, -1, -1)) == null)
   check("truncated: null or safe", runCatching { TombstoneParser.format(buildFullTombstone().copyOfRange(0, 40)) }.isSuccess)
   check("empty: null", TombstoneParser.format(ByteArray(0)) == null)
+
+  // Hostile length whose Long addition overflows: `pos + len` wraps negative, which
+  // once moved the cursor backwards and looped forever. Must return null promptly.
+  val overflowLen = byteArrayOf(
+    0x0a, 0xf6.toByte(), 0xff.toByte(), 0xff.toByte(), 0xff.toByte(),
+    0xff.toByte(), 0xff.toByte(), 0xff.toByte(), 0xff.toByte(), 0x7f
+  )
+  check("overflow length: null", TombstoneParser.format(overflowLen) == null)
+
+  // 70 frames on the crashing thread: 64 emitted + a "+6 more" marker.
+  val manyFrames = ProtoWriter().apply {
+    varint(5, 1)
+    varint(6, 42)
+    message(16) {
+      varint(1, 42)
+      message(2) {
+        varint(1, 42)
+        string(2, "main")
+        repeat(70) { i -> frame(i.toLong(), null, 0L, "/lib.so", null) }
+      }
+    }
+  }.toByteArray()
+  val capped = TombstoneParser.format(manyFrames) ?: ""
+  check("frame cap: #63 kept, #64 dropped", capped.contains("#63") && !capped.contains("#64"), capped.take(200))
+  check("frame cap: marker", capped.contains("… [+6 more frames]"), capped.takeLast(120))
 
   println(if (failures == 0) "ALL TESTS PASSED" else "$failures TEST(S) FAILED")
   if (failures > 0) kotlin.system.exitProcess(1)

@@ -8,6 +8,9 @@ import Foundation
 // scripts/CallStackCompactorTest.swift.
 enum CallStackCompactor {
   private static let maxFrames = 128
+  // Walk bound past maxFrames — lets the truncation marker report how many frames were
+  // cut without formatting them, while still terminating on pathological trees.
+  private static let walkLimit = 4096
 
   static func attributedStack(tree: [String: Any]) -> String? {
     guard let stacks = tree["callStacks"] as? [[String: Any]], !stacks.isEmpty else {
@@ -21,15 +24,22 @@ enum CallStackCompactor {
     }
 
     var lines: [String] = []
+    var total = 0
     var pending = roots
-    while !pending.isEmpty && lines.count < maxFrames {
+    while !pending.isEmpty && total < walkLimit {
       let frame = pending.removeFirst()
-      lines.append(format(frame: frame, index: lines.count))
+      total += 1
+      if lines.count < maxFrames {
+        lines.append(format(frame: frame, index: lines.count))
+      }
       if let subFrames = frame["subFrames"] as? [[String: Any]] {
         pending.insert(contentsOf: subFrames, at: 0)
       }
     }
     if lines.isEmpty { return nil }
+    if total > lines.count {
+      lines.append("  … [+\(total - lines.count)\(pending.isEmpty ? "" : "+") more frames]")
+    }
 
     return (["attributed stack (\(stacks.count) threads):"] + lines).joined(separator: "\n")
   }

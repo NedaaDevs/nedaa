@@ -18,6 +18,6 @@ export interface NativeDiagnostic {
   summary: string;
   /** stack or trace excerpt, truncated natively */
   detail?: string;
-  /** full payload JSON when small enough */
-  raw?: string;
+  /** opaque token to pass to ack() once the entry has been durably persisted */
+  ackToken?: string;
 }

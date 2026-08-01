@@ -32,16 +32,18 @@ export const useInitialSetup = () => {
   const customSoundsStore = useCustomSoundsStore();
 
   useEffect(() => {
+    // Diagnostics cover first-run/onboarding sessions too — a crash during onboarding
+    // must be captured, so these install before the first-run gate. All three are
+    // idempotent for the re-run when isFirstRun flips.
+    installCrashHandler();
+    installLifecycleLogging();
+    AppLogger.prune();
+    // Drain OS-level diagnostics from the previous session into the crash log (best-effort).
+    void processNativeDiagnostics();
+
     if (!IS_SCREENSHOT_MODE && appStore.isFirstRun) return;
 
     const initializeApp = async () => {
-      // Install the crash handler first so early-startup errors are captured, then
-      // lifecycle breadcrumbs (launch/update/unclean-exit), and prune logs once per launch.
-      installCrashHandler();
-      installLifecycleLogging();
-      AppLogger.prune();
-      // Drain OS-level diagnostics from the previous session into the crash log (best-effort).
-      void processNativeDiagnostics();
       if (IS_SCREENSHOT_MODE) {
         seedScreenshotState();
       }

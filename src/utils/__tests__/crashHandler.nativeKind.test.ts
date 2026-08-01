@@ -28,6 +28,7 @@ jest.mock("@/utils/appLogger", () => ({
 
 // eslint-disable-next-line import/first -- import must follow jest.mock hoisting
 import {
+  installCrashHandler,
   writeNativePendingReport,
   readPendingReport,
   clearPendingReport,
@@ -46,5 +47,29 @@ describe("writeNativePendingReport", () => {
   it("persists an anr sentinel", () => {
     writeNativePendingReport("anr", "ANR in main");
     expect(readPendingReport()?.kind).toBe("anr");
+  });
+});
+
+describe("installCrashHandler", () => {
+  it("installs once, and writes the sentinel only for fatal errors", () => {
+    const handlers: Array<(e: Error, isFatal?: boolean) => void> = [];
+    const setSpy = jest
+      .spyOn(ErrorUtils, "setGlobalHandler")
+      .mockImplementation((h) => handlers.push(h as (e: Error, isFatal?: boolean) => void));
+    jest.spyOn(ErrorUtils, "getGlobalHandler").mockReturnValue(undefined as never);
+
+    installCrashHandler();
+    installCrashHandler();
+    expect(setSpy).toHaveBeenCalledTimes(1);
+
+    clearPendingReport();
+    // RN reports guarded, recoverable errors with isFatal=false — no crash sentinel.
+    handlers[0](new Error("guarded"), false);
+    expect(readPendingReport()).toBeNull();
+
+    handlers[0](new Error("boom"), true);
+    expect(readPendingReport()?.kind).toBe("crash");
+
+    jest.restoreAllMocks();
   });
 });

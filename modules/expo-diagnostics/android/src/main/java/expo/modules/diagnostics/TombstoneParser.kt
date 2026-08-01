@@ -37,10 +37,12 @@ object TombstoneParser {
       throw IllegalStateException("varint too long")
     }
 
-    // Returns a sub-reader over a length-delimited field's payload.
+    // Returns a sub-reader over a length-delimited field's payload. The bound check
+    // compares against the remaining span (never `pos + len`, whose Long addition can
+    // overflow on a hostile length and silently move the cursor backwards).
     fun readLen(): Reader {
       val len = readVarint()
-      if (len < 0 || pos + len > end) throw IllegalStateException("length past end")
+      if (len < 0 || len > (end - pos).toLong()) throw IllegalStateException("length past end")
       val r = Reader(buf, pos, pos + len.toInt())
       pos += len.toInt()
       return r
@@ -89,6 +91,8 @@ object TombstoneParser {
     var name = ""
     val frames = ArrayList<String>()
     val notes = ArrayList<String>()
+    // Frames seen in the proto, including ones past MAX_FRAMES; drives the "+N more" marker.
+    var totalFrames = 0
   }
 
   private fun parseTombstone(r: Reader): String? {
@@ -138,6 +142,9 @@ object TombstoneParser {
       if (thread.frames.isNotEmpty()) {
         out.append("backtrace:\n")
         for (frame in thread.frames) out.append(frame).append('\n')
+        if (thread.totalFrames > thread.frames.size) {
+          out.append("  … [+${thread.totalFrames - thread.frames.size} more frames]\n")
+        }
       }
     }
     return out.toString().trimEnd()
@@ -192,10 +199,15 @@ object TombstoneParser {
         num == 2 && wireType == LEN -> { t.name = r.readString(); true }
         num == 4 && wireType == LEN -> {
           val frame = parseFrame(r.readLen())
+          t.totalFrames++
           if (t.frames.size < MAX_FRAMES) t.frames.add(formatFrame(t.frames.size, frame))
           true
         }
-        num == 7 && wireType == LEN -> { t.notes.add(r.readString()); true }
+        num == 7 && wireType == LEN -> {
+          val note = r.readString()
+          if (t.notes.size < 8) t.notes.add(note)
+          true
+        }
         else -> false
       }
     }
@@ -203,7 +215,7 @@ object TombstoneParser {
   }
 
   private class Frame {
-    var pc = 0L
+    var relPc = 0L
     var functionName = ""
     var functionOffset = 0L
     var fileName = ""
@@ -214,7 +226,10 @@ object TombstoneParser {
     val f = Frame()
     forEachField(r) { num, wireType ->
       when {
-        num == 2 && wireType == VARINT -> { f.pc = r.readVarint(); true }
+        // rel_pc (offset into the mapped library) is what debuggerd prints as "pc" and
+        // what symbolication against the .so needs; the absolute pc is ASLR-randomized
+        // and useless without the memory map, so it is skipped.
+        num == 1 && wireType == VARINT -> { f.relPc = r.readVarint(); true }
         num == 4 && wireType == LEN -> { f.functionName = r.readString(); true }
         num == 5 && wireType == VARINT -> { f.functionOffset = r.readVarint(); true }
         num == 6 && wireType == LEN -> { f.fileName = r.readString(); true }
@@ -228,7 +243,7 @@ object TombstoneParser {
   private fun formatFrame(index: Int, f: Frame): String {
     val out = StringBuilder()
     out.append("  #").append(String.format("%02d", index))
-    out.append(" pc 0x").append(String.format("%016x", f.pc))
+    out.append(" pc 0x").append(String.format("%016x", f.relPc))
     out.append(' ').append(f.fileName.ifEmpty { "<unknown>" })
     if (f.functionName.isNotEmpty()) {
       out.append(" (").append(f.functionName)

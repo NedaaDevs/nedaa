@@ -119,6 +119,7 @@ let hangTree = tree(from: """
     let deepTree: [String: Any] = ["callStacks": [["threadAttributed": true, "callStackRootFrames": [deep]]] as [Any]]
     let capped = CallStackCompactor.attributedStack(tree: deepTree) ?? ""
     check("deep chain: capped at 128 frames", capped.contains("#127") && !capped.contains("#128"), "")
+    check("deep chain: truncation marker", capped.contains("… [+173 more frames]"), String(capped.suffix(80)))
 
     print(failures == 0 ? "ALL TESTS PASSED" : "\(failures) TEST(S) FAILED")
     exit(failures == 0 ? 0 : 1)

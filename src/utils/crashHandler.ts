@@ -15,16 +15,30 @@ export interface PendingReport {
 
 const log = AppLogger.create("crash");
 
+// Guards against double-install: a second call would wrap our own handler and
+// duplicate every log line, flush, and sentinel write.
+let installed = false;
+
 // Install a global JS error handler that records the crash into the `crash` domain,
 // force-flushes everything to disk, and writes the sentinel — then chains to the
 // previous handler so the dev red-screen / default behavior is preserved.
 export const installCrashHandler = (): void => {
+  if (installed) return;
+  installed = true;
   const previous = ErrorUtils.getGlobalHandler?.();
   ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
     try {
-      log.e("fatal", `${isFatal ? "FATAL " : ""}${error?.message ?? String(error)}`, error);
+      log.e(
+        isFatal ? "fatal" : "error",
+        `${isFatal ? "FATAL " : ""}${error?.message ?? String(error)}`,
+        error
+      );
       AppLogger.flushAllSync();
-      writePendingReport(`${error?.name ?? "Error"}: ${error?.message ?? String(error)}`);
+      // RN reports guarded, recoverable errors with isFatal=false and keeps running —
+      // those are logged above but must not raise the "app crashed" prompt.
+      if (isFatal) {
+        writePendingReport(`${error?.name ?? "Error"}: ${error?.message ?? String(error)}`);
+      }
     } catch {
       // never let the crash handler throw
     }

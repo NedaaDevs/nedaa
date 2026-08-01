@@ -14,4 +14,8 @@ describe("ExpoDiagnosticsModule (native absent)", () => {
   it("drain resolves to empty array when native module is missing", async () => {
     await expect(ExpoDiagnosticsModule.drain()).resolves.toEqual([]);
   });
+
+  it("ack resolves without throwing when native module is missing", async () => {
+    await expect(ExpoDiagnosticsModule.ack(["token"])).resolves.toBeUndefined();
+  });
 });

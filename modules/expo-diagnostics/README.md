@@ -1,24 +1,31 @@
 # expo-diagnostics
 
-Buffers OS-level diagnostics and exposes them to JS via `drain()`.
+Buffers OS-level diagnostics and exposes them to JS via `drain()` + `ack()`.
+
+**Peek/ack protocol:** `drain()` returns records without consuming them; the native side
+consumes (Android: cursor advance, iOS: file delete) only when JS calls `ack(tokens)` after
+the log write is flushed to disk. A crash between drain and ack replays the records on the
+next launch instead of losing them; entry `id`s are stable across replays for dedup.
 
 - **iOS:** MetricKit `MXCrashDiagnostic` (→ `crash`) and `MXHangDiagnostic` (→ `hang`),
-  persisted to `Application Support/diagnostics-inbox/` on delivery. Does not fire on
+  persisted atomically to `Application Support/diagnostics-inbox/` on delivery; unreadable
+  or oversized files are quarantined as `.bad`, never silently deleted. Does not fire on
   Simulator — verify via TestFlight/release.
   The detail leads with `CallStackCompactor`'s attributed-thread stack (`#NN binary
-+0xOFFSET (uuid)` — symbolicate offline with the build's dSYMs) followed by the raw
-  callStackTree JSON, so the 64KB cap can only truncate the raw tail, never the crashed
-  thread. Verify with `ios/scripts/CallStackCompactorTest.swift` (standalone swiftc
-  script — no XCTest target).
-- **Android:** `ApplicationExitInfo` (API 30+): `REASON_CRASH`/`REASON_CRASH_NATIVE` → `crash`,
-  `REASON_ANR` → `anr`, `REASON_LOW_MEMORY` → `memory`, signalled/excessive-resource → `other`.
-  Returns `[]` below API 30. AOSP — works on HMS builds.
++0xOFFSET (uuid)` — symbolicate offline with the build's dSYMs) followed by the FULL
+  diagnostic JSON (metadata, virtual-memory info, all threads), so the 64KB cap can only
+  truncate the raw tail, never the crashed thread. Verify with
+  `ios/scripts/CallStackCompactorTest.swift` (standalone swiftc script — no XCTest target).
+- **Android:** `ApplicationExitInfo` (API 30+): crash/native-crash/init-failure → `crash`,
+  `REASON_ANR` → `anr`, low-memory and SIGKILL-signalled (LMK fallback) → `memory`,
+  other signals/excessive-resource → `other`. Returns `[]` below API 30. AOSP — works on
+  HMS builds.
   `getTraceInputStream()` is format-polymorphic: text for ANRs, a binary tombstone protobuf
   (AOSP `debuggerd/proto/tombstone.proto`) for native crashes. `TombstoneParser` decodes the
   latter into a debuggerd-style summary (signal, abort message, causes, crashing-thread
-  backtrace); unparseable tombstones are kept as base64 for offline decoding. Verify the
-  parser with `android/scripts/TombstoneParserTest.kt` (standalone kotlinc script — no
-  Android test target in this module).
+  backtrace with `rel_pc` + BuildId); unparseable tombstones are kept as base64 for offline
+  decoding. Verify the parser with `android/scripts/TombstoneParserTest.kt` (standalone
+  kotlinc script — no Android test target in this module).
 
 ## Consumption
 
