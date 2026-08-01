@@ -5,6 +5,11 @@ Buffers OS-level diagnostics and exposes them to JS via `drain()`.
 - **iOS:** MetricKit `MXCrashDiagnostic` (→ `crash`) and `MXHangDiagnostic` (→ `hang`),
   persisted to `Application Support/diagnostics-inbox/` on delivery. Does not fire on
   Simulator — verify via TestFlight/release.
+  The detail leads with `CallStackCompactor`'s attributed-thread stack (`#NN binary
++0xOFFSET (uuid)` — symbolicate offline with the build's dSYMs) followed by the raw
+  callStackTree JSON, so the 64KB cap can only truncate the raw tail, never the crashed
+  thread. Verify with `ios/scripts/CallStackCompactorTest.swift` (standalone swiftc
+  script — no XCTest target).
 - **Android:** `ApplicationExitInfo` (API 30+): `REASON_CRASH`/`REASON_CRASH_NATIVE` → `crash`,
   `REASON_ANR` → `anr`, `REASON_LOW_MEMORY` → `memory`, signalled/excessive-resource → `other`.
   Returns `[]` below API 30. AOSP — works on HMS builds.

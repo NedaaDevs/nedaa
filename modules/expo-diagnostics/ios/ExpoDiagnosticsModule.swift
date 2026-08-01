@@ -104,11 +104,19 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
       ? "crash exc=\(exceptionType)/\(exceptionCode) sig=\(signal) \(termination) v\(appVersion)"
       : "hang v\(appVersion)"
 
+    // Compact attributed-thread stack first: the raw tree lists every thread and the
+    // crashed one is not guaranteed to precede the truncation point, so truncation
+    // must only ever eat into the raw JSON tail.
     var detail = ""
-    if let tree = diag["callStackTree"],
-       let treeData = try? JSONSerialization.data(withJSONObject: tree),
-       let treeStr = String(data: treeData, encoding: .utf8) {
-      detail = self.truncated(treeStr)
+    if let tree = diag["callStackTree"] as? [String: Any] {
+      let compact = CallStackCompactor.attributedStack(tree: tree)
+      var parts: [String] = []
+      if let compact { parts.append(compact) }
+      if let treeData = try? JSONSerialization.data(withJSONObject: tree),
+         let treeStr = String(data: treeData, encoding: .utf8) {
+        parts.append(treeStr)
+      }
+      detail = self.truncated(parts.joined(separator: "\n"))
     }
 
     return [
