@@ -86,10 +86,25 @@ class ExpoDiagnosticsModule : Module() {
     val summary = "exit reason=${info.reason} status=${info.status} " +
       "importance=${info.importance} desc=${info.description ?: ""}"
     var detail: String? = null
-    // Trace is available for ANR and native crash on supported devices.
+    // Trace is available for ANR and native crash on supported devices. ANR traces are
+    // plain text; native-crash traces are a binary tombstone protobuf that must be
+    // decoded, never read as text.
     if (kind == "anr" || kind == "crash") {
       detail = try {
-        info.traceInputStream?.bufferedReader()?.use { it.readText() }?.let { truncate(it) }
+        if (info.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) {
+          info.traceInputStream?.use { it.readBytes() }?.let { bytes ->
+            TombstoneParser.format(bytes)?.let { truncate(it) }
+              // Unparseable tombstone: keep the raw bytes decodable offline against
+              // AOSP's tombstone.proto instead of dropping them.
+              ?: ("tombstone protobuf (${bytes.size}B, unparsed) base64:\n" +
+                android.util.Base64.encodeToString(
+                  bytes.copyOf(minOf(bytes.size, detailCap / 2)),
+                  android.util.Base64.NO_WRAP
+                ))
+          }
+        } else {
+          info.traceInputStream?.bufferedReader()?.use { it.readText() }?.let { truncate(it) }
+        }
       } catch (e: Exception) {
         null
       }

@@ -8,6 +8,12 @@ Buffers OS-level diagnostics and exposes them to JS via `drain()`.
 - **Android:** `ApplicationExitInfo` (API 30+): `REASON_CRASH`/`REASON_CRASH_NATIVE` → `crash`,
   `REASON_ANR` → `anr`, `REASON_LOW_MEMORY` → `memory`, signalled/excessive-resource → `other`.
   Returns `[]` below API 30. AOSP — works on HMS builds.
+  `getTraceInputStream()` is format-polymorphic: text for ANRs, a binary tombstone protobuf
+  (AOSP `debuggerd/proto/tombstone.proto`) for native crashes. `TombstoneParser` decodes the
+  latter into a debuggerd-style summary (signal, abort message, causes, crashing-thread
+  backtrace); unparseable tombstones are kept as base64 for offline decoding. Verify the
+  parser with `android/scripts/TombstoneParserTest.kt` (standalone kotlinc script — no
+  Android test target in this module).
 
 ## Consumption
 
