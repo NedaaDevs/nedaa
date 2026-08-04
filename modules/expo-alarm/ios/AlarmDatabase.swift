@@ -208,6 +208,12 @@ class AlarmDatabase {
         return alarm.completed
     }
 
+    func getCompletedAlarmIds() -> [String] {
+        query("SELECT id FROM alarms WHERE completed = 1 AND is_backup = 0") { stmt in
+            String(cString: sqlite3_column_text(stmt, 0))
+        }
+    }
+
     func clearCompleted(id: String) {
         execute("UPDATE alarms SET completed = 0 WHERE id = ?") { [SQLITE_TRANSIENT] stmt in
             sqlite3_bind_text(stmt, 1, id, -1, SQLITE_TRANSIENT)

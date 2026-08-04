@@ -27,13 +27,14 @@ export async function detectActiveAlarm(
   handledIds?: { has(id: string): boolean },
   retryCount = 0
 ): Promise<ActiveAlarmInfo | null> {
-  // Check completed queue first to avoid showing challenge for already-completed alarms
-  const completedQueue = await ExpoAlarm.getCompletedQueue().catch((e) => {
-    // Empty fallback risks re-showing a challenge for an already-completed alarm.
-    alarmLog.w("Detector", `getCompletedQueue failed: ${e?.message ?? e}`);
-    return [];
-  });
-  const completedIds = new Set(completedQueue.map((item) => item.alarmId));
+  // Check completed alarms first to avoid showing challenge for already-completed alarms
+  const completedIds = new Set(
+    await ExpoAlarm.getCompletedAlarmIds().catch((e) => {
+      // Empty fallback risks re-showing a challenge for an already-completed alarm.
+      alarmLog.w("Detector", `getCompletedAlarmIds failed: ${e?.message ?? e}`);
+      return [];
+    })
+  );
 
   const now = Date.now();
 

@@ -260,6 +260,19 @@ class AlarmDatabase private constructor(private val context: Context) :
         return alarms
     }
 
+    fun getCompletedAlarmIds(): List<String> {
+        val ids = mutableListOf<String>()
+        val cursor = readableDatabase.rawQuery(
+            "SELECT id FROM alarms WHERE completed = 1 AND is_backup = 0", null
+        )
+        cursor.use {
+            while (it.moveToNext()) {
+                ids.add(it.getString(0))
+            }
+        }
+        return ids
+    }
+
     fun markCompleted(id: String) {
         val values = ContentValues().apply { put("completed", 1) }
         writableDatabase.update("alarms", values, "id = ?", arrayOf(id))

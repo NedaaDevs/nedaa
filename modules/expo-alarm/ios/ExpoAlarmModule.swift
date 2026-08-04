@@ -357,6 +357,10 @@ public class ExpoAlarmModule: Module {
             return true
         }
 
+        AsyncFunction("getCompletedAlarmIds") { () -> [String] in
+            AlarmDatabase.shared.getCompletedAlarmIds()
+        }
+
         Function("deleteAlarmFromDB") { (id: String) -> Bool in
             AlarmDatabase.shared.deleteAlarm(id: id)
             AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()

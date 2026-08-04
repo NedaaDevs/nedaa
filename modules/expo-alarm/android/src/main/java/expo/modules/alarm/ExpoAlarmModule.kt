@@ -151,6 +151,10 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        AsyncFunction("getCompletedAlarmIds") {
+            db.getCompletedAlarmIds()
+        }
+
         // Completed queue (for processing alarms completed via overlay)
         AsyncFunction("getCompletedQueue") {
             db.getCompletedQueue().map { record ->

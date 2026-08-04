@@ -167,6 +167,14 @@ export async function clearCompletedChallenges(): Promise<boolean> {
   return NativeModule.clearCompletedChallenges();
 }
 
+// Ids of alarms flagged completed — the cross-platform record that an alarm finished,
+// cleared when the id is scheduled again. The Android completed queue is narrower: the
+// work list of overlay completions still awaiting recurrence rescheduling.
+export async function getCompletedAlarmIds(): Promise<string[]> {
+  if (!isAvailable) return [];
+  return NativeModule.getCompletedAlarmIds();
+}
+
 // Completed queue (alarms completed via Android overlay, need JS processing)
 export interface CompletedAlarm {
   id: number;
@@ -605,6 +613,7 @@ export default {
   getPendingChallenge,
   clearPendingChallenge,
   clearCompletedChallenges,
+  getCompletedAlarmIds,
   getCompletedQueue,
   clearCompletedQueue,
   getSnoozeQueue,
