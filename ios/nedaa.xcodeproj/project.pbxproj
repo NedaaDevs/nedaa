@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0479CE96E4A47ECBDB66E316 /* OpenNedaaAlarmIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5C32969FBFD662649E72631 /* OpenNedaaAlarmIntent.swift */; };
 		0E19C01AB3F13A692D593841 /* iOS-Radar.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		2086DF27F7974C99BB880496 /* Asap_700Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */; };
@@ -135,6 +136,7 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = nedaa/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* nedaa-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "nedaa-Bridging-Header.h"; path = "nedaa/nedaa-Bridging-Header.h"; sourceTree = "<group>"; };
+		F5C32969FBFD662649E72631 /* OpenNedaaAlarmIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = nedaa/OpenNedaaAlarmIntent.swift; sourceTree = "<group>"; };
 		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
 		FDE52688DF5F5110C0D947CA /* Pods-nedaa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.debug.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.debug.xcconfig"; sourceTree = "<group>"; };
 		FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_700Bold.ttf; path = "../node_modules/@expo-google-fonts/asap/700Bold/Asap_700Bold.ttf"; sourceTree = "<group>"; };
@@ -236,6 +238,7 @@
 				353E4C9B2DFCDB1F003E7634 /* makkah_athan1.caf */,
 				0279B5DCCC4F0F8A79E7947D /* sounds */,
 				C781E4824C17489FA7470F90 /* Settings.bundle */,
+				F5C32969FBFD662649E72631 /* OpenNedaaAlarmIntent.swift */,
 			);
 			name = nedaa;
 			sourceTree = "<group>";
@@ -600,6 +603,7 @@
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				DEAE4D9EFC16322A17A3F48F /* ExpoModulesProvider.swift in Sources */,
 				3571E5712F12BEBF00DABED1 /* AlarmActivityAttributes.swift in Sources */,
+				0479CE96E4A47ECBDB66E316 /* OpenNedaaAlarmIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

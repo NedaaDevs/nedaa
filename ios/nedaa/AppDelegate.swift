@@ -1,5 +1,6 @@
 import AVFoundation
 internal import Expo
+internal import ExpoAlarm
 import React
 import ReactAppDependencyProvider
 
@@ -16,6 +17,16 @@ class AppDelegate: ExpoAppDelegate {
   ) -> Bool {
     // Configure audio session early for warm-start background scenarios
     configureAudioSession()
+
+    // The alarm module builds AlarmKit stop intents through this hook; the intent type has to
+    // be declared here in the app target to get a resolvable AppIntents mangled type name.
+#if canImport(AlarmKit)
+    if #available(iOS 26.1, *) {
+      AlarmIntentFactory.makeStopIntent = { alarmId, alarmType, title in
+        OpenNedaaAlarmIntent(alarmId: alarmId, alarmType: alarmType, title: title)
+      }
+    }
+#endif
 
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)

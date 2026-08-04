@@ -270,7 +270,7 @@ import AppIntents
                 presentation: presentation,
                 tintColor: alarmType == "fajr" ? .orange : .green
             )
-            let backupIntent = OpenNedaaAlarmIntent(
+            let backupIntent = AlarmIntentFactory.stopIntent(
                 alarmId: originalAlarmId,
                 alarmType: alarmType,
                 title: title

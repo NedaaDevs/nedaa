@@ -152,7 +152,8 @@ public class ExpoAlarmModule: Module {
                             stopButton: stopButton
                         )
 
-                        let stopIntent = OpenNedaaAlarmIntent(alarmId: id, alarmType: alarmType, title: title)
+                        let stopIntent = AlarmIntentFactory.stopIntent(
+                            alarmId: id, alarmType: alarmType, title: title)
 
                         guard let alarmUUID = UUID(uuidString: id) else {
                             promise.reject("ERR_INVALID_UUID", "Invalid alarm ID: \(id)")
