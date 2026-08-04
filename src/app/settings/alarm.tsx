@@ -35,6 +35,7 @@ import {
   VolumeOff,
   ShieldAlert,
   CircleHelp,
+  Layers,
 } from "lucide-react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
@@ -59,6 +60,8 @@ import {
   requestFullScreenIntentPermission,
   isBatteryOptimizationExempt,
   requestBatteryOptimizationExemption,
+  canDrawOverlays,
+  requestDrawOverlaysPermission,
 } from "expo-alarm";
 
 import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
@@ -299,6 +302,21 @@ const AlarmSettings = () => {
         canRequestInApp: false,
         onRequest: () => {
           requestFullScreenIntentPermission();
+        },
+      });
+
+      // Without this the challenge overlay silently stops itself and the alarm falls back
+      // to a notification, so it belongs beside the other alarm permissions.
+      const overlayGranted = canDrawOverlays();
+      items.push({
+        id: "overlay",
+        icon: Layers,
+        titleKey: "alarm.permission.android.overlay.title",
+        descriptionKey: "alarm.permission.android.overlay.description",
+        granted: overlayGranted,
+        canRequestInApp: false,
+        onRequest: () => {
+          requestDrawOverlaysPermission();
         },
       });
 

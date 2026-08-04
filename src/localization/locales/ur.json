@@ -221,6 +221,8 @@
   "alarm.permission.android.fullScreen.title": "فل سکرین الرٹس",
   "alarm.permission.android.notifications.description": "نماز کا وقت ہونے پر آپ کو مطلع کرنے کے لیے ضروری ہے",
   "alarm.permission.android.notifications.title": "اطلاعات",
+  "alarm.permission.android.overlay.description": "بیداری کا چیلنج اسکرین پر موجود کسی بھی چیز کے اوپر دکھاتا ہے",
+  "alarm.permission.android.overlay.title": "دوسری ایپس کے اوپر دکھائیں",
   "alarm.permission.countNeeded": "{{count}} اجازتیں درکار ہیں",
   "alarm.permission.description": "آپ کے نماز کے الارم قابل اعتماد طریقے سے کام کرنے کے لیے، درج ذیل اجازتیں درکار ہیں:",
   "alarm.permission.granted": "اجازت دی گئی",

@@ -221,6 +221,8 @@
   "alarm.permission.android.fullScreen.title": "Amaran Skrin Penuh",
   "alarm.permission.android.notifications.description": "Diperlukan untuk memaklumkan anda apabila tiba waktu solat",
   "alarm.permission.android.notifications.title": "Pemberitahuan",
+  "alarm.permission.android.overlay.description": "Membenarkan cabaran bangun tidur muncul atas apa jua pada skrin",
+  "alarm.permission.android.overlay.title": "Papar Atas Apl Lain",
   "alarm.permission.countNeeded": "{{count}} kebenaran diperlukan",
   "alarm.permission.description": "Untuk memastikan penggera solat anda berfungsi dengan baik, kebenaran berikut diperlukan:",
   "alarm.permission.granted": "Dibenarkan",

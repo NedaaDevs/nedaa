@@ -230,6 +230,8 @@
   "alarm.permission.android.fullScreen.title": "تنبيهات ملء الشاشة",
   "alarm.permission.android.notifications.description": "مطلوب لتنبيهك عندما يحين وقت الصلاة",
   "alarm.permission.android.notifications.title": "الإشعارات",
+  "alarm.permission.android.overlay.description": "يتيح ظهور تحدي الاستيقاظ فوق ما يظهر على الشاشة",
+  "alarm.permission.android.overlay.title": "العرض فوق التطبيقات الأخرى",
   "alarm.permission.countNeeded": "{{count}} أذونات مطلوبة",
   "alarm.permission.description": "لضمان عمل منبهات الصلاة بشكل موثوق، الأذونات التالية مطلوبة:",
   "alarm.permission.granted": "مُفعَّل",
