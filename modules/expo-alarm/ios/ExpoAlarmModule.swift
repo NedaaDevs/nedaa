@@ -226,6 +226,15 @@ public class ExpoAlarmModule: Module {
                             AlarmAudioManager.shared.startQuietKeepAlive()
                             PersistentLog.shared.alarm("Keep-alive started (alarm < 10min)")
 
+                            // The only point the app is reliably foregrounded before the alarm,
+                            // and ActivityKit only permits starting an activity from there.
+                            await AlarmObserver.startScheduledLiveActivity(
+                                alarmId: id,
+                                alarmType: alarmType,
+                                title: title,
+                                triggerTime: triggerDate
+                            )
+
                             AlarmObserver.stopObserving()
                             AlarmObserver.startObserving()
                             PersistentLog.shared.alarm("Observer restarted for imminent alarm")

@@ -370,11 +370,7 @@ import AppIntents
             )
         }
 
-        _ = await startFiringLiveActivity(
-            alarmId: originalAlarmId,
-            alarmType: metadata.alarmType,
-            title: metadata.title
-        )
+        _ = await startFiringLiveActivity(alarmId: originalAlarmId)
 
         if !AlarmAudioManager.shared.isKeepAliveRunning() {
             AlarmAudioManager.shared.startQuietKeepAlive()
@@ -471,7 +467,7 @@ import AppIntents
 
         await scheduleBypassNotifications()
 
-        await updateLiveActivityForDismiss(alarmId: originalAlarmId, metadata: metadata)
+        await updateLiveActivityForDismiss(alarmId: originalAlarmId)
     }
 
     @available(iOS 26.1, *)
@@ -503,7 +499,7 @@ import AppIntents
     // MARK: - Live Activity Helpers
 
     @available(iOS 16.2, *)
-    static func updateLiveActivityForDismiss(alarmId: String, metadata: (alarmType: String, title: String)?) async {
+    static func updateLiveActivityForDismiss(alarmId: String) async {
         let log = NativeLogger.shared
 
         var activityToUpdate: Activity<AlarmActivityAttributes>?
@@ -515,31 +511,13 @@ import AppIntents
             }
         }
 
-        if activityToUpdate == nil {
-            let alarmType = metadata?.alarmType ?? "prayer"
-            let title = metadata?.title ?? "Alarm"
-
-            let attributes = AlarmActivityAttributes(
-                alarmId: alarmId,
-                alarmType: alarmType,
-                title: title,
-                triggerTime: Date()
-            )
-            let state = AlarmActivityAttributes.ContentState(state: "firing")
-
-            do {
-                activityToUpdate = try Activity.request(
-                    attributes: attributes,
-                    content: .init(state: state, staleDate: nil),
-                    pushType: nil
-                )
-            } catch {
-                log.observerError("Failed to create Live Activity: \(error)")
-                return
-            }
+        // ActivityKit rejects Activity.request from the background, and a firing alarm always
+        // runs there, so the activity has to already exist from when the alarm was scheduled.
+        guard let activity = activityToUpdate else {
+            log.observerError("No Live Activity for \(alarmId) to escalate")
+            PersistentLog.shared.observer("No Live Activity to escalate for \(alarmId.prefix(8))")
+            return
         }
-
-        guard let activity = activityToUpdate else { return }
 
         let newState = AlarmActivityAttributes.ContentState(state: "firing")
 
@@ -556,38 +534,73 @@ import AppIntents
     }
 
     @available(iOS 16.2, *)
-    static func startFiringLiveActivity(alarmId: String, alarmType: String, title: String) async -> String? {
+    /// Creates the alarm's Live Activity. Only legal while the app is foregrounded, which is
+    /// why it runs at scheduling time rather than when the alarm fires.
+    static func startScheduledLiveActivity(
+        alarmId: String, alarmType: String, title: String, triggerTime: Date
+    ) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            return nil
+            return
         }
 
-        let existingCount = Activity<AlarmActivityAttributes>.activities.count
-        if existingCount > 0 {
-            for activity in Activity<AlarmActivityAttributes>.activities {
-                let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
-                await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
-            }
-            try? await Task.sleep(nanoseconds: 100_000_000)
-        }
+        await endAllLiveActivities()
 
         let attributes = AlarmActivityAttributes(
             alarmId: alarmId,
             alarmType: alarmType,
             title: title,
-            triggerTime: Date()
+            triggerTime: triggerTime
         )
-        let state = AlarmActivityAttributes.ContentState(state: "firing")
+        let state = AlarmActivityAttributes.ContentState(state: "countdown", remainingSeconds: nil)
 
         do {
-            let activity = try Activity.request(
+            _ = try Activity.request(
                 attributes: attributes,
-                content: .init(state: state, staleDate: nil),
+                content: .init(state: state, staleDate: triggerTime),
                 pushType: nil
             )
-            return activity.id
+            PersistentLog.shared.alarm("Live Activity started for \(alarmId.prefix(8))")
         } catch {
-            PersistentLog.shared.alarm("Failed to start Live Activity: \(error)")
+            PersistentLog.shared.alarm("Live Activity request failed: \(error)")
+        }
+    }
+
+    /// Moves the alarm's Live Activity into the firing state and clears any others.
+    ///
+    /// A firing alarm runs in the background, where ActivityKit rejects `Activity.request`
+    /// with `.visibility`, so this can only promote an activity that already exists. Alarms
+    /// scheduled further out than the imminent window carry none.
+    @available(iOS 16.2, *)
+    static func startFiringLiveActivity(alarmId: String) async -> String? {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             return nil
+        }
+
+        var firing: Activity<AlarmActivityAttributes>?
+        for activity in Activity<AlarmActivityAttributes>.activities {
+            if activity.attributes.alarmId == alarmId {
+                firing = activity
+            } else {
+                let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
+                await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
+            }
+        }
+
+        guard let activity = firing else {
+            PersistentLog.shared.alarm("No Live Activity to fire for \(alarmId.prefix(8))")
+            return nil
+        }
+
+        let state = AlarmActivityAttributes.ContentState(state: "firing", remainingSeconds: nil)
+        await activity.update(ActivityContent(state: state, staleDate: nil))
+        return activity.id
+    }
+
+    @available(iOS 16.2, *)
+    private static func endAllLiveActivities() async {
+        for activity in Activity<AlarmActivityAttributes>.activities {
+            let finalState = AlarmActivityAttributes.ContentState(state: "dismissed", remainingSeconds: nil)
+            await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
         }
     }
 }
