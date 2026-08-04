@@ -276,7 +276,7 @@
   "alarm.settings.previewAlarm": "معاينة المنبّه",
   "alarm.settings.previewAlarmFailed": "تعذّر الجدولة",
   "alarm.settings.previewAlarmHint": "أغلق التطبيق لتسمعه يرن كمنبّه حقيقي.",
-  "alarm.settings.previewAlarmPending": "يرن خلال {{seconds}} ث…",
+  "alarm.settings.previewAlarmPending": "أغلق التطبيق · {{seconds}} ث",
   "alarm.settings.reportProblem": "الإبلاغ عن مشكلة",
   "alarm.settings.selectSound": "اختر الصوت",
   "alarm.settings.snooze": "الغفوة",

@@ -276,7 +276,7 @@
   "alarm.settings.previewAlarm": "Preview Alarm",
   "alarm.settings.previewAlarmFailed": "Couldn't schedule",
   "alarm.settings.previewAlarmHint": "Close the app to hear it ring like a real alarm.",
-  "alarm.settings.previewAlarmPending": "Ringing in {{seconds}}s…",
+  "alarm.settings.previewAlarmPending": "Close the app · {{seconds}}s",
   "alarm.settings.reportProblem": "Report a Problem",
   "alarm.settings.selectSound": "Select sound",
   "alarm.settings.snooze": "Snooze",
