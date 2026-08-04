@@ -11,8 +11,42 @@ import android.os.Build
 
 class AlarmScheduler(private val context: Context) {
 
+    companion object {
+        const val REARM_DELAY_MS = 15_000L
+    }
+
     private val alarmManager: AlarmManager
         get() = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    /**
+     * Rings an alarm again shortly after its challenge was abandoned.
+     *
+     * The alarm services are START_NOT_STICKY, so swiping the app out of recents destroys them
+     * and nothing brings them back — the alarm would disappear with the challenge unsolved.
+     * Rescheduling the same id restores it; a completed alarm is left alone.
+     */
+    fun rearmUnsolvedAlarm(alarmId: String, delayMs: Long = REARM_DELAY_MS): Boolean {
+        if (alarmId.isEmpty()) return false
+
+        val db = AlarmDatabase.getInstance(context)
+        val record = db.getAlarm(alarmId) ?: return false
+        if (record.completed) return false
+
+        val sound = db.getAlarmSettings(record.alarmType).sound.ifEmpty { "beep" }
+        val armed = scheduleAlarm(
+            id = alarmId,
+            triggerTimeMs = System.currentTimeMillis() + delayMs,
+            alarmType = record.alarmType,
+            title = record.title,
+            soundName = sound,
+            snoozeCount = record.snoozeCount
+        )
+        AlarmLogger.getInstance(context).w(
+            "AlarmScheduler",
+            "Challenge abandoned, alarm re-armed in ${delayMs}ms: id=$alarmId armed=$armed"
+        )
+        return armed
+    }
 
     private fun stableRequestCode(id: String): Int {
         var h = 0

@@ -157,6 +157,12 @@ class AlarmService : Service() {
         wakeLock = null
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Covers alarms with no overlay permission, where this service is the only one alive.
+        currentAlarmId?.let { AlarmScheduler(this).rearmUnsolvedAlarm(it) }
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (isRunning) {

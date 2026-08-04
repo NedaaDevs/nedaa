@@ -272,6 +272,11 @@ class AlarmOverlayService : Service() {
         vibrationPattern = settings.vibrationPattern
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        AlarmScheduler(this).rearmUnsolvedAlarm(alarmId)
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
@@ -1332,6 +1337,9 @@ class AlarmOverlayService : Service() {
         db.addToCompletedQueue(alarmId, alarmType, title)
         db.clearPendingChallenge()
         db.markCompleted(alarmId)
+
+        // Drops any re-arm placed by onTaskRemoved during this challenge.
+        AlarmScheduler(this).cancelAlarm(alarmId)
 
         AlarmService.stop(this)
 
