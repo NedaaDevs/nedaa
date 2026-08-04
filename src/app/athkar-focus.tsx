@@ -765,8 +765,8 @@ const AthkarFocusScreen = () => {
             <Animated.View exiting={reduceMotion ? undefined : FadeOut}>
               <Button
                 size="md"
-                variant="outline"
                 action="default"
+                variant="outline"
                 accessibilityLabel={t("athkar.focus.showInstructions")}
                 onPress={() => setShowInstructions(true)}
                 width={48}
@@ -782,8 +782,8 @@ const AthkarFocusScreen = () => {
           )}
           <Button
             size="md"
-            variant="outline"
             action="default"
+            variant="outline"
             accessibilityLabel={t("common.close")}
             onPress={() => router.back()}
             width={48}

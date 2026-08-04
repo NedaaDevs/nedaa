@@ -107,8 +107,8 @@ const MyAthkarCard: FC<Props> = ({
                 {currentCount > 0 && (
                   <Button
                     size="xs"
-                    variant="outline"
                     action="default"
+                    variant="outline"
                     onPress={(e: any) => {
                       e.stopPropagation();
                       decrementCount(myAthkarId);

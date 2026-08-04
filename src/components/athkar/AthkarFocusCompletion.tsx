@@ -55,8 +55,8 @@ export const AthkarFocusCompletion = ({
         <Box position="absolute" top={48} end={16} zIndex={10}>
           <Button
             size="md"
-            variant="outline"
             action="default"
+            variant="outline"
             onPress={handleFinish}
             accessibilityLabel={t("common.close")}
             width={48}

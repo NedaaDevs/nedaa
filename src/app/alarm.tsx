@@ -289,8 +289,8 @@ function ActiveAlarmView({
         {canSnooze && (
           <Button
             size="sm"
-            variant="outline"
             action="default"
+            variant="outline"
             alignSelf="center"
             height={44}
             minHeight={44}

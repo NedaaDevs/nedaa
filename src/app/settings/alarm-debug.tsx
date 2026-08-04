@@ -699,8 +699,8 @@ const AlarmDebugScreen = () => {
                     ))}
                     <Button
                       size="xs"
-                      variant="outline"
                       action="negative"
+                      variant="outline"
                       onPress={() => useAlarmStreakStore.setState({ streak: 0 })}>
                       <Button.Text>Reset</Button.Text>
                     </Button>

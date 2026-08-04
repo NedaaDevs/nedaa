@@ -153,8 +153,8 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                 {currentCount > 0 && (
                   <Button
                     size="xs"
-                    variant="outline"
                     action="default"
+                    variant="outline"
                     accessibilityLabel={t("common.decrement")}
                     onPress={(e: any) => {
                       e.stopPropagation();

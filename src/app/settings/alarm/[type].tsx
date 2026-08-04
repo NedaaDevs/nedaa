@@ -334,8 +334,8 @@ const AlarmTypeSettingsScreen = () => {
                 <Button
                   size="lg"
                   minHeight={44}
-                  variant={previewState === "idle" ? "solid" : "outline"}
                   action={previewState === "failed" ? "negative" : "primary"}
+                  variant={previewState === "idle" ? "solid" : "outline"}
                   disabled={previewState === "pending"}
                   onPress={handlePreviewAlarm}
                   accessibilityRole="button"

@@ -424,9 +424,9 @@ const NotificationSettings = () => {
                     </Button.Text>
                   </Button>
                   <Button
+                    action="negative"
                     variant="outline"
                     size="sm"
-                    action="negative"
                     onPress={() => {
                       if (isAthanPlaying()) stopAthan();
                     }}>
