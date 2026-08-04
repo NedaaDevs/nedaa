@@ -167,12 +167,15 @@ import AppIntents
         for dbId in dbAlarmIds {
             if !alarmKitIds.contains(dbId.lowercased()) {
                 if let alarmInfo = AlarmDatabase.shared.getAlarm(id: dbId) {
-                    if alarmInfo.triggerTime < now && !alarmInfo.completed {
+                    if alarmInfo.triggerTime < now {
                         let age = now - alarmInfo.triggerTime
                         if age > staleThresholdMs {
+                            // Completed rows are collected here too. Nothing else deletes them,
+                            // so every dismissed alarm would otherwise leave a row for good; the
+                            // stale window still outlives the completed-alarm lookups that read them.
                             plog.observer("Stale alarm \(dbId.prefix(8)) (\(Int(age/1000))s old), cleaning up")
                             AlarmDatabase.shared.deleteAlarm(id: dbId)
-                        } else {
+                        } else if !alarmInfo.completed {
                             plog.observer("Missed dismiss detected: \(dbId.prefix(8))")
                             await handleAlarmDismissed(alarmId: dbId)
                             AlarmDatabase.shared.deleteAlarm(id: dbId)
