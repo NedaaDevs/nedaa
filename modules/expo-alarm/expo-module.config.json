@@ -1,6 +1,7 @@
 {
   "platforms": ["ios", "android"],
   "ios": {
+    "appDelegateSubscribers": ["AlarmAppDelegateSubscriber"],
     "modules": ["ExpoAlarmModule"]
   },
   "android": {

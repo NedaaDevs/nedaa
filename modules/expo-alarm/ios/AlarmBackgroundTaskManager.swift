@@ -6,17 +6,30 @@ class AlarmBackgroundTaskManager {
     static let shared = AlarmBackgroundTaskManager()
     static let taskIdentifier = "dev.nedaa.app.alarmWake"
 
+    private var isRegistered = false
+
     private init() {}
 
     func registerTask() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.taskIdentifier, using: nil) { task in
+        guard !isRegistered else { return }
+        isRegistered = true
+        let registered = BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: Self.taskIdentifier,
+            using: nil
+        ) { task in
             guard let processingTask = task as? BGProcessingTask else {
                 task.setTaskCompleted(success: false)
                 return
             }
             self.handleBackgroundTask(processingTask)
         }
-        PersistentLog.shared.alarm("BGTask registered: \(Self.taskIdentifier)")
+        // A rejection means the identifier is missing from BGTaskSchedulerPermittedIdentifiers,
+        // which leaves every wake request undeliverable.
+        PersistentLog.shared.alarm(
+            registered
+                ? "BGTask registered: \(Self.taskIdentifier)"
+                : "BGTask registration rejected, identifier not permitted: \(Self.taskIdentifier)"
+        )
     }
 
     func scheduleWakeTask(alarmTime: Date, alarmId: String) {

@@ -79,12 +79,6 @@ public class ExpoAlarmModule: Module {
 
             AlarmObserver.startObserving()
 
-            #if canImport(AlarmKit)
-            if #available(iOS 26.1, *) {
-                AlarmBackgroundTaskManager.shared.registerTask()
-            }
-            #endif
-
             let dbAlarmIds = AlarmDatabase.shared.getAllAlarmIds()
             self.withAlarmIds { ids in
                 for id in dbAlarmIds {
