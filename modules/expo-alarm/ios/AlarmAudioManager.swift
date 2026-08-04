@@ -214,6 +214,24 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
             for (key, value) in error.userInfo {
                 logError("  [\(key)]: \(value)")
             }
+            // A background app holding a non-mixable category is refused the session. Mixing
+            // is still permitted there, so fall back to it rather than ring silently.
+            if error.code == AVAudioSession.ErrorCode.cannotInterruptOthers.rawValue {
+                return configureMixableSession()
+            }
+            return false
+        }
+    }
+
+    private func configureMixableSession() -> Bool {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+            log("Session configured (playback, mixWithOthers) — cannot interrupt others")
+            return true
+        } catch {
+            logError("Mixable session fallback failed: \(error)")
             return false
         }
     }
@@ -498,31 +516,24 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         timer?.invalidate()
         vibrationTimer = nil
 
-        if isKeepAliveActive {
-            let player = keepAlivePlayer
-            player?.stop()
-            keepAlivePlayer = nil
-            isKeepAliveActive = false
-        }
-
         // Save system volume before we change it
         saveSystemVolume()
 
         // Set the alarm volume for audio player
         volume = alarmVolume
 
-        // No mixWithOthers — we want to be loud and interrupt other audio
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(
-                .playback,
-                mode: .default,
-                options: []
-            )
-            try session.setActive(true)
-        } catch {
-            logError("Failed to reconfigure session: \(error)")
+        // Reconfigure while the keep-alive player still holds the session. Releasing it first
+        // leaves the app with nothing playing, and iOS then refuses a non-mixable activation
+        // from the background with AVAudioSessionErrorCodeCannotInterruptOthers.
+        if !configureSession() {
             logError("Continuing anyway - vibration still works, audio works in foreground")
+        }
+
+        if isKeepAliveActive {
+            let player = keepAlivePlayer
+            player?.stop()
+            keepAlivePlayer = nil
+            isKeepAliveActive = false
         }
 
         DispatchQueue.main.async { [weak self] in
