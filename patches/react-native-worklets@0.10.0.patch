@@ -1,0 +1,46 @@
+diff --git a/apple/worklets/apple/AnimationFrameQueue.mm b/apple/worklets/apple/AnimationFrameQueue.mm
+index b93cd2c625ef8a03415ce23c6fc584e51d3696a9..e373061ff58970c4a676e9d62a4cfc7f9f7fe168 100644
+--- a/apple/worklets/apple/AnimationFrameQueue.mm
++++ b/apple/worklets/apple/AnimationFrameQueue.mm
+@@ -79,7 +79,19 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
+ 
+ - (void)scheduleQueueExecution
+ {
+-  [displayLink_ setPaused:FALSE];
++  [self setDisplayLinkPaused:FALSE];
++}
++
++// A paused-state write reaches the render server over a blocking round trip, and
++// CoreAnimation defers part of that work when the write comes from inside a
++// display link dispatch. Writing only on a real change keeps the steady state
++// free of those round trips.
++- (void)setDisplayLinkPaused:(BOOL)paused
++{
++  if ([displayLink_ isPaused] == paused) {
++    return;
++  }
++  [displayLink_ setPaused:paused];
+ }
+ 
+ - (void)executeQueue:(WorkletsDisplayLink *)displayLink
+@@ -87,7 +99,6 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
+   RCTAssertMainQueue();
+ 
+   auto frameCallbacks = [self pullCallbacks];
+-  [displayLink_ setPaused:TRUE];
+ 
+ #if TARGET_OS_OSX
+   auto targetTimestamp = displayLink.timestamp + displayLink.duration;
+@@ -98,6 +109,12 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
+   for (const auto &callback : frameCallbacks) {
+     callback(targetTimestamp);
+   }
++
++  // The link keeps running until a tick drains the queue. Callbacks re-arm the
++  // queue from inside this dispatch, so a pause taken before them would need an
++  // immediate unpause and re-enter CoreAnimation on every frame.
++  std::lock_guard<std::mutex> lock(callbacksMutex_);
++  [self setDisplayLinkPaused:frameCallbacks_.empty()];
+ }
+ 
+ - (void)executeQueueForProMotion:(WorkletsDisplayLink *)displayLink

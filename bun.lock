@@ -106,6 +106,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "react-native-worklets@0.10.0": "patches/react-native-worklets@0.10.0.patch",
+  },
   "overrides": {
     "@react-navigation/bottom-tabs": "7.15.2",
     "@react-navigation/native": "7.1.31",
