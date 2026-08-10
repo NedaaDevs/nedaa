@@ -1839,6 +1839,8 @@
   "whatsNew.importantDays.title": "المناسبات الإسلامية على الرئيسية",
   "whatsNew.notNow": "ليس الآن",
   "whatsNew.subtitle": "الجديد في الإصدار {{version}}",
+  "whatsNew.textSize.description": "جهازك يستخدم خطًا أكبر. فعّله في نداء أيضًا.",
+  "whatsNew.textSize.title": "خط أكبر",
   "whatsNew.title": "الجديد في التطبيق",
   "widget_iftar": "إفطار",
   "widget_imsak": "إمساك",

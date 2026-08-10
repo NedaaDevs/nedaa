@@ -1,8 +1,11 @@
 import type { ComponentType } from "react";
-import { BookOpen, CalendarDays, Headphones } from "lucide-react-native";
+import { PixelRatio } from "react-native";
+import { ALargeSmall, BookOpen, CalendarDays, Headphones } from "lucide-react-native";
 
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { usePreferencesStore } from "@/stores/preferences";
+import { TextSize } from "@/enums/app";
+import { nearestTextSize, OS_FONT_SCALE_OFFER_THRESHOLD } from "@/constants/TextSize";
 
 // What's New announcement ids. Entries announce features to EXISTING users; a
 // fresh install seeds all current ids as seen at onboarding completion, so
@@ -10,6 +13,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 // Ship a new announcement by adding an entry to WHATS_NEW_ENTRIES (newest
 // first) and its id here.
 export const WhatsNewId = {
+  TEXT_SIZE: "text-size-v1",
   // TODO(quran-gate): entries retire once the feature has been public for a release.
   QURAN: "quran-feature-v1",
   QURAN_AUDIO: "quran-audio-v1",
@@ -24,6 +28,8 @@ export const ALL_WHATS_NEW_IDS: WhatsNewId[] = Object.values(WhatsNewId);
 export type WhatsNewGateContext = {
   quranUnlocked: boolean;
   umrahInProgress: boolean;
+  fontScale: number;
+  textSizeOfferHandled: boolean;
 };
 
 export type WhatsNewAction =
@@ -42,6 +48,21 @@ export type WhatsNewEntry = {
 
 // Newest release first.
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
+  {
+    id: WhatsNewId.TEXT_SIZE,
+    icon: ALargeSmall,
+    titleKey: "whatsNew.textSize.title",
+    descriptionKey: "whatsNew.textSize.description",
+    // Only users who run large OS text and never answered the offer.
+    gate: (ctx) => ctx.fontScale >= OS_FONT_SCALE_OFFER_THRESHOLD && !ctx.textSizeOfferHandled,
+    action: {
+      type: "optIn",
+      ctaKey: "whatsNew.enable",
+      isEnabled: () => usePreferencesStore.getState().textSize !== TextSize.DEFAULT,
+      enable: () =>
+        usePreferencesStore.getState().setTextSize(nearestTextSize(PixelRatio.getFontScale())),
+    },
+  },
   {
     id: WhatsNewId.QURAN_AUDIO,
     icon: Headphones,

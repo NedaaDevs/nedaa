@@ -1,7 +1,9 @@
 import { useCallback, useMemo } from "react";
+import { PixelRatio } from "react-native";
 
 import { getUnseenEntries } from "@/constants/WhatsNew";
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { readPendingReport } from "@/utils/crashHandler";
 
@@ -12,10 +14,17 @@ export const useWhatsNew = () => {
   const { isFirstRun, hasHydrated, quranUnlocked, dismissedFeatureCards, dismissFeatureCards } =
     useAppStore();
   const umrahInProgress = useUmrahGuideStore((s) => !!s.activeProgress);
+  const textSizeOfferHandled = usePreferencesStore((s) => s.textSizeOfferHandled);
 
   const entries = useMemo(
-    () => getUnseenEntries(dismissedFeatureCards, { quranUnlocked, umrahInProgress }),
-    [dismissedFeatureCards, quranUnlocked, umrahInProgress]
+    () =>
+      getUnseenEntries(dismissedFeatureCards, {
+        quranUnlocked,
+        umrahInProgress,
+        fontScale: PixelRatio.getFontScale(),
+        textSizeOfferHandled,
+      }),
+    [dismissedFeatureCards, quranUnlocked, umrahInProgress, textSizeOfferHandled]
   );
 
   const shouldPresent =

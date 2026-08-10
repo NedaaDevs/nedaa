@@ -1786,6 +1786,8 @@
   "whatsNew.importantDays.title": "Islamic Occasions on Home",
   "whatsNew.notNow": "Not now",
   "whatsNew.subtitle": "New in version {{version}}",
+  "whatsNew.textSize.description": "Your device uses larger text. Turn it on for Nedaa too.",
+  "whatsNew.textSize.title": "Larger text",
   "whatsNew.title": "What's New",
   "widget_iftar": "Iftar",
   "widget_imsak": "Imsak",

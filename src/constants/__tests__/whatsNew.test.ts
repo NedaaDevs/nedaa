@@ -15,7 +15,13 @@ jest.mock("expo-sqlite/kv-store", () => ({
   },
 }));
 
-const LOCKED_CTX = { quranUnlocked: false, umrahInProgress: false };
+// A settled text-size offer at normal OS scale keeps that entry out of these cases.
+const LOCKED_CTX = {
+  quranUnlocked: false,
+  umrahInProgress: false,
+  fontScale: 1.0,
+  textSizeOfferHandled: true,
+};
 
 describe("getUnseenEntries", () => {
   test("returns nothing when every id is seen", () => {
