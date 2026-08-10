@@ -34,3 +34,13 @@ export const OpeningTab = {
 } as const;
 
 export type OpeningTabValue = (typeof OpeningTab)[keyof typeof OpeningTab];
+
+/** In-app text size preset. Values are storage keys — never rename persisted ones. */
+export const TextSize = {
+  DEFAULT: "default",
+  LARGE: "large",
+  XLARGE: "xlarge",
+  MAX: "max",
+} as const;
+
+export type TextSizeValue = (typeof TextSize)[keyof typeof TextSize];

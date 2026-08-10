@@ -2,7 +2,7 @@ import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { getCalendars } from "expo-localization";
-import { OpeningTab, type OpeningTabValue } from "@/enums/app";
+import { OpeningTab, type OpeningTabValue, TextSize, type TextSizeValue } from "@/enums/app";
 
 // Seeds the initial 24-hour setting from the device clock; once the user
 // touches the toggle the persisted value takes over.
@@ -23,6 +23,11 @@ type PreferencesState = {
   showImportantDaysOnHome: boolean;
   // Accessibility: render bigger buttons/text where controls support it (default off).
   largeControls: boolean;
+  // In-app text size preset. Applied by the shared Text primitive; the OS
+  // font scale never scales app text.
+  textSize: TextSizeValue;
+  // The text-size offer was answered (onboarding, What's New, or Settings).
+  textSizeOfferHandled: boolean;
   // Send anonymous play stats to the API (default on). Gates trackPlay().
   shareUsageStats: boolean;
 
@@ -37,6 +42,8 @@ type PreferencesState = {
   setShowImportantDaysOnHome: (value: boolean) => void;
   setLargeControls: (value: boolean) => void;
   setShareUsageStats: (value: boolean) => void;
+  setTextSize: (value: TextSizeValue) => void;
+  markTextSizeOfferHandled: () => void;
 };
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -53,6 +60,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       showImportantDaysOnHome: false,
       largeControls: false,
       shareUsageStats: true,
+      textSize: TextSize.DEFAULT,
+      textSizeOfferHandled: false,
 
       setUseWesternNumerals: (value) => set({ useWesternNumerals: value }),
       setUse24HourTime: (value) => set({ use24HourTime: value }),
@@ -65,6 +74,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
       setLargeControls: (value) => set({ largeControls: value }),
       setShareUsageStats: (value) => set({ shareUsageStats: value }),
+      setTextSize: (value) => set({ textSize: value, textSizeOfferHandled: true }),
+      markTextSizeOfferHandled: () => set({ textSizeOfferHandled: true }),
     }),
     {
       name: "display-storage",
