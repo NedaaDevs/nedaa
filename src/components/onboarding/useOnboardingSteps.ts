@@ -6,12 +6,15 @@ import { checkLocationPermission } from "@/utils/location";
 import { useLocationStore } from "@/stores/location";
 import { LocationMode } from "@/enums/location";
 
+import { isLargeOsTextActive } from "@/utils/textSizeOffer";
+
 import WelcomeStep from "./steps/WelcomeStep";
+import TextSizeStep from "./steps/TextSizeStep";
 import NotificationsStep from "./steps/NotificationsStep";
 import LocationStep from "./steps/LocationStep";
 
 type OnboardingStepConfig = {
-  id: "welcome" | "notifications" | "location";
+  id: "welcome" | "textSize" | "notifications" | "location";
   component: React.ComponentType<{ onNext: () => void }>;
 };
 
@@ -24,6 +27,12 @@ const allSteps: {
     id: "welcome",
     component: WelcomeStep,
     shouldShow: async () => true,
+  },
+  {
+    id: "textSize",
+    component: TextSizeStep,
+    // Only users who already run large OS text get the offer.
+    shouldShow: async () => isLargeOsTextActive(),
   },
   {
     id: "notifications",
