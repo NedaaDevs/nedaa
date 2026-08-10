@@ -38,6 +38,7 @@ import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
 import { installScreenshotRouter } from "@/screenshot-mode/router";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
+import { usePreferencesHydrated } from "@/hooks/usePreferencesHydrated";
 
 import { trackAppSession } from "@/utils/reviewPrompt";
 
@@ -136,6 +137,7 @@ export default function RootLayout() {
   const systemScheme = useColorScheme();
 
   const [fontsLoaded, fontError] = useLoadFonts();
+  const prefsHydrated = usePreferencesHydrated();
   useInitialSetup();
 
   // Pin the native layer (system dialogs, keyboard, window bg) to the in-app
@@ -153,7 +155,10 @@ export default function RootLayout() {
     return installScreenshotRouter();
   }, []);
 
-  const isReady = (fontsLoaded || fontError) && hasHydrated;
+  // Both persisted stores gate the first frame: the app store carries theme
+  // and first-run state; the preferences store carries the text-size preset
+  // and offer flag, which must not render as defaults and then reflow.
+  const isReady = (fontsLoaded || fontError) && hasHydrated && prefsHydrated;
 
   useEffect(() => {
     if (isReady) {
