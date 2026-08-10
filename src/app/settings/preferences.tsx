@@ -1,8 +1,11 @@
 import { useRef } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
+import { router } from "expo-router";
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { Info } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react-native";
+
+import { useRTL } from "@/contexts/RTLContext";
 
 // Components
 import { Background } from "@/components/ui/background";
@@ -73,6 +76,7 @@ const DurationPicker = ({
 
 const PreferencesSettings = () => {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const { locale } = useAppStore();
   // TODO(quran-gate): remove at 2.10.0
   const quranUnlocked = useAppStore((s) => s.quranUnlocked);
@@ -195,6 +199,30 @@ const PreferencesSettings = () => {
               onValueChange={setLargeControls}
             />
           )}
+
+          <Pressable
+            onPress={() => router.push("/settings/textSize")}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.textSize.title")}
+            accessibilityHint={t("a11y.settingsItemNav", { name: t("settings.textSize.title") })}
+            minHeight={44}
+            paddingVertical="$3">
+            <HStack alignItems="center" justifyContent="space-between" gap="$3">
+              <VStack flexShrink={1} gap="$0.5">
+                <Text size="md" fontWeight="600">
+                  {t("settings.textSize.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary">
+                  {t("settings.textSize.description")}
+                </Text>
+              </VStack>
+              <Icon
+                size="lg"
+                color="$typographySecondary"
+                as={isRTL ? ChevronLeft : ChevronRight}
+              />
+            </HStack>
+          </Pressable>
 
           <SettingsToggleRow
             titleKey="settings.preferences.importantDays.title"
