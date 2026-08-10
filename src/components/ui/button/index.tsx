@@ -1,6 +1,8 @@
 import React from "react";
 import { ActivityIndicator, Platform } from "react-native";
 import { PlatformType } from "@/enums/app";
+import { buttonLabelFontSize } from "@/components/ui/button/sizing";
+import { useTextScale } from "@/hooks/useTextScale";
 import {
   styled,
   View,
@@ -68,12 +70,14 @@ const ButtonFrame = styled(View, {
         borderColor: "$backgroundMuted",
       },
     },
+    // minHeight, not height: the box is a floor that grows with a scaled or
+    // wrapped label instead of clipping it.
     size: {
-      xs: { height: 32, paddingHorizontal: 14 },
-      sm: { height: 36, paddingHorizontal: 16 },
-      md: { height: 40, paddingHorizontal: 20 },
-      lg: { height: 44, paddingHorizontal: 24 },
-      xl: { height: 48, paddingHorizontal: 28 },
+      xs: { minHeight: 32, paddingVertical: 4, paddingHorizontal: 14 },
+      sm: { minHeight: 36, paddingVertical: 4, paddingHorizontal: 16 },
+      md: { minHeight: 40, paddingVertical: 4, paddingHorizontal: 20 },
+      lg: { minHeight: 44, paddingVertical: 4, paddingHorizontal: 24 },
+      xl: { minHeight: 48, paddingVertical: 4, paddingHorizontal: 28 },
     },
     variant: {
       solid: { borderWidth: 0 },
@@ -119,12 +123,14 @@ const ButtonTextFrame = styled(TamaguiText, {
       outline: {},
       link: {},
     },
+    // The size variant carries no styles: ButtonText computes the label's
+    // fontSize from the size context so the app text-scale can multiply it.
     size: {
-      xs: { fontSize: 10 },
-      sm: { fontSize: 12 },
-      md: { fontSize: 14 },
-      lg: { fontSize: 16 },
-      xl: { fontSize: 18 },
+      xs: {},
+      sm: {},
+      md: {},
+      lg: {},
+      xl: {},
     },
   } as const,
 
@@ -134,6 +140,30 @@ const ButtonTextFrame = styled(TamaguiText, {
     size: "md",
   },
 });
+
+// The public Button.Text: applies the app text-scale to the size variant's
+// label font and keeps OS font scaling off (the app owns text size).
+type ButtonTextProps = GetProps<typeof ButtonTextFrame> & { scaleOverride?: number };
+
+const ButtonText = React.forwardRef<React.ComponentRef<typeof ButtonTextFrame>, ButtonTextProps>(
+  ({ fontSize, size, scaleOverride, ...props }, ref) => {
+    const ctx = ButtonContext.useStyledContext();
+    // The hook always runs (hooks-order safety); the override only replaces its value.
+    const appScale = useTextScale();
+    const m = scaleOverride ?? appScale;
+    // The label's own size prop wins over the Button's size context.
+    const sizeKey = typeof size === "string" ? size : ctx.size;
+    return (
+      <ButtonTextFrame
+        ref={ref}
+        {...props}
+        fontSize={buttonLabelFontSize(sizeKey, fontSize, m)}
+        allowFontScaling={false}
+      />
+    );
+  }
+);
+ButtonText.displayName = "ButtonText";
 
 // --- ButtonIcon ---
 
@@ -217,7 +247,7 @@ ButtonGroup.displayName = "ButtonGroup";
 // --- Compound export ---
 
 const Button = withStaticProperties(ButtonFrame, {
-  Text: ButtonTextFrame,
+  Text: ButtonText,
   Icon: ButtonIcon,
   Spinner: ButtonSpinner,
   Group: ButtonGroup,
