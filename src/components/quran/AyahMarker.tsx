@@ -134,7 +134,10 @@ const AyahMarker = ({
         // sized to sit inside the medallion.
         <RibbonGlyph size={markerHeight * 0.6} color={bookmarkColor} />
       ) : (
+        // The digit's size derives from the marker geometry; OS scaling would
+        // push it off the medallion.
         <Text
+          allowFontScaling={false}
           style={{
             fontSize,
             color: textColor,

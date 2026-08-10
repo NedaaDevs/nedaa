@@ -44,7 +44,9 @@ const QuranIntroSheet = ({
             marginBottom={2}
             style={{ backgroundColor: c.markerColor }}
           />
-          <RNText style={{ fontSize: 18, fontFamily: QURAN_TEXT_FONT, color: c.markerColor }}>
+          <RNText
+            allowFontScaling={false}
+            style={{ fontSize: 18, fontFamily: QURAN_TEXT_FONT, color: c.markerColor }}>
             {`﴿${sampleNum}﴾`}
           </RNText>
         </YStack>
@@ -53,6 +55,7 @@ const QuranIntroSheet = ({
     if (id === "highlight") {
       return (
         <RNText
+          allowFontScaling={false}
           style={{
             fontSize: 17,
             fontFamily: QURAN_TEXT_FONT,

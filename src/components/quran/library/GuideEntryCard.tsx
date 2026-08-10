@@ -56,6 +56,7 @@ export const GuideEntryCard = ({
         />
       ) : entry.symbol ? (
         <RNText
+          allowFontScaling={false}
           style={{
             fontSize: 24,
             minWidth: 30,
@@ -75,6 +76,7 @@ export const GuideEntryCard = ({
         {isDua ? (
           <YStack gap="$1.5" marginTop="$1">
             <RNText
+              allowFontScaling={false}
               style={{
                 fontSize: 21,
                 lineHeight: 40,

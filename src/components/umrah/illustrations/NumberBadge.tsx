@@ -32,7 +32,11 @@ const NumberBadge = ({ n, color, bg, size = 20, x, y }: Props) => {
     includeFontPadding: false,
   };
 
-  return <RNText style={style}>{formatNumberToLocale(n.toString())}</RNText>;
+  return (
+    <RNText allowFontScaling={false} style={style}>
+      {formatNumberToLocale(n.toString())}
+    </RNText>
+  );
 };
 
 export default NumberBadge;

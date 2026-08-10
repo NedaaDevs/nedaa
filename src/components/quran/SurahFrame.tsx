@@ -99,6 +99,7 @@ const SurahFrame = ({
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
+            allowFontScaling={false}
             accessibilityLabel={label}
             style={{
               fontFamily: ligature ? surahNameLigatureFont(version) : metadataFontFamily(),

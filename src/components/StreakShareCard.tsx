@@ -63,21 +63,29 @@ const StreakShareCard = ({ variant, count }: StreakShareCardProps) => {
             <VariantIcon size={30} color={GOLD} />
           </YStack>
 
+          {/* The card is a fixed-size PNG capture; exported pixels must not
+              vary with the sender's text-size preset. */}
           <Text
             fontSize={13}
             fontWeight="700"
             letterSpacing={2}
             color={GOLD}
             textAlign="center"
+            scaleOverride={1}
             style={{ textTransform: "uppercase" }}>
             {t(`streakShare.${variant}.title`)}
           </Text>
 
-          <Text fontSize={84} fontWeight="800" color={TEXT} textAlign="center">
+          <Text fontSize={84} fontWeight="800" color={TEXT} textAlign="center" scaleOverride={1}>
             {formattedCount}
           </Text>
 
-          <Text fontSize={16} fontWeight="600" color={TEXT_MUTED} textAlign="center">
+          <Text
+            fontSize={16}
+            fontWeight="600"
+            color={TEXT_MUTED}
+            textAlign="center"
+            scaleOverride={1}>
             {t("streakShare.daysUnit", { count })}
           </Text>
         </YStack>
@@ -92,6 +100,7 @@ const StreakShareCard = ({ variant, count }: StreakShareCardProps) => {
               fontWeight="700"
               letterSpacing={1.4}
               color={TEXT_MUTED}
+              scaleOverride={1}
               style={{ textTransform: "uppercase" }}>
               {t("streakShare.tagline")}
             </Text>

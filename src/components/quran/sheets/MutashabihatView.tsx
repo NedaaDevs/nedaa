@@ -77,6 +77,7 @@ export const MutashabihatView = ({
               </XStack>
 
               <RNText
+                allowFontScaling={false}
                 style={{
                   fontSize: 21,
                   lineHeight: 42,
@@ -87,6 +88,7 @@ export const MutashabihatView = ({
                 }}>
                 {words.map((word, j) => (
                   <RNText
+                    allowFontScaling={false}
                     key={j}
                     style={
                       inSharedPhrase(j + 1)

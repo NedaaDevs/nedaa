@@ -230,7 +230,10 @@ const TextPage = ({
               />
             </View>
             {!NO_BASMALA_SURAHS.includes(surah) && (
+              // The reader owns this size; neither the OS scale nor the app
+              // preset may compound it.
               <Text
+                allowFontScaling={false}
                 style={[
                   styles.basmala,
                   {
@@ -249,6 +252,7 @@ const TextPage = ({
       blocks.push(
         <Text
           key={`surah-flow-${surah}`}
+          allowFontScaling={false}
           style={{
             fontSize,
             lineHeight: fontSize * 2,
