@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Tabs, router, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTextScale } from "@/hooks/useTextScale";
 import { BottomTabBar, BottomTabBarProps } from "expo-router/js-tabs";
 import { useTranslation } from "react-i18next";
 
@@ -50,6 +51,7 @@ const TabsLayout = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const textScale = useTextScale();
 
   // TODO(quran-gate): remove at 2.10.0
   // Warm the content DB at startup, but ONLY when Quran is unlocked — so the
@@ -103,8 +105,15 @@ const TabsLayout = () => {
         headerShown: false,
         tabBarActiveTintColor: theme.primary.val,
         tabBarInactiveTintColor: theme.typographySecondary.val,
+        tabBarAllowFontScaling: false,
+        tabBarLabelStyle: {
+          // react-navigation's default label is ~12px; the app preset scales it.
+          fontSize: 12 * textScale,
+        },
         tabBarStyle: {
-          height: 60 + insets.bottom,
+          // The vendored bar sizes itself from a numeric height only, so the
+          // label's extra line height is added here rather than via minHeight.
+          height: 60 + Math.ceil(16 * (textScale - 1)) + insets.bottom,
           paddingBottom: insets.bottom,
           paddingTop: 5,
           backgroundColor: theme.backgroundSecondary.val,
