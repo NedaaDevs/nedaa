@@ -10,15 +10,11 @@ import {
 } from "tamagui";
 import type { GetProps } from "tamagui";
 import { PlatformType } from "@/enums/app";
+import { useTextScale } from "@/hooks/useTextScale";
 
 type FabSize = "sm" | "md" | "lg";
 type FabPlacement =
-  | "top right"
-  | "top left"
-  | "bottom right"
-  | "bottom left"
-  | "top center"
-  | "bottom center";
+  "top right" | "top left" | "bottom right" | "bottom left" | "top center" | "bottom center";
 
 const FabContext = createStyledContext({
   size: "md" as FabSize,
@@ -100,7 +96,7 @@ FabIcon.displayName = "FabIcon";
 
 // --- FabLabel ---
 
-const FabLabel = styled(TamaguiText, {
+const FabLabelFrame = styled(TamaguiText, {
   name: "FabLabel",
   context: FabContext,
   fontFamily: "$body",
@@ -108,14 +104,32 @@ const FabLabel = styled(TamaguiText, {
   color: "$typographyContrast",
   ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
+  // Sizes carry no styles: FabLabel computes the fontSize from the size
+  // context so the app text-scale can multiply it.
   variants: {
     size: {
-      sm: { fontSize: 10 },
-      md: { fontSize: 12 },
-      lg: { fontSize: 14 },
+      sm: {},
+      md: {},
+      lg: {},
     },
   } as const,
 });
+
+// Label font size per Fab size variant; the app text-scale multiplies it.
+const FAB_FONT_SIZE: Record<string, number> = { sm: 10, md: 12, lg: 14 };
+
+type FabLabelWrapperProps = GetProps<typeof FabLabelFrame> & { scaleOverride?: number };
+
+const FabLabel = React.forwardRef<React.ComponentRef<typeof FabLabelFrame>, FabLabelWrapperProps>(
+  ({ fontSize, scaleOverride, ...props }, ref) => {
+    const ctx = FabContext.useStyledContext();
+    const appScale = useTextScale();
+    const m = scaleOverride ?? appScale;
+    const base = typeof fontSize === "number" ? fontSize : (FAB_FONT_SIZE[ctx.size ?? "md"] ?? 12);
+    return <FabLabelFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
+  }
+);
+FabLabel.displayName = "FabLabel";
 
 // --- Compound export ---
 
@@ -125,7 +139,7 @@ const Fab = withStaticProperties(FabFrame, {
 });
 
 type FabProps = GetProps<typeof FabFrame>;
-type FabLabelProps = GetProps<typeof FabLabel>;
+type FabLabelProps = FabLabelWrapperProps;
 
 export { Fab, FabIcon, FabLabel };
 export type { FabProps, FabIconProps, FabLabelProps, FabSize, FabPlacement };

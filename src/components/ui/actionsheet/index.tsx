@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { styled, View, Text as TamaguiText, useTheme } from "tamagui";
+import { useTextScale } from "@/hooks/useTextScale";
 import type { GetProps } from "tamagui";
 import { BackHandler, FlatList, Platform } from "react-native";
 import type { FlatListProps } from "react-native";
@@ -144,13 +145,33 @@ const ActionsheetItem = styled(View, {
 
 // --- ActionsheetItemText ---
 
-const ActionsheetItemText = styled(TamaguiText, {
+const ActionsheetItemTextFrame = styled(TamaguiText, {
   name: "ActionsheetItemText",
   fontFamily: "$body",
-  fontSize: "$3",
   color: "$typography",
   ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 });
+
+// Item copy is 14px ($3) chrome; the app text-scale multiplies it and the OS
+// scale stays off (the app owns text size).
+const ITEM_FONT_SIZE = 14;
+
+type ActionsheetItemTextWrapperProps = GetProps<typeof ActionsheetItemTextFrame> & {
+  scaleOverride?: number;
+};
+
+const ActionsheetItemText = React.forwardRef<
+  React.ComponentRef<typeof ActionsheetItemTextFrame>,
+  ActionsheetItemTextWrapperProps
+>(({ fontSize, scaleOverride, ...props }, ref) => {
+  const appScale = useTextScale();
+  const m = scaleOverride ?? appScale;
+  const base = typeof fontSize === "number" ? fontSize : ITEM_FONT_SIZE;
+  return (
+    <ActionsheetItemTextFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />
+  );
+});
+ActionsheetItemText.displayName = "ActionsheetItemText";
 
 // --- ActionsheetIcon ---
 
@@ -194,7 +215,7 @@ ActionsheetScrollView.displayName = "ActionsheetScrollView";
 // --- Types ---
 
 type ActionsheetItemProps = GetProps<typeof ActionsheetItem>;
-type ActionsheetItemTextProps = GetProps<typeof ActionsheetItemText>;
+type ActionsheetItemTextProps = ActionsheetItemTextWrapperProps;
 
 export {
   Actionsheet,

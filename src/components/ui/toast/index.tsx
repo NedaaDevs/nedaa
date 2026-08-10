@@ -1,3 +1,4 @@
+import React from "react";
 import { Platform } from "react-native";
 import {
   styled,
@@ -8,6 +9,7 @@ import {
 } from "tamagui";
 import type { GetProps } from "tamagui";
 import { PlatformType } from "@/enums/app";
+import { useTextScale } from "@/hooks/useTextScale";
 
 type ToastAction = "error" | "warning" | "success" | "info" | "muted";
 
@@ -59,12 +61,11 @@ const ToastFrame = styled(YStack, {
 
 // --- ToastTitle ---
 
-const ToastTitle = styled(TamaguiText, {
+const ToastTitleFrame = styled(TamaguiText, {
   name: "ToastTitle",
   context: ToastContext,
   fontFamily: "$body",
   fontWeight: "700",
-  fontSize: 12,
   ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
@@ -80,12 +81,11 @@ const ToastTitle = styled(TamaguiText, {
 
 // --- ToastDescription ---
 
-const ToastDescription = styled(TamaguiText, {
+const ToastDescriptionFrame = styled(TamaguiText, {
   name: "ToastDescription",
   context: ToastContext,
   fontFamily: "$body",
   fontWeight: "400",
-  fontSize: 12,
   ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
 
   variants: {
@@ -99,6 +99,37 @@ const ToastDescription = styled(TamaguiText, {
   } as const,
 });
 
+// Toast copy is fixed 12px chrome; the app text-scale multiplies it and the
+// OS scale stays off (the app owns text size).
+const TOAST_FONT_SIZE = 12;
+
+type ToastTitleProps = GetProps<typeof ToastTitleFrame> & { scaleOverride?: number };
+
+const ToastTitle = React.forwardRef<React.ComponentRef<typeof ToastTitleFrame>, ToastTitleProps>(
+  ({ fontSize, scaleOverride, ...props }, ref) => {
+    const appScale = useTextScale();
+    const m = scaleOverride ?? appScale;
+    const base = typeof fontSize === "number" ? fontSize : TOAST_FONT_SIZE;
+    return <ToastTitleFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
+  }
+);
+ToastTitle.displayName = "ToastTitle";
+
+type ToastDescriptionProps = GetProps<typeof ToastDescriptionFrame> & { scaleOverride?: number };
+
+const ToastDescription = React.forwardRef<
+  React.ComponentRef<typeof ToastDescriptionFrame>,
+  ToastDescriptionProps
+>(({ fontSize, scaleOverride, ...props }, ref) => {
+  const appScale = useTextScale();
+  const m = scaleOverride ?? appScale;
+  const base = typeof fontSize === "number" ? fontSize : TOAST_FONT_SIZE;
+  return (
+    <ToastDescriptionFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />
+  );
+});
+ToastDescription.displayName = "ToastDescription";
+
 // --- Compound export ---
 
 const Toast = withStaticProperties(ToastFrame, {
@@ -107,8 +138,6 @@ const Toast = withStaticProperties(ToastFrame, {
 });
 
 type ToastProps = GetProps<typeof ToastFrame>;
-type ToastTitleProps = GetProps<typeof ToastTitle>;
-type ToastDescriptionProps = GetProps<typeof ToastDescription>;
 
 export { Toast, ToastTitle, ToastDescription };
 export type { ToastProps, ToastTitleProps, ToastDescriptionProps, ToastAction };

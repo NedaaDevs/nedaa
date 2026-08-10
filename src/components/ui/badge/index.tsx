@@ -10,6 +10,7 @@ import {
 } from "tamagui";
 import type { GetProps } from "tamagui";
 import { PlatformType } from "@/enums/app";
+import { useTextScale } from "@/hooks/useTextScale";
 
 type BadgeAction = "error" | "warning" | "success" | "info" | "muted";
 type BadgeSize = "sm" | "md" | "lg";
@@ -101,13 +102,32 @@ const BadgeTextFrame = styled(TamaguiText, {
       info: { color: "$info" },
       muted: { color: "$typography" },
     },
+    // Sizes carry no styles: BadgeText computes the label's fontSize from the
+    // size context so the app text-scale can multiply it.
     size: {
-      sm: { fontSize: 10 },
-      md: { fontSize: 10 },
-      lg: { fontSize: 12 },
+      sm: {},
+      md: {},
+      lg: {},
     },
   } as const,
 });
+
+// Label font size per Badge size variant; the app text-scale multiplies it.
+const BADGE_FONT_SIZE: Record<string, number> = { sm: 10, md: 10, lg: 12 };
+
+type BadgeTextProps = GetProps<typeof BadgeTextFrame> & { scaleOverride?: number };
+
+const BadgeText = React.forwardRef<React.ComponentRef<typeof BadgeTextFrame>, BadgeTextProps>(
+  ({ fontSize, scaleOverride, ...props }, ref) => {
+    const ctx = BadgeContext.useStyledContext();
+    const appScale = useTextScale();
+    const m = scaleOverride ?? appScale;
+    const base =
+      typeof fontSize === "number" ? fontSize : (BADGE_FONT_SIZE[ctx.size ?? "md"] ?? 10);
+    return <BadgeTextFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
+  }
+);
+BadgeText.displayName = "BadgeText";
 
 // --- BadgeIcon ---
 
@@ -132,7 +152,7 @@ BadgeIcon.displayName = "BadgeIcon";
 // --- Compound export ---
 
 const Badge = withStaticProperties(BadgeFrame, {
-  Text: BadgeTextFrame,
+  Text: BadgeText,
   Icon: BadgeIcon,
 });
 
