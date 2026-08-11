@@ -1,12 +1,18 @@
 import { executeBackgroundRefresh } from "@/tasks/backgroundRefresh";
 
-// Referenced lazily by the module factories below, so the `mock` prefix hoisting
-// rule is satisfied and the consts are initialised before any test calls them.
+// The factories below read `hydratedPersist` eagerly, at the moment the SUT
+// imports a mocked store. babel-plugin-jest-hoist lifts the `jest.mock` calls
+// above the imports and carries a referenced const with them only when its
+// initialiser is pure, so this has to stay a plain object literal: a
+// `jest.fn()` member or any computed value stops the hoist and the factory then
+// hits the temporal dead zone with a ReferenceError.
 const hydratedPersist = {
   hasHydrated: () => true,
   onFinishHydration: (_fn: () => void) => () => {},
 };
 
+// Referenced lazily by the module factories below, so the `mock` prefix hoisting
+// rule is satisfied and the consts are initialised before any test calls them.
 const mockScheduleAll = jest.fn();
 const mockRefreshTimings = jest.fn();
 const mockGetAndStore = jest.fn();
@@ -14,6 +20,7 @@ const mockClearPendingReapply = jest.fn();
 const mockAwaitPendingReapply = jest.fn();
 const mockGetByRange = jest.fn();
 const mockBgLog = jest.fn();
+const mockWaitForHydration = jest.fn();
 
 let mockNow = new Date("2026-08-15T08:00:00Z");
 
@@ -72,6 +79,9 @@ jest.mock("@/stores/customSounds", () => ({
 jest.mock("@/stores/quranReminders", () => ({
   useQuranRemindersStore: { persist: hydratedPersist },
 }));
+jest.mock("@/utils/storeHydration", () => ({
+  waitForHydration: (...args: unknown[]) => mockWaitForHydration(...args),
+}));
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: {
     flushAll: jest.fn(),
@@ -104,10 +114,24 @@ describe("executeBackgroundRefresh", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockNow = new Date("2026-08-15T08:00:00Z");
+    // Every gated store is hydrated unless a test says otherwise.
+    mockWaitForHydration.mockImplementation(async () => {});
     mockAwaitPendingReapply.mockResolvedValue(false);
     mockGetByRange.mockResolvedValue(fourRows);
     mockRefreshTimings.mockResolvedValue(fourRows);
     mockScheduleAll.mockResolvedValue({ success: true, scheduledCount: 10 });
+  });
+
+  it("skips the whole run when a gated store fails to hydrate", async () => {
+    mockWaitForHydration.mockImplementation(async (_persist, opts) => {
+      opts?.onTimeout?.();
+    });
+
+    const result = await executeBackgroundRefresh();
+
+    expect(result).toBe(2); // Failed
+    expect(mockGetAndStore).not.toHaveBeenCalled();
+    expect(mockScheduleAll).not.toHaveBeenCalled();
   });
 
   it("refreshes the window from the database before it reschedules", async () => {

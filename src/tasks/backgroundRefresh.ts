@@ -32,9 +32,12 @@ const BG_HYDRATION_TIMEOUT_MS = 5000;
 
 // A headless launch starts a fresh JS process; the persisted stores rehydrate
 // asynchronously. Reading them early yields defaults — the Riyadh fallback
-// timezone, default sounds — and a reschedule from defaults replaces the
-// user's setup. Bounded so a stalled rehydration cannot eat the OS window.
-const waitForBackgroundStores = async (): Promise<void> => {
+// timezone, default sounds — so a reschedule from defaults replaces the user's
+// queue with wrong times. The wait is bounded so a stalled rehydration cannot
+// eat the OS window, and the names of the stores that hit that bound come back
+// to the caller: the run is skipped instead, which keeps the previous schedule.
+const waitForBackgroundStores = async (): Promise<string[]> => {
+  const timedOut: string[] = [];
   const gated = [
     ["location", locationStore.persist],
     ["prayerTimes", usePrayerTimesStore.persist],
@@ -48,6 +51,7 @@ const waitForBackgroundStores = async (): Promise<void> => {
       waitForHydration(persist, {
         timeoutMs: BG_HYDRATION_TIMEOUT_MS,
         onTimeout: () => {
+          timedOut.push(name);
           void BackgroundTaskLog.log(
             BACKGROUND_REFRESH_TASK,
             "hydration_timeout",
@@ -58,6 +62,7 @@ const waitForBackgroundStores = async (): Promise<void> => {
       })
     )
   );
+  return timedOut;
 };
 
 // The task body, exported so the debug screen can run it on demand. The OS
@@ -73,7 +78,16 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
       `Started at ${new Date().toISOString()}`
     );
 
-    await waitForBackgroundStores();
+    const notHydrated = await waitForBackgroundStores();
+    if (notHydrated.length > 0) {
+      await BackgroundTaskLog.log(
+        BACKGROUND_REFRESH_TASK,
+        "hydration_incomplete",
+        "failed",
+        `run skipped: ${notHydrated.join(", ")} not hydrated`
+      );
+      return BackgroundTask.BackgroundTaskResult.Failed;
+    }
 
     const timezone = locationStore.getState().locationDetails.timezone;
     if (!timezone) {

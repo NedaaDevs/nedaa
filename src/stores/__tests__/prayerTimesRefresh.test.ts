@@ -7,6 +7,8 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 const mockGetByRange = jest.fn();
 const mockGetByDate = jest.fn();
 
+let mockNow = new Date("2026-08-15T08:00:00Z");
+
 jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
     getPrayerTimesByDateRange: (...args: unknown[]) => mockGetByRange(...args),
@@ -44,13 +46,21 @@ jest.mock("expo-sqlite/kv-store", () => ({
 }));
 jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
 jest.mock("../../../modules/expo-widgets/src", () => ({ refreshAllWidgets: jest.fn() }));
+jest.mock("@/utils/date", () => {
+  const actual = jest.requireActual("@/utils/date");
+  // The store reads the clock through `timeZonedNow`; a fixed instant keeps the
+  // expected date ints stable whatever the machine's own date is.
+  return { ...actual, timeZonedNow: () => mockNow };
+});
 
 const dateInt = (d: Date) => parseInt(format(d, "yyyyMMdd"));
 
-// Rows shaped like DayPrayerTimes for a date span starting today.
+// Rows shaped like DayPrayerTimes for a date span starting on the mocked today.
+// `format` renders in the machine's timezone, so rows and expectations both go
+// through it from the same instant and agree on every machine.
 const makeRows = (days: number) =>
   Array.from({ length: days }, (_, i) => ({
-    date: dateInt(addDays(new Date(), i)),
+    date: dateInt(addDays(mockNow, i)),
     timings: { fajr: "", dhuhr: "", asr: "", maghrib: "", isha: "" },
     otherTimings: {},
   }));
@@ -58,13 +68,14 @@ const makeRows = (days: number) =>
 describe("refreshTimingsFromDb", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNow = new Date("2026-08-15T08:00:00Z");
   });
 
   it("re-derives the projections from the database window", async () => {
     const rows = makeRows(14);
     mockGetByRange.mockResolvedValue(rows);
     mockGetByDate.mockResolvedValue({
-      date: dateInt(subDays(new Date(), 1)),
+      date: dateInt(subDays(mockNow, 1)),
       timings: {},
       otherTimings: {},
     });
@@ -74,13 +85,10 @@ describe("refreshTimingsFromDb", () => {
     expect(returned).toHaveLength(14);
     const state = usePrayerTimesStore.getState();
     expect(state.twoWeeksTimings).toHaveLength(14);
-    expect(state.todayTimings?.date).toBe(dateInt(new Date()));
-    expect(state.tomorrowTimings?.date).toBe(dateInt(addDays(new Date(), 1)));
+    expect(state.todayTimings?.date).toBe(dateInt(mockNow));
+    expect(state.tomorrowTimings?.date).toBe(dateInt(addDays(mockNow, 1)));
     // Window: today .. today+13 as YYYYMMDD ints
-    expect(mockGetByRange).toHaveBeenCalledWith(
-      dateInt(new Date()),
-      dateInt(addDays(new Date(), 13))
-    );
+    expect(mockGetByRange).toHaveBeenCalledWith(dateInt(mockNow), dateInt(addDays(mockNow, 13)));
   });
 
   it("sets twoWeeksTimings to null when the database is empty", async () => {

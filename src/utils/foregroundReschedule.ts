@@ -1,6 +1,7 @@
 import { AppState, AppStateStatus } from "react-native";
 
 import { useNotificationStore } from "@/stores/notification";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 let registered = false;
 
@@ -14,7 +15,13 @@ export const registerForegroundReschedule = (): void => {
 
   AppState.addEventListener("change", (state: AppStateStatus) => {
     if (state === "active") {
-      void useNotificationStore.getState().rescheduleIfNeeded(false);
+      void (async () => {
+        // The reschedule reads the store's two-week projection, so re-derive it
+        // from the database first; otherwise the top-up schedules the window of
+        // the last cold start.
+        await usePrayerTimesStore.getState().refreshTimingsFromDb();
+        await useNotificationStore.getState().rescheduleIfNeeded(false);
+      })();
     }
   });
 };
