@@ -9,16 +9,52 @@ import { BackgroundTaskLog } from "@/services/background-task-log";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import locationStore from "@/stores/location";
+import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { useCustomSoundsStore } from "@/stores/customSounds";
+import { useQuranRemindersStore } from "@/stores/quranReminders";
 
 // Utils
 import { timeZonedNow, dateToInt } from "@/utils/date";
 import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
 import { AppLogger } from "@/utils/appLogger";
+import { waitForHydration } from "@/utils/storeHydration";
 import { addDays } from "date-fns";
 
 export const BACKGROUND_REFRESH_TASK = "dev.nedaa.app.background-refresh";
 const MINIMUM_INTERVAL = 60 * 24; // 24 hours (in minutes)
 const MIN_FUTURE_DAYS = 3; // Fetch if less than 3 days of data remain
+
+const BG_HYDRATION_TIMEOUT_MS = 5000;
+
+// A headless launch starts a fresh JS process; the persisted stores rehydrate
+// asynchronously. Reading them early yields defaults — the Riyadh fallback
+// timezone, default sounds — and a reschedule from defaults replaces the
+// user's setup. Bounded so a stalled rehydration cannot eat the OS window.
+const waitForBackgroundStores = async (): Promise<void> => {
+  const gated = [
+    ["location", locationStore.persist],
+    ["prayerTimes", usePrayerTimesStore.persist],
+    ["notification", useNotificationStore.persist],
+    ["providerSettings", useProviderSettingsStore.persist],
+    ["customSounds", useCustomSoundsStore.persist],
+    ["quranReminders", useQuranRemindersStore.persist],
+  ] as const;
+  await Promise.all(
+    gated.map(([name, persist]) =>
+      waitForHydration(persist, {
+        timeoutMs: BG_HYDRATION_TIMEOUT_MS,
+        onTimeout: () => {
+          void BackgroundTaskLog.log(
+            BACKGROUND_REFRESH_TASK,
+            "hydration_timeout",
+            "skipped",
+            `${name} store not hydrated after ${BG_HYDRATION_TIMEOUT_MS}ms`
+          );
+        },
+      })
+    )
+  );
+};
 
 // The task body, exported so the debug screen can run it on demand. The OS
 // trigger and the manual run share one code path and one log trail.
@@ -32,6 +68,8 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
       "success",
       `Started at ${new Date().toISOString()}`
     );
+
+    await waitForBackgroundStores();
 
     const timezone = locationStore.getState().locationDetails.timezone;
     if (!timezone) {
@@ -93,6 +131,11 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
         `${futureData.length} days available, no fetch needed`
       );
     }
+
+    // The scheduler reads the store's two-week projection; without this the
+    // input is the window persisted at the last foreground launch, which ends
+    // 13 days after that launch even when the database holds fresh rows.
+    await usePrayerTimesStore.getState().refreshTimingsFromDb();
 
     // Reschedule notifications
     try {
