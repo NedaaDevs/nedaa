@@ -62,6 +62,8 @@ export type PrayerTimesStore = {
   getProviders: () => Promise<Provider[]>;
   getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<boolean>;
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
+  /** Re-reads the two-week window from the database and resets the projections. */
+  refreshTimingsFromDb: () => Promise<DayPrayerTimes[]>;
   // `now` is a parameter so callers that re-render on a clock tick recompute; without
   // it the result is memoized against inputs that never change.
   getNextPrayer: (now?: Date) => Prayer | null;
@@ -200,6 +202,30 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           set({ hasError: false, errorMessage: "" });
         },
 
+        // The projections persist between launches, so without this recompute a
+        // reader gets the window of the last launch — it ends 13 days after
+        // that launch, and the schedulable horizon shrinks daily.
+        refreshTimingsFromDb: async (): Promise<DayPrayerTimes[]> => {
+          const { locationDetails } = locationStore.getState();
+          const now = timeZonedNow(locationDetails.timezone);
+          const yesterday = dateToInt(subDays(now, 1));
+          const today = dateToInt(now);
+          const tomorrow = dateToInt(addDays(now, 1));
+          const { startDate, endDate } = getTwoWeeksDateRange(locationDetails.timezone);
+
+          const twoWeeksTimings = await PrayerTimesDB.getPrayerTimesByDateRange(startDate, endDate);
+          const yesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
+
+          set({
+            yesterdayTimings,
+            todayTimings: twoWeeksTimings.find((timing) => timing.date === today) ?? null,
+            tomorrowTimings: twoWeeksTimings.find((timing) => timing.date === tomorrow) ?? null,
+            twoWeeksTimings: twoWeeksTimings.length > 0 ? twoWeeksTimings : null,
+          });
+
+          return twoWeeksTimings;
+        },
+
         loadPrayerTimes: async (forceGetAndStore = false): Promise<void> => {
           try {
             // Clear any previous errors
@@ -237,28 +263,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               // Surfaced in the UI: the times on screen are not for where the user is.
               usingDefaultLocation: lastKnownCoords === null,
             });
-            // Get yesterday, today, tomorrow dates
-            const now = timeZonedNow(locationDetails.timezone);
-            const yesterday = dateToInt(subDays(now, 1));
-            const today = dateToInt(now);
-            const tomorrow = dateToInt(addDays(now, 1));
 
-            // Calculate two week date range (today to today+13 days)
-            const { startDate, endDate } = getTwoWeeksDateRange(locationDetails.timezone);
-
-            // Fetch the two weeks data
-            const twoWeeksTimings = await PrayerTimesDB.getPrayerTimesByDateRange(
-              startDate,
-              endDate
-            );
-
-            // Get yesterday's data separately since it's not in the two weeks range
-            const yesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
-
-            // Find today and tomorrow in the returned array by date
-            const todayTimings = twoWeeksTimings.find((timing) => timing.date === today) ?? null;
-            const tomorrowTimings =
-              twoWeeksTimings.find((timing) => timing.date === tomorrow) ?? null;
+            await get().refreshTimingsFromDb();
+            const { yesterdayTimings, todayTimings, tomorrowTimings } = get();
 
             // Check if we need to fetch fresh data
             if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
@@ -293,30 +300,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
                 await get().getAndStorePrayerTimes(currentYear + 1);
               }
 
-              // Re-query DB for the updated data
-              const newYesterdayTimings = await PrayerTimesDB.getPrayerTimesByDate(yesterday);
-              const newTwoWeeksTimings = await PrayerTimesDB.getPrayerTimesByDateRange(
-                startDate,
-                endDate
-              );
-              const newTodayTimings =
-                newTwoWeeksTimings.find((timing) => timing.date === today) ?? null;
-              const newTomorrowTimings =
-                newTwoWeeksTimings.find((timing) => timing.date === tomorrow) ?? null;
-
-              set({
-                yesterdayTimings: newYesterdayTimings,
-                todayTimings: newTodayTimings,
-                tomorrowTimings: newTomorrowTimings,
-                twoWeeksTimings: newTwoWeeksTimings.length > 0 ? newTwoWeeksTimings : null,
-              });
-            } else {
-              set({
-                yesterdayTimings,
-                todayTimings,
-                tomorrowTimings,
-                twoWeeksTimings: twoWeeksTimings.length > 0 ? twoWeeksTimings : null,
-              });
+              await get().refreshTimingsFromDb();
             }
 
             await get().cleanupOldData();
