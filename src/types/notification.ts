@@ -3,7 +3,7 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey, QadaSoundKey } from "@/constants/sounds";
 
 // Enums
-import { LocalPermissionStatus } from "@/enums/notifications";
+import { LocalPermissionStatus, type SchedulingSkipReasonValue } from "@/enums/notifications";
 
 // Types
 import type { NotificationSoundKey } from "@/types/sound";
@@ -30,6 +30,18 @@ export type QadaNotificationConfig = {
 export type NotificationPermissionsState = {
   status: LocalPermissionStatus;
   canRequestAgain: boolean;
+};
+
+// `skipReason` marks an expected no-op (nothing to schedule); `error` marks a
+// genuine failure. Callers log the two at different levels.
+export type SchedulingResult = {
+  success: boolean;
+  scheduledCount: number;
+  failedCount?: number;
+  error?: Error;
+  skipReason?: SchedulingSkipReasonValue;
+  // ISO time of the latest scheduled item — the end of the notification horizon.
+  lastScheduledAt?: string;
 };
 
 export type AthkarNotificationSettings = {
@@ -97,7 +109,7 @@ export type NotificationAction = {
     prayerId: string,
     type: T
   ) => ConfigForType<T>;
-  scheduleAllNotifications: () => Promise<void>;
+  scheduleAllNotifications: () => Promise<SchedulingResult>;
   rescheduleIfNeeded: (force: boolean) => Promise<void>;
   updateAthkarNotificationSetting: (option: AthkarNotificationSettings) => Promise<void>;
   updateOtherTimingNotification: (id: OtherTimingId, enabled: boolean) => Promise<void>;

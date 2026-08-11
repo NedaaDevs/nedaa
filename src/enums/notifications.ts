@@ -8,6 +8,7 @@ export enum LocalPermissionStatus {
 export const SchedulingSkipReason = {
   PERMISSION_NOT_GRANTED: "permissionNotGranted",
   NO_PRAYER_TIMES: "noPrayerTimes",
+  NOTIFICATIONS_DISABLED: "notificationsDisabled",
 } as const;
 
 export type SchedulingSkipReasonValue =

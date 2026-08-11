@@ -7,7 +7,8 @@ export type ApplyStep = "prayerTimes" | "notifications" | "alarms";
 export type ApplyProviderSettingsDeps = {
   saveSettings: () => Promise<void>;
   loadPrayerTimes: (forceGetAndStore: boolean) => Promise<void>;
-  scheduleAllNotifications: () => Promise<void>;
+  // Result intentionally unused here; the apply flow only needs completion.
+  scheduleAllNotifications: () => Promise<unknown>;
   rescheduleAllAlarms: () => Promise<void>;
   reloadPrayerWidgets: () => void;
   markSettingsApplied: () => void;

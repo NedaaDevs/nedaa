@@ -28,7 +28,7 @@ export const useLocationUpdate = () => {
   const prayerTimesStore = usePrayerTimesStore();
   const notificationStore = useNotificationStore();
 
-  const runStep = async (step: UpdateStep, fn: () => Promise<void>) => {
+  const runStep = async (step: UpdateStep, fn: () => Promise<unknown>) => {
     setUpdateState((prev) => ({ ...prev, currentStep: step, error: null }));
     try {
       await fn();

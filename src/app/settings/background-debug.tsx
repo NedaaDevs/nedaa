@@ -16,6 +16,7 @@ import * as TaskManager from "expo-task-manager";
 import { BackgroundTaskLog, type TaskLogEntry } from "@/services/background-task-log";
 import {
   BACKGROUND_REFRESH_TASK,
+  executeBackgroundRefresh,
   registerBackgroundRefresh,
   unregisterBackgroundRefresh,
 } from "@/tasks/backgroundRefresh";
@@ -51,6 +52,7 @@ const BackgroundDebugScreen = () => {
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
   const [logs, setLogs] = useState<TaskLogEntry[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
 
   const checkStatus = useCallback(async () => {
     try {
@@ -107,6 +109,23 @@ const BackgroundDebugScreen = () => {
     await checkStatus();
     await loadLogs();
     setLastResult("Refreshed");
+  };
+
+  // Runs the task body directly, without the OS scheduler. This checks the
+  // fetch-and-reschedule logic and writes the same log trail as a real run.
+  const handleRunNow = async () => {
+    setIsRunning(true);
+    try {
+      const result = await executeBackgroundRefresh();
+      setLastResult(
+        `Manual run finished: ${result === BackgroundTask.BackgroundTaskResult.Success ? "success" : "failed"}`
+      );
+    } catch (error) {
+      setLastResult(`Manual run error: ${error}`);
+    } finally {
+      setIsRunning(false);
+      await loadLogs();
+    }
   };
 
   return (
@@ -197,6 +216,15 @@ const BackgroundDebugScreen = () => {
                   <Button.Text>Clear Logs</Button.Text>
                 </Button>
               </HStack>
+
+              <Button
+                onPress={handleRunNow}
+                disabled={isRunning}
+                accessibilityRole="button"
+                accessibilityLabel="Run the background task now"
+                accessibilityState={{ disabled: isRunning }}>
+                <Button.Text>{isRunning ? "Running..." : "Run Task Now"}</Button.Text>
+              </Button>
 
               <Button
                 variant="outline"

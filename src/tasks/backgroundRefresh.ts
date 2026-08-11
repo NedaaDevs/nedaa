@@ -12,14 +12,17 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { timeZonedNow, dateToInt } from "@/utils/date";
+import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
+import { AppLogger } from "@/utils/appLogger";
 import { addDays } from "date-fns";
 
 export const BACKGROUND_REFRESH_TASK = "dev.nedaa.app.background-refresh";
 const MINIMUM_INTERVAL = 60 * 24; // 24 hours (in minutes)
 const MIN_FUTURE_DAYS = 3; // Fetch if less than 3 days of data remain
 
-// Define the task in global scope (required by expo-task-manager)
-TaskManager.defineTask(BACKGROUND_REFRESH_TASK, async () => {
+// The task body, exported so the debug screen can run it on demand. The OS
+// trigger and the manual run share one code path and one log trail.
+export const executeBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResult> => {
   const startTime = Date.now();
 
   try {
@@ -94,16 +97,22 @@ TaskManager.defineTask(BACKGROUND_REFRESH_TASK, async () => {
     // Reschedule notifications
     try {
       const notificationStore = useNotificationStore.getState();
-      await notificationStore.scheduleAllNotifications();
+      const scheduleResult = await notificationStore.scheduleAllNotifications();
+      const summary = summarizeSchedulingResult(scheduleResult);
 
       const durationMs = Date.now() - startTime;
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
         "task_completed",
-        "success",
-        `Fetched: ${fetchedNewData}, duration: ${durationMs}ms`,
+        summary.result,
+        `${summary.details}; fetched=${fetchedNewData}`,
         durationMs
       );
+      // A skip (permission revoked, notifications off) is a user state, not a
+      // system failure — a retry cannot resolve it, so the task reports Success.
+      if (summary.result === "failed") {
+        return BackgroundTask.BackgroundTaskResult.Failed;
+      }
     } catch (scheduleError) {
       const msg = scheduleError instanceof Error ? scheduleError.message : String(scheduleError);
       await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "schedule_failed", "failed", msg);
@@ -116,8 +125,15 @@ TaskManager.defineTask(BACKGROUND_REFRESH_TASK, async () => {
     const durationMs = Date.now() - startTime;
     await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "task_error", "failed", msg, durationMs);
     return BackgroundTask.BackgroundTaskResult.Failed;
+  } finally {
+    // A headless process can die right after the task returns. The file logger
+    // buffers lines, so an explicit flush keeps the run's trace on disk.
+    AppLogger.flushAll();
   }
-});
+};
+
+// Define the task in global scope (required by expo-task-manager)
+TaskManager.defineTask(BACKGROUND_REFRESH_TASK, executeBackgroundRefresh);
 
 export async function registerBackgroundRefresh(): Promise<boolean> {
   try {

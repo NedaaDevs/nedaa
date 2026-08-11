@@ -27,7 +27,9 @@ import {
   type OtherTimingId,
   type OtherTimingNotifications,
   type DuhaTimePreference,
+  type SchedulingResult,
 } from "@/types/notification";
+import { SchedulingSkipReason } from "@/enums/notifications";
 import { Platform } from "react-native";
 
 // Constants
@@ -248,7 +250,7 @@ export const useNotificationStore = create<NotificationStore>()(
           await get().scheduleAllNotifications();
         },
 
-        scheduleAllNotifications: async () => {
+        scheduleAllNotifications: async (): Promise<SchedulingResult> => {
           const {
             settings,
             morningNotification,
@@ -258,7 +260,13 @@ export const useNotificationStore = create<NotificationStore>()(
             otherTimingNotifications,
             duhaTime,
           } = get();
-          if (!settings.enabled) return;
+          if (!settings.enabled) {
+            return {
+              success: true,
+              scheduledCount: 0,
+              skipReason: SchedulingSkipReason.NOTIFICATIONS_DISABLED,
+            };
+          }
 
           set({ isScheduling: true });
 
@@ -306,6 +314,7 @@ export const useNotificationStore = create<NotificationStore>()(
             } else {
               console.error("Failed to schedule notifications:", result.error);
             }
+            return result;
           } finally {
             set({ isScheduling: false });
           }

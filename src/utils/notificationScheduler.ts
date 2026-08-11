@@ -28,8 +28,10 @@ import {
   NotificationSettings,
   NotificationType,
   getEffectiveConfig,
+  type SchedulingResult,
+  type OtherTimingNotifications,
+  type OtherTimingId,
 } from "@/types/notification";
-import type { OtherTimingNotifications, OtherTimingId } from "@/types/notification";
 import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 import { calculateIshraq, calculateDuha } from "@/utils/otherTimingCalculations";
 
@@ -39,7 +41,7 @@ import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
-import { SchedulingSkipReason, type SchedulingSkipReasonValue } from "@/enums/notifications";
+import { SchedulingSkipReason } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
 // Stores
@@ -69,15 +71,6 @@ type SchedulingOptions = {
   timezone: string;
 };
 
-// `skipReason` marks an expected no-op (nothing to schedule); `error` marks a
-// genuine failure. Callers log the two at different levels.
-type SchedulingResult = {
-  success: boolean;
-  scheduledCount: number;
-  error?: Error;
-  skipReason?: SchedulingSkipReasonValue;
-};
-
 type NotificationScheduleItem = {
   id: string;
   time: Date;
@@ -102,7 +95,6 @@ const OTHER_TIMING_IDS: OtherTimingId[] = [
   "imsak",
 ];
 const MAX_IOS_NOTIFICATIONS = 63;
-const DEFAULT_DAYS_TO_SCHEDULE = 10;
 const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
 
 const scheduleAthkarNotifications = async (
@@ -373,8 +365,6 @@ export const scheduleAllNotifications = async (
 
     await cancelAllScheduledNotifications();
 
-    // Determine scheduling period
-    const daysToSchedule = options.daysToSchedule || DEFAULT_DAYS_TO_SCHEDULE;
     const now = timeZonedNow(timezone);
 
     const daysPrayerTimes = data;
@@ -494,6 +484,8 @@ export const scheduleAllNotifications = async (
     let scheduledCount = 0;
     let failedCount = 0;
     let firstFailure: string | null = null;
+    // Items are sorted ascendent by time, so the last success is the horizon end.
+    let lastScheduledTime: Date | null = null;
     for (const notification of notificationsToProcess) {
       const notificationInput: NotificationContentInput = {
         title: notification.title,
@@ -514,6 +506,16 @@ export const scheduleAllNotifications = async (
 
       if (result.success) {
         scheduledCount++;
+        lastScheduledTime = notification.time;
+
+        // Per-item trace for shared diagnostic bundles. DEBUG level: written only
+        // in dev builds or when debug mode is on; the flag persists, so it also
+        // covers headless background runs.
+        log.d(
+          "Scheduler",
+          `${notification.type}/${notification.prayerId} at ${notification.time.toISOString()}` +
+            (notification.soundKey ? ` sound=${notification.soundKey}` : "")
+        );
 
         // Schedule native athan service for prayer notifications with athan sounds (Android)
         // Only when fullAthanPlayback is enabled — otherwise the channel plays the sound
@@ -576,8 +578,23 @@ export const scheduleAllNotifications = async (
     if (failedCount > 0) {
       log.w("Scheduler", `${failedCount} of the run failed — first: ${firstFailure}`);
     }
-    log.i("Scheduler", `scheduled ${scheduledCount} notifications`);
-    return { success: true, scheduledCount };
+    // Nothing landed and at least one item failed: the run failed, a partial
+    // run reports success with the failure count attached.
+    if (scheduledCount === 0 && failedCount > 0) {
+      return {
+        success: false,
+        scheduledCount,
+        failedCount,
+        error: new Error(`all ${failedCount} schedule calls failed — first: ${firstFailure}`),
+      };
+    }
+    const lastScheduledAt = lastScheduledTime?.toISOString();
+    log.i(
+      "Scheduler",
+      `scheduled ${scheduledCount} notifications` +
+        (lastScheduledAt ? ` through ${lastScheduledAt}` : "")
+    );
+    return { success: true, scheduledCount, failedCount, lastScheduledAt };
   } catch (error) {
     log.e("Scheduler", "scheduling run failed", error instanceof Error ? error : undefined);
     return {
