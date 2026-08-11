@@ -14,7 +14,6 @@ const mockClearPendingReapply = jest.fn();
 const mockAwaitPendingReapply = jest.fn();
 const mockGetByRange = jest.fn();
 const mockBgLog = jest.fn();
-const mockAddExpirationListener = jest.fn((..._args: unknown[]) => ({ remove: () => {} }));
 
 let mockNow = new Date("2026-08-15T08:00:00Z");
 
@@ -24,7 +23,9 @@ jest.mock("expo-background-task", () => ({
   getStatusAsync: jest.fn(async () => 2),
   registerTaskAsync: jest.fn(async () => {}),
   unregisterTaskAsync: jest.fn(async () => {}),
-  addExpirationListener: (...args: unknown[]) => mockAddExpirationListener(...args),
+  // Owned by the factory rather than an outer const: the SUT registers its
+  // listener at import time, before any module-scope initialiser here runs.
+  addExpirationListener: jest.fn(() => ({ remove: () => {} })),
 }));
 jest.mock("expo-task-manager", () => ({
   defineTask: jest.fn(),
@@ -89,6 +90,12 @@ jest.mock("@/utils/date", () => {
     getTimezoneYear: () => mockNow.getUTCFullYear(),
   };
 });
+
+// The mocked module instance is shared across `jest.isolateModules`, so this
+// reference stays the one an isolated re-import of the SUT calls.
+const { addExpirationListener: mockAddExpirationListener } = jest.requireMock(
+  "expo-background-task"
+) as { addExpirationListener: jest.Mock };
 
 // 4 rows = the today..today+3 range is fully covered → no fetch needed.
 const fourRows = [{ date: 1 }, { date: 2 }, { date: 3 }, { date: 4 }];
@@ -177,5 +184,19 @@ describe("executeBackgroundRefresh", () => {
     await executeBackgroundRefresh();
 
     expect(mockGetAndStore).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("expiration listener", () => {
+  it("registers an iOS expiration listener at module scope", () => {
+    // Registration happens at import time and the other suite's beforeEach
+    // clears all mocks, so re-evaluate the module in isolation instead of
+    // counting calls from the original import.
+    jest.isolateModules(() => {
+      mockAddExpirationListener.mockClear();
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("@/tasks/backgroundRefresh");
+      expect(mockAddExpirationListener).toHaveBeenCalledTimes(1);
+    });
   });
 });

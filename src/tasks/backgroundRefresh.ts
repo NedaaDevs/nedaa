@@ -1,5 +1,9 @@
 import * as BackgroundTask from "expo-background-task";
 import * as TaskManager from "expo-task-manager";
+import { Platform } from "react-native";
+
+// Enums
+import { PlatformType } from "@/enums/app";
 
 // Services
 import { PrayerTimesDB } from "@/services/db";
@@ -190,6 +194,21 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
 
 // Define the task in global scope (required by expo-task-manager)
 TaskManager.defineTask(BACKGROUND_REFRESH_TASK, executeBackgroundRefresh);
+
+// iOS can stop a processing task at any point. The scheduler orders items
+// soonest-first, so an interrupted run keeps the nearest days; this records
+// the interruption and lands the buffered log lines before the process dies.
+if (Platform.OS === PlatformType.IOS) {
+  BackgroundTask.addExpirationListener(() => {
+    void BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      "task_expired",
+      "failed",
+      "iOS stopped the background run before completion"
+    );
+    AppLogger.flushAll();
+  });
+}
 
 export async function registerBackgroundRefresh(): Promise<boolean> {
   try {
