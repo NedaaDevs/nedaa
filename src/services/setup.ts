@@ -12,6 +12,7 @@ import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/provider
 
 // Utils
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
+import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
@@ -63,6 +64,7 @@ export const appSetup = async (
 
     await BackgroundTaskLog.initialize();
     await registerBackgroundRefresh();
+    registerForegroundReschedule();
 
     // Register DB cleanup tasks for graceful shutdown
     cleanupManager.register("umrah-db-flush", () => UmrahDB.flush(), 10);
