@@ -9,12 +9,12 @@ import { BackgroundTaskLog } from "@/services/background-task-log";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import locationStore from "@/stores/location";
-import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { useProviderSettingsStore, awaitPendingReapply } from "@/stores/providerSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import { useQuranRemindersStore } from "@/stores/quranReminders";
 
 // Utils
-import { timeZonedNow, dateToInt } from "@/utils/date";
+import { timeZonedNow, dateToInt, getTimezoneMonth, getTimezoneYear } from "@/utils/date";
 import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
 import { AppLogger } from "@/utils/appLogger";
 import { waitForHydration } from "@/utils/storeHydration";
@@ -86,17 +86,22 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
     const todayInt = dateToInt(now);
     const futureDate = dateToInt(addDays(now, MIN_FUTURE_DAYS));
 
-    // Check if we have enough prayer data
+    // A pending reapply means the stored rows were computed with old provider
+    // settings; row count alone cannot see that, so it forces the fetch.
+    const pendingReapply = await awaitPendingReapply();
+
     const futureData = await PrayerTimesDB.getPrayerTimesByDateRange(todayInt, futureDate);
     const hasSufficientData = futureData.length >= MIN_FUTURE_DAYS;
 
     let fetchedNewData = false;
-    if (!hasSufficientData) {
+    if (!hasSufficientData || pendingReapply) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
         "fetching_prayer_times",
         "success",
-        `Only ${futureData.length} days of data, fetching more`
+        pendingReapply
+          ? "Provider reapply pending, refetching"
+          : `Only ${futureData.length} days of data, fetching more`
       );
 
       try {
@@ -104,6 +109,14 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
         const success = await prayerTimesStore.getAndStorePrayerTimes();
 
         if (success) {
+          // A late-December window crosses into January and the current-year
+          // fetch cannot cover it; best-effort, the next run retries.
+          if (getTimezoneMonth(timezone) === 12) {
+            await prayerTimesStore.getAndStorePrayerTimes(getTimezoneYear(timezone) + 1);
+          }
+          if (pendingReapply) {
+            useProviderSettingsStore.getState().clearPendingReapply();
+          }
           fetchedNewData = true;
           await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "prayer_times_fetched", "success");
         } else {

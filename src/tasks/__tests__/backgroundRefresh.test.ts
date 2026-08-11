@@ -136,4 +136,46 @@ describe("executeBackgroundRefresh", () => {
 
     expect(result).toBe(2); // Failed
   });
+
+  it("forces a refetch when a provider reapply is pending, then clears the flag", async () => {
+    mockAwaitPendingReapply.mockResolvedValue(true);
+    mockGetAndStore.mockResolvedValue(true);
+    // Data is sufficient — the pending reapply alone must force the fetch.
+    mockGetByRange.mockResolvedValue(fourRows);
+
+    await executeBackgroundRefresh();
+
+    expect(mockGetAndStore).toHaveBeenCalled();
+    expect(mockClearPendingReapply).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the reapply flag when the forced fetch fails", async () => {
+    mockAwaitPendingReapply.mockResolvedValue(true);
+    mockGetAndStore.mockResolvedValue(false);
+
+    await executeBackgroundRefresh();
+
+    expect(mockClearPendingReapply).not.toHaveBeenCalled();
+  });
+
+  it("also fetches the next year in December", async () => {
+    mockNow = new Date("2026-12-30T08:00:00Z");
+    mockGetByRange.mockResolvedValue([{ date: 1 }]);
+    mockGetAndStore.mockResolvedValue(true);
+
+    await executeBackgroundRefresh();
+
+    // First call: whole current year (no args). Second call: next year.
+    expect(mockGetAndStore).toHaveBeenNthCalledWith(1);
+    expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
+  });
+
+  it("does not fetch the next year outside December", async () => {
+    mockGetByRange.mockResolvedValue([{ date: 1 }]);
+    mockGetAndStore.mockResolvedValue(true);
+
+    await executeBackgroundRefresh();
+
+    expect(mockGetAndStore).toHaveBeenCalledTimes(1);
+  });
 });
