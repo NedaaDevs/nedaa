@@ -10,6 +10,21 @@ import { AppLogger } from "./appLogger";
 const log = AppLogger.create("alarm");
 export { log as alarmLog };
 
+// Tail kept in shared bundles: enough to cover recent athan and alarm activity without
+// pushing the rest of the report past what a support message can carry.
+const NATIVE_LOG_TAIL_CHARS = 32 * 1024;
+
+// The native alarm log records athan broadcasts, service starts, MediaPlayer state, and
+// audio focus — background activity no JS logger sees, because JS is not running for it.
+// Without this section a crash in that path leaves nothing in the shared report.
+AppLogger.registerReportSection("alarm-native", async () => {
+  const text = ExpoAlarm.getPersistentLog();
+  if (!text) return "(empty)";
+  return text.length > NATIVE_LOG_TAIL_CHARS
+    ? `…[earlier entries trimmed]\n${text.slice(-NATIVE_LOG_TAIL_CHARS)}`
+    : text;
+});
+
 export const ISSUE_CATEGORIES = [
   "alarm_not_firing",
   "wrong_time",
