@@ -1,1 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- Runs at process start so the uncaught-exception handler is in place before any
+         app code, including code in processes started only for a broadcast or a widget. -->
+    <provider
+      android:name=".DiagnosticsInitProvider"
+      android:authorities="${applicationId}.diagnosticsinit"
+      android:exported="false"
+      android:initOrder="100" />
+  </application>
+</manifest>

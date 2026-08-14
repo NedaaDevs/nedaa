@@ -79,6 +79,16 @@ const DiagnosticsDebugScreen = () => {
                 accessibilityLabel={isIOS ? "Trigger a main-thread hang" : "Trigger an ANR"}>
                 <Button.Text>{isIOS ? "Hang (main thread)" : "ANR (main thread)"}</Button.Text>
               </Button>
+
+              {!isIOS && (
+                <Button
+                  disabled={!armed}
+                  onPress={() => ExpoDiagnosticsModule.testJvmCrash()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Trigger an unhandled Java exception">
+                  <Button.Text>JVM crash (Java)</Button.Text>
+                </Button>
+              )}
             </VStack>
           </Card>
         </VStack>

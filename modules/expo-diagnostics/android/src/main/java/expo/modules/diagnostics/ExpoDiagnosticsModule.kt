@@ -13,7 +13,9 @@ import android.system.OsConstants
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
+import java.util.concurrent.ConcurrentHashMap
 
 // Reads OS-recorded process-exit records and maps them to the shared NativeDiagnostic
 // shape. API 30+ only. Peek/ack protocol: drain() returns records without consuming
@@ -23,6 +25,10 @@ class ExpoDiagnosticsModule : Module() {
   private val prefsName = "expo_diagnostics"
   private val cursorKey = "last_exit_ts"
   private val detailCap = 64 * 1024
+  // Stack files attached to drained entries, held until ack confirms the entry is
+  // persisted. Keyed by ack token so an un-acked drain replays with its stack intact; the
+  // token is an exit timestamp, which two exits can share, so each key holds a list.
+  private val pendingRecords = ConcurrentHashMap<String, MutableList<File>>()
   // Upper bound on a single trace read; tombstones with memory dumps run to ~1MB.
   private val maxTraceBytes = 2 * 1024 * 1024
 
@@ -50,6 +56,14 @@ class ExpoDiagnosticsModule : Module() {
         Thread.sleep(10_000)
       }
     }
+
+    // Throw an unhandled exception off the JS thread so the recorded stack, the
+    // REASON_CRASH exit record, and their pid match can be checked end-to-end.
+    Function("testJvmCrash") {
+      Handler(Looper.getMainLooper()).post {
+        throw IllegalStateException("expo-diagnostics test JVM crash")
+      }
+    }
   }
 
   private fun prefs(): SharedPreferences? =
@@ -62,6 +76,9 @@ class ExpoDiagnosticsModule : Module() {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
       ?: return emptyList()
     val prefs = prefs() ?: return emptyList()
+    // Bound the stack-record directory here rather than at process start, where the
+    // filesystem work would sit on the main thread of every launch.
+    JvmCrashRecorder.prune(context)
     // maxNum=0 returns every retained record, so a backlog larger than one page
     // cannot slip past the cursor unseen.
     val records = am.getHistoricalProcessExitReasons(context.packageName, 0, 0)
@@ -89,8 +106,16 @@ class ExpoDiagnosticsModule : Module() {
   private fun ack(tokens: List<String>) {
     val prefs = prefs() ?: return
     val maxTs = tokens.mapNotNull { it.toLongOrNull() }.maxOrNull() ?: return
-    if (maxTs > prefs.getLong(cursorKey, 0L)) {
-      prefs.edit().putLong(cursorKey, maxTs).apply()
+    // commit(), not apply(): apply() reports no failure and writes the cursor to disk in
+    // the background. If the process died before that landed, the cursor would roll back
+    // to a record whose stack file this method had already deleted.
+    val advanced =
+      maxTs <= prefs.getLong(cursorKey, 0L) || prefs.edit().putLong(cursorKey, maxTs).commit()
+    if (!advanced) return
+    // A stack file is dead weight once its entry is persisted and the cursor stops that
+    // entry from being drained again.
+    for (token in tokens) {
+      pendingRecords.remove(token)?.forEach { it.delete() }
     }
   }
 
@@ -109,20 +134,25 @@ class ExpoDiagnosticsModule : Module() {
   }
 
   private fun toEntry(info: ApplicationExitInfo, kind: String): Map<String, Any?> {
-    val summary = "exit reason=${info.reason} status=${info.status} " +
-      "importance=${info.importance} desc=${info.description ?: ""}"
+    // Reason and importance are spelled out: the bare integers say nothing to whoever
+    // reads a shared report, and they decide what the crash even was.
+    val summary = "exit reason=${info.reason} (${reasonName(info.reason)}) " +
+      "status=${info.status} importance=${info.importance} " +
+      "(${importanceName(info.importance)}) desc=${info.description ?: ""}"
     // Any exit may carry an attached trace (e.g. a recovered-ANR dump left on a later
     // exit), so reading is attempted for every kind. ANR and recovered traces are plain
     // text; native-crash traces are a binary tombstone protobuf that must be decoded,
-    // never read as text.
+    // never read as text. The platform never supplies a Java exception stack, so a JVM
+    // crash reads the record the process wrote as the exception unwound — falling back to
+    // the attached trace, which on such an exit is a recovered-ANR dump.
     val detail: String? = try {
-      if (info.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) {
-        info.traceInputStream?.use { readCapped(it) }?.let { bytes ->
-          TombstoneParser.format(bytes)?.let { truncate(it) } ?: base64Fallback(bytes)
-        }
-      } else {
-        info.traceInputStream?.use { String(readCapped(it), Charsets.UTF_8) }
-          ?.let { truncate(it) }
+      when (info.reason) {
+        ApplicationExitInfo.REASON_CRASH_NATIVE ->
+          info.traceInputStream?.use { readCapped(it) }?.let { bytes ->
+            TombstoneParser.format(bytes)?.let { truncate(it) } ?: base64Fallback(bytes)
+          }
+        ApplicationExitInfo.REASON_CRASH -> jvmRecord(info) ?: readTrace(info)
+        else -> readTrace(info)
       }
     } catch (e: Exception) {
       null
@@ -135,6 +165,44 @@ class ExpoDiagnosticsModule : Module() {
       "detail" to detail,
       "ackToken" to info.timestamp.toString()
     )
+  }
+
+  private fun readTrace(info: ApplicationExitInfo): String? =
+    info.traceInputStream?.use { String(readCapped(it), Charsets.UTF_8) }?.let { truncate(it) }
+
+  // Matched by pid: the recorder names its file after the process that died, so a backlog
+  // of exits cannot attach one crash's stack to another's record. The file is kept until
+  // ack, so a drain that never reaches JS replays with its stack.
+  private fun jvmRecord(info: ApplicationExitInfo): String? {
+    val context = appContext.reactContext ?: return null
+    val file = JvmCrashRecorder.recordFor(context, info.pid, info.timestamp) ?: return null
+    val text = JvmCrashRecorder.read(file) ?: return null
+    pendingRecords.getOrPut(info.timestamp.toString()) { mutableListOf() }.add(file)
+    return truncate(text)
+  }
+
+  private fun reasonName(reason: Int): String = when (reason) {
+    ApplicationExitInfo.REASON_CRASH -> "jvm-crash"
+    ApplicationExitInfo.REASON_CRASH_NATIVE -> "native-crash"
+    ApplicationExitInfo.REASON_ANR -> "anr"
+    ApplicationExitInfo.REASON_INITIALIZATION_FAILURE -> "init-failure"
+    ApplicationExitInfo.REASON_LOW_MEMORY -> "low-memory"
+    ApplicationExitInfo.REASON_SIGNALED -> "signalled"
+    ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "excessive-resource"
+    else -> "reason-$reason"
+  }
+
+  // Importance separates a crash the user watched from one in a process the system had
+  // already parked, which points at completely different code.
+  private fun importanceName(importance: Int): String = when (importance) {
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND -> "foreground"
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE -> "foreground-service"
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE -> "visible"
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE -> "perceptible"
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE -> "service"
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED -> "cached"
+    ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE -> "gone"
+    else -> "importance-$importance"
   }
 
   // Unparseable tombstone: keep the raw bytes decodable offline against AOSP's

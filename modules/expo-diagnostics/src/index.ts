@@ -11,6 +11,7 @@ const NativeModule = requireOptionalNativeModule<{
   testNativeCrash?(): void;
   testHang?(): void;
   testAnr?(): void;
+  testJvmCrash?(): void;
 }>("ExpoDiagnostics");
 
 export const ExpoDiagnosticsModule = {
@@ -37,5 +38,10 @@ export const ExpoDiagnosticsModule = {
   // Main-thread block past the ANR timeout: REASON_ANR on Android. No-op on iOS.
   testAnr(): void {
     NativeModule?.testAnr?.();
+  },
+  // Unhandled Java exception: REASON_CRASH on Android, with the stack supplied by the
+  // in-process recorder rather than the platform. No-op on iOS.
+  testJvmCrash(): void {
+    NativeModule?.testJvmCrash?.();
   },
 };

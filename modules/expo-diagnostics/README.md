@@ -27,6 +27,40 @@ next launch instead of losing them; entry `id`s are stable across replays for de
   decoding. Verify the parser with `android/scripts/TombstoneParserTest.kt` (standalone
   kotlinc script — no Android test target in this module).
 
+  **JVM crashes carry no platform Java stack.** `REASON_CRASH` (an unhandled Java/Kotlin
+  exception) records the exit but attaches no exception stack — a `REASON_CRASH` record can
+  still carry a _recovered-ANR_ dump, which is why the JVM path falls back to
+  `getTraceInputStream()` — so the stack has to be captured in process.
+
+  `JvmCrashRecorder` installs a `Thread.setDefaultUncaughtExceptionHandler` that writes the
+  stack to `filesDir/diagnostics-jvm/jvm-<pid>-<ms>.txt`, delegates to the previous handler
+  so the process still dies and the exit record is still written, and kills the process
+  itself if that handler returns instead. Details that matter:
+  - The stack goes through a **capped writer**, so an arbitrarily deep cause chain cannot
+    drive a second allocation failure in a process that is already dying.
+  - The record is written under a `partial-` name and **renamed into place**, so a
+    truncated write is never matched to an exit.
+  - `install()` does **no I/O** — it runs on the main thread at process start. Pruning
+    (14 days / 10 records) happens on the `drain()` path instead.
+  - `toEntry` matches a record to its exit by **pid plus write time**: pids are recycled,
+    and the exit time is a hard upper bound because the record is always written first.
+  - `ack` advances the cursor with **`commit()`, not `apply()`**, and deletes stack files
+    only once that succeeded — `apply()` writes in the background and reports no failure,
+    so a rollback would strand an entry whose stack had already been deleted.
+
+  `DiagnosticsInitProvider` (a ContentProvider in this module's manifest) installs the
+  handler at process start, which covers processes launched only for a broadcast or a
+  widget update, where no React context exists. A future component with an
+  `android:process` override would need its own provider entry. Threads that set their own
+  uncaught handler bypass this, as Java dispatches to those first.
+
+  Verify the record shape with `android/scripts/JvmCrashFormatterTest.kt` (standalone
+  kotlinc script, 24 checks), and the whole path on device with the "JVM crash (Java)"
+  trigger on the diagnostics debug screen.
+
+  Entry summaries spell out the reason and the importance (`reason=4 (jvm-crash) …
+importance=400 (cached)`): the integers alone decide what a crash was and where it ran.
+
 ## Consumption
 
 `src/utils/nativeDiagnostics.ts` calls `drain()` at startup (best-effort, non-blocking),
