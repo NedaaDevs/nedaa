@@ -74,6 +74,11 @@ export const installLifecycleLogging = (): void => {
     if (next === "background" || next === "active") {
       appLog.i("State", next);
       writeSessionState(next, version);
+      // AppLogger's own listener runs first — it is registered at module scope, before
+      // this one — so its background flush happens before this line is buffered. Android
+      // freezes cached processes, so the buffered line has no later chance to reach disk:
+      // flush it here or lose the marker that opens every background crash window.
+      if (next === "background") AppLogger.flushAllSync();
     }
   });
 };
