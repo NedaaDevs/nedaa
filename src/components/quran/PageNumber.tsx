@@ -86,6 +86,9 @@ const PageNumber = ({ page, quranTheme, version, rub, side, clearance }: PageNum
     useQuranStore((s) => s.ornamentMeta[OrnamentCategory.PAGE_HOLDER]) ??
     BUNDLED_ORNAMENT_META[OrnamentCategory.PAGE_HOLDER];
   const holderAssetMeta = holderMeta.assets[OrnamentAsset.CARTOUCHE];
+  const hizbAssetMeta =
+    holderMeta.assets[OrnamentAsset.HIZB] ??
+    BUNDLED_ORNAMENT_META[OrnamentCategory.PAGE_HOLDER].assets[OrnamentAsset.HIZB];
   const holderPresent = holderAssetMeta !== undefined;
   const holderWidth = HOLDER_HEIGHT * (holderAssetMeta?.aspect ?? 3.24);
   const source = resolveOrnamentImage(
@@ -110,6 +113,16 @@ const PageNumber = ({ page, quranTheme, version, rub, side, clearance }: PageNum
       : Math.min(
           HIZB_TOP_MAX,
           Math.max(HIZB_TOP_MIN, FOOTER_PAD_TOP + HOLDER_HEIGHT + clearance - HIZB_INK_GAP)
+        );
+  const hizbPanelCenter = ((hizbAssetMeta?.panel?.t ?? 0) + (hizbAssetMeta?.panel?.b ?? 1)) / 2;
+  // On hizb pages, align the cartouche with the plaque's usable inner panel,
+  // while keeping the downward shift inside the available safe-area space.
+  const pageNumberDrop =
+    rub == null
+      ? 0
+      : Math.min(
+          hizbDrop,
+          Math.max(0, HOLDER_HEIGHT / 2 + hizbDrop - (hizbTop + hizbDrop) * (1 - hizbPanelCenter))
         );
 
   return (
@@ -137,7 +150,11 @@ const PageNumber = ({ page, quranTheme, version, rub, side, clearance }: PageNum
       ) : null}
       {holderPresent ? (
         <View
-          style={{ width: holderWidth, height: HOLDER_HEIGHT }}
+          style={{
+            width: holderWidth,
+            height: HOLDER_HEIGHT,
+            transform: [{ translateY: pageNumberDrop }],
+          }}
           accessibilityLabel={t("a11y.quran.page", { page })}>
           <View
             pointerEvents="none"
@@ -182,6 +199,7 @@ const PageNumber = ({ page, quranTheme, version, rub, side, clearance }: PageNum
             fontFamily: QURAN_FONT_FAMILY,
             writingDirection: "rtl",
             fontSize: 19,
+            transform: [{ translateY: pageNumberDrop }],
           }}
           accessibilityLabel={t("a11y.quran.page", { page })}>
           {toHafsDigits(page)}

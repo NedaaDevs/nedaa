@@ -269,8 +269,8 @@ export const BUNDLED_ORNAMENT_META: Record<OrnamentCategory, OrnamentPackMeta> =
     assets: {
       [OrnamentAsset.CARTOUCHE]: { aspect: 3.2397 },
       [OrnamentAsset.HIZB]: {
-        aspect: 0.7292,
-        panel: { l: 0.0738, t: 0.4375, r: 0.9262, b: 0.9479 },
+        aspect: 0.7604,
+        panel: { l: 0.0715, t: 0.4077, r: 0.9277, b: 0.9408 },
       },
     },
   },
