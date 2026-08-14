@@ -189,8 +189,7 @@ export const OrnamentAsset = {
   FRAME: "frame", // surahFrame
   MARKER: "marker", // ayahMarker
   CARTOUCHE: "cartouche", // pageHolder, normal pages
-  QUARTER_LEFT: "quarter-left", // pageHolder hizb-quarter, narrow cell left
-  QUARTER_RIGHT: "quarter-right", // pageHolder hizb-quarter, narrow cell right
+  HIZB: "hizb", // pageHolder, plaque marking the rub the page opens
 } as const;
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- value + type share one name (const-as-const idiom)
 export type OrnamentAsset = (typeof OrnamentAsset)[keyof typeof OrnamentAsset];

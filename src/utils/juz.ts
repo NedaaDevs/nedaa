@@ -68,8 +68,20 @@ export const rubForHizbQuarter = (rub: number): { hizb: number; quarter: 0 | 1 |
 const QUARTER_FRACTION_AR = ["", "١/٤", "١/٢", "٣/٤"] as const;
 const QUARTER_FRACTION_LATIN = ["", "1/4", "1/2", "3/4"] as const;
 
-// Localized hizb-quarter label for the footer holder: «٣/٤ الحزب ١» in Arabic,
-// "3/4 Hizb 1" elsewhere; hizb starts show just the hizb.
+// Quarter words as a printed mushaf spells them, for the hizb medallion.
+const QUARTER_WORD_AR = ["", "ربع", "نصف", "ثلاث ارباع"] as const;
+
+// The medallion's three pieces, stacked as a printed mushaf sets them: the
+// quarter word, «الحزب», then the hizb number. Always Arabic — the mark belongs
+// to the mushaf page, not the surrounding UI. The number stays raw so the caller
+// can render it in the mushaf font's own digits.
+export const rubMarkParts = (rub: number): { quarter: string; word: string; hizb: number } => {
+  const { hizb, quarter } = rubForHizbQuarter(rub);
+  return { quarter: QUARTER_WORD_AR[quarter], word: "الحزب", hizb };
+};
+
+// Localized hizb-quarter label, read out for the footer plaque: «٣/٤ الحزب ١»
+// in Arabic, "3/4 Hizb 1" elsewhere; hizb starts show just the hizb.
 export const rubLabel = (rub: number): string => {
   const { hizb, quarter } = rubForHizbQuarter(rub);
   if (i18n.language === "ar") {

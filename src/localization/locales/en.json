@@ -135,7 +135,6 @@
   "a11y.quran.listen.timer": "Sleep timer",
   "a11y.quran.page": "Page {{page}}",
   "a11y.quran.pageInfo": "Page {{page}}, Surah {{surah}}, Juz {{juz}}",
-  "a11y.quran.pageQuarter": "Page {{page}}, {{quarter}}",
   "a11y.quran.pauseDownload": "Pause download",
   "a11y.quran.readAlong": "Toggle read-along highlight",
   "a11y.quran.reciterAyahByAyah": "{{name}}, verse-by-verse highlighting",

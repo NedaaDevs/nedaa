@@ -37,7 +37,7 @@ export type PageData = {
   surahHeaderLines: Record<number, number>;
   juz: number;
   // The rub (hizb quarter) that starts on this page, or null — drives the
-  // footer's quarter-holder variant.
+  // footer's hizb plaque.
   rubStart: number | null;
   glyphBounds: GlyphBound[];
   sourcePageHeight: number;

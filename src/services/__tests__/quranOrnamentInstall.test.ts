@@ -25,8 +25,6 @@ describe("parseOrnamentPackJson", () => {
 describe("ornamentSlotFileName", () => {
   it("builds <asset>-<slot>.png", () => {
     expect(ornamentSlotFileName(OrnamentAsset.FRAME, OrnamentSlot.DARK)).toBe("frame-dark.png");
-    expect(ornamentSlotFileName(OrnamentAsset.QUARTER_LEFT, OrnamentSlot.SEPIA)).toBe(
-      "quarter-left-sepia.png"
-    );
+    expect(ornamentSlotFileName(OrnamentAsset.HIZB, OrnamentSlot.SEPIA)).toBe("hizb-sepia.png");
   });
 });

@@ -674,8 +674,8 @@ const getHizbStartPages = async (): Promise<{ division: number; page: number }[]
   );
 };
 
-// Start page of each rub (hizb quarter, 1..240) — drives the footer's
-// quarter-holder variant on boundary pages.
+// Start page of each rub (hizb quarter, 1..240) — drives the footer's hizb
+// plaque on boundary pages.
 const getRubStartPages = async (): Promise<{ division: number; page: number }[]> => {
   const db = await openQuranDb();
   return db.getAllAsync<{ division: number; page: number }>(

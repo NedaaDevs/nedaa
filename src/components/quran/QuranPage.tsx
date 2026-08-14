@@ -183,6 +183,36 @@ const QuranPage = ({
     [isPageMode, coverScale, lineHeight, lineCoverClipY, pageScaleX, pageScaleY, srcLineHeight]
   );
 
+  // Free space left under the page's lowest ink. How close the last line runs to
+  // the bottom of the lines area changes page to page, and the footer's hizb
+  // plaque sizes itself to whatever is left. Null until both the glyphs and the
+  // measured height are in.
+  const inkClearance = useMemo(() => {
+    if (linesAreaHeight === 0 || glyphBounds.length === 0) return null;
+    // Page mode reads its source height from a separate async measure; without
+    // it the scale factors are placeholders and the ink lands anywhere.
+    if (isPageMode && sourcePageHeight === 0) return null;
+    let lowest = 0;
+    for (const g of glyphBounds) {
+      const bottom = isPageMode
+        ? ((g.line - 1) * srcLineHeight + g.y + g.height) * pageScaleX * pageScaleY
+        : (g.line - 1) * lineHeight + (g.y + g.height) * coverScale - lineCoverClipY;
+      if (bottom > lowest) lowest = bottom;
+    }
+    return Math.max(linesAreaHeight - lowest, 0);
+  }, [
+    glyphBounds,
+    isPageMode,
+    sourcePageHeight,
+    linesAreaHeight,
+    lineHeight,
+    lineCoverClipY,
+    srcLineHeight,
+    pageScaleX,
+    pageScaleY,
+    coverScale,
+  ]);
+
   const { highlightedAyah, clearHighlight, handlePress, handleLongPress } = useAyahSelection({
     version,
     page,
@@ -533,7 +563,7 @@ const QuranPage = ({
     <YStack
       flex={1}
       width={width}
-      style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background }}>
+      style={{ backgroundColor: QURAN_THEME_COLORS[quranTheme].background, position: "relative" }}>
       <PageHeader
         surahName={headerSurah}
         surahNumber={headerSurahNumber}
@@ -738,8 +768,9 @@ const QuranPage = ({
         page={page}
         quranTheme={quranTheme}
         version={version}
-        rubStart={rubStart}
+        rub={rubStart}
         side={side}
+        clearance={inkClearance}
       />
     </YStack>
   );

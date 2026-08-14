@@ -234,13 +234,9 @@ export const BUNDLED_ORNAMENTS: Record<
       [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/cartouche-sepia.png"),
       [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/cartouche-dark.png"),
     },
-    [OrnamentAsset.QUARTER_LEFT]: {
-      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/quarter-left-sepia.png"),
-      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/quarter-left-dark.png"),
-    },
-    [OrnamentAsset.QUARTER_RIGHT]: {
-      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/quarter-right-sepia.png"),
-      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/quarter-right-dark.png"),
+    [OrnamentAsset.HIZB]: {
+      [OrnamentSlot.SEPIA]: require("@/../assets/images/quran-ornaments/page-holder/hizb-sepia.png"),
+      [OrnamentSlot.DARK]: require("@/../assets/images/quran-ornaments/page-holder/hizb-dark.png"),
     },
   },
 };
@@ -269,11 +265,13 @@ export const BUNDLED_ORNAMENT_META: Record<OrnamentCategory, OrnamentPackMeta> =
     assets: { [OrnamentAsset.MARKER]: { aspect: 0.75 } },
   },
   [OrnamentCategory.PAGE_HOLDER]: {
-    version: "2026-07-17",
+    version: "2026-08-14",
     assets: {
       [OrnamentAsset.CARTOUCHE]: { aspect: 3.2397 },
-      [OrnamentAsset.QUARTER_LEFT]: { aspect: 3.937 },
-      [OrnamentAsset.QUARTER_RIGHT]: { aspect: 3.937 },
+      [OrnamentAsset.HIZB]: {
+        aspect: 0.7292,
+        panel: { l: 0.0738, t: 0.4375, r: 0.9262, b: 0.9479 },
+      },
     },
   },
 };

@@ -10,7 +10,6 @@ import {
   bundledOrnamentModule,
   ornamentThemeSlot,
   pageLeafSide,
-  quarterHolderAsset,
   resolveOrnamentImage,
 } from "@/utils/quranOrnaments";
 
@@ -35,11 +34,7 @@ describe("bundledOrnamentModule", () => {
       bundledOrnamentModule(OrnamentCategory.AYAH_MARKER, OrnamentAsset.MARKER, OrnamentSlot.DARK)
     ).toBeDefined();
     expect(
-      bundledOrnamentModule(
-        OrnamentCategory.PAGE_HOLDER,
-        OrnamentAsset.QUARTER_RIGHT,
-        OrnamentSlot.SEPIA
-      )
+      bundledOrnamentModule(OrnamentCategory.PAGE_HOLDER, OrnamentAsset.HIZB, OrnamentSlot.SEPIA)
     ).toBeDefined();
   });
   it("returns undefined for an asset a category does not carry", () => {
@@ -82,13 +77,6 @@ describe("resolveOrnamentImage", () => {
     );
     expect(typeof src === "object" && "uri" in src).toBe(true);
     expect((src as { uri: string }).uri).toContain("ornaments/surahFrame/frame-dark.png");
-  });
-});
-
-describe("quarterHolderAsset", () => {
-  it("puts the narrow cell toward the outer edge per leaf", () => {
-    expect(quarterHolderAsset("right")).toBe(OrnamentAsset.QUARTER_RIGHT);
-    expect(quarterHolderAsset("left")).toBe(OrnamentAsset.QUARTER_LEFT);
   });
 });
 
