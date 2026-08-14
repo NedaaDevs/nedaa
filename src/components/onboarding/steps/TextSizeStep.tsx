@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { PixelRatio } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -24,14 +24,21 @@ type TextSizeStepProps = {
 
 const TextSizeStep = ({ onNext }: TextSizeStepProps) => {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<TextSizeValue>(() =>
-    nearestTextSize(PixelRatio.getFontScale())
-  );
+  const textSize = usePreferencesStore((s) => s.textSize);
+  const offerHandled = usePreferencesStore((s) => s.textSizeOfferHandled);
   const setTextSize = usePreferencesStore((s) => s.setTextSize);
+  const markOfferHandled = usePreferencesStore((s) => s.markTextSizeOfferHandled);
 
-  // Applies the choice and settles the offer, even when Default stays selected.
+  // Seeded from the device font scale so the screen opens at the highlighted row's size.
+  // The handled flag stops a remount from overwriting a choice already made.
+  useEffect(() => {
+    if (!offerHandled) setTextSize(nearestTextSize(PixelRatio.getFontScale()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Rows apply their own size on press; Continue only settles the offer.
   const apply = () => {
-    setTextSize(selected);
+    markOfferHandled();
     onNext();
   };
 
@@ -50,16 +57,16 @@ const TextSizeStep = ({ onNext }: TextSizeStepProps) => {
         {OPTIONS.map(({ value, labelKey }) => (
           <Pressable
             key={value}
-            onPress={() => setSelected(value)}
+            onPress={() => setTextSize(value)}
             accessibilityRole="radio"
-            accessibilityState={{ selected: selected === value }}
+            accessibilityState={{ selected: textSize === value }}
             accessibilityLabel={t("a11y.textSize.option", { name: t(labelKey) })}
             minHeight={44}
             paddingHorizontal="$4"
             paddingVertical="$2.5"
             borderRadius="$4"
             borderWidth={1}
-            borderColor={selected === value ? "$primary" : "$outline"}>
+            borderColor={textSize === value ? "$primary" : "$outline"}>
             <HStack alignItems="center" justifyContent="space-between">
               {/* Each label previews its own multiplier, not the active preset. */}
               <Text size="md" fontWeight="600" scaleOverride={TEXT_SIZE_MULTIPLIERS[value]}>
