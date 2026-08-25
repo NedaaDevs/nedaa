@@ -503,14 +503,18 @@ const doStart = async (version: MushafVersion, active: ActiveDownload): Promise<
         // reader opens the freshly installed geometry. A stale connection (held
         // across the file replacement) reads no glyph bounds — markers don't
         // render and long-press finds nothing — until the app restarts.
-        await QuranContentDB.closeBoundsDb(version);
+        const boundsReleased = await QuranContentDB.closeBoundsDb(version);
 
         const extractedBoundsDb = new File(versionDir, "bounds.db");
-        if (extractedBoundsDb.exists) {
+        if (extractedBoundsDb.exists && boundsReleased) {
           const targetBoundsDb = getBoundsDbFile(version);
           if (targetBoundsDb.exists) targetBoundsDb.delete();
           await extractedBoundsDb.move(targetBoundsDb);
           log.d("Download", "Moved bounds.db into place");
+        } else if (!boundsReleased) {
+          // Replacing a file whose WAL index is still mapped raises SIGBUS in the next
+          // reader. The extracted copy stays put and the swap retries on the next launch.
+          log.w("Download", `bounds-${version}.db still open — swap deferred`);
         }
       },
     });
@@ -736,10 +740,12 @@ const deleteVersion = async (version: MushafVersion): Promise<void> => {
     }
   }
 
-  await QuranContentDB.closeBoundsDb(version);
+  const boundsReleased = await QuranContentDB.closeBoundsDb(version);
 
   const boundsFile = getBoundsDbFile(version);
-  if (boundsFile.exists) {
+  if (boundsFile.exists && !boundsReleased) {
+    log.w("Download", `bounds-${version}.db still open — left in place`);
+  } else if (boundsFile.exists) {
     try {
       boundsFile.delete();
     } catch {

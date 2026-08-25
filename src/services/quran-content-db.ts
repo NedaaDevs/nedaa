@@ -283,23 +283,40 @@ const CONTENT_DB_FILES = [
   `${STAGING_NAME}.version`,
 ];
 
+// Releases a connection and reports whether the file is now safe to replace. Deleting a
+// database while a connection still maps its WAL index raises SIGBUS in the next reader,
+// so callers that delete must treat `false` as "leave the files alone".
+const closeQuietly = async (db: SQLite.SQLiteDatabase | null): Promise<boolean> => {
+  if (!db) return true;
+  try {
+    await db.closeAsync();
+    return true;
+  } catch (error) {
+    log.e("Open", "closeAsync failed — file replacement unsafe", error as Error);
+    return false;
+  }
+};
+
 const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   if (!quranDbPromise) {
     quranDbPromise = (async () => {
+      // Held outside the try so the recovery path can close a connection that opened
+      // successfully and then failed its probe.
+      let opened: SQLite.SQLiteDatabase | null = null;
       try {
         await ensureInstalledDbForOpen();
-        const db = await SQLite.openDatabaseAsync(
+        opened = await SQLite.openDatabaseAsync(
           QURAN_DB_NAME,
           { useNewConnection: true },
           await getDirectory()
         );
         // Integrity probe: a stamped file can still be truncated/schema-broken.
         // Reading the core `ayahs` table fails the open so the gate shows retry.
-        await db.getFirstAsync("SELECT 1 FROM ayahs LIMIT 1");
+        await opened.getFirstAsync("SELECT 1 FROM ayahs LIMIT 1");
         quranDbReady = true;
         // Non-blocking: refresh content for the next launch without gating the reader.
         void checkForContentUpdate();
-        return db;
+        return opened;
       } catch (error) {
         quranDbReady = false;
         log.e("Open", "Error opening quran.db", error as Error);
@@ -310,9 +327,17 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
           const targetDir = await getTargetDir();
           const stamped = new File(targetDir, `${QURAN_DB_NAME}.version`).exists;
           if (stamped) {
-            log.w("Open", "recovery wipe begin");
-            removeContentFiles(targetDir, CONTENT_DB_FILES);
-            log.w("Open", "recovery wipe done — retry re-downloads");
+            // The connection has to be gone before the files are. Deleting a database
+            // whose WAL index is still mapped raises SIGBUS in the next reader of that
+            // mapping, so a close that fails cancels the wipe rather than risking it.
+            const released = await closeQuietly(opened);
+            if (released) {
+              log.w("Open", "recovery wipe begin");
+              removeContentFiles(targetDir, CONTENT_DB_FILES);
+              log.w("Open", "recovery wipe done — retry re-downloads");
+            } else {
+              log.w("Open", "recovery wipe skipped — connection still open");
+            }
           }
         } catch (cleanupError) {
           log.e("Open", "Recovery wipe failed", cleanupError as Error);
@@ -349,19 +374,28 @@ const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> =>
   return boundsDbMap.get(version)!;
 };
 
-const closeBoundsDb = async (version: MushafVersion): Promise<void> => {
+// Resolves true when the bounds file is safe to delete or replace. A connection that
+// failed to close stays in the map so it is not lost track of, and the caller keeps the
+// file rather than unlinking one whose WAL index may still be mapped.
+const closeBoundsDb = async (version: MushafVersion): Promise<boolean> => {
   const promise = boundsDbMap.get(version);
+  let released = true;
   if (promise) {
+    let db: SQLite.SQLiteDatabase | null = null;
     try {
-      const db = await promise;
-      await db.closeAsync();
+      db = await promise;
     } catch {
-      // Already closed or failed
+      // The open itself failed, so there is no connection holding the file.
+      boundsDbMap.delete(version);
     }
-    boundsDbMap.delete(version);
+    if (db) {
+      released = await closeQuietly(db);
+      if (released) boundsDbMap.delete(version);
+    }
   }
   // A bounds DB swap (re-download) can change page geometry — drop cached pages.
   clearPageReadCache();
+  return released;
 };
 
 const getLineMetadata = (version: MushafVersion, page: number): Promise<LineMetadata[]> =>
