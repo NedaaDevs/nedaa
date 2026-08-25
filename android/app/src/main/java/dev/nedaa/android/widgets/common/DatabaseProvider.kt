@@ -1,6 +1,7 @@
 package dev.nedaa.android.widgets.common
 
 import android.content.Context
+import android.database.DatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import java.io.File
@@ -13,6 +14,19 @@ object DatabaseProvider {
     private const val TAG = "DatabaseProvider"
     private const val NEDAA_DB = "nedaa.db"
     private const val ATHKAR_DB = "athkar.db"
+
+    /**
+     * Reports corruption and leaves the file alone.
+     *
+     * The three-argument [SQLiteDatabase.openDatabase] installs DefaultDatabaseErrorHandler,
+     * which DELETES the database when it judges it corrupt. These databases belong to the
+     * app — nedaa.db holds the qada counters — and the widgets only read them, so a verdict
+     * reached here must never destroy the user's data. The app owns repair; a widget that
+     * cannot read simply renders nothing.
+     */
+    private val readOnlyErrorHandler = DatabaseErrorHandler { db ->
+        Log.e(TAG, "Corruption reported for ${db?.path}; leaving the file for the app to handle")
+    }
 
     /**
      * Get read-only access to the Nedaa database (prayer times, qada)
@@ -43,7 +57,8 @@ object DatabaseProvider {
             SQLiteDatabase.openDatabase(
                 dbPath,
                 null,
-                SQLiteDatabase.OPEN_READONLY
+                SQLiteDatabase.OPEN_READONLY,
+                readOnlyErrorHandler
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error opening database: $dbName", e)
