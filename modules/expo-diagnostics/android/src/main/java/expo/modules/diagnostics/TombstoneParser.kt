@@ -8,6 +8,9 @@ package expo.modules.diagnostics
 object TombstoneParser {
   private const val MAX_FRAMES = 64
 
+  // A process has a few thousand mappings; the cap bounds a hostile or corrupt record.
+  private const val MAX_MAPPINGS = 8192
+
   // Wire types
   private const val VARINT = 0
   private const val FIXED64 = 1
@@ -87,6 +90,17 @@ object TombstoneParser {
     var faultAddress = 0L
   }
 
+  // One entry of the process memory map. Only what is needed to name the region a fault
+  // landed in — the rest of the proto's fields (offset, build id, load bias) are skipped.
+  private class MemoryMapping {
+    var begin = 0L
+    var end = 0L
+    var read = false
+    var write = false
+    var execute = false
+    var name = ""
+  }
+
   private class ThreadInfo {
     var name = ""
     val frames = ArrayList<String>()
@@ -104,6 +118,9 @@ object TombstoneParser {
     val causes = ArrayList<String>()
     // tid may be serialized after the threads map, so keep every entry until the end.
     val threads = HashMap<Long, ThreadInfo>()
+    // Field order is not guaranteed, so the mappings are held until the signal's fault
+    // address is known and the containing region can be resolved.
+    val mappings = ArrayList<MemoryMapping>()
 
     forEachField(r) { num, wireType ->
       when {
@@ -114,6 +131,11 @@ object TombstoneParser {
         num == 14 && wireType == LEN -> { abortMessage = r.readString(); true }
         num == 15 && wireType == LEN -> { parseCause(r.readLen())?.let { causes.add(it) }; true }
         num == 16 && wireType == LEN -> { parseThreadEntry(r.readLen(), threads); true }
+        num == 17 && wireType == LEN -> {
+          val m = parseMemoryMapping(r.readLen())
+          if (mappings.size < MAX_MAPPINGS) mappings.add(m)
+          true
+        }
         else -> false
       }
     }
@@ -127,6 +149,13 @@ object TombstoneParser {
       out.append("signal ${it.number} (${it.name.ifEmpty { "?" }}), code ${it.code} (${it.codeName.ifEmpty { "?" }})")
       if (it.hasFaultAddress) out.append(", fault addr 0x${java.lang.Long.toHexString(it.faultAddress)}")
       out.append('\n')
+      // Names the region the fault landed in. For a SIGBUS on a file-backed mapping this
+      // is the whole diagnosis — it identifies the file whose pages went missing.
+      if (it.hasFaultAddress) {
+        findMapping(mappings, it.faultAddress)?.let { m ->
+          out.append("fault mapping: ${formatMapping(m)}\n")
+        }
+      }
     }
     if (abortMessage.isNotEmpty()) out.append("Abort message: '$abortMessage'\n")
     for (cause in causes) out.append("Cause: $cause\n")
@@ -148,6 +177,40 @@ object TombstoneParser {
       }
     }
     return out.toString().trimEnd()
+  }
+
+  // Addresses are uint64 in the proto, so every comparison is unsigned; a mapping above
+  // 0x7fff_ffff_ffff_ffff would otherwise read as negative and never match.
+  private fun findMapping(mappings: List<MemoryMapping>, address: Long): MemoryMapping? =
+    mappings.firstOrNull {
+      java.lang.Long.compareUnsigned(address, it.begin) >= 0 &&
+        java.lang.Long.compareUnsigned(address, it.end) < 0
+    }
+
+  private fun formatMapping(m: MemoryMapping): String {
+    val perms = buildString {
+      append(if (m.read) 'r' else '-')
+      append(if (m.write) 'w' else '-')
+      append(if (m.execute) 'x' else '-')
+    }
+    val name = m.name.ifEmpty { "<anonymous>" }
+    return "0x${java.lang.Long.toHexString(m.begin)}-0x${java.lang.Long.toHexString(m.end)} $perms $name"
+  }
+
+  private fun parseMemoryMapping(r: Reader): MemoryMapping {
+    val m = MemoryMapping()
+    forEachField(r) { num, wireType ->
+      when {
+        num == 1 && wireType == VARINT -> { m.begin = r.readVarint(); true }
+        num == 2 && wireType == VARINT -> { m.end = r.readVarint(); true }
+        num == 4 && wireType == VARINT -> { m.read = r.readVarint() != 0L; true }
+        num == 5 && wireType == VARINT -> { m.write = r.readVarint() != 0L; true }
+        num == 6 && wireType == VARINT -> { m.execute = r.readVarint() != 0L; true }
+        num == 7 && wireType == LEN -> { m.name = r.readString(); true }
+        else -> false
+      }
+    }
+    return m
   }
 
   private fun parseSignal(r: Reader): SignalInfo {

@@ -107,7 +107,8 @@ private fun buildFullTombstone(): ByteArray = ProtoWriter().apply {
   message(15) { string(1, "possible truncated mmap") } // cause
   varint(20, 5) // process_uptime seconds
   varint(22, 4096) // page_size (should be ignored)
-  message(17) { varint(1, 0x1000); varint(2, 0x2000) } // memory_mappings (ignored)
+  // memory_mappings — this one does not contain the fault address, so it must not be named
+  message(17) { varint(1, 0x1000); varint(2, 0x2000); varint(4, 1); string(7, "/elsewhere.so") }
 }.toByteArray()
 
 private var failures = 0
@@ -139,6 +140,48 @@ fun main() {
   check("full: frame without function", text.contains("#01 pc 0x000000000000dead /apex/com.android.runtime/lib64/bionic/libc.so"), text)
   check("full: backtrace note", text.contains("note: unreadable elf"), text)
   check("full: other thread excluded", !text.contains("Jit thread pool") && !text.contains("idle_fn"), text)
+  check("full: non-containing mapping not reported", !text.contains("fault mapping:"), text)
+
+  // A fault inside a file-backed mapping names the file — the whole point of parsing
+  // memory_mappings, and what identifies which database a SIGBUS landed in.
+  val mapped = TombstoneParser.format(
+    ProtoWriter().apply {
+      varint(5, 27418)
+      varint(6, 27483)
+      message(10) {
+        varint(1, 7)
+        string(2, "SIGBUS")
+        varint(3, 2)
+        string(4, "BUS_ADRERR")
+        varint(8, 1)
+        varint(9, 0x7914b9e04000L)
+      }
+      // Three regions; only the middle one contains the fault address.
+      message(17) { varint(1, 0x7914b9d00000L); varint(2, 0x7914b9d08000L); varint(4, 1); string(7, "/other.db-shm") }
+      message(17) {
+        varint(1, 0x7914b9e00000L)
+        varint(2, 0x7914b9e08000L)
+        varint(4, 1)
+        varint(5, 1)
+        string(7, "/data/data/dev.nedaa.android/files/SQLite/nedaa.db-shm")
+      }
+      message(17) { varint(1, 0x7914b9f00000L); varint(2, 0x7914b9f08000L); varint(6, 1); string(7, "/libfoo.so") }
+    }.toByteArray()
+  ) ?: ""
+  check("mapped: names the faulting file", mapped.contains("files/SQLite/nedaa.db-shm"), mapped)
+  check("mapped: reports the range", mapped.contains("0x7914b9e00000-0x7914b9e08000"), mapped)
+  check("mapped: reports permissions", mapped.contains("rw-"), mapped)
+  check("mapped: picks the containing region", !mapped.contains("/other.db-shm") && !mapped.contains("/libfoo.so"), mapped)
+
+  // An unnamed (anonymous) region still reports, so a heap fault is not silent.
+  val anon = TombstoneParser.format(
+    ProtoWriter().apply {
+      varint(5, 1)
+      message(10) { varint(1, 11); string(2, "SIGSEGV"); varint(8, 1); varint(9, 0x5000L) }
+      message(17) { varint(1, 0x4000L); varint(2, 0x6000L); varint(4, 1); varint(5, 1) }
+    }.toByteArray()
+  ) ?: ""
+  check("anon: reports anonymous region", anon.contains("fault mapping: 0x4000-0x6000 rw- <anonymous>"), anon)
 
   // Signal only, no threads: still produces a summary.
   val signalOnly = ProtoWriter().apply {
