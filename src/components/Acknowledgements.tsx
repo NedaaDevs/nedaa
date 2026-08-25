@@ -13,7 +13,6 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { ExternalLink } from "@/components/ExternalLink";
-import { useAppStore } from "@/stores/app";
 import { CREDITS, GENERAL_CREDITS, CONTRIBUTORS } from "@/constants/Acknowledgements";
 
 // Icons
@@ -37,12 +36,8 @@ const Acknowledgements = () => {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
-  // The source credits are Qur'an-specific, so they stay hidden until the reader ships.
-  // Contributors and the contact CTA are not, and always show.
-  // TODO(quran-gate): drop the guard at 2.10.0
-  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
-  // General credits are for sources the whole app depends on, so they are never gated.
-  const visibleCredits = [...GENERAL_CREDITS, ...(quranUnlocked ? CREDITS : [])];
+  // General credits cover the whole app; CREDITS are the Qur'an source attributions.
+  const visibleCredits = [...GENERAL_CREDITS, ...CREDITS];
   const creditsCount = visibleCredits.length;
 
   // Expanded by default; collapsible so a longer list can't push the closing CTA out of reach.

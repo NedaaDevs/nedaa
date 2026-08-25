@@ -78,8 +78,6 @@ const PreferencesSettings = () => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const { locale } = useAppStore();
-  // TODO(quran-gate): remove at 2.10.0
-  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
   const {
     useWesternNumerals,
     setUseWesternNumerals,
@@ -116,8 +114,7 @@ const PreferencesSettings = () => {
     ...(isAthkarSupported(locale)
       ? [{ value: OpeningTab.ATHKAR, labelKey: "a11y.tab.athkar" }]
       : []),
-    // TODO(quran-gate): drop the condition at 2.10.0 (feature public).
-    ...(quranUnlocked ? [{ value: OpeningTab.QURAN, labelKey: "a11y.tab.quran" }] : []),
+    { value: OpeningTab.QURAN, labelKey: "a11y.tab.quran" },
     { value: OpeningTab.TOOLS, labelKey: "a11y.tab.tools" },
   ];
 
@@ -188,17 +185,13 @@ const PreferencesSettings = () => {
             onValueChange={setHapticsEnabled}
           />
 
-          {/* Only affects the Quran reader's scroll and audio controls, so it is
-              hidden until the reader is available.
-              TODO(quran-gate): drop the condition at 2.10.0 (feature public). */}
-          {quranUnlocked && (
-            <SettingsToggleRow
-              titleKey="settings.preferences.largeControls.title"
-              descriptionKey="settings.preferences.largeControls.description"
-              value={largeControls}
-              onValueChange={setLargeControls}
-            />
-          )}
+          {/* Only affects the Quran reader's scroll and audio controls. */}
+          <SettingsToggleRow
+            titleKey="settings.preferences.largeControls.title"
+            descriptionKey="settings.preferences.largeControls.description"
+            value={largeControls}
+            onValueChange={setLargeControls}
+          />
 
           <Pressable
             onPress={() => router.push("/settings/textSize")}

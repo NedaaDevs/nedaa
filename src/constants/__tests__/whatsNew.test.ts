@@ -16,8 +16,7 @@ jest.mock("expo-sqlite/kv-store", () => ({
 }));
 
 // A settled text-size offer at normal OS scale keeps that entry out of these cases.
-const LOCKED_CTX = {
-  quranUnlocked: false,
+const BASE_CTX = {
   umrahInProgress: false,
   fontScale: 1.0,
   textSizeOfferHandled: true,
@@ -25,16 +24,11 @@ const LOCKED_CTX = {
 
 describe("getUnseenEntries", () => {
   test("returns nothing when every id is seen", () => {
-    expect(getUnseenEntries([...ALL_WHATS_NEW_IDS], LOCKED_CTX)).toEqual([]);
+    expect(getUnseenEntries([...ALL_WHATS_NEW_IDS], BASE_CTX)).toEqual([]);
   });
 
-  test("hides quran entries while the gate is locked", () => {
-    const ids = getUnseenEntries([], LOCKED_CTX).map((e) => e.id);
-    expect(ids).toEqual([WhatsNewId.IMPORTANT_DAYS, WhatsNewId.UMRAH]);
-  });
-
-  test("shows quran entries first once unlocked", () => {
-    const ids = getUnseenEntries([], { ...LOCKED_CTX, quranUnlocked: true }).map((e) => e.id);
+  test("lists the quran entries first", () => {
+    const ids = getUnseenEntries([], BASE_CTX).map((e) => e.id);
     expect(ids).toEqual([
       WhatsNewId.QURAN_AUDIO,
       WhatsNewId.QURAN,
@@ -44,13 +38,13 @@ describe("getUnseenEntries", () => {
   });
 
   test("hides umrah entry when a guide session is in progress", () => {
-    const ids = getUnseenEntries([], { ...LOCKED_CTX, umrahInProgress: true }).map((e) => e.id);
-    expect(ids).toEqual([WhatsNewId.IMPORTANT_DAYS]);
+    const ids = getUnseenEntries([], { ...BASE_CTX, umrahInProgress: true }).map((e) => e.id);
+    expect(ids).toEqual([WhatsNewId.QURAN_AUDIO, WhatsNewId.QURAN, WhatsNewId.IMPORTANT_DAYS]);
   });
 
   test("filters only seen ids, keeping registry order", () => {
-    const ids = getUnseenEntries([WhatsNewId.IMPORTANT_DAYS], LOCKED_CTX).map((e) => e.id);
-    expect(ids).toEqual([WhatsNewId.UMRAH]);
+    const ids = getUnseenEntries([WhatsNewId.IMPORTANT_DAYS], BASE_CTX).map((e) => e.id);
+    expect(ids).toEqual([WhatsNewId.QURAN_AUDIO, WhatsNewId.QURAN, WhatsNewId.UMRAH]);
   });
 });
 

@@ -11,20 +11,18 @@ import { readPendingReport } from "@/utils/crashHandler";
 // user with unseen announcements. The crash-report prompt takes priority —
 // if one is pending, What's New waits for a later launch.
 export const useWhatsNew = () => {
-  const { isFirstRun, hasHydrated, quranUnlocked, dismissedFeatureCards, dismissFeatureCards } =
-    useAppStore();
+  const { isFirstRun, hasHydrated, dismissedFeatureCards, dismissFeatureCards } = useAppStore();
   const umrahInProgress = useUmrahGuideStore((s) => !!s.activeProgress);
   const textSizeOfferHandled = usePreferencesStore((s) => s.textSizeOfferHandled);
 
   const entries = useMemo(
     () =>
       getUnseenEntries(dismissedFeatureCards, {
-        quranUnlocked,
         umrahInProgress,
         fontScale: PixelRatio.getFontScale(),
         textSizeOfferHandled,
       }),
-    [dismissedFeatureCards, quranUnlocked, umrahInProgress, textSizeOfferHandled]
+    [dismissedFeatureCards, umrahInProgress, textSizeOfferHandled]
   );
 
   const shouldPresent =

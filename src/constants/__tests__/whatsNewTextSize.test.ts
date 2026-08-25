@@ -10,7 +10,6 @@ jest.mock("expo-sqlite/kv-store", () => ({
 }));
 
 const baseCtx = {
-  quranUnlocked: false,
   umrahInProgress: false,
   fontScale: 1.0,
   textSizeOfferHandled: false,

@@ -1,13 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  AccessibilityInfo,
-  Alert,
-  AppState,
-  Linking,
-  Platform,
-  ScrollView,
-  Share,
-} from "react-native";
+import { AccessibilityInfo, AppState, Linking, Platform, ScrollView, Share } from "react-native";
 import Animated, {
   SharedValue,
   useSharedValue,
@@ -78,11 +70,6 @@ import { PlatformType } from "@/enums/app";
 const THANK_YOU_DURATION = 2000;
 const FADE_MS = 200;
 
-// TODO(quran-gate): remove at 2.10.0
-const QURAN_UNLOCK_TAP_COUNT = 5;
-// TODO(quran-gate): remove at 2.10.0
-const QURAN_UNLOCK_TAP_TIMEOUT_MS = 3000;
-
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -91,31 +78,6 @@ const SettingsScreen = () => {
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const [alarmAvailable, setAlarmAvailable] = useState(false);
   const hapticMedium = useHaptic("medium");
-
-  // TODO(quran-gate): remove at 2.10.0
-  const setQuranUnlocked = useAppStore((s) => s.setQuranUnlocked);
-  // TODO(quran-gate): remove at 2.10.0
-  const hapticSuccess = useHaptic("success");
-  // TODO(quran-gate): remove at 2.10.0
-  const quranTapCountRef = useRef(0);
-  // TODO(quran-gate): remove at 2.10.0
-  const quranLastTapRef = useRef(0);
-  // TODO(quran-gate): remove at 2.10.0
-  const handleQuranUnlockTap = useCallback(() => {
-    const now = Date.now();
-    if (now - quranLastTapRef.current > QURAN_UNLOCK_TAP_TIMEOUT_MS) {
-      quranTapCountRef.current = 0;
-    }
-    quranLastTapRef.current = now;
-    quranTapCountRef.current += 1;
-
-    if (quranTapCountRef.current >= QURAN_UNLOCK_TAP_COUNT) {
-      quranTapCountRef.current = 0;
-      hapticSuccess();
-      setQuranUnlocked(true);
-      Alert.alert(t("settings.quranUnlocked.title"), t("settings.quranUnlocked.body"));
-    }
-  }, [hapticSuccess, setQuranUnlocked, t]);
 
   const [rateThanked, setRateThanked] = useState(false);
   const [shareThanked, setShareThanked] = useState(false);
@@ -224,8 +186,7 @@ const SettingsScreen = () => {
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {/* TODO(quran-gate): onTitlePress unlock — remove at 2.10.0 */}
-        <TopBar title="settings.title" backOnClick onTitlePress={handleQuranUnlockTap} />
+        <TopBar title="settings.title" backOnClick />
 
         {/* Language */}
         <SettingsItem
@@ -324,8 +285,6 @@ const SettingsScreen = () => {
         {/* Help */}
         <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
 
-        {/* Contributors + contact CTA are always shown; the Qur'an source credits inside
-            are gated on quranUnlocked until the reader ships. */}
         <SettingsItem
           name={t("settings.acknowledgements.title")}
           path={"/settings/acknowledgements" as any}

@@ -43,8 +43,6 @@ let openingTabApplied = false;
 
 const TabsLayout = () => {
   const { locale, mode } = useAppStore();
-  // TODO(quran-gate): remove at 2.10.0
-  const quranUnlocked = useAppStore((s) => s.quranUnlocked);
   // The immersive reader owns the whole screen — the global Listen mini-player
   // would overlay the page and disrupt reading, so suppress it there.
   const readerActive = useQuranStore((s) => s.readerActive);
@@ -53,12 +51,10 @@ const TabsLayout = () => {
   const insets = useSafeAreaInsets();
   const textScale = useTextScale();
 
-  // TODO(quran-gate): remove at 2.10.0
-  // Warm the content DB at startup, but ONLY when Quran is unlocked — so the
-  // reader opens without a loading flash and locked users do no Quran work.
+  // Warm the content DB at startup so the reader opens without a loading flash.
   useEffect(() => {
-    if (quranUnlocked) void QuranContentDB.openQuranDb();
-  }, [quranUnlocked]);
+    void QuranContentDB.openQuranDb();
+  }, []);
 
   // Land on the user's chosen tab. The preference is persisted, so wait for
   // rehydration or the stored choice is missed on a cold start.
@@ -71,10 +67,9 @@ const TabsLayout = () => {
 
       const tab = usePreferencesStore.getState().openingTab;
       if (tab === OpeningTab.HOME) return;
-      // A tab can become unreachable after it was chosen — the locale changed,
-      // or Quran was re-locked. Fall back to home rather than a hidden route.
+      // A tab can become unreachable after it was chosen — the locale no longer
+      // supports it. Fall back to home rather than a hidden route.
       if (tab === OpeningTab.ATHKAR && !isAthkarSupported(locale)) return;
-      if (tab === OpeningTab.QURAN && !quranUnlocked) return;
 
       router.replace(OPENING_TAB_ROUTE[tab]);
     };
@@ -84,7 +79,7 @@ const TabsLayout = () => {
       return;
     }
     return usePreferencesStore.persist.onFinishHydration(apply);
-  }, [locale, quranUnlocked]);
+  }, [locale]);
 
   return (
     <Tabs
@@ -141,8 +136,6 @@ const TabsLayout = () => {
         name="quran"
         options={{
           title: t("a11y.tab.quran"),
-          // TODO(quran-gate): remove at 2.10.0
-          href: quranUnlocked ? "/(tabs)/quran" : null,
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
           tabBarStyle: { display: "none" },
         }}

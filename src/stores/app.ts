@@ -59,8 +59,6 @@ export const useAppStore = create<AppState>()(
           showLoadingOverlay: false,
           hijriDaysOffset: 0,
           dismissedFeatureCards: [],
-          // TODO(quran-gate): remove at 2.10.0
-          quranUnlocked: false,
 
           setIsFirstRun(isFirstRun: boolean) {
             // Completing first-run seeds every current feature card as dismissed:
@@ -101,11 +99,6 @@ export const useAppStore = create<AppState>()(
               dismissedFeatureCards: [...new Set([...state.dismissedFeatureCards, ...ids])],
             }));
           },
-
-          // TODO(quran-gate): remove at 2.10.0
-          setQuranUnlocked: (on: boolean) => {
-            set({ quranUnlocked: on });
-          },
         }),
         {
           name: "app-storage",
@@ -116,8 +109,6 @@ export const useAppStore = create<AppState>()(
             mode: state.mode,
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
-            // TODO(quran-gate): remove at 2.10.0
-            quranUnlocked: state.quranUnlocked,
             // Exclude loading state from persistence
           }),
           merge: (persisted, current) => {
@@ -125,8 +116,6 @@ export const useAppStore = create<AppState>()(
             return {
               ...current,
               ...saved,
-              // TODO(quran-gate): remove at 2.10.0
-              quranUnlocked: typeof saved.quranUnlocked === "boolean" ? saved.quranUnlocked : false,
             };
           },
           onRehydrateStorage: () => (state, error) => {

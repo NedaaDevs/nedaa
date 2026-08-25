@@ -26,7 +26,6 @@ export type WhatsNewId = (typeof WhatsNewId)[keyof typeof WhatsNewId];
 export const ALL_WHATS_NEW_IDS: WhatsNewId[] = Object.values(WhatsNewId);
 
 export type WhatsNewGateContext = {
-  quranUnlocked: boolean;
   umrahInProgress: boolean;
   fontScale: number;
   textSizeOfferHandled: boolean;
@@ -68,8 +67,6 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
     icon: Headphones,
     titleKey: "quranAudio.featureCard.title",
     descriptionKey: "quranAudio.featureCard.description",
-    // TODO(quran-gate): drop the gate at 2.10.0 (feature public).
-    gate: (ctx) => ctx.quranUnlocked,
     action: { type: "navigate", route: "/quran-listen", ctaKey: "quranAudio.featureCard.explore" },
   },
   {
@@ -77,8 +74,6 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
     icon: BookOpen,
     titleKey: "quran.featureCard.title",
     descriptionKey: "quran.featureCard.description",
-    // TODO(quran-gate): drop the gate at 2.10.0 (feature public).
-    gate: (ctx) => ctx.quranUnlocked,
     action: { type: "navigate", route: "/(tabs)/quran", ctaKey: "quran.featureCard.explore" },
   },
   {

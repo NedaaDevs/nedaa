@@ -29,8 +29,6 @@ type Props = {
   rightIconLabel?: string;
   // A tappable right-side action (works alongside backOnClick, unlike `href`).
   onRightPress?: () => void;
-  // TODO(quran-gate): remove at 2.10.0
-  onTitlePress?: () => void;
 };
 
 const TopBar = ({
@@ -41,7 +39,6 @@ const TopBar = ({
   preferHref = false,
   rightIconLabel,
   onRightPress,
-  onTitlePress,
 }: Props) => {
   const router = useRouter();
   const { t } = useTranslation();
@@ -79,18 +76,9 @@ const TopBar = ({
             </Pressable>
           )}
 
-          {onTitlePress ? (
-            // TODO(quran-gate): remove onTitlePress wrapper at 2.10.0
-            <Pressable onPress={onTitlePress} accessible={false} flexShrink={1}>
-              <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
-                {t(title)}
-              </Text>
-            </Pressable>
-          ) : (
-            <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
-              {t(title)}
-            </Text>
-          )}
+          <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
+            {t(title)}
+          </Text>
         </HStack>
 
         {href && !backOnClick && (
