@@ -327,30 +327,6 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   return quranDbPromise;
 };
 
-// Wipe the installed content DB (+ version marker / WAL / SHM) and drop the
-// in-memory connection. Does not re-download — the next openQuranDb() re-fetches
-// behind the reader's DB gate.
-// TODO(quran-gate): remove with the gating scaffolding at 2.10.0.
-const wipeContentDb = async (): Promise<void> => {
-  if (quranDbPromise) {
-    try {
-      const db = await quranDbPromise;
-      await db.closeAsync();
-    } catch {
-      // already closed or failed to open — we're deleting it regardless
-    }
-    quranDbPromise = null;
-  }
-  quranDbReady = false;
-  clearPageReadCache();
-
-  const dir = await getDirectory();
-  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
-  const targetDir = new Directory(dirUri);
-  removeContentFiles(targetDir, CONTENT_DB_FILES);
-  log.i("Reset", "Wiped installed content DB");
-};
-
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
   if (!boundsDbMap.has(version)) {
     boundsDbMap.set(
@@ -863,7 +839,6 @@ const getAyahTajweed = async (
 export const QuranContentDB = {
   openQuranDb,
   isContentDbReady,
-  wipeContentDb,
   getMutashabihatGroupForAyah,
   getMutashabihatKeysForPage,
   getAyahTajweed,
