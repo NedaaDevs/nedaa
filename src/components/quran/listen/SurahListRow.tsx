@@ -10,6 +10,7 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
+import { RevelationPlace } from "@/enums/quran";
 import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatFileSizeLocale, formatNumberToLocale } from "@/utils/number";
 
@@ -22,6 +23,8 @@ type Props = {
   isPaused: boolean; // interrupted transfer with a saved resume point
   downloadProgress?: number; // 0..1 while downloading
   estimatedBytes?: number; // download size in bytes
+  ayahCount?: number; // from the content DB, absent until it loads
+  revelationPlace?: RevelationPlace;
   onPress: (surah: number) => void;
   onDownload: (surah: number) => void; // fresh download OR resume a paused one
   onPause: (surah: number) => void;
@@ -55,8 +58,8 @@ const DownloadRing = ({ fraction, showPause }: { fraction: number; showPause?: b
           strokeDasharray={`${CIRC}`}
           strokeDashoffset={CIRC * (1 - Math.min(1, Math.max(0, fraction)))}
           strokeLinecap="round"
-          rotation={-90}
-          origin={`${RING / 2}, ${RING / 2}`}
+          // Start the arc at twelve o'clock, rotating about the ring's centre.
+          transform={`rotate(-90, ${RING / 2}, ${RING / 2})`}
         />
       </Svg>
       {showPause ? <Icon as={Pause} size="xs" color="$accentPrimary" /> : null}
@@ -73,6 +76,8 @@ const SurahListRowBase = ({
   isPaused,
   downloadProgress,
   estimatedBytes,
+  ayahCount,
+  revelationPlace,
   onPress,
   onDownload,
   onPause,
@@ -82,11 +87,21 @@ const SurahListRowBase = ({
   const scriptFont = metadataFontFamily();
   const name = localizedSurahName(surah);
 
-  // Size comes from the audio manifest, so Listen needs no content DB.
-  // TODO(quran-gate): at 2.10.0 the content DB is always installed — restore the
-  // "<n> ayahs · Makki/Madani" prefix here, read from QuranContentDB.
+  // Ayah count and revelation place come from the content DB and arrive a frame or two
+  // after the list; the download size comes from the audio manifest and is there at once.
+  // Whatever has landed is shown, so the row never waits on the slower source.
   const metaLine =
-    estimatedBytes && estimatedBytes > 0 ? formatFileSizeLocale(estimatedBytes, t) : null;
+    [
+      ayahCount ? t("quran.surah.ayahCount", { n: formatNumberToLocale(String(ayahCount)) }) : null,
+      revelationPlace
+        ? revelationPlace === RevelationPlace.MAKKAH
+          ? t("quran.surah.makki")
+          : t("quran.surah.madani")
+        : null,
+      estimatedBytes && estimatedBytes > 0 ? formatFileSizeLocale(estimatedBytes, t) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || null;
 
   return (
     <Pressable

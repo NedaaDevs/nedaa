@@ -9,6 +9,8 @@ import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import TopBar from "@/components/TopBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
+import { QuranContentDB } from "@/services/quran-content-db";
+import type { SurahMeta } from "@/types/quran";
 import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
 import { SurahListRow } from "@/components/quran/listen/SurahListRow";
 import { DownloadsDrawer } from "@/components/quran/listen/DownloadsDrawer";
@@ -41,6 +43,7 @@ const QuranListenSurahsScreen = () => {
   const listenRecitationId = useQuranAudioStore((s) => s.listenRecitationId);
   const [reciterName, setReciterName] = useState<string | null>(null);
   const [recitation, setRecitation] = useState<QuranRecitation | null>(null);
+  const [surahMeta, setSurahMeta] = useState<Map<number, SurahMeta>>(new Map());
   const [query, setQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -79,6 +82,20 @@ const QuranListenSurahsScreen = () => {
 
   useEffect(() => {
     void quranAudioPlayer.warmUp();
+  }, []);
+
+  // Ayah counts and revelation places for every row, read once. A failure leaves the map
+  // empty and the rows fall back to the download size alone.
+  useEffect(() => {
+    let alive = true;
+    QuranContentDB.getAllSurahs()
+      .then((all) => {
+        if (alive) setSurahMeta(new Map(all.map((m) => [m.number, m])));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -171,6 +188,8 @@ const QuranListenSurahsScreen = () => {
             isPaused={pausedSet.has(surah)}
             downloadProgress={progressBySurah[surah]}
             estimatedBytes={sizeOf(surah)}
+            ayahCount={surahMeta.get(surah)?.ayahCount}
+            revelationPlace={surahMeta.get(surah)?.revelationPlace}
             onPress={onPress}
             onDownload={onDownload}
             onPause={onPause}
