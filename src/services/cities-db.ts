@@ -113,18 +113,45 @@ export const getInstalledTier = (): CitiesTierValue => activeTier(isFullPackInst
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 let openedTier: CitiesTierValue | null = null;
 
-/** Drop the open connection so the next query reopens against the current tier. */
-export const invalidateCitiesDb = (): void => {
+// Detaches the cached connection so the next query reopens. Synchronous, so a caller that
+// only needs a reopen never races a half-cleared cache.
+const detachCitiesDb = (): Promise<SQLite.SQLiteDatabase> | null => {
   const previous = dbPromise;
   dbPromise = null;
   openedTier = null;
-  void previous?.then((db) => db.closeAsync()).catch(() => {});
+  return previous;
+};
+
+/**
+ * Drops the open connection and resolves true once the files are safe to replace.
+ * Callers that delete or overwrite the database must await this and honour `false`:
+ * unlinking a file whose WAL index is still mapped raises SIGBUS in the next reader.
+ */
+export const invalidateCitiesDb = async (): Promise<boolean> => {
+  const previous = detachCitiesDb();
+  if (!previous) return true;
+  let db: SQLite.SQLiteDatabase;
+  try {
+    db = await previous;
+  } catch {
+    // The open itself failed, so nothing holds the file.
+    return true;
+  }
+  try {
+    await db.closeAsync();
+    return true;
+  } catch (error) {
+    log.e("CitiesDB", "closeAsync failed — file replacement unsafe", error as Error);
+    return false;
+  }
 };
 
 const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
   const tier = getInstalledTier();
-  // A finished download changes the tier underneath an open connection.
-  if (dbPromise && openedTier !== tier) invalidateCitiesDb();
+  // A finished download changes the tier underneath an open connection. No file is
+  // replaced on this path, so the close can settle in the background; the detach is
+  // synchronous, so the reopen below never sees the old connection.
+  if (dbPromise && openedTier !== tier) void invalidateCitiesDb();
 
   if (!dbPromise) {
     openedTier = tier;

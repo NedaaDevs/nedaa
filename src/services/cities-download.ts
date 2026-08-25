@@ -11,6 +11,7 @@ import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 
 // Services
+import { invalidateCitiesDb } from "@/services/cities-db";
 import { citiesPackUrl } from "@/services/citiesDbStrategy";
 
 // Utils
@@ -74,6 +75,13 @@ export const downloadCitiesPack = async ({
   }
 
   const target = new File(getDbDirectory(), CITIES_DB_NAME);
+  // The reader has to let go before the file is replaced. Deleting a database whose WAL
+  // index is still mapped raises SIGBUS in the next reader of that mapping, so a close
+  // that fails leaves the staged download in place for the next launch to install.
+  if (!(await invalidateCitiesDb())) {
+    log.w("CitiesDB", "cities.db still open — install deferred");
+    return;
+  }
   // A stale database and its write-ahead sidecars would otherwise shadow the new file.
   if (target.exists) target.delete();
   for (const suffix of ["-wal", "-shm"]) {

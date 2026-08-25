@@ -46,8 +46,10 @@ export const useCitiesPackStore = create<CitiesPackStore>()(
             onProgress: ({ receivedBytes, totalBytes }) => set({ receivedBytes, totalBytes }),
           });
 
-          // The open connection still points at the seed until it is dropped.
-          invalidateCitiesDb();
+          // The open connection still points at the seed until it is dropped. The
+          // download already released it before installing; this covers the case where
+          // it was reopened while the download ran.
+          await invalidateCitiesDb();
           set({ isInstalled: isFullPackInstalled(), isDownloading: false });
         } catch (error) {
           const message = error instanceof Error ? error.message : "Cities pack download failed";
