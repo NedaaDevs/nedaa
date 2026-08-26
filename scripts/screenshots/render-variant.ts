@@ -29,6 +29,7 @@ export type RenderInput = {
   locale: "en" | "ar";
   device: DeviceSpec;
   variant: Variant;
+  theme?: "light" | "dark";
 };
 
 type BilingualCopy = {
@@ -87,6 +88,10 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
       headlineLine1: "The mushaf,",
       headlineLine2Italic: "page by page.",
     },
+    "quran-dark": {
+      headlineLine1: "Night reading,",
+      headlineLine2Italic: "easy on the eyes.",
+    },
     "athkar-with-audio": {
       headlineLine1: "Morning & evening athkar, with sound.",
       headlineLine2Italic: "Hisn al-Muslim or your own.",
@@ -129,6 +134,10 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
     quran: {
       headlineLine1: "المصحف،",
       headlineLine2Italic: "صفحةً صفحة.",
+    },
+    "quran-dark": {
+      headlineLine1: "قراءة ليلية،",
+      headlineLine2Italic: "مريحة للعين.",
     },
     "athkar-with-audio": {
       headlineLine1: "أذكار الصباح والمساء، بالصوت.",
@@ -859,7 +868,12 @@ export async function renderVariant(input: RenderInput): Promise<Buffer> {
       input.device.platform === "ios"
         ? HERO_COPY_IOS_OVERRIDE[input.locale]?.[input.screen]
         : undefined;
-    const copy = override ?? HERO_COPY[input.locale][input.screen];
+    // A screen may appear twice in one plan under different themes, so prefer a
+    // `<screen>-<theme>` entry and fall back to the screen's default copy.
+    const themed = input.theme
+      ? HERO_COPY[input.locale][`${input.screen}-${input.theme}`]
+      : undefined;
+    const copy = override ?? themed ?? HERO_COPY[input.locale][input.screen];
     if (!copy) {
       throw new Error(`No hero copy for ${input.locale}/${input.screen}. Add it to HERO_COPY.`);
     }

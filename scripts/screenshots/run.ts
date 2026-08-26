@@ -44,7 +44,8 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..", "..");
 const RAW_DIR = path.join(PROJECT_ROOT, "tmp", "screenshots-raw");
 const OUT_DIR = path.join(PROJECT_ROOT, "fastlane", "screenshots");
-const WEBSITE_DIR = path.join(PROJECT_ROOT, "website-v2", "src", "assets", "screenshots");
+// The site is a sibling repo (Astro), not a directory inside the app.
+const WEBSITE_DIR = path.join(PROJECT_ROOT, "..", "website", "src", "assets", "screenshots");
 
 function sh(cmd: string, args: string[]): void {
   execFileSync(cmd, args, { stdio: "inherit" });
@@ -94,8 +95,25 @@ function getBootedDeviceId(): string {
 function getBootedAndroidSerial(): string {
   const output = shOut("adb", ["devices"]);
   // `adb devices` prints a header line then `<serial>\t<state>` rows.
-  for (const line of output.split("\n").slice(1)) {
-    const [serial, state] = line.trim().split(/\s+/);
+  const rows = output
+    .split("\n")
+    .slice(1)
+    .map((line) => line.trim().split(/\s+/))
+    .filter(([serial, state]) => serial && state === "device");
+  // With more than one emulator up, picking the first row silently targets
+  // whichever adb happened to list first. ANDROID_SERIAL names the intended one.
+  const wanted = process.env.ANDROID_SERIAL;
+  if (wanted) {
+    const match = rows.find(([serial]) => serial === wanted);
+    if (!match) {
+      throw new Error(
+        `ANDROID_SERIAL=${wanted} is not an attached device. Attached: ${rows.map(([s]) => s).join(", ") || "none"}`
+      );
+    }
+    console.log(`[verify] using android device from ANDROID_SERIAL: ${wanted}`);
+    return wanted;
+  }
+  for (const [serial, state] of rows) {
     if (serial && state === "device") {
       console.log(`[verify] using running android device: ${serial}`);
       return serial;
@@ -239,6 +257,7 @@ async function buildCell(opts: {
     device,
     locale,
     variant: "hero",
+    theme: cell.theme,
   });
 }
 

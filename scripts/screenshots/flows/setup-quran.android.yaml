@@ -1,4 +1,4 @@
-appId: dev.nedaa.app
+appId: dev.nedaa.android
 ---
 # One-time capture setup: install a mushaf edition and clear the first-open
 # walkthrough so the `quran` scene renders a bare reader page.
@@ -13,6 +13,18 @@ appId: dev.nedaa.app
 # `runFlow when visible` checks once — without this every step silently skips.
 - waitForAnimationToEnd:
     timeout: 15000
+# Play Services' Location Accuracy prompt covers the app on a fresh install and
+# intercepts every tap beneath it. Declining is enough — screenshot mode seeds
+# its own location.
+- runFlow:
+    when:
+      visible:
+        text: ".*No thanks.*"
+    commands:
+      - tapOn:
+          text: ".*No thanks.*"
+      - waitForAnimationToEnd:
+          timeout: 5000
 - runFlow:
     when:
       visible:
@@ -21,16 +33,15 @@ appId: dev.nedaa.app
       - tapOn:
           text: "Continue"
 # Conditional: the reader hides the tab bar while it is open, so on a relaunch
-# straight into the reader there is no tab to tap. Selectors are wildcarded
-# because Maestro full-matches the `text` regex against the accessibility label,
-# and the tab reads "Quran, tab, 3 of 7".
+# straight into the reader there is no tab to tap. Android exposes the tab as a
+# plain "Quran" label, unlike iOS's "Quran, tab, 3 of 7".
 - runFlow:
     when:
       visible:
-        text: ".*Quran, tab.*"
+        text: "Quran"
     commands:
       - tapOn:
-          text: ".*Quran, tab.*"
+          text: "Quran"
       - waitForAnimationToEnd:
           timeout: 10000
 # V2 (Madinah Mushaf 1420) is the default edition — first in VERSION_ORDER — so
