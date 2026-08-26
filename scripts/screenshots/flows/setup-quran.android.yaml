@@ -42,8 +42,10 @@ appId: dev.nedaa.android
     commands:
       - tapOn:
           text: "Quran"
+      # Opening the tab first fetches the content DB behind a loading gate; the
+      # spinner counts as an animation, so this waits for the gate to resolve.
       - waitForAnimationToEnd:
-          timeout: 10000
+          timeout: 60000
 # V2 (Madinah Mushaf 1420) is the default edition — first in VERSION_ORDER — so
 # the shot shows what a user actually lands on. ~109MB over the sim's network.
 - runFlow:
@@ -51,10 +53,13 @@ appId: dev.nedaa.android
       visible:
         text: ".*Choose Your Mushaf.*"
     commands:
+      # Exact title: the wildcard form also matches the CTA below, which reads
+      # "Download Madinah Mushaf 1420 · 114 MB", and the taps then land on the
+      # wrong element without failing.
       - tapOn:
-          text: ".*Madinah Mushaf 1420.*"
+          text: "Madinah Mushaf 1420"
       - tapOn:
-          text: ".*Download.*"
+          text: "Download Madinah Mushaf 1420.*"
       - extendedWaitUntil:
           visible:
             text: ".*Start Reading.*"
