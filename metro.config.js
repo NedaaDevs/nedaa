@@ -28,7 +28,9 @@ const configWithMinifier = {
         warnings: false,
         passes: 2,
       },
-      format: {
+      // metro-minify-terser always passes `output`, and terser rejects a config that
+      // carries both `output` and `format`.
+      output: {
         comments: false,
       },
     },
