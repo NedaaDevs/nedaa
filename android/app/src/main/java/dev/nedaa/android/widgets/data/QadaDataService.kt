@@ -38,7 +38,9 @@ class QadaDataService(private val context: Context) {
         return try {
             DatabaseProvider.getNedaaDatabase(context)?.use { db ->
                 val cursor = db.rawQuery(
-                    "SELECT total_missed, total_completed FROM $QADA_FASTS_TABLE LIMIT 1",
+                    // Every write targets `id = 1` and the schema does not constrain the
+                    // table to one row, so name the row rather than taking the first.
+                    "SELECT total_missed, total_completed FROM $QADA_FASTS_TABLE WHERE id = 1",
                     null
                 )
 

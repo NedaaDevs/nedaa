@@ -55,8 +55,12 @@ export type QadaSettings = z.infer<typeof QadaSettingsSchema>;
 // sharedDb.run() without re-entering the (non-reentrant) shared lock.
 // ---------------------------------------------------------------------------
 
+// Row 1 is the singleton these tables hold; the schema does not constrain it, and every
+// write targets `id = 1`, so the reads name it too rather than taking whatever row comes first.
 const getQadaFastWith = async (db: SQLiteDatabase): Promise<QadaFast | null> => {
-  const result = await db.getFirstAsync<QadaFast>(`SELECT * FROM ${QADA_FASTS_TABLE} LIMIT 1;`);
+  const result = await db.getFirstAsync<QadaFast>(
+    `SELECT * FROM ${QADA_FASTS_TABLE} WHERE id = 1;`
+  );
   return result || null;
 };
 
@@ -74,7 +78,7 @@ const updateQadaFastWith = async (
 
 const getSettingsWith = async (db: SQLiteDatabase): Promise<QadaSettings | null> => {
   const result = await db.getFirstAsync<QadaSettings>(
-    `SELECT * FROM ${QADA_SETTINGS_TABLE} LIMIT 1;`
+    `SELECT * FROM ${QADA_SETTINGS_TABLE} WHERE id = 1;`
   );
   return result || null;
 };
