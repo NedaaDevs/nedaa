@@ -48,6 +48,7 @@ Available for iOS and Android, including Huawei devices without Google services.
 - A Fajr alarm that behaves like a real alarm instead of a notification, with an optional wake-up challenge.
 - Home screen and lock screen widgets, including Suhoor and Iftar widgets during Ramadan.
 - Morning and evening Athkar with audio, and you can add your own.
+- A Mushaf reader with recitation audio, in your choice of edition or as plain text, with search, bookmarks, highlights, and word-by-word read-along.
 - Qibla compass.
 - Hijri date, and a Hijri to Gregorian converter.
 - Qada tracker for missed Ramadan fasts.
@@ -55,8 +56,6 @@ Available for iOS and Android, including Huawei devices without Google services.
 - Countdowns to Ramadan, both Eids, Arafah, Ashura, and the Hijri new year.
 - Arabic, English, Malay, and Urdu, with full RTL. [Want to see the app in your language?](#translation)
 - Works offline once your prayer times are synced.
-
-A Mushaf reader with recitation audio is in beta testing and ships soon.
 
 ## Built with
 
