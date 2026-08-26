@@ -22,6 +22,12 @@
         "BUILD_VARIANT": "hms"
       }
     },
+    "production-hms-apk": {
+      "extends": "production-apk",
+      "env": {
+        "BUILD_VARIANT": "hms"
+      }
+    },
     "production-apk": {
       "extends": "production",
       "autoIncrement": false,
