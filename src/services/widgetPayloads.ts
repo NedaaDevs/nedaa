@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 import { Platform } from "react-native";
 
 import { PlatformType } from "@/enums/app";
-import { HijriNative } from "@/utils/date";
+import { HijriNative, dateToInt, timeZonedNow } from "@/utils/date";
 import { upcomingImportantDays } from "@/utils/importantDays";
 import { sharedDb } from "@/services/db";
 import i18n from "@/localization/i18n";
@@ -75,9 +75,18 @@ export const syncWidgetPayloads = async (): Promise<void> => {
       await db.execAsync(
         `CREATE TABLE IF NOT EXISTS widget_important_days
            (id TEXT PRIMARY KEY, name TEXT, hijriLabel TEXT, dateISO TEXT, sort INTEGER);
-         CREATE TABLE IF NOT EXISTS widget_hijri_today (id INTEGER PRIMARY KEY CHECK (id = 1), hijriLabel TEXT);
-         CREATE TABLE IF NOT EXISTS widget_config (id INTEGER PRIMARY KEY CHECK (id = 1), locale TEXT, useWesternNumerals INTEGER);`
+         CREATE TABLE IF NOT EXISTS widget_hijri_today (id INTEGER PRIMARY KEY CHECK (id = 1), hijriLabel TEXT, dateInt INTEGER);
+         CREATE TABLE IF NOT EXISTS widget_config (id INTEGER PRIMARY KEY CHECK (id = 1), locale TEXT, useWesternNumerals INTEGER, timezone TEXT, hijriDaysOffset INTEGER);`
       );
+      // Columns added after the tables shipped. ALTER throws when the column is already
+      // there, which is the normal case, so each one is attempted independently.
+      for (const alter of [
+        `ALTER TABLE widget_hijri_today ADD COLUMN dateInt INTEGER`,
+        `ALTER TABLE widget_config ADD COLUMN timezone TEXT`,
+        `ALTER TABLE widget_config ADD COLUMN hijriDaysOffset INTEGER`,
+      ]) {
+        await db.execAsync(alter).catch(() => {});
+      }
       await db.withTransactionAsync(async () => {
         await db.runAsync(`DELETE FROM widget_important_days`);
         for (let i = 0; i < days.length; i++) {
@@ -87,15 +96,19 @@ export const syncWidgetPayloads = async (): Promise<void> => {
             [d.id, d.name, d.hijriLabel, d.dateISO, i]
           );
         }
+        // The Gregorian date the label was computed for, so a widget waking after
+        // midnight can tell the stored label is yesterday's and recompute instead.
         await db.runAsync(
-          `INSERT OR REPLACE INTO widget_hijri_today (id, hijriLabel) VALUES (1, ?)`,
-          [h.hijriLabel]
+          `INSERT OR REPLACE INTO widget_hijri_today (id, hijriLabel, dateInt) VALUES (1, ?, ?)`,
+          [h.hijriLabel, dateToInt(timeZonedNow(timezone))]
         );
         // Locale + numeral preference so Kotlin-rendered numbers/dates match the
         // app's chosen language (not the device locale).
+        // Timezone and Hijri offset travel with the config so widgets key their "today"
+        // off the user's location the way the app does, not off the device zone.
         await db.runAsync(
-          `INSERT OR REPLACE INTO widget_config (id, locale, useWesternNumerals) VALUES (1, ?, ?)`,
-          [locale, useWesternNumerals]
+          `INSERT OR REPLACE INTO widget_config (id, locale, useWesternNumerals, timezone, hijriDaysOffset) VALUES (1, ?, ?, ?, ?)`,
+          [locale, useWesternNumerals, timezone, hijriDaysOffset]
         );
       });
     });

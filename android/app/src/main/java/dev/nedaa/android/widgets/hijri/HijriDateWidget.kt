@@ -42,6 +42,7 @@ import dev.nedaa.android.widgets.common.WidgetBoundaries
 import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.common.WidgetSizes
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -55,12 +56,26 @@ class HijriTodayService(private val context: Context) {
         private const val TABLE_NAME = "widget_hijri_today"
     }
 
-    fun get(): String? {
+    /**
+     * The stored label, or null when it was computed for a different day.
+     *
+     * JS writes this row only when the app runs. A widget waking after midnight would
+     * otherwise show yesterday's Hijri date beside today's Gregorian one, so the day it was
+     * written for is checked and a stale row falls through to the on-device computation.
+     */
+    fun get(todayDateInt: Int): String? {
         return try {
             DatabaseProvider.getNedaaDatabase(context)?.use { db ->
-                val cursor = db.rawQuery("SELECT hijriLabel FROM $TABLE_NAME LIMIT 1", null)
+                val cursor = db.rawQuery(
+                    "SELECT hijriLabel, dateInt FROM $TABLE_NAME WHERE id = 1",
+                    null
+                )
                 cursor.use {
-                    if (it.moveToFirst()) it.getString(0) else null
+                    if (!it.moveToFirst()) return@use null
+                    // Written before the column existed: trust it rather than losing the
+                    // localized label until the next sync.
+                    if (!it.isNull(1) && it.getInt(1) != todayDateInt) return@use null
+                    it.getString(0)
                 }
             }
         } catch (e: Exception) {
@@ -74,12 +89,15 @@ class HijriTodayService(private val context: Context) {
  * Umm al-Qura Hijri date, computed on-device.
  *
  * This is the ONE sanctioned Kotlin Hijri computation in the widget code — only used
- * when the app hasn't written `widget_hijri_today` yet (e.g. first install before the
- * next background refresh). Must stay Umm al-Qura to match the app's hijri-native source.
+ * when the app hasn't written `widget_hijri_today` yet, or when what it wrote is for a
+ * previous day. Must stay Umm al-Qura to match the app's hijri-native source, and applies
+ * the user's day offset the way that source does.
  */
-private fun computeHijriLabelFallback(locale: Locale): String {
-    val calendar = IslamicCalendar().apply {
+private fun computeHijriLabelFallback(locale: Locale, zone: TimeZone, daysOffset: Int): String {
+    // ICU keeps its own TimeZone type, so the java.util zone is converted by id.
+    val calendar = IslamicCalendar(android.icu.util.TimeZone.getTimeZone(zone.id)).apply {
         calculationType = IslamicCalendar.CalculationType.ISLAMIC_UMALQURA
+        if (daysOffset != 0) add(IslamicCalendar.DAY_OF_MONTH, daysOffset)
     }
     val day = calendar.get(IslamicCalendar.DAY_OF_MONTH)
     val year = calendar.get(IslamicCalendar.YEAR)
@@ -100,10 +118,18 @@ class HijriDateWidget : GlanceAppWidget() {
             // hijriLabel from the DB is a JS-computed payload already localized to the app's
             // locale/numerals; the on-device fallback is the only Kotlin-computed case that
             // needs config applied here.
-            val hijriLabel = HijriTodayService(context).get()
-                ?: config.localizeNumber(computeHijriLabelFallback(config.locale))
+            val todayDateInt = Calendar.getInstance(config.timezone).let {
+                it.get(Calendar.YEAR) * 10000 + (it.get(Calendar.MONTH) + 1) * 100 +
+                    it.get(Calendar.DAY_OF_MONTH)
+            }
+            val hijriLabel = HijriTodayService(context).get(todayDateInt)
+                ?: config.localizeNumber(
+                    computeHijriLabelFallback(config.locale, config.timezone, config.hijriDaysOffset)
+                )
             val gregorianLabel = config.localizeNumber(
-                SimpleDateFormat("d MMM yyyy", config.locale).format(Date())
+                SimpleDateFormat("d MMM yyyy", config.locale)
+                    .apply { timeZone = config.timezone }
+                    .format(Date())
             )
 
             NedaaWidgetTheme {

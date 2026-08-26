@@ -3,6 +3,7 @@ package dev.nedaa.android.widgets.data
 import android.content.Context
 import android.util.Log
 import dev.nedaa.android.widgets.common.DatabaseProvider
+import dev.nedaa.android.widgets.common.WidgetConfig
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -142,10 +143,14 @@ class AthkarDataService(private val context: Context) {
     }
 
     /**
-     * Get today's date as YYYYMMDD integer
+     * Today as a YYYYMMDD integer, in the user's location zone.
+     *
+     * The app writes athkar day rows keyed to the location's timezone, so keying off the
+     * device zone here would query a different row than the app around midnight for anyone
+     * whose location is not their device zone.
      */
     private fun getTodayDateInt(): Int {
-        val calendar = Calendar.getInstance(TimeZone.getDefault())
+        val calendar = Calendar.getInstance(WidgetConfig.get(context).timezone)
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
         val day = calendar.get(Calendar.DAY_OF_MONTH)
