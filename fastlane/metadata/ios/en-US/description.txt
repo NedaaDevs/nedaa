@@ -1,6 +1,6 @@
 Nedaa is a free, open-source, privacy-first prayer-times and Islamic-companion app. No data collection. No ads. No accounts. No paywalls. No premium tier.
 
-Nedaa (Arabic: نداء, "the call" — a reference to the Adhan) is built around accurate prayer times, real OS-level Fajr alarms, daily Athkar, Qibla, Hijri tools, an Umrah guide, a Qada (fasting) tracker, and a Quran reader in active development.
+Nedaa (Arabic: نداء, "the call" — a reference to the Adhan) is built around accurate prayer times, real OS-level Fajr alarms, daily Athkar, Qibla, Hijri tools, an Umrah guide, a Qada (fasting) tracker, and a Quran mushaf reader with recitation audio.
 
 ACCURATE PRAYER TIMES — ANYWHERE
 • 22 calculation methods (Muslim World League, ISNA, Umm al-Qura, Karachi, Egyptian, Diyanet, JAKIM, Kemenag, Singapore MUIS, and more)
@@ -16,6 +16,15 @@ A PRAYER ALARM THAT ACTUALLY WAKES YOU
 • Bypasses Do Not Disturb and silent mode
 • Optional wake-up challenges (tap or math)
 • Custom Athan sound per alarm type
+
+READ THE QURAN
+• A full Mushaf in the edition you choose, including a tajweed-coloured one
+• A flowing Text mode with adjustable size
+• Recitation with word-by-word read-along, and per-surah downloads for offline listening
+• Search across surah names and verse text
+• Colour highlights, saved-place bookmarks, and ayah copy and share
+• A similar-verses tool for memorizers, plus a tajweed, stop-sign and sajda guide
+• Editions download on demand — nothing Quran ships inside the app
 
 DAILY ATHKAR
 • Morning and evening remembrances from the Hisn al-Muslim dataset (Sa'id ibn Ali ibn Wahaf al-Qahtani)

@@ -14,6 +14,14 @@ Nedaa (meaning "calling" in Arabic) gives you precise salah times that match you
 • Custom Athan notifications for each salah with multiple authentic Athan sounds
 • Pre-prayer reminders and Iqama time notifications
 
+📖 READ THE QURAN
+• A full Mushaf in the edition you choose, including a tajweed-coloured one
+• A flowing Text mode with adjustable size
+• Recitation with word-by-word read-along and offline per-surah downloads
+• Search across surah names and verse text
+• Colour highlights, saved-place bookmarks, and ayah copy and share
+• A similar-verses tool for memorizers, plus a tajweed and sajda guide
+
 📱 HANDY WIDGETS
 • Home screen widgets showing all prayer times or just the next prayer
 • Countdown timers to the next salah

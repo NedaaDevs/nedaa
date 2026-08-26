@@ -1,1 +1,1 @@
-azan,haji,muslim,kiblat,ramadan,doa,hijri,islam,widget,masjid,umrah,solat,iftar,sahur,zikir
+azan,haji,muslim,kiblat,ramadan,doa,hijri,islam,widget,umrah,solat,iftar,sahur,zikir,mushaf,surah

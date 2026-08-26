@@ -1,6 +1,6 @@
 Nedaa ialah aplikasi waktu solat dan teman Islami yang percuma, sumber terbuka dan mengutamakan privasi. Tiada pengumpulan data. Tiada iklan. Tiada akaun. Tiada bayaran tersembunyi. Tiada tahap premium.
 
-Nedaa (Arab: نداء, "seruan" — merujuk kepada Azan) dibina berteraskan waktu solat yang tepat, penggera Subuh sebenar peringkat sistem, Azkar harian, Kiblat, alat Hijri, panduan Umrah, penjejak Qada (puasa), dan pembaca al-Quran yang sedang dibangunkan.
+Nedaa (Arab: نداء, "seruan" — merujuk kepada Azan) dibina berteraskan waktu solat yang tepat, penggera Subuh sebenar peringkat sistem, Azkar harian, Kiblat, alat Hijri, panduan Umrah, penjejak Qada (puasa), dan pembaca mushaf al-Quran dengan audio bacaan.
 
 WAKTU SOLAT TEPAT — DI MANA SAHAJA
 • 22 kaedah pengiraan (Muslim World League, ISNA, Umm al-Qura, Karachi, Mesir, Diyanet, JAKIM, Kemenag, MUIS Singapura, dan banyak lagi)
@@ -16,6 +16,15 @@ PENGGERA SOLAT YANG BENAR-BENAR MENGEJUTKAN ANDA
 • Menembusi mod Jangan Ganggu dan mod senyap
 • Cabaran bangun pilihan (ketik atau matematik)
 • Bunyi Azan tersuai bagi setiap jenis penggera
+
+BACA AL-QURAN
+• Mushaf penuh dalam edisi pilihan anda, termasuk edisi berwarna tajwid
+• Mod Teks yang mengalir dengan saiz boleh laras
+• Bacaan dengan ikutan kata demi kata, dan muat turun setiap surah untuk luar talian
+• Carian merentas nama surah dan teks ayat
+• Sorotan warna, penanda tempat tersimpan, serta salin dan kongsi ayat
+• Alat ayat serupa untuk penghafaz, serta panduan tajwid, tanda waqaf dan sajdah
+• Edisi dimuat turun atas permintaan — tiada kandungan al-Quran dalam fail aplikasi
 
 AZKAR HARIAN
 • Zikir pagi dan petang daripada himpunan Hisnul Muslim (Sa'id bin Ali bin Wahaf al-Qahtani)

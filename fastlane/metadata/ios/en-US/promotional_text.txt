@@ -1,1 +1,1 @@
-Real OS-level Fajr alarms (Apple AlarmKit on iOS 26+). Daily Athkar from Hisn al-Muslim with audio. Step-by-step Umrah Guide. Free, open source, no ads, ever.
+The Quran reader is here. A full Mushaf in the edition you choose, a flowing Text mode, and recitation with word-by-word read-along. Free, open source, no ads, ever.
