@@ -1,0 +1,42 @@
+appId: dev.nedaa.app
+---
+# One-time capture setup: install a mushaf edition so the `quran` scene renders
+# the reader instead of the edition picker.
+#
+# Needed because shot.yaml's readiness marker is time-based — it fires ~900ms
+# after navigation whatever the screen shows, so an uninstalled edition captures
+# a picture of the picker and still reports success. Run this once per
+# simulator; the download persists in the app container across a capture run,
+# which never erases or reinstalls.
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible:
+        text: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"
+# Selectors are wildcarded because Maestro full-matches the `text` regex against
+# the accessibility label, and the tab reads "Quran, tab, 3 of 7".
+- tapOn:
+    text: ".*Quran, tab.*"
+- extendedWaitUntil:
+    visible:
+      text: ".*Choose Your Mushaf.*"
+    timeout: 60000
+# V2 (Madinah Mushaf 1420) is the default edition — first in VERSION_ORDER — so
+# the shot shows what a user actually lands on.
+- tapOn:
+    text: ".*Madinah Mushaf 1420.*"
+- tapOn:
+    text: ".*Download.*"
+# ~109MB of page images plus the bounds bundle, over the simulator's network.
+- extendedWaitUntil:
+    visible:
+      text: ".*Start Reading.*"
+    timeout: 900000
+- tapOn:
+    text: ".*Start Reading.*"
+- waitForAnimationToEnd:
+    timeout: 10000

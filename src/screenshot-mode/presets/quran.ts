@@ -10,6 +10,7 @@ export type QuranSeed = z.infer<typeof quranSeedSchema>;
 
 const raw = {
   "al-fatiha-page-1": { surah: 1, ayah: 1, page: 1 },
+  "al-kahf-page-293": { surah: 18, ayah: 1, page: 293 },
 } as const;
 
 export const quranPresets: Record<string, QuranSeed> = Object.fromEntries(

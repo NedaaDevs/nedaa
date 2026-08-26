@@ -34,7 +34,7 @@ const DEFAULT_SEED: Record<ScreenKey, string> = {
   qibla: "istanbul-pointing-141",
   privacy: "default",
   qada: "missed-3-2-4-1-2",
-  quran: "al-fatiha-page-1",
+  quran: "al-kahf-page-293",
   "athkar-with-audio": "track-2-at-1m14s",
   tools: "default",
   umrah: "sai-2-of-4",
@@ -215,7 +215,7 @@ async function buildCell(opts: {
   cell: PlanCell;
   locale: "en" | "ar";
   device: DeviceSpec;
-  getRaw: (screen: ScreenKey, locale: "en" | "ar") => Buffer;
+  getRaw: (screen: ScreenKey, locale: "en" | "ar", theme?: "light" | "dark") => Buffer;
 }): Promise<Buffer> {
   const { cell, locale, device, getRaw } = opts;
   if (cell.variant === "honest") {
@@ -223,7 +223,10 @@ async function buildCell(opts: {
   }
   if (cell.variant === "athkar") {
     return renderVariant({
-      rawPngs: { en: getRaw(cell.screen, "en"), ar: getRaw(cell.screen, "ar") },
+      rawPngs: {
+        en: getRaw(cell.screen, "en", cell.theme),
+        ar: getRaw(cell.screen, "ar", cell.theme),
+      },
       screen: cell.screen,
       device,
       locale,
@@ -231,7 +234,7 @@ async function buildCell(opts: {
     });
   }
   return renderVariant({
-    rawPng: getRaw(cell.screen, locale),
+    rawPng: getRaw(cell.screen, locale, cell.theme),
     screen: cell.screen,
     device,
     locale,
@@ -286,8 +289,8 @@ async function runAll(opts: {
 
   // With --resume, reuse a cached raw when present instead of re-capturing —
   // turns an interrupted run's expensive device I/O into an instant re-render.
-  const getRaw = (screen: ScreenKey, locale: "en" | "ar") => {
-    const cached = rawPath({ screen, locale, deviceId: device.id, platform });
+  const getRaw = (screen: ScreenKey, locale: "en" | "ar", theme?: "light" | "dark") => {
+    const cached = rawPath({ screen, locale, deviceId: device.id, platform, theme });
     if (resume && existsSync(cached)) return readFileSync(cached);
     return captureRaw({
       screen,
@@ -296,6 +299,7 @@ async function runAll(opts: {
       deviceId: device.id,
       bootedUdid,
       platform,
+      theme,
     });
   };
 
@@ -332,8 +336,8 @@ async function runRecomposite(opts: {
   const cfg = platformConfig(platform);
   const device = findDevice(opts.deviceOverride ?? cfg.deviceId);
 
-  const getRaw = (screen: ScreenKey, locale: "en" | "ar") => {
-    const file = rawPath({ screen, locale, deviceId: device.id, platform });
+  const getRaw = (screen: ScreenKey, locale: "en" | "ar", theme?: "light" | "dark") => {
+    const file = rawPath({ screen, locale, deviceId: device.id, platform, theme });
     if (!existsSync(file)) throw new Error(`Missing cached raw: ${file} — run a capture first`);
     return readFileSync(file);
   };

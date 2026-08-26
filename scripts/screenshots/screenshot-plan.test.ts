@@ -33,9 +33,31 @@ describe("screenshot plan", () => {
   test("android fits Play's eight-cell cap by dropping qibla", () => {
     expect(STORE_PLAN.android).toHaveLength(8);
     expect(STORE_PLAN.android.some((c) => c.screen === "qibla")).toBe(false);
-    // iOS has a ten-cell cap, so it keeps qibla alongside quran.
-    expect(STORE_PLAN.ios).toHaveLength(9);
+    // iOS has a ten-cell cap, so it keeps qibla alongside both quran cells.
+    expect(STORE_PLAN.ios).toHaveLength(10);
     expect(STORE_PLAN.ios.some((c) => c.screen === "qibla")).toBe(true);
+  });
+
+  test("ios pairs the reader in light and dark; android ships light only", () => {
+    const iosQuran = STORE_PLAN.ios.filter((c) => c.screen === "quran");
+    expect(iosQuran.map((c) => c.theme)).toEqual([undefined, "dark"]);
+    const androidQuran = STORE_PLAN.android.filter((c) => c.screen === "quran");
+    expect(androidQuran).toHaveLength(1);
+  });
+
+  test("validatePlan allows one screen in two themes but not the same theme twice", () => {
+    expect(() =>
+      validatePlan([
+        { idx: 1, screen: "quran", variant: "hero" },
+        { idx: 2, screen: "quran", variant: "hero", theme: "dark" },
+      ])
+    ).not.toThrow();
+    expect(() =>
+      validatePlan([
+        { idx: 1, screen: "quran", variant: "hero", theme: "dark" },
+        { idx: 2, screen: "quran", variant: "hero", theme: "dark" },
+      ])
+    ).toThrow();
   });
 
   test("fileStem zero-pads the index", () => {
