@@ -57,6 +57,20 @@ export type QadaSettings = z.infer<typeof QadaSettingsSchema>;
 
 // Row 1 is the singleton these tables hold; the schema does not constrain it, and every
 // write targets `id = 1`, so the reads name it too rather than taking whatever row comes first.
+// Completing days mutates the original `added` entry — a partial completion only
+// decrements its count — so the entry itself never records when the days were made up.
+// This ledger row is that record, and it is what "completed today" is counted from.
+const recordCompletionWith = async (
+  db: SQLiteDatabase,
+  days: number,
+  now: string
+): Promise<void> => {
+  await db.runAsync(
+    `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
+    [days, "completed", "completed", null, now, now]
+  );
+};
+
 const getQadaFastWith = async (db: SQLiteDatabase): Promise<QadaFast | null> => {
   const result = await db.getFirstAsync<QadaFast>(
     `SELECT * FROM ${QADA_FASTS_TABLE} WHERE id = 1;`
@@ -217,9 +231,11 @@ const addMissedFasts = (count: number, notes?: string): Promise<boolean> =>
 const getHistory = (limit?: number): Promise<QadaHistory[]> =>
   sharedDb.run(async (db) => {
     try {
+      // Completion ledger rows are bookkeeping, not entries the user created, so the
+      // visible history lists only what they added.
       const query = limit
-        ? `SELECT * FROM ${QADA_HISTORY_TABLE} ORDER BY created_at DESC LIMIT ?;`
-        : `SELECT * FROM ${QADA_HISTORY_TABLE} ORDER BY created_at DESC;`;
+        ? `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = 'added' ORDER BY created_at DESC LIMIT ?;`
+        : `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = 'added' ORDER BY created_at DESC;`;
 
       const results = limit
         ? await db.getAllAsync<QadaHistory>(query, [limit])
@@ -346,6 +362,7 @@ const completeOneDayFromEntry = (id: number): Promise<boolean> =>
       const newTotalCompleted = currentData.total_completed + 1;
       const newTotalMissed = currentData.total_missed - 1;
       await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
+      await recordCompletionWith(db, 1, now);
       console.log(
         "[Qada DB] Updated totals - completed:",
         newTotalCompleted,
@@ -409,6 +426,7 @@ const updateEntryStatus = (
         const newTotalCompleted = currentData.total_completed + entry.count;
         const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
         await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
+        await recordCompletionWith(db, entry.count, now);
 
         console.log(
           "[Qada DB] Completed entry ID:",

@@ -69,8 +69,10 @@ class QadaDataService(private val context: Context) {
                 val (todayStart, todayEnd) =
                     DayWindow.todayUtcBounds(TimeZone.getDefault(), System.currentTimeMillis())
 
+                // Sum the days, not the rows: completing a multi-day entry writes one
+                // ledger row carrying its whole count.
                 val cursor = db.rawQuery(
-                    """SELECT COUNT(*) FROM $QADA_HISTORY_TABLE
+                    """SELECT COALESCE(SUM(count), 0) FROM $QADA_HISTORY_TABLE
                        WHERE type = 'completed'
                        AND updated_at >= ?
                        AND updated_at < ?""",
