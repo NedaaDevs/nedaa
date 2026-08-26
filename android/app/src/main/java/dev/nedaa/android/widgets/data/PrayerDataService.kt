@@ -195,8 +195,12 @@ class PrayerDataService(private val context: Context) {
     private fun getTimezone(): String? {
         return try {
             DatabaseProvider.getNedaaDatabase(context)?.use { db ->
+                // `date` is an INTEGER PRIMARY KEY, so it aliases the rowid and an
+                // unordered LIMIT 1 returns the oldest retained day. Order descending to
+                // read the newest, or a user who has travelled keys their day off the
+                // timezone they left.
                 val cursor = db.rawQuery(
-                    "SELECT timezone FROM $TABLE_NAME LIMIT 1",
+                    "SELECT timezone FROM $TABLE_NAME ORDER BY date DESC LIMIT 1",
                     null
                 )
                 cursor.use {

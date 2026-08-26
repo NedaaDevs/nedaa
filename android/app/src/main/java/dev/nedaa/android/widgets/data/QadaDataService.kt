@@ -3,7 +3,9 @@ package dev.nedaa.android.widgets.data
 import android.content.Context
 import android.util.Log
 import dev.nedaa.android.widgets.common.DatabaseProvider
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
 
 /**
@@ -136,18 +138,18 @@ class QadaDataService(private val context: Context) {
     }
 
     /**
-     * Convert Calendar to ISO 8601 string
+     * Render an instant as a UTC ISO 8601 string.
+     *
+     * `qada_history.updated_at` is written by the app as `new Date().toISOString()`, a true
+     * UTC instant, and the query compares these strings lexically. The bounds must therefore
+     * be the UTC representation of local midnight — formatting the calendar's local fields
+     * and appending `Z` would claim UTC while carrying local time, shifting the day window
+     * by the device's offset.
      */
     private fun toIsoString(calendar: Calendar): String {
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH) + 1
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
-        val second = calendar.get(Calendar.SECOND)
-        return String.format(
-            "%04d-%02d-%02dT%02d:%02d:%02d.000Z",
-            year, month, day, hour, minute, second
-        )
+        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        return formatter.format(calendar.time)
     }
 }
