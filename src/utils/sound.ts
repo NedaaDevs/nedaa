@@ -10,7 +10,6 @@ import type { CustomSound } from "@/types/customSound";
 import { useAthkarStore } from "@/stores/athkar";
 
 // Services
-import * as audioPreview from "@/services/audio/previewPlayer";
 
 // Utils
 import { isCustomSoundKey } from "@/utils/customSoundHelpers";
@@ -66,6 +65,11 @@ export const isSoundPreviewable = <T extends NotificationType>(
 type SoundPreviewListener = () => void;
 
 // Singleton class to manage sound preview with enhanced type safety
+// react-native-nitro-player starts a media playback service when its module initialises,
+// and a background process may not start one. Previews are a foreground-only concern, so
+// the player loads on demand and stays out of the notification-scheduling import graph.
+const loadAudioPreview = () => import("@/services/audio/previewPlayer");
+
 class SoundPreviewManager {
   private static instance: SoundPreviewManager;
   private isPlaying: boolean = false;
@@ -127,7 +131,8 @@ class SoundPreviewManager {
         this.currentSoundId = soundId;
         this.notifyListeners();
 
-        await audioPreview.playPreview(customSound.contentUri);
+        const { playPreview } = await loadAudioPreview();
+        await playPreview(customSound.contentUri);
       } catch (error) {
         console.error("[SoundPreview] Custom play failed:", error);
         this.isPlaying = false;
@@ -158,7 +163,8 @@ class SoundPreviewManager {
       this.currentSoundId = soundId;
       this.notifyListeners();
 
-      await audioPreview.playPreview(soundSource);
+      const { playPreview } = await loadAudioPreview();
+      await playPreview(soundSource);
     } catch (error) {
       console.error("[SoundPreview] Play failed:", error);
       this.isPlaying = false;
@@ -170,7 +176,8 @@ class SoundPreviewManager {
 
   async stopPreview(): Promise<void> {
     try {
-      await audioPreview.stopPreview();
+      const { stopPreview } = await loadAudioPreview();
+      await stopPreview();
       this.isPlaying = false;
       this.currentSoundId = null;
       this.notifyListeners();
