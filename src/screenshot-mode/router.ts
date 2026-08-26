@@ -6,6 +6,7 @@ import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { parseScreenshotDeepLink } from "@/screenshot-mode/parseScreenshotDeepLink";
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
 import { useAppStore } from "@/stores/app";
+import { useQuranStore } from "@/stores/quran";
 import { AppLocale, AppMode } from "@/enums/app";
 
 // How long to let the target screen mount and settle before re-arming the
@@ -58,6 +59,11 @@ function handleUrl(url: string | null | undefined) {
     console.log(`[screenshot] switching theme to ${targetMode}`);
     useAppStore.getState().setMode(targetMode);
   }
+  // The reader's paper theme honours an explicit user pick over the app scheme,
+  // so a device with a saved reader theme would ignore ?theme= and capture the
+  // wrong paper while still reporting success. Drop the override so the URL wins.
+  useQuranStore.getState().setQuranThemeAuto();
+
   console.log(`[screenshot] navigating to ${SCREEN_TO_PATH[link.screen]}`);
   if (link.screen === "reliable-alarms") {
     // Pass the seeded prayer as alarmType so the screen shows a real (localized)

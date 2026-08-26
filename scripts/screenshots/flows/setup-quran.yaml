@@ -1,13 +1,12 @@
 appId: dev.nedaa.app
 ---
-# One-time capture setup: install a mushaf edition so the `quran` scene renders
-# the reader instead of the edition picker.
+# One-time capture setup: install a mushaf edition and clear the first-open
+# walkthrough so the `quran` scene renders a bare reader page.
 #
 # Needed because shot.yaml's readiness marker is time-based — it fires ~900ms
-# after navigation whatever the screen shows, so an uninstalled edition captures
-# a picture of the picker and still reports success. Run this once per
-# simulator; the download persists in the app container across a capture run,
-# which never erases or reinstalls.
+# after navigation whatever the screen shows, so an uninstalled edition or an
+# open sheet captures the wrong thing and still reports success. Every step is
+# conditional, so re-running on an already-set-up simulator is a no-op.
 - launchApp:
     clearState: false
 - runFlow:
@@ -17,26 +16,49 @@ appId: dev.nedaa.app
     commands:
       - tapOn:
           text: "Continue"
-# Selectors are wildcarded because Maestro full-matches the `text` regex against
-# the accessibility label, and the tab reads "Quran, tab, 3 of 7".
-- tapOn:
-    text: ".*Quran, tab.*"
-- extendedWaitUntil:
-    visible:
-      text: ".*Choose Your Mushaf.*"
-    timeout: 60000
+# Conditional: the reader hides the tab bar while it is open, so on a relaunch
+# straight into the reader there is no tab to tap. Selectors are wildcarded
+# because Maestro full-matches the `text` regex against the accessibility label,
+# and the tab reads "Quran, tab, 3 of 7".
+- runFlow:
+    when:
+      visible:
+        text: ".*Quran, tab.*"
+    commands:
+      - tapOn:
+          text: ".*Quran, tab.*"
+      - waitForAnimationToEnd:
+          timeout: 10000
 # V2 (Madinah Mushaf 1420) is the default edition — first in VERSION_ORDER — so
-# the shot shows what a user actually lands on.
-- tapOn:
-    text: ".*Madinah Mushaf 1420.*"
-- tapOn:
-    text: ".*Download.*"
-# ~109MB of page images plus the bounds bundle, over the simulator's network.
-- extendedWaitUntil:
-    visible:
-      text: ".*Start Reading.*"
-    timeout: 900000
-- tapOn:
-    text: ".*Start Reading.*"
+# the shot shows what a user actually lands on. ~109MB over the sim's network.
+- runFlow:
+    when:
+      visible:
+        text: ".*Choose Your Mushaf.*"
+    commands:
+      - tapOn:
+          text: ".*Madinah Mushaf 1420.*"
+      - tapOn:
+          text: ".*Download.*"
+      - extendedWaitUntil:
+          visible:
+            text: ".*Start Reading.*"
+          timeout: 900000
+      - tapOn:
+          text: ".*Start Reading.*"
+      - waitForAnimationToEnd:
+          timeout: 10000
+# Let the reader settle first: `runFlow when visible` evaluates once, so without
+# this the walkthrough is still animating in and the check silently skips.
 - waitForAnimationToEnd:
-    timeout: 10000
+    timeout: 8000
+# The first-open walkthrough covers the page; dismissing it persists.
+- runFlow:
+    when:
+      visible:
+        text: ".*Got it.*"
+    commands:
+      - tapOn:
+          text: ".*Got it.*"
+      - waitForAnimationToEnd:
+          timeout: 10000
