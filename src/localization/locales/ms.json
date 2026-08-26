@@ -1242,6 +1242,7 @@
   "quran.mutashabihat.title": "Ayat serupa",
   "quran.onboarding.download": "Muat Turun",
   "quran.onboarding.downloaded": "Dimuat turun",
+  "quran.onboarding.loadError": "Tidak dapat memuatkan edisi. Semak sambungan anda dan cuba lagi.",
   "quran.onboarding.noDownload": "Tidak perlu muat turun",
   "quran.onboarding.recommended": "SYR",
   "quran.onboarding.startReading": "Mula Membaca",

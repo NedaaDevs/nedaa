@@ -1334,6 +1334,7 @@
   "quran.mutashabihat.title": "المتشابهات",
   "quran.onboarding.download": "تحميل",
   "quran.onboarding.downloaded": "تم التنزيل",
+  "quran.onboarding.loadError": "تعذّر تحميل النسخ. تحقّق من اتصالك وحاول مرة أخرى.",
   "quran.onboarding.noDownload": "لا يحتاج تحميل",
   "quran.onboarding.recommended": "مُوصى",
   "quran.onboarding.startReading": "ابدأ القراءة",

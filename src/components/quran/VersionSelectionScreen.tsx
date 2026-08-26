@@ -22,6 +22,10 @@ const VERSION_ORDER = [MushafVersion.V2, MushafVersion.V4, MushafVersion.V1];
 // Sentinel selection id for the no-download Text option (not a manifest version).
 const TEXT_MODE_ID = "text";
 
+// "error" still renders the screen: Text mode needs no manifest, so it stays
+// reachable for a reader whose content is already installed.
+type LoadState = "loading" | "ready" | "error";
+
 interface VersionSelectionScreenProps {
   onSelectVersion: (version: QuranManifestVersion) => void;
   onSelectTextMode: () => void;
@@ -43,23 +47,44 @@ const VersionSelectionScreen = ({
   const isCellular = useIsCellular();
   const downloads = useQuranStore((s) => s.versionDownloads);
   const [versions, setVersions] = useState<QuranManifestVersion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [attempt, setAttempt] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [v4Dark, setV4Dark] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const loadManifest = async () => {
-      const fetched = await QuranManifestService.getVersions();
-      const sorted = VERSION_ORDER.map((id) => fetched.find((v) => v.id === id)).filter(
-        Boolean
-      ) as QuranManifestVersion[];
-      setVersions(sorted);
-      setLoading(false);
+      try {
+        const fetched = await QuranManifestService.getVersions();
+        if (cancelled) return;
+        const sorted = VERSION_ORDER.map((id) => fetched.find((v) => v.id === id)).filter(
+          Boolean
+        ) as QuranManifestVersion[];
+        setVersions(sorted);
+        // An empty list means the manifest was unreachable or carries no published
+        // edition. Either way there is no mushaf to choose, so say so instead of
+        // rendering a list with nothing in it.
+        setLoadState(sorted.length > 0 ? "ready" : "error");
+      } catch {
+        if (!cancelled) setLoadState("error");
+      }
     };
     loadManifest();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
 
-  if (loading) {
+  // A fetched manifest is cached for an hour, so a retry would replay the same
+  // empty result until the cache is dropped first.
+  const retryLoad = () => {
+    QuranManifestService.clearCache();
+    setLoadState("loading");
+    setAttempt((n) => n + 1);
+  };
+
+  if (loadState === "loading") {
     return (
       <YStack
         flex={1}
@@ -151,22 +176,58 @@ const VersionSelectionScreen = ({
             </YStack>
           </MotiView>
 
-          {versions.map((version, index) => (
+          {loadState === "error" ? (
             <MotiView
-              key={version.id}
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ delay: 300 + index * 100 }}
+              transition={{ delay: 300 }}
               style={{ width: "100%" }}>
-              <VersionCard
-                version={version}
-                selected={selectedId === version.id}
-                onSelect={(v) => setSelectedId(v.id)}
-                v4Dark={v4Dark}
-                setV4Dark={setV4Dark}
-              />
+              <YStack
+                gap="$3"
+                alignItems="center"
+                padding="$4"
+                borderRadius="$4"
+                borderWidth={1}
+                borderColor={chrome.cardBorder}>
+                <Text fontSize={14} color={chrome.subtleText} textAlign="center">
+                  {t("quran.onboarding.loadError")}
+                </Text>
+                <Pressable
+                  onPress={retryLoad}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("common.retry")}
+                  style={{
+                    minHeight: 44,
+                    justifyContent: "center",
+                    paddingHorizontal: 24,
+                    borderRadius: 22,
+                    borderWidth: 1,
+                    borderColor: chrome.accent,
+                  }}>
+                  <Text fontSize={15} fontWeight="600" color={chrome.accent}>
+                    {t("common.retry")}
+                  </Text>
+                </Pressable>
+              </YStack>
             </MotiView>
-          ))}
+          ) : (
+            versions.map((version, index) => (
+              <MotiView
+                key={version.id}
+                from={{ opacity: 0, translateY: 20 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ delay: 300 + index * 100 }}
+                style={{ width: "100%" }}>
+                <VersionCard
+                  version={version}
+                  selected={selectedId === version.id}
+                  onSelect={(v) => setSelectedId(v.id)}
+                  v4Dark={v4Dark}
+                  setV4Dark={setV4Dark}
+                />
+              </MotiView>
+            ))
+          )}
 
           {/* Text mode — no download, a peer to the editions */}
           <MotiView

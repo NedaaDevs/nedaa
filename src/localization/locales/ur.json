@@ -1242,6 +1242,7 @@
   "quran.mutashabihat.title": "متشابہ آیات",
   "quran.onboarding.download": "ڈاؤن لوڈ",
   "quran.onboarding.downloaded": "ڈاؤن لوڈ ہو گیا",
+  "quran.onboarding.loadError": "نسخے لوڈ نہیں ہو سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "quran.onboarding.noDownload": "ڈاؤن لوڈ کی ضرورت نہیں",
   "quran.onboarding.recommended": "تجویز",
   "quran.onboarding.startReading": "پڑھنا شروع کریں",

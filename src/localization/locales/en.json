@@ -1289,6 +1289,7 @@
   "quran.mutashabihat.title": "Similar verses",
   "quran.onboarding.download": "Download",
   "quran.onboarding.downloaded": "Downloaded",
+  "quran.onboarding.loadError": "Couldn't load the editions. Check your connection and try again.",
   "quran.onboarding.noDownload": "No download needed",
   "quran.onboarding.recommended": "REC",
   "quran.onboarding.startReading": "Start Reading",
