@@ -13,9 +13,6 @@ import { usePreferencesStore } from "@/stores/preferences";
 // Enums
 import { OpeningTab, type OpeningTabValue } from "@/enums/app";
 
-// Services
-import { QuranContentDB } from "@/services/quran-content-db";
-
 // Icons
 import { Home, Settings, BookOpenText, BookOpen, Wrench } from "lucide-react-native";
 
@@ -50,11 +47,6 @@ const TabsLayout = () => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const textScale = useTextScale();
-
-  // Warm the content DB at startup so the reader opens without a loading flash.
-  useEffect(() => {
-    void QuranContentDB.openQuranDb();
-  }, []);
 
   // Land on the user's chosen tab. The preference is persisted, so wait for
   // rehydration or the stored choice is missed on a cold start.
