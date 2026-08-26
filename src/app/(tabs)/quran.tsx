@@ -51,6 +51,7 @@ import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
 import GuideSheet from "@/components/quran/sheets/GuideSheet";
 import { useQuranContentDbReady } from "@/hooks/useQuranContentDbReady";
+import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useReadAlongWord } from "@/hooks/useReadAlongWord";
 import { useStopReaderAudioOnLeave } from "@/hooks/useStopReaderAudioOnLeave";
 import { GuideCategory, type GuideEntry } from "@/types/guide";
@@ -93,6 +94,8 @@ const QuranScreen = () => {
   const quranTheme = useResolvedQuranTheme();
   const prefersDark = usePrefersDarkReader();
   const { state: dbState, retry: retryDb } = useQuranContentDbReady();
+  // Screenshot runs open on a fixed page so every capture frames the same spread.
+  const screenshotSeed = useScreenshotSeed("quran");
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const insets = useSafeAreaInsets();
@@ -192,6 +195,10 @@ const QuranScreen = () => {
       })
       .catch(() => {});
   }, [playingSurah, playingAyah, currentPage, setJumpReturn, setCurrentPage, setFlashAyah]);
+
+  useEffect(() => {
+    if (screenshotSeed) setCurrentPage(screenshotSeed.page);
+  }, [screenshotSeed, setCurrentPage]);
 
   // Ensure the edition's ayah-marker frames are installed (covers editions added
   // before the ornament pack shipped). Idempotent + tiny (~20KB); no-ops once on

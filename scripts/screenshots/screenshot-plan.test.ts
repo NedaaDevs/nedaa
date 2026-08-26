@@ -22,10 +22,20 @@ describe("screenshot plan", () => {
     }
   });
 
-  test("quran is excluded (gated)", () => {
+  test("quran ships on both platforms, high in the carousel", () => {
     for (const platform of ["ios", "android"] as const) {
-      expect(STORE_PLAN[platform].some((c) => c.screen === "quran")).toBe(false);
+      const quran = STORE_PLAN[platform].find((c) => c.screen === "quran");
+      expect(quran).toBeDefined();
+      expect(quran?.idx).toBeLessThanOrEqual(3);
     }
+  });
+
+  test("android fits Play's eight-cell cap by dropping qibla", () => {
+    expect(STORE_PLAN.android).toHaveLength(8);
+    expect(STORE_PLAN.android.some((c) => c.screen === "qibla")).toBe(false);
+    // iOS has a ten-cell cap, so it keeps qibla alongside quran.
+    expect(STORE_PLAN.ios).toHaveLength(9);
+    expect(STORE_PLAN.ios.some((c) => c.screen === "qibla")).toBe(true);
   });
 
   test("fileStem zero-pads the index", () => {
