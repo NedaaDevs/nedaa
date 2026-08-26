@@ -36,13 +36,19 @@ object DayWindow {
         }.timeInMillis
 
     /**
-     * The next local midnight. Derived by adding a calendar day rather than 24 hours, so a
-     * DST transition inside the day does not move the boundary off midnight.
+     * The next local midnight. Adds a calendar day rather than 24 hours, so a DST
+     * transition inside the day does not move the boundary off midnight, then re-zeroes
+     * the time fields: in a zone that skips midnight itself, the day start is not 00:00 and
+     * the added day would otherwise inherit that offset and spill into the next day.
      */
     fun localDayEnd(zone: TimeZone, nowMillis: Long): Long =
         Calendar.getInstance(zone).apply {
             timeInMillis = localDayStart(zone, nowMillis)
             add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }.timeInMillis
 
     /** Half-open `[start, end)` bounds for the local day, as UTC ISO-8601 strings. */
