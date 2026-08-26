@@ -3,9 +3,7 @@ package dev.nedaa.android.widgets.data
 import android.content.Context
 import android.util.Log
 import dev.nedaa.android.widgets.common.DatabaseProvider
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import dev.nedaa.android.widgets.common.DayWindow
 import java.util.TimeZone
 
 /**
@@ -66,9 +64,8 @@ class QadaDataService(private val context: Context) {
     private fun getTodayCompletedCount(): Int {
         return try {
             DatabaseProvider.getNedaaDatabase(context)?.use { db ->
-                // Get today's date range for the query
-                val todayStart = getTodayStartIso()
-                val todayEnd = getTodayEndIso()
+                val (todayStart, todayEnd) =
+                    DayWindow.todayUtcBounds(TimeZone.getDefault(), System.currentTimeMillis())
 
                 val cursor = db.rawQuery(
                     """SELECT COUNT(*) FROM $QADA_HISTORY_TABLE
@@ -110,46 +107,4 @@ class QadaDataService(private val context: Context) {
         return totals.first > 0 || totals.second > 0
     }
 
-    /**
-     * Get today's start time in ISO format
-     */
-    private fun getTodayStartIso(): String {
-        val calendar = Calendar.getInstance(TimeZone.getDefault()).apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        return toIsoString(calendar)
-    }
-
-    /**
-     * Get tomorrow's start time in ISO format (end of today)
-     */
-    private fun getTodayEndIso(): String {
-        val calendar = Calendar.getInstance(TimeZone.getDefault()).apply {
-            add(Calendar.DAY_OF_YEAR, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        return toIsoString(calendar)
-    }
-
-    /**
-     * Render an instant as a UTC ISO 8601 string.
-     *
-     * `qada_history.updated_at` is written by the app as `new Date().toISOString()`, a true
-     * UTC instant, and the query compares these strings lexically. The bounds must therefore
-     * be the UTC representation of local midnight — formatting the calendar's local fields
-     * and appending `Z` would claim UTC while carrying local time, shifting the day window
-     * by the device's offset.
-     */
-    private fun toIsoString(calendar: Calendar): String {
-        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        return formatter.format(calendar.time)
-    }
 }
