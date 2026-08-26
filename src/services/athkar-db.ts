@@ -6,6 +6,7 @@ import { getDirectory } from "@/services/db";
 
 // Utils
 import { dateToInt, timeZonedNow } from "@/utils/date";
+import { daysBetweenDateInts } from "@/utils/streak";
 import { AppLogger } from "@/utils/appLogger";
 import { createSerializedDatabase } from "@/utils/serializedDatabase";
 
@@ -825,7 +826,7 @@ const updateStreakForDay = (
           // First ever completion
           shouldUpdate = true;
         } else {
-          const daysSinceLastStreak = dateInt - streakData.last_streak_date;
+          const daysSinceLastStreak = daysBetweenDateInts(streakData.last_streak_date, dateInt);
 
           if (daysSinceLastStreak === 1) {
             // Consecutive day
@@ -976,7 +977,7 @@ const validateStreakForToday = (
           return;
         }
 
-        const daysSinceLastStreak = todayInt - streakData.last_streak_date;
+        const daysSinceLastStreak = daysBetweenDateInts(streakData.last_streak_date, todayInt);
 
         // If it's the same day or consecutive day, no action needed
         if (daysSinceLastStreak <= 1) {
