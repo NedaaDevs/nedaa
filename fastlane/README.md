@@ -1,4 +1,5 @@
-## fastlane documentation
+fastlane documentation
+----
 
 # Installation
 
@@ -37,6 +38,50 @@ Upload metadata to Google Play Store (no binary upload)
 ```
 
 Upload metadata + screenshots to Google Play Store
+
+### android update_changelogs
+
+```sh
+[bundle exec] fastlane android update_changelogs
+```
+
+Upload changelogs only
+
+---
+
+## iOS
+
+### ios validate_metadata
+
+```sh
+[bundle exec] fastlane ios validate_metadata
+```
+
+Run App Store metadata pre-submission checks (no upload)
+
+### ios update_metadata
+
+```sh
+[bundle exec] fastlane ios update_metadata
+```
+
+Upload metadata only to App Store Connect
+
+### ios update_screenshots
+
+```sh
+[bundle exec] fastlane ios update_screenshots
+```
+
+Upload pre-generated screenshots to App Store Connect
+
+### ios update_listing
+
+```sh
+[bundle exec] fastlane ios update_listing
+```
+
+Upload metadata + pre-generated screenshots to App Store Connect
 
 ---
 
