@@ -1,4 +1,9 @@
-import { getUnseenEntries, WhatsNewId, WHATS_NEW_ENTRIES } from "@/constants/WhatsNew";
+import {
+  getApplicableEntries,
+  getUnseenEntries,
+  WhatsNewId,
+  WHATS_NEW_ENTRIES,
+} from "@/constants/WhatsNew";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -18,6 +23,9 @@ const baseCtx = {
 const textSizeVisible = (ctx: typeof baseCtx) =>
   getUnseenEntries([], ctx, WHATS_NEW_ENTRIES).some((e) => e.id === WhatsNewId.TEXT_SIZE);
 
+const textSizeListed = (ctx: typeof baseCtx) =>
+  getApplicableEntries(ctx, WHATS_NEW_ENTRIES).some((e) => e.id === WhatsNewId.TEXT_SIZE);
+
 describe("text-size What's New gate", () => {
   test("hidden at normal OS scale", () => {
     expect(textSizeVisible({ ...baseCtx, fontScale: 1.0 })).toBe(false);
@@ -29,5 +37,15 @@ describe("text-size What's New gate", () => {
 
   test("hidden once handled", () => {
     expect(textSizeVisible({ ...baseCtx, fontScale: 1.3, textSizeOfferHandled: true })).toBe(false);
+  });
+});
+
+describe("text-size in the Settings list", () => {
+  test("listed at large OS scale even once handled", () => {
+    expect(textSizeListed({ ...baseCtx, fontScale: 1.3, textSizeOfferHandled: true })).toBe(true);
+  });
+
+  test("not listed at normal OS scale", () => {
+    expect(textSizeListed({ ...baseCtx, fontScale: 1.0 })).toBe(false);
   });
 });

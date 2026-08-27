@@ -1,4 +1,5 @@
 import {
+  getApplicableEntries,
   getUnseenEntries,
   WHATS_NEW_ENTRIES,
   WhatsNewId,
@@ -45,6 +46,23 @@ describe("getUnseenEntries", () => {
   test("filters only seen ids, keeping registry order", () => {
     const ids = getUnseenEntries([WhatsNewId.IMPORTANT_DAYS], BASE_CTX).map((e) => e.id);
     expect(ids).toEqual([WhatsNewId.QURAN_AUDIO, WhatsNewId.QURAN, WhatsNewId.UMRAH]);
+  });
+});
+
+describe("getApplicableEntries", () => {
+  test("lists seen entries, so the Settings sheet is never empty", () => {
+    const ids = getApplicableEntries(BASE_CTX, WHATS_NEW_ENTRIES).map((e) => e.id);
+    expect(ids).toEqual([
+      WhatsNewId.QURAN_AUDIO,
+      WhatsNewId.QURAN,
+      WhatsNewId.IMPORTANT_DAYS,
+      WhatsNewId.UMRAH,
+    ]);
+  });
+
+  test("keeps the umrah entry while a guide session is in progress", () => {
+    const ids = getApplicableEntries({ ...BASE_CTX, umrahInProgress: true }).map((e) => e.id);
+    expect(ids).toContain(WhatsNewId.UMRAH);
   });
 });
 

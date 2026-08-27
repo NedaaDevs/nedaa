@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { PixelRatio } from "react-native";
 
-import { getUnseenEntries } from "@/constants/WhatsNew";
+import { getApplicableEntries, getUnseenEntries } from "@/constants/WhatsNew";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
@@ -15,29 +15,29 @@ export const useWhatsNew = () => {
   const umrahInProgress = useUmrahGuideStore((s) => !!s.activeProgress);
   const textSizeOfferHandled = usePreferencesStore((s) => s.textSizeOfferHandled);
 
-  const entries = useMemo(
-    () =>
-      getUnseenEntries(dismissedFeatureCards, {
-        umrahInProgress,
-        fontScale: PixelRatio.getFontScale(),
-        textSizeOfferHandled,
-      }),
-    [dismissedFeatureCards, umrahInProgress, textSizeOfferHandled]
+  const ctx = useMemo(
+    () => ({ umrahInProgress, fontScale: PixelRatio.getFontScale(), textSizeOfferHandled }),
+    [umrahInProgress, textSizeOfferHandled]
   );
+
+  const entries = useMemo(
+    () => getUnseenEntries(dismissedFeatureCards, ctx),
+    [dismissedFeatureCards, ctx]
+  );
+
+  // Opening from Settings shows every applicable entry, seen or not — the
+  // unseen set is empty for anyone who already dismissed the sheet.
+  const allEntries = useMemo(() => getApplicableEntries(ctx), [ctx]);
 
   const shouldPresent =
     hasHydrated && !isFirstRun && entries.length > 0 && readPendingReport() === null;
 
-  const markAllSeen = useCallback(() => {
-    dismissFeatureCards(entries.map((e) => e.id));
-  }, [dismissFeatureCards, entries]);
-
   const markSeen = useCallback(
-    (id: string) => {
-      dismissFeatureCards([id]);
+    (ids: string[]) => {
+      dismissFeatureCards(ids);
     },
     [dismissFeatureCards]
   );
 
-  return { entries, shouldPresent, markAllSeen, markSeen };
+  return { entries, allEntries, shouldPresent, markSeen };
 };

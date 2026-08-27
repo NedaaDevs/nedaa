@@ -44,6 +44,7 @@ import {
   Award,
   Bug,
   Layers,
+  Sparkles,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -56,6 +57,7 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { useToastStore } from "@/stores/toast";
 import { useDebugModeStore } from "@/stores/debugMode";
+import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
@@ -76,6 +78,7 @@ const SettingsScreen = () => {
   const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
+  const requestWhatsNew = useWhatsNewSheetStore((s) => s.requestOpen);
   const [alarmAvailable, setAlarmAvailable] = useState(false);
   const hapticMedium = useHaptic("medium");
 
@@ -290,6 +293,9 @@ const SettingsScreen = () => {
           path={"/settings/acknowledgements" as any}
           icon={Award}
         />
+
+        {/* What's New */}
+        <SettingsItem name={t("whatsNew.title")} onPress={requestWhatsNew} icon={Sparkles} />
 
         {/* Rate & Share */}
         <HStack marginHorizontal="$2" marginTop="$2" gap="$2">

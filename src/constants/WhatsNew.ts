@@ -40,8 +40,8 @@ export type WhatsNewEntry = {
   icon: ComponentType<any>;
   titleKey: string;
   descriptionKey: string;
-  // Visibility gate; omitted = always eligible.
-  gate?: (ctx: WhatsNewGateContext) => boolean;
+  applies?: (ctx: WhatsNewGateContext) => boolean;
+  announceGate?: (ctx: WhatsNewGateContext) => boolean;
   action: WhatsNewAction;
 };
 
@@ -52,8 +52,8 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
     icon: ALargeSmall,
     titleKey: "whatsNew.textSize.title",
     descriptionKey: "whatsNew.textSize.description",
-    // Only users who run large OS text and never answered the offer.
-    gate: (ctx) => ctx.fontScale >= OS_FONT_SCALE_OFFER_THRESHOLD && !ctx.textSizeOfferHandled,
+    applies: (ctx) => ctx.fontScale >= OS_FONT_SCALE_OFFER_THRESHOLD,
+    announceGate: (ctx) => !ctx.textSizeOfferHandled,
     action: {
       type: "optIn",
       ctaKey: "whatsNew.enable",
@@ -93,14 +93,23 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
     icon: KaabaIcon,
     titleKey: "umrah.featureCard.title",
     descriptionKey: "umrah.featureCard.description",
-    // Already using the guide — nothing to announce.
-    gate: (ctx) => !ctx.umrahInProgress,
+    announceGate: (ctx) => !ctx.umrahInProgress,
     action: { type: "navigate", route: "/umrah", ctaKey: "umrah.featureCard.explore" },
   },
 ];
+
+const applies = (entry: WhatsNewEntry, ctx: WhatsNewGateContext) => entry.applies?.(ctx) ?? true;
+
+export const getApplicableEntries = (
+  ctx: WhatsNewGateContext,
+  entries: WhatsNewEntry[] = WHATS_NEW_ENTRIES
+): WhatsNewEntry[] => entries.filter((e) => applies(e, ctx));
 
 export const getUnseenEntries = (
   seenIds: string[],
   ctx: WhatsNewGateContext,
   entries: WhatsNewEntry[] = WHATS_NEW_ENTRIES
-): WhatsNewEntry[] => entries.filter((e) => !seenIds.includes(e.id) && (e.gate?.(ctx) ?? true));
+): WhatsNewEntry[] =>
+  entries.filter(
+    (e) => !seenIds.includes(e.id) && applies(e, ctx) && (e.announceGate?.(ctx) ?? true)
+  );
