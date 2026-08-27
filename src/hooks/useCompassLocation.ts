@@ -23,6 +23,8 @@ import {
 
 const log = AppLogger.create("compass");
 
+// The only bound on the compass position watch: a watch carries no native deadline of its own.
+// It sets how long Qibla waits for a fresh fix before it falls back to a saved one.
 export const COMPASS_LOCATION_REQUEST_TIMEOUT_MS = 15_000;
 export const MAX_ACQUIRED_LOCATION_ACCURACY_METERS = 100;
 
@@ -99,9 +101,43 @@ const getPermissionIssue = (
     : CompassReliabilityIssue.LOCATION_PERMISSION_BLOCKED;
 };
 
+/** Codes the HMS location module attaches to its promise rejections. */
+const LocationErrorCode = {
+  UNAUTHORIZED: "E_LOCATION_UNAUTHORIZED",
+  SERVICES_DISABLED: "E_LOCATION_SERVICES_DISABLED",
+  UNAVAILABLE: "E_LOCATION_UNAVAILABLE",
+  TIMEOUT: "E_LOCATION_TIMEOUT",
+} as const;
+
+// The code crosses the native bridge as a plain property, not as a recognisable error class.
+const getErrorCode = (error: unknown): string | null => {
+  if (!(error instanceof Error)) return null;
+  const { code } = error as Error & { code?: unknown };
+  return typeof code === "string" ? code : null;
+};
+
 const getPositionFailureIssue = (error: unknown): CompassReliabilityIssueValue => {
+  switch (getErrorCode(error)) {
+    case LocationErrorCode.SERVICES_DISABLED:
+      return CompassReliabilityIssue.LOCATION_SERVICES_DISABLED;
+    case LocationErrorCode.UNAUTHORIZED:
+      return CompassReliabilityIssue.LOCATION_PERMISSION_DENIED;
+    // The provider reports itself unavailable only after it confirms services are on, so this
+    // means "no fix yet". Sending the user to a settings screen that already reads correct
+    // would mislead them.
+    case LocationErrorCode.UNAVAILABLE:
+    case LocationErrorCode.TIMEOUT:
+      return CompassReliabilityIssue.LOCATION_TIMEOUT;
+  }
+
+  // Watch errors carry a bare message, and the GMS provider uses its own codes, so both
+  // classify on text.
   const message =
     error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  // An unavailable provider is not a disabled one, so this test comes first.
+  if (message.includes("unavailable")) {
+    return CompassReliabilityIssue.LOCATION_TIMEOUT;
+  }
   if (message.includes("disabled") || message.includes("provider")) {
     return CompassReliabilityIssue.LOCATION_SERVICES_DISABLED;
   }

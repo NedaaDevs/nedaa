@@ -46,7 +46,9 @@ class ExpoHmsLocationModule : Module() {
   private lateinit var locationProvider: FusedLocationProviderClient
   private val mainHandler = Handler(Looper.getMainLooper())
   private val watchCallbacks = ConcurrentHashMap<Int, LocationCallback>()
-  private val currentCallbacks = ConcurrentHashMap<LocationCallback, Runnable>()
+  // One entry per in-flight one-shot request: its deadline, and the promise that deadline settles.
+  // Holding both in a single entry keeps registration atomic against teardown.
+  private val currentCallbacks = ConcurrentHashMap<LocationCallback, Pair<Runnable, Promise>>()
 
   override fun definition() = ModuleDefinition {
     Name(MODULE_NAME)
@@ -128,16 +130,27 @@ class ExpoHmsLocationModule : Module() {
       return
     }
 
+    // Request-scoped state. Every callback and the deadline run on the main looper, so plain
+    // captured locals are enough.
+    val startedAt = SystemClock.elapsedRealtime()
+    // True until Location Kit says otherwise, so a deadline reached with no availability report
+    // is classified as a timeout rather than as an unavailable provider.
+    var locationAvailable = true
+    var resultsSeen = 0
+    var staleFixesDropped = 0
+
     lateinit var callback: LocationCallback
     callback = object : LocationCallback() {
       override fun onLocationResult(result: LocationResult?) {
-        val location = result?.locations?.lastOrNull()
-        if (location == null) {
-          return
-        }
+        resultsSeen += 1
+        // An empty result carries no verdict; the deadline decides how a fixless request ends.
+        val location = result?.locations?.lastOrNull() ?: return
         // Location Kit can emit a cached fix as soon as updates start. A 30-second ceiling admits
         // normal provider latency but prevents prayer calculations from accepting an old city fix.
-        if (!location.isFreshForCurrentRequest()) return
+        if (!location.isFreshForCurrentRequest()) {
+          staleFixesDropped += 1
+          return
+        }
 
         finishCurrentRequest(callback) {
           promise.resolve(location.toResponse())
@@ -145,20 +158,26 @@ class ExpoHmsLocationModule : Module() {
       }
 
       override fun onLocationAvailability(availability: LocationAvailability?) {
-        if (availability?.isLocationAvailable == false) {
-          finishCurrentRequest(callback) {
-            promise.reject(ERROR_UNAVAILABLE, "Location is unavailable; check device location settings", null)
-          }
-        }
+        // Availability is advisory: it reports that no fix is ready yet, not that none will
+        // arrive. It only labels the rejection the deadline produces.
+        availability?.let { locationAvailable = it.isLocationAvailable }
       }
     }
 
     val timeout = Runnable {
       finishCurrentRequest(callback) {
-        promise.reject(ERROR_TIMEOUT, "Location request timed out", null)
+        // Native logging reaches only logcat, so these counters travel on the message the JS
+        // logger records, where a shared diagnostic report can carry them.
+        val diagnostics = "(availability=$locationAvailable results=$resultsSeen " +
+          "stale=$staleFixesDropped elapsed=${SystemClock.elapsedRealtime() - startedAt}ms)"
+        if (!locationAvailable) {
+          promise.reject(ERROR_UNAVAILABLE, "Huawei Location Kit reported no location available $diagnostics", null)
+        } else {
+          promise.reject(ERROR_TIMEOUT, "Location request timed out $diagnostics", null)
+        }
       }
     }
-    currentCallbacks[callback] = timeout
+    currentCallbacks[callback] = timeout to promise
     mainHandler.postDelayed(timeout, CURRENT_LOCATION_TIMEOUT_MS)
 
     try {
@@ -191,11 +210,8 @@ class ExpoHmsLocationModule : Module() {
 
     val callback = object : LocationCallback() {
       override fun onLocationResult(result: LocationResult?) {
-        val location = result?.locations?.lastOrNull()
-        if (location == null) {
-          sendLocationError(watchId, "Huawei Location Kit returned no location")
-          return
-        }
+        // A watch is long lived; one empty result is a gap between fixes, not a failure.
+        val location = result?.locations?.lastOrNull() ?: return
         sendEvent(
           LOCATION_EVENT,
           mapOf("watchId" to watchId, "location" to location.toResponse()),
@@ -203,9 +219,8 @@ class ExpoHmsLocationModule : Module() {
       }
 
       override fun onLocationAvailability(availability: LocationAvailability?) {
-        if (availability?.isLocationAvailable == false) {
-          sendLocationError(watchId, "Location is unavailable; check device location settings")
-        }
+        // Availability is advisory: it reports that no fix is ready yet, not that none will
+        // arrive. The watch keeps running and its deadline belongs to the caller.
       }
     }
     watchCallbacks[watchId] = callback
@@ -250,8 +265,9 @@ class ExpoHmsLocationModule : Module() {
     }
   }
 
+  // Removing the timeout is the settle-once gate: the first caller to win it owns the promise.
   private fun finishCurrentRequest(callback: LocationCallback, completion: () -> Unit) {
-    val timeout = currentCallbacks.remove(callback) ?: return
+    val (timeout, _) = currentCallbacks.remove(callback) ?: return
     mainHandler.removeCallbacks(timeout)
     removeLocationUpdates(callback)
     completion()
@@ -269,11 +285,18 @@ class ExpoHmsLocationModule : Module() {
   }
 
   private fun removeAllLocationCallbacks() {
-    currentCallbacks.forEach { (callback, timeout) ->
-      mainHandler.removeCallbacks(timeout)
-      removeLocationUpdates(callback)
+    // A torn-down module can never deliver a fix, so every pending request is settled here.
+    // Each one leaves the maps through finishCurrentRequest, which rejects it before it is dropped.
+    currentCallbacks.forEach { (callback, entry) ->
+      val (_, promise) = entry
+      finishCurrentRequest(callback) {
+        promise.reject(
+          ERROR_REQUEST_FAILED,
+          "Huawei Location Kit request was cancelled: the module was destroyed",
+          null,
+        )
+      }
     }
-    currentCallbacks.clear()
     watchCallbacks.values.forEach(::removeLocationUpdates)
     watchCallbacks.clear()
   }
@@ -464,7 +487,7 @@ class ExpoHmsLocationModule : Module() {
     private const val LOCATION_ERROR_EVENT = "onLocationError"
     private const val ACCURACY_HIGH = 4
     private const val MIN_LOCATION_INTERVAL_MS = 500L
-    private const val CURRENT_LOCATION_TIMEOUT_MS = 9_000L
+    private const val CURRENT_LOCATION_TIMEOUT_MS = 30_000L
     private const val MAX_CURRENT_FIX_AGE_MS = 30_000L
     private const val GEOCODER_TIMEOUT_MS = 10_000L
     private const val ERROR_UNAUTHORIZED = "E_LOCATION_UNAUTHORIZED"

@@ -26,10 +26,16 @@ import {
   getLocationWithTimeout,
   calculateDistance,
   CITY_CHANGE_THRESHOLD,
+  LOCATION_REQUEST_TIMEOUT_EXTENDED,
   LocationPermissionError,
 } from "@/utils/location";
 
 const log = AppLogger.create("location");
+
+// The HMS module appends a counter group to its rejection messages so the log records why a
+// request ended. The Location screen renders this text, so it is dropped before display.
+const stripLocationDiagnostics = (message: string): string =>
+  message.replace(/\s*\(availability=[^)]*\)\s*$/, "");
 
 export type LocationStore = {
   locationDetails: LocationDetails;
@@ -171,7 +177,7 @@ export const useLocationStore = create<LocationStore>()(
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
-                error: cause.message,
+                error: stripLocationDiagnostics(cause.message),
                 isLoading: false,
               },
             }));
@@ -184,7 +190,7 @@ export const useLocationStore = create<LocationStore>()(
         updateCurrentLocation: async () => {
           set({ isGettingLocation: true });
           try {
-            const location = await getLocationWithTimeout();
+            const location = await getLocationWithTimeout(LOCATION_REQUEST_TIMEOUT_EXTENDED);
             console.log(
               `Location updated to: ${location.coords.latitude}, ${location.coords.longitude}`
             );
@@ -216,7 +222,7 @@ export const useLocationStore = create<LocationStore>()(
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
-                error: cause.message,
+                error: stripLocationDiagnostics(cause.message),
               },
             }));
             throw cause;

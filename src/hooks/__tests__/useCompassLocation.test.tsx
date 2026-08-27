@@ -2,7 +2,10 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 
 import { CompassLocationSource, CompassReliabilityIssue } from "@/enums/compass";
-import { useCompassLocation } from "@/hooks/useCompassLocation";
+import {
+  COMPASS_LOCATION_REQUEST_TIMEOUT_MS,
+  useCompassLocation,
+} from "@/hooks/useCompassLocation";
 import { useCompassStore } from "@/stores/compass";
 import { MAX_FRESH_LOCATION_AGE_MS, MAX_SAVED_LOCATION_AGE_MS } from "@/utils/compass";
 
@@ -280,7 +283,7 @@ describe("useCompassLocation", () => {
     const tree = await renderHook();
     await flush();
     await act(async () => {
-      jest.advanceTimersByTime(15_000);
+      jest.advanceTimersByTime(COMPASS_LOCATION_REQUEST_TIMEOUT_MS);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -332,7 +335,7 @@ describe("useCompassLocation", () => {
     expect(mockWatchPositionAsync).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      jest.advanceTimersByTime(15_000);
+      jest.advanceTimersByTime(COMPASS_LOCATION_REQUEST_TIMEOUT_MS);
       await Promise.resolve();
       await Promise.resolve();
     });
