@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HijriNative, type HijriDate } from "@/utils/date";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HIJRI_YEAR_MIN, HIJRI_YEAR_MAX } from "@/constants/Hijri";
 
 import { HStack } from "@/components/ui/hstack";
 import { Card } from "@/components/ui/card";
@@ -29,9 +30,6 @@ type HijriWheelPickerProps = {
   onChange: (date: HijriDate) => void;
 };
 
-const YEAR_MIN = 1400;
-const YEAR_MAX = 1500;
-
 const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
@@ -54,7 +52,10 @@ const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
   }, [t]);
 
   const yearOptions = useMemo(() => {
-    return Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MIN + i);
+    return Array.from(
+      { length: HIJRI_YEAR_MAX - HIJRI_YEAR_MIN + 1 },
+      (_, i) => HIJRI_YEAR_MIN + i
+    );
   }, []);
 
   const formattedDay = formatNumberToLocale(value.day.toString());
