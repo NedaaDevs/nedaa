@@ -14,6 +14,7 @@ import TopBar from "@/components/TopBar";
 import {
   AlarmClock,
   Compass,
+  CalendarHeart,
   CalendarRange,
   CalendarCheck,
   CalendarDays,
@@ -51,6 +52,13 @@ const UTILITIES: ToolItem[] = [
     subtitleKey: "tools.umrahGuide.subtitle",
     icon: KaabaIcon,
     route: "/umrah",
+  },
+  {
+    id: "hijri-calendar",
+    titleKey: "hijriCalendar.title",
+    subtitleKey: "hijriCalendar.subtitle",
+    icon: CalendarHeart,
+    route: "/hijri-calendar",
   },
   {
     id: "hijri-converter",
