@@ -8,10 +8,16 @@ import { OpeningTab, type OpeningTabValue, TextSize, type TextSizeValue } from "
 // touches the toggle the persisted value takes over.
 const deviceUses24HourClock = (): boolean => getCalendars()[0]?.uses24hourClock ?? false;
 
+// expo-localization numbers weekdays 1-7 from Sunday; Date.getDay() numbers
+// them 0-6. The store keeps the getDay() convention so callers need not convert.
+const deviceWeekStartsOn = (): number => (getCalendars()[0]?.firstWeekday ?? 1) - 1;
+
 type PreferencesState = {
   useWesternNumerals: boolean;
   // Clock format for prayer and adhan times. Seeded from the device on first run.
   use24HourTime: boolean;
+  // First column of the Hijri calendar grid. Seeded from the device on first run.
+  weekStartsOn: number;
   // Tab the app lands on at launch.
   openingTab: OpeningTabValue;
   countdownEnabled: boolean;
@@ -33,6 +39,7 @@ type PreferencesState = {
 
   setUseWesternNumerals: (value: boolean) => void;
   setUse24HourTime: (value: boolean) => void;
+  setWeekStartsOn: (value: number) => void;
   setOpeningTab: (value: OpeningTabValue) => void;
   setCountdownEnabled: (value: boolean) => void;
   setCountdownMinutes: (value: number) => void;
@@ -51,6 +58,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set) => ({
       useWesternNumerals: false,
       use24HourTime: deviceUses24HourClock(),
+      weekStartsOn: deviceWeekStartsOn(),
       openingTab: OpeningTab.HOME,
       countdownEnabled: false,
       countdownMinutes: 60,
@@ -65,6 +73,7 @@ export const usePreferencesStore = create<PreferencesState>()(
 
       setUseWesternNumerals: (value) => set({ useWesternNumerals: value }),
       setUse24HourTime: (value) => set({ use24HourTime: value }),
+      setWeekStartsOn: (value) => set({ weekStartsOn: value }),
       setOpeningTab: (value) => set({ openingTab: value }),
       setCountdownEnabled: (value) => set({ countdownEnabled: value }),
       setCountdownMinutes: (value) => set({ countdownMinutes: value }),
