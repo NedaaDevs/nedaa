@@ -1,4 +1,3 @@
-// src/constants/__tests__/Observances.test.ts
 import { OBSERVANCES, MONTH_NOTES } from "@/constants/Observances";
 import { ObservanceClass, ObservanceId } from "@/enums/observances";
 
