@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.nedaa.android.widgets.common.WidgetBoundaries
 import dev.nedaa.android.widgets.data.PrayerDataService
+import dev.nedaa.android.widgets.notification.PrayerNotificationPublisher
 import java.util.concurrent.TimeUnit
 
 /**
@@ -66,6 +67,13 @@ class PrayerTimesWorker(
             PrayerTimesWidgetSmall().updateAll(context)
             PrayerTimesWidgetMedium().updateAll(context)
             PrayerTimesWidgetLarge().updateAll(context)
+
+            // A notification failure must not prevent the widget refresh or its next boundary.
+            try {
+                PrayerNotificationPublisher.publish(context)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating prayer notification", e)
+            }
 
             // Schedule next update
             scheduleNextUpdate()

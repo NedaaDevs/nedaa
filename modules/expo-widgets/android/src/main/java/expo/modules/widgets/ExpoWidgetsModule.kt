@@ -1,5 +1,6 @@
 package expo.modules.widgets
 
+import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -8,12 +9,17 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 // Addressed by name so this module needs no reference to the app's widget classes.
 private const val WIDGET_PREFS = "nedaa_widgets"
 private const val KEY_LAST_RENDER = "widgetLastRenderedAt"
+private const val KEY_PERSISTENT_NOTIFICATION_ENABLED = "persistentNotificationEnabled"
+private const val TAG = "ExpoWidgetsModule"
+private const val NOTIFICATION_PUBLISHER_CLASS =
+    "dev.nedaa.android.widgets.notification.PrayerNotificationPublisher"
 
 class ExpoWidgetsModule : Module() {
 
@@ -88,6 +94,12 @@ class ExpoWidgetsModule : Module() {
                     ctx.sendBroadcast(intent)
                 }
             }
+            // The broadcast above is skipped when no widget is placed, and it is what would
+            // otherwise start the worker that repaints the shade card. Refresh the card directly
+            // so a data change reaches it without a home-screen widget.
+            if (isPersistentNotificationEnabled(ctx)) {
+                invokeNotificationPublisher(ctx, "publishFromBridge")
+            }
             return@AsyncFunction null
         }
 
@@ -95,6 +107,32 @@ class ExpoWidgetsModule : Module() {
             return@Function context
                 .getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE)
                 .getLong(KEY_LAST_RENDER, 0L)
+        }
+
+        Function("isPersistentNotificationEnabled") {
+            return@Function context
+                .getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_PERSISTENT_NOTIFICATION_ENABLED, false)
+        }
+
+        AsyncFunction("setPersistentNotificationEnabled") { enabled: Boolean ->
+            val ctx = context
+            // Persisting an enable the system will not honour would leave the switch reading on
+            // with nothing in the shade, so refuse it and let the caller report why.
+            if (enabled && !areNotificationsEnabled(ctx)) {
+                return@AsyncFunction false
+            }
+
+            ctx.getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_PERSISTENT_NOTIFICATION_ENABLED, enabled)
+                .apply()
+
+            invokeNotificationPublisher(
+                context = ctx,
+                methodName = if (enabled) "publishFromBridge" else "cancelFromBridge"
+            )
+            return@AsyncFunction true
         }
 
         Function("getPlacedWidgetCount") {
@@ -129,6 +167,25 @@ class ExpoWidgetsModule : Module() {
                 }
             }
             return@Function false
+        }
+    }
+
+    private fun areNotificationsEnabled(context: Context): Boolean =
+        context.getSystemService(NotificationManager::class.java)?.areNotificationsEnabled() ?: false
+
+    private fun isPersistentNotificationEnabled(context: Context): Boolean = context
+        .getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE)
+        .getBoolean(KEY_PERSISTENT_NOTIFICATION_ENABLED, false)
+
+    private fun invokeNotificationPublisher(context: Context, methodName: String) {
+        runCatching {
+            Class.forName(NOTIFICATION_PUBLISHER_CLASS)
+                .getMethod(methodName, Context::class.java)
+                .invoke(null, context)
+        }.onFailure {
+            // The publisher lives in the app module and is reached by name, so a rename or a
+            // stripped class fails here rather than at compile time.
+            Log.e(TAG, "Notification publisher unreachable: $methodName", it)
         }
     }
 }

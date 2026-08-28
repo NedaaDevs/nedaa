@@ -339,7 +339,7 @@ private fun MediumPrayerTimesView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             prayers.forEach { prayer ->
-                val isNext = prayer.name == nextPrayer?.name && prayer.time == nextPrayer?.time
+                val isNext = isNextPrayer(prayer, nextPrayer)
                 val isPast = prayer.isPast
 
                 // Each prayer column
@@ -489,7 +489,7 @@ private fun LargePrayerTimesView(
         // instead of the last rows clipping off the bottom.
         Column(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
             prayers.forEach { prayer ->
-                val isNext = prayer.name == nextPrayer?.name && prayer.time == nextPrayer?.time
+                val isNext = isNextPrayer(prayer, nextPrayer)
                 val isPrevious = prayer.name == previousPrayer?.name && prayer.time == previousPrayer?.time
                 val isPast = prayer.isPast
 
@@ -636,7 +636,7 @@ private fun NoDataView(context: Context) {
 /**
  * Get localized prayer name
  */
-private fun getPrayerDisplayName(name: String, context: Context): String {
+internal fun getPrayerDisplayName(name: String, context: Context): String {
     return when (name.lowercase()) {
         PrayerData.FAJR -> context.getString(R.string.prayer_fajr)
         PrayerData.SUNRISE -> context.getString(R.string.prayer_sunrise)
@@ -648,3 +648,7 @@ private fun getPrayerDisplayName(name: String, context: Context): String {
         else -> name.replaceFirstChar { it.uppercase() }
     }
 }
+
+/** Matches a displayed prayer to the service's next-prayer result by identity and instant. */
+internal fun isNextPrayer(prayer: PrayerData, nextPrayer: PrayerData?): Boolean =
+    nextPrayer != null && prayer.name == nextPrayer.name && prayer.time == nextPrayer.time

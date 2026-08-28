@@ -9,6 +9,9 @@ type SwitchProps = {
   size?: SwitchSize;
   disabled?: boolean;
   accessibilityLabel?: string;
+  accessibilityRole?: "switch";
+  accessibilityState?: { checked?: boolean; disabled?: boolean };
+  accessibilityHint?: string;
   style?: any;
 };
 

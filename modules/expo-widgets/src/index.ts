@@ -61,3 +61,15 @@ export function requestDisableBatteryOptimization(): boolean {
   if (Platform.OS !== "android" || !NativeModule) return false;
   return NativeModule.requestDisableBatteryOptimization();
 }
+
+export const isPersistentNotificationEnabled = (): boolean => {
+  if (Platform.OS !== "android" || !NativeModule) return false;
+  return NativeModule.isPersistentNotificationEnabled();
+};
+
+// Resolves false when the system will not show the notification, so the caller can undo the
+// switch rather than leave it reading on with nothing in the shade.
+export const setPersistentNotificationEnabled = async (enabled: boolean): Promise<boolean> => {
+  if (Platform.OS !== "android" || !NativeModule) return false;
+  return NativeModule.setPersistentNotificationEnabled(enabled);
+};

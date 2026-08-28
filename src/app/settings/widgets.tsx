@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useToastStore } from "@/stores/toast";
 
@@ -50,9 +51,12 @@ import {
   pinWidget,
   isBatteryOptimizationDisabled,
   requestDisableBatteryOptimization,
+  isPersistentNotificationEnabled,
+  setPersistentNotificationEnabled,
   type WidgetType,
 } from "expo-widgets";
 import { PlatformType } from "@/enums/app";
+import { applyPersistentNotificationToggle } from "@/utils/widgets/persistentNotificationToggle";
 
 type WidgetItem = {
   type: WidgetType;
@@ -228,6 +232,46 @@ const WidgetCard = ({
   );
 };
 
+const PersistentNotificationCard = ({
+  enabled,
+  onValueChange,
+  t,
+}: {
+  enabled: boolean;
+  onValueChange: (value: boolean) => void;
+  t: (key: string) => string;
+}) => (
+  <Card variant="grouped" borderRadius="$7" borderWidth={1} borderColor="$outline">
+    <HStack padding="$4" alignItems="center" gap="$3">
+      <Box
+        width={40}
+        height={40}
+        borderRadius="$6"
+        backgroundColor="$primarySubtle"
+        alignItems="center"
+        justifyContent="center">
+        <Icon as={Clock} size="sm" color="$primary" />
+      </Box>
+      <VStack flex={1} gap="$0.5">
+        <Text size="lg" fontWeight="600">
+          {t("settings.widgets.persistentNotification")}
+        </Text>
+        <Text size="xs" color="$typographySecondary">
+          {t("settings.widgets.persistentNotificationDesc")}
+        </Text>
+      </VStack>
+      <Switch
+        value={enabled}
+        onValueChange={onValueChange}
+        style={{ minWidth: 44, minHeight: 44 }}
+        accessibilityRole="switch"
+        accessibilityLabel={t("a11y.settings.widgets.persistentNotification")}
+        accessibilityState={{ checked: enabled }}
+      />
+    </HStack>
+  </Card>
+);
+
 const REFRESH_TOASTS = {
   confirmed: { key: "settings.widgets.refreshConfirmed", type: "success" },
   pending: { key: "settings.widgets.refreshPending", type: "info" },
@@ -244,6 +288,7 @@ const WidgetSettings = () => {
     canPin = false;
   }
   const [batteryOptDisabled, setBatteryOptDisabled] = useState(true);
+  const [persistentNotificationEnabled, setPersistentNotificationEnabledState] = useState(false);
   // True only while the user's grant is pending (dialog open), so returning to
   // the app can confirm success with a toast rather than a silent card swap.
   const awaitingBatteryGrant = useRef(false);
@@ -269,6 +314,31 @@ const WidgetSettings = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs state from a native battery query on foreground return
     refreshBatteryState();
   }, [becameActiveAt, refreshBatteryState]);
+
+  const refreshPersistentNotificationState = useCallback(() => {
+    if (Platform.OS !== PlatformType.ANDROID) return;
+    setPersistentNotificationEnabledState(isPersistentNotificationEnabled());
+  }, []);
+
+  useFocusEffect(refreshPersistentNotificationState);
+
+  const handlePersistentNotification = useCallback(
+    async (enabled: boolean) => {
+      const previous = persistentNotificationEnabled;
+      try {
+        const accepted = await applyPersistentNotificationToggle(enabled, previous, {
+          setLocalEnabled: setPersistentNotificationEnabledState,
+          setNativeEnabled: setPersistentNotificationEnabled,
+        });
+        if (!accepted && enabled) {
+          showToast(t("settings.widgets.persistentNotificationDenied"), "error");
+        }
+      } catch {
+        // The helper restores the previous value when the native write fails.
+      }
+    },
+    [persistentNotificationEnabled, showToast, t]
+  );
 
   const handleBatteryOptimization = () => {
     awaitingBatteryGrant.current = true;
@@ -394,6 +464,15 @@ const WidgetSettings = () => {
                 {t("settings.widgets.batteryOptDone")}
               </Text>
             </Card>
+          )}
+
+          {/* Notification shade card (Android only) */}
+          {Platform.OS === PlatformType.ANDROID && (
+            <PersistentNotificationCard
+              enabled={persistentNotificationEnabled}
+              onValueChange={handlePersistentNotification}
+              t={t}
+            />
           )}
 
           {/* Android widget list */}

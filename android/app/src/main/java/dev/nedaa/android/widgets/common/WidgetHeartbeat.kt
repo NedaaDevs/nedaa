@@ -10,6 +10,7 @@ import androidx.glance.LocalState
 object WidgetHeartbeat {
     const val PREFS = "nedaa_widgets"
     const val KEY_LAST_RENDER = "widgetLastRenderedAt"
+    const val KEY_PERSISTENT_NOTIFICATION_ENABLED = "persistentNotificationEnabled"
 
     fun stamp(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
