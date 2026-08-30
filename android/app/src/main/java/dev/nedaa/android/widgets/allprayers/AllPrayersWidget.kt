@@ -64,6 +64,7 @@ class AllPrayersWidget : GlanceAppWidget() {
             val nextPrayer = prayerService.getNextPrayer(showSunrise = true)
             val previousPrayer = prayerService.getPreviousPrayer(showSunrise = true)
             val config = WidgetConfig.get(context)
+            val localizedContext = config.localizedContext(context)
 
             NedaaWidgetTheme {
                 val size = LocalSize.current
@@ -78,10 +79,10 @@ class AllPrayersWidget : GlanceAppWidget() {
                     contentAlignment = Alignment.Center
                 ) {
                     if (dayPrayers == null || dayPrayers.prayers.isEmpty()) {
-                        EmptyState(context)
+                        EmptyState(localizedContext)
                     } else {
                         AllPrayersContent(
-                            context = context,
+                            context = localizedContext,
                             config = config,
                             dayPrayers = dayPrayers,
                             nextPrayer = nextPrayer,

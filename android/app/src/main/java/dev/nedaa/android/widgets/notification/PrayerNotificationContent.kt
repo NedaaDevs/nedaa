@@ -34,7 +34,7 @@ fun PrayerNotificationCompact(
     nextPrayer: PrayerData?,
     config: WidgetConfig
 ) {
-    val context = LocalContext.current
+    val context = config.localizedContext(LocalContext.current)
     val prayers = dayPrayers?.prayers.orEmpty()
     val timezone = dayPrayers?.getTimezoneObj()
 

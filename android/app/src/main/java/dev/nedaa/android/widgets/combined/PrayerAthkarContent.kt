@@ -50,7 +50,7 @@ fun PrayerAthkarContent(
     currentDate: Date? = null,
     modifier: GlanceModifier = GlanceModifier
 ) {
-    val context = LocalContext.current
+    val context = config.localizedContext(LocalContext.current)
     val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
     val tz = timezone ?: TimeZone.getDefault()
 

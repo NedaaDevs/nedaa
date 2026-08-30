@@ -32,7 +32,7 @@ import dev.nedaa.android.widgets.common.NedaaColors
 import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.data.QadaSummary
 
-/** [ramadanDeadline], when present, is a pre-formatted "Ramadan · 42d" make-up deadline line. */
+/** [ramadanDeadline], when present, is a localized make-up deadline line. */
 @Composable
 fun QadaContentMedium(
     summary: QadaSummary,
@@ -40,7 +40,7 @@ fun QadaContentMedium(
     ramadanDeadline: String? = null,
     modifier: GlanceModifier = GlanceModifier
 ) {
-    val context = LocalContext.current
+    val context = config.localizedContext(LocalContext.current)
     val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse("myapp:///qada")).apply {
         setPackage(context.packageName)
     }

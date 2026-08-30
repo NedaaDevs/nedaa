@@ -41,7 +41,7 @@ fun AthkarContentMedium(
     promotedSession: String = "morning",
     modifier: GlanceModifier = GlanceModifier
 ) {
-    val context = LocalContext.current
+    val context = config.localizedContext(LocalContext.current)
     val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse("myapp:///athkar")).apply {
         setPackage(context.packageName)
     }

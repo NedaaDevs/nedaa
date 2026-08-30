@@ -81,6 +81,7 @@ class SuhoorIftarWidget : GlanceAppWidget() {
             val fajr = todaysPrayers?.prayers?.firstOrNull { it.name == PrayerData.FAJR }
             val maghrib = todaysPrayers?.prayers?.firstOrNull { it.name == PrayerData.MAGHRIB }
             val config = WidgetConfig.get(context)
+            val localizedContext = config.localizedContext(context)
 
             NedaaWidgetTheme {
                 val size = LocalSize.current
@@ -96,8 +97,8 @@ class SuhoorIftarWidget : GlanceAppWidget() {
                     when {
                         inRamadan && fajr != null && maghrib != null ->
                             SuhoorIftarContent(fajr, maghrib, wide = size.width >= WidgetSizes.MEDIUM.width, config = config)
-                        ramadanDay != null -> RamadanCountdown(context, ramadanDay, config)
-                        else -> EmptyState(context)
+                        ramadanDay != null -> RamadanCountdown(localizedContext, ramadanDay, config)
+                        else -> EmptyState(localizedContext)
                     }
                 }
             }
@@ -110,7 +111,7 @@ private fun launchIntent(context: Context): Intent =
 
 @Composable
 private fun SuhoorIftarContent(fajr: PrayerData, maghrib: PrayerData, wide: Boolean, config: WidgetConfig) {
-    val context = LocalContext.current
+    val context = config.localizedContext(LocalContext.current)
     val suhoor = context.getString(R.string.widget_suhoor)
     val iftar = context.getString(R.string.widget_iftar)
     val now = System.currentTimeMillis()

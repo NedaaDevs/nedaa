@@ -34,14 +34,15 @@ import dev.nedaa.android.widgets.data.QadaSummary
 import dev.nedaa.android.widgets.importantdays.ImportantDaysDataService
 
 /**
- * "Ramadan · 42d" make-up deadline line for the Qada widgets, or null if the important-days
+ * "Ramadan · 42 days" make-up deadline line for the Qada widgets, or null if the important-days
  * payload hasn't been written yet (Task 5) or doesn't include a Ramadan row.
  */
 internal fun ramadanDeadlineLine(context: Context, config: WidgetConfig): String? {
     val ramadan = ImportantDaysDataService(context).getUpcoming(10).firstOrNull { it.id == "ramadan" }
         ?: return null
     val days = config.localizeNumber(ImportantDaysDataService.daysUntil(ramadan.dateISO))
-    return "${ramadan.name} · ${days}d"
+    val localizedContext = config.localizedContext(context)
+    return "${ramadan.name} · $days ${localizedContext.getString(R.string.widget_days_unit)}"
 }
 
 /**
@@ -65,7 +66,7 @@ fun ResponsiveQadaContent(
 
 /**
  * Content composable for Qada widget (2x2 fixed).
- * [ramadanDeadline], when present, is a pre-formatted "Ramadan · 42d" make-up deadline line.
+ * [ramadanDeadline], when present, is a localized make-up deadline line.
  */
 @Composable
 fun QadaContent(
@@ -74,7 +75,7 @@ fun QadaContent(
     ramadanDeadline: String? = null,
     modifier: GlanceModifier = GlanceModifier
 ) {
-    val context = LocalContext.current
+    val context = config.localizedContext(LocalContext.current)
     val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse("myapp:///qada")).apply {
         setPackage(context.packageName)
     }
