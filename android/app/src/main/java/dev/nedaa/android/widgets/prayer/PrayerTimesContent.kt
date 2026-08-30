@@ -87,7 +87,7 @@ fun PrayerTimesContent(
     config: WidgetConfig,
     modifier: GlanceModifier = GlanceModifier
 ) {
-    val context = config.localizedContext(LocalContext.current)
+    val context = LocalContext.current
 
     // Get launch intent for main app
     val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)

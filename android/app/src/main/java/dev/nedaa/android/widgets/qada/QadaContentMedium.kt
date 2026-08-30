@@ -40,7 +40,7 @@ fun QadaContentMedium(
     ramadanDeadline: String? = null,
     modifier: GlanceModifier = GlanceModifier
 ) {
-    val context = config.localizedContext(LocalContext.current)
+    val context = LocalContext.current
     val deepLinkIntent = Intent(Intent.ACTION_VIEW, Uri.parse("myapp:///qada")).apply {
         setPackage(context.packageName)
     }

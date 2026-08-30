@@ -17,9 +17,18 @@ class WidgetConfigTest {
 
     @Test
     fun `localizeNumber restores Western digits when Arabic numerals are disabled`() {
+        // An Arabic device formats times as ١٢:٣٤, so the Western-numerals
+        // preference has to convert back rather than pass the value through.
         val config = WidgetConfig(Locale.forLanguageTag("ar"), false, timezone, 0)
 
         assertEquals("12:34", config.localizeNumber("١٢:٣٤"))
         assertEquals("12:34", config.localizeNumber("۱۲:۳۴"))
+    }
+
+    @Test
+    fun `localizeNumber leaves separators and letters alone`() {
+        val config = WidgetConfig(Locale.forLanguageTag("ar"), true, timezone, 0)
+
+        assertEquals("رمضان · ٤٢", config.localizeNumber("رمضان · 42"))
     }
 }

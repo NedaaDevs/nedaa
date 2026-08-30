@@ -107,7 +107,6 @@ class ImportantDaysWidget : GlanceAppWidget() {
             // provideGlance, so values read out here would redraw stale.
             val days = ImportantDaysDataService(context).getUpcoming(3)
             val config = WidgetConfig.get(context)
-            val localizedContext = config.localizedContext(context)
 
             NedaaWidgetTheme {
                 val size = LocalSize.current
@@ -121,9 +120,9 @@ class ImportantDaysWidget : GlanceAppWidget() {
                     contentAlignment = Alignment.Center
                 ) {
                     when {
-                        days.isEmpty() -> EmptyState(localizedContext)
-                        size.width >= WidgetSizes.MEDIUM.width -> WideContent(localizedContext, config, days)
-                        else -> CompactContent(localizedContext, config, days.first())
+                        days.isEmpty() -> EmptyState(context)
+                        size.width >= WidgetSizes.MEDIUM.width -> WideContent(context, config, days)
+                        else -> CompactContent(context, config, days.first())
                     }
                 }
             }

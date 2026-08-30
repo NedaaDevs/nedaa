@@ -54,7 +54,7 @@ export const buildHijriTodayPayload = (
   return { hijriLabel: hijriLabelOf(t, today.day, today.month, today.year) };
 };
 
-// Writes Important Days + today's Hijri date + locale config into the DB the
+// Writes Important Days + today's Hijri date + widget config into the DB the
 // Android widgets read. Routed through the app's shared serialized connection
 // (a second handle to nedaa.db NPEs mid-session). Widgets are decoration: any
 // failure here must never break the app.
@@ -68,7 +68,6 @@ export const syncWidgetPayloads = async (): Promise<void> => {
     const timezone = useLocationStore.getState().locationDetails.timezone;
     const days = buildImportantDaysPayload(t, timezone, hijriDaysOffset);
     const h = buildHijriTodayPayload(t, timezone, hijriDaysOffset);
-    const locale = useAppStore.getState().locale;
     const useWesternNumerals = usePreferencesStore.getState().useWesternNumerals ? 1 : 0;
 
     await sharedDb.run(async (db) => {
@@ -102,13 +101,13 @@ export const syncWidgetPayloads = async (): Promise<void> => {
           `INSERT OR REPLACE INTO widget_hijri_today (id, hijriLabel, dateInt) VALUES (1, ?, ?)`,
           [h.hijriLabel, dateToInt(timeZonedNow(timezone))]
         );
-        // Locale + numeral preference so Kotlin-rendered numbers/dates match the
-        // app's chosen language (not the device locale).
+        // The numeral preference, so Kotlin-rendered digits match the in-app setting.
+        // A widget takes its language from the device, so the config carries no locale.
         // Timezone and Hijri offset travel with the config so widgets key their "today"
         // off the user's location the way the app does, not off the device zone.
         await db.runAsync(
-          `INSERT OR REPLACE INTO widget_config (id, locale, useWesternNumerals, timezone, hijriDaysOffset) VALUES (1, ?, ?, ?, ?)`,
-          [locale, useWesternNumerals, timezone, hijriDaysOffset]
+          `INSERT OR REPLACE INTO widget_config (id, useWesternNumerals, timezone, hijriDaysOffset) VALUES (1, ?, ?, ?)`,
+          [useWesternNumerals, timezone, hijriDaysOffset]
         );
       });
     });

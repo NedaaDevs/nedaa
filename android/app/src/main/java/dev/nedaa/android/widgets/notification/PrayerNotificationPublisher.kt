@@ -63,10 +63,9 @@ object PrayerNotificationPublisher {
         )
         val nextPrayer = service.getNextPrayer(showSunrise = false)
         val config = WidgetConfig.get(context)
-        val localizedContext = config.localizedContext(context)
 
         val collapsed = GlanceRemoteViews().compose(
-            context = localizedContext,
+            context = context,
             size = DpSize(WIDTH_DP.dp, COLLAPSED_HEIGHT_DP.dp),
             content = {
                 NedaaWidgetTheme {
@@ -75,7 +74,7 @@ object PrayerNotificationPublisher {
             }
         ).remoteViews
         val expanded = GlanceRemoteViews().compose(
-            context = localizedContext,
+            context = context,
             size = DpSize(WIDTH_DP.dp, EXPANDED_HEIGHT_DP.dp),
             content = {
                 NedaaWidgetTheme {

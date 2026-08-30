@@ -1,23 +1,27 @@
 package dev.nedaa.android.widgets.common
 
 import android.content.Context
-import android.content.res.Configuration
 import java.util.Locale
 import java.util.TimeZone
 
 /**
- * The app's chosen language + numeral preference (written to the DB by the JS
- * layer), so widgets format dates/numbers to match the in-app UI rather than the
- * device locale. Falls back to the device locale when the config is absent.
+ * How a widget formats itself. A widget sits on the home screen next to other
+ * widgets, so its language comes from the device and not from the language the
+ * user picked inside the app. The numeral toggle, the timezone and the Hijri
+ * offset are user preferences, so the JS layer writes those to the DB.
  */
 data class WidgetConfig(
+    /** The device locale. Android resolves widget string resources against it too. */
     val locale: Locale,
     val arabicNumerals: Boolean,
     /** The user's location zone, so a widget's "today" is the day the app is showing. */
     val timezone: TimeZone,
     val hijriDaysOffset: Int,
 ) {
-    /** Normalize digits to the numeral style selected in the app. */
+    /**
+     * Normalize digits to the numeral style this widget shows. Date formatters follow
+     * the device locale, so digits arrive in either style and both need a conversion.
+     */
     fun localizeNumber(value: String): String {
         val builder = StringBuilder(value.length)
         for (c in value) {
@@ -38,55 +42,49 @@ data class WidgetConfig(
 
     fun localizeNumber(value: Int): String = localizeNumber(value.toString())
 
-    /** Resolve Android string resources using Nedaa's selected app language. */
-    fun localizedContext(context: Context): Context {
-        val widgetLocale = locale
-        val configuration = Configuration(context.resources.configuration).apply {
-            setLocale(widgetLocale)
-            setLayoutDirection(widgetLocale)
-        }
-        return context.createConfigurationContext(configuration)
-    }
-
     companion object {
         private val WESTERN_DIGITS = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
         private val ARABIC_DIGITS = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
         private val PERSIAN_DIGITS = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
 
         fun get(context: Context): WidgetConfig {
-            var localeTag: String? = null
             var useWestern = false
             var zoneId: String? = null
             var hijriOffset = 0
             // The table may not exist yet on first launch (JS writes it on sync);
-            // any failure falls through to the device-locale default.
+            // any failure falls through to the defaults below.
             try {
                 DatabaseProvider.getNedaaDatabase(context)?.use { db ->
                     db.rawQuery(
-                        "SELECT locale, useWesternNumerals, timezone, hijriDaysOffset FROM widget_config WHERE id = 1",
+                        "SELECT useWesternNumerals, timezone, hijriDaysOffset FROM widget_config WHERE id = 1",
                         null
                     ).use { c ->
                         if (c.moveToFirst()) {
-                            localeTag = c.getString(0)
-                            useWestern = c.getInt(1) == 1
+                            useWestern = c.getInt(0) == 1
                             // Added after the table shipped, so absent on an install that
                             // has not synced since.
-                            if (!c.isNull(2)) zoneId = c.getString(2)
-                            if (!c.isNull(3)) hijriOffset = c.getInt(3)
+                            if (!c.isNull(1)) zoneId = c.getString(1)
+                            if (!c.isNull(2)) hijriOffset = c.getInt(2)
                         }
                     }
                 }
             } catch (_: Exception) {
-                // No config yet — use the device locale below.
+                // No config yet — use the defaults.
             }
-            val locale = localeTag
-                ?.replace('_', '-')
-                ?.let(Locale::forLanguageTag)
-                ?.takeUnless { it.language.isBlank() }
-                ?: Locale.getDefault()
+            val locale = deviceLocale(context)
             val arabicNumerals = locale.language == "ar" && !useWestern
             val zone = zoneId?.let { TimeZone.getTimeZone(it) } ?: TimeZone.getDefault()
             return WidgetConfig(locale, arabicNumerals, zone, hijriOffset)
+        }
+
+        /**
+         * The locale Android resolves this widget's string resources against, so the
+         * digits and the dates match the strings. Locale.getDefault() can drift from
+         * the resource configuration, so read the configuration itself.
+         */
+        private fun deviceLocale(context: Context): Locale {
+            val locales = context.resources.configuration.locales
+            return if (locales.isEmpty) Locale.getDefault() else locales[0]
         }
     }
 }
