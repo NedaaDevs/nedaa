@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import { Asset } from "expo-asset";
 
 // Constants
-import { HISN_MUSLIM_DB_NAME } from "@/constants/DB";
+import { HISN_MUSLIM_DB_NAME, FTS_DB_OPEN_OPTIONS } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 
 // Types
@@ -77,7 +77,7 @@ const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
         await ensureDbCopied();
         return await SQLite.openDatabaseAsync(
           HISN_MUSLIM_DB_NAME,
-          { useNewConnection: true },
+          FTS_DB_OPEN_OPTIONS,
           getDbDirectory().uri
         );
       } catch (error) {

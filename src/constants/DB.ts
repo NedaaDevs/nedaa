@@ -20,3 +20,11 @@ export const QURAN_BOUNDS_DB_NAME = "bounds.db" as const;
 
 export const CITIES_SEED_DB_NAME = "cities-seed.db" as const;
 export const CITIES_DB_NAME = "cities.db" as const;
+
+// Open options for any connection whose schema has an FTS5 table. expo-sqlite's close sweep
+// finalizes every statement on the connection, FTS5's internal ones included, and FTS5 frees
+// the same pointers again on disconnect — the double free aborts the process.
+export const FTS_DB_OPEN_OPTIONS = {
+  useNewConnection: true,
+  finalizeUnusedStatementsBeforeClosing: false,
+} as const;

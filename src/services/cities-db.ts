@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import { Asset } from "expo-asset";
 
 // Constants
-import { CITIES_DB_NAME, CITIES_SEED_DB_NAME } from "@/constants/DB";
+import { CITIES_DB_NAME, CITIES_SEED_DB_NAME, FTS_DB_OPEN_OPTIONS } from "@/constants/DB";
 import { NEAREST_CITY_INITIAL_DEGREES, NEAREST_CITY_MAX_DEGREES } from "@/constants/Cities";
 import { appGroupId } from "@/constants/App";
 
@@ -159,11 +159,7 @@ const openDatabase = (): Promise<SQLite.SQLiteDatabase> => {
       try {
         if (tier === CitiesTier.SEED) await ensureSeedCopied();
         const name = tier === CitiesTier.FULL ? CITIES_DB_NAME : CITIES_SEED_DB_NAME;
-        return await SQLite.openDatabaseAsync(
-          name,
-          { useNewConnection: true },
-          getDbDirectory().uri
-        );
+        return await SQLite.openDatabaseAsync(name, FTS_DB_OPEN_OPTIONS, getDbDirectory().uri);
       } catch (error) {
         dbPromise = null;
         openedTier = null;

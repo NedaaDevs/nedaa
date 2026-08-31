@@ -66,7 +66,7 @@ export const downloadCitiesPack = async ({
     },
   };
 
-  log.i("CitiesDB", `downloading full pack v${CITIES_PACK_VERSION}`);
+  log.i("CitiesDB", `downloading full pack ${CITIES_PACK_VERSION}`);
   const downloaded = await new DownloadTask(url, staging, options).downloadAsync();
 
   if (!downloaded || !staging.exists || staging.size === 0) {
@@ -77,7 +77,7 @@ export const downloadCitiesPack = async ({
   const target = new File(getDbDirectory(), CITIES_DB_NAME);
   // The reader has to let go before the file is replaced. Deleting a database whose WAL
   // index is still mapped raises SIGBUS in the next reader of that mapping, so a close
-  // that fails leaves the staged download in place for the next launch to install.
+  // that fails abandons the install; the next attempt downloads the pack again.
   if (!(await invalidateCitiesDb())) {
     log.w("CitiesDB", "cities.db still open — install deferred");
     return;
@@ -92,5 +92,5 @@ export const downloadCitiesPack = async ({
   // Awaited because the native side relocates on a background dispatcher; reading the
   // destination in the same tick would otherwise see a file that has not landed.
   await staging.move(target);
-  log.i("CitiesDB", `installed full pack v${CITIES_PACK_VERSION} (${target.size} bytes)`);
+  log.i("CitiesDB", `installed full pack ${CITIES_PACK_VERSION} (${target.size} bytes)`);
 };

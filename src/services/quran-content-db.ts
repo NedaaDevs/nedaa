@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { File, Directory, Paths, DownloadTask } from "expo-file-system";
 import { unzip } from "react-native-zip-archive";
 
-import { QURAN_DB_NAME } from "@/constants/DB";
+import { QURAN_DB_NAME, FTS_DB_OPEN_OPTIONS } from "@/constants/DB";
 import { appGroupId } from "@/constants/App";
 import { PlatformType } from "@/enums/app";
 import { getUserAgent } from "@/utils/userAgent";
@@ -307,7 +307,7 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
         await ensureInstalledDbForOpen();
         opened = await SQLite.openDatabaseAsync(
           QURAN_DB_NAME,
-          { useNewConnection: true },
+          FTS_DB_OPEN_OPTIONS,
           await getDirectory()
         );
         // Integrity probe: a stamped file can still be truncated/schema-broken.
