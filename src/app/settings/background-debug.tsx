@@ -21,6 +21,10 @@ import {
   unregisterBackgroundRefresh,
 } from "@/tasks/backgroundRefresh";
 
+// The two platforms name the background-task consumer type differently:
+// `BackgroundTaskConsumer.kt` returns "expo-background-task", the Swift one "backgroundTask".
+const BACKGROUND_TASK_TYPES = new Set(["expo-background-task", "backgroundTask"]);
+
 const resultBadgeAction = (result: TaskLogEntry["result"]) => {
   switch (result) {
     case "success":
@@ -50,6 +54,7 @@ const formatTimestamp = (iso: string): string => {
 const BackgroundDebugScreen = () => {
   const [bgStatus, setBgStatus] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
+  const [consumerCount, setConsumerCount] = useState<number | null>(null);
   const [logs, setLogs] = useState<TaskLogEntry[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -71,6 +76,16 @@ const BackgroundDebugScreen = () => {
       setIsRegistered(registered);
     } catch {
       setIsRegistered(false);
+    }
+
+    // Background-task consumers registered for this app. The native scheduler runs one
+    // task execution per consumer, so anything above 1 means the fan-out comes from a
+    // duplicated consumer; 1 alongside repeated runs points at queued worker entries.
+    try {
+      const tasks = await TaskManager.getRegisteredTasksAsync();
+      setConsumerCount(tasks.filter((task) => BACKGROUND_TASK_TYPES.has(task.taskType)).length);
+    } catch {
+      setConsumerCount(null);
     }
   }, []);
 
@@ -173,6 +188,27 @@ const BackgroundDebugScreen = () => {
                       : isRegistered
                         ? "Registered"
                         : "Not Registered"}
+                  </Badge.Text>
+                </Badge>
+              </HStack>
+
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                accessibilityLabel={`Background task consumers: ${consumerCount === null ? "unknown" : consumerCount}, expected 1`}>
+                <Text color="$typography">Consumers</Text>
+                <Badge
+                  action={
+                    consumerCount === null ? "info" : consumerCount === 1 ? "success" : "error"
+                  }>
+                  {/* The count carries "expected 1" in its own text: a red badge is not
+                      readable on its own to a colour-insensitive eye. */}
+                  <Badge.Text>
+                    {consumerCount === null
+                      ? "Unknown"
+                      : consumerCount === 1
+                        ? "1"
+                        : `${consumerCount} — expected 1`}
                   </Badge.Text>
                 </Badge>
               </HStack>

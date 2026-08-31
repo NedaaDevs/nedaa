@@ -224,3 +224,59 @@ describe("expiration listener", () => {
     });
   });
 });
+
+// A queued WorkManager backlog invokes the task many times at once. Each run
+// rebuilds the whole notification set, so overlapping runs race the same alarm
+// budget; the guard collapses them into one.
+describe("single-flight guard", () => {
+  const flushMicrotasks = () => new Promise((resolve) => setImmediate(resolve));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockNow = new Date("2026-08-15T08:00:00Z");
+    mockWaitForHydration.mockImplementation(async () => {});
+    mockAwaitPendingReapply.mockResolvedValue(false);
+    mockGetByRange.mockResolvedValue(fourRows);
+    mockRefreshTimings.mockResolvedValue(fourRows);
+    mockScheduleAll.mockResolvedValue({ success: true, scheduledCount: 10 });
+  });
+
+  it("runs the work once when invoked concurrently, and gives both callers that result", async () => {
+    let releaseSchedule: (() => void) | null = null;
+    mockScheduleAll.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseSchedule = () => resolve({ success: true, scheduledCount: 10 });
+        })
+    );
+
+    const first = executeBackgroundRefresh();
+    const second = executeBackgroundRefresh();
+    await flushMicrotasks();
+
+    expect(mockScheduleAll).toHaveBeenCalledTimes(1);
+
+    releaseSchedule!();
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    expect(firstResult).toBe(1); // Success
+    expect(secondResult).toBe(firstResult);
+  });
+
+  it("starts a fresh run once the previous one has settled", async () => {
+    await executeBackgroundRefresh();
+    await executeBackgroundRefresh();
+
+    expect(mockScheduleAll).toHaveBeenCalledTimes(2);
+  });
+
+  it("releases the guard when a run fails, so the next invocation is not wedged", async () => {
+    mockScheduleAll.mockRejectedValueOnce(new Error("scheduling blew up"));
+
+    expect(await executeBackgroundRefresh()).toBe(2); // Failed
+
+    mockScheduleAll.mockResolvedValue({ success: true, scheduledCount: 10 });
+
+    expect(await executeBackgroundRefresh()).toBe(1); // Success
+  });
+});

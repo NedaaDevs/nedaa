@@ -67,7 +67,7 @@ const waitForBackgroundStores = async (): Promise<string[]> => {
 
 // The task body, exported so the debug screen can run it on demand. The OS
 // trigger and the manual run share one code path and one log trail.
-export const executeBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResult> => {
+const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResult> => {
   const startTime = Date.now();
 
   try {
@@ -204,6 +204,36 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
     // buffers lines, so an explicit flush keeps the run's trace on disk.
     AppLogger.flushAll();
   }
+};
+
+let inFlightRun: Promise<BackgroundTask.BackgroundTaskResult> | null = null;
+
+/**
+ * Runs the refresh, or joins the run already in progress.
+ *
+ * One OS job can invoke the task many times at once, and every run rebuilds the whole
+ * notification set — N overlapping runs request N × ~70 alarms against Android's
+ * 500-concurrent-alarm-per-uid ceiling, and most of them fail. The `run_coalesced`
+ * entries also count the overlap, which the task log cannot otherwise show.
+ */
+export const executeBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResult> => {
+  const current = inFlightRun;
+  if (current) {
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      "run_coalesced",
+      "skipped",
+      "joined the run already in progress"
+    );
+    return current;
+  }
+
+  // Assigned before the first await so a caller arriving in the same tick sees it.
+  const run = runBackgroundRefresh().finally(() => {
+    if (inFlightRun === run) inFlightRun = null;
+  });
+  inFlightRun = run;
+  return run;
 };
 
 // Define the task in global scope (required by expo-task-manager)
