@@ -5,8 +5,6 @@ export type DeviceSpec = {
   width: number;
   height: number;
   framePath: string;
-  capturedRawWidth: number;
-  capturedRawHeight: number;
   supportsWidgets: boolean;
   // Which device-mockup chrome the hero compositor should draw around the
   // screenshot: Dynamic Island + iOS side buttons, Android punch-hole, or a
@@ -21,8 +19,6 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     width: 1290,
     height: 2796,
     framePath: "frames/iphone-6.9.svg",
-    capturedRawWidth: 1290,
-    capturedRawHeight: 2796,
     supportsWidgets: true,
     chrome: "iphone",
   },
@@ -32,8 +28,6 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     width: 1242,
     height: 2688,
     framePath: "frames/iphone-6.5.svg",
-    capturedRawWidth: 1242,
-    capturedRawHeight: 2688,
     supportsWidgets: true,
     chrome: "iphone",
   },
@@ -43,8 +37,6 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     width: 2064,
     height: 2752,
     framePath: "frames/ipad-13.svg",
-    capturedRawWidth: 2064,
-    capturedRawHeight: 2752,
     supportsWidgets: false,
     chrome: "ipad",
   },
@@ -54,8 +46,6 @@ export const DEVICE_MATRIX: readonly DeviceSpec[] = [
     width: 1080,
     height: 1920,
     framePath: "frames/android-phone.svg",
-    capturedRawWidth: 1080,
-    capturedRawHeight: 1920,
     supportsWidgets: false,
     chrome: "android",
   },

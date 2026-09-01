@@ -184,13 +184,23 @@ function escapeHtml(s: string): string {
   );
 }
 
+// A PNG's IHDR chunk holds the pixel dimensions at fixed offsets: the "IHDR"
+// tag at byte 12, then width at 16 and height at 20, both big-endian.
+const pngAspect = (png: Buffer): number => {
+  if (png.length < 24 || png.readUInt32BE(12) !== 0x49484452) {
+    throw new Error("Raw capture is not a PNG, so its aspect cannot be read.");
+  }
+  return png.readUInt32BE(20) / png.readUInt32BE(16);
+};
+
 function heroHtml(opts: {
   rawPngBase64: string;
+  rawAspect: number;
   copy: HeroCopy;
   device: DeviceSpec;
   locale: "en" | "ar";
 }): string {
-  const { copy, device, locale, rawPngBase64 } = opts;
+  const { copy, device, locale, rawPngBase64, rawAspect } = opts;
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
@@ -199,10 +209,11 @@ function heroHtml(opts: {
   const line2Below = copy.line2Below === true;
   const W = device.width;
   const H = device.height;
-  // Match the mockup's silhouette to the real device instead of assuming a
-  // phone shape — an iPad screenshot squeezed into a 19.5:9 phone frame via
-  // object-fit: cover crops most of the screen away.
-  const ASPECT = device.height / device.width;
+  // Match the mockup's silhouette to the captured screenshot, not the store
+  // canvas. The two differ wherever the capture device is not the canvas shape,
+  // and object-fit: cover then crops the screen to fill a frame of the wrong
+  // proportions.
+  const ASPECT = rawAspect;
 
   // Responsive: a headline band is always kept; the phone is then made as large
   // as possible, bounded by EITHER a width cap OR the height left under the
@@ -877,6 +888,7 @@ export async function renderVariant(input: RenderInput): Promise<Buffer> {
     }
     html = heroHtml({
       rawPngBase64: input.rawPng.toString("base64"),
+      rawAspect: pngAspect(input.rawPng),
       copy,
       device: input.device,
       locale: input.locale,
