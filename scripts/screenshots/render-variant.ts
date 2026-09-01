@@ -459,7 +459,6 @@ const PROMISES_COPY: Record<
     headlineLine1Italic: "don't",
     headlineLine2: "take from you.",
     rows: [
-      { key: "Free", body: "Forever. Not free-as-in-trial." },
       { key: "No ads", body: "Worship is not a billboard." },
       { key: "No accounts", body: "No sign-up. No email. No password." },
       { key: "No tracking", body: "No third-party SDKs. We don’t know who you are." },
@@ -471,7 +470,6 @@ const PROMISES_COPY: Record<
     headlineLine1Italic: "لا",
     headlineLine2: "نأخذه منك.",
     rows: [
-      { key: "مجاني", body: "إلى الأبد. ليس مجرّد فترة تجريبية." },
       { key: "بلا إعلانات", body: "العبادة ليست لوحة إعلانات." },
       { key: "بلا حسابات", body: "بلا تسجيل، ولا بريد، ولا كلمة مرور." },
       { key: "بلا تتبّع", body: "لا أنظمة تتبّع خارجية. لا نعرف من أنت." },
@@ -489,7 +487,7 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
   const W = device.width;
   const H = device.height;
 
-  // Responsive, no phone: a headline band on top, then the five rows are
+  // Responsive, no phone: a headline band on top, then the rows are
   // distributed to fill the remaining height so there is no dead space at the
   // bottom on either canvas (iOS 1290x2796 / Android 1080x1920).
   const HEADLINE_BAND = Math.round(H * 0.22);
