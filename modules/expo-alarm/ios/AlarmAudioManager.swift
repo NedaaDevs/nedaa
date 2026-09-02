@@ -587,11 +587,28 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     }
 
     private func findSoundFile(named name: String) -> URL? {
-        for ext in ["caf", "mp3", "wav", "m4a"] {
+        return AlarmSoundResolver.url(named: name)
+    }
+}
+
+/// Resolves a stored sound setting, which holds an extension-less base name, to the
+/// bundled file it refers to. Shared so that in-app playback, alarm scheduling and the
+/// bypass backup cannot drift apart on which extensions count or which file wins.
+enum AlarmSoundResolver {
+    static let extensions = ["caf", "mp3", "wav", "m4a"]
+
+    static func url(named name: String) -> URL? {
+        guard !name.isEmpty else { return nil }
+        for ext in extensions {
             if let url = Bundle.main.url(forResource: name, withExtension: ext) {
                 return url
             }
         }
         return nil
+    }
+
+    /// The file name AlarmKit is given for a custom alert sound.
+    static func fileName(named name: String) -> String? {
+        return url(named: name)?.lastPathComponent
     }
 }

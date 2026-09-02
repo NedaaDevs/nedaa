@@ -36,7 +36,8 @@ public struct AlarmActivityAttributes: ActivityAttributes {
     }
 }
 
-// sound/openText are unused on iOS (sound is always .default); kept for a
+// The alarm sound comes from the saved per-type settings, not from this record, because
+// the scheduler never sends one. openText is unused on iOS; both fields are kept for a
 // shared cross-platform shape.
 struct ScheduleAlarmOptions: Record {
     @Field var id: String = ""
@@ -161,6 +162,13 @@ public class ExpoAlarmModule: Module {
                         }
                         try? AlarmManager.shared.cancel(id: alarmUUID)
 
+                        let alertSound: AlertConfiguration.AlertSound
+                        if let soundFile = self.alarmSoundFileName(for: alarmType) {
+                            alertSound = .named(soundFile)
+                        } else {
+                            alertSound = .default
+                        }
+
                         if countdown {
                             // Preview alarm: render a live countdown in the Dynamic Island /
                             // lock screen before firing, then present the alert with Stop.
@@ -184,7 +192,7 @@ public class ExpoAlarmModule: Module {
                                 schedule: schedule,
                                 attributes: attributes,
                                 stopIntent: stopIntent,
-                                sound: .default
+                                sound: alertSound
                             )
                             _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
                         } else {
@@ -199,7 +207,7 @@ public class ExpoAlarmModule: Module {
                                 schedule: schedule,
                                 attributes: attributes,
                                 stopIntent: stopIntent,
-                                sound: .default
+                                sound: alertSound
                             )
                             _ = try await AlarmManager.shared.schedule(id: alarmUUID, configuration: config)
                         }
@@ -683,6 +691,18 @@ public class ExpoAlarmModule: Module {
             "snoozeMaxCount": 3,
             "snoozeDuration": 5
         ]
+    }
+
+    // AlarmKit matches an alert sound by file name in the app bundle, while the stored
+    // setting holds an extension-less base name. Returns nil when no bundled file
+    // matches, which leaves the system default alert sound in place.
+    private func alarmSoundFileName(for alarmType: String) -> String? {
+        let name = getAlarmSettings(alarmType)["sound"] as? String ?? ""
+        guard let file = AlarmSoundResolver.fileName(named: name) else {
+            PersistentLog.shared.alarm("No bundled file for alarm sound \(name)")
+            return nil
+        }
+        return file
     }
 
     private func saveAlarmSettings(_ alarmType: String, settings: [String: Any]) {

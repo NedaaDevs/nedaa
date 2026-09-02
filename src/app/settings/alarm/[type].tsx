@@ -30,6 +30,9 @@ import * as ExpoAlarm from "expo-alarm";
 
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
+
+// Enums
+import { PlatformType } from "@/enums/app";
 import { useAlarmStore } from "@/stores/alarm";
 import { createAsyncLock } from "@/utils/asyncLock";
 import {
@@ -132,17 +135,28 @@ const AlarmTypeSettingsScreen = () => {
     }
   };
 
-  const debouncedReschedule = useCallback(() => {
-    if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
-    rescheduleTimerRef.current = setTimeout(async () => {
-      await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
-      if (alarmType === "fajr") {
-        await scheduleFajrAlarm();
-      } else {
-        await scheduleFridayAlarm();
-      }
-    }, 500);
-  }, [alarmType, scheduledType]);
+  const debouncedReschedule = useCallback(
+    (afterNativeSync?: Promise<boolean>) => {
+      if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
+      rescheduleTimerRef.current = setTimeout(() => {
+        // Shares the toggle lock: cancel-then-recreate must not interleave with an
+        // enable/disable, or a disable can land between the two and leave a live alarm
+        // behind an Off switch.
+        toggleLock(async () => {
+          // Scheduling rebuilds the alarm from the saved native settings, so a write
+          // that failed would rebuild it from stale values. Keep the existing alarm.
+          if (afterNativeSync && !(await afterNativeSync)) return;
+          await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
+          if (alarmType === "fajr") {
+            await scheduleFajrAlarm();
+          } else {
+            await scheduleFridayAlarm();
+          }
+        });
+      }, 500);
+    },
+    [alarmType, scheduledType, toggleLock]
+  );
 
   const handleChange = (changes: Partial<AlarmTypeSettings>) => {
     updateSettings(alarmType, changes);
@@ -177,14 +191,23 @@ const AlarmTypeSettingsScreen = () => {
       }
     }
 
-    if (Object.keys(nativeSettings).length > 0) {
-      ExpoAlarm.setAlarmSettings(scheduledType, nativeSettings).catch((e: unknown) =>
-        alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`, e as Error)
-      );
-    }
+    // setAlarmSettings resolves false rather than rejecting, so a failure shows up in
+    // the result, not in a catch.
+    const nativeSync =
+      Object.keys(nativeSettings).length > 0
+        ? ExpoAlarm.setAlarmSettings(scheduledType, nativeSettings)
+        : Promise.resolve(true);
 
-    if (changes.timing && settings.enabled) {
-      debouncedReschedule();
+    nativeSync.then((ok) => {
+      if (!ok) alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`);
+    });
+
+    // AlarmKit copies the sound into the scheduled alarm, so iOS only picks up a new
+    // one by rebuilding it. Android reads the sound from its database as the alarm
+    // fires, so rescheduling there would risk the alarm for no gain.
+    const soundNeedsReschedule = changes.sound !== undefined && Platform.OS === PlatformType.IOS;
+    if ((changes.timing || soundNeedsReschedule) && settings.enabled) {
+      debouncedReschedule(nativeSync);
     }
   };
 

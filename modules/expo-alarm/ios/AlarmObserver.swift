@@ -278,12 +278,18 @@ import AppIntents
                 alarmType: alarmType,
                 title: title
             )
+            let alertSound: AlertConfiguration.AlertSound
+            if let soundFile = alarmSoundFileName(for: alarmType) {
+                alertSound = .named(soundFile)
+            } else {
+                alertSound = .default
+            }
             let config = AlarmManager.AlarmConfiguration(
                 countdownDuration: countdownDuration,
                 schedule: .fixed(backupTime),
                 attributes: attributes,
                 stopIntent: backupIntent,
-                sound: .named("beep")
+                sound: alertSound
             )
             _ = try await AlarmManager.shared.schedule(id: backupId, configuration: config)
 
@@ -303,6 +309,14 @@ import AppIntents
     }
 
     // MARK: - Alarm Handlers
+
+    // AlarmKit matches an alert sound by file name in the app bundle, while the stored
+    // setting holds an extension-less base name. Returns nil when no bundled file
+    // matches, which leaves the system default alert sound in place.
+    private static func alarmSoundFileName(for alarmType: String) -> String? {
+        let settings = UserDefaults.standard.dictionary(forKey: "alarm_settings_\(alarmType)") ?? [:]
+        return AlarmSoundResolver.fileName(named: settings["sound"] as? String ?? "")
+    }
 
     @available(iOS 26.1, *)
     private static func handleAlarmAlerting(alarmId: String) async {
