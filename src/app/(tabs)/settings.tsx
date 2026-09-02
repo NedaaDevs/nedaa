@@ -45,6 +45,7 @@ import {
   Bug,
   Layers,
   Sparkles,
+  Music,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -225,6 +226,16 @@ const SettingsScreen = () => {
             name={t("alarm.settings.title")}
             path={"/settings/alarm" as any}
             icon={AlarmClock}
+          />
+        )}
+
+        {/* Custom Sounds — Android only; shared by notifications and alarms, so it
+        sits beside them rather than inside either one. */}
+        {Platform.OS === PlatformType.ANDROID && (
+          <SettingsItem
+            name={t("notification.customSound.title")}
+            path={"/settings/customSounds" as any}
+            icon={Music}
           />
         )}
 

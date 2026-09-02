@@ -38,7 +38,14 @@ class AlarmSettingsFragment : PreferenceFragmentCompat() {
         val settings = db.getAlarmSettings(alarmType)
 
         findPreference<SwitchPreferenceCompat>("enabled")?.isChecked = settings.enabled
-        findPreference<ListPreference>("sound")?.value = settings.sound
+        findPreference<ListPreference>("sound")?.let { pref ->
+            // A custom or device sound is stored as a content:// URI, which this static
+            // entry list cannot represent. Hiding the row keeps the screen from showing
+            // a blank selection and from overwriting that choice with a bundled name.
+            val representable = pref.entryValues.any { it == settings.sound }
+            pref.isVisible = representable
+            if (representable) pref.value = settings.sound
+        }
         findPreference<SeekBarPreference>("volume")?.value = (settings.volume * 100).toInt()
         findPreference<SwitchPreferenceCompat>("gentle_wakeup_enabled")?.isChecked = settings.gentleWakeUpEnabled
         findPreference<ListPreference>("gentle_wakeup_duration")?.value = settings.gentleWakeUpDuration.toString()

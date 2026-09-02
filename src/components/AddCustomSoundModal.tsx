@@ -22,7 +22,7 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 
 // Icons
-import { X, Check, Upload, Square, SquareCheck, Speaker, TriangleAlert } from "lucide-react-native";
+import { X, Check, Upload, Speaker, TriangleAlert } from "lucide-react-native";
 
 // Types
 import type { NotificationType } from "@/types/notification";
@@ -45,6 +45,15 @@ import {
 // Stores
 import { useCustomSoundsStore } from "@/stores/customSounds";
 
+// A custom sound is offered for every notification type that supports one. The alarm
+// picker lists custom sounds independently, since alarms store the URI, not a sound key.
+const CUSTOM_SOUND_NOTIFICATION_TYPES: NotificationType[] = [
+  NOTIFICATION_TYPE.PRAYER,
+  NOTIFICATION_TYPE.IQAMA,
+  NOTIFICATION_TYPE.PRE_ATHAN,
+  NOTIFICATION_TYPE.QADA,
+];
+
 type AddCustomSoundModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -62,7 +71,6 @@ export default function AddCustomSoundModal({
 
   const [soundName, setSoundName] = useState("");
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<NotificationType[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
@@ -136,14 +144,8 @@ export default function AddCustomSoundModal({
     }
   };
 
-  const toggleType = (type: NotificationType) => {
-    setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
-
   const handleAdd = async () => {
-    if (!selectedFile || !soundName.trim() || selectedTypes.length === 0) {
+    if (!selectedFile || !soundName.trim()) {
       setError(t("notification.customSound.validationError"));
       return;
     }
@@ -156,7 +158,7 @@ export default function AddCustomSoundModal({
       const result = await addCustomSound(
         selectedFile,
         soundName.trim(),
-        selectedTypes,
+        CUSTOM_SOUND_NOTIFICATION_TYPES,
         customSounds,
         forceAdd
       );
@@ -177,14 +179,13 @@ export default function AddCustomSoundModal({
   const handleClose = () => {
     setSoundName("");
     setSelectedFile(null);
-    setSelectedTypes([]);
     setError(null);
     setDuplicateWarning(null);
     setForceAdd(false);
     onClose();
   };
 
-  const canAdd = selectedFile && soundName.trim() && selectedTypes.length > 0 && !isProcessing;
+  const canAdd = selectedFile && soundName.trim() && !isProcessing;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg">
@@ -264,138 +265,6 @@ export default function AddCustomSoundModal({
                 }}
                 placeholderTextColor={theme.typographySecondary?.val}
               />
-            </VStack>
-
-            {/* Notification Types Selection */}
-            <VStack gap="$2">
-              <Text size="sm" fontWeight="600" color="$typography" marginBottom="$2">
-                {t("notification.customSound.availableFor")}
-              </Text>
-              <VStack
-                gap="$1"
-                backgroundColor="$background"
-                borderRadius="$6"
-                borderWidth={1}
-                borderColor="$outline"
-                padding="$2">
-                <Pressable
-                  onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.PRAYER)}
-                  disabled={isProcessing}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selectedTypes.includes(NOTIFICATION_TYPE.PRAYER) }}
-                  accessibilityLabel={t("notification.type.prayer")}
-                  flexDirection="row"
-                  alignItems="center"
-                  padding="$3"
-                  borderRadius="$4"
-                  backgroundColor={
-                    selectedTypes.includes(NOTIFICATION_TYPE.PRAYER)
-                      ? "$backgroundInfo"
-                      : "transparent"
-                  }>
-                  <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.PRAYER) ? SquareCheck : Square}
-                    size="lg"
-                    color={
-                      selectedTypes.includes(NOTIFICATION_TYPE.PRAYER)
-                        ? "$primary"
-                        : "$typographySecondary"
-                    }
-                  />
-                  <Text color="$typography" fontWeight="500" flex={1} marginStart="$3">
-                    {t("notification.type.prayer")}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.IQAMA)}
-                  disabled={isProcessing}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selectedTypes.includes(NOTIFICATION_TYPE.IQAMA) }}
-                  accessibilityLabel={t("notification.type.iqama")}
-                  flexDirection="row"
-                  alignItems="center"
-                  padding="$3"
-                  borderRadius="$4"
-                  backgroundColor={
-                    selectedTypes.includes(NOTIFICATION_TYPE.IQAMA)
-                      ? "$backgroundInfo"
-                      : "transparent"
-                  }>
-                  <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.IQAMA) ? SquareCheck : Square}
-                    size="lg"
-                    color={
-                      selectedTypes.includes(NOTIFICATION_TYPE.IQAMA)
-                        ? "$primary"
-                        : "$typographySecondary"
-                    }
-                  />
-                  <Text color="$typography" fontWeight="500" flex={1} marginStart="$3">
-                    {t("notification.type.iqama")}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.PRE_ATHAN)}
-                  disabled={isProcessing}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{
-                    checked: selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN),
-                  }}
-                  accessibilityLabel={t("notification.type.preAthan")}
-                  flexDirection="row"
-                  alignItems="center"
-                  padding="$3"
-                  borderRadius="$4"
-                  backgroundColor={
-                    selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN)
-                      ? "$backgroundInfo"
-                      : "transparent"
-                  }>
-                  <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN) ? SquareCheck : Square}
-                    size="lg"
-                    color={
-                      selectedTypes.includes(NOTIFICATION_TYPE.PRE_ATHAN)
-                        ? "$primary"
-                        : "$typographySecondary"
-                    }
-                  />
-                  <Text color="$typography" fontWeight="500" flex={1} marginStart="$3">
-                    {t("notification.type.preAthan")}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => !isProcessing && toggleType(NOTIFICATION_TYPE.QADA)}
-                  disabled={isProcessing}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selectedTypes.includes(NOTIFICATION_TYPE.QADA) }}
-                  accessibilityLabel={t("notification.type.qada")}
-                  flexDirection="row"
-                  alignItems="center"
-                  padding="$3"
-                  borderRadius="$4"
-                  backgroundColor={
-                    selectedTypes.includes(NOTIFICATION_TYPE.QADA)
-                      ? "$backgroundInfo"
-                      : "transparent"
-                  }>
-                  <Icon
-                    as={selectedTypes.includes(NOTIFICATION_TYPE.QADA) ? SquareCheck : Square}
-                    size="lg"
-                    color={
-                      selectedTypes.includes(NOTIFICATION_TYPE.QADA)
-                        ? "$primary"
-                        : "$typographySecondary"
-                    }
-                  />
-                  <Text color="$typography" fontWeight="500" flex={1} marginStart="$3">
-                    {t("notification.type.qada")}
-                  </Text>
-                </Pressable>
-              </VStack>
             </VStack>
 
             {/* Duplicate Warning Message */}

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ScrollView, Alert, Platform } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -33,6 +33,9 @@ import {
   calculateTotalStorage,
   getCustomSoundUsages,
   replaceCustomSoundInSettings,
+  getAlarmUsagesForUri,
+  releaseCustomSoundFromAlarms,
+  CUSTOM_SOUND_REPLACEMENT,
 } from "@/utils/customSoundManager";
 
 // Hooks
@@ -56,6 +59,7 @@ export default function CustomSoundsScreen() {
     useCustomSoundsStore();
   const { settings, updateSettings, getUsedCustomSounds } = useNotificationStore();
 
+  const deletingIdsRef = useRef(new Set<string>());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Initialize store on mount
@@ -111,82 +115,133 @@ export default function CustomSoundsScreen() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  // Removes the file only once every selection pointing at it has been moved off.
+  // Alarms are released first because that is the step that can fail: nothing else
+  // changes until the native database has accepted the new sound.
+  const removeSound = async (sound: CustomSound, replaceNotifications: boolean): Promise<void> => {
+    const released = await releaseCustomSoundFromAlarms(sound.contentUri);
+    if (!released) {
+      Alert.alert(
+        t("notification.customSound.deleteFailedTitle"),
+        t("notification.customSound.deleteFailedMessage")
+      );
+      return;
+    }
+
+    if (replaceNotifications) {
+      await updateSettings(
+        replaceCustomSoundInSettings(sound.id, CUSTOM_SOUND_REPLACEMENT, settings)
+      );
+    }
+
+    // Keeping the entry when the file survives leaves the list matching what is on disk.
+    // The settings have already moved off it, so this reports the file, not the alarm.
+    const deleted = await deleteCustomSoundFromMediaStore(sound.contentUri);
+    if (!deleted) {
+      Alert.alert(
+        t("notification.customSound.deleteFailedTitle"),
+        t("notification.customSound.deleteFileFailedMessage")
+      );
+      return;
+    }
+    await deleteCustomSound(sound.id);
+  };
+
+  const handleDelete = async (id: string) => {
     const sound = customSounds.find((s) => s.id === id);
     if (!sound) return;
 
-    // Check if the custom sound is being used in any notification settings
-    const usedSounds = getUsedCustomSounds();
-    const isInUse = usedSounds.has(id);
-    const usages = getCustomSoundUsages(id, settings);
+    // Reading alarm usage is async, so two quick taps could otherwise open two dialogs
+    // and run the delete twice.
+    if (deletingIdsRef.current.has(id)) return;
+    deletingIdsRef.current.add(id);
+    try {
+      await confirmDelete(sound);
+    } finally {
+      deletingIdsRef.current.delete(id);
+    }
+  };
 
-    if (isInUse && usages.length > 0) {
+  // Resolves only once the dialog is answered and the confirmed work has finished, so
+  // the caller's in-flight guard covers the whole delete rather than just the prompt.
+  const confirmThen = (
+    title: string,
+    message: string,
+    confirmLabel: string,
+    onConfirm: () => Promise<void>
+  ): Promise<void> =>
+    new Promise((resolve) => {
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: t("common.cancel"), style: "cancel", onPress: () => resolve() },
+          {
+            text: confirmLabel,
+            style: "destructive",
+            onPress: async () => {
+              await onConfirm();
+              resolve();
+            },
+          },
+        ],
+        { onDismiss: () => resolve() }
+      );
+    });
+
+  const confirmDelete = async (sound: CustomSound) => {
+    const id = sound.id;
+
+    // Notification settings reference the custom sound id; alarms reference the URI.
+    const usedSounds = getUsedCustomSounds();
+    const usages = getCustomSoundUsages(id, settings);
+    const alarmUsages = await getAlarmUsagesForUri(sound.contentUri);
+    // Null means the alarm database could not be read. Deleting on an unknown answer
+    // could pull the file out from under an alarm that still points at it.
+    if (alarmUsages === null) {
+      Alert.alert(
+        t("notification.customSound.deleteFailedTitle"),
+        t("notification.customSound.deleteUnknownMessage")
+      );
+      return;
+    }
+    const isInUse = usedSounds.has(id) || alarmUsages.length > 0;
+
+    if (isInUse && usages.length + alarmUsages.length > 0) {
       // Format usages
-      const usageLabels = usages.map((usage) => {
-        if (usage.prayerId) {
-          // Prayer-specific usage
-          return t(`notification.customSound.usage.${usage.type}`, { prayer: usage.prayerId });
-        } else {
-          // Default usage
-          return t(`notification.customSound.usage.default.${usage.type}`);
-        }
-      });
+      const usageLabels = [
+        ...usages.map((usage) =>
+          usage.prayerId
+            ? t(`notification.customSound.usage.${usage.type}`, { prayer: usage.prayerId })
+            : t(`notification.customSound.usage.default.${usage.type}`)
+        ),
+        ...alarmUsages.map((alarmType) => t(`alarm.types.${alarmType}`)),
+      ];
 
       // Show alert with auto-replacement option
-      Alert.alert(
+      await confirmThen(
         t("notification.customSound.deleteInUseTitle"),
         t("notification.customSound.deleteInUseMessage", {
           name: sound.name,
           usages: usageLabels.join(", "),
-          replacement: t("notification.sound.makkahAthan1"),
+          replacement: t("notification.sound.beep"),
         }),
-        [
-          {
-            text: t("common.cancel"),
-            style: "cancel",
-          },
-          {
-            text: t("notification.customSound.replaceAndDelete"),
-            style: "destructive",
-            onPress: async () => {
-              hapticMedium();
-
-              // Replace the custom sound with default sound in settings
-              const newSettings = replaceCustomSoundInSettings(id, "makkahAthan1", settings);
-              await updateSettings(newSettings);
-
-              // Delete from MediaStore
-              await deleteCustomSoundFromMediaStore(sound.contentUri);
-              // Delete from store
-              await deleteCustomSound(id);
-
-              console.log(`[CustomSounds] Replaced and deleted custom sound: ${sound.name}`);
-            },
-          },
-        ]
+        t("notification.customSound.replaceAndDelete"),
+        async () => {
+          hapticMedium();
+          await removeSound(sound, true);
+        }
       );
     } else {
       // Show regular delete confirmation
-      Alert.alert(
+      await confirmThen(
         t("notification.customSound.deleteTitle"),
         t("notification.customSound.deleteMessage", { name: sound.name }),
-        [
-          {
-            text: t("common.cancel"),
-            style: "cancel",
-          },
-          {
-            text: t("common.delete"),
-            style: "destructive",
-            onPress: async () => {
-              hapticMedium();
-              // Delete from MediaStore
-              await deleteCustomSoundFromMediaStore(sound.contentUri);
-              // Delete from store
-              await deleteCustomSound(id);
-            },
-          },
-        ]
+        t("common.delete"),
+        async () => {
+          hapticMedium();
+          await removeSound(sound, false);
+        }
       );
     }
   };

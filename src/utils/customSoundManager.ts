@@ -7,13 +7,28 @@ import { Platform } from "react-native";
 import { PlatformType } from "@/enums/app";
 
 // Types
-import type { CustomSound, AddCustomSoundResult } from "@/types/customSound";
+import type { CustomSound, AddCustomSoundResult, CustomSoundUsageType } from "@/types/customSound";
 import type { NotificationType, NotificationSettings } from "@/types/notification";
+import type { AlarmType } from "@/types/alarm";
 import { SUPPORTED_AUDIO_EXTENSIONS, CUSTOM_SOUND_KEY_PREFIX } from "@/types/customSound";
 
 // Utils
 import { getNotificationSound } from "@/utils/sound";
 import { isCustomSoundKey as isCustomSoundKeyHelper } from "@/utils/customSoundHelpers";
+import { toScheduledAlarmType } from "@/utils/alarmTypes";
+
+// Stores
+import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+
+import * as ExpoAlarm from "expo-alarm";
+
+/**
+ * Bundled sound that replaces a removed custom sound. `beep` is the only bundled sound
+ * declared for every notification type, so it is valid wherever a custom sound was.
+ */
+export const CUSTOM_SOUND_REPLACEMENT = "beep";
+
+const ALARM_TYPES: AlarmType[] = ["fajr", "friday"];
 
 /**
  * Pick an audio file from the device
@@ -133,12 +148,16 @@ export async function addCustomSound(
 
     // Register with MediaStore (conditionally import on Android only)
     const { default: CustomNotificationSound } = await import("expo-custom-notification-sound");
-    const soundTitle = `Nedaa_${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    // Registration deletes any existing row with the same title, so the id is part of
+    // the title: two sounds the user names alike must not evict each other's file, or
+    // an alarm already pointing at the first one loses its sound.
+    const soundId = generateCustomSoundId();
+    const soundTitle = `Nedaa_${name.replace(/[^a-zA-Z0-9]/g, "_")}_${soundId}`;
     const contentUri = await CustomNotificationSound.registerSoundFile(filePath, soundTitle);
 
     // Create custom sound object
     const customSound: CustomSound = {
-      id: generateCustomSoundId(),
+      id: soundId,
       name,
       contentUri,
       fileName: file.name,
@@ -353,8 +372,8 @@ export const isCustomSoundInUse = (
 export const getCustomSoundUsages = (
   soundId: string,
   notificationSettings: NotificationSettings
-): { prayerId?: string; type: "prayer" | "iqama" | "preAthan" }[] => {
-  const usages: { prayerId?: string; type: "prayer" | "iqama" | "preAthan" }[] = [];
+): { prayerId?: string; type: CustomSoundUsageType }[] => {
+  const usages: { prayerId?: string; type: CustomSoundUsageType }[] = [];
 
   // Check default settings
   if (notificationSettings.defaults.prayer.sound === soundId) {
@@ -365,6 +384,10 @@ export const getCustomSoundUsages = (
   }
   if (notificationSettings.defaults.preAthan.sound === soundId) {
     usages.push({ type: "preAthan" });
+  }
+  // Qada has no per-prayer overrides; it is a defaults-only notification type.
+  if (notificationSettings.defaults.qada.sound === soundId) {
+    usages.push({ type: "qada" });
   }
 
   // Check prayer-specific overrides
@@ -385,11 +408,91 @@ export const getCustomSoundUsages = (
 };
 
 /**
+ * Alarm types whose selected sound is this content:// URI. Alarms persist the URI
+ * itself rather than a custom sound id, so the lookup is by URI.
+ */
+export const getAlarmUsagesForUri = async (contentUri: string): Promise<AlarmType[] | null> => {
+  const found: AlarmType[] = [];
+
+  for (const type of ALARM_TYPES) {
+    // The native database is what the alarm reads when it fires, and a settings sync
+    // that failed earlier leaves it holding a URI the JS store never learned about.
+    // An unreadable database means unknown, not unused: answering from the store could
+    // delete a file an alarm still points at, so the caller is told to stop instead.
+    const native = await ExpoAlarm.getAlarmSettings(toScheduledAlarmType(type));
+    if (!native) return null;
+    if (native.sound === contentUri) found.push(type);
+  }
+
+  return found;
+};
+
+/**
+ * Realigns the JS store with what the native database actually holds. Used after a
+ * partly-applied change, so the two never describe different sounds.
+ */
+const reconcileAlarmStoreWithNative = async (): Promise<void> => {
+  const store = useAlarmSettingsStore.getState();
+  for (const type of ALARM_TYPES) {
+    const native = await ExpoAlarm.getAlarmSettings(toScheduledAlarmType(type));
+    if (native && native.sound !== store[type].sound) {
+      store.setSound(type, native.sound);
+    }
+  }
+};
+
+/**
+ * Repoints every alarm using this URI onto a bundled fallback, natively first and then
+ * in the JS store. Returns false when a native write fails, which means the file must
+ * be kept: an alarm left pointing at a deleted URI falls through to another sound
+ * without telling the user.
+ */
+export const releaseCustomSoundFromAlarms = async (
+  contentUri: string,
+  fallbackSound: string = CUSTOM_SOUND_REPLACEMENT
+): Promise<boolean> => {
+  const affected = await getAlarmUsagesForUri(contentUri);
+  // Null means the native database could not be read, so nothing may be released.
+  if (affected === null) return false;
+  if (affected.length === 0) return true;
+
+  const moved: AlarmType[] = [];
+
+  for (const alarmType of affected) {
+    // setAlarmSettings resolves false rather than throwing, so the result has to be read.
+    const written = await ExpoAlarm.setAlarmSettings(toScheduledAlarmType(alarmType), {
+      sound: fallbackSound,
+    });
+    if (!written) {
+      // One alarm moved and another refused leaves the user with a sound they never
+      // chose on an alarm they are still keeping, so undo the ones already written.
+      for (const done of moved) {
+        await ExpoAlarm.setAlarmSettings(toScheduledAlarmType(done), { sound: contentUri });
+      }
+      // A rollback can fail too; adopting the real native values keeps the store honest
+      // about what will play rather than showing a sound that is no longer selected.
+      await reconcileAlarmStoreWithNative();
+      return false;
+    }
+    moved.push(alarmType);
+  }
+
+  // The JS store follows only once every native write has landed, so a partial failure
+  // never leaves the two disagreeing about what will actually play.
+  const store = useAlarmSettingsStore.getState();
+  for (const alarmType of moved) {
+    store.setSound(alarmType, fallbackSound);
+  }
+
+  return true;
+};
+
+/**
  * Replace a custom sound with a default sound in all notification settings
  */
 export const replaceCustomSoundInSettings = (
   oldSoundId: string,
-  newSoundId: string = "makkahAthan1",
+  newSoundId: string = CUSTOM_SOUND_REPLACEMENT,
   notificationSettings: NotificationSettings
 ): NotificationSettings => {
   const newSettings = JSON.parse(JSON.stringify(notificationSettings)); // Deep clone
@@ -403,6 +506,9 @@ export const replaceCustomSoundInSettings = (
   }
   if (newSettings.defaults.preAthan.sound === oldSoundId) {
     newSettings.defaults.preAthan.sound = newSoundId;
+  }
+  if (newSettings.defaults.qada.sound === oldSoundId) {
+    newSettings.defaults.qada.sound = newSoundId;
   }
 
   // Replace in prayer-specific overrides

@@ -592,7 +592,9 @@ class AlarmDatabase private constructor(private val context: Context) :
         }
     }
 
-    fun saveAlarmSettings(settings: AlarmSettingsRecord) {
+    // Returns false when the row could not be written. Callers that are about to delete
+    // the file a setting points at rely on this, so the insert result is not discarded.
+    fun saveAlarmSettings(settings: AlarmSettingsRecord): Boolean {
         val values = ContentValues().apply {
             put("alarm_type", settings.alarmType)
             put("enabled", if (settings.enabled) 1 else 0)
@@ -609,7 +611,13 @@ class AlarmDatabase private constructor(private val context: Context) :
             put("snooze_max_count", settings.snoozeMaxCount)
             put("snooze_duration", settings.snoozeDuration)
         }
-        writableDatabase.insertWithOnConflict("alarm_settings", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+        return try {
+            writableDatabase.insertWithOnConflict(
+                "alarm_settings", null, values, SQLiteDatabase.CONFLICT_REPLACE
+            ) != -1L
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun updateAlarmSetting(alarmType: String, key: String, value: Any) {

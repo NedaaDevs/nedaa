@@ -500,7 +500,6 @@ class ExpoAlarmModule : Module() {
                 snoozeDuration = ((settingsMap["snoozeDuration"] as? Number)?.toInt()) ?: currentSettings.snoozeDuration
             )
             db.saveAlarmSettings(newSettings)
-            true
         }
 
         Function("isAlarmTypeEnabled") { alarmType: String ->

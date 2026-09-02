@@ -9,6 +9,7 @@ import SoundPreviewButton from "@/components/SoundPreviewButton";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useCustomSoundsStore } from "@/stores/customSounds";
 import * as ExpoAlarm from "expo-alarm";
 
 const ALARM_SOUNDS = [
@@ -39,6 +40,9 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
+  // Alarms store the content:// URI itself, never the custom_* id: no JS runs when an
+  // alarm fires, so the native database value has to be playable on its own.
+  const customSounds = useCustomSoundsStore((state) => state.customSounds);
   const [systemSounds, setSystemSounds] = useState<SoundOption[]>([]);
   const [, setSystemSoundsLoaded] = useState(false);
   const [isPreviewingSystem, setIsPreviewingSystem] = useState(false);
@@ -157,13 +161,15 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
     [systemSounds]
   );
 
-  const allSoundItems = useMemo(() => {
-    const items = [...translatedAppSounds];
-    if (translatedSystemSounds.length > 0) {
-      items.push(...translatedSystemSounds);
-    }
-    return items;
-  }, [translatedAppSounds, translatedSystemSounds]);
+  const translatedCustomSounds = useMemo(
+    () => customSounds.map((s) => ({ label: s.name, value: s.contentUri })),
+    [customSounds]
+  );
+
+  const allSoundItems = useMemo(
+    () => [...translatedAppSounds, ...translatedCustomSounds, ...translatedSystemSounds],
+    [translatedAppSounds, translatedCustomSounds, translatedSystemSounds]
+  );
 
   const isCurrentlyPlaying = isSystemSound(value)
     ? isPreviewingSystem

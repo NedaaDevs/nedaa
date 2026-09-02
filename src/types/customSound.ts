@@ -30,6 +30,13 @@ export type CustomSound = {
 };
 
 /**
+ * Where a custom sound can be selected: the notification types plus the alarm settings.
+ * Alarms are not a NotificationType — they persist the content:// URI natively rather
+ * than a sound key, so they are tracked as a separate usage.
+ */
+export type CustomSoundUsageType = "prayer" | "iqama" | "preAthan" | "qada" | "alarm";
+
+/**
  * Result from picking and adding a custom sound
  */
 export type AddCustomSoundResult =
