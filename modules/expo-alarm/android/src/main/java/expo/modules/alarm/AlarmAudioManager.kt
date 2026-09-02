@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
-import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
@@ -30,11 +29,14 @@ class AlarmAudioManager(private val context: Context) {
         // up to the target over the configured duration, one step per interval.
         private const val RAMP_START_FRACTION = 0.2f
         private const val RAMP_STEP_INTERVAL_MS = 1000L
+
+        // Bundled sound of last resort when neither the chosen sound nor the device
+        // default can be played.
+        private const val FALLBACK_SOUND = "beep"
     }
 
     private var mediaPlayer: MediaPlayer? = null
     private var mediaPlayerGeneration = 0
-    private var systemRingtone: Ringtone? = null
     private var vibrator: Vibrator? = null
     private var isVibrating = false
     private var volume: Float = 1.0f
@@ -131,87 +133,112 @@ class AlarmAudioManager(private val context: Context) {
             val gentleActive = gentleWakeUpEnabled && gentleWakeUpDurationMinutes > 0
             val startVolume = if (gentleActive) volume * RAMP_START_FRACTION else volume
 
-            if (soundName.startsWith("content://")) {
-                // System sound URI - use Ringtone API for better compatibility
-                val uri = Uri.parse(soundName)
-                systemRingtone = RingtoneManager.getRingtone(context, uri)?.apply {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        isLooping = true
-                        volume = startVolume
-                    }
-                    play()
-                }
+            if (!startPlayer(soundCandidates(soundName), startVolume)) return false
 
-                if (systemRingtone == null) {
-                    log("Failed to get Ringtone for URI: $soundName, falling back to default")
-                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    systemRingtone = RingtoneManager.getRingtone(context, defaultUri)?.apply {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                            isLooping = true
-                            volume = startVolume
-                        }
-                        play()
-                    }
-                }
-
-                if (systemRingtone != null && gentleActive) {
-                    startVolumeRamp(volume, gentleWakeUpDurationMinutes)
-                }
-                return systemRingtone != null
-            } else {
-                // Bundled resource - use MediaPlayer
-                val resId = findSoundResource(soundName)
-                if (resId == 0) {
-                    log("Sound resource not found: $soundName")
-                    return false
-                }
-                val uri = Uri.parse("android.resource://${context.packageName}/$resId")
-
-                // A stop (or a newer start) can run between prepareAsync and the queued
-                // onPrepared; a generation token plus identity check make the callback a
-                // no-op so start() never lands on a released or superseded player.
-                val generation = ++mediaPlayerGeneration
-                mediaPlayer = MediaPlayer().apply {
-                    setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                    )
-                    setDataSource(context, uri)
-                    isLooping = true
-                    setVolume(startVolume, startVolume)
-                    setOnPreparedListener { mp ->
-                        if (generation != mediaPlayerGeneration || mp !== mediaPlayer) return@setOnPreparedListener
-                        try {
-                            mp.start()
-                            log("MediaPlayer prepared and started")
-                        } catch (e: Exception) {
-                            log("MediaPlayer start failed: ${e.message}")
-                        }
-                    }
-                    setOnErrorListener { _, what, extra ->
-                        if (generation != mediaPlayerGeneration) return@setOnErrorListener false
-                        log("MediaPlayer error: what=$what extra=$extra")
-                        false
-                    }
-                    prepareAsync()
-                }
-
-                if (gentleActive) {
-                    startVolumeRamp(volume, gentleWakeUpDurationMinutes)
-                }
-                return true
+            if (gentleActive) {
+                startVolumeRamp(volume, gentleWakeUpDurationMinutes)
             }
+            return true
         } catch (e: Exception) {
             log("Failed to start alarm sound: ${e.message}")
             cancelVolumeRamp()
             mediaPlayer?.release()
             mediaPlayer = null
-            systemRingtone?.stop()
-            systemRingtone = null
             return false
         }
+    }
+
+    // Playback sources in preference order: the chosen sound, the device's default
+    // alarm, then the bundled fallback. An alarm that makes no sound is a worse
+    // failure than an alarm that makes the wrong one.
+    private fun soundCandidates(soundName: String): List<Uri> {
+        val chosen = if (soundName.startsWith("content://")) {
+            Uri.parse(soundName)
+        } else {
+            resourceUri(findSoundResource(soundName)).also {
+                if (it == null) log("No bundled resource for sound: $soundName")
+            }
+        }
+        return listOfNotNull(
+            chosen,
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+            resourceUri(findSoundResource(FALLBACK_SOUND))
+        ).distinct()
+    }
+
+    private fun resourceUri(resId: Int): Uri? =
+        if (resId == 0) null else Uri.parse("android.resource://${context.packageName}/$resId")
+
+    // Every source plays through MediaPlayer with USAGE_ALARM, so it follows the alarm
+    // stream, the alarm Do Not Disturb rules and the gentle ramp. The Ringtone API
+    // defaults to USAGE_NOTIFICATION_RINGTONE, which is inaudible on a phone set to
+    // vibrate. Steps to the next candidate when a source cannot open or decode.
+    @Synchronized
+    private fun startPlayer(candidates: List<Uri>, startVolume: Float, index: Int = 0): Boolean {
+        if (index >= candidates.size) {
+            log("No alarm sound source could be played")
+            return false
+        }
+        val uri = candidates[index]
+
+        // A stop (or a newer start) can run between prepareAsync and the queued
+        // callbacks; a generation token plus identity check make the callback a no-op
+        // so start() never lands on a released or superseded player. The player is
+        // published before prepareAsync, so that check cannot reject its own player.
+        // Both callbacks hold the monitor across check and action, so a stop landing
+        // mid-callback cannot be overtaken by a retry.
+        val generation = ++mediaPlayerGeneration
+        val player = MediaPlayer()
+        mediaPlayer = player
+        return try {
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            player.setDataSource(context, uri)
+            player.isLooping = true
+            player.setVolume(startVolume, startVolume)
+            player.setOnPreparedListener { mp ->
+                synchronized(this) {
+                    if (generation == mediaPlayerGeneration && mp === mediaPlayer) {
+                        try {
+                            mp.start()
+                            log("MediaPlayer prepared and started: $uri")
+                        } catch (e: Exception) {
+                            log("MediaPlayer start failed on $uri: ${e.message}")
+                            releasePlayer(mp)
+                            startPlayer(candidates, startVolume, index + 1)
+                        }
+                    }
+                }
+            }
+            player.setOnErrorListener { mp, what, extra ->
+                synchronized(this) {
+                    if (generation == mediaPlayerGeneration) {
+                        log("MediaPlayer error on $uri: what=$what extra=$extra")
+                        releasePlayer(mp)
+                        startPlayer(candidates, startVolume, index + 1)
+                    }
+                }
+                true
+            }
+            player.prepareAsync()
+            true
+        } catch (e: Exception) {
+            log("Cannot open $uri: ${e.message}")
+            releasePlayer(player)
+            startPlayer(candidates, startVolume, index + 1)
+        }
+    }
+
+    @Synchronized
+    private fun releasePlayer(player: MediaPlayer) {
+        try {
+            player.release()
+        } catch (_: Exception) {}
+        if (mediaPlayer === player) mediaPlayer = null
     }
 
     // Steps the per-player attenuation from RAMP_START_FRACTION*target up to target,
@@ -257,13 +284,6 @@ class AlarmAudioManager(private val context: Context) {
         } catch (e: Exception) {
             log("applyPlaybackVolume mediaPlayer failed: ${e.message}")
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            try {
-                systemRingtone?.volume = v
-            } catch (e: Exception) {
-                log("applyPlaybackVolume ringtone failed: ${e.message}")
-            }
-        }
     }
 
     @Synchronized
@@ -278,19 +298,12 @@ class AlarmAudioManager(private val context: Context) {
             }
         } catch (_: Exception) {}
         mediaPlayer = null
-
-        try {
-            systemRingtone?.stop()
-        } catch (e: Exception) {
-            AlarmLogger.getInstance(context).d("AlarmAudio", "stopAlarmSound ringtone failed: ${e.message}")
-        }
-        systemRingtone = null
     }
 
     @Synchronized
     fun isPlaying(): Boolean {
         return try {
-            mediaPlayer?.isPlaying == true || systemRingtone?.isPlaying == true
+            mediaPlayer?.isPlaying == true
         } catch (e: Exception) {
             AlarmLogger.getInstance(context).d("AlarmAudio", "isPlaying check failed: ${e.message}")
             false
@@ -355,11 +368,11 @@ class AlarmAudioManager(private val context: Context) {
         restoreSystemVolume()
     }
 
+    // Returns 0 for a name with no bundled resource. The caller's candidate list owns
+    // the fallback, so an unknown name stays visible in the log instead of silently
+    // resolving to the fallback sound here.
     private fun findSoundResource(name: String): Int {
         val cleanName = name.replace(Regex("\\.(ogg|mp3|wav|m4a|caf)$"), "")
-        val resId = context.resources.getIdentifier(cleanName, "raw", context.packageName)
-        if (resId != 0) return resId
-        // Fallback to beep
-        return context.resources.getIdentifier("beep", "raw", context.packageName)
+        return context.resources.getIdentifier(cleanName, "raw", context.packageName)
     }
 }
