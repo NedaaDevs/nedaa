@@ -12,6 +12,7 @@ import {
   TimingConfig,
   DEFAULT_ALARM_TYPE_SETTINGS,
   DEFAULT_TIMING_CONFIG,
+  MIN_ALARM_VOLUME,
 } from "@/types/alarm";
 
 interface AlarmSettingsState {
@@ -128,17 +129,23 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
             minutesBefore: 30,
           };
 
+          // Volumes saved before the floor existed can be zero, which rings silently.
+          const liftVolume = (volume: number | undefined) =>
+            Math.max(volume ?? DEFAULT_ALARM_TYPE_SETTINGS.volume, MIN_ALARM_VOLUME);
+
           return {
             ...currentState,
             fajr: {
               ...DEFAULT_ALARM_TYPE_SETTINGS,
               ...persisted.fajr,
               timing: fajrTiming,
+              volume: liftVolume(persisted.fajr?.volume),
             },
             friday: {
               ...DEFAULT_ALARM_TYPE_SETTINGS,
               ...persisted.friday,
               timing: fridayTiming,
+              volume: liftVolume(persisted.friday?.volume),
             },
           };
         },

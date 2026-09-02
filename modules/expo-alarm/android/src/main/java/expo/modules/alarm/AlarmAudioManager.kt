@@ -33,6 +33,10 @@ class AlarmAudioManager(private val context: Context) {
         // Bundled sound of last resort when neither the chosen sound nor the device
         // default can be played.
         private const val FALLBACK_SOUND = "beep"
+
+        // Lowest volume an alarm may play at. A stored zero — from a build that allowed
+        // it — would ring silently while still vibrating, which reads as a broken alarm.
+        private const val MIN_VOLUME = 0.25f
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -119,14 +123,14 @@ class AlarmAudioManager(private val context: Context) {
         stopAlarmSound()
         log("Starting alarm sound=$soundName volumeLevel=$volumeLevel gentle=$gentleWakeUpEnabled/${gentleWakeUpDurationMinutes}min")
         try {
-            volume = volumeLevel.coerceIn(0f, 1f)
+            volume = volumeLevel.coerceIn(MIN_VOLUME, 1f)
 
             // Set alarm stream volume based on setting (0.0-1.0 mapped to system range).
             // The gentle ramp modulates per-player attenuation only, never this stream,
             // so it never fights saveSystemVolume/restoreSystemVolume.
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            val targetVol = (maxVol * volumeLevel).toInt().coerceIn(1, maxVol)
+            val targetVol = (maxVol * volume).toInt().coerceIn(1, maxVol)
             audioManager.setStreamVolume(AudioManager.STREAM_ALARM, targetVol, 0)
             log("Set system alarm volume to $targetVol/$maxVol (from setting $volumeLevel)")
 

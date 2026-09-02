@@ -86,6 +86,13 @@ export const DEFAULT_TIMING_CONFIG: TimingConfig = {
   minutesBefore: 0,
 };
 
+/**
+ * Lowest selectable alarm volume. An alarm that plays at zero still vibrates and shows
+ * its overlay, so it is indistinguishable from a broken one — the floor keeps every
+ * alarm audible.
+ */
+export const MIN_ALARM_VOLUME = 0.25;
+
 export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   enabled: false,
   sound: "beep",
