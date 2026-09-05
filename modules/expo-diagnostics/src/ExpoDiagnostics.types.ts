@@ -1,5 +1,7 @@
 export const NativeDiagnosticKind = {
   CRASH: "crash",
+  /** SIGKILL with no termination reason: the OS reclaimed the process, not an app fault */
+  KILLED: "killed",
   ANR: "anr",
   HANG: "hang",
   MEMORY: "memory",
@@ -20,4 +22,6 @@ export interface NativeDiagnostic {
   detail?: string;
   /** opaque token to pass to ack() once the entry has been durably persisted */
   ackToken?: string;
+  /** build that was running when the event happened, which may predate the build that drains it */
+  appVersion?: string;
 }

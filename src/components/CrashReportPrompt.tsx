@@ -19,13 +19,15 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { readPendingReport, clearPendingReport } from "@/utils/crashHandler";
+import {
+  readPendingReport,
+  clearPendingReport,
+  isPendingReportActionable,
+} from "@/utils/crashHandler";
 import { usePendingReportStore } from "@/stores/pendingReport";
 import { submitFeedback, buildLogAttachment, generateClientKey } from "@/services/feedback";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { Report } from "@/types/feedback";
-
-const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -49,10 +51,10 @@ const CrashReportPrompt = () => {
 
   useEffect(() => {
     const pending = readPendingReport();
-    if (pending && Date.now() - pending.ts < MAX_AGE_MS) {
+    if (pending && isPendingReportActionable(pending)) {
       ref.current?.present();
     } else if (pending) {
-      clearPendingReport(); // stale crash — drop it silently
+      clearPendingReport(); // too old, or from a build that is no longer installed
     }
   }, [pendingNonce]);
 

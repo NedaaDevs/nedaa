@@ -5,7 +5,7 @@ import { getApplicableEntries, getUnseenEntries } from "@/constants/WhatsNew";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
-import { readPendingReport } from "@/utils/crashHandler";
+import { readPendingReport, isPendingReportActionable } from "@/utils/crashHandler";
 
 // Present condition for the What's New sheet: an existing (post-onboarding)
 // user with unseen announcements. The crash-report prompt takes priority —
@@ -29,8 +29,15 @@ export const useWhatsNew = () => {
   // unseen set is empty for anyone who already dismissed the sheet.
   const allEntries = useMemo(() => getApplicableEntries(ctx), [ctx]);
 
+  // Only a sentinel that will actually raise the crash prompt defers this sheet. One that the
+  // prompt is about to discard — too old, or from a build no longer installed — must not, or
+  // the post-update launch shows neither.
+  const pendingReport = readPendingReport();
   const shouldPresent =
-    hasHydrated && !isFirstRun && entries.length > 0 && readPendingReport() === null;
+    hasHydrated &&
+    !isFirstRun &&
+    entries.length > 0 &&
+    (pendingReport === null || !isPendingReportActionable(pendingReport));
 
   const markSeen = useCallback(
     (ids: string[]) => {

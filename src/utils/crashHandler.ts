@@ -1,6 +1,7 @@
 import { File, Directory, Paths } from "expo-file-system";
 
 import { AppLogger } from "@/utils/appLogger";
+import { appVersionLabel } from "@/utils/appVersion";
 import { usePendingReportStore } from "@/stores/pendingReport";
 
 // Sentinel dropped when a fatal JS error is caught, so the next launch can detect the
@@ -11,7 +12,19 @@ export interface PendingReport {
   ts: number;
   kind: "crash" | "native-crash" | "anr";
   summary: string;
+  /** build that was running when the sentinel was written; absent on sentinels from older builds */
+  version?: string;
 }
+
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+// A sentinel is worth a prompt only while it still describes the installed build. The native
+// drain can write one during a background launch, where no UI exists to show it, so it can sit
+// unread until the user next opens the app — weeks later, and often after an update that
+// replaced the build the report would have been about. An unstamped sentinel predates this
+// field, so it is older than the running build by definition.
+export const isPendingReportActionable = (pending: PendingReport): boolean =>
+  Date.now() - pending.ts < MAX_AGE_MS && pending.version === appVersionLabel();
 
 const log = AppLogger.create("crash");
 
@@ -80,11 +93,15 @@ const installRejectionTracker = (): void => {
   }
 };
 
-const writeSentinel = (kind: PendingReport["kind"], summary: string): void => {
+const writeSentinel = (
+  kind: PendingReport["kind"],
+  summary: string,
+  version = appVersionLabel()
+): void => {
   try {
     const f = sentinelFile();
     if (!f.exists) f.create();
-    f.write(JSON.stringify({ ts: Date.now(), kind, summary } satisfies PendingReport));
+    f.write(JSON.stringify({ ts: Date.now(), kind, summary, version } satisfies PendingReport));
     // Wake any mounted CrashReportPrompt: the native drain writes this after the prompt's
     // first read, so a nonce bump makes it re-check within the same session.
     usePendingReportStore.getState().notify();
@@ -97,8 +114,14 @@ const writePendingReport = (summary: string): void => writeSentinel("crash", sum
 
 // Written by the native-diagnostics drain when an OS-level crash or ANR is found on the
 // previous session, so CrashReportPrompt shows on this launch (same sentinel file).
-export const writeNativePendingReport = (kind: "native-crash" | "anr", summary: string): void =>
-  writeSentinel(kind, summary);
+// `version` is the build that died, which the OS reports alongside the event. It can predate
+// the running build, because a payload is only delivered on the launch after the death and the
+// store may have updated in between. Falls back to the running build when the platform omits it.
+export const writeNativePendingReport = (
+  kind: "native-crash" | "anr",
+  summary: string,
+  version?: string
+): void => writeSentinel(kind, summary, version ?? appVersionLabel());
 
 export const readPendingReport = (): PendingReport | null => {
   try {

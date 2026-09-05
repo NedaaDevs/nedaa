@@ -1,8 +1,8 @@
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { File, Directory, Paths } from "expo-file-system";
-import * as Application from "expo-application";
 
 import { AppLogger } from "@/utils/appLogger";
+import { appVersionLabel } from "@/utils/appVersion";
 import { readPendingReport } from "@/utils/crashHandler";
 
 // Lifecycle breadcrumbs for diagnostic bundles: launch, foreground/background
@@ -52,11 +52,13 @@ export const installLifecycleLogging = (): void => {
   if (installed) return;
   installed = true;
 
-  const version = `${Application.nativeApplicationVersion ?? "?"} (${Application.nativeBuildVersion ?? "?"})`;
+  const version = appVersionLabel();
   const previous = readSessionState();
 
   // Previous session ended while foreground with no JS crash sentinel → the JS
-  // handler never saw it die (native crash / OOM / force kill).
+  // handler never saw it die (native crash / OOM / force kill). Any sentinel counts here,
+  // including one from an older build: it still records that the death was captured, so the
+  // warning would only repeat it.
   if (previous?.state === "active" && !readPendingReport()) {
     crashLog.w(
       "Session",
@@ -67,7 +69,15 @@ export const installLifecycleLogging = (): void => {
     appLog.i("Session", `updated ${previous.version} -> ${version}`);
   }
   appLog.i("Session", "launched");
-  writeSessionState("active", version);
+  // iOS launches the app into the background for background-refresh, and such a session never
+  // fires an AppState change — so the launch itself has to record the real state, or a
+  // background process the OS later reclaims looks like a foreground death. Only an explicit
+  // `background` counts: iOS reports `inactive` while a normal cold launch is still settling.
+  // Android is excluded: its AppState constant reads `background` until the host reaches
+  // RESUMED, which would mislabel ordinary cold launches, and a headless Android task never
+  // mounts the tree to reach this code at all.
+  const launchedInBackground = Platform.OS === "ios" && AppState.currentState === "background";
+  writeSessionState(launchedInBackground ? "background" : "active", version);
 
   AppState.addEventListener("change", (next: AppStateStatus) => {
     // `inactive` fires on every iOS control-center/app-switcher peek — noise.

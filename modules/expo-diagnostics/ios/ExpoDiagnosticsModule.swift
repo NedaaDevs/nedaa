@@ -106,7 +106,7 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
 
     let crashDiags = (root["crashDiagnostics"] as? [[String: Any]]) ?? []
     for (i, d) in crashDiags.enumerated() {
-      entries.append(self.entry(kind: "crash", now: now, diag: d, token: token, index: i))
+      entries.append(self.entry(kind: self.crashKind(d), now: now, diag: d, token: token, index: i))
     }
     let hangDiags = (root["hangDiagnostics"] as? [[String: Any]]) ?? []
     for (i, d) in hangDiags.enumerated() {
@@ -127,6 +127,20 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
     return entries
   }
 
+  // SIGKILL with no termination reason is the OS reclaiming a process, not an app fault: it
+  // ends background-refresh runs it no longer needs and sweeps idle processes for memory.
+  // Every attributable kill — watchdog, RunningBoard, per-process limit — names a reason, so an
+  // unnamed one is reported as `killed` and never raises a crash prompt.
+  // Both facts must hold, so an unreadable signal classifies as `crash`, never as `killed` —
+  // a missed reclaim costs one false prompt, a missed crash costs the report entirely.
+  private func crashKind(_ diag: [String: Any]) -> String {
+    let meta = (diag["diagnosticMetaData"] as? [String: Any]) ?? [:]
+    let signal = meta["signal"] as? Int ?? 0
+    let termination = (meta["terminationReason"] as? String ?? "")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return signal == 9 && termination.isEmpty ? "killed" : "crash"
+  }
+
   private func entry(
     kind: String, now: Double, diag: [String: Any], token: String, index: Int
   ) -> [String: Any] {
@@ -138,8 +152,8 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
     let appVersion = meta["appVersion"] as? String ?? ""
     let osVersion = meta["osVersion"] as? String ?? ""
     var summary: String
-    if kind == "crash" {
-      summary = "crash exc=\(exceptionType)/\(exceptionCode) sig=\(signal) \(termination) v\(appVersion)"
+    if kind == "crash" || kind == "killed" {
+      summary = "\(kind) exc=\(exceptionType)/\(exceptionCode) sig=\(signal) \(termination) v\(appVersion)"
       if let reason = meta["objectiveCexceptionReason"] as? [String: Any],
          let composed = reason["composedMessage"] as? String {
         summary += " reason=\(composed.prefix(200))"
@@ -166,7 +180,7 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
       parts.append(diagStr)
     }
 
-    return [
+    var out: [String: Any] = [
       "id": "\(token)#\(kind)\(index)",
       "kind": kind,
       "timestamp": now,
@@ -174,6 +188,14 @@ final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
       "detail": self.truncated(parts.joined(separator: "\n")),
       "ackToken": token,
     ]
+    // The build that died. A payload is delivered on the launch after the death, which may be
+    // a later build if the store updated in between, so the reader cannot assume the running
+    // one. Formatted to match `appVersionLabel()` on the JS side.
+    let appBuild = meta["appBuildVersion"] as? String ?? ""
+    if !appVersion.isEmpty {
+      out["appVersion"] = appBuild.isEmpty ? appVersion : "\(appVersion) (\(appBuild))"
+    }
+    return out
   }
 
   private func truncated(_ s: String) -> String {

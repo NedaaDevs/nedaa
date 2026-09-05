@@ -9,6 +9,9 @@ import { writeNativePendingReport } from "@/utils/crashHandler";
 
 const log = AppLogger.create("crash");
 
+// Only these two raise the report prompt. `killed` is excluded on purpose: it is a SIGKILL
+// with no termination reason, so the OS reclaimed the process rather than the app faulting.
+// It still reaches the log, at warn.
 const isHighConfidence = (kind: NativeDiagnostic["kind"]): boolean =>
   kind === NativeDiagnosticKind.CRASH || kind === NativeDiagnosticKind.ANR;
 
@@ -48,7 +51,7 @@ export const processNativeDiagnostics = async (): Promise<void> => {
     const worst = entries.find((e) => isHighConfidence(e.kind));
     if (worst) {
       const kind = worst.kind === NativeDiagnosticKind.ANR ? "anr" : "native-crash";
-      writeNativePendingReport(kind, worst.summary);
+      writeNativePendingReport(kind, worst.summary, worst.appVersion);
     }
 
     AppLogger.flushAllSync();

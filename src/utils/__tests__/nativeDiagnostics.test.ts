@@ -12,6 +12,7 @@ jest.mock("../../../modules/expo-diagnostics/src", () => ({
   },
   NativeDiagnosticKind: {
     CRASH: "crash",
+    KILLED: "killed",
     ANR: "anr",
     HANG: "hang",
     MEMORY: "memory",
@@ -82,6 +83,23 @@ describe("processNativeDiagnostics", () => {
     ]);
     await freshProcess()();
     expect(mockSentinel).toHaveBeenCalledTimes(1);
+  });
+
+  it("stamps the sentinel with the build that died, not the build that drained", async () => {
+    mockDrain.mockResolvedValue([
+      { id: "1", kind: "crash", timestamp: 1, summary: "boom", appVersion: "2.9.9 (503)" },
+    ]);
+    await freshProcess()();
+    expect(mockSentinel).toHaveBeenCalledWith("native-crash", "boom", "2.9.9 (503)");
+  });
+
+  it("writes no sentinel for an OS reclaim the native side classified as killed", async () => {
+    mockDrain.mockResolvedValue([
+      { id: "1", kind: "killed", timestamp: 1, summary: "killed exc=10/0 sig=9  v2.10.0" },
+    ]);
+    await freshProcess()();
+    expect(mockSentinel).not.toHaveBeenCalled();
+    expect(mockWarn).toHaveBeenCalledWith("native-killed", expect.stringContaining("sig=9"));
   });
 
   it("does not write a sentinel for hang/memory only", async () => {
