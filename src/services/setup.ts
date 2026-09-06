@@ -16,6 +16,7 @@ import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
+import { logLaunchWidgetAttachContext } from "@/services/widgetDiagnostics";
 
 // Background task
 import { registerBackgroundRefresh } from "@/tasks/backgroundRefresh";
@@ -69,6 +70,8 @@ export const appSetup = async (
     // Register DB cleanup tasks for graceful shutdown
     cleanupManager.register("umrah-db-flush", () => UmrahDB.flush(), 10);
 
+    // Ahead of the refresh, so the record of what could attach precedes the attaching.
+    logLaunchWidgetAttachContext();
     reloadPrayerWidgets();
     refreshAllWidgets();
     void syncWidgetPayloads();
