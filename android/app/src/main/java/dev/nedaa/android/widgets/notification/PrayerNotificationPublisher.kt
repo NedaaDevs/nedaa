@@ -4,8 +4,6 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -22,6 +20,7 @@ import dev.nedaa.android.R
 import dev.nedaa.android.widgets.common.NedaaWidgetTheme
 import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.common.WidgetHeartbeat
+import dev.nedaa.android.widgets.common.WidgetPlacement
 import dev.nedaa.android.widgets.data.DayPrayers
 import dev.nedaa.android.widgets.data.PrayerDataService
 import dev.nedaa.android.widgets.prayer.PrayerTimesWorker
@@ -43,12 +42,6 @@ object PrayerNotificationPublisher {
     // Android allows a collapsed custom view as little as 48dp and an expanded one 252dp.
     private const val COLLAPSED_HEIGHT_DP = 48
     private const val EXPANDED_HEIGHT_DP = 160
-
-    private val PRAYER_WIDGET_RECEIVERS = listOf(
-        "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverSmall",
-        "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverMedium",
-        "dev.nedaa.android.widgets.prayer.PrayerTimesReceiverLarge"
-    )
 
     private val bridgeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -135,19 +128,12 @@ object PrayerNotificationPublisher {
     fun cancelFromBridge(context: Context) {
         cancel(context)
         // A placed widget still needs the chain; only the card's own use of it ends here.
-        if (!hasPlacedPrayerWidget(context)) {
+        if (!WidgetPlacement.has(context, WidgetPlacement.Family.PRAYER)) {
             PrayerTimesWorker.cancelUpdates(context)
         }
     }
 
-    private fun hasPlacedPrayerWidget(context: Context): Boolean {
-        val manager = AppWidgetManager.getInstance(context)
-        return PRAYER_WIDGET_RECEIVERS.any { className ->
-            manager.getAppWidgetIds(ComponentName(context.packageName, className)).isNotEmpty()
-        }
-    }
-
-    private fun isEnabled(context: Context): Boolean = context
+    internal fun isEnabled(context: Context): Boolean = context
         .getSharedPreferences(WidgetHeartbeat.PREFS, Context.MODE_PRIVATE)
         .getBoolean(WidgetHeartbeat.KEY_PERSISTENT_NOTIFICATION_ENABLED, false)
 
