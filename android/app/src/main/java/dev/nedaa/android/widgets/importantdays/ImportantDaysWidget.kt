@@ -38,7 +38,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.nedaa.android.R
-import dev.nedaa.android.widgets.common.DatabaseProvider
+import dev.nedaa.android.widgets.common.WidgetSnapshot
 import dev.nedaa.android.widgets.common.NedaaColors
 import dev.nedaa.android.widgets.common.NedaaWidgetTheme
 import dev.nedaa.android.widgets.common.WidgetBoundaries
@@ -50,13 +50,10 @@ import java.util.concurrent.TimeUnit
 
 data class ImportantDay(val id: String, val name: String, val hijriLabel: String, val dateISO: String)
 
-/** Reads the `widget_important_days` table Task 5 populates in nedaa.db. */
+/** Reads the important days JS wrote into the widget snapshot. */
 class ImportantDaysDataService(private val context: Context) {
 
     companion object {
-        private const val TAG = "ImportantDaysDataService"
-        private const val TABLE_NAME = "widget_important_days"
-
         /** Whole days from today (device zone) to the ISO date; never negative. */
         fun daysUntil(dateISO: String, now: Long = System.currentTimeMillis()): Int {
             val parts = dateISO.split("-").map { it.toInt() }
@@ -75,26 +72,11 @@ class ImportantDaysDataService(private val context: Context) {
         }
     }
 
-    fun getUpcoming(limit: Int): List<ImportantDay> {
-        return try {
-            DatabaseProvider.getNedaaDatabase(context)?.use { db ->
-                val cursor = db.rawQuery(
-                    "SELECT id, name, hijriLabel, dateISO FROM $TABLE_NAME ORDER BY sort LIMIT ?",
-                    arrayOf(limit.toString())
-                )
-                cursor.use {
-                    val days = mutableListOf<ImportantDay>()
-                    while (it.moveToNext()) {
-                        days.add(ImportantDay(it.getString(0), it.getString(1), it.getString(2), it.getString(3)))
-                    }
-                    days
-                }
-            } ?: emptyList()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching important days", e)
-            emptyList()
-        }
-    }
+    /** The next [limit] days in the order JS sorted them; empty when there is no snapshot. */
+    fun getUpcoming(limit: Int): List<ImportantDay> =
+        WidgetSnapshot.load(context)?.importantDays.orEmpty()
+            .take(limit)
+            .map { ImportantDay(it.id, it.name, it.hijriLabel, it.dateISO) }
 }
 
 /** Countdowns to Ramadan, Eid, and other important Hijri dates (2x2, resizable to 4x2). */

@@ -36,7 +36,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import dev.nedaa.android.widgets.common.DatabaseProvider
+import dev.nedaa.android.widgets.common.WidgetSnapshot
 import dev.nedaa.android.widgets.common.NedaaWidgetTheme
 import dev.nedaa.android.widgets.common.WidgetBoundaries
 import dev.nedaa.android.widgets.common.WidgetConfig
@@ -48,41 +48,18 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
-/** Reads the single-row `widget_hijri_today` table Task 5 populates in nedaa.db. */
+/** The Hijri label JS computed for today, from the widget snapshot. */
 class HijriTodayService(private val context: Context) {
-
-    companion object {
-        private const val TAG = "HijriTodayService"
-        private const val TABLE_NAME = "widget_hijri_today"
-    }
 
     /**
      * The stored label, or null when it was computed for a different day.
      *
-     * JS writes this row only when the app runs. A widget waking after midnight would
-     * otherwise show yesterday's Hijri date beside today's Gregorian one, so the day it was
-     * written for is checked and a stale row falls through to the on-device computation.
+     * JS writes the snapshot only when the app runs. A widget waking after midnight would
+     * otherwise show yesterday's Hijri date beside today's Gregorian one, so a stale entry
+     * falls through to the on-device computation.
      */
-    fun get(todayDateInt: Int): String? {
-        return try {
-            DatabaseProvider.getNedaaDatabase(context)?.use { db ->
-                val cursor = db.rawQuery(
-                    "SELECT hijriLabel, dateInt FROM $TABLE_NAME WHERE id = 1",
-                    null
-                )
-                cursor.use {
-                    if (!it.moveToFirst()) return@use null
-                    // Written before the column existed: trust it rather than losing the
-                    // localized label until the next sync.
-                    if (!it.isNull(1) && it.getInt(1) != todayDateInt) return@use null
-                    it.getString(0)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching hijri today", e)
-            null
-        }
-    }
+    fun get(todayDateInt: Int): String? =
+        WidgetSnapshot.load(context)?.hijriToday?.takeIf { it.date == todayDateInt }?.hijriLabel
 }
 
 /**
