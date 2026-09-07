@@ -51,6 +51,7 @@ import {
 import { isPinningSupported } from "expo-widgets";
 
 // Hooks
+import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
 
 // Stores
@@ -67,7 +68,6 @@ import { isAthkarSupported } from "@/utils/athkar";
 import { STORE_LINKS } from "@/constants/StoreLinks";
 
 // Services
-import { isAlarmKitAvailable } from "expo-alarm";
 import { PlatformType } from "@/enums/app";
 
 const THANK_YOU_DURATION = 2000;
@@ -80,7 +80,7 @@ const SettingsScreen = () => {
   const { localizedLocation } = useLocationStore();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const requestWhatsNew = useWhatsNewSheetStore((s) => s.requestOpen);
-  const [alarmAvailable, setAlarmAvailable] = useState(false);
+  const alarmSupported = useAlarmSupported();
   const hapticMedium = useHaptic("medium");
 
   const [rateThanked, setRateThanked] = useState(false);
@@ -109,7 +109,6 @@ const SettingsScreen = () => {
   const shareHeartFillStyle = useAnimatedStyle(() => ({ opacity: shareHeartFill.value }));
 
   useEffect(() => {
-    isAlarmKitAvailable().then(setAlarmAvailable);
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
     const timers = timersRef;
     return () => {
@@ -220,8 +219,8 @@ const SettingsScreen = () => {
           icon={BellRing}
         />
 
-        {/* Alarm Settings — iOS 26+ (AlarmKit) or Android */}
-        {(Platform.OS === PlatformType.ANDROID || alarmAvailable) && (
+        {/* Alarm Settings — iOS needs AlarmKit; Android always has it */}
+        {alarmSupported && (
           <SettingsItem
             name={t("alarm.settings.title")}
             path={"/settings/alarm" as any}

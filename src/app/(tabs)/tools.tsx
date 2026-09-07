@@ -32,6 +32,7 @@ import { UMRAH_STAGES } from "@/constants/UmrahGuide";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import { localizedSurahName } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
+import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useRTL } from "@/contexts/RTLContext";
 
@@ -116,6 +117,8 @@ export default function ToolsScreen() {
   const { fajr, friday } = useAlarmSettingsStore();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
+
+  const alarmSupported = useAlarmSupported();
 
   const handleToolPress = async (route: string) => {
     await selectionHaptic();
@@ -215,13 +218,15 @@ export default function ToolsScreen() {
           <VStack gap="$2">
             <SectionHeader label={t("tools.sections.remindersAudio")} />
             <VStack gap="$3">
-              <ToolRow
-                icon={AlarmClock}
-                title={t("tools.alarm.title")}
-                status={alarmStatus}
-                chevron={ChevronIcon}
-                onPress={() => handleToolPress("/settings/alarm")}
-              />
+              {alarmSupported && (
+                <ToolRow
+                  icon={AlarmClock}
+                  title={t("tools.alarm.title")}
+                  status={alarmStatus}
+                  chevron={ChevronIcon}
+                  onPress={() => handleToolPress("/settings/alarm")}
+                />
+              )}
               <ToolRow
                 icon={Headphones}
                 title={t("tools.quranListen.title")}
