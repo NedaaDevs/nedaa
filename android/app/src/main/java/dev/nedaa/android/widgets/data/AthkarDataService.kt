@@ -1,159 +1,57 @@
 package dev.nedaa.android.widgets.data
 
 import android.content.Context
-import android.util.Log
-import dev.nedaa.android.widgets.common.DatabaseProvider
-import dev.nedaa.android.widgets.common.WidgetConfig
-import java.util.Calendar
+import dev.nedaa.android.widgets.athkar.ATHKAR_SESSION_MORNING
+import dev.nedaa.android.widgets.common.Snapshot
+import dev.nedaa.android.widgets.common.SnapshotAthkar
+import dev.nedaa.android.widgets.common.WidgetSnapshot
 import java.util.TimeZone
 
-/**
- * Service for fetching Athkar (remembrance) data from the SQLite database
- */
+/** Athkar progress for the widgets, read from the snapshot JS writes. */
 class AthkarDataService(private val context: Context) {
 
     companion object {
-        private const val TAG = "AthkarDataService"
-        private const val STREAK_TABLE = "athkar_streak"
-        private const val COMPLETED_DAYS_TABLE = "athkar_completed_days"
-        private const val DAILY_ITEMS_TABLE = "athkar_daily_items"
-    }
+        /**
+         * Today's progress resets at midnight; the streak and the per-session totals are the
+         * last known values. A stale day therefore reads as 0/total, never as yesterday's count.
+         */
+        internal fun summaryFrom(athkar: SnapshotAthkar?, today: Int): AthkarSummary {
+            if (athkar == null) return AthkarSummary.empty()
+            val fresh = athkar.date == today
+            val morningDone = fresh && athkar.morning.completedAt != null
+            val eveningDone = fresh && athkar.evening.completedAt != null
+            return AthkarSummary(
+                morningCompleted = morningDone,
+                eveningCompleted = eveningDone,
+                currentStreak = athkar.streak.current,
+                longestStreak = athkar.streak.longest,
+                completedItems = if (fresh) athkar.morning.completed + athkar.evening.completed else 0,
+                totalItems = athkar.morning.total + athkar.evening.total,
+            )
+        }
 
-    /**
-     * Get today's Athkar summary including completion status and streaks
-     */
-    fun getAthkarSummary(): AthkarSummary {
-        val todayInt = getTodayDateInt()
-
-        val completion = getTodayCompletion(todayInt)
-        val streak = getStreakData()
-        val progress = getTodayProgress(todayInt)
-
-        return AthkarSummary(
-            morningCompleted = completion.first,
-            eveningCompleted = completion.second,
-            currentStreak = streak.first,
-            longestStreak = streak.second,
-            completedItems = progress.first,
-            totalItems = progress.second
-        )
-    }
-
-    /**
-     * Get today's morning/evening completion status
-     */
-    private fun getTodayCompletion(todayInt: Int): Pair<Boolean, Boolean> {
-        return try {
-            DatabaseProvider.getAthkarDatabase(context)?.use { db ->
-                val cursor = db.rawQuery(
-                    """SELECT morning_completed_at, evening_completed_at
-                       FROM $COMPLETED_DAYS_TABLE
-                       WHERE date = ?""",
-                    arrayOf(todayInt.toString())
-                )
-
-                cursor.use {
-                    if (it.moveToFirst()) {
-                        val morningCompleted = !it.isNull(0)
-                        val eveningCompleted = !it.isNull(1)
-                        Pair(morningCompleted, eveningCompleted)
-                    } else {
-                        Pair(false, false)
-                    }
-                }
-            } ?: Pair(false, false)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting today's completion", e)
-            Pair(false, false)
+        /** Completed/total for one session (`morning` / `evening`) today. */
+        internal fun sessionFrom(athkar: SnapshotAthkar?, today: Int, session: String): Pair<Int, Int> {
+            if (athkar == null) return Pair(0, 0)
+            val s = if (session == ATHKAR_SESSION_MORNING) athkar.morning else athkar.evening
+            return if (athkar.date == today) Pair(s.completed, s.total) else Pair(0, s.total)
         }
     }
 
-    /**
-     * Get current and longest streak
-     */
-    private fun getStreakData(): Pair<Int, Int> {
-        return try {
-            DatabaseProvider.getAthkarDatabase(context)?.use { db ->
-                val cursor = db.rawQuery(
-                    "SELECT current_streak, longest_streak FROM $STREAK_TABLE WHERE id = 1",
-                    null
-                )
+    private val snapshot: Snapshot? by lazy { WidgetSnapshot.load(context) }
 
-                cursor.use {
-                    if (it.moveToFirst()) {
-                        val currentStreak = it.getInt(0)
-                        val longestStreak = it.getInt(1)
-                        Pair(currentStreak, longestStreak)
-                    } else {
-                        Pair(0, 0)
-                    }
-                }
-            } ?: Pair(0, 0)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting streak data", e)
-            Pair(0, 0)
-        }
+    // The app keys athkar days to the location zone, which the snapshot carries in config.
+    private fun today(): Int {
+        val zone = snapshot?.config?.timezone?.takeIf { it.isNotEmpty() }?.let { TimeZone.getTimeZone(it) }
+            ?: TimeZone.getDefault()
+        return WidgetSnapshot.dateIntFor(System.currentTimeMillis(), zone)
     }
 
-    /**
-     * Get today's progress (completed items vs total items)
-     */
-    private fun getTodayProgress(todayInt: Int): Pair<Int, Int> {
-        return try {
-            DatabaseProvider.getAthkarDatabase(context)?.use { db ->
-                val cursor = db.rawQuery(
-                    """SELECT
-                         SUM(CASE WHEN current_count >= total_count THEN 1 ELSE 0 END) as completed,
-                         COUNT(*) as total
-                       FROM $DAILY_ITEMS_TABLE
-                       WHERE date = ?""",
-                    arrayOf(todayInt.toString())
-                )
+    fun getAthkarSummary(): AthkarSummary = summaryFrom(snapshot?.athkar, today())
 
-                cursor.use {
-                    if (it.moveToFirst()) {
-                        val completed = it.getInt(0)
-                        val total = it.getInt(1)
-                        Pair(completed, total)
-                    } else {
-                        Pair(0, 0)
-                    }
-                }
-            } ?: Pair(0, 0)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting today's progress", e)
-            Pair(0, 0)
-        }
-    }
+    fun isMorningCompleted(): Boolean = getAthkarSummary().morningCompleted
 
-    /**
-     * Check if morning session is completed
-     */
-    fun isMorningCompleted(): Boolean {
-        val todayInt = getTodayDateInt()
-        return getTodayCompletion(todayInt).first
-    }
+    fun isEveningCompleted(): Boolean = getAthkarSummary().eveningCompleted
 
-    /**
-     * Check if evening session is completed
-     */
-    fun isEveningCompleted(): Boolean {
-        val todayInt = getTodayDateInt()
-        return getTodayCompletion(todayInt).second
-    }
-
-    /**
-     * Today as a YYYYMMDD integer, in the user's location zone.
-     *
-     * The app writes athkar day rows keyed to the location's timezone, so keying off the
-     * device zone here would query a different row than the app around midnight for anyone
-     * whose location is not their device zone.
-     */
-    private fun getTodayDateInt(): Int {
-        val calendar = Calendar.getInstance(WidgetConfig.get(context).timezone)
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH) + 1
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-        return year * 10000 + month * 100 + day
-    }
+    fun sessionProgress(session: String): Pair<Int, Int> = sessionFrom(snapshot?.athkar, today(), session)
 }

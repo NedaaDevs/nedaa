@@ -7,15 +7,12 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.fillMaxSize
-import dev.nedaa.android.widgets.common.DatabaseProvider
 import dev.nedaa.android.widgets.common.NedaaWidgetTheme
 import dev.nedaa.android.widgets.common.WidgetConfig
 import dev.nedaa.android.widgets.common.WidgetSizes
 import dev.nedaa.android.widgets.data.AthkarDataService
 import dev.nedaa.android.widgets.data.PrayerData
 import dev.nedaa.android.widgets.data.PrayerDataService
-import java.util.Calendar
-import java.util.TimeZone
 
 /**
  * Athkar Progress home screen widget (2x2), resizable up to the Medium (4x2) layout.
@@ -71,33 +68,8 @@ internal fun promotedAthkarSession(context: Context): String {
 }
 
 /** Completed/total items for a single Athkar session today (thikr_id suffix `-morning`/`-evening`). */
-internal fun sessionAthkarProgress(context: Context, session: String): Pair<Int, Int> {
-    return try {
-        DatabaseProvider.getAthkarDatabase(context)?.use { db ->
-            val cursor = db.rawQuery(
-                """SELECT
-                     SUM(CASE WHEN current_count >= total_count THEN 1 ELSE 0 END),
-                     COUNT(*)
-                   FROM athkar_daily_items
-                   WHERE date = ? AND thikr_id LIKE ?""",
-                arrayOf(todayAthkarDateInt().toString(), "%-$session")
-            )
-            cursor.use {
-                if (it.moveToFirst()) Pair(it.getInt(0), it.getInt(1)) else Pair(0, 0)
-            }
-        } ?: Pair(0, 0)
-    } catch (e: Exception) {
-        Pair(0, 0)
-    }
-}
-
-private fun todayAthkarDateInt(): Int {
-    val calendar = Calendar.getInstance(TimeZone.getDefault())
-    val year = calendar.get(Calendar.YEAR)
-    val month = calendar.get(Calendar.MONTH) + 1
-    val day = calendar.get(Calendar.DAY_OF_MONTH)
-    return year * 10000 + month * 100 + day
-}
+internal fun sessionAthkarProgress(context: Context, session: String): Pair<Int, Int> =
+    AthkarDataService(context).sessionProgress(session)
 
 internal const val ATHKAR_SESSION_MORNING = "morning"
 internal const val ATHKAR_SESSION_EVENING = "evening"
