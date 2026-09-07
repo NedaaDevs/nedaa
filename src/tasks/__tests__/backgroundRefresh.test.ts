@@ -155,7 +155,7 @@ describe("executeBackgroundRefresh", () => {
     await executeBackgroundRefresh();
 
     expect(mockSyncWidgetSnapshot).toHaveBeenCalledTimes(1);
-    // The snapshot must carry the refreshed window, not the one it replaced.
+    // Ordering matters: the snapshot reads the window after the refresh fills it.
     expect(mockRefreshTimings.mock.invocationCallOrder[0]).toBeLessThan(
       mockSyncWidgetSnapshot.mock.invocationCallOrder[0]
     );
