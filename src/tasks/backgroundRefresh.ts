@@ -8,6 +8,7 @@ import { PlatformType } from "@/enums/app";
 // Services
 import { PrayerTimesDB } from "@/services/db";
 import { BackgroundTaskLog } from "@/services/background-task-log";
+import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 
 // Stores
 import { useNotificationStore } from "@/stores/notification";
@@ -167,6 +168,10 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     // input is the window persisted at the last foreground launch, which ends
     // 13 days after that launch even when the database holds fresh rows.
     await usePrayerTimesStore.getState().refreshTimingsFromDb();
+
+    // A day with no app launch still gets today's timings onto the Android home screen.
+    // Android-only by construction; iOS widgets read the database and get no reload here.
+    await syncWidgetSnapshot();
 
     // Reschedule notifications
     try {

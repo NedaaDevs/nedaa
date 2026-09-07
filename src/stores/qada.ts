@@ -9,7 +9,10 @@ import { QadaDB } from "@/services/qada-db";
 import { mapSnakeToCamel } from "@/utils/caseConversion";
 
 // Utils
-import { scheduleQadaNotifications } from "@/utils/qadaNotificationScheduler";
+import {
+  cancelAllQadaNotifications,
+  scheduleQadaNotifications,
+} from "@/utils/qadaNotificationScheduler";
 import i18next from "@/localization/i18n";
 
 // Stores
@@ -26,6 +29,16 @@ import type { QadaHistory, QadaSettings } from "@/services/qada-db";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("qada");
+
+// Resolved at call time: the snapshot module reads this store, so a static import
+// would close a cycle. Fire-and-forget — the snapshot must never block a store action.
+// require, not import(): a dynamic import throws inside the Jest VM, which has no
+// ES-module loader, so the wiring below would be untestable.
+const syncWidgetSnapshot = () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const m = require("@/services/widgetSnapshot") as typeof import("@/services/widgetSnapshot");
+  void m.syncWidgetSnapshot();
+};
 
 /**
  * Sync qada notifications with current settings
@@ -184,6 +197,7 @@ export const useQadaStore = create<QadaState>()(
             await syncQadaNotifications();
 
             set({ isLoading: false });
+            syncWidgetSnapshot();
           } catch (error) {
             console.error("[Qada Store] Error loading data:", error);
             set({
@@ -214,6 +228,7 @@ export const useQadaStore = create<QadaState>()(
 
               // Sync notifications with new count
               await syncQadaNotifications();
+              syncWidgetSnapshot();
             }
 
             set({ isLoading: false });
@@ -446,9 +461,8 @@ export const useQadaStore = create<QadaState>()(
               });
 
               // Cancel notifications since all data is reset
-              const { cancelAllQadaNotifications } =
-                await import("@/utils/qadaNotificationScheduler");
               await cancelAllQadaNotifications();
+              syncWidgetSnapshot();
             }
 
             set({ isLoading: false });

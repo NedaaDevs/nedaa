@@ -114,6 +114,11 @@ export const syncWidgetPayloads = async (): Promise<void> => {
     if (Platform.OS === PlatformType.IOS) {
       reloadAllWidgets();
     } else {
+      // The Android widgets read a file, not these tables. Resolved at call time
+      // because the snapshot module imports this one for its builders.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const m = require("@/services/widgetSnapshot") as typeof import("@/services/widgetSnapshot");
+      await m.writeWidgetSnapshot();
       refreshAllWidgets();
     }
   } catch (e) {

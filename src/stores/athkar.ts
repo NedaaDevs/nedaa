@@ -24,6 +24,16 @@ const log = AppLogger.create("athkar");
 
 type AthkarStore = AthkarState & AthkarActions;
 
+// Resolved at call time so the snapshot module's own imports stay off this store's
+// import graph. Fire-and-forget — the snapshot must never block a store action.
+// require, not import(): a dynamic import throws inside the Jest VM, which has no
+// ES-module loader, so the wiring below would be untestable.
+const syncWidgetSnapshot = () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const m = require("@/services/widgetSnapshot") as typeof import("@/services/widgetSnapshot");
+  void m.syncWidgetSnapshot();
+};
+
 // Debounced DB update queue - keeps existing pattern for DB lock prevention
 const debouncedDBUpdate = createDebouncedQueue(
   async (dateInt: number, thikrId: string, count: number) => {
@@ -36,6 +46,7 @@ const debouncedDBUpdate = createDebouncedQueue(
 const debouncedSessionCheck = createDebouncedQueue(
   async (dateInt: number, session: "morning" | "evening") => {
     await AthkarDB.checkAndMarkSessionComplete(dateInt, session);
+    syncWidgetSnapshot();
   },
   500 // 500ms delay
 );
@@ -295,6 +306,7 @@ export const useAthkarStore = create<AthkarStore>()(
 
         reloadStreakFromDB: async () => {
           const streakData = await AthkarDB.getStreakData();
+          syncWidgetSnapshot();
           if (streakData) {
             set({
               streak: {
