@@ -522,6 +522,25 @@ const getRemainingCount = async (): Promise<number> => {
   }
 };
 
+// Days made up between two UTC instants. `updated_at` is written with
+// `toISOString()`, so ISO bounds compare correctly as text. Sums the days, not the
+// rows: completing a multi-day entry writes one ledger row carrying its whole count.
+export const getCompletedCountBetweenWith = async (
+  db: SQLiteDatabase,
+  startIso: string,
+  endIso: string
+): Promise<number> => {
+  const row = await db.getFirstAsync<{ total: number | null }>(
+    `SELECT COALESCE(SUM(count), 0) AS total FROM ${QADA_HISTORY_TABLE}
+     WHERE type = 'completed' AND updated_at >= ? AND updated_at < ?;`,
+    [startIso, endIso]
+  );
+  return row?.total ?? 0;
+};
+
+const getCompletedCountBetween = (startIso: string, endIso: string): Promise<number> =>
+  sharedDb.run((db) => getCompletedCountBetweenWith(db, startIso, endIso));
+
 export const QadaDB = {
   initialize: initializeDB,
   getQadaFast,
@@ -535,4 +554,5 @@ export const QadaDB = {
   updateSettings,
   resetAll,
   getRemainingCount,
+  getCompletedCountBetween,
 };

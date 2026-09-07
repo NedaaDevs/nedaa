@@ -780,6 +780,64 @@ const getStreakData = (): Promise<AthkarStreak | null> =>
     }
   });
 
+export type AthkarWidgetSnapshotData = {
+  morning: { completed: number; total: number; completedAt: string | null };
+  evening: { completed: number; total: number; completedAt: string | null };
+  streak: { current: number; longest: number };
+};
+
+const emptyAthkarWidgetSnapshotData = (): AthkarWidgetSnapshotData => ({
+  morning: { completed: 0, total: 0, completedAt: null },
+  evening: { completed: 0, total: 0, completedAt: null },
+  streak: { current: 0, longest: 0 },
+});
+
+// Everything the Android widgets show for one day, read under a single lock hold so
+// the three tables agree with each other. Takes db so it can run inside a caller's
+// run() without nesting the non-reentrant lock.
+export const getWidgetSnapshotDataWith = async (
+  db: SQLite.SQLiteDatabase,
+  dateInt: number
+): Promise<AthkarWidgetSnapshotData> => {
+  try {
+    const session = async (name: "morning" | "evening") => {
+      const row = await db.getFirstAsync<{ completed: number | null; total: number }>(
+        `SELECT SUM(CASE WHEN current_count >= total_count THEN 1 ELSE 0 END) AS completed,
+                COUNT(*) AS total
+         FROM ${ATHKAR_DAILY_ITEMS_TABLE}
+         WHERE date = ? AND thikr_id LIKE ?;`,
+        [dateInt, `%-${name}`]
+      );
+      return { completed: row?.completed ?? 0, total: row?.total ?? 0 };
+    };
+    const morning = await session("morning");
+    const evening = await session("evening");
+    const day = await db.getFirstAsync<{
+      morning_completed_at: string | null;
+      evening_completed_at: string | null;
+    }>(
+      `SELECT morning_completed_at, evening_completed_at
+       FROM ${ATHKAR_COMPLETED_DAYS_TABLE}
+       WHERE date = ?;`,
+      [dateInt]
+    );
+    const streak = await db.getFirstAsync<{ current_streak: number; longest_streak: number }>(
+      `SELECT current_streak, longest_streak FROM ${ATHKAR_STREAK_TABLE} WHERE id = 1;`
+    );
+    return {
+      morning: { ...morning, completedAt: day?.morning_completed_at ?? null },
+      evening: { ...evening, completedAt: day?.evening_completed_at ?? null },
+      streak: { current: streak?.current_streak ?? 0, longest: streak?.longest_streak ?? 0 },
+    };
+  } catch (error) {
+    console.error("Error reading athkar widget snapshot data:", error);
+    return emptyAthkarWidgetSnapshotData();
+  }
+};
+
+const getWidgetSnapshotData = (dateInt: number): Promise<AthkarWidgetSnapshotData> =>
+  sdb.run((db) => getWidgetSnapshotDataWith(db, dateInt));
+
 // Update streak when both sessions are completed
 const updateStreakForDay = (
   dateInt: number
@@ -1370,6 +1428,7 @@ export const AthkarDB = {
 
   // Streak operations
   getStreakData,
+  getWidgetSnapshotData,
   updateStreakForDay,
   resetCurrentStreak,
   updateStreakSettings,
