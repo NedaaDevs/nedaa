@@ -1,19 +1,28 @@
-const mockWriteSnapshotFile = jest.fn(async () => {});
+// Each mock carries its argument tuple, so the call assertions below typecheck.
+type AthkarStub = {
+  morning: { completed: number; total: number; completedAt: string | null };
+  evening: { completed: number; total: number; completedAt: string | null };
+  streak: { current: number; longest: number };
+};
+
+const mockWriteSnapshotFile = jest.fn<Promise<void>, [unknown]>(async () => {});
 jest.mock("@/services/widgetSnapshotFile", () => ({
   ...jest.requireActual("@/services/widgetSnapshotFile"),
   writeSnapshotFile: (s: unknown) => mockWriteSnapshotFile(s),
 }));
 
-const mockRefreshAllWidgets = jest.fn(async () => {});
+const mockRefreshAllWidgets = jest.fn<Promise<void>, []>(async () => {});
 jest.mock("../../../modules/expo-widgets/src", () => ({
   refreshAllWidgets: () => mockRefreshAllWidgets(),
 }));
 
-const mockGetByRange = jest.fn(async () => []);
+const mockGetByRange = jest.fn<Promise<unknown[]>, [number, number]>(async () => []);
 jest.mock("@/services/db", () => ({
-  PrayerTimesDB: { getPrayerTimesByDateRange: (...a: unknown[]) => mockGetByRange(...a) },
+  PrayerTimesDB: {
+    getPrayerTimesByDateRange: (start: number, end: number) => mockGetByRange(start, end),
+  },
 }));
-const mockAthkar = jest.fn(async () => ({
+const mockAthkar = jest.fn<Promise<AthkarStub>, [number]>(async () => ({
   morning: { completed: 0, total: 0, completedAt: null },
   evening: { completed: 0, total: 0, completedAt: null },
   streak: { current: 0, longest: 0 },
@@ -21,9 +30,11 @@ const mockAthkar = jest.fn(async () => ({
 jest.mock("@/services/athkar-db", () => ({
   AthkarDB: { getWidgetSnapshotData: (d: number) => mockAthkar(d) },
 }));
-const mockQadaCount = jest.fn(async () => 2);
+const mockQadaCount = jest.fn<Promise<number>, [string, string]>(async () => 2);
 jest.mock("@/services/qada-db", () => ({
-  QadaDB: { getCompletedCountBetween: (...a: unknown[]) => mockQadaCount(...a) },
+  QadaDB: {
+    getCompletedCountBetween: (startIso: string, endIso: string) => mockQadaCount(startIso, endIso),
+  },
 }));
 jest.mock("@/services/widgetPayloads", () => ({
   buildHijriTodayPayload: () => ({ hijriLabel: "H" }),
