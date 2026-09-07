@@ -6,6 +6,8 @@ import android.content.Intent
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import dev.nedaa.android.widgets.common.WidgetPlacement
+import dev.nedaa.android.widgets.notification.PrayerNotificationPublisher
 
 /**
  * Broadcast receiver for Medium Prayer Times widget (4x2)
@@ -27,7 +29,12 @@ class PrayerTimesReceiverMedium : GlanceAppWidgetReceiver() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        Log.d(TAG, "Medium widget disabled")
+        // Another size may still be placed, and the shade card rides this chain too.
+        if (!WidgetPlacement.has(context, WidgetPlacement.Family.PRAYER) &&
+            !PrayerNotificationPublisher.isEnabled(context)
+        ) {
+            PrayerTimesWorker.cancelUpdates(context)
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {

@@ -308,6 +308,11 @@ class AllPrayersReceiver : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         AllPrayersWorker.scheduleUpdate(context, 0)
     }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        AllPrayersWorker.cancelUpdates(context)
+    }
 }
 
 class AllPrayersWorker(
@@ -333,6 +338,11 @@ class AllPrayersWorker(
                 )
 
             Log.d(TAG, "Scheduled widget update in ${delayMillis / 1000}s (${delayMillis / 60000}min)")
+        }
+
+        fun cancelUpdates(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            Log.d(TAG, "Canceled widget updates")
         }
     }
 

@@ -238,6 +238,11 @@ class SuhoorIftarReceiver : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         SuhoorIftarWorker.scheduleUpdate(context, 0)
     }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        SuhoorIftarWorker.cancelUpdates(context)
+    }
 }
 
 class SuhoorIftarWorker(
@@ -258,6 +263,11 @@ class SuhoorIftarWorker(
                 .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, workRequest)
 
             Log.d(TAG, "Scheduled widget update in ${delayMillis / 1000}s (${delayMillis / 60000}min)")
+        }
+
+        fun cancelUpdates(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            Log.d(TAG, "Canceled widget updates")
         }
     }
 

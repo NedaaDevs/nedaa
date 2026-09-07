@@ -1,8 +1,21 @@
 package dev.nedaa.android.widgets.qada
 
+import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import dev.nedaa.android.widgets.common.WidgetPlacement
 
 class QadaReceiverMedium : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = QadaWidgetMedium()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        QadaWorker.schedulePeriodicUpdate(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        // The small size shares this periodic job.
+        if (!WidgetPlacement.has(context, WidgetPlacement.Family.QADA)) QadaWorker.cancelUpdates(context)
+    }
 }

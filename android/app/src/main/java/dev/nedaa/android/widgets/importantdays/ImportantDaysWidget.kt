@@ -284,6 +284,11 @@ class ImportantDaysReceiver : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         ImportantDaysWorker.scheduleUpdate(context, 0)
     }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        ImportantDaysWorker.cancelUpdates(context)
+    }
 }
 
 class ImportantDaysWorker(
@@ -308,6 +313,11 @@ class ImportantDaysWorker(
                 )
 
             Log.d(TAG, "Scheduled widget update in ${delayMillis / 1000}s (${delayMillis / 60000}min)")
+        }
+
+        fun cancelUpdates(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            Log.d(TAG, "Canceled widget updates")
         }
     }
 

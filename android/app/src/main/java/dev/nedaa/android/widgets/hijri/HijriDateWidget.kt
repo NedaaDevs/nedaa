@@ -163,6 +163,11 @@ class HijriDateReceiver : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         HijriDateWorker.scheduleUpdate(context, 0)
     }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        HijriDateWorker.cancelUpdates(context)
+    }
 }
 
 class HijriDateWorker(
@@ -187,6 +192,11 @@ class HijriDateWorker(
                 )
 
             Log.d(TAG, "Scheduled widget update in ${delayMillis / 1000}s (${delayMillis / 60000}min)")
+        }
+
+        fun cancelUpdates(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            Log.d(TAG, "Canceled widget updates")
         }
     }
 
