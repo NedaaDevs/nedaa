@@ -21,6 +21,7 @@ const mockAwaitPendingReapply = jest.fn();
 const mockGetByRange = jest.fn();
 const mockBgLog = jest.fn();
 const mockWaitForHydration = jest.fn();
+const mockSyncWidgetSnapshot = jest.fn(async () => {});
 
 let mockNow = new Date("2026-08-15T08:00:00Z");
 
@@ -81,6 +82,10 @@ jest.mock("@/stores/quranReminders", () => ({
 }));
 jest.mock("@/utils/storeHydration", () => ({
   waitForHydration: (...args: unknown[]) => mockWaitForHydration(...args),
+}));
+// The task imports this statically; without a stub its store graph opens a database.
+jest.mock("@/services/widgetSnapshot", () => ({
+  syncWidgetSnapshot: () => mockSyncWidgetSnapshot(),
 }));
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: {
@@ -144,6 +149,16 @@ describe("executeBackgroundRefresh", () => {
       mockScheduleAll.mock.invocationCallOrder[0]
     );
     expect(mockGetAndStore).not.toHaveBeenCalled();
+  });
+
+  it("writes the widget snapshot once the window has been refreshed", async () => {
+    await executeBackgroundRefresh();
+
+    expect(mockSyncWidgetSnapshot).toHaveBeenCalledTimes(1);
+    // The snapshot must carry the refreshed window, not the one it replaced.
+    expect(mockRefreshTimings.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSyncWidgetSnapshot.mock.invocationCallOrder[0]
+    );
   });
 
   it("fetches when the database holds fewer than 3 future days", async () => {

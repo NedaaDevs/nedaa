@@ -72,8 +72,14 @@ export const writeWidgetSnapshot = async (): Promise<void> => {
 
 // Write then repaint. Repaints Android only: iOS widgets read the database tables and
 // their WidgetKit reload budget must not be spent on Android-side changes.
+// Never throws: callers are a headless task and fire-and-forget store actions, and a
+// failed repaint must not stop the work that follows it.
 export const syncWidgetSnapshot = async (): Promise<void> => {
   if (Platform.OS !== PlatformType.ANDROID) return;
   await writeWidgetSnapshot();
-  await refreshAllWidgets();
+  try {
+    await refreshAllWidgets();
+  } catch (e) {
+    log.e("Snapshot", "widget repaint failed", e instanceof Error ? e : undefined);
+  }
 };

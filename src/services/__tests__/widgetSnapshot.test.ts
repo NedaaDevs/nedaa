@@ -131,6 +131,13 @@ describe("syncWidgetSnapshot", () => {
     expect(mockRefreshAllWidgets).toHaveBeenCalledTimes(1);
   });
 
+  test("a failed repaint is logged, not thrown", async () => {
+    mockRefreshAllWidgets.mockRejectedValueOnce(new Error("no widget host"));
+    await expect(syncWidgetSnapshot()).resolves.toBeUndefined();
+    expect(mockWriteSnapshotFile).toHaveBeenCalledTimes(1);
+    expect(mockLog.e).toHaveBeenCalledWith("Snapshot", expect.any(String), expect.any(Error));
+  });
+
   test("does nothing on iOS — the WidgetKit reload budget is not touched", async () => {
     setPlatform("ios");
     await syncWidgetSnapshot();
