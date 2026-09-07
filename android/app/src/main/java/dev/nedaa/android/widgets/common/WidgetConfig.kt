@@ -8,7 +8,7 @@ import java.util.TimeZone
  * How a widget formats itself. A widget sits on the home screen next to other
  * widgets, so its language comes from the device and not from the language the
  * user picked inside the app. The numeral toggle, the timezone and the Hijri
- * offset are user preferences, so the JS layer writes those to the DB.
+ * offset are user preferences, so the JS layer writes those into the widget snapshot.
  */
 data class WidgetConfig(
     /** The device locale. Android resolves widget string resources against it too. */
@@ -47,34 +47,16 @@ data class WidgetConfig(
         private val ARABIC_DIGITS = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
         private val PERSIAN_DIGITS = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
 
-        fun get(context: Context): WidgetConfig {
-            var useWestern = false
-            var zoneId: String? = null
-            var hijriOffset = 0
-            // The table may not exist yet on first launch (JS writes it on sync);
-            // any failure falls through to the defaults below.
-            try {
-                DatabaseProvider.getNedaaDatabase(context)?.use { db ->
-                    db.rawQuery(
-                        "SELECT useWesternNumerals, timezone, hijriDaysOffset FROM widget_config WHERE id = 1",
-                        null
-                    ).use { c ->
-                        if (c.moveToFirst()) {
-                            useWestern = c.getInt(0) == 1
-                            // Added after the table shipped, so absent on an install that
-                            // has not synced since.
-                            if (!c.isNull(1)) zoneId = c.getString(1)
-                            if (!c.isNull(2)) hijriOffset = c.getInt(2)
-                        }
-                    }
-                }
-            } catch (_: Exception) {
-                // No config yet — use the defaults.
-            }
-            val locale = deviceLocale(context)
+        fun get(context: Context): WidgetConfig =
+            fromSnapshot(WidgetSnapshot.load(context)?.config, deviceLocale(context))
+
+        /** Device defaults for anything the snapshot lacks, so a first launch still renders. */
+        internal fun fromSnapshot(config: SnapshotConfig?, locale: Locale): WidgetConfig {
+            val useWestern = config?.useWesternNumerals ?: false
             val arabicNumerals = locale.language == "ar" && !useWestern
-            val zone = zoneId?.let { TimeZone.getTimeZone(it) } ?: TimeZone.getDefault()
-            return WidgetConfig(locale, arabicNumerals, zone, hijriOffset)
+            val zone = config?.timezone?.takeIf { it.isNotEmpty() }?.let { TimeZone.getTimeZone(it) }
+                ?: TimeZone.getDefault()
+            return WidgetConfig(locale, arabicNumerals, zone, config?.hijriDaysOffset ?: 0)
         }
 
         /**
