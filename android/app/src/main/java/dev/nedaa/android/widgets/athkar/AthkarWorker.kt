@@ -4,22 +4,18 @@ import android.content.Context
 import android.util.Log
 import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.nedaa.android.widgets.common.WidgetBoundaries
 import dev.nedaa.android.widgets.data.PrayerData
 import dev.nedaa.android.widgets.data.PrayerDataService
-import java.util.Calendar
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 /**
- * Background worker for updating Athkar Progress widget
- * Schedules daily updates at midnight
+ * Repaints the Athkar widgets and re-chains itself to the next boundary.
  */
 class AthkarWorker(
     private val context: Context,
@@ -29,26 +25,6 @@ class AthkarWorker(
     companion object {
         private const val TAG = "AthkarWorker"
         private const val WORK_NAME = "athkar_widget_update"
-
-        /**
-         * Schedule periodic updates at midnight
-         */
-        fun schedulePeriodicUpdate(context: Context) {
-            val delayUntilMidnight = calculateDelayUntilMidnight()
-
-            val workRequest = PeriodicWorkRequestBuilder<AthkarWorker>(24, TimeUnit.HOURS)
-                .setInitialDelay(delayUntilMidnight, TimeUnit.MILLISECONDS)
-                .build()
-
-            WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(
-                    WORK_NAME,
-                    ExistingPeriodicWorkPolicy.UPDATE,
-                    workRequest
-                )
-
-            Log.d(TAG, "Scheduled daily athkar widget update")
-        }
 
         /**
          * One-time update that re-chains to the next boundary. The promoted
@@ -64,25 +40,10 @@ class AthkarWorker(
         }
 
         /**
-         * Cancel periodic updates
+         * Cancel the boundary chain
          */
         fun cancelUpdates(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-        }
-
-        /**
-         * Calculate milliseconds until next midnight
-         */
-        private fun calculateDelayUntilMidnight(): Long {
-            val now = Calendar.getInstance()
-            val midnight = Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, 1)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            return midnight.timeInMillis - now.timeInMillis
         }
     }
 
