@@ -11,6 +11,7 @@ import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 // Stores
 import locationStore from "@/stores/location";
 import prayerTimesStore from "@/stores/prayerTimes";
+import { clearTransientSchedulingState } from "@/stores/notificationTransientState";
 
 // Services
 import { QadaDB } from "@/services/qada-db";
@@ -375,6 +376,8 @@ export const useNotificationStore = create<NotificationStore>()(
         storage: createJSONStorage(() => Storage),
         onRehydrateStorage: () => (state) => {
           if (!state) return;
+
+          clearTransientSchedulingState(state);
 
           // Migration v1: Add qada defaults for old users
           if (state.migrationVersion < 1) {
