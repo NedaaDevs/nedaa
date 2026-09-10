@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The bundled athan, iqama and alert sounds in res/raw are referenced only by name from JS and
+  from notification-channel setup, never from Java or XML, so aapt2 resource shrinking sees no
+  reference and deletes them. A build with resource shrinking on would then play silence for
+  every athan. Resource shrinking is off today; this keeps the sounds safe if it is turned on.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@raw/*" />
