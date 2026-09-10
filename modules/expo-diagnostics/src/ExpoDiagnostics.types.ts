@@ -25,3 +25,30 @@ export interface NativeDiagnostic {
   /** build that was running when the event happened, which may predate the build that drains it */
   appVersion?: string;
 }
+
+/** Counts of the WorkManager entries filed under the background-task unique work name. */
+export interface BackgroundWorkerQueueCounts {
+  uniqueName: string;
+  /** every entry the name matched, finished ones included */
+  total: number;
+  /** entries still to run: the live queue depth */
+  unfinished: number;
+  enqueued: number;
+  running: number;
+  /** appended behind a running head, so these run in order rather than together */
+  blocked: number;
+  /** finished states are pruned after about a day, so these describe a recent window */
+  succeeded: number;
+  failed: number;
+  cancelled: number;
+  maxRunAttemptCount: number;
+}
+
+/**
+ * A queue reading, or the reason there isn't one. "unsupported" and "error" are distinct from
+ * a zero count on purpose: a platform without WorkManager must never render as an empty queue.
+ */
+export type BackgroundWorkerQueueResult =
+  | { status: "ok"; counts: BackgroundWorkerQueueCounts }
+  | { status: "unsupported" }
+  | { status: "error"; message: string };

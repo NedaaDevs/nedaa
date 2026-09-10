@@ -10,6 +10,9 @@ import android.os.Looper
 import android.os.Process
 import android.system.Os
 import android.system.OsConstants
+import androidx.work.WorkManager
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.ByteArrayOutputStream
@@ -41,6 +44,30 @@ class ExpoDiagnosticsModule : Module() {
 
     AsyncFunction("ack") { tokens: List<String> ->
       ack(tokens)
+    }
+
+    // Resolved from the future's own callback rather than by waiting on it: every async
+    // function in the app shares one handler thread, so blocking here stalls all of them.
+    AsyncFunction("readBackgroundWorkerQueue") { promise: Promise ->
+      val context = appContext.reactContext
+      if (context == null) {
+        promise.reject(CodedException("ERR_NO_CONTEXT", "No context", null))
+        return@AsyncFunction
+      }
+      try {
+        val future = WorkManager.getInstance(context)
+          .getWorkInfosForUniqueWork(BACKGROUND_WORKER_UNIQUE_NAME)
+        future.addListener({
+          try {
+            promise.resolve(summarizeBackgroundWorkerQueue(future.get()))
+          } catch (e: Exception) {
+            promise.reject(CodedException("ERR_WORK_QUERY", e.message ?: "query failed", e))
+          }
+        }, { it.run() })
+      } catch (e: Exception) {
+        // WorkManager throws when it was never initialised for this process.
+        promise.reject(CodedException("ERR_WORK_MANAGER", e.message ?: "unavailable", e))
+      }
     }
 
     // Raise a real SIGSEGV so debuggerd writes a tombstone and the next launch sees

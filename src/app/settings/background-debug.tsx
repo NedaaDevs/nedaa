@@ -11,6 +11,7 @@ import TopBar from "@/components/TopBar";
 import { Background } from "@/components/ui/background";
 
 import * as BackgroundTask from "expo-background-task";
+import { ExpoDiagnosticsModule } from "../../../modules/expo-diagnostics/src";
 import * as TaskManager from "expo-task-manager";
 
 import { BackgroundTaskLog, type TaskLogEntry } from "@/services/background-task-log";
@@ -55,6 +56,7 @@ const BackgroundDebugScreen = () => {
   const [bgStatus, setBgStatus] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
   const [consumerCount, setConsumerCount] = useState<number | null>(null);
+  const [workerQueue, setWorkerQueue] = useState<string | null>(null);
   const [logs, setLogs] = useState<TaskLogEntry[]>([]);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -86,6 +88,19 @@ const BackgroundDebugScreen = () => {
       setConsumerCount(tasks.filter((task) => BACKGROUND_TASK_TYPES.has(task.taskType)).length);
     } catch {
       setConsumerCount(null);
+    }
+
+    // Unfinished worker entries under the background-task unique name. Entries appended
+    // behind a running head sit in BLOCKED and run in order; several ENQUEUED or RUNNING
+    // roots run together, and only that shape races the per-uid alarm ceiling.
+    const queue = await ExpoDiagnosticsModule.readBackgroundWorkerQueue();
+    if (queue.status === "ok") {
+      const c = queue.counts;
+      setWorkerQueue(`${c.unfinished} unfinished — ${c.enqueued}/${c.running}/${c.blocked}`);
+    } else if (queue.status === "unsupported") {
+      setWorkerQueue("n/a");
+    } else {
+      setWorkerQueue("read failed");
     }
   }, []);
 
@@ -210,6 +225,19 @@ const BackgroundDebugScreen = () => {
                         ? "1"
                         : `${consumerCount} — expected 1`}
                   </Badge.Text>
+                </Badge>
+              </HStack>
+
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                accessibilityLabel={`Worker queue: ${workerQueue ?? "unknown"}`}>
+                <Text color="$typography">Worker queue</Text>
+                {/* No pass/fail colour: the healthy depth here is not known, and a badge
+                    that guesses would read as a verdict. The enqueued/running/blocked split
+                    is what distinguishes a serial backlog from concurrent roots. */}
+                <Badge action="info">
+                  <Badge.Text>{workerQueue ?? "Unknown"}</Badge.Text>
                 </Badge>
               </HStack>
 

@@ -21,3 +21,8 @@ android {
     jvmTarget = '17'
   }
 }
+
+dependencies {
+  // Reads the background-task worker queue; the app resolves work-runtime 2.10.5 overall.
+  implementation 'androidx.work:work-runtime:2.10.0'
+}

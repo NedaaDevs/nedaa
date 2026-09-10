@@ -1,9 +1,17 @@
 import { requireOptionalNativeModule } from "expo-modules-core";
 
-import type { NativeDiagnostic } from "./ExpoDiagnostics.types";
+import type {
+  BackgroundWorkerQueueCounts,
+  BackgroundWorkerQueueResult,
+  NativeDiagnostic,
+} from "./ExpoDiagnostics.types";
 
 export { NativeDiagnosticKind } from "./ExpoDiagnostics.types";
-export type { NativeDiagnostic } from "./ExpoDiagnostics.types";
+export type {
+  BackgroundWorkerQueueCounts,
+  BackgroundWorkerQueueResult,
+  NativeDiagnostic,
+} from "./ExpoDiagnostics.types";
 
 const NativeModule = requireOptionalNativeModule<{
   drain(): Promise<NativeDiagnostic[]>;
@@ -12,6 +20,7 @@ const NativeModule = requireOptionalNativeModule<{
   testHang?(): void;
   testAnr?(): void;
   testJvmCrash?(): void;
+  readBackgroundWorkerQueue?(): Promise<BackgroundWorkerQueueCounts>;
 }>("ExpoDiagnostics");
 
 export const ExpoDiagnosticsModule = {
@@ -43,5 +52,17 @@ export const ExpoDiagnosticsModule = {
   // in-process recorder rather than the platform. No-op on iOS.
   testJvmCrash(): void {
     NativeModule?.testJvmCrash?.();
+  },
+  // Android-only: iOS schedules background work through BGTaskScheduler, which has no
+  // WorkManager queue to read. The absent binding reports "unsupported" rather than a zero
+  // count, so a platform that cannot measure is never mistaken for an empty queue.
+  async readBackgroundWorkerQueue(): Promise<BackgroundWorkerQueueResult> {
+    const read = NativeModule?.readBackgroundWorkerQueue;
+    if (!read) return { status: "unsupported" };
+    try {
+      return { status: "ok", counts: await read() };
+    } catch (error) {
+      return { status: "error", message: error instanceof Error ? error.message : String(error) };
+    }
   },
 };

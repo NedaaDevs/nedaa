@@ -2,6 +2,7 @@ import * as SQLite from "expo-sqlite";
 import { getDirectory } from "@/services/db";
 import { createSerializedDatabase } from "@/utils/serializedDatabase";
 import { AppLogger } from "@/utils/appLogger";
+import { ExpoDiagnosticsModule } from "../../modules/expo-diagnostics/src";
 
 const BG_LOG_DB_NAME = "background_task_logs.db";
 const TABLE_NAME = "task_logs";
@@ -102,3 +103,38 @@ AppLogger.registerReportSection("background-tasks", async () => {
     .reverse() // oldest first, matching the .log files' chronology
     .join("\n");
 });
+
+// The worker-queue depth is the number that tells a serial backlog apart from duplicate
+// concurrent roots; only the second floods the per-uid alarm ceiling. It lives outside the
+// file logger, so it is registered as its own section.
+const QUEUE_READ_TIMEOUT_MS = 2000;
+
+const describeWorkerQueue = async (): Promise<string> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // buildReport awaits each section with no time bound and one of its callers is the
+  // post-crash prompt, so a native read that never settles would hold up the whole report.
+  const timeout = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => resolve("timeout"), QUEUE_READ_TIMEOUT_MS);
+  });
+
+  try {
+    const result = await Promise.race([ExpoDiagnosticsModule.readBackgroundWorkerQueue(), timeout]);
+
+    if (result === "timeout") return "read timed out";
+    if (result.status === "unsupported") return "no WorkManager on this platform";
+    if (result.status === "error") return `read failed: ${result.message}`;
+
+    const c = result.counts;
+    return [
+      `unique: ${c.uniqueName}`,
+      `enqueued=${c.enqueued} running=${c.running} blocked=${c.blocked}`,
+      `unfinished=${c.unfinished} total=${c.total}`,
+      // Finished states are pruned after about a day, so this is a recent window.
+      `finished(<=1d)=${c.succeeded + c.failed + c.cancelled} attempts: max=${c.maxRunAttemptCount}`,
+    ].join("\n");
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
+AppLogger.registerReportSection("background-worker-queue", describeWorkerQueue);
