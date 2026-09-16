@@ -1,17 +1,14 @@
 import type { TFunction } from "i18next";
 import appStore from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
+import { localizeDigits, toWesternDigits } from "@/utils/digits";
 
-export const formatNumberToLocale = (str: string) => {
-  if (
-    appStore.getState().locale.startsWith("ar") &&
-    !usePreferencesStore.getState().useWesternNumerals
-  ) {
-    const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
-    return str.replace(/[0-9]/g, (digit: string): string => arabicDigits[parseInt(digit)]);
-  }
-  return str;
-};
+export const formatNumberToLocale = (str: string) =>
+  localizeDigits(
+    str,
+    appStore.getState().locale,
+    usePreferencesStore.getState().useWesternNumerals
+  );
 
 // File size with localized digits and unit label (e.g. "12.3 م ب" in Arabic).
 export const formatFileSizeLocale = (bytes: number, t: TFunction): string => {
@@ -23,7 +20,5 @@ export const formatFileSizeLocale = (bytes: number, t: TFunction): string => {
   return `${formatNumberToLocale(String(value))} ${t(`common.units.${units[i]}`)}`;
 };
 
-export const normalizeNumber = (str: string) => {
-  const arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
-  return str.replace(/[٠-٩]/g, (d) => arabicDigits.indexOf(d).toString());
-};
+// Parses digits a reader typed, which may be in either set.
+export const normalizeNumber = toWesternDigits;

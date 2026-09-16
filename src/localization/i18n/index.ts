@@ -10,6 +10,7 @@ import translationMS from "@/localization/locales/ms.json";
 import translationUR from "@/localization/locales/ur.json";
 // Enums
 import { AppLocale } from "@/enums/app";
+import { numeralPostProcessor } from "@/localization/numerals";
 
 const resources = {
   ar: { translation: translationAR },
@@ -23,14 +24,18 @@ const initI18n = () => {
 
   // Initialize i18n with React integration
   // eslint-disable-next-line import/no-named-as-default-member
-  i18n.use(initReactI18next).init({
-    resources,
-    lng: deviceLanguage,
-    fallbackLng: AppLocale.EN,
-    interpolation: {
-      escapeValue: false,
-    },
-  });
+  i18n
+    .use(initReactI18next)
+    .use(numeralPostProcessor)
+    .init({
+      resources,
+      lng: deviceLanguage,
+      fallbackLng: AppLocale.EN,
+      interpolation: {
+        escapeValue: false,
+      },
+      postProcess: [numeralPostProcessor.name],
+    });
 };
 
 initI18n();
