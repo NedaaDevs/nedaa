@@ -189,21 +189,21 @@ const KeepLocationUpdated = () => {
 
   // Re-check permission when app becomes active (user returns from settings)
   useEffect(() => {
+    const checkPermissionStatus = async () => {
+      setIsCheckingPermission(true);
+      try {
+        const { granted, canRequestAgain } = await checkLocationPermission();
+        setHasPermission(granted);
+        setCanAskPermission(canRequestAgain);
+      } catch (error) {
+        console.error("Failed to check permission:", error);
+      } finally {
+        setIsCheckingPermission(false);
+      }
+    };
+
     checkPermissionStatus();
   }, [becameActiveAt]);
-
-  const checkPermissionStatus = async () => {
-    setIsCheckingPermission(true);
-    try {
-      const { granted, canRequestAgain } = await checkLocationPermission();
-      setHasPermission(granted);
-      setCanAskPermission(canRequestAgain);
-    } catch (error) {
-      console.error("Failed to check permission:", error);
-    } finally {
-      setIsCheckingPermission(false);
-    }
-  };
 
   const handleRequestPermission = async () => {
     hapticMedium();

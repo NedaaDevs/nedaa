@@ -49,33 +49,32 @@ type Props = {
 
 type FilterType = "all" | "prayer" | "iqama" | "preAthan" | "athkar" | "qada";
 
-export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
+// Modal mounts its children only while it is open, so this body is created fresh on
+// every open: the filter starts at "all" and the list is fetched once per open.
+const NotificationDebugModalBody: FC<Pick<Props, "onClose">> = ({ onClose }) => {
   const theme = useTheme();
   const [notifications, setNotifications] = useState<ScheduledNotification[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const fetchNotifications = async () => {
-    const list = await listScheduledNotifications();
-    // Sort notifications by date
-    const sortedList = (list as ScheduledNotification[]).sort((a, b) => {
-      const getTime = (trigger: NotificationTrigger) => {
-        if (trigger.type === "timeInterval") {
-          return Date.now() + trigger.seconds * 1000;
-        } else {
-          return trigger.value;
-        }
-      };
-      return getTime(a.trigger) - getTime(b.trigger);
-    });
-    setNotifications(sortedList);
-  };
-
   useEffect(() => {
-    if (isOpen) {
-      fetchNotifications();
-      setFilter("all"); // Reset filter when modal opens
-    }
-  }, [isOpen]);
+    const fetchNotifications = async () => {
+      const list = await listScheduledNotifications();
+      // Sort notifications by date
+      const sortedList = (list as ScheduledNotification[]).sort((a, b) => {
+        const getTime = (trigger: NotificationTrigger) => {
+          if (trigger.type === "timeInterval") {
+            return Date.now() + trigger.seconds * 1000;
+          } else {
+            return trigger.value;
+          }
+        };
+        return getTime(a.trigger) - getTime(b.trigger);
+      });
+      setNotifications(sortedList);
+    };
+
+    void fetchNotifications();
+  }, []);
 
   // Filter notifications based on selected type
   const getNotificationType = (notification: ScheduledNotification): string => {
@@ -136,140 +135,137 @@ export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => {
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Box
+      flex={1}
+      backgroundColor="transparent"
+      alignItems="center"
+      justifyContent="flex-end"
+      padding="$4">
       <Box
-        flex={1}
-        backgroundColor="transparent"
-        alignItems="center"
-        justifyContent="flex-end"
-        padding="$4">
-        <Box
-          borderTopLeftRadius="$8"
-          borderTopRightRadius="$8"
-          width="100%"
-          maxHeight="85%"
-          minHeight="70%"
-          // eslint-disable-next-line no-restricted-syntax -- sheet frame, owns its own surface
-          backgroundColor="$backgroundSecondary">
-          {/* Header */}
-          <Box padding="$6" borderBottomWidth={1} borderColor="$outline">
-            <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
-              <Text size="xl" fontWeight="600" color="$typography">
-                Scheduled Notifications
-              </Text>
-              <Pressable padding="$2" borderRadius="$2" onPress={onClose}>
-                <XIcon size={24} color={theme.typographySecondary.val} />
-              </Pressable>
+        borderTopLeftRadius="$8"
+        borderTopRightRadius="$8"
+        width="100%"
+        maxHeight="85%"
+        minHeight="70%"
+        // eslint-disable-next-line no-restricted-syntax -- sheet frame, owns its own surface
+        backgroundColor="$backgroundSecondary">
+        {/* Header */}
+        <Box padding="$6" borderBottomWidth={1} borderColor="$outline">
+          <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+            <Text size="xl" fontWeight="600" color="$typography">
+              Scheduled Notifications
+            </Text>
+            <Pressable padding="$2" borderRadius="$2" onPress={onClose}>
+              <XIcon size={24} color={theme.typographySecondary.val} />
+            </Pressable>
+          </HStack>
+
+          {/* Filter Chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
+            <HStack gap="$1" paddingRight="$2">
+              {filterButtons.map((btn) => (
+                <Pressable
+                  key={btn.key}
+                  onPress={() => setFilter(btn.key)}
+                  paddingHorizontal="$3"
+                  paddingVertical="$1"
+                  borderRadius="$4"
+                  backgroundColor={filter === btn.key ? "$primary" : "$backgroundMuted"}>
+                  <Text
+                    size="sm"
+                    fontWeight="500"
+                    color={filter === btn.key ? "$background" : "$typography"}>
+                    {btn.label} ({btn.count})
+                  </Text>
+                </Pressable>
+              ))}
             </HStack>
-
-            {/* Filter Chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
-              <HStack gap="$1" paddingRight="$2">
-                {filterButtons.map((btn) => (
-                  <Pressable
-                    key={btn.key}
-                    onPress={() => setFilter(btn.key)}
-                    paddingHorizontal="$3"
-                    paddingVertical="$1"
-                    borderRadius="$4"
-                    backgroundColor={filter === btn.key ? "$primary" : "$backgroundMuted"}>
-                    <Text
-                      size="sm"
-                      fontWeight="500"
-                      color={filter === btn.key ? "$background" : "$typography"}>
-                      {btn.label} ({btn.count})
-                    </Text>
-                  </Pressable>
-                ))}
-              </HStack>
-            </ScrollView>
-          </Box>
-
-          {/* Content */}
-          <ScrollView style={{ flex: 1, paddingHorizontal: 24 }}>
-            <Box paddingVertical="$6">
-              {filteredNotifications.length === 0 ? (
-                <Text color="$typography" textAlign="center">
-                  {notifications.length === 0
-                    ? "No scheduled notifications found"
-                    : `No ${filter} notifications found`}
-                </Text>
-              ) : (
-                <VStack gap="$4">
-                  {filteredNotifications.map((notification, index) => (
-                    <Box
-                      key={index}
-                      backgroundColor="$background"
-                      padding="$4"
-                      borderRadius="$6"
-                      borderWidth={1}
-                      borderColor="$outline">
-                      <VStack gap="$2">
-                        <HStack
-                          justifyContent="space-between"
-                          alignItems="center"
-                          marginBottom="$1">
-                          <Text color="$typography" fontWeight="600" size="xs">
-                            #{index + 1}
-                          </Text>
-                          <Badge size="sm" variant="outline">
-                            <Badge.Text size="sm">{getNotificationType(notification)}</Badge.Text>
-                          </Badge>
-                        </HStack>
-                        <Text color="$typography" fontWeight="600">
-                          {notification.content.title}
-                        </Text>
-                        <Text color="$typographySecondary" size="sm">
-                          {notification.content.body}
-                        </Text>
-                        <Box
-                          marginTop="$2"
-                          paddingTop="$2"
-                          borderTopWidth={1}
-                          borderColor="$outline">
-                          <VStack gap="$1">
-                            <Text color="$typographySecondary" size="xs">
-                              ID: {notification.identifier}
-                            </Text>
-                            <Text color="$typographySecondary" size="xs">
-                              Category:{" "}
-                              {(notification.content.data as { categoryId?: string } | undefined)
-                                ?.categoryId || "N/A"}
-                            </Text>
-                            <Text color="$typographySecondary" size="xs">
-                              Trigger: {notification.trigger.type}
-                              {notification.trigger.type === "timeInterval"
-                                ? ` (${notification.trigger.seconds}s)`
-                                : ` (${new Date(notification.trigger.value).toLocaleString()})`}
-                            </Text>
-                            <Text color="$typographySecondary" size="xs">
-                              Sound: {notification.content.sound || "default"}
-                            </Text>
-                          </VStack>
-                        </Box>
-                      </VStack>
-                    </Box>
-                  ))}
-                </VStack>
-              )}
-            </Box>
           </ScrollView>
+        </Box>
 
-          {/* Footer */}
-          <Box padding="$6" borderTopWidth={1} borderColor="$outline">
-            <VStack gap="$2">
-              <Text size="sm" color="$typographySecondary" textAlign="center">
-                Showing {filteredNotifications.length} of {notifications.length} notifications
+        {/* Content */}
+        <ScrollView style={{ flex: 1, paddingHorizontal: 24 }}>
+          <Box paddingVertical="$6">
+            {filteredNotifications.length === 0 ? (
+              <Text color="$typography" textAlign="center">
+                {notifications.length === 0
+                  ? "No scheduled notifications found"
+                  : `No ${filter} notifications found`}
               </Text>
-              <Button onPress={onClose} width="100%">
-                <Button.Text>Close</Button.Text>
-              </Button>
-            </VStack>
+            ) : (
+              <VStack gap="$4">
+                {filteredNotifications.map((notification, index) => (
+                  <Box
+                    key={index}
+                    backgroundColor="$background"
+                    padding="$4"
+                    borderRadius="$6"
+                    borderWidth={1}
+                    borderColor="$outline">
+                    <VStack gap="$2">
+                      <HStack justifyContent="space-between" alignItems="center" marginBottom="$1">
+                        <Text color="$typography" fontWeight="600" size="xs">
+                          #{index + 1}
+                        </Text>
+                        <Badge size="sm" variant="outline">
+                          <Badge.Text size="sm">{getNotificationType(notification)}</Badge.Text>
+                        </Badge>
+                      </HStack>
+                      <Text color="$typography" fontWeight="600">
+                        {notification.content.title}
+                      </Text>
+                      <Text color="$typographySecondary" size="sm">
+                        {notification.content.body}
+                      </Text>
+                      <Box marginTop="$2" paddingTop="$2" borderTopWidth={1} borderColor="$outline">
+                        <VStack gap="$1">
+                          <Text color="$typographySecondary" size="xs">
+                            ID: {notification.identifier}
+                          </Text>
+                          <Text color="$typographySecondary" size="xs">
+                            Category:{" "}
+                            {(notification.content.data as { categoryId?: string } | undefined)
+                              ?.categoryId || "N/A"}
+                          </Text>
+                          <Text color="$typographySecondary" size="xs">
+                            Trigger: {notification.trigger.type}
+                            {notification.trigger.type === "timeInterval"
+                              ? ` (${notification.trigger.seconds}s)`
+                              : ` (${new Date(notification.trigger.value).toLocaleString()})`}
+                          </Text>
+                          <Text color="$typographySecondary" size="xs">
+                            Sound: {notification.content.sound || "default"}
+                          </Text>
+                        </VStack>
+                      </Box>
+                    </VStack>
+                  </Box>
+                ))}
+              </VStack>
+            )}
           </Box>
+        </ScrollView>
+
+        {/* Footer */}
+        <Box padding="$6" borderTopWidth={1} borderColor="$outline">
+          <VStack gap="$2">
+            <Text size="sm" color="$typographySecondary" textAlign="center">
+              Showing {filteredNotifications.length} of {notifications.length} notifications
+            </Text>
+            <Button onPress={onClose} width="100%">
+              <Button.Text>Close</Button.Text>
+            </Button>
+          </VStack>
         </Box>
       </Box>
-    </Modal>
+    </Box>
   );
 };
+
+export const NotificationDebugModal: FC<Props> = ({ isOpen, onClose }) => (
+  <Modal isOpen={isOpen} onClose={onClose}>
+    <NotificationDebugModalBody onClose={onClose} />
+  </Modal>
+);
 
 export default NotificationDebugModal;

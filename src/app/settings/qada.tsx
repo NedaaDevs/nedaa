@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
@@ -108,17 +108,6 @@ const QadaSettings = () => {
   const hapticTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync with store values on mount
-  useEffect(() => {
-    setTempReminderType(reminderType);
-    setTempReminderDays(reminderDays || 30);
-    setTempReminderDaysText((reminderDays || 30).toString());
-    setTempCustomDate(customDate);
-    setTempPrivacyMode(privacyMode);
-    setTempQadaSound(settings.defaults.qada.sound);
-    setTempQadaVibration(settings.defaults.qada.vibration);
-  }, [reminderType, reminderDays, customDate, privacyMode, settings.defaults.qada]);
-
   const baseSoundOptions = getAvailableSoundsWithCustom("qada", customSounds || []);
 
   // Add default (system) sound option at the beginning
@@ -196,14 +185,17 @@ const QadaSettings = () => {
     hapticWarning();
 
     // Start animations
-    progress.value = withTiming(100, { duration: 3000 });
-    backgroundProgress.value = withTiming(1, { duration: 3000 });
-    scaleValue.value = withTiming(0.95, { duration: 100 });
+    progress.set(withTiming(100, { duration: 3000 }));
+    backgroundProgress.set(withTiming(1, { duration: 3000 }));
+    scaleValue.set(withTiming(0.95, { duration: 100 }));
 
     // Use a ref to track if we should continue the animation
     const shouldContinue = { value: true };
 
     // Set up progress tracking for display
+    // Runs from the gesture's onBegin on touch, never during render. The React
+    // Compiler does not model Gesture builder methods as event-handler registration.
+    // eslint-disable-next-line react-hooks/purity
     const startTime = Date.now();
     const updateProgress = () => {
       const elapsed = Date.now() - startTime;
@@ -249,9 +241,9 @@ const QadaSettings = () => {
     }
 
     // Reset values
-    progress.value = 0;
-    backgroundProgress.value = 0;
-    scaleValue.value = 1;
+    progress.set(0);
+    backgroundProgress.set(0);
+    scaleValue.set(1);
   };
 
   const handleResetComplete = async () => {
@@ -267,9 +259,9 @@ const QadaSettings = () => {
     }
 
     // Reset animation values
-    progress.value = 0;
-    backgroundProgress.value = 0;
-    scaleValue.value = 1;
+    progress.set(0);
+    backgroundProgress.set(0);
+    scaleValue.set(1);
 
     try {
       await resetAll();
@@ -288,12 +280,12 @@ const QadaSettings = () => {
   const buttonAnimatedStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: errorColor,
-      transform: [{ scale: scaleValue.value }],
+      transform: [{ scale: scaleValue.get() }],
     };
   });
 
   const progressOverlayStyle = useAnimatedStyle(() => {
-    const width = interpolate(progress.value, [0, 100], [0, 1]);
+    const width = interpolate(progress.get(), [0, 100], [0, 1]);
 
     return {
       position: "absolute" as const,
@@ -520,12 +512,11 @@ const QadaSettings = () => {
                   mode="date"
                   display="spinner"
                   locale={appStore.getState().locale}
-                  onChange={(event, selectedDate) => {
+                  onValueChange={(_event, selectedDate) => {
                     setShowDatePicker(false);
-                    if (selectedDate) {
-                      setTempCustomDate(selectedDate.toISOString());
-                    }
+                    setTempCustomDate(selectedDate.toISOString());
                   }}
+                  onDismiss={() => setShowDatePicker(false)}
                 />
               )}
             </VStack>
@@ -742,6 +733,10 @@ const QadaSettings = () => {
                   {t("qada.resetWarning")}
                 </Text>
 
+                {/* The gesture callbacks run on touch, never during render. The React
+                    Compiler does not model Gesture builder methods as event-handler
+                    registration, so it reads the refs they close over as render reads. */}
+                {/* eslint-disable-next-line react-hooks/refs */}
                 {(() => {
                   const longPressGesture = Gesture.Pan()
                     .onBegin(() => {
