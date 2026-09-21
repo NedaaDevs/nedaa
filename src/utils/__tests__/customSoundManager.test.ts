@@ -1,5 +1,13 @@
 import type { NotificationSettings } from "@/types/notification";
 
+import {
+  getCustomSoundUsages,
+  replaceCustomSoundInSettings,
+  getAlarmUsagesForUri,
+  releaseCustomSoundFromAlarms,
+  CUSTOM_SOUND_REPLACEMENT,
+} from "@/utils/customSoundManager";
+
 jest.mock("expo-document-picker", () => ({}));
 jest.mock("expo-file-system", () => ({ File: class {}, Paths: { cache: "" } }));
 jest.mock("expo-notifications", () => ({ AndroidImportance: { HIGH: 6 } }));
@@ -23,14 +31,6 @@ const mockAlarmState = {
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: { getState: () => mockAlarmState },
 }));
-
-import {
-  getCustomSoundUsages,
-  replaceCustomSoundInSettings,
-  getAlarmUsagesForUri,
-  releaseCustomSoundFromAlarms,
-  CUSTOM_SOUND_REPLACEMENT,
-} from "@/utils/customSoundManager";
 
 const CUSTOM_ID = "custom_1_abc";
 const URI = "content://media/external/audio/media/42";
