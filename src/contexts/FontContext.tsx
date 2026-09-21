@@ -1,4 +1,4 @@
-import React, { createContext, use, useEffect, useState } from "react";
+import React, { createContext, use } from "react";
 
 // Enums
 import { AppLocale } from "@/enums/app";
@@ -50,14 +50,11 @@ interface FontProviderProps {
  */
 export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
   const { locale } = useAppStore();
-  const [fontFamily, setFontFamily] = useState<Record<FontWeight, string>>(
-    FONT_MAPPINGS[locale] || FONT_MAPPINGS[AppLocale.EN]
-  );
 
-  // Update font families when locale changes
-  useEffect(() => {
-    setFontFamily(FONT_MAPPINGS[locale] || FONT_MAPPINGS[AppLocale.EN]);
-  }, [locale]);
+  // Derived during render, so a locale switch swaps the font in the same commit.
+  // Holding it in state costs a second render in which Arabic text is still laid
+  // out in the Latin-only family.
+  const fontFamily = FONT_MAPPINGS[locale] || FONT_MAPPINGS[AppLocale.EN];
 
   const getFontFamily = (weight: FontWeight): string => {
     return fontFamily[weight] || fontFamily.regular;
