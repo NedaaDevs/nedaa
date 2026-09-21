@@ -1,6 +1,7 @@
-import Svg, { Path, Circle, Rect, Line, G, Ellipse } from "react-native-svg";
+import Svg, { Path, Circle, Line, G, Ellipse } from "react-native-svg";
 import { View } from "react-native";
 import { useTheme } from "tamagui";
+import { Rect } from "@/components/ui/svg-geometry";
 import NumberBadge from "@/components/umrah/illustrations/NumberBadge";
 
 type Props = {
