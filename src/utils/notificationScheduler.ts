@@ -41,7 +41,7 @@ import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
-import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
+import { OTHER_TIMING_IDS, PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
@@ -86,14 +86,6 @@ type NotificationScheduleItem = {
   channelId?: string;
 };
 
-const OTHER_TIMING_IDS: OtherTimingId[] = [
-  "ishraq",
-  "duha",
-  "midnight",
-  "firstthird",
-  "lastthird",
-  "imsak",
-];
 const MAX_IOS_NOTIFICATIONS = 63;
 const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
 
