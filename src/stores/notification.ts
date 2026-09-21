@@ -284,19 +284,21 @@ export const useNotificationStore = create<NotificationStore>()(
           await get().scheduleAllNotifications();
         },
 
-        beginBatch: () => {
+        withBatch: async (run) => {
           set((state) => ({ batchDepth: state.batchDepth + 1 }));
-        },
 
-        endBatch: async () => {
-          const depth = Math.max(0, get().batchDepth - 1);
-          set({ batchDepth: depth });
+          try {
+            return await run();
+          } finally {
+            const depth = Math.max(0, get().batchDepth - 1);
+            set({ batchDepth: depth });
 
-          // Only the outermost batch pays, and only for writes that actually happened.
-          if (depth > 0 || !get().pendingReschedule) return;
-
-          set({ pendingReschedule: false });
-          await get().scheduleAllNotifications();
+            // Only the outermost batch pays, and only for writes that happened.
+            if (depth === 0 && get().pendingReschedule) {
+              set({ pendingReschedule: false });
+              await get().scheduleAllNotifications();
+            }
+          }
         },
 
         requestReschedule: async () => {
