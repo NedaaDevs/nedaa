@@ -35,9 +35,12 @@ import {
 
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
 import { shareAlarmReport, copyAlarmReport } from "@/utils/alarmReport";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 const AlarmDebugScreen = () => {
-  const [isModuleAvailable, setIsModuleAvailable] = useState<boolean | null>(null);
+  // Whether the native module is linked cannot change while the process runs, so it
+  // is read once at mount instead of being refreshed with the rest of the status.
+  const [isModuleAvailable] = useState(() => ExpoAlarm.isNativeModuleAvailable());
   const [isAlarmKitAvailable, setIsAlarmKitAvailable] = useState<boolean | null>(null);
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [bgRefreshStatus, setBgRefreshStatus] = useState<string | null>(null);
@@ -120,10 +123,7 @@ const AlarmDebugScreen = () => {
   };
 
   const checkStatus = async () => {
-    const moduleAvailable = ExpoAlarm.isNativeModuleAvailable();
-    setIsModuleAvailable(moduleAvailable);
-
-    if (moduleAvailable) {
+    if (ExpoAlarm.isNativeModuleAvailable()) {
       const alarmKitAvailable = await ExpoAlarm.isAlarmKitAvailable();
       setIsAlarmKitAvailable(alarmKitAvailable);
 
@@ -153,7 +153,9 @@ const AlarmDebugScreen = () => {
   };
 
   useEffect(() => {
-    checkStatus();
+    void (async () => {
+      await checkStatus();
+    })();
   }, []);
 
   const handleRequestAuth = async () => {
@@ -167,7 +169,7 @@ const AlarmDebugScreen = () => {
   };
 
   const applyTestSettings = () => {
-    updateSettings("fajr", {
+    updateSettings(PRAYER_ID.FAJR, {
       sound: testSound,
       challenge: {
         type: testChallengeType,
@@ -280,9 +282,9 @@ const AlarmDebugScreen = () => {
 
   const scheduleNextFajr = async () => {
     try {
-      const alarmId = await schedulePrayerAlarm("fajr", "fajr");
+      const alarmId = await schedulePrayerAlarm(PRAYER_ID.FAJR, PRAYER_ID.FAJR);
       if (alarmId) {
-        const nextFajr = getNextPrayerDate("fajr");
+        const nextFajr = getNextPrayerDate(PRAYER_ID.FAJR);
         setLastResult(`Scheduled Fajr: ${nextFajr?.toISOString()}`);
         await checkStatus();
       } else {
@@ -706,7 +708,7 @@ const AlarmDebugScreen = () => {
                     </Button>
                   </HStack>
                 </VStack>
-                <StreakShareButton variant="fajr" count={fajrStreak} />
+                <StreakShareButton variant={PRAYER_ID.FAJR} count={fajrStreak} />
               </HStack>
 
               <HStack justifyContent="space-between" alignItems="center">
@@ -729,7 +731,7 @@ const AlarmDebugScreen = () => {
               </Button>
               {todayTimings && (
                 <Text size="sm" color="$typographySecondary">
-                  Next Fajr: {getNextPrayerDate("fajr")?.toLocaleString() ?? "N/A"}
+                  Next Fajr: {getNextPrayerDate(PRAYER_ID.FAJR)?.toLocaleString() ?? "N/A"}
                 </Text>
               )}
             </VStack>

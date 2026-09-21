@@ -1,13 +1,7 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Dimensions, StyleSheet } from "react-native";
-import Animated, {
-  Easing,
-  FadeIn,
-  FadeOut,
-  SlideInDown,
-  SlideOutDown,
-} from "react-native-reanimated";
+import Animated, { Easing, FadeIn, SlideInDown, SlideOutDown } from "react-native-reanimated";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";

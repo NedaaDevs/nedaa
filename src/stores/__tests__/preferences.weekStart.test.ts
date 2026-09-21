@@ -16,6 +16,9 @@ jest.mock("expo-sqlite/kv-store", () => ({
 const loadStore = () => {
   let store: (typeof import("@/stores/preferences"))["usePreferencesStore"] | undefined;
   jest.isolateModules(() => {
+    // A static import is hoisted out of the callback, so isolateModules needs a call-time require
+    // to load the module afresh.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     store = require("@/stores/preferences").usePreferencesStore;
   });
   return store!;
