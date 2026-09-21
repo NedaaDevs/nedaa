@@ -34,6 +34,7 @@ import {
   type DuhaTimePreference,
   type SchedulingResult,
 } from "@/types/notification";
+import { OTHER_TIMING } from "@/constants/Prayer";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import { Platform } from "react-native";
 
@@ -98,12 +99,12 @@ const defaultSettings: NotificationSettings = {
 };
 
 const defaultOtherTimingNotifications: OtherTimingNotifications = {
-  ishraq: false,
-  duha: false,
-  midnight: false,
-  firstthird: false,
-  lastthird: false,
-  imsak: false,
+  [OTHER_TIMING.ISHRAQ]: false,
+  [OTHER_TIMING.DUHA]: false,
+  [OTHER_TIMING.MIDNIGHT]: false,
+  [OTHER_TIMING.FIRST_THIRD]: false,
+  [OTHER_TIMING.LAST_THIRD]: false,
+  [OTHER_TIMING.IMSAK]: false,
 };
 
 const defaultDuhaTime: DuhaTimePreference = {
