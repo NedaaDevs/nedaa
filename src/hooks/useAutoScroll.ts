@@ -51,53 +51,53 @@ export const useAutoScroll = <ItemT>({
   const maxOffset = useSharedValue(Number.MAX_SAFE_INTEGER);
 
   useEffect(() => {
-    speed.value = pxPerSec;
+    speed.set(pxPerSec);
   }, [pxPerSec, speed]);
 
   const scrollHandler = useAnimatedScrollHandler({
     // Mirror the real position + extent for seeding/following — never drives the loop.
     onScroll: (e) => {
-      liveOffset.value = e.contentOffset.y;
-      contentH.value = e.contentSize.height;
-      layoutH.value = e.layoutMeasurement.height;
+      liveOffset.set(e.contentOffset.y);
+      contentH.set(e.contentSize.height);
+      layoutH.set(e.layoutMeasurement.height);
     },
     // A touch (drag + any fling) suspends the glide; releasing resumes. Fire only
     // on real user interaction, not our scrollTo.
     onBeginDrag: () => {
-      interacting.value = true;
+      interacting.set(true);
     },
     onEndDrag: () => {
-      interacting.value = false;
+      interacting.set(false);
     },
     onMomentumBegin: () => {
-      interacting.value = true;
+      interacting.set(true);
     },
     onMomentumEnd: () => {
-      interacting.value = false;
+      interacting.set(false);
     },
   });
 
   const frame = useFrameCallback((f) => {
     // While the user is touching, follow their scroll so the glide picks up from
     // the new position on release — don't drive against them.
-    if (interacting.value) {
-      target.value = liveOffset.value;
+    if (interacting.get()) {
+      target.set(liveOffset.get());
       return;
     }
     const dt = (f.timeSincePreviousFrame ?? 16) / 1000;
     // Park at the read-along ceiling (0 while follow drives); resumes when lifted.
-    const next = Math.min(target.value + speed.value * dt, maxOffset.value);
+    const next = Math.min(target.get() + speed.get() * dt, maxOffset.get());
     // Clamp/stop only once we actually know the scrollable extent; until then
     // (before the first scroll event) just keep gliding so play can start.
-    const max = contentH.value - layoutH.value;
+    const max = contentH.get() - layoutH.get();
     if (max > 0 && next >= max) {
-      target.value = max;
+      target.set(max);
       scrollTo(animatedRef, 0, max, false);
       scheduleOnRN(onReachEnd);
       return;
     }
-    if (next <= target.value) return; // parked at the cap — hold position
-    target.value = next;
+    if (next <= target.get()) return; // parked at the cap — hold position
+    target.set(next);
     scrollTo(animatedRef, 0, next, false);
   }, false);
 
@@ -109,8 +109,7 @@ export const useAutoScroll = <ItemT>({
       scheduleOnUI(() => {
         // A just-mounted list reports liveOffset 0 before its first scroll event;
         // fall back to the current page's offset so the glide doesn't start at the top.
-        target.value =
-          liveOffset.value === 0 && initialOffset > 0 ? initialOffset : liveOffset.value;
+        target.set(liveOffset.get() === 0 && initialOffset > 0 ? initialOffset : liveOffset.get());
       });
     }
     frame.setActive(playing);
@@ -121,7 +120,7 @@ export const useAutoScroll = <ItemT>({
   const jumpTo = useCallback(
     (offset: number) => {
       scheduleOnUI(() => {
-        target.value = offset;
+        target.set(offset);
         scrollTo(animatedRef, 0, offset, false);
       });
     },
@@ -132,7 +131,7 @@ export const useAutoScroll = <ItemT>({
   // pixel offset isn't knowable up front (variable-height text pages).
   const syncToLive = useCallback(() => {
     scheduleOnUI(() => {
-      target.value = liveOffset.value;
+      target.set(liveOffset.get());
     });
   }, [liveOffset, target]);
 
