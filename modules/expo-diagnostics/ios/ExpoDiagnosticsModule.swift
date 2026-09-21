@@ -10,7 +10,11 @@ import MetricKit
 // files are quarantined (renamed .bad), never silently destroyed.
 final class DiagnosticsInbox: NSObject, MXMetricManagerSubscriber {
   private let inboxName = "diagnostics-inbox"
-  private let detailCap = 64 * 1024
+  // A crash payload carries one call stack per thread, around 2.4 KB each, and a hang is
+  // diagnosed from the thread holding what the crashed one waits on — which can be any of
+  // them. Sized so a several-hundred-thread payload survives whole; maxFileBytes still
+  // bounds the file.
+  private let detailCap = 1024 * 1024
   private let maxFileBytes = 4 * 1024 * 1024
   private let maxFilesPerDrain = 32
 
