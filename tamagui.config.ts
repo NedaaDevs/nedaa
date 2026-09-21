@@ -451,9 +451,9 @@ const config = createTamagui({
   fontLanguages: ["default", "ar"],
   animations,
   media: {
-    sm: { maxWidth: 640 },
-    md: { maxWidth: 768 },
-    lg: { maxWidth: 1024 },
+    // The app's one width breakpoint: below it a screen is one column, at or above it
+    // there is room to arrange. Mirrors EXPANDED_MIN_DP in @/hooks/useDeviceClass.
+    expanded: { minWidth: 560 },
     short: { maxHeight: 820 },
     hoverNone: { hover: "none" },
     pointerCoarse: { pointer: "coarse" },
