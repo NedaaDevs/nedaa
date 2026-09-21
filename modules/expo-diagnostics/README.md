@@ -13,10 +13,10 @@ next launch instead of losing them; entry `id`s are stable across replays for de
   Simulator — verify via TestFlight/release.
   The detail leads with `CallStackCompactor`'s attributed-thread stack (`#NN binary
 +0xOFFSET (uuid)` — symbolicate offline with the build's dSYMs) followed by the FULL
-  diagnostic JSON (metadata, virtual-memory info, all threads), so the detail cap (1MB on
-  iOS, 64KB on Android) can only truncate the raw tail, never the crashed thread. iOS is
-  sized to keep every thread of a several-hundred-thread payload, because a hang is
-  diagnosed from the thread holding what the crashed one waits on. Verify with
+  diagnostic JSON (metadata, virtual-memory info, all threads), so the 1MB detail cap can
+  only truncate the raw tail, never the crashed thread. Both platforms cap at 1MB, sized to
+  keep every thread of a several-hundred-thread payload, because a hang is diagnosed from
+  the thread holding what the blocked one waits on. Verify with
   `ios/scripts/CallStackCompactorTest.swift` (standalone swiftc script — no XCTest target).
 - **Android:** `ApplicationExitInfo` (API 30+): crash/native-crash/init-failure → `crash`,
   `REASON_ANR` → `anr`, low-memory and SIGKILL-signalled (LMK fallback) → `memory`,

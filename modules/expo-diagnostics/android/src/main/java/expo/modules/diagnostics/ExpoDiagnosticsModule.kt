@@ -27,7 +27,11 @@ import java.util.concurrent.ConcurrentHashMap
 class ExpoDiagnosticsModule : Module() {
   private val prefsName = "expo_diagnostics"
   private val cursorKey = "last_exit_ts"
-  private val detailCap = 64 * 1024
+  // An ANR trace or tombstone carries every thread's stack, and a hang is diagnosed from
+  // the thread holding what the blocked one waits on — which can be any of them. Sized to
+  // keep a whole trace; maxTraceBytes still bounds the read. base64Fallback keeps half of
+  // this, because base64 inflates by a third.
+  private val detailCap = 1024 * 1024
   // Stack files attached to drained entries, held until ack confirms the entry is
   // persisted. Keyed by ack token so an un-acked drain replays with its stack intact; the
   // token is an exit timestamp, which two exits can share, so each key holds a list.
