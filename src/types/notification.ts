@@ -121,10 +121,9 @@ export type NotificationAction = {
     prayerId: string,
     type: T
   ) => ConfigForType<T>;
-  // Opens a batch, so a run of related writes costs one reschedule rather than one each.
-  beginBatch: () => void;
-  // Closes a batch and, at the outermost one, runs any reschedule the writes owed.
-  endBatch: () => Promise<void>;
+  // Runs `run` as one batch, so a run of related writes costs one reschedule rather
+  // than one each. The batch closes even if `run` throws, and the throw propagates.
+  withBatch: <T>(run: () => Promise<T>) => Promise<T>;
   // Reschedules now, or records that one is owed when a batch is open.
   requestReschedule: () => Promise<void>;
   scheduleAllNotifications: () => Promise<SchedulingResult>;

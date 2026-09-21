@@ -60,22 +60,21 @@ describe("batched writes", () => {
   });
 
   it("schedules once for a whole batch", async () => {
-    store().beginBatch();
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { vibration: false });
-    await store().updateOverride(PRAYER_ID.ASR, NOTIFICATION_TYPE.IQAMA, { timing: 20 });
-    expect(scheduler).not.toHaveBeenCalled();
-
-    await store().endBatch();
+    await store().withBatch(async () => {
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { vibration: false });
+      await store().updateOverride(PRAYER_ID.ASR, NOTIFICATION_TYPE.IQAMA, { timing: 20 });
+      expect(scheduler).not.toHaveBeenCalled();
+    });
 
     expect(scheduler).toHaveBeenCalledTimes(1);
   });
 
   it("still applies every write to state while batching", async () => {
-    store().beginBatch();
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { vibration: false });
-    await store().endBatch();
+    await store().withBatch(async () => {
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { vibration: false });
+    });
 
     expect(store().settings.overrides[PRAYER_ID.FAJR][NOTIFICATION_TYPE.PRAYER]).toEqual({
       sound: SOUND,
@@ -84,8 +83,7 @@ describe("batched writes", () => {
   });
 
   it("schedules nothing when a batch wrote nothing", async () => {
-    store().beginBatch();
-    await store().endBatch();
+    await store().withBatch(async () => {});
 
     expect(scheduler).not.toHaveBeenCalled();
   });
@@ -94,32 +92,30 @@ describe("batched writes", () => {
     await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
     scheduler.mockClear();
 
-    store().beginBatch();
-    await store().resetOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER);
-    expect(scheduler).not.toHaveBeenCalled();
-
-    await store().endBatch();
+    await store().withBatch(async () => {
+      await store().resetOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER);
+      expect(scheduler).not.toHaveBeenCalled();
+    });
 
     expect(scheduler).toHaveBeenCalledTimes(1);
     expect(store().settings.overrides[PRAYER_ID.FAJR]).toBeUndefined();
   });
 
   it("holds the flush until the outermost batch closes", async () => {
-    store().beginBatch();
-    store().beginBatch();
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    await store().withBatch(async () => {
+      await store().withBatch(async () => {
+        await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+      });
+      expect(scheduler).not.toHaveBeenCalled();
+    });
 
-    await store().endBatch();
-    expect(scheduler).not.toHaveBeenCalled();
-
-    await store().endBatch();
     expect(scheduler).toHaveBeenCalledTimes(1);
   });
 
   it("returns to immediate scheduling after a batch closes", async () => {
-    store().beginBatch();
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().endBatch();
+    await store().withBatch(async () => {
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    });
     scheduler.mockClear();
 
     await store().updateOverride(PRAYER_ID.ASR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
@@ -128,10 +124,50 @@ describe("batched writes", () => {
   });
 
   it("records the owed reschedule while the batch is open", async () => {
-    store().beginBatch();
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    await store().withBatch(async () => {
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+      expect(store().pendingReschedule).toBe(true);
+    });
+  });
 
-    expect(store().pendingReschedule).toBe(true);
+  it("clears the owed reschedule once the batch flushes", async () => {
+    await store().withBatch(async () => {
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    });
+
+    expect(store().pendingReschedule).toBe(false);
+  });
+
+  // The scope the caller cannot leave open: a throw still closes the batch and pays
+  // what the writes owed.
+  it("closes the batch and still schedules when the body throws", async () => {
+    await expect(
+      store().withBatch(async () => {
+        await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+        throw new Error("boom");
+      })
+    ).rejects.toThrow("boom");
+
+    expect(scheduler).toHaveBeenCalledTimes(1);
+    expect(store().batchDepth).toBe(0);
+    expect(store().pendingReschedule).toBe(false);
+  });
+
+  it("returns to immediate scheduling after a throw", async () => {
+    await store()
+      .withBatch(async () => {
+        throw new Error("boom");
+      })
+      .catch(() => {});
+    scheduler.mockClear();
+
+    await store().updateOverride(PRAYER_ID.ASR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+
+    expect(scheduler).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands back what the body returned", async () => {
+    await expect(store().withBatch(async () => "done")).resolves.toBe("done");
   });
 
   // A batch belongs to the screen that opened it, so a process death leaves a depth
@@ -146,13 +182,5 @@ describe("batched writes", () => {
     expect(survivor.batchDepth).toBe(0);
     expect(survivor.isScheduling).toBe(false);
     expect(survivor.pendingReschedule).toBe(true);
-  });
-
-  it("clears the owed reschedule once the batch flushes", async () => {
-    store().beginBatch();
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().endBatch();
-
-    expect(store().pendingReschedule).toBe(false);
   });
 });
