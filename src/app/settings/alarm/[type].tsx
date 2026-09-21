@@ -44,6 +44,7 @@ import { alarmLog } from "@/utils/alarmReport";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
 import { SOUND_ASSETS } from "@/constants/sounds";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 const getNativeSoundName = (soundKey: string): string => {
   const asset = SOUND_ASSETS[soundKey as keyof typeof SOUND_ASSETS];
@@ -89,7 +90,7 @@ const AlarmTypeSettingsScreen = () => {
   const hapticSelection = useHaptic("selection");
 
   const settings = useAlarmSettingsStore((state) =>
-    alarmType === "fajr" ? state.fajr : state.friday
+    alarmType === PRAYER_ID.FAJR ? state.fajr : state.friday
   );
   const updateSettings = useAlarmSettingsStore((state) => state.updateSettings);
 
@@ -147,7 +148,7 @@ const AlarmTypeSettingsScreen = () => {
           // that failed would rebuild it from stale values. Keep the existing alarm.
           if (afterNativeSync && !(await afterNativeSync)) return;
           await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
-          if (alarmType === "fajr") {
+          if (alarmType === PRAYER_ID.FAJR) {
             await scheduleFajrAlarm();
           } else {
             await scheduleFridayAlarm();
@@ -222,7 +223,8 @@ const AlarmTypeSettingsScreen = () => {
 
       try {
         if (enabled) {
-          const id = alarmType === "fajr" ? await scheduleFajrAlarm() : await scheduleFridayAlarm();
+          const id =
+            alarmType === PRAYER_ID.FAJR ? await scheduleFajrAlarm() : await scheduleFridayAlarm();
           // enabled is already true in the store (handleChange ran synchronously), so
           // a null here is a real failure (native refusal / no prayer data), not the
           // settings-disabled early return — revert to Off.
@@ -239,7 +241,7 @@ const AlarmTypeSettingsScreen = () => {
   };
 
   const title =
-    alarmType === "fajr" ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
+    alarmType === PRAYER_ID.FAJR ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
 
   const backHref = "/settings/alarm";
 
@@ -259,7 +261,7 @@ const AlarmTypeSettingsScreen = () => {
                   {t("alarm.settings.enableAlarm")}
                 </Text>
                 <Text size="sm" color="$typographySecondary">
-                  {alarmType === "fajr"
+                  {alarmType === PRAYER_ID.FAJR
                     ? t("alarm.settings.fajrEnableDescription")
                     : t("alarm.settings.fridayEnableDescription")}
                 </Text>
@@ -278,7 +280,7 @@ const AlarmTypeSettingsScreen = () => {
               {/* Timing Settings */}
               <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
                 <Text size="sm" color="$typographySecondary" marginBottom="$2">
-                  {alarmType === "fajr"
+                  {alarmType === PRAYER_ID.FAJR
                     ? t("alarm.settings.timingDescriptionFajr")
                     : t("alarm.settings.timingDescriptionFriday")}
                 </Text>

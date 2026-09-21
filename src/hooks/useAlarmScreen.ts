@@ -9,6 +9,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [isSnoozed, setIsSnoozed] = useState(false);
@@ -20,7 +21,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   // Selected so the snooze count on screen follows the store.
   const alarm = useAlarmStore((state) => state.scheduledAlarms[alarmId]);
 
-  const settingsType = alarmType === ScheduledAlarmType.JUMMAH ? "friday" : "fajr";
+  const settingsType = alarmType === ScheduledAlarmType.JUMMAH ? "friday" : PRAYER_ID.FAJR;
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
   const snoozeCount = alarm?.snoozeCount ?? 0;
