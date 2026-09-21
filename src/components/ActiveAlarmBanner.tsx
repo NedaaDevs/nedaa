@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { AppState, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -19,22 +19,22 @@ export default function ActiveAlarmBanner() {
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarmInfo | null>(null);
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
 
-  const checkActiveAlarm = useCallback(async () => {
-    const result = await detectActiveAlarm(scheduledAlarms);
-    setActiveAlarm(result);
-  }, [scheduledAlarms]);
-
   useEffect(() => {
-    checkActiveAlarm();
+    const checkActiveAlarm = async () => {
+      const result = await detectActiveAlarm(scheduledAlarms);
+      setActiveAlarm(result);
+    };
+
+    void checkActiveAlarm();
 
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        checkActiveAlarm();
+        void checkActiveAlarm();
       }
     });
 
     return () => sub.remove();
-  }, [checkActiveAlarm]);
+  }, [scheduledAlarms]);
 
   if (!activeAlarm) return null;
 
