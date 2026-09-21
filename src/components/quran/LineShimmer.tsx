@@ -23,15 +23,17 @@ const LineShimmer = ({ screenWidth, lineHeight, quranTheme }: LineShimmerProps) 
   const themeColors = QURAN_THEME_COLORS[quranTheme];
 
   useEffect(() => {
-    translateX.value = withRepeat(
-      withTiming(screenWidth, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      false
+    translateX.set(
+      withRepeat(
+        withTiming(screenWidth, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        false
+      )
     );
   }, [screenWidth, translateX]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
+    transform: [{ translateX: translateX.get() }],
   }));
 
   return (
