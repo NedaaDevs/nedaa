@@ -101,12 +101,12 @@ const SettingsScreen = () => {
   const shareThanksOpacity = useSharedValue(0);
   const shareHeartFill = useSharedValue(0);
 
-  const rateStyle = useAnimatedStyle(() => ({ opacity: rateOpacity.value }));
-  const rateThanksStyle = useAnimatedStyle(() => ({ opacity: rateThanksOpacity.value }));
-  const rateHeartFillStyle = useAnimatedStyle(() => ({ opacity: rateHeartFill.value }));
-  const shareStyle = useAnimatedStyle(() => ({ opacity: shareOpacity.value }));
-  const shareThanksStyle = useAnimatedStyle(() => ({ opacity: shareThanksOpacity.value }));
-  const shareHeartFillStyle = useAnimatedStyle(() => ({ opacity: shareHeartFill.value }));
+  const rateStyle = useAnimatedStyle(() => ({ opacity: rateOpacity.get() }));
+  const rateThanksStyle = useAnimatedStyle(() => ({ opacity: rateThanksOpacity.get() }));
+  const rateHeartFillStyle = useAnimatedStyle(() => ({ opacity: rateHeartFill.get() }));
+  const shareStyle = useAnimatedStyle(() => ({ opacity: shareOpacity.get() }));
+  const shareThanksStyle = useAnimatedStyle(() => ({ opacity: shareThanksOpacity.get() }));
+  const shareHeartFillStyle = useAnimatedStyle(() => ({ opacity: shareHeartFill.get() }));
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -125,19 +125,17 @@ const SettingsScreen = () => {
     ) => {
       const dur = reduceMotionRef.current ? 0 : FADE_MS;
       setThanked(true);
-      mainOpacity.value = withTiming(0, { duration: dur });
-      thanksOpacity.value = withTiming(1, { duration: dur });
-      heartFill.value = 0;
-      heartFill.value = withTiming(1, {
-        duration: reduceMotionRef.current ? 0 : THANK_YOU_DURATION,
-      });
+      mainOpacity.set(withTiming(0, { duration: dur }));
+      thanksOpacity.set(withTiming(1, { duration: dur }));
+      heartFill.set(0);
+      heartFill.set(withTiming(1, { duration: reduceMotionRef.current ? 0 : THANK_YOU_DURATION }));
 
       const t1 = setTimeout(() => {
-        mainOpacity.value = withTiming(1, { duration: dur });
-        thanksOpacity.value = withTiming(0, { duration: dur });
+        mainOpacity.set(withTiming(1, { duration: dur }));
+        thanksOpacity.set(withTiming(0, { duration: dur }));
         const t2 = setTimeout(() => {
           setThanked(false);
-          heartFill.value = 0;
+          heartFill.set(0);
         }, dur);
         timersRef.current.push(t2);
       }, THANK_YOU_DURATION);
