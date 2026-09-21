@@ -1,3 +1,4 @@
+import type { OtherTimingId } from "@/constants/Prayer";
 // Constants
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey, QadaSoundKey } from "@/constants/sounds";
@@ -51,7 +52,7 @@ export type AthkarNotificationSettings = {
   minute: number;
 };
 
-export type OtherTimingId = "ishraq" | "duha" | "midnight" | "firstthird" | "lastthird" | "imsak";
+export type { OtherTimingId };
 
 export type OtherTimingNotifications = Record<OtherTimingId, boolean>;
 
