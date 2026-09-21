@@ -42,6 +42,7 @@ import { shouldForceReschedule } from "@/utils/notificationReschedule";
 import { PermissionStatus } from "expo-notifications";
 
 // Constants
+import { PRAYER_ID } from "@/constants/Prayer";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { Background } from "@/components/ui/background";
 
@@ -392,7 +393,7 @@ const NotificationSettings = () => {
                         await scheduleAthan({
                           id: `test_athan_${Date.now()}`,
                           triggerDate,
-                          prayerId: "fajr",
+                          prayerId: PRAYER_ID.FAJR,
                           soundName: sound,
                           title: t("prayerTimes.fajr"),
                           stopLabel: t("common.stop"),
@@ -403,7 +404,7 @@ const NotificationSettings = () => {
                         const sound =
                           getNotificationSound(NOTIFICATION_TYPE.PRAYER, soundKey) || "default";
                         const channelId = getNotificationChannelId(
-                          "fajr",
+                          PRAYER_ID.FAJR,
                           NOTIFICATION_TYPE.PRAYER,
                           prayerDefaults
                         );

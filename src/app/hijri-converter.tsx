@@ -129,9 +129,7 @@ const HijriConverterScreen = () => {
                     value={gregorianDate}
                     mode="date"
                     display="inline"
-                    onChange={(_event, selectedDate) => {
-                      if (selectedDate) setGregorianDate(selectedDate);
-                    }}
+                    onValueChange={(_event, selectedDate) => setGregorianDate(selectedDate)}
                     locale={locale}
                   />
                 ) : (
@@ -156,10 +154,11 @@ const HijriConverterScreen = () => {
                         value={gregorianDate}
                         mode="date"
                         display="default"
-                        onChange={(_event, selectedDate) => {
+                        onValueChange={(_event, selectedDate) => {
                           setShowGregorianPicker(false);
-                          if (selectedDate) setGregorianDate(selectedDate);
+                          setGregorianDate(selectedDate);
                         }}
+                        onDismiss={() => setShowGregorianPicker(false)}
                         locale={locale}
                       />
                     )}

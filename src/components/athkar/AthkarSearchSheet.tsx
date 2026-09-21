@@ -43,7 +43,7 @@ type Props = {
   onClose: () => void;
 };
 
-const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
+const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose: closeSheet }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { batchAddItems, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
@@ -74,15 +74,16 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, categories.length]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setViewMode("categories");
-      setSearchQuery("");
-      setSearchResults([]);
-      setSelectedCategory(null);
-      setSelectedItems(new Map());
-    }
-  }, [isOpen]);
+  // Closing resets the sheet in the same call, so the next open starts fresh even
+  // when the parent keeps it mounted and only flips isOpen later.
+  const onClose = useCallback(() => {
+    setViewMode("categories");
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedCategory(null);
+    setSelectedItems(new Map());
+    closeSheet();
+  }, [closeSheet]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
