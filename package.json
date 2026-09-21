@@ -152,16 +152,6 @@
     "prettier": "^3.9.6",
     "typescript": "~6.0.3"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "prettier --write",
-      "eslint --max-warnings 1 --no-warn-ignored",
-      "bun run lint"
-    ],
-    "*.{json,md,yml}": [
-      "prettier --write"
-    ]
-  },
   "private": true,
   "patchedDependencies": {
     "react-native-worklets@0.10.1": "patches/react-native-worklets@0.10.1.patch",
