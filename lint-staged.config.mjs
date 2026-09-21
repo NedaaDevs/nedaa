@@ -4,7 +4,11 @@
 const verifyHms = () => "bun run verify:android:hms";
 
 export default {
-  "*.{js,jsx,ts,tsx}": ["prettier --write", "eslint --max-warnings 1 --no-warn-ignored", "bun run lint"],
+  "*.{js,jsx,ts,tsx}": [
+    "prettier --write",
+    "eslint --max-warnings 0 --no-warn-ignored",
+    "bun run lint",
+  ],
   "*.{json,md,yml}": ["prettier --write"],
   // The HMS variant is the only build that compiles the vendored expo-hms-notifications fork,
   // whose gradle guard pins the expo-notifications version it grafts sources from. A bump that
