@@ -139,13 +139,13 @@ const DownloadProgressScreen = ({
   const fill = useSharedValue(0);
 
   useEffect(() => {
-    fill.value = reduceMotion
-      ? fillTarget
-      : withTiming(fillTarget, { duration: 350, easing: Easing.linear });
+    fill.set(
+      reduceMotion ? fillTarget : withTiming(fillTarget, { duration: 350, easing: Easing.linear })
+    );
   }, [fillTarget, reduceMotion, fill]);
 
-  const clipStyle = useAnimatedStyle(() => ({ height: `${fill.value}%` }));
-  const opacityStyle = useAnimatedStyle(() => ({ opacity: fill.value / 100 }));
+  const clipStyle = useAnimatedStyle(() => ({ height: `${fill.get()}%` }));
+  const opacityStyle = useAnimatedStyle(() => ({ opacity: fill.get() / 100 }));
 
   useEffect(() => {
     if (isComplete) hapticSuccess();
