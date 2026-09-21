@@ -57,19 +57,19 @@ const StepCardContent = ({ step }: Props) => {
     setIsFlipped(newFlipped);
 
     if (!reduceMotion) {
-      flipValue.value = withTiming(newFlipped ? 180 : 0, { duration: 400 });
+      flipValue.set(withTiming(newFlipped ? 180 : 0, { duration: 400 }));
     } else {
-      flipValue.value = newFlipped ? 180 : 0;
+      flipValue.set(newFlipped ? 180 : 0);
     }
   };
 
   const frontStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateY: `${interpolate(flipValue.value, [0, 180], [0, 180])}deg` }],
+    transform: [{ rotateY: `${interpolate(flipValue.get(), [0, 180], [0, 180])}deg` }],
     backfaceVisibility: "hidden" as const,
   }));
 
   const backStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateY: `${interpolate(flipValue.value, [0, 180], [180, 360])}deg` }],
+    transform: [{ rotateY: `${interpolate(flipValue.get(), [0, 180], [180, 360])}deg` }],
     backfaceVisibility: "hidden" as const,
   }));
 
