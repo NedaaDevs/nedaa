@@ -3,14 +3,16 @@ import { AppState, AppStateStatus } from "react-native";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
+import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
 import { AppLogger } from "@/utils/appLogger";
 
 let registered = false;
 
 // Warm foregrounds never pass through appSetup, so without this a device the
-// user never cold-starts stops getting fresh notifications once the scheduled
-// horizon runs out. rescheduleIfNeeded's same-day guard caps it at one real
-// run per day.
+// user never cold-starts stops getting fresh notifications and alarms once the
+// scheduled horizon runs out. rescheduleIfNeeded's same-day guard caps the
+// notification side at one real run per day; ensureAlarmsScheduled is a no-op
+// unless an enabled alarm has no scheduled instance.
 export const registerForegroundReschedule = (): void => {
   if (registered) return;
   registered = true;
@@ -24,6 +26,8 @@ export const registerForegroundReschedule = (): void => {
         await usePrayerTimesStore.getState().refreshTimingsFromDb();
         await syncWidgetSnapshot();
         await useNotificationStore.getState().rescheduleIfNeeded(false);
+        // Alarms read todayTimings/tomorrowTimings, so they follow the refresh too.
+        await ensureAlarmsScheduled();
       })().catch((error) => {
         AppLogger.create("widgets").e("Foreground", "foreground refresh failed", error);
       });
