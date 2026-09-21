@@ -68,6 +68,10 @@ export type NotificationOptions = {
 
 export type NotificationState = {
   isScheduling: boolean;
+  // Open batches. Writes hold their reschedule while this is above zero.
+  batchDepth: number;
+  // A reschedule the app owes but has not run. Survives a crash so the next launch pays it.
+  pendingReschedule: boolean;
   settings: NotificationSettings;
   lastScheduledDate: string | null;
   migrationVersion: number;
@@ -116,6 +120,12 @@ export type NotificationAction = {
     prayerId: string,
     type: T
   ) => ConfigForType<T>;
+  // Opens a batch, so a run of related writes costs one reschedule rather than one each.
+  beginBatch: () => void;
+  // Closes a batch and, at the outermost one, runs any reschedule the writes owed.
+  endBatch: () => Promise<void>;
+  // Reschedules now, or records that one is owed when a batch is open.
+  requestReschedule: () => Promise<void>;
   scheduleAllNotifications: () => Promise<SchedulingResult>;
   rescheduleIfNeeded: (force: boolean) => Promise<void>;
   updateAthkarNotificationSetting: (option: AthkarNotificationSettings) => Promise<void>;
