@@ -1,8 +1,15 @@
 import type { PrayerTimings, OtherTimings, OtherTimingName, PrayerName } from "@/types/prayerTimes";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 export const isPrayerTimings = (obj: unknown): obj is PrayerTimings => {
   const parsedObj = obj as Record<PrayerName, string>;
-  const requiredKeys: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+  const requiredKeys: PrayerName[] = [
+    PRAYER_ID.FAJR,
+    PRAYER_ID.DHUHR,
+    PRAYER_ID.ASR,
+    PRAYER_ID.MAGHRIB,
+    PRAYER_ID.ISHA,
+  ];
 
   return (
     typeof obj === "object" &&
