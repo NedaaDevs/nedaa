@@ -2,7 +2,6 @@ import { FC, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Select } from "@/components/ui/select";
 
