@@ -19,7 +19,7 @@ import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
 
 // Stores
-import prayerTimesStore from "@/stores/prayerTimes";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -59,9 +59,12 @@ const OtherRemindersSettings = () => {
   const { otherTimingNotifications, duhaTime, updateOtherTimingNotification, updateDuhaTime } =
     useNotificationSettings();
 
+  // Subscribed rather than read once, because the screen can mount before the
+  // day's timings have loaded and the window would stay empty for its lifetime.
+  const today = usePrayerTimesStore((state) => state.todayTimings);
+
   // Valid hours within today's Duha window
   const duhaHours = useMemo(() => {
-    const today = prayerTimesStore.getState().todayTimings;
     if (!today?.otherTimings.sunrise || !today?.timings.dhuhr) return [];
     const startHour =
       addMinutes(parseISO(today.otherTimings.sunrise), ISHRAQ_OFFSET_MINUTES).getHours() + 1;
@@ -71,7 +74,7 @@ const OtherRemindersSettings = () => {
       hours.push(h);
     }
     return hours;
-  }, []);
+  }, [today]);
 
   return (
     <Background>
