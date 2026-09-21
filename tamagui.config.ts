@@ -451,9 +451,10 @@ const config = createTamagui({
   fontLanguages: ["default", "ar"],
   animations,
   media: {
-    // The app's one width breakpoint: below it a screen is one column, at or above it
-    // there is room to arrange. Mirrors EXPANDED_MIN_DP in @/hooks/useDeviceClass.
-    expanded: { minWidth: 560 },
+    // Both bounds, so this matches the window's SHORTER edge exactly as
+    // resolveDeviceClass does. Width alone splits from the hook whenever the window is
+    // wide and short — a landscape phone, or any window with the keyboard open.
+    expanded: { minWidth: 560, minHeight: 560 },
     short: { maxHeight: 820 },
     hoverNone: { hover: "none" },
     pointerCoarse: { pointer: "coarse" },
