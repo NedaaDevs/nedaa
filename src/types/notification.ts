@@ -98,7 +98,14 @@ export type NotificationAction = {
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
   ) => Promise<void>;
+  // Merges into the stored config for the type; a field it omits keeps its value.
   updateOverride: <T extends PrayerNotificationType>(
+    prayerId: string,
+    type: T,
+    config: Partial<ConfigForType<T>>
+  ) => Promise<void>;
+  // Replaces the stored config for the type; a field it omits falls back to the default.
+  replaceOverride: <T extends PrayerNotificationType>(
     prayerId: string,
     type: T,
     config: Partial<ConfigForType<T>>
