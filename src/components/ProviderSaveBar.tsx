@@ -88,6 +88,7 @@ export const ProviderSaveBar: FC = () => {
       paddingHorizontal="$4"
       paddingTop="$3"
       paddingBottom={insets.bottom + 12}
+      // eslint-disable-next-line no-restricted-syntax -- full-bleed docked bar, owns its own surface
       backgroundColor="$backgroundSecondary"
       borderTopWidth={1}
       borderTopColor="$outline">
