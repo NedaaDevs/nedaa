@@ -38,7 +38,6 @@ jest.mock("@/stores/prayerTimes", () => ({
 }));
 
 const SOUND: PrayerSoundKey = "athan2";
-const OTHER_SOUND: PrayerSoundKey = "medinaAthan";
 
 const store = () => useNotificationStore.getState();
 const scheduler = scheduleAllNotifications as jest.Mock;
