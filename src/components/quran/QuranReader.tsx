@@ -1,6 +1,3 @@
-/* eslint-disable react-hooks/immutability -- every write here is a deliberate
-Reanimated shared-value mutation driving the pager on the UI thread; the rule
-models plain React state, not worklets. */
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useWindowDimensions, StyleSheet, View, ScrollView, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -85,13 +82,15 @@ const runFollowTurn = (
   delta: number,
   commitUnit: (unit: number) => void
 ) => {
-  dragOffset.value = withTiming(delta, FOLLOW_TURN_TIMING, (finished) => {
-    "worklet";
-    if (!finished) return;
-    unitIndex.value = from + delta;
-    dragOffset.value = 0;
-    scheduleOnRN(commitUnit, unitIndex.value);
-  });
+  dragOffset.set(
+    withTiming(delta, FOLLOW_TURN_TIMING, (finished) => {
+      "worklet";
+      if (!finished) return;
+      unitIndex.set(from + delta);
+      dragOffset.set(0);
+      scheduleOnRN(commitUnit, unitIndex.get());
+    })
+  );
 };
 
 const QuranReader = ({
@@ -159,12 +158,12 @@ const QuranReader = ({
   const unitIndex = useSharedValue(currentUnit);
 
   useEffect(() => {
-    pinchBaseFontSize.value = fontSize;
+    pinchBaseFontSize.set(fontSize);
   }, [fontSize, pinchBaseFontSize]);
 
   // Mirror external unit changes (e.g. the page slider) onto the UI-thread index.
   useEffect(() => {
-    unitIndex.value = currentUnit;
+    unitIndex.set(currentUnit);
   }, [currentUnit, unitIndex]);
 
   // A search jump sets `flashAyah`; the page pulse-highlights it, then we clear
@@ -216,9 +215,9 @@ const QuranReader = ({
     if (visible.includes(followTarget.page)) return;
 
     const targetUnit = isSpread ? spreadOf(followTarget.page) : followTarget.page;
-    const from = unitIndex.value;
+    const from = unitIndex.get();
     const delta = targetUnit - from;
-    if (Math.abs(delta) !== 1 || isHorizontal.value !== null) {
+    if (Math.abs(delta) !== 1 || isHorizontal.get() !== null) {
       commitUnit(targetUnit);
       return;
     }
@@ -245,24 +244,24 @@ const QuranReader = ({
   const panGesture = panGestureBase
     .onBegin((event) => {
       "worklet";
-      startedInBottomEdge.value = event.absoluteY > height - bottomDeadZone;
+      startedInBottomEdge.set(event.absoluteY > height - bottomDeadZone);
     })
     .onUpdate((event) => {
       "worklet";
-      if (isHorizontal.value === null) {
+      if (isHorizontal.get() === null) {
         if (Math.abs(event.translationX) > 10 || Math.abs(event.translationY) > 10) {
-          isHorizontal.value = Math.abs(event.translationX) > Math.abs(event.translationY);
+          isHorizontal.set(Math.abs(event.translationX) > Math.abs(event.translationY));
         }
         return;
       }
 
       // A vertical drag from the bottom edge is the system close gesture, not a
       // page turn; let it pass through without moving the page.
-      if (!isHorizontal.value && startedInBottomEdge.value) {
+      if (!isHorizontal.get() && startedInBottomEdge.get()) {
         return;
       }
 
-      if (!isHorizontal.value && verticalScrolls) {
+      if (!isHorizontal.get() && verticalScrolls) {
         return;
       }
 
@@ -270,26 +269,26 @@ const QuranReader = ({
       // RTL: positive translationX = next unit (direction +1)
       // Vertical: negative translationY = next unit (direction +1)
       let normalized: number;
-      if (isHorizontal.value) {
+      if (isHorizontal.get()) {
         normalized = event.translationX / width;
       } else {
         normalized = -event.translationY / height;
       }
 
       // Clamp at boundaries
-      if (normalized > 0 && unitIndex.value >= totalUnits) return;
-      if (normalized < 0 && unitIndex.value <= 1) return;
+      if (normalized > 0 && unitIndex.get() >= totalUnits) return;
+      if (normalized < 0 && unitIndex.get() <= 1) return;
 
-      dragOffset.value = normalized;
+      dragOffset.set(normalized);
     })
     .onEnd((event) => {
       "worklet";
-      const horizontal = isHorizontal.value;
-      isHorizontal.value = null;
+      const horizontal = isHorizontal.get();
+      isHorizontal.set(null);
 
       // Vertical drag from the bottom edge never moved the page (see onUpdate);
       // nothing to settle.
-      if (!horizontal && startedInBottomEdge.value) {
+      if (!horizontal && startedInBottomEdge.get()) {
         return;
       }
 
@@ -307,37 +306,41 @@ const QuranReader = ({
 
       // Settle time scales with fling speed, easing out into place.
       const speed = Math.abs(velocity);
-      const remainingFraction = 1 - Math.abs(dragOffset.value);
+      const remainingFraction = 1 - Math.abs(dragOffset.get());
       const turnDuration =
         speed > 50
           ? Math.max(140, Math.min(280, ((remainingFraction * dimension) / speed) * 1000))
           : 240;
       const turnTiming = { duration: turnDuration, easing: Easing.out(Easing.cubic) };
 
-      if (shouldAdvance && translation > 0 && unitIndex.value < totalUnits) {
-        dragOffset.value = withTiming(1, turnTiming, (finished) => {
-          if (!finished) return;
-          // Advance the index and zero the drag in the same UI frame so the turn
-          // is seamless; React syncs afterward for windowing + persistence.
-          unitIndex.value = unitIndex.value + 1;
-          dragOffset.value = 0;
-          scheduleOnRN(commitUnit, unitIndex.value);
-        });
-      } else if (shouldAdvance && translation < 0 && unitIndex.value > 1) {
-        dragOffset.value = withTiming(-1, turnTiming, (finished) => {
-          if (!finished) return;
-          unitIndex.value = unitIndex.value - 1;
-          dragOffset.value = 0;
-          scheduleOnRN(commitUnit, unitIndex.value);
-        });
+      if (shouldAdvance && translation > 0 && unitIndex.get() < totalUnits) {
+        dragOffset.set(
+          withTiming(1, turnTiming, (finished) => {
+            if (!finished) return;
+            // Advance the index and zero the drag in the same UI frame so the turn
+            // is seamless; React syncs afterward for windowing + persistence.
+            unitIndex.set((v) => v + 1);
+            dragOffset.set(0);
+            scheduleOnRN(commitUnit, unitIndex.get());
+          })
+        );
+      } else if (shouldAdvance && translation < 0 && unitIndex.get() > 1) {
+        dragOffset.set(
+          withTiming(-1, turnTiming, (finished) => {
+            if (!finished) return;
+            unitIndex.set((v) => v - 1);
+            dragOffset.set(0);
+            scheduleOnRN(commitUnit, unitIndex.get());
+          })
+        );
       } else {
-        dragOffset.value = withSpring(0, settleSpring);
+        dragOffset.set(withSpring(0, settleSpring));
       }
     });
 
   const pinchGesture = Gesture.Pinch().onEnd((event) => {
     "worklet";
-    const newSize = Math.round(pinchBaseFontSize.value * event.scale);
+    const newSize = Math.round(pinchBaseFontSize.get() * event.scale);
     const clamped = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, newSize));
     scheduleOnRN(onFontSizeChange, clamped);
   });
@@ -466,20 +469,20 @@ const PageSlot = ({
   const animatedStyle = useAnimatedStyle(() => {
     // unitOffset: 0 = current, -1 = next, +1 = prev; dragOffset: -1..1 drag.
     // UI-thread values only, so a turn updates position in one frame.
-    const unitOffset = -(unit - unitIndex.value);
-    const translateX = (unitOffset + dragOffset.value) * width;
+    const unitOffset = -(unit - unitIndex.get());
+    const translateX = (unitOffset + dragOffset.get()) * width;
     return { transform: [{ translateX }] };
   });
 
   // Shadow opacity peaks mid-turn (sin curve) and only on the outgoing slot.
   const leftShadowStyle = useAnimatedStyle(() => {
-    const d = dragOffset.value;
-    const active = unit === unitIndex.value && d > 0;
+    const d = dragOffset.get();
+    const active = unit === unitIndex.get() && d > 0;
     return { opacity: active ? TURN_SHADOW_PEAK * Math.sin(Math.PI * Math.min(d, 1)) : 0 };
   });
   const rightShadowStyle = useAnimatedStyle(() => {
-    const d = -dragOffset.value;
-    const active = unit === unitIndex.value && d > 0;
+    const d = -dragOffset.get();
+    const active = unit === unitIndex.get() && d > 0;
     return { opacity: active ? TURN_SHADOW_PEAK * Math.sin(Math.PI * Math.min(d, 1)) : 0 };
   });
 
