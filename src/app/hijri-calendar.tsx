@@ -18,7 +18,7 @@ import DayObservanceSheet from "@/components/hijri/DayObservanceSheet";
 
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
-import usePreferencesStore from "@/stores/preferences";
+import { usePreferencesStore } from "@/stores/preferences";
 import { HijriNative, getDateLocale } from "@/utils/date";
 import { buildMonthGrid, stepMonth, type MonthCell } from "@/utils/hijriMonthGrid";
 import { MONTH_NOTES } from "@/constants/Observances";
