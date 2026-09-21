@@ -31,12 +31,13 @@ import { clockFormat, formatPrayerTime, getDateLocale } from "@/utils/date";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 import { isAlarmDue } from "@/utils/alarmDue";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
 // Friday Dhuhr occurrence; custom alarms have no associated prayer.
 const PRAYER_BY_ALARM: Partial<Record<string, { nameKey: string; timing: PrayerName }>> = {
-  [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: "fajr" },
-  [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: "dhuhr" },
+  [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: PRAYER_ID.FAJR },
+  [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: PRAYER_ID.DHUHR },
 };
 
 const localeTime = (

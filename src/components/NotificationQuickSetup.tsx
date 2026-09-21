@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useMemo } from "react";
+import { FC, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 // Constants
@@ -58,14 +58,20 @@ const NotificationQuickSetup: FC<Props> = ({
   const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
 
-  // Sync local state with props when they change
-  useEffect(() => {
+  // The props carry the applied settings; the two local values are a draft the
+  // user edits until Apply. Re-seeding during render rather than in an effect
+  // keeps a parent update from showing one frame of the superseded draft.
+  const [seenSound, setSeenSound] = useState(currentSound);
+  if (seenSound !== currentSound) {
+    setSeenSound(currentSound);
     setLocalSound(currentSound);
-  }, [currentSound]);
+  }
 
-  useEffect(() => {
+  const [seenVibration, setSeenVibration] = useState(vibrationEnabled);
+  if (seenVibration !== vibrationEnabled) {
+    setSeenVibration(vibrationEnabled);
     setLocalVibration(vibrationEnabled);
-  }, [vibrationEnabled]);
+  }
 
   const soundOptions = getAvailableSoundsWithCustom(NOTIFICATION_TYPE.PRAYER, customSounds);
 
