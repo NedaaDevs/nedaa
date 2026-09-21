@@ -36,27 +36,28 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
 
   // Dragging the header moves the sheet with the finger; past a threshold it
   // slides off and closes. Plain values (not useCallback/useMemo): the React
-  // Compiler memoizes them, and keeping offset out of a hook dependency list
-  // avoids the immutability rule that fires when a hook value is then mutated.
+  // Compiler memoizes them.
   const offset = useSharedValue(0);
   const drag = Gesture.Pan()
     .activeOffsetY(10)
     .failOffsetY(-10)
     .onChange((e) => {
       "worklet";
-      offset.value = Math.max(0, offset.value + e.changeY);
+      offset.set((v) => Math.max(0, v + e.changeY));
     })
     .onEnd((e) => {
       "worklet";
-      if (offset.value > 96 || e.velocityY > 700) {
-        offset.value = withTiming(400, { duration: 180 }, (done) => {
-          if (done) scheduleOnRN(onClose);
-        });
+      if (offset.get() > 96 || e.velocityY > 700) {
+        offset.set(
+          withTiming(400, { duration: 180 }, (done) => {
+            if (done) scheduleOnRN(onClose);
+          })
+        );
       } else {
-        offset.value = withSpring(0, { damping: 22, stiffness: 220 });
+        offset.set(withSpring(0, { damping: 22, stiffness: 220 }));
       }
     });
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }));
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
 
   return (
     <>
