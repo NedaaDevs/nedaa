@@ -30,12 +30,15 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
 
+// Constants
+import { PRAYER_ID } from "@/constants/Prayer";
+
 const PRAYERS = [
-  { id: "fajr", name: "prayerTimes.fajr" },
-  { id: "dhuhr", name: "prayerTimes.dhuhr" },
-  { id: "asr", name: "prayerTimes.asr" },
-  { id: "maghrib", name: "prayerTimes.maghrib" },
-  { id: "isha", name: "prayerTimes.isha" },
+  { id: PRAYER_ID.FAJR, name: "prayerTimes.fajr" },
+  { id: PRAYER_ID.DHUHR, name: "prayerTimes.dhuhr" },
+  { id: PRAYER_ID.ASR, name: "prayerTimes.asr" },
+  { id: PRAYER_ID.MAGHRIB, name: "prayerTimes.maghrib" },
+  { id: PRAYER_ID.ISHA, name: "prayerTimes.isha" },
 ];
 
 type Props = {
