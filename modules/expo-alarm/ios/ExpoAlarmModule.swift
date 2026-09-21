@@ -187,9 +187,11 @@ public class ExpoAlarmModule: Module {
                                 presentation: presentation,
                                 tintColor: alarmType == "fajr" ? .orange : .green
                             )
+                            // No schedule: preAlert already counts from now to the trigger.
+                            // A schedule as well defers the countdown to that date and then
+                            // runs preAlert again, alerting at twice the requested delay.
                             let config = AlarmManager.AlarmConfiguration(
                                 countdownDuration: countdownDuration,
-                                schedule: schedule,
                                 attributes: attributes,
                                 stopIntent: stopIntent,
                                 sound: alertSound

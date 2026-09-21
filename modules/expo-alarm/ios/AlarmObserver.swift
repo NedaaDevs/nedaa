@@ -284,9 +284,11 @@ import AppIntents
             } else {
                 alertSound = .default
             }
+            // No schedule: preAlert already counts `delay` from now. A schedule as well
+            // defers the countdown to that date and then runs preAlert again, ringing
+            // the backup at twice the delay.
             let config = AlarmManager.AlarmConfiguration(
                 countdownDuration: countdownDuration,
-                schedule: .fixed(backupTime),
                 attributes: attributes,
                 stopIntent: backupIntent,
                 sound: alertSound
