@@ -66,7 +66,7 @@ const NotificationSettings = () => {
     updateAllNotificationToggle,
     updateQuickSetup,
     updateDefault,
-    updateOverride,
+    replaceOverride,
     resetOverride,
     scheduleAllNotifications,
     rescheduleIfNeeded,
@@ -287,7 +287,7 @@ const NotificationSettings = () => {
                   updateDefault(NOTIFICATION_TYPE.PRAYER, field, value)
                 }
                 onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, NOTIFICATION_TYPE.PRAYER, config)
+                  replaceOverride(prayerId, NOTIFICATION_TYPE.PRAYER, config)
                 }
                 onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.PRAYER)}
                 defaultExpanded={true}
@@ -305,7 +305,7 @@ const NotificationSettings = () => {
                   updateDefault(NOTIFICATION_TYPE.IQAMA, field, value)
                 }
                 onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, NOTIFICATION_TYPE.IQAMA, config)
+                  replaceOverride(prayerId, NOTIFICATION_TYPE.IQAMA, config)
                 }
                 onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.IQAMA)}
                 hasTiming={true}
@@ -324,7 +324,7 @@ const NotificationSettings = () => {
                   updateDefault(NOTIFICATION_TYPE.PRE_ATHAN, field, value)
                 }
                 onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN, config)
+                  replaceOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN, config)
                 }
                 onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN)}
                 hasTiming={true}
