@@ -1,0 +1,13 @@
+diff --git a/ios/Utilities/Utilities.swift b/ios/Utilities/Utilities.swift
+index 3144ea069305fc36a8ffc2cd9f3fdff9b21257a9..3d57aacae9f18a0418edb1546bedcd192c126db5 100644
+--- a/ios/Utilities/Utilities.swift
++++ b/ios/Utilities/Utilities.swift
+@@ -141,7 +141,7 @@ public struct Utilities {
+   nonisolated public func currentViewController() -> UIViewController? {
+     return MainActor.assumeIsolated {
+ #if os(iOS) || os(tvOS)
+-      var controller = UIApplication.shared.keyWindow?.rootViewController
++      var controller = SceneGeometry.keyWindow()?.rootViewController
+ 
+       while let presentedController = controller?.presentedViewController, !presentedController.isBeingDismissed {
+         controller = presentedController
