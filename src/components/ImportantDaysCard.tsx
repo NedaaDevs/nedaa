@@ -57,7 +57,7 @@ const ImportantDaysCard = () => {
   useEffect(() => {
     if (!enabled || reduceMotion || count <= 1) return;
     const id = setInterval(() => {
-      if (Date.now() < pausedUntil.value) return;
+      if (Date.now() < pausedUntil.get()) return;
       setPage((p) => (p + 1) % count);
     }, DWELL_MS);
     return () => clearInterval(id);
@@ -65,10 +65,7 @@ const ImportantDaysCard = () => {
 
   const advance = useCallback(
     (dir: number) => {
-      // Shared values are mutable by design; the compiler's immutability check
-      // doesn't model reanimated, so it flags this legitimate write.
-      // eslint-disable-next-line react-hooks/immutability
-      pausedUntil.value = Date.now() + PAUSE_AFTER_SWIPE_MS;
+      pausedUntil.set(Date.now() + PAUSE_AFTER_SWIPE_MS);
       setPage((p) => (p + dir + count) % count);
       selectionHaptic();
     },

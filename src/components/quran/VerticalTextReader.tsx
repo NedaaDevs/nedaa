@@ -89,7 +89,7 @@ const VerticalTextReader = ({
     const parked = !!followTarget;
     scheduleOnUI(() => {
       "worklet";
-      maxOffset.value = parked ? 0 : Number.MAX_SAFE_INTEGER;
+      maxOffset.set(parked ? 0 : Number.MAX_SAFE_INTEGER);
     });
     if (!followTarget) {
       lastFollowPageRef.current = 0;
@@ -118,21 +118,19 @@ const VerticalTextReader = ({
   // Pinch scales the reading size against the size the pinch began at, snapped to
   // the same steps the +/− buttons use; lastApplied throttles a drag to one
   // update per step rather than one per frame.
-  // Plain values (not useMemo): the React Compiler memoizes them, and keeping the
-  // shared values out of a hook dependency list avoids the immutability rule that
-  // fires when a value passed to a hook is then mutated.
+  // Plain values (not useMemo): the React Compiler memoizes them.
   const pinchBase = useSharedValue(fontSize);
   const lastApplied = useSharedValue(fontSize);
   const pinchGesture = Gesture.Pinch()
     .runOnJS(true)
     .onBegin(() => {
-      pinchBase.value = fontSize;
-      lastApplied.value = fontSize;
+      pinchBase.set(fontSize);
+      lastApplied.set(fontSize);
     })
     .onUpdate((e) => {
-      const next = pinchFontSize(pinchBase.value, e.scale);
-      if (next === lastApplied.value) return;
-      lastApplied.value = next;
+      const next = pinchFontSize(pinchBase.get(), e.scale);
+      if (next === lastApplied.get()) return;
+      lastApplied.set(next);
       onFontSizeChange?.(next);
     });
 

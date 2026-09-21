@@ -67,20 +67,26 @@ export const ScrollDirectionIcon = ({ direction, color, size = 22 }: Props) => {
   useEffect(() => {
     // reduceMotion: Never on BOTH the timing and the repeat — under the OS Reduce
     // Motion setting, an unopted withRepeat collapses the infinite loop to one play.
-    t.value = withRepeat(
-      withTiming(1, { duration: LOOP_MS, easing: Easing.linear, reduceMotion: ReduceMotion.Never }),
-      -1,
-      false,
-      undefined,
-      ReduceMotion.Never
+    t.set(
+      withRepeat(
+        withTiming(1, {
+          duration: LOOP_MS,
+          easing: Easing.linear,
+          reduceMotion: ReduceMotion.Never,
+        }),
+        -1,
+        false,
+        undefined,
+        ReduceMotion.Never
+      )
     );
     return () => cancelAnimation(t);
   }, [t]);
 
   const stripStyle = useAnimatedStyle(() =>
     isVertical
-      ? { transform: [{ translateY: -t.value * travel }] }
-      : { transform: [{ translateX: -t.value * travel }] }
+      ? { transform: [{ translateY: -t.get() * travel }] }
+      : { transform: [{ translateX: -t.get() * travel }] }
   );
 
   return (

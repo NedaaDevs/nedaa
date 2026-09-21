@@ -110,15 +110,13 @@ const AyahActionSheet = ({
   // The sub-view sits on a panel over the actions; dragging its header down moves the
   // panel with the finger and, past a threshold, slides it off to reveal the actions —
   // a native back gesture without a second (cascade-prone) modal.
-  // Plain functions/gesture (not useCallback/useMemo): the React Compiler memoizes
-  // them, and keeping subOffset out of a hook dependency list avoids the immutability
-  // rule that fires when a value passed to a hook is then mutated.
+  // Plain functions/gesture (not useCallback/useMemo): the React Compiler memoizes them.
   const subOffset = useSharedValue(0);
   const closeSubView = () => setSubView(null);
   // Reset the slide offset synchronously on open so the panel starts covering (not at
   // a leftover slid-off position from the previous close).
   const openSubView = (kind: AyahSubViewKind) => {
-    subOffset.value = 0;
+    subOffset.set(0);
     setSubView(kind);
   };
   const subDrag = Gesture.Pan()
@@ -126,20 +124,22 @@ const AyahActionSheet = ({
     .failOffsetY(-10)
     .onChange((e) => {
       "worklet";
-      subOffset.value = Math.max(0, subOffset.value + e.changeY);
+      subOffset.set((v) => Math.max(0, v + e.changeY));
     })
     .onEnd((e) => {
       "worklet";
-      if (subOffset.value > 96 || e.velocityY > 700) {
-        subOffset.value = withTiming(height, { duration: 180 }, (done) => {
-          if (done) scheduleOnRN(closeSubView);
-        });
+      if (subOffset.get() > 96 || e.velocityY > 700) {
+        subOffset.set(
+          withTiming(height, { duration: 180 }, (done) => {
+            if (done) scheduleOnRN(closeSubView);
+          })
+        );
       } else {
-        subOffset.value = withSpring(0, { damping: 22, stiffness: 220 });
+        subOffset.set(withSpring(0, { damping: 22, stiffness: 220 }));
       }
     });
   const subPanelStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: subOffset.value }],
+    transform: [{ translateY: subOffset.get() }],
   }));
 
   const highlights = useHighlightStore((s) => s.highlights);
