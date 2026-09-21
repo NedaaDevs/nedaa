@@ -1,9 +1,9 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-// tamagui.config.ts sits outside the jest roots, so the vocabulary is read from the
-// source rather than imported. Whether Tamagui accepts these keys is a type question
-// and tsc answers it; this guards the values from drifting.
+// Importing tamagui.config.ts runs createTamagui(), so the vocabulary is read from the
+// source instead. Whether Tamagui accepts these keys is a type question tsc answers;
+// this guards the values from drifting.
 const radiusBlock = (): string => {
   const source = readFileSync(join(__dirname, "../../../../tamagui.config.ts"), "utf8");
   const match = source.match(/\n {2}radius: \{([\s\S]*?)\n {2}\},/);
