@@ -2,6 +2,8 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { Text as RNText } from "react-native";
 
+import { usePreferencesHydrated } from "@/hooks/usePreferencesHydrated";
+
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
   default: {
@@ -10,8 +12,6 @@ jest.mock("expo-sqlite/kv-store", () => ({
     removeItem: jest.fn(() => Promise.resolve()),
   },
 }));
-
-import { usePreferencesHydrated } from "@/hooks/usePreferencesHydrated";
 
 const Probe = () => <RNText>{usePreferencesHydrated() ? "yes" : "no"}</RNText>;
 

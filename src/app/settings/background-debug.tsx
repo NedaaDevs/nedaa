@@ -110,8 +110,9 @@ const BackgroundDebugScreen = () => {
   }, []);
 
   useEffect(() => {
-    checkStatus();
-    loadLogs();
+    void (async () => {
+      await Promise.all([checkStatus(), loadLogs()]);
+    })();
   }, [checkStatus, loadLogs]);
 
   const handleToggleRegistration = async () => {
