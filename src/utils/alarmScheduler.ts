@@ -9,6 +9,7 @@ import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
 import { pickNextTrigger } from "@/utils/alarmTrigger";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
+import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 
 const ALARM_HYDRATION_TIMEOUT_MS = 5000;
 
@@ -33,9 +34,7 @@ export const waitForAlarmStores = async (): Promise<void> => {
   ]);
 };
 
-export function getNextPrayerDate(
-  prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha"
-): Date | null {
+export function getNextPrayerDate(prayerName: PrayerId): Date | null {
   const { todayTimings, tomorrowTimings } = usePrayerTimesStore.getState();
 
   if (todayTimings?.timings[prayerName]) {
@@ -66,7 +65,7 @@ function getFridayDhuhrCandidates(): Date[] {
 }
 
 export async function schedulePrayerAlarm(
-  prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha",
+  prayerName: PrayerId,
   alarmType: ScheduledAlarmType = ScheduledAlarmType.CUSTOM
 ): Promise<string | null> {
   const alarmStore = useAlarmStore.getState();
@@ -76,7 +75,7 @@ export async function schedulePrayerAlarm(
     alarmType === ScheduledAlarmType.JUMMAH
       ? "friday"
       : alarmType === ScheduledAlarmType.FAJR
-        ? "fajr"
+        ? PRAYER_ID.FAJR
         : null;
   if (settingsType && !alarmSettings[settingsType].enabled) {
     return null;
@@ -124,7 +123,7 @@ export async function scheduleFajrAlarm(): Promise<string | null> {
   const settings = useAlarmSettingsStore.getState().fajr;
   if (!settings.enabled) return null;
 
-  return schedulePrayerAlarm("fajr", ScheduledAlarmType.FAJR);
+  return schedulePrayerAlarm(PRAYER_ID.FAJR, ScheduledAlarmType.FAJR);
 }
 
 export async function scheduleFridayAlarm(): Promise<string | null> {
