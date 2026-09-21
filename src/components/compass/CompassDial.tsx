@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { MotiView } from "moti";
-import { Circle, G, Line, Svg, Text as SvgText } from "react-native-svg";
+import { Circle, G, Line, Svg } from "react-native-svg";
 import { useTheme } from "tamagui";
 
 import {
@@ -16,6 +16,7 @@ import {
   KaabaShapes,
 } from "@/components/compass/KaabaGlyph";
 import { Box } from "@/components/ui/box";
+import { Text as SvgText } from "@/components/ui/svg-geometry";
 import type { QiblaProximityState } from "@/utils/compass";
 import { applyHeadingDeadband, unwrapHeading } from "@/utils/compass";
 import { reshapeArabic } from "@/utils/reshaper";
@@ -89,20 +90,18 @@ export const CompassDial = ({
     displayedHeading.current = next;
     const nextUnwrapped = unwrapHeading(unwrappedHeading.current, next);
     unwrappedHeading.current = nextUnwrapped;
-    rotationValue.value = reduceMotion
-      ? -nextUnwrapped
-      : withSpring(-nextUnwrapped, ROTATION_SPRING);
+    rotationValue.set(reduceMotion ? -nextUnwrapped : withSpring(-nextUnwrapped, ROTATION_SPRING));
   }, [heading, reduceMotion, rotationValue]);
 
   useEffect(() => {
     const target = isAligned ? 1 : 0;
-    glow.value = reduceMotion ? target : withTiming(target, { duration: 250 });
+    glow.set(reduceMotion ? target : withTiming(target, { duration: 250 }));
   }, [glow, isAligned, reduceMotion]);
 
   const compassRotationStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationValue.value}deg` }],
+    transform: [{ rotate: `${rotationValue.get()}deg` }],
   }));
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value * 0.6 }));
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.get() * 0.6 }));
 
   const ringColor = proximityState === "searching" ? colors.secondary : colors.primary;
   const showRingMarker = qiblaDirection !== null && !isAligned;
@@ -245,12 +244,11 @@ export const CompassDial = ({
             // Counter-rotate by the heading so the Kaaba stays upright while the ring turns.
             <G
               testID="kaaba-ring-marker"
-              x={markerX - markerWidth / 2}
-              y={markerY - markerHeight / 2}>
+              transform={`translate(${markerX - markerWidth / 2}, ${markerY - markerHeight / 2})`}>
+              {/* The flanking translates put the rotation and the scale on the
+                  glyph centre; react-native-svg has no transform-origin. */}
               <G
-                rotation={heading}
-                origin={`${markerWidth / 2}, ${markerHeight / 2}`}
-                scale={MARKER_SCALE}>
+                transform={`translate(${markerWidth / 2}, ${markerHeight / 2}) rotate(${heading}) scale(${MARKER_SCALE}) translate(${-markerWidth / 2}, ${-markerHeight / 2})`}>
                 <KaabaShapes />
               </G>
             </G>
