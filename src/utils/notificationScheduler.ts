@@ -41,7 +41,7 @@ import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
-import { PRAYER_IDS } from "@/constants/Prayer";
+import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
@@ -474,7 +474,7 @@ export const scheduleAllNotifications = async (
         title: t("notification.reminder.title"),
         body: t("notification.reminder.body"),
         type: NOTIFICATION_TYPE.PRAYER,
-        prayerId: "fajr",
+        prayerId: PRAYER_ID.FAJR,
         categoryId: "reminder",
         vibration: true,
         sound: "default",
@@ -768,7 +768,7 @@ const generatePrayerNotifications = (
 const formatPrayerName = (prayerId: PrayerName, date?: Date): string => {
   // Special case for Jumu'ah (Friday Dhuhr)
   const checkDate = date || new Date();
-  if (checkDate.getDay() === 5 && prayerId === "dhuhr") {
+  if (checkDate.getDay() === 5 && prayerId === PRAYER_ID.DHUHR) {
     return "jumuah";
   }
 
