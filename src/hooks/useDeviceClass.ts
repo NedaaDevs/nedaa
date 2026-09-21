@@ -15,12 +15,10 @@ export type DeviceClass = (typeof DEVICE_CLASS)[keyof typeof DEVICE_CLASS];
  */
 export const EXPANDED_MIN_DP = 560;
 
-/** Takes the shorter edge, so a device does not change class when it rotates. */
-export const resolveDeviceClass = (shorterEdgeDp: number): DeviceClass =>
-  shorterEdgeDp >= EXPANDED_MIN_DP ? DEVICE_CLASS.EXPANDED : DEVICE_CLASS.COMPACT;
+/** Reads the shorter edge of the WINDOW, so orientation does not change the class. */
+export const resolveDeviceClass = (window: { width: number; height: number }): DeviceClass =>
+  Math.min(window.width, window.height) >= EXPANDED_MIN_DP
+    ? DEVICE_CLASS.EXPANDED
+    : DEVICE_CLASS.COMPACT;
 
-export const useDeviceClass = (): DeviceClass => {
-  const { width, height } = useWindowDimensions();
-
-  return resolveDeviceClass(Math.min(width, height));
-};
+export const useDeviceClass = (): DeviceClass => resolveDeviceClass(useWindowDimensions());
