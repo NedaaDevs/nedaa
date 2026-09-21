@@ -8,7 +8,17 @@ jest.mock("react-native-reanimated", () => {
   return {
     __esModule: true,
     default: { View },
-    useSharedValue: (value: unknown) => ({ value }),
+    // A shared value is a box with a getter and a setter; the setter accepts an updater.
+    useSharedValue: (value: unknown) => {
+      const sv = {
+        value,
+        get: () => sv.value,
+        set: (next: unknown) => {
+          sv.value = typeof next === "function" ? next(sv.value) : next;
+        },
+      };
+      return sv;
+    },
     useAnimatedStyle: () => ({}),
     withSpring: (value: unknown) => value,
     withTiming: (value: unknown) => value,

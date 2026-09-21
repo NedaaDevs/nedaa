@@ -1,6 +1,6 @@
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, Animated, Easing, Image, View } from "react-native";
+import { AccessibilityInfo, Animated, Easing, Image, View, useAnimatedValue } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "tamagui";
 
@@ -54,7 +54,7 @@ const ReciterCard: FC<Props> = ({
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
 
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim = useAnimatedValue(0);
 
   useEffect(() => {
     if (isDownloading && !reduceMotion) {
@@ -128,8 +128,7 @@ const ReciterCard: FC<Props> = ({
                     strokeDasharray={`${CIRCUMFERENCE}`}
                     strokeDashoffset={`${CIRCUMFERENCE * (1 - sampleProgress)}`}
                     strokeLinecap="round"
-                    rotation={-90}
-                    origin={`${PLAY_BTN / 2}, ${PLAY_BTN / 2}`}
+                    transform={`rotate(-90, ${PLAY_BTN / 2}, ${PLAY_BTN / 2})`}
                   />
                 </Svg>
               )}
