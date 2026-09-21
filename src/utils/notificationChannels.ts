@@ -12,6 +12,7 @@ import { PrayerName } from "@/types/prayerTimes";
 import type { CustomSound } from "@/types/customSound";
 
 // Constants
+import { PRAYER_ID } from "@/constants/Prayer";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
@@ -179,7 +180,13 @@ export const createNotificationChannels = async (
   // All user preferences live in the app store, so nothing is lost.
   await deleteAllManagedChannels();
 
-  const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+  const prayers: PrayerName[] = [
+    PRAYER_ID.FAJR,
+    PRAYER_ID.DHUHR,
+    PRAYER_ID.ASR,
+    PRAYER_ID.MAGHRIB,
+    PRAYER_ID.ISHA,
+  ];
   const channels: ChannelConfig[] = [];
 
   // Create channels for each prayer and notification type combination
@@ -391,7 +398,13 @@ export const shouldUpdateChannels = async (
 
   try {
     const existingChannels = await Notifications.getNotificationChannelsAsync();
-    const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    const prayers: PrayerName[] = [
+      PRAYER_ID.FAJR,
+      PRAYER_ID.DHUHR,
+      PRAYER_ID.ASR,
+      PRAYER_ID.MAGHRIB,
+      PRAYER_ID.ISHA,
+    ];
     const requiredChannels = new Set<string>();
 
     // Build set of required channel IDs
