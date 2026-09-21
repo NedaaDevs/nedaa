@@ -114,6 +114,8 @@ export const useNotificationStore = create<NotificationStore>()(
       (set, get) => ({
         settings: defaultSettings,
         isScheduling: false,
+        batchDepth: 0,
+        pendingReschedule: false,
         lastScheduledDate: null,
         migrationVersion: 0,
         morningNotification: {
@@ -234,7 +236,7 @@ export const useNotificationStore = create<NotificationStore>()(
             }),
           }));
 
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         replaceOverride: async (prayerId, type, config) => {
@@ -248,7 +250,7 @@ export const useNotificationStore = create<NotificationStore>()(
             settings: writeOverride(state.settings, prayerId, type, config),
           }));
 
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         resetOverride: async (prayerId, type) => {
@@ -271,13 +273,37 @@ export const useNotificationStore = create<NotificationStore>()(
             return { settings: { ...state.settings, overrides } };
           });
 
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         resetAllOverrides: async () => {
           set((state) => ({
             settings: { ...state.settings, overrides: {} },
           }));
+          await get().scheduleAllNotifications();
+        },
+
+        beginBatch: () => {
+          set((state) => ({ batchDepth: state.batchDepth + 1 }));
+        },
+
+        endBatch: async () => {
+          const depth = Math.max(0, get().batchDepth - 1);
+          set({ batchDepth: depth });
+
+          // Only the outermost batch pays, and only for writes that actually happened.
+          if (depth > 0 || !get().pendingReschedule) return;
+
+          set({ pendingReschedule: false });
+          await get().scheduleAllNotifications();
+        },
+
+        requestReschedule: async () => {
+          if (get().batchDepth > 0) {
+            set({ pendingReschedule: true });
+            return;
+          }
+
           await get().scheduleAllNotifications();
         },
 
