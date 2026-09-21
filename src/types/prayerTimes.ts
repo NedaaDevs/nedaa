@@ -1,4 +1,4 @@
-import type { PrayerId } from "@/constants/Prayer";
+import type { OtherTimingName, PrayerId } from "@/constants/Prayer";
 export type AllTimings = {
   fajr: string;
   sunrise: string;
@@ -34,8 +34,7 @@ export type PrayerTimesParams = {
 
 export type PrayerName = PrayerId;
 
-export type OtherTimingName =
-  "sunrise" | "sunset" | "imsak" | "midnight" | "firstthird" | "lastthird";
+export type { OtherTimingName };
 
 export type PrayerTimings = Record<PrayerName, string>;
 export type OtherTimings = Record<OtherTimingName, string>;
