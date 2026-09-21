@@ -177,6 +177,14 @@ const tokens = createTokens({
     "-6": -24,
   },
   radius: {
+    // Named by what the shape wraps, so a screen picks an intent rather than a number.
+    // The numeric steps below stay for the call sites that still use them.
+    chip: 8,
+    control: 12,
+    card: 16,
+    sheet: 18,
+    pill: 999,
+
     0: 0,
     1: 2,
     2: 4,
