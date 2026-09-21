@@ -40,6 +40,7 @@ import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
+import { PRAYER_IDS } from "@/constants/Prayer";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
@@ -89,7 +90,6 @@ type NotificationScheduleItem = {
   channelId?: string;
 };
 
-const PRAYER_IDS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 const OTHER_TIMING_IDS: OtherTimingId[] = [
   "ishraq",
   "duha",
