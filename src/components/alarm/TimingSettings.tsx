@@ -12,6 +12,7 @@ import { Minus, Plus } from "lucide-react-native";
 
 import { TimingConfig, TimingMode, AlarmType } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 type Props = {
   value: TimingConfig;
@@ -31,8 +32,8 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
   const timing = value ?? DEFAULT_TIMING;
 
-  const showAtPrayerTimeOption = alarmType === "fajr";
-  const minuteSteps = alarmType === "fajr" ? FAJR_MINUTE_STEPS : FRIDAY_MINUTE_STEPS;
+  const showAtPrayerTimeOption = alarmType === PRAYER_ID.FAJR;
+  const minuteSteps = alarmType === PRAYER_ID.FAJR ? FAJR_MINUTE_STEPS : FRIDAY_MINUTE_STEPS;
 
   const handleModeChange = (mode: TimingMode) => {
     hapticSelection();
@@ -157,7 +158,7 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
             <HStack gap="$1" flex={1} justifyContent="center" flexWrap="wrap">
               {minuteSteps
-                .filter((m) => (alarmType === "fajr" ? m > 0 : true))
+                .filter((m) => (alarmType === PRAYER_ID.FAJR ? m > 0 : true))
                 .map((minutes) => (
                   <Pressable
                     key={minutes}

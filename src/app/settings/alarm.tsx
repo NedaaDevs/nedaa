@@ -66,6 +66,7 @@ import {
 
 import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
 import { PermissionStatus } from "expo-notifications";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 import { PlatformType } from "@/enums/app";
 import {
@@ -350,7 +351,7 @@ const AlarmSettings = () => {
 
   const alarmTypes = [
     {
-      type: "fajr",
+      type: PRAYER_ID.FAJR,
       title: t("alarm.settings.fajrAlarm"),
       description: t("alarm.settings.fajrDescription"),
       icon: Sun,
