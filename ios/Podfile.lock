@@ -182,7 +182,7 @@ PODS:
     - Yoga
   - ExpoAlarm (1.0.0):
     - ExpoModulesCore
-  - ExpoAppIntegrity (57.0.1):
+  - ExpoAppIntegrity (57.0.2):
     - ExpoModulesCore
   - ExpoAsset (57.0.18):
     - ExpoModulesCore
@@ -3086,7 +3086,7 @@ SPEC CHECKSUMS:
   expo-dev-menu: 272e23ced973a0e401c2b9a679595ea6c7c05d78
   expo-dev-menu-interface: 7a59e803916fbfd1b96c75ff91ea8dddac7e722f
   ExpoAlarm: 8f71cefb35639b1e79fb50d89e36736b29fc8681
-  ExpoAppIntegrity: c4f6d2065674ec9744881f8c04d52ade9b6cacd8
+  ExpoAppIntegrity: 6d9a55f47108c742db83df98e06f50ed3c599763
   ExpoAsset: a917b756b2e4fe12cef1ac3bca5fd849ddb2b919
   ExpoBackgroundTask: 48dd8f9d306b552b9110bbacad685df5576297d3
   ExpoClipboard: 15b8cc88075d7c50af165ed8fca0a76915903bba
