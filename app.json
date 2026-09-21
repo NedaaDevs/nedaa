@@ -89,6 +89,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "dev.nedaa.android",
+      "scheme": "dev.nedaa.app",
       "blockedPermissions": [
         "ACTIVITY_RECOGNITION",
         "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
