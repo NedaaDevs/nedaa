@@ -296,10 +296,12 @@ export const useNotificationStore = create<NotificationStore>()(
             const depth = Math.max(0, get().batchDepth - 1);
             set({ batchDepth: depth });
 
-            // Only the outermost batch pays, and only for writes that happened.
+            // Only the outermost batch pays, and only for writes that happened. The debt
+            // is cleared once the scheduler confirms, not before: a failed run has
+            // already cancelled everything, so the work is still owed.
             if (depth === 0 && get().pendingReschedule) {
-              set({ pendingReschedule: false });
-              await get().scheduleAllNotifications();
+              const result = await get().scheduleAllNotifications();
+              if (result.success) set({ pendingReschedule: false });
             }
           }
         },
@@ -310,7 +312,9 @@ export const useNotificationStore = create<NotificationStore>()(
             return;
           }
 
-          await get().scheduleAllNotifications();
+          // A full reschedule covers whatever a previous failed flush still owed.
+          const result = await get().scheduleAllNotifications();
+          if (result.success && get().pendingReschedule) set({ pendingReschedule: false });
         },
 
         scheduleAllNotifications: async (): Promise<SchedulingResult> => {

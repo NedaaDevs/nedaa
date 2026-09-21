@@ -183,4 +183,28 @@ describe("batched writes", () => {
     expect(survivor.isScheduling).toBe(false);
     expect(survivor.pendingReschedule).toBe(true);
   });
+  // The scheduler cancels every pending notification before it can fail
+  // (notificationScheduler.ts:357 then :365), so a debt cleared on a failed flush
+  // leaves nothing scheduled and nothing owed.
+  it("keeps the debt when the flush fails", async () => {
+    await store().withBatch(async () => {
+      scheduler.mockResolvedValueOnce({ success: false, scheduledCount: 0 });
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    });
+
+    expect(scheduler).toHaveBeenCalledTimes(1);
+    expect(store().pendingReschedule).toBe(true);
+  });
+
+  it("pays the debt on the next write after a failed flush", async () => {
+    await store().withBatch(async () => {
+      scheduler.mockResolvedValueOnce({ success: false, scheduledCount: 0 });
+      await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    });
+    scheduler.mockClear();
+
+    await store().updateOverride(PRAYER_ID.ASR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+
+    expect(store().pendingReschedule).toBe(false);
+  });
 });
