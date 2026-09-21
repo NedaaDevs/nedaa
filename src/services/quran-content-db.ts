@@ -352,8 +352,19 @@ const openQuranDb = (): Promise<SQLite.SQLiteDatabase> => {
   return quranDbPromise;
 };
 
+const boundsDbFile = (version: MushafVersion): File => {
+  const dir = SQLite.defaultDatabaseDirectory;
+  const dirUri = dir.startsWith("file://") ? dir : `file://${dir}`;
+  return new File(dirUri, `bounds-${version}.db`);
+};
+
 const openBoundsDb = (version: MushafVersion): Promise<SQLite.SQLiteDatabase> => {
   if (!boundsDbMap.has(version)) {
+    // openDatabaseAsync would create an empty DB here. Reject uncached, so a
+    // re-download is picked up.
+    if (!boundsDbFile(version).exists) {
+      return Promise.reject(new Error(`bounds-${version}.db is not installed`));
+    }
     boundsDbMap.set(
       version,
       (async () => {
@@ -398,6 +409,15 @@ const closeBoundsDb = async (version: MushafVersion): Promise<boolean> => {
   return released;
 };
 
+// An absent or table-less bounds DB means no geometry, not a failed render. Sits
+// outside cachedRead so the empty result is not cached.
+const boundsFallback =
+  <T>(label: string) =>
+  (error: unknown): T[] => {
+    log.w("Bounds", `${label} unavailable: ${(error as Error)?.message ?? error}`);
+    return [];
+  };
+
 const getLineMetadata = (version: MushafVersion, page: number): Promise<LineMetadata[]> =>
   cachedRead(`lm:${version}:${page}`, async () => {
     const db = await openBoundsDb(version);
@@ -416,7 +436,7 @@ const getLineMetadata = (version: MushafVersion, page: number): Promise<LineMeta
       surahNumber: row.surah_number,
       surahName: row.surah_name,
     }));
-  });
+  }).catch(boundsFallback<LineMetadata>(`line metadata p${page}`));
 
 const getMarkerBounds = (version: MushafVersion, page: number): Promise<GlyphBound[]> =>
   cachedRead(`mb:${version}:${page}`, async () => {
@@ -450,7 +470,7 @@ const getMarkerBounds = (version: MushafVersion, page: number): Promise<GlyphBou
       height: row.height,
       isMarker: true,
     }));
-  });
+  }).catch(boundsFallback<GlyphBound>(`marker bounds p${page}`));
 
 const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBound[]> =>
   cachedRead(`gb:${version}:${page}`, async () => {
@@ -482,7 +502,7 @@ const getGlyphBounds = (version: MushafVersion, page: number): Promise<GlyphBoun
       height: row.height,
       isMarker: row.is_marker === 1,
     }));
-  });
+  }).catch(boundsFallback<GlyphBound>(`glyph bounds p${page}`));
 
 // An ayah's word glyphs (no ayah-end marker) in global reading order
 // (page → line → position). Each carries its canonical QPC wordIndex — the same
@@ -526,15 +546,20 @@ const getAyahWordGlyphs = (
       height: row.height,
       isMarker: row.is_marker === 1,
     }));
-  });
+  }).catch(boundsFallback<GlyphBound>(`ayah word glyphs ${surah}:${ayah}`));
 
 const getSurahForPage = async (version: MushafVersion, page: number): Promise<string> => {
-  const db = await openBoundsDb(version);
-  const result = await db.getFirstAsync<{ surah_name: string }>(
-    "SELECT surah_name FROM line_metadata WHERE page = ? AND surah_name IS NOT NULL LIMIT 1",
-    [page]
-  );
-  return result?.surah_name ?? "";
+  try {
+    const db = await openBoundsDb(version);
+    const result = await db.getFirstAsync<{ surah_name: string }>(
+      "SELECT surah_name FROM line_metadata WHERE page = ? AND surah_name IS NOT NULL LIMIT 1",
+      [page]
+    );
+    return result?.surah_name ?? "";
+  } catch (error) {
+    log.w("Bounds", `surah name p${page} unavailable: ${(error as Error)?.message ?? error}`);
+    return "";
+  }
 };
 
 const getAyahsForPage = (
