@@ -161,7 +161,7 @@ export default function StepScreen() {
             )}
           </VStack>
         ) : (
-          <StepCard step={step} />
+          <StepCard key={step.id} step={step} />
         )}
       </ScrollView>
 

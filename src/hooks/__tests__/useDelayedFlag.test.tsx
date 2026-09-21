@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import renderer, { act } from "react-test-renderer";
 
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
@@ -50,6 +50,32 @@ describe("useDelayedFlag", () => {
 
     act(() => tree.update(<Probe value={false} />));
     expect(latest()).toBe(false);
+
+    act(() => tree.unmount());
+  });
+
+  // A layout effect fires only for a render that commits, so this sees every painted
+  // frame and nothing that React threw away.
+  it("never commits a true frame once the value has dropped", () => {
+    const committed: boolean[] = [];
+    const CommitProbe = ({ value }: { value: boolean }) => {
+      const flag = useDelayedFlag(value, 500);
+      useLayoutEffect(() => {
+        committed.push(flag);
+      });
+      return null;
+    };
+
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<CommitProbe value />);
+    });
+    act(() => jest.advanceTimersByTime(500));
+    expect(committed[committed.length - 1]).toBe(true);
+    const dropAt = committed.length;
+
+    act(() => tree.update(<CommitProbe value={false} />));
+    expect(committed.slice(dropAt)).toEqual([false]);
 
     act(() => tree.unmount());
   });
