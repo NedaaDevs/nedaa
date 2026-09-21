@@ -24,6 +24,7 @@ import {
   NotificationType,
   type NotificationAction,
   type NotificationSettings,
+  type PrayerNotificationType,
   type NotificationState,
   type OtherTimingId,
   type OtherTimingNotifications,
@@ -41,6 +42,21 @@ import { AppLogger } from "@/utils/appLogger";
 const log = AppLogger.create("notifications");
 
 export type NotificationStore = NotificationState & NotificationAction;
+
+// Seats a config at overrides[prayerId][type]. What the caller resolves into `config`
+// is what distinguishes a merging write from a replacing one.
+const writeOverride = <T extends PrayerNotificationType>(
+  settings: NotificationSettings,
+  prayerId: string,
+  type: T,
+  config: Partial<ConfigForType<T>>
+): NotificationSettings => ({
+  ...settings,
+  overrides: {
+    ...settings.overrides,
+    [prayerId]: { ...settings.overrides[prayerId], [type]: config },
+  },
+});
 
 const defaultSettings: NotificationSettings = {
   enabled: true,
@@ -207,41 +223,55 @@ export const useNotificationStore = create<NotificationStore>()(
           await get().scheduleAllNotifications();
         },
 
-        updateOverride: async <T extends NotificationType>(
-          prayerId: string,
-          type: T,
-          config: Partial<ConfigForType<T>>
-        ) => {
-          set((state) => {
-            const newOverrides = { ...state.settings.overrides };
+        updateOverride: async (prayerId, type, config) => {
+          // An empty config asks for no change; dropping an override is resetOverride's job.
+          if (Object.keys(config).length === 0) return;
 
-            if (!newOverrides[prayerId]) {
-              newOverrides[prayerId] = {};
-            }
+          set((state) => ({
+            settings: writeOverride(state.settings, prayerId, type, {
+              ...state.settings.overrides[prayerId]?.[type],
+              ...config,
+            }),
+          }));
 
-            // If config is empty, remove the override
-            if (Object.keys(config).length === 0) {
-              delete newOverrides[prayerId][type];
-              if (Object.keys(newOverrides[prayerId]).length === 0) {
-                delete newOverrides[prayerId];
-              }
-            } else {
-              newOverrides[prayerId] = {
-                ...newOverrides[prayerId],
-                [type]: config,
-              };
-            }
+          await get().scheduleAllNotifications();
+        },
 
-            return {
-              settings: { ...state.settings, overrides: newOverrides },
-            };
-          });
+        replaceOverride: async (prayerId, type, config) => {
+          // A config that keeps no field leaves nothing to override.
+          if (Object.keys(config).length === 0) {
+            await get().resetOverride(prayerId, type);
+            return;
+          }
+
+          set((state) => ({
+            settings: writeOverride(state.settings, prayerId, type, config),
+          }));
 
           await get().scheduleAllNotifications();
         },
 
         resetOverride: async (prayerId, type) => {
-          await get().updateOverride(prayerId, type, {});
+          set((state) => {
+            const prayerOverride = state.settings.overrides[prayerId];
+            if (!prayerOverride) return state;
+
+            const remainingTypes = { ...prayerOverride };
+            delete remainingTypes[type];
+
+            const overrides = { ...state.settings.overrides };
+
+            // A prayer whose last overridden type is gone leaves no entry behind.
+            if (Object.keys(remainingTypes).length > 0) {
+              overrides[prayerId] = remainingTypes;
+            } else {
+              delete overrides[prayerId];
+            }
+
+            return { settings: { ...state.settings, overrides } };
+          });
+
+          await get().scheduleAllNotifications();
         },
 
         resetAllOverrides: async () => {
