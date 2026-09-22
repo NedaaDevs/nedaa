@@ -86,3 +86,19 @@ describe("touch target tokens", () => {
     for (const px of Object.values(TARGETS)) expect(px).toBeGreaterThanOrEqual(44);
   });
 });
+
+/** The five intents a stack chooses between, by what the gap separates. */
+const SPACING = { tight: 4, inline: 8, stack: 12, group: 16, section: 20 } as const;
+
+describe("spacing vocabulary", () => {
+  it.each(Object.entries(SPACING))("$%s is %ipx", (name, px) => {
+    expect(tokenBlock("space")).toMatch(new RegExp(`\\b${name}: ${px},`));
+  });
+
+  // A sixth name is a design decision, so it fails here first.
+  it("carries no intent beyond the five", () => {
+    const named = blockKeys("space").filter((k) => !/^-?\d/.test(k) && k !== "true");
+
+    expect(named.sort()).toEqual(Object.keys(SPACING).sort());
+  });
+});
