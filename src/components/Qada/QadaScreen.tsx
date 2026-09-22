@@ -211,6 +211,7 @@ const QadaScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenHeader
+        variant="bar"
         title={t("qada.title")}
         back={{ to: BACK_DESTINATION.TOOLS }}
         action={{

@@ -300,7 +300,7 @@ const QadaSettings = () => {
 
   return (
     <Background>
-      <ScreenHeader title={t("qada.notificationSettings")} back />
+      <ScreenHeader variant="bar" title={t("qada.notificationSettings")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
