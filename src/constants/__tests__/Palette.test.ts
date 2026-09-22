@@ -1,5 +1,11 @@
-import { NEDAA_DARK, NEDAA_LIGHT, COLOR_TOKENS } from "@/constants/Palette";
-import { oklchToHex } from "@/test-helpers/oklch";
+import {
+  BRIGHTNESS,
+  COLOR_TOKENS,
+  NEDAA_DARK,
+  NEDAA_LIGHT,
+  PHASE_GRADIENTS,
+} from "@/constants/Palette";
+import { mixOklch, oklchToHex } from "@/test-helpers/oklch";
 
 /** Each palette carries the least forgiving surface its tokens sit on. */
 const PALETTES = [
@@ -56,6 +62,26 @@ describe("palette", () => {
         const digits = entry.oklch.includes("/") ? 9 : 7;
         expect(`${token}:${entry.hex.length}`).toBe(`${token}:${digits}`);
       }
+    }
+  });
+});
+
+describe("phase gradients", () => {
+  const entries = Object.entries(PHASE_GRADIENTS).flatMap(([phase, byBrightness]) =>
+    Object.entries(byBrightness)
+      .filter(([, gradient]) => gradient !== null)
+      .map(([brightness, gradient]) => [`${phase}/${brightness}`, brightness, gradient!] as const)
+  );
+
+  it.each(entries)("%s mixes to its stated hex", (_name, brightness, gradient) => {
+    const palette = brightness === BRIGHTNESS.DARK ? NEDAA_DARK : NEDAA_LIGHT;
+
+    expect(mixOklch(palette[gradient.base].hex, gradient.tint, gradient.percent)).toBe(gradient.to);
+  });
+
+  it("declares both brightnesses for every phase", () => {
+    for (const byBrightness of Object.values(PHASE_GRADIENTS)) {
+      expect(Object.keys(byBrightness).sort()).toEqual(Object.values(BRIGHTNESS).sort());
     }
   });
 });

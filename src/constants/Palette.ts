@@ -42,3 +42,64 @@ export const NEDAA_DARK = {
 export type ColorToken = keyof typeof NEDAA_LIGHT & keyof typeof NEDAA_DARK;
 
 export const COLOR_TOKENS = Object.keys(NEDAA_LIGHT) as readonly ColorToken[];
+
+export const PHASE = { DAWN: "dawn", ASR: "asr", MAGHRIB: "maghrib" } as const;
+export type Phase = (typeof PHASE)[keyof typeof PHASE];
+
+export const BRIGHTNESS = { LIGHT: "light", DARK: "dark" } as const;
+export type Brightness = (typeof BRIGHTNESS)[keyof typeof BRIGHTNESS];
+
+type PhaseGradient = {
+  angle: number;
+  /** Palette token the gradient starts from. */
+  from: ColorToken;
+  /** The tint mixed into `base`; `to` is the result, re-derived by the test. */
+  base: ColorToken;
+  tint: string;
+  percent: number;
+  to: string;
+};
+
+/** `null` where the design tints nothing and the surface shows plain. */
+export const PHASE_GRADIENTS: Record<Phase, Record<Brightness, PhaseGradient | null>> = {
+  [PHASE.ASR]: {
+    light: {
+      angle: 140,
+      from: "surface2",
+      base: "surface2",
+      tint: "#EAD095",
+      percent: 22,
+      to: "#DFEAE2C8",
+    },
+    dark: null,
+  },
+  [PHASE.MAGHRIB]: {
+    light: {
+      angle: 150,
+      from: "surface",
+      base: "surface",
+      tint: "#BB7588",
+      percent: 18,
+      to: "#E1DFE7EB",
+    },
+    dark: {
+      angle: 150,
+      from: "surface",
+      base: "surface",
+      tint: "#BB7588",
+      percent: 18,
+      to: "#282C49",
+    },
+  },
+  [PHASE.DAWN]: {
+    light: {
+      angle: 160,
+      from: "surface2",
+      base: "surface",
+      tint: "#BFAFCF",
+      percent: 18,
+      to: "#DFEAF6EB",
+    },
+    dark: null,
+  },
+};
