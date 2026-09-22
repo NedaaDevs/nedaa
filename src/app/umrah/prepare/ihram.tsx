@@ -11,7 +11,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { useTheme } from "tamagui";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import IhramMale from "@/components/umrah/illustrations/IhramMale";
 import IhramFemale from "@/components/umrah/illustrations/IhramFemale";
 import NumberBadge from "@/components/umrah/illustrations/NumberBadge";
@@ -36,7 +36,7 @@ export default function IhramScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.prepare.ihram" backOnClick />
+      <ScreenHeader title="umrah.prepare.ihram" backOnClick />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         <HStack

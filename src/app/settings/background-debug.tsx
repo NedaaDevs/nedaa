@@ -7,7 +7,7 @@ import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { Background } from "@/components/ui/background";
 
 import * as BackgroundTask from "expo-background-task";
@@ -161,7 +161,7 @@ const BackgroundDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="Background Debug" href="/settings" backOnClick />
+      <ScreenHeader title="Background Debug" href="/settings" backOnClick />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

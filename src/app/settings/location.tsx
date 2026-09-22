@@ -1,12 +1,12 @@
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import Location from "@/components/Location";
 
 const LocationSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.location.title" href="/settings" backOnClick />
+      <ScreenHeader title="settings.location.title" href="/settings" backOnClick />
       <Location />
     </Background>
   );

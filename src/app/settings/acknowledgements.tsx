@@ -1,12 +1,12 @@
 // Components
 import { Background } from "@/components/ui/background";
 import Acknowledgements from "@/components/Acknowledgements";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 const AcknowledgementsSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.acknowledgements.title" href="/settings" backOnClick />
+      <ScreenHeader title="settings.acknowledgements.title" href="/settings" backOnClick />
       <Acknowledgements />
     </Background>
   );

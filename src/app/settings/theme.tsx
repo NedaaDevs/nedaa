@@ -1,12 +1,12 @@
 // Components
 import { Background } from "@/components/ui/background";
 import ThemeList from "@/components/ThemeList";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 const ThemeSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.appearance" href="/settings" backOnClick />
+      <ScreenHeader title="settings.appearance" href="/settings" backOnClick />
       <ThemeList />
     </Background>
   );

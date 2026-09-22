@@ -4,7 +4,7 @@ import { useIsFocused } from "expo-router/react-navigation";
 import { Info, LocateFixed } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { CompassDetailsSheet } from "@/components/compass/CompassDetailsSheet";
 import { CompassDial } from "@/components/compass/CompassDial";
 import { CompassIssueCard } from "@/components/compass/CompassIssueCard";
@@ -370,7 +370,7 @@ const CompassScreen = () => {
 
   return (
     <Background>
-      <TopBar title="compass.title" href="/(tabs)/tools" backOnClick preferHref />
+      <ScreenHeader title="compass.title" href="/(tabs)/tools" backOnClick preferHref />
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}

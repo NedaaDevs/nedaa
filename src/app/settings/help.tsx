@@ -1,12 +1,12 @@
 // Components
 import { Background } from "@/components/ui/background";
 import ConcatUs from "@/components/ContactUs";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 const HelpSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.help.title" href="/settings" backOnClick />
+      <ScreenHeader title="settings.help.title" href="/settings" backOnClick />
       <ConcatUs />
     </Background>
   );

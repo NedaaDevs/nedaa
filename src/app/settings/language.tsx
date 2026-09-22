@@ -1,12 +1,12 @@
 // Components
 import { Background } from "@/components/ui/background";
 import LanguageList from "@/components/LanguageList";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 const LanguageSettings = () => {
   return (
     <Background>
-      <TopBar title="settings.language" href="/settings" backOnClick />
+      <ScreenHeader title="settings.language" href="/settings" backOnClick />
       <LanguageList />
     </Background>
   );
