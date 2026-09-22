@@ -52,7 +52,7 @@
     }
   },
   "dependencies": {
-    "@expo-google-fonts/asap": "^0.4.3",
+    "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
     "@expo/app-integrity": "^57.0.2",
     "@expo/vector-icons": "^15.1.1",
