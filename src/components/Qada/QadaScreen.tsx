@@ -28,6 +28,9 @@ import {
   ModalCloseButton,
 } from "@/components/ui/modal";
 
+// Constants
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+
 // Stores
 import { useQadaStore } from "@/stores/qada";
 
@@ -207,28 +210,18 @@ const QadaScreen = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Box position="relative">
-        <ScreenHeader title="qada.title" href="/(tabs)/tools" backOnClick preferHref />
-        {/* Settings Icon Overlay */}
-        <Pressable
-          onPress={() => {
+      <ScreenHeader
+        title={t("qada.title")}
+        back={{ to: BACK_DESTINATION.TOOLS }}
+        action={{
+          icon: Settings,
+          label: t("common.settings"),
+          onPress: () => {
             hapticLight();
             router.push("/settings/qada");
-          }}
-          accessibilityLabel={t("common.settings")}
-          position="absolute"
-          end={24}
-          top={8}
-          justifyContent="center"
-          minWidth={44}
-          minHeight={44}
-          alignItems="center"
-          padding="$2"
-          borderRadius="$4"
-          zIndex={50}>
-          <Icon as={Settings} size="lg" color="$typographyContrast" />
-        </Pressable>
-      </Box>
+          },
+        }}
+      />
 
       <ScrollView
         contentContainerStyle={{

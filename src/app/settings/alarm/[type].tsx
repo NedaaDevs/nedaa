@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 import {
   SoundPicker,
@@ -238,11 +239,9 @@ const AlarmTypeSettingsScreen = () => {
   const title =
     alarmType === PRAYER_ID.FAJR ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
 
-  const backHref = "/settings/alarm";
-
   return (
     <Background>
-      <ScreenHeader title={title} href={backHref} backOnClick />
+      <ScreenHeader title={title} back={{ fallback: BACK_DESTINATION.SETTINGS_ALARM }} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

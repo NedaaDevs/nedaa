@@ -20,6 +20,7 @@ import {
 
 import { Background } from "@/components/ui/background";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -185,7 +186,7 @@ const FeedbackScreen = () => {
   if (status === "success") {
     return (
       <Background>
-        <ScreenHeader title={t("feedback.title")} href="/settings" backOnClick />
+        <ScreenHeader title={t("feedback.title")} back={{ fallback: BACK_DESTINATION.SETTINGS }} />
         <VStack flex={1} padding="$4" gap="$4" justifyContent="center" alignItems="center">
           <VStack
             width={56}
@@ -229,7 +230,7 @@ const FeedbackScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title={t("feedback.title")} href="/settings" backOnClick />
+      <ScreenHeader title={t("feedback.title")} back={{ fallback: BACK_DESTINATION.SETTINGS }} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
