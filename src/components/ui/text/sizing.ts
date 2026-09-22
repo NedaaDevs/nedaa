@@ -58,6 +58,17 @@ export const resolveFontSize = (value: unknown): number | undefined => {
   return isNaN(num) ? undefined : num;
 };
 
+/** A token reads the line-height column, where resolveFontSize reads the font one. */
+export const resolveLineHeight = (value: unknown): number | undefined => {
+  if (value == null) return undefined;
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.startsWith("$")) {
+    return FONT_SIZES[value]?.lineHeight;
+  }
+  const num = Number(value);
+  return isNaN(num) ? undefined : num;
+};
+
 /**
  * Final font geometry for a Text instance: the app text-scale multiplier `m`
  * applied to either the caller's explicit fontSize or the size-token table.
@@ -71,16 +82,11 @@ export const resolveTextSizing = (
   lineHeight?: unknown
 ): { fontSize: number | undefined; lineHeight: number | undefined } => {
   const base = fontSize != null ? resolveFontSize(fontSize) : sizeValues.fontSize;
-  const baseLineHeight =
-    lineHeight != null
-      ? typeof lineHeight === "string" && lineHeight.startsWith("$")
-        ? FONT_SIZES[lineHeight]?.lineHeight
-        : resolveFontSize(lineHeight)
-      : fontSize != null
-        ? undefined
-        : sizeValues.lineHeight;
+  const explicitBox = lineHeight != null ? resolveLineHeight(lineHeight) : undefined;
+  const box = explicitBox ?? (fontSize != null ? undefined : sizeValues.lineHeight);
+
   return {
     fontSize: base == null ? undefined : base * m,
-    lineHeight: baseLineHeight == null ? undefined : baseLineHeight * m,
+    lineHeight: box == null ? undefined : box * m,
   };
 };
