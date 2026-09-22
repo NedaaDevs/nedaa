@@ -11,7 +11,7 @@ import { useLocationStore } from "@/stores/location";
 
 import { Background } from "@/components/ui/background";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
@@ -109,7 +109,7 @@ const HijriConverterScreen = () => {
   return (
     <Background>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <TopBar title={t("tools.hijriConverter.title")} href="/(tabs)/tools" backOnClick />
+        <ScreenHeader title={t("tools.hijriConverter.title")} href="/(tabs)/tools" backOnClick />
 
         <Box padding="$4">
           <Card padding="$5">

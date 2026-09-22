@@ -24,7 +24,7 @@ import {
   ActionsheetItemText,
   ActionsheetScrollView,
 } from "@/components/ui/actionsheet";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 // Icons
 import { Calendar, ChevronDown } from "lucide-react-native";
@@ -104,7 +104,7 @@ const HijriSettings = () => {
 
   return (
     <Background>
-      <TopBar title={t("settings.hijri.date.title")} href="/settings/advance" backOnClick />
+      <ScreenHeader title={t("settings.hijri.date.title")} href="/settings/advance" backOnClick />
 
       <Box flex={1} padding="$4">
         <Card padding="$6" marginBottom="$6">

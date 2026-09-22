@@ -12,7 +12,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import { MapPin, Plane, ChevronRight } from "lucide-react-native";
 import { MIQAT_POINTS } from "@/constants/UmrahMiqat";
@@ -84,7 +84,7 @@ export default function MiqatScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.prepare.miqat" backOnClick />
+      <ScreenHeader title="umrah.prepare.miqat" backOnClick />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 16 }}>
         {step === "origin" && (

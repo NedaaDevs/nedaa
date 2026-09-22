@@ -7,7 +7,7 @@ import { DownloadCloud } from "lucide-react-native";
 import { Background } from "@/components/ui/background";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 import { QuranContentDB } from "@/services/quran-content-db";
 import type { SurahMeta } from "@/types/quran";
@@ -148,7 +148,7 @@ const QuranListenSurahsScreen = () => {
 
   return (
     <Background>
-      <TopBar
+      <ScreenHeader
         title={reciterName ?? "tools.quranListen.title"}
         href="/quran-listen"
         backOnClick
