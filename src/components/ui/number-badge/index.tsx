@@ -1,34 +1,55 @@
 import { Text as RNText, Platform, type TextStyle } from "react-native";
+
+import { useThemeColor } from "@/components/ui/theme-color";
+import { PlatformType } from "@/enums/app";
 import { formatNumberToLocale } from "@/utils/number";
+
+const DIAMETER = { sm: 20, md: 24 } as const;
+const BORDER_WIDTH = 1.5;
+const IS_ANDROID = Platform.OS === PlatformType.ANDROID;
+
+type NumberBadgeSize = keyof typeof DIAMETER;
 
 type Props = {
   n: number;
-  color: string;
-  bg: string;
-  size?: number;
+  /** A theme token or a colour, for the digit and the rim. */
+  color?: string;
+  /** A theme token or a colour. */
+  bg?: string;
+  size?: NumberBadgeSize;
   x?: number;
   y?: number;
 };
 
-export const NumberBadge = ({ n, color, bg, size = 20, x, y }: Props) => {
+/** A circled number. It keeps a fixed size, so it does not follow the text scale. */
+export const NumberBadge = ({
+  n,
+  color = "$accentPrimary",
+  bg = "$background",
+  size = "sm",
+  x,
+  y,
+}: Props) => {
+  const ink = useThemeColor(color);
+  const fill = useThemeColor(bg);
+  const diameter = DIAMETER[size];
   const isAbsolute = x !== undefined && y !== undefined;
-  const fontSize = Math.round(size * 0.55);
-  const borderWidth = size >= 24 ? 1.5 : 1.5;
+  const lineBox = diameter - BORDER_WIDTH * 2;
 
   const style: TextStyle = {
     ...(isAbsolute && { position: "absolute", left: x, top: y }),
-    width: size,
-    height: size,
-    borderRadius: size / 2,
-    borderWidth,
-    borderColor: color,
-    backgroundColor: bg,
+    width: diameter,
+    height: diameter,
+    borderRadius: diameter / 2,
+    borderWidth: BORDER_WIDTH,
+    borderColor: ink,
+    backgroundColor: fill,
     overflow: "hidden",
-    fontSize,
+    fontSize: Math.round(diameter * 0.55),
     fontWeight: "700",
-    color,
+    color: ink,
     textAlign: "center",
-    lineHeight: Platform.OS === "android" ? size - borderWidth * 2 + 1 : size - borderWidth * 2,
+    lineHeight: IS_ANDROID ? lineBox + 1 : lineBox,
     includeFontPadding: false,
   };
 
@@ -38,3 +59,5 @@ export const NumberBadge = ({ n, color, bg, size = 20, x, y }: Props) => {
     </RNText>
   );
 };
+
+export type { NumberBadgeSize };
