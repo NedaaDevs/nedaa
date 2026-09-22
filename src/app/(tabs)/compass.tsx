@@ -55,6 +55,7 @@ import {
   type QiblaProximityState,
 } from "@/utils/compass";
 import { formatNumberToLocale } from "@/utils/number";
+import { useFontFamily } from "@/contexts/FontContext";
 
 const log = AppLogger.create("compass");
 
@@ -84,6 +85,7 @@ const getSensorIssue = (
 
 const CompassScreen = () => {
   const { t } = useTranslation();
+  const dialFontFamily = useFontFamily("regular");
   const isFocused = useIsFocused();
   const { isActive: isAppActive } = useAppVisibility();
   const qiblaSeed = useScreenshotSeed("qibla");
@@ -416,6 +418,7 @@ const CompassScreen = () => {
 
               <Box>
                 <CompassDial
+                  fontFamily={dialFontFamily}
                   heading={compass.heading}
                   qiblaDirection={qiblaDirection}
                   proximityState={proximityState}

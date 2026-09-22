@@ -42,7 +42,12 @@ jest.mock("react-i18next", () => ({
       return key;
     },
   }),
+  // The screen reaches the i18n bootstrap through the font context.
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
+
+// The font context reads the locale from the app store, which persists to SQLite.
+jest.mock("@/contexts/FontContext", () => ({ useFontFamily: () => "IBMPlexSansArabic-Regular" }));
 
 jest.mock("@/components/TopBar", () => () => null);
 jest.mock("@/components/compass/CompassDial", () => ({

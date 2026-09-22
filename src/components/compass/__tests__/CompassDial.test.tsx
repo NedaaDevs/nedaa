@@ -43,6 +43,7 @@ const baseProps = {
   reduceMotion: true,
   accessibilityLabel: "dial",
   translateDirection: (key: string) => key,
+  fontFamily: "IBMPlexSansArabic-Regular",
 };
 
 const renderDial = (props: Partial<React.ComponentProps<typeof CompassDial>> = {}) => {

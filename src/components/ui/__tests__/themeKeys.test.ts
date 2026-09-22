@@ -18,7 +18,7 @@ const tokenBlock = (name: string): string => {
 };
 
 const blockKeys = (name: string): string[] =>
-  [...tokenBlock(name).matchAll(/^\s{4}"?([a-zA-Z0-9]+)"?:/gm)].map((m) => m[1]);
+  [...tokenBlock(name).matchAll(/^\s{4}"?([a-zA-Z0-9.]+)"?:/gm)].map((m) => m[1]);
 
 const themeKeys = (name: string): string[] => {
   const block = source().match(new RegExp(`\\nconst ${name} = \\{([\\s\\S]*?)\\n\\};`));
@@ -29,9 +29,18 @@ const themeKeys = (name: string): string[] => {
 const THEMES = ["lightTheme", "darkTheme"];
 
 describe("theme keys", () => {
-  it("finds the blocks it compares", () => {
-    expect(blockKeys("color").length).toBeGreaterThan(40);
-    for (const theme of THEMES) expect(themeKeys(theme).length).toBeGreaterThan(30);
+  // Without a floor on each scale, a reformat that breaks a regex passes vacuously.
+  it.each([
+    ["color", 50],
+    ["size", 22],
+    ["space", 19],
+    ["radius", 15],
+  ])("finds the %s block", (name, least) => {
+    expect(blockKeys(name).length).toBeGreaterThan(least);
+  });
+
+  it.each(THEMES)("finds %s", (theme) => {
+    expect(themeKeys(theme).length).toBeGreaterThan(30);
   });
 
   /**
@@ -57,7 +66,7 @@ describe("theme keys", () => {
   // `size` and `space` resolve by the same lookup, so a theme key named for one
   // of their steps would answer a width or a padding.
   it.each(THEMES)("%s shares no name with a size or space step", (theme) => {
-    const scales = new Set([...blockKeys("space"), ...blockKeys("radius")]);
+    const scales = new Set([...blockKeys("size"), ...blockKeys("space"), ...blockKeys("radius")]);
     const collisions = themeKeys(theme).filter((key) => scales.has(key));
 
     expect(collisions).toEqual([]);
