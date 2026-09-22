@@ -193,6 +193,16 @@ const pngAspect = (png: Buffer): number => {
   return png.readUInt32BE(20) / png.readUInt32BE(16);
 };
 
+/**
+ * Arabic is cursive and carries diacritics: negative tracking overlaps the letter
+ * joins, and a synthetic oblique has no form in the script. Leading is set per
+ * renderer, since each has its own Latin baseline, but Arabic always needs 1.3+.
+ */
+const scriptMetrics = (isAr: boolean) => ({
+  tracking: isAr ? "normal" : "-0.03em",
+  accentStyle: isAr ? "normal" : "italic",
+});
+
 function heroHtml(opts: {
   rawPngBase64: string;
   rawAspect: number;
@@ -204,6 +214,7 @@ function heroHtml(opts: {
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
+  const { tracking, accentStyle } = scriptMetrics(isAr);
   const isAndroid = device.platform === "android";
   const isTablet = device.chrome === "ipad";
   const line2Below = copy.line2Below === true;
@@ -311,13 +322,13 @@ function heroHtml(opts: {
     font-family: '${fontFamily}', system-ui, sans-serif;
     font-weight: 700;
     font-size: ${headlineSize}px;
-    letter-spacing: -0.03em;
-    line-height: 1.0;
+    letter-spacing: ${tracking};
+    line-height: ${isAr ? "1.3" : "1.0"};
     color: #0F2C44;
     margin: 0;
     text-wrap: balance;
   }
-  .italic-accent { font-style: italic; font-weight: 700; color: #1C5D85; }
+  .italic-accent { font-style: ${accentStyle}; font-weight: 700; color: #1C5D85; }
   .stage {
     flex: 1;
     display: flex;
@@ -337,7 +348,7 @@ function heroHtml(opts: {
   }
   .caption {
     font-family: '${fontFamily}', system-ui, sans-serif;
-    font-style: italic;
+    font-style: ${accentStyle};
     font-weight: 700;
     font-size: ${captionSize}px;
     color: #1C5D85;
@@ -484,7 +495,7 @@ const PROMISES_COPY: Record<
       { key: "بلا إعلانات", body: "العبادة ليست لوحة إعلانات." },
       { key: "بلا حسابات", body: "بلا تسجيل، ولا بريد، ولا كلمة مرور." },
       { key: "بلا تتبّع", body: "لا أنظمة تتبّع خارجية. لا نعرف من أنت." },
-      { key: "مفتوح المصدر", body: "github.com/NedaaDevs/nedaa. اقرأ كلّ سطر." },
+      { key: "مفتوح المصدر", body: "اقرأ كلّ سطر على github.com/NedaaDevs/nedaa" },
     ],
   },
 };
@@ -495,6 +506,7 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
+  const { tracking, accentStyle } = scriptMetrics(isAr);
   const W = device.width;
   const H = device.height;
 
@@ -562,13 +574,13 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
     font-family: '${fontFamily}', system-ui, sans-serif;
     font-weight: 700;
     font-size: ${headlineSize}px;
-    letter-spacing: -0.03em;
-    line-height: 1.0;
+    letter-spacing: ${tracking};
+    line-height: ${isAr ? "1.3" : "1.0"};
     color: #0F2C44;
     margin: 0;
     text-wrap: balance;
   }
-  .italic-accent { font-style: italic; font-weight: 700; color: #1C5D85; }
+  .italic-accent { font-style: ${accentStyle}; font-weight: 700; color: #1C5D85; }
   .promises {
     flex: 1;
     display: flex;
@@ -599,15 +611,15 @@ function promisesHtml(opts: { device: DeviceSpec; locale: "en" | "ar" }): string
     font-size: ${keySize}px;
     font-weight: 700;
     color: #0F2C44;
-    letter-spacing: -0.015em;
-    line-height: 1.0;
+    letter-spacing: ${isAr ? "normal" : "-0.015em"};
+    line-height: ${isAr ? "1.3" : "1.0"};
   }
   .body {
     font-family: '${fontFamily}', system-ui, sans-serif;
     font-size: ${bodySize}px;
     color: #4B5563;
     margin-top: ${Math.round(H * 0.006)}px;
-    line-height: 1.3;
+    line-height: ${isAr ? "1.55" : "1.3"};
   }
 </style>
 </head>
@@ -638,6 +650,7 @@ function bilingualHtml(opts: {
   const isAr = locale === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const fontFamily = isAr ? "IBM Plex Sans Arabic" : "Asap";
+  const { tracking, accentStyle } = scriptMetrics(isAr);
   const FRAME_W = 520;
   const FRAME_ASPECT = 19.5 / 9;
   const FRAME_H = FRAME_W * FRAME_ASPECT;
@@ -699,14 +712,14 @@ function bilingualHtml(opts: {
     font-family: '${fontFamily}', system-ui, sans-serif;
     font-weight: 700;
     font-size: ${isAr ? 140 : 156}px;
-    letter-spacing: -0.03em;
-    line-height: 0.96;
+    letter-spacing: ${tracking};
+    line-height: ${isAr ? "1.3" : "0.96"};
     color: #0F2C44;
     margin: 0;
     text-wrap: balance;
   }
   .italic-accent {
-    font-style: italic;
+    font-style: ${accentStyle};
     font-weight: 700;
     color: #1C5D85;
   }
