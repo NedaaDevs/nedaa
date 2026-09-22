@@ -302,7 +302,7 @@ const FeedbackScreen = () => {
                   type ? `feedback.messagePlaceholder.${type}` : "feedback.messagePlaceholder"
                 )}
                 multiline
-                size="$4"
+                size="md"
                 minHeight={120}
                 paddingTop="$3"
                 fontSize={16}
@@ -407,7 +407,7 @@ const FeedbackScreen = () => {
                 placeholder={t("feedback.contactPlaceholder")}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                size="$4"
+                size="md"
                 height={48}
                 fontSize={16}
                 maxLength={256}
