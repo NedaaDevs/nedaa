@@ -50,3 +50,22 @@ describe("resolveTextSizing", () => {
     expect(resolveTextSizing(1.5, undefined, MD, "$5").lineHeight).toBe(42);
   });
 });
+
+describe("explicit lineHeight", () => {
+  test("an explicit line box wins over the size table, and scales", () => {
+    const m = TEXT_SIZE_MULTIPLIERS[TextSize.LARGE];
+
+    expect(resolveTextSizing(m, undefined, MD, 30)).toEqual({
+      fontSize: 14 * m,
+      lineHeight: 30 * m,
+    });
+  });
+
+  test("an explicit line box survives an explicit fontSize", () => {
+    expect(resolveTextSizing(1, 20, MD, 28)).toEqual({ fontSize: 20, lineHeight: 28 });
+  });
+
+  test("an unresolvable line box falls back to the size table", () => {
+    expect(resolveTextSizing(1, undefined, MD, "$99")).toEqual({ fontSize: 14, lineHeight: 20 });
+  });
+});
