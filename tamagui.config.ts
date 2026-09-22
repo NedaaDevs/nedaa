@@ -5,8 +5,8 @@ import { defaultConfig } from "@tamagui/config/v5";
 // Fonts — weight-to-face mappings for locale-aware font switching
 // FontLanguage component handles runtime switching: wrap content with
 // <FontLanguage body="ar" heading="ar"> to switch to Arabic fonts.
-const asapFont = createFont({
-  family: "Asap-Regular",
+const latinFont = createFont({
+  family: "IBMPlexSans-Regular",
   size: {
     1: 10, // 2xs
     2: 12, // xs
@@ -48,15 +48,15 @@ const asapFont = createFont({
     true: 0,
   },
   face: {
-    400: { normal: "Asap-Regular" },
-    500: { normal: "Asap-Medium" },
-    600: { normal: "Asap-SemiBold" },
-    700: { normal: "Asap-Bold" },
+    400: { normal: "IBMPlexSans-Regular" },
+    500: { normal: "IBMPlexSans-Medium" },
+    600: { normal: "IBMPlexSans-SemiBold" },
+    700: { normal: "IBMPlexSans-Bold" },
   },
 });
 
-const ibmPlexSansFont = createFont({
-  family: "IBMPlexSans-Regular",
+const arabicFont = createFont({
+  family: "IBMPlexSansArabic-Regular",
   size: {
     1: 10,
     2: 12,
@@ -98,19 +98,19 @@ const ibmPlexSansFont = createFont({
     true: 0,
   },
   face: {
-    400: { normal: "IBMPlexSans-Regular" },
-    500: { normal: "IBMPlexSans-Medium" },
-    600: { normal: "IBMPlexSans-SemiBold" },
-    700: { normal: "IBMPlexSans-Bold" },
+    400: { normal: "IBMPlexSansArabic-Regular" },
+    500: { normal: "IBMPlexSansArabic-Medium" },
+    600: { normal: "IBMPlexSansArabic-SemiBold" },
+    700: { normal: "IBMPlexSansArabic-Bold" },
   },
 });
 
 const monoFont = createFont({
   family: "monospace",
-  size: { ...asapFont.size },
-  lineHeight: { ...asapFont.lineHeight },
-  weight: { ...asapFont.weight },
-  letterSpacing: { ...asapFont.letterSpacing },
+  size: { ...latinFont.size },
+  lineHeight: { ...latinFont.lineHeight },
+  weight: { ...latinFont.weight },
+  letterSpacing: { ...latinFont.letterSpacing },
   face: {
     400: { normal: "monospace" },
     700: { normal: "monospace" },
@@ -447,12 +447,12 @@ const config = createTamagui({
     dark: darkTheme,
   },
   fonts: {
-    heading: asapFont,
-    heading_default: asapFont,
-    heading_ar: ibmPlexSansFont,
-    body: asapFont,
-    body_default: asapFont,
-    body_ar: ibmPlexSansFont,
+    heading: latinFont,
+    heading_default: latinFont,
+    heading_ar: arabicFont,
+    body: latinFont,
+    body_default: latinFont,
+    body_ar: arabicFont,
     mono: monoFont,
   },
   fontLanguages: ["default", "ar"],

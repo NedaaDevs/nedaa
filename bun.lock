@@ -5,7 +5,7 @@
     "": {
       "name": "nedaa",
       "dependencies": {
-        "@expo-google-fonts/asap": "^0.4.3",
+        "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
         "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
         "@expo/app-integrity": "^57.0.2",
         "@expo/vector-icons": "^15.1.1",
@@ -374,7 +374,7 @@
 
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.4.1", "", { "dependencies": { "@eslint/core": "^0.17.0", "levn": "^0.4.1" } }, "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA=="],
 
-    "@expo-google-fonts/asap": ["@expo-google-fonts/asap@0.4.3", "", {}, "sha512-oIKwz5LCb51kdM9xPlgnF1vvtDkrCOsJw0OBg66QTZ4EJzNlUosXJhhW3QV5oSgE2WZsip05NsxIVCO1op99Vg=="],
+    "@expo-google-fonts/ibm-plex-sans": ["@expo-google-fonts/ibm-plex-sans@0.4.1", "", {}, "sha512-allsuhZbvKoKDTB/U8creFVYYzhI97Nw9MgyyNjFzqISNc/sURpA7ZY37Rr+IRI567OV9BWQ/ioUCjAQrVGRbw=="],
 
     "@expo-google-fonts/ibm-plex-sans-arabic": ["@expo-google-fonts/ibm-plex-sans-arabic@0.4.2", "", {}, "sha512-Cx24iSo/4pWBKHVf69tbVLDUiHWCSTHrhKPw/+SYWLDnyiX10WXh+amNWRSo9N3ruwd+qk9AQgDaIY1KO0u1Ig=="],
 
