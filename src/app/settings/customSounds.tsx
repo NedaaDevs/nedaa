@@ -72,7 +72,7 @@ export default function CustomSoundsScreen() {
   if (Platform.OS !== PlatformType.ANDROID) {
     return (
       <Background>
-        <ScreenHeader title={t("notification.customSound.title")} backOnClick />
+        <ScreenHeader title={t("notification.customSound.title")} back />
         <Box flex={1} justifyContent="center" alignItems="center" padding="$6">
           <VStack gap="$3" alignItems="center" maxWidth={400}>
             <Box
@@ -261,7 +261,7 @@ export default function CustomSoundsScreen() {
 
   return (
     <Background>
-      <ScreenHeader title={t("notification.customSound.title")} backOnClick />
+      <ScreenHeader title={t("notification.customSound.title")} back />
 
       <ScrollView style={{ flex: 1 }}>
         <VStack gap="$4" padding="$4">

@@ -371,7 +371,7 @@ const WidgetSettings = () => {
 
   return (
     <Background>
-      <ScreenHeader title="settings.widgets.title" backOnClick />
+      <ScreenHeader title={t("settings.widgets.title")} back />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
