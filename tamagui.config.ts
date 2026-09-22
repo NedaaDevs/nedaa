@@ -171,6 +171,13 @@ const tokens = createTokens({
     16: 64,
     20: 80,
     true: 16,
+    // Named by what the gap separates. Derived from usage: $2 and $3 are 63% of
+    // the 351 stack gaps in the tree.
+    tight: 4,
+    inline: 8,
+    stack: 12,
+    group: 16,
+    section: 20,
     "-0.5": -2,
     "-1": -4,
     "-1.5": -6,
