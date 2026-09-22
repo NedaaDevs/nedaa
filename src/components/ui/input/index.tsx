@@ -4,24 +4,49 @@ import { Input as TamaguiInput, type InputProps, type TamaguiElement } from "tam
 
 import { useRTL } from "@/contexts/RTLContext";
 
-// App-themed text input. Mirrors for RTL — text *and* placeholder align to the
-// start side (Arabic/Urdu read right-aligned) — and resolves text/placeholder/
-// border/background from theme tokens so it reads correctly in light and dark
-// without per-call styling. Callers can override any prop (e.g. a borderless
-// search field passes backgroundColor="transparent" borderWidth={0}).
-export const Input = ({ ref, ...props }: InputProps & { ref?: Ref<TextInput> }) => {
+type InputSize = "sm" | "md" | "lg";
+
+/** Height and inset per size. Medium sits on the platform touch floor. */
+const SIZE = {
+  sm: { minHeight: "$9", paddingHorizontal: "$stack", fontSize: 14 },
+  md: { minHeight: "$target", paddingHorizontal: "$group", fontSize: 16 },
+  lg: { minHeight: "$12", paddingHorizontal: "$group", fontSize: 18 },
+} as const;
+
+type Props = Omit<InputProps, "size"> & {
+  ref?: Ref<TextInput>;
+  size?: InputSize;
+  invalid?: boolean;
+};
+
+/**
+ * App-themed text input, mirrored for RTL so text and placeholder align to the
+ * start side.
+ */
+export const Input = ({ ref, size = "md", invalid, disabled, ...props }: Props) => {
   const { isRTL } = useRTL();
+  const metrics = SIZE[size];
+
   return (
     <TamaguiInput
       // Tamagui types the ref as TamaguiElement; the runtime instance is the RN
-      // TextInput, so we expose the TextInput type to callers (for .focus()).
+      // TextInput, so callers get the TextInput type for .focus().
       ref={ref as Ref<TamaguiElement>}
       textAlign={isRTL ? "right" : "left"}
-      color="$typography"
+      minHeight={metrics.minHeight}
+      paddingHorizontal={metrics.paddingHorizontal}
+      fontSize={metrics.fontSize}
+      borderRadius="$control"
       placeholderTextColor="$typographySecondary"
-      borderColor="$borderColor"
+      borderColor={invalid ? "$error" : "$borderColor"}
       backgroundColor="$backgroundSecondary"
+      opacity={disabled ? 0.5 : 1}
+      disabled={disabled}
+      focusStyle={{ borderColor: invalid ? "$error" : "$primary" }}
+      accessibilityState={{ disabled: Boolean(disabled) }}
       {...props}
     />
   );
 };
+
+export type { InputSize };
