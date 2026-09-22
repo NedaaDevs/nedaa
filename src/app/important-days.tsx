@@ -10,7 +10,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
@@ -34,7 +34,7 @@ const ImportantDaysScreen = () => {
 
   return (
     <Background>
-      <TopBar title="importantDays.title" backOnClick />
+      <ScreenHeader title="importantDays.title" backOnClick />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           {/* Hero: the closest occasion */}

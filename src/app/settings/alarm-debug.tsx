@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { Background } from "@/components/ui/background";
 import SoundPicker from "@/components/alarm/SoundPicker";
 
@@ -302,7 +302,7 @@ const AlarmDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="Alarm Debug" href="/settings" backOnClick />
+      <ScreenHeader title="Alarm Debug" href="/settings" backOnClick />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
