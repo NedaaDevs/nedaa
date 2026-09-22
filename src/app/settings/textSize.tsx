@@ -4,6 +4,7 @@ import { Check } from "lucide-react-native";
 // Components
 import { Background } from "@/components/ui/background";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -31,7 +32,10 @@ const TextSizeSettings = () => {
 
   return (
     <Background>
-      <ScreenHeader title="settings.textSize.title" href="/settings/preferences" backOnClick />
+      <ScreenHeader
+        title={t("settings.textSize.title")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_PREFERENCES }}
+      />
       <VStack padding="$4" gap="$2">
         {OPTIONS.map(({ value, labelKey }) => {
           const selected = textSize === value;

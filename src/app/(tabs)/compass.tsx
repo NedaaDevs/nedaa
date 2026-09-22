@@ -5,6 +5,7 @@ import { Info, LocateFixed } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { CompassDetailsSheet } from "@/components/compass/CompassDetailsSheet";
 import { CompassDial } from "@/components/compass/CompassDial";
 import { CompassIssueCard } from "@/components/compass/CompassIssueCard";
@@ -370,7 +371,7 @@ const CompassScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="compass.title" href="/(tabs)/tools" backOnClick preferHref />
+      <ScreenHeader title={t("compass.title")} back={{ to: BACK_DESTINATION.TOOLS }} />
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
