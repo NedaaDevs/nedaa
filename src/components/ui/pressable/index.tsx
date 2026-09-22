@@ -5,12 +5,17 @@ import type { GetProps } from "tamagui";
 const PressableFrame = styled(View, {
   name: "Pressable",
   role: "button",
-  minHeight: 44,
-  minWidth: 44,
+  minHeight: "$target",
+  minWidth: "$target",
   pressStyle: {
     opacity: 0.7,
   },
   variants: {
+    /** The tab bar sits above the platform floor; everything else sits on it. */
+    target: {
+      default: { minHeight: "$target", minWidth: "$target" },
+      tab: { minHeight: "$targetTab", minWidth: "$targetTab" },
+    },
     disabled: {
       true: {
         opacity: 0.4,
