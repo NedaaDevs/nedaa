@@ -12,7 +12,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import HijriMonthGrid from "@/components/hijri/HijriMonthGrid";
 import DayObservanceSheet from "@/components/hijri/DayObservanceSheet";
 
@@ -101,7 +101,7 @@ const HijriCalendarScreen = () => {
 
   return (
     <Background>
-      <TopBar title="hijriCalendar.title" backOnClick />
+      <ScreenHeader title="hijriCalendar.title" backOnClick />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           <HStack justifyContent="space-between" alignItems="center">

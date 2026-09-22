@@ -49,7 +49,7 @@ jest.mock("react-i18next", () => ({
 // The font context reads the locale from the app store, which persists to SQLite.
 jest.mock("@/contexts/FontContext", () => ({ useFontFamily: () => "IBMPlexSansArabic-Regular" }));
 
-jest.mock("@/components/TopBar", () => () => null);
+jest.mock("@/components/ui/screen-header", () => ({ ScreenHeader: () => null }));
 jest.mock("@/components/compass/CompassDial", () => ({
   CompassDial: (props: Record<string, unknown>) => mockCompassDial(props),
 }));
