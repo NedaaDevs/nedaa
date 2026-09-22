@@ -5,8 +5,8 @@ export const HStack = styled(XStack, {
   name: "HStack",
 
   variants: {
-    /** What the gap separates, not how many pixels. */
-    space: {
+    /** What the gap separates, not how many pixels. `space` is reserved by Tamagui. */
+    spacing: {
       tight: { gap: "$tight" },
       inline: { gap: "$inline" },
       stack: { gap: "$stack" },
