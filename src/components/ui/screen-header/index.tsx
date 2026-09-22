@@ -12,13 +12,14 @@ import { findBackDestination, type BackDestination } from "@/constants/BackDesti
 // Components
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { useBackDestination } from "@/components/ui/screen-header/useBackDestination";
 
 // Icons
-import { ArrowLeft, ArrowRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 /**
  * `true` pops the stack. `fallback` pops, or opens that screen when nothing is
@@ -32,12 +33,20 @@ type ScreenHeaderAction = {
   onPress: () => void;
 };
 
-type Props = {
+type SharedProps = {
   /** Display text; the caller translates it. */
   title: string;
   back?: ScreenHeaderBack;
   action?: ScreenHeaderAction;
 };
+
+/**
+ * `stacked` sets a large title under a back link that names its destination.
+ * `bar` centres a small title between the controls and has no room for a subtitle.
+ */
+type Props =
+  | (SharedProps & { variant?: "stacked"; subtitle?: string })
+  | (SharedProps & { variant: "bar"; subtitle?: never });
 
 type BackPlan =
   { pop: true; destination?: BackDestination } | { pop: false; destination: BackDestination };
@@ -53,14 +62,19 @@ const planBack = (
   return undefined;
 };
 
-export const ScreenHeader = ({ title, back, action }: Props) => {
+export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked" }: Props) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const behind = useBackDestination();
   const plan = planBack(back, behind);
 
-  const BackArrow = isRTL ? ArrowRight : ArrowLeft;
+  // Back points to the start edge.
+  const Chevron = isRTL ? ChevronRight : ChevronLeft;
+  const destinationName = plan?.destination ? t(plan.destination.title) : undefined;
+  const backLabel = destinationName
+    ? t("a11y.backTo", { screen: destinationName })
+    : t("a11y.back");
 
   const handleBack = () => {
     if (!plan) return;
@@ -68,43 +82,75 @@ export const ScreenHeader = ({ title, back, action }: Props) => {
     else router.navigate(plan.destination.href);
   };
 
-  return (
-    <Box paddingHorizontal="$5" paddingVertical="$4" backgroundColor="$backgroundElevated">
-      <HStack justifyContent="space-between" alignItems="center" width="100%">
-        <HStack alignItems="center" gap="$3" flexShrink={1}>
+  const actionButton = action && (
+    <Pressable
+      onPress={action.onPress}
+      accessibilityLabel={action.label}
+      alignItems="center"
+      justifyContent="center">
+      <Icon as={action.icon} size="lg" color="$accent" />
+    </Pressable>
+  );
+
+  if (variant === "bar") {
+    return (
+      <HStack alignItems="center" paddingHorizontal="$stack" paddingVertical="$tight">
+        <Box width="$target">
           {plan && (
             <Pressable
               onPress={handleBack}
-              padding="$2"
-              borderRadius="$4"
+              accessibilityLabel={backLabel}
               alignItems="center"
-              justifyContent="center"
-              accessibilityLabel={
-                plan.destination
-                  ? t("a11y.backTo", { screen: t(plan.destination.title) })
-                  : t("a11y.back")
-              }>
-              <Icon as={BackArrow} size="lg" color="$typographyContrast" />
+              justifyContent="center">
+              <Icon as={Chevron} size="lg" color="$fg" />
             </Pressable>
           )}
-
-          <Text size="2xl" bold color="$typographyContrast" accessibilityRole="header">
-            {title}
-          </Text>
-        </HStack>
-
-        {action && (
-          <Pressable
-            onPress={action.onPress}
-            padding="$2"
-            borderRadius="$4"
-            alignItems="center"
-            justifyContent="center"
-            accessibilityLabel={action.label}>
-            <Icon as={action.icon} size="lg" color="$typographyContrast" />
-          </Pressable>
-        )}
+        </Box>
+        <Text
+          flex={1}
+          textAlign="center"
+          size="lg"
+          bold
+          typography="title"
+          color="$fg"
+          accessibilityRole="header">
+          {title}
+        </Text>
+        <Box width="$target">{actionButton}</Box>
       </HStack>
-    </Box>
+    );
+  }
+
+  return (
+    <VStack spacing="tight" paddingHorizontal="$group" paddingTop="$inline" paddingBottom="$stack">
+      {(plan || action) && (
+        <HStack alignItems="center">
+          {plan && (
+            <Pressable
+              onPress={handleBack}
+              accessibilityLabel={backLabel}
+              flexDirection="row"
+              alignItems="center"
+              gap="$tight">
+              <Icon as={Chevron} size="md" color="$fg" />
+              {destinationName && (
+                <Text size="sm" fontWeight="600" color="$fg">
+                  {destinationName}
+                </Text>
+              )}
+            </Pressable>
+          )}
+          {actionButton && <Box marginStart="auto">{actionButton}</Box>}
+        </HStack>
+      )}
+      <Text size="3xl" bold typography="title" color="$fg" accessibilityRole="header">
+        {title}
+      </Text>
+      {subtitle && (
+        <Text size="sm" typography="helper" color="$muted">
+          {subtitle}
+        </Text>
+      )}
+    </VStack>
   );
 };
