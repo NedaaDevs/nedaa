@@ -10,7 +10,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { X } from "lucide-react-native";
-import ProgressRing from "@/components/umrah/ProgressRing";
+import { Ring } from "@/components/ui/ring";
 
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
@@ -62,7 +62,7 @@ const UmrahResumeBanner = () => {
         })}
         accessibilityHint={t("umrah.resumeBanner.a11yHint")}>
         <HStack alignItems="center" gap="$3">
-          <ProgressRing progress={progress} size="md" />
+          <Ring progress={progress} size="md" />
           <VStack flex={1} gap="$0.5">
             <Text size="sm" fontWeight="600" color="$typography">
               {t(currentStage.titleKey)}
