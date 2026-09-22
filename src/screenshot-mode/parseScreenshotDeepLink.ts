@@ -6,7 +6,6 @@ const SCREEN_KEYS: readonly ScreenshotScreenKey[] = [
   "reliable-alarms",
   "athkar",
   "qibla",
-  "privacy",
   "qada",
   "quran",
   "athkar-with-audio",
