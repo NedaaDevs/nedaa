@@ -33,6 +33,7 @@
   "a11y.athkar.tapToCount": "اضغط للعد",
   "a11y.athkar.viewDetail": "عرض تفاصيل الذكر",
   "a11y.back": "رجوع",
+  "a11y.backTo": "العودة إلى {{screen}}",
   "a11y.compass.compassOnly": "استخدام البوصلة فقط",
   "a11y.compass.compassOnlyHint": "يعرض البوصلة بدون اتجاه القبلة",
   "a11y.compass.details": "يفتح تفاصيل البوصلة",

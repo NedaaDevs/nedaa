@@ -34,7 +34,7 @@ const ImportantDaysScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="importantDays.title" backOnClick />
+      <ScreenHeader title={t("importantDays.title")} back />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           {/* Hero: the closest occasion */}

@@ -47,7 +47,7 @@ export default function PrepareIndexScreen() {
 
   return (
     <Background>
-      <ScreenHeader title="umrah.prepare.title" backOnClick />
+      <ScreenHeader title={t("umrah.prepare.title")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 16 }}>
         <VStack gap="$3" paddingTop="$4">

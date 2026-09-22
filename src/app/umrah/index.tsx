@@ -92,7 +92,7 @@ export default function UmrahOverviewScreen() {
 
   return (
     <Background>
-      <ScreenHeader title="umrah.title" backOnClick />
+      <ScreenHeader title={t("umrah.title")} back />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: activeProgress ? 80 : 100 }}>
         <VStack paddingHorizontal="$4" paddingTop="$4" gap="$2">

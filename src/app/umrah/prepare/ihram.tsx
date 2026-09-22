@@ -36,7 +36,7 @@ export default function IhramScreen() {
 
   return (
     <Background>
-      <ScreenHeader title="umrah.prepare.ihram" backOnClick />
+      <ScreenHeader title={t("umrah.prepare.ihram")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         <HStack

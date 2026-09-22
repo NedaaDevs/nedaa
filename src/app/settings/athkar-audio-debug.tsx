@@ -98,7 +98,7 @@ const AthkarAudioDebugScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="settings.athkarAudio.debug.title" backOnClick />
+      <ScreenHeader title={t("settings.athkarAudio.debug.title")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

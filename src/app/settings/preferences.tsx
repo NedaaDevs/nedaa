@@ -120,7 +120,7 @@ const PreferencesSettings = () => {
 
   return (
     <Background>
-      <ScreenHeader title="settings.preferences.title" backOnClick />
+      <ScreenHeader title={t("settings.preferences.title")} back />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack padding="$4" gap="$4">
           {/* Western Numerals - only show for Arabic locale */}

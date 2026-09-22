@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { Background } from "@/components/ui/background";
 
 import * as BackgroundTask from "expo-background-task";
@@ -161,7 +162,7 @@ const BackgroundDebugScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="Background Debug" href="/settings" backOnClick />
+      <ScreenHeader title="Background Debug" back={{ fallback: BACK_DESTINATION.SETTINGS }} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
