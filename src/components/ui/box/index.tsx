@@ -5,8 +5,8 @@ export const Box = styled(View, {
   name: "Box",
 
   variants: {
-    /** What the gap separates, not how many pixels. */
-    space: {
+    /** What the gap separates, not how many pixels. `space` is reserved by Tamagui. */
+    spacing: {
       tight: { gap: "$tight" },
       inline: { gap: "$inline" },
       stack: { gap: "$stack" },
