@@ -19,7 +19,7 @@ import {
 } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -185,7 +185,7 @@ const FeedbackScreen = () => {
   if (status === "success") {
     return (
       <Background>
-        <TopBar title={t("feedback.title")} href="/settings" backOnClick />
+        <ScreenHeader title={t("feedback.title")} href="/settings" backOnClick />
         <VStack flex={1} padding="$4" gap="$4" justifyContent="center" alignItems="center">
           <VStack
             width={56}
@@ -229,7 +229,7 @@ const FeedbackScreen = () => {
 
   return (
     <Background>
-      <TopBar title={t("feedback.title")} href="/settings" backOnClick />
+      <ScreenHeader title={t("feedback.title")} href="/settings" backOnClick />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

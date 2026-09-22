@@ -16,7 +16,7 @@ import { useTheme } from "tamagui";
 
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import SoundPreviewButton from "@/components/SoundPreviewButton";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -300,7 +300,7 @@ const QadaSettings = () => {
 
   return (
     <Background>
-      <TopBar title="qada.notificationSettings" backOnClick={true} />
+      <ScreenHeader title="qada.notificationSettings" backOnClick={true} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

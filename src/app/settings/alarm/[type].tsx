@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import {
   SoundPicker,
@@ -242,7 +242,7 @@ const AlarmTypeSettingsScreen = () => {
 
   return (
     <Background>
-      <TopBar title={title} href={backHref} backOnClick />
+      <ScreenHeader title={title} href={backHref} backOnClick />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

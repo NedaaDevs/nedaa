@@ -9,7 +9,7 @@ import { useRTL } from "@/contexts/RTLContext";
 
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -120,7 +120,7 @@ const PreferencesSettings = () => {
 
   return (
     <Background>
-      <TopBar title="settings.preferences.title" backOnClick />
+      <ScreenHeader title="settings.preferences.title" backOnClick />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack padding="$4" gap="$4">
           {/* Western Numerals - only show for Arabic locale */}

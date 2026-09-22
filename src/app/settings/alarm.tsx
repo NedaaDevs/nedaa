@@ -17,7 +17,7 @@ import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
 import { Spinner } from "@/components/ui/spinner";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import ReportProblemModal from "@/components/ReportProblemModal";
 
 import {
@@ -381,7 +381,7 @@ const AlarmSettings = () => {
   if (isCheckingPermissions) {
     return (
       <Background>
-        <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+        <ScreenHeader title="alarm.settings.title" href="/settings" backOnClick />
         <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
           <Spinner size="large" />
         </Box>
@@ -392,7 +392,7 @@ const AlarmSettings = () => {
   if (!allGranted && !skipGate && currentPermission) {
     return (
       <Background>
-        <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+        <ScreenHeader title="alarm.settings.title" href="/settings" backOnClick />
         <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8">
           <VStack alignItems="center" width="100%" maxWidth={320} gap="$5">
             <Box
@@ -464,7 +464,7 @@ const AlarmSettings = () => {
 
   return (
     <Background>
-      <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+      <ScreenHeader title="alarm.settings.title" href="/settings" backOnClick />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
