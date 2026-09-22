@@ -12,7 +12,7 @@ type Props = {
   color?: string;
 };
 
-const ProgressRing = ({ progress, size = "md", color }: Props) => {
+export const Ring = ({ progress, size = "md", color }: Props) => {
   const theme = useTheme();
   const { size: diameter, strokeWidth } = SIZE_PRESETS[size];
   const ringColor = color ?? theme.accentPrimary.val;
@@ -52,5 +52,3 @@ const ProgressRing = ({ progress, size = "md", color }: Props) => {
     </Svg>
   );
 };
-
-export default ProgressRing;
