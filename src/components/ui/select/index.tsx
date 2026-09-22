@@ -74,10 +74,10 @@ const Select: React.FC<SelectProps> = ({
         onPress={handleOpen}
         borderColor="$outline"
         borderWidth={1}
-        borderRadius="$4"
+        borderRadius="$control"
         backgroundColor="$backgroundSecondary"
-        minHeight={44}
-        paddingHorizontal="$3"
+        minHeight="$target"
+        paddingHorizontal="$stack"
         justifyContent="center"
         opacity={disabled ? 0.5 : 1}
         accessibilityRole="combobox"
@@ -120,8 +120,8 @@ const Select: React.FC<SelectProps> = ({
                           color="$typographySecondary"
                           fontSize="$2"
                           fontWeight="600"
-                          paddingHorizontal="$4"
-                          paddingVertical="$2">
+                          paddingHorizontal="$group"
+                          paddingVertical="$inline">
                           {group.label}
                         </Text>
                       )}
@@ -159,10 +159,10 @@ const SelectOption: React.FC<{
 }> = ({ item, isSelected, onSelect }) => (
   <Pressable
     onPress={() => onSelect(item.value)}
-    paddingHorizontal="$4"
-    paddingVertical="$3"
+    paddingHorizontal="$group"
+    paddingVertical="$stack"
     backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
-    minHeight={44}
+    minHeight="$target"
     accessibilityRole="radio"
     accessibilityState={{ selected: isSelected }}
     accessibilityLabel={item.label}>
