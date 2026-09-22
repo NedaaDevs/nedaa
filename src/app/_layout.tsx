@@ -15,7 +15,9 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
-import { PlatformType } from "@/enums/app";
+import { AppMode, PlatformType } from "@/enums/app";
+
+import { isArabicScript } from "@/constants/Fonts";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
@@ -101,7 +103,7 @@ function AppShell() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
-          <StatusBar style={themeName === "dark" ? "light" : "dark"} />
+          <StatusBar style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
           <ToastProvider />
           <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
@@ -174,23 +176,16 @@ export default function RootLayout() {
     return null;
   }
 
-  const resolvedTheme =
-    mode === "system"
-      ? systemScheme === "dark"
-        ? "dark"
-        : "light"
-      : mode === "dark"
-        ? "dark"
-        : "light";
-
-  const isArabicScript = locale === "ar" || locale === "ur";
+  const brightness = mode === AppMode.SYSTEM ? systemScheme : mode;
+  const resolvedTheme = brightness === AppMode.DARK ? AppMode.DARK : AppMode.LIGHT;
+  const arabicScript = isArabicScript(locale);
 
   return (
     <ScreenshotModeWrapper>
       <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
         <FontLanguage
-          body={isArabicScript ? "ar" : "default"}
-          heading={isArabicScript ? "ar" : "default"}>
+          body={arabicScript ? "ar" : "default"}
+          heading={arabicScript ? "ar" : "default"}>
           <RTLProvider>
             <FontProvider>
               <AppShell />
