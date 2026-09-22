@@ -10,7 +10,6 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
-import { useTheme } from "tamagui";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import IhramMale from "@/components/umrah/illustrations/IhramMale";
 import IhramFemale from "@/components/umrah/illustrations/IhramFemale";
@@ -175,21 +174,18 @@ export default function IhramScreen() {
   );
 }
 
-const NumberedItem = ({ n, text }: { n: number; text: string }) => {
-  const theme = useTheme();
-  return (
-    <HStack gap="$3" alignItems="flex-start" accessible accessibilityLabel={text}>
-      <NumberBadge n={n} size={24} color={theme.accentPrimary.val} bg={theme.background.val} />
-      <Text
-        size="sm"
-        color="$typographySecondary"
-        flex={1}
-        paddingTop="$0.5"
-        importantForAccessibility="no">
-        {text}
-      </Text>
-    </HStack>
-  );
-};
+const NumberedItem = ({ n, text }: { n: number; text: string }) => (
+  <HStack gap="$3" alignItems="flex-start" accessible accessibilityLabel={text}>
+    <NumberBadge n={n} size="md" />
+    <Text
+      size="sm"
+      color="$typographySecondary"
+      flex={1}
+      paddingTop="$0.5"
+      importantForAccessibility="no">
+      {text}
+    </Text>
+  </HStack>
+);
 
 const Divider = () => <Box height={1} backgroundColor="$outline" opacity={0.3} />;

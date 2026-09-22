@@ -1,25 +1,30 @@
 import Svg, { Circle } from "react-native-svg";
-import { useTheme } from "tamagui";
+
+import { useThemeColor } from "@/components/ui/theme-color";
 
 const SIZE_PRESETS = {
   sm: { size: 28, strokeWidth: 3 },
   md: { size: 48, strokeWidth: 5 },
 } as const;
 
+type RingSize = keyof typeof SIZE_PRESETS;
+
 type Props = {
+  /** Fraction complete, clamped to 0–1. */
   progress: number;
-  size?: "sm" | "md";
+  size?: RingSize;
+  /** A theme token or a colour. */
   color?: string;
 };
 
-export const Ring = ({ progress, size = "md", color }: Props) => {
-  const theme = useTheme();
+export const Ring = ({ progress, size = "md", color = "$accentPrimary" }: Props) => {
+  const ringColor = useThemeColor(color);
   const { size: diameter, strokeWidth } = SIZE_PRESETS[size];
-  const ringColor = color ?? theme.accentPrimary.val;
+  const fraction = Math.min(Math.max(progress, 0), 1);
 
   const radius = (diameter - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - Math.min(Math.max(progress, 0), 1));
+  const strokeDashoffset = circumference * (1 - fraction);
 
   return (
     <Svg
@@ -52,3 +57,5 @@ export const Ring = ({ progress, size = "md", color }: Props) => {
     </Svg>
   );
 };
+
+export type { RingSize };

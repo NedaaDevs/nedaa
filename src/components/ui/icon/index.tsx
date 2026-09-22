@@ -1,9 +1,9 @@
 import React from "react";
 import { View as RNView, type StyleProp, type ViewStyle } from "react-native";
-import { useTheme } from "tamagui";
 import { Mail } from "lucide-react-native";
 
 import { ICON_SIZES, resolveIconSize, type IconSize } from "@/components/ui/icon/sizing";
+import { useThemeColor } from "@/components/ui/theme-color";
 
 type IconProps = {
   as: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
@@ -19,15 +19,8 @@ const Icon = React.forwardRef<any, IconProps>(
     { as: IconComponent, size = "md", color, strokeWidth, style, accessibilityLabel, ...props },
     _ref
   ) => {
-    const theme = useTheme();
-
     const resolvedSize = resolveIconSize(size);
-
-    const resolvedColor = color
-      ? color.startsWith("$")
-        ? ((theme as Record<string, { val: string }>)[color.slice(1)]?.val ?? color)
-        : color
-      : theme.typography.val;
+    const resolvedColor = useThemeColor(color ?? "$typography");
 
     const isDecorative = !accessibilityLabel;
 
