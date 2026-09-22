@@ -53,6 +53,9 @@ jest.mock("@/components/ui/vstack", () => ({ VStack: mockPassthrough() }));
 jest.mock("@/components/ui/pressable", () => ({ Pressable: mockPassthrough() }));
 jest.mock("@/components/ui/button", () => ({ Button: mockPassthrough() }));
 jest.mock("@/components/ui/icon", () => ({ Icon: () => null }));
+// Stands in as the plain input, so the behavioural assertions below still find it.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock("@/components/ui/sheet-input", () => ({ SheetInput: require("react-native").TextInput }));
 
 jest.mock("lucide-react-native", () => new Proxy({}, { get: () => () => null }));
 jest.mock("tamagui", () => ({
