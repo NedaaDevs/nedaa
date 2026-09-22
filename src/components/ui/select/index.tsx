@@ -23,7 +23,6 @@ type SelectProps = {
   items?: SelectItem[];
   groups?: SelectGroup[];
   disabled?: boolean;
-  size?: "$2" | "$3" | "$4" | "$5";
 };
 
 const ITEM_HEIGHT = 44;

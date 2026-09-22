@@ -9,6 +9,7 @@ import {
   useTheme,
 } from "tamagui";
 import type { GetProps } from "tamagui";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { useTextScale } from "@/hooks/useTextScale";
 
@@ -20,10 +21,10 @@ const FabContext = createStyledContext({
   size: "md" as FabSize,
 });
 
-const ICON_SIZE: Record<FabSize, number> = {
-  sm: 18,
-  md: 20,
-  lg: 24,
+const ICON_SIZE: Record<FabSize, IconSize> = {
+  sm: "md",
+  md: "lg",
+  lg: "xl",
 };
 
 // --- FabFrame ---
@@ -90,7 +91,7 @@ const FabIcon: React.FC<FabIconProps> = ({
       : colorProp
     : theme.typographyContrast.val;
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
 };
 FabIcon.displayName = "FabIcon";
 
