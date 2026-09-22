@@ -1,4 +1,6 @@
 import { createFont, createTamagui, createTokens } from "tamagui";
+
+import { NEDAA_DARK, NEDAA_LIGHT } from "./src/constants/Palette";
 import { createAnimations } from "@tamagui/animations-moti";
 import { defaultConfig } from "@tamagui/config/v5";
 
@@ -334,6 +336,23 @@ const lightTheme = {
   borderColor: tokens.color.lightOutline,
   shadowColor: "rgba(38, 38, 38, 0.1)",
   placeholderColor: tokens.color.lightTypographySecondary,
+
+  // The design palette. Additive only: `success` already exists above and keeps its
+  // current value, so no consumer shifts.
+  bg: NEDAA_LIGHT.bg.hex,
+  surface: NEDAA_LIGHT.surface.hex,
+  surface2: NEDAA_LIGHT.surface2.hex,
+  fg: NEDAA_LIGHT.fg.hex,
+  muted: NEDAA_LIGHT.muted.hex,
+  border: NEDAA_LIGHT.border.hex,
+  accent: NEDAA_LIGHT.accent.hex,
+  accentSoft: NEDAA_LIGHT.accentSoft.hex,
+  warn: NEDAA_LIGHT.warn.hex,
+  danger: NEDAA_LIGHT.danger.hex,
+  bar: NEDAA_LIGHT.bar.hex,
+
+  /** Switch thumb while checked. */
+  switchThumbChecked: tokens.color.lightTypographyContrast,
 };
 
 const darkTheme = {
@@ -392,6 +411,23 @@ const darkTheme = {
   borderColor: tokens.color.darkOutline,
   shadowColor: "rgba(0, 0, 0, 0.3)",
   placeholderColor: tokens.color.darkTypographySecondary,
+
+  // The design palette. Additive only: `success` already exists above and keeps its
+  // current value, so no consumer shifts.
+  bg: NEDAA_DARK.bg.hex,
+  surface: NEDAA_DARK.surface.hex,
+  surface2: NEDAA_DARK.surface2.hex,
+  fg: NEDAA_DARK.fg.hex,
+  muted: NEDAA_DARK.muted.hex,
+  border: NEDAA_DARK.border.hex,
+  accent: NEDAA_DARK.accent.hex,
+  accentSoft: NEDAA_DARK.accentSoft.hex,
+  warn: NEDAA_DARK.warn.hex,
+  danger: NEDAA_DARK.danger.hex,
+  bar: NEDAA_DARK.bar.hex,
+
+  /** Switch thumb while checked. */
+  switchThumbChecked: tokens.color.darkBackground,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
