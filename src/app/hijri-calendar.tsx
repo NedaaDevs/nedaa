@@ -101,7 +101,7 @@ const HijriCalendarScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="hijriCalendar.title" backOnClick />
+      <ScreenHeader title={t("hijriCalendar.title")} back />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           <HStack justifyContent="space-between" alignItems="center">
