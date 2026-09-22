@@ -35,7 +35,7 @@ const FabFrame = styled(View, {
   justifyContent: "center",
   flexDirection: "row",
   position: "absolute",
-  borderRadius: 999,
+  borderRadius: "$pill",
   backgroundColor: "$primary",
   shadowColor: "$typography",
   shadowOffset: { width: 0, height: 2 },
@@ -47,17 +47,17 @@ const FabFrame = styled(View, {
 
   variants: {
     size: {
-      sm: { width: 40, height: 40 },
-      md: { width: 48, height: 48 },
-      lg: { width: 56, height: 56 },
+      sm: { width: "$10", height: "$10" },
+      md: { width: "$12", height: "$12" },
+      lg: { width: "$14", height: "$14" },
     },
     placement: {
-      "top right": { top: 16, right: 16 },
-      "top left": { top: 16, left: 16 },
-      "bottom right": { bottom: 16, right: 16 },
-      "bottom left": { bottom: 16, left: 16 },
-      "top center": { top: 16, alignSelf: "center" },
-      "bottom center": { bottom: 16, alignSelf: "center" },
+      "top right": { top: "$group", right: "$group" },
+      "top left": { top: "$group", left: "$group" },
+      "bottom right": { bottom: "$group", right: "$group" },
+      "bottom left": { bottom: "$group", left: "$group" },
+      "top center": { top: "$group", alignSelf: "center" },
+      "bottom center": { bottom: "$group", alignSelf: "center" },
     },
   } as const,
 
@@ -102,7 +102,7 @@ const FabLabelFrame = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "600",
   color: "$typographyContrast",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: "$tight" }),
 
   // Sizes carry no styles: FabLabel computes the fontSize from the size
   // context so the app text-scale can multiply it.
