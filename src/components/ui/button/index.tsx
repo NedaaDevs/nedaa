@@ -53,8 +53,8 @@ const ButtonFrame = styled(View, {
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
-  gap: "$2",
-  borderRadius: "$4",
+  gap: "$inline",
+  borderRadius: "$control",
   pressStyle: {
     opacity: 0.8,
   },
@@ -73,11 +73,11 @@ const ButtonFrame = styled(View, {
     // minHeight, not height: the box is a floor that grows with a scaled or
     // wrapped label instead of clipping it.
     size: {
-      xs: { minHeight: 32, paddingVertical: 4, paddingHorizontal: 14 },
-      sm: { minHeight: 36, paddingVertical: 4, paddingHorizontal: 16 },
-      md: { minHeight: 40, paddingVertical: 4, paddingHorizontal: 20 },
-      lg: { minHeight: 44, paddingVertical: 4, paddingHorizontal: 24 },
-      xl: { minHeight: 48, paddingVertical: 4, paddingHorizontal: 28 },
+      xs: { minHeight: "$8", paddingVertical: "$tight", paddingHorizontal: "$3.5" },
+      sm: { minHeight: "$9", paddingVertical: "$tight", paddingHorizontal: "$group" },
+      md: { minHeight: "$10", paddingVertical: "$tight", paddingHorizontal: "$section" },
+      lg: { minHeight: "$target", paddingVertical: "$tight", paddingHorizontal: "$6" },
+      xl: { minHeight: "$12", paddingVertical: "$tight", paddingHorizontal: "$7" },
     },
     variant: {
       solid: { borderWidth: 0 },
@@ -108,7 +108,10 @@ const ButtonTextFrame = styled(TamaguiText, {
   context: ButtonContext,
   fontFamily: "$body",
   fontWeight: "600",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 8, textBreakStrategy: "simple" }),
+  ...(Platform.OS === PlatformType.ANDROID && {
+    paddingEnd: "$inline",
+    textBreakStrategy: "simple",
+  }),
 
   variants: {
     action: {
