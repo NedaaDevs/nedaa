@@ -142,6 +142,10 @@ const tokens = createTokens({
     20: 80,
     24: 96,
     true: 16,
+    // Touch targets, named by what they wrap. 44 is the platform floor; the tab
+    // bar sits above it.
+    target: 44,
+    targetTab: 50,
   },
   space: {
     0: 0,
