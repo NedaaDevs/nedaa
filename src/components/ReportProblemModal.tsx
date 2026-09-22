@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
   BottomSheetView,
-  BottomSheetTextInput,
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { SheetInput } from "@/components/ui/sheet-input";
 import { openComposer } from "react-native-email-link";
 import * as MailComposer from "expo-mail-composer";
 import * as Clipboard from "expo-clipboard";
@@ -22,7 +22,6 @@ import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon, MailIcon } from "@/components/ui/icon";
 import { MessageToast } from "@/components/feedback";
-import { useRTL } from "@/contexts/RTLContext";
 import { AppLogger } from "@/utils/appLogger";
 import { submitFeedback, generateClientKey, utf8ByteLength } from "@/services/feedback";
 import { Report, Attachment, type ReportType, type OutgoingAttachment } from "@/types/feedback";
@@ -66,7 +65,6 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   feedbackType = Report.BUG,
 }) => {
   const { t } = useTranslation();
-  const { isRTL } = useRTL();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
@@ -258,23 +256,13 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
             {t("settings.shareLogs.hint")}
           </Text>
 
-          <BottomSheetTextInput
+          <SheetInput
+            variant="boxed"
             value={description}
             onChangeText={setDescription}
             placeholder={t("settings.shareLogs.describe")}
-            placeholderTextColor={theme.typographySecondary?.val}
             multiline
-            style={{
-              minHeight: 88,
-              borderWidth: 1,
-              borderColor: theme.outline?.val,
-              borderRadius: 12,
-              padding: 12,
-              textAlignVertical: "top",
-              textAlign: isRTL ? "right" : "left",
-              color: theme.typography?.val,
-              fontSize: 15,
-            }}
+            style={{ borderColor: theme.outline?.val, fontSize: 15 }}
           />
 
           <Pressable
