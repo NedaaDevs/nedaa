@@ -14,7 +14,7 @@ import { useTheme } from "tamagui";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import IhramMale from "@/components/umrah/illustrations/IhramMale";
 import IhramFemale from "@/components/umrah/illustrations/IhramFemale";
-import NumberBadge from "@/components/umrah/illustrations/NumberBadge";
+import { NumberBadge } from "@/components/ui/number-badge";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 import type { Gender } from "@/types/umrah";

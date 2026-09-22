@@ -10,7 +10,7 @@ type Props = {
   y?: number;
 };
 
-const NumberBadge = ({ n, color, bg, size = 20, x, y }: Props) => {
+export const NumberBadge = ({ n, color, bg, size = 20, x, y }: Props) => {
   const isAbsolute = x !== undefined && y !== undefined;
   const fontSize = Math.round(size * 0.55);
   const borderWidth = size >= 24 ? 1.5 : 1.5;
@@ -38,5 +38,3 @@ const NumberBadge = ({ n, color, bg, size = 20, x, y }: Props) => {
     </RNText>
   );
 };
-
-export default NumberBadge;
