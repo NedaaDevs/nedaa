@@ -49,7 +49,7 @@ WIDGET
 • Sedia untuk Ramadan: widget Sahur dan Berbuka
 
 MENGUTAMAKAN PRIVASI DARI ASASNYA
-• Lokasi berketepatan rendah, digunakan hanya untuk mengira waktu solat — kekal pada peranti
+• Lokasi berketepatan rendah, kami hantar hanya untuk mendapatkan waktu solat — tiada akaun, tiada ID peranti, tiada apa-apa yang mengenal pasti anda
 • Tiada ID pengiklanan, tiada graf pemasangan, tiada akses kenalan, tiada profil merentas peranti
 • Sumber terbuka — audit cara data anda dikendalikan di github.com/NedaaDevs/nedaa
 • Ketelusan sumber: Projek Tanzil (teks al-Quran, CC-BY 3.0), Hisnul Muslim (azkar), Aladhan (waktu solat) — semuanya dikreditkan dalam aplikasi
