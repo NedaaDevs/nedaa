@@ -431,6 +431,13 @@ const animations = createAnimations({
     type: "timing",
     duration: 280,
   },
+  // Durations only. The config is loaded in Node at build time, so it must not
+  // import react-native; an easing curve has to come from the call site.
+  quick: { type: "timing", duration: 160 },
+  settle: { type: "timing", duration: 220 },
+  gentle: { type: "timing", duration: 280 },
+  // The sky crossfades across a prayer phase change.
+  sky: { type: "timing", duration: 720 },
 });
 
 const config = createTamagui({
