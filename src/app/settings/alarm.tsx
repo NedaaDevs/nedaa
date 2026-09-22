@@ -473,6 +473,7 @@ const AlarmSettings = () => {
     <Background>
       <ScreenHeader
         title={t("alarm.settings.title")}
+        subtitle={t("alarm.settings.description")}
         back={{ fallback: BACK_DESTINATION.SETTINGS }}
       />
 
@@ -480,12 +481,6 @@ const AlarmSettings = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1}>
-          <Box marginHorizontal="$4" marginTop="$4" marginBottom="$2">
-            <Text size="sm" color="$typographySecondary">
-              {t("alarm.settings.description")}
-            </Text>
-          </Box>
-
           <VStack marginHorizontal="$2">
             {alarmTypes.map((alarm, index) => (
               <Box key={alarm.type}>
