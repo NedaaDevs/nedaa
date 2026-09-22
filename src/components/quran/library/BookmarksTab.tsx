@@ -72,7 +72,7 @@ export const BookmarksTab = ({ onNavigate }: { onNavigate: (page: number) => voi
               <XStack flex={1} alignItems="center" gap="$2">
                 <Input
                   flex={1}
-                  size="$4"
+                  size="md"
                   height={48}
                   fontSize={16}
                   value={draft}
