@@ -41,7 +41,7 @@ const BadgeFrame = styled(XStack, {
   name: "Badge",
   context: BadgeContext,
   alignItems: "center",
-  borderRadius: "$1",
+  borderRadius: "$chip",
 
   variants: {
     action: {
@@ -71,9 +71,9 @@ const BadgeFrame = styled(XStack, {
       outline: { borderWidth: 1 },
     },
     size: {
-      sm: { paddingHorizontal: "$1", paddingVertical: 2 },
-      md: { paddingHorizontal: "$2", paddingVertical: "$1" },
-      lg: { paddingHorizontal: "$3", paddingVertical: "$1" },
+      sm: { paddingHorizontal: "$tight", paddingVertical: "$0.5" },
+      md: { paddingHorizontal: "$inline", paddingVertical: "$tight" },
+      lg: { paddingHorizontal: "$stack", paddingVertical: "$tight" },
     },
   } as const,
 
@@ -92,7 +92,7 @@ const BadgeTextFrame = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "400",
   textTransform: "uppercase",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: "$tight" }),
 
   variants: {
     action: {
