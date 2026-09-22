@@ -46,6 +46,14 @@ describe("theme keys", () => {
     expect(collisions).toEqual([]);
   });
 
+  // A repeated key silently wins on the later line, so the earlier value vanishes.
+  it.each(THEMES)("%s declares each key once", (theme) => {
+    const seen = new Set<string>();
+    const repeated = themeKeys(theme).filter((key) => !seen.add(key));
+
+    expect(repeated).toEqual([]);
+  });
+
   // `size` and `space` resolve by the same lookup, so a theme key named for one
   // of their steps would answer a width or a padding.
   it.each(THEMES)("%s shares no name with a size or space step", (theme) => {
