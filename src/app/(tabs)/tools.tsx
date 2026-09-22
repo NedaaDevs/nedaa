@@ -23,7 +23,7 @@ import {
   ChevronLeft,
 } from "lucide-react-native";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
-import ProgressRing from "@/components/umrah/ProgressRing";
+import { Ring } from "@/components/ui/ring";
 
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
@@ -164,7 +164,7 @@ export default function ToolsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`${t("tools.umrahGuide.title")}, ${continueLabel}`}
                 accessibilityHint={t("a11y.tools.continueHint")}>
-                <ProgressRing progress={umrahProgress} size="md" />
+                <Ring progress={umrahProgress} size="md" />
                 <VStack flex={1} gap="$0.5">
                   <Text size="md" fontWeight="600" color="$typography">
                     {t("tools.umrahGuide.title")}
