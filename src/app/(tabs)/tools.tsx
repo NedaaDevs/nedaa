@@ -9,7 +9,7 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import {
   AlarmClock,
@@ -149,7 +149,7 @@ export default function ToolsScreen() {
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}>
-        <TopBar title="tools.title" />
+        <ScreenHeader title="tools.title" />
 
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$5">
           {/* Continue — present only while a journey is in progress. */}

@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Components
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { SwipeableEntry } from "@/components/Qada/SwipeableEntry";
 import { Text } from "@/components/ui/text";
 import { Card } from "@/components/ui/card";
@@ -208,7 +208,7 @@ const QadaScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Box position="relative">
-        <TopBar title="qada.title" href="/(tabs)/tools" backOnClick preferHref />
+        <ScreenHeader title="qada.title" href="/(tabs)/tools" backOnClick preferHref />
         {/* Settings Icon Overlay */}
         <Pressable
           onPress={() => {
