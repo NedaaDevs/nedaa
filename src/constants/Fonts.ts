@@ -26,3 +26,6 @@ export const FONT_MAPPINGS: Record<AppLocale, FaceSet> = {
 };
 
 export const DEFAULT_FACES = LATIN_SCRIPT;
+
+export const isArabicScript = (locale: AppLocale): boolean =>
+  FONT_MAPPINGS[locale] === ARABIC_SCRIPT;
