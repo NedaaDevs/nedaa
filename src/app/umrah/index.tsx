@@ -13,7 +13,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import JourneyTimeline from "@/components/umrah/JourneyTimeline";
 
 import {
@@ -92,7 +92,7 @@ export default function UmrahOverviewScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.title" backOnClick />
+      <ScreenHeader title="umrah.title" backOnClick />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: activeProgress ? 80 : 100 }}>
         <VStack paddingHorizontal="$4" paddingTop="$4" gap="$2">
