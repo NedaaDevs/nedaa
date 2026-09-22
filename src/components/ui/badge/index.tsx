@@ -9,6 +9,7 @@ import {
   useTheme,
 } from "tamagui";
 import type { GetProps } from "tamagui";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { useTextScale } from "@/hooks/useTextScale";
 
@@ -20,10 +21,10 @@ const BadgeContext = createStyledContext({
   size: "md" as BadgeSize,
 });
 
-const ICON_SIZE: Record<BadgeSize, number> = {
-  sm: 12,
-  md: 14,
-  lg: 16,
+const ICON_SIZE: Record<BadgeSize, IconSize> = {
+  sm: "2xs",
+  md: "xs",
+  lg: "sm",
 };
 
 const ACTION_THEME_KEY: Record<BadgeAction, string> = {
@@ -145,7 +146,7 @@ const BadgeIcon: React.FC<BadgeIconProps> = ({ as: IconComponent, size: sizeProp
   const resolvedColor =
     (theme as Record<string, { val: string }>)[key]?.val ?? theme.typography.val;
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
 };
 BadgeIcon.displayName = "BadgeIcon";
 

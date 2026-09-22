@@ -32,14 +32,18 @@ const ProgressFrame = styled(View, {
 type ProgressFrameProps = GetProps<typeof ProgressFrame> & {
   value?: number;
   size?: ProgressSize;
+  min?: number;
+  max?: number;
 };
 
 const Progress = ProgressFrame.styleable<{
   value?: number;
   size?: ProgressSize;
+  min?: number;
+  max?: number;
 }>((props, ref) => {
-  const { value = 0, size = "md", children, ...rest } = props;
-  const clampedValue = Math.max(0, Math.min(100, value));
+  const { value = 0, size = "md", min = 0, max = 100, children, ...rest } = props;
+  const clampedValue = Math.max(min, Math.min(max, value));
 
   return (
     <ProgressContext.Provider progress={clampedValue} size={size}>
@@ -47,7 +51,7 @@ const Progress = ProgressFrame.styleable<{
         ref={ref}
         height={SIZE_HEIGHT[size]}
         role="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: clampedValue }}
+        accessibilityValue={{ min, max, now: clampedValue }}
         {...rest}>
         {children}
       </ProgressFrame>

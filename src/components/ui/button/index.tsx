@@ -1,5 +1,6 @@
 import React from "react";
 import { ActivityIndicator, Platform } from "react-native";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { buttonLabelFontSize } from "@/components/ui/button/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
@@ -25,12 +26,12 @@ const ButtonContext = createStyledContext({
   action: "primary" as ButtonAction,
 });
 
-const ICON_SIZE: Record<ButtonSize, number> = {
-  xs: 14,
-  sm: 16,
-  md: 18,
-  lg: 18,
-  xl: 20,
+const ICON_SIZE: Record<ButtonSize, IconSize> = {
+  xs: "xs",
+  sm: "sm",
+  md: "md",
+  lg: "md",
+  xl: "lg",
 };
 
 const ACTION_THEME_KEY: Record<ButtonAction, string> = {
@@ -196,7 +197,7 @@ const ButtonIcon: React.FC<ButtonIconProps> = ({
     resolvedColor = (theme as Record<string, { val: string }>)[key]?.val ?? theme.primary.val;
   }
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
 };
 ButtonIcon.displayName = "ButtonIcon";
 
