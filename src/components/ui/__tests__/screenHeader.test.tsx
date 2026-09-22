@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { Text } from "react-native";
 import { Settings } from "lucide-react-native";
 import { router, Stack, Tabs, usePathname } from "expo-router";
-import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import { act, fireEvent, renderRouter, screen, within } from "expo-router/testing-library";
 import { TamaguiProvider } from "tamagui";
 
 import config from "../../../../tamagui.config";
@@ -24,6 +24,7 @@ jest.mock("expo-sqlite/kv-store", () => ({
 
 const TITLE = "Alarm settings";
 const ACTION_LABEL = "Open alarm settings";
+const SUBTITLE = "Sounds, challenges and snooze";
 /** A screen no back control can name. */
 const UNNAMED_ROUTE = "settings/alarm-debug";
 
@@ -159,22 +160,74 @@ describe("ScreenHeader", () => {
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it.each([false, true])("reads back, title, action (rtl: %s)", async (isRTL) => {
+    // Stacked sets the controls on one row above the title; the bar puts the title between them.
+    it.each([
+      { variant: "stacked", rtl: false, order: [backTo("SETTINGS"), ACTION_LABEL, TITLE] },
+      { variant: "stacked", rtl: true, order: [backTo("SETTINGS"), ACTION_LABEL, TITLE] },
+      { variant: "bar", rtl: false, order: [backTo("SETTINGS"), TITLE, ACTION_LABEL] },
+      { variant: "bar", rtl: true, order: [backTo("SETTINGS"), TITLE, ACTION_LABEL] },
+    ] as const)("$variant reads in visual order (rtl: $rtl)", async ({ variant, rtl, order }) => {
       await renderApp(
         <ScreenHeader
           title={TITLE}
+          variant={variant}
           back={{ fallback: BACK_DESTINATION.SETTINGS }}
           action={{ icon: Settings, label: ACTION_LABEL, onPress: () => {} }}
         />,
         BACK_DESTINATION.SETTINGS_ALARM.href,
-        isRTL
+        rtl
       );
 
-      const order = screen
+      const names = screen
         .getAllByRole(/button|header/)
         .map((node) => node.props.accessibilityLabel ?? node.props.children);
 
-      expect(order).toEqual([backTo("SETTINGS"), TITLE, ACTION_LABEL]);
+      expect(names).toEqual(order);
+    });
+  });
+
+  describe("stacked", () => {
+    it("shows the destination's name beside the chevron", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(
+        within(screen.getByRole("button", { name: backTo("TOOLS") })).getByText(
+          i18n.t(BACK_DESTINATION.TOOLS.title)
+        )
+      ).toBeOnTheScreen();
+    });
+
+    it("shows only the chevron when the destination has no name", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(`/${UNNAMED_ROUTE}`);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(
+        within(screen.getByRole("button", { name: i18n.t("a11y.back") })).queryByText(/./)
+      ).toBeNull();
+    });
+
+    it("sets the subtitle under the title", async () => {
+      await renderApp(
+        <ScreenHeader title={TITLE} subtitle={SUBTITLE} />,
+        BACK_DESTINATION.SETTINGS_ALARM.href
+      );
+
+      expect(screen.getByText(SUBTITLE)).toBeOnTheScreen();
+    });
+  });
+
+  describe("bar", () => {
+    it("names the destination only to the screen reader", async () => {
+      await renderApp(<ScreenHeader title={TITLE} variant="bar" back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(
+        within(screen.getByRole("button", { name: backTo("TOOLS") })).queryByText(/./)
+      ).toBeNull();
     });
   });
 });
