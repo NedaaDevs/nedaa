@@ -63,6 +63,8 @@ const CardFrame = styled(YStack, {
 const CardPressableFrame = styled(CardFrame, {
   name: "CardPressable",
   role: "button",
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
   minHeight: "$target",
   minWidth: "$target",
   pressStyle: {
