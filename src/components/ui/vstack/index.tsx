@@ -1,4 +1,8 @@
-import { YStack } from "tamagui";
+import { styled, YStack, type GetProps } from "tamagui";
 
-export const VStack = YStack;
-VStack.displayName = "VStack";
+/** A column. Its own frame, so a lint rule can tell it from raw YStack. */
+export const VStack = styled(YStack, {
+  name: "VStack",
+});
+
+export type VStackProps = GetProps<typeof VStack>;
