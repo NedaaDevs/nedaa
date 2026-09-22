@@ -159,7 +159,7 @@ export default function AlarmCompleteScreen() {
                       lineHeight={34}
                       textAlign="center"
                       color="$typography"
-                      style={{ fontFamily: "IBMPlexSans-Regular" }}>
+                      style={{ fontFamily: "IBMPlexSansArabic-Regular" }}>
                       {MORNING_DHIKR_AR}
                     </Text>
                     <Text
