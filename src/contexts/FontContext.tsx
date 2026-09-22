@@ -6,28 +6,10 @@ import { AppLocale } from "@/enums/app";
 // Stores
 import { useAppStore } from "@/stores/app";
 
-export type FontWeight = "regular" | "medium" | "semibold" | "bold";
+// Constants
+import { DEFAULT_FACES, FONT_MAPPINGS, type FontWeight } from "@/constants/Fonts";
 
-export const FONT_MAPPINGS = {
-  [AppLocale.AR]: {
-    regular: "IBMPlexSans-Regular",
-    medium: "IBMPlexSans-Medium",
-    semibold: "IBMPlexSans-SemiBold",
-    bold: "IBMPlexSans-Bold",
-  },
-  [AppLocale.EN]: {
-    regular: "Asap-Regular",
-    medium: "Asap-Medium",
-    semibold: "Asap-SemiBold",
-    bold: "Asap-Bold",
-  },
-  [AppLocale.MS]: {
-    regular: "Asap-Regular",
-    medium: "Asap-Medium",
-    semibold: "Asap-SemiBold",
-    bold: "Asap-Bold",
-  },
-};
+export type { FontWeight };
 
 interface FontContextType {
   fontFamily: Record<FontWeight, string>;
@@ -38,7 +20,7 @@ interface FontContextType {
 const FontContext = createContext<FontContextType>({
   fontFamily: FONT_MAPPINGS[AppLocale.EN],
   locale: AppLocale.EN,
-  getFontFamily: () => "Asap-Regular",
+  getFontFamily: () => DEFAULT_FACES.regular,
 });
 
 interface FontProviderProps {

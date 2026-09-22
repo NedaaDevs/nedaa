@@ -10,7 +10,7 @@
 		0479CE96E4A47ECBDB66E316 /* OpenNedaaAlarmIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5C32969FBFD662649E72631 /* OpenNedaaAlarmIntent.swift */; };
 		0E19C01AB3F13A692D593841 /* iOS-Radar.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		2086DF27F7974C99BB880496 /* Asap_700Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */; };
+		2086DF27F7974C99BB880496 /* IBMPlexSans_700Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FEAC1A7FAC0043FAA2148177 /* IBMPlexSans_700Bold.ttf */; };
 		276EF93FB225DA4D8E9A7F64 /* iOS-Ascending.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */; };
 		2945C6B468CB29381C4409A0 /* iOS-Presto.m4a in Resources */ = {isa = PBXBuildFile; fileRef = E56D427AB1225CD998955D09 /* iOS-Presto.m4a */; };
 		2CDC19E4F827976145FBF4CC /* iOS-Marimba.m4a in Resources */ = {isa = PBXBuildFile; fileRef = E9E0DBBAFE7CA6669D0B5A77 /* iOS-Marimba.m4a */; };
@@ -44,19 +44,19 @@
 		6C8CBC5F3FB2B770F4FCACFC /* iOS-Beacon.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CB31401727F611561E0B3393 /* iOS-Beacon.m4a */; };
 		7272C8E9A006736ADF518FD2 /* iOS-Alarm.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */; };
 		740242B0A19C4804A06D2674 /* IBMPlexSansArabic_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F3087B62D4D4E6293EBFAB8 /* IBMPlexSansArabic_400Regular.ttf */; };
-		782C1853BC45468A9E97557A /* Asap_600SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 07DD26D53B684119BBB6CDA6 /* Asap_600SemiBold.ttf */; };
+		782C1853BC45468A9E97557A /* IBMPlexSans_600SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 07DD26D53B684119BBB6CDA6 /* IBMPlexSans_600SemiBold.ttf */; };
 		7B9EFBE5E5F14916BD6BE5CF /* IBMPlexSansArabic_600SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D8229BED42F148008205B852 /* IBMPlexSansArabic_600SemiBold.ttf */; };
 		B176DA807A9849918BDCFBF5 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = C781E4824C17489FA7470F90 /* Settings.bundle */; };
 		B9BCF485FE7430CECA3FC17F /* iOS-Daybreak-EncoreInfinitum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		C8DD410D3DFF5769BF95E8D0 /* iOS-Chimes.m4a in Resources */ = {isa = PBXBuildFile; fileRef = BAE97368DE2A3D14571CBC08 /* iOS-Chimes.m4a */; };
-		CBABBC2891E740E0B0A511D2 /* Asap_500Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8F365AD51C0F4E16A97E648A /* Asap_500Medium.ttf */; };
+		CBABBC2891E740E0B0A511D2 /* IBMPlexSans_500Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8F365AD51C0F4E16A97E648A /* IBMPlexSans_500Medium.ttf */; };
 		DEAE4D9EFC16322A17A3F48F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E535398133B6C0CA3A79FCE0 /* ExpoModulesProvider.swift */; };
 		E25F4CE3BFAF846FC2ED802D /* iOS-Reflection-EncoreInfinitum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = BCB97B8A56A196557E78B2DB /* iOS-Reflection-EncoreInfinitum.m4a */; };
 		E520209B8F5242DABE076868 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DA08ED9376A040CA976C4F84 /* PrivacyInfo.xcprivacy */; };
 		E9270E2508E0EFBAA7698D3D /* iOS-Stargaze.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F34F4E30F2694C3280179AC2 /* Asap_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */; };
+		F34F4E30F2694C3280179AC2 /* IBMPlexSans_400Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 35D4F51711EE49C4A501E8AF /* IBMPlexSans_400Regular.ttf */; };
 		F613F027BF5FAFD6C3F9DFAD /* iOS-Signal.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 3AB57CC41D2290378087A3EA /* iOS-Signal.m4a */; };
 /* End PBXBuildFile section */
 
@@ -86,7 +86,7 @@
 
 /* Begin PBXFileReference section */
 		04797457B600BFEFF20872D3 /* iOS-Alarm.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Alarm.m4a"; sourceTree = "<group>"; };
-		07DD26D53B684119BBB6CDA6 /* Asap_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/asap/600SemiBold/Asap_600SemiBold.ttf"; sourceTree = "<group>"; };
+		07DD26D53B684119BBB6CDA6 /* IBMPlexSans_600SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSans_600SemiBold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans/600SemiBold/IBMPlexSans_600SemiBold.ttf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* nedaa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nedaa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = nedaa/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = nedaa/Info.plist; sourceTree = "<group>"; };
@@ -104,7 +104,7 @@
 		35C11B362E03326600EC4249 /* knock.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = knock.caf; sourceTree = "<group>"; };
 		35C11B372E03326600EC4249 /* medina_athan.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = medina_athan.caf; sourceTree = "<group>"; };
 		35C11B382E03326600EC4249 /* takbir.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = takbir.caf; sourceTree = "<group>"; };
-		35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_400Regular.ttf; path = "../node_modules/@expo-google-fonts/asap/400Regular/Asap_400Regular.ttf"; sourceTree = "<group>"; };
+		35D4F51711EE49C4A501E8AF /* IBMPlexSans_400Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSans_400Regular.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans/400Regular/IBMPlexSans_400Regular.ttf"; sourceTree = "<group>"; };
 		35DE52832E2591EB00FAF71E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		35F778B42E05B032009C55CF /* NedaaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NedaaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		35F778B52E05B032009C55CF /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -118,7 +118,7 @@
 		4F965BC8BA398FA918782408 /* iOS-Sencha.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Sencha.m4a"; sourceTree = "<group>"; };
 		7A09DB6A61F847A8F05878BE /* iOS-Stargaze.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Stargaze.m4a"; sourceTree = "<group>"; };
 		7FEA9357ECA69F397F59F024 /* iOS-Radial-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Radial-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
-		8F365AD51C0F4E16A97E648A /* Asap_500Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_500Medium.ttf; path = "../node_modules/@expo-google-fonts/asap/500Medium/Asap_500Medium.ttf"; sourceTree = "<group>"; };
+		8F365AD51C0F4E16A97E648A /* IBMPlexSans_500Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSans_500Medium.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans/500Medium/IBMPlexSans_500Medium.ttf"; sourceTree = "<group>"; };
 		91E34239ACEE55C0A86C2022 /* iOS-Radar.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Radar.m4a"; sourceTree = "<group>"; };
 		A1FD51ECE3939C235F869824 /* iOS-Ascending.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Ascending.m4a"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = nedaa/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -139,7 +139,7 @@
 		F5C32969FBFD662649E72631 /* OpenNedaaAlarmIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = nedaa/OpenNedaaAlarmIntent.swift; sourceTree = "<group>"; };
 		F88D710F7E37760508B8F741 /* iOS-Daybreak-EncoreInfinitum.m4a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "iOS-Daybreak-EncoreInfinitum.m4a"; sourceTree = "<group>"; };
 		FDE52688DF5F5110C0D947CA /* Pods-nedaa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nedaa.debug.xcconfig"; path = "Target Support Files/Pods-nedaa/Pods-nedaa.debug.xcconfig"; sourceTree = "<group>"; };
-		FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Asap_700Bold.ttf; path = "../node_modules/@expo-google-fonts/asap/700Bold/Asap_700Bold.ttf"; sourceTree = "<group>"; };
+		FEAC1A7FAC0043FAA2148177 /* IBMPlexSans_700Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = IBMPlexSans_700Bold.ttf; path = "../node_modules/@expo-google-fonts/ibm-plex-sans/700Bold/IBMPlexSans_700Bold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -313,10 +313,10 @@
 				462CD69125344516968C89B4 /* IBMPlexSansArabic_500Medium.ttf */,
 				D8229BED42F148008205B852 /* IBMPlexSansArabic_600SemiBold.ttf */,
 				C7947A41E2F14420B203A5EB /* IBMPlexSansArabic_700Bold.ttf */,
-				35D4F51711EE49C4A501E8AF /* Asap_400Regular.ttf */,
-				8F365AD51C0F4E16A97E648A /* Asap_500Medium.ttf */,
-				07DD26D53B684119BBB6CDA6 /* Asap_600SemiBold.ttf */,
-				FEAC1A7FAC0043FAA2148177 /* Asap_700Bold.ttf */,
+				35D4F51711EE49C4A501E8AF /* IBMPlexSans_400Regular.ttf */,
+				8F365AD51C0F4E16A97E648A /* IBMPlexSans_500Medium.ttf */,
+				07DD26D53B684119BBB6CDA6 /* IBMPlexSans_600SemiBold.ttf */,
+				FEAC1A7FAC0043FAA2148177 /* IBMPlexSans_700Bold.ttf */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -464,10 +464,10 @@
 				5198B9A4B37C4A60856C40A4 /* IBMPlexSansArabic_500Medium.ttf in Resources */,
 				7B9EFBE5E5F14916BD6BE5CF /* IBMPlexSansArabic_600SemiBold.ttf in Resources */,
 				6C3C3CADEC77474799B1D706 /* IBMPlexSansArabic_700Bold.ttf in Resources */,
-				F34F4E30F2694C3280179AC2 /* Asap_400Regular.ttf in Resources */,
-				CBABBC2891E740E0B0A511D2 /* Asap_500Medium.ttf in Resources */,
-				782C1853BC45468A9E97557A /* Asap_600SemiBold.ttf in Resources */,
-				2086DF27F7974C99BB880496 /* Asap_700Bold.ttf in Resources */,
+				F34F4E30F2694C3280179AC2 /* IBMPlexSans_400Regular.ttf in Resources */,
+				CBABBC2891E740E0B0A511D2 /* IBMPlexSans_500Medium.ttf in Resources */,
+				782C1853BC45468A9E97557A /* IBMPlexSans_600SemiBold.ttf in Resources */,
+				2086DF27F7974C99BB880496 /* IBMPlexSans_700Bold.ttf in Resources */,
 				B176DA807A9849918BDCFBF5 /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
