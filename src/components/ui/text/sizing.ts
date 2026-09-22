@@ -30,6 +30,24 @@ export const SIZE_MAP: Record<string, string> = {
   "5xl": "$9",
 };
 
+/**
+ * Line box as a ratio of the font size. Arabic is cursive and carries diacritics,
+ * so 1.3 is the floor for display text and body wants 1.5 or looser. The size
+ * table runs as tight as 1.0 at $10, which clips those marks.
+ */
+export const ROLE_RATIO = {
+  display: 1.3,
+  title: 1.4,
+  helper: 1.5,
+  body: 1.6,
+} as const;
+
+export type TextRole = keyof typeof ROLE_RATIO;
+
+/** Undefined when no role is set, so the size table keeps its own line box. */
+export const roleLineHeight = (role: TextRole | undefined, fontSize: number): number | undefined =>
+  role == null ? undefined : Math.round(fontSize * ROLE_RATIO[role]);
+
 export const resolveFontSize = (value: unknown): number | undefined => {
   if (value == null) return undefined;
   if (typeof value === "number") return value;
