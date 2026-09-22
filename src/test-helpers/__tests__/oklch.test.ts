@@ -72,4 +72,21 @@ describe("mixOklch", () => {
   it("stays opaque when both sides are", () => {
     expect(mixOklch("#071C3B", "#BB7588", 18)).toMatch(/^#[0-9A-F]{6}$/);
   });
+
+  // CSS Color 5 worked example: color-mix(in oklch, red, blue) is
+  // oklch(0.5400 0.2855 326.65). Interpolating in rectangular OKLab instead
+  // passes near the grey axis and lands on a duller, different hue.
+  it("matches the spec example for red and blue", () => {
+    expect(mixOklch("#FF0000", "#0000FF", 50)).toBe(oklchToHex("oklch(54% 0.2855 326.65)"));
+  });
+
+  // Hue takes the shortest arc. Mixing 350 and 10 lands near 0 (red); the long way
+  // round would pass through 180 (cyan).
+  it("arcs the short way across the 0 degree boundary", () => {
+    const mixed = mixOklch(oklchToHex("oklch(60% 0.15 350)"), oklchToHex("oklch(60% 0.15 10)"), 50);
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(mixed.slice(i, i + 2), 16));
+
+    expect(r).toBeGreaterThan(g);
+    expect(r).toBeGreaterThan(b);
+  });
 });
