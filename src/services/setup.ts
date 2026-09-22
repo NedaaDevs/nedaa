@@ -31,6 +31,10 @@ export const appSetup = async (
   prayerStore: PrayerTimesStore,
   notificationStore: NotificationStore
 ) => {
+  // Outside the try: a launch that fails still needs a resume path, and this is
+  // the only one. Synchronous, and it awaits alarm hydration itself.
+  registerForegroundReschedule();
+
   try {
     const { loadPrayerTimes } = prayerStore;
 
@@ -64,7 +68,6 @@ export const appSetup = async (
 
     await BackgroundTaskLog.initialize();
     await registerBackgroundRefresh();
-    registerForegroundReschedule();
 
     // Register DB cleanup tasks for graceful shutdown
     cleanupManager.register("umrah-db-flush", () => UmrahDB.flush(), 10);
