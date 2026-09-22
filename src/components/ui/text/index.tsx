@@ -2,7 +2,14 @@ import React from "react";
 import { Platform } from "react-native";
 import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
 import { AppLocale, PlatformType } from "@/enums/app";
-import { FONT_SIZES, SIZE_MAP, resolveTextSizing } from "@/components/ui/text/sizing";
+import {
+  FONT_SIZES,
+  SIZE_MAP,
+  resolveFontSize,
+  resolveTextSizing,
+  roleLineHeight,
+  type TextRole,
+} from "@/components/ui/text/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
 import i18n from "@/localization/i18n";
 
@@ -35,6 +42,8 @@ type TextProps = TamaguiTextProps & {
   size?: TextSize;
   /** Tabular figures, so digits keep a fixed advance width in aligned columns. */
   numeric?: boolean;
+  /** Line box as a ratio of the font size. Not `role`, which is accessibility. */
+  typography?: TextRole;
   /** Fixed multiplier for this instance, replacing the app preset (previews, share captures). */
   scaleOverride?: number;
 };
@@ -57,6 +66,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       fontWeight,
       fontSize,
       lineHeight,
+      typography,
       isTruncated,
       underline,
       strikeThrough,
@@ -78,7 +88,10 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
     const resolvedWeight = resolveFontWeight(bold, fontWeight);
     const tokenKey = SIZE_MAP[size] ?? "$3";
     const sizeValues = FONT_SIZES[tokenKey] ?? FONT_SIZES["$3"];
-    const sized = resolveTextSizing(m, fontSize, sizeValues, lineHeight);
+    // A role states the line box as a ratio, so it reaches the same path an
+    // explicit lineHeight does. An explicit value still wins.
+    const roleBox = roleLineHeight(typography, resolveFontSize(fontSize) ?? sizeValues.fontSize);
+    const sized = resolveTextSizing(m, fontSize, sizeValues, lineHeight ?? roleBox);
 
     return (
       <TamaguiText

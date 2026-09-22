@@ -1,4 +1,9 @@
-import { resolveTextSizing } from "@/components/ui/text/sizing";
+import {
+  FONT_SIZES,
+  ROLE_RATIO,
+  resolveTextSizing,
+  roleLineHeight,
+} from "@/components/ui/text/sizing";
 import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
 import { TextSize } from "@/enums/app";
 
@@ -67,5 +72,27 @@ describe("explicit lineHeight", () => {
 
   test("an unresolvable line box falls back to the size table", () => {
     expect(resolveTextSizing(1, undefined, MD, "$99")).toEqual({ fontSize: 14, lineHeight: 20 });
+  });
+});
+
+describe("typographic roles", () => {
+  test("each role states a ratio that clears the Arabic floor", () => {
+    for (const ratio of Object.values(ROLE_RATIO)) {
+      expect(ratio).toBeGreaterThanOrEqual(1.3);
+    }
+  });
+
+  test("a role derives the line box from the font size", () => {
+    expect(roleLineHeight("display", 48)).toBe(62);
+    expect(roleLineHeight("body", 16)).toBe(26);
+  });
+
+  // The display sizes run as tight as 1.0, which clips Arabic diacritics.
+  test("display opens up the line box the size table leaves flat", () => {
+    expect(roleLineHeight("display", 48)).toBeGreaterThan(FONT_SIZES.$10.lineHeight);
+  });
+
+  test("no role leaves the size table alone", () => {
+    expect(roleLineHeight(undefined, 48)).toBeUndefined();
   });
 });
