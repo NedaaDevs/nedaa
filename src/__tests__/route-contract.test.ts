@@ -1,5 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+
+import { readRoutes, walkFiles, REPO_ROOT } from "@/test-helpers/routeTree";
 
 /**
  * Pins the deep-link contract between the native layers and the Expo Router tree.
@@ -13,24 +15,10 @@ import { join, relative, sep } from "node:path";
  * instead of on a device.
  */
 
-const REPO_ROOT = join(__dirname, "..", "..");
-const ROUTES_DIR = join(REPO_ROOT, "src", "app");
-
 /** Native trees that hold hardcoded link literals. */
 const NATIVE_ROOTS = ["ios", "android", "modules"];
 
 const NATIVE_SOURCE_FILE = /\.(swift|kt|java|m|mm|h)$/;
-
-/** Generated, vendored or derived trees. Their contents are not the contract. */
-const SKIPPED_DIRECTORIES = new Set([
-  "build",
-  "Pods",
-  "node_modules",
-  ".gradle",
-  ".cxx",
-  "DerivedData",
-  "xcuserdata",
-]);
 
 /**
  * Transport and platform schemes. They address the network, a bundled resource or
@@ -75,19 +63,6 @@ type NativeLink = {
   raw: string;
 };
 
-const escapeForRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const walkFiles = (directory: string): string[] => {
-  const entries = readdirSync(directory, { withFileTypes: true });
-  return entries.flatMap((entry) => {
-    const full = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return SKIPPED_DIRECTORIES.has(entry.name) ? [] : walkFiles(full);
-    }
-    return entry.isFile() ? [full] : [];
-  });
-};
-
 /** Matches `scheme://rest` and stops at the closing quote or whitespace. */
 const LINK_LITERAL = /([A-Za-z][A-Za-z0-9+.-]*):\/\/[^"'\s`]*/g;
 
@@ -107,58 +82,6 @@ const readNativeLinks = (): NativeLink[] =>
           }));
       })
   );
-
-const ROUTE_FILE = /\.(tsx|ts|jsx|js)$/;
-
-/**
- * Expo Router treats a file as a route unless it is a layout (`_layout`), a
- * framework file (`+not-found`, `+html`, `+native-intent`) or a type declaration.
- * A link that only lands on `+not-found` is a broken link, so those are excluded.
- */
-const isRouteFile = (name: string) =>
-  ROUTE_FILE.test(name) &&
-  !name.endsWith(".d.ts") &&
-  !/\.(test|spec)\.[jt]sx?$/.test(name) &&
-  !name.startsWith("_") &&
-  !name.startsWith("+");
-
-/**
- * File-tree to URL rules: route groups `(tabs)` are absent from the URL, a trailing
- * `index` segment collapses onto its parent, and the extension is dropped.
- */
-const toRoutePath = (relativeFile: string) => {
-  const segments = relativeFile
-    .split(sep)
-    .join("/")
-    .replace(ROUTE_FILE, "")
-    .split("/")
-    .filter((segment) => !/^\(.*\)$/.test(segment));
-  if (segments[segments.length - 1] === "index") segments.pop();
-  return `/${segments.join("/")}`.replace(/\/$/, "") || "/";
-};
-
-/** `[id]` matches one segment, `[...rest]` matches the remainder. */
-const toRouteMatcher = (routePath: string) =>
-  new RegExp(
-    `^${routePath
-      .split("/")
-      .map((segment) => {
-        if (/^\[\.\.\..+\]$/.test(segment)) return ".*";
-        if (/^\[.+\]$/.test(segment)) return "[^/]+";
-        return escapeForRegExp(segment);
-      })
-      .join("/")}$`
-  );
-
-const readRoutes = () =>
-  walkFiles(ROUTES_DIR)
-    .filter((path) => isRouteFile(path.split(sep)[path.split(sep).length - 1]))
-    .filter((path) => !path.split(sep).includes("__tests__"))
-    .map((path) => {
-      const file = relative(REPO_ROOT, path).split(sep).join("/");
-      const routePath = toRoutePath(relative(ROUTES_DIR, path));
-      return { file, routePath, matcher: toRouteMatcher(routePath) };
-    });
 
 /**
  * A custom scheme has no authority component that Expo Router cares about: the
