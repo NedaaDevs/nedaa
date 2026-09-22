@@ -82,3 +82,54 @@ export const oklchToHex = (input: string): string => {
   const rgb = gamutMap(colour).map(encodeGamma).map(toByte).join("");
   return alpha >= 1 ? `#${rgb}` : `#${rgb}${toByte(alpha)}`;
 };
+
+type Oklab = { L: number; a: number; b: number; alpha: number };
+
+const decodeGamma = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+
+const hexToOklab = (hex: string): Oklab => {
+  const at = (i: number) => decodeGamma(parseInt(hex.slice(i, i + 2), 16) / 255);
+  const [r, g, b] = [at(1), at(3), at(5)];
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return {
+    L: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    a: 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    b: 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+    alpha: hex.length > 7 ? parseInt(hex.slice(7, 9), 16) / 255 : 1,
+  };
+};
+
+const oklabToLinearSrgb = ({ L, a, b }: Oklab): [number, number, number] => {
+  const lms = [
+    L + 0.3963377774 * a + 0.2158037573 * b,
+    L - 0.1055613458 * a - 0.0638541728 * b,
+    L - 0.0894841775 * a - 1.291485548 * b,
+  ].map((v) => v ** 3) as [number, number, number];
+  return [
+    4.0767416621 * lms[0] - 3.3077115913 * lms[1] + 0.2309699292 * lms[2],
+    -1.2684380046 * lms[0] + 2.6097574011 * lms[1] - 0.3413193965 * lms[2],
+    -0.0041960863 * lms[0] - 0.7034186147 * lms[1] + 1.707614701 * lms[2],
+  ];
+};
+
+/**
+ * `color-mix(in oklch, base, tint P%)`. CSS premultiplies by alpha before
+ * interpolating, so a translucent base does not darken toward the tint.
+ */
+export const mixOklch = (baseHex: string, tintHex: string, percentTint: number): string => {
+  const t = percentTint / 100;
+  const base = hexToOklab(baseHex);
+  const tint = hexToOklab(tintHex);
+
+  const alpha = base.alpha * (1 - t) + tint.alpha * t;
+  const channel = (key: "L" | "a" | "b") =>
+    alpha === 0 ? 0 : (base[key] * base.alpha * (1 - t) + tint[key] * tint.alpha * t) / alpha;
+
+  const rgb = oklabToLinearSrgb({ L: channel("L"), a: channel("a"), b: channel("b"), alpha })
+    .map(encodeGamma)
+    .map(toByte)
+    .join("");
+  return alpha >= 1 ? `#${rgb}` : `#${rgb}${toByte(alpha)}`;
+};
