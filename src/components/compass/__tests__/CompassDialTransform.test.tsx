@@ -47,6 +47,7 @@ const baseProps = {
   reduceMotion: true,
   accessibilityLabel: "dial",
   translateDirection: (key: string) => key,
+  fontFamily: "IBMPlexSansArabic-Regular",
 };
 
 // react-native-svg composes every transform prop into a single `matrix` prop on
