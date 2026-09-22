@@ -12,6 +12,9 @@ import {
 } from "@gorhom/bottom-sheet";
 import { PlatformType } from "@/enums/app";
 
+/** The $sheet radius, as a number: gorhom styles take no theme tokens. */
+const SHEET_RADIUS = 18;
+
 // --- Actionsheet ---
 // Built on @gorhom/bottom-sheet so an inner ActionsheetScrollView scrolls instead of
 // dragging the whole sheet. `isOpen` is bridged to present/dismiss; gorhom supplies
@@ -20,7 +23,10 @@ import { PlatformType } from "@/enums/app";
 type ActionsheetProps = {
   isOpen?: boolean;
   onClose?: () => void;
-  snapPoints?: number[];
+  /** A number is a percentage of the screen; a string passes to gorhom as written. */
+  snapPoints?: (number | string)[];
+  /** Sizes the sheet to its content instead of a detent. */
+  fitContent?: boolean;
   children?: React.ReactNode;
 };
 
@@ -28,12 +34,16 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   isOpen = false,
   onClose,
   snapPoints = [50],
+  fitContent = false,
   children,
 }) => {
   const theme = useTheme();
   const ref = useRef<BottomSheetModal>(null);
   const hasPresented = useRef(false);
-  const points = useMemo(() => snapPoints.map((n) => `${n}%`), [snapPoints]);
+  const points = useMemo(
+    () => snapPoints.map((n) => (typeof n === "number" ? `${n}%` : n)),
+    [snapPoints]
+  );
 
   // Present on open; dismiss on a programmatic close only. hasPresented guards both
   // the never-dismiss-before-present case and the reopen case: gorhom's onDismiss
@@ -78,12 +88,17 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   return (
     <BottomSheetModal
       ref={ref}
-      snapPoints={points}
-      enableDynamicSizing={false}
+      snapPoints={fitContent ? undefined : points}
+      enableDynamicSizing={fitContent}
       enablePanDownToClose
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: theme.backgroundSecondary?.val }}
+      backgroundStyle={{
+        backgroundColor: theme.backgroundSecondary?.val,
+        // $sheet. Set explicitly, or gorhom's own default applies.
+        borderTopLeftRadius: SHEET_RADIUS,
+        borderTopRightRadius: SHEET_RADIUS,
+      }}
       handleIndicatorStyle={{ backgroundColor: theme.backgroundMuted?.val }}>
       {children}
     </BottomSheetModal>
@@ -102,15 +117,19 @@ ActionsheetBackdrop.displayName = "ActionsheetBackdrop";
 
 type ActionsheetContentProps = {
   children?: React.ReactNode;
+  /** Lets the content draw its own insets, for a full-bleed list or media. */
+  unpadded?: boolean;
 };
 
-const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children }) => {
+const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpadded }) => {
   // The scrollable must be the modal's content directly — gorhom doesn't scroll a
   // BottomSheetScrollView nested inside a BottomSheetView. So the content IS the
   // scroll view; ActionsheetScrollView below is a passthrough.
   return (
     <BottomSheetScrollView
-      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24 }}>
+      contentContainerStyle={
+        unpadded ? undefined : { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24 }
+      }>
       {children}
     </BottomSheetScrollView>
   );
