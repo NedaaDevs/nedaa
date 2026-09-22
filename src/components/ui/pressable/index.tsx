@@ -5,6 +5,8 @@ import type { GetProps } from "tamagui";
 const PressableFrame = styled(View, {
   name: "Pressable",
   role: "button",
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
   minHeight: "$target",
   minWidth: "$target",
   pressStyle: {
