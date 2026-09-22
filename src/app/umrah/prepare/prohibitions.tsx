@@ -61,7 +61,7 @@ export default function ProhibitionsScreen() {
 
   return (
     <Background>
-      <ScreenHeader title={t("umrah.prepare.prohibitions")} back />
+      <ScreenHeader variant="bar" title={t("umrah.prepare.prohibitions")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         {groups.map((group) => (
