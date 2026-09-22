@@ -96,3 +96,17 @@ describe("typographic roles", () => {
     expect(roleLineHeight(undefined, 48)).toBeUndefined();
   });
 });
+
+describe("token line heights", () => {
+  // A token must read the line-height column, not the font-size one.
+  test("a line-height token resolves to the box the table declares", () => {
+    expect(resolveTextSizing(1, undefined, MD, "$4")).toEqual({
+      fontSize: 14,
+      lineHeight: FONT_SIZES.$4.lineHeight,
+    });
+  });
+
+  test("an unknown line-height token falls back to the size table", () => {
+    expect(resolveTextSizing(1, undefined, MD, "$99")).toEqual({ fontSize: 14, lineHeight: 20 });
+  });
+});
