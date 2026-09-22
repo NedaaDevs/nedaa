@@ -101,33 +101,43 @@ const hexToOklab = (hex: string): Oklab => {
   };
 };
 
-const oklabToLinearSrgb = ({ L, a, b }: Oklab): [number, number, number] => {
-  const lms = [
-    L + 0.3963377774 * a + 0.2158037573 * b,
-    L - 0.1055613458 * a - 0.0638541728 * b,
-    L - 0.0894841775 * a - 1.291485548 * b,
-  ].map((v) => v ** 3) as [number, number, number];
-  return [
-    4.0767416621 * lms[0] - 3.3077115913 * lms[1] + 0.2309699292 * lms[2],
-    -1.2684380046 * lms[0] + 2.6097574011 * lms[1] - 0.3413193965 * lms[2],
-    -0.0041960863 * lms[0] - 0.7034186147 * lms[1] + 1.707614701 * lms[2],
-  ];
+/** Shortest arc between two hue angles, in degrees. */
+const hueDelta = (from: number, to: number): number => {
+  const raw = (to - from) % 360;
+  return raw > 180 ? raw - 360 : raw < -180 ? raw + 360 : raw;
 };
 
 /**
- * `color-mix(in oklch, base, tint P%)`. CSS premultiplies by alpha before
- * interpolating, so a translucent base does not darken toward the tint.
+ * `color-mix(in oklch, base, tint P%)`. Polar: lightness and chroma interpolate,
+ * hue takes the shortest arc. Rectangular OKLab instead cuts near the grey axis,
+ * so two colours far apart in hue mix to a duller third one.
+ *
+ * Alpha premultiplies L and C but not the hue angle, per CSS Color 4.
  */
 export const mixOklch = (baseHex: string, tintHex: string, percentTint: number): string => {
   const t = percentTint / 100;
   const base = hexToOklab(baseHex);
   const tint = hexToOklab(tintHex);
 
+  const baseC = Math.hypot(base.a, base.b);
+  const tintC = Math.hypot(tint.a, tint.b);
   const alpha = base.alpha * (1 - t) + tint.alpha * t;
-  const channel = (key: "L" | "a" | "b") =>
-    alpha === 0 ? 0 : (base[key] * base.alpha * (1 - t) + tint[key] * tint.alpha * t) / alpha;
+  const weighted = (x: number, y: number) =>
+    alpha === 0 ? 0 : (x * base.alpha * (1 - t) + y * tint.alpha * t) / alpha;
 
-  const rgb = oklabToLinearSrgb({ L: channel("L"), a: channel("a"), b: channel("b"), alpha })
+  // An achromatic colour has no hue to contribute, so it borrows the other's.
+  const baseH = baseC < 1e-6 ? null : Math.atan2(base.b, base.a) * (180 / Math.PI);
+  const tintH = tintC < 1e-6 ? null : Math.atan2(tint.b, tint.a) * (180 / Math.PI);
+  const from = baseH ?? tintH ?? 0;
+  const to = tintH ?? baseH ?? 0;
+  const hue = ((from + hueDelta(from, to) * t) * Math.PI) / 180;
+
+  // A mix can land outside sRGB, so it maps the same way a conversion does.
+  const rgb = gamutMap({
+    l: weighted(base.L, tint.L),
+    c: weighted(baseC, tintC),
+    h: (hue * 180) / Math.PI,
+  })
     .map(encodeGamma)
     .map(toByte)
     .join("");
