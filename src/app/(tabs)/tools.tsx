@@ -149,7 +149,7 @@ export default function ToolsScreen() {
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}>
-        <ScreenHeader title="tools.title" />
+        <ScreenHeader title={t("tools.title")} />
 
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$5">
           {/* Continue — present only while a journey is in progress. */}
