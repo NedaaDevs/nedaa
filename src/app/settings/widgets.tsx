@@ -5,7 +5,7 @@ import { useFocusEffect } from "expo-router";
 
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -371,7 +371,7 @@ const WidgetSettings = () => {
 
   return (
     <Background>
-      <TopBar title="settings.widgets.title" backOnClick />
+      <ScreenHeader title="settings.widgets.title" backOnClick />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>

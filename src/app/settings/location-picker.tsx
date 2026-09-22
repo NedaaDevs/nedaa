@@ -3,7 +3,7 @@ import { router } from "expo-router";
 
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import CityPicker from "@/components/location/CityPicker";
 import CoordinateEntry from "@/components/location/CoordinateEntry";
 
@@ -26,7 +26,7 @@ const LocationPickerScreen = () => {
 
   return (
     <Background>
-      <TopBar title={TITLES[mode]} href="/settings/location" backOnClick />
+      <ScreenHeader title={TITLES[mode]} href="/settings/location" backOnClick />
 
       {mode === PickerMode.SEARCH ? (
         <CityPicker onDone={close} onEnterCoordinates={() => setMode(PickerMode.COORDINATES)} />

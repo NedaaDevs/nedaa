@@ -20,7 +20,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import SettingsItem from "@/components/SettingsItem";
 import SettingsFooter from "@/components/SettingsFooter";
 
@@ -187,7 +187,7 @@ const SettingsScreen = () => {
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <TopBar title="settings.title" backOnClick />
+        <ScreenHeader title="settings.title" backOnClick />
 
         {/* Language */}
         <SettingsItem
