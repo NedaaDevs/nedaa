@@ -24,7 +24,7 @@ const ProgressFrame = styled(View, {
   name: "Progress",
   context: ProgressContext,
   backgroundColor: "$backgroundMuted",
-  borderRadius: "$10",
+  borderRadius: "$pill",
   width: "100%",
   overflow: "hidden",
 });
@@ -62,7 +62,7 @@ const ProgressFilledTrackFrame = styled(View, {
   name: "ProgressFilledTrack",
   context: ProgressContext,
   backgroundColor: "$primary",
-  borderRadius: "$10",
+  borderRadius: "$pill",
 });
 
 const ProgressFilledTrack = ProgressFilledTrackFrame.styleable((props, ref) => {
