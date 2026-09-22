@@ -5,7 +5,6 @@ export type ScreenshotScreenKey =
   | "reliable-alarms"
   | "athkar"
   | "qibla"
-  | "privacy"
   | "qada"
   | "quran"
   | "athkar-with-audio"
