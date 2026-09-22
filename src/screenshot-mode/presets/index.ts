@@ -3,7 +3,6 @@ import { prayerTimesPresets, type PrayerTimesSeed } from "./prayer-times";
 import { reliableAlarmsPresets, type ReliableAlarmsSeed } from "./reliable-alarms";
 import { athkarPresets, type AthkarSeed } from "./athkar";
 import { qiblaPresets, type QiblaSeed } from "./qibla";
-import { privacyPresets, type PrivacySeed } from "./privacy";
 import { qadaPresets, type QadaSeed } from "./qada";
 import { quranPresets, type QuranSeed } from "./quran";
 import { athkarWithAudioPresets, type AthkarWithAudioSeed } from "./athkar-with-audio";
@@ -15,7 +14,6 @@ export type PresetMap = {
   "reliable-alarms": ReliableAlarmsSeed;
   athkar: AthkarSeed;
   qibla: QiblaSeed;
-  privacy: PrivacySeed;
   qada: QadaSeed;
   quran: QuranSeed;
   "athkar-with-audio": AthkarWithAudioSeed;
@@ -28,7 +26,6 @@ export const presets: { [K in ScreenshotScreenKey]: Record<string, PresetMap[K]>
   "reliable-alarms": reliableAlarmsPresets,
   athkar: athkarPresets,
   qibla: qiblaPresets,
-  privacy: privacyPresets,
   qada: qadaPresets,
   quran: quranPresets,
   "athkar-with-audio": athkarWithAudioPresets,

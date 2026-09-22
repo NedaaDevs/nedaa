@@ -1,64 +1,81 @@
-import { execFileSync } from "child_process";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from "node:fs";
+import { sep } from "node:path";
 
-const SRC = join(__dirname, "../..");
-const read = (relative: string) => readFileSync(join(SRC, relative), "utf8");
+import { readRoutes, resolvesToRoute, walkFiles, ROUTES_DIR } from "@/test-helpers/routeTree";
+import { presets } from "@/screenshot-mode/presets";
+import { SCREEN_TO_PATH } from "@/screenshot-mode/screenPaths";
 
-/** The declared keys, read from the union rather than retyped. */
-const declaredKeys = (): string[] => {
-  const union = read("stores/screenshotStore.ts").match(
-    /export type ScreenshotScreenKey =([\s\S]*?);/
-  );
-  if (!union) throw new Error("ScreenshotScreenKey union not found");
-  return [...union[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-};
+/**
+ * Pins what the types cannot: that a key's path reaches a route file, and that
+ * something reads its preset. Both fail silently, capturing the wrong screen or
+ * live data. Key presence is already a compile error, so nothing restates it.
+ */
 
-const routedKeys = (): string[] => {
-  const map = read("screenshot-mode/router.ts").match(
-    /SCREEN_TO_PATH: Record<ScreenshotScreenKey, string> = \{([\s\S]*?)\n\};/
-  );
-  if (!map) throw new Error("SCREEN_TO_PATH not found");
-  return [...map[1].matchAll(/^\s*"?([a-z-]+)"?:/gm)].map((m) => m[1]);
-};
+const SRC = ROUTES_DIR.split(sep).slice(0, -1).join(sep);
 
-/** Keys some component actually reads a seed for. */
+/** `presets` is a mapped type over the key union, so its keys are the declared set. */
+const declaredKeys = Object.keys(presets);
+
+/** Both consumer forms: the hook during render, the selector outside React. */
+const SEED_CONSUMER = /(?:use|select)ScreenshotSeed(?:<[^>]*>)?\([^)]*?"([^"]+)"/g;
+
 const consumedKeys = (): string[] => {
-  const out = execFileSync(
-    "grep",
-    ["-rhoE", 'useScreenshotSeed\\("[^"]+"\\)', SRC, "--include=*.ts", "--include=*.tsx"],
-    { encoding: "utf8" }
+  const files = walkFiles(SRC).filter(
+    (path) => /\.tsx?$/.test(path) && !path.split(sep).includes("__tests__")
   );
-  return [...new Set([...out.matchAll(/"([^"]+)"/g)].map((m) => m[1]))];
+  const keys = files
+    .flatMap((path) => [...readFileSync(path, "utf8").matchAll(SEED_CONSUMER)])
+    .map((match) => match[1]);
+  return [...new Set(keys)];
 };
 
 /**
- * Keys whose preset is defined but read by nothing, so the capture shows live data.
- * A ratchet, not an allowance: this list may shrink, never grow.
+ * Keys no component reads a seed for, and why. Each reason is re-proved below, so
+ * an entry suppresses nothing — it moves the proof to another assertion.
  */
-const KNOWN_ORPHANS = ["reliable-alarms", "privacy", "tools"];
+const SEEDLESS_SCREENS: Record<string, string> = {
+  "reliable-alarms":
+    "The router consumes it: it reads ringingPrayer off the payload and passes it as the alarmType param, so the screen shows a real Fajr title rather than the CUSTOM fallback.",
+  tools:
+    "The Tools menu is static content. Its preset exists only so the router's getPreset() guard returns non-null and navigation proceeds.",
+};
 
 describe("screenshot contract", () => {
-  // A key with no consumer captures LIVE data in place of the preset — the shot
-  // succeeds and the content is wrong, which is how 2.10.1 was rejected.
-  it("orphans no key that a component reads today", () => {
+  it("finds the seed consumers and the route tree", () => {
+    // A moved directory or a regex matching nothing would pass everything below.
+    expect(consumedKeys().length).toBeGreaterThan(5);
+    expect(readRoutes().length).toBeGreaterThan(20);
+    expect(declaredKeys).toContain("prayer-times");
+  });
+
+  // A key nothing reads captures live data: the shot succeeds, the content is wrong.
+  it("gives every declared key a consumer", () => {
     const consumed = consumedKeys();
-    const orphaned = declaredKeys().filter((key) => !consumed.includes(key));
+    const orphaned = declaredKeys.filter((key) => !consumed.includes(key));
 
-    expect(orphaned.sort()).toEqual([...KNOWN_ORPHANS].sort());
+    expect(orphaned.sort()).toEqual(Object.keys(SEEDLESS_SCREENS).sort());
   });
 
-  it("every declared key has a route", () => {
-    const routed = routedKeys();
-    const unrouted = declaredKeys().filter((key) => !routed.includes(key));
+  // An unresolved path lands on +not-found, so the shot is of an error screen.
+  it("points every key at a route that exists", () => {
+    const routes = readRoutes();
+    const unreachable = Object.entries(SCREEN_TO_PATH)
+      .filter(([, path]) => !resolvesToRoute(routes, path))
+      .map(([key, path]) => `${key} -> ${path}`);
 
-    expect(unrouted).toEqual([]);
+    expect(unreachable).toEqual([]);
   });
 
-  it("no route points at a key that no longer exists", () => {
-    const declared = declaredKeys();
-    const stale = routedKeys().filter((key) => !declared.includes(key));
+  it("re-proves the router's own read of the reliable-alarms seed", () => {
+    const router = readFileSync(`${SRC}/screenshot-mode/router.ts`, "utf8");
 
-    expect(stale).toEqual([]);
+    expect(router).toContain("ringingPrayer");
+    expect(router).toContain('link.screen === "reliable-alarms"');
+  });
+
+  it("re-proves that the tools screen is documented as seedless", () => {
+    const preset = readFileSync(`${SRC}/screenshot-mode/presets/tools.ts`, "utf8");
+
+    expect(preset).toContain("reads no seed");
   });
 });
