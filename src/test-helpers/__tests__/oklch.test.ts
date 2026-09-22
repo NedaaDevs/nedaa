@@ -1,4 +1,4 @@
-import { oklchToHex, parseOklch } from "@/test-helpers/oklch";
+import { mixOklch, oklchToHex, parseOklch } from "@/test-helpers/oklch";
 
 describe("parseOklch", () => {
   it("reads lightness, chroma and hue", () => {
@@ -43,5 +43,33 @@ describe("oklchToHex", () => {
   it("clamps black and white to the ends of the range", () => {
     expect(oklchToHex("oklch(0% 0 0)")).toBe("#000000");
     expect(oklchToHex("oklch(100% 0 0)")).toBe("#FFFFFF");
+  });
+});
+
+describe("mixOklch", () => {
+  it("returns the base at 0% and the tint at 100%", () => {
+    expect(mixOklch("#D9F4FF", "#EAD095", 0)).toBe("#D9F4FF");
+    expect(mixOklch("#D9F4FF", "#EAD095", 100)).toBe("#EAD095");
+  });
+
+  it("lands between the two", () => {
+    const mixed = mixOklch("#000000", "#FFFFFF", 50);
+    const channel = parseInt(mixed.slice(1, 3), 16);
+
+    expect(channel).toBeGreaterThan(0x40);
+    expect(channel).toBeLessThan(0xc0);
+    expect(mixed).toMatch(/^#([0-9A-F]{2})\1\1$/);
+  });
+
+  // CSS premultiplies, so alpha interpolates with the colour.
+  it("interpolates alpha", () => {
+    const baseAlpha = 0xb8 / 255;
+    const expected = Math.round((baseAlpha * 0.78 + 1 * 0.22) * 255);
+
+    expect(mixOklch("#D9F4FFB8", "#EAD095", 22).slice(7)).toBe(expected.toString(16).toUpperCase());
+  });
+
+  it("stays opaque when both sides are", () => {
+    expect(mixOklch("#071C3B", "#BB7588", 18)).toMatch(/^#[0-9A-F]{6}$/);
   });
 });
