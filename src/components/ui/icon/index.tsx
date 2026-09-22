@@ -3,16 +3,7 @@ import { View as RNView, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "tamagui";
 import { Mail } from "lucide-react-native";
 
-type IconSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
-
-const SIZE_MAP: Record<IconSize, number> = {
-  "2xs": 12,
-  xs: 14,
-  sm: 16,
-  md: 18,
-  lg: 20,
-  xl: 24,
-};
+import { ICON_SIZES, resolveIconSize, type IconSize } from "@/components/ui/icon/sizing";
 
 type IconProps = {
   as: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
@@ -30,7 +21,7 @@ const Icon = React.forwardRef<any, IconProps>(
   ) => {
     const theme = useTheme();
 
-    const resolvedSize = typeof size === "number" ? size : (SIZE_MAP[size] ?? 18);
+    const resolvedSize = resolveIconSize(size);
 
     const resolvedColor = color
       ? color.startsWith("$")
@@ -70,4 +61,5 @@ Icon.displayName = "Icon";
 const MailIcon = Mail;
 
 export { Icon, MailIcon };
+export { ICON_SIZES, resolveIconSize };
 export type { IconProps, IconSize };
