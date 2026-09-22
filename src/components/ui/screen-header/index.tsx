@@ -31,7 +31,7 @@ type Props = {
   onRightPress?: () => void;
 };
 
-const TopBar = ({
+export const ScreenHeader = ({
   href,
   title,
   icon,
@@ -115,5 +115,3 @@ const TopBar = ({
     </Box>
   );
 };
-
-export default TopBar;

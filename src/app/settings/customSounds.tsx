@@ -13,7 +13,7 @@ import { Icon } from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import AddCustomSoundModal from "@/components/AddCustomSoundModal";
 
 // Icons
@@ -72,7 +72,7 @@ export default function CustomSoundsScreen() {
   if (Platform.OS !== PlatformType.ANDROID) {
     return (
       <Background>
-        <TopBar title={t("notification.customSound.title")} backOnClick />
+        <ScreenHeader title={t("notification.customSound.title")} backOnClick />
         <Box flex={1} justifyContent="center" alignItems="center" padding="$6">
           <VStack gap="$3" alignItems="center" maxWidth={400}>
             <Box
@@ -261,7 +261,7 @@ export default function CustomSoundsScreen() {
 
   return (
     <Background>
-      <TopBar title={t("notification.customSound.title")} backOnClick />
+      <ScreenHeader title={t("notification.customSound.title")} backOnClick />
 
       <ScrollView style={{ flex: 1 }}>
         <VStack gap="$4" padding="$4">
