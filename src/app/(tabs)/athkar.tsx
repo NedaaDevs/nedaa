@@ -1,11 +1,11 @@
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import AthkarTabs from "@/components/athkar/AthkarTabs";
 
 const Athkar = () => {
   return (
     <Background>
-      <TopBar title="athkar.title" />
+      <ScreenHeader title="athkar.title" />
       <AthkarTabs />
     </Background>
   );

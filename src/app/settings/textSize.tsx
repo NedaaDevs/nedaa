@@ -3,7 +3,7 @@ import { Check } from "lucide-react-native";
 
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -31,7 +31,7 @@ const TextSizeSettings = () => {
 
   return (
     <Background>
-      <TopBar title="settings.textSize.title" href="/settings/preferences" backOnClick />
+      <ScreenHeader title="settings.textSize.title" href="/settings/preferences" backOnClick />
       <VStack padding="$4" gap="$2">
         {OPTIONS.map(({ value, labelKey }) => {
           const selected = textSize === value;

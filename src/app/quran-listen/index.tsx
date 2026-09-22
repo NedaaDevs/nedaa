@@ -13,7 +13,7 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Spinner } from "@/components/ui/spinner";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
@@ -81,7 +81,7 @@ const QuranListenScreen = () => {
 
   return (
     <Background>
-      <TopBar title="tools.quranListen.title" href="/(tabs)/tools" backOnClick />
+      <ScreenHeader title="tools.quranListen.title" href="/(tabs)/tools" backOnClick />
       {status === LOAD_STATUS.READY && reciters.length > 0 ? (
         <VStack paddingHorizontal="$3" paddingTop="$2">
           <ListenSearchBar

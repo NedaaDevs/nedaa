@@ -12,7 +12,7 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
@@ -78,7 +78,7 @@ const OtherRemindersSettings = () => {
 
   return (
     <Background>
-      <TopBar title="notification.otherReminders" backOnClick />
+      <ScreenHeader title="notification.otherReminders" backOnClick />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
