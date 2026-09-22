@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { Background } from "@/components/ui/background";
 import SoundPicker from "@/components/alarm/SoundPicker";
 
@@ -302,7 +303,7 @@ const AlarmDebugScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="Alarm Debug" href="/settings" backOnClick />
+      <ScreenHeader title="Alarm Debug" back={{ fallback: BACK_DESTINATION.SETTINGS }} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

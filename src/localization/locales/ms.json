@@ -33,6 +33,7 @@
   "a11y.athkar.tapToCount": "Ketik untuk mengira. Tekan lama untuk mengira sepuluh-sepuluh",
   "a11y.athkar.viewDetail": "Lihat butiran penuh azkar",
   "a11y.back": "Kembali",
+  "a11y.backTo": "Kembali ke {{screen}}",
   "a11y.customAthkar.cardComplete": "Selesai",
   "a11y.customAthkar.cardProgress": "{{current}} daripada {{total}} selesai",
   "a11y.customAthkar.confirmThikir": "Sahkan zikir",

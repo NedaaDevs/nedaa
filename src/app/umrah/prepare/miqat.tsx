@@ -84,7 +84,7 @@ export default function MiqatScreen() {
 
   return (
     <Background>
-      <ScreenHeader title="umrah.prepare.miqat" backOnClick />
+      <ScreenHeader title={t("umrah.prepare.miqat")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 16 }}>
         {step === "origin" && (

@@ -33,6 +33,7 @@
   "a11y.athkar.tapToCount": "گنتی کے لیے ٹیپ کریں۔ دس گننے کے لیے دیر تک دبائیں",
   "a11y.athkar.viewDetail": "ذکر کی مکمل تفصیلات دیکھیں",
   "a11y.back": "واپس جائیں",
+  "a11y.backTo": "{{screen}} پر واپس جائیں",
   "a11y.customAthkar.cardComplete": "مکمل",
   "a11y.customAthkar.cardProgress": "{{current}} از {{total}} مکمل",
   "a11y.customAthkar.confirmThikir": "ذکر تصدیق کریں",

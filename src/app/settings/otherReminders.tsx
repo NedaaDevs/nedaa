@@ -78,7 +78,7 @@ const OtherRemindersSettings = () => {
 
   return (
     <Background>
-      <ScreenHeader title="notification.otherReminders" backOnClick />
+      <ScreenHeader title={t("notification.otherReminders")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

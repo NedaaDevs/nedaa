@@ -46,7 +46,7 @@ const WidgetsDebugScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="Widgets Debug" backOnClick />
+      <ScreenHeader title="Widgets Debug" back />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack gap="$3" paddingHorizontal="$4" paddingTop="$6">
           <Card borderRadius="$7" borderWidth={1} borderColor="$outline">

@@ -39,7 +39,7 @@ const AthanPlaybackSettings = () => {
 
   return (
     <Background>
-      <ScreenHeader title="notification.athanPlayback.title" backOnClick />
+      <ScreenHeader title={t("notification.athanPlayback.title")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

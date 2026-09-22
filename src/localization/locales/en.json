@@ -33,6 +33,7 @@
   "a11y.athkar.tapToCount": "Tap to count. Long press to count by ten",
   "a11y.athkar.viewDetail": "View full athkar details",
   "a11y.back": "Go back",
+  "a11y.backTo": "Back to {{screen}}",
   "a11y.compass.compassOnly": "Use compass only",
   "a11y.compass.compassOnlyHint": "Shows the compass without the Qibla direction",
   "a11y.compass.details": "Opens compass details",
