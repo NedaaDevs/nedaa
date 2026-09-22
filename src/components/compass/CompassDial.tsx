@@ -54,6 +54,8 @@ type CompassDialProps = {
   reduceMotion: boolean;
   accessibilityLabel: string;
   translateDirection: (key: string) => string;
+  /** The dial letters are Arabic in ar and ur, so the face follows the locale. */
+  fontFamily: string;
   dimmed?: boolean;
 };
 
@@ -64,6 +66,7 @@ export const CompassDial = ({
   reduceMotion,
   accessibilityLabel,
   translateDirection,
+  fontFamily,
   dimmed = false,
 }: CompassDialProps) => {
   const theme = useTheme();
@@ -219,7 +222,7 @@ export const CompassDial = ({
               alignmentBaseline="middle"
               fontSize={direction.fontSize}
               fontWeight="bold"
-              fontFamily="IBMPlexSans-Regular"
+              fontFamily={fontFamily}
               fill={direction.color}>
               {reshapeArabic(translateDirection(`compass.directions.${direction.key}`))}
             </SvgText>
