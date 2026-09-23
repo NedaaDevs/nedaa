@@ -1,4 +1,3 @@
-import { Appearance } from "react-native";
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 
@@ -53,7 +52,7 @@ export const useAppStore = create<AppState>()(
           isFirstRun: true,
           hasHydrated: false,
           locale: initialLanguage,
-          mode: Appearance.getColorScheme() as AppMode,
+          mode: AppMode.SYSTEM,
           direction: initialDirection,
           loadingMessage: "",
           showLoadingOverlay: false,
