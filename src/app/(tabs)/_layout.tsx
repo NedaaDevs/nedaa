@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { Tabs, router, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTextScale } from "@/hooks/useTextScale";
-import { BottomTabBar, BottomTabBarProps } from "expo-router/js-tabs";
+import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { useTranslation } from "react-i18next";
 
 // Stores
@@ -14,24 +13,31 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { OpeningTab, type OpeningTabValue } from "@/enums/app";
 
 // Icons
-import { Home, BookOpenText, BookOpen, Wrench } from "lucide-react-native";
+import { AlarmClock, BookOpen, Ellipsis, House } from "lucide-react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { TabBarItem } from "@/components/ui/tab-bar-item";
 import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
 
-// Hooks
-import { useTheme, useThemeName } from "tamagui";
-
 const OPENING_TAB_ROUTE: Record<Exclude<OpeningTabValue, "index">, Href> = {
   [OpeningTab.ATHKAR]: "/(tabs)/athkar",
   [OpeningTab.QURAN]: "/(tabs)/quran",
   [OpeningTab.TOOLS]: "/(tabs)/tools",
 };
+
+/** The bar's tabs, in the order it shows them. */
+const TAB_ITEMS = [
+  { name: OpeningTab.HOME, title: "a11y.tab.home", icon: House },
+  { name: OpeningTab.QURAN, title: "a11y.tab.quran", icon: BookOpen },
+  { name: OpeningTab.ATHKAR, title: "a11y.tab.athkar", icon: AlarmClock },
+  { name: OpeningTab.TOOLS, title: "a11y.tab.tools", icon: Ellipsis },
+] as const;
 
 // Honoured once per app launch: the effect below runs again on a locale change, and
 // re-navigating then would yank the user out of whatever tab they were on.
@@ -43,12 +49,10 @@ const TabsLayout = () => {
   // would overlay the page and disrupt reading, so suppress it there.
   const readerActive = useQuranStore((s) => s.readerActive);
   const { t } = useTranslation();
-  const theme = useTheme();
-  // A theme change does not re-render a route that only reads theme values; the
-  // theme name does, so the tab bar's colours follow without a remount.
-  useThemeName();
   const insets = useSafeAreaInsets();
-  const textScale = useTextScale();
+  const tabs = TAB_ITEMS.filter(
+    (tab) => tab.name !== OpeningTab.ATHKAR || isAthkarSupported(locale)
+  );
 
   // Land on the user's chosen tab. The preference is persisted, so wait for
   // rehydration or the stored choice is missed on a cold start.
@@ -75,95 +79,60 @@ const TabsLayout = () => {
     return usePreferencesStore.persist.onFinishHydration(apply);
   }, [locale]);
 
+  const renderTabBar = ({ state, navigation }: BottomTabBarProps) => {
+    const focused = state.routes[state.index].name;
+    // Quran is full screen, so the mini player pads the bottom inset.
+    const tabBarHidden = focused === OpeningTab.QURAN;
+    return (
+      <Box backgroundColor="$backgroundSecondary">
+        {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
+        <MiniPlayerBar />
+        {!tabBarHidden && (
+          <HStack
+            accessibilityRole="tablist"
+            gap="$0.5"
+            paddingTop="$1.5"
+            paddingHorizontal="$2.5"
+            paddingBottom={insets.bottom}
+            borderTopWidth={1}
+            borderColor="$border"
+            backgroundColor="$bar">
+            {tabs.map((tab) => {
+              const route = state.routes.find((candidate) => candidate.name === tab.name);
+              if (!route) return null;
+              const selected = focused === tab.name;
+              return (
+                <TabBarItem
+                  key={route.key}
+                  label={t(tab.title)}
+                  icon={tab.icon}
+                  selected={selected}
+                  onPress={() => {
+                    const event = navigation.emit({
+                      type: "tabPress",
+                      target: route.key,
+                      canPreventDefault: true,
+                    });
+                    if (!selected && !event.defaultPrevented) {
+                      navigation.navigate(route.name, route.params);
+                    }
+                  }}
+                  onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
+                />
+              );
+            })}
+          </HStack>
+        )}
+      </Box>
+    );
+  };
+
+  // Other tab routes register from their files; only the bar shows tabs.
   return (
-    <Tabs
-      tabBar={(props: BottomTabBarProps) => {
-        // The quran tab hides the tab bar (display: none), leaving the mini
-        // player as the bottom-most element — it must pad the bottom inset then.
-        const tabBarHidden = props.state.routes[props.state.index].name === "quran";
-        return (
-          <Box backgroundColor="$backgroundSecondary">
-            {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
-            <MiniPlayerBar />
-            <BottomTabBar {...props} />
-          </Box>
-        );
-      }}
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.primary.val,
-        tabBarInactiveTintColor: theme.typographySecondary.val,
-        tabBarAllowFontScaling: false,
-        tabBarLabelStyle: {
-          // react-navigation's default label is ~12px; the app preset scales it.
-          fontSize: 12 * textScale,
-        },
-        tabBarStyle: {
-          // The vendored bar sizes itself from a numeric height only, so the
-          // label's extra line height is added here rather than via minHeight.
-          height: 60 + Math.ceil(16 * (textScale - 1)) + insets.bottom,
-          paddingBottom: insets.bottom,
-          paddingTop: 5,
-          backgroundColor: theme.backgroundSecondary.val,
-          borderTopColor: theme.outline.val,
-        },
-      }}>
-      {/* The bar shows these in JSX order: Today, Quran, Athkar, More. */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t("a11y.tab.home"),
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="quran"
-        options={{
-          title: t("a11y.tab.quran"),
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
-          tabBarStyle: { display: "none" },
-        }}
-      />
-
-      <Tabs.Screen
-        name="athkar"
-        options={{
-          title: t("a11y.tab.athkar"),
-          href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
-          tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="tools"
-        options={{
-          title: t("a11y.tab.tools"),
-          tabBarIcon: ({ color, size }) => <Wrench color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="qada"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="compass"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t("a11y.tab.settings"),
-          href: null,
-        }}
-      />
+    <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
+      {TAB_ITEMS.map((tab) => (
+        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: t(tab.title) }} />
+      ))}
     </Tabs>
   );
 };
