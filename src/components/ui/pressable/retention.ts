@@ -6,19 +6,29 @@ export const RETENTION_SLOP = 20;
 
 /**
  * Ends a hold when the finger slides off, which Tamagui's press events never do.
- * The finger is read against the view the touch began on, so the control's
- * children must not take touches.
+ * The control's origin is taken at touch-down, while the finger is still on it,
+ * and each move is read in page coordinates from there: Android reports a move's
+ * `locationX` against the view under the finger, not the control. The control's
+ * children must not take touches, or the origin is read off a child.
  */
 export const usePressRetention = (onLeave: () => void) => {
   const size = useRef({ width: 0, height: 0 });
+  const origin = useRef({ x: 0, y: 0 });
 
   return {
     onLayout: ({ nativeEvent }: LayoutChangeEvent) => {
       size.current = nativeEvent.layout;
     },
+    onResponderGrant: ({ nativeEvent }: GestureResponderEvent) => {
+      origin.current = {
+        x: nativeEvent.pageX - nativeEvent.locationX,
+        y: nativeEvent.pageY - nativeEvent.locationY,
+      };
+    },
     onResponderMove: ({ nativeEvent }: GestureResponderEvent) => {
       const { width, height } = size.current;
-      const { locationX: x, locationY: y } = nativeEvent;
+      const x = nativeEvent.pageX - origin.current.x;
+      const y = nativeEvent.pageY - origin.current.y;
       const outside =
         x < -RETENTION_SLOP ||
         y < -RETENTION_SLOP ||
