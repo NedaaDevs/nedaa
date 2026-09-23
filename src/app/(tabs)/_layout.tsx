@@ -25,7 +25,7 @@ import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 import { isAthkarSupported } from "@/utils/athkar";
 
 // Hooks
-import { useTheme } from "tamagui";
+import { useTheme, useThemeName } from "tamagui";
 
 const OPENING_TAB_ROUTE: Record<Exclude<OpeningTabValue, "index">, Href> = {
   [OpeningTab.ATHKAR]: "/(tabs)/athkar",
@@ -33,18 +33,20 @@ const OPENING_TAB_ROUTE: Record<Exclude<OpeningTabValue, "index">, Href> = {
   [OpeningTab.TOOLS]: "/(tabs)/tools",
 };
 
-// Honoured once per app launch. This layout remounts whenever the theme changes
-// (key={`tabs-${mode}`}), and re-navigating then would yank the user out of
-// whatever tab they were on.
+// Honoured once per app launch: the effect below runs again on a locale change, and
+// re-navigating then would yank the user out of whatever tab they were on.
 let openingTabApplied = false;
 
 const TabsLayout = () => {
-  const { locale, mode } = useAppStore();
+  const locale = useAppStore((state) => state.locale);
   // The immersive reader owns the whole screen — the global Listen mini-player
   // would overlay the page and disrupt reading, so suppress it there.
   const readerActive = useQuranStore((s) => s.readerActive);
   const { t } = useTranslation();
   const theme = useTheme();
+  // A theme change does not re-render a route that only reads theme values; the
+  // theme name does, so the tab bar's colours follow without a remount.
+  useThemeName();
   const insets = useSafeAreaInsets();
   const textScale = useTextScale();
 
@@ -75,7 +77,6 @@ const TabsLayout = () => {
 
   return (
     <Tabs
-      key={`tabs-${mode}`}
       tabBar={(props: BottomTabBarProps) => {
         // The quran tab hides the tab bar (display: none), leaving the mini
         // player as the bottom-most element — it must pad the bottom inset then.
