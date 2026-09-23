@@ -72,6 +72,8 @@ const MyAthkarCard: FC<Props> = ({
 
   return (
     <Pressable
+      // Holds text or a control the reader must reach; as one element iOS would hide them.
+      accessible={false}
       onPress={handleIncrement}
       onLongPress={handleLongPress}
       delayLongPress={400}
