@@ -46,7 +46,6 @@ import {
   Layers,
   Sparkles,
   Music,
-  Sun,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -60,7 +59,6 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { useToastStore } from "@/stores/toast";
 import { useDebugModeStore } from "@/stores/debugMode";
-import { DEBUG_ROUTE } from "@/constants/DebugRoutes";
 import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 
 // Utils
@@ -292,7 +290,6 @@ const SettingsScreen = () => {
               path={"/settings/widgets-debug" as any}
               icon={Layers}
             />
-            <SettingsItem name="Sky Debug" path={DEBUG_ROUTE.SKY} icon={Sun} />
           </>
         )}
 
