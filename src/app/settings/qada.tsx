@@ -390,6 +390,8 @@ const QadaSettings = () => {
           {tempReminderType !== "none" && (
             <VStack gap="$2">
               <Pressable
+                // Holds text or a control the reader must reach; as one element iOS would hide them.
+                accessible={false}
                 onPress={() => setTempPrivacyMode(!tempPrivacyMode)}
                 accessibilityRole="button"
                 accessibilityLabel={t("qada.privacyMode")}
@@ -484,6 +486,8 @@ const QadaSettings = () => {
 
               {/* Vibration Toggle */}
               <Pressable
+                // Holds text or a control the reader must reach; as one element iOS would hide them.
+                accessible={false}
                 onPress={() => setTempQadaVibration(!tempQadaVibration)}
                 padding="$4"
                 borderRadius="$6"

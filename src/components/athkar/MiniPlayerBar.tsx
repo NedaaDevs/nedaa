@@ -131,6 +131,8 @@ const MiniPlayerBar: FC = () => {
     <GestureDetector gesture={swipeDismiss}>
       <Animated.View style={containerStyle}>
         <Pressable
+          // Holds text or a control the reader must reach; as one element iOS would hide them.
+          accessible={false}
           onPress={handleTap}
           accessibilityLabel={t("a11y.athkar.nowPlaying", {
             current: sessionProgress.current,
