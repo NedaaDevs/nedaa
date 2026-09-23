@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Pressable } from "@/components/ui/pressable";
 import { renderWithTheme } from "@/test-helpers/theme";
 
-/** CLAUDE.md's floor. A control below it is hard to hit and fails the checklist. */
+/** The platform touch floor, in points. A smaller control is hard to hit. */
 const TOUCH_FLOOR = 44;
 
 describe("primitive accessibility contract", () => {
@@ -14,12 +14,34 @@ describe("primitive accessibility contract", () => {
     expect(screen.getByRole("button", { name: "Open settings" })).toBeOnTheScreen();
   });
 
-  it("a disabled card reports it rather than only dimming", async () => {
-    await renderWithTheme(
-      <Card.Pressable accessibilityLabel="Reset" disabled onPress={() => {}} />
-    );
+  const FRAMES = [
+    ["Pressable", Pressable],
+    ["Card.Pressable", Card.Pressable],
+  ] as const;
+
+  it.each(FRAMES)("a disabled %s reports it rather than only dimming", async (_, Frame) => {
+    await renderWithTheme(<Frame accessibilityLabel="Reset" disabled onPress={() => {}} />);
 
     expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+  });
+
+  it.each(FRAMES)("a %s fires when a finger presses it", async (_, Frame) => {
+    const onPress = jest.fn();
+    await renderWithTheme(<Frame accessibilityLabel="Open" onPress={onPress} />);
+
+    await userEvent.setup().press(screen.getByRole("button", { name: "Open" }));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  // One element hides what it holds from VoiceOver, so a container opts out.
+  it.each(FRAMES)("a %s holding a control can stop being one element", async (_, Frame) => {
+    await renderWithTheme(<Frame testID="container" accessible={false} onPress={() => {}} />);
+
+    expect(screen.getByTestId("container", { includeHiddenElements: true })).toHaveProp(
+      "accessible",
+      false
+    );
   });
 
   it("a pressable holds the touch floor", async () => {
