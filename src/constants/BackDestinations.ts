@@ -16,6 +16,7 @@ export const BACK_DESTINATION = {
   SETTINGS: { route: "(tabs)/settings", href: "/settings", title: "settings.title" },
   ATHKAR: { route: "(tabs)/athkar", href: "/athkar", title: "athkar.title" },
   QADA: { route: "(tabs)/qada", href: "/qada", title: "qada.title" },
+  QURAN: { route: "(tabs)/quran", href: "/quran", title: "a11y.tab.quran" },
   SETTINGS_ADVANCED: {
     route: "settings/advance/index",
     href: "/settings/advance",
@@ -71,6 +72,21 @@ export const BACK_DESTINATION = {
     route: "umrah/prepare/index",
     href: "/umrah/prepare",
     title: "umrah.prepare.title",
+  },
+  UMRAH_IHRAM: {
+    route: "umrah/prepare/ihram",
+    href: "/umrah/prepare/ihram",
+    title: "umrah.prepare.ihram",
+  },
+  UMRAH_MIQAT: {
+    route: "umrah/prepare/miqat",
+    href: "/umrah/prepare/miqat",
+    title: "umrah.prepare.miqat",
+  },
+  UMRAH_PROHIBITIONS: {
+    route: "umrah/prepare/prohibitions",
+    href: "/umrah/prepare/prohibitions",
+    title: "umrah.prepare.prohibitions",
   },
 } as const satisfies Record<string, BackDestinationEntry>;
 
