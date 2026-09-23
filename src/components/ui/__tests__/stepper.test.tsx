@@ -160,18 +160,35 @@ describe("Stepper", () => {
       expect(shown()).toBe(released);
     });
 
+    // The move reports the view under the finger, as Android does, not the button.
     it("stops counting when the finger slides off the button", async () => {
       const size = 44;
+      const at = { x: 100, y: 300 };
       await render(<Harness start={MIN} />);
       const button = part(STEPPER_PART.INCREMENT);
       await act(() =>
         fireEvent(button, "layout", { nativeEvent: { layout: { width: size, height: size } } })
       );
+      await act(() =>
+        fireEvent(button, "responderGrant", {
+          nativeEvent: {
+            pageX: at.x + size / 2,
+            pageY: at.y + size / 2,
+            locationX: size / 2,
+            locationY: size / 2,
+          },
+        })
+      );
       await pressIn(STEPPER_PART.INCREMENT);
 
       await act(() =>
         fireEvent(button, "responderMove", {
-          nativeEvent: { locationX: size / 2, locationY: -RETENTION_SLOP - 1 },
+          nativeEvent: {
+            pageX: at.x + size / 2,
+            pageY: at.y - RETENTION_SLOP - 1,
+            locationX: 2,
+            locationY: 2,
+          },
         })
       );
       const leftAt = shown();
