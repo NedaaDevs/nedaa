@@ -32,6 +32,7 @@ const renderApp = async (header: ReactElement, initialUrl = "/", isRTL = false) 
       "(tabs)/index": () => null,
       "(tabs)/tools": () => null,
       "(tabs)/settings": () => null,
+      "(tabs)/quran": () => null,
       "settings/alarm": () => header,
       [UNNAMED_ROUTE]: () => null,
     },
@@ -68,6 +69,15 @@ describe("ScreenHeader", () => {
       await go(BACK_DESTINATION.SETTINGS_ALARM.href);
 
       expect(screen.getByRole("button", { name: backTo("SETTINGS") })).toBeOnTheScreen();
+    });
+
+    // The What's New sheet can push a header screen over any tab, the Quran tab included.
+    it("names the Quran tab", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.QURAN.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(screen.getByRole("button", { name: backTo("QURAN") })).toBeOnTheScreen();
     });
 
     // The label and the press must agree, or the control lies about where it goes.
