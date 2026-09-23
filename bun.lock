@@ -16,7 +16,6 @@
         "@react-navigation/native-stack": "7.14.2",
         "@tamagui/animations-moti": "^2.7.7",
         "@tamagui/config": "^2.7.7",
-        "@tamagui/linear-gradient": "^2.7.7",
         "@tamagui/native": "^2.7.7",
         "axios": "^1.20.0",
         "date-fns": "^4.4.0",
