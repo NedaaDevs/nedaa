@@ -1,40 +1,29 @@
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 // Components
 import { Box } from "@/components/ui/box";
 import { SkyBackground } from "@/components/ui/sky-background";
-import Header from "@/components/Header";
-import { CelestialRhythm } from "@/components/today/CelestialRhythm";
-import TimingsCarousel from "@/components/TimingsCarousel";
+import { TodayHeader } from "@/components/today/TodayHeader";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
-import ImportantDaysCard from "@/components/ImportantDaysCard";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 
 // Stores
-import { useAppStore } from "@/stores/app";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 
 export default function MainScreen() {
-  const { mode } = useAppStore();
   const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
+  const insets = useSafeAreaInsets();
 
   return (
     <SkyBackground>
-      <Box flex={1}>
+      {/* The sky runs under the status bar, so the content starts below it. */}
+      <Box flex={1} paddingTop={insets.top}>
         <ActiveAlarmBanner />
-        <Box>
-          <Header />
-        </Box>
-
-        <Box paddingHorizontal="$4" paddingBottom="$2">
-          <CelestialRhythm />
+        <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
+          <TodayHeader />
         </Box>
 
         {activeProgress && <UmrahResumeBanner />}
-
-        <ImportantDaysCard />
-
-        <Box flex={1}>
-          <TimingsCarousel mode={mode} />
-        </Box>
       </Box>
     </SkyBackground>
   );
