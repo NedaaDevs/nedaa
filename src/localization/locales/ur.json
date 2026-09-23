@@ -1549,6 +1549,8 @@
   "settings.textSize.preview": "نماز کے اوقات ایک نظر میں",
   "settings.textSize.title": "متن کا سائز",
   "settings.thankYou": "جزاک اللہ خیراً",
+  "settings.themes.adaptive.description": "نماز کے اوقات کی پیروی کریں: دن میں ہلکا، مغرب سے تاریک",
+  "settings.themes.adaptive.title": "خودکار",
   "settings.themes.dark.description": "ہمیشہ تاریک ظاہری شکل استعمال کریں",
   "settings.themes.dark.title": "تاریک",
   "settings.themes.light.description": "ہمیشہ ہلکی ظاہری شکل کا استعمال کریں۔",
