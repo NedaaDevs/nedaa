@@ -1,5 +1,4 @@
 import "@/localization/i18n";
-import "@tamagui/linear-gradient";
 
 import { useEffect } from "react";
 import { Stack, useSegments } from "expo-router";
