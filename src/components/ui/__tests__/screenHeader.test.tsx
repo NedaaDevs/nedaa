@@ -3,24 +3,12 @@ import { Text } from "react-native";
 import { Settings } from "lucide-react-native";
 import { router, Stack, Tabs, usePathname } from "expo-router";
 import { act, fireEvent, renderRouter, screen, within } from "expo-router/testing-library";
-import { TamaguiProvider } from "tamagui";
 
-import config from "../../../../tamagui.config";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { RTLContext } from "@/contexts/RTLContext";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import i18n from "@/localization/i18n";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
-
-// RTLContext reaches the app store, which persists through SQLite.
-jest.mock("expo-sqlite/kv-store", () => ({
-  __esModule: true,
-  default: {
-    getItem: jest.fn(() => Promise.resolve(null)),
-    setItem: jest.fn(() => Promise.resolve()),
-    removeItem: jest.fn(() => Promise.resolve()),
-  },
-}));
+import { ThemeProvider } from "@/test-helpers/theme";
 
 const TITLE = "Alarm settings";
 const ACTION_LABEL = "Open alarm settings";
@@ -49,11 +37,7 @@ const renderApp = async (header: ReactElement, initialUrl = "/", isRTL = false) 
     },
     {
       initialUrl,
-      wrapper: ({ children }) => (
-        <TamaguiProvider config={config} defaultTheme="light">
-          <RTLContext value={{ isRTL, direction: isRTL ? "rtl" : "ltr" }}>{children}</RTLContext>
-        </TamaguiProvider>
-      ),
+      wrapper: ({ children }) => <ThemeProvider isRTL={isRTL}>{children}</ThemeProvider>,
     }
   );
 

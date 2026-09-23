@@ -1,23 +1,11 @@
 import { useState } from "react";
 import { Platform, Text } from "react-native";
 import { act, fireEvent, render, screen, userEvent } from "@testing-library/react-native";
-import { TamaguiProvider } from "tamagui";
 
-import config from "../../../../tamagui.config";
-import { RTLContext } from "@/contexts/RTLContext";
 import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
 import { STEPPER_PART, Stepper } from "@/components/ui/stepper";
 import { PlatformType } from "@/enums/app";
-
-// RTLContext reaches the app store, which persists through SQLite.
-jest.mock("expo-sqlite/kv-store", () => ({
-  __esModule: true,
-  default: {
-    getItem: jest.fn(() => Promise.resolve(null)),
-    setItem: jest.fn(() => Promise.resolve()),
-    removeItem: jest.fn(() => Promise.resolve()),
-  },
-}));
+import { ThemeProvider } from "@/test-helpers/theme";
 
 const mockHaptic = jest.fn();
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => mockHaptic }));
@@ -38,20 +26,18 @@ const Harness = ({
 }) => {
   const [value, setValue] = useState(start);
   return (
-    <TamaguiProvider config={config} defaultTheme="light">
-      <RTLContext value={{ isRTL, direction: isRTL ? "rtl" : "ltr" }}>
-        <Stepper
-          value={value}
-          onChange={setValue}
-          min={MIN}
-          max={MAX}
-          accessibilityLabel={LABEL}
-          valueText={`${value} days`}
-          disabled={disabled}>
-          <Text testID="value">{value}</Text>
-        </Stepper>
-      </RTLContext>
-    </TamaguiProvider>
+    <ThemeProvider isRTL={isRTL}>
+      <Stepper
+        value={value}
+        onChange={setValue}
+        min={MIN}
+        max={MAX}
+        accessibilityLabel={LABEL}
+        valueText={`${value} days`}
+        disabled={disabled}>
+        <Text testID="value">{value}</Text>
+      </Stepper>
+    </ThemeProvider>
   );
 };
 
