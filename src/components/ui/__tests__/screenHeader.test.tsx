@@ -71,13 +71,13 @@ describe("ScreenHeader", () => {
     });
 
     // The helper builds labels through i18n; one literal pins the English wording itself.
-    it("says 'Back to Tools' in English", async () => {
+    it("says 'Back to More' in English", async () => {
       await act(() => i18n.changeLanguage(AppLocale.EN));
       await renderApp(<ScreenHeader title={TITLE} back />);
       await go(BACK_DESTINATION.TOOLS.href);
       await go(BACK_DESTINATION.SETTINGS_ALARM.href);
 
-      expect(screen.getByRole("button", { name: "Back to Tools" })).toBeOnTheScreen();
+      expect(screen.getByRole("button", { name: "Back to More" })).toBeOnTheScreen();
     });
 
     it("names a different parent when reached from it", async () => {
