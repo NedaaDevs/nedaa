@@ -5,6 +5,7 @@ import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Appearance, Platform, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { isTodaySegments, rootSafeAreaEdges } from "@/utils/safeArea";
 import * as SplashScreen from "expo-splash-screen";
 
 import { TamaguiProvider, FontLanguage, useTheme, useThemeName } from "tamagui";
@@ -83,15 +84,11 @@ function AppShell() {
   const safeAreaBg = readerImmersive
     ? QURAN_THEME_COLORS[quranTheme].background
     : theme.background.val;
-  // Android: make the immersive reader full-bleed by dropping the top safe-area
-  // edge, so the status bar overlays the page. Otherwise hiding the bar collapses
-  // the top inset and showing it again re-pads, shoving the page down on every
-  // chrome toggle. iOS keeps the top edge — its inset is the physical notch, which
-  // persists regardless of status-bar visibility, so there's no reflow to fix.
-  const safeAreaEdges: ("top" | "right" | "left")[] =
-    readerImmersive && Platform.OS === PlatformType.ANDROID
-      ? ["right", "left"]
-      : ["top", "right", "left"];
+  const safeAreaEdges = rootSafeAreaEdges({
+    today: isTodaySegments(segments),
+    immersiveReader: readerImmersive,
+    android: Platform.OS === PlatformType.ANDROID,
+  });
 
   const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
 
