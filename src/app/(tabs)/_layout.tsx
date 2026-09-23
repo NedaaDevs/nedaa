@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { Tabs, router, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
+import { BottomTabBarHeightCallbackContext } from "expo-router/build/react-navigation/bottom-tabs/utils/BottomTabBarHeightCallbackContext";
 import { useTranslation } from "react-i18next";
 
 // Stores
@@ -39,6 +40,76 @@ const TAB_ITEMS = [
   { name: OpeningTab.TOOLS, title: "a11y.tab.tools", icon: Ellipsis },
 ] as const;
 
+export const TAB_BAR_PART = { FRAME: "tab-bar-frame" } as const;
+
+/** Tabs that draw a sky; the bar floats over them so the sky shows through. */
+const FLOATING_TABS: readonly string[] = [OpeningTab.HOME];
+
+type AppTabBarProps = BottomTabBarProps & {
+  tabs: readonly (typeof TAB_ITEMS)[number][];
+  readerActive: boolean;
+};
+
+const AppTabBar = ({ state, navigation, tabs, readerActive }: AppTabBarProps) => {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  // The tab view gives each screen this height, so a screen under a floating bar
+  // knows how much room to leave.
+  const reportHeight = useContext(BottomTabBarHeightCallbackContext);
+  const focused = state.routes[state.index].name;
+  // Quran is full screen, so the mini player pads the bottom inset.
+  const tabBarHidden = focused === OpeningTab.QURAN;
+  const floating = FLOATING_TABS.includes(focused);
+
+  return (
+    <Box
+      testID={TAB_BAR_PART.FRAME}
+      onLayout={({ nativeEvent }) => reportHeight?.(nativeEvent.layout.height)}
+      {...(floating
+        ? { position: "absolute", start: 0, end: 0, bottom: 0 }
+        : { backgroundColor: "$backgroundSecondary" })}>
+      {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
+      <MiniPlayerBar />
+      {!tabBarHidden && (
+        <HStack
+          accessibilityRole="tablist"
+          gap="$0.5"
+          paddingTop="$1.5"
+          paddingHorizontal="$2.5"
+          paddingBottom={insets.bottom}
+          borderTopWidth={1}
+          borderColor="$border"
+          backgroundColor="$bar">
+          {tabs.map((tab) => {
+            const route = state.routes.find((candidate) => candidate.name === tab.name);
+            if (!route) return null;
+            const selected = focused === tab.name;
+            return (
+              <TabBarItem
+                key={route.key}
+                label={t(tab.title)}
+                icon={tab.icon}
+                selected={selected}
+                onPress={() => {
+                  const event = navigation.emit({
+                    type: "tabPress",
+                    target: route.key,
+                    canPreventDefault: true,
+                  });
+                  if (!selected && !event.defaultPrevented) {
+                    navigation.navigate(route.name, route.params);
+                  }
+                }}
+                onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
+              />
+            );
+          })}
+        </HStack>
+      )}
+    </Box>
+  );
+};
+
 // Honoured once per app launch: the effect below runs again on a locale change, and
 // re-navigating then would yank the user out of whatever tab they were on.
 let openingTabApplied = false;
@@ -49,7 +120,6 @@ const TabsLayout = () => {
   // would overlay the page and disrupt reading, so suppress it there.
   const readerActive = useQuranStore((s) => s.readerActive);
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const tabs = TAB_ITEMS.filter(
     (tab) => tab.name !== OpeningTab.ATHKAR || isAthkarSupported(locale)
   );
@@ -79,53 +149,9 @@ const TabsLayout = () => {
     return usePreferencesStore.persist.onFinishHydration(apply);
   }, [locale]);
 
-  const renderTabBar = ({ state, navigation }: BottomTabBarProps) => {
-    const focused = state.routes[state.index].name;
-    // Quran is full screen, so the mini player pads the bottom inset.
-    const tabBarHidden = focused === OpeningTab.QURAN;
-    return (
-      <Box backgroundColor="$backgroundSecondary">
-        {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
-        <MiniPlayerBar />
-        {!tabBarHidden && (
-          <HStack
-            accessibilityRole="tablist"
-            gap="$0.5"
-            paddingTop="$1.5"
-            paddingHorizontal="$2.5"
-            paddingBottom={insets.bottom}
-            borderTopWidth={1}
-            borderColor="$border"
-            backgroundColor="$bar">
-            {tabs.map((tab) => {
-              const route = state.routes.find((candidate) => candidate.name === tab.name);
-              if (!route) return null;
-              const selected = focused === tab.name;
-              return (
-                <TabBarItem
-                  key={route.key}
-                  label={t(tab.title)}
-                  icon={tab.icon}
-                  selected={selected}
-                  onPress={() => {
-                    const event = navigation.emit({
-                      type: "tabPress",
-                      target: route.key,
-                      canPreventDefault: true,
-                    });
-                    if (!selected && !event.defaultPrevented) {
-                      navigation.navigate(route.name, route.params);
-                    }
-                  }}
-                  onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
-                />
-              );
-            })}
-          </HStack>
-        )}
-      </Box>
-    );
-  };
+  const renderTabBar = (props: BottomTabBarProps) => (
+    <AppTabBar {...props} tabs={tabs} readerActive={readerActive} />
+  );
 
   // Other tab routes register from their files; only the bar shows tabs.
   return (
