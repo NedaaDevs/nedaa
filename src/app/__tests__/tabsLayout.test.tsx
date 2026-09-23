@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { Text, useColorScheme } from "react-native";
 import { router, Slot, usePathname } from "expo-router";
+import { userEvent } from "@testing-library/react-native";
 import { act, renderRouter, screen } from "expo-router/testing-library";
 
 import TabsLayout from "@/app/(tabs)/_layout";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { AppMode } from "@/enums/app";
+import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -81,7 +82,7 @@ const renderTabs = () =>
 describe("tabs layout", () => {
   beforeEach(() => {
     toolsMounts = 0;
-    useAppStore.setState({ mode: AppMode.LIGHT });
+    useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN });
   });
 
   // A new appearance restyles the tabs in place; rebuilding them reran every screen.
@@ -103,24 +104,55 @@ describe("tabs layout", () => {
 
     await act(() => useAppStore.setState({ mode: AppMode.DARK }));
 
-    expect(backgrounds()).toContain(config.themes.dark.backgroundSecondary.val);
-    expect(backgrounds()).not.toContain(config.themes.light.backgroundSecondary.val);
+    expect(backgrounds()).toContain(config.themes.dark.bar.val);
+    expect(backgrounds()).not.toContain(config.themes.light.bar.val);
   });
 
-  // Settings moves under More; the bar keeps the four places a day is spent in.
+  const tabNames = () => screen.queryAllByRole("tab").map((node) => node.props.accessibilityLabel);
+
+  // Settings sits under More; the bar keeps the four places a day is spent in.
   it("offers Today, Quran, Athkar and More, in that order", async () => {
     await renderTabs();
 
-    const labels = screen
-      .getAllByRole(/button|tab/)
-      .map((node) => node.props.accessibilityLabel)
-      .filter(Boolean);
-
-    expect(labels.map((label) => label.split(",")[0])).toEqual([
+    expect(tabNames()).toEqual([
       i18n.t("a11y.tab.home"),
       i18n.t("a11y.tab.quran"),
       i18n.t("a11y.tab.athkar"),
       i18n.t("a11y.tab.tools"),
     ]);
+  });
+
+  it("drops Athkar where the locale has none", async () => {
+    useAppStore.setState({ locale: AppLocale.MS });
+    await renderTabs();
+
+    expect(tabNames()).not.toContain(i18n.t("a11y.tab.athkar"));
+    expect(tabNames()).toHaveLength(3);
+  });
+
+  it("marks the open tab selected", async () => {
+    await renderTabs();
+
+    expect(screen.getByRole("tab", { name: i18n.t("a11y.tab.home"), selected: true })).toBeTruthy();
+    expect(screen.getAllByRole("tab", { selected: false })).toHaveLength(3);
+  });
+
+  it("opens a tab when pressed", async () => {
+    await renderTabs();
+
+    await userEvent.setup().press(screen.getByRole("tab", { name: i18n.t("a11y.tab.tools") }));
+
+    expect(screen.getByTestId("pathname")).toHaveTextContent(
+      normalizeRoutePath(BACK_DESTINATION.TOOLS.href)
+    );
+  });
+
+  // The reader is full screen; the tabs would cover the page.
+  it("hides the tabs on the Quran tab", async () => {
+    await renderTabs();
+
+    await act(() => router.navigate(BACK_DESTINATION.QURAN.href));
+
+    expect(screen.queryAllByRole("tab")).toEqual([]);
   });
 });
