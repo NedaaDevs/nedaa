@@ -7,13 +7,17 @@ jest.mock("lucide-react-native", () => ({ RefreshCw: "RefreshCw" }));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-jest.mock("tamagui", () => {
+// gorhom's modal needs reanimated, which cannot load under jest.
+const mockSheet = jest.fn();
+jest.mock("@/components/ui/actionsheet", () => {
   const { View } = jest.requireActual("react-native");
-  const Sheet = ({ children }: { children: React.ReactNode }) => <View>{children}</View>;
-  Sheet.Overlay = View;
-  Sheet.Handle = View;
-  Sheet.Frame = View;
-  return { Sheet };
+  return {
+    Actionsheet: (props: { children: React.ReactNode }) => {
+      mockSheet(props);
+      return <View>{props.children}</View>;
+    },
+    ActionsheetContent: View,
+  };
 });
 jest.mock("@/components/ui/button", () => {
   const { Pressable, Text, View } = jest.requireActual("react-native");
@@ -75,6 +79,26 @@ const hasText = (tree: renderer.ReactTestRenderer, text: string) =>
   tree.root.findAll((node) => node.props.children === text).length > 0;
 
 describe("CompassDetailsSheet", () => {
+  beforeEach(() => mockSheet.mockClear());
+
+  it("opens as a sheet sized to its content", () => {
+    renderSheet();
+
+    expect(mockSheet).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isOpen: true, fitContent: true })
+    );
+  });
+
+  // The sheet reports a swipe or backdrop dismissal; the screen owns the open state.
+  it("tells the screen when the sheet is dismissed", () => {
+    const onOpenChange = jest.fn();
+    renderSheet({ onOpenChange });
+
+    act(() => mockSheet.mock.lastCall?.[0].onClose());
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it("renders all detail rows", () => {
     const tree = renderSheet();
     for (const label of [
