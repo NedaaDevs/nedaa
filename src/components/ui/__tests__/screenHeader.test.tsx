@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import { Text } from "react-native";
 import { Settings } from "lucide-react-native";
 import { router, Stack, Tabs, usePathname } from "expo-router";
-import { act, fireEvent, renderRouter, screen, within } from "expo-router/testing-library";
+import { userEvent } from "@testing-library/react-native";
+import { act, renderRouter, screen, within } from "expo-router/testing-library";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -43,6 +44,11 @@ const renderApp = async (header: ReactElement, initialUrl = "/", isRTL = false) 
   );
 
 const go = (path: string) => act(() => router.push(path as never));
+
+// userEvent drives the host view's responder, as a finger does.
+const press = (name: string) => userEvent.setup().press(screen.getByRole("button", { name }));
+
+const pathname = () => screen.getByTestId("pathname");
 
 const backTo = (destination: keyof typeof BACK_DESTINATION) =>
   i18n.t("a11y.backTo", { screen: i18n.t(BACK_DESTINATION[destination].title) });
@@ -86,11 +92,9 @@ describe("ScreenHeader", () => {
       await go(BACK_DESTINATION.TOOLS.href);
       await go(BACK_DESTINATION.SETTINGS_ALARM.href);
 
-      await act(() => fireEvent.press(screen.getByRole("button", { name: backTo("TOOLS") })));
+      await press(backTo("TOOLS"));
 
-      expect(screen.getByTestId("pathname")).toHaveTextContent(
-        normalizeRoutePath(BACK_DESTINATION.TOOLS.href)
-      );
+      expect(pathname()).toHaveTextContent(normalizeRoutePath(BACK_DESTINATION.TOOLS.href));
     });
 
     it("falls back to its parent when opened cold", async () => {
@@ -99,11 +103,22 @@ describe("ScreenHeader", () => {
         BACK_DESTINATION.SETTINGS_ALARM.href
       );
 
-      await act(() => fireEvent.press(screen.getByRole("button", { name: backTo("SETTINGS") })));
+      await press(backTo("SETTINGS"));
 
-      expect(screen.getByTestId("pathname")).toHaveTextContent(
-        normalizeRoutePath(BACK_DESTINATION.SETTINGS.href)
+      expect(pathname()).toHaveTextContent(normalizeRoutePath(BACK_DESTINATION.SETTINGS.href));
+    });
+
+    // A fallback is for a cold open only; with a screen behind, back still pops to it.
+    it("pops rather than falls back when a screen is behind", async () => {
+      await renderApp(
+        <ScreenHeader title={TITLE} back={{ fallback: BACK_DESTINATION.SETTINGS }} />
       );
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      await press(backTo("TOOLS"));
+
+      expect(pathname()).toHaveTextContent(normalizeRoutePath(BACK_DESTINATION.TOOLS.href));
     });
 
     it("goes to a fixed screen whatever is behind", async () => {
@@ -111,7 +126,9 @@ describe("ScreenHeader", () => {
       await go(BACK_DESTINATION.SETTINGS.href);
       await go(BACK_DESTINATION.SETTINGS_ALARM.href);
 
-      expect(screen.getByRole("button", { name: backTo("TOOLS") })).toBeOnTheScreen();
+      await press(backTo("TOOLS"));
+
+      expect(pathname()).toHaveTextContent(normalizeRoutePath(BACK_DESTINATION.TOOLS.href));
     });
 
     it("says only 'back' when the destination has no name", async () => {
@@ -149,7 +166,7 @@ describe("ScreenHeader", () => {
         BACK_DESTINATION.SETTINGS_ALARM.href
       );
 
-      await act(() => fireEvent.press(screen.getByRole("button", { name: ACTION_LABEL })));
+      await press(ACTION_LABEL);
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
