@@ -7,7 +7,11 @@ declare module "react-native/Libraries/StyleSheet/processBackgroundImage" {
         direction: { type: "angle"; value: number } | { type: "keyword"; value: string };
         colorStops: ColorStop[];
       }
-    | { type: "radial-gradient"; colorStops: ColorStop[] };
+    | {
+        type: "radial-gradient";
+        position: { top?: number | string; left?: number | string };
+        colorStops: ColorStop[];
+      };
 
   /** One entry per accepted gradient; empty when any token is invalid. */
   export default function processBackgroundImage(input: string): ParsedGradient[];
