@@ -4,6 +4,8 @@
  * other. Stylesheets read the hex; React Native cannot parse oklch.
  */
 
+import { PHASE } from "@/constants/Phase";
+
 export type PaletteEntry = { readonly oklch: string; readonly hex: string };
 
 /** From the prototype's phone-frame override, not its `:root`. */
@@ -43,8 +45,8 @@ export type ColorToken = keyof typeof NEDAA_LIGHT & keyof typeof NEDAA_DARK;
 
 export const COLOR_TOKENS = Object.keys(NEDAA_LIGHT) as readonly ColorToken[];
 
-export const PHASE = { DAWN: "dawn", ASR: "asr", MAGHRIB: "maghrib" } as const;
-export type Phase = (typeof PHASE)[keyof typeof PHASE];
+/** The phases whose sky carries a tint; day and night keep the plain surface. */
+type TintedPhase = typeof PHASE.DAWN | typeof PHASE.ASR | typeof PHASE.MAGHRIB;
 
 export const BRIGHTNESS = { LIGHT: "light", DARK: "dark" } as const;
 export type Brightness = (typeof BRIGHTNESS)[keyof typeof BRIGHTNESS];
@@ -61,7 +63,7 @@ type PhaseGradient = {
 };
 
 /** `null` where the design tints nothing and the surface shows plain. */
-export const PHASE_GRADIENTS: Record<Phase, Record<Brightness, PhaseGradient | null>> = {
+export const PHASE_GRADIENTS: Record<TintedPhase, Record<Brightness, PhaseGradient | null>> = {
   [PHASE.ASR]: {
     light: {
       angle: 140,
