@@ -261,7 +261,7 @@
   "alarm.settings.beforePrayerTime": "قبل الصلاة",
   "alarm.settings.challenge": "تحدي الإيقاف",
   "alarm.settings.challengeDescription": "يتطلب إكمال مهمة لإيقاف المنبه",
-  "alarm.settings.description": "قم بتخصيص منبهات الصلاة مع الأصوات والتحديات وخيارات الغفوة.",
+  "alarm.settings.description": "خصّص صوت منبهات الصلاة وتحدي إيقافها والغفوة.",
   "alarm.settings.duration": "المدة",
   "alarm.settings.enableAlarm": "تفعيل المنبه",
   "alarm.settings.fajrAlarm": "منبه الفجر",
