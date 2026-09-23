@@ -1595,6 +1595,8 @@
   "settings.textSize.preview": "Prayer times at a glance",
   "settings.textSize.title": "Text size",
   "settings.thankYou": "JazakAllah Khair",
+  "settings.themes.adaptive.description": "Follow the prayer times: light by day, dark from Maghrib",
+  "settings.themes.adaptive.title": "Adaptive",
   "settings.themes.dark.description": "Always use dark appearance",
   "settings.themes.dark.title": "Dark",
   "settings.themes.light.description": "Always use light appearance",
