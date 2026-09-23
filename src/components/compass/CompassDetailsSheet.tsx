@@ -1,7 +1,7 @@
 import { RefreshCw } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { Sheet } from "tamagui";
 
+import { Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -55,10 +55,8 @@ export const CompassDetailsSheet = ({
   const { t } = useTranslation();
 
   return (
-    <Sheet modal open={open} onOpenChange={onOpenChange} snapPointsMode="fit" dismissOnSnapToBottom>
-      <Sheet.Overlay />
-      <Sheet.Handle />
-      <Sheet.Frame padding="$5" paddingBottom="$8">
+    <Actionsheet isOpen={open} onClose={() => onOpenChange(false)} fitContent>
+      <ActionsheetContent>
         <VStack gap="$3">
           <Text size="lg" bold accessibilityRole="header">
             {t("compass.details.title")}
@@ -95,7 +93,7 @@ export const CompassDetailsSheet = ({
             {t("compass.disclaimer")}
           </Text>
         </VStack>
-      </Sheet.Frame>
-    </Sheet>
+      </ActionsheetContent>
+    </Actionsheet>
   );
 };
