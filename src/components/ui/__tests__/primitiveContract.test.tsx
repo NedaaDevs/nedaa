@@ -1,18 +1,8 @@
-import { render, screen, userEvent } from "@testing-library/react-native";
-import { TamaguiProvider } from "tamagui";
+import { screen, userEvent } from "@testing-library/react-native";
 
-import config from "../../../../tamagui.config";
 import { Card } from "@/components/ui/card";
 import { Pressable } from "@/components/ui/pressable";
-
-const renderWithTheme = (ui: React.ReactElement) =>
-  render(ui, {
-    wrapper: ({ children }) => (
-      <TamaguiProvider config={config} defaultTheme="light">
-        {children}
-      </TamaguiProvider>
-    ),
-  });
+import { renderWithTheme } from "@/test-helpers/theme";
 
 /** CLAUDE.md's floor. A control below it is hard to hit and fails the checklist. */
 const TOUCH_FLOOR = 44;
