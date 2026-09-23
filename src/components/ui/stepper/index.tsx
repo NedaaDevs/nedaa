@@ -6,6 +6,7 @@ import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
+import { usePressRetention } from "@/components/ui/pressable/retention";
 import { PlatformType } from "@/enums/app";
 import { useHaptic } from "@/hooks/useHaptic";
 
@@ -63,6 +64,7 @@ export const Stepper = ({
 }: Props) => {
   const [held, setHeld] = useState<Direction | null>(null);
   const haptic = useHaptic("light");
+  const retention = usePressRetention(() => setHeld(null));
 
   // Returns where it landed, so a hold counts on from there without waiting for a render.
   const advance = (from: number, direction: Direction) => {
@@ -112,12 +114,15 @@ export const Stepper = ({
             }
       }
       onPressOut={() => setHeld(null)}
+      {...retention}
       opacity={disabled ? 0.4 : 1}
       backgroundColor="$accentSoft"
       borderRadius="$chip"
       alignItems="center"
       justifyContent="center">
-      <Icon as={glyph} size="md" color="$accent" />
+      <Box pointerEvents="none">
+        <Icon as={glyph} size="md" color="$accent" />
+      </Box>
     </Pressable>
   );
 

@@ -3,7 +3,9 @@ import { Alert, Platform, type AccessibilityActionEvent } from "react-native";
 
 import { Fill } from "@/components/ui/hold-to-confirm/Fill";
 import { Icon } from "@/components/ui/icon";
+import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
+import { usePressRetention } from "@/components/ui/pressable/retention";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
@@ -60,6 +62,7 @@ export const HoldToConfirm = ({
     onConfirm();
   });
 
+  const retention = usePressRetention(() => setHolding(false));
   const active = holding && !busy;
 
   useEffect(() => {
@@ -105,23 +108,23 @@ export const HoldToConfirm = ({
             }
       }
       onPressOut={() => setHolding(false)}
-      flexDirection="row"
-      alignItems="center"
+      {...retention}
       justifyContent="center"
-      gap="$inline"
       paddingHorizontal="$group"
       borderRadius="$control"
       overflow="hidden"
       backgroundColor="$error">
       <Fill holding={active} durationMs={durationMs} color={fillColor} />
-      {busy ? (
-        <Spinner size="small" color="$typographyContrast" />
-      ) : (
-        icon && <Icon as={icon} size="md" color="$typographyContrast" />
-      )}
-      <Text fontWeight="500" color="$typographyContrast">
-        {label}
-      </Text>
+      <HStack pointerEvents="none" alignItems="center" justifyContent="center" spacing="inline">
+        {busy ? (
+          <Spinner size="small" color="$typographyContrast" />
+        ) : (
+          icon && <Icon as={icon} size="md" color="$typographyContrast" />
+        )}
+        <Text fontWeight="500" color="$typographyContrast">
+          {label}
+        </Text>
+      </HStack>
     </Pressable>
   );
 };
