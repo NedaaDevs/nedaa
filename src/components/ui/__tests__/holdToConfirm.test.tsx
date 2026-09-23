@@ -160,12 +160,24 @@ describe("HoldToConfirm", () => {
 
     describe("sliding off", () => {
       const FRAME = { width: 300, height: 44 };
-      const holdThenMoveTo = async (locationX: number) => {
+      // The control sits at this page offset; the finger lands at its middle.
+      const AT = { x: 40, y: 400 };
+      const holdThenMoveTo = async (move: { pageX: number; locationX: number }) => {
         await act(() => fireEvent(control(), "layout", { nativeEvent: { layout: FRAME } }));
+        await act(() =>
+          fireEvent(control(), "responderGrant", {
+            nativeEvent: {
+              pageX: AT.x + FRAME.width / 2,
+              pageY: AT.y + FRAME.height / 2,
+              locationX: FRAME.width / 2,
+              locationY: FRAME.height / 2,
+            },
+          })
+        );
         await act(() => fireEvent(control(), "pressIn"));
         await act(() =>
           fireEvent(control(), "responderMove", {
-            nativeEvent: { locationX, locationY: FRAME.height / 2 },
+            nativeEvent: { ...move, pageY: AT.y + FRAME.height / 2, locationY: FRAME.height / 2 },
           })
         );
         await act(() => jest.advanceTimersByTime(HOLD.DEFAULT_MS * 2));
@@ -175,8 +187,19 @@ describe("HoldToConfirm", () => {
       it("lets go of the hold past the edge", async () => {
         const { onConfirm, view } = renderHold();
         await view;
+        const pageX = AT.x + FRAME.width + RETENTION_SLOP + 1;
 
-        await holdThenMoveTo(FRAME.width + RETENTION_SLOP + 1);
+        await holdThenMoveTo({ pageX, locationX: pageX - AT.x });
+
+        expect(onConfirm).not.toHaveBeenCalled();
+      });
+
+      // Android reads a move against the view under the finger, so its locationX is near zero.
+      it("lets go past the edge when the move reports another view", async () => {
+        const { onConfirm, view } = renderHold();
+        await view;
+
+        await holdThenMoveTo({ pageX: AT.x + FRAME.width + RETENTION_SLOP + 1, locationX: 2 });
 
         expect(onConfirm).not.toHaveBeenCalled();
       });
@@ -184,8 +207,9 @@ describe("HoldToConfirm", () => {
       it("keeps the hold through a small drift", async () => {
         const { onConfirm, view } = renderHold();
         await view;
+        const pageX = AT.x + FRAME.width + RETENTION_SLOP - 1;
 
-        await holdThenMoveTo(FRAME.width + RETENTION_SLOP - 1);
+        await holdThenMoveTo({ pageX, locationX: pageX - AT.x });
 
         expect(onConfirm).toHaveBeenCalledTimes(1);
       });
