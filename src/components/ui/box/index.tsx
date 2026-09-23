@@ -13,7 +13,8 @@ export const Box = styled(View, {
       group: { gap: "$group" },
       section: { gap: "$section" },
     },
-    inset: {
+    /** Padding by the same steps. `inset` is a Tamagui style prop. */
+    pad: {
       tight: { padding: "$tight" },
       inline: { padding: "$inline" },
       stack: { padding: "$stack" },
