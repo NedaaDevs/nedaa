@@ -1,8 +1,7 @@
-import { processColor } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
-import { ARC_PART } from "@/components/ui/arc";
+import { TIMELINE_PART } from "@/components/ui/timeline";
 import { CelestialRhythm, RHYTHM_PART } from "@/components/today/CelestialRhythm";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import i18n from "@/localization/i18n";
@@ -90,14 +89,21 @@ describe("CelestialRhythm", () => {
     });
   });
 
-  it("lights the selected prayer's stretch of the line", async () => {
+  it("lights the selected prayer's name", async () => {
     await renderAt("2026-09-23", "10:00", { selected: PRAYER_ID.MAGHRIB });
 
-    const strokes = screen
-      .getAllByTestId(ARC_PART.SEGMENT, { includeHiddenElements: true })
-      .map((node) => node.props.stroke?.payload);
+    expect(
+      screen.getByText(name("prayerTimes.maghrib"), { includeHiddenElements: true })
+    ).toHaveStyle({ color: LIGHT.accent.val });
+  });
 
-    expect(strokes).toContain(processColor(LIGHT.accent.val));
+  // Nothing leads anywhere after Isha, so the line stays matte.
+  it("fills nothing after Isha", async () => {
+    await renderAt("2026-09-23", "22:00");
+
+    expect(screen.queryAllByTestId(TIMELINE_PART.FILL, { includeHiddenElements: true })).toEqual(
+      []
+    );
   });
 
   it("fades back while a state panel covers the day", async () => {
