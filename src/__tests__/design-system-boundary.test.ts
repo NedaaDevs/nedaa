@@ -17,9 +17,9 @@ import { REPO_ROOT, walkFiles } from "@/test-helpers/routeTree";
  */
 const CEILING = {
   /** Files importing any value from `tamagui` or `@tamagui/*`. */
-  tamaguiValueImporters: 80,
+  tamaguiValueImporters: 79,
   /** `useTheme()` calls on Tamagui's hook. */
-  useThemeCalls: 29,
+  useThemeCalls: 28,
   /** Radius props not set to a named token ($chip, $control, $card, $sheet, $pill). */
   rawRadius: 402,
   /** Width, height and their bounds given a non-zero number. */
