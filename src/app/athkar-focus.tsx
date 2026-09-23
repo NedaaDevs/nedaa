@@ -838,6 +838,8 @@ const AthkarFocusScreen = () => {
         {/* Main content area — tap zone (flex fills remaining space above audio controls) */}
         <GestureDetector gesture={combinedGestures}>
           <Pressable
+            // Holds text or a control the reader must reach; as one element iOS would hide them.
+            accessible={false}
             flex={1}
             accessibilityRole="button"
             accessibilityLabel={t("athkar.focus.tapToIncrement")}>
