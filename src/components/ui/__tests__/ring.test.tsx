@@ -1,21 +1,12 @@
 import type { ReactTestRendererJSON } from "react-test-renderer";
-import { render, screen } from "@testing-library/react-native";
-import { TamaguiProvider } from "tamagui";
+import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import { Ring } from "@/components/ui/ring";
+import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
 const CIRCLE = "RNSVGCircle";
-
-const renderWithTheme = (ui: React.ReactElement) =>
-  render(ui, {
-    wrapper: ({ children }) => (
-      <TamaguiProvider config={config} defaultTheme="light">
-        {children}
-      </TamaguiProvider>
-    ),
-  });
 
 /** The host circles in paint order: the track, then the arc. */
 const circles = () => {
