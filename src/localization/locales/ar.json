@@ -1637,6 +1637,8 @@
   "settings.textSize.preview": "مواقيت الصلاة في لمحة",
   "settings.textSize.title": "حجم الخط",
   "settings.thankYou": "جزاك الله خيرًا",
+  "settings.themes.adaptive.description": "اتبع أوقات الصلاة: فاتح نهارًا وداكن من المغرب",
+  "settings.themes.adaptive.title": "متكيف",
   "settings.themes.dark.description": "استخدم المظهر الداكن دائمًا",
   "settings.themes.dark.title": "داكن",
   "settings.themes.light.description": "استخدم المظهر الفاتح دائمًا",
