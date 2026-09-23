@@ -2,12 +2,13 @@ import { useEffect } from "react";
 import { Text, useColorScheme } from "react-native";
 import { router, Slot, usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
-import { act, renderRouter, screen } from "expo-router/testing-library";
+import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
 
-import TabsLayout from "@/app/(tabs)/_layout";
+import TabsLayout, { TAB_BAR_PART } from "@/app/(tabs)/_layout";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAppStore } from "@/stores/app";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import config from "../../../tamagui.config";
@@ -20,6 +21,9 @@ jest.mock("@/components/athkar/MiniPlayerBar", () => ({ __esModule: true, defaul
 jest.mock("@/components/quran/listen/QuranMiniPlayer", () => ({ QuranMiniPlayer: () => null }));
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
+
+/** Today's content, reporting the room it leaves for the bar. */
+const TodayStandIn = () => <Text testID="inset">{useTabBarInset()}</Text>;
 
 let toolsMounts = 0;
 const ToolsScreen = () => {
@@ -65,7 +69,7 @@ const renderTabs = () =>
         </>
       ),
       "(tabs)/_layout": TabsLayout,
-      "(tabs)/index": () => null,
+      "(tabs)/index": TodayStandIn,
       "(tabs)/athkar": () => null,
       "(tabs)/quran": () => null,
       "(tabs)/qada": () => null,
@@ -154,5 +158,35 @@ describe("tabs layout", () => {
     await act(() => router.navigate(BACK_DESTINATION.QURAN.href));
 
     expect(screen.queryAllByRole("tab")).toEqual([]);
+  });
+
+  const frameStyle = () =>
+    Object.assign({}, ...[screen.getByTestId(TAB_BAR_PART.FRAME).props.style].flat(Infinity));
+
+  // Today's sky runs under the bar, as the design draws it.
+  it("floats the bar over Today", async () => {
+    await renderTabs();
+
+    expect(frameStyle()).toMatchObject({ position: "absolute" });
+  });
+
+  // The other tabs keep the bar in the flow until they draw a sky of their own.
+  it("keeps the bar in the flow on another tab", async () => {
+    await renderTabs();
+    await act(() => router.navigate(BACK_DESTINATION.TOOLS.href));
+
+    expect(frameStyle().position).not.toBe("absolute");
+  });
+
+  it("tells the screen how much room the floating bar needs", async () => {
+    await renderTabs();
+
+    await act(() =>
+      fireEvent(screen.getByTestId(TAB_BAR_PART.FRAME), "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 92 } },
+      })
+    );
+
+    expect(screen.getByTestId("inset")).toHaveTextContent("92");
   });
 });
