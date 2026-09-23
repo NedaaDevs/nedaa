@@ -1,20 +1,18 @@
 import { readFileSync } from "fs";
 import { join } from "path";
+import { stylePropsAll } from "@tamagui/helpers";
+import { View, XStack, YStack } from "tamagui";
 
-const frame = (name: string) => readFileSync(join(__dirname, `../${name}/index.tsx`), "utf8");
-
-const FRAMES = ["hstack", "vstack", "box"];
-
-/** Both axes name what they separate, so a screen never picks a number. */
-const SPACING = ["tight", "inline", "stack", "group", "section"];
+import config from "../../../../tamagui.config";
+import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
 
 /**
- * Tamagui drops a prop whose name is in skipProps BEFORE it looks up variants, so
- * an axis named for a reserved prop compiles, reads correctly and never runs.
- * Read from the shipped list, which changes with the version. Parsed rather than
- * imported because `tamagui` ships ESM that jest cannot transform.
+ * Props Tamagui drops before it looks up variants. The package's export map hides
+ * the module, so the shipped file is read; the floor test below catches a miss.
  */
-const reserved = (): string[] => {
+const skipProps = (): string[] => {
   const source = readFileSync(
     join(__dirname, "../../../../node_modules/@tamagui/web/dist/cjs/helpers/skipProps.native.js"),
     "utf8"
@@ -24,46 +22,54 @@ const reserved = (): string[] => {
   return [...block[1].matchAll(/^\s+(\w+):/gm)].map((m) => m[1]);
 };
 
-/** The variant group names, which sit one level above the steps. */
-const axes = (name: string): string[] => {
-  const block = frame(name).match(/variants: \{([\s\S]*?)\n  \} as const/);
-  if (!block) throw new Error(`${name}: variants block not found`);
-  return [...block[1].matchAll(/^ {4}(\w+): \{$/gm)].map((m) => m[1]);
-};
+const FRAMES = [
+  ["HStack", HStack, XStack],
+  ["VStack", VStack, YStack],
+  ["Box", Box, View],
+] as const;
+
+const variantsOf = (frame: { staticConfig: { variants?: Record<string, object> } }) =>
+  frame.staticConfig.variants ?? {};
+
+/** The axes a frame adds, without the ones it inherits. */
+const ownAxes = (frame: (typeof FRAMES)[number][1], parent: (typeof FRAMES)[number][2]) =>
+  Object.keys(variantsOf(frame)).filter((axis) => !(axis in variantsOf(parent)));
+
+/** Every name Tamagui already reads as a prop: a variant under one of these never runs. */
+const TAKEN = [...skipProps(), ...Object.keys(stylePropsAll), ...Object.keys(config.shorthands)];
 
 describe("stack frames", () => {
-  it("finds the reserved prop list", () => {
-    expect(reserved()).toContain("space");
-    expect(reserved().length).toBeGreaterThan(5);
+  it("finds the names Tamagui reads", () => {
+    expect(TAKEN).toEqual(expect.arrayContaining(["space", "inset", "p"]));
   });
 
-  it.each(FRAMES)("%s declares two axes", (name) => {
-    expect(axes(name).sort()).toEqual(["inset", "spacing"]);
+  it.each(FRAMES)("%s adds a gap axis and a padding axis", (_, frame, parent) => {
+    expect(ownAxes(frame, parent).sort()).toEqual(["pad", "spacing"]);
   });
 
-  // The axis was named `space` and silently never ran.
-  it.each(FRAMES)("%s names no axis Tamagui would drop", (name) => {
-    const dropped = axes(name).filter((axis) => reserved().includes(axis));
-
-    expect(dropped).toEqual([]);
+  // `space` and then `inset` compiled, read correctly, and never ran.
+  it.each(FRAMES)("%s names no axis Tamagui would take", (_, frame, parent) => {
+    expect(ownAxes(frame, parent).filter((axis) => TAKEN.includes(axis))).toEqual([]);
   });
 
-  it.each(FRAMES)("%s is a styled frame, not an alias", (name) => {
-    expect(frame(name)).toMatch(/export const \w+ = styled\(/);
-  });
+  it.each(FRAMES)("%s sets each step's own space token", (_, frame) => {
+    const { spacing, pad } = variantsOf(frame) as Record<string, Record<string, object>>;
 
-  it.each(FRAMES)("%s maps every step on both axes", (name) => {
-    const source = frame(name);
-
-    for (const step of SPACING) {
-      expect(source).toContain(`${step}: { gap: "$${step}" }`);
-      expect(source).toContain(`${step}: { padding: "$${step}" }`);
+    for (const step of Object.keys(spacing)) {
+      expect(config.tokens.space).toHaveProperty(step);
+      expect(spacing[step]).toEqual({ gap: `$${step}` });
+      expect(pad[step]).toEqual({ padding: `$${step}` });
     }
   });
 
-  it.each(FRAMES)("%s spells its steps only in the vocabulary", (name) => {
-    const steps = [...frame(name).matchAll(/^ {6}(\w+): \{ (?:gap|padding)/gm)].map((m) => m[1]);
+  it("gives all three frames one vocabulary of at least five steps", () => {
+    const vocabularies = FRAMES.map(([, frame]) =>
+      Object.keys((variantsOf(frame) as Record<string, object>).spacing).sort()
+    );
 
-    expect([...new Set(steps)].sort()).toEqual([...SPACING].sort());
+    expect(vocabularies[0].length).toBeGreaterThanOrEqual(5);
+    expect(new Set(vocabularies.map((steps) => steps.join()))).toEqual(
+      new Set([vocabularies[0].join()])
+    );
   });
 });
