@@ -71,9 +71,9 @@ export const resolveLineHeight = (value: unknown): number | undefined => {
 
 /**
  * Final font geometry for a Text instance: the app text-scale multiplier `m`
- * applied to either the caller's explicit fontSize or the size-token table.
- * Explicit line heights scale with the font. With only an explicit fontSize,
- * React Native derives the line box from the scaled font.
+ * applied to the caller's explicit values or the size-token table. An explicit
+ * line box wins and scales with the font. Without one, an explicit fontSize
+ * leaves the box undefined so React Native derives it from the scaled font.
  */
 export const resolveTextSizing = (
   m: number,
