@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "tamagui";
@@ -15,7 +15,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
-import { Pressable } from "@/components/ui/pressable";
+import { Stepper } from "@/components/ui/stepper";
 import { Icon } from "@/components/ui/icon";
 
 import {
@@ -46,6 +46,10 @@ import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
+
+/** The custom amount the add sheet accepts, in days. */
+const MIN_CUSTOM_DAYS = 1;
+const MAX_CUSTOM_DAYS = 999;
 
 const QadaScreen = () => {
   const { t } = useTranslation();
@@ -81,10 +85,6 @@ const QadaScreen = () => {
   const [amount, setAmount] = useState(1);
   const [notes, setNotes] = useState("");
 
-  // Stepper long press state
-  const incrementTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const decrementTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const { isRTL } = useRTL();
   const hapticSelection = useHaptic("selection");
   const hapticSuccess = useHaptic("success");
@@ -92,76 +92,6 @@ const QadaScreen = () => {
 
   const remaining = getRemaining();
   const completionPercentage = getCompletionPercentage();
-
-  const incrementAmount = () => {
-    setAmount((prev) => Math.min(prev + 1, 999));
-  };
-
-  const decrementAmount = () => {
-    setAmount((prev) => Math.max(prev - 1, 1));
-  };
-
-  const stopIncrement = () => {
-    if (incrementTimer.current) {
-      clearInterval(incrementTimer.current);
-      incrementTimer.current = null;
-    }
-  };
-
-  const stopDecrement = () => {
-    if (decrementTimer.current) {
-      clearInterval(decrementTimer.current);
-      decrementTimer.current = null;
-    }
-  };
-
-  const startIncrement = () => {
-    hapticLight();
-    incrementAmount();
-
-    let count = 0;
-    const runIncrement = () => {
-      count++;
-      incrementAmount();
-
-      // Speed up after 5 increments by clearing and creating new interval
-      if (count === 5) {
-        if (incrementTimer.current) clearInterval(incrementTimer.current);
-        incrementTimer.current = setInterval(runIncrement, 100);
-      }
-    };
-
-    // Start with slower interval (200ms)
-    incrementTimer.current = setInterval(runIncrement, 200);
-  };
-
-  const startDecrement = () => {
-    hapticLight();
-    decrementAmount();
-
-    let count = 0;
-    const runDecrement = () => {
-      count++;
-      decrementAmount();
-
-      // Speed up after 5 decrements by clearing and creating new interval
-      if (count === 5) {
-        if (decrementTimer.current) clearInterval(decrementTimer.current);
-        decrementTimer.current = setInterval(runDecrement, 100);
-      }
-    };
-
-    // Start with slower interval (200ms)
-    decrementTimer.current = setInterval(runDecrement, 200);
-  };
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      stopIncrement();
-      stopDecrement();
-    };
-  }, []);
 
   const handleQuickAdd = async (days: number) => {
     await hapticSelection();
@@ -173,9 +103,6 @@ const QadaScreen = () => {
 
   const handleAddMissed = async () => {
     if (amount <= 0) return;
-    // Stop any running timers before adding
-    stopIncrement();
-    stopDecrement();
     await addMissed(amount, notes || undefined);
     setAmount(1);
     setNotes("");
@@ -184,8 +111,6 @@ const QadaScreen = () => {
   };
 
   const handleModalClose = () => {
-    stopIncrement();
-    stopDecrement();
     setNotes("");
     setShowAddModal(false);
   };
@@ -454,54 +379,21 @@ const QadaScreen = () => {
                     <Text size="sm" color="$typographySecondary">
                       {t("qada.customAmount")}
                     </Text>
-                    <HStack gap="$3" alignItems="center" justifyContent="center">
-                      <Pressable
-                        onPressIn={startDecrement}
-                        onPressOut={stopDecrement}
-                        onTouchEnd={stopDecrement}
-                        disabled={isLoading}
-                        accessibilityRole="button"
-                        accessibilityLabel={t("a11y.qada.decrement")}
-                        width={56}
-                        height={56}
-                        backgroundColor="$background"
-                        borderWidth={2}
-                        borderColor="$outline"
-                        borderRadius={999}
-                        alignItems="center"
-                        justifyContent="center">
-                        <Text size="2xl" color="$typography" bold>
-                          −
-                        </Text>
-                      </Pressable>
-
-                      <Box flex={1} alignItems="center">
-                        <Text size="5xl" bold color="$primary">
-                          {formatNumberToLocale(amount.toString())}
-                        </Text>
-                        <Text size="sm" color="$typographySecondary" marginTop="$1">
-                          {formatNumberToLocale(t("qada.days", { count: amount }))}
-                        </Text>
-                      </Box>
-
-                      <Pressable
-                        onPressIn={startIncrement}
-                        onPressOut={stopIncrement}
-                        onTouchEnd={stopIncrement}
-                        disabled={isLoading}
-                        accessibilityRole="button"
-                        accessibilityLabel={t("a11y.qada.increment")}
-                        width={56}
-                        height={56}
-                        backgroundColor="$primary"
-                        borderRadius={999}
-                        alignItems="center"
-                        justifyContent="center">
-                        <Text size="2xl" color="$typographyContrast" bold>
-                          +
-                        </Text>
-                      </Pressable>
-                    </HStack>
+                    <Stepper
+                      value={amount}
+                      onChange={setAmount}
+                      min={MIN_CUSTOM_DAYS}
+                      max={MAX_CUSTOM_DAYS}
+                      accessibilityLabel={t("qada.customAmount")}
+                      valueText={formatNumberToLocale(t("qada.days", { count: amount }))}
+                      disabled={isLoading}>
+                      <Text size="5xl" bold color="$primary">
+                        {formatNumberToLocale(amount.toString())}
+                      </Text>
+                      <Text size="sm" color="$typographySecondary" marginTop="$1">
+                        {formatNumberToLocale(t("qada.days", { count: amount }))}
+                      </Text>
+                    </Stepper>
                   </VStack>
 
                   {/* Optional Notes Input */}
