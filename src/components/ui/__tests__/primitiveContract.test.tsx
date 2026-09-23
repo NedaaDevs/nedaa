@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, userEvent } from "@testing-library/react-native";
 import { TamaguiProvider } from "tamagui";
 
 import config from "../../../../tamagui.config";
@@ -47,5 +47,25 @@ describe("primitive accessibility contract", () => {
     );
 
     expect(screen.getByRole("button", { name: "Athkar" })).toHaveStyle({ minHeight: 50 });
+  });
+});
+
+describe("disabled pressables", () => {
+  // userEvent drives the host view's responder, as a finger does; fireEvent would
+  // read the handler off the wrapper's props and miss what reaches the view.
+  it.each([
+    ["Pressable", Pressable],
+    ["Card.Pressable", Card.Pressable],
+  ])("%s ignores press-in and press-out", async (_, Component) => {
+    const onPressIn = jest.fn();
+    const onPressOut = jest.fn();
+    await renderWithTheme(
+      <Component accessibilityLabel="Hold" disabled onPressIn={onPressIn} onPressOut={onPressOut} />
+    );
+
+    await userEvent.setup().press(screen.getByRole("button", { name: "Hold" }));
+
+    expect(onPressIn).not.toHaveBeenCalled();
+    expect(onPressOut).not.toHaveBeenCalled();
   });
 });
