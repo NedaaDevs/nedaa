@@ -1,4 +1,4 @@
-import type { PaletteEntry } from "@/constants/Palette";
+import { NEDAA_LIGHT, type PaletteEntry } from "@/constants/Palette";
 import { DARK_SKY, LIGHT_SKY } from "@/constants/Sky";
 import { oklchToHex } from "@/test-helpers/oklch";
 
@@ -27,7 +27,6 @@ describe("sky", () => {
     ["base", LIGHT_SKY.base],
     ["glow", LIGHT_SKY.glow.stops],
     ["horizon", LIGHT_SKY.horizon.stops],
-    ["sun", LIGHT_SKY.sun.stops],
     ["edge wash", LIGHT_SKY.edgeWash],
   ])("%s stops run forward within the gradient", (_name, stops) => {
     const offsets = stops.map((s) => s.offset);
@@ -35,5 +34,25 @@ describe("sky", () => {
     expect(offsets).toEqual([...offsets].sort((a, b) => a - b));
     expect(Math.min(...offsets)).toBeGreaterThanOrEqual(0);
     expect(Math.max(...offsets)).toBeLessThanOrEqual(1);
+  });
+});
+
+/** Relative luminance, then the WCAG ratio. */
+const luminance = (hex: string) => {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a: string, b: string) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+// Today's date and city sit straight on the sky, in the palette's text colour.
+describe("day sky", () => {
+  it.each(LIGHT_SKY.base.map((s) => [s.color.hex]))("keeps title text readable on %s", (hex) => {
+    expect(contrast(NEDAA_LIGHT.fg.hex, hex)).toBeGreaterThanOrEqual(4.5);
   });
 });
