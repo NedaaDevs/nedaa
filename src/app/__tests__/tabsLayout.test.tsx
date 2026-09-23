@@ -6,6 +6,7 @@ import { act, renderRouter, screen } from "expo-router/testing-library";
 import TabsLayout from "@/app/(tabs)/_layout";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppMode } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import config from "../../../tamagui.config";
@@ -104,5 +105,22 @@ describe("tabs layout", () => {
 
     expect(backgrounds()).toContain(config.themes.dark.backgroundSecondary.val);
     expect(backgrounds()).not.toContain(config.themes.light.backgroundSecondary.val);
+  });
+
+  // Settings moves under More; the bar keeps the four places a day is spent in.
+  it("offers Today, Quran, Athkar and More, in that order", async () => {
+    await renderTabs();
+
+    const labels = screen
+      .getAllByRole(/button|tab/)
+      .map((node) => node.props.accessibilityLabel)
+      .filter(Boolean);
+
+    expect(labels.map((label) => label.split(",")[0])).toEqual([
+      i18n.t("a11y.tab.home"),
+      i18n.t("a11y.tab.quran"),
+      i18n.t("a11y.tab.athkar"),
+      i18n.t("a11y.tab.tools"),
+    ]);
   });
 });
