@@ -22,7 +22,7 @@ import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
-import { nativeColorSchemeFor } from "@/utils/appearance";
+import { isDarkMode, nativeColorSchemeFor } from "@/utils/appearance";
 
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
@@ -176,8 +176,7 @@ export default function RootLayout() {
     return null;
   }
 
-  const brightness = mode === AppMode.SYSTEM ? systemScheme : mode;
-  const resolvedTheme = brightness === AppMode.DARK ? AppMode.DARK : AppMode.LIGHT;
+  const resolvedTheme = isDarkMode(mode, systemScheme) ? AppMode.DARK : AppMode.LIGHT;
   const arabicScript = isArabicScript(locale);
 
   return (
