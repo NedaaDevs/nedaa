@@ -1,29 +1,11 @@
-import { render, screen } from "@testing-library/react-native";
-import { TamaguiProvider } from "tamagui";
+import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import { NumberBadge } from "@/components/ui/number-badge";
 import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
-
-jest.mock("expo-sqlite/kv-store", () => ({
-  __esModule: true,
-  default: {
-    getItem: jest.fn(() => Promise.resolve(null)),
-    setItem: jest.fn(() => Promise.resolve()),
-    removeItem: jest.fn(() => Promise.resolve()),
-  },
-}));
-
-const renderWithTheme = (ui: React.ReactElement) =>
-  render(ui, {
-    wrapper: ({ children }) => (
-      <TamaguiProvider config={config} defaultTheme="light">
-        {children}
-      </TamaguiProvider>
-    ),
-  });
+import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
 const N = 3;
