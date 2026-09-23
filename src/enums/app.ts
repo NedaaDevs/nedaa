@@ -14,6 +14,8 @@ export enum AppMode {
   SYSTEM = "system",
   LIGHT = "light",
   DARK = "dark",
+  /** Follows the prayer-day phases: light by day, dark from Maghrib. */
+  ADAPTIVE = "adaptive",
 }
 
 export enum AppDirection {
