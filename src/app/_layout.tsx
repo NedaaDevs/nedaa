@@ -23,6 +23,7 @@ import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { isDarkMode, nativeColorSchemeFor } from "@/utils/appearance";
+import { PhaseContext, usePrayerPhaseSource } from "@/contexts/PhaseContext";
 
 import { ToastProvider } from "@/components/ToastContainer";
 import { LoadingOverlay } from "@/components/feedback";
@@ -146,12 +147,14 @@ export default function RootLayout() {
   const prefsHydrated = usePreferencesHydrated();
   useInitialSetup();
 
+  const phase = usePrayerPhaseSource();
+
   // Pin the native layer (system dialogs, keyboard, window bg) to the in-app
   // mode so it can't follow the OS day/night independently.
   useEffect(() => {
     if (!hasHydrated) return;
-    Appearance.setColorScheme(nativeColorSchemeFor(mode));
-  }, [mode, hasHydrated]);
+    Appearance.setColorScheme(nativeColorSchemeFor(mode, phase));
+  }, [mode, phase, hasHydrated]);
 
   useEffect(() => {
     trackAppSession();
@@ -176,22 +179,24 @@ export default function RootLayout() {
     return null;
   }
 
-  const resolvedTheme = isDarkMode(mode, systemScheme) ? AppMode.DARK : AppMode.LIGHT;
+  const resolvedTheme = isDarkMode(mode, systemScheme, phase) ? AppMode.DARK : AppMode.LIGHT;
   const arabicScript = isArabicScript(locale);
 
   return (
     <ScreenshotModeWrapper>
-      <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
-        <FontLanguage
-          body={arabicScript ? "ar" : "default"}
-          heading={arabicScript ? "ar" : "default"}>
-          <RTLProvider>
-            <FontProvider>
-              <AppShell />
-            </FontProvider>
-          </RTLProvider>
-        </FontLanguage>
-      </TamaguiProvider>
+      <PhaseContext value={phase}>
+        <TamaguiProvider config={tamaguiConfig} defaultTheme={resolvedTheme}>
+          <FontLanguage
+            body={arabicScript ? "ar" : "default"}
+            heading={arabicScript ? "ar" : "default"}>
+            <RTLProvider>
+              <FontProvider>
+                <AppShell />
+              </FontProvider>
+            </RTLProvider>
+          </FontLanguage>
+        </TamaguiProvider>
+      </PhaseContext>
     </ScreenshotModeWrapper>
   );
 }
