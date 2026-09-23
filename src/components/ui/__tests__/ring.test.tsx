@@ -40,12 +40,15 @@ describe("Ring", () => {
 
   // A token the ring failed to resolve would reach the SVG unparsed and draw nothing.
   it("strokes with the theme's accent by default", async () => {
-    await renderWithTheme(<Ring progress={0.4} color={LIGHT.accentPrimary.val} />);
-    const explicit = circles().map((circle) => circle.props.stroke);
-    screen.unmount();
+    await renderWithTheme(
+      <>
+        <Ring progress={0.4} color={LIGHT.accentPrimary.val} />
+        <Ring progress={0.4} />
+      </>
+    );
+    const strokes = circles().map((circle) => circle.props.stroke);
 
-    await renderWithTheme(<Ring progress={0.4} />);
-
-    expect(circles().map((circle) => circle.props.stroke)).toEqual(explicit);
+    // Two circles per ring: the explicit ring's pair, then the default's.
+    expect(strokes.slice(2)).toEqual(strokes.slice(0, 2));
   });
 });
