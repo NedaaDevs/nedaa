@@ -105,6 +105,8 @@ const SurahListRowBase = ({
 
   return (
     <Pressable
+      // Holds text or a control the reader must reach; as one element iOS would hide them.
+      accessible={false}
       onPress={() => onPress(surah)}
       accessibilityRole="button"
       accessibilityLabel={name}

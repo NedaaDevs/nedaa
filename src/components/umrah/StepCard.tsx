@@ -170,6 +170,8 @@ const StepCardContent = ({ step }: Props) => {
 
           {step.dua && (
             <Pressable
+              // Holds text or a control the reader must reach; as one element iOS would hide them.
+              accessible={false}
               onPress={handleFlip}
               width="100%"
               accessibilityRole="button"
@@ -276,6 +278,8 @@ const StepCardContent = ({ step }: Props) => {
           )}
 
           <Pressable
+            // Holds text or a control the reader must reach; as one element iOS would hide them.
+            accessible={false}
             onPress={handleFlip}
             width="100%"
             accessibilityRole="button"
