@@ -5,6 +5,7 @@ import { TamaguiProvider } from "tamagui";
 
 import config from "../../../../tamagui.config";
 import { HOLD, HoldToConfirm } from "@/components/ui/hold-to-confirm";
+import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
 import { PlatformType } from "@/enums/app";
 
 // The fill is reanimated, which cannot load under jest; it is drawing only.
@@ -156,6 +157,39 @@ describe("HoldToConfirm", () => {
       await act(() => jest.advanceTimersByTime(HOLD.DEFAULT_MS * 2));
 
       expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
+
+    describe("sliding off", () => {
+      const FRAME = { width: 300, height: 44 };
+      const holdThenMoveTo = async (locationX: number) => {
+        await act(() => fireEvent(control(), "layout", { nativeEvent: { layout: FRAME } }));
+        await act(() => fireEvent(control(), "pressIn"));
+        await act(() =>
+          fireEvent(control(), "responderMove", {
+            nativeEvent: { locationX, locationY: FRAME.height / 2 },
+          })
+        );
+        await act(() => jest.advanceTimersByTime(HOLD.DEFAULT_MS * 2));
+      };
+
+      // Sliding away is how a finger takes back a press.
+      it("lets go of the hold past the edge", async () => {
+        const { onConfirm, view } = renderHold();
+        await view;
+
+        await holdThenMoveTo(FRAME.width + RETENTION_SLOP + 1);
+
+        expect(onConfirm).not.toHaveBeenCalled();
+      });
+
+      it("keeps the hold through a small drift", async () => {
+        const { onConfirm, view } = renderHold();
+        await view;
+
+        await holdThenMoveTo(FRAME.width + RETENTION_SLOP - 1);
+
+        expect(onConfirm).toHaveBeenCalledTimes(1);
+      });
     });
 
     it("cancels a hold when it turns busy", async () => {

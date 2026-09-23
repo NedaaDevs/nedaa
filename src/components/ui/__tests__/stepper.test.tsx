@@ -5,6 +5,7 @@ import { TamaguiProvider } from "tamagui";
 
 import config from "../../../../tamagui.config";
 import { RTLContext } from "@/contexts/RTLContext";
+import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
 import { STEPPER_PART, Stepper } from "@/components/ui/stepper";
 import { PlatformType } from "@/enums/app";
 
@@ -171,6 +172,26 @@ describe("Stepper", () => {
       await wait(2000);
 
       expect(shown()).toBe(released);
+    });
+
+    it("stops counting when the finger slides off the button", async () => {
+      const size = 44;
+      await render(<Harness start={MIN} />);
+      const button = part(STEPPER_PART.INCREMENT);
+      await act(() =>
+        fireEvent(button, "layout", { nativeEvent: { layout: { width: size, height: size } } })
+      );
+      await pressIn(STEPPER_PART.INCREMENT);
+
+      await act(() =>
+        fireEvent(button, "responderMove", {
+          nativeEvent: { locationX: size / 2, locationY: -RETENTION_SLOP - 1 },
+        })
+      );
+      const leftAt = shown();
+      await wait(2000);
+
+      expect(shown()).toBe(leftAt);
     });
 
     it("holds at the floor", async () => {
