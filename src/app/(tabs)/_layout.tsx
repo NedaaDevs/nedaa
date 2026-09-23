@@ -14,7 +14,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { OpeningTab, type OpeningTabValue } from "@/enums/app";
 
 // Icons
-import { Home, Settings, BookOpenText, BookOpen, Wrench } from "lucide-react-native";
+import { Home, BookOpenText, BookOpen, Wrench } from "lucide-react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -108,20 +108,12 @@ const TabsLayout = () => {
           borderTopColor: theme.outline.val,
         },
       }}>
+      {/* The bar shows these in JSX order: Today, Quran, Athkar, More. */}
       <Tabs.Screen
         name="index"
         options={{
           title: t("a11y.tab.home"),
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="athkar"
-        options={{
-          title: t("a11y.tab.athkar"),
-          href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
-          tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
         }}
       />
 
@@ -135,9 +127,11 @@ const TabsLayout = () => {
       />
 
       <Tabs.Screen
-        name="qada"
+        name="athkar"
         options={{
-          href: null,
+          title: t("a11y.tab.athkar"),
+          href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
+          tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
         }}
       />
 
@@ -146,6 +140,13 @@ const TabsLayout = () => {
         options={{
           title: t("a11y.tab.tools"),
           tabBarIcon: ({ color, size }) => <Wrench color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="qada"
+        options={{
+          href: null,
         }}
       />
 
@@ -160,7 +161,7 @@ const TabsLayout = () => {
         name="settings"
         options={{
           title: t("a11y.tab.settings"),
-          tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
+          href: null,
         }}
       />
     </Tabs>
