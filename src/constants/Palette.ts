@@ -15,6 +15,8 @@ export const NEDAA_LIGHT = {
   surface2: { oklch: "oklch(95% 0.032 225 / .72)", hex: "#D9F4FFB8" },
   fg: { oklch: "oklch(23% 0.055 254)", hex: "#081D36" },
   muted: { oklch: "oklch(45% 0.05 240)", hex: "#3B596E" },
+  /** Muted text on the deeper day sky, where `muted` falls to 3:1. */
+  mutedSky: { oklch: "oklch(35% 0.05 240)", hex: "#203E52" },
   border: { oklch: "oklch(80% 0.045 230)", hex: "#A1C4D5" },
   accent: { oklch: "oklch(41.5% 0.09 232)", hex: "#005372" },
   accentSoft: { oklch: "oklch(93% 0.03 220)", hex: "#D3EDF6" },
@@ -31,6 +33,7 @@ export const NEDAA_DARK = {
   surface2: { oklch: "oklch(26% 0.072 260)", hex: "#0D2346" },
   fg: { oklch: "oklch(93% 0.018 230)", hex: "#DCEAF2" },
   muted: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
+  mutedSky: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
   border: { oklch: "oklch(37% 0.055 257)", hex: "#2D415D" },
   accent: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
   accentSoft: { oklch: "oklch(33% 0.055 85)", hex: "#423310" },
