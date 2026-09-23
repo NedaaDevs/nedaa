@@ -1,5 +1,6 @@
 import { createFont, createTamagui, createTokens } from "tamagui";
 
+import { DURATION_MS } from "./src/constants/Motion";
 import { NEDAA_DARK, NEDAA_LIGHT } from "./src/constants/Palette";
 import { createAnimations } from "@tamagui/animations-moti";
 import { defaultConfig } from "@tamagui/config/v5";
@@ -480,11 +481,11 @@ const animations = createAnimations({
   },
   // Durations only. The config is loaded in Node at build time, so it must not
   // import react-native; an easing curve has to come from the call site.
-  quick: { type: "timing", duration: 160 },
-  settle: { type: "timing", duration: 220 },
-  gentle: { type: "timing", duration: 280 },
+  quick: { type: "timing", duration: DURATION_MS.QUICK },
+  settle: { type: "timing", duration: DURATION_MS.SETTLE },
+  gentle: { type: "timing", duration: DURATION_MS.GENTLE },
   // The sky crossfades across a prayer phase change.
-  sky: { type: "timing", duration: 720 },
+  sky: { type: "timing", duration: DURATION_MS.SKY },
 });
 
 const config = createTamagui({

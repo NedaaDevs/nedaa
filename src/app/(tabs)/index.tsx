@@ -1,6 +1,6 @@
 // Components
 import { Box } from "@/components/ui/box";
-import { Background } from "@/components/ui/background";
+import { SkyBackground } from "@/components/ui/sky-background";
 import Header from "@/components/Header";
 import TimingsCarousel from "@/components/TimingsCarousel";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
@@ -16,7 +16,7 @@ export default function MainScreen() {
   const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
 
   return (
-    <Background>
+    <SkyBackground>
       <Box flex={1}>
         <ActiveAlarmBanner />
         <Box>
@@ -31,6 +31,6 @@ export default function MainScreen() {
           <TimingsCarousel mode={mode} />
         </Box>
       </Box>
-    </Background>
+    </SkyBackground>
   );
 }
