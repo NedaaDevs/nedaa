@@ -1628,6 +1628,8 @@
   "tools.qada.subtitle": "Jejak puasa tertinggal",
   "tools.qada.title": "Penjejak Qada",
   "tools.quranListen.nowPlaying": "Sedang dimainkan · {{surah}}",
+  "tools.quranListen.subtitle": "Bacaan mengikut qari",
+  "tools.quranListen.title": "Dengar Al-Quran",
   "tools.sections.continue": "Teruskan",
   "tools.sections.remindersAudio": "Peringatan & Audio",
   "tools.sections.utilities": "Utiliti",
