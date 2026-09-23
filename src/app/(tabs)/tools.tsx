@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 import {
   AlarmClock,
@@ -21,6 +22,7 @@ import {
   Headphones,
   ChevronRight,
   ChevronLeft,
+  Settings,
 } from "lucide-react-native";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { Ring } from "@/components/ui/ring";
@@ -149,7 +151,14 @@ export default function ToolsScreen() {
   return (
     <Background>
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}>
-        <ScreenHeader title={t("tools.title")} />
+        <ScreenHeader
+          title={t("tools.title")}
+          action={{
+            icon: Settings,
+            label: t("settings.title"),
+            onPress: () => router.navigate(BACK_DESTINATION.SETTINGS.href),
+          }}
+        />
 
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$5">
           {/* Continue — present only while a journey is in progress. */}
