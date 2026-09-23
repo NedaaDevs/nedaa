@@ -1,4 +1,4 @@
-import { NEDAA_LIGHT, type PaletteEntry } from "@/constants/Palette";
+import { NEDAA_DARK, NEDAA_LIGHT, type PaletteEntry } from "@/constants/Palette";
 import { DARK_SKY, LIGHT_SKY } from "@/constants/Sky";
 import { oklchToHex } from "@/test-helpers/oklch";
 
@@ -54,5 +54,14 @@ const contrast = (a: string, b: string) => {
 describe("day sky", () => {
   it.each(LIGHT_SKY.base.map((s) => [s.color.hex]))("keeps title text readable on %s", (hex) => {
     expect(contrast(NEDAA_LIGHT.fg.hex, hex)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The Gregorian date and the city are muted, but still text.
+  it.each(LIGHT_SKY.base.map((s) => [s.color.hex]))("keeps muted text readable on %s", (hex) => {
+    expect(contrast(NEDAA_LIGHT.mutedSky.hex, hex)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps muted text readable on the night sky", () => {
+    expect(contrast(NEDAA_DARK.mutedSky.hex, NEDAA_DARK.surface.hex)).toBeGreaterThanOrEqual(4.5);
   });
 });
