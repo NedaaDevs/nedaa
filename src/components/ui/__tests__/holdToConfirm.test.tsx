@@ -1,12 +1,11 @@
 import { Alert, Platform } from "react-native";
 import { useState } from "react";
 import { act, fireEvent, render, screen, userEvent } from "@testing-library/react-native";
-import { TamaguiProvider } from "tamagui";
 
-import config from "../../../../tamagui.config";
 import { HOLD, HoldToConfirm } from "@/components/ui/hold-to-confirm";
 import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
 import { PlatformType } from "@/enums/app";
+import { ThemeProvider } from "@/test-helpers/theme";
 
 // The fill is reanimated, which cannot load under jest; it is drawing only.
 jest.mock("@/components/ui/hold-to-confirm/Fill", () => ({ Fill: () => null }));
@@ -27,7 +26,7 @@ const DIALOG = {
 const renderHold = (props: Partial<Parameters<typeof HoldToConfirm>[0]> = {}) => {
   const onConfirm = jest.fn();
   const ui = (extra: Partial<Parameters<typeof HoldToConfirm>[0]> = {}) => (
-    <TamaguiProvider config={config} defaultTheme="light">
+    <ThemeProvider>
       <HoldToConfirm
         label={LABEL}
         onConfirm={onConfirm}
@@ -35,7 +34,7 @@ const renderHold = (props: Partial<Parameters<typeof HoldToConfirm>[0]> = {}) =>
         {...props}
         {...extra}
       />
-    </TamaguiProvider>
+    </ThemeProvider>
   );
   const view = render(ui());
   return { onConfirm, view, ui };
@@ -135,7 +134,7 @@ describe("HoldToConfirm", () => {
       const BusyAfterConfirm = () => {
         const [busy, setBusy] = useState(false);
         return (
-          <TamaguiProvider config={config} defaultTheme="light">
+          <ThemeProvider>
             <HoldToConfirm
               label={LABEL}
               busy={busy}
@@ -146,7 +145,7 @@ describe("HoldToConfirm", () => {
                 setTimeout(() => setBusy(false), HOLD.TICK_MS);
               }}
             />
-          </TamaguiProvider>
+          </ThemeProvider>
         );
       };
       await render(<BusyAfterConfirm />);
