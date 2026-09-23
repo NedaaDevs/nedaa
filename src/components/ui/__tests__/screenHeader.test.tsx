@@ -7,6 +7,7 @@ import { act, renderRouter, screen, within } from "expo-router/testing-library";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
@@ -67,6 +68,16 @@ describe("ScreenHeader", () => {
       await go(BACK_DESTINATION.SETTINGS_ALARM.href);
 
       expect(screen.getByRole("button", { name: backTo("TOOLS") })).toBeOnTheScreen();
+    });
+
+    // The helper builds labels through i18n; one literal pins the English wording itself.
+    it("says 'Back to Tools' in English", async () => {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(screen.getByRole("button", { name: "Back to Tools" })).toBeOnTheScreen();
     });
 
     it("names a different parent when reached from it", async () => {
@@ -220,13 +231,15 @@ describe("ScreenHeader", () => {
       ).toBeNull();
     });
 
-    it("sets the subtitle under the title", async () => {
+    it("sets the subtitle after the title", async () => {
       await renderApp(
         <ScreenHeader title={TITLE} subtitle={SUBTITLE} />,
         BACK_DESTINATION.SETTINGS_ALARM.href
       );
 
-      expect(screen.getByText(SUBTITLE)).toBeOnTheScreen();
+      const texts = screen.getAllByText(new RegExp(`^(${TITLE}|${SUBTITLE})$`));
+
+      expect(texts.map((node) => node.props.children)).toEqual([TITLE, SUBTITLE]);
     });
   });
 
