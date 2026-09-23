@@ -1,9 +1,9 @@
 import { BRIGHTNESS, NEDAA_DARK, NEDAA_LIGHT, PHASE_GRADIENTS } from "@/constants/Palette";
 import { PHASE } from "@/constants/Phase";
-import { DARK_SKY, LIGHT_SKY } from "@/constants/Sky";
+import { CELESTIAL_BODY, DARK_SKY, LIGHT_SKY, SKY_ARC } from "@/constants/Sky";
 import processBackgroundImage from "react-native/Libraries/StyleSheet/processBackgroundImage";
 
-import { fadedDisc, skyBackgroundImage, skyScene } from "@/utils/sky";
+import { arcCentre, fadedDisc, flattenOver, skyBackgroundImage, skyScene } from "@/utils/sky";
 
 describe("fadedDisc", () => {
   it("fades evenly either side of the disc's edge", () => {
@@ -87,10 +87,20 @@ describe("skyScene", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("sits every sky on its palette's page colour", () => {
-    expect(skyScene(BRIGHTNESS.LIGHT, PHASE.ASR).underlay).toBe(NEDAA_LIGHT.bg.hex);
+  it("sits an untinted sky on its palette's page colour", () => {
+    expect(skyScene(BRIGHTNESS.LIGHT, PHASE.DAY).underlay).toBe(NEDAA_LIGHT.bg.hex);
     expect(skyScene(BRIGHTNESS.DARK, PHASE.NIGHT).underlay).toBe(NEDAA_DARK.bg.hex);
   });
+
+  // The design draws its translucent tints over a near-black frame, not the page.
+  it.each([PHASE.DAWN, PHASE.ASR, PHASE.MAGHRIB])(
+    "sits the tinted light %s sky on the dark ground",
+    (phase) => {
+      expect(skyScene(BRIGHTNESS.LIGHT, phase).underlay).toBe(
+        flattenOver(LIGHT_SKY.tintGround.hex, NEDAA_LIGHT.bg.hex)
+      );
+    }
+  );
 });
 
 describe("skyBackgroundImage", () => {
@@ -100,8 +110,8 @@ describe("skyBackgroundImage", () => {
 
   // RN's parser drops the whole list on one bad token, so every scene must parse.
   it.each([
-    ["light day", BRIGHTNESS.LIGHT, PHASE.DAY, 5],
-    ["light Asr", BRIGHTNESS.LIGHT, PHASE.ASR, 4],
+    ["light day", BRIGHTNESS.LIGHT, PHASE.DAY, 4],
+    ["light Asr", BRIGHTNESS.LIGHT, PHASE.ASR, 3],
     ["dark night", BRIGHTNESS.DARK, PHASE.NIGHT, 3],
     ["dark Maghrib", BRIGHTNESS.DARK, PHASE.MAGHRIB, 3],
   ] as const)("paints every %s layer", (_name, brightness, phase, layers) => {
@@ -142,5 +152,78 @@ describe("skyBackgroundImage", () => {
     LIGHT_SKY.edgeWash.forEach(({ color }, i) =>
       expect(alphas[i]).toBeCloseTo(parseInt(color.hex.slice(7), 16) / 255, 2)
     );
+  });
+});
+
+describe("arcCentre", () => {
+  const W = 400;
+  const H = 900;
+  const PEAK = LIGHT_SKY.sun.disc.top + LIGHT_SKY.sun.disc.diameter / 2;
+
+  it.each([
+    ["rises past the start edge on the horizon", 0, SKY_ARC.start * W, SKY_ARC.horizon * H],
+    ["peaks mid-sky where the prototype drew the sun", 0.5, W / 2, PEAK],
+    ["sets past the end edge on the horizon", 1, SKY_ARC.end * W, SKY_ARC.horizon * H],
+  ])("%s", (_name, progress, cx, cy) => {
+    const got = arcCentre(progress, W, H, false);
+
+    expect(got.cx).toBeCloseTo(cx);
+    expect(got.cy).toBeCloseTo(cy);
+  });
+
+  it("rises from the right edge in a right-to-left layout", () => {
+    expect(arcCentre(0.2, W, H, true).cx).toBeCloseTo(W - arcCentre(0.2, W, H, false).cx);
+  });
+});
+
+describe("skyBackgroundImage with a body up", () => {
+  const W = 400;
+  const H = 900;
+  const layersOf = (css: string) => processBackgroundImage(css);
+  const lightDay = skyScene(BRIGHTNESS.LIGHT, PHASE.DAY);
+  const darkNight = skyScene(BRIGHTNESS.DARK, PHASE.NIGHT);
+  const sun = (progress: number) => ({ body: CELESTIAL_BODY.SUN, progress });
+  const moon = (progress: number) => ({ body: CELESTIAL_BODY.MOON, progress });
+
+  /** Light layers, front first: wash, horizon, glow, base. */
+  const positionOf = (css: string, index: number) => {
+    const layer = layersOf(css)[index];
+    if (layer.type !== "radial-gradient") throw new Error(`layer ${index} is not radial`);
+    return layer.position;
+  };
+  const GLOW = 2;
+  const glowRest = positionOf(skyBackgroundImage(lightDay, W, H, false), GLOW);
+
+  // The glow keeps its offset from the sun, so it moves wherever the sun goes.
+  it("moves the glow along the sun's arc", () => {
+    const early = skyBackgroundImage(lightDay, W, H, false, sun(0.2));
+    const late = skyBackgroundImage(lightDay, W, H, false, sun(0.8));
+    const moved = Number(positionOf(late, GLOW).left) - Number(positionOf(early, GLOW).left);
+
+    expect(moved).toBeCloseTo(arcCentre(0.8, W, H, false).cx - arcCentre(0.2, W, H, false).cx);
+  });
+
+  it("rests the glow in its corner while the moon is up", () => {
+    expect(positionOf(skyBackgroundImage(lightDay, W, H, false, moon(0.5)), GLOW)).toEqual(
+      glowRest
+    );
+  });
+
+  it("puts the moon on its arc", () => {
+    const { cx } = arcCentre(0.6, W, H, false);
+
+    expect(
+      Number(positionOf(skyBackgroundImage(darkNight, W, H, false, moon(0.6)), 0).left)
+    ).toBeCloseTo(cx);
+  });
+});
+
+describe("flattenOver", () => {
+  it.each([
+    ["#00000080", "#FFFFFF", "#7F7F7F"],
+    ["#FF0000", "#0000FF", "#FF0000"],
+    ["#FFFFFF00", "#123456", "#123456"],
+  ])("lays %s over %s as %s", (top, bottom, flat) => {
+    expect(flattenOver(top, bottom)).toBe(flat);
   });
 });
