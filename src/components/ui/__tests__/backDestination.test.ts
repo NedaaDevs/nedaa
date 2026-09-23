@@ -69,6 +69,18 @@ describe("backDestination", () => {
     );
   });
 
+  // Two nested layouts: the path must read outermost first, as the file tree does.
+  it("names a screen behind in a doubly nested stack from the root down", () => {
+    const ihram = route("ihram");
+    const prepare = stack("prepare", [route("index"), ihram]);
+    const umrah = stack("umrah", [route("index"), route("prepare", prepare)]);
+    const app = stack("app", [route("(tabs)", tabs([home, tools], 1)), route("umrah", umrah)]);
+
+    expect(backDestination([prepare, umrah, app, container(app)], ihram.key)).toBe(
+      BACK_DESTINATION.UMRAH_PREPARE.route
+    );
+  });
+
   it("follows tab history rather than tab order", () => {
     const tabState = tabs([home, tools, settingsTab], 2);
     const app = stack("app", [route("(tabs)", tabState)]);
