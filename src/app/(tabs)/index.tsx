@@ -2,6 +2,7 @@
 import { Box } from "@/components/ui/box";
 import { SkyBackground } from "@/components/ui/sky-background";
 import Header from "@/components/Header";
+import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import TimingsCarousel from "@/components/TimingsCarousel";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import ImportantDaysCard from "@/components/ImportantDaysCard";
@@ -21,6 +22,10 @@ export default function MainScreen() {
         <ActiveAlarmBanner />
         <Box>
           <Header />
+        </Box>
+
+        <Box paddingHorizontal="$4" paddingBottom="$2">
+          <CelestialRhythm />
         </Box>
 
         {activeProgress && <UmrahResumeBanner />}
