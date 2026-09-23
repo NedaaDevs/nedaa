@@ -1,24 +1,15 @@
 import { Text } from "react-native";
-import { render, screen } from "@testing-library/react-native";
-import { TamaguiProvider } from "tamagui";
+import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import { Icon } from "@/components/ui/icon";
+import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
 const RAW = "#123456";
 
 /** Stands in for a lucide glyph and shows the colour it was handed. */
 const Glyph = ({ color }: { color?: string }) => <Text testID="glyph">{color}</Text>;
-
-const renderWithTheme = (ui: React.ReactElement) =>
-  render(ui, {
-    wrapper: ({ children }) => (
-      <TamaguiProvider config={config} defaultTheme="light">
-        {children}
-      </TamaguiProvider>
-    ),
-  });
 
 describe("Icon colour", () => {
   it.each([
