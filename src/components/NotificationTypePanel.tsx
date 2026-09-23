@@ -125,6 +125,8 @@ const NotificationTypePanel: FC<Props> = ({
       <Card variant="grouped" marginHorizontal="$4">
         {/* Header */}
         <Pressable
+          // Holds text or a control the reader must reach; as one element iOS would hide them.
+          accessible={false}
           onPress={handleToggle}
           disabled={!defaults.enabled}
           accessibilityRole="button"
