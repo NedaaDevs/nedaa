@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // Components
 import { Box } from "@/components/ui/box";
 import { SkyBackground } from "@/components/ui/sky-background";
+import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import { TodayHeader } from "@/components/today/TodayHeader";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
@@ -25,6 +26,7 @@ export default function MainScreen() {
         <ActiveAlarmBanner />
         <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
           <TodayHeader />
+          <CelestialRhythm />
         </Box>
 
         {activeProgress && <UmrahResumeBanner />}
