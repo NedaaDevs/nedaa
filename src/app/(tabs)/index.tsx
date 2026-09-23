@@ -7,17 +7,21 @@ import { TodayHeader } from "@/components/today/TodayHeader";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 
+// Hooks
+import { useTabBarInset } from "@/hooks/useTabBarInset";
+
 // Stores
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 
 export default function MainScreen() {
   const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
   const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
 
   return (
     <SkyBackground>
-      {/* The sky runs under the status bar, so the content starts below it. */}
-      <Box flex={1} paddingTop={insets.top}>
+      {/* The sky runs under both bars; the content sits between them. */}
+      <Box flex={1} paddingTop={insets.top} paddingBottom={tabBarInset}>
         <ActiveAlarmBanner />
         <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
           <TodayHeader />
