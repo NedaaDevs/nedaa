@@ -12,7 +12,7 @@ import {
   Settings,
 } from "lucide-react-native";
 
-import { Box } from "@/components/ui/box";
+import { Divider } from "@/components/ui/divider";
 import { Grid } from "@/components/ui/grid";
 import { ListRow } from "@/components/ui/list-row";
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -157,14 +157,15 @@ export default function ToolsScreen() {
             </Section>
 
             {/* Set apart by a rule: the way into everything the app can be set to. */}
-            <Box paddingTop="$4" borderTopWidth={1} borderColor="$border">
+            <VStack gap="$4">
+              <Divider />
               <ListRow
                 icon={Settings}
                 title={t("settings.title")}
                 status={t("tools.settings.status")}
                 onPress={() => open(BACK_DESTINATION.SETTINGS.href)}
               />
-            </Box>
+            </VStack>
           </VStack>
         </SkyOccluder>
       </SkyScrollView>
