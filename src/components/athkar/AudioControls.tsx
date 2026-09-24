@@ -1,6 +1,6 @@
-import { FC, useState, useCallback, useEffect, useRef } from "react";
+import { FC, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, LayoutChangeEvent, View } from "react-native";
+import { LayoutChangeEvent, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -28,6 +28,7 @@ import { useRTL } from "@/contexts/RTLContext";
 import { AUDIO_UI, PLAYBACK_RATE_OPTIONS, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Props = {
   onPlayPause: () => void;
@@ -89,10 +90,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const NextIcon = isRTL ? SkipBack : SkipForward;
 
   // Reduce motion
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   // Seek state
   const [trackWidth, setTrackWidth] = useState(0);

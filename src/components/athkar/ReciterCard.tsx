@@ -1,6 +1,6 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, Animated, Easing, Image, View, useAnimatedValue } from "react-native";
+import { Animated, Easing, Image, View, useAnimatedValue } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "@/components/ui/theme-color";
 
@@ -16,6 +16,7 @@ import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { formatFileSize } from "@/utils/customSoundManager";
 
 import type { ReciterCatalogEntry } from "@/types/athkar-audio";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Props = {
   reciter: ReciterCatalogEntry;
@@ -49,10 +50,7 @@ const ReciterCard: FC<Props> = ({
   const theme = useTheme();
   const name = reciterRegistry.getLocalizedName(reciter.name, i18n.language);
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const spinAnim = useAnimatedValue(0);
 
