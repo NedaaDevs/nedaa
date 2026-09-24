@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { EmptyState } from "@/components/feedback/EmptyState";
+import { StatePanel } from "@/components/ui/state-panel";
 import { TimelineSkeleton } from "@/components/ui/timeline";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
@@ -21,7 +21,13 @@ export const PrayerTimesState = () => {
       // The store records a failure in hasError, which this state reads back.
       loadPrayerTimes(true).catch(() => {});
     };
-    return <EmptyState type="error" onRetry={retry} isRetrying={isLoading} />;
+    return (
+      <StatePanel
+        title={t("today.failed.title")}
+        body={t("today.failed.body")}
+        action={{ label: t("common.retry"), onPress: retry }}
+      />
+    );
   }
 
   return isLoading ? <TimelineSkeleton label={t("common.loading")} /> : null;

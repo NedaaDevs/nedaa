@@ -38,10 +38,13 @@ const renderState = (state: {
 describe("PrayerTimesState", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("offers a retry when the times failed to load", async () => {
+  it("says the times failed to load, and offers a retry", async () => {
     await renderState({ todayTimings: null, hasError: true, isLoading: false });
 
-    await userEvent.press(screen.getByText(i18n.t("common.retry")));
+    expect(
+      screen.getByLabelText(`${i18n.t("today.failed.title")}. ${i18n.t("today.failed.body")}`)
+    ).toBeTruthy();
+    await userEvent.press(screen.getByRole("button", { name: i18n.t("common.retry") }));
 
     expect(clearError).toHaveBeenCalled();
     expect(loadPrayerTimes).toHaveBeenCalledWith(true);
