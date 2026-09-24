@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AccessibilityInfo, Pressable, ScrollView } from "react-native";
+import { Pressable, ScrollView } from "react-native";
 import { useIsFocused } from "expo-router/react-navigation";
 import { Info, LocateFixed } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -57,6 +57,7 @@ import {
 } from "@/utils/compass";
 import { formatNumberToLocale } from "@/utils/number";
 import { useFontFamily } from "@/contexts/FontContext";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const log = AppLogger.create("compass");
 
@@ -97,7 +98,7 @@ const CompassScreen = () => {
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
   const hapticMedium = useHaptic("medium");
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReducedMotion();
   const [sensorRestartKey, setSensorRestartKey] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [compassOnly, setCompassOnly] = useState(false);
@@ -160,18 +161,6 @@ const CompassScreen = () => {
         tiltDegrees: null,
       }
     : liveCompass;
-
-  useEffect(() => {
-    let mounted = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
 
   // Compass-only mode is the user's escape hatch when true north cannot be resolved
   // (native heading magnetic and the declination model unavailable): drop the Qibla

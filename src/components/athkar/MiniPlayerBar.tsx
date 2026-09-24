@@ -1,6 +1,6 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo } from "react-native";
+
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -23,16 +23,14 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { AUDIO_UI, DEFAULT_PLAYBACK_RATE, PLAYBACK_RATE_OPTIONS } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const DISMISS_THRESHOLD = 60;
 
 const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const reduceMotionShared = useSharedValue(false);
   useEffect(() => {

@@ -56,7 +56,6 @@ describe("useReducedMotion", () => {
     expect(latest()).toBe(true);
   });
 
-  // The one-shot probe it replaces never saw a mid-session toggle.
   it("follows a change while mounted", async () => {
     await render();
     expect(latest()).toBe(false);
@@ -64,6 +63,21 @@ describe("useReducedMotion", () => {
     await act(async () => handler?.(true));
 
     expect(latest()).toBe(true);
+  });
+
+  // A remount starts from what is known, so no first frame animates by mistake.
+  it("starts a fresh mount from the last known setting", async () => {
+    jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockResolvedValue(true);
+    const first = await render();
+    await act(async () => first.unmount());
+    results.length = 0;
+    jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockReturnValue(new Promise(() => {}));
+
+    act(() => {
+      renderer.create(<Probe />);
+    });
+
+    expect(results[0]).toBe(true);
   });
 
   it("unsubscribes on unmount", async () => {
