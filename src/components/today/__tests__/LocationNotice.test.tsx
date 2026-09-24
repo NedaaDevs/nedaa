@@ -16,7 +16,7 @@ const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 const renderNotice = () =>
   renderRouter(
     {
-      "(tabs)/index": () => (
+      [BACK_DESTINATION.HOME.route]: () => (
         <>
           <LocationNotice />
           <Pathname />
@@ -24,7 +24,10 @@ const renderNotice = () =>
       ),
       [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => <Pathname />,
     },
-    { initialUrl: "/", wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider> }
+    {
+      initialUrl: BACK_DESTINATION.HOME.href as string,
+      wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>,
+    }
   );
 
 describe("LocationNotice", () => {
