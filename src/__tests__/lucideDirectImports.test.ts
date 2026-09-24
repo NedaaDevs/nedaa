@@ -21,7 +21,7 @@ describe("lucideDirectImports", () => {
     expect(out).not.toContain(`from "${PACKAGE}";`);
   });
 
-  // Aliases share one module with the name lucide now ships.
+  // An alias resolves to the module of the name it points to.
   it("follows an alias to the module it shares", () => {
     expect(rewrite(`import { AlarmCheck } from "${PACKAGE}";`)).toContain(
       `import AlarmCheck from "${PACKAGE}/icons/alarm-clock-check";`

@@ -3,7 +3,6 @@ import { Sun } from "lucide-react-native";
 
 import config from "../../../../tamagui.config";
 import { TIMELINE, TIMELINE_PART, Timeline, type TimelineMark } from "@/components/ui/timeline";
-import { TICK_STATE } from "@/constants/Timeline";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 let mockReduced = false;
@@ -12,9 +11,9 @@ jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduc
 const LIGHT = config.themes.light;
 
 const MARKS: TimelineMark[] = [
-  { id: "a", share: 0, state: TICK_STATE.PASSED, icon: Sun, label: "First" },
-  { id: "b", share: 0.5, state: TICK_STATE.CURRENT, icon: Sun, label: "Middle" },
-  { id: "c", share: 1, state: TICK_STATE.FUTURE, icon: Sun, label: "Last" },
+  { id: "a", share: 0, icon: Sun, label: "First" },
+  { id: "b", share: 0.5, icon: Sun, label: "Middle" },
+  { id: "c", share: 1, icon: Sun, label: "Last" },
 ];
 const PROGRESS = { from: 0.5, to: 1, fraction: 0.25 };
 
@@ -39,7 +38,7 @@ describe("Timeline", () => {
     });
   });
 
-  // The caller names the gold mark; the current state alone does not light one.
+  // Only the mark the caller names is drawn in the accent.
   it("draws only the accent mark in the accent", async () => {
     await renderWithTheme(<Timeline marks={MARKS} progress={PROGRESS} accent="c" />);
 
