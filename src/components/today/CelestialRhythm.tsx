@@ -32,7 +32,7 @@ export const CelestialRhythm = ({ selected, dimmed }: Props) => {
     return t(prayerNameKey(id, friday));
   };
 
-  const { marks, progress, next } = rhythmLine(today, now, following);
+  const { marks, progress, focus } = rhythmLine(today, now, following);
   const current = marks.find((mark) => mark.state === TICK_STATE.CURRENT)?.id;
 
   const summary = (() => {
@@ -59,7 +59,7 @@ export const CelestialRhythm = ({ selected, dimmed }: Props) => {
           label: nameOf(mark.id),
         }))}
         progress={progress}
-        accent={next ?? undefined}
+        accent={focus ?? undefined}
         selected={selected}
       />
     </Box>

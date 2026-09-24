@@ -1,6 +1,6 @@
 import { parseISO } from "date-fns";
 
-import { COUNT_AXIS, type CountAxis } from "@/constants/Countdown";
+import { COUNT_AXIS, PRAYER_FOCUS, type CountAxis } from "@/constants/Countdown";
 import { PRAYER_IDS, type PrayerId } from "@/constants/Prayer";
 import { storedDayList, type StoredDays } from "@/utils/phase";
 
@@ -10,20 +10,24 @@ export type FocusPrayer = { id: PrayerId; time: Date; timezone: string };
 export type CountSettings = {
   /** «Show seconds»: the figure counts to the second, both ways. */
   seconds: boolean;
-  /** «Iqama Timer»: the minutes after an athan, opened on the time since it. */
-  iqama: { enabled: boolean; minutes: number };
 };
 
 export type FocusCount = {
   axis: CountAxis;
-  /** The prayer the block names: always the next one. */
-  next: FocusPrayer;
+  /** The prayer the block names: the one just come in, else the next. */
+  named: FocusPrayer;
+  /** Whether the named prayer is the one in its focus window now. */
+  current: boolean;
   /** The prayer the figure counts to or from. */
   counted: FocusPrayer;
   seconds: number;
   /** Whether the figure shows seconds. */
   precise: boolean;
 };
+
+/** Whether a time that came in at `startedAt` is still in its focus window. */
+export const inFocusWindow = (startedAt: number, now: number) =>
+  now >= startedAt && now - startedAt < PRAYER_FOCUS.activeMs;
 
 const prayersIn = (days: StoredDays): FocusPrayer[] =>
   storedDayList(days).flatMap((day) =>
@@ -44,20 +48,39 @@ export const focusCount = (
 
   const secondsTo = (prayer: FocusPrayer) =>
     Math.abs(Math.round((prayer.time.getTime() - now.getTime()) / 1000));
-  const { iqama, seconds: precise } = settings;
-  const inIqama =
-    previous !== undefined && iqama.enabled && secondsTo(previous) <= iqama.minutes * 60;
+  const precise = settings.seconds;
+  const inFocus = previous !== undefined && inFocusWindow(previous.time.getTime(), now.getTime());
 
-  if (inIqama !== flipped && previous) {
+  // A prayer just come in is named and counted up from; flipped, the next one.
+  if (inFocus && !flipped) {
     return {
       axis: COUNT_AXIS.SINCE,
-      next,
+      named: previous,
+      current: true,
       counted: previous,
       seconds: secondsTo(previous),
       precise,
     };
   }
-  return { axis: COUNT_AXIS.UNTIL, next, counted: next, seconds: secondsTo(next), precise };
+  // Between prayers the next is named; flipped, the figure counts from the last.
+  if (!inFocus && flipped && previous) {
+    return {
+      axis: COUNT_AXIS.SINCE,
+      named: next,
+      current: false,
+      counted: previous,
+      seconds: secondsTo(previous),
+      precise,
+    };
+  }
+  return {
+    axis: COUNT_AXIS.UNTIL,
+    named: next,
+    current: false,
+    counted: next,
+    seconds: secondsTo(next),
+    precise,
+  };
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");

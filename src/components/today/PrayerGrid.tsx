@@ -29,17 +29,26 @@ type CardProps = {
 /** One prayer: quiet once passed, accented when next, ringed when chosen. */
 const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
   const { t } = useTranslation();
-  const next = card.state === PRAYER_CARD_STATE.NEXT;
+  const current = card.state === PRAYER_CARD_STATE.CURRENT;
+  // The one gold card: the prayer just come in, else the next.
+  const next = current || card.state === PRAYER_CARD_STATE.NEXT;
   const past = card.state === PRAYER_CARD_STATE.PAST;
 
   return (
     <Pressable
       onPress={onPress}
       // The state shows only as colour on screen, so the label carries it.
-      accessibilityLabel={t(next ? "a11y.today.prayerCardNext" : "a11y.today.prayerCard", {
-        prayer: name,
-        time,
-      })}
+      accessibilityLabel={t(
+        current
+          ? "a11y.today.prayerCardCurrent"
+          : next
+            ? "a11y.today.prayerCardNext"
+            : "a11y.today.prayerCard",
+        {
+          prayer: name,
+          time,
+        }
+      )}
       accessibilityState={{ selected }}
       flexDirection="row"
       alignItems="center"

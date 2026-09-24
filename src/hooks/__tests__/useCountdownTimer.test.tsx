@@ -33,8 +33,6 @@ describe("useCountdownTimer", () => {
     });
     usePreferencesStore.setState({
       showSeconds: false,
-      iqamaCountUpEnabled: false,
-      iqamaCountUpMinutes: 30,
     });
   });
   afterEach(() => jest.useRealTimers());
