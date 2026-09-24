@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { useRouter, type Href } from "expo-router";
-import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlarmClock,
@@ -18,7 +17,7 @@ import { Grid } from "@/components/ui/grid";
 import { ListRow } from "@/components/ui/list-row";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground } from "@/components/ui/sky-background";
+import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { Tile } from "@/components/ui/tile";
 import { VStack } from "@/components/ui/vstack";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
@@ -110,61 +109,65 @@ export default function ToolsScreen() {
   return (
     // The sky runs under both bars; the content scrolls clear of the tab bar.
     <SkyBackground>
-      <ScrollView
+      <SkyScrollView
         contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarInset }}>
-        <ScreenHeader
-          title={t("tools.title")}
-          subtitle={city && country ? t("tools.place", { city, country }) : city}
-        />
+        <SkyOccluder>
+          <ScreenHeader
+            title={t("tools.title")}
+            subtitle={city && country ? t("tools.place", { city, country }) : city}
+          />
+        </SkyOccluder>
 
-        <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$5" gap="$5">
-          <UmrahContinue />
+        <SkyOccluder>
+          <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$5" gap="$5">
+            <UmrahContinue />
 
-          <Section title={t("tools.sections.utilities")}>
-            <Grid columns={2} gap="$2">
-              {TOOLS.map((tool) => (
-                <Grid.Item key={tool.id}>
-                  <Tile
-                    icon={tool.icon}
-                    label={t(tool.titleKey)}
-                    onPress={() => open(tool.route)}
+            <Section title={t("tools.sections.utilities")}>
+              <Grid columns={2} gap="$2">
+                {TOOLS.map((tool) => (
+                  <Grid.Item key={tool.id}>
+                    <Tile
+                      icon={tool.icon}
+                      label={t(tool.titleKey)}
+                      onPress={() => open(tool.route)}
+                    />
+                  </Grid.Item>
+                ))}
+              </Grid>
+            </Section>
+
+            {/* Rows, because they carry live state a tile can't show. */}
+            <Section title={t("tools.sections.remindersAudio")}>
+              <VStack gap="$2">
+                {alarmSupported && (
+                  <ListRow
+                    icon={AlarmClock}
+                    title={t("tools.alarm.title")}
+                    status={alarmStatus}
+                    onPress={() => open(BACK_DESTINATION.SETTINGS_ALARM.href)}
                   />
-                </Grid.Item>
-              ))}
-            </Grid>
-          </Section>
-
-          {/* Rows, because they carry live state a tile can't show. */}
-          <Section title={t("tools.sections.remindersAudio")}>
-            <VStack gap="$2">
-              {alarmSupported && (
+                )}
                 <ListRow
-                  icon={AlarmClock}
-                  title={t("tools.alarm.title")}
-                  status={alarmStatus}
-                  onPress={() => open(BACK_DESTINATION.SETTINGS_ALARM.href)}
+                  icon={Headphones}
+                  title={t("tools.quranListen.title")}
+                  status={listenStatus}
+                  onPress={() => open(BACK_DESTINATION.QURAN_LISTEN.href)}
                 />
-              )}
-              <ListRow
-                icon={Headphones}
-                title={t("tools.quranListen.title")}
-                status={listenStatus}
-                onPress={() => open(BACK_DESTINATION.QURAN_LISTEN.href)}
-              />
-            </VStack>
-          </Section>
+              </VStack>
+            </Section>
 
-          {/* Set apart by a rule: the way into everything the app can be set to. */}
-          <Box paddingTop="$4" borderTopWidth={1} borderColor="$border">
-            <ListRow
-              icon={Settings}
-              title={t("settings.title")}
-              status={t("tools.settings.status")}
-              onPress={() => open(BACK_DESTINATION.SETTINGS.href)}
-            />
-          </Box>
-        </VStack>
-      </ScrollView>
+            {/* Set apart by a rule: the way into everything the app can be set to. */}
+            <Box paddingTop="$4" borderTopWidth={1} borderColor="$border">
+              <ListRow
+                icon={Settings}
+                title={t("settings.title")}
+                status={t("tools.settings.status")}
+                onPress={() => open(BACK_DESTINATION.SETTINGS.href)}
+              />
+            </Box>
+          </VStack>
+        </SkyOccluder>
+      </SkyScrollView>
     </SkyBackground>
   );
 }
