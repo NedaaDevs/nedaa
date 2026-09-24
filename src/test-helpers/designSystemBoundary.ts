@@ -70,6 +70,8 @@ const attributeValue = (attribute: ts.JsxAttribute): ts.Expression | undefined =
 const propName = (name: ts.Node): string | undefined =>
   ts.isIdentifier(name) || ts.isStringLiteral(name) ? name.text : undefined;
 
+const THEME_COLOR_MODULE = "@/components/ui/theme-color";
+
 export const countBoundary = (
   fileName: string,
   source: string,
@@ -89,6 +91,17 @@ export const countBoundary = (
   for (const statement of file.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier))
       continue;
+    // The app's useTheme wraps Tamagui's; a call to it is still a theme read.
+    if (statement.moduleSpecifier.text === THEME_COLOR_MODULE) {
+      const bindings = statement.importClause?.namedBindings;
+      if (bindings && ts.isNamedImports(bindings)) {
+        for (const element of bindings.elements) {
+          const imported = (element.propertyName ?? element.name).text;
+          if (imported === "useTheme") tamaguiValues.set(element.name.text, imported);
+        }
+      }
+      continue;
+    }
     if (!isTamaguiModule(statement.moduleSpecifier.text)) continue;
     const clause = statement.importClause;
     if (!clause) {

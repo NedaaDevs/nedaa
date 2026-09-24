@@ -1,6 +1,7 @@
 import React from "react";
 import { Platform } from "react-native";
-import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
+import { Text as TamaguiText, type TextProps as TamaguiTextProps } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { AppLocale, PlatformType } from "@/enums/app";
 import {
   FONT_SIZES,

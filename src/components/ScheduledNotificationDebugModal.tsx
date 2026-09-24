@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from "react";
 import type { NotificationContent } from "expo-notifications";
 import { ScrollView } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Utils
 import { listScheduledNotifications } from "@/utils/notifications";

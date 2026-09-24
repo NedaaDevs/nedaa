@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
