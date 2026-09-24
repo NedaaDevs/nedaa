@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, Dimensions, View } from "react-native";
+import { Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/components/ui/theme-color";
@@ -70,6 +70,7 @@ import { AppLogger } from "@/utils/appLogger";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const log = AppLogger.create("athkar");
 
@@ -137,11 +138,7 @@ const AthkarFocusScreen = () => {
   const isAutopilot = playbackMode === PLAYBACK_MODE.AUTOPILOT;
   const isCellular = useIsCellular();
 
-  // Reduce motion check
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   // Onboarding modal
   const [showOnboarding, setShowOnboarding] = useState(false);
