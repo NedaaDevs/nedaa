@@ -18,7 +18,7 @@ const DAY: DayPrayerTimes = {
   } as DayPrayerTimes["otherTimings"],
 };
 const at = (time: string) => prayerCards(DAY, new Date(`2026-09-23T${time}:00.000Z`));
-const { PAST, NEXT, FUTURE } = PRAYER_CARD_STATE;
+const { PAST, CURRENT, NEXT, FUTURE } = PRAYER_CARD_STATE;
 const shape = (time: string) => {
   const { wide, rest } = at(time);
   return [[wide.id, wide.state], rest.map((card) => [card.id, card.state])];
@@ -36,6 +36,23 @@ describe("prayerCards", () => {
         [PRAYER_ID.ISHA, FUTURE],
       ],
     ]);
+  });
+
+  // A prayer just come in keeps the lead, as the current one, for its window.
+  it("keeps a prayer just come in on top as the current one", () => {
+    expect(shape("15:32")).toEqual([
+      [PRAYER_ID.ASR, CURRENT],
+      [
+        [PRAYER_ID.FAJR, PAST],
+        [PRAYER_ID.DHUHR, PAST],
+        [PRAYER_ID.MAGHRIB, FUTURE],
+        [PRAYER_ID.ISHA, FUTURE],
+      ],
+    ]);
+  });
+
+  it("hands the lead to the next prayer once that window ends", () => {
+    expect(shape("15:50")[0]).toEqual([PRAYER_ID.MAGHRIB, NEXT]);
   });
 
   it("leads with Fajr before dawn", () => {

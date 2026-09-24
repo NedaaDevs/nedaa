@@ -24,55 +24,10 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 
 // Utils
-import { formatNumberToLocale } from "@/utils/number";
 import { isAthkarSupported } from "@/utils/athkar";
 
 // Enums
 import { OpeningTab } from "@/enums/app";
-
-const DurationPicker = ({
-  value,
-  onChange,
-  options,
-  labelKey,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  options: number[];
-  labelKey: string;
-}) => {
-  const { t } = useTranslation();
-
-  return (
-    <HStack backgroundColor="$backgroundMuted" borderRadius="$4" padding="$1">
-      {options.map((option) => {
-        const isSelected = value === option;
-        return (
-          <Pressable
-            key={option}
-            onPress={() => onChange(option)}
-            flex={1}
-            paddingVertical="$2"
-            borderRadius="$3"
-            backgroundColor={isSelected ? "$primary" : "transparent"}
-            alignItems="center"
-            justifyContent="center"
-            minHeight={36}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: isSelected }}
-            accessibilityLabel={formatNumberToLocale(t(labelKey, { count: option }))}>
-            <Text
-              size="sm"
-              color={isSelected ? "$typographyContrast" : "$typography"}
-              fontWeight={isSelected ? "600" : "400"}>
-              {formatNumberToLocale(t(labelKey, { count: option }))}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </HStack>
-  );
-};
 
 const PreferencesSettings = () => {
   const { t } = useTranslation();
@@ -87,10 +42,6 @@ const PreferencesSettings = () => {
     setOpeningTab,
     showSeconds,
     setShowSeconds,
-    iqamaCountUpEnabled,
-    setIqamaCountUpEnabled,
-    iqamaCountUpMinutes,
-    setIqamaCountUpMinutes,
     hapticsEnabled,
     setHapticsEnabled,
     largeControls,
@@ -152,21 +103,6 @@ const PreferencesSettings = () => {
             value={showSeconds}
             onValueChange={setShowSeconds}
           />
-
-          <SettingsToggleRow
-            titleKey="settings.preferences.iqamaCountUp.title"
-            descriptionKey="settings.preferences.iqamaCountUp.description"
-            value={iqamaCountUpEnabled}
-            onValueChange={setIqamaCountUpEnabled}>
-            {iqamaCountUpEnabled && (
-              <DurationPicker
-                value={iqamaCountUpMinutes}
-                onChange={setIqamaCountUpMinutes}
-                options={[10, 15, 20, 30]}
-                labelKey="settings.preferences.iqamaCountUp.minutes"
-              />
-            )}
-          </SettingsToggleRow>
 
           <SettingsToggleRow
             titleKey="settings.preferences.haptics.title"

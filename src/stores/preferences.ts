@@ -22,8 +22,6 @@ type PreferencesState = {
   openingTab: OpeningTabValue;
   // Today's focus figure counts to the second; off counts in minutes, calmer.
   showSeconds: boolean;
-  iqamaCountUpEnabled: boolean;
-  iqamaCountUpMinutes: number;
   hapticsEnabled: boolean;
   // Home shows the Important Days pager card. The Tools screen is always available.
   showImportantDaysOnHome: boolean;
@@ -42,8 +40,6 @@ type PreferencesState = {
   setWeekStartsOn: (value: number) => void;
   setOpeningTab: (value: OpeningTabValue) => void;
   setShowSeconds: (value: boolean) => void;
-  setIqamaCountUpEnabled: (value: boolean) => void;
-  setIqamaCountUpMinutes: (value: number) => void;
   setHapticsEnabled: (value: boolean) => void;
   setShowImportantDaysOnHome: (value: boolean) => void;
   setLargeControls: (value: boolean) => void;
@@ -60,8 +56,6 @@ export const usePreferencesStore = create<PreferencesState>()(
       weekStartsOn: deviceWeekStartsOn(),
       openingTab: OpeningTab.HOME,
       showSeconds: true,
-      iqamaCountUpEnabled: false,
-      iqamaCountUpMinutes: 30,
       hapticsEnabled: true,
       showImportantDaysOnHome: false,
       largeControls: false,
@@ -74,8 +68,6 @@ export const usePreferencesStore = create<PreferencesState>()(
       setWeekStartsOn: (value) => set({ weekStartsOn: value }),
       setOpeningTab: (value) => set({ openingTab: value }),
       setShowSeconds: (value) => set({ showSeconds: value }),
-      setIqamaCountUpEnabled: (value) => set({ iqamaCountUpEnabled: value }),
-      setIqamaCountUpMinutes: (value) => set({ iqamaCountUpMinutes: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
       setLargeControls: (value) => set({ largeControls: value }),

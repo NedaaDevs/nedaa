@@ -21,9 +21,9 @@ const CEILING = {
   /** `useTheme()` calls on Tamagui's hook. */
   useThemeCalls: 28,
   /** Radius props not set to a named token ($chip, $control, $card, $sheet, $pill). */
-  rawRadius: 393,
+  rawRadius: 391,
   /** Width, height and their bounds given a non-zero number. */
-  rawSize: 606,
+  rawSize: 605,
   /** `styled()` belongs in `ui/`, and nowhere else ever. */
   styledCalls: 0,
 } as const;
