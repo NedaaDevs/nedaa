@@ -87,37 +87,37 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   };
 
   return (
-    <VStack
-      flex={1}
-      alignItems="center"
-      justifyContent="center"
-      padding="$8"
-      gap="$4"
-      accessible={true}
-      accessibilityLabel={t("a11y.emptyState", {
-        title: title || config.title,
-        description: description || config.description,
-      })}
-      accessibilityLiveRegion="polite">
-      {/* Icon */}
-      <Box
-        width={80}
-        height={80}
-        borderRadius={999}
-        backgroundColor={config.bgColor}
+    <VStack flex={1} alignItems="center" justifyContent="center" padding="$8" gap="$4">
+      {/* One element for the message; the retry button stays reachable beside it. */}
+      <VStack
         alignItems="center"
-        justifyContent="center">
-        <Icon color={config.iconColor} as={config.icon} size="xl" />
-      </Box>
+        gap="$4"
+        accessible
+        accessibilityLabel={t("a11y.emptyState", {
+          title: title || config.title,
+          description: description || config.description,
+        })}
+        accessibilityLiveRegion="polite">
+        {/* Icon */}
+        <Box
+          width={80}
+          height={80}
+          borderRadius={999}
+          backgroundColor={config.bgColor}
+          alignItems="center"
+          justifyContent="center">
+          <Icon color={config.iconColor} as={config.icon} size="xl" />
+        </Box>
 
-      {/* Content */}
-      <VStack gap="$2" alignItems="center" maxWidth={280}>
-        <Text size="xl" fontWeight="600" color="$typography" textAlign="center">
-          {title || config.title}
-        </Text>
-        <Text size="sm" color="$typographySecondary" textAlign="center">
-          {description || config.description}
-        </Text>
+        {/* Content */}
+        <VStack gap="$2" alignItems="center" maxWidth={280}>
+          <Text size="xl" fontWeight="600" color="$typography" textAlign="center">
+            {title || config.title}
+          </Text>
+          <Text size="sm" color="$typographySecondary" textAlign="center">
+            {description || config.description}
+          </Text>
+        </VStack>
       </VStack>
 
       {/* Action Button */}
