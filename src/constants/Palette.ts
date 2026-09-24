@@ -13,6 +13,9 @@ export const NEDAA_LIGHT = {
   bg: { oklch: "oklch(93% 0.025 230)", hex: "#D8EBF6" },
   surface: { oklch: "oklch(97% 0.02 222 / .9)", hex: "#E7F9FFE6" },
   surface2: { oklch: "oklch(95% 0.032 225 / .72)", hex: "#D9F4FFB8" },
+  /** A surface lifted over any sky, e.g. a toast; nearly opaque. */
+  raised: { oklch: "oklch(97% 0.02 222 / .98)", hex: "#E7F9FFFA" },
+  shadow: { oklch: "oklch(20% 0.04 250 / .24)", hex: "#0717273D" },
   fg: { oklch: "oklch(23% 0.055 254)", hex: "#081D36" },
   muted: { oklch: "oklch(45% 0.05 240)", hex: "#3B596E" },
   /** Muted text on the deeper day sky, where `muted` falls to 3:1. */
@@ -31,6 +34,8 @@ export const NEDAA_DARK = {
   bg: { oklch: "oklch(7% 0.015 252)", hex: "#000103" },
   surface: { oklch: "oklch(23% 0.065 258)", hex: "#071C3B" },
   surface2: { oklch: "oklch(26% 0.072 260)", hex: "#0D2346" },
+  raised: { oklch: "oklch(23% 0.065 258 / .98)", hex: "#071C3BFA" },
+  shadow: { oklch: "oklch(5% 0.03 260 / .5)", hex: "#00000280" },
   fg: { oklch: "oklch(93% 0.018 230)", hex: "#DCEAF2" },
   muted: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
   mutedSky: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },

@@ -192,6 +192,7 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
 
     if (result.failed > 0) {
       setFailedIds(result.failedIds);
+      // The dialog draws over toasts; its own Retry button is the way back.
       MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
     }
 
@@ -216,6 +217,7 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
 
     if (result.failed > 0) {
       setFailedIds(result.failedIds);
+      // The dialog draws over toasts; its own Retry button is the way back.
       MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
     } else {
       setFailedIds([]);
