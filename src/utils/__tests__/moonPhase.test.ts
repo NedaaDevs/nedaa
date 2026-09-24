@@ -19,11 +19,19 @@ describe("moonPhaseFor", () => {
     ["a thin crescent", 1, 0, 0.1],
     ["full", 15, 0.45, 0.55],
     ["a thin waning crescent", 29, 0.9, 1],
+    ["the last, near new", 30, 0.95, 1],
   ])("reads Hijri day %s as %s", (_name, day, low, high) => {
     const phase = moonPhaseFor(day);
 
     expect(phase).toBeGreaterThan(low);
     expect(phase).toBeLessThan(high);
+  });
+
+  // A 30-day month must not wrap back to a waxing crescent on its last night.
+  it("moves forward through every day of a month", () => {
+    const phases = Array.from({ length: 30 }, (_, i) => moonPhaseFor(i + 1));
+
+    phases.slice(1).forEach((phase, i) => expect(phase).toBeGreaterThan(phases[i]));
   });
 });
 

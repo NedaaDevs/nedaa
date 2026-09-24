@@ -19,10 +19,12 @@ import { usePhase } from "@/contexts/PhaseContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppIsDark } from "@/hooks/useAppIsDark";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
+import { useClockOverride } from "@/hooks/useTodayClock";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { celestialPositionAt, type CelestialPosition } from "@/utils/celestial";
+import { phaseAt } from "@/utils/phase";
 import { bodyCentre, skyBackgroundImage, skyScene, type SkyScene } from "@/utils/sky";
 import { hijriDayAt, moonPhaseFor } from "@/utils/moonPhase";
 
@@ -84,14 +86,20 @@ type Props = { children?: ReactNode };
 export const SkyBackground = ({ children }: Props) => {
   const window = useWindowDimensions();
   const [size, setSize] = useState({ width: window.width, height: window.height });
-  const scene = skyScene(useAppIsDark() ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT, usePhase());
   const { isRTL } = useRTL();
   const reduced = useReducedMotion();
-  const now = useMinuteClock();
+  const clock = useMinuteClock();
+  const override = useClockOverride();
+  const now = override ?? clock;
   const yesterday = usePrayerTimesStore((state) => state.yesterdayTimings);
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
-  const celestial = celestialPositionAt(now, { yesterday, today, tomorrow });
+  const days = { yesterday, today, tomorrow };
+  // A pinned moment paints its own phase; the live one comes from the root.
+  const livePhase = usePhase();
+  const phase = (override && phaseAt(override, days)) || livePhase;
+  const scene = skyScene(useAppIsDark() ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT, phase);
+  const celestial = celestialPositionAt(now, days);
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const hijriDay = today ? hijriDayAt(now, today.timezone, hijriOffset) : undefined;
 

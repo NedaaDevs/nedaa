@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { Icon, type IconProps } from "@/components/ui/icon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
 import { TICK_STATE, type TickState } from "@/constants/Timeline";
@@ -24,6 +25,7 @@ export const TIMELINE_PART = {
   FILL: "timeline-fill",
   SHIMMER: "timeline-shimmer",
   NAME: "timeline-name",
+  SKELETON: "timeline-skeleton",
   DOT: "timeline-dot",
 } as const;
 
@@ -229,7 +231,7 @@ export const Timeline = ({ marks, progress, selected }: Props) => {
                 fontWeight={strong ? "700" : "600"}
                 color={colour}
                 numberOfLines={1}
-                // A long name such as «شروق الشمس» shrinks to fit, never cut off.
+                // A long name such as «شروق الشمس» shrinks, down to 70%, to fit one line.
                 adjustsFontSizeToFit
                 minimumFontScale={0.7}>
                 {mark.label}
@@ -241,6 +243,16 @@ export const Timeline = ({ marks, progress, selected }: Props) => {
     </View>
   );
 };
+
+/** The timeline's place while its marks load, announced by `label`. */
+export const TimelineSkeleton = ({ label }: { label: string }) => (
+  <Skeleton
+    testID={TIMELINE_PART.SKELETON}
+    accessible
+    accessibilityLabel={label}
+    style={{ height: TIMELINE.mark + 4 + TIMELINE.row }}
+  />
+);
 
 const clampShare = (n: number) => Math.min(1, Math.max(0, n));
 

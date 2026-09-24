@@ -6,12 +6,14 @@ import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
 import { PhaseContext } from "@/contexts/PhaseContext";
+import { SimulatedClockContext } from "@/hooks/useTodayClock";
 import { AppMode } from "@/enums/app";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { phaseAt } from "@/utils/phase";
 import { skyScene } from "@/utils/sky";
 
 /** Fajr 04:00, sunrise 06:00, Maghrib 18:00, in UTC. */
@@ -79,6 +81,30 @@ describe("SkyBackground", () => {
     expect(screen.getByText("Today")).toBeOnTheScreen();
     expect(screen.queryByTestId(SKY_PART.CANVAS)).toBeNull();
     expect(part(SKY_PART.CANVAS)).toHaveLength(1);
+  });
+
+  // Adaptive follows the prayer day, whatever the system scheme says.
+  it("paints Maghrib dark under Adaptive on a light system", async () => {
+    useAppStore.setState({ mode: AppMode.ADAPTIVE });
+    await renderWithTheme(<Sky phase={PHASE.MAGHRIB} />);
+
+    expect(paints()[0].backgroundColor).toBe(skyScene(BRIGHTNESS.DARK, PHASE.MAGHRIB).underlay);
+  });
+
+  // A debug run or a screenshot seed moves the sky with Today's other parts.
+  it("paints the phase of a simulated clock over the live one", async () => {
+    usePrayerTimesStore.setState({ todayTimings: TODAY, yesterdayTimings: null });
+    const afternoon = at("16:00");
+    await renderWithTheme(
+      <SimulatedClockContext value={afternoon}>
+        <Sky phase={PHASE.DAY} />
+      </SimulatedClockContext>
+    );
+    const simulated = skyScene(BRIGHTNESS.LIGHT, phaseAt(afternoon, { today: TODAY })!);
+
+    expect(simulated.key).not.toBe(skyScene(BRIGHTNESS.LIGHT, PHASE.DAY).key);
+    expect(paints()[0].backgroundColor).toBe(simulated.underlay);
+    expect(part(SKY_PART.SUN)).toHaveLength(1);
   });
 
   it.each([
@@ -168,6 +194,13 @@ describe("SkyBackground", () => {
       await renderWithTheme(<Sky phase={PHASE.DAY} />);
 
       expect(raysTurn()).toBe(true);
+    });
+
+    // RN swaps a physical left in RTL but not SVG x; one space keeps them aligned.
+    it("draws its rays and bloom in one left-to-right space in RTL", async () => {
+      await renderWithTheme(<Sky phase={PHASE.DAY} />, { isRTL: true });
+
+      expect(part(SKY_PART.SUN)[0]).toHaveStyle({ direction: "ltr" });
     });
 
     it("holds its rays still under reduced motion", async () => {
