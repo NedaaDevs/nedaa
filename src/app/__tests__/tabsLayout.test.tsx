@@ -15,6 +15,7 @@ import config from "../../../tamagui.config";
 import { isDarkMode } from "@/utils/appearance";
 import { TamaguiProvider } from "tamagui";
 import { RTLContext } from "@/contexts/RTLContext";
+import { controlProblems } from "@/test-helpers/controls";
 
 // The players reach native audio modules that jest does not load; the bar's frame is what matters.
 jest.mock("@/components/athkar/MiniPlayerBar", () => ({ __esModule: true, default: () => null }));
@@ -124,6 +125,12 @@ describe("tabs layout", () => {
       i18n.t("a11y.tab.athkar"),
       i18n.t("a11y.tab.tools"),
     ]);
+  });
+
+  it("gives every tab a role, a name and a 44pt target", async () => {
+    await renderTabs();
+
+    expect(controlProblems()).toEqual([]);
   });
 
   it("drops Athkar where the locale has none", async () => {
