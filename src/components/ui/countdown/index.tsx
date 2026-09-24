@@ -167,7 +167,7 @@ export const Countdown = ({
   switchKey,
   ...textProps
 }: CountdownProps) => {
-  const figures = { ...textProps, numeric: true };
+  const figures = { ...textProps, numeric: true, glyph: true };
   const characters = [...value];
 
   return (
