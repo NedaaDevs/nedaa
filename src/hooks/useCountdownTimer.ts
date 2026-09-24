@@ -36,11 +36,8 @@ export const useCountdownTimer = (flipped: boolean): FocusCount | null => {
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
   const seconds = usePreferencesStore((state) => state.showSeconds);
-  const iqamaEnabled = usePreferencesStore((state) => state.iqamaCountUpEnabled);
-  const iqamaMinutes = usePreferencesStore((state) => state.iqamaCountUpMinutes);
   const settings: CountSettings = {
     seconds,
-    iqama: { enabled: iqamaEnabled, minutes: iqamaMinutes },
   };
   const days = { yesterday, today, tomorrow };
 

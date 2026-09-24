@@ -46,7 +46,6 @@ describe("FocusCountdown", () => {
   beforeEach(() => {
     usePreferencesStore.setState({
       showSeconds: false,
-      iqamaCountUpEnabled: false,
       useWesternNumerals: true,
     });
   });
@@ -98,6 +97,28 @@ describe("FocusCountdown", () => {
   });
 
   // The prayer list names Friday's Dhuhr as Jumuah; the focus block agrees.
+  // For a while after its time comes in, the prayer is named and counted up from.
+  it("stays on a prayer just come in, as the current one, counting up", async () => {
+    await renderAt("2026-09-23", "15:32");
+
+    expect(screen.getByText(i18n.t("today.focus.current"))).toBeTruthy();
+    expect(screen.getByRole("togglebutton", { name: name("prayerTimes.asr") })).toBeTruthy();
+    expect(
+      screen.getAllByText(i18n.t("today.focus.since", { prayer: name("prayerTimes.asr") }), hidden)
+        .length
+    ).toBeGreaterThan(0);
+  });
+
+  it("names the next prayer when flipped during that time", async () => {
+    await renderAt("2026-09-23", "15:32");
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    await user.press(screen.getByRole("togglebutton", { name: name("prayerTimes.asr") }));
+
+    expect(screen.getByText(i18n.t("today.focus.next"))).toBeTruthy();
+    expect(screen.getByRole("togglebutton", { name: name("prayerTimes.maghrib") })).toBeTruthy();
+  });
+
   it("names Dhuhr as Jumuah on a Friday", async () => {
     await renderAt("2026-09-25", "10:00");
 
