@@ -44,7 +44,7 @@ const TILE_ORDER = [
   "tools.hijriConverter.title",
   "importantDays.title",
   "tools.qada.title",
-  "tools.umrahGuide.title",
+  "umrah.title",
 ];
 
 describe("More", () => {
