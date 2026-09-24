@@ -13,6 +13,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { controlProblems } from "@/test-helpers/controls";
 
 // hijri-native is a native module; the header reads today's Hijri date from it.
 const mockFromTimestamp = jest.fn((_seconds: number, _timezone: string) => ({
@@ -122,5 +123,11 @@ describe("TodayHeader", () => {
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION.href)
     );
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderHeader();
+
+    expect(controlProblems()).toEqual([]);
   });
 });

@@ -8,6 +8,7 @@ import i18n from "@/localization/i18n";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { controlProblems } from "@/test-helpers/controls";
 
 const LIGHT = config.themes.light;
 
@@ -130,5 +131,11 @@ describe("CelestialRhythm", () => {
     await renderAt("2026-09-23", "16:00", { dimmed: true });
 
     expect(screen.getByTestId(RHYTHM_PART.ROOT)).toHaveStyle({ opacity: 0.35 });
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderAt("2026-09-23", "14:02");
+
+    expect(controlProblems()).toEqual([]);
   });
 });
