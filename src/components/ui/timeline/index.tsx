@@ -159,9 +159,15 @@ export const Timeline = ({ marks, progress, accent: accented, selected }: Props)
   const accent = useThemeColor("$accent");
   const muted = useThemeColor("$muted");
   const [nameWidths, setNameWidths] = useState<Record<string, number>>({});
+  // Android measures text a pixel wider or narrower as it moves; a change under
+  // a point is that, not a new width, and would set the names swinging.
   const measureName = (id: string) => (event: LayoutChangeEvent) => {
     const measured = event.nativeEvent.layout.width;
-    setNameWidths((widths) => (widths[id] === measured ? widths : { ...widths, [id]: measured }));
+    setNameWidths((widths) => {
+      const known = widths[id];
+      if (known !== undefined && Math.abs(measured - known) < 1) return widths;
+      return { ...widths, [id]: Math.ceil(measured) };
+    });
   };
 
   const span = Math.max(0, width - 2 * TIMELINE.edge);
