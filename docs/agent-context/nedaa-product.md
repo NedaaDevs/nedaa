@@ -10,8 +10,8 @@
 
 ## Name & meaning
 
-- **Nedaa** (Arabic: **نداء**) — literally "the call" or "summons." A reference to the Adhan, the call to prayer.
-- Branding sometimes pairs the Latin and Arabic forms: **Nedaa | نداء**.
+- **Nedaa** (Arabic: **نِداء**) — literally "the call" or "summons." A reference to the Adhan, the call to prayer.
+- Branding sometimes pairs the Latin and Arabic forms: **Nedaa | نِداء**.
 - Domain: `nedaa.dev`. Support: `support@nedaa.dev`.
 
 ## What the app does (end-user phrasing)
