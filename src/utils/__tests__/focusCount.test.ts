@@ -1,4 +1,4 @@
-import { COUNT_AXIS } from "@/constants/Countdown";
+import { COUNT_AXIS, PRAYER_FOCUS } from "@/constants/Countdown";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { focusCount, formatCount, type CountSettings } from "@/utils/focusCount";
@@ -22,7 +22,7 @@ const DAYS = {
   today: day("2026-09-23"),
   tomorrow: day("2026-09-24"),
 };
-const OFF: CountSettings = { seconds: false, iqama: { enabled: false, minutes: 30 } };
+const OFF: CountSettings = { seconds: false };
 const at = (iso: string) => new Date(`${iso}.000Z`);
 const count = (iso: string, settings = OFF, flipped = false) =>
   focusCount(at(iso), DAYS, settings, flipped)!;
@@ -32,24 +32,24 @@ describe("focusCount", () => {
     const result = count("2026-09-23T14:02:00");
 
     expect(result.axis).toBe(COUNT_AXIS.UNTIL);
-    expect(result.next.id).toBe(PRAYER_ID.ASR);
+    expect(result.named.id).toBe(PRAYER_ID.ASR);
     expect(result.counted.id).toBe(PRAYER_ID.ASR);
     expect(result.seconds).toBe(78 * 60);
     expect(result.precise).toBe(false);
   });
 
-  // The name always names the next prayer; only the figure's direction flips.
+  // Between prayers the name stays on the next; only the direction flips.
   it("counts up from the last prayer when flipped", () => {
     const result = count("2026-09-23T14:10:00", OFF, true);
 
     expect(result.axis).toBe(COUNT_AXIS.SINCE);
-    expect(result.next.id).toBe(PRAYER_ID.ASR);
+    expect(result.named.id).toBe(PRAYER_ID.ASR);
     expect(result.counted.id).toBe(PRAYER_ID.DHUHR);
     expect(result.seconds).toBe(130 * 60);
   });
 
   it("reaches into tomorrow after Isha and into yesterday before Fajr", () => {
-    expect(count("2026-09-23T22:00:00").next.time).toEqual(at("2026-09-24T04:30:00"));
+    expect(count("2026-09-23T23:00:00").named.time).toEqual(at("2026-09-24T04:30:00"));
     expect(count("2026-09-23T02:00:00", OFF, true).counted.time).toEqual(at("2026-09-22T19:25:00"));
   });
 
@@ -70,22 +70,40 @@ describe("focusCount", () => {
     });
   });
 
-  describe("the Iqama Timer setting", () => {
-    const on = { ...OFF, iqama: { enabled: true, minutes: 30 } };
+  // A prayer stays in focus for a while after its time comes in, counting up.
+  describe("a prayer just come in", () => {
+    const window = PRAYER_FOCUS.activeMs / 60_000;
 
-    it("opens on the time since the athan while the window lasts", () => {
-      const result = count("2026-09-23T12:08:05", on);
+    it("names it and counts up from it", () => {
+      const result = count("2026-09-23T15:32:00");
 
       expect(result.axis).toBe(COUNT_AXIS.SINCE);
-      expect(result.counted.id).toBe(PRAYER_ID.DHUHR);
+      expect(result.named.id).toBe(PRAYER_ID.ASR);
+      expect(result.counted.id).toBe(PRAYER_ID.ASR);
+      expect(result.current).toBe(true);
+      expect(result.seconds).toBe(12 * 60);
     });
 
-    it("still flips to the countdown", () => {
-      expect(count("2026-09-23T12:08:05", on, true).axis).toBe(COUNT_AXIS.UNTIL);
+    // Flipped, the block names what it counts to: the next prayer.
+    it("flips to the next prayer's countdown", () => {
+      const result = count("2026-09-23T15:32:00", OFF, true);
+
+      expect(result.axis).toBe(COUNT_AXIS.UNTIL);
+      expect(result.named.id).toBe(PRAYER_ID.MAGHRIB);
+      expect(result.current).toBe(false);
     });
 
-    it("returns to the countdown once the window ends", () => {
-      expect(count("2026-09-23T12:31:00", on).axis).toBe(COUNT_AXIS.UNTIL);
+    it("hands over to the next prayer once its window ends", () => {
+      const minutes = String(20 + window).padStart(2, "0");
+      const result = count(`2026-09-23T15:${minutes}:00`);
+
+      expect(result.named.id).toBe(PRAYER_ID.MAGHRIB);
+      expect(result.axis).toBe(COUNT_AXIS.UNTIL);
+      expect(result.current).toBe(false);
+    });
+
+    it("stays on Isha for its window before tomorrow's Fajr", () => {
+      expect(count("2026-09-23T19:40:00").named.id).toBe(PRAYER_ID.ISHA);
     });
   });
 });
