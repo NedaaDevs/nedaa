@@ -70,7 +70,7 @@ const TOOLS: readonly ToolItem[] = [
   },
   {
     id: "umrah-guide",
-    titleKey: "tools.umrahGuide.title",
+    titleKey: BACK_DESTINATION.UMRAH.title,
     icon: KaabaIcon,
     route: BACK_DESTINATION.UMRAH.href,
   },
