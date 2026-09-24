@@ -28,3 +28,9 @@ export const Easing = {
   inOut: (easing: unknown) => easing,
   cubic: (t: number) => t,
 };
+
+/** A layout transition's builder chain, kept as one object the tests can spot. */
+export const LinearTransition = {
+  duration: () => LinearTransition,
+  easing: () => LinearTransition,
+};

@@ -30,11 +30,23 @@ describe("Timeline", () => {
   afterEach(() => jest.useRealTimers());
 
   it("puts an icon and a name on the line for every mark, out of the reader's way", async () => {
-    await renderWithTheme(<Timeline marks={MARKS} progress={PROGRESS} />);
+    await renderWithTheme(<Timeline marks={MARKS} progress={PROGRESS} accent="b" />);
 
     expect(part(TIMELINE_PART.MARK)).toHaveLength(MARKS.length);
     expect(screen.queryByText("Middle")).toBeNull();
     expect(screen.getByText("Middle", { includeHiddenElements: true })).toHaveStyle({
+      color: LIGHT.accent.val,
+    });
+  });
+
+  // The caller names the gold mark; the current state alone does not light one.
+  it("draws only the accent mark in the accent", async () => {
+    await renderWithTheme(<Timeline marks={MARKS} progress={PROGRESS} accent="c" />);
+
+    expect(screen.getByText("Last", { includeHiddenElements: true })).toHaveStyle({
+      color: LIGHT.accent.val,
+    });
+    expect(screen.getByText("Middle", { includeHiddenElements: true })).not.toHaveStyle({
       color: LIGHT.accent.val,
     });
   });
