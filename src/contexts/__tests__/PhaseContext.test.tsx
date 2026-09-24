@@ -1,6 +1,7 @@
 import { AppState } from "react-native";
 import { act, renderHook } from "@testing-library/react-native";
 
+import { APP_STATE } from "@/constants/AppState";
 import { PHASE } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { usePrayerPhaseSource } from "@/contexts/PhaseContext";
@@ -96,7 +97,7 @@ describe("usePrayerPhaseSource", () => {
 
     await act(() => {
       jest.setSystemTime(new Date("2026-09-24T10:00:00.000Z"));
-      listeners.forEach((listener) => listener("active"));
+      listeners.forEach((listener) => listener(APP_STATE.ACTIVE));
     });
 
     expect(result.current).toBe(PHASE.DAY);
