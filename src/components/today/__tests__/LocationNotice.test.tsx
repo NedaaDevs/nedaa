@@ -9,6 +9,7 @@ import i18n from "@/localization/i18n";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { controlProblems } from "@/test-helpers/controls";
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
@@ -53,5 +54,12 @@ describe("LocationNotice", () => {
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION.href)
     );
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    await renderNotice();
+
+    expect(controlProblems()).toEqual([]);
   });
 });
