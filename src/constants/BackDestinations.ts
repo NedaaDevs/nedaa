@@ -68,6 +68,17 @@ export const BACK_DESTINATION = {
     title: "tools.quranListen.title",
   },
   UMRAH: { route: "umrah/index", href: "/umrah", title: "umrah.title" },
+  COMPASS: { route: "(tabs)/compass", href: "/compass", title: "tools.compass.title" },
+  HIJRI_CALENDAR: {
+    route: "hijri-calendar",
+    href: "/hijri-calendar",
+    title: "hijriCalendar.title",
+  },
+  HIJRI_CONVERTER: {
+    route: "hijri-converter",
+    href: "/hijri-converter",
+    title: "tools.hijriConverter.title",
+  },
   UMRAH_PREPARE: {
     route: "umrah/prepare/index",
     href: "/umrah/prepare",
