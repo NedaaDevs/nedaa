@@ -3,7 +3,7 @@ import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Components
 import { Background } from "@/components/ui/background";

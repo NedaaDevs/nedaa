@@ -8,7 +8,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { isTodaySegments, rootSafeAreaEdges } from "@/utils/safeArea";
 import * as SplashScreen from "expo-splash-screen";
 
-import { TamaguiProvider, FontLanguage, useTheme, useThemeName } from "tamagui";
+import { TamaguiProvider, FontLanguage, useThemeName } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import tamaguiConfig from "../../tamagui.config";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
