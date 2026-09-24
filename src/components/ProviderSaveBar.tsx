@@ -69,7 +69,9 @@ export const ProviderSaveBar: FC = () => {
       hapticSuccess();
     } catch (error) {
       setSaveFailed(true);
-      MessageToast.showError(t("providers.saveFailed"));
+      MessageToast.showError(t("providers.saveFailed"), {
+        action: { label: t("common.retry"), onPress: handleSave },
+      });
       log.e(
         "Settings",
         "applying provider settings failed",

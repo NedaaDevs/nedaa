@@ -57,7 +57,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Stores
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
-import { useToastStore } from "@/stores/toast";
+import { MessageToast } from "@/components/feedback/MessageToast";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 
@@ -182,7 +182,7 @@ const SettingsScreen = () => {
   const handleShareLongPress = async () => {
     hapticMedium();
     await Clipboard.setStringAsync(STORE_LINKS.share);
-    useToastStore.getState().showToast(t("settings.linkCopied"), "success");
+    MessageToast.showSuccess(t("settings.linkCopied"));
   };
   return (
     <Background>

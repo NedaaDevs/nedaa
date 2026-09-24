@@ -23,10 +23,14 @@ export const useAnimatedStyle = <T>(style: () => T) => style();
 export const withTiming = jest.fn((value: unknown) => value);
 export const withSpring = jest.fn((value: unknown) => value);
 export const withSequence = (...steps: unknown[]) => steps[steps.length - 1];
+export const withRepeat = jest.fn((animation: unknown) => animation);
+export const cancelAnimation = jest.fn();
+export const ReduceMotion = { System: "system", Always: "always", Never: "never" } as const;
 export const Easing = {
   out: (easing: unknown) => easing,
   inOut: (easing: unknown) => easing,
   cubic: (t: number) => t,
+  linear: (t: number) => t,
 };
 
 /** A layout transition's builder chain, kept as one object the tests can spot. */

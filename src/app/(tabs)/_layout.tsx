@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { usePreferencesStore } from "@/stores/preferences";
+import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 
 // Enums
 import { OpeningTab, type OpeningTabValue } from "@/enums/app";
@@ -54,6 +55,7 @@ const AppTabBar = ({ state, navigation, tabs, readerActive }: AppTabBarProps) =>
   // The tab view gives each screen this height, so a screen under a floating bar
   // knows how much room to leave.
   const reportHeight = useContext(BottomTabBarHeightCallbackContext);
+  const setFrameHeight = useTabBarFrameStore((state) => state.setHeight);
   const focused = state.routes[state.index].name;
   // Quran is full screen, so the mini player pads the bottom inset.
   const tabBarHidden = focused === OpeningTab.QURAN;
@@ -63,7 +65,10 @@ const AppTabBar = ({ state, navigation, tabs, readerActive }: AppTabBarProps) =>
   return (
     <Box
       testID={TAB_BAR_PART.FRAME}
-      onLayout={({ nativeEvent }) => reportHeight?.(nativeEvent.layout.height)}
+      onLayout={({ nativeEvent }) => {
+        reportHeight?.(nativeEvent.layout.height);
+        setFrameHeight(nativeEvent.layout.height);
+      }}
       {...(floating
         ? { position: "absolute", start: 0, end: 0, bottom: 0 }
         : { backgroundColor: "$backgroundSecondary" })}>

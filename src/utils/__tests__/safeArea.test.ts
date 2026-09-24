@@ -1,4 +1,6 @@
-import { SAFE_EDGE, isSkySegments, rootSafeAreaEdges } from "@/utils/safeArea";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { TOAST_GAP } from "@/constants/Toast";
+import { SAFE_EDGE, isSkySegments, rootSafeAreaEdges, toastBottom } from "@/utils/safeArea";
 
 describe("rootSafeAreaEdges", () => {
   it("pads the top of an ordinary screen", () => {
@@ -35,5 +37,29 @@ describe("isSkySegments", () => {
     [["settings", "location"], false],
   ])("reads %j as a sky screen: %s", (segments, sky) => {
     expect(isSkySegments(segments)).toBe(sky);
+  });
+});
+
+describe("toastBottom", () => {
+  const BAR = 92;
+  const INSET = 34;
+
+  // The measured frame holds the bar, any mini player and the bottom inset.
+  const segmentsOf = ({ route }: { route: string }) => route.split("/");
+  const [TABS] = segmentsOf(BACK_DESTINATION.HOME);
+
+  it.each([
+    ["Today, under the floating bar", [TABS], BAR, BAR],
+    ["Athkar, above the bar in the flow", segmentsOf(BACK_DESTINATION.ATHKAR), BAR, BAR],
+    ["the Quran reader, where the bar is gone", segmentsOf(BACK_DESTINATION.QURAN), 0, INSET],
+    ["a tab before the bar has measured", segmentsOf(BACK_DESTINATION.TOOLS), 0, INSET],
+    [
+      "a stack screen, where the bar's height is stale",
+      segmentsOf(BACK_DESTINATION.SETTINGS_LOCATION),
+      BAR,
+      INSET,
+    ],
+  ])("clears %s", (_name, segments, tabBarHeight, clears) => {
+    expect(toastBottom({ segments, tabBarHeight, insetBottom: INSET })).toBe(clears + TOAST_GAP);
   });
 });
