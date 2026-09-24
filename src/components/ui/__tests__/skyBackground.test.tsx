@@ -93,6 +93,7 @@ describe("SkyBackground", () => {
 
   // A debug run or a screenshot seed moves the sky with Today's other parts.
   it("paints the phase of a simulated clock over the live one", async () => {
+    useAppStore.setState({ mode: AppMode.ADAPTIVE });
     usePrayerTimesStore.setState({ todayTimings: TODAY, yesterdayTimings: null });
     const afternoon = at("16:00");
     await renderWithTheme(
@@ -107,16 +108,27 @@ describe("SkyBackground", () => {
     expect(part(SKY_PART.SUN)).toHaveLength(1);
   });
 
-  it.each([
-    [AppMode.LIGHT, PHASE.ASR, BRIGHTNESS.LIGHT],
-    [AppMode.DARK, PHASE.MAGHRIB, BRIGHTNESS.DARK],
-  ])("in %s at %s paints that scene", async (mode, phase, brightness) => {
-    useAppStore.setState({ mode });
-    await renderWithTheme(<Sky phase={phase} />);
-    const scene = skyScene(brightness, phase);
+  it("tints the sky by phase under Adaptive", async () => {
+    useAppStore.setState({ mode: AppMode.ADAPTIVE });
+    await renderWithTheme(<Sky phase={PHASE.ASR} />);
+    const scene = skyScene(BRIGHTNESS.LIGHT, PHASE.ASR);
 
     expect(paints()[0].backgroundColor).toBe(scene.underlay);
     expect(paints()[0].experimental_backgroundImage).toContain(scene.base.stops[1].color);
+  });
+
+  // A fixed brightness keeps its plain sky; only Adaptive follows the phase.
+  it.each([
+    [AppMode.LIGHT, PHASE.ASR, BRIGHTNESS.LIGHT],
+    [AppMode.DARK, PHASE.MAGHRIB, BRIGHTNESS.DARK],
+  ])("in %s at %s paints the plain sky", async (mode, phase, brightness) => {
+    useAppStore.setState({ mode });
+    await renderWithTheme(<Sky phase={phase} />);
+    const scene = skyScene(brightness, undefined);
+    const tinted = skyScene(brightness, phase);
+
+    expect(paints()[0].backgroundColor).toBe(scene.underlay);
+    expect(paints()[0].experimental_backgroundImage).not.toContain(tinted.base.stops[1].color);
   });
 
   it.each([
