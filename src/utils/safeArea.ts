@@ -1,5 +1,6 @@
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { isSkyTab } from "@/constants/SkyTabs";
+import { TOAST_GAP } from "@/constants/Toast";
 import { OpeningTab } from "@/enums/app";
 
 export const SAFE_EDGE = { TOP: "top", RIGHT: "right", LEFT: "left" } as const;
@@ -20,3 +21,10 @@ export const rootSafeAreaEdges = ({ sky, immersiveReader, android }: Screen): Sa
   sky || (immersiveReader && android)
     ? [SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT]
     : [SAFE_EDGE.TOP, SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT];
+
+type ToastPlacement = { segments: readonly string[]; tabBarHeight: number; insetBottom: number };
+
+// On a tab route the measured frame covers the bar and any mini player, the
+// inset its floor; elsewhere that measurement is stale.
+export const toastBottom = ({ segments, tabBarHeight, insetBottom }: ToastPlacement) =>
+  (segments[0] === TAB_GROUP ? Math.max(tabBarHeight, insetBottom) : insetBottom) + TOAST_GAP;

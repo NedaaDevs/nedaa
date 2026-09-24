@@ -17,7 +17,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
-import { useToastStore } from "@/stores/toast";
+import { MessageToast } from "@/components/feedback/MessageToast";
 
 import { refreshWidgets, CONFIRM_TIMEOUT_MS } from "@/services/widgetRefresh";
 import {
@@ -273,11 +273,11 @@ const PersistentNotificationCard = ({
 );
 
 const REFRESH_TOASTS = {
-  confirmed: { key: "settings.widgets.refreshConfirmed", type: "success" },
-  pending: { key: "settings.widgets.refreshPending", type: "info" },
-  "none-placed": { key: "settings.widgets.refreshNonePlaced", type: "info" },
-  unavailable: { key: "settings.widgets.refreshFailed", type: "error" },
-} as const satisfies Record<WidgetRefreshResult, { key: string; type: string }>;
+  confirmed: { key: "settings.widgets.refreshConfirmed", show: MessageToast.showSuccess },
+  pending: { key: "settings.widgets.refreshPending", show: MessageToast.showInfo },
+  "none-placed": { key: "settings.widgets.refreshNonePlaced", show: MessageToast.showInfo },
+  unavailable: { key: "settings.widgets.refreshFailed", show: MessageToast.showError },
+} as const satisfies Record<WidgetRefreshResult, { key: string; show: (message: string) => void }>;
 
 const WidgetSettings = () => {
   const { t } = useTranslation();
@@ -293,7 +293,6 @@ const WidgetSettings = () => {
   // the app can confirm success with a toast rather than a silent card swap.
   const awaitingBatteryGrant = useRef(false);
   const { becameActiveAt } = useAppVisibility();
-  const showToast = useToastStore((s) => s.showToast);
 
   // Re-read on navigation focus AND every foreground return — the battery
   // dialog is a separate system Activity, so RN navigation focus never fires
@@ -304,9 +303,9 @@ const WidgetSettings = () => {
     setBatteryOptDisabled(disabled);
     if (disabled && awaitingBatteryGrant.current) {
       awaitingBatteryGrant.current = false;
-      showToast(t("settings.widgets.batteryOptEnabled"), "success");
+      MessageToast.showSuccess(t("settings.widgets.batteryOptEnabled"));
     }
-  }, [showToast, t]);
+  }, [t]);
 
   useFocusEffect(refreshBatteryState);
 
@@ -331,13 +330,13 @@ const WidgetSettings = () => {
           setNativeEnabled: setPersistentNotificationEnabled,
         });
         if (!accepted && enabled) {
-          showToast(t("settings.widgets.persistentNotificationDenied"), "error");
+          MessageToast.showError(t("settings.widgets.persistentNotificationDenied"));
         }
       } catch {
         // The helper restores the previous value when the native write fails.
       }
     },
-    [persistentNotificationEnabled, showToast, t]
+    [persistentNotificationEnabled, t]
   );
 
   const handleBatteryOptimization = () => {
@@ -352,7 +351,9 @@ const WidgetSettings = () => {
     setRefreshing(true);
     // Outlives the poll window so the outcome replaces it rather than following a
     // gap of silence — the pending path runs slightly past the deadline itself.
-    showToast(t("settings.widgets.refreshStarted"), "muted", undefined, CONFIRM_TIMEOUT_MS + 2000);
+    MessageToast.showProgress(t("settings.widgets.refreshStarted"), {
+      durationMs: CONFIRM_TIMEOUT_MS + 2000,
+    });
     try {
       const result = await refreshWidgets({
         isReloadAvailable: isWidgetRefreshAvailable,
@@ -363,11 +364,11 @@ const WidgetSettings = () => {
         sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
       });
       const toast = REFRESH_TOASTS[result];
-      showToast(t(toast.key), toast.type);
+      toast.show(t(toast.key));
     } finally {
       setRefreshing(false);
     }
-  }, [refreshing, showToast, t]);
+  }, [refreshing, t]);
 
   return (
     <Background>
