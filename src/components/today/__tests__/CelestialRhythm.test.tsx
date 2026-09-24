@@ -29,7 +29,11 @@ const day = (date: string): DayPrayerTimes => ({
 
 const renderAt = (date: string, time: string, props = {}) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
-  usePrayerTimesStore.setState({ todayTimings: day(date) });
+  usePrayerTimesStore.setState({
+    yesterdayTimings: null,
+    todayTimings: day(date),
+    tomorrowTimings: null,
+  });
   return renderWithTheme(<CelestialRhythm {...props} />);
 };
 
@@ -54,6 +58,18 @@ describe("CelestialRhythm", () => {
     await renderAt("2026-09-23", time);
 
     expect(summary()).toBe(i18n.t(key, { prayer: name(prayer) }));
+  });
+
+  // The store rolls days only on launch or foreground, never at midnight.
+  it("follows the clock into the next stored day", async () => {
+    jest.useFakeTimers({ now: new Date("2026-09-24T13:00:00.000Z") });
+    usePrayerTimesStore.setState({
+      todayTimings: day("2026-09-23"),
+      tomorrowTimings: day("2026-09-24"),
+    });
+    await renderWithTheme(<CelestialRhythm />);
+
+    expect(summary()).toBe(i18n.t("a11y.rhythm.current", { prayer: name("prayerTimes.dhuhr") }));
   });
 
   // The existing prayer list names Friday's Dhuhr as Jumuah; the rhythm agrees.
