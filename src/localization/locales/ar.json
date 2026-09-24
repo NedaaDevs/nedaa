@@ -171,6 +171,8 @@
   "a11y.today.showRemaining": "التبديل إلى الوقت المتبقي",
   "a11y.today.sinceSpoken": "مضى على {{prayer}} {{duration}}",
   "a11y.today.untilSpoken": "بقي على {{prayer}} {{duration}}",
+  "a11y.today.prayerCard": "{{prayer}}، {{time}}",
+  "a11y.today.prayerCardNext": "{{prayer}}، {{time}}، الصلاة القادمة",
   "a11y.tools.continueHint": "يفتح دليل العمرة من حيث توقفت",
   "a11y.tools.umrahGuideHint": "دليل العمرة خطوة بخطوة مع الأدعية",
   "a11y.umrah.backToPrevious": "رجوع",

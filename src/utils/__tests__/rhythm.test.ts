@@ -82,4 +82,22 @@ describe("rhythmLine", () => {
   it.each(["03:00", "22:00"])("fills nothing at %s", (time) => {
     expect(line(time).progress).toBeNull();
   });
+
+  // The gold marks what is coming, as the focus block names it; sunrise is no prayer.
+  it.each([
+    ["03:00", PRAYER_ID.FAJR],
+    ["05:00", PRAYER_ID.DHUHR],
+    ["09:00", PRAYER_ID.DHUHR],
+    ["16:00", PRAYER_ID.MAGHRIB],
+  ])("names the next prayer at %s", (time, next) => {
+    expect(line(time).next).toBe(next);
+  });
+
+  it("names no next prayer after Isha", () => {
+    expect(line("22:00").next).toBeNull();
+  });
+
+  it("names tomorrow's Fajr next after Isha, when tomorrow is stored", () => {
+    expect(rhythmLine(DAY, at("22:00"), DAY).next).toBe(PRAYER_ID.FAJR);
+  });
 });
