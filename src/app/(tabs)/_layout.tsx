@@ -12,6 +12,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 
 // Enums
 import { OpeningTab, type OpeningTabValue } from "@/enums/app";
+import { isSkyTab } from "@/constants/SkyTabs";
 
 // Icons
 import { AlarmClock, BookOpen, Ellipsis, House } from "lucide-react-native";
@@ -42,9 +43,6 @@ const TAB_ITEMS = [
 
 export const TAB_BAR_PART = { FRAME: "tab-bar-frame" } as const;
 
-/** Tabs that draw a sky; the bar floats over them so the sky shows through. */
-const FLOATING_TABS: readonly string[] = [OpeningTab.HOME];
-
 type AppTabBarProps = BottomTabBarProps & {
   tabs: readonly (typeof TAB_ITEMS)[number][];
   readerActive: boolean;
@@ -59,7 +57,8 @@ const AppTabBar = ({ state, navigation, tabs, readerActive }: AppTabBarProps) =>
   const focused = state.routes[state.index].name;
   // Quran is full screen, so the mini player pads the bottom inset.
   const tabBarHidden = focused === OpeningTab.QURAN;
-  const floating = FLOATING_TABS.includes(focused);
+  // The bar floats over a sky tab so the sky shows through it.
+  const floating = isSkyTab(focused);
 
   return (
     <Box
