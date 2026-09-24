@@ -15,6 +15,7 @@ import { TICK_STATE } from "@/constants/Timeline";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { storedDayOn } from "@/utils/phase";
 import { rhythmLine, type RhythmTimingId } from "@/utils/rhythm";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
@@ -40,7 +41,11 @@ type Props = {
 export const CelestialRhythm = ({ selected, dimmed }: Props) => {
   const { t } = useTranslation();
   const now = useTodayClock();
-  const today = usePrayerTimesStore((state) => state.todayTimings);
+  const yesterday = usePrayerTimesStore((state) => state.yesterdayTimings);
+  const stored = usePrayerTimesStore((state) => state.todayTimings);
+  const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
+  // The store rolls its days on launch or foreground, not at midnight.
+  const today = storedDayOn(now, { yesterday, today: stored, tomorrow }) ?? stored;
 
   if (!today) return null;
 
