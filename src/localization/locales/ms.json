@@ -162,6 +162,8 @@
   "a11y.today.showRemaining": "Tunjukkan masa berbaki",
   "a11y.today.sinceSpoken": "{{duration}} sejak {{prayer}}",
   "a11y.today.untilSpoken": "{{duration}} lagi hingga {{prayer}}",
+  "a11y.today.prayerCard": "{{prayer}}, {{time}}",
+  "a11y.today.prayerCardNext": "{{prayer}}, {{time}}, solat seterusnya",
   "a11y.tools.continueHint": "Membuka panduan Umrah dari tempat anda berhenti",
   "a11y.tools.umrahGuideHint": "Panduan Umrah langkah demi langkah beserta doa",
   "a11y.umrah.backToPrevious": "Kembali",
