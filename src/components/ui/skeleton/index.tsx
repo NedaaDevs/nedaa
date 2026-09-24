@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Animated, Easing, type ViewProps } from "react-native";
-import { styled, YStack, useTheme } from "tamagui";
+import { styled, YStack } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 

@@ -7,7 +7,7 @@ import {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { Info } from "lucide-react-native";
 
 import { VStack } from "@/components/ui/vstack";

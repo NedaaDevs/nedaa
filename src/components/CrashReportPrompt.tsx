@@ -8,7 +8,7 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { SheetInput } from "@/components/ui/sheet-input";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { WifiOff } from "lucide-react-native";
 
