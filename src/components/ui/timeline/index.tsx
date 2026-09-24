@@ -12,7 +12,7 @@ import { Icon, type IconProps } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
-import { TICK_STATE, type TickState } from "@/constants/Timeline";
+import type { TickState } from "@/constants/Timeline";
 import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { spreadLabels } from "@/utils/spreadLabels";
@@ -67,6 +67,8 @@ type Props = {
   marks: TimelineMark[];
   /** The stretch under way, as shares of the line, and the part gone. */
   progress: { from: number; to: number; fraction: number } | null;
+  /** The mark drawn in the accent: what the day points to. */
+  accent?: string;
   /** The mark drawn as chosen, whatever its time. */
   selected?: string;
 };
@@ -151,7 +153,7 @@ const Fill = ({ length, colour }: { length: number; colour: string }) => {
 };
 
 /** Icons on a straight line, names under them, the current stretch filling. */
-export const Timeline = ({ marks, progress, selected }: Props) => {
+export const Timeline = ({ marks, progress, accent: accented, selected }: Props) => {
   const { width, onLayout } = useMeasuredWidth();
   const fg = useThemeColor("$fg");
   const accent = useThemeColor("$accent");
@@ -176,7 +178,7 @@ export const Timeline = ({ marks, progress, selected }: Props) => {
     return { start, length: Math.max(0, xOf(to) - TIMELINE.mark / 2 - TIMELINE.gap - start) };
   };
   const colourOf = (mark: TimelineMark) =>
-    mark.id === selected || mark.state === TICK_STATE.CURRENT ? "$accent" : "$muted";
+    mark.id === selected || mark.id === accented ? "$accent" : "$muted";
   const current = progress && stretch(progress.from, progress.to);
 
   return (

@@ -11,12 +11,12 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { APP_STATE } from "@/constants/AppState";
 import { COUNT_AXIS } from "@/constants/Countdown";
-import { PRAYER_ID } from "@/constants/Prayer";
 import { useCountdownTimer } from "@/hooks/useCountdownTimer";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { localizeDigits } from "@/utils/digits";
 import { formatCount, type FocusPrayer } from "@/utils/focusCount";
+import { prayerNameKey } from "@/utils/prayerName";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 /** The widest figures the block shows, with and without an hour of seconds. */
@@ -42,9 +42,7 @@ export const FocusCountdown = () => {
   if (!count) return null;
 
   const nameOf = ({ id, time, timezone }: FocusPrayer) =>
-    id === PRAYER_ID.DHUHR && isFridayInTimeZone(time, timezone)
-      ? t("prayerTimes.jumuah")
-      : t(`prayerTimes.${id}`);
+    t(prayerNameKey(id, isFridayInTimeZone(time, timezone)));
   const digits = (text: string) => localizeDigits(text, locale, western);
   const until = count.axis === COUNT_AXIS.UNTIL;
   const counted = nameOf(count.counted);

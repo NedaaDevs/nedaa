@@ -26,6 +26,8 @@ export type RhythmLine = {
   marks: RhythmMark[];
   /** The stretch from the current timing to the next, and the part gone. */
   progress: { from: number; to: number; fraction: number } | null;
+  /** The next prayer to come; never sunrise; after Isha, tomorrow's Fajr. */
+  next: PrayerId | null;
 };
 
 const timeOf = (day: DayPrayerTimes, id: RhythmTimingId) =>
@@ -34,7 +36,12 @@ const timeOf = (day: DayPrayerTimes, id: RhythmTimingId) =>
   ).getTime();
 
 /** The prayer day as a straight line: each timing placed by its time. */
-export const rhythmLine = (day: DayPrayerTimes, now: Date): RhythmLine => {
+export const rhythmLine = (
+  day: DayPrayerTimes,
+  now: Date,
+  /** The day after, whose Fajr is next once today's Isha is in. */
+  following?: DayPrayerTimes | null
+): RhythmLine => {
   const times = RHYTHM_TIMINGS.map((id) => timeOf(day, id));
   // Each timing's distance from Fajr, the prayer-free morning counted short.
   const drawn = times.map(() => 0);
@@ -67,5 +74,10 @@ export const rhythmLine = (day: DayPrayerTimes, now: Date): RhythmLine => {
         }
       : null;
 
-  return { marks, progress };
+  const nextPrayer = RHYTHM_TIMINGS.find(
+    (id, i): id is PrayerId => id !== OTHER_TIMING.SUNRISE && times[i] > clock
+  );
+
+  const afterIsha = following ? PRAYER_ID.FAJR : null;
+  return { marks, progress, next: nextPrayer ?? afterIsha };
 };
