@@ -249,6 +249,24 @@ describe("SkyBackground", () => {
       expect(part(SKY_PART.MOON)).toHaveLength(0);
     });
 
+    // Android can draw a shape before a moved clip or gradient it points to.
+    it("moves the moon without redrawing its face", async () => {
+      useAppStore.setState({ mode: AppMode.DARK });
+      await renderWithTheme(<Sky phase={PHASE.NIGHT} />);
+      // Moved by a transform: a re-layout would make Android redraw the SVG.
+      const place = () => {
+        const style = Object.assign({}, ...[part(SKY_PART.MOON)[0].props.style].flat());
+        expect(style.left).toBe(0);
+        return JSON.stringify(style.transform);
+      };
+      const [face, before] = [moonPaths()[0], place()];
+
+      await act(() => jest.advanceTimersByTime(60 * 60_000));
+
+      expect(place()).not.toBe(before);
+      expect(moonPaths()[0]).toBe(face);
+    });
+
     // Earthshine: the unlit part still reads as the moon's body.
     it("shows the whole disc faintly behind the lit part", async () => {
       useAppStore.setState({ mode: AppMode.DARK });
