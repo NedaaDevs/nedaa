@@ -4,7 +4,9 @@ import { HijriNative } from "@/utils/date";
 const SYNODIC_MONTH_DAYS = 29.53;
 
 /** How far through its cycle the moon is on a Hijri day: 0 new, 0.5 full. */
-export const moonPhaseFor = (hijriDay: number) => (hijriDay / SYNODIC_MONTH_DAYS) % 1;
+export const moonPhaseFor = (hijriDay: number) =>
+  // Mid-day of each day; a 30th day stays just short of new, never wrapping.
+  Math.min((hijriDay - 0.5) / SYNODIC_MONTH_DAYS, 0.999);
 
 /** The Hijri day at `now` in the times' timezone, with the user's offset. */
 export const hijriDayAt = (now: Date, timezone: string, offset: number) => {

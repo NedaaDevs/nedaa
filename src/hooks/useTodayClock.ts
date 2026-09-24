@@ -6,11 +6,16 @@ import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 /** A simulated moment that overrides Today's clock while a debug run plays. */
 export const SimulatedClockContext = createContext<Date | null>(null);
 
-/** Today's clock: a debug run's, a screenshot's seed, or the device's. */
+/** The moment Today is pinned to: a debug run's, or a screenshot's seed. */
+export const useClockOverride = (): Date | null => {
+  const simulated = use(SimulatedClockContext);
+  const seed = useScreenshotSeed("prayer-times");
+  if (simulated) return simulated;
+  return seed ? new Date(seed.frozenNow) : null;
+};
+
+/** Today's clock: the pinned moment, or the device's. */
 export const useTodayClock = (): Date => {
   const clock = useMinuteClock();
-  const seed = useScreenshotSeed("prayer-times");
-  const simulated = use(SimulatedClockContext);
-  if (simulated) return simulated;
-  return seed ? new Date(seed.frozenNow) : clock;
+  return useClockOverride() ?? clock;
 };
