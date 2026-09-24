@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useRef, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -51,7 +51,11 @@ export const ProviderSaveBar: FC = () => {
 
   const isApplying = isLoading || isFetchingPrayers || step !== null;
 
+  // Held in the operation, not the button: the error toast's retry calls it too.
+  const saving = useRef(false);
   const handleSave = async () => {
+    if (saving.current) return;
+    saving.current = true;
     try {
       await applyProviderSettings(
         {
@@ -78,6 +82,7 @@ export const ProviderSaveBar: FC = () => {
         error instanceof Error ? error : undefined
       );
     } finally {
+      saving.current = false;
       setStep(null);
     }
   };
