@@ -1,5 +1,6 @@
 import React from "react";
-import { Switch as TSwitch, useTheme } from "tamagui";
+import { Switch as TSwitch } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 type SwitchSize = "sm" | "md" | "lg";
 

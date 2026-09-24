@@ -6,8 +6,8 @@ import {
   Text as TamaguiText,
   createStyledContext,
   withStaticProperties,
-  useTheme,
 } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
 import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";

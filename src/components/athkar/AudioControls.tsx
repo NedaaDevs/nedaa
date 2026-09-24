@@ -10,7 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
