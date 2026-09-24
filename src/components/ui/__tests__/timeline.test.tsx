@@ -116,6 +116,25 @@ describe("Timeline", () => {
     expect(second - first).toBeGreaterThanOrEqual(30 + TIMELINE.nameSpace - 1e-9);
   });
 
+  // Android measures a name a pixel off as it moves; that must not move it.
+  it("holds names still through sub-point changes in their measured width", async () => {
+    await renderWithTheme(<Timeline marks={pair(0.05)} progress={null} />);
+    await layOut(390);
+    const measure = async (width: number) => {
+      for (const node of part(TIMELINE_PART.NAME)) {
+        await act(() =>
+          fireEvent(node, "layout", { nativeEvent: { layout: { x: 0, y: 0, width, height: 18 } } })
+        );
+      }
+    };
+
+    await measure(42.26);
+    const before = nameCentres(43);
+    await measure(42.67);
+
+    expect(nameCentres(43)).toEqual(before);
+  });
+
   it("puts a name with room right under its mark", async () => {
     await renderWithTheme(<Timeline marks={MARKS} progress={null} />);
     await layOut(390);
