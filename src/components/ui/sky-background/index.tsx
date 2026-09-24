@@ -13,6 +13,7 @@ import { MoonGlyph } from "@/components/ui/sky-background/MoonGlyph";
 import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SunGlyph } from "@/components/ui/sky-background/SunGlyph";
 import { DURATION_MS } from "@/constants/Motion";
+import { AppMode } from "@/enums/app";
 import { CELESTIAL_BODY, type CelestialBody, type SkyDisc } from "@/constants/Sky";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { usePhase } from "@/contexts/PhaseContext";
@@ -97,7 +98,10 @@ export const SkyBackground = ({ children }: Props) => {
   // A pinned moment paints its own phase; the live one comes from the root.
   const livePhase = usePhase();
   const phase = (override && phaseAt(override, days)) || livePhase;
-  const scene = skyScene(useAppIsDark() ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT, phase);
+  // Only Adaptive tints by phase; a fixed brightness keeps its plain sky.
+  const adaptive = useAppStore((state) => state.mode) === AppMode.ADAPTIVE;
+  const brightness = useAppIsDark() ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT;
+  const scene = skyScene(brightness, adaptive ? phase : undefined);
   const celestial = celestialPositionAt(now, days);
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const hijriDay = today ? hijriDayAt(now, today.timezone, hijriOffset) : undefined;
