@@ -12,7 +12,6 @@ import { Icon, type IconProps } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
-import type { TickState } from "@/constants/Timeline";
 import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { spreadLabels } from "@/utils/spreadLabels";
@@ -58,7 +57,6 @@ export type TimelineMark = {
   id: string;
   /** Where the mark sits, from 0 at the start of the line to 1 at the end. */
   share: number;
-  state: TickState;
   icon: IconProps["as"];
   label: string;
 };
