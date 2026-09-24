@@ -1,4 +1,4 @@
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // The Quran "chrome" (version selection, download progress, settings sheet,
 // banner) follows the APP theme — not the reader's paper themes (sepia/dark).

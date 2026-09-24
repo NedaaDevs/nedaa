@@ -9,7 +9,7 @@ import Animated, {
   Extrapolation,
 } from "react-native-reanimated";
 import { LayoutChangeEvent, Platform, TouchableOpacity } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Components
 import { Text } from "@/components/ui/text";

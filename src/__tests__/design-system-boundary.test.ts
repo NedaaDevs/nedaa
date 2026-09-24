@@ -17,7 +17,7 @@ import { REPO_ROOT, walkFiles } from "@/test-helpers/routeTree";
  */
 const CEILING = {
   /** Files importing any value from `tamagui` or `@tamagui/*`. */
-  tamaguiValueImporters: 79,
+  tamaguiValueImporters: 52,
   /** `useTheme()` calls on Tamagui's hook. */
   useThemeCalls: 28,
   /** Radius props not set to a named token ($chip, $control, $card, $sheet, $pill). */
@@ -71,6 +71,14 @@ describe("design-system boundary", () => {
         useTheme(); theme(); navTheme();`;
 
       expect(count(source).useThemeCalls).toBe(2);
+    });
+
+    it("counts the app's live useTheme as Tamagui's", () => {
+      const source = `
+        import { useTheme } from "@/components/ui/theme-color";
+        useTheme();`;
+
+      expect(count(source).useThemeCalls).toBe(1);
     });
 
     it.each([

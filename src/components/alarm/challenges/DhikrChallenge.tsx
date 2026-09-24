@@ -1,7 +1,7 @@
 import { FC, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { TextInput, Keyboard } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";

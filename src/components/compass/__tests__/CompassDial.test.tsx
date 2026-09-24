@@ -28,7 +28,7 @@ jest.mock("moti", () => {
   const { View } = jest.requireActual("react-native");
   return { MotiView: View };
 });
-jest.mock("tamagui", () => ({
+jest.mock("@/components/ui/theme-color", () => ({
   useTheme: () => new Proxy({}, { get: () => ({ val: "#123456" }) }),
 }));
 jest.mock("@/components/ui/box", () => {
