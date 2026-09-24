@@ -1,5 +1,5 @@
 // Rewrites `import { Compass } from "lucide-react-native"` to the icon's own
-// module. Metro does not tree-shake, so the barrel ships every icon.
+// module, so bundles Metro does not tree-shake (development) skip the barrel.
 const fs = require("fs");
 const path = require("path");
 
