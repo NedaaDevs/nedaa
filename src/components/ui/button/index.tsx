@@ -5,6 +5,7 @@ import { PlatformType } from "@/enums/app";
 import { buttonLabelFontSize } from "@/components/ui/button/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
 import {
+  getTokenValue,
   styled,
   View,
   XStack,
@@ -25,6 +26,20 @@ const ButtonContext = createStyledContext({
   variant: "solid" as ButtonVariant,
   action: "primary" as ButtonAction,
 });
+
+/** Each size's drawn height; below `$target`, a touch area makes up the rest. */
+const MIN_HEIGHT = {
+  xs: "$8",
+  sm: "$9",
+  md: "$10",
+  lg: "$target",
+  xl: "$12",
+} as const satisfies Record<ButtonSize, string>;
+
+const touchSlop = (size: ButtonSize) => {
+  const short = getTokenValue("$target", "size") - getTokenValue(MIN_HEIGHT[size], "size");
+  return short > 0 ? { top: short / 2, bottom: short / 2 } : undefined;
+};
 
 const ICON_SIZE: Record<ButtonSize, IconSize> = {
   xs: "xs",
@@ -76,11 +91,11 @@ const ButtonFrame = styled(View, {
     // minHeight, not height: the box is a floor that grows with a scaled or
     // wrapped label instead of clipping it.
     size: {
-      xs: { minHeight: "$8", paddingVertical: "$tight", paddingHorizontal: "$3.5" },
-      sm: { minHeight: "$9", paddingVertical: "$tight", paddingHorizontal: "$group" },
-      md: { minHeight: "$10", paddingVertical: "$tight", paddingHorizontal: "$section" },
-      lg: { minHeight: "$target", paddingVertical: "$tight", paddingHorizontal: "$6" },
-      xl: { minHeight: "$12", paddingVertical: "$tight", paddingHorizontal: "$7" },
+      xs: { minHeight: MIN_HEIGHT.xs, paddingVertical: "$tight", paddingHorizontal: "$3.5" },
+      sm: { minHeight: MIN_HEIGHT.sm, paddingVertical: "$tight", paddingHorizontal: "$group" },
+      md: { minHeight: MIN_HEIGHT.md, paddingVertical: "$tight", paddingHorizontal: "$section" },
+      lg: { minHeight: MIN_HEIGHT.lg, paddingVertical: "$tight", paddingHorizontal: "$6" },
+      xl: { minHeight: MIN_HEIGHT.xl, paddingVertical: "$tight", paddingHorizontal: "$7" },
     },
     variant: {
       solid: { borderWidth: 0 },
@@ -252,14 +267,23 @@ ButtonGroup.displayName = "ButtonGroup";
 
 // --- Compound export ---
 
-const Button = withStaticProperties(ButtonFrame, {
+type ButtonFrameProps = GetProps<typeof ButtonFrame>;
+
+const ButtonRoot = React.forwardRef<React.ComponentRef<typeof ButtonFrame>, ButtonFrameProps>(
+  ({ hitSlop, ...props }, ref) => (
+    <ButtonFrame ref={ref} hitSlop={hitSlop ?? touchSlop(props.size ?? "md")} {...props} />
+  )
+);
+ButtonRoot.displayName = "Button";
+
+const Button = withStaticProperties(ButtonRoot, {
   Text: ButtonText,
   Icon: ButtonIcon,
   Spinner: ButtonSpinner,
   Group: ButtonGroup,
 });
 
-type ButtonProps = GetProps<typeof ButtonFrame>;
+type ButtonProps = ButtonFrameProps;
 
 export { Button, ButtonIcon, ButtonSpinner, ButtonGroup };
 export type {
