@@ -1,13 +1,18 @@
 import { ChallengeDifficulty, DhikrPhrase, DHIKR_PHRASES } from "@/types/alarm";
 
-// Forgiving normalization: lowercase, drop Arabic diacritics + tatweel, keep
-// only letters (spaces, apostrophes, hyphens, digits, punctuation removed).
-// The Android overlay applies the same rule in Kotlin.
+// Forgiving: letters only, no diacritics, one spelling per Arabic letter
+// family, and a doubled letter counts once. Mirrored in the Android overlay.
 export const normalizeDhikr = (input: string): string =>
   input
     .toLowerCase()
-    .replace(/[ً-ْٰـ]/g, "")
-    .replace(/[^\p{L}]/gu, "");
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, "")
+    .replace(/[\u0623\u0625\u0622\u0671]/g, "\u0627")
+    .replace(/\u0649/g, "\u064A")
+    .replace(/\u0629/g, "\u0647")
+    .replace(/\u0624/g, "\u0648")
+    .replace(/\u0626/g, "\u064A")
+    .replace(/[^\p{L}]|\u0621/gu, "")
+    .replace(/(\p{L})\1+/gu, "$1");
 
 // Matches when the input equals either the transliteration or the Arabic form
 // under the same normalization, so both keyboards work.

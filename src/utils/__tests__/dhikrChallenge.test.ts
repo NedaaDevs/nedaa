@@ -5,13 +5,12 @@ const easySubhan = DHIKR_PHRASES.easy[0];
 
 describe("normalizeDhikr", () => {
   it("lowercases and strips spaces", () => {
-    expect(normalizeDhikr("Subhanallah")).toBe("subhanallah");
-    expect(normalizeDhikr("  SUB HAN allah  ")).toBe("subhanallah");
+    expect(normalizeDhikr("  SUB HAN allah  ")).toBe(normalizeDhikr("subhanallah"));
   });
 
   it("strips apostrophes and hyphens", () => {
-    expect(normalizeDhikr("Subhan'allah")).toBe("subhanallah");
-    expect(normalizeDhikr("subhan-allah")).toBe("subhanallah");
+    expect(normalizeDhikr("Subhan'allah")).toBe(normalizeDhikr("subhanallah"));
+    expect(normalizeDhikr("subhan-allah")).toBe(normalizeDhikr("subhanallah"));
   });
 
   it("strips Arabic diacritics but keeps letters", () => {
@@ -20,6 +19,31 @@ describe("normalizeDhikr", () => {
 
   it("returns empty string for whitespace/punctuation only", () => {
     expect(normalizeDhikr("   -- '' ")).toBe("");
+  });
+});
+
+describe("matchesDhikr, as people really type", () => {
+  const phrase = (arabic: string): DhikrPhrase =>
+    Object.values(DHIKR_PHRASES)
+      .flat()
+      .find((candidate) => candidate.arabic === arabic)!;
+
+  it.each([
+    ["alef without hamza", "الله اكبر", "الله أكبر"],
+    ["hamza below dropped", "لا اله الا الله", "لا إله إلا الله"],
+    ["taa marbuta as haa", "لا حول ولا قوه الا بالله", "لا حول ولا قوة إلا بالله"],
+    ["no spaces", "استغفرالله", "أستغفر الله"],
+  ])("accepts %s", (_name, typed, arabic) => {
+    expect(matchesDhikr(typed, phrase(arabic))).toBe(true);
+  });
+
+  it("accepts a transliteration with a letter written once", () => {
+    expect(matchesDhikr("alhamdulilah", phrase("الحمد لله"))).toBe(true);
+    expect(matchesDhikr("la ilaha ila alah", phrase("لا إله إلا الله"))).toBe(true);
+  });
+
+  it("still refuses a different phrase", () => {
+    expect(matchesDhikr("الحمد لله", phrase("الله أكبر"))).toBe(false);
   });
 });
 
