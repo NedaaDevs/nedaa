@@ -38,7 +38,7 @@ const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 const renderHeader = () =>
   renderRouter(
     {
-      "(tabs)/index": () => (
+      [BACK_DESTINATION.HOME.route]: () => (
         <>
           <TodayHeader />
           <Pathname />
@@ -47,7 +47,7 @@ const renderHeader = () =>
       [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => <Pathname />,
     },
     {
-      initialUrl: "/",
+      initialUrl: BACK_DESTINATION.HOME.href as string,
       wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>,
     }
   );

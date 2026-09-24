@@ -13,6 +13,7 @@ import i18n from "@/localization/i18n";
 import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 import { useToastStore } from "@/stores/toast";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 // The gesture runs only on a device; here the detector renders its child.
@@ -30,9 +31,12 @@ jest.mock("react-native-gesture-handler", () => {
 const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
 const label = (kind: string, message: string) => `${i18n.t(`a11y.toast.${kind}`)}: ${message}`;
 
-const renderHost = (initialUrl = "/") =>
+const renderHost = (initialUrl = BACK_DESTINATION.HOME.href as string) =>
   renderRouter(
-    { "(tabs)/index": () => <ToastHost />, "settings/location": () => <ToastHost /> },
+    {
+      [BACK_DESTINATION.HOME.route]: () => <ToastHost />,
+      [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => <ToastHost />,
+    },
     { initialUrl, wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider> }
   );
 
@@ -166,7 +170,7 @@ describe("ToastHost", () => {
 
   it("ignores the tab bar's last height on a stack screen", async () => {
     useTabBarFrameStore.setState({ height: 92 });
-    await renderHost("/settings/location");
+    await renderHost(BACK_DESTINATION.SETTINGS_LOCATION.href as string);
     await act(() => MessageToast.showSuccess("Link copied"));
 
     expect(bottom()).toBe(TOAST_GAP);
