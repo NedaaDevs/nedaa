@@ -9,7 +9,7 @@ import {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { Sparkles } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";

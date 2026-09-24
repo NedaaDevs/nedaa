@@ -10,7 +10,7 @@ import * as Clipboard from "expo-clipboard";
 
 // Plugins
 import { useTranslation } from "react-i18next";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Components
 import { Background } from "@/components/ui/background";

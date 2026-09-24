@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 

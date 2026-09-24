@@ -1,7 +1,7 @@
 import type { ComponentRef, Ref } from "react";
 import type { TextInputProps } from "react-native";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { useRTL } from "@/contexts/RTLContext";
 

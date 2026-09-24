@@ -13,7 +13,7 @@ import { openComposer } from "react-native-email-link";
 import * as MailComposer from "expo-mail-composer";
 import * as Clipboard from "expo-clipboard";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { Send, Share2, ClipboardCopy } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
