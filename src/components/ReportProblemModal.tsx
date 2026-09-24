@@ -209,7 +209,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
     try {
       const { full } = await compose();
       await Clipboard.setStringAsync(full);
-      MessageToast.showInfo(t("settings.shareLogs.copied"));
+      MessageToast.showSuccess(t("settings.shareLogs.copied"));
     } catch (e) {
       console.error("Failed to copy report:", e);
     }

@@ -26,7 +26,7 @@ import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { isDarkMode, nativeColorSchemeFor } from "@/utils/appearance";
 import { PhaseContext, usePrayerPhaseSource } from "@/contexts/PhaseContext";
 
-import { ToastProvider } from "@/components/ToastContainer";
+import { ToastHost } from "@/components/ToastHost";
 import { LoadingOverlay } from "@/components/feedback";
 import CityChangeModal from "@/components/CityChangeModal";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
@@ -102,7 +102,6 @@ function AppShell() {
       <BottomSheetModalProvider>
         <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
           <StatusBar style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
-          <ToastProvider />
           <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
           {pendingCityChange && (
@@ -132,6 +131,8 @@ function AppShell() {
           <WhatsNewSheet />
         </SafeAreaView>
       </BottomSheetModalProvider>
+      {/* After the sheets' portal host, so a toast shows above an open sheet. */}
+      <ToastHost />
     </GestureHandlerRootView>
   );
 }
