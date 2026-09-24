@@ -33,6 +33,7 @@ import WhatsNewSheet from "@/components/WhatsNewSheet";
 import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
+import { useNotificationResponses } from "@/hooks/useNotificationResponses";
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
@@ -90,7 +91,10 @@ function AppShell() {
       ? ["right", "left"]
       : ["top", "right", "left"];
 
+  const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
+
   useNotificationListeners();
+  useNotificationResponses(!showOnboarding);
   useAlarmDeepLink();
 
   return (
@@ -113,7 +117,7 @@ function AppShell() {
             />
           )}
 
-          {isFirstRun && !IS_SCREENSHOT_MODE ? (
+          {showOnboarding ? (
             <OnboardingScreen />
           ) : (
             <Stack

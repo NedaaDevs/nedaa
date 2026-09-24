@@ -5,7 +5,6 @@ import {
   AndroidNotificationPriority,
 } from "expo-notifications";
 import { Platform } from "react-native";
-import { useRouter } from "expo-router";
 
 // Services
 import { cleanupManager } from "@/services/cleanup";
@@ -14,13 +13,11 @@ import { cleanupManager } from "@/services/cleanup";
 import { PlatformType } from "@/enums/app";
 
 // Native modules
-import { stopAthan } from "expo-alarm";
 
 // Types
 import type { NotificationOptions } from "@/types/notification";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 export const scheduleNotification = async (
   date: Date,
@@ -191,7 +188,6 @@ export const scheduleRecurringNotification = async (
 
 // Store subscriptions for cleanup
 let notificationReceivedSubscription: Notifications.EventSubscription | null = null;
-let notificationResponseSubscription: Notifications.EventSubscription | null = null;
 
 // Configure base notification handler and setup listeners
 export const configureNotifications = () => {
@@ -222,41 +218,6 @@ export const configureNotifications = () => {
       }
     );
 
-    notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const { data } = response.notification.request.content;
-        try {
-          console.log(
-            "[Notifications] Notification response:",
-            response.notification.request.identifier
-          );
-          console.log("[Notifications] Action:", response.actionIdentifier);
-
-          // Stop athan playback if user taps a prayer notification
-          if (Platform.OS === PlatformType.ANDROID && data?.type === "prayer") {
-            stopAthan();
-          }
-
-          // Navigate to screen specified in notification data
-          if (data?.screen) {
-            const router = useRouter();
-            router.navigate(data.screen as any);
-          }
-
-          // Quran reminders also land the reader on the target surah's page.
-          // Loaded lazily so the reader/content-DB graph stays out of startup.
-          if (data?.type === NOTIFICATION_TYPE.QURAN_REMINDER) {
-            const surah = data.surah as number | undefined;
-            void import("@/utils/notificationDeepLink").then((m) =>
-              m.openQuranReminderTarget({ surah })
-            );
-          }
-        } catch (error) {
-          console.error("[Notifications] Error handling notification response:", error);
-        }
-      }
-    );
-
     // Register cleanup with the cleanup manager
     cleanupManager.register(
       "notification-listeners",
@@ -278,23 +239,17 @@ export const cleanupNotificationListeners = () => {
       notificationReceivedSubscription = null;
     }
 
-    if (notificationResponseSubscription) {
-      notificationResponseSubscription.remove();
-      notificationResponseSubscription = null;
-    }
-
     console.log("[Notifications] Cleaned up notification listeners successfully");
   } catch (error) {
     console.error("[Notifications] Error cleaning up notification listeners:", error);
     // Force reset subscriptions even if cleanup fails
     notificationReceivedSubscription = null;
-    notificationResponseSubscription = null;
   }
 };
 
 // Check if listeners are currently active (useful for debugging)
 export const areListenersActive = (): boolean => {
-  return !!(notificationReceivedSubscription && notificationResponseSubscription);
+  return !!notificationReceivedSubscription;
 };
 
 export const checkPermissions = async () => {
