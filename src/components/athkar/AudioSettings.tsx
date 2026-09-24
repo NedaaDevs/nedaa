@@ -194,32 +194,37 @@ const AudioSettings: FC = () => {
 
     if (result.failed > 0) {
       setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
+        action: {
+          label: t("athkar.audio.retry"),
+          onPress: () => retryFailed(reciterId, manifest, result.failedIds),
+        },
+      });
     }
 
     setIsDownloading(false);
     await refreshStorage();
   };
 
-  const handleRetryFailed = async () => {
-    if (!selectedReciterId || !cachedManifest || failedIds.length === 0) return;
-
+  // Takes its inputs, so a toast's action retries what failed, not what a
+  // stale render saw.
+  const retryFailed = async (reciterId: string, manifest: ReciterManifest, ids: string[]) => {
     setIsRetrying(true);
-    setDownloadTotal(failedIds.length);
+    setDownloadTotal(ids.length);
     setDownloadCompleted(0);
 
-    const result = await audioDownloadManager.retryFailed(
-      selectedReciterId,
-      cachedManifest,
-      failedIds,
-      (completed) => {
-        setDownloadCompleted(completed);
-      }
-    );
+    const result = await audioDownloadManager.retryFailed(reciterId, manifest, ids, (completed) => {
+      setDownloadCompleted(completed);
+    });
 
     if (result.failed > 0) {
       setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
+        action: {
+          label: t("athkar.audio.retry"),
+          onPress: () => retryFailed(reciterId, manifest, result.failedIds),
+        },
+      });
     } else {
       setFailedIds([]);
       MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
@@ -227,6 +232,11 @@ const AudioSettings: FC = () => {
 
     setIsRetrying(false);
     await refreshStorage();
+  };
+
+  const handleRetryFailed = () => {
+    if (!selectedReciterId || !cachedManifest || failedIds.length === 0) return;
+    void retryFailed(selectedReciterId, cachedManifest, failedIds);
   };
 
   const modeOptions: { mode: PlaybackMode; labelKey: string; descKey: string }[] = [

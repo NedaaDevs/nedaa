@@ -16,6 +16,7 @@ import { isDarkMode } from "@/utils/appearance";
 import { TamaguiProvider } from "tamagui";
 import { RTLContext } from "@/contexts/RTLContext";
 import { controlProblems } from "@/test-helpers/controls";
+import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 
 // The players reach native audio modules that jest does not load; the bar's frame is what matters.
 jest.mock("@/components/athkar/MiniPlayerBar", () => ({ __esModule: true, default: () => null }));
@@ -199,5 +200,18 @@ describe("tabs layout", () => {
     );
 
     expect(screen.getByTestId("inset")).toHaveTextContent("92");
+  });
+
+  // The toast lives at the root, outside the tabs, so the bar reports there too.
+  it("tells the root how tall the bar is", async () => {
+    await renderTabs();
+
+    await act(() =>
+      fireEvent(screen.getByTestId(TAB_BAR_PART.FRAME), "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 92 } },
+      })
+    );
+
+    expect(useTabBarFrameStore.getState().height).toBe(92);
   });
 });
