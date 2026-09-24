@@ -36,15 +36,13 @@ const PrayerTimesList = () => {
     usePrayerTimesStore();
   const now = useMinuteClock();
   const nextPrayer = todayTimings ? getNextPrayer(now) : null;
-  // Past Isha, getNextPrayer rolls over to tomorrow's Fajr. Highlighting today's
-  // first row would be wrong, so nothing is marked next.
-  const nextIsTomorrow = !!nextPrayer && !!todayTimings && nextPrayer.date !== todayTimings.date;
+  // Past Isha the next prayer is tomorrow's Fajr: its row shows that time.
+  const tomorrowsNext =
+    nextPrayer && todayTimings && nextPrayer.date !== todayTimings.date ? nextPrayer : null;
   const screenshotSeed = useScreenshotSeed("prayer-times");
   const displayNextPrayerName: string | null = screenshotSeed?.nextPrayer
     ? screenshotSeed.nextPrayer.toLowerCase()
-    : nextIsTomorrow
-      ? null
-      : (nextPrayer?.name ?? null);
+    : (nextPrayer?.name ?? null);
 
   const handleRetry = async () => {
     clearError();
@@ -109,7 +107,7 @@ const PrayerTimesList = () => {
             <TimingItem
               key={prayerName}
               name={name}
-              time={time}
+              time={tomorrowsNext?.name === prayerName ? tomorrowsNext.time : time}
               icon={prayerIcons[prayerName]}
               isNext={isNext}
             />
