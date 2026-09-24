@@ -12,8 +12,8 @@ import {
   Text as TamaguiText,
   createStyledContext,
   withStaticProperties,
-  useTheme,
 } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
 
 type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -51,6 +51,8 @@ const ButtonFrame = styled(View, {
   name: "Button",
   context: ButtonContext,
   role: "button",
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
