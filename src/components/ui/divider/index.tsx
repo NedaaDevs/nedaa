@@ -2,7 +2,7 @@ import { styled, Separator } from "tamagui";
 
 export const Divider = styled(Separator, {
   name: "Divider",
-  borderColor: "$outline",
+  borderColor: "$border",
 
   variants: {
     orientation: {
