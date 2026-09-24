@@ -1,5 +1,6 @@
 import { screen, userEvent } from "@testing-library/react-native";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Pressable } from "@/components/ui/pressable";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -42,6 +43,25 @@ describe("primitive accessibility contract", () => {
       "accessible",
       false
     );
+  });
+
+  // The frames default to a button; a radio or a link must still read as one.
+  it.each(FRAMES)("a %s keeps the role its caller names", async (_, Frame) => {
+    await renderWithTheme(
+      <Frame accessibilityRole="radio" accessibilityLabel="Fajr" onPress={() => {}} />
+    );
+
+    expect(screen.getByRole("radio", { name: "Fajr" })).toBeOnTheScreen();
+  });
+
+  it("a button is one element the screen reader can find", async () => {
+    await renderWithTheme(
+      <Button onPress={() => {}}>
+        <Button.Text>Retry</Button.Text>
+      </Button>
+    );
+
+    expect(screen.getByRole("button", { name: "Retry" })).toBeOnTheScreen();
   });
 
   it("a pressable holds the touch floor", async () => {
