@@ -44,6 +44,15 @@ export const storedDayOn = (now: Date, days: StoredDays): DayPrayerTimes | undef
   );
 
 /**
+ * The stored day whose prayers run at `now`: from its Fajr until the next day's.
+ * A night belongs to the day whose Isha began it, so the views agree past midnight.
+ */
+export const prayerDayAt = (now: Date, days: StoredDays): DayPrayerTimes | undefined => {
+  const stored = storedDayList(days);
+  return stored.findLast((day) => parseISO(day.timings[PRAYER_ID.FAJR]) <= now) ?? stored[0];
+};
+
+/**
  * Every stored boundary in time order, and the span the stored days cover: from the
  * first stored Fajr to a day after the last, because the final night ends at a Fajr
  * the store does not hold.
