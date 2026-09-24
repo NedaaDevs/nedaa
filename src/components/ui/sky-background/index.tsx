@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   Animated,
   Easing,
@@ -10,11 +10,23 @@ import {
 
 import { Background } from "@/components/ui/background";
 import { MoonGlyph } from "@/components/ui/sky-background/MoonGlyph";
+import {
+  SkyOccluder,
+  SkyOccluderContext,
+  SkyScrollView,
+} from "@/components/ui/sky-background/occluder";
 import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SunGlyph } from "@/components/ui/sky-background/SunGlyph";
 import { DURATION_MS } from "@/constants/Motion";
 import { AppMode } from "@/enums/app";
-import { CELESTIAL_BODY, type CelestialBody, type SkyDisc } from "@/constants/Sky";
+import {
+  BODY_BEHIND_TEXT,
+  CELESTIAL_BODY,
+  MOON_GLYPH,
+  SUN_GLYPH,
+  type CelestialBody,
+  type SkyDisc,
+} from "@/constants/Sky";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { usePhase } from "@/contexts/PhaseContext";
 import { useRTL } from "@/contexts/RTLContext";
@@ -26,10 +38,18 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { celestialPositionAt, type CelestialPosition } from "@/utils/celestial";
 import { phaseAt } from "@/utils/phase";
-import { bodyCentre, skyBackgroundImage, skyScene, type SkyScene } from "@/utils/sky";
+import { measureInWindow } from "@/utils/measureInWindow";
+import {
+  bodyCentre,
+  discOverlaps,
+  skyBackgroundImage,
+  skyScene,
+  type SkyScene,
+  type WindowRect,
+} from "@/utils/sky";
 import { hijriDayAt, moonPhaseFor } from "@/utils/moonPhase";
 
-export { SKY_PART };
+export { SKY_PART, SkyOccluder, SkyScrollView };
 
 const HIDDEN_FROM_READER = {
   accessible: false,
@@ -47,11 +67,13 @@ type LayersProps = {
   /** The Hijri day that shapes the moon; no moon when it is unknown. */
   hijriDay: number | undefined;
   reduced: boolean;
+  /** The sun's or moon's opacity, lowered while text covers it. */
+  bodyOpacity: Animated.Value;
 };
 
 /** One sky: gradients on a single view, the sun or moon drawn over them. */
 const SkyLayers = (props: LayersProps) => {
-  const { scene, width, height, isRTL, celestial, hijriDay, reduced } = props;
+  const { scene, width, height, isRTL, celestial, hijriDay, reduced, bodyOpacity } = props;
   const box = { width, height };
   const place = (body: CelestialBody, disc: SkyDisc) =>
     bodyCentre(body, disc, width, height, isRTL, celestial);
@@ -66,16 +88,20 @@ const SkyLayers = (props: LayersProps) => {
           experimental_backgroundImage: skyBackgroundImage(scene, width, height, isRTL, celestial),
         },
       ]}>
-      {scene.sun && (
-        <SunGlyph {...place(CELESTIAL_BODY.SUN, scene.sun.disc)} {...box} reduced={reduced} />
-      )}
-      {scene.moon && hijriDay !== undefined && (
-        <MoonGlyph
-          {...place(CELESTIAL_BODY.MOON, scene.moon.moon.disc)}
-          phase={moonPhaseFor(hijriDay)}
-          isRTL={isRTL}
-        />
-      )}
+      <Animated.View
+        testID={SKY_PART.BODIES}
+        style={[StyleSheet.absoluteFill, { opacity: bodyOpacity }]}>
+        {scene.sun && (
+          <SunGlyph {...place(CELESTIAL_BODY.SUN, scene.sun.disc)} {...box} reduced={reduced} />
+        )}
+        {scene.moon && hijriDay !== undefined && (
+          <MoonGlyph
+            {...place(CELESTIAL_BODY.MOON, scene.moon.moon.disc)}
+            phase={moonPhaseFor(hijriDay)}
+            isRTL={isRTL}
+          />
+        )}
+      </Animated.View>
     </View>
   );
 };
@@ -111,6 +137,71 @@ export const SkyBackground = ({ children }: Props) => {
   const [fadingFrom, setFadingFrom] = useState<SkyScene | null>(null);
   const [opacity] = useState(() => new Animated.Value(1));
 
+  // Text blocks over the sky, in window points, and where the sky itself sits.
+  const [boxes, setBoxes] = useState<Record<string, WindowRect>>({});
+  const [origin, setOrigin] = useState({ x: 0, y: 0 });
+  const [epoch, setEpoch] = useState(0);
+  const canvas = useRef<View>(null);
+  // Stable, and a no-op for an unchanged box, so measuring never loops a render.
+  const [report] = useState(
+    () => (id: string, box: WindowRect | null) =>
+      setBoxes((current) => {
+        const { [id]: old, ...rest } = current;
+        if (!box) return old ? rest : current;
+        const same =
+          old && (Object.keys(box) as (keyof WindowRect)[]).every((k) => old[k] === box[k]);
+        return same ? current : { ...rest, [id]: box };
+      })
+  );
+  const registry = { report, epoch, remeasure: () => setEpoch((value) => value + 1) };
+
+  const body = scene.sun
+    ? {
+        centre: bodyCentre(
+          CELESTIAL_BODY.SUN,
+          scene.sun.disc,
+          size.width,
+          size.height,
+          isRTL,
+          celestial
+        ),
+        radius: SUN_GLYPH.core,
+      }
+    : scene.moon && hijriDay !== undefined
+      ? {
+          centre: bodyCentre(
+            CELESTIAL_BODY.MOON,
+            scene.moon.moon.disc,
+            size.width,
+            size.height,
+            isRTL,
+            celestial
+          ),
+          radius: MOON_GLYPH.radius,
+        }
+      : null;
+  const onSky = Object.values(boxes).map(({ x, y, width, height }) => ({
+    x: x - origin.x,
+    y: y - origin.y,
+    width,
+    height,
+  }));
+  const hidden = body !== null && discOverlaps(body.centre.cx, body.centre.cy, body.radius, onSky);
+  const [bodyOpacity] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    const target = hidden ? BODY_BEHIND_TEXT.opacity : 1;
+    if (reduced) return bodyOpacity.setValue(target);
+    const fade = Animated.timing(bodyOpacity, {
+      toValue: target,
+      duration: DURATION_MS.GENTLE,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    });
+    fade.start();
+    return () => fade.stop();
+  }, [hidden, reduced, bodyOpacity]);
+
   if (scene.key !== shown.key) {
     setShown(scene);
     setFadingFrom(reduced ? null : shown);
@@ -132,8 +223,10 @@ export const SkyBackground = ({ children }: Props) => {
     return () => fade.stop();
   }, [fadingFrom, opacity]);
 
-  const onLayout = ({ nativeEvent }: LayoutChangeEvent) =>
+  const onLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
+    void measureInWindow(canvas.current).then((box) => box && setOrigin(box));
+  };
 
   const layer = (painted: SkyScene) => (
     <SkyLayers
@@ -144,6 +237,7 @@ export const SkyBackground = ({ children }: Props) => {
       celestial={celestial}
       hijriDay={hijriDay}
       reduced={reduced}
+      bodyOpacity={bodyOpacity}
     />
   );
 
@@ -159,11 +253,12 @@ export const SkyBackground = ({ children }: Props) => {
       )}
       <Animated.View
         {...HIDDEN_FROM_READER}
+        ref={canvas}
         testID={SKY_PART.CANVAS}
         style={[StyleSheet.absoluteFill, { opacity: fadingFrom ? opacity : 1 }]}>
         {layer(scene)}
       </Animated.View>
-      {children}
+      <SkyOccluderContext value={registry}>{children}</SkyOccluderContext>
     </Background>
   );
 };
