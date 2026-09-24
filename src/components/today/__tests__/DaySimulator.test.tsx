@@ -1,7 +1,7 @@
 import { Text } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
-import { DAY_SIMULATION, DaySimulator } from "@/components/today/DaySimulator";
+import { DAY_SIMULATION, DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { useDebugModeStore } from "@/stores/debugMode";
@@ -39,6 +39,7 @@ const renderSimulator = () =>
   renderWithTheme(
     <DaySimulator>
       <Clock />
+      <DaySimulatorButton />
     </DaySimulator>
   );
 

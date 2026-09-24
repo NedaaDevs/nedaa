@@ -52,7 +52,11 @@ export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
   const step = 360 / rays.lengths.length;
 
   return (
-    <View testID={SKY_PART.SUN} style={StyleSheet.absoluteFill} pointerEvents="none">
+    // The rays sit by a physical left, which RN swaps in RTL and the SVG does not.
+    <View
+      testID={SKY_PART.SUN}
+      style={[StyleSheet.absoluteFill, styles.frame]}
+      pointerEvents="none">
       <Animated.View
         testID={SKY_PART.SUN_RAYS}
         style={[
@@ -107,3 +111,7 @@ export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  frame: { direction: "ltr" },
+});
