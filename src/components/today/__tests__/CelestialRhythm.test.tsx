@@ -97,12 +97,16 @@ describe("CelestialRhythm", () => {
     }
   });
 
-  it("draws the current prayer's label in the accent", async () => {
+  // One gold for what is coming: the focus block and the cards mark it too.
+  it("draws the next prayer's label in the accent", async () => {
     await renderAt("2026-09-23", "16:00");
 
-    expect(screen.getByText(name("prayerTimes.asr"), { includeHiddenElements: true })).toHaveStyle({
-      color: LIGHT.accent.val,
-    });
+    expect(
+      screen.getByText(name("prayerTimes.maghrib"), { includeHiddenElements: true })
+    ).toHaveStyle({ color: LIGHT.accent.val });
+    expect(
+      screen.getByText(name("prayerTimes.asr"), { includeHiddenElements: true })
+    ).not.toHaveStyle({ color: LIGHT.accent.val });
   });
 
   it("lights the selected prayer's name", async () => {
