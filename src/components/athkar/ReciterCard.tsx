@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, Animated, Easing, Image, View, useAnimatedValue } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -73,13 +73,8 @@ const ReciterCard: FC<Props> = ({
   }, [isDownloading, reduceMotion, spinAnim]);
 
   return (
-    <Pressable
-      // Holds text or a control the reader must reach; as one element iOS would hide them.
-      accessible={false}
-      onPress={() => onSelect(reciter.id)}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={selected ? t("a11y.athkar.reciterSelected", { name }) : name}>
+    // The card holds the sample button, so the radio is the name area inside it.
+    <Pressable accessible={false} onPress={() => onSelect(reciter.id)}>
       <Box
         padding="$3"
         borderRadius="$6"
@@ -87,34 +82,45 @@ const ReciterCard: FC<Props> = ({
         borderWidth={selected ? 2 : 1}
         borderColor={selected ? "$primary" : "$outline"}>
         <HStack alignItems="center" gap="$3">
-          {reciter.avatar ? (
-            <Image
-              source={{ uri: reciter.avatar }}
-              style={{ width: 48, height: 48, borderRadius: 24 }}
-            />
-          ) : (
-            <Box
-              width={48}
-              height={48}
-              borderRadius={24}
-              backgroundColor={selected ? "$backgroundSecondary" : "$backgroundMuted"}
-              alignItems="center"
-              justifyContent="center">
-              <Text size="lg" fontWeight="600" color="$typography">
-                {name.charAt(0)}
-              </Text>
-            </Box>
-          )}
+          <Pressable
+            flex={1}
+            flexDirection="row"
+            alignItems="center"
+            gap="$3"
+            onPress={() => onSelect(reciter.id)}
+            accessible
+            role="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={selected ? t("a11y.athkar.reciterSelected", { name }) : name}>
+            {reciter.avatar ? (
+              <Image
+                source={{ uri: reciter.avatar }}
+                style={{ width: 48, height: 48, borderRadius: 24 }}
+              />
+            ) : (
+              <Box
+                width={48}
+                height={48}
+                borderRadius={24}
+                backgroundColor={selected ? "$backgroundSecondary" : "$backgroundMuted"}
+                alignItems="center"
+                justifyContent="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  {name.charAt(0)}
+                </Text>
+              </Box>
+            )}
 
-          <VStack flex={1}>
-            <Text fontWeight="600" color={selected ? "$typographyContrast" : "$typography"}>
-              {name}
-            </Text>
-            <Text size="sm" color={selected ? "$typographyContrast" : "$typographySecondary"}>
-              {formatFileSize(reciter.totalSize)}
-              {downloaded === true ? ` · ${t("athkar.audio.downloaded")}` : ""}
-            </Text>
-          </VStack>
+            <VStack flex={1}>
+              <Text fontWeight="600" color={selected ? "$typographyContrast" : "$typography"}>
+                {name}
+              </Text>
+              <Text size="sm" color={selected ? "$typographyContrast" : "$typographySecondary"}>
+                {formatFileSize(reciter.totalSize)}
+                {downloaded === true ? ` · ${t("athkar.audio.downloaded")}` : ""}
+              </Text>
+            </VStack>
+          </Pressable>
 
           {onPlaySample && reciter.sampleUrl && (
             <View style={{ width: PLAY_BTN, height: PLAY_BTN }}>
