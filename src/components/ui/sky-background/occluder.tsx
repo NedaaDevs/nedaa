@@ -2,8 +2,6 @@ import { createContext, use, useEffect, useId, useRef, type ReactNode } from "re
 import {
   ScrollView,
   View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
   type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
@@ -22,13 +20,13 @@ type Registry = {
 
 export const SkyOccluderContext = createContext<Registry | null>(null);
 
-/** Text over the sky: a sun or moon behind it dims so the text stays legible. */
 type OccluderProps = {
   children: ReactNode;
   /** Sizes the box to the text; a stretched box would dim over empty sky. */
   style?: StyleProp<ViewStyle>;
 };
 
+/** Text over the sky: a sun or moon behind it dims, so the text reads. */
 export const SkyOccluder = ({ children, style }: OccluderProps) => {
   const registry = use(SkyOccluderContext);
   const id = useId();
@@ -54,15 +52,15 @@ export const SkyOccluder = ({ children, style }: OccluderProps) => {
   );
 };
 
-type ScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
-
-/** A scroll view over the sky: when it settles, its text measures again. */
+/** Over the sky: its text re-measures when it settles or moves. */
 export const SkyScrollView = (props: ScrollViewProps) => {
   const registry = use(SkyOccluderContext);
+  // Content above can move the whole view without moving any block within its
+  // parent, so no block's own layout event fires.
   const settled =
-    (own: ScrollEnd | undefined): ScrollEnd =>
-    (event) => {
-      own?.(event);
+    <Args extends unknown[]>(own: ((...args: Args) => void) | undefined) =>
+    (...args: Args) => {
+      own?.(...args);
       registry?.remeasure();
     };
 
@@ -71,6 +69,8 @@ export const SkyScrollView = (props: ScrollViewProps) => {
       {...props}
       onScrollEndDrag={settled(props.onScrollEndDrag)}
       onMomentumScrollEnd={settled(props.onMomentumScrollEnd)}
+      onLayout={settled(props.onLayout)}
+      onContentSizeChange={settled(props.onContentSizeChange)}
     />
   );
 };
