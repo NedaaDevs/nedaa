@@ -20,8 +20,8 @@ type PreferencesState = {
   weekStartsOn: number;
   // Tab the app lands on at launch.
   openingTab: OpeningTabValue;
-  countdownEnabled: boolean;
-  countdownMinutes: number;
+  // Today's focus figure counts to the second; off counts in minutes, calmer.
+  showSeconds: boolean;
   iqamaCountUpEnabled: boolean;
   iqamaCountUpMinutes: number;
   hapticsEnabled: boolean;
@@ -41,8 +41,7 @@ type PreferencesState = {
   setUse24HourTime: (value: boolean) => void;
   setWeekStartsOn: (value: number) => void;
   setOpeningTab: (value: OpeningTabValue) => void;
-  setCountdownEnabled: (value: boolean) => void;
-  setCountdownMinutes: (value: number) => void;
+  setShowSeconds: (value: boolean) => void;
   setIqamaCountUpEnabled: (value: boolean) => void;
   setIqamaCountUpMinutes: (value: number) => void;
   setHapticsEnabled: (value: boolean) => void;
@@ -60,8 +59,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       use24HourTime: deviceUses24HourClock(),
       weekStartsOn: deviceWeekStartsOn(),
       openingTab: OpeningTab.HOME,
-      countdownEnabled: false,
-      countdownMinutes: 60,
+      showSeconds: true,
       iqamaCountUpEnabled: false,
       iqamaCountUpMinutes: 30,
       hapticsEnabled: true,
@@ -75,8 +73,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setUse24HourTime: (value) => set({ use24HourTime: value }),
       setWeekStartsOn: (value) => set({ weekStartsOn: value }),
       setOpeningTab: (value) => set({ openingTab: value }),
-      setCountdownEnabled: (value) => set({ countdownEnabled: value }),
-      setCountdownMinutes: (value) => set({ countdownMinutes: value }),
+      setShowSeconds: (value) => set({ showSeconds: value }),
       setIqamaCountUpEnabled: (value) => set({ iqamaCountUpEnabled: value }),
       setIqamaCountUpMinutes: (value) => set({ iqamaCountUpMinutes: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
