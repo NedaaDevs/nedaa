@@ -162,6 +162,8 @@
   "a11y.today.showRemaining": "باقی وقت دکھائیں",
   "a11y.today.sinceSpoken": "{{prayer}} سے {{duration}} گزر چکے",
   "a11y.today.untilSpoken": "{{prayer}} میں {{duration}} باقی",
+  "a11y.today.prayerCard": "{{prayer}}، {{time}}",
+  "a11y.today.prayerCardNext": "{{prayer}}، {{time}}، اگلی نماز",
   "a11y.tools.continueHint": "عمرہ گائیڈ وہیں سے کھولتا ہے جہاں آپ نے چھوڑا تھا",
   "a11y.tools.umrahGuideHint": "دعاؤں کے ساتھ مرحلہ وار عمرہ گائیڈ",
   "a11y.umrah.backToPrevious": "Go back",
