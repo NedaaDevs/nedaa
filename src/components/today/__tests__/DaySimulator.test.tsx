@@ -1,8 +1,17 @@
 import { Text } from "react-native";
+import { Theme } from "tamagui";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { DAY_SIMULATION, DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
+import config from "../../../../tamagui.config";
+import { useTheme } from "@/components/ui/theme-color";
+import { PHASE } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { PhaseContext } from "@/contexts/PhaseContext";
+import { AppMode } from "@/enums/app";
+import { useAppIsDark } from "@/hooks/useAppIsDark";
+import { useAppStore } from "@/stores/app";
+import { ONE_DAY_MS } from "@/utils/phase";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -58,7 +67,8 @@ describe("DaySimulator", () => {
     expect(screen.queryByRole("button", { name: DAY_SIMULATION.label })).toBeNull();
   });
 
-  it("runs the clock from before Fajr to after Isha, then back to live", async () => {
+  // The moon's arc runs to the next Fajr; stopping at Isha would cut it short.
+  it("runs the clock from before Fajr to the next Fajr, then back to live", async () => {
     await renderSimulator();
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 
@@ -69,13 +79,45 @@ describe("DaySimulator", () => {
     await act(() => jest.advanceTimersByTime(DAY_SIMULATION.tickMs));
     expect(new Date(clock()).getTime() - start).toBe(DAY_SIMULATION.stepMs);
 
-    const span = new Date(DAY.timings[PRAYER_ID.ISHA]).getTime() + DAY_SIMULATION.marginMs - start;
-    const ticks = Math.ceil(span / DAY_SIMULATION.stepMs) + 1;
-    for (let i = 0; i < ticks; i++) {
+    const nextFajr = new Date(DAY.timings[PRAYER_ID.FAJR]).getTime() + ONE_DAY_MS;
+    const steps = Math.floor((nextFajr - start) / DAY_SIMULATION.stepMs);
+    for (let i = 1; i < steps; i++) {
       await act(() => jest.advanceTimersByTime(DAY_SIMULATION.tickMs));
     }
+    expect(new Date(clock()).getTime()).toBe(start + steps * DAY_SIMULATION.stepMs);
+
+    await act(() => jest.advanceTimersByTime(DAY_SIMULATION.tickMs));
 
     expect(new Date(clock()).getMinutes()).toBe(new Date().getMinutes());
     expect(new Date(clock()).getHours()).toBe(new Date().getHours());
+  });
+
+  // Adaptive draws by the phase; a run must show noon as day, not the live night.
+  it("gives Today the simulated phase's brightness and theme", async () => {
+    useAppStore.setState({ mode: AppMode.ADAPTIVE });
+    const Brightness = () => (
+      <Text testID="brightness">{`${useAppIsDark()} ${useTheme().background.val}`}</Text>
+    );
+    await renderWithTheme(
+      <PhaseContext value={PHASE.NIGHT}>
+        <Theme name={AppMode.DARK}>
+          <DaySimulator>
+            <Brightness />
+            <DaySimulatorButton />
+          </DaySimulator>
+        </Theme>
+      </PhaseContext>
+    );
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.press(screen.getByRole("button", { name: DAY_SIMULATION.label }));
+
+    const toNoon = (8 * 60 * 60_000) / DAY_SIMULATION.stepMs;
+    for (let i = 0; i < toNoon; i++) {
+      await act(() => jest.advanceTimersByTime(DAY_SIMULATION.tickMs));
+    }
+
+    expect(screen.getByTestId("brightness")).toHaveTextContent(
+      `false ${config.themes.light.background.val}`
+    );
   });
 });
