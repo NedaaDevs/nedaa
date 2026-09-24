@@ -2,9 +2,11 @@ import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { StyleSheet } from "react-native";
 
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
+import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -46,38 +48,49 @@ export const TodayHeader = () => {
 
   return (
     <VStack gap="$3.5">
-      <Text size="md" bold color="$fg">
-        {t("brand.name")}
-      </Text>
+      <SkyOccluder style={styles.hug}>
+        <Text size="md" bold color="$fg">
+          {t("brand.name")}
+        </Text>
+      </SkyOccluder>
       <HStack justifyContent="space-between" alignItems="flex-end" gap="$3">
-        <VStack gap="$1" flexShrink={1}>
-          <Text accessibilityRole="header" size="3xl" bold typography="title" color="$fg">
-            {hijriDate}
-          </Text>
-          <Text size="sm" typography="helper" color="$mutedSky">
-            {gregorian}
-          </Text>
-        </VStack>
-        {city ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("a11y.location.currentCity", { city })}
-            accessibilityHint={t("a11y.today.locationHint")}
-            onPress={() => router.push(BACK_DESTINATION.SETTINGS_LOCATION.href)}
-            alignItems="flex-end"
-            justifyContent="flex-end"
-            flexShrink={1}>
-            <Text size="sm" bold typography="helper" color="$fg" numberOfLines={1}>
-              {city}
+        <SkyOccluder style={styles.shrink}>
+          <VStack gap="$1">
+            <Text accessibilityRole="header" size="3xl" bold typography="title" color="$fg">
+              {hijriDate}
             </Text>
-            {country ? (
-              <Text size="xs" typography="helper" color="$mutedSky" numberOfLines={1}>
-                {country}
+            <Text size="sm" typography="helper" color="$mutedSky">
+              {gregorian}
+            </Text>
+          </VStack>
+        </SkyOccluder>
+        {city ? (
+          <SkyOccluder style={styles.shrink}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("a11y.location.currentCity", { city })}
+              accessibilityHint={t("a11y.today.locationHint")}
+              onPress={() => router.push(BACK_DESTINATION.SETTINGS_LOCATION.href)}
+              alignItems="flex-end"
+              justifyContent="flex-end"
+              flexShrink={1}>
+              <Text size="sm" bold typography="helper" color="$fg" numberOfLines={1}>
+                {city}
               </Text>
-            ) : null}
-          </Pressable>
+              {country ? (
+                <Text size="xs" typography="helper" color="$mutedSky" numberOfLines={1}>
+                  {country}
+                </Text>
+              ) : null}
+            </Pressable>
+          </SkyOccluder>
         ) : null}
       </HStack>
     </VStack>
   );
 };
+
+const styles = StyleSheet.create({
+  hug: { alignSelf: "flex-start" },
+  shrink: { flexShrink: 1 },
+});
