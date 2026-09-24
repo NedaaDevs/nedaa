@@ -112,7 +112,7 @@ const HERO_COPY: Record<"en" | "ar", Record<string, HeroCopy>> = {
   },
   ar: {
     "prayer-times": {
-      headlineLine1: "نداء الصلاة،",
+      headlineLine1: "نِداء الصلاة،",
       headlineLine2Italic: "بتصميمٍ يليق به.",
     },
     athkar: {
