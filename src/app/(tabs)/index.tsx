@@ -8,6 +8,7 @@ import { SkyBackground } from "@/components/ui/sky-background";
 import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
 import { FocusCountdown } from "@/components/today/FocusCountdown";
+import { LocationNotice } from "@/components/today/LocationNotice";
 import { OtherTimes } from "@/components/today/OtherTimes";
 import { PrayerGrid } from "@/components/today/PrayerGrid";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
@@ -45,6 +46,7 @@ export default function MainScreen() {
               <TodayHeader />
               <FocusCountdown />
               <CelestialRhythm selected={selected} />
+              <LocationNotice />
               <PrayerGrid selected={selected} onSelect={choose} />
               <OtherTimes />
               <PrayerTimesState />
