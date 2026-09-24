@@ -14,6 +14,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/utils/date", () => ({
@@ -46,9 +47,9 @@ const DAY: DayPrayerTimes = {
 
 const renderToday = () =>
   renderRouter(
-    { "(tabs)/index": () => <TodayScreen /> },
+    { [BACK_DESTINATION.HOME.route]: () => <TodayScreen /> },
     {
-      initialUrl: "/",
+      initialUrl: BACK_DESTINATION.HOME.href as string,
       wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>,
     }
   );

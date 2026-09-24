@@ -97,7 +97,6 @@ describe("FocusCountdown", () => {
     expect(button.props.accessibilityHint).toBe(name("a11y.today.showRemaining"));
   });
 
-  // The prayer list names Friday's Dhuhr as Jumuah; the focus block agrees.
   // For a while after its time comes in, the prayer is named and counted up from.
   it("stays on a prayer just come in, as the current one, counting up", async () => {
     await renderAt("2026-09-23", "15:32");
@@ -120,6 +119,7 @@ describe("FocusCountdown", () => {
     expect(screen.getByRole("togglebutton", { name: name("prayerTimes.maghrib") })).toBeTruthy();
   });
 
+  // The prayer list names Friday's Dhuhr as Jumuah; the focus block agrees.
   it("names Dhuhr as Jumuah on a Friday", async () => {
     await renderAt("2026-09-25", "10:00");
 
