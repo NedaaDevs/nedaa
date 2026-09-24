@@ -71,7 +71,6 @@ const SkyLayers = (props: LayersProps) => {
       {scene.moon && hijriDay !== undefined && (
         <MoonGlyph
           {...place(CELESTIAL_BODY.MOON, scene.moon.moon.disc)}
-          {...box}
           phase={moonPhaseFor(hijriDay)}
           isRTL={isRTL}
         />
