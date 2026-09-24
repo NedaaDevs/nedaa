@@ -202,3 +202,13 @@ export const skyBackgroundImage = (
 
   return layers.join(", ");
 };
+
+export type WindowRect = { x: number; y: number; width: number; height: number };
+
+/** Whether a disc at (cx, cy) touches any of the boxes. */
+export const discOverlaps = (cx: number, cy: number, radius: number, boxes: WindowRect[]) =>
+  boxes.some(({ x, y, width, height }) => {
+    const nearestX = Math.min(Math.max(cx, x), x + width);
+    const nearestY = Math.min(Math.max(cy, y), y + height);
+    return (cx - nearestX) ** 2 + (cy - nearestY) ** 2 <= radius ** 2;
+  });

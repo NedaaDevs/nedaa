@@ -7,6 +7,7 @@ import { COUNT_DIRECTION, Countdown, Rolling } from "@/components/ui/countdown";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
+import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { APP_STATE } from "@/constants/AppState";
@@ -73,46 +74,50 @@ export const FocusCountdown = () => {
         <Text size="xs" fontWeight="600" color="$accent">
           {t(count.current ? "today.focus.current" : "today.focus.next")}
         </Text>
-        <Pressable
-          accessibilityRole="togglebutton"
-          accessibilityLabel={nameOf(count.named)}
-          accessibilityHint={t(until ? "a11y.today.showElapsed" : "a11y.today.showRemaining")}
-          accessibilityState={{ checked: !until }}
-          onPress={() => setFlipped((value) => !value)}
-          flexDirection="row"
-          alignItems="center"
-          gap="$2"
-          paddingEnd="$2.5"
-          borderRadius="$control">
-          <Text size="3xl" bold typography="title" color="$fg">
-            {nameOf(count.named)}
-          </Text>
-          <Icon as={ArrowDownUp} size="xs" color={until ? "$mutedSky" : "$accent"} />
-        </Pressable>
+        <SkyOccluder>
+          <Pressable
+            accessibilityRole="togglebutton"
+            accessibilityLabel={nameOf(count.named)}
+            accessibilityHint={t(until ? "a11y.today.showElapsed" : "a11y.today.showRemaining")}
+            accessibilityState={{ checked: !until }}
+            onPress={() => setFlipped((value) => !value)}
+            flexDirection="row"
+            alignItems="center"
+            gap="$2"
+            paddingEnd="$2.5"
+            borderRadius="$control">
+            <Text size="3xl" bold typography="title" color="$fg">
+              {nameOf(count.named)}
+            </Text>
+            <Icon as={ArrowDownUp} size="xs" color={until ? "$mutedSky" : "$accent"} />
+          </Pressable>
+        </SkyOccluder>
       </VStack>
-      <VStack
-        accessible
-        accessibilityLabel={t(until ? "a11y.today.untilSpoken" : "a11y.today.sinceSpoken", {
-          prayer: counted,
-          duration,
-        })}>
-        <Countdown
-          value={digits(formatCount(count.seconds, count.precise, count.axis))}
-          reserve={digits(count.precise && count.seconds >= 3600 ? WIDEST.hours : WIDEST.minutes)}
-          counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
-          openKey={opened}
-          switchKey={count.axis}
-          size="xl"
-          bold
-          color="$fg"
-        />
-        <Rolling
-          value={t(until ? "today.focus.until" : "today.focus.since", { prayer: counted })}
-          size="xs"
-          typography="helper"
-          color="$mutedSky"
-        />
-      </VStack>
+      <SkyOccluder>
+        <VStack
+          accessible
+          accessibilityLabel={t(until ? "a11y.today.untilSpoken" : "a11y.today.sinceSpoken", {
+            prayer: counted,
+            duration,
+          })}>
+          <Countdown
+            value={digits(formatCount(count.seconds, count.precise, count.axis))}
+            reserve={digits(count.precise && count.seconds >= 3600 ? WIDEST.hours : WIDEST.minutes)}
+            counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
+            openKey={opened}
+            switchKey={count.axis}
+            size="xl"
+            bold
+            color="$fg"
+          />
+          <Rolling
+            value={t(until ? "today.focus.until" : "today.focus.since", { prayer: counted })}
+            size="xs"
+            typography="helper"
+            color="$mutedSky"
+          />
+        </VStack>
+      </SkyOccluder>
     </HStack>
   );
 };
