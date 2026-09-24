@@ -182,7 +182,7 @@ describe("tabs layout", () => {
     expect(frameStyle()).toMatchObject({ position: "absolute" });
   });
 
-  // A tab not yet on the sky keeps the bar in the flow.
+  // A tab without the sky keeps the bar in the flow.
   it("keeps the bar in the flow on a tab without the sky", async () => {
     await renderTabs();
     await act(() => router.navigate(BACK_DESTINATION.ATHKAR.href));
