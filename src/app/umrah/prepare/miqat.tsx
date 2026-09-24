@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { useState } from "react";
+import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -18,6 +18,7 @@ import { MapPin, Plane, ChevronRight } from "lucide-react-native";
 import { MIQAT_POINTS } from "@/constants/UmrahMiqat";
 import { useHaptic } from "@/hooks/useHaptic";
 import type { MiqatPoint } from "@/types/umrah";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Step = "origin" | "direction" | "result";
 
@@ -39,12 +40,8 @@ export default function MiqatScreen() {
   const selectionHaptic = useHaptic("selection");
   const [step, setStep] = useState<Step>("origin");
   const [selectedMiqat, setSelectedMiqat] = useState<MiqatPoint | null>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReducedMotion();
   const isArabic = i18n.language === "ar";
-
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
 
   const outsideMiqats = MIQAT_POINTS.filter((m) => !m.isInsideMakkah);
   const insideMiqat = MIQAT_POINTS.find((m) => m.isInsideMakkah);

@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import Animated, { FadeIn } from "react-native-reanimated";
 
@@ -17,16 +16,13 @@ import { NumberBadge } from "@/components/ui/number-badge";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 import type { Gender } from "@/types/umrah";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export default function IhramScreen() {
   const { t } = useTranslation();
   const selectionHaptic = useHaptic("selection");
   const { selectedGender, setSelectedGender } = useUmrahGuideStore();
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const handleGenderSelect = async (gender: Gender) => {
     await selectionHaptic();
