@@ -15,10 +15,15 @@ import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 // hijri-native is a native module; the header reads today's Hijri date from it.
+const mockFromTimestamp = jest.fn((_seconds: number, _timezone: string) => ({
+  year: 1448,
+  month: 4,
+  day: 12,
+}));
 jest.mock("@/utils/date", () => ({
   ...jest.requireActual("@/utils/date"),
   HijriNative: {
-    fromTimestamp: () => ({ year: 1448, month: 4, day: 12 }),
+    fromTimestamp: (seconds: number, timezone: string) => mockFromTimestamp(seconds, timezone),
     addDays: (date: { day: number }, days: number) => ({ ...date, day: date.day + days }),
   },
 }));
@@ -86,6 +91,23 @@ describe("TodayHeader", () => {
     );
 
     expect(line).toHaveStyle({ color: LIGHT.mutedSky.val });
+  });
+
+  // 22:00 UTC is already Thursday in Makkah; the header reads the city's day.
+  it("dates the day in the location's timezone, asking Hijri in seconds", async () => {
+    const now = new Date("2026-09-23T22:00:00.000Z");
+    jest.setSystemTime(now);
+    useLocationStore.setState({
+      locationDetails: { ...useLocationStore.getState().locationDetails, timezone: "Asia/Riyadh" },
+    });
+    await renderHeader();
+
+    expect(
+      screen.getByText(
+        i18n.t("today.gregorianDate", { day: "Thursday", date: "24 September 2026" })
+      )
+    ).toBeTruthy();
+    expect(mockFromTimestamp).toHaveBeenCalledWith(Math.floor(now.getTime() / 1000), "Asia/Riyadh");
   });
 
   it("opens the location settings from the city", async () => {
