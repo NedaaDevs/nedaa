@@ -3,6 +3,7 @@ import { parseISO } from "date-fns";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { TICK_STATE, type TickState } from "@/constants/Timeline";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { inFocusWindow } from "@/utils/focusCount";
 
 export type RhythmTimingId = PrayerId | typeof OTHER_TIMING.SUNRISE;
 
@@ -26,8 +27,8 @@ export type RhythmLine = {
   marks: RhythmMark[];
   /** The stretch from the current timing to the next, and the part gone. */
   progress: { from: number; to: number; fraction: number } | null;
-  /** The next prayer to come; never sunrise; after Isha, tomorrow's Fajr. */
-  next: PrayerId | null;
+  /** The prayer just come in, else the next; past Isha, tomorrow's Fajr. */
+  focus: PrayerId | null;
 };
 
 const timeOf = (day: DayPrayerTimes, id: RhythmTimingId) =>
@@ -74,10 +75,17 @@ export const rhythmLine = (
         }
       : null;
 
+  const isPrayer = (id: RhythmTimingId): id is PrayerId => id !== OTHER_TIMING.SUNRISE;
   const nextPrayer = RHYTHM_TIMINGS.find(
-    (id, i): id is PrayerId => id !== OTHER_TIMING.SUNRISE && times[i] > clock
+    (id, i): id is PrayerId => isPrayer(id) && times[i] > clock
   );
+  const latest = RHYTHM_TIMINGS.findLast(
+    (id, i): id is PrayerId => isPrayer(id) && times[i] <= clock
+  );
+  const latestTime = latest ? times[RHYTHM_TIMINGS.indexOf(latest)] : undefined;
+  const inFocus =
+    latest && latestTime !== undefined && inFocusWindow(latestTime, clock) ? latest : undefined;
 
   const afterIsha = following ? PRAYER_ID.FAJR : null;
-  return { marks, progress, next: nextPrayer ?? afterIsha };
+  return { marks, progress, focus: inFocus ?? nextPrayer ?? afterIsha };
 };

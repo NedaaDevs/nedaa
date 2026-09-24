@@ -71,11 +71,11 @@ export const FocusCountdown = () => {
       borderColor="$border">
       <VStack flex={1} alignItems="flex-start">
         <Text size="xs" fontWeight="600" color="$accent">
-          {t("today.focus.next")}
+          {t(count.current ? "today.focus.current" : "today.focus.next")}
         </Text>
         <Pressable
           accessibilityRole="togglebutton"
-          accessibilityLabel={nameOf(count.next)}
+          accessibilityLabel={nameOf(count.named)}
           accessibilityHint={t(until ? "a11y.today.showElapsed" : "a11y.today.showRemaining")}
           accessibilityState={{ checked: !until }}
           onPress={() => setFlipped((value) => !value)}
@@ -85,7 +85,7 @@ export const FocusCountdown = () => {
           paddingEnd="$2.5"
           borderRadius="$control">
           <Text size="3xl" bold typography="title" color="$fg">
-            {nameOf(count.next)}
+            {nameOf(count.named)}
           </Text>
           <Icon as={ArrowDownUp} size="xs" color={until ? "$mutedSky" : "$accent"} />
         </Pressable>
