@@ -32,7 +32,14 @@ import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import { localizedSurahName } from "@/utils/surahName";
 
-type ToolItem = { id: string; titleKey: string; icon: React.ComponentType<any>; route: Href };
+type ToolItem = {
+  id: string;
+  titleKey: string;
+  icon: React.ComponentType<any>;
+  route: Href;
+  /** Where it leads, when the title alone would mislead. */
+  hintKey?: string;
+};
 
 // Self-contained utilities: open, do one thing, leave. Anything with ongoing
 // state lives in the Continue card or the rows below instead.
@@ -59,6 +66,7 @@ const TOOLS: readonly ToolItem[] = [
   {
     id: "important-days",
     titleKey: "importantDays.title",
+    hintKey: "a11y.tools.occasionsHint",
     icon: CalendarDays,
     route: BACK_DESTINATION.HIJRI_CALENDAR.href,
   },
@@ -88,6 +96,8 @@ export default function ToolsScreen() {
   const { fajr, friday } = useAlarmSettingsStore();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
+
+  const opens = (name: string) => t("a11y.tools.opens", { name });
 
   const open = async (route: Href) => {
     await selectionHaptic();
@@ -129,6 +139,7 @@ export default function ToolsScreen() {
                     <Tile
                       icon={tool.icon}
                       label={t(tool.titleKey)}
+                      hint={tool.hintKey ? t(tool.hintKey) : opens(t(tool.titleKey))}
                       onPress={() => open(tool.route)}
                     />
                   </Grid.Item>
@@ -144,6 +155,7 @@ export default function ToolsScreen() {
                     icon={AlarmClock}
                     title={t("tools.alarm.title")}
                     status={alarmStatus}
+                    hint={opens(t("tools.alarm.title"))}
                     onPress={() => open(BACK_DESTINATION.SETTINGS_ALARM.href)}
                   />
                 )}
@@ -151,6 +163,7 @@ export default function ToolsScreen() {
                   icon={Headphones}
                   title={t("tools.quranListen.title")}
                   status={listenStatus}
+                  hint={opens(t("tools.quranListen.title"))}
                   onPress={() => open(BACK_DESTINATION.QURAN_LISTEN.href)}
                 />
               </VStack>
@@ -163,6 +176,7 @@ export default function ToolsScreen() {
                 icon={Settings}
                 title={t("settings.title")}
                 status={t("tools.settings.status")}
+                hint={opens(t("settings.title"))}
                 onPress={() => open(BACK_DESTINATION.SETTINGS.href)}
               />
             </VStack>

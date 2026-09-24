@@ -24,7 +24,7 @@ const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 const renderMore = () =>
   renderRouter(
     {
-      "(tabs)/tools": () => (
+      [BACK_DESTINATION.TOOLS.route]: () => (
         <>
           <ToolsScreen />
           <Pathname />
@@ -54,7 +54,7 @@ describe("More", () => {
     useLocationStore.setState({ localizedLocation: { city: "Riyadh", country: "Saudi Arabia" } });
   });
 
-  // DESIGN.md: never a plain canvas; More sits on the same sky as Today.
+  // More sits on the same sky as Today, never a plain canvas.
   it("draws the sky behind its content", async () => {
     await renderMore();
 
@@ -74,10 +74,20 @@ describe("More", () => {
     const labels = screen.getAllByRole("button").map((node) => node.props.accessibilityLabel);
     const tiles = labels.filter((label) => TILE_ORDER.map((key) => i18n.t(key)).includes(label));
     expect(tiles).toEqual(TILE_ORDER.map((key) => i18n.t(key)));
-    expect(screen.queryByText(i18n.t("importantDays.subtitle"))).toBeNull();
   });
 
-  // The occasions live on the Hijri calendar; their old screen keeps its path only.
+  it("tells a screen reader where each tile leads", async () => {
+    await renderMore();
+    const hintOf = (key: string) =>
+      screen.getByRole("button", { name: i18n.t(key) }).props.accessibilityHint;
+
+    expect(hintOf("tools.compass.title")).toBe(
+      i18n.t("a11y.tools.opens", { name: i18n.t("tools.compass.title") })
+    );
+    expect(hintOf("importantDays.title")).toBe(i18n.t("a11y.tools.occasionsHint"));
+  });
+
+  // The occasions are marked on the Hijri calendar.
   it("opens the Hijri calendar from Important days", async () => {
     await renderMore();
 
