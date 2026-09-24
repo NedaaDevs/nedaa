@@ -3,7 +3,14 @@ import { PHASE } from "@/constants/Phase";
 import { CELESTIAL_BODY, DARK_SKY, LIGHT_SKY, SKY_ARC } from "@/constants/Sky";
 import processBackgroundImage from "react-native/Libraries/StyleSheet/processBackgroundImage";
 
-import { arcCentre, fadedDisc, flattenOver, skyBackgroundImage, skyScene } from "@/utils/sky";
+import {
+  arcCentre,
+  discOverlaps,
+  fadedDisc,
+  flattenOver,
+  skyBackgroundImage,
+  skyScene,
+} from "@/utils/sky";
 
 describe("fadedDisc", () => {
   it("fades evenly either side of the disc's edge", () => {
@@ -225,5 +232,22 @@ describe("flattenOver", () => {
     ["#FFFFFF00", "#123456", "#123456"],
   ])("lays %s over %s as %s", (top, bottom, flat) => {
     expect(flattenOver(top, bottom)).toBe(flat);
+  });
+});
+
+describe("discOverlaps", () => {
+  const box = { x: 100, y: 100, width: 200, height: 40 };
+
+  it.each([
+    ["inside the box", { cx: 150, cy: 120 }, true],
+    ["touching an edge", { cx: 90, cy: 120 }, true],
+    ["past a corner, clear of it", { cx: 90, cy: 90 }, false],
+    ["above the box", { cx: 150, cy: 60 }, false],
+  ])("finds a disc %s", (_name, { cx, cy }, overlaps) => {
+    expect(discOverlaps(cx, cy, 12, [box])).toBe(overlaps);
+  });
+
+  it("finds nothing with no boxes", () => {
+    expect(discOverlaps(150, 120, 12, [])).toBe(false);
   });
 });

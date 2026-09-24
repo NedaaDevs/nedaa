@@ -2,6 +2,7 @@
 export const SKY_PART = {
   CANVAS: "sky-canvas",
   PAINT: "sky-paint",
+  BODIES: "sky-bodies",
   SUN: "sky-sun",
   SUN_RAYS: "sky-sun-rays",
   MOON: "sky-moon",

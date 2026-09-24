@@ -1,7 +1,8 @@
 import { Text } from "react-native";
 import { act, screen } from "@testing-library/react-native";
 
-import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
+import { SKY_PART, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
+import { BODY_BEHIND_TEXT } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
@@ -43,6 +44,12 @@ jest.mock("@/utils/date", () => ({
 }));
 
 let mockReduced = false;
+
+// Where each text block reports itself, in window points.
+let mockTextBox = { x: 0, y: 0, width: 0, height: 0 };
+jest.mock("@/utils/measureInWindow", () => ({
+  measureInWindow: () => Promise.resolve(mockTextBox),
+}));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
 const Sky = ({ phase }: { phase: Phase | undefined }) => (
@@ -253,6 +260,46 @@ describe("SkyBackground", () => {
 
       expect(moonPaths()).toHaveLength(1);
       expect(moonPaths()[0]).toMatch(/^M /);
+    });
+
+    describe("behind text", () => {
+      const TextOverSky = () => (
+        <PhaseContext value={PHASE.NIGHT}>
+          <SkyBackground>
+            <SkyOccluder>
+              <Text>Isha</Text>
+            </SkyOccluder>
+          </SkyBackground>
+        </PhaseContext>
+      );
+      const bodies = () => part(SKY_PART.BODIES)[0];
+      // Lets the measurement land. Jest never steps a native-driver fade, so
+      // these run under Reduce Motion, where the sky sets the value at once.
+      const settle = async () => {
+        await act(async () => {});
+        await nextMinute();
+      };
+
+      beforeEach(() => {
+        mockReduced = true;
+        useAppStore.setState({ mode: AppMode.DARK });
+      });
+
+      it("dims the moon while text covers it", async () => {
+        mockTextBox = { x: 0, y: 0, width: 10_000, height: 10_000 };
+        await renderWithTheme(<TextOverSky />);
+        await settle();
+
+        expect(bodies()).toHaveStyle({ opacity: BODY_BEHIND_TEXT.opacity });
+      });
+
+      it("keeps the moon bright clear of text", async () => {
+        mockTextBox = { x: 0, y: -5_000, width: 10, height: 10 };
+        await renderWithTheme(<TextOverSky />);
+        await settle();
+
+        expect(bodies()).toHaveStyle({ opacity: 1 });
+      });
     });
 
     it("draws no moon on a light sky", async () => {
