@@ -5,7 +5,7 @@ import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Appearance, Platform, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { isTodaySegments, rootSafeAreaEdges } from "@/utils/safeArea";
+import { isSkySegments, rootSafeAreaEdges } from "@/utils/safeArea";
 import * as SplashScreen from "expo-splash-screen";
 
 import { TamaguiProvider, FontLanguage, useThemeName } from "tamagui";
@@ -86,7 +86,7 @@ function AppShell() {
     ? QURAN_THEME_COLORS[quranTheme].background
     : theme.background.val;
   const safeAreaEdges = rootSafeAreaEdges({
-    today: isTodaySegments(segments),
+    sky: isSkySegments(segments),
     immersiveReader: readerImmersive,
     android: Platform.OS === PlatformType.ANDROID,
   });
