@@ -4,7 +4,6 @@ import type { GetProps } from "tamagui";
 
 const PressableFrame = styled(View, {
   name: "Pressable",
-  role: "button",
   // A View carrying a role is not yet an accessibility element.
   accessible: true,
   minHeight: "$target",
@@ -34,9 +33,11 @@ type PressableProps = GetProps<typeof PressableFrame>;
  * still responds to touch.
  */
 const Pressable = forwardRef<never, PressableProps>(
-  ({ onPress, onLongPress, disabled, accessibilityState, ...props }, ref) => (
+  ({ onPress, onLongPress, disabled, accessibilityState, role, ...props }, ref) => (
     <PressableFrame
       ref={ref}
+      // A button unless the caller names a role; `role` would override theirs.
+      role={role ?? (props.accessibilityRole ? undefined : "button")}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
       onLongPress={disabled ? undefined : onLongPress}

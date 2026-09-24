@@ -62,7 +62,6 @@ const CardFrame = styled(YStack, {
 // hand-rolled `<Pressable>` surface swaps over without changing feel.
 const CardPressableFrame = styled(CardFrame, {
   name: "CardPressable",
-  role: "button",
   // A View carrying a role is not yet an accessibility element.
   accessible: true,
   minHeight: "$target",
@@ -82,9 +81,11 @@ const CardPressableFrame = styled(CardFrame, {
 
 /** Same reason as the `Pressable` primitive: the `disabled` variant only dims. */
 const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
-  ({ onPress, onLongPress, disabled, accessibilityState, ...props }, ref) => (
+  ({ onPress, onLongPress, disabled, accessibilityState, role, ...props }, ref) => (
     <CardPressableFrame
       ref={ref}
+      // A button unless the caller names a role; `role` would override theirs.
+      role={role ?? (props.accessibilityRole ? undefined : "button")}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
       onLongPress={disabled ? undefined : onLongPress}
