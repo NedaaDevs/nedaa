@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioLines, Download, CheckCircle2, Pause, Headphones } from "lucide-react-native";
 import Svg, { Circle } from "react-native-svg";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
