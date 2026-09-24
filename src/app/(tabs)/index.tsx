@@ -5,6 +5,7 @@ import { Box } from "@/components/ui/box";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
+import { FocusCountdown } from "@/components/today/FocusCountdown";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TodayHeader } from "@/components/today/TodayHeader";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
@@ -29,6 +30,7 @@ export default function MainScreen() {
           <ActiveAlarmBanner />
           <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
             <TodayHeader />
+            <FocusCountdown />
             <CelestialRhythm />
             <PrayerTimesState />
             <DaySimulatorButton />
