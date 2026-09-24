@@ -1,8 +1,12 @@
+import { AccessibilityInfo, Platform } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 
 import { CALLOUT_PART, Callout } from "@/components/ui/callout";
 import { StatePanel } from "@/components/ui/state-panel";
+import { PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
+
+const PLATFORM = Platform.OS;
 
 describe("StatePanel", () => {
   const renderPanel = async (onAction = jest.fn()) => {
@@ -30,6 +34,30 @@ describe("StatePanel", () => {
     await userEvent.press(screen.getByRole("button", { name: "Retry" }));
 
     expect(onAction).toHaveBeenCalled();
+  });
+
+  describe("speaking its message", () => {
+    afterEach(() => {
+      Platform.OS = PLATFORM;
+      jest.mocked(AccessibilityInfo.announceForAccessibility).mockClear();
+    });
+
+    // Android speaks the live region; iOS has none, so the panel says it.
+    it("says what failed on iOS as it appears", async () => {
+      Platform.OS = PlatformType.IOS;
+      await renderPanel();
+
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+        "Couldn't load the times. Check your connection."
+      );
+    });
+
+    it("leaves Android to its live region", async () => {
+      Platform.OS = PlatformType.ANDROID;
+      await renderPanel();
+
+      expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalled();
+    });
   });
 });
 
