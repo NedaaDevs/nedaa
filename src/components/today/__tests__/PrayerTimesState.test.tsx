@@ -7,6 +7,7 @@ import i18n from "@/localization/i18n";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { controlProblems } from "@/test-helpers/controls";
 
 const DAY: DayPrayerTimes = {
   date: 20260923,
@@ -61,5 +62,11 @@ describe("PrayerTimesState", () => {
     await renderState({ todayTimings: DAY, hasError: true, isLoading: true });
 
     expect(screen.toJSON()).toBeNull();
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderState({ todayTimings: null, hasError: true, isLoading: false });
+
+    expect(controlProblems()).toEqual([]);
   });
 });

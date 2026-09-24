@@ -17,6 +17,7 @@ import { useDebugModeStore } from "@/stores/debugMode";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { controlProblems } from "@/test-helpers/controls";
 
 const DAY: DayPrayerTimes = {
   date: 20260923,
@@ -119,5 +120,11 @@ describe("DaySimulator", () => {
     expect(screen.getByTestId("brightness")).toHaveTextContent(
       `false ${config.themes.light.background.val}`
     );
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderSimulator();
+
+    expect(controlProblems()).toEqual([]);
   });
 });
