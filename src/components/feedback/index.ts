@@ -1,8 +1,4 @@
-export {
-  default as NetworkStatusBanner,
-  NetworkStatusBanner as NetworkStatus,
-} from "./NetworkStatusBanner";
-export type { Props as NetworkStatusBannerProps } from "./NetworkStatusBanner/types";
+export { default as NetworkStatusBanner } from "./NetworkStatusBanner";
 
 export { default as LoadingOverlay } from "./LoadingOverlay";
 export type { Props as LoadingOverlayProps } from "./LoadingOverlay/types";

@@ -1,43 +1,22 @@
 import { create } from "zustand";
 
-type ToastType = "success" | "error" | "warning" | "info" | "muted";
+import type { ToastContent } from "@/utils/toast";
+
+export type ShownToast = ToastContent & { id: number };
 
 type ToastState = {
-  message: string;
-  title?: string;
-  type: ToastType;
-  isVisible: boolean;
-  showToast: (message: string, type: ToastType, title?: string, duration?: number) => void;
-  hideToast: () => void;
+  toast: ShownToast | null;
+  show: (toast: ToastContent) => void;
+  /** Hides the toast with this id, or whatever shows when none is given. */
+  hide: (id?: number) => void;
 };
 
-// One toast surface, so one pending dismissal. Held outside the store because it
-// is scheduling state, not rendered state.
-let hideTimer: ReturnType<typeof setTimeout> | null = null;
+let nextId = 1;
 
-const cancelPendingHide = () => {
-  if (hideTimer) clearTimeout(hideTimer);
-  hideTimer = null;
-};
-
-export const useToastStore = create<ToastState>((set) => ({
-  message: "",
-  title: "",
-  type: "muted",
-  isVisible: false,
-  // Callers that omit a duration get the standard dwell time; without the default
-  // the timeout fires on the next tick and the toast never renders a visible frame.
-  showToast: (message, type, title, duration = 3000) => {
-    // The previous message's dismissal would otherwise cut this one short.
-    cancelPendingHide();
-    set({ message, type, title, isVisible: true });
-    hideTimer = setTimeout(() => {
-      hideTimer = null;
-      set({ isVisible: false });
-    }, duration);
-  },
-  hideToast: () => {
-    cancelPendingHide();
-    set({ isVisible: false });
-  },
+// Read through MessageToast and the host only; callers never touch it.
+export const useToastStore = create<ToastState>()((set) => ({
+  toast: null,
+  show: (toast) => set({ toast: { ...toast, id: nextId++ } }),
+  hide: (id) =>
+    set((state) => (id === undefined || state.toast?.id === id ? { toast: null } : state)),
 }));
