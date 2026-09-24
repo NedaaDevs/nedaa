@@ -1,38 +1,39 @@
-import { SAFE_EDGE, isTodaySegments, rootSafeAreaEdges } from "@/utils/safeArea";
+import { SAFE_EDGE, isSkySegments, rootSafeAreaEdges } from "@/utils/safeArea";
 
 describe("rootSafeAreaEdges", () => {
   it("pads the top of an ordinary screen", () => {
-    expect(rootSafeAreaEdges({ today: false, immersiveReader: false, android: false })).toEqual([
+    expect(rootSafeAreaEdges({ sky: false, immersiveReader: false, android: false })).toEqual([
       SAFE_EDGE.TOP,
       SAFE_EDGE.RIGHT,
       SAFE_EDGE.LEFT,
     ]);
   });
 
-  // Today draws its sky under the status bar and pads its own content instead.
-  it.each([true, false])("leaves the top of Today open (android: %s)", (android) => {
-    expect(rootSafeAreaEdges({ today: true, immersiveReader: false, android })).not.toContain(
+  // A sky screen draws under the status bar and pads its own content instead.
+  it.each([true, false])("leaves the top of a sky screen open (android: %s)", (android) => {
+    expect(rootSafeAreaEdges({ sky: true, immersiveReader: false, android })).not.toContain(
       SAFE_EDGE.TOP
     );
   });
 
   it("opens the top for the immersive reader on Android only", () => {
-    expect(rootSafeAreaEdges({ today: false, immersiveReader: true, android: true })).not.toContain(
+    expect(rootSafeAreaEdges({ sky: false, immersiveReader: true, android: true })).not.toContain(
       SAFE_EDGE.TOP
     );
-    expect(rootSafeAreaEdges({ today: false, immersiveReader: true, android: false })).toContain(
+    expect(rootSafeAreaEdges({ sky: false, immersiveReader: true, android: false })).toContain(
       SAFE_EDGE.TOP
     );
   });
 });
 
-describe("isTodaySegments", () => {
+describe("isSkySegments", () => {
   it.each([
     [["(tabs)"], true],
     [["(tabs)", "index"], true],
+    [["(tabs)", "tools"], true],
     [["(tabs)", "quran"], false],
     [["settings", "location"], false],
-  ])("reads %j as Today: %s", (segments, today) => {
-    expect(isTodaySegments(segments)).toBe(today);
+  ])("reads %j as a sky screen: %s", (segments, sky) => {
+    expect(isSkySegments(segments)).toBe(sky);
   });
 });

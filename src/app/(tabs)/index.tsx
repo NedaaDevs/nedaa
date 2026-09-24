@@ -14,7 +14,6 @@ import { PrayerGrid } from "@/components/today/PrayerGrid";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TodayHeader } from "@/components/today/TodayHeader";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
-import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
 
 // Constants
 import type { PrayerId } from "@/constants/Prayer";
@@ -22,11 +21,7 @@ import type { PrayerId } from "@/constants/Prayer";
 // Hooks
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 
-// Stores
-import { useUmrahGuideStore } from "@/stores/umrahGuide";
-
 export default function MainScreen() {
-  const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   // Chosen on a card, lit on the day's line; choosing it again clears it.
@@ -52,8 +47,6 @@ export default function MainScreen() {
               <PrayerTimesState />
               <DaySimulatorButton />
             </Box>
-
-            {activeProgress && <UmrahResumeBanner />}
           </ScrollView>
         </Box>
       </SkyBackground>

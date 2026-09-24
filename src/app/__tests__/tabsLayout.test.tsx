@@ -163,17 +163,21 @@ describe("tabs layout", () => {
   const frameStyle = () =>
     Object.assign({}, ...[screen.getByTestId(TAB_BAR_PART.FRAME).props.style].flat(Infinity));
 
-  // Today's sky runs under the bar, as the design draws it.
-  it("floats the bar over Today", async () => {
+  // The sky runs under the bar on the screens that draw it, as the design does.
+  it.each([
+    ["Today", BACK_DESTINATION.HOME.href],
+    ["More", BACK_DESTINATION.TOOLS.href],
+  ])("floats the bar over %s", async (_, href) => {
     await renderTabs();
+    await act(() => router.navigate(href));
 
     expect(frameStyle()).toMatchObject({ position: "absolute" });
   });
 
-  // The other tabs keep the bar in the flow until they draw a sky of their own.
-  it("keeps the bar in the flow on another tab", async () => {
+  // A tab not yet on the sky keeps the bar in the flow.
+  it("keeps the bar in the flow on a tab without the sky", async () => {
     await renderTabs();
-    await act(() => router.navigate(BACK_DESTINATION.TOOLS.href));
+    await act(() => router.navigate(BACK_DESTINATION.ATHKAR.href));
 
     expect(frameStyle().position).not.toBe("absolute");
   });
