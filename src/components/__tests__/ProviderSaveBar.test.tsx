@@ -152,8 +152,21 @@ describe("ProviderSaveBar", () => {
     const tree = await render();
     await pressSave(tree);
 
-    expect(mockShowError).toHaveBeenCalledWith("providers.saveFailed");
+    expect(mockShowError).toHaveBeenCalledWith("providers.saveFailed", {
+      action: { label: "common.retry", onPress: expect.any(Function) },
+    });
     expect(tree.root.findAllByProps({ testID: "save-button" }).length).toBeGreaterThan(0);
+  });
+
+  it("saves again from the toast's retry", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("offline"));
+    const tree = await render();
+    await pressSave(tree);
+    const [, { action }] = mockShowError.mock.calls[0];
+
+    await act(() => action.onPress());
+
+    expect(mockMarkSettingsApplied).toHaveBeenCalledTimes(1);
   });
 
   it("leaves the settings unapplied when the refetch fails", async () => {

@@ -1,68 +1,22 @@
+import { TOAST_KIND, type ToastKind } from "@/constants/Toast";
 import { useToastStore } from "@/stores/toast";
-import i18n from "@/localization/i18n";
+import type { ToastContent } from "@/utils/toast";
 
-type ToastType = "success" | "error" | "warning" | "info" | "muted";
+type Options = Pick<ToastContent, "action" | "durationMs">;
 
-type Options = {
-  message: string;
-  type?: ToastType;
-  title?: string;
-  duration?: number;
-};
+const shower =
+  (kind: ToastKind) =>
+  (message: string, options: Options = {}) =>
+    useToastStore.getState().show({ kind, message, ...options });
 
-const show = ({ message, type = "info", title, duration = 3000 }: Options) => {
-  const { showToast } = useToastStore.getState();
-  showToast(message, type, title, duration);
-};
-
-const showSuccess = (message: string, title?: string, duration?: number) => {
-  show({
-    message,
-    type: "success",
-    title: title || i18n.t("common.success"),
-    duration,
-  });
-};
-
-const showError = (message: string, title?: string, duration?: number) => {
-  show({
-    message,
-    type: "error",
-    title: title || i18n.t("common.error"),
-    duration: duration || 5000,
-  });
-};
-
-const showWarning = (message: string, title?: string, duration?: number) => {
-  show({
-    message,
-    type: "warning",
-    title: title || i18n.t("common.warning"),
-    duration,
-  });
-};
-
-const showInfo = (message: string, title?: string, duration?: number) => {
-  show({
-    message,
-    type: "info",
-    title,
-    duration,
-  });
-};
-
-const hide = () => {
-  const { hideToast } = useToastStore.getState();
-  hideToast();
-};
-
+/** The one way to show a toast. A new toast replaces the one on screen. */
 export const MessageToast = {
-  show,
-  showSuccess,
-  showError,
-  showWarning,
-  showInfo,
-  hide,
+  showSuccess: shower(TOAST_KIND.SUCCESS),
+  showInfo: shower(TOAST_KIND.INFO),
+  showProgress: shower(TOAST_KIND.PROGRESS),
+  showWarning: shower(TOAST_KIND.WARNING),
+  showError: shower(TOAST_KIND.ERROR),
+  hide: () => useToastStore.getState().hide(),
 };
 
 export default MessageToast;
