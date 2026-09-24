@@ -171,68 +171,82 @@ const AudioSettings: FC = () => {
     );
   };
 
-  const handleDownloadPack = async (reciterId: string) => {
-    const reciter = reciters.find((r) => r.id === reciterId);
-    if (!reciter) return;
-
-    setIsDownloading(true);
-    setFailedIds([]);
-    const manifest = await reciterRegistry.fetchManifest(reciterId);
-    if (!manifest) {
-      setIsDownloading(false);
-      return;
+  // One download or retry at a time; toast actions bypass the hidden buttons.
+  const busy = useRef(false);
+  const exclusively = async (run: () => Promise<void>) => {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      await run();
+    } finally {
+      busy.current = false;
     }
-
-    setCachedManifest(manifest);
-    const total = Object.keys(manifest.files).length;
-    setDownloadTotal(total);
-    setDownloadCompleted(0);
-
-    const result = await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
-      setDownloadCompleted(completed);
-    });
-
-    if (result.failed > 0) {
-      setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
-        action: {
-          label: t("athkar.audio.retry"),
-          onPress: () => retryFailed(reciterId, manifest, result.failedIds),
-        },
-      });
-    }
-
-    setIsDownloading(false);
-    await refreshStorage();
   };
+
+  const handleDownloadPack = (reciterId: string) =>
+    exclusively(async () => {
+      const reciter = reciters.find((r) => r.id === reciterId);
+      if (!reciter) return;
+
+      setIsDownloading(true);
+      setFailedIds([]);
+      const manifest = await reciterRegistry.fetchManifest(reciterId);
+      if (!manifest) {
+        setIsDownloading(false);
+        return;
+      }
+
+      setCachedManifest(manifest);
+      const total = Object.keys(manifest.files).length;
+      setDownloadTotal(total);
+      setDownloadCompleted(0);
+
+      const result = await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
+        setDownloadCompleted(completed);
+      });
+
+      if (result.failed > 0) {
+        setFailedIds(result.failedIds);
+        MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
+          action: {
+            label: t("athkar.audio.retry"),
+            onPress: () => retryFailed(reciterId, manifest, result.failedIds),
+          },
+        });
+      }
+
+      setIsDownloading(false);
+      await refreshStorage();
+    });
 
   // Takes its inputs, so a toast's action retries what failed, not what a
   // stale render saw.
-  const retryFailed = async (reciterId: string, manifest: ReciterManifest, ids: string[]) => {
-    setIsRetrying(true);
-    setDownloadTotal(ids.length);
-    setDownloadCompleted(0);
+  const retryFailed = (reciterId: string, manifest: ReciterManifest, ids: string[]) =>
+    exclusively(async () => {
+      setIsRetrying(true);
+      setDownloadTotal(ids.length);
+      setDownloadCompleted(0);
 
-    const result = await audioDownloadManager.retryFailed(reciterId, manifest, ids, (completed) => {
-      setDownloadCompleted(completed);
-    });
-
-    if (result.failed > 0) {
-      setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
-        action: {
-          label: t("athkar.audio.retry"),
-          onPress: () => retryFailed(reciterId, manifest, result.failedIds),
-        },
+      const result = await audioDownloadManager.retryFailed(reciterId, manifest, ids, (done) => {
+        setDownloadCompleted(done);
       });
-    } else {
-      setFailedIds([]);
-      MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
-    }
 
-    setIsRetrying(false);
-    await refreshStorage();
-  };
+      if (result.failed > 0) {
+        setFailedIds(result.failedIds);
+        MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
+          action: {
+            label: t("athkar.audio.retry"),
+            onPress: () => retryFailed(reciterId, manifest, result.failedIds),
+          },
+        });
+      } else {
+        setFailedIds([]);
+        MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
+      }
+
+      setIsRetrying(false);
+      await refreshStorage();
+    });
 
   const handleRetryFailed = () => {
     if (!selectedReciterId || !cachedManifest || failedIds.length === 0) return;
