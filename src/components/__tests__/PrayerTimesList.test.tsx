@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
+import renderer, { act } from "react-test-renderer";
 
 import PrayerTimesList from "@/components/PrayerTimesList";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
@@ -69,10 +69,14 @@ describe("PrayerTimesList after Isha", () => {
     };
   });
 
-  it("marks Fajr next, at tomorrow's time", async () => {
-    await render(<PrayerTimesList />);
+  it("marks Fajr next, at tomorrow's time", () => {
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<PrayerTimesList />);
+    });
+    const rows = JSON.stringify(tree.toJSON());
 
-    expect(screen.getByText(`prayerTimes.fajr ${TOMORROW_FAJR.time} next`)).toBeTruthy();
-    expect(screen.queryAllByText(/ next$/)).toHaveLength(1);
+    expect(rows).toContain(`prayerTimes.fajr ${TOMORROW_FAJR.time} next`);
+    expect(rows.match(/ next"/g)).toHaveLength(1);
   });
 });
