@@ -7,7 +7,7 @@ import { HStack } from "@/components/ui/hstack";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Types
 type HapticType = "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error";

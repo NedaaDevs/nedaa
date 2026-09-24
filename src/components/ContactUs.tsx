@@ -18,7 +18,7 @@ import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
 
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 const ContactUs = () => {
   const { t } = useTranslation();

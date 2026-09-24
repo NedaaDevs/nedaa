@@ -8,7 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { MotiView } from "moti";
 import { Circle, G, Line, Svg } from "react-native-svg";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import {
   KAABA_VIEWBOX_HEIGHT,
