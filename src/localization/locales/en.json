@@ -171,6 +171,8 @@
   "a11y.today.showRemaining": "Shows the time remaining",
   "a11y.today.sinceSpoken": "{{duration}} since {{prayer}}",
   "a11y.today.untilSpoken": "{{duration}} until {{prayer}}",
+  "a11y.today.prayerCard": "{{prayer}}, {{time}}",
+  "a11y.today.prayerCardNext": "{{prayer}}, {{time}}, next prayer",
   "a11y.tools.continueHint": "Opens the Umrah guide where you left off",
   "a11y.tools.umrahGuideHint": "Step by step Umrah guide with Duas",
   "a11y.umrah.backToPrevious": "Go back",
