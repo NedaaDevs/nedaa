@@ -1,4 +1,5 @@
 import { parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 import { BRIGHTNESS, type Brightness } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
@@ -30,7 +31,17 @@ export type StoredDays = {
   tomorrow?: DayPrayerTimes | null;
 };
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+export const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The stored days that are present, in time order. */
+export const storedDayList = (days: StoredDays): DayPrayerTimes[] =>
+  [days.yesterday, days.today, days.tomorrow].filter((day): day is DayPrayerTimes => day != null);
+
+/** The stored day whose date `now` falls on, in that day's timezone. */
+export const storedDayOn = (now: Date, days: StoredDays): DayPrayerTimes | undefined =>
+  storedDayList(days).find(
+    (day) => Number(formatInTimeZone(now, day.timezone, "yyyyMMdd")) === day.date
+  );
 
 /**
  * Every stored boundary in time order, and the span the stored days cover: from the
@@ -38,9 +49,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  * the store does not hold.
  */
 const timeline = (days: StoredDays) => {
-  const stored = [days.yesterday, days.today, days.tomorrow].filter(
-    (day): day is DayPrayerTimes => day != null
-  );
+  const stored = storedDayList(days);
   if (stored.length === 0) return undefined;
   const boundaries = stored.flatMap(phaseStarts);
   const lastFajr = phaseStarts(stored[stored.length - 1])[0][1].getTime();
