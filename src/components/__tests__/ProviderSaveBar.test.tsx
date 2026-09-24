@@ -158,6 +158,24 @@ describe("ProviderSaveBar", () => {
     expect(tree.root.findAllByProps({ testID: "save-button" }).length).toBeGreaterThan(0);
   });
 
+  // The toast's retry must not start a second save beside one already running.
+  it("ignores the toast's retry while a save is running", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("offline"));
+    const tree = await render();
+    await pressSave(tree);
+    const [, { action }] = mockShowError.mock.calls[0];
+    mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
+    mockSaveSettings.mockClear();
+
+    await act(async () => {
+      void pressSave(tree);
+      await Promise.resolve();
+    });
+    await act(() => action.onPress());
+
+    expect(mockSaveSettings).toHaveBeenCalledTimes(1);
+  });
+
   it("saves again from the toast's retry", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("offline"));
     const tree = await render();
