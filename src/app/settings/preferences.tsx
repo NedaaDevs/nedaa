@@ -85,10 +85,8 @@ const PreferencesSettings = () => {
     setUse24HourTime,
     openingTab,
     setOpeningTab,
-    countdownEnabled,
-    setCountdownEnabled,
-    countdownMinutes,
-    setCountdownMinutes,
+    showSeconds,
+    setShowSeconds,
     iqamaCountUpEnabled,
     setIqamaCountUpEnabled,
     iqamaCountUpMinutes,
@@ -149,19 +147,11 @@ const PreferencesSettings = () => {
           />
 
           <SettingsToggleRow
-            titleKey="settings.preferences.countdown.title"
-            descriptionKey="settings.preferences.countdown.description"
-            value={countdownEnabled}
-            onValueChange={setCountdownEnabled}>
-            {countdownEnabled && (
-              <DurationPicker
-                value={countdownMinutes}
-                onChange={setCountdownMinutes}
-                options={[15, 30, 45, 60]}
-                labelKey="settings.preferences.countdown.minutes"
-              />
-            )}
-          </SettingsToggleRow>
+            titleKey="settings.preferences.seconds.title"
+            descriptionKey="settings.preferences.seconds.description"
+            value={showSeconds}
+            onValueChange={setShowSeconds}
+          />
 
           <SettingsToggleRow
             titleKey="settings.preferences.iqamaCountUp.title"
