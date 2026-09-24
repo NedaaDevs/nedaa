@@ -18,7 +18,7 @@ const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 const renderCard = () =>
   renderRouter(
     {
-      "(tabs)/tools": () => (
+      [BACK_DESTINATION.TOOLS.route]: () => (
         <>
           <UmrahContinue />
           <Pathname />
