@@ -43,6 +43,8 @@ type TextProps = TamaguiTextProps & {
   size?: TextSize;
   /** Tabular figures, so digits keep a fixed advance width in aligned columns. */
   numeric?: boolean;
+  /** A lone character, measured exactly: no room added on Android. */
+  glyph?: boolean;
   /** Line box as a ratio of the font size. Not `role`, which is accessibility. */
   typography?: TextRole;
   /** Fixed multiplier for this instance, replacing the app preset (previews, share captures). */
@@ -76,6 +78,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       highlight,
       size = "md",
       numeric,
+      glyph,
       scaleOverride,
       style,
       ...props
@@ -108,7 +111,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         allowFontScaling={false}
         // Android mismeasures Arabic glyph widths; "simple" break strategy
         // uses a more generous width calculation in StaticLayout.
-        {...(IS_ANDROID && { textBreakStrategy: "simple", paddingEnd: 8 })}
+        {...(IS_ANDROID && !glyph && { textBreakStrategy: "simple", paddingEnd: 8 })}
         style={[
           !IS_ANDROID && i18n.language === "ar" && { writingDirection: "rtl" as const },
           underline && { textDecorationLine: "underline" as const },
