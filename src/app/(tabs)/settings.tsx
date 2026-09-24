@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { AccessibilityInfo, AppState, Linking, Platform, ScrollView, Share } from "react-native";
+import { AppState, Linking, Platform, ScrollView, Share } from "react-native";
 import Animated, {
   SharedValue,
   useSharedValue,
@@ -69,6 +69,7 @@ import { STORE_LINKS } from "@/constants/StoreLinks";
 
 // Services
 import { PlatformType } from "@/enums/app";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const THANK_YOU_DURATION = 2000;
 const FADE_MS = 200;
@@ -85,7 +86,7 @@ const SettingsScreen = () => {
 
   const [rateThanked, setRateThanked] = useState(false);
   const [shareThanked, setShareThanked] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReducedMotion();
   const reduceMotionRef = useRef(false);
   // Mirror into a ref for the animation callbacks; writing in an effect (not
   // during render) keeps it React-compiler safe.
@@ -109,7 +110,6 @@ const SettingsScreen = () => {
   const shareHeartFillStyle = useAnimatedStyle(() => ({ opacity: shareHeartFill.get() }));
 
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
     const timers = timersRef;
     return () => {
       timers.current.forEach(clearTimeout);
