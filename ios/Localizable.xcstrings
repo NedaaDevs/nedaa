@@ -3008,7 +3008,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "افتح نداء"
+            "value": "افتح نِداء"
           }
         },
         "en": {
@@ -3020,7 +3020,7 @@
         "ur": {
           "stringUnit": {
             "state": "translated",
-            "value": "نداء کھولیں"
+            "value": "نِداء کھولیں"
           }
         }
       }
@@ -3030,7 +3030,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "افتح نداء بسرعة من شاشة القفل."
+            "value": "افتح نِداء بسرعة من شاشة القفل."
           }
         },
         "en": {
@@ -3042,7 +3042,7 @@
         "ur": {
           "stringUnit": {
             "state": "translated",
-            "value": "لاک اسکرین سے نداء فوری طور پر کھولیں۔"
+            "value": "لاک اسکرین سے نِداء فوری طور پر کھولیں۔"
           }
         }
       }
