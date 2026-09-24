@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform, ActivityIndicator, TextInput, Alert } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import * as DocumentPicker from "expo-document-picker";
 
 // Components

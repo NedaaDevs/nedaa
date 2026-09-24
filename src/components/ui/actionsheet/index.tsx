@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { styled, View, Text as TamaguiText, useTheme } from "tamagui";
+import { styled, View, Text as TamaguiText } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { useTextScale } from "@/hooks/useTextScale";
 import type { GetProps } from "tamagui";
 import { BackHandler, FlatList, Platform } from "react-native";
