@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { useTranslation } from "react-i18next";
 import {
   type LucideIcon,

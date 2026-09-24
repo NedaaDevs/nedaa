@@ -9,7 +9,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Components
 import { Text } from "@/components/ui/text";

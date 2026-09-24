@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { MotiView } from "moti";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
