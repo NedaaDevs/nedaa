@@ -470,7 +470,7 @@ const config = createTamagui({
     disableSSR: true,
     onlyAllowShorthands: false,
     defaultFont: "body",
-    fastSchemeChange: true,
+    fastSchemeChange: false,
     styleCompat: "react-native",
   },
 });
