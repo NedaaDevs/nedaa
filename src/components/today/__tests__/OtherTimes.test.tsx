@@ -10,6 +10,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
+import { controlProblems } from "@/test-helpers/controls";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 
@@ -60,5 +61,11 @@ describe("OtherTimes", () => {
       });
       expect(screen.getByLabelText(`${i18n.t(OTHER_TIME_LABEL_KEY[name])}, ${time}`)).toBeTruthy();
     }
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderWithTheme(<OtherTimes />);
+
+    expect(controlProblems()).toEqual([]);
   });
 });

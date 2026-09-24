@@ -5,6 +5,7 @@ import { Text } from "react-native";
 import { usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
+import { controlProblems } from "@/test-helpers/controls";
 
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -110,5 +111,11 @@ describe("More", () => {
     expect(
       screen.getByRole("button", { name: new RegExp(`^${i18n.t("tools.quranListen.title")}, `) })
     ).toBeTruthy();
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderMore();
+
+    expect(controlProblems()).toEqual([]);
   });
 });

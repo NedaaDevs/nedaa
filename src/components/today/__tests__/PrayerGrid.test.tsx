@@ -10,6 +10,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
+import { controlProblems } from "@/test-helpers/controls";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 
@@ -122,5 +123,11 @@ describe("PrayerGrid", () => {
     await renderWithTheme(<PrayerGrid onSelect={jest.fn()} />);
 
     expect(screen.toJSON()).toBeNull();
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderAt("2026-09-23", "14:02").rendered;
+
+    expect(controlProblems()).toEqual([]);
   });
 });
