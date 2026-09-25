@@ -1,3 +1,5 @@
+import { readdirSync } from "node:fs";
+import { join, parse } from "node:path";
 import { useEffect } from "react";
 import { Text, useColorScheme } from "react-native";
 import { router, Slot, usePathname } from "expo-router";
@@ -6,11 +8,11 @@ import { act, fireEvent, renderRouter, screen } from "expo-router/testing-librar
 
 import TabsLayout, { TAB_BAR_PART } from "@/app/(tabs)/_layout";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { AppLocale, AppMode } from "@/enums/app";
+import { AppLocale, AppMode, HiddenTab, OpeningTab } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAppStore } from "@/stores/app";
-import { normalizeRoutePath } from "@/test-helpers/routeTree";
+import { normalizeRoutePath, REPO_ROOT } from "@/test-helpers/routeTree";
 import config from "../../../tamagui.config";
 import { isDarkMode } from "@/utils/appearance";
 import { TamaguiProvider } from "tamagui";
@@ -21,6 +23,9 @@ import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 // The players reach native audio modules that jest does not load; the bar's frame is what matters.
 jest.mock("@/components/athkar/MiniPlayerBar", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/components/quran/listen/QuranMiniPlayer", () => ({ QuranMiniPlayer: () => null }));
+
+const TABS_GROUP = "(tabs)";
+const LAYOUT = "_layout";
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
@@ -157,6 +162,26 @@ describe("tabs layout", () => {
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       normalizeRoutePath(BACK_DESTINATION.TOOLS.href)
     );
+  });
+
+  it("reaches every tab the bar hides by link", async () => {
+    await renderTabs();
+
+    for (const name of Object.values(HiddenTab)) {
+      await act(() => router.navigate(BACK_DESTINATION.TOOLS.href));
+      await act(() => router.push(`/${name}`));
+
+      expect(screen.getByTestId("pathname")).toHaveTextContent(`/${name}`);
+    }
+  });
+
+  it("declares every tab route file", () => {
+    const files = readdirSync(join(REPO_ROOT, "src", "app", TABS_GROUP))
+      .map((file) => parse(file).name)
+      .filter((name) => name !== LAYOUT);
+    const declared = [...Object.values(OpeningTab), ...Object.values(HiddenTab)];
+
+    expect(files.sort()).toEqual(declared.sort());
   });
 
   // The reader is full screen; the tabs would cover the page.
