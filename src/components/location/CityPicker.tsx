@@ -118,7 +118,7 @@ const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
             <Box paddingTop="$2">
               <CitiesPackRow />
             </Box>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           hasQuery && !isSearching ? (
@@ -127,7 +127,7 @@ const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
                 {t("location.picker.noResults")}
               </Text>
             </Box>
-          ) : null
+          ) : undefined
         }
         ListFooterComponent={
           <VStack gap="$3" paddingVertical="$4">

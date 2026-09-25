@@ -8,6 +8,7 @@ import { useDebugModeStore } from "@/stores/debugMode";
 import * as Sharing from "expo-sharing";
 import { AppState, Platform } from "react-native";
 
+import { APP_STATE } from "@/constants/AppState";
 import { sessionMarker, pruneByAge, pruneGlobalBySize, buildBundle } from "@/utils/logBundle";
 
 // Logging convention (keep shared diagnostic bundles signal, not noise):
@@ -269,7 +270,7 @@ class DomainLogger {
 }
 
 AppState.addEventListener("change", (state) => {
-  if (state === "background") {
+  if (state === APP_STATE.BACKGROUND) {
     AppLogger.flushAll();
     AppLogger.prune();
   }

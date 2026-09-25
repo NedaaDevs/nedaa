@@ -1,5 +1,5 @@
 import { screen } from "@testing-library/react-native";
-import { StyleSheet, type Insets, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, type Insets, type ViewProps } from "react-native";
 
 /** A rendered host element, as RNTL's JSON gives it. */
 type HostElement = NonNullable<ReturnType<typeof screen.toJSON>>;
@@ -19,7 +19,7 @@ const controlsIn = (node: HostElement | string | null, out: HostElement[] = []) 
 };
 
 /** The drawn height plus any invisible touch area above and below it. */
-const touchHeightOf = (style: StyleProp<ViewStyle>, hitSlop: Insets | number | undefined) => {
+const touchHeightOf = (style: ViewProps["style"], hitSlop: Insets | number | undefined) => {
   const { minHeight, height } = StyleSheet.flatten(style) ?? {};
   const drawn = Math.max(Number(minHeight) || 0, Number(height) || 0);
   const slop =
