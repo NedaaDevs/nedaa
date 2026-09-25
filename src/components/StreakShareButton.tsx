@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { View } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,7 @@ const StreakShareButton = ({ variant, count }: StreakShareButtonProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<ComponentRef<typeof View>>(null);
 
   const onShare = async () => {
     if (busy) return;
