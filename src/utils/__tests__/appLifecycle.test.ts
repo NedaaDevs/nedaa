@@ -46,7 +46,7 @@ jest.mock("expo-file-system", () => ({
     textSync() {
       return mockStored ?? "";
     }
-    write(contents: string) {
+    writeSync(contents: string) {
       mockWritten = contents;
       mockStored = contents;
     }

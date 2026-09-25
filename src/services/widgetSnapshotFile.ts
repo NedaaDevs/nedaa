@@ -3,6 +3,7 @@ import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { Directory, File, Paths } from "expo-file-system";
 
 import { dateToInt } from "@/utils/date";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 import type { AthkarWidgetSnapshotData } from "@/services/athkar-db";
 import type { WidgetImportantDay } from "@/services/widgetPayloads";
@@ -93,7 +94,7 @@ export const writeSnapshotFile = async (snapshot: WidgetSnapshot): Promise<void>
   const tmp = new File(dir, SNAPSHOT_TMP);
   if (tmp.exists) tmp.delete();
   tmp.create();
-  tmp.write(JSON.stringify(snapshot));
+  writeFileSync(tmp, JSON.stringify(snapshot));
   const target = new File(dir, SNAPSHOT_FILE);
   if (target.exists) target.delete();
   await tmp.move(target);
