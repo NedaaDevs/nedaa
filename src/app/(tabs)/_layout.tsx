@@ -1,8 +1,11 @@
 import { useContext, useEffect } from "react";
-import { Tabs, router, type Href } from "expo-router";
+import { router, type Href } from "expo-router";
+import {
+  Tabs,
+  BottomTabBarHeightCallbackContext,
+  type BottomTabBarProps,
+} from "expo-router/js-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { BottomTabBarProps } from "expo-router/js-tabs";
-import { BottomTabBarHeightCallbackContext } from "expo-router/build/react-navigation/bottom-tabs/utils/BottomTabBarHeightCallbackContext";
 import { useTranslation } from "react-i18next";
 
 // Stores
@@ -12,8 +15,9 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 
 // Enums
-import { OpeningTab, type OpeningTabValue } from "@/enums/app";
+import { HiddenTab, OpeningTab, type OpeningTabValue } from "@/enums/app";
 import { isSkyTab } from "@/constants/SkyTabs";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 // Icons
 import { AlarmClock, BookOpen, Ellipsis, House } from "lucide-react-native";
@@ -28,11 +32,13 @@ import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
 
-const OPENING_TAB_ROUTE: Record<Exclude<OpeningTabValue, "index">, Href> = {
-  [OpeningTab.ATHKAR]: "/(tabs)/athkar",
-  [OpeningTab.QURAN]: "/(tabs)/quran",
-  [OpeningTab.TOOLS]: "/(tabs)/tools",
-};
+/** Where each bar tab lives; the opening-tab preference lands there too. */
+const TAB_HREF = {
+  [OpeningTab.HOME]: BACK_DESTINATION.HOME.href,
+  [OpeningTab.QURAN]: BACK_DESTINATION.QURAN.href,
+  [OpeningTab.ATHKAR]: BACK_DESTINATION.ATHKAR.href,
+  [OpeningTab.TOOLS]: BACK_DESTINATION.TOOLS.href,
+} as const satisfies Record<OpeningTabValue, Href>;
 
 /** The bar's tabs, in the order it shows them. */
 const TAB_ITEMS = [
@@ -44,12 +50,13 @@ const TAB_ITEMS = [
 
 export const TAB_BAR_PART = { FRAME: "tab-bar-frame" } as const;
 
-type AppTabBarProps = BottomTabBarProps & {
+// Reads only the tab state; a press switches tabs by href through the router.
+type AppTabBarProps = Pick<BottomTabBarProps, "state"> & {
   tabs: readonly (typeof TAB_ITEMS)[number][];
   readerActive: boolean;
 };
 
-const AppTabBar = ({ state, navigation, tabs, readerActive }: AppTabBarProps) => {
+const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   // The tab view gives each screen this height, so a screen under a floating bar
@@ -95,16 +102,8 @@ const AppTabBar = ({ state, navigation, tabs, readerActive }: AppTabBarProps) =>
                 icon={tab.icon}
                 selected={selected}
                 onPress={() => {
-                  const event = navigation.emit({
-                    type: "tabPress",
-                    target: route.key,
-                    canPreventDefault: true,
-                  });
-                  if (!selected && !event.defaultPrevented) {
-                    navigation.navigate(route.name, route.params);
-                  }
+                  if (!selected) router.navigate(TAB_HREF[tab.name]);
                 }}
-                onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
               />
             );
           })}
@@ -143,7 +142,7 @@ const TabsLayout = () => {
       // supports it. Fall back to home rather than a hidden route.
       if (tab === OpeningTab.ATHKAR && !isAthkarSupported(locale)) return;
 
-      router.replace(OPENING_TAB_ROUTE[tab]);
+      router.replace(TAB_HREF[tab]);
     };
 
     if (usePreferencesStore.persist.hasHydrated()) {
@@ -153,15 +152,18 @@ const TabsLayout = () => {
     return usePreferencesStore.persist.onFinishHydration(apply);
   }, [locale]);
 
-  const renderTabBar = (props: BottomTabBarProps) => (
-    <AppTabBar {...props} tabs={tabs} readerActive={readerActive} />
+  const renderTabBar = ({ state }: BottomTabBarProps) => (
+    <AppTabBar state={state} tabs={tabs} readerActive={readerActive} />
   );
 
-  // Other tab routes register from their files; only the bar shows tabs.
+  // A tab route renders only when declared; the bar shows TAB_ITEMS alone.
   return (
     <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
       {TAB_ITEMS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{ title: t(tab.title) }} />
+      ))}
+      {Object.values(HiddenTab).map((name) => (
+        <Tabs.Screen key={name} name={name} />
       ))}
     </Tabs>
   );
