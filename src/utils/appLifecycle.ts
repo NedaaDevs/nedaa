@@ -5,6 +5,7 @@ import { APP_STATE } from "@/constants/AppState";
 import { AppLogger } from "@/utils/appLogger";
 import { appVersionLabel } from "@/utils/appVersion";
 import { readPendingReport } from "@/utils/crashHandler";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 // Lifecycle breadcrumbs for diagnostic bundles: launch, foreground/background
 // transitions, and version updates go to the `app` domain — the timeline that
@@ -41,7 +42,7 @@ const writeSessionState = (state: SessionState["state"], version: string): void 
     if (!dir.exists) dir.create({ intermediates: true });
     const f = stateFile();
     if (!f.exists) f.create();
-    f.write(JSON.stringify({ state, version } satisfies SessionState));
+    writeFileSync(f, JSON.stringify({ state, version } satisfies SessionState));
   } catch {
     // best-effort — breadcrumbs must never break startup
   }
