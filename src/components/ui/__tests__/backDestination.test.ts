@@ -1,6 +1,7 @@
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import {
   backDestination,
+  chainFor,
   type NavigatorRoute,
   type NavigatorState,
 } from "@/components/ui/screen-header/backDestination";
@@ -102,5 +103,27 @@ describe("backDestination", () => {
     const app = stack("app", [alarm]);
 
     expect(backDestination([app, container(app)], alarm.key)).toBeUndefined();
+  });
+});
+
+describe("chainFor", () => {
+  it("finds the chain to a key nested in a mounted tree", () => {
+    const ihram = route("ihram");
+    const prepare = stack("prepare", [route("index"), ihram]);
+    const umrah = stack("umrah", [route("index"), route("prepare", prepare)]);
+    const app = stack("app", [route("(tabs)", tabs([home, tools], 1)), route("umrah", umrah)]);
+    const root = container(app);
+
+    expect(chainFor(root, app, ihram.key)).toEqual([prepare, umrah, app, root]);
+  });
+
+  // A fresh navigator's holder has no state yet, so its key is nowhere in root.
+  it("falls back to its own state and the focused chain when the key's navigator is not in the tree yet", () => {
+    const ihram = route("ihram");
+    const own = stack("prepare", [ihram]);
+    const app = stack("app", [route("(tabs)", tabs([home, tools], 1)), route("umrah")]);
+    const root = container(app);
+
+    expect(chainFor(root, own, ihram.key)).toEqual([own, app, root]);
   });
 });
