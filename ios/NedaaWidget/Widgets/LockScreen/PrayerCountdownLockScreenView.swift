@@ -21,7 +21,7 @@ struct PrayerCountdownConfigurationIntent: WidgetConfigurationIntent {
 
 // MARK: - Timeline Entry
 
-struct PrayerCountdownEntry: TimelineEntry {
+struct PrayerCountdownEntry: TimelineEntry, RedactableEntry {
     let date: Date
     let nextPrayer: PrayerData?
     let previousPrayer: PrayerData?
@@ -29,9 +29,11 @@ struct PrayerCountdownEntry: TimelineEntry {
     let showSunrise: Bool
     let isRamadan: Bool
     let showRamadanLabels: Bool
+    var isUnavailable = false
 
     var relevance: TimelineEntryRelevance? {
-        prayerTimelineRelevance(
+        guard !isUnavailable else { return nil }
+        return prayerTimelineRelevance(
             nextPrayerDate: nextPrayer?.date,
             previousPrayerDate: previousPrayer?.date,
             currentDate: date,
@@ -84,7 +86,7 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
         let showTimer = configuration.showTimer
 
         guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
-            let fallback = placeholder(in: context)
+            let fallback = placeholder(in: context).markedUnavailable
             return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
         }
         let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
@@ -244,6 +246,7 @@ struct PrayerCountdownLockScreenWidget: Widget {
             provider: CountdownLockScreenViewProvider()
         ) { entry in
             PrayerCountdownLockScreenView(entry: entry)
+                .unavailable(entry.isUnavailable)
         }
         .configurationDisplayName(NSLocalizedString("nextPrayerLockScreenWidgetTitle", comment: "Lock screen widget title"))
         .description(NSLocalizedString("nextPrayerLockScreenWidgetDesc", comment: "Lock screen widget description"))
@@ -273,7 +276,8 @@ struct InlinePrayerProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PrayerCountdownEntry) -> Void) {
-        completion(placeholder(in: context))
+        let sample = placeholder(in: context)
+        completion(context.isPreview ? sample : sample.markedUnavailable)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerCountdownEntry>) -> Void) {
@@ -281,7 +285,7 @@ struct InlinePrayerProvider: TimelineProvider {
         let currentDate = Date()
 
         guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false) else {
-            let fallback = placeholder(in: context)
+            let fallback = placeholder(in: context).markedUnavailable
             completion(Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600))))
             return
         }
@@ -389,6 +393,7 @@ struct InlinePrayerWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: InlinePrayerProvider()) { entry in
             InlinePrayerView(entry: entry)
+                .unavailable(entry.isUnavailable)
                 .widgetURL(URL(string: "myapp:///"))
         }
         .configurationDisplayName(NSLocalizedString("inlinePrayerWidgetTitle", comment: ""))

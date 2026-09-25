@@ -25,7 +25,8 @@ struct CombinedPrayerProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> AllPrayersEntry {
-        placeholder(in: context)
+        let sample = placeholder(in: context)
+        return context.isPreview ? sample : sample.markedUnavailable
     }
 
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
@@ -35,7 +36,7 @@ struct CombinedPrayerProvider: AppIntentTimelineProvider {
         let showTimer = configuration.showTimer
 
         guard let allTodayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
-            let fallback = placeholder(in: context)
+            let fallback = placeholder(in: context).markedUnavailable
             return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
         }
         let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
@@ -192,6 +193,7 @@ struct AllPrayersCombinedWidget: Widget {
             provider: CombinedPrayerProvider()
         ) { entry in
             CombinedPrayerView(entry: entry)
+                .unavailable(entry.isUnavailable)
                 .widgetURL(URL(string: "myapp:///"))
         }
         .configurationDisplayName(NSLocalizedString("allPrayersCombinedWidgetTitle", comment: ""))

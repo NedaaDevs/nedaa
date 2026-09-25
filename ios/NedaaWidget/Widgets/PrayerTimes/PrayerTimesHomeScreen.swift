@@ -9,6 +9,7 @@ struct PrayerTimesHomeScreen: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: PrayerTimesConfigurationIntent.self, provider: PrayerHomeScreenProvider()) { entry in
             PrayerTimesHomeScreenEntryView(entry: entry)
+                .unavailable(entry.isUnavailable)
                 .standByAware()
                 .containerBackground(for: .widget) {
                     WidgetBackgroundView()

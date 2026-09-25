@@ -62,7 +62,7 @@ extension LocalizedStringResource {
 
 // MARK: - Timeline Entry
 
-struct PrayerHomeScreenEntry: TimelineEntry {
+struct PrayerHomeScreenEntry: TimelineEntry, RedactableEntry {
     let date: Date
     let previousPrayer: PrayerData?
     let nextPrayer: PrayerData?
@@ -71,9 +71,11 @@ struct PrayerHomeScreenEntry: TimelineEntry {
     let showSunrise: Bool
     let isRamadan: Bool
     let showRamadanLabels: Bool
+    var isUnavailable = false
 
     var relevance: TimelineEntryRelevance? {
-        prayerTimelineRelevance(
+        guard !isUnavailable else { return nil }
+        return prayerTimelineRelevance(
             nextPrayerDate: nextPrayer?.date,
             previousPrayerDate: previousPrayer?.date,
             currentDate: date,
@@ -141,7 +143,9 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: PrayerTimesConfigurationIntent, in context: Context) async -> PrayerHomeScreenEntry {
+        let sample = PrayerHomeScreenEntry.preview
         return createEntry(for: Date(), configuration: configuration)
+            ?? (context.isPreview ? sample : sample.markedUnavailable)
     }
 
     func timeline(for configuration: PrayerTimesConfigurationIntent, in context: Context) async -> Timeline<PrayerHomeScreenEntry> {
@@ -151,7 +155,7 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
         let showTimer = configuration.showTimer
 
         guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
-            let fallback = PrayerHomeScreenEntry.preview
+            let fallback = PrayerHomeScreenEntry.preview.markedUnavailable
             return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
         }
         let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
@@ -202,13 +206,12 @@ struct PrayerHomeScreenProvider: AppIntentTimelineProvider {
         return Timeline(entries: entries, policy: .atEnd)
     }
 
-    private func createEntry(for date: Date, configuration: PrayerTimesConfigurationIntent) -> PrayerHomeScreenEntry {
+    private func createEntry(for date: Date, configuration: PrayerTimesConfigurationIntent) -> PrayerHomeScreenEntry? {
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
         
         guard let prayerTimes = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
-            // Fallback to default times if database fails
-            return PrayerHomeScreenEntry.preview
+            return nil
         }
 
         let prayers = prayerTimes

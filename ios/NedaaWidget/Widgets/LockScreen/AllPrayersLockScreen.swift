@@ -21,7 +21,7 @@ struct AllPrayersConfigurationIntent: WidgetConfigurationIntent {
 
 // MARK: - Timeline Entry
 
-struct AllPrayersEntry: TimelineEntry {
+struct AllPrayersEntry: TimelineEntry, RedactableEntry {
     let date: Date
     let allPrayers: [PrayerData]?
     let nextPrayer: PrayerData?
@@ -30,9 +30,11 @@ struct AllPrayersEntry: TimelineEntry {
     let showSunrise: Bool
     let isRamadan: Bool
     let showRamadanLabels: Bool
+    var isUnavailable = false
 
     var relevance: TimelineEntryRelevance? {
-        prayerTimelineRelevance(
+        guard !isUnavailable else { return nil }
+        return prayerTimelineRelevance(
             nextPrayerDate: nextPrayer?.date,
             previousPrayerDate: previousPrayer?.date,
             currentDate: date,
@@ -83,7 +85,7 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> AllPrayersEntry {
         let currentDate = Date()
-        return AllPrayersEntry(
+        let sample = AllPrayersEntry(
             date: currentDate,
             allPrayers: isFirstHalf ? morningPrayers : eveningPrayers,
             nextPrayer: PrayerData(name: "Fajr", date: currentDate),
@@ -93,6 +95,7 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
             isRamadan: PrayerTimelineUtils.isRamadan(currentDate),
             showRamadanLabels: configuration.showRamadanLabels
         )
+        return context.isPreview ? sample : sample.markedUnavailable
     }
     
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
@@ -108,7 +111,7 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
         let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
 
         guard let allTodayPrayers = todaysPrayers else {
-            let fallback = placeholder(in: context)
+            let fallback = placeholder(in: context).markedUnavailable
             return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
         }
 
@@ -237,6 +240,7 @@ struct MorningPrayerWidget: Widget {
             provider: SplitPrayerProvider(isFirstHalf: true)
         ) { entry in
             PrayerView(entry: entry)
+                .unavailable(entry.isUnavailable)
                 .widgetURL(URL(string: "myapp:///"))
         }
         .configurationDisplayName(
@@ -259,6 +263,7 @@ struct EveningPrayerWidget: Widget {
             provider: SplitPrayerProvider(isFirstHalf: false)
         ) { entry in
             PrayerView(entry: entry)
+                .unavailable(entry.isUnavailable)
                 .widgetURL(URL(string: "myapp:///"))
         }
         .configurationDisplayName(
