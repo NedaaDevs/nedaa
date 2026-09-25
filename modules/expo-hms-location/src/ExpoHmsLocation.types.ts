@@ -68,6 +68,16 @@ export type HmsLocationErrorEvent = {
   reason: string;
 };
 
+export const HMS_LOCATION_EVENT = {
+  UPDATE: "onLocationUpdate",
+  ERROR: "onLocationError",
+} as const;
+
+export type HmsLocationEvents = {
+  [HMS_LOCATION_EVENT.UPDATE]: (event: HmsLocationUpdateEvent) => void;
+  [HMS_LOCATION_EVENT.ERROR]: (event: HmsLocationErrorEvent) => void;
+};
+
 export type ExpoHmsLocationNativeModule = {
   getForegroundPermissionsAsync(): Promise<HmsLocationPermissionResponse>;
   requestForegroundPermissionsAsync(): Promise<HmsLocationPermissionResponse>;
