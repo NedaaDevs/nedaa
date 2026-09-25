@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView } from "react-native";
-import { useIsFocused } from "expo-router/react-navigation";
+import { useIsFocused } from "expo-router";
 import { Info, LocateFixed } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
