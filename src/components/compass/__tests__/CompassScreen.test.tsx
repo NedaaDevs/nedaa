@@ -25,7 +25,8 @@ const mockHapticSelection = jest.fn();
 const mockHapticLight = jest.fn();
 const mockHapticMedium = jest.fn();
 
-jest.mock("expo-router/react-navigation", () => ({
+jest.mock("expo-router", () => ({
+  ...jest.requireActual("expo-router"),
   useIsFocused: () => true,
 }));
 

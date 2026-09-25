@@ -37,6 +37,13 @@ export const OpeningTab = {
 
 export type OpeningTabValue = (typeof OpeningTab)[keyof typeof OpeningTab];
 
+/** Tab routes the bar never shows; links and back controls reach them. */
+export const HiddenTab = {
+  COMPASS: "compass",
+  QADA: "qada",
+  SETTINGS: "settings",
+} as const;
+
 /** In-app text size preset. Values are storage keys — never rename persisted ones. */
 export const TextSize = {
   DEFAULT: "default",
