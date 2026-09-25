@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+} from "react";
 import {
   Animated,
   Easing,
@@ -141,7 +148,7 @@ export const SkyBackground = ({ children }: Props) => {
   const [boxes, setBoxes] = useState<Record<string, WindowRect>>({});
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [epoch, setEpoch] = useState(0);
-  const canvas = useRef<View>(null);
+  const canvas = useRef<ComponentRef<typeof View>>(null);
   // Stable, and a no-op for an unchanged box, so measuring never loops a render.
   const [report] = useState(
     () => (id: string, box: WindowRect | null) =>

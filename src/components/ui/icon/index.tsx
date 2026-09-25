@@ -1,5 +1,5 @@
 import React from "react";
-import { View as RNView, type StyleProp, type ViewStyle } from "react-native";
+import { View as RNView, type ViewProps } from "react-native";
 import { Mail } from "lucide-react-native";
 
 import { ICON_SIZES, resolveIconSize, type IconSize } from "@/components/ui/icon/sizing";
@@ -10,7 +10,7 @@ type IconProps = {
   size?: IconSize | number;
   color?: string;
   strokeWidth?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
   accessibilityLabel?: string;
 };
 
