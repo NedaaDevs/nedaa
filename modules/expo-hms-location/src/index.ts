@@ -1,52 +1,43 @@
 import {
-  EventEmitter,
   requireOptionalNativeModule,
-  type EventEmitter as EventEmitterType,
+  type NativeModule as ExpoNativeModule,
 } from "expo-modules-core";
 
-import type {
-  ExpoHmsLocationNativeModule,
-  HmsGeocodedAddress,
-  HmsLocationCallback,
-  HmsLocationErrorCallback,
-  HmsLocationErrorEvent,
-  HmsLocationObject,
-  HmsLocationOptions,
-  HmsLocationPermissionResponse,
-  HmsLocationSubscription,
-  HmsLocationUpdateEvent,
-  HmsReverseGeocodeInput,
+import {
+  HMS_LOCATION_EVENT,
+  type ExpoHmsLocationNativeModule,
+  type HmsGeocodedAddress,
+  type HmsLocationCallback,
+  type HmsLocationErrorCallback,
+  type HmsLocationEvents,
+  type HmsLocationObject,
+  type HmsLocationOptions,
+  type HmsLocationPermissionResponse,
+  type HmsLocationSubscription,
+  type HmsReverseGeocodeInput,
 } from "./ExpoHmsLocation.types";
 
-type HmsLocationEvents = {
-  onLocationUpdate: (event: HmsLocationUpdateEvent) => void;
-  onLocationError: (event: HmsLocationErrorEvent) => void;
-};
-
-type UntypedEventEmitter = InstanceType<EventEmitterType>;
-type HmsLocationEventEmitter = InstanceType<EventEmitterType<HmsLocationEvents>>;
-type HmsLocationNativeModule = ExpoHmsLocationNativeModule & HmsLocationEventEmitter;
+// The exported NativeModule type is the constructor and drops the events map.
+type HmsLocationNativeModule = ExpoHmsLocationNativeModule &
+  InstanceType<typeof ExpoNativeModule<HmsLocationEvents>>;
 
 export type {
   HmsGeocodedAddress,
   HmsLocationCoordinates,
+  HmsLocationEvents,
   HmsLocationObject,
   HmsLocationOptions,
   HmsLocationPermissionResponse,
   HmsLocationSubscription,
   HmsReverseGeocodeInput,
 } from "./ExpoHmsLocation.types";
+export { HMS_LOCATION_EVENT } from "./ExpoHmsLocation.types";
 
 const NativeModule = requireOptionalNativeModule<HmsLocationNativeModule>("ExpoHmsLocation");
-const emitter = NativeModule
-  ? (new EventEmitter(
-      NativeModule as unknown as UntypedEventEmitter
-    ) as unknown as HmsLocationEventEmitter)
-  : null;
 
 let nextWatchId = 0;
 
-const requireHmsLocation = (): ExpoHmsLocationNativeModule => {
+const requireHmsLocation = (): HmsLocationNativeModule => {
   if (!NativeModule) {
     throw new Error("Huawei Location Kit is unavailable in this build");
   }
@@ -82,23 +73,13 @@ export const ExpoHmsLocationModule = {
     errorCallback?: HmsLocationErrorCallback
   ): Promise<HmsLocationSubscription> {
     const nativeModule = requireHmsLocation();
-    if (!emitter) {
-      throw new Error("Huawei Location Kit event emitter is unavailable");
-    }
-
     const watchId = ++nextWatchId;
-    const locationSubscription = emitter.addListener(
-      "onLocationUpdate",
-      (event: HmsLocationUpdateEvent) => {
-        if (event.watchId === watchId) callback(event.location);
-      }
-    );
-    const errorSubscription = emitter.addListener(
-      "onLocationError",
-      (event: HmsLocationErrorEvent) => {
-        if (event.watchId === watchId) errorCallback?.(event.reason);
-      }
-    );
+    const locationSubscription = nativeModule.addListener(HMS_LOCATION_EVENT.UPDATE, (event) => {
+      if (event.watchId === watchId) callback(event.location);
+    });
+    const errorSubscription = nativeModule.addListener(HMS_LOCATION_EVENT.ERROR, (event) => {
+      if (event.watchId === watchId) errorCallback?.(event.reason);
+    });
 
     try {
       await nativeModule.startWatchingAsync(watchId, options);
