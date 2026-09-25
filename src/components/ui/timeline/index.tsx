@@ -12,6 +12,7 @@ import { Icon, type IconProps } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
+import { LOOP_FOREVER } from "@/constants/Motion";
 import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { spreadLabels } from "@/utils/spreadLabels";
@@ -123,7 +124,7 @@ const Fill = ({ length, colour }: { length: number; colour: string }) => {
         }),
         Animated.delay(TIMELINE.restMs),
       ]),
-      { resetBeforeIteration: true }
+      { iterations: LOOP_FOREVER, resetBeforeIteration: true }
     );
     loop.start();
     return () => loop.stop();
