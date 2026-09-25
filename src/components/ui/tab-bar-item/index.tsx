@@ -11,10 +11,9 @@ type Props = {
   icon: IconProps["as"];
   selected: boolean;
   onPress: () => void;
-  onLongPress?: () => void;
 };
 
-export const TabBarItem = ({ label, icon, selected, onPress, onLongPress }: Props) => {
+export const TabBarItem = ({ label, icon, selected, onPress }: Props) => {
   const colour = selected ? "$accent" : "$muted";
   return (
     <Pressable
@@ -24,7 +23,6 @@ export const TabBarItem = ({ label, icon, selected, onPress, onLongPress }: Prop
       accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
-      onLongPress={onLongPress}
       flex={1}
       alignItems="center"
       justifyContent="center"
