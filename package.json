@@ -51,7 +51,7 @@
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"
     },
     "transformIgnorePatterns": [
-      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|@sentry/react-native|native-base|standard-navigation|tamagui|@tamagui|react-native-svg|@gorhom|moti|react-native-reanimated|react-native-worklets))",
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|standard-navigation|tamagui|@tamagui|react-native-svg|@gorhom|moti|react-native-reanimated|react-native-worklets))",
       "/node_modules/react-native-reanimated/plugin/",
       "/node_modules/@react-native/babel-preset/"
     ],
