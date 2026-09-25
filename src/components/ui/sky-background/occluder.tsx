@@ -1,11 +1,13 @@
-import { createContext, use, useEffect, useId, useRef, type ReactNode } from "react";
 import {
-  ScrollView,
-  View,
-  type ScrollViewProps,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+  createContext,
+  use,
+  useEffect,
+  useId,
+  useRef,
+  type ComponentRef,
+  type ReactNode,
+} from "react";
+import { ScrollView, View, type ScrollViewProps, type ViewProps } from "react-native";
 
 import { measureInWindow } from "@/utils/measureInWindow";
 import type { WindowRect } from "@/utils/sky";
@@ -23,14 +25,14 @@ export const SkyOccluderContext = createContext<Registry | null>(null);
 type OccluderProps = {
   children: ReactNode;
   /** Sizes the box to the text; a stretched box would dim over empty sky. */
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
 };
 
 /** Text over the sky: a sun or moon behind it dims, so the text reads. */
 export const SkyOccluder = ({ children, style }: OccluderProps) => {
   const registry = use(SkyOccluderContext);
   const id = useId();
-  const view = useRef<View>(null);
+  const view = useRef<ComponentRef<typeof View>>(null);
   const report = registry?.report;
   const epoch = registry?.epoch;
 

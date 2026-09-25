@@ -1,4 +1,5 @@
-import { isDarkMode, NATIVE_SCHEME, nativeColorSchemeFor } from "@/utils/appearance";
+import { NATIVE_SCHEME } from "@/constants/Appearance";
+import { isDarkMode, nativeColorSchemeFor } from "@/utils/appearance";
 import { AppMode } from "@/enums/app";
 import { PHASE, type Phase } from "@/constants/Phase";
 
@@ -19,7 +20,7 @@ describe("isDarkMode", () => {
     [AppMode.LIGHT, NATIVE_SCHEME.DARK, false],
     [AppMode.SYSTEM, NATIVE_SCHEME.DARK, true],
     [AppMode.SYSTEM, NATIVE_SCHEME.LIGHT, false],
-    [AppMode.SYSTEM, NATIVE_SCHEME.UNSPECIFIED, false],
+    [AppMode.SYSTEM, null, false],
   ])("%s with the phone on %s is dark: %s", (mode, systemScheme, expected) => {
     expect(isDarkMode(mode, systemScheme)).toBe(expected);
   });
