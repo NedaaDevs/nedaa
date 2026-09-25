@@ -17,26 +17,35 @@ const ACTION_LABEL = "Open alarm settings";
 const SUBTITLE = "Sounds, challenges and snooze";
 /** A screen no back control can name. */
 const UNNAMED_ROUTE = "settings/alarm-debug";
+const UMRAH_LAYOUT = "umrah/_layout";
+const UMRAH_PREPARE_LAYOUT = "umrah/prepare/_layout";
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
-/** The app's navigator shape: a root stack over tabs, plus pushed settings screens. */
+const HeaderlessStack = () => <Stack screenOptions={{ headerShown: false }} />;
+
+/** The app's navigator shape: a root stack over tabs and nested stacks. */
 const renderApp = async (header: ReactElement, initialUrl = "/", isRTL = false) =>
   renderRouter(
     {
       _layout: () => (
         <>
-          <Stack screenOptions={{ headerShown: false }} />
+          <HeaderlessStack />
           <Pathname />
         </>
       ),
       "(tabs)/_layout": () => <Tabs screenOptions={{ headerShown: false }} />,
-      "(tabs)/index": () => null,
-      "(tabs)/tools": () => null,
-      "(tabs)/settings": () => null,
-      "(tabs)/quran": () => null,
-      "settings/alarm": () => header,
+      [BACK_DESTINATION.HOME.route]: () => null,
+      [BACK_DESTINATION.TOOLS.route]: () => null,
+      [BACK_DESTINATION.SETTINGS.route]: () => null,
+      [BACK_DESTINATION.QURAN.route]: () => null,
+      [BACK_DESTINATION.SETTINGS_ALARM.route]: () => header,
       [UNNAMED_ROUTE]: () => null,
+      [UMRAH_LAYOUT]: HeaderlessStack,
+      [BACK_DESTINATION.UMRAH.route]: () => header,
+      [UMRAH_PREPARE_LAYOUT]: HeaderlessStack,
+      [BACK_DESTINATION.UMRAH_PREPARE.route]: () => header,
+      [BACK_DESTINATION.UMRAH_IHRAM.route]: () => header,
     },
     {
       initialUrl,
@@ -166,6 +175,64 @@ describe("ScreenHeader", () => {
         minHeight: 44,
         minWidth: 44,
       });
+    });
+
+    it("names its parent again when pushed a second time", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.SETTINGS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+      await act(() => router.back());
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(screen.getByRole("button", { name: backTo("SETTINGS") })).toBeOnTheScreen();
+    });
+  });
+
+  describe("back in nested stacks", () => {
+    it("names the tab a new stack opened over", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.UMRAH.href);
+
+      expect(screen.getByRole("button", { name: backTo("TOOLS") })).toBeOnTheScreen();
+    });
+
+    it("names the screen under a stack opened inside another", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.UMRAH.href);
+      await go(BACK_DESTINATION.UMRAH_PREPARE.href);
+
+      expect(screen.getByRole("button", { name: backTo("UMRAH") })).toBeOnTheScreen();
+    });
+
+    it("names the screen below it in the same nested stack", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.UMRAH.href);
+      await go(BACK_DESTINATION.UMRAH_PREPARE.href);
+      await go(BACK_DESTINATION.UMRAH_IHRAM.href);
+
+      expect(screen.getByRole("button", { name: backTo("UMRAH_PREPARE") })).toBeOnTheScreen();
+    });
+
+    it("names the screen behind again once back on it", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.UMRAH.href);
+      await go(BACK_DESTINATION.UMRAH_PREPARE.href);
+      await go(BACK_DESTINATION.UMRAH_IHRAM.href);
+
+      await press(backTo("UMRAH_PREPARE"));
+
+      expect(pathname()).toHaveTextContent(normalizeRoutePath(BACK_DESTINATION.UMRAH_PREPARE.href));
+      expect(screen.getByRole("button", { name: backTo("UMRAH") })).toBeOnTheScreen();
+    });
+
+    it("hides when a deep link opens the nested stack cold", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />, BACK_DESTINATION.UMRAH_IHRAM.href);
+
+      expect(screen.queryByRole("button")).toBeNull();
     });
   });
 
