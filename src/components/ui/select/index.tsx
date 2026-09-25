@@ -36,7 +36,7 @@ const Select: React.FC<SelectProps> = ({
   disabled,
 }) => {
   const [open, setOpen] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { direction } = useRTL();
