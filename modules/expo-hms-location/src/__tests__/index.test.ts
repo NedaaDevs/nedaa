@@ -1,6 +1,9 @@
+import { HMS_LOCATION_EVENT, type HmsLocationEvents } from "../ExpoHmsLocation.types";
+
 type Listener = (event: unknown) => void;
 
 type MockNativeModule = {
+  addListener: jest.Mock;
   getCurrentPositionAsync: jest.Mock;
   getForegroundPermissionsAsync: jest.Mock;
   requestForegroundPermissionsAsync: jest.Mock;
@@ -11,7 +14,14 @@ type MockNativeModule = {
 };
 
 const loadSubject = () => {
+  const listeners = new Map<string, Set<Listener>>();
   const nativeModule: MockNativeModule = {
+    addListener: jest.fn((eventName: string, listener: Listener) => {
+      const eventListeners = listeners.get(eventName) ?? new Set<Listener>();
+      eventListeners.add(listener);
+      listeners.set(eventName, eventListeners);
+      return { remove: () => eventListeners.delete(listener) };
+    }),
     getCurrentPositionAsync: jest.fn(),
     getForegroundPermissionsAsync: jest.fn(),
     requestForegroundPermissionsAsync: jest.fn(),
@@ -20,19 +30,10 @@ const loadSubject = () => {
     startWatchingAsync: jest.fn(),
     stopWatchingAsync: jest.fn(),
   };
-  const listeners = new Map<string, Set<Listener>>();
 
   jest.doMock("expo-modules-core", () => ({
     ...jest.requireActual("expo-modules-core"),
     requireOptionalNativeModule: () => nativeModule,
-    EventEmitter: class MockEventEmitter {
-      addListener(eventName: string, listener: Listener) {
-        const eventListeners = listeners.get(eventName) ?? new Set<Listener>();
-        eventListeners.add(listener);
-        listeners.set(eventName, eventListeners);
-        return { remove: () => eventListeners.delete(listener) };
-      }
-    },
   }));
 
   let subject: typeof import("../index").ExpoHmsLocationModule;
@@ -43,9 +44,10 @@ const loadSubject = () => {
   return {
     ExpoHmsLocationModule: subject!,
     nativeModule,
-    emit: (eventName: string, event: unknown) => {
+    emit: (eventName: keyof HmsLocationEvents, event: unknown) => {
       listeners.get(eventName)?.forEach((listener) => listener(event));
     },
+    listenerCount: (eventName: keyof HmsLocationEvents) => listeners.get(eventName)?.size ?? 0,
   };
 };
 
@@ -112,12 +114,56 @@ describe("ExpoHmsLocationModule", () => {
       timestamp: 1_750_000_000_000,
     };
 
-    emit("onLocationUpdate", { watchId: secondWatchId, location: position });
+    emit(HMS_LOCATION_EVENT.UPDATE, { watchId: secondWatchId, location: position });
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledWith(position);
 
     firstSubscription.remove();
     expect(nativeModule.stopWatchingAsync).toHaveBeenCalledWith(firstWatchId);
+  });
+
+  it("routes watch errors by id to the error callback", async () => {
+    const { ExpoHmsLocationModule, emit, nativeModule } = loadSubject();
+    nativeModule.startWatchingAsync.mockResolvedValue(undefined);
+    const firstError = jest.fn();
+    const secondError = jest.fn();
+
+    await ExpoHmsLocationModule.watchPositionAsync({ accuracy: 4 }, jest.fn(), firstError);
+    await ExpoHmsLocationModule.watchPositionAsync({ accuracy: 4 }, jest.fn(), secondError);
+
+    const secondWatchId = nativeModule.startWatchingAsync.mock.calls[1][0];
+    emit(HMS_LOCATION_EVENT.ERROR, { watchId: secondWatchId, reason: "timeout" });
+    expect(firstError).not.toHaveBeenCalled();
+    expect(secondError).toHaveBeenCalledWith("timeout");
+  });
+
+  it("detaches both native listeners on remove and stops the watch once", async () => {
+    const { ExpoHmsLocationModule, listenerCount, nativeModule } = loadSubject();
+    nativeModule.startWatchingAsync.mockResolvedValue(undefined);
+    nativeModule.stopWatchingAsync.mockResolvedValue(undefined);
+
+    const subscription = await ExpoHmsLocationModule.watchPositionAsync({ accuracy: 4 }, jest.fn());
+    expect(listenerCount(HMS_LOCATION_EVENT.UPDATE)).toBe(1);
+    expect(listenerCount(HMS_LOCATION_EVENT.ERROR)).toBe(1);
+
+    subscription.remove();
+    subscription.remove();
+    expect(listenerCount(HMS_LOCATION_EVENT.UPDATE)).toBe(0);
+    expect(listenerCount(HMS_LOCATION_EVENT.ERROR)).toBe(0);
+    expect(nativeModule.stopWatchingAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("detaches both native listeners when the native watch fails to start", async () => {
+    const { ExpoHmsLocationModule, listenerCount, nativeModule } = loadSubject();
+    const startFailure = new Error("start failed");
+    nativeModule.startWatchingAsync.mockRejectedValue(startFailure);
+
+    await expect(ExpoHmsLocationModule.watchPositionAsync({ accuracy: 4 }, jest.fn())).rejects.toBe(
+      startFailure
+    );
+    expect(nativeModule.addListener).toHaveBeenCalledTimes(2);
+    expect(listenerCount(HMS_LOCATION_EVENT.UPDATE)).toBe(0);
+    expect(listenerCount(HMS_LOCATION_EVENT.ERROR)).toBe(0);
   });
 
   it("handles a native watch cleanup rejection", async () => {
