@@ -18,6 +18,28 @@ const ROOT_LAYOUT_ROUTE = "__root";
 const focusedIndex = (state: { index?: number; routes: readonly unknown[] }) =>
   state.index ?? state.routes.length - 1;
 
+/** A mounted navigator keys its state and routes; a link's partial does not. */
+const isMounted = (state: NestedState): state is NavigatorState =>
+  typeof state.key === "string" && state.routes.every((route) => route.key !== undefined);
+
+/** Navigator states from the one holding route `key` out to `state`. */
+const chainTo = (state: NestedState, key: string): NavigatorState[] | undefined => {
+  if (!isMounted(state)) return undefined;
+  for (const route of state.routes) {
+    if (route.key === key) return [state];
+    const inner = route.state && chainTo(route.state, key);
+    if (inner) return [...inner, state];
+  }
+  return undefined;
+};
+
+/** Mounted navigator states along the focused path, innermost first. */
+const focusedChain = (state: NestedState): NavigatorState[] => {
+  if (!isMounted(state)) return [];
+  const focused = state.routes[focusedIndex(state)];
+  return [...(focused?.state ? focusedChain(focused.state) : []), state];
+};
+
 /** Tab history also records non-route entries, which back skips. */
 const isRouteVisit = (entry: unknown): entry is { type: "route"; key: string } =>
   typeof entry === "object" &&
@@ -50,6 +72,10 @@ const focusedNames = (route: NamedRoute): string[] => {
   if (!nested?.routes.length) return [route.name];
   return [route.name, ...focusedNames(nested.routes[focusedIndex(nested)])];
 };
+
+/** A just-mounted navigator is not in the tree yet; its holder is focused. */
+export const chainFor = (root: NestedState, own: NavigatorState, key: string): NavigatorState[] =>
+  chainTo(root, key) ?? [own, ...focusedChain(root)];
 
 /**
  * The screen `router.back()` lands on, as its file path under src/app. `chain` runs

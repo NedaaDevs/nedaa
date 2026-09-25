@@ -1,39 +1,14 @@
-import { useEffect, useState } from "react";
-import { useNavigation, useRoute } from "expo-router";
+import { useIsFocused, useRootNavigationState, useRoute } from "expo-router";
+import { useNavigationState } from "expo-router/react-navigation";
 
-import {
-  backDestination,
-  type NavigatorState,
-} from "@/components/ui/screen-header/backDestination";
+import { backDestination, chainFor } from "@/components/ui/screen-header/backDestination";
 
-type ChainedNavigation = {
-  getState: () => NavigatorState | undefined;
-  getParent: () => ChainedNavigation | undefined;
-};
-
-const chainFrom = (navigation: ChainedNavigation): NavigatorState[] => {
-  const chain: NavigatorState[] = [];
-  for (let at: ChainedNavigation | undefined = navigation; at; at = at.getParent()) {
-    const state = at.getState();
-    if (!state) break;
-    chain.push(state);
-  }
-  return chain;
-};
-
-/** Where back goes from this screen, read again each time the screen comes into view. */
+/** Where back goes from this screen, read from the root navigation tree. */
 export const useBackDestination = (): string | undefined => {
-  const navigation = useNavigation();
+  // Re-renders on focus, so a screen back in view reads the tree again.
+  useIsFocused();
+  const root = useRootNavigationState();
+  const own = useNavigationState((state) => state);
   const { key } = useRoute();
-  const [destination, setDestination] = useState(() => backDestination(chainFrom(navigation), key));
-
-  useEffect(
-    () =>
-      navigation.addListener("focus", () =>
-        setDestination(backDestination(chainFrom(navigation), key))
-      ),
-    [navigation, key]
-  );
-
-  return destination;
+  return backDestination(chainFor(root, own, key), key);
 };
