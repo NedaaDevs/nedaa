@@ -126,7 +126,7 @@ When planning a new feature, **check this table first** to see if a similar capa
 
 - EAS Build packages files via git; `.gitignore` patterns can silently exclude native module files. Use `modules/*/android/build/` (with trailing slash), not `modules/*/android/build*` — the latter accidentally matches `build.gradle`.
 - The `production-hms` build copies `agconnect-services.json` from a secret env var during `eas-build-pre-install`.
-- `@react-navigation/{bottom-tabs,native,native-stack}` are **pinned exactly**. `expo install --fix` will loosen them — re-pin after running it. 7.2.x of `@react-navigation/native` breaks the custom `tabBar` render prop with a "Couldn't find a theme" error.
+- Expo Router ships its own copy of React Navigation, so the app does not depend on `@react-navigation/*`. Import navigation APIs from `expo-router`; a second copy splits the navigation contexts.
 - Tamagui's 6 packages move as one atomic family; bump them together.
 - `.easignore` keeps local-only directories out of the build archive; it is separate from `.gitignore` and both matter.
 - EAS profile `production-apk` produces a standalone APK (the default Android build is an AAB).
