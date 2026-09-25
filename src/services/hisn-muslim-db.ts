@@ -15,6 +15,7 @@ import { PlatformType } from "@/enums/app";
 
 // Utils
 import { stripTashkeel } from "@/utils/tashkeel";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 const HISN_MUSLIM_DB_VERSION = 1;
 
@@ -61,7 +62,7 @@ const ensureDbCopied = async (): Promise<void> => {
   // the next open re-copies instead of opening an empty DB forever.
   if (versionFile.exists) versionFile.delete();
   versionFile.create();
-  versionFile.write(String(HISN_MUSLIM_DB_VERSION));
+  writeFileSync(versionFile, String(HISN_MUSLIM_DB_VERSION));
 
   console.log(
     `[HisnMuslim-DB] Copied hisn-muslim.db v${HISN_MUSLIM_DB_VERSION} to ${targetDir.uri}`
