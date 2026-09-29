@@ -7,22 +7,17 @@ import { Select } from "@/components/ui/select";
 import SoundPreviewButton from "@/components/SoundPreviewButton";
 
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { ALARM_SOUND_KEYS, SOUND_ASSETS } from "@/constants/sounds";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import * as ExpoAlarm from "expo-alarm";
 
-const ALARM_SOUNDS = [
-  { value: "beep", label: "notification.sound.beep", isSystem: false },
-  { value: "tasbih", label: "notification.sound.tasbih", isSystem: false },
-  { value: "takbir", label: "notification.sound.takbir", isSystem: false },
-  { value: "knock", label: "notification.sound.knock", isSystem: false },
-  { value: "makkahAthan1", label: "notification.sound.makkahAthan1", isSystem: false },
-  { value: "medinaAthan", label: "notification.sound.medinaAthan", isSystem: false },
-  { value: "athan2", label: "notification.sound.athan2", isSystem: false },
-  { value: "athan3", label: "notification.sound.athan3", isSystem: false },
-  { value: "yasserAldosari", label: "notification.sound.yasserAldosari", isSystem: false },
-];
+const ALARM_SOUNDS = ALARM_SOUND_KEYS.map((key) => ({
+  value: key,
+  label: SOUND_ASSETS[key].label,
+  isSystem: false,
+}));
 
 type SoundOption = {
   value: string;
