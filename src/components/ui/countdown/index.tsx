@@ -11,6 +11,7 @@ import Animated, {
 
 import { Text } from "@/components/ui/text";
 import { SPIN } from "@/constants/Countdown";
+import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Test ids; the figure is drawing, hidden from the screen reader. */
@@ -167,6 +168,7 @@ export const Countdown = ({
   switchKey,
   ...textProps
 }: CountdownProps) => {
+  const { isRTL } = useRTL();
   const figures = { ...textProps, numeric: true, glyph: true };
   const characters = [...value];
 
@@ -177,8 +179,8 @@ export const Countdown = ({
           <Still key={i} text={character} textProps={figures} />
         ))}
       </View>
-      {/* Figures read left to right in every language. */}
-      <View testID={COUNTDOWN_PART.ROW} style={styles.row}>
+      {/* Left to right in every language, from the reading start of the reserve. */}
+      <View testID={COUNTDOWN_PART.ROW} style={[styles.row, isRTL && styles.rowRTL]}>
         {characters.map((character, i) => {
           const digits = DIGIT_SETS.find((set) => set.includes(character));
           // Keyed from the end, so 10:00 to 9:59 turns each place against itself.
@@ -261,6 +263,8 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     direction: "ltr",
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
   },
+  // The row is forced LTR, so an RTL reading start is its far end.
+  rowRTL: { justifyContent: "flex-end" },
 });

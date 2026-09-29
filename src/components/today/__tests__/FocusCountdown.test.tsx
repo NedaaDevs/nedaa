@@ -46,6 +46,16 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 
 const hidden = { includeHiddenElements: true };
 
+/** The spoken figure at 14:02, 1 hour 18 minutes before Asr. */
+const untilAsr = () =>
+  i18n.t("a11y.today.untilSpoken", {
+    prayer: name("prayerTimes.asr"),
+    duration: i18n.t("a11y.today.durationBoth", {
+      hours: i18n.t("common.hour", { count: 1 }),
+      minutes: i18n.t("common.minute", { count: 18 }),
+    }),
+  });
+
 describe("FocusCountdown", () => {
   beforeEach(() => {
     usePreferencesStore.setState({
@@ -56,18 +66,28 @@ describe("FocusCountdown", () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it.each([
-    [TextSize.DEFAULT, "row"],
-    [TextSize.MAX, "column"],
-  ] as const)(
-    "at text size %s lays the name and the figure out as a %s",
-    async (textSize, flexDirection) => {
+  // Jest lays nothing out, so this pins the rule: the row wraps, no part shrinks.
+  it.each(Object.values(TextSize))(
+    "at text size %s wraps the figure under the name rather than squeeze either",
+    async (textSize) => {
       usePreferencesStore.setState({ textSize });
       await renderAt("2026-09-23", "14:02");
 
-      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({ flexDirection });
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({
+        flexDirection: "row",
+        flexWrap: "wrap",
+      });
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.NAME)).toHaveStyle({ flexShrink: 0 });
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.FIGURE)).toHaveStyle({ flexShrink: 0 });
     }
   );
+
+  // Beside the name or under it, the figure and its caption share a start edge.
+  it("starts the caption at the figure's start edge", async () => {
+    await renderAt("2026-09-23", "14:02");
+
+    expect(screen.getByLabelText(untilAsr())).toHaveStyle({ alignItems: "flex-start" });
+  });
 
   it("names the next prayer on a button that flips the figure", async () => {
     await renderAt("2026-09-23", "14:02");
@@ -84,17 +104,7 @@ describe("FocusCountdown", () => {
       screen.getAllByText(i18n.t("today.focus.until", { prayer: name("prayerTimes.asr") }), hidden)
         .length
     ).toBeGreaterThan(0);
-    expect(
-      screen.getByLabelText(
-        i18n.t("a11y.today.untilSpoken", {
-          prayer: name("prayerTimes.asr"),
-          duration: i18n.t("a11y.today.durationBoth", {
-            hours: i18n.t("common.hour", { count: 1 }),
-            minutes: i18n.t("common.minute", { count: 18 }),
-          }),
-        })
-      )
-    ).toBeTruthy();
+    expect(screen.getByLabelText(untilAsr())).toBeTruthy();
   });
 
   it("counts up from the last prayer once pressed", async () => {
