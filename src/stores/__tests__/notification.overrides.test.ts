@@ -1,16 +1,8 @@
 import { useNotificationStore } from "@/stores/notification";
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { NOTIFICATION_FIELD, NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
-
-jest.mock("expo-sqlite/kv-store", () => ({
-  __esModule: true,
-  default: {
-    getItem: jest.fn(() => Promise.resolve(null)),
-    setItem: jest.fn(() => Promise.resolve()),
-    removeItem: jest.fn(() => Promise.resolve()),
-  },
-}));
+import { scheduleAllNotifications } from "@/utils/notificationScheduler";
 
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
 jest.mock("@/utils/notifications", () => ({ cancelAllScheduledNotifications: jest.fn() }));
@@ -40,8 +32,10 @@ const OTHER_SOUND: PrayerSoundKey = "medinaAthan";
 
 const store = () => useNotificationStore.getState();
 const overrideFor = (prayerId: string) => store().settings.overrides[prayerId];
+const scheduler = scheduleAllNotifications as jest.Mock;
 
 beforeEach(() => {
+  scheduler.mockClear();
   useNotificationStore.setState((state) => ({
     settings: { ...state.settings, overrides: {} },
   }));
@@ -49,8 +43,18 @@ beforeEach(() => {
 
 describe("updateOverride merge semantics", () => {
   it("keeps an earlier field when a later write sets a different one", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { vibration: false });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.VIBRATION,
+      false
+    );
 
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]).toEqual({
       sound: SOUND,
@@ -59,26 +63,162 @@ describe("updateOverride merge semantics", () => {
   });
 
   it("replaces the value when a later write sets the same field", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: OTHER_SOUND });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      OTHER_SOUND
+    );
 
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]?.sound).toBe(OTHER_SOUND);
   });
 
   it("leaves a sibling type untouched", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.IQAMA, { timing: 25 });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.IQAMA,
+      NOTIFICATION_FIELD.TIMING,
+      25
+    );
 
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]?.sound).toBe(SOUND);
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.IQAMA]?.timing).toBe(25);
   });
 
   it("leaves another prayer untouched", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { enabled: false });
-    await store().updateOverride(PRAYER_ID.ASR, NOTIFICATION_TYPE.PRAYER, { enabled: true });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.ENABLED,
+      false
+    );
+    await store().updateOverride(
+      PRAYER_ID.ASR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.VIBRATION,
+      false
+    );
 
-    expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]?.enabled).toBe(false);
-    expect(overrideFor(PRAYER_ID.ASR)[NOTIFICATION_TYPE.PRAYER]?.enabled).toBe(true);
+    expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]).toEqual({ enabled: false });
+    expect(overrideFor(PRAYER_ID.ASR)[NOTIFICATION_TYPE.PRAYER]).toEqual({ vibration: false });
+  });
+});
+
+// An override holds only what differs from the defaults, like a modal save.
+describe("updateOverride keeps only what differs from the defaults", () => {
+  it("drops a field written back to its default", async () => {
+    const { sound } = store().settings.defaults.prayer;
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.VIBRATION,
+      false
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      sound
+    );
+
+    expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]).toEqual({ vibration: false });
+  });
+
+  it("drops the prayer's entry when its last field returns to the default", async () => {
+    const { timing } = store().settings.defaults.iqama;
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.IQAMA,
+      NOTIFICATION_FIELD.TIMING,
+      25
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.IQAMA,
+      NOTIFICATION_FIELD.TIMING,
+      timing
+    );
+
+    expect(overrideFor(PRAYER_ID.FAJR)).toBeUndefined();
+  });
+
+  it("stores nothing for a default value on a prayer with no override", async () => {
+    const { enabled } = store().settings.defaults.prayer;
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.ENABLED,
+      enabled
+    );
+
+    expect(overrideFor(PRAYER_ID.FAJR)).toBeUndefined();
+    expect(scheduler).not.toHaveBeenCalled();
+  });
+
+  it("schedules nothing when the value is already stored", async () => {
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    scheduler.mockClear();
+
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+
+    expect(scheduler).not.toHaveBeenCalled();
+  });
+
+  it("never writes the defaults", async () => {
+    const defaults = store().settings.defaults;
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+
+    expect(store().settings.defaults).toBe(defaults);
+  });
+});
+
+// A merge takes one field and a replace a whole config; neither fits the other.
+// tsc fails the build if either directive below stops being needed.
+describe("merge and replace are distinct calls", () => {
+  it("rejects a config handed to the merge and a field handed to the replace", () => {
+    const { FAJR } = PRAYER_ID;
+    const { PRAYER } = NOTIFICATION_TYPE;
+    const swapped = () => {
+      // @ts-expect-error a merge takes one field, never a whole config
+      void store().updateOverride(FAJR, PRAYER, { sound: SOUND });
+      // @ts-expect-error a replace takes a whole config, never one field
+      void store().replaceOverride(FAJR, PRAYER, NOTIFICATION_FIELD.SOUND, SOUND);
+    };
+
+    expect(swapped).toEqual(expect.any(Function));
   });
 });
 
@@ -86,24 +226,42 @@ describe("updateOverride merge semantics", () => {
 // the fields it omits.
 describe("replaceOverride", () => {
   it("drops a field the new config omits", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, {
-      sound: SOUND,
-      vibration: false,
-    });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.VIBRATION,
+      false
+    );
     await store().replaceOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { vibration: false });
 
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]).toEqual({ vibration: false });
   });
 
   it("leaves a sibling type untouched", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.IQAMA, { timing: 25 });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.IQAMA,
+      NOTIFICATION_FIELD.TIMING,
+      25
+    );
     await store().replaceOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { enabled: false });
 
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.IQAMA]?.timing).toBe(25);
   });
 
   it("removes the type when handed an empty config", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
     await store().replaceOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, {});
 
     expect(overrideFor(PRAYER_ID.FAJR)).toBeUndefined();
@@ -111,23 +269,31 @@ describe("replaceOverride", () => {
 });
 
 describe("override removal is explicit", () => {
-  it("does not remove an override when an empty config is written", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, {});
-
-    expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]?.sound).toBe(SOUND);
-  });
-
   it("removes the type through resetOverride", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
     await store().resetOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER);
 
     expect(overrideFor(PRAYER_ID.FAJR)).toBeUndefined();
   });
 
   it("keeps a sibling type when one type is reset", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.IQAMA, { timing: 25 });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.IQAMA,
+      NOTIFICATION_FIELD.TIMING,
+      25
+    );
     await store().resetOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER);
 
     expect(overrideFor(PRAYER_ID.FAJR)[NOTIFICATION_TYPE.PRAYER]).toBeUndefined();
@@ -137,7 +303,12 @@ describe("override removal is explicit", () => {
 
 describe("getEffectiveConfigForPrayer", () => {
   it("layers the override over the defaults", async () => {
-    await store().updateOverride(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    await store().updateOverride(
+      PRAYER_ID.FAJR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
 
     const config = store().getEffectiveConfigForPrayer(PRAYER_ID.FAJR, NOTIFICATION_TYPE.PRAYER);
     const defaults = store().settings.defaults.prayer;
@@ -155,7 +326,12 @@ describe("getEffectiveConfigForPrayer", () => {
 
   // Friday renames Dhuhr to Jumu'ah for display only, so the override must still resolve.
   it("resolves a dhuhr override regardless of the weekday", async () => {
-    await store().updateOverride(PRAYER_ID.DHUHR, NOTIFICATION_TYPE.PRAYER, { sound: SOUND });
+    await store().updateOverride(
+      PRAYER_ID.DHUHR,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_FIELD.SOUND,
+      SOUND
+    );
 
     expect(
       store().getEffectiveConfigForPrayer(PRAYER_ID.DHUHR, NOTIFICATION_TYPE.PRAYER).sound
