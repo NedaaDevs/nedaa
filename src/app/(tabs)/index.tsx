@@ -12,6 +12,7 @@ import { OtherTimes } from "@/components/today/OtherTimes";
 import { PrayerGrid } from "@/components/today/PrayerGrid";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TodayHeader } from "@/components/today/TodayHeader";
+import { UpcomingOccasions } from "@/components/today/UpcomingOccasions";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 
 // Constants
@@ -20,9 +21,13 @@ import type { PrayerId } from "@/constants/Prayer";
 // Hooks
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 
+// Stores
+import { usePreferencesStore } from "@/stores/preferences";
+
 export default function MainScreen() {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
+  const showOccasions = usePreferencesStore((state) => state.showImportantDaysOnHome);
   // Chosen on a card, lit on the day's line; choosing it again clears it.
   const [selected, setSelected] = useState<PrayerId>();
   const choose = (id: PrayerId) => setSelected((current) => (current === id ? undefined : id));
@@ -48,6 +53,7 @@ export default function MainScreen() {
               <PrayerGrid selected={selected} onSelect={choose} />
               <OtherTimes />
               <PrayerTimesState />
+              {showOccasions ? <UpcomingOccasions /> : null}
               <DaySimulatorButton />
             </Box>
           </SkyScrollView>
