@@ -83,21 +83,37 @@ const channelSoundMatches = (
  */
 const CHANNEL_VERSION = 3;
 
+/** What a channel fixes at creation: Android ignores later changes to either. */
+type ChannelSettings = { sound: string; vibration: boolean };
+
+/** The notification types whose channels this module creates and deletes. */
+const MANAGED_TYPES = [
+  NOTIFICATION_TYPE.PRAYER,
+  NOTIFICATION_TYPE.IQAMA,
+  NOTIFICATION_TYPE.PRE_ATHAN,
+  NOTIFICATION_TYPE.ATHKAR,
+] as const;
+const MANAGED_IDS = ["reminder", "quran_reminder"] as const;
+
+const isManagedChannel = (id: string) =>
+  MANAGED_TYPES.some((type) => id.startsWith(`${type}_`)) ||
+  MANAGED_IDS.some((managed) => id === managed);
+
 /**
- * Generate a unique channel ID based on prayer, notification type, and sound
+ * One channel per prayer, type, sound, playback mode and vibration. Android restores
+ * a deleted channel's old settings when the same id is created again, so each of
+ * these needs its own id to take effect.
  */
 const generateChannelId = (
   prayer: PrayerName,
   type: NotificationType,
-  soundKey: string,
+  { sound, vibration }: ChannelSettings,
   silenced: boolean = false
 ): string => {
-  // Use sound key to make channel unique per sound
-  const sanitizedSoundKey = soundKey.replace(/[^a-zA-Z0-9]/g, "_");
-  // Include explicit suffix so that toggling fullAthanPlayback creates a NEW channel ID,
-  // bypassing Android's cache of deleted channel settings.
+  const sanitizedSoundKey = sound.replace(/[^a-zA-Z0-9]/g, "_");
   const modeSuffix = silenced ? "silent" : "sound";
-  return `${type}_${prayer}_${sanitizedSoundKey}_v${CHANNEL_VERSION}_${modeSuffix}`;
+  const vibrationSuffix = vibration ? "vib" : "novib";
+  return `${type}_${prayer}_${sanitizedSoundKey}_v${CHANNEL_VERSION}_${modeSuffix}_${vibrationSuffix}`;
 };
 
 /**
@@ -131,14 +147,7 @@ const deleteAllManagedChannels = async (): Promise<void> => {
     const existingChannels = await Notifications.getNotificationChannelsAsync();
 
     for (const channel of existingChannels) {
-      if (
-        channel.id.startsWith("prayer_") ||
-        channel.id.startsWith("iqama_") ||
-        channel.id.startsWith("preathan_") ||
-        channel.id.startsWith("athkar_") ||
-        channel.id === "reminder" ||
-        channel.id === "quran_reminder"
-      ) {
+      if (isManagedChannel(channel.id)) {
         await Notifications.deleteNotificationChannelAsync(channel.id);
       }
     }
@@ -206,7 +215,7 @@ export const createNotificationChannels = async (
       const channelId = generateChannelId(
         prayer,
         NOTIFICATION_TYPE.PRAYER,
-        prayerConfig.sound,
+        prayerConfig,
         silenceChannel
       );
 
@@ -232,12 +241,7 @@ export const createNotificationChannels = async (
         : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound);
 
       channels.push({
-        id: generateChannelId(
-          prayer,
-          NOTIFICATION_TYPE.IQAMA,
-          iqamaConfig.sound,
-          silenceIqamaChannel
-        ),
+        id: generateChannelId(prayer, NOTIFICATION_TYPE.IQAMA, iqamaConfig, silenceIqamaChannel),
         name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
         sound: resolvedIqamaSound,
@@ -252,7 +256,7 @@ export const createNotificationChannels = async (
     // Pre-Athan notification channel
     if (preAthanConfig.enabled) {
       channels.push({
-        id: generateChannelId(prayer, NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
+        id: generateChannelId(prayer, NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig),
         name: getChannelDisplayName(prayer, NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
         importance: Notifications.AndroidImportance.HIGH,
         sound: getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound),
@@ -366,11 +370,9 @@ export const createNotificationChannels = async (
 export const getNotificationChannelId = (
   prayer: PrayerName,
   type: NotificationType,
-  soundKey: string,
+  settings: ChannelSettings,
   silenced: boolean = false
-): string => {
-  return generateChannelId(prayer, type, soundKey, silenced);
-};
+): string => generateChannelId(prayer, type, settings, silenced);
 
 /**
  * Check if channels need to be updated based on sound settings
@@ -434,7 +436,7 @@ export const shouldUpdateChannels = async (
             (type === NOTIFICATION_TYPE.IQAMA &&
               fullIqamaPlayback &&
               isIqamaFullSound(config.sound));
-          const channelId = generateChannelId(prayer, type, config.sound, isSilenced);
+          const channelId = generateChannelId(prayer, type, config, isSilenced);
           requiredChannels.add(channelId);
 
           // Check if channel exists with correct sound
@@ -501,15 +503,7 @@ export const shouldUpdateChannels = async (
     requiredChannels.add("reminder");
 
     // Check if there are old channels that need cleanup
-    const managedChannels = existingChannels.filter(
-      (ch) =>
-        ch.id.startsWith("prayer_") ||
-        ch.id.startsWith("iqama_") ||
-        ch.id.startsWith("preathan_") ||
-        ch.id.startsWith("athkar_") ||
-        ch.id === "reminder" ||
-        ch.id === "quran_reminder"
-    );
+    const managedChannels = existingChannels.filter((ch) => isManagedChannel(ch.id));
 
     for (const channel of managedChannels) {
       if (!requiredChannels.has(channel.id)) {
@@ -572,14 +566,7 @@ export const debugChannelInfo = async (): Promise<void> => {
     const channels = await Notifications.getNotificationChannelsAsync();
     console.log(`[NotificationChannels] Debug: Found ${channels.length} total channels`);
 
-    const managedChannels = channels.filter(
-      (ch) =>
-        ch.id.startsWith("prayer_") ||
-        ch.id.startsWith("iqama_") ||
-        ch.id.startsWith("preathan_") ||
-        ch.id === "reminder" ||
-        ch.id === "quran_reminder"
-    );
+    const managedChannels = channels.filter((ch) => isManagedChannel(ch.id));
 
     console.log(`[NotificationChannels] Debug: Found ${managedChannels.length} managed channels`);
 

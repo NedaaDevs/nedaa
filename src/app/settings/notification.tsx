@@ -82,39 +82,39 @@ const NotificationSettings = () => {
 
   // Check permission when app becomes active (user returns from settings)
   useEffect(() => {
+    const checkPermissionStatus = async () => {
+      setIsCheckingPermission(true);
+      const wasGranted = hasPermission === true;
+      let granted = false;
+      try {
+        const { status } = await checkPermissions();
+        granted = status === PermissionStatus.GRANTED;
+
+        setHasPermission(granted);
+        // On iOS, if permission is denied, we can only redirect to settings
+        // On Android, we might be able to ask again depending on the situation
+        setCanAskPermission(status === PermissionStatus.UNDETERMINED);
+      } catch (error) {
+        console.error("Failed to check notification permission:", error);
+        setHasPermission(false);
+        setCanAskPermission(false);
+      } finally {
+        // Render as soon as the cheap permission read resolves — never hold the
+        // screen behind a full reschedule.
+        setIsCheckingPermission(false);
+      }
+
+      // Reschedule off the critical path: forced only when permission has just
+      // become granted, otherwise guarded so it skips work already done today. The
+      // inline scheduling banner reflects it; the screen never blocks on it.
+      if (granted) {
+        void rescheduleIfNeeded(shouldForceReschedule(wasGranted, granted));
+      }
+    };
+
     checkPermissionStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [becameActiveAt]);
-
-  const checkPermissionStatus = async () => {
-    setIsCheckingPermission(true);
-    const wasGranted = hasPermission === true;
-    let granted = false;
-    try {
-      const { status } = await checkPermissions();
-      granted = status === PermissionStatus.GRANTED;
-
-      setHasPermission(granted);
-      // On iOS, if permission is denied, we can only redirect to settings
-      // On Android, we might be able to ask again depending on the situation
-      setCanAskPermission(status === PermissionStatus.UNDETERMINED);
-    } catch (error) {
-      console.error("Failed to check notification permission:", error);
-      setHasPermission(false);
-      setCanAskPermission(false);
-    } finally {
-      // Render as soon as the cheap permission read resolves — never hold the
-      // screen behind a full reschedule.
-      setIsCheckingPermission(false);
-    }
-
-    // Reschedule off the critical path: forced only when permission has just
-    // become granted, otherwise guarded so it skips work already done today. The
-    // inline scheduling banner reflects it; the screen never blocks on it.
-    if (granted) {
-      void rescheduleIfNeeded(shouldForceReschedule(wasGranted, granted));
-    }
-  };
 
   const handleRequestPermission = async () => {
     hapticMedium();
@@ -398,13 +398,14 @@ const NotificationSettings = () => {
                           stopLabel: t("common.stop"),
                         });
                       } else {
-                        const soundKey = settings.defaults.prayer.sound;
+                        const prayerDefaults = settings.defaults.prayer;
+                        const soundKey = prayerDefaults.sound;
                         const sound =
                           getNotificationSound(NOTIFICATION_TYPE.PRAYER, soundKey) || "default";
                         const channelId = getNotificationChannelId(
                           "fajr",
                           NOTIFICATION_TYPE.PRAYER,
-                          soundKey
+                          prayerDefaults
                         );
                         await scheduleNotification(
                           triggerDate,

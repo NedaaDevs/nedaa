@@ -649,11 +649,10 @@ const generatePrayerNotifications = (
 
       // Only schedule if interval is at least MIN_INTERVAL_SECONDS (skip in test mode)
       if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
-        // Generate dynamic channel ID based on sound
         const preAthanChannelId = getNotificationChannelId(
           prayerId,
           NOTIFICATION_TYPE.PRE_ATHAN,
-          preAthanConfig.sound
+          preAthanConfig
         );
 
         notifications.push({
@@ -684,13 +683,12 @@ const generatePrayerNotifications = (
 
     // Only schedule if interval is at least MIN_INTERVAL_SECONDS (skip in test mode)
     if (testMode || secondsFromNow >= MIN_INTERVAL_SECONDS) {
-      // Generate dynamic channel ID based on sound
       // Pass silenced flag to match the channel ID created in notificationChannels.ts
       const silenceChannel = isAthanSound(prayerConfig.sound) && fullAthanEnabled;
       const prayerChannelId = getNotificationChannelId(
         prayerId,
         NOTIFICATION_TYPE.PRAYER,
-        prayerConfig.sound,
+        prayerConfig,
         silenceChannel
       );
 
@@ -729,7 +727,7 @@ const generatePrayerNotifications = (
       const iqamaChannelId = getNotificationChannelId(
         prayerId,
         NOTIFICATION_TYPE.IQAMA,
-        iqamaConfig.sound,
+        iqamaConfig,
         silenceChannel
       );
 
