@@ -7,7 +7,12 @@ import { Platform } from "react-native";
 import { PlatformType } from "@/enums/app";
 
 // Types
-import type { CustomSound, AddCustomSoundResult, CustomSoundUsageType } from "@/types/customSound";
+import type {
+  CustomSound,
+  CustomSoundKey,
+  AddCustomSoundResult,
+  CustomSoundUsageType,
+} from "@/types/customSound";
 import type { NotificationType, NotificationSettings } from "@/types/notification";
 import type { AlarmType } from "@/types/alarm";
 import { SUPPORTED_AUDIO_EXTENSIONS, CUSTOM_SOUND_KEY_PREFIX } from "@/types/customSound";
@@ -237,7 +242,7 @@ function getFileExtension(filename: string): string {
 /**
  * Generate a unique ID for a custom sound
  */
-function generateCustomSoundId(): string {
+function generateCustomSoundId(): CustomSoundKey {
   return `${CUSTOM_SOUND_KEY_PREFIX}${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 

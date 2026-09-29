@@ -1,3 +1,4 @@
+import type { Href } from "expo-router";
 import { Bell, Sun, Building2 } from "lucide-react-native";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { PRAYER_ID } from "@/constants/Prayer";
@@ -26,6 +27,12 @@ export const ALARM_TIMING_CHOICES: Record<AlarmType, AlarmTimingChoices> = {
     minuteSteps: [15, 30, 45, 60, 90, 120],
   },
 };
+
+/** One alarm type's full settings screen. */
+export const alarmSettingsHref = (type: AlarmType): Href => ({
+  pathname: "/settings/alarm/[type]",
+  params: { type },
+});
 
 export const ALARM_DEFAULTS = {
   TAPS_REQUIRED: 5,
