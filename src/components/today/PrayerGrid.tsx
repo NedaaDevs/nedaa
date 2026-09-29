@@ -1,3 +1,5 @@
+import type { Ref } from "react";
+import type { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { parseISO } from "date-fns";
 
@@ -25,10 +27,11 @@ type CardProps = {
   time: string;
   selected: boolean;
   onPress: () => void;
+  openerRef?: Ref<View>;
 };
 
 /** One prayer: quiet once passed, accented when next, ringed when chosen. */
-const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
+const PrayerCardView = ({ card, name, time, selected, onPress, openerRef }: CardProps) => {
   const { t } = useTranslation();
   const current = card.state === PRAYER_CARD_STATE.CURRENT;
   // The one gold card: the prayer just come in, else the next.
@@ -37,6 +40,7 @@ const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
 
   return (
     <Pressable
+      ref={openerRef}
       onPress={onPress}
       // The state shows only as colour on screen, so the label carries it.
       accessibilityLabel={t(
@@ -81,10 +85,12 @@ type Props = {
   /** The prayer chosen on Today, ringed here and lit on the day's line. */
   selected?: PrayerId;
   onSelect: (id: PrayerId) => void;
+  /** Lands on the chosen card, where reader focus returns after its sheet. */
+  openerRef?: Ref<View>;
 };
 
 /** The day's five prayers: the next one wide on top, the others two by two. */
-export const PrayerGrid = ({ selected, onSelect }: Props) => {
+export const PrayerGrid = ({ selected, onSelect, openerRef }: Props) => {
   const { t } = useTranslation();
   const { now, day, following } = useShownDay();
   const locale = useAppStore((state) => state.locale);
@@ -106,6 +112,7 @@ export const PrayerGrid = ({ selected, onSelect }: Props) => {
       )}
       selected={card.id === selected}
       onPress={() => onSelect(card.id)}
+      openerRef={card.id === selected ? openerRef : undefined}
     />
   );
 

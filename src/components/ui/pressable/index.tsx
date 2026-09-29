@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import type { View as NativeView } from "react-native";
 import { styled, View } from "tamagui";
 import type { GetProps } from "tamagui";
 
@@ -32,7 +33,8 @@ type PressableProps = GetProps<typeof PressableFrame>;
  * view, so the handlers are dropped here too — otherwise the control dims to 40% and
  * still responds to touch.
  */
-const Pressable = forwardRef<never, PressableProps>(
+// The ref is the native view, so a sheet can hand reader focus back to it.
+const Pressable = forwardRef<NativeView, PressableProps>(
   ({ onPress, onLongPress, disabled, accessibilityState, role, ...props }, ref) => (
     <PressableFrame
       ref={ref}
