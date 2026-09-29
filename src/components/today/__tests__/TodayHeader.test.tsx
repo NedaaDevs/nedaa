@@ -134,18 +134,30 @@ describe("TodayHeader", () => {
     expect(screen.getByText(COUNTRY)).toHaveStyle({ fontSize: fontSizeOf("sm") });
   });
 
-  it.each([
-    [TextSize.DEFAULT, "row"],
-    [TextSize.MAX, "column"],
-  ] as const)(
-    "at text size %s lays the dates and the place out as a %s",
-    async (textSize, flexDirection) => {
+  // Jest lays nothing out, so this pins the rule: the row wraps, no part shrinks.
+  it.each(Object.values(TextSize))(
+    "at text size %s wraps the place under the dates rather than truncate it",
+    async (textSize) => {
       usePreferencesStore.setState({ textSize });
       await renderHeader();
 
-      expect(screen.getByTestId(TODAY_HEADER_PART.DATE_ROW)).toHaveStyle({ flexDirection });
+      expect(screen.getByTestId(TODAY_HEADER_PART.DATE_ROW)).toHaveStyle({
+        flexDirection: "row",
+        flexWrap: "wrap",
+      });
+      expect(screen.getByTestId(TODAY_HEADER_PART.DATES)).toHaveStyle({ flexShrink: 0 });
+      expect(screen.getByTestId(TODAY_HEADER_PART.PLACE)).toHaveStyle({ flexShrink: 0 });
     }
   );
+
+  // Beside the dates or under them, the city and country share a start edge.
+  it("starts the city and country at the place's start edge", async () => {
+    await renderHeader();
+
+    expect(
+      screen.getByRole("button", { name: i18n.t("a11y.location.currentCity", { city: CITY }) })
+    ).toHaveStyle({ alignItems: "flex-start" });
+  });
 
   it("opens the location settings from the city", async () => {
     await renderHeader();
