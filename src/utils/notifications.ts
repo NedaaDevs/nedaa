@@ -12,12 +12,8 @@ import { cleanupManager } from "@/services/cleanup";
 // Enums
 import { PlatformType } from "@/enums/app";
 
-// Native modules
-
 // Types
 import type { NotificationOptions } from "@/types/notification";
-
-// Constants
 
 export const scheduleNotification = async (
   date: Date,
@@ -245,11 +241,6 @@ export const cleanupNotificationListeners = () => {
     // Force reset subscriptions even if cleanup fails
     notificationReceivedSubscription = null;
   }
-};
-
-// Check if listeners are currently active (useful for debugging)
-export const areListenersActive = (): boolean => {
-  return !!notificationReceivedSubscription;
 };
 
 export const checkPermissions = async () => {
