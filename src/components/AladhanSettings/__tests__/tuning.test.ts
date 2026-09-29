@@ -4,6 +4,7 @@ import {
   TUNING_LIMIT,
   TUNED_PRAYERS,
   clampTuning,
+  summarisePrayerTuning,
   summariseTuning,
 } from "@/components/AladhanSettings/tuning";
 
@@ -71,6 +72,36 @@ describe("summariseTuning", () => {
     const summary = summariseTuning(tuning({ [PRAYER_ID.FAJR]: 2 }), t) as string;
 
     expect(summary).toContain("\u2066+2\u2069");
+  });
+});
+
+describe("summarisePrayerTuning", () => {
+  // Echoes the key and count, so each case shows which copy it chose.
+  const tCount = (key: string, options?: { count: number }) =>
+    options ? `${key}:${options.count}` : key;
+
+  test("reports no adjustment at zero", () => {
+    expect(summarisePrayerTuning(tuning({ [PRAYER_ID.ISHA]: 4 }), PRAYER_ID.FAJR, tCount)).toBe(
+      "prayerDetail.adjustment.none"
+    );
+  });
+
+  test("reports no adjustment when no tuning is stored", () => {
+    expect(summarisePrayerTuning(undefined, PRAYER_ID.FAJR, tCount)).toBe(
+      "prayerDetail.adjustment.none"
+    );
+  });
+
+  test("counts a positive offset as minutes later", () => {
+    expect(summarisePrayerTuning(tuning({ [PRAYER_ID.FAJR]: 5 }), PRAYER_ID.FAJR, tCount)).toBe(
+      "prayerDetail.adjustment.later:5"
+    );
+  });
+
+  test("counts a negative offset as minutes earlier, unsigned", () => {
+    expect(summarisePrayerTuning(tuning({ [PRAYER_ID.FAJR]: -3 }), PRAYER_ID.FAJR, tCount)).toBe(
+      "prayerDetail.adjustment.earlier:3"
+    );
   });
 });
 
