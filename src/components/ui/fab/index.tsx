@@ -7,7 +7,7 @@ import {
   createStyledContext,
   withStaticProperties,
 } from "tamagui";
-import { useTheme } from "@/components/ui/theme-color";
+import { useThemeColor } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
 import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
@@ -79,19 +79,12 @@ type FabIconProps = {
 const FabIcon: React.FC<FabIconProps> = ({
   as: IconComponent,
   size: sizeProp,
-  color: colorProp,
+  color = "$typographyContrast",
 }) => {
   const ctx = FabContext.useStyledContext();
-  const theme = useTheme();
-
   const iconSize = sizeProp ?? ICON_SIZE[ctx.size ?? "md"];
-  const resolvedColor = colorProp
-    ? colorProp.startsWith("$")
-      ? ((theme as Record<string, { val: string }>)[colorProp.slice(1)]?.val ?? colorProp)
-      : colorProp
-    : theme.typographyContrast.val;
 
-  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={useThemeColor(color)} />;
 };
 FabIcon.displayName = "FabIcon";
 
