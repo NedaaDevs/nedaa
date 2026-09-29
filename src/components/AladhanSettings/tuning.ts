@@ -8,6 +8,7 @@ import type { AladhanTuning, AladhanPrayerTimeName } from "@/types/providers/ala
 import { formatNumberToLocale } from "@/utils/number";
 
 type Translate = (key: string) => string;
+type TranslateCount = (key: string, options?: { count: number }) => string;
 
 /** The API accepts ±30 minutes per timing. */
 export const TUNING_LIMIT = 30;
@@ -60,4 +61,19 @@ export const summariseTuning = (tuning: AladhanTuning, t: Translate): string | n
       return `${t(prayerNameKey(prayer))} ${isolateLtr(offset)}`;
     })
     .join(" · ");
+};
+
+/** One prayer's offset, counted as minutes later or earlier than calculated. */
+export const summarisePrayerTuning = (
+  tuning: AladhanTuning | undefined,
+  prayer: AladhanPrayerTimeName,
+  t: TranslateCount
+): string => {
+  const offset = tuning?.[prayer] ?? 0;
+
+  if (offset === 0) return t("prayerDetail.adjustment.none");
+
+  return t(offset > 0 ? "prayerDetail.adjustment.later" : "prayerDetail.adjustment.earlier", {
+    count: Math.abs(offset),
+  });
 };
