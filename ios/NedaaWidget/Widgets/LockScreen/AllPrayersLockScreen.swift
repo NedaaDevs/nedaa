@@ -84,18 +84,9 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> AllPrayersEntry {
-        let currentDate = Date()
-        let sample = AllPrayersEntry(
-            date: currentDate,
-            allPrayers: isFirstHalf ? morningPrayers : eveningPrayers,
-            nextPrayer: PrayerData(name: "Fajr", date: currentDate),
-            previousPrayer: nil,
-            showTimer: true,
-            showSunrise: true,
-            isRamadan: PrayerTimelineUtils.isRamadan(currentDate),
-            showRamadanLabels: configuration.showRamadanLabels
-        )
-        return context.isPreview ? sample : sample.markedUnavailable
+        let sample = placeholder(in: context)
+        return makeEntries(for: configuration, from: Date())?.first
+            ?? (context.isPreview ? sample : sample.markedUnavailable)
     }
     
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
@@ -104,16 +95,25 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
             WidgetHeartbeat.stamp(kind: isFirstHalf ? "MorningPrayerWidget" : "EveningPrayerWidget")
         }
         let currentDate = Date()
-        let showSunrise = configuration.showSunrise
-        let showTimer = configuration.showTimer
 
-        let todaysPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise)
-        let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
-
-        guard let allTodayPrayers = todaysPrayers else {
+        guard let entries = makeEntries(for: configuration, from: currentDate) else {
             let fallback = placeholder(in: context).markedUnavailable
             return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
         }
+        return Timeline(entries: entries, policy: .atEnd)
+    }
+
+    /// Entries starting at `currentDate`; nil when today's times are missing.
+    private func makeEntries(
+        for configuration: AllPrayersConfigurationIntent, from currentDate: Date
+    ) -> [AllPrayersEntry]? {
+        let showSunrise = configuration.showSunrise
+        let showTimer = configuration.showTimer
+
+        guard let allTodayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
+            return nil
+        }
+        let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
 
         let entryDates = PrayerTimelineUtils.generateEntryDates(
             from: currentDate,
@@ -162,7 +162,7 @@ struct SplitPrayerProvider: AppIntentTimelineProvider {
             ))
         }
 
-        return Timeline(entries: entries, policy: .atEnd)
+        return entries
     }
 }
 

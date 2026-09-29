@@ -64,30 +64,31 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> PrayerCountdownEntry {
-        let showSunrise = configuration.showSunrise
-        let showTimer = configuration.showTimer
-        let nextPrayer = prayerService.getNextPrayer(showSunrise: showSunrise)
-        let previousPrayer = prayerService.getPreviousPrayer(showSunrise: showSunrise)
-        return PrayerCountdownEntry(
-            date: Date(),
-            nextPrayer: nextPrayer,
-            previousPrayer: previousPrayer,
-            showTimer: showTimer,
-            showSunrise: showSunrise,
-            isRamadan: PrayerTimelineUtils.isRamadan(Date()),
-            showRamadanLabels: configuration.showRamadanLabels
-        )
+        let sample = placeholder(in: context)
+        return makeEntries(for: configuration, from: Date())?.first
+            ?? (context.isPreview ? sample : sample.markedUnavailable)
     }
     
     func timeline(for configuration: PrayerCountdownConfigurationIntent, in context: Context) async -> Timeline<PrayerCountdownEntry> {
         if !context.isPreview { WidgetHeartbeat.stamp(kind: "PrayerCountdownLockScreenWidget") }
         let currentDate = Date()
+
+        guard let entries = makeEntries(for: configuration, from: currentDate) else {
+            let fallback = placeholder(in: context).markedUnavailable
+            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
+        }
+        return Timeline(entries: entries, policy: .atEnd)
+    }
+
+    /// Entries starting at `currentDate`; nil when today's times are missing.
+    private func makeEntries(
+        for configuration: PrayerCountdownConfigurationIntent, from currentDate: Date
+    ) -> [PrayerCountdownEntry]? {
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
 
         guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
-            let fallback = placeholder(in: context).markedUnavailable
-            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
+            return nil
         }
         let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
 
@@ -131,7 +132,7 @@ struct CountdownLockScreenViewProvider: AppIntentTimelineProvider {
             ))
         }
 
-        return Timeline(entries: entries, policy: .atEnd)
+        return entries
     }
 }
 
@@ -277,17 +278,26 @@ struct InlinePrayerProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping (PrayerCountdownEntry) -> Void) {
         let sample = placeholder(in: context)
-        completion(context.isPreview ? sample : sample.markedUnavailable)
+        let entry = makeEntries(from: Date())?.first
+        completion(entry ?? (context.isPreview ? sample : sample.markedUnavailable))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerCountdownEntry>) -> Void) {
         if !context.isPreview { WidgetHeartbeat.stamp(kind: "InlinePrayerWidget") }
         let currentDate = Date()
 
-        guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false) else {
+        guard let entries = makeEntries(from: currentDate) else {
             let fallback = placeholder(in: context).markedUnavailable
             completion(Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600))))
             return
+        }
+        completion(Timeline(entries: entries, policy: .atEnd))
+    }
+
+    /// Entries starting at `currentDate`; nil when today's times are missing.
+    private func makeEntries(from currentDate: Date) -> [PrayerCountdownEntry]? {
+        guard let todayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: false) else {
+            return nil
         }
         let tomorrowPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: false)
 
@@ -324,7 +334,7 @@ struct InlinePrayerProvider: TimelineProvider {
             ))
         }
 
-        completion(Timeline(entries: entries, policy: .atEnd))
+        return entries
     }
 }
 

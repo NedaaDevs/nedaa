@@ -26,18 +26,30 @@ struct CombinedPrayerProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> AllPrayersEntry {
         let sample = placeholder(in: context)
-        return context.isPreview ? sample : sample.markedUnavailable
+        return makeEntries(for: configuration, from: Date())?.first
+            ?? (context.isPreview ? sample : sample.markedUnavailable)
     }
 
     func timeline(for configuration: AllPrayersConfigurationIntent, in context: Context) async -> Timeline<AllPrayersEntry> {
         if !context.isPreview { WidgetHeartbeat.stamp(kind: "AllPrayersCombinedWidget") }
         let currentDate = Date()
+
+        guard let entries = makeEntries(for: configuration, from: currentDate) else {
+            let fallback = placeholder(in: context).markedUnavailable
+            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
+        }
+        return Timeline(entries: entries, policy: .atEnd)
+    }
+
+    /// Entries starting at `currentDate`; nil when today's times are missing.
+    private func makeEntries(
+        for configuration: AllPrayersConfigurationIntent, from currentDate: Date
+    ) -> [AllPrayersEntry]? {
         let showSunrise = configuration.showSunrise
         let showTimer = configuration.showTimer
 
         guard let allTodayPrayers = prayerService.getTodaysPrayerTimes(showSunrise: showSunrise) else {
-            let fallback = placeholder(in: context).markedUnavailable
-            return Timeline(entries: [fallback], policy: .after(currentDate.addingTimeInterval(3600)))
+            return nil
         }
         let tomorrowsPrayers = prayerService.getTomorrowsPrayerTimes(showSunrise: showSunrise)
 
@@ -92,7 +104,7 @@ struct CombinedPrayerProvider: AppIntentTimelineProvider {
             ))
         }
 
-        return Timeline(entries: entries, policy: .atEnd)
+        return entries
     }
 }
 
