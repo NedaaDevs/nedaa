@@ -3,6 +3,8 @@ import type { HostInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react-native";
 
+import { AdjustmentRow } from "@/components/prayer-detail/AdjustmentRow";
+import { PlaybackRow } from "@/components/prayer-detail/PlaybackRow";
 import { PrayerDetailHero } from "@/components/prayer-detail/PrayerDetailHero";
 import {
   SheetErrorState,
@@ -13,6 +15,7 @@ import { Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
+import { Section } from "@/components/ui/section";
 import { VStack } from "@/components/ui/vstack";
 import { PRAYER_DETAIL_STATE } from "@/constants/PrayerDetail";
 import type { PrayerId } from "@/constants/Prayer";
@@ -69,7 +72,13 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
         </Pressable>
       </HStack>
       {state === PRAYER_DETAIL_STATE.READY ? (
-        <PrayerDetailHero prayerId={prayerId} />
+        <>
+          <PrayerDetailHero prayerId={prayerId} />
+          <PlaybackRow />
+          <Section title={t("prayerDetail.sections.calculation")}>
+            <AdjustmentRow prayerId={prayerId} />
+          </Section>
+        </>
       ) : state === PRAYER_DETAIL_STATE.LOADING ? (
         <SheetLoadingState prayerId={prayerId} />
       ) : state === PRAYER_DETAIL_STATE.UNAVAILABLE ? (
