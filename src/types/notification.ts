@@ -8,18 +8,19 @@ import { LocalPermissionStatus, type SchedulingSkipReasonValue } from "@/enums/n
 
 // Types
 import type { NotificationSoundKey } from "@/types/sound";
+import type { CustomSoundKey } from "@/types/customSound";
 import type { AthkarType } from "@/types/athkar";
 
 export type PrayerNotificationConfig = NotificationConfig & {
-  sound: PrayerSoundKey;
+  sound: PrayerSoundKey | CustomSoundKey;
 };
 
 export type IqamaNotificationConfig = NotificationWithTiming & {
-  sound: IqamaSoundKey;
+  sound: IqamaSoundKey | CustomSoundKey;
 };
 
 export type PreAthanNotificationConfig = NotificationWithTiming & {
-  sound: PreAthanSoundKey;
+  sound: PreAthanSoundKey | CustomSoundKey;
 };
 
 export type QadaNotificationConfig = {
@@ -100,7 +101,7 @@ export type NotificationAction = {
   updateAthanAudioStream: (stream: "media" | "ringer") => Promise<void>;
   updateFullIqamaPlayback: (enabled: boolean) => Promise<void>;
   updateIqamaAudioStream: (stream: "media" | "ringer") => Promise<void>;
-  updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
+  updateQuickSetup: (sound: PrayerNotificationConfig["sound"], vibration: boolean) => Promise<void>;
   updateDefault: <T extends ConfiguredNotificationType>(
     type: T,
     field: keyof ConfigForType<T>,
