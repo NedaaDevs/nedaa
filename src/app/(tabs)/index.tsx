@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Components
@@ -14,11 +13,10 @@ import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TodayHeader } from "@/components/today/TodayHeader";
 import { UpcomingOccasions } from "@/components/today/UpcomingOccasions";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
-
-// Constants
-import type { PrayerId } from "@/constants/Prayer";
+import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 
 // Hooks
+import { usePrayerDetail } from "@/hooks/usePrayerDetail";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 
 // Stores
@@ -28,9 +26,8 @@ export default function MainScreen() {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const showOccasions = usePreferencesStore((state) => state.showImportantDaysOnHome);
-  // Chosen on a card, lit on the day's line; choosing it again clears it.
-  const [selected, setSelected] = useState<PrayerId>();
-  const choose = (id: PrayerId) => setSelected((current) => (current === id ? undefined : id));
+  // A card opens its prayer's sheet; the card and its mark on the line stay lit.
+  const detail = usePrayerDetail();
 
   return (
     <DaySimulator>
@@ -45,12 +42,16 @@ export default function MainScreen() {
               <TodayHeader />
               <FocusCountdown />
               <SkyOccluder>
-                <CelestialRhythm selected={selected} />
+                <CelestialRhythm selected={detail.prayerId} />
               </SkyOccluder>
               <SkyOccluder>
                 <LocationNotice />
               </SkyOccluder>
-              <PrayerGrid selected={selected} onSelect={choose} />
+              <PrayerGrid
+                selected={detail.prayerId}
+                onSelect={detail.open}
+                openerRef={detail.openerRef}
+              />
               <OtherTimes />
               <PrayerTimesState />
               {showOccasions ? <UpcomingOccasions /> : null}
@@ -58,6 +59,11 @@ export default function MainScreen() {
             </Box>
           </SkyScrollView>
         </Box>
+        <PrayerDetailSheet
+          prayerId={detail.prayerId}
+          onClose={detail.close}
+          finalFocusRef={detail.openerRef}
+        />
       </SkyBackground>
     </DaySimulator>
   );

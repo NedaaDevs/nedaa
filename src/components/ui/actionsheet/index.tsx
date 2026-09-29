@@ -1,10 +1,13 @@
 import React, {
+  createContext,
+  use,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type PropsWithChildren,
+  type RefObject,
 } from "react";
 import { styled, View, Text as TamaguiText } from "tamagui";
 import { useTranslation } from "react-i18next";
@@ -12,12 +15,14 @@ import { useTheme, useThemeColor } from "@/components/ui/theme-color";
 import { useTextScale } from "@/hooks/useTextScale";
 import type { GetProps } from "tamagui";
 import {
+  AccessibilityInfo,
   BackHandler,
   FlatList,
   Platform,
   StyleSheet,
   View as RNView,
   type FlatListProps,
+  type HostInstance,
 } from "react-native";
 import { ReduceMotion } from "react-native-reanimated";
 import {
@@ -27,7 +32,7 @@ import {
   useBottomSheetModal,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { useCoverApp } from "@/components/ui/actionsheet/cover";
+import { useAppCovered, useCoverApp } from "@/components/ui/actionsheet/cover";
 import { PlatformType } from "@/enums/app";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -36,6 +41,14 @@ const SHEET_RADIUS = 18;
 
 /** Test ids for the parts a test reaches. */
 export const ACTIONSHEET_PART = { LAYER: "actionsheet-layer" } as const;
+
+/** Moves screen-reader focus to a view, when there is one. */
+const focusOn = (node: HostInstance | null | undefined) => {
+  if (node) AccessibilityInfo.sendAccessibilityEvent(node, "focus");
+};
+
+/** Where ActionsheetTitle registers its view for the sheet to focus. */
+const TitleContext = createContext<RefObject<RNView | null> | null>(null);
 
 // The app's sibling holding backdrop and sheet: VoiceOver stays inside it,
 // and the escape gesture closes the top sheet.
@@ -65,6 +78,8 @@ type ActionsheetProps = {
   snapPoints?: (number | string)[];
   /** Sizes the sheet to its content instead of a detent. */
   fitContent?: boolean;
+  /** Gets screen-reader focus back once the sheet closes: its opener. */
+  finalFocusRef?: RefObject<HostInstance | null>;
   children?: React.ReactNode;
 };
 
@@ -73,20 +88,40 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   onClose,
   snapPoints = [50],
   fitContent = false,
+  finalFocusRef,
   children,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const ref = useRef<BottomSheetModal>(null);
+  const title = useRef<RNView>(null);
   const hasPresented = useRef(false);
+  const leaving = useRef(false);
   // Up from its first settle until gorhom reports it dismissed.
   const [shown, setShown] = useState(false);
   useCoverApp(shown);
+  const covered = useAppCovered();
   const points = useMemo(
     () => snapPoints.map((n) => (typeof n === "number" ? `${n}%` : n)),
     [snapPoints]
   );
+
+  // Focus moves to the title once the sheet is up, and back out after.
+  useEffect(() => {
+    if (!shown) return;
+    focusOn(title.current);
+    return () => {
+      leaving.current = true;
+    };
+  }, [shown]);
+
+  // Waits for the app to be uncovered: until then the opener is out of reach.
+  useEffect(() => {
+    if (shown || covered || !leaving.current) return;
+    leaving.current = false;
+    focusOn(finalFocusRef?.current);
+  }, [shown, covered, finalFocusRef]);
 
   // Present on open; dismiss on a programmatic close only. hasPresented guards both
   // the never-dismiss-before-present case and the reopen case: gorhom's onDismiss
@@ -156,7 +191,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
         borderTopRightRadius: SHEET_RADIUS,
       }}
       handleIndicatorStyle={{ backgroundColor: theme.backgroundMuted?.val }}>
-      {children}
+      <TitleContext value={title}>{children}</TitleContext>
     </BottomSheetModal>
   );
 };
@@ -191,6 +226,16 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
   );
 };
 ActionsheetContent.displayName = "ActionsheetContent";
+
+// --- ActionsheetTitle ---
+
+/** The sheet's heading, text only; reader focus lands here once it is up. */
+const ActionsheetTitle: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <RNView ref={use(TitleContext)} accessible accessibilityRole="header">
+    {children}
+  </RNView>
+);
+ActionsheetTitle.displayName = "ActionsheetTitle";
 
 // --- ActionsheetDragIndicatorWrapper / ActionsheetDragIndicator ---
 // gorhom renders the drag handle, so these are no-ops kept for API compatibility.
@@ -293,6 +338,7 @@ export {
   ActionsheetIcon,
   ActionsheetFlatList,
   ActionsheetScrollView,
+  ActionsheetTitle,
 };
 export type {
   ActionsheetProps,

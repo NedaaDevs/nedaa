@@ -1,3 +1,5 @@
+import { Component, createRef, type RefObject } from "react";
+import type { View } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
@@ -32,7 +34,11 @@ const day = (date: string): DayPrayerTimes => ({
   } as DayPrayerTimes["otherTimings"],
 });
 
-const renderAt = (date: string, time: string, props: { selected?: PrayerId } = {}) => {
+const renderAt = (
+  date: string,
+  time: string,
+  props: { selected?: PrayerId; openerRef?: RefObject<View | null> } = {}
+) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
@@ -50,6 +56,11 @@ const label = (date: string, id: PrayerId, next = false, name = i18n.t(`prayerTi
     prayer: name,
     time: timeOf(date, id),
   });
+// jest's View mock hands a ref its component, props included.
+const labelOf = (node: unknown) =>
+  node instanceof Component && "accessibilityLabel" in node.props
+    ? node.props.accessibilityLabel
+    : undefined;
 const cards = () => screen.getAllByRole("button").map((card) => card.props.accessibilityLabel);
 
 describe("PrayerGrid", () => {
@@ -85,6 +96,18 @@ describe("PrayerGrid", () => {
       screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.MAGHRIB) }).props
         .accessibilityState
     ).toMatchObject({ selected: true });
+  });
+
+  // The prayer sheet hands reader focus back to this card once it closes.
+  it("holds the opener ref on the chosen card only", async () => {
+    const openerRef = createRef<View>();
+    const { rendered } = renderAt("2026-09-23", "14:02", {
+      selected: PRAYER_ID.MAGHRIB,
+      openerRef,
+    });
+    await rendered;
+
+    expect(labelOf(openerRef.current)).toBe(label("2026-09-23", PRAYER_ID.MAGHRIB));
   });
 
   it("names Dhuhr as Jumuah on a Friday", async () => {
