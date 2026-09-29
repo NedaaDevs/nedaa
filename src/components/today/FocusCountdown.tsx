@@ -18,6 +18,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { localizeDigits } from "@/utils/digits";
 import { formatCount, type FocusPrayer } from "@/utils/focusCount";
 import { prayerNameKey } from "@/utils/prayerName";
+import { spokenDuration } from "@/utils/spokenDuration";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 /** The widest figures the block shows, with and without an hour of seconds. */
@@ -53,21 +54,7 @@ export const FocusCountdown = () => {
   const digits = (text: string) => localizeDigits(text, locale, western);
   const until = count.axis === COUNT_AXIS.UNTIL;
   const counted = nameOf(count.counted);
-
-  // Spoken in whole minutes: a screen reader reading seconds would never finish.
-  const minutes = Math.max(
-    1,
-    until ? Math.ceil(count.seconds / 60) : Math.floor(count.seconds / 60)
-  );
-  const [hours, rest] = [Math.floor(minutes / 60), minutes % 60];
-  const hourText = t("common.hour", { count: hours });
-  const minuteText = t("common.minute", { count: rest });
-  const duration =
-    hours && rest
-      ? t("a11y.today.durationBoth", { hours: hourText, minutes: minuteText })
-      : hours
-        ? hourText
-        : minuteText;
+  const duration = spokenDuration(count, t);
 
   // Neither part shrinks: when both do not fit, the figure wraps under the name.
   return (
