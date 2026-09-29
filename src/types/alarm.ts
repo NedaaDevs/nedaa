@@ -1,6 +1,8 @@
-export type AlarmType = "fajr" | "friday";
+import { ALARM_TIMING_MODE, type ALARM_TYPE } from "@/constants/Alarm";
 
-export type TimingMode = "atPrayerTime" | "beforePrayerTime";
+export type AlarmType = (typeof ALARM_TYPE)[keyof typeof ALARM_TYPE];
+
+export type TimingMode = (typeof ALARM_TIMING_MODE)[keyof typeof ALARM_TIMING_MODE];
 
 export type ChallengeType = "tap" | "math" | "dhikr" | "none";
 
@@ -43,6 +45,13 @@ export interface TimingConfig {
   minutesBefore: number;
 }
 
+export interface AlarmTimingChoices {
+  /** Modes offered, in display order. */
+  modes: readonly TimingMode[];
+  /** Offsets a before-prayer alarm may take, in minutes. */
+  minuteSteps: readonly number[];
+}
+
 export interface AlarmTypeSettings {
   enabled: boolean;
   sound: string;
@@ -82,7 +91,7 @@ export const DEFAULT_SNOOZE_CONFIG: SnoozeConfig = {
 };
 
 export const DEFAULT_TIMING_CONFIG: TimingConfig = {
-  mode: "atPrayerTime",
+  mode: ALARM_TIMING_MODE.AT_PRAYER_TIME,
   minutesBefore: 0,
 };
 
@@ -103,11 +112,6 @@ export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   vibration: DEFAULT_VIBRATION_CONFIG,
   snooze: DEFAULT_SNOOZE_CONFIG,
 };
-
-export const TIMING_WINDOW_MINUTES = {
-  fajr: 90,
-  friday: 120,
-} as const;
 
 export const CHALLENGE_DIFFICULTY_CONFIG = {
   tap: {
