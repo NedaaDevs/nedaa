@@ -4,6 +4,11 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react-native";
 
 import { AdjustmentRow } from "@/components/prayer-detail/AdjustmentRow";
+import { AlarmDisclosure, useAlarmTypeFor } from "@/components/prayer-detail/AlarmDisclosure";
+import { AlertsHeader } from "@/components/prayer-detail/AlertsHeader";
+import { AthanGroup } from "@/components/prayer-detail/AthanGroup";
+import { IqamaGroup } from "@/components/prayer-detail/IqamaGroup";
+import { PreAthanGroup } from "@/components/prayer-detail/PreAthanGroup";
 import { PlaybackRow } from "@/components/prayer-detail/PlaybackRow";
 import { PrayerDetailHero } from "@/components/prayer-detail/PrayerDetailHero";
 import {
@@ -52,6 +57,7 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
   const clearError = usePrayerTimesStore((state) => state.clearError);
   const loadPrayerTimes = usePrayerTimesStore((state) => state.loadPrayerTimes);
   const settingsHydrated = useNotificationSettingsHydrated();
+  const alarmType = useAlarmTypeFor(prayerId);
   const state = prayerDetailState({ prayerId, day, isLoading, hasError, settingsHydrated });
   const retry = () => {
     clearError();
@@ -74,6 +80,17 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
       {state === PRAYER_DETAIL_STATE.READY ? (
         <>
           <PrayerDetailHero prayerId={prayerId} />
+          <Section title={t("prayerDetail.sections.alerts")}>
+            <AthanGroup prayerId={prayerId} />
+            <IqamaGroup prayerId={prayerId} />
+            <PreAthanGroup prayerId={prayerId} />
+            <AlertsHeader prayerId={prayerId} />
+          </Section>
+          {alarmType ? (
+            <Section title={t("prayerDetail.sections.alarms")}>
+              <AlarmDisclosure prayerId={prayerId} />
+            </Section>
+          ) : null}
           <PlaybackRow />
           <Section title={t("prayerDetail.sections.calculation")}>
             <AdjustmentRow prayerId={prayerId} />

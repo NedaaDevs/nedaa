@@ -24,3 +24,6 @@ export const NOTIFICATION_FIELD = {
   VIBRATION: "vibration",
   TIMING: "timing",
 } as const satisfies Record<string, keyof NotificationWithTiming>;
+
+/** Minutes from the Athan: after it for Iqama, before it for pre-Athan. */
+export const NOTIFICATION_TIMING_CHOICES = [5, 10, 15, 20, 30] as const;

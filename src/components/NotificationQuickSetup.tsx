@@ -9,11 +9,10 @@ import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
 
 // Utils
-import { getAvailableSoundsWithCustom } from "@/utils/sound";
+import { getAvailableSoundsWithCustom, isNotificationSound } from "@/utils/sound";
 
 // Types
-import type { NotificationType } from "@/types/notification";
-import type { PrayerSoundKey } from "@/constants/sounds";
+import type { NotificationType, PrayerNotificationConfig } from "@/types/notification";
 
 // Stores
 import { useCustomSoundsStore } from "@/stores/customSounds";
@@ -34,9 +33,9 @@ import SoundPreviewButton from "@/components/SoundPreviewButton";
 import { Zap } from "lucide-react-native";
 
 type Props = {
-  currentSound: PrayerSoundKey;
+  currentSound: PrayerNotificationConfig["sound"];
   vibrationEnabled: boolean;
-  onApply: (sound: PrayerSoundKey, vibration: boolean) => void;
+  onApply: (sound: PrayerNotificationConfig["sound"], vibration: boolean) => void;
   supportsVibration?: boolean;
 };
 
@@ -55,7 +54,7 @@ const NotificationQuickSetup: FC<Props> = ({
   const { customSounds } = useCustomSoundsStore();
 
   // Local state for quick setup
-  const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
+  const [localSound, setLocalSound] = useState<PrayerNotificationConfig["sound"]>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
 
   // The props carry the applied settings; the two local values are a draft the
@@ -101,7 +100,7 @@ const NotificationQuickSetup: FC<Props> = ({
 
   const handleValueChange = (value: string) => {
     hapticSelection();
-    setLocalSound(value as PrayerSoundKey);
+    if (isNotificationSound(NOTIFICATION_TYPE.PRAYER, value)) setLocalSound(value);
   };
 
   return (
