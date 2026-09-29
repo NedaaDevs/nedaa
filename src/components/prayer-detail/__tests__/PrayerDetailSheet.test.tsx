@@ -79,6 +79,15 @@ describe("PrayerDetailSheet", () => {
     expect(screen.getByRole(HEADER, { name: i18n.t("prayerTimes.jumuah") })).toBeOnTheScreen();
   });
 
+  it("offers the reliable alarm for Fajr and not for Asr", async () => {
+    const alarms = { name: i18n.t("prayerDetail.sections.alarms"), ...hidden };
+    await renderOn("2026-09-23", PRAYER_ID.FAJR);
+    expect(screen.getByRole(HEADER, alarms)).toBeOnTheScreen();
+
+    await renderOn("2026-09-23", PRAYER_ID.ASR);
+    expect(screen.queryByRole(HEADER, alarms)).toBeNull();
+  });
+
   it("reports a close from the sheet itself", async () => {
     const onClose = jest.fn();
     await renderOn("2026-09-23", PRAYER_ID.ASR, onClose);
