@@ -43,22 +43,13 @@ export const nextHijriOccurrence = (args: {
   return { hijriYear, daysRemaining, expectedGregorian };
 };
 
-// Registry → occurrences, soonest first; a tie keeps registry order.
+// Soonest first; Array sort is stable, so a tie keeps registry order.
 export const upcomingImportantDays = (args: {
   timezone: string;
   hijriDaysOffset?: number;
   now?: Date;
 }): UpcomingImportantDay[] =>
-  IMPORTANT_DAYS.map((def, order) => ({
-    order,
-    day: {
-      ...def,
-      ...nextHijriOccurrence({
-        ...args,
-        hijriMonth: def.hijriMonth,
-        hijriDay: def.hijriDay,
-      }),
-    },
-  }))
-    .sort((a, b) => a.day.daysRemaining - b.day.daysRemaining || a.order - b.order)
-    .map(({ day }) => day);
+  IMPORTANT_DAYS.map((def) => ({
+    ...def,
+    ...nextHijriOccurrence({ ...args, hijriMonth: def.hijriMonth, hijriDay: def.hijriDay }),
+  })).sort((a, b) => a.daysRemaining - b.daysRemaining);
