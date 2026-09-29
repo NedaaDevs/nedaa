@@ -26,7 +26,10 @@ export const DISCLOSURE = { ms: 220 } as const;
 
 const TIMING = { duration: DISCLOSURE.ms, easing: Easing.out(Easing.cubic) };
 
-type Props = { title: string; children: ReactNode };
+type Props = {
+  title: string;
+  children: ReactNode;
+};
 
 /** A summary row that opens a body below it, the body growing to its height. */
 export const Disclosure = ({ title, children }: Props) => {
@@ -55,11 +58,11 @@ export const Disclosure = ({ title, children }: Props) => {
         alignItems="center"
         justifyContent="space-between"
         gap="$3">
-        <Text size="xs" fontWeight="600" color="$fg">
+        <Text size="md" typography="helper" fontWeight="600" color="$fg">
           {title}
         </Text>
         <Animated.View testID={DISCLOSURE_PART.CHEVRON} style={chevron}>
-          <Icon as={ChevronDown} size="xs" color="$muted" />
+          <Icon as={ChevronDown} size="lg" color="$muted" />
         </Animated.View>
       </Pressable>
       <Animated.View

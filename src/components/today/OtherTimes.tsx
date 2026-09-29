@@ -50,10 +50,10 @@ export const OtherTimes = () => {
         minHeight="$8"
         borderTopWidth={1}
         borderColor="$border">
-        <Text size="xs" color="$muted" numberOfLines={1} flexShrink={1}>
+        <Text size="md" typography="helper" color="$mutedSky" flexShrink={1}>
           {label}
         </Text>
-        <Text size="xs" fontWeight="600" numeric color="$fg">
+        <Text size="md" fontWeight="600" numeric color="$fg">
           {time}
         </Text>
       </HStack>
