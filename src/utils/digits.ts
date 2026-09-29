@@ -11,3 +11,13 @@ export const toArabicIndicDigits = (str: string) =>
 // Arabic-Indic digits is deliberate and passes through both ways.
 export const localizeDigits = (str: string, locale: string, useWesternNumerals: boolean) =>
   locale.startsWith("ar") && !useWesternNumerals ? toArabicIndicDigits(str) : str;
+
+/** The Unicode left-to-right isolate and the mark that closes it. */
+export const LTR_ISOLATE = { OPEN: "\u2066", CLOSE: "\u2069" } as const;
+
+// A Latin number with its sign, and any time, decimal or range joined to it.
+const LATIN_NUMBER = /[+\-\u2212]?[0-9]+(?:[:.,\u2013\-\u2212][0-9]+)*/g;
+
+/** Holds each Latin number left to right, so RTL text cannot reorder it. */
+export const isolateLatinNumbers = (str: string) =>
+  str.replace(LATIN_NUMBER, (number) => `${LTR_ISOLATE.OPEN}${number}${LTR_ISOLATE.CLOSE}`);

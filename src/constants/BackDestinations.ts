@@ -42,6 +42,11 @@ export const BACK_DESTINATION = {
     href: "/settings/athanPlayback",
     title: "notification.athanPlayback.title",
   },
+  SETTINGS_CUSTOM_SOUNDS: {
+    route: "settings/customSounds",
+    href: "/settings/customSounds",
+    title: "notification.customSound.title",
+  },
   SETTINGS_ATHKAR: {
     route: "settings/athkar",
     href: "/settings/athkar",
