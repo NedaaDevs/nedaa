@@ -79,6 +79,11 @@ export const BACK_DESTINATION = {
     href: "/hijri-converter",
     title: "tools.hijriConverter.title",
   },
+  IMPORTANT_DAYS: {
+    route: "important-days",
+    href: "/important-days",
+    title: "importantDays.title",
+  },
   UMRAH_PREPARE: {
     route: "umrah/prepare/index",
     href: "/umrah/prepare",
