@@ -16,14 +16,13 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { upcomingImportantDays } from "@/utils/importantDays";
 import { useImportantDayFormat } from "@/hooks/useImportantDayFormat";
-import { formatNumberToLocale } from "@/utils/number";
 
 const ImportantDaysScreen = () => {
   const { t } = useTranslation();
   const hijriDaysOffset = useAppStore((s) => s.hijriDaysOffset);
   const { locationDetails } = useLocationStore();
   const timezone = locationDetails.timezone;
-  const { hijriLabel, expectedLabel, remainingLabel, daysUnit } = useImportantDayFormat();
+  const { hijriLabel, expectedLabel, remainingLabel, dayFigure } = useImportantDayFormat();
 
   const days = useMemo(
     () => upcomingImportantDays({ timezone, hijriDaysOffset }),
@@ -31,6 +30,7 @@ const ImportantDaysScreen = () => {
   );
 
   const [closest, ...rest] = days;
+  const figure = closest && dayFigure(closest.daysRemaining);
 
   return (
     <Background>
@@ -65,19 +65,19 @@ const ImportantDaysScreen = () => {
                   </VStack>
                 </HStack>
                 <VStack alignItems="center" minWidth={64}>
-                  {closest.daysRemaining <= 1 ? (
-                    <Text size="xl" fontWeight="800" color="$accentPrimary">
-                      {remainingLabel(closest.daysRemaining)}
-                    </Text>
-                  ) : (
+                  {figure?.unit ? (
                     <>
                       <Text size="3xl" fontWeight="800" color="$accentPrimary">
-                        {formatNumberToLocale(String(closest.daysRemaining))}
+                        {figure.value}
                       </Text>
                       <Text size="xs" color="$typographySecondary">
-                        {daysUnit(closest.daysRemaining)}
+                        {figure.unit}
                       </Text>
                     </>
+                  ) : (
+                    <Text size="xl" fontWeight="800" color="$accentPrimary">
+                      {figure?.value}
+                    </Text>
                   )}
                 </VStack>
               </HStack>
