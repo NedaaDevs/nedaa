@@ -48,6 +48,9 @@ const TAB_ITEMS = [
   { name: OpeningTab.TOOLS, title: "a11y.tab.tools", icon: Ellipsis },
 ] as const;
 
+/** Every route the tabs declare: the bar's tabs, then the ones it hides. */
+export const TAB_ROUTES = [...TAB_ITEMS.map((tab) => tab.name), ...Object.values(HiddenTab)];
+
 export const TAB_BAR_PART = { FRAME: "tab-bar-frame" } as const;
 
 // Reads only the tab state; a press switches tabs by href through the router.
@@ -156,15 +159,13 @@ const TabsLayout = () => {
     <AppTabBar state={state} tabs={tabs} readerActive={readerActive} />
   );
 
-  // A tab route renders only when declared; the bar shows TAB_ITEMS alone.
+  // Every tab route is declared; the bar shows TAB_ITEMS alone.
   return (
     <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
-      {TAB_ITEMS.map((tab) => (
-        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: t(tab.title) }} />
-      ))}
-      {Object.values(HiddenTab).map((name) => (
-        <Tabs.Screen key={name} name={name} />
-      ))}
+      {TAB_ROUTES.map((name) => {
+        const item = TAB_ITEMS.find((tab) => tab.name === name);
+        return <Tabs.Screen key={name} name={name} options={item && { title: t(item.title) }} />;
+      })}
     </Tabs>
   );
 };
