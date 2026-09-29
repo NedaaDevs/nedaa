@@ -1,20 +1,16 @@
 import { ScheduledAlarmType } from "@/enums/alarm";
 import type { AlarmType } from "@/types/alarm";
-import { PRAYER_ID } from "@/constants/Prayer";
+import { ALARM_TYPE } from "@/constants/Alarm";
 
-// The settings store is keyed by AlarmType ("friday") while scheduled alarms and the
-// native settings storage are keyed by ScheduledAlarmType ("jummah"). Everything that
-// crosses the native boundary must use the scheduled type — fire paths look up by it.
+// Native storage and fire paths key by scheduled type, not by settings key.
 export const toScheduledAlarmType = (
   alarmType: AlarmType
 ): ScheduledAlarmType.FAJR | ScheduledAlarmType.JUMMAH =>
-  alarmType === PRAYER_ID.FAJR ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
+  alarmType === ALARM_TYPE.FAJR ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
 
-// Inverse of toScheduledAlarmType: resolve a scheduled alarm back to its settings
-// key so store-side logic (snooze caps, titles) reads the user's per-type config.
-// CUSTOM has no per-type user settings, so it maps to null.
+// Inverse of toScheduledAlarmType; CUSTOM has no per-type settings, so null.
 export const toSettingsAlarmType = (scheduledType: ScheduledAlarmType): AlarmType | null => {
-  if (scheduledType === ScheduledAlarmType.FAJR) return PRAYER_ID.FAJR;
-  if (scheduledType === ScheduledAlarmType.JUMMAH) return "friday";
+  if (scheduledType === ScheduledAlarmType.FAJR) return ALARM_TYPE.FAJR;
+  if (scheduledType === ScheduledAlarmType.JUMMAH) return ALARM_TYPE.FRIDAY;
   return null;
 };
