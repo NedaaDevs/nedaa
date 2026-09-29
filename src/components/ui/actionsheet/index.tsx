@@ -1,20 +1,57 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react";
 import { styled, View, Text as TamaguiText } from "tamagui";
+import { useTranslation } from "react-i18next";
 import { useTheme, useThemeColor } from "@/components/ui/theme-color";
 import { useTextScale } from "@/hooks/useTextScale";
 import type { GetProps } from "tamagui";
-import { BackHandler, FlatList, Platform } from "react-native";
-import type { FlatListProps } from "react-native";
+import {
+  BackHandler,
+  FlatList,
+  Platform,
+  StyleSheet,
+  View as RNView,
+  type FlatListProps,
+} from "react-native";
+import { ReduceMotion } from "react-native-reanimated";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetBackdrop,
+  useBottomSheetModal,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { useCoverApp } from "@/components/ui/actionsheet/cover";
 import { PlatformType } from "@/enums/app";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** The $sheet radius, as a number: gorhom styles take no theme tokens. */
 const SHEET_RADIUS = 18;
+
+/** Test ids for the parts a test reaches. */
+export const ACTIONSHEET_PART = { LAYER: "actionsheet-layer" } as const;
+
+// The app's sibling holding backdrop and sheet: VoiceOver stays inside it,
+// and the escape gesture closes the top sheet.
+const ModalLayer = ({ children }: PropsWithChildren) => {
+  const { dismiss } = useBottomSheetModal();
+  return (
+    <RNView
+      testID={ACTIONSHEET_PART.LAYER}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="box-none"
+      accessibilityViewIsModal
+      onAccessibilityEscape={() => dismiss()}>
+      {children}
+    </RNView>
+  );
+};
 
 // --- Actionsheet ---
 // Built on @gorhom/bottom-sheet so an inner ActionsheetScrollView scrolls instead of
@@ -39,8 +76,13 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   children,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
+  const reduced = useReducedMotion();
   const ref = useRef<BottomSheetModal>(null);
   const hasPresented = useRef(false);
+  // Up from its first settle until gorhom reports it dismissed.
+  const [shown, setShown] = useState(false);
+  useCoverApp(shown);
   const points = useMemo(
     () => snapPoints.map((n) => (typeof n === "number" ? `${n}%` : n)),
     [snapPoints]
@@ -59,8 +101,13 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     }
   }, [isOpen]);
 
+  const handleChange = useCallback((index: number) => {
+    if (index >= 0) setShown(true);
+  }, []);
+
   const handleDismiss = useCallback(() => {
     hasPresented.current = false;
+    setShown(false);
     onClose?.();
   }, [onClose]);
 
@@ -81,9 +128,10 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
         disappearsOnIndex={-1}
         opacity={0.5}
         pressBehavior="close"
+        accessibilityLabel={t("common.close")}
       />
     ),
-    []
+    [t]
   );
 
   return (
@@ -92,7 +140,14 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       snapPoints={fitContent ? undefined : points}
       enableDynamicSizing={fitContent}
       enablePanDownToClose
+      onChange={handleChange}
       onDismiss={handleDismiss}
+      overrideReduceMotion={reduced ? ReduceMotion.Always : ReduceMotion.Never}
+      // gorhom's defaults make the content one "Bottom Sheet" element.
+      accessible={false}
+      accessibilityLabel={null}
+      accessibilityRole={null}
+      containerComponent={ModalLayer}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor: theme.backgroundSecondary?.val,
