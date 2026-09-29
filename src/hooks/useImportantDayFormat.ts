@@ -35,9 +35,6 @@ export const useImportantDayFormat = () => {
     return t("importantDays.inDays", { count: daysRemaining });
   };
 
-  // Bare unit word ("days") for the hero block, where the numeral stands alone.
-  const daysUnit = (daysRemaining: number) => t("importantDays.days", { count: daysRemaining });
-
   // A numeral before the Arabic dual is wrong, so two days is its own word.
   const dayFigure = (daysRemaining: number): DayFigure => {
     if (daysRemaining === 0) return { value: t("importantDays.today") };
@@ -45,8 +42,11 @@ export const useImportantDayFormat = () => {
     if (new Intl.PluralRules(locale).select(daysRemaining) === PLURAL_DUAL) {
       return { value: t("importantDays.twoDays") };
     }
-    return { value: digits(String(daysRemaining)), unit: daysUnit(daysRemaining) };
+    return {
+      value: digits(String(daysRemaining)),
+      unit: t("importantDays.days", { count: daysRemaining }),
+    };
   };
 
-  return { hijriLabel, expectedLabel, remainingLabel, daysUnit, dayFigure };
+  return { hijriLabel, expectedLabel, remainingLabel, dayFigure };
 };
