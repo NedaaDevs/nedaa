@@ -1849,5 +1849,12 @@
   "widget_imsak": "Imsak",
   "widget_ramadan_day": "Ramadan Day %d",
   "widget_show_ramadan_labels": "Show Ramadan Labels",
-  "widget_suhoor": "Suhoor"
+  "widget_suhoor": "Suhoor",
+  "a11y.prayerDetail.states.retry": "Loads the prayer times again",
+  "prayerDetail.states.error.body": "Couldn't load the time for {{prayer}}. Check your internet connection, then try again.",
+  "prayerDetail.states.error.title": "Couldn't load this prayer",
+  "prayerDetail.states.loading.body": "Getting the alerts for {{prayer}} ready.",
+  "prayerDetail.states.loading.title": "Loading settings",
+  "prayerDetail.states.unavailable.body": "There's no time for {{prayer}} yet. Try again to load today's times.",
+  "prayerDetail.states.unavailable.title": "Settings unavailable"
 }

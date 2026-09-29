@@ -1,20 +1,26 @@
 import { useState, type RefObject } from "react";
 import type { HostInstance } from "react-native";
 import { useTranslation } from "react-i18next";
-import { parseISO } from "date-fns";
 import { X } from "lucide-react-native";
 
-import { Actionsheet, ActionsheetContent, ActionsheetTitle } from "@/components/ui/actionsheet";
+import { PrayerDetailHero } from "@/components/prayer-detail/PrayerDetailHero";
+import {
+  SheetErrorState,
+  SheetLoadingState,
+  SheetUnavailableState,
+} from "@/components/prayer-detail/SheetStates";
+import { Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
+import { PRAYER_DETAIL_STATE } from "@/constants/PrayerDetail";
+import type { PrayerId } from "@/constants/Prayer";
+import { useNotificationSettingsHydrated } from "@/hooks/useNotificationSettingsHydrated";
 import { useShownDay } from "@/hooks/useShownDay";
 import { SimulatedClockContext, useClockOverride } from "@/hooks/useTodayClock";
-import { prayerNameKey } from "@/utils/prayerName";
-import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { prayerDetailState } from "@/utils/prayerDetailState";
 
 type Props = {
   /** The prayer to show; none closes the sheet. */
@@ -34,12 +40,20 @@ type Opening = {
 
 type BodyProps = { prayerId: PrayerId; onClose: () => void };
 
-/** The prayer's name as the sheet's title, under its close button. */
+/** The prayer's sections in the prototype's order, or the state in their place. */
 const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
   const { t } = useTranslation();
   const { day } = useShownDay();
-  const friday =
-    day !== null && isFridayInTimeZone(parseISO(day.timings[PRAYER_ID.DHUHR]), day.timezone);
+  const isLoading = usePrayerTimesStore((state) => state.isLoading);
+  const hasError = usePrayerTimesStore((state) => state.hasError);
+  const clearError = usePrayerTimesStore((state) => state.clearError);
+  const loadPrayerTimes = usePrayerTimesStore((state) => state.loadPrayerTimes);
+  const settingsHydrated = useNotificationSettingsHydrated();
+  const state = prayerDetailState({ prayerId, day, isLoading, hasError, settingsHydrated });
+  const retry = () => {
+    clearError();
+    loadPrayerTimes(true).catch(() => {});
+  };
 
   return (
     <VStack gap="$5" paddingBottom="$5">
@@ -54,11 +68,15 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
           <Icon as={X} size="md" color="$muted" />
         </Pressable>
       </HStack>
-      <ActionsheetTitle>
-        <Text size="2xl" bold typography="title" color="$fg">
-          {t(prayerNameKey(prayerId, friday))}
-        </Text>
-      </ActionsheetTitle>
+      {state === PRAYER_DETAIL_STATE.READY ? (
+        <PrayerDetailHero prayerId={prayerId} />
+      ) : state === PRAYER_DETAIL_STATE.LOADING ? (
+        <SheetLoadingState prayerId={prayerId} />
+      ) : state === PRAYER_DETAIL_STATE.UNAVAILABLE ? (
+        <SheetUnavailableState prayerId={prayerId} onRetry={retry} />
+      ) : (
+        <SheetErrorState prayerId={prayerId} onRetry={retry} />
+      )}
     </VStack>
   );
 };
