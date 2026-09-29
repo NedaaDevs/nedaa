@@ -12,6 +12,7 @@ import {
   type TextRole,
 } from "@/components/ui/text/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
+import { getDirection, useAppStore } from "@/stores/app";
 import i18n from "@/localization/i18n";
 
 type TextSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
@@ -86,6 +87,8 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
     ref
   ) => {
     const theme = useTheme();
+    // iOS aligns unmarked text by the phone's language, not the app's.
+    const writingDirection = getDirection(useAppStore((state) => state.locale));
     // The hook always runs (hooks-order safety); the override only replaces its value.
     const appScale = useTextScale();
     const m = scaleOverride ?? appScale;
@@ -113,7 +116,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         // uses a more generous width calculation in StaticLayout.
         {...(IS_ANDROID && !glyph && { textBreakStrategy: "simple", paddingEnd: 8 })}
         style={[
-          !IS_ANDROID && i18n.language === "ar" && { writingDirection: "rtl" as const },
+          !IS_ANDROID && { writingDirection },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },
