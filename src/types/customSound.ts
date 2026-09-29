@@ -5,7 +5,7 @@ import { NotificationType } from "@/types/notification";
  */
 export type CustomSound = {
   /** Unique identifier */
-  id: string;
+  id: CustomSoundKey;
 
   /** User-defined name for the sound */
   name: string;
@@ -64,3 +64,6 @@ export const SUPPORTED_AUDIO_EXTENSIONS = [".mp3", ".ogg", ".wav", ".m4a", ".aac
  * Custom sound key prefix to distinguish from bundled sounds
  */
 export const CUSTOM_SOUND_KEY_PREFIX = "custom_";
+
+/** How a stored alert names a custom sound. */
+export type CustomSoundKey = `${typeof CUSTOM_SOUND_KEY_PREFIX}${string}`;
