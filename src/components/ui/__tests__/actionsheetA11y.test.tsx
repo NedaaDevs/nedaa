@@ -1,8 +1,14 @@
-import { Text } from "react-native";
+import { Component, createRef } from "react";
+import { AccessibilityInfo, Text, View } from "react-native";
 import { act, fireEvent, screen } from "@testing-library/react-native";
 import { ReduceMotion } from "react-native-reanimated";
 
-import { ACTIONSHEET_PART, Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
+import {
+  ACTIONSHEET_PART,
+  Actionsheet,
+  ActionsheetContent,
+  ActionsheetTitle,
+} from "@/components/ui/actionsheet";
 import { useAppCovered } from "@/components/ui/actionsheet/cover";
 import i18n from "@/localization/i18n";
 import { BOTTOM_SHEET_PART, modalProps } from "@/test-helpers/bottomSheetMock";
@@ -14,31 +20,52 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
-const BODY = "Fajr";
+const TITLE = "Fajr";
 const COVER = "cover";
+const FOCUS = "focus";
+const HEADER = "header";
 // The open sheet hides its siblings from a reader, so tests look past that.
 const hidden = { includeHiddenElements: true };
 
 /** Whether the app behind is covered, as the root layout reads it. */
 const CoverProbe = () => <Text testID={COVER}>{String(useAppCovered())}</Text>;
 
+const opener = createRef<View>();
+
 const Screen = ({ open, onClose = jest.fn() }: { open: boolean; onClose?: () => void }) => (
   <>
     <CoverProbe />
-    <Actionsheet isOpen={open} onClose={onClose}>
+    <View ref={opener} accessible accessibilityRole="button" />
+    <Actionsheet isOpen={open} onClose={onClose} finalFocusRef={opener}>
       <ActionsheetContent>
-        <Text>{BODY}</Text>
+        <ActionsheetTitle>
+          <Text>{TITLE}</Text>
+        </ActionsheetTitle>
       </ActionsheetContent>
     </Actionsheet>
   </>
 );
 
+// jest's View mock hands a ref its component, props included.
+const roleOf = (node: unknown) =>
+  node instanceof Component && "accessibilityRole" in node.props
+    ? node.props.accessibilityRole
+    : undefined;
+
+// Compared by identity: printing a rendered node walks the whole tree.
+const focusEvent = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+const focusedRoles = () => focusEvent.mock.calls.map(([node, event]) => [roleOf(node), event]);
+const lastFocusIsOpener = () => {
+  const [node, event] = focusEvent.mock.lastCall ?? [];
+  return node === opener.current && event === FOCUS;
+};
 const covered = () => screen.getByTestId(COVER, hidden).props.children;
 const lastSheetProps = () => modalProps.mock.lastCall?.[0];
 
 describe("Actionsheet accessibility", () => {
   beforeEach(() => {
     mockReduced = false;
+    focusEvent.mockReset();
     modalProps.mockClear();
   });
 
@@ -59,10 +86,28 @@ describe("Actionsheet accessibility", () => {
     expect(content.props.accessibilityRole).toBeUndefined();
   });
 
+  it("moves screen-reader focus to the title once the sheet is up", async () => {
+    await renderWithTheme(<Screen open />);
+
+    expect(screen.getByRole(HEADER, { name: TITLE })).toBeOnTheScreen();
+    expect(focusedRoles()).toEqual([[HEADER, FOCUS]]);
+  });
+
   it("holds the app behind out of the reader's reach while open", async () => {
     await renderWithTheme(<Screen open />);
 
     expect(covered()).toBe(String(true));
+  });
+
+  it("returns focus to the opener once the app is uncovered", async () => {
+    const coveredAtFocus: string[] = [];
+    await renderWithTheme(<Screen open />);
+    focusEvent.mockImplementation(() => coveredAtFocus.push(covered()));
+
+    await screen.rerender(<Screen open={false} />);
+
+    expect(lastFocusIsOpener()).toBe(true);
+    expect(coveredAtFocus.at(-1)).toBe(String(false));
   });
 
   it("closes on the iOS escape gesture", async () => {

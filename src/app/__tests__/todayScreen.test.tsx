@@ -1,7 +1,7 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
-import { act } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { SKY_PART } from "@/components/ui/sky-background";
@@ -19,6 +19,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { HijriDate } from "@/utils/date";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("@/utils/date", () => {
   // A 30-day-month calendar, enough for the occasions to count their days.
   const serial = ({ year, month, day }: HijriDate) => year * 360 + (month - 1) * 30 + day;
@@ -111,6 +112,20 @@ describe("Today", () => {
 
     expect(screen.getByText(i18n.t("today.focus.next"))).toBeTruthy();
     expect(screen.getAllByText(i18n.t("prayerTimes.asr")).length).toBeGreaterThan(0);
+  });
+
+  it("opens a prayer's sheet from its card, keeping the card chosen", async () => {
+    await renderToday();
+    const card = screen.getByRole("button", {
+      name: new RegExp(`^${i18n.t("prayerTimes.maghrib")},`),
+    });
+
+    await act(() => fireEvent.press(card));
+
+    expect(
+      screen.getByRole("header", { name: i18n.t("prayerTimes.maghrib"), hidden: true })
+    ).toBeTruthy();
+    expect(card.props.accessibilityState).toMatchObject({ selected: true });
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {
