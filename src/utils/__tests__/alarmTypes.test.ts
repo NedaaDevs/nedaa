@@ -1,27 +1,26 @@
-import { toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
+import { ALARM_TYPE } from "@/constants/Alarm";
 import { ScheduledAlarmType } from "@/enums/alarm";
-import { PRAYER_ID } from "@/constants/Prayer";
+import { toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 
 describe("toScheduledAlarmType", () => {
   it("maps the friday settings key to the jummah scheduled type", () => {
-    // Native fire paths look alarm settings up by the *scheduled* type ("jummah");
-    // persisting under the settings key ("friday") made every Jummah customization
-    // fall back to defaults at fire time.
-    expect(toScheduledAlarmType("friday")).toBe(ScheduledAlarmType.JUMMAH);
+    // Native fire paths read settings by the scheduled type; the settings key
+    // would leave every Jummah customization on its defaults at fire time.
+    expect(toScheduledAlarmType(ALARM_TYPE.FRIDAY)).toBe(ScheduledAlarmType.JUMMAH);
   });
 
   it("maps fajr to fajr", () => {
-    expect(toScheduledAlarmType(PRAYER_ID.FAJR)).toBe(ScheduledAlarmType.FAJR);
+    expect(toScheduledAlarmType(ALARM_TYPE.FAJR)).toBe(ScheduledAlarmType.FAJR);
   });
 });
 
 describe("toSettingsAlarmType", () => {
   it("maps the jummah scheduled type back to the friday settings key", () => {
-    expect(toSettingsAlarmType(ScheduledAlarmType.JUMMAH)).toBe("friday");
+    expect(toSettingsAlarmType(ScheduledAlarmType.JUMMAH)).toBe(ALARM_TYPE.FRIDAY);
   });
 
   it("maps fajr to fajr", () => {
-    expect(toSettingsAlarmType(ScheduledAlarmType.FAJR)).toBe(PRAYER_ID.FAJR);
+    expect(toSettingsAlarmType(ScheduledAlarmType.FAJR)).toBe(ALARM_TYPE.FAJR);
   });
 
   it("returns null for custom (no per-type user settings)", () => {
