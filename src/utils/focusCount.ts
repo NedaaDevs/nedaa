@@ -29,10 +29,15 @@ export type FocusCount = {
 export const inFocusWindow = (startedAt: number, now: number) =>
   now >= startedAt && now - startedAt < PRAYER_FOCUS.activeMs;
 
-const prayersIn = (days: StoredDays): FocusPrayer[] =>
+/** Every stored prayer at its moment, in time order. */
+export const prayersIn = (days: StoredDays): FocusPrayer[] =>
   storedDayList(days).flatMap((day) =>
     PRAYER_IDS.map((id) => ({ id, time: parseISO(day.timings[id]), timezone: day.timezone }))
   );
+
+/** Whole seconds between a prayer's moment and `now`, either side of it. */
+export const secondsFrom = (prayer: FocusPrayer, now: Date) =>
+  Math.abs(Math.round((prayer.time.getTime() - now.getTime()) / 1000));
 
 /** What the focus block counts at `now`; null with no later prayer stored. */
 export const focusCount = (
@@ -46,8 +51,6 @@ export const focusCount = (
   if (!next) return null;
   const previous = prayers.findLast((prayer) => prayer.time <= now);
 
-  const secondsTo = (prayer: FocusPrayer) =>
-    Math.abs(Math.round((prayer.time.getTime() - now.getTime()) / 1000));
   const precise = settings.seconds;
   const inFocus = previous !== undefined && inFocusWindow(previous.time.getTime(), now.getTime());
 
@@ -58,7 +61,7 @@ export const focusCount = (
       named: previous,
       current: true,
       counted: previous,
-      seconds: secondsTo(previous),
+      seconds: secondsFrom(previous, now),
       precise,
     };
   }
@@ -69,7 +72,7 @@ export const focusCount = (
       named: next,
       current: false,
       counted: previous,
-      seconds: secondsTo(previous),
+      seconds: secondsFrom(previous, now),
       precise,
     };
   }
@@ -78,7 +81,7 @@ export const focusCount = (
     named: next,
     current: false,
     counted: next,
-    seconds: secondsTo(next),
+    seconds: secondsFrom(next, now),
     precise,
   };
 };

@@ -2,7 +2,8 @@ import { AccessibilityInfo, Platform } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 
 import { CALLOUT_PART, Callout } from "@/components/ui/callout";
-import { StatePanel } from "@/components/ui/state-panel";
+import { STATE_PANEL_ICON_ID, StatePanel } from "@/components/ui/state-panel";
+import { STATE_PANEL_KIND } from "@/constants/StatePanel";
 import { PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -34,6 +35,26 @@ describe("StatePanel", () => {
     await userEvent.press(screen.getByRole("button", { name: "Retry" }));
 
     expect(onAction).toHaveBeenCalled();
+  });
+
+  // A wait has nothing to act on; the message alone is announced.
+  it("offers no action while something loads", async () => {
+    await renderWithTheme(
+      <StatePanel kind={STATE_PANEL_KIND.LOADING} title="Loading" body="Getting things ready." />
+    );
+
+    expect(
+      screen.getByLabelText("Loading. Getting things ready.").props.accessibilityLiveRegion
+    ).toBe("polite");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it.each(Object.values(STATE_PANEL_KIND))("marks the %s kind with its own icon", async (kind) => {
+    await renderWithTheme(<StatePanel kind={kind} title="Title" body="Body." />);
+
+    expect(
+      screen.getByTestId(STATE_PANEL_ICON_ID[kind], { includeHiddenElements: true })
+    ).toBeTruthy();
   });
 
   describe("speaking its message", () => {

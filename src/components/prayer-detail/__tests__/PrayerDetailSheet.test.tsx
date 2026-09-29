@@ -101,6 +101,14 @@ describe("PrayerDetailSheet", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("keeps the prayer named when its times cannot be shown", async () => {
+    await renderOn("2026-09-23", PRAYER_ID.ASR);
+    await act(() => usePrayerTimesStore.setState({ todayTimings: null, isLoading: false }));
+
+    expect(screen.getByRole(HEADER, { name: i18n.t("prayerTimes.asr") })).toBeOnTheScreen();
+    expect(screen.getByText(i18n.t("prayerDetail.states.unavailable.title"))).toBeOnTheScreen();
+  });
+
   it("hands reader focus back to the opener once closed", async () => {
     await renderOn("2026-09-23", PRAYER_ID.ASR);
 
