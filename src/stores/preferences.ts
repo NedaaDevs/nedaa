@@ -23,7 +23,7 @@ type PreferencesState = {
   // Today's focus figure counts to the second; off counts in minutes, calmer.
   showSeconds: boolean;
   hapticsEnabled: boolean;
-  // Home shows the Important Days pager card. The Tools screen is always available.
+  // Today lists the two nearest occasions below the prayer times.
   showImportantDaysOnHome: boolean;
   // Accessibility: render bigger buttons/text where controls support it (default off).
   largeControls: boolean;
