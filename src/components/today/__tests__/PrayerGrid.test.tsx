@@ -1,5 +1,6 @@
 import { screen, userEvent } from "@testing-library/react-native";
 
+import config from "../../../../tamagui.config";
 import { PrayerGrid } from "@/components/today/PrayerGrid";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
@@ -11,6 +12,7 @@ import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
 import { controlProblems } from "@/test-helpers/controls";
+import { fontSizeOf, styleOf } from "@/test-helpers/text";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 
@@ -123,6 +125,44 @@ describe("PrayerGrid", () => {
     await renderWithTheme(<PrayerGrid onSelect={jest.fn()} />);
 
     expect(screen.toJSON()).toBeNull();
+  });
+
+  // The wide card and a half-width one share the stacked layout.
+  it.each([PRAYER_ID.ASR, PRAYER_ID.FAJR])("sets %s's time under its name", async (id) => {
+    await renderAt("2026-09-23", "14:02").rendered;
+    const named = screen.getByText(i18n.t(`prayerTimes.${id}`));
+    const time = screen.getByText(timeOf("2026-09-23", id));
+    const column = named.parent;
+
+    expect(column).toHaveStyle({ flexDirection: "column" });
+    expect(column?.children.indexOf(named)).toBe(0);
+    expect(column?.children.indexOf(time)).toBe(1);
+    expect(named).toHaveStyle({ fontSize: fontSizeOf("lg") });
+    expect(time).toHaveStyle({ fontSize: fontSizeOf("lg") });
+  });
+
+  // A long name at a large text size wraps and the card grows.
+  it("lets a long name wrap, never truncating", async () => {
+    await renderAt("2026-09-23", "14:02").rendered;
+
+    for (const id of [PRAYER_ID.ASR, PRAYER_ID.FAJR]) {
+      expect(screen.getByText(i18n.t(`prayerTimes.${id}`)).props.numberOfLines).toBeUndefined();
+    }
+  });
+
+  it("gives each card the height of its two lines", async () => {
+    await renderAt("2026-09-23", "14:02").rendered;
+    const card = styleOf(screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.FAJR) }));
+    const named = styleOf(screen.getByText(i18n.t(`prayerTimes.${PRAYER_ID.FAJR}`)));
+    const time = styleOf(screen.getByText(timeOf("2026-09-23", PRAYER_ID.FAJR)));
+
+    expect(card.minHeight).toBe(config.tokens.size[16].val);
+    expect(card.minHeight).toBeGreaterThanOrEqual(
+      Number(card.paddingTop) +
+        Number(named.lineHeight) +
+        Number(time.lineHeight) +
+        Number(card.paddingBottom)
+    );
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {
