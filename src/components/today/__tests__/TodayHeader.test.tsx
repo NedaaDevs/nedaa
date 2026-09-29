@@ -4,9 +4,10 @@ import { userEvent } from "@testing-library/react-native";
 import { act, renderRouter, screen } from "expo-router/testing-library";
 
 import config from "../../../../tamagui.config";
-import { TodayHeader } from "@/components/today/TodayHeader";
+import { TODAY_HEADER_PART, TodayHeader } from "@/components/today/TodayHeader";
+import { ROLE_RATIO } from "@/components/ui/text/sizing";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { AppLocale, AppMode } from "@/enums/app";
+import { AppLocale, AppMode, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
@@ -14,6 +15,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { controlProblems } from "@/test-helpers/controls";
+import { fontSizeOf, lineRatioOf } from "@/test-helpers/text";
 
 // hijri-native is a native module; the header reads today's Hijri date from it.
 const mockFromTimestamp = jest.fn((_seconds: number, _timezone: string) => ({
@@ -57,7 +59,7 @@ describe("TodayHeader", () => {
     jest.useFakeTimers({ now: new Date("2026-09-23T09:00:00.000Z") });
     await act(() => i18n.changeLanguage(AppLocale.EN));
     useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN, hijriDaysOffset: 0 });
-    usePreferencesStore.setState({ useWesternNumerals: false });
+    usePreferencesStore.setState({ useWesternNumerals: false, textSize: TextSize.DEFAULT });
     useLocationStore.setState({
       localizedLocation: { city: CITY, country: COUNTRY },
       locationDetails: {
@@ -110,6 +112,40 @@ describe("TodayHeader", () => {
     ).toBeTruthy();
     expect(mockFromTimestamp).toHaveBeenCalledWith(Math.floor(now.getTime() / 1000), "Asia/Riyadh");
   });
+
+  // The date can be Arabic, so its display size needs the Arabic line floor.
+  it("sets the Hijri date at display size, on a line box Arabic fits", async () => {
+    await renderHeader();
+    const date = screen.getByRole("header");
+
+    expect(date).toHaveStyle({ fontSize: fontSizeOf("4xl") });
+    expect(lineRatioOf(date)).toBeGreaterThanOrEqual(ROLE_RATIO.display);
+  });
+
+  it("sets the Gregorian date and the place at reading size", async () => {
+    await renderHeader();
+
+    expect(
+      screen.getByText(
+        i18n.t("today.gregorianDate", { day: "Wednesday", date: "23 September 2026" })
+      )
+    ).toHaveStyle({ fontSize: fontSizeOf("md") });
+    expect(screen.getByText(CITY)).toHaveStyle({ fontSize: fontSizeOf("md") });
+    expect(screen.getByText(COUNTRY)).toHaveStyle({ fontSize: fontSizeOf("sm") });
+  });
+
+  it.each([
+    [TextSize.DEFAULT, "row"],
+    [TextSize.MAX, "column"],
+  ] as const)(
+    "at text size %s lays the dates and the place out as a %s",
+    async (textSize, flexDirection) => {
+      usePreferencesStore.setState({ textSize });
+      await renderHeader();
+
+      expect(screen.getByTestId(TODAY_HEADER_PART.DATE_ROW)).toHaveStyle({ flexDirection });
+    }
+  );
 
   it("opens the location settings from the city", async () => {
     await renderHeader();

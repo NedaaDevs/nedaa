@@ -2,15 +2,18 @@ import { AppState, type AppStateStatus } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 import { withTiming } from "react-native-reanimated";
 
-import { FocusCountdown } from "@/components/today/FocusCountdown";
+import { FOCUS_COUNTDOWN_PART, FocusCountdown } from "@/components/today/FocusCountdown";
+import { ROLE_RATIO } from "@/components/ui/text/sizing";
 import { APP_STATE } from "@/constants/AppState";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
+import { fontSizeOf, lineRatioOf } from "@/test-helpers/text";
 
 /** Wednesday 23 September 2026; the 25th is a Friday. */
 const day = (date: string): DayPrayerTimes => ({
@@ -48,9 +51,23 @@ describe("FocusCountdown", () => {
     usePreferencesStore.setState({
       showSeconds: false,
       useWesternNumerals: true,
+      textSize: TextSize.DEFAULT,
     });
   });
   afterEach(() => jest.useRealTimers());
+
+  it.each([
+    [TextSize.DEFAULT, "row"],
+    [TextSize.MAX, "column"],
+  ] as const)(
+    "at text size %s lays the name and the figure out as a %s",
+    async (textSize, flexDirection) => {
+      usePreferencesStore.setState({ textSize });
+      await renderAt("2026-09-23", "14:02");
+
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({ flexDirection });
+    }
+  );
 
   it("names the next prayer on a button that flips the figure", async () => {
     await renderAt("2026-09-23", "14:02");
@@ -160,6 +177,41 @@ describe("FocusCountdown", () => {
     await act(() => onChange?.(APP_STATE.ACTIVE));
 
     expect(withTiming).toHaveBeenCalled();
+  });
+
+  // The name can be Arabic, so its display size needs the Arabic line floor.
+  it("names the prayer at display size, on a line box Arabic fits", async () => {
+    await renderAt("2026-09-23", "14:02");
+    const named = screen.getByText(name("prayerTimes.asr"));
+
+    expect(named).toHaveStyle({ fontSize: fontSizeOf("5xl") });
+    expect(lineRatioOf(named)).toBeGreaterThanOrEqual(ROLE_RATIO.display);
+  });
+
+  // Beside the countdown a long name has little room; it wraps, keeping its mark.
+  it("lets a long name wrap beside its mark, never truncating", async () => {
+    await renderAt("2026-09-23", "14:02");
+    const named = screen.getByText(name("prayerTimes.asr"));
+
+    expect(named).toHaveStyle({ flexShrink: 1 });
+    expect(named.props.numberOfLines).toBeUndefined();
+  });
+
+  it("sets the figure to balance the name, its words at reading size", async () => {
+    await renderAt("2026-09-23", "14:02");
+
+    for (const separator of screen.getAllByText(":", hidden)) {
+      expect(separator).toHaveStyle({ fontSize: fontSizeOf("4xl") });
+    }
+    for (const label of screen.getAllByText(
+      i18n.t("today.focus.until", { prayer: name("prayerTimes.asr") }),
+      hidden
+    )) {
+      expect(label).toHaveStyle({ fontSize: fontSizeOf("md") });
+    }
+    expect(screen.getByText(i18n.t("today.focus.next"))).toHaveStyle({
+      fontSize: fontSizeOf("md"),
+    });
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

@@ -13,6 +13,7 @@ import { VStack } from "@/components/ui/vstack";
 import { APP_STATE } from "@/constants/AppState";
 import { COUNT_AXIS } from "@/constants/Countdown";
 import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { useLargestText } from "@/hooks/useTextScale";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { localizeDigits } from "@/utils/digits";
@@ -23,9 +24,13 @@ import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 /** The widest figures the block shows, with and without an hour of seconds. */
 const WIDEST = { minutes: "00:00", hours: "00:00:00" } as const;
 
+export const FOCUS_COUNTDOWN_PART = { ROW: "focus-countdown-row" } as const;
+
 /** The next prayer by name, and how long until it or since the last one. */
 export const FocusCountdown = () => {
   const { t } = useTranslation();
+  // At the largest text the figure sits under the name, out of its way.
+  const stacked = useLargestText();
   const [flipped, setFlipped] = useState(false);
   const count = useCountdownTimer(flipped);
   const locale = useAppStore((state) => state.locale);
@@ -65,13 +70,15 @@ export const FocusCountdown = () => {
 
   return (
     <HStack
-      alignItems="flex-end"
-      gap="$4"
+      testID={FOCUS_COUNTDOWN_PART.ROW}
+      flexDirection={stacked ? "column" : "row"}
+      alignItems={stacked ? "flex-start" : "flex-end"}
+      gap={stacked ? "$2" : "$4"}
       paddingBottom="$2"
       borderBottomWidth={1}
       borderColor="$border">
-      <VStack flex={1} alignItems="flex-start">
-        <Text size="xs" fontWeight="600" color="$accent">
+      <VStack flexGrow={1} flexShrink={1} alignItems="flex-start">
+        <Text size="md" typography="helper" fontWeight="600" color="$accent">
           {t(count.current ? "today.focus.current" : "today.focus.next")}
         </Text>
         <SkyOccluder>
@@ -86,10 +93,10 @@ export const FocusCountdown = () => {
             gap="$2"
             paddingEnd="$2.5"
             borderRadius="$control">
-            <Text size="3xl" bold typography="title" color="$fg">
+            <Text size="5xl" bold typography="title" color="$fg" flexShrink={1}>
               {nameOf(count.named)}
             </Text>
-            <Icon as={ArrowDownUp} size="xs" color={until ? "$mutedSky" : "$accent"} />
+            <Icon as={ArrowDownUp} size="lg" color={until ? "$mutedSky" : "$accent"} />
           </Pressable>
         </SkyOccluder>
       </VStack>
@@ -106,13 +113,13 @@ export const FocusCountdown = () => {
             counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
             openKey={opened}
             switchKey={count.axis}
-            size="xl"
+            size="4xl"
             bold
             color="$fg"
           />
           <Rolling
             value={t(until ? "today.focus.until" : "today.focus.since", { prayer: counted })}
-            size="xs"
+            size="md"
             typography="helper"
             color="$mutedSky"
           />
