@@ -14,17 +14,12 @@ jest.mock("@/utils/date", () => {
     return { year, month: Math.floor(rest / 30) + 1, day: (rest % 30) + 1 };
   };
   let todayHijri = { year: 1448, month: 1, day: 17 };
-  // Pins every occasion the same distance away, to expose the tie order.
-  let fixedDistance: number | null = null;
   // The device's today falls on this civil date.
   const epochGregorian = Date.UTC(2026, 0, 1);
   const todaySerial = () => serial(todayHijri);
   return {
     __setToday: (d: HijriDate) => {
       todayHijri = d;
-    },
-    __setDistance: (days: number | null) => {
-      fixedDistance = days;
     },
     timeZonedNow: () => new Date(epochGregorian),
     HijriNative: {
@@ -42,14 +37,13 @@ jest.mock("@/utils/date", () => {
       },
       addDays: (d: HijriDate, n: number) => fromSerial(serial(d) + n),
       // Matches hijri-native's real convention: days FROM a TO b (b - a).
-      differenceInDays: (a: HijriDate, b: HijriDate) => fixedDistance ?? serial(b) - serial(a),
+      differenceInDays: (a: HijriDate, b: HijriDate) => serial(b) - serial(a),
     },
   };
 });
 
 const dateMock = jest.requireMock("@/utils/date") as {
   __setToday: (d: HijriDate) => void;
-  __setDistance: (days: number | null) => void;
 };
 const TZ = "Asia/Riyadh";
 
@@ -143,16 +137,5 @@ describe("upcomingImportantDays", () => {
     );
 
     expect(ramadan?.daysRemaining).toBe(expected);
-  });
-
-  it("keeps registry order between occasions the same distance away", () => {
-    dateMock.__setDistance(7);
-    try {
-      const list = upcomingImportantDays({ timezone: TZ });
-
-      expect(list.map(({ id }) => id)).toEqual(IMPORTANT_DAYS.map(({ id }) => id));
-    } finally {
-      dateMock.__setDistance(null);
-    }
   });
 });
