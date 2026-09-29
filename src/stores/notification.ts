@@ -7,6 +7,7 @@ import { openSettings } from "expo-linking";
 import { cancelAllScheduledNotifications } from "@/utils/notifications";
 import { scheduleAllNotifications, shouldReschedule } from "@/utils/notificationScheduler";
 import { buildUsedSoundsSet } from "@/utils/customSoundManager";
+import { singleFlight } from "@/utils/singleFlight";
 
 // Stores
 import locationStore from "@/stores/location";
@@ -21,7 +22,6 @@ import {
   AthkarNotificationSettings,
   ConfigForType,
   getEffectiveConfig,
-  NotificationType,
   type NotificationAction,
   type NotificationSettings,
   type PrayerNotificationType,
@@ -58,6 +58,41 @@ const writeOverride = <T extends PrayerNotificationType>(
     [prayerId]: { ...settings.overrides[prayerId], [type]: config },
   },
 });
+
+const removeOverride = (
+  settings: NotificationSettings,
+  prayerId: string,
+  type: PrayerNotificationType
+): NotificationSettings => {
+  const remainingTypes = { ...settings.overrides[prayerId] };
+  delete remainingTypes[type];
+
+  const overrides = { ...settings.overrides };
+
+  // A prayer whose last overridden type is gone leaves no entry behind.
+  if (Object.keys(remainingTypes).length > 0) {
+    overrides[prayerId] = remainingTypes;
+  } else {
+    delete overrides[prayerId];
+  }
+
+  return { ...settings, overrides };
+};
+
+// Debts recorded so far; a run settles the debt only if none arrived since.
+let debtsRecorded = 0;
+
+// Runs the scheduler and clears the debt it covered.
+const rescheduleAndSettle = async (
+  get: () => NotificationStore,
+  set: (partial: Pick<NotificationStore, "pendingReschedule">) => void
+): Promise<void> => {
+  const debtsBefore = debtsRecorded;
+  const result = await get().scheduleAllNotifications();
+  if (result.success && debtsRecorded === debtsBefore && get().pendingReschedule) {
+    set({ pendingReschedule: false });
+  }
+};
 
 const defaultSettings: NotificationSettings = {
   enabled: true,
@@ -145,19 +180,19 @@ export const useNotificationStore = create<NotificationStore>()(
               [id]: enabled,
             },
           }));
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         updateDuhaTime: async (hour: number, minute: number) => {
           set({ duhaTime: { hour, minute } });
           if (get().otherTimingNotifications.duha) {
-            await get().scheduleAllNotifications();
+            await get().requestReschedule();
           }
         },
 
         updateFullAthanPlayback: async (enabled) => {
           set({ fullAthanPlayback: enabled });
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         updateAthanAudioStream: async (stream) => {
@@ -170,7 +205,7 @@ export const useNotificationStore = create<NotificationStore>()(
 
         updateFullIqamaPlayback: async (enabled) => {
           set({ fullIqamaPlayback: enabled });
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         updateIqamaAudioStream: async (stream) => {
@@ -190,7 +225,7 @@ export const useNotificationStore = create<NotificationStore>()(
           if (!enabled) {
             await cancelAllScheduledNotifications();
           } else {
-            await get().scheduleAllNotifications();
+            await get().requestReschedule();
           }
         },
 
@@ -209,7 +244,7 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
 
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         updateDefault: async (type, field, value) => {
@@ -223,18 +258,33 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           }));
 
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
-        updateOverride: async (prayerId, type, config) => {
-          // An empty config asks for no change; dropping an override is resetOverride's job.
-          if (Object.keys(config).length === 0) return;
+        updateOverride: async <T extends PrayerNotificationType, K extends keyof ConfigForType<T>>(
+          prayerId: string,
+          type: T,
+          field: K,
+          value: ConfigForType<T>[K]
+        ) => {
+          const { settings } = get();
+          const stored: Partial<ConfigForType<T>> = settings.overrides[prayerId]?.[type] ?? {};
+          // A value equal to the default is no override, so the field is dropped.
+          const isDefault = settings.defaults[type][field] === value;
+          if (isDefault ? stored[field] === undefined : stored[field] === value) return;
+
+          const config: Partial<ConfigForType<T>> = { ...stored };
+          if (isDefault) {
+            delete config[field];
+          } else {
+            config[field] = value;
+          }
 
           set((state) => ({
-            settings: writeOverride(state.settings, prayerId, type, {
-              ...state.settings.overrides[prayerId]?.[type],
-              ...config,
-            }),
+            settings:
+              Object.keys(config).length > 0
+                ? writeOverride(state.settings, prayerId, type, config)
+                : removeOverride(state.settings, prayerId, type),
           }));
 
           await get().requestReschedule();
@@ -255,24 +305,10 @@ export const useNotificationStore = create<NotificationStore>()(
         },
 
         resetOverride: async (prayerId, type) => {
-          set((state) => {
-            const prayerOverride = state.settings.overrides[prayerId];
-            if (!prayerOverride) return state;
+          // Nothing stored means nothing changes, so nothing is owed.
+          if (get().settings.overrides[prayerId]?.[type] === undefined) return;
 
-            const remainingTypes = { ...prayerOverride };
-            delete remainingTypes[type];
-
-            const overrides = { ...state.settings.overrides };
-
-            // A prayer whose last overridden type is gone leaves no entry behind.
-            if (Object.keys(remainingTypes).length > 0) {
-              overrides[prayerId] = remainingTypes;
-            } else {
-              delete overrides[prayerId];
-            }
-
-            return { settings: { ...state.settings, overrides } };
-          });
+          set((state) => ({ settings: removeOverride(state.settings, prayerId, type) }));
 
           await get().requestReschedule();
         },
@@ -281,7 +317,7 @@ export const useNotificationStore = create<NotificationStore>()(
           set((state) => ({
             settings: { ...state.settings, overrides: {} },
           }));
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         withBatch: async (run) => {
@@ -297,24 +333,24 @@ export const useNotificationStore = create<NotificationStore>()(
             // is cleared once the scheduler confirms, not before: a failed run has
             // already cancelled everything, so the work is still owed.
             if (depth === 0 && get().pendingReschedule) {
-              const result = await get().scheduleAllNotifications();
-              if (result.success) set({ pendingReschedule: false });
+              await rescheduleAndSettle(get, set);
             }
           }
         },
 
         requestReschedule: async () => {
           if (get().batchDepth > 0) {
+            debtsRecorded += 1;
             set({ pendingReschedule: true });
             return;
           }
 
           // A full reschedule covers whatever a previous failed flush still owed.
-          const result = await get().scheduleAllNotifications();
-          if (result.success && get().pendingReschedule) set({ pendingReschedule: false });
+          await rescheduleAndSettle(get, set);
         },
 
-        scheduleAllNotifications: async (): Promise<SchedulingResult> => {
+        // Runs cancel and rebuild every notification; two at once can duplicate them.
+        scheduleAllNotifications: singleFlight(async (): Promise<SchedulingResult> => {
           const {
             settings,
             morningNotification,
@@ -382,7 +418,7 @@ export const useNotificationStore = create<NotificationStore>()(
           } finally {
             set({ isScheduling: false });
           }
-        },
+        }),
 
         rescheduleIfNeeded: async (force = false) => {
           const { settings, isScheduling } = get();
@@ -404,12 +440,10 @@ export const useNotificationStore = create<NotificationStore>()(
             },
           });
 
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
-        getEffectiveConfigForPrayer: <
-          T extends Exclude<NotificationType, "athkar" | "otherTiming">,
-        >(
+        getEffectiveConfigForPrayer: <T extends PrayerNotificationType>(
           prayerId: string,
           type: T
         ): ConfigForType<T> => {
@@ -418,7 +452,7 @@ export const useNotificationStore = create<NotificationStore>()(
         },
         updateSettings: async (newSettings: NotificationSettings) => {
           set({ settings: newSettings });
-          await get().scheduleAllNotifications();
+          await get().requestReschedule();
         },
 
         getUsedCustomSounds: () => {
