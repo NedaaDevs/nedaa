@@ -1,6 +1,6 @@
 import type { OtherTimingId } from "@/constants/Prayer";
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import type { NOTIFICATION_TYPE, PRAYER_NOTIFICATION_TYPES } from "@/constants/Notification";
 import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey, QadaSoundKey } from "@/constants/sounds";
 
 // Enums
@@ -88,7 +88,10 @@ export type NotificationState = {
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
-export type PrayerNotificationType = Exclude<NotificationType, "athkar" | "qada" | "otherTiming">;
+/** The types whose config the store holds. */
+export type ConfiguredNotificationType = keyof NotificationDefaults;
+
+export type PrayerNotificationType = (typeof PRAYER_NOTIFICATION_TYPES)[number];
 
 export type NotificationAction = {
   openNotificationSettings: () => Promise<void>;
@@ -98,16 +101,17 @@ export type NotificationAction = {
   updateFullIqamaPlayback: (enabled: boolean) => Promise<void>;
   updateIqamaAudioStream: (stream: "media" | "ringer") => Promise<void>;
   updateQuickSetup: (sound: PrayerSoundKey, vibration: boolean) => Promise<void>;
-  updateDefault: <T extends Exclude<NotificationType, "athkar" | "otherTiming">>(
+  updateDefault: <T extends ConfiguredNotificationType>(
     type: T,
     field: keyof ConfigForType<T>,
     value: ConfigForType<T>[keyof ConfigForType<T>]
   ) => Promise<void>;
-  // Merges into the stored config for the type; a field it omits keeps its value.
-  updateOverride: <T extends PrayerNotificationType>(
+  // Sets one field and keeps the rest; a value equal to the default drops the field.
+  updateOverride: <T extends PrayerNotificationType, K extends keyof ConfigForType<T>>(
     prayerId: string,
     type: T,
-    config: Partial<ConfigForType<T>>
+    field: K,
+    value: ConfigForType<T>[K]
   ) => Promise<void>;
   // Replaces the stored config for the type; a field it omits falls back to the default.
   replaceOverride: <T extends PrayerNotificationType>(
@@ -153,7 +157,7 @@ export type NotificationDefaults = {
 };
 
 export type NotificationOverride = {
-  [T in NotificationType]?: Partial<ConfigForType<T>>;
+  [T in PrayerNotificationType]?: Partial<ConfigForType<T>>;
 };
 
 export type NotificationSettings = {
@@ -162,36 +166,15 @@ export type NotificationSettings = {
   overrides: Record<string, NotificationOverride>; // keyed by prayer ID
 };
 
-export function getEffectiveConfig<T extends Exclude<NotificationType, "athkar" | "otherTiming">>(
+/** The defaults for a type with this prayer's override on top. */
+export const getEffectiveConfig = <T extends PrayerNotificationType>(
   prayerId: string,
   type: T,
   defaults: NotificationDefaults,
   overrides: Record<string, NotificationOverride>
-): T extends "prayer"
-  ? PrayerNotificationConfig
-  : T extends "iqama"
-    ? IqamaNotificationConfig
-    : T extends "preAthan"
-      ? PreAthanNotificationConfig
-      : T extends "qada"
-        ? QadaNotificationConfig
-        : never {
-  const defaultConfig = defaults[type];
-  const override = overrides[prayerId]?.[type];
+): ConfigForType<T> => ({
+  ...defaults[type],
+  ...overrides[prayerId]?.[type],
+});
 
-  return {
-    ...defaultConfig,
-    ...override,
-  } as any;
-}
-
-// Helper type to extract config type from notification type
-export type ConfigForType<T extends NotificationType> = T extends typeof NOTIFICATION_TYPE.PRAYER
-  ? PrayerNotificationConfig
-  : T extends typeof NOTIFICATION_TYPE.IQAMA
-    ? IqamaNotificationConfig
-    : T extends typeof NOTIFICATION_TYPE.PRE_ATHAN
-      ? PreAthanNotificationConfig
-      : T extends typeof NOTIFICATION_TYPE.QADA
-        ? QadaNotificationConfig
-        : never;
+export type ConfigForType<T extends ConfiguredNotificationType> = NotificationDefaults[T];
