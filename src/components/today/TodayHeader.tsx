@@ -10,6 +10,7 @@ import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { useLargestText } from "@/hooks/useTextScale";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
@@ -17,9 +18,13 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { HijriNative, getDateLocale } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
 
-/** Today's top: the brand, then the dates at the start and place at the end. */
+export const TODAY_HEADER_PART = { DATE_ROW: "today-date-row" } as const;
+
+/** Today's top: the brand, then the dates, with the place beside or below them. */
 export const TodayHeader = () => {
   const { t } = useTranslation();
+  // At the largest text the place moves under the dates rather than truncating.
+  const stacked = useLargestText();
   const locale = useAppStore((state) => state.locale);
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const useWesternNumerals = usePreferencesStore((state) => state.useWesternNumerals);
@@ -53,13 +58,18 @@ export const TodayHeader = () => {
           {t("brand.name")}
         </Text>
       </SkyOccluder>
-      <HStack justifyContent="space-between" alignItems="flex-end" gap="$3">
+      <HStack
+        testID={TODAY_HEADER_PART.DATE_ROW}
+        flexDirection={stacked ? "column" : "row"}
+        justifyContent="space-between"
+        alignItems={stacked ? "flex-start" : "flex-end"}
+        gap="$3">
         <SkyOccluder style={styles.shrink}>
           <VStack gap="$1">
-            <Text accessibilityRole="header" size="3xl" bold typography="title" color="$fg">
+            <Text accessibilityRole="header" size="4xl" bold typography="title" color="$fg">
               {hijriDate}
             </Text>
-            <Text size="sm" typography="helper" color="$mutedSky">
+            <Text size="md" typography="helper" color="$mutedSky">
               {gregorian}
             </Text>
           </VStack>
@@ -71,14 +81,14 @@ export const TodayHeader = () => {
               accessibilityLabel={t("a11y.location.currentCity", { city })}
               accessibilityHint={t("a11y.today.locationHint")}
               onPress={() => router.push(BACK_DESTINATION.SETTINGS_LOCATION.href)}
-              alignItems="flex-end"
+              alignItems={stacked ? "flex-start" : "flex-end"}
               justifyContent="flex-end"
               flexShrink={1}>
-              <Text size="sm" bold typography="helper" color="$fg" numberOfLines={1}>
+              <Text size="md" bold typography="helper" color="$fg" numberOfLines={1}>
                 {city}
               </Text>
               {country ? (
-                <Text size="xs" typography="helper" color="$mutedSky" numberOfLines={1}>
+                <Text size="sm" typography="helper" color="$mutedSky" numberOfLines={1}>
                   {country}
                 </Text>
               ) : null}

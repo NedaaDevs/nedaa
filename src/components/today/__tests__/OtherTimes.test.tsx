@@ -11,6 +11,7 @@ import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
 import { controlProblems } from "@/test-helpers/controls";
+import { fontSizeOf } from "@/test-helpers/text";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 
@@ -60,6 +61,37 @@ describe("OtherTimes", () => {
         use24HourTime: false,
       });
       expect(screen.getByLabelText(`${i18n.t(OTHER_TIME_LABEL_KEY[name])}, ${time}`)).toBeTruthy();
+    }
+  });
+
+  it("sets the summary and every time at reading size", async () => {
+    await renderWithTheme(<OtherTimes />);
+
+    expect(screen.getByText(i18n.t("otherTimings.title"))).toHaveStyle({
+      fontSize: fontSizeOf("md"),
+    });
+    for (const name of OTHER_TIMING_NAMES) {
+      const time = formatPrayerTime(OTHER[name], "UTC", {
+        locale: AppLocale.EN,
+        use24HourTime: false,
+      });
+      for (const text of [i18n.t(OTHER_TIME_LABEL_KEY[name]), time]) {
+        expect(screen.getByText(text, { includeHiddenElements: true })).toHaveStyle({
+          fontSize: fontSizeOf("md"),
+        });
+      }
+    }
+  });
+
+  // A long name at a large text size wraps and the row grows.
+  it("lets a long name wrap, never truncating", async () => {
+    await renderWithTheme(<OtherTimes />);
+
+    for (const name of OTHER_TIMING_NAMES) {
+      expect(
+        screen.getByText(i18n.t(OTHER_TIME_LABEL_KEY[name]), { includeHiddenElements: true }).props
+          .numberOfLines
+      ).toBeUndefined();
     }
   });
 
