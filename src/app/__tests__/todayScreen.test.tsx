@@ -10,20 +10,28 @@ import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
+import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import type { HijriDate } from "@/utils/date";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
-jest.mock("@/utils/date", () => ({
-  ...jest.requireActual("@/utils/date"),
-  HijriNative: {
-    fromTimestamp: () => ({ year: 1448, month: 4, day: 12 }),
-    addDays: (date: { day: number }, days: number) => ({ ...date, day: date.day + days }),
-  },
-}));
+jest.mock("@/utils/date", () => {
+  // A 30-day-month calendar, enough for the occasions to count their days.
+  const serial = ({ year, month, day }: HijriDate) => year * 360 + (month - 1) * 30 + day;
+  return {
+    ...jest.requireActual("@/utils/date"),
+    HijriNative: {
+      fromTimestamp: () => ({ year: 1448, month: 4, day: 12 }),
+      addDays: (date: { day: number }, days: number) => ({ ...date, day: date.day + days }),
+      toGregorian: () => ({ year: 2026, month: 9, day: 23 }),
+      differenceInDays: (a: HijriDate, b: HijriDate) => serial(b) - serial(a),
+    },
+  };
+});
 
 const DAY: DayPrayerTimes = {
   date: 20260923,
@@ -59,6 +67,7 @@ describe("Today", () => {
     jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
     await act(() => i18n.changeLanguage(AppLocale.EN));
     useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN, hijriDaysOffset: 0 });
+    usePreferencesStore.setState({ showImportantDaysOnHome: false });
     useLocationStore.setState({ localizedLocation: { city: "Makkah", country: "Saudi Arabia" } });
     usePrayerTimesStore.setState({
       yesterdayTimings: null,
@@ -82,7 +91,19 @@ describe("Today", () => {
   it("heads the screen with the Hijri date", async () => {
     await renderToday();
 
-    expect(screen.getByRole("header")).toBeTruthy();
+    expect(screen.getByRole("header", { name: `12 ${i18n.t("hijriMonths.3")} 1448` })).toBeTruthy();
+  });
+
+  it.each([
+    [false, 0],
+    [true, 1],
+  ])("lists the coming occasions only when asked (on: %s)", async (on, shown) => {
+    usePreferencesStore.setState({ showImportantDaysOnHome: on });
+    await renderToday();
+
+    expect(
+      screen.queryAllByRole("header", { name: i18n.t("importantDays.upcoming") })
+    ).toHaveLength(shown);
   });
 
   it("names the next prayer above its countdown", async () => {
@@ -93,6 +114,7 @@ describe("Today", () => {
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {
+    usePreferencesStore.setState({ showImportantDaysOnHome: true });
     await renderToday();
 
     expect(controlProblems()).toEqual([]);
