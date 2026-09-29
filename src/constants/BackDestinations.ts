@@ -22,6 +22,11 @@ export const BACK_DESTINATION = {
     href: "/settings/advance",
     title: "settings.advance.title",
   },
+  SETTINGS_PROVIDER: {
+    route: "settings/advance/provider",
+    href: "/settings/advance/provider",
+    title: "settings.advance.provider.title",
+  },
   SETTINGS_ALARM: {
     route: "settings/alarm",
     href: "/settings/alarm",
