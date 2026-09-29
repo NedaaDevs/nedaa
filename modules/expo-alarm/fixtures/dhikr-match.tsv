@@ -1,0 +1,27 @@
+case	typed	arabic	transliteration	matches
+exact transliteration	Subhanallah	سبحان الله	Subhanallah	true
+capitals, spaces and apostrophe	SUB HAN'ALLAH	سبحان الله	Subhanallah	true
+Arabic with harakat	سُبْحَانَ الله	سبحان الله	Subhanallah	true
+letter written once	alhamdulilah	الحمد لله	Alhamdulillah	true
+letters written once	la ilaha ila alah	لا إله إلا الله	La ilaha illa Allah	true
+alef without hamza	الله اكبر	الله أكبر	Allahu Akbar	true
+hamza below dropped	لا اله الا الله	لا إله إلا الله	La ilaha illa Allah	true
+ta marbuta as heh	لا حول ولا قوه الا بالله	لا حول ولا قوة إلا بالله	La hawla wa la quwwata illa billah	true
+alef without hamza, no space	استغفرالله	أستغفر الله	Astaghfirullah	true
+Urdu keyboard	سبحان اللہ	سبحان الله	Subhanallah	true
+Urdu keyboard	الحمد للہ	الحمد لله	Alhamdulillah	true
+Urdu keyboard	اللہ اکبر	الله أكبر	Allahu Akbar	true
+Urdu keyboard	سبحان اللہ وبحمدہ	سبحان الله وبحمده	Subhanallahi wa bihamdihi	true
+Urdu keyboard	لا الہ الا اللہ	لا إله إلا الله	La ilaha illa Allah	true
+Urdu keyboard	استغفر اللہ	أستغفر الله	Astaghfirullah	true
+Urdu keyboard	اعوذ باللہ من الشیطان الرجیم	أعوذ بالله من الشيطان الرجيم	A'udhu billahi minash shaytanir rajim	true
+Urdu keyboard	لا حول ولا قوۃ الا باللہ	لا حول ولا قوة إلا بالله	La hawla wa la quwwata illa billah	true
+Urdu keyboard	سبحان اللہ وبحمدہ سبحان اللہ العظیم	سبحان الله وبحمده سبحان الله العظيم	Subhanallahi wa bihamdihi subhanallahil azim	true
+a different phrase	الحمد لله	الله أكبر	Allahu Akbar	false
+a different transliteration	Alhamdulillah	سبحان الله	Subhanallah	false
+Urdu keyboard, a different phrase	اللہ اکبر	الحمد لله	Alhamdulillah	false
+Urdu keyboard, a shorter phrase	سبحان اللہ	سبحان الله وبحمده	Subhanallahi wa bihamdihi	false
+a longer phrase	سبحان الله وبحمده سبحان الله العظيم	سبحان الله وبحمده	Subhanallahi wa bihamdihi	false
+a wrong letter	سبحان الله وبحمدك	سبحان الله وبحمده	Subhanallahi wa bihamdihi	false
+spaces only	   	سبحان الله	Subhanallah	false
+punctuation only	-- ''	سبحان الله	Subhanallah	false

@@ -1,78 +1,55 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { normalizeDhikr, matchesDhikr, pickDhikrPhrase } from "@/utils/dhikrChallenge";
 import { DHIKR_PHRASES, DhikrPhrase } from "@/types/alarm";
 
-const easySubhan = DHIKR_PHRASES.easy[0];
+// The Android overlay's JVM test reads the same tables.
+const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
+
+// Rows of a tab-separated fixture, header dropped.
+const readCases = (file: string): string[][] =>
+  readFileSync(join(FIXTURES, file), "utf8")
+    .split("\n")
+    .slice(1)
+    .filter((line) => line.length > 0)
+    .map((line) => line.split("\t"));
+
+const normalizeCases = readCases("dhikr-normalize.tsv");
+const matchCases = readCases("dhikr-match.tsv");
+const phrases = Object.values(DHIKR_PHRASES).flat();
 
 describe("normalizeDhikr", () => {
-  it("lowercases and strips spaces", () => {
-    expect(normalizeDhikr("  SUB HAN allah  ")).toBe(normalizeDhikr("subhanallah"));
+  it.each(normalizeCases)("normalizes %s: %s", (_case, input, normalized) => {
+    expect(normalizeDhikr(input)).toBe(normalized);
   });
 
-  it("strips apostrophes and hyphens", () => {
-    expect(normalizeDhikr("Subhan'allah")).toBe(normalizeDhikr("subhanallah"));
-    expect(normalizeDhikr("subhan-allah")).toBe(normalizeDhikr("subhanallah"));
-  });
-
-  it("strips Arabic diacritics but keeps letters", () => {
-    expect(normalizeDhikr("الْحَمْدُ لله")).toBe(normalizeDhikr("الحمد لله"));
-  });
-
-  it("returns empty string for whitespace/punctuation only", () => {
+  it("returns an empty string for whitespace and punctuation only", () => {
     expect(normalizeDhikr("   -- '' ")).toBe("");
   });
 });
 
-describe("matchesDhikr, as people really type", () => {
-  const phrase = (arabic: string): DhikrPhrase =>
-    Object.values(DHIKR_PHRASES)
-      .flat()
-      .find((candidate) => candidate.arabic === arabic)!;
-
-  it.each([
-    ["alef without hamza", "الله اكبر", "الله أكبر"],
-    ["hamza below dropped", "لا اله الا الله", "لا إله إلا الله"],
-    ["taa marbuta as haa", "لا حول ولا قوه الا بالله", "لا حول ولا قوة إلا بالله"],
-    ["no spaces", "استغفرالله", "أستغفر الله"],
-  ])("accepts %s", (_name, typed, arabic) => {
-    expect(matchesDhikr(typed, phrase(arabic))).toBe(true);
-  });
-
-  it("accepts a transliteration with a letter written once", () => {
-    expect(matchesDhikr("alhamdulilah", phrase("الحمد لله"))).toBe(true);
-    expect(matchesDhikr("la ilaha ila alah", phrase("لا إله إلا الله"))).toBe(true);
-  });
-
-  it("still refuses a different phrase", () => {
-    expect(matchesDhikr("الحمد لله", phrase("الله أكبر"))).toBe(false);
-  });
-});
-
 describe("matchesDhikr", () => {
-  it("accepts the exact transliteration", () => {
-    expect(matchesDhikr("Subhanallah", easySubhan)).toBe(true);
+  it.each(matchCases)("%s: %s", (_case, typed, arabic, transliteration, matches) => {
+    expect(String(matchesDhikr(typed, { arabic, transliteration }))).toBe(matches);
   });
 
-  it("accepts forgiving transliteration (case, spaces, apostrophes)", () => {
-    expect(matchesDhikr("sub han allah", easySubhan)).toBe(true);
-    expect(matchesDhikr("SUBHAN'ALLAH", easySubhan)).toBe(true);
+  it("draws its shared cases from every challenge phrase", () => {
+    const listed = matchCases.map(([, , arabic, transliteration]) => ({ arabic, transliteration }));
+    for (const phrase of listed) expect(phrases).toContainEqual(phrase);
+    expect(new Set(listed.map(({ arabic }) => arabic))).toEqual(
+      new Set(phrases.map(({ arabic }) => arabic))
+    );
   });
 
-  it("accepts the Arabic string", () => {
-    expect(matchesDhikr("سبحان الله", easySubhan)).toBe(true);
-  });
-
-  it("accepts Arabic with diacritics", () => {
-    expect(matchesDhikr("سُبْحَانَ الله", easySubhan)).toBe(true);
-  });
-
-  it("rejects empty input", () => {
-    expect(matchesDhikr("", easySubhan)).toBe(false);
-    expect(matchesDhikr("   ", easySubhan)).toBe(false);
-  });
-
-  it("rejects a wrong phrase", () => {
-    expect(matchesDhikr("Alhamdulillah", easySubhan)).toBe(false);
-  });
+  it.each(phrases.map((phrase) => [phrase.transliteration, phrase] as const))(
+    "%s matches its own phrase and no other",
+    (_name, phrase) => {
+      const matchedBy = (typed: string) => phrases.filter((target) => matchesDhikr(typed, target));
+      expect(matchedBy(phrase.arabic)).toEqual([phrase]);
+      expect(matchedBy(phrase.transliteration)).toEqual([phrase]);
+    }
+  );
 });
 
 describe("pickDhikrPhrase", () => {

@@ -207,8 +207,6 @@ class AlarmOverlayService : Service() {
     private var vibrationEnabled: Boolean = true
     private var vibrationPattern: String = "default"
 
-    private data class DhikrPhrase(val arabic: String, val transliteration: String)
-
     override fun onCreate() {
         super.onCreate()
         isRunning = true
@@ -1144,33 +1142,12 @@ class AlarmOverlayService : Service() {
         dhikrProgressText?.text = getString(R.string.overlay_dhikr_progress, completedDhikrChallenges + 1, challengeCount)
     }
 
-    // Letters only, no diacritics, one spelling per Arabic letter family, a
-    // doubled letter counts once. Mirrors JS normalizeDhikr.
-    private fun normalizeDhikr(input: String): String {
-        return input.lowercase()
-            .replace(Regex("[\\u064B-\\u0652\\u0670\\u0640]"), "")
-            .replace(Regex("[\\u0623\\u0625\\u0622\\u0671]"), "\u0627")
-            .replace('\u0649', '\u064A')
-            .replace('\u0629', '\u0647')
-            .replace('\u0624', '\u0648')
-            .replace('\u0626', '\u064A')
-            .replace(Regex("[^\\p{L}]|\\u0621"), "")
-            .replace(Regex("(\\p{L})\\1+"), "$1")
-    }
-
-    private fun matchesDhikr(input: String, phrase: DhikrPhrase): Boolean {
-        val normalized = normalizeDhikr(input)
-        if (normalized.isEmpty()) return false
-        return normalized == normalizeDhikr(phrase.transliteration) ||
-                normalized == normalizeDhikr(phrase.arabic)
-    }
-
     private fun onDhikrSubmitted() {
         onInteraction()
         val phrase = currentDhikrPhrase ?: return
         val input = dhikrInput?.text?.toString() ?: ""
 
-        if (matchesDhikr(input, phrase)) {
+        if (DhikrMatcher.matches(input, phrase)) {
             completedDhikrChallenges++
 
             if (completedDhikrChallenges >= challengeCount) {

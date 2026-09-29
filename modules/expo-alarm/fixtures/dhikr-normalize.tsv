@@ -1,0 +1,42 @@
+case	input	normalized
+challenge phrase	سبحان الله	سبحاناله
+challenge phrase	الحمد لله	الحمدله
+challenge phrase	الله أكبر	الهاكبر
+challenge phrase	سبحان الله وبحمده	سبحانالهوبحمده
+challenge phrase	لا إله إلا الله	لالهالاله
+challenge phrase	أستغفر الله	استغفراله
+challenge phrase	أعوذ بالله من الشيطان الرجيم	اعوذبالهمنالشيطانالرجيم
+challenge phrase	لا حول ولا قوة إلا بالله	لاحولولاقوهالاباله
+challenge phrase	سبحان الله وبحمده سبحان الله العظيم	سبحانالهوبحمدهسبحانالهالعظيم
+challenge phrase	Subhanallah	subhanalah
+challenge phrase	Alhamdulillah	alhamdulilah
+challenge phrase	Allahu Akbar	alahuakbar
+challenge phrase	Subhanallahi wa bihamdihi	subhanalahiwabihamdihi
+challenge phrase	La ilaha illa Allah	lailahailalah
+challenge phrase	Astaghfirullah	astaghfirulah
+challenge phrase	A'udhu billahi minash shaytanir rajim	audhubilahiminashshaytanirajim
+challenge phrase	La hawla wa la quwwata illa billah	lahawlawalaquwatailabilah
+challenge phrase	Subhanallahi wa bihamdihi subhanallahil azim	subhanalahiwabihamdihisubhanalahilazim
+capitals and spaces	  SUB HAN allah  	subhanalah
+apostrophe	Subhan'allah	subhanalah
+hyphen	subhan-allah	subhanalah
+dotted capital I	SUBHANALLAHİ WA BİHAMDİHİ	subhanalahiwabihamdihi
+harakat	الْحَمْدُ لله	الحمدله
+shadda and superscript alef	اللّٰه أكبر	الهاكبر
+tatweel	الحمـــد لله	الحمدله
+zero-width non-joiner	سبحان‌الله	سبحاناله
+alef with hamza below	إله	اله
+alef with madda	آمين	امين
+alef wasla	ٱلله	اله
+alef maqsura	على	علي
+ta marbuta	قوة	قوه
+waw with hamza	مؤمن	مومن
+yeh with hamza	بئر	بير
+standalone hamza	شيء	شي
+Urdu heh goal and keheh	اللہ اکبر	الهاكبر
+Farsi yeh	الرجیم	الرجيم
+Urdu ta marbuta goal	قوۃ	قوه
+heh doachashmee	اللھ	اله
+ae	اللە	اله
+heh goal with hamza	اللۂ	اله
+heh goal, hamza typed apart	اللۂ	اله
