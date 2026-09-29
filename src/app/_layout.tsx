@@ -27,6 +27,7 @@ import { isDarkMode, nativeColorSchemeFor } from "@/utils/appearance";
 import { PhaseContext, usePrayerPhaseSource } from "@/contexts/PhaseContext";
 
 import { ToastHost } from "@/components/ToastHost";
+import { useAppCovered } from "@/components/ui/actionsheet/cover";
 import { LoadingOverlay } from "@/components/feedback";
 import CityChangeModal from "@/components/CityChangeModal";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
@@ -92,6 +93,7 @@ function AppShell() {
   });
 
   const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
+  const appCovered = useAppCovered();
 
   useNotificationListeners();
   useNotificationResponses(!showOnboarding);
@@ -100,7 +102,11 @@ function AppShell() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
-        <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: safeAreaBg }}>
+        {/* TalkBack skips the app under an open sheet; iOS uses the sheet layer. */}
+        <SafeAreaView
+          edges={safeAreaEdges}
+          style={{ flex: 1, backgroundColor: safeAreaBg }}
+          importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
           <StatusBar style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
           <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
