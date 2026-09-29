@@ -13,14 +13,15 @@ import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { useRTL } from "@/contexts/RTLContext";
 import { useImportantDayFormat, type DayFigure } from "@/hooks/useImportantDayFormat";
-import { useLargestText } from "@/hooks/useTextScale";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { upcomingImportantDays } from "@/utils/importantDays";
 
-/** Test ids for the link's chevron, named by the way it points. */
+/** Test ids: a row's two parts, and the link's chevron by the way it points. */
 export const OCCASIONS_PART = {
+  NAME: "occasions-name",
+  FIGURE: "occasions-figure",
   CHEVRON_LEFT: "occasions-chevron-left",
   CHEVRON_RIGHT: "occasions-chevron-right",
 } as const;
@@ -35,21 +36,24 @@ export const DAY_FORMAT = "yyyy-MM-dd";
 const middayOf = (day: string, timezone: string) => fromZonedTime(`${day}T12:00`, timezone);
 
 /** The days left: a number beside its unit, or one word in their place. */
-const Figure = ({ value, unit }: DayFigure) =>
-  unit ? (
-    <HStack alignItems="baseline" gap="$1">
-      <Text size="3xl" fontWeight="600" numeric color="$accent">
+const Figure = ({ value, unit }: DayFigure) => (
+  <HStack testID={OCCASIONS_PART.FIGURE} flexShrink={0} alignItems="baseline" gap="$1">
+    {unit ? (
+      <>
+        <Text size="3xl" fontWeight="600" numeric color="$accent">
+          {value}
+        </Text>
+        <Text size="sm" typography="helper" color="$muted">
+          {unit}
+        </Text>
+      </>
+    ) : (
+      <Text size="xl" fontWeight="600" color="$accent">
         {value}
       </Text>
-      <Text size="sm" typography="helper" color="$muted">
-        {unit}
-      </Text>
-    </HStack>
-  ) : (
-    <Text size="xl" fontWeight="600" color="$accent">
-      {value}
-    </Text>
-  );
+    )}
+  </HStack>
+);
 
 /** The two nearest occasions, and a link to every one. */
 export const UpcomingOccasions = () => {
@@ -58,8 +62,6 @@ export const UpcomingOccasions = () => {
   const now = useTodayClock();
   const timezone = useLocationStore((state) => state.locationDetails.timezone);
   const hijriDaysOffset = useAppStore((state) => state.hijriDaysOffset);
-  // At the largest text the figure moves under the name instead of beside it.
-  const stacked = useLargestText();
   const { hijriLabel, remainingLabel, dayFigure } = useImportantDayFormat();
 
   // Keyed by the day, so a minute tick reuses the list.
@@ -112,19 +114,22 @@ export const UpcomingOccasions = () => {
       {occasions.map((occasion, index) => {
         const name = t(occasion.i18nKey);
         const hijri = hijriLabel(occasion);
+        // Neither part shrinks: when both cannot fit, the figure wraps under.
         return (
           <Box
             key={occasion.id}
             accessible
             accessibilityLabel={`${name}, ${remainingLabel(occasion.daysRemaining)}, ${hijri}`}
-            flexDirection={stacked ? "column" : "row"}
-            alignItems={stacked ? "flex-start" : "center"}
-            gap={stacked ? "$1" : "$2.5"}
+            flexDirection="row"
+            flexWrap="wrap"
+            alignItems="center"
+            columnGap="$2.5"
+            rowGap="$1"
             paddingHorizontal="$3"
-            paddingVertical={stacked ? "$2.5" : "$2"}
+            paddingVertical="$2"
             borderTopWidth={index === 0 ? 0 : 1}
             borderColor="$border">
-            <VStack flexGrow={1} flexShrink={1}>
+            <VStack testID={OCCASIONS_PART.NAME} flexGrow={1} flexShrink={0}>
               <Text size="lg" fontWeight="600" color="$fg">
                 {name}
               </Text>

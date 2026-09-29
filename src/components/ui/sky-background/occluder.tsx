@@ -26,10 +26,11 @@ type OccluderProps = {
   children: ReactNode;
   /** Sizes the box to the text; a stretched box would dim over empty sky. */
   style?: ViewProps["style"];
+  testID?: ViewProps["testID"];
 };
 
 /** Text over the sky: a sun or moon behind it dims, so the text reads. */
-export const SkyOccluder = ({ children, style }: OccluderProps) => {
+export const SkyOccluder = ({ children, style, testID }: OccluderProps) => {
   const registry = use(SkyOccluderContext);
   const id = useId();
   const view = useRef<ComponentRef<typeof View>>(null);
@@ -48,7 +49,7 @@ export const SkyOccluder = ({ children, style }: OccluderProps) => {
   useEffect(() => () => report?.(id, null), [report, id]);
 
   return (
-    <View ref={view} style={style} onLayout={measure}>
+    <View ref={view} testID={testID} style={style} onLayout={measure}>
       {children}
     </View>
   );

@@ -82,6 +82,19 @@ describe("Countdown", () => {
     expect(part(COUNTDOWN_PART.ROW)[0]).toHaveStyle({ direction: "ltr" });
   });
 
+  // The reserve's spare room falls at the end; the digits start where text does.
+  it.each([
+    [false, "flex-start"],
+    [true, "flex-end"],
+  ] as const)(
+    "starts its digits at the reading start edge (rtl: %s)",
+    async (isRTL, justifyContent) => {
+      await renderWithTheme(figure("1:18"), { isRTL });
+
+      expect(part(COUNTDOWN_PART.ROW)[0]).toHaveStyle({ justifyContent });
+    }
+  );
+
   it("sets its digits in tabular figures", async () => {
     await renderWithTheme(figure("1:18"));
 
