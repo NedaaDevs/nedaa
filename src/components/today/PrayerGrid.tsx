@@ -7,6 +7,7 @@ import { Grid } from "@/components/ui/grid";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
 import { PRAYER_CARD_STATE } from "@/constants/PrayerCard";
 import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { useShownDay } from "@/hooks/useShownDay";
@@ -53,7 +54,7 @@ const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
       flexDirection="row"
       alignItems="center"
       gap="$2"
-      minHeight="$14"
+      minHeight="$16"
       paddingHorizontal="$3"
       paddingVertical="$2"
       borderRadius="$card"
@@ -61,19 +62,17 @@ const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
       borderColor={selected || next ? "$accent" : "$border"}
       backgroundColor={next ? "$accentSoft" : past ? "transparent" : "$surface2"}>
       <Box opacity={past ? 0.55 : 1}>
-        <Icon as={PRAYER_ICONS[card.id]} size="sm" color={next ? "$accent" : "$muted"} />
+        <Icon as={PRAYER_ICONS[card.id]} size="lg" color={next ? "$accent" : "$muted"} />
       </Box>
-      <Text
-        size="sm"
-        fontWeight="600"
-        color={next ? "$accent" : past ? "$muted" : "$fg"}
-        numberOfLines={1}
-        flexShrink={1}>
-        {name}
-      </Text>
-      <Text size="sm" fontWeight="600" numeric color={past ? "$muted" : "$fg"} marginStart="auto">
-        {time}
-      </Text>
+      {/* A long name wraps; the card grows past its floor. */}
+      <VStack flexShrink={1}>
+        <Text size="lg" fontWeight="600" color={next ? "$accent" : past ? "$mutedSky" : "$fg"}>
+          {name}
+        </Text>
+        <Text size="lg" fontWeight="600" numeric color={past ? "$mutedSky" : "$fg"}>
+          {time}
+        </Text>
+      </VStack>
     </Pressable>
   );
 };
