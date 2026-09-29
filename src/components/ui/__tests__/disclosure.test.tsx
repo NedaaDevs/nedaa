@@ -3,6 +3,7 @@ import { act, fireEvent, screen, userEvent } from "@testing-library/react-native
 import { withTiming } from "react-native-reanimated";
 
 import { DISCLOSURE_PART, Disclosure } from "@/components/ui/disclosure";
+import { fontSizeOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -59,6 +60,12 @@ describe("Disclosure", () => {
     await renderDisclosure();
 
     expect(summary()).toHaveStyle({ minHeight: 44 });
+  });
+
+  it("draws its summary at the md size", async () => {
+    await renderDisclosure();
+
+    expect(screen.getByText("Other times")).toHaveStyle({ fontSize: fontSizeOf("md") });
   });
 
   it("opens at once under reduced motion", async () => {
