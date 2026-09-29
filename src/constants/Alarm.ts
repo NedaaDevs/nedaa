@@ -1,5 +1,31 @@
 import { Bell, Sun, Building2 } from "lucide-react-native";
 import { ScheduledAlarmType } from "@/enums/alarm";
+import { PRAYER_ID } from "@/constants/Prayer";
+import type { AlarmTimingChoices, AlarmType } from "@/types/alarm";
+
+/** Persisted store keys; renaming one orphans a user's alarm settings. */
+export const ALARM_TYPE = {
+  FAJR: PRAYER_ID.FAJR,
+  FRIDAY: "friday",
+} as const;
+
+/** Persisted timing modes. */
+export const ALARM_TIMING_MODE = {
+  AT_PRAYER_TIME: "atPrayerTime",
+  BEFORE_PRAYER_TIME: "beforePrayerTime",
+} as const;
+
+/** What each alarm offers; Friday rings only before Jumuah. */
+export const ALARM_TIMING_CHOICES: Record<AlarmType, AlarmTimingChoices> = {
+  [ALARM_TYPE.FAJR]: {
+    modes: [ALARM_TIMING_MODE.AT_PRAYER_TIME, ALARM_TIMING_MODE.BEFORE_PRAYER_TIME],
+    minuteSteps: [0, 5, 10, 15, 20, 30, 45, 60, 90],
+  },
+  [ALARM_TYPE.FRIDAY]: {
+    modes: [ALARM_TIMING_MODE.BEFORE_PRAYER_TIME],
+    minuteSteps: [15, 30, 45, 60, 90, 120],
+  },
+};
 
 export const ALARM_DEFAULTS = {
   TAPS_REQUIRED: 5,
