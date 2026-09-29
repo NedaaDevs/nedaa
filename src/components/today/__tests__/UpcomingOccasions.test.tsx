@@ -227,15 +227,19 @@ describe("UpcomingOccasions", () => {
     ).toBeTruthy();
   });
 
-  it.each([
-    [TextSize.DEFAULT, "row"],
-    [TextSize.MAX, "column"],
-  ] as const)("at text size %s lays a row out as a %s", async (textSize, flexDirection) => {
-    usePreferencesStore.setState({ textSize });
-    await renderOccasions();
+  // Jest lays nothing out, so this pins the rule: the row wraps, no part shrinks.
+  it.each(Object.values(TextSize))(
+    "at text size %s wraps the figure under the name rather than squeeze either",
+    async (textSize) => {
+      usePreferencesStore.setState({ textSize });
+      await renderOccasions();
 
-    expect(screen.getByLabelText(labelOf(FIRST, inDays(42)))).toHaveStyle({ flexDirection });
-  });
+      const row = screen.getByLabelText(labelOf(FIRST, inDays(42)));
+      expect(row).toHaveStyle({ flexDirection: "row", flexWrap: "wrap" });
+      expect(within(row).getByTestId(OCCASIONS_PART.NAME)).toHaveStyle({ flexShrink: 0 });
+      expect(within(row).getByTestId(OCCASIONS_PART.FIGURE)).toHaveStyle({ flexShrink: 0 });
+    }
+  );
 
   it("gives every control a role, a name and a 44pt target", async () => {
     await renderOccasions();
