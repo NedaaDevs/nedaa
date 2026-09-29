@@ -1,10 +1,11 @@
+import { ALARM_TIMING_MODE } from "@/constants/Alarm";
 import { pickNextTrigger } from "@/utils/alarmTrigger";
 import type { TimingConfig } from "@/types/alarm";
 
 const at = (iso: string) => new Date(iso).getTime();
 
-const before30: TimingConfig = { mode: "beforePrayerTime", minutesBefore: 30 };
-const atPrayer: TimingConfig = { mode: "atPrayerTime", minutesBefore: 30 };
+const before30: TimingConfig = { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 30 };
+const atPrayer: TimingConfig = { mode: ALARM_TIMING_MODE.AT_PRAYER_TIME, minutesBefore: 30 };
 
 describe("pickNextTrigger", () => {
   const todayFajr = new Date("2026-07-23T05:00:00Z");

@@ -1,3 +1,4 @@
+import { ALARM_TIMING_MODE } from "@/constants/Alarm";
 import type { TimingConfig } from "@/types/alarm";
 
 export interface PrayerTrigger {
@@ -9,7 +10,11 @@ export const applyTimingOffset = (
   prayerDate: Date,
   timing: TimingConfig | null | undefined
 ): Date => {
-  if (timing?.mode === "beforePrayerTime" && timing.minutesBefore && timing.minutesBefore > 0) {
+  if (
+    timing?.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME &&
+    timing.minutesBefore &&
+    timing.minutesBefore > 0
+  ) {
     return new Date(prayerDate.getTime() - timing.minutesBefore * 60 * 1000);
   }
   return prayerDate;
