@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { styled, View, Text as TamaguiText } from "tamagui";
-import { useTheme } from "@/components/ui/theme-color";
+import { useTheme, useThemeColor } from "@/components/ui/theme-color";
 import { useTextScale } from "@/hooks/useTextScale";
 import type { GetProps } from "tamagui";
 import { BackHandler, FlatList, Platform } from "react-native";
@@ -204,18 +204,8 @@ type ActionsheetIconProps = {
 const ActionsheetIcon: React.FC<ActionsheetIconProps> = ({
   as: IconComponent,
   size = 20,
-  color: colorProp,
-}) => {
-  const theme = useTheme();
-
-  const resolvedColor = colorProp
-    ? colorProp.startsWith("$")
-      ? ((theme as Record<string, { val: string }>)[colorProp.slice(1)]?.val ?? colorProp)
-      : colorProp
-    : theme.typography.val;
-
-  return <IconComponent size={size} color={resolvedColor} />;
-};
+  color = "$typography",
+}) => <IconComponent size={size} color={useThemeColor(color)} />;
 ActionsheetIcon.displayName = "ActionsheetIcon";
 
 // --- ActionsheetFlatList ---
