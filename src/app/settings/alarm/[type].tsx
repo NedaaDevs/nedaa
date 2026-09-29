@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Platform } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -27,25 +27,12 @@ import {
 
 import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
 
-import * as ExpoAlarm from "expo-alarm";
-
-import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { toScheduledAlarmType } from "@/utils/alarmTypes";
-
-// Enums
+import { ALARM_TYPE } from "@/constants/Alarm";
 import { PlatformType } from "@/enums/app";
-import { useAlarmStore } from "@/stores/alarm";
-import { createAsyncLock } from "@/utils/asyncLock";
-import {
-  scheduleFajrAlarm,
-  scheduleFridayAlarm,
-  schedulePreviewAlarm,
-} from "@/utils/alarmScheduler";
-import { alarmLog } from "@/utils/alarmReport";
-import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
+import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useHaptic } from "@/hooks/useHaptic";
-import { getNativeSoundName } from "@/utils/nativeSoundName";
-import { PRAYER_ID } from "@/constants/Prayer";
+import { schedulePreviewAlarm } from "@/utils/alarmScheduler";
+import { toScheduledAlarmType } from "@/utils/alarmTypes";
 
 type SettingsSectionProps = {
   title: string;
@@ -78,19 +65,12 @@ const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
 const AlarmTypeSettingsScreen = () => {
   const { t } = useTranslation();
   const { type } = useLocalSearchParams<{ type: string }>();
-  const alarmType = type as AlarmType;
-  // Native settings storage and scheduled alarms are keyed by the scheduled type
-  // ("jummah"), not the settings key ("friday") — fire paths look up by it.
+  const alarmType = type === ALARM_TYPE.FAJR ? ALARM_TYPE.FAJR : ALARM_TYPE.FRIDAY;
+  // Previews fire by scheduled type ("jummah"), not the settings key ("friday").
   const scheduledType = toScheduledAlarmType(alarmType);
   const hapticSelection = useHaptic("selection");
 
-  const settings = useAlarmSettingsStore((state) =>
-    alarmType === PRAYER_ID.FAJR ? state.fajr : state.friday
-  );
-  const updateSettings = useAlarmSettingsStore((state) => state.updateSettings);
-
-  const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toggleLock = useRef(createAsyncLock()).current;
+  const { settings, update, setEnabled } = useAlarmTypeSettings(alarmType);
 
   const PREVIEW_ALARM_SECONDS = 30;
   const [previewState, setPreviewState] = useState<"idle" | "pending" | "failed">("idle");
@@ -131,113 +111,13 @@ const AlarmTypeSettingsScreen = () => {
     }
   };
 
-  const debouncedReschedule = useCallback(
-    (afterNativeSync?: Promise<boolean>) => {
-      if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
-      rescheduleTimerRef.current = setTimeout(() => {
-        // Shares the toggle lock: cancel-then-recreate must not interleave with an
-        // enable/disable, or a disable can land between the two and leave a live alarm
-        // behind an Off switch.
-        toggleLock(async () => {
-          // Scheduling rebuilds the alarm from the saved native settings, so a write
-          // that failed would rebuild it from stale values. Keep the existing alarm.
-          if (afterNativeSync && !(await afterNativeSync)) return;
-          await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
-          if (alarmType === PRAYER_ID.FAJR) {
-            await scheduleFajrAlarm();
-          } else {
-            await scheduleFridayAlarm();
-          }
-        });
-      }, 500);
-    },
-    [alarmType, scheduledType, toggleLock]
-  );
-
-  const handleChange = (changes: Partial<AlarmTypeSettings>) => {
-    updateSettings(alarmType, changes);
-
-    const nativeSettings: Record<string, unknown> = {};
-    if (changes.enabled !== undefined) nativeSettings.enabled = changes.enabled;
-    if (changes.sound !== undefined) nativeSettings.sound = getNativeSoundName(changes.sound);
-    if (changes.volume !== undefined) nativeSettings.volume = changes.volume;
-
-    if (Platform.OS === "android") {
-      if (changes.challenge) {
-        nativeSettings.challengeType = changes.challenge.type;
-        nativeSettings.challengeDifficulty = changes.challenge.difficulty;
-        nativeSettings.challengeCount = changes.challenge.count;
-      }
-      if (changes.vibration) {
-        nativeSettings.vibrationEnabled = changes.vibration.enabled;
-        nativeSettings.vibrationPattern = changes.vibration.pattern;
-      }
-      if (changes.snooze) {
-        nativeSettings.snoozeEnabled = changes.snooze.enabled;
-        nativeSettings.snoozeMaxCount = changes.snooze.maxCount;
-        nativeSettings.snoozeDuration = changes.snooze.durationMinutes;
-      }
-      if (changes.timing) {
-        nativeSettings.timingMode = changes.timing.mode;
-        nativeSettings.timingMinutesBefore = changes.timing.minutesBefore;
-      }
-      if (changes.gentleWakeUp) {
-        nativeSettings.gentleWakeUpEnabled = changes.gentleWakeUp.enabled;
-        nativeSettings.gentleWakeUpDuration = changes.gentleWakeUp.durationMinutes;
-      }
-    }
-
-    // setAlarmSettings resolves false rather than rejecting, so a failure shows up in
-    // the result, not in a catch.
-    const nativeSync =
-      Object.keys(nativeSettings).length > 0
-        ? ExpoAlarm.setAlarmSettings(scheduledType, nativeSettings)
-        : Promise.resolve(true);
-
-    nativeSync.then((ok) => {
-      if (!ok) alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`);
-    });
-
-    // AlarmKit copies the sound into the scheduled alarm, so iOS only picks up a new
-    // one by rebuilding it. Android reads the sound from its database as the alarm
-    // fires, so rescheduling there would risk the alarm for no gain.
-    const soundNeedsReschedule = changes.sound !== undefined && Platform.OS === PlatformType.IOS;
-    if ((changes.timing || soundNeedsReschedule) && settings.enabled) {
-      debouncedReschedule(nativeSync);
-    }
-  };
-
   const handleEnabledToggle = (enabled: boolean) => {
     hapticSelection();
-
-    // Serialize toggles: a disable interleaving with a pending enable's scheduleAlarm
-    // sees no stored alarm yet, finishes, then the enable inserts one that fires
-    // while the UI reads Off.
-    toggleLock(async () => {
-      handleChange({ enabled });
-
-      try {
-        if (enabled) {
-          const id =
-            alarmType === PRAYER_ID.FAJR ? await scheduleFajrAlarm() : await scheduleFridayAlarm();
-          // enabled is already true in the store (handleChange ran synchronously), so
-          // a null here is a real failure (native refusal / no prayer data), not the
-          // settings-disabled early return — revert to Off.
-          if (id === null) {
-            handleChange({ enabled: false });
-          }
-        } else if (!(await useAlarmStore.getState().cancelAlarmsByType(scheduledType))) {
-          // The alarm is still armed, so the switch must not read Off.
-          handleChange({ enabled: true });
-        }
-      } catch {
-        handleChange({ enabled: !enabled });
-      }
-    });
+    setEnabled(enabled);
   };
 
   const title =
-    alarmType === PRAYER_ID.FAJR ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
+    alarmType === ALARM_TYPE.FAJR ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
 
   return (
     <Background>
@@ -255,7 +135,7 @@ const AlarmTypeSettingsScreen = () => {
                   {t("alarm.settings.enableAlarm")}
                 </Text>
                 <Text size="sm" color="$typographySecondary">
-                  {alarmType === PRAYER_ID.FAJR
+                  {alarmType === ALARM_TYPE.FAJR
                     ? t("alarm.settings.fajrEnableDescription")
                     : t("alarm.settings.fridayEnableDescription")}
                 </Text>
@@ -274,20 +154,20 @@ const AlarmTypeSettingsScreen = () => {
               {/* Timing Settings */}
               <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
                 <Text size="sm" color="$typographySecondary" marginBottom="$2">
-                  {alarmType === PRAYER_ID.FAJR
+                  {alarmType === ALARM_TYPE.FAJR
                     ? t("alarm.settings.timingDescriptionFajr")
                     : t("alarm.settings.timingDescriptionFriday")}
                 </Text>
                 <TimingSettings
                   value={settings.timing}
                   alarmType={alarmType}
-                  onChange={(timing) => handleChange({ timing })}
+                  onChange={(timing) => update({ timing })}
                 />
               </SettingsSection>
 
               {/* Sound Settings */}
               <SettingsSection title={t("alarm.settings.sound")} icon={Volume2}>
-                <SoundPicker value={settings.sound} onChange={(sound) => handleChange({ sound })} />
+                <SoundPicker value={settings.sound} onChange={(sound) => update({ sound })} />
 
                 <VStack
                   gap="$2"
@@ -298,22 +178,19 @@ const AlarmTypeSettingsScreen = () => {
                   <Text size="sm" color="$typographySecondary">
                     {t("alarm.settings.volume")}
                   </Text>
-                  <VolumeSlider
-                    value={settings.volume}
-                    onChange={(volume) => handleChange({ volume })}
-                  />
+                  <VolumeSlider value={settings.volume} onChange={(volume) => update({ volume })} />
                 </VStack>
               </SettingsSection>
 
               {/* Gentle Wake-Up Settings (Android-only: iOS alarm sound is OS-controlled) */}
-              {Platform.OS === "android" && (
+              {Platform.OS === PlatformType.ANDROID && (
                 <SettingsSection title={t("alarm.settings.gentleWakeUp")} icon={Sunrise}>
                   <Text size="sm" color="$typographySecondary" marginBottom="$2">
                     {t("alarm.settings.gentleWakeUpDescription")}
                   </Text>
                   <GentleWakeUpSettings
                     value={settings.gentleWakeUp}
-                    onChange={(gentleWakeUp) => handleChange({ gentleWakeUp })}
+                    onChange={(gentleWakeUp) => update({ gentleWakeUp })}
                   />
                 </SettingsSection>
               )}
@@ -325,7 +202,7 @@ const AlarmTypeSettingsScreen = () => {
                 </Text>
                 <ChallengePicker
                   value={settings.challenge}
-                  onChange={(challenge) => handleChange({ challenge })}
+                  onChange={(challenge) => update({ challenge })}
                 />
               </SettingsSection>
 
@@ -333,16 +210,13 @@ const AlarmTypeSettingsScreen = () => {
               <SettingsSection title={t("alarm.settings.vibration")} icon={Vibrate}>
                 <VibrationSettings
                   value={settings.vibration}
-                  onChange={(vibration) => handleChange({ vibration })}
+                  onChange={(vibration) => update({ vibration })}
                 />
               </SettingsSection>
 
               {/* Snooze Settings */}
               <SettingsSection title={t("alarm.settings.snooze")} icon={Clock}>
-                <SnoozeSettings
-                  value={settings.snooze}
-                  onChange={(snooze) => handleChange({ snooze })}
-                />
+                <SnoozeSettings value={settings.snooze} onChange={(snooze) => update({ snooze })} />
               </SettingsSection>
 
               {/* Preview Alarm: end-to-end rehearsal using the saved per-type settings */}
