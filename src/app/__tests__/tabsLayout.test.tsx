@@ -6,9 +6,9 @@ import { router, Slot, usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
 
-import TabsLayout, { TAB_BAR_PART } from "@/app/(tabs)/_layout";
+import TabsLayout, { TAB_BAR_PART, TAB_ROUTES } from "@/app/(tabs)/_layout";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { AppLocale, AppMode, HiddenTab, OpeningTab } from "@/enums/app";
+import { AppLocale, AppMode, HiddenTab } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAppStore } from "@/stores/app";
@@ -175,13 +175,13 @@ describe("tabs layout", () => {
     }
   });
 
+  // The layout declares one screen for each of TAB_ROUTES.
   it("declares every tab route file", () => {
     const files = readdirSync(join(REPO_ROOT, "src", "app", TABS_GROUP))
       .map((file) => parse(file).name)
       .filter((name) => name !== LAYOUT);
-    const declared = [...Object.values(OpeningTab), ...Object.values(HiddenTab)];
 
-    expect(files.sort()).toEqual(declared.sort());
+    expect(files.sort()).toEqual([...TAB_ROUTES].sort());
   });
 
   // The reader is full screen; the tabs would cover the page.
