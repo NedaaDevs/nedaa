@@ -1,3 +1,5 @@
 What's new?
 
+• Fixed an issue that stopped alarms from turning on
+• Your vibration choice for each alert now takes effect
 • Bug fixes and improvements
