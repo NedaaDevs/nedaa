@@ -1927,7 +1927,7 @@
   "prayerDetail.states.unavailable.title": "الإعدادات غير متاحة",
   "prayerDetail.sections.calculation": "الحساب",
   "prayerDetail.sections.alerts": "تنبيهات الصلاة",
-  "prayerDetail.sections.alarms": "المنبّهات الموثوقة",
+  "prayerDetail.sections.alarms": "المنبّهات",
   "a11y.prayerDetail.soundPicker.manageLibraryHint": "يفتح أصواتك المخصصة",
   "a11y.prayerDetail.soundPicker.preview": "معاينة {{name}}",
   "a11y.prayerDetail.soundPicker.stop": "إيقاف معاينة {{name}}",

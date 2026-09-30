@@ -1824,7 +1824,7 @@
   "prayerDetail.states.unavailable.title": "ترتیبات دستیاب نہیں",
   "prayerDetail.sections.calculation": "حساب",
   "prayerDetail.sections.alerts": "نماز کی اطلاعات",
-  "prayerDetail.sections.alarms": "قابلِ اعتماد الارم",
+  "prayerDetail.sections.alarms": "الارم",
   "a11y.prayerDetail.soundPicker.manageLibraryHint": "آپ کی حسب ضرورت آوازیں کھولتا ہے",
   "a11y.prayerDetail.soundPicker.preview": "{{name}} سنیں",
   "a11y.prayerDetail.soundPicker.stop": "{{name}} روکیں",
