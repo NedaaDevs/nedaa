@@ -1823,13 +1823,9 @@
   "prayerDetail.sections.calculation": "Pengiraan",
   "prayerDetail.sections.alerts": "Pemberitahuan solat",
   "prayerDetail.sections.alarms": "Penggera",
-  "a11y.prayerDetail.soundPicker.manageLibraryHint": "Membuka bunyi tersuai anda",
   "a11y.prayerDetail.soundPicker.preview": "Pratonton {{name}}",
   "a11y.prayerDetail.soundPicker.stop": "Hentikan pratonton {{name}}",
   "a11y.prayerDetail.soundPicker.triggerHint": "Menunjukkan bunyi yang boleh dipilih",
-  "prayerDetail.soundPicker.bundled": "Bunyi terbina",
-  "prayerDetail.soundPicker.custom": "Bunyi anda",
-  "prayerDetail.soundPicker.manageLibrary": "Urus bunyi anda",
   "prayerDetail.soundPicker.unset": "Tiada bunyi dipilih",
   "a11y.prayerDetail.athan.hint": "Menghidupkan atau mematikan pemberitahuan Azan untuk solat ini",
   "prayerDetail.athan.title": "Azan",
@@ -1869,5 +1865,6 @@
   "a11y.prayerDetail.iqama.choice_other": "{{count}} minit selepas Azan",
   "a11y.prayerDetail.preAthan.choice_one": "{{count}} minit sebelum Azan",
   "a11y.prayerDetail.preAthan.choice_other": "{{count}} minit sebelum Azan",
-  "prayerDetail.sections.playback": "Main azan"
+  "prayerDetail.sections.playback": "Main azan",
+  "prayerDetail.playback.global": "Tetapan umum"
 }

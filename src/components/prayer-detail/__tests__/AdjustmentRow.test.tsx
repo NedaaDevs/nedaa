@@ -109,6 +109,16 @@ describe("AdjustmentRow", () => {
     );
   });
 
+  // A row of the sheet, like the alert groups above it, not a card of its own.
+  it("lies flat on the sheet", async () => {
+    useTuning({});
+    await renderRow();
+
+    expect(rowNamed(i18n.t("prayerDetail.adjustment.none"))).not.toHaveStyle({
+      borderTopWidth: 1,
+    });
+  });
+
   it("gives the row a role, a name and a 44pt target", async () => {
     useTuning({});
     await renderRow();
