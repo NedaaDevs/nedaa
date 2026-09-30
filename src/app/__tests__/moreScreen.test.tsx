@@ -68,6 +68,17 @@ describe("More", () => {
     expect(screen.getByText("Riyadh, Saudi Arabia")).toBeTruthy();
   });
 
+  // The Settings root names the place with the same words.
+  it.each([
+    [{ city: "Riyadh", country: "" }, "Riyadh"],
+    [{ city: "", country: "Saudi Arabia" }, "Saudi Arabia"],
+  ])("names whichever part of the place is known: %o", async (localizedLocation, expected) => {
+    useLocationStore.setState({ localizedLocation });
+    await renderMore();
+
+    expect(screen.getByText(expected)).toBeTruthy();
+  });
+
   it("lays out the six tools in order, with no subtitles", async () => {
     await renderMore();
 

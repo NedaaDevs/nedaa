@@ -16,7 +16,7 @@ const AdvanceSettings = () => {
     <Background>
       <ScreenHeader
         title={t("settings.advance.provider.title")}
-        back={{ fallback: BACK_DESTINATION.SETTINGS_ADVANCED }}
+        back={{ fallback: BACK_DESTINATION.SETTINGS }}
       />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
