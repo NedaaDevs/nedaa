@@ -1,7 +1,7 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
-import { act, fireEvent } from "@testing-library/react-native";
+import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { SKY_PART } from "@/components/ui/sky-background";
@@ -120,7 +120,8 @@ describe("Today", () => {
       name: new RegExp(`^${i18n.t("prayerTimes.maghrib")},`),
     });
 
-    await act(() => fireEvent.press(card));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.press(card);
 
     expect(
       screen.getByRole("header", { name: i18n.t("prayerTimes.maghrib"), hidden: true })

@@ -2,7 +2,12 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { ALARM_SOUND_KEYS, SOUND_ASSETS, SOUND_PICKER_GROUP } from "@/constants/sounds";
 import i18n from "@/localization/i18n";
 import type { CustomSound } from "@/types/customSound";
-import { getAlarmSoundChoiceGroups, getSoundChoiceGroups, getAvailableSounds } from "@/utils/sound";
+import {
+  chosenSoundLabel,
+  getAlarmSoundChoiceGroups,
+  getAvailableSounds,
+  getSoundChoiceGroups,
+} from "@/utils/sound";
 
 const custom = (id: CustomSound["id"], availableFor: CustomSound["availableFor"]): CustomSound => ({
   id,
@@ -93,5 +98,21 @@ describe("getAlarmSoundChoiceGroups", () => {
       label: t("alarm.settings.systemSound"),
       previewSource: null,
     });
+  });
+});
+
+describe("chosenSoundLabel", () => {
+  const mine = custom("custom_a", [NOTIFICATION_TYPE.PRAYER]);
+  const groups = getSoundChoiceGroups(NOTIFICATION_TYPE.PRAYER, [mine], t);
+
+  it("names a bundled or a custom choice", () => {
+    const [bundled] = groups[0]!.options;
+
+    expect(chosenSoundLabel(groups, bundled!.value, t)).toBe(bundled!.label);
+    expect(chosenSoundLabel(groups, mine.id, t)).toBe(mine.name);
+  });
+
+  it("reads unset for a value no group offers", () => {
+    expect(chosenSoundLabel(groups, "custom_gone", t)).toBe(t("prayerDetail.soundPicker.unset"));
   });
 });
