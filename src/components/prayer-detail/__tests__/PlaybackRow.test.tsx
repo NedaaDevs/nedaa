@@ -1,8 +1,11 @@
 import { Platform, Text } from "react-native";
 import { usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
-import { renderRouter, screen } from "expo-router/testing-library";
+import { renderRouter, screen, within } from "expo-router/testing-library";
 
+import config from "../../../../tamagui.config";
+
+import { DETAIL_PANEL_ID } from "@/components/prayer-detail/DetailPanel";
 import { PlaybackRow } from "@/components/prayer-detail/PlaybackRow";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { PlatformType } from "@/enums/app";
@@ -85,6 +88,29 @@ describe("PlaybackRow on Android", () => {
     await renderRow();
 
     expect(screen.getByRole("header", { name: SECTION })).toBeTruthy();
+  });
+
+  // The scope line says the same for readers, so the chip is drawn only.
+  it("tags its header as global, for the eye only", async () => {
+    setPlayback(false, false);
+    await renderRow();
+
+    const chip = i18n.t("prayerDetail.playback.global");
+    expect(screen.getByText(chip, { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByText(chip)).toBeNull();
+  });
+
+  it("lays its row flat inside a bordered panel", async () => {
+    setPlayback(false, false);
+    await renderRow();
+
+    const panel = screen.getByTestId(DETAIL_PANEL_ID);
+    expect(panel).toHaveStyle({
+      borderTopWidth: 1,
+      backgroundColor: config.themes.light.panel.val,
+    });
+    const row = within(panel).getByRole("button", { name: new RegExp(TITLE) });
+    expect(row).not.toHaveStyle({ borderTopWidth: 1 });
   });
 
   it("holds no switches", async () => {

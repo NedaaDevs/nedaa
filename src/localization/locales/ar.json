@@ -1935,13 +1935,9 @@
   "prayerDetail.sections.calculation": "الحساب",
   "prayerDetail.sections.alerts": "تنبيهات الصلاة",
   "prayerDetail.sections.alarms": "المنبّهات",
-  "a11y.prayerDetail.soundPicker.manageLibraryHint": "يفتح أصواتك المخصصة",
   "a11y.prayerDetail.soundPicker.preview": "معاينة {{name}}",
   "a11y.prayerDetail.soundPicker.stop": "إيقاف معاينة {{name}}",
   "a11y.prayerDetail.soundPicker.triggerHint": "يعرض الأصوات التي يمكنك اختيارها",
-  "prayerDetail.soundPicker.bundled": "الأصوات المدمجة",
-  "prayerDetail.soundPicker.custom": "أصواتك",
-  "prayerDetail.soundPicker.manageLibrary": "إدارة أصواتك",
   "prayerDetail.soundPicker.unset": "لم تختر صوتاً",
   "a11y.prayerDetail.athan.hint": "يشغّل تنبيه الأذان لهذه الصلاة أو يوقفه",
   "prayerDetail.athan.title": "الأذان",
@@ -2013,5 +2009,6 @@
   "a11y.prayerDetail.preAthan.choice_few": "قبل الأذان بـ{{count}} دقائق",
   "a11y.prayerDetail.preAthan.choice_many": "قبل الأذان بـ{{count}} دقيقة",
   "a11y.prayerDetail.preAthan.choice_other": "قبل الأذان بـ{{count}} دقيقة",
-  "prayerDetail.sections.playback": "تشغيل الأذان"
+  "prayerDetail.sections.playback": "تشغيل الأذان",
+  "prayerDetail.playback.global": "إعداد عام"
 }

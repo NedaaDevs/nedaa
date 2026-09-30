@@ -161,6 +161,16 @@ describe("PrayerDetailSheet", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  // It sits at the top end beside the hero, not on a row of its own.
+  it("floats its close button at the top end, out of the flow", async () => {
+    await renderOn("2026-09-23", PRAYER_ID.ASR);
+
+    const [button] = screen
+      .getAllByRole("button", { name: i18n.t("common.close") })
+      .filter((each) => each.props.testID !== BOTTOM_SHEET_PART.BACKDROP);
+    expect(button).toHaveStyle({ position: "absolute", top: 0 });
+  });
+
   it("keeps the prayer named when its times cannot be shown", async () => {
     await renderOn("2026-09-23", PRAYER_ID.ASR);
     await act(() => usePrayerTimesStore.setState({ todayTimings: null, isLoading: false }));

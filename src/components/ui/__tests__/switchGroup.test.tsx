@@ -1,12 +1,20 @@
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
+import { withTiming } from "react-native-reanimated";
 import { Bell } from "lucide-react-native";
 
 import { ICON_SIZES } from "@/components/ui/icon/sizing";
-import { SwitchGroup } from "@/components/ui/switch-group";
+import { DURATION_MS } from "@/constants/Motion";
+import { SWITCH_GROUP_PART, SwitchGroup } from "@/components/ui/switch-group";
 import { controlProblems } from "@/test-helpers/controls";
+import { fontSizeOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
+
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
 const LABEL = "Athan";
 const SUMMARY = "Makkah";
@@ -34,7 +42,21 @@ const row = () => screen.getByRole("switch", { name: NAME });
 type Host = ReturnType<typeof row>;
 const styleOf = (element: Host) => StyleSheet.flatten(element.props.style) ?? {};
 
+const hidden = { includeHiddenElements: true };
+const bodyStyle = () => styleOf(screen.getByTestId(SWITCH_GROUP_PART.BODY, hidden));
+const measure = (height: number) =>
+  act(() =>
+    fireEvent(screen.getByTestId(SWITCH_GROUP_PART.CONTENT, hidden), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 300, height } },
+    })
+  );
+
 describe("SwitchGroup", () => {
+  beforeEach(() => {
+    mockReduced = false;
+    jest.clearAllMocks();
+  });
+
   it("reads as one switch with its name, summary, hint and state", async () => {
     await renderWithTheme(<Group initial />);
 
@@ -92,7 +114,7 @@ describe("SwitchGroup", () => {
   it("keeps the row at the touch floor with a role and a name", async () => {
     await renderWithTheme(<Group initial />);
 
-    expect(row()).toHaveStyle({ minHeight: 44 });
+    expect(Number(styleOf(row()).minHeight)).toBeGreaterThanOrEqual(44);
     expect(controlProblems()).toEqual([]);
   });
 
@@ -109,11 +131,72 @@ describe("SwitchGroup", () => {
     const body = screen.getByText(BODY).parent!.parent!;
     const [spacer] = body.children as Host[];
     expect(styleOf(body).gap).toBe(styleOf(row()).gap);
-    expect(styleOf(spacer!).width).toBe(ICON_SIZES.md);
+    expect(styleOf(spacer!).width).toBe(ICON_SIZES.lg);
   });
 
-  // A switch inside a group is a setting of it, not a second group header.
-  it("draws a nested switch as a plain row", async () => {
+  it("grows its body to the content's height when switched on", async () => {
+    await renderWithTheme(<Group />);
+
+    await userEvent.setup().press(row());
+    await measure(120);
+
+    expect(bodyStyle().height).toBe(120);
+    expect(withTiming).toHaveBeenCalled();
+  });
+
+  it("folds its body away and hides it from the reader when switched off", async () => {
+    await renderWithTheme(<Group initial />);
+    await measure(120);
+
+    await userEvent.setup().press(row());
+
+    expect(bodyStyle().height).toBe(0);
+    expect(screen.queryByText(BODY)).toBeNull();
+  });
+
+  it("opens at once, at full height, under reduced motion", async () => {
+    mockReduced = true;
+    await renderWithTheme(<Group />);
+
+    await userEvent.setup().press(row());
+    await measure(120);
+
+    expect(withTiming).not.toHaveBeenCalled();
+    expect(bodyStyle().height).toBe(120);
+  });
+
+  // A body left mounted keeps its sound preview playing with no way to stop it.
+  it("unmounts its body once the fold closes", async () => {
+    jest.useFakeTimers();
+    await renderWithTheme(<Group initial />);
+    await measure(120);
+
+    await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(row());
+    expect(screen.getByText(BODY, hidden)).toBeTruthy();
+    await act(() => jest.advanceTimersByTimeAsync(DURATION_MS.SETTLE));
+
+    expect(screen.queryByText(BODY, hidden)).toBeNull();
+    jest.useRealTimers();
+  });
+
+  it("unmounts its body at once under reduced motion", async () => {
+    mockReduced = true;
+    await renderWithTheme(<Group initial />);
+
+    await userEvent.setup().press(row());
+
+    expect(screen.queryByText(BODY, hidden)).toBeNull();
+  });
+
+  it("titles its row at the md size over an sm summary", async () => {
+    await renderWithTheme(<Group />);
+
+    expect(screen.getByText(LABEL)).toHaveStyle({ fontSize: fontSizeOf("md") });
+    expect(screen.getByText(SUMMARY)).toHaveStyle({ fontSize: fontSizeOf("sm") });
+  });
+
+  // A switch inside a group is a setting of it: no divider, the same title.
+  it("draws a nested switch as a row without a divider", async () => {
     await renderWithTheme(
       <SwitchGroup icon={Bell} label={LABEL} summary={SUMMARY} value onValueChange={jest.fn()}>
         <SwitchGroup label={NESTED} value={false} onValueChange={jest.fn()} />
@@ -122,8 +205,10 @@ describe("SwitchGroup", () => {
 
     const nested = screen.getByRole("switch", { name: NESTED });
     expect(styleOf(nested.parent!).borderBottomWidth).toBeUndefined();
-    expect(styleOf(screen.getByText(NESTED)).fontFamily).not.toBe(
-      styleOf(screen.getByText(LABEL)).fontFamily
-    );
+    const title = styleOf(screen.getByText(LABEL));
+    expect(styleOf(screen.getByText(NESTED))).toMatchObject({
+      fontFamily: title.fontFamily,
+      fontSize: title.fontSize,
+    });
   });
 });

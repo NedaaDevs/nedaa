@@ -2,8 +2,8 @@ import { AccessibilityInfo, Platform } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 
 import { CALLOUT_PART, Callout } from "@/components/ui/callout";
-import { STATE_PANEL_ICON_ID, StatePanel } from "@/components/ui/state-panel";
-import { STATE_PANEL_KIND } from "@/constants/StatePanel";
+import { STATE_PANEL_ICON_ID, STATE_PANEL_ROOT_ID, StatePanel } from "@/components/ui/state-panel";
+import { STATE_PANEL_KIND, STATE_PANEL_VARIANT } from "@/constants/StatePanel";
 import { PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -55,6 +55,18 @@ describe("StatePanel", () => {
     expect(
       screen.getByTestId(STATE_PANEL_ICON_ID[kind], { includeHiddenElements: true })
     ).toBeTruthy();
+  });
+
+  // A card frames the state on a screen; the flat variant sits on a sheet's own surface.
+  it.each([
+    [STATE_PANEL_VARIANT.CARD, true],
+    [STATE_PANEL_VARIANT.FLAT, false],
+  ])("draws a %s variant with a frame: %s", async (variant, framed) => {
+    await renderWithTheme(<StatePanel variant={variant} title="Title" body="Body." />);
+
+    const root = screen.getByTestId(STATE_PANEL_ROOT_ID);
+    if (framed) expect(root).toHaveStyle({ borderTopWidth: 1 });
+    else expect(root).not.toHaveStyle({ borderTopWidth: 1 });
   });
 
   describe("speaking its message", () => {

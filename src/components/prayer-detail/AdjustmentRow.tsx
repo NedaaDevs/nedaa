@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { SlidersHorizontal } from "lucide-react-native";
 
 import { summarisePrayerTuning } from "@/components/AladhanSettings/tuning";
-import { ListRow } from "@/components/ui/list-row";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { PrayerId } from "@/constants/Prayer";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
@@ -25,6 +25,7 @@ export const AdjustmentRow = ({ prayerId }: { prayerId: PrayerId }) => {
 
   return (
     <ListRow
+      variant={LIST_ROW_VARIANT.PLAIN}
       icon={SlidersHorizontal}
       title={t("prayerDetail.adjustment.title")}
       status={status}

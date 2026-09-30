@@ -13,8 +13,9 @@ import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { CUSTOM_SOUND_KEY_PREFIX, type CustomSound } from "@/types/customSound";
 import { getEffectiveConfig } from "@/types/notification";
-import { getSoundChoiceGroups } from "@/utils/sound";
+import { getSoundChoices } from "@/utils/sound";
 
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
 jest.mock("@/utils/notifications", () => ({ cancelAllScheduledNotifications: jest.fn() }));
 jest.mock("@/utils/notificationScheduler", () => ({
@@ -69,9 +70,9 @@ const SOUND_LABEL = i18n.t("notification.sound");
 const VIBRATION = i18n.t("notification.vibration");
 
 const soundName = (key: string) =>
-  getSoundChoiceGroups(NOTIFICATION_TYPE.PRAYER, [MY_ATHAN], i18n.t)
-    .flatMap((group) => group.options)
-    .find((option) => option.value === key)!.label;
+  getSoundChoices(NOTIFICATION_TYPE.PRAYER, [MY_ATHAN], i18n.t).find(
+    (option) => option.value === key
+  )!.label;
 
 const effective = () => {
   const { defaults, overrides } = useNotificationStore.getState().settings;

@@ -5,6 +5,7 @@ import {
   SheetLoadingState,
   SheetUnavailableState,
 } from "@/components/prayer-detail/SheetStates";
+import { STATE_PANEL_ROOT_ID } from "@/components/ui/state-panel";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { SimulatedClockContext } from "@/hooks/useTodayClock";
 import i18n from "@/localization/i18n";
@@ -86,6 +87,12 @@ describe("SheetStates", () => {
 
     await userEvent.press(retryButton());
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("sits flat on the sheet, with no card around the state", async () => {
+    await renderIn(<SheetLoadingState prayerId={PRAYER_ID.ASR} />, FRIDAY);
+
+    expect(screen.getByTestId(STATE_PANEL_ROOT_ID)).not.toHaveStyle({ borderTopWidth: 1 });
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

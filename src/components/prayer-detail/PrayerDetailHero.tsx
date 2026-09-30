@@ -45,8 +45,9 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
   const until = count?.axis === COUNT_AXIS.UNTIL;
 
   return (
-    <VStack gap="$3" paddingTop="$2" paddingBottom="$3">
-      <HStack alignItems="center" gap="$3">
+    <VStack gap="$3" paddingTop="$2">
+      {/* The end stays clear for the sheet's close button. */}
+      <HStack alignItems="center" gap="$3" paddingEnd="$11">
         <Box
           width="$12"
           height="$12"
@@ -54,13 +55,14 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
           justifyContent="center"
           borderRadius="$pill"
           borderWidth={1}
-          borderColor="$accent"
+          borderColor="$accentLine"
           backgroundColor="$accentSoft">
-          <Icon as={PRAYER_ICONS[prayerId]} size="lg" color="$accent" />
+          {/* 22 sits between the ramp's 20 and 24. */}
+          <Icon as={PRAYER_ICONS[prayerId]} size={22} strokeWidth={1.65} color="$accent" />
         </Box>
         <VStack flexShrink={1}>
           <ActionsheetTitle>
-            <Text size="2xl" bold typography="title" color="$fg">
+            <Text size="3xl" bold typography="display" color="$fg">
               {name}
             </Text>
           </ActionsheetTitle>
@@ -88,14 +90,14 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
           borderRadius="$card"
           borderWidth={1}
           borderColor="$border"
-          backgroundColor="$surface2">
-          <Text size="xl" bold numeric color="$fg">
+          backgroundColor="$surface2Soft">
+          <Text size="2xl" bold numeric color="$fg">
             {digits(formatCount(count.seconds, count.precise, count.axis))}
           </Text>
           <Text size="sm" color="$muted" flex={1}>
             {t(until ? "today.focus.until" : "today.focus.since", { prayer: name })}
           </Text>
-          <Icon as={ArrowDownUp} size="md" color={until ? "$muted" : "$accent"} />
+          <Icon as={ArrowDownUp} size="md" color="$muted" />
         </Pressable>
       )}
     </VStack>
