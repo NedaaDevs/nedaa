@@ -47,11 +47,7 @@ export default function MainScreen() {
               <SkyOccluder>
                 <LocationNotice />
               </SkyOccluder>
-              <PrayerGrid
-                selected={detail.prayerId}
-                onSelect={detail.open}
-                openerRef={detail.openerRef}
-              />
+              <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
               <OtherTimes />
               <PrayerTimesState />
               {showOccasions ? <UpcomingOccasions /> : null}

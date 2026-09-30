@@ -115,7 +115,7 @@ afterEach(() => {
 describe.each(CASES)("$type group", ({ type, other, Group, title, summary, timing, direction }) => {
   const groupSwitch = () => screen.getByRole("switch", { name: new RegExp(`^${i18n.t(title)}, `) });
   const pill = (minutes: number) =>
-    screen.getByRole("radio", { name: i18n.t("common.minute", { count: minutes }) });
+    screen.getByRole("radio", { name: `${minutes} minutes ${direction}` });
 
   it("reads Off and shows no body while off", async () => {
     await seed(type, { enabled: false });
@@ -166,6 +166,16 @@ describe.each(CASES)("$type group", ({ type, other, Group, title, summary, timin
       expect(pill(minutes).props.accessibilityState).toMatchObject({ selected: minutes === 20 });
     }
     expect(screen.getByText("20")).toBeTruthy();
+  });
+
+  // iOS reads no name on the pill group, so each pill carries its side of the Athan.
+  it("names every pill with its side of the Athan", async () => {
+    await seed(type, { enabled: true });
+    await renderWithTheme(<Group prayerId={PRAYER} />);
+
+    expect(screen.getAllByRole("radio").slice(0, NOTIFICATION_TIMING_CHOICES.length)).toEqual(
+      NOTIFICATION_TIMING_CHOICES.map(pill)
+    );
   });
 
   it("writes a picked pill without touching the other type", async () => {

@@ -1918,5 +1918,11 @@
   "prayerDetail.alarm.summary.pending": "Updating the alarm…",
   "prayerDetail.alarm.timing": "When the alarm rings",
   "prayerDetail.sections.alerts": "Prayer alerts",
-  "prayerDetail.sections.alarms": "Reliable alarms"
+  "prayerDetail.sections.alarms": "Reliable alarms",
+  "a11y.today.prayerCardHint": "Opens this prayer's alerts and settings",
+  "a11y.prayerDetail.iqama.choice_one": "{{count}} minute after the Athan",
+  "a11y.prayerDetail.iqama.choice_other": "{{count}} minutes after the Athan",
+  "a11y.prayerDetail.preAthan.choice_one": "{{count}} minute before the Athan",
+  "a11y.prayerDetail.preAthan.choice_other": "{{count}} minutes before the Athan",
+  "prayerDetail.sections.playback": "Athan playback"
 }

@@ -1,5 +1,4 @@
-import { Component, createRef, type RefObject } from "react";
-import type { View } from "react-native";
+import { Component } from "react";
 import { screen, userEvent } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
@@ -34,11 +33,7 @@ const day = (date: string): DayPrayerTimes => ({
   } as DayPrayerTimes["otherTimings"],
 });
 
-const renderAt = (
-  date: string,
-  time: string,
-  props: { selected?: PrayerId; openerRef?: RefObject<View | null> } = {}
-) => {
+const renderAt = (date: string, time: string, props: { selected?: PrayerId } = {}) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
@@ -91,7 +86,7 @@ describe("PrayerGrid", () => {
 
     await user.press(screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.ISHA) }));
 
-    expect(onSelect).toHaveBeenCalledWith(PRAYER_ID.ISHA);
+    expect(onSelect).toHaveBeenCalledWith(PRAYER_ID.ISHA, expect.anything());
     expect(
       screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.MAGHRIB) }).props
         .accessibilityState
@@ -99,15 +94,23 @@ describe("PrayerGrid", () => {
   });
 
   // The prayer sheet hands reader focus back to this card once it closes.
-  it("holds the opener ref on the chosen card only", async () => {
-    const openerRef = createRef<View>();
-    const { rendered } = renderAt("2026-09-23", "14:02", {
-      selected: PRAYER_ID.MAGHRIB,
-      openerRef,
-    });
+  it("hands over the pressed card itself, for focus to return to", async () => {
+    const { onSelect, rendered } = renderAt("2026-09-23", "14:02");
     await rendered;
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 
-    expect(labelOf(openerRef.current)).toBe(label("2026-09-23", PRAYER_ID.MAGHRIB));
+    await user.press(screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.ISHA) }));
+
+    const [, opener] = onSelect.mock.lastCall ?? [];
+    expect(labelOf(opener)).toBe(label("2026-09-23", PRAYER_ID.ISHA));
+  });
+
+  it("tells a screen reader that a card opens its prayer's sheet", async () => {
+    await renderAt("2026-09-23", "14:02").rendered;
+
+    for (const card of screen.getAllByRole("button")) {
+      expect(card.props.accessibilityHint).toBe(i18n.t("a11y.today.prayerCardHint"));
+    }
   });
 
   it("names Dhuhr as Jumuah on a Friday", async () => {
