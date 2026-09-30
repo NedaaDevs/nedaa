@@ -39,12 +39,9 @@ const Switch = React.forwardRef<any, SwitchProps>(
           ...accessibility,
           disabled,
           style: [SCALE[size], disabled && { opacity: 0.4 }, style],
-          trackColor: {
-            false: theme.outline.val,
-            true: theme.primary.val,
-          },
-          thumbColor: value ? theme.switchThumbChecked.val : theme.typographyContrast.val,
-          ios_backgroundColor: theme.outline.val,
+          trackColor: { false: theme.track.val, true: theme.accent.val },
+          thumbColor: theme.thumb.val,
+          ios_backgroundColor: theme.track.val,
         }}
       />
     );

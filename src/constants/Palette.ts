@@ -27,6 +27,10 @@ export const NEDAA_LIGHT = {
   warn: { oklch: "oklch(57% 0.11 72)", hex: "#9F6B1E" },
   danger: { oklch: "oklch(50% 0.14 26)", hex: "#A43B36" },
   bar: { oklch: "oklch(96% 0.03 225 / .8)", hex: "#E1F6FFCC" },
+  // Switch track while off, sheet handle, switch thumb: tints of the ink.
+  track: { oklch: "oklch(23% 0.055 254 / .18)", hex: "#081D362E" },
+  handle: { oklch: "oklch(23% 0.055 254 / .28)", hex: "#081D3647" },
+  thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
@@ -46,6 +50,9 @@ export const NEDAA_DARK = {
   warn: { oklch: "oklch(77% 0.11 80)", hex: "#D9AC5E" },
   danger: { oklch: "oklch(74% 0.12 28)", hex: "#ED8C80" },
   bar: { oklch: "oklch(19% 0.055 256 / .8)", hex: "#03132CCC" },
+  track: { oklch: "oklch(93% 0.018 230 / .18)", hex: "#DCEAF22E" },
+  handle: { oklch: "oklch(93% 0.018 230 / .28)", hex: "#DCEAF247" },
+  thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** Derived, so a token added to one palette must be added to the other. */
