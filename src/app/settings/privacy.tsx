@@ -6,15 +6,14 @@ import {
   Building2,
   ChartNoAxesColumn,
   LocateFixed,
-  MapPin,
   MessageSquareText,
-  Monitor,
   Send,
   ShieldCheck,
   Smartphone,
   Tag,
 } from "lucide-react-native";
 
+import { SETTINGS_ROWS } from "@/components/settings/settingsRows";
 import type { IconProps } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
@@ -24,6 +23,7 @@ import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-b
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { SECTION_KIND } from "@/constants/Section";
+import { SETTINGS_ROW } from "@/constants/SettingsRoot";
 import { useHaptic } from "@/hooks/useHaptic";
 import { usePreferencesStore } from "@/stores/preferences";
 
@@ -102,7 +102,10 @@ export default function PrivacyScreen() {
                   titleKey="settings.privacy.requests.title"
                   bodyKey="settings.privacy.requests.body"
                 />
-                {linkRow(BACK_DESTINATION.SETTINGS_LOCATION, MapPin)}
+                {linkRow(
+                  BACK_DESTINATION.SETTINGS_LOCATION,
+                  SETTINGS_ROWS[SETTINGS_ROW.LOCATION].icon
+                )}
               </ListGroup>
             </Section>
 
@@ -136,7 +139,7 @@ export default function PrivacyScreen() {
                 />
                 {linkRow(
                   BACK_DESTINATION.SETTINGS_PREFERENCES,
-                  Monitor,
+                  SETTINGS_ROWS[SETTINGS_ROW.PREFERENCES].icon,
                   t(shareUsageStats ? "settings.privacy.usage.on" : "settings.privacy.usage.off")
                 )}
               </ListGroup>

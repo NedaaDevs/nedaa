@@ -17,15 +17,30 @@ export const BACK_DESTINATION = {
   ATHKAR: { route: "(tabs)/athkar", href: "/athkar", title: "athkar.title" },
   QADA: { route: "(tabs)/qada", href: "/qada", title: "qada.title" },
   QURAN: { route: "(tabs)/quran", href: "/quran", title: "a11y.tab.quran" },
-  SETTINGS_ADVANCED: {
-    route: "settings/advance/index",
-    href: "/settings/advance",
-    title: "settings.advance.title",
-  },
   SETTINGS_PROVIDER: {
     route: "settings/advance/provider",
     href: "/settings/advance/provider",
     title: "settings.advance.provider.title",
+  },
+  SETTINGS_HIJRI: {
+    route: "settings/advance/hijri",
+    href: "/settings/advance/hijri",
+    title: "settings.hijri.date.title",
+  },
+  SETTINGS_LANGUAGE: {
+    route: "settings/language",
+    href: "/settings/language",
+    title: "settings.language",
+  },
+  SETTINGS_THEME: {
+    route: "settings/theme",
+    href: "/settings/theme",
+    title: "settings.appearance",
+  },
+  SETTINGS_WIDGETS: {
+    route: "settings/widgets",
+    href: "/settings/widgets",
+    title: "settings.widgets.title",
   },
   SETTINGS_ALARM: {
     route: "settings/alarm",
