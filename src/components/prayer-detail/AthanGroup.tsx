@@ -26,13 +26,13 @@ export const AthanGroup = ({ prayerId }: { prayerId: PrayerId }) => {
   const soundName =
     groups.flatMap((group) => group.options).find((option) => option.value === config.sound)
       ?.label ?? t("prayerDetail.soundPicker.unset");
-  const soundLabel = t("prayerDetail.athan.sound");
+  const soundLabel = t("notification.sound");
 
   return (
     <SwitchGroup
       icon={Bell}
       label={t("prayerDetail.athan.title")}
-      summary={config.enabled ? soundName : t("prayerDetail.athan.off")}
+      summary={config.enabled ? soundName : t("common.off")}
       hint={t("a11y.prayerDetail.athan.hint")}
       value={config.enabled}
       onValueChange={(enabled) => void update(TYPE, NOTIFICATION_FIELD.ENABLED, enabled)}>
@@ -53,7 +53,7 @@ export const AthanGroup = ({ prayerId }: { prayerId: PrayerId }) => {
       {/* iOS has no per-notification vibration setting. */}
       {Platform.OS === PlatformType.ANDROID ? (
         <SwitchGroup
-          label={t("prayerDetail.athan.vibration")}
+          label={t("notification.vibration")}
           value={config.vibration}
           onValueChange={(vibration) => void update(TYPE, NOTIFICATION_FIELD.VIBRATION, vibration)}
         />

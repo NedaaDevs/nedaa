@@ -76,8 +76,8 @@ const AT_PRAYER: TimingConfig = { mode: ALARM_TIMING_MODE.AT_PRAYER_TIME, minute
 const BEFORE_30: TimingConfig = { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 30 };
 
 const TITLE: Record<AlarmType, string> = {
-  [ALARM_TYPE.FAJR]: i18n.t("prayerDetail.alarm.title.fajr"),
-  [ALARM_TYPE.FRIDAY]: i18n.t("prayerDetail.alarm.title.friday"),
+  [ALARM_TYPE.FAJR]: i18n.t("alarm.settings.fajrAlarm"),
+  [ALARM_TYPE.FRIDAY]: i18n.t("alarm.settings.fridayAlarm"),
 };
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
@@ -183,7 +183,7 @@ describe("AlarmDisclosure", () => {
     });
     expect(
       screen.getByRole("switch", {
-        name: `${TITLE.fajr}, ${i18n.t("prayerDetail.alarm.summary.off")}`,
+        name: `${TITLE.fajr}, ${i18n.t("common.off")}`,
       })
     ).toBeTruthy();
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
