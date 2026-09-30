@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { DEBUG_SCREEN } from "@/constants/DebugScreens";
 import { VStack } from "@/components/ui/vstack";
 
 import {
@@ -46,7 +48,10 @@ const WidgetsDebugScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title="Widgets Debug" back />
+      <ScreenHeader
+        title={DEBUG_SCREEN.WIDGETS.label}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack gap="$3" paddingHorizontal="$4" paddingTop="$6">
           <Card borderRadius="$7" borderWidth={1} borderColor="$outline">
