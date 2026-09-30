@@ -256,13 +256,11 @@ export const getSoundChoiceGroups = (
 ): SoundChoiceGroup<string>[] => [
   {
     id: SOUND_PICKER_GROUP.BUNDLED,
-    options: Object.entries(SOUND_ASSETS)
-      .filter(([, asset]) => (asset.availableFor as readonly NotificationType[]).includes(type))
-      .map(([key, asset]) => ({
-        value: key,
-        label: t(asset.label),
-        previewSource: asset.previewSource,
-      })),
+    options: Object.entries(BUNDLED_ASSETS).flatMap(([key, asset]) =>
+      asset?.availableFor.includes(type)
+        ? [{ value: key, label: t(asset.label), previewSource: asset.previewSource }]
+        : []
+    ),
   },
   {
     id: SOUND_PICKER_GROUP.CUSTOM,
@@ -271,6 +269,15 @@ export const getSoundChoiceGroups = (
       .map((sound) => ({ value: sound.id, label: sound.name, previewSource: sound.contentUri })),
   },
 ];
+
+/** The chosen sound's name, or unset when no group offers it. */
+export const chosenSoundLabel = <K extends string>(
+  groups: readonly SoundChoiceGroup<K>[],
+  value: K,
+  t: TFunction
+): string =>
+  groups.flatMap((group) => group.options).find((option) => option.value === value)?.label ??
+  t("prayerDetail.soundPicker.unset");
 
 // An alarm stores a custom sound's URI: no JS runs when it fires.
 // A choice made outside the list stays listed, with nothing to preview.
