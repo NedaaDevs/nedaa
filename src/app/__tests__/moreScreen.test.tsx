@@ -82,7 +82,7 @@ describe("More", () => {
       screen.getByRole("button", { name: i18n.t(key) }).props.accessibilityHint;
 
     expect(hintOf("tools.compass.title")).toBe(
-      i18n.t("a11y.tools.opens", { name: i18n.t("tools.compass.title") })
+      i18n.t("a11y.opens", { name: i18n.t("tools.compass.title") })
     );
     expect(hintOf("importantDays.title")).toBe(i18n.t("a11y.tools.occasionsHint"));
   });

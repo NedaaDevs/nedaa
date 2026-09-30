@@ -38,6 +38,14 @@ describe("isSkySegments", () => {
   ])("reads %j as a sky screen: %s", (segments, sky) => {
     expect(isSkySegments(segments)).toBe(sky);
   });
+
+  // About and Privacy are stack screens drawn on the sky.
+  it.each([BACK_DESTINATION.SETTINGS_ABOUT, BACK_DESTINATION.SETTINGS_PRIVACY])(
+    "reads $route as a sky screen",
+    ({ route }) => {
+      expect(isSkySegments(route.split("/"))).toBe(true);
+    }
+  );
 });
 
 describe("toastBottom", () => {

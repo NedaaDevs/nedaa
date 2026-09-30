@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, Image } from "react-native";
 import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 
 import {
   AlertTriangle,
@@ -71,10 +71,6 @@ const AREA_KEY: Record<(typeof AREAS)[number], string> = {
   other: "feedback.area.other",
 };
 
-const REPORT_VALUES = Object.values(Report) as string[];
-const validType = (value?: string): ReportType | null =>
-  value && REPORT_VALUES.includes(value) ? (value as ReportType) : null;
-
 const logsDefaultFor = (type: ReportType): boolean => type === Report.CRASH || type === Report.BUG;
 
 const formatBytes = (b: number): string => {
@@ -87,10 +83,8 @@ const FeedbackScreen = () => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const offline = useIsOffline();
-  const params = useLocalSearchParams<{ type?: string }>();
-  const initialType = validType(params.type);
 
-  const [type, setType] = useState<ReportType | null>(initialType);
+  const [type, setType] = useState<ReportType | null>(null);
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
   const [area, setArea] = useState<string | undefined>(undefined);
@@ -186,7 +180,10 @@ const FeedbackScreen = () => {
   if (status === "success") {
     return (
       <Background>
-        <ScreenHeader title={t("feedback.title")} back={{ fallback: BACK_DESTINATION.SETTINGS }} />
+        <ScreenHeader
+          title={t("feedback.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+        />
         <VStack flex={1} padding="$4" gap="$4" justifyContent="center" alignItems="center">
           <VStack
             width={56}
@@ -230,7 +227,10 @@ const FeedbackScreen = () => {
 
   return (
     <Background>
-      <ScreenHeader title={t("feedback.title")} back={{ fallback: BACK_DESTINATION.SETTINGS }} />
+      <ScreenHeader
+        title={t("feedback.title")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

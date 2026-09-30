@@ -39,3 +39,12 @@ export const LinearTransition = {
   duration: () => LinearTransition,
   easing: () => LinearTransition,
 };
+
+/** Motion on, so an entering animation is built; the View ignores it. */
+export const useReducedMotion = () => false;
+
+/** An entering animation's builder chain. */
+export const FadeInDown = {
+  duration: () => FadeInDown,
+  delay: () => FadeInDown,
+};
