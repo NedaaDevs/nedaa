@@ -1829,7 +1829,7 @@
   "prayerDetail.states.unavailable.title": "Tetapan tidak tersedia",
   "prayerDetail.sections.calculation": "Pengiraan",
   "prayerDetail.sections.alerts": "Pemberitahuan solat",
-  "prayerDetail.sections.alarms": "Penggera yang boleh dipercayai",
+  "prayerDetail.sections.alarms": "Penggera",
   "a11y.prayerDetail.soundPicker.manageLibraryHint": "Membuka bunyi tersuai anda",
   "a11y.prayerDetail.soundPicker.preview": "Pratonton {{name}}",
   "a11y.prayerDetail.soundPicker.stop": "Hentikan pratonton {{name}}",
