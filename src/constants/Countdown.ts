@@ -3,6 +3,9 @@ export const COUNT_AXIS = { UNTIL: "until", SINCE: "since" } as const;
 
 export type CountAxis = (typeof COUNT_AXIS)[keyof typeof COUNT_AXIS];
 
+/** The widest figures a count shows, with and without an hour of seconds. */
+export const COUNT_WIDEST = { minutes: "00:00", hours: "00:00:00" } as const;
+
 /** A figure's one-off whirl to its value on open or switch. */
 export const SPIN = { ms: 700 } as const;
 
