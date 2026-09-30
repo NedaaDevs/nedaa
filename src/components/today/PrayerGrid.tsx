@@ -1,4 +1,4 @@
-import type { Ref } from "react";
+import { useRef } from "react";
 import type { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { parseISO } from "date-fns";
@@ -26,13 +26,14 @@ type CardProps = {
   name: string;
   time: string;
   selected: boolean;
-  onPress: () => void;
-  openerRef?: Ref<View>;
+  onPress: (opener: View | null) => void;
 };
 
 /** One prayer: quiet once passed, accented when next, ringed when chosen. */
-const PrayerCardView = ({ card, name, time, selected, onPress, openerRef }: CardProps) => {
+const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
   const { t } = useTranslation();
+  // Held from mount: a ref handed over later is never attached.
+  const self = useRef<View>(null);
   const current = card.state === PRAYER_CARD_STATE.CURRENT;
   // The one gold card: the prayer just come in, else the next.
   const next = current || card.state === PRAYER_CARD_STATE.NEXT;
@@ -40,8 +41,8 @@ const PrayerCardView = ({ card, name, time, selected, onPress, openerRef }: Card
 
   return (
     <Pressable
-      ref={openerRef}
-      onPress={onPress}
+      ref={self}
+      onPress={() => onPress(self.current)}
       // The state shows only as colour on screen, so the label carries it.
       accessibilityLabel={t(
         current
@@ -54,6 +55,7 @@ const PrayerCardView = ({ card, name, time, selected, onPress, openerRef }: Card
           time,
         }
       )}
+      accessibilityHint={t("a11y.today.prayerCardHint")}
       accessibilityState={{ selected }}
       flexDirection="row"
       alignItems="center"
@@ -84,13 +86,12 @@ const PrayerCardView = ({ card, name, time, selected, onPress, openerRef }: Card
 type Props = {
   /** The prayer chosen on Today, ringed here and lit on the day's line. */
   selected?: PrayerId;
-  onSelect: (id: PrayerId) => void;
-  /** Lands on the chosen card, where reader focus returns after its sheet. */
-  openerRef?: Ref<View>;
+  /** Gets the pressed card too, where reader focus returns after its sheet. */
+  onSelect: (id: PrayerId, opener: View | null) => void;
 };
 
 /** The day's five prayers: the next one wide on top, the others two by two. */
-export const PrayerGrid = ({ selected, onSelect, openerRef }: Props) => {
+export const PrayerGrid = ({ selected, onSelect }: Props) => {
   const { t } = useTranslation();
   const { now, day, following } = useShownDay();
   const locale = useAppStore((state) => state.locale);
@@ -111,8 +112,7 @@ export const PrayerGrid = ({ selected, onSelect, openerRef }: Props) => {
         western
       )}
       selected={card.id === selected}
-      onPress={() => onSelect(card.id)}
-      openerRef={card.id === selected ? openerRef : undefined}
+      onPress={(opener) => onSelect(card.id, opener)}
     />
   );
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
@@ -15,22 +16,17 @@ import {
   ALARM_TIMING_MODE,
   ALARM_TYPE,
   alarmSettingsHref,
+  timingForMode,
 } from "@/constants/Alarm";
-import type { PrayerId } from "@/constants/Prayer";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
-import { useShownDay } from "@/hooks/useShownDay";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import type { AlarmType, TimingConfig, TimingMode } from "@/types/alarm";
-import { alarmTypeForPrayer } from "@/utils/alarmTypes";
+import { alarmPermissionsGranted } from "@/utils/alarmPermissions";
 import { getAlarmSoundChoiceGroups } from "@/utils/sound";
 
 const TITLE = {
-  [ALARM_TYPE.FAJR]: "alarm.settings.fajrAlarm",
-  [ALARM_TYPE.FRIDAY]: "alarm.settings.fridayAlarm",
-} as const satisfies Record<AlarmType, string>;
-
-const SETTINGS_TITLE = {
   [ALARM_TYPE.FAJR]: "alarm.settings.fajrAlarm",
   [ALARM_TYPE.FRIDAY]: "alarm.settings.fridayAlarm",
 } as const satisfies Record<AlarmType, string>;
@@ -39,12 +35,6 @@ const MODE_LABEL = {
   [ALARM_TIMING_MODE.AT_PRAYER_TIME]: "prayerDetail.alarm.mode.atPrayer",
   [ALARM_TIMING_MODE.BEFORE_PRAYER_TIME]: "prayerDetail.alarm.mode.before",
 } as const satisfies Record<TimingMode, string>;
-
-/** The alarm this prayer offers on the shown day, or null for none. */
-export const useAlarmTypeFor = (prayerId: PrayerId): AlarmType | null => {
-  const { day } = useShownDay();
-  return day ? alarmTypeForPrayer(prayerId, day) : null;
-};
 
 const timingSummary = (type: AlarmType, timing: TimingConfig, t: TFunction) => {
   if (type === ALARM_TYPE.FRIDAY) {
@@ -55,7 +45,8 @@ const timingSummary = (type: AlarmType, timing: TimingConfig, t: TFunction) => {
     : t("prayerDetail.alarm.summary.before", { count: timing.minutesBefore });
 };
 
-const AlarmPanel = ({ type }: { type: AlarmType }) => {
+/** A reliable alarm: on or off, when it rings, and its sound. */
+export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
   const { t } = useTranslation();
   const { settings, update, setEnabled } = useAlarmTypeSettings(type);
   const customSounds = useCustomSoundsStore((state) => state.customSounds);
@@ -67,55 +58,58 @@ const AlarmPanel = ({ type }: { type: AlarmType }) => {
   const beforeSteps = minuteSteps.filter((minutes) => minutes > 0);
   const { timing } = settings;
 
-  // The store turns the alarm on before scheduling and back off if that fails.
-  const toggle = (enabled: boolean) => {
-    if (pending) return;
+  const toggle = async (enabled: boolean) => {
     setFailed(false);
     setPending(true);
-    const settle = () => {
+    // On a failed check the schedule runs and reports any failure itself.
+    if (enabled && !(await alarmPermissionsGranted().catch(() => true))) {
       setPending(false);
-      setFailed(enabled && !useAlarmSettingsStore.getState()[type].enabled);
-    };
-    setEnabled(enabled).then(settle, settle);
+      router.push(BACK_DESTINATION.SETTINGS_ALARM.href);
+      return;
+    }
+    await setEnabled(enabled).catch(() => {});
+    setPending(false);
+    // The store turns the alarm on before scheduling and back off if that fails.
+    const didFail = enabled && !useAlarmSettingsStore.getState()[type].enabled;
+    setFailed(didFail);
+    if (didFail) AccessibilityInfo.announceForAccessibility(t("prayerDetail.alarm.summary.failed"));
   };
-
-  const chooseMode = (mode: TimingMode) =>
-    update({
-      timing: {
-        mode,
-        minutesBefore: mode === ALARM_TIMING_MODE.AT_PRAYER_TIME ? 0 : (beforeSteps[0] ?? 0),
-      },
-    });
 
   const summary = pending
     ? t("prayerDetail.alarm.summary.pending")
     : failed
       ? t("prayerDetail.alarm.summary.failed")
       : !settings.enabled
-        ? t(type === ALARM_TYPE.FRIDAY ? "alarm.settings.fridayEnableDescription" : "common.off")
+        ? t("common.off")
         : timingSummary(type, timing, t);
 
-  const settingsName = t(SETTINGS_TITLE[type]);
+  const name = t(TITLE[type]);
 
   return (
     <SwitchGroup
       icon={AlarmClock}
-      label={t(TITLE[type])}
+      label={name}
       summary={summary}
       value={settings.enabled}
-      onValueChange={toggle}>
+      busy={pending}
+      onValueChange={(enabled) => void toggle(enabled)}>
       {modes.length > 1 ? (
         <SegmentedChoice
           options={modes}
           value={timing.mode}
-          onChange={chooseMode}
+          onChange={(mode) => update({ timing: timingForMode(type, mode) })}
           accessibilityLabel={t("prayerDetail.alarm.timing")}
           label={(mode) => t(MODE_LABEL[mode])}
         />
       ) : null}
       {timing.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME ? (
         <VStack gap="$tight">
-          <Text size="xs" color="$muted">
+          {/* The pill group reads this as its name, so readers skip it here. */}
+          <Text
+            size="xs"
+            color="$muted"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants">
             {t("prayerDetail.alarm.minutesBefore")}
           </Text>
           <SegmentedChoice
@@ -138,15 +132,9 @@ const AlarmPanel = ({ type }: { type: AlarmType }) => {
         icon={SlidersHorizontal}
         title={t("prayerDetail.alarm.more.title")}
         status={t("prayerDetail.alarm.more.status")}
-        hint={t("a11y.prayerDetail.alarm.moreHint", { name: settingsName })}
+        hint={t("a11y.prayerDetail.alarm.moreHint", { name })}
         onPress={() => router.push(alarmSettingsHref(type))}
       />
     </SwitchGroup>
   );
-};
-
-/** The prayer's reliable alarm: on or off, when it rings, and its sound. */
-export const AlarmDisclosure = ({ prayerId }: { prayerId: PrayerId }) => {
-  const type = useAlarmTypeFor(prayerId);
-  return type ? <AlarmPanel type={type} /> : null;
 };

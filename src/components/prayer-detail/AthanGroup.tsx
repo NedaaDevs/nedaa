@@ -4,14 +4,12 @@ import { Bell } from "lucide-react-native";
 
 import { SoundPicker } from "@/components/ui/sound-picker";
 import { SwitchGroup } from "@/components/ui/switch-group";
-import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
 import { NOTIFICATION_FIELD, NOTIFICATION_TYPE } from "@/constants/Notification";
 import type { PrayerId } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { usePrayerAlertSettings } from "@/hooks/usePrayerAlertSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
-import { getSoundChoiceGroups, isNotificationSound } from "@/utils/sound";
+import { chosenSoundLabel, getSoundChoiceGroups, isNotificationSound } from "@/utils/sound";
 
 const TYPE = NOTIFICATION_TYPE.PRAYER;
 
@@ -23,10 +21,7 @@ export const AthanGroup = ({ prayerId }: { prayerId: PrayerId }) => {
   const config = configs[TYPE];
 
   const groups = getSoundChoiceGroups(TYPE, customSounds, t);
-  const soundName =
-    groups.flatMap((group) => group.options).find((option) => option.value === config.sound)
-      ?.label ?? t("prayerDetail.soundPicker.unset");
-  const soundLabel = t("notification.sound");
+  const soundName = chosenSoundLabel(groups, config.sound, t);
 
   return (
     <SwitchGroup
@@ -36,20 +31,14 @@ export const AthanGroup = ({ prayerId }: { prayerId: PrayerId }) => {
       hint={t("a11y.prayerDetail.athan.hint")}
       value={config.enabled}
       onValueChange={(enabled) => void update(TYPE, NOTIFICATION_FIELD.ENABLED, enabled)}>
-      <VStack gap="$1.5">
-        <Text size="xs" color="$muted">
-          {soundLabel}
-        </Text>
-        <SoundPicker
-          label={soundLabel}
-          groups={groups}
-          value={config.sound}
-          onChange={(sound) => {
-            if (isNotificationSound(TYPE, sound))
-              void update(TYPE, NOTIFICATION_FIELD.SOUND, sound);
-          }}
-        />
-      </VStack>
+      <SoundPicker
+        label={t("notification.sound")}
+        groups={groups}
+        value={config.sound}
+        onChange={(sound) => {
+          if (isNotificationSound(TYPE, sound)) void update(TYPE, NOTIFICATION_FIELD.SOUND, sound);
+        }}
+      />
       {/* iOS has no per-notification vibration setting. */}
       {Platform.OS === PlatformType.ANDROID ? (
         <SwitchGroup

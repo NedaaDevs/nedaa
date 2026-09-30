@@ -13,6 +13,9 @@ import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+
 // 25 September 2026 is a Friday.
 const FRIDAY: DayPrayerTimes = {
   date: 20260925,

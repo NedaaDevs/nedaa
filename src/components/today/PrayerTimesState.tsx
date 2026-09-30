@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { StatePanel } from "@/components/ui/state-panel";
 import { TimelineSkeleton } from "@/components/ui/timeline";
+import { useRetryPrayerTimes } from "@/hooks/useRetryPrayerTimes";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 /** Today before its times arrive: a placeholder, or a retry after a failure. */
@@ -10,17 +11,11 @@ export const PrayerTimesState = () => {
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const hasError = usePrayerTimesStore((state) => state.hasError);
   const isLoading = usePrayerTimesStore((state) => state.isLoading);
-  const loadPrayerTimes = usePrayerTimesStore((state) => state.loadPrayerTimes);
-  const clearError = usePrayerTimesStore((state) => state.clearError);
+  const retry = useRetryPrayerTimes();
 
   if (today) return null;
 
   if (hasError) {
-    const retry = () => {
-      clearError();
-      // The store records a failure in hasError, which this state reads back.
-      loadPrayerTimes(true).catch(() => {});
-    };
     return (
       <StatePanel
         title={t("today.failed.title")}
