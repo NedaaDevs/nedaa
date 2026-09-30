@@ -143,7 +143,8 @@
       "@react-native-community/datetimepicker",
       "expo-sharing",
       "expo-status-bar",
-      "./plugins/withIosAcknowledgements"
+      "./plugins/withIosAcknowledgements",
+      "./plugins/withTextViewBoundsForWidth"
     ],
     "experiments": {
       "typedRoutes": true,
