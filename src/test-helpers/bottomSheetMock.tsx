@@ -46,7 +46,7 @@ type NullableA11y = {
   accessibilityRole?: AccessibilityRole | null;
 };
 
-type BackdropProps = NullableA11y & Pick<ViewProps, "style">;
+type BackdropProps = NullableA11y & Pick<ViewProps, "style"> & { opacity?: number };
 
 type ModalProps = PropsWithChildren<
   NullableA11y & {
@@ -126,10 +126,11 @@ export const BottomSheetBackdrop = ({
   accessibilityLabel,
   accessibilityRole,
   style,
+  opacity,
 }: BackdropProps) => (
   <Pressable
     testID={BOTTOM_SHEET_PART.BACKDROP}
-    style={style}
+    style={[style, { opacity }]}
     onPress={() => presented.at(-1)?.()}
     accessible={orDefault(accessible, DEFAULT_BACKDROP_A11Y.accessible)}
     accessibilityLabel={orDefault(accessibilityLabel, DEFAULT_BACKDROP_A11Y.accessibilityLabel)}

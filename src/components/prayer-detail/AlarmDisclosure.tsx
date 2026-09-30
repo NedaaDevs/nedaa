@@ -3,9 +3,10 @@ import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
-import { AlarmClock, SlidersHorizontal } from "lucide-react-native";
+import { AlarmClock } from "lucide-react-native";
 
-import { ListRow } from "@/components/ui/list-row";
+import { DetailPanel } from "@/components/prayer-detail/DetailPanel";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SoundPicker } from "@/components/ui/sound-picker";
 import { SwitchGroup } from "@/components/ui/switch-group";
@@ -24,7 +25,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import type { AlarmType, TimingConfig, TimingMode } from "@/types/alarm";
 import { alarmPermissionsGranted } from "@/utils/alarmPermissions";
-import { getAlarmSoundChoiceGroups } from "@/utils/sound";
+import { getAlarmSoundChoices } from "@/utils/sound";
 
 const TITLE = {
   [ALARM_TYPE.FAJR]: "alarm.settings.fajrAlarm",
@@ -93,48 +94,51 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
       value={settings.enabled}
       busy={pending}
       onValueChange={(enabled) => void toggle(enabled)}>
-      {modes.length > 1 ? (
-        <SegmentedChoice
-          options={modes}
-          value={timing.mode}
-          onChange={(mode) => update({ timing: timingForMode(type, mode) })}
-          accessibilityLabel={t("prayerDetail.alarm.timing")}
-          label={(mode) => t(MODE_LABEL[mode])}
-        />
-      ) : null}
-      {timing.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME ? (
-        <VStack gap="$tight">
-          {/* The pill group reads this as its name, so readers skip it here. */}
-          <Text
-            size="xs"
-            color="$muted"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants">
-            {t("prayerDetail.alarm.minutesBefore")}
-          </Text>
+      <DetailPanel>
+        {modes.length > 1 ? (
           <SegmentedChoice
-            options={beforeSteps}
-            value={timing.minutesBefore}
-            onChange={(minutesBefore) => update({ timing: { ...timing, minutesBefore } })}
-            accessibilityLabel={t("prayerDetail.alarm.minutesBefore")}
-            label={String}
-            spokenLabel={(minutes) => t("common.minute", { count: minutes })}
+            options={modes}
+            value={timing.mode}
+            onChange={(mode) => update({ timing: timingForMode(type, mode) })}
+            accessibilityLabel={t("prayerDetail.alarm.timing")}
+            label={(mode) => t(MODE_LABEL[mode])}
           />
-        </VStack>
-      ) : null}
-      <SoundPicker
-        label={t("prayerDetail.alarm.sound")}
-        groups={getAlarmSoundChoiceGroups(customSounds, t, settings.sound)}
-        value={settings.sound}
-        onChange={(sound) => update({ sound })}
-      />
-      <ListRow
-        icon={SlidersHorizontal}
-        title={t("prayerDetail.alarm.more.title")}
-        status={t("prayerDetail.alarm.more.status")}
-        hint={t("a11y.prayerDetail.alarm.moreHint", { name })}
-        onPress={() => router.push(alarmSettingsHref(type))}
-      />
+        ) : null}
+        {timing.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME ? (
+          <VStack gap="$tight">
+            {/* The pill group reads this as its name, so readers skip it here. */}
+            <Text
+              size="xs"
+              fontWeight="600"
+              color="$muted"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants">
+              {t("prayerDetail.alarm.minutesBefore")}
+            </Text>
+            <SegmentedChoice
+              options={beforeSteps}
+              value={timing.minutesBefore}
+              onChange={(minutesBefore) => update({ timing: { ...timing, minutesBefore } })}
+              accessibilityLabel={t("prayerDetail.alarm.minutesBefore")}
+              label={String}
+              spokenLabel={(minutes) => t("common.minute", { count: minutes })}
+            />
+          </VStack>
+        ) : null}
+        <SoundPicker
+          label={t("prayerDetail.alarm.sound")}
+          options={getAlarmSoundChoices(customSounds, t, settings.sound)}
+          value={settings.sound}
+          onChange={(sound) => update({ sound })}
+        />
+        <ListRow
+          variant={LIST_ROW_VARIANT.PLAIN}
+          title={t("prayerDetail.alarm.more.title")}
+          status={t("prayerDetail.alarm.more.status")}
+          hint={t("a11y.prayerDetail.alarm.moreHint", { name })}
+          onPress={() => router.push(alarmSettingsHref(type))}
+        />
+      </DetailPanel>
     </SwitchGroup>
   );
 };

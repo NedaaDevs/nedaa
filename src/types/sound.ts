@@ -1,5 +1,4 @@
 // Types
-import type { SoundPickerGroupId } from "@/constants/sounds";
 import { NotificationType } from "@/types/notification";
 
 // Base sound asset type
@@ -28,11 +27,6 @@ export type SoundChoice<K extends string> = {
   label: string;
   /** Null when the sound has nothing to play, such as silent. */
   previewSource: PreviewSource | null;
-};
-
-export type SoundChoiceGroup<K extends string> = {
-  id: SoundPickerGroupId;
-  options: readonly SoundChoice<K>[];
 };
 
 // Type-safe sound assets configuration

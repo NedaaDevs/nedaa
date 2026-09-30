@@ -18,6 +18,7 @@ import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { ConfigForType } from "@/types/notification";
 
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
 jest.mock("@/utils/notifications", () => ({ cancelAllScheduledNotifications: jest.fn() }));
 jest.mock("@/utils/notificationScheduler", () => ({
