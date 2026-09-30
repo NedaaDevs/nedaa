@@ -4,6 +4,7 @@ import { PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
 import type { SchedulingResult } from "@/types/notification";
 import { scheduleAllNotifications } from "@/utils/notificationScheduler";
+import { cancelAllScheduledNotifications } from "@/utils/notifications";
 
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
 jest.mock("@/utils/notifications", () => ({ cancelAllScheduledNotifications: jest.fn() }));
@@ -56,9 +57,11 @@ const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 const store = () => useNotificationStore.getState();
 const scheduler = scheduleAllNotifications as jest.Mock;
+const cancelAll = cancelAllScheduledNotifications as jest.Mock;
 
 beforeEach(() => {
   scheduler.mockReset();
+  cancelAll.mockReset();
   useNotificationStore.setState((state) => ({
     settings: { ...state.settings, enabled: true, overrides: {} },
     pendingReschedule: false,
@@ -185,6 +188,24 @@ describe("scheduleAllNotifications single-flight", () => {
     await store().scheduleAllNotifications();
 
     expect(scheduler).toHaveBeenCalledTimes(2);
+  });
+
+  // A run in progress adds its notifications after any cancel that lands mid-run.
+  it("cancels everything only after a run in progress ends when turned off", async () => {
+    const first = deferred();
+    const order: string[] = [];
+    scheduler.mockReturnValueOnce(first.promise.finally(() => order.push("run")));
+    cancelAll.mockImplementation(() => order.push("cancel"));
+
+    const running = store().scheduleAllNotifications();
+    await settle();
+    const disabling = store().updateAllNotificationToggle(false);
+    await settle();
+    first.resolve(done(FIRST_COUNT));
+    await Promise.all([running, disabling]);
+
+    expect(order).toEqual(["run", "cancel"]);
+    expect(scheduler).toHaveBeenCalledTimes(1);
   });
 
   // A flush that lands after a later write must leave that write owed.

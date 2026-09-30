@@ -4,6 +4,7 @@ import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import type { PrayerSoundKey } from "@/constants/sounds";
 import { scheduleAllNotifications } from "@/utils/notificationScheduler";
+import { cancelAllScheduledNotifications } from "@/utils/notifications";
 import { clearTransientSchedulingState } from "@/stores/notificationTransientState";
 
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
@@ -33,6 +34,7 @@ const SOUND: PrayerSoundKey = "athan2";
 
 const store = () => useNotificationStore.getState();
 const scheduler = scheduleAllNotifications as jest.Mock;
+const cancelAll = cancelAllScheduledNotifications as jest.Mock;
 // Writes replace the settings object, so this stays the store's starting point.
 const INITIAL_SETTINGS = store().settings;
 
@@ -345,6 +347,21 @@ describe("every rescheduling write goes through requestReschedule", () => {
     });
 
     expect(scheduler).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("turning every notification off", () => {
+  beforeEach(() => cancelAll.mockClear());
+
+  it("cancels once, at the batch's flush", async () => {
+    await store().withBatch(async () => {
+      await store().updateAllNotificationToggle(false);
+      expect(cancelAll).not.toHaveBeenCalled();
+    });
+
+    expect(cancelAll).toHaveBeenCalledTimes(1);
+    expect(scheduler).not.toHaveBeenCalled();
+    expect(store().pendingReschedule).toBe(false);
   });
 });
 

@@ -12,7 +12,7 @@ export type PrayerAlertConfigs = { [T in PrayerNotificationType]: ConfigForType<
 export type PrayerAlertSettings = {
   /** Each type's defaults with this prayer's override on top. */
   configs: PrayerAlertConfigs;
-  /** Whether any field of this prayer differs from the defaults. */
+  /** Whether any stored field of this prayer differs from its default. */
   isCustom: boolean;
   /** Sets one field for this prayer; the default value clears it instead. */
   update: <T extends PrayerNotificationType, K extends keyof ConfigForType<T>>(
@@ -23,6 +23,10 @@ export type PrayerAlertSettings = {
   /** Drops every override of this prayer, so it follows the defaults again. */
   reset: () => Promise<void>;
 };
+
+// A default can move onto a stored value, so storing a field is not custom.
+const differsFrom = (override: Record<string, unknown>, defaults: Record<string, unknown>) =>
+  Object.entries(override).some(([field, value]) => defaults[field] !== value);
 
 // Each write reschedules unless a useNotificationEditSession is open.
 export const usePrayerAlertSettings = (prayerId: PrayerId): PrayerAlertSettings => {
@@ -53,8 +57,8 @@ export const usePrayerAlertSettings = (prayerId: PrayerId): PrayerAlertSettings 
     ),
   } satisfies PrayerAlertConfigs;
 
-  const isCustom = PRAYER_NOTIFICATION_TYPES.some(
-    (type) => Object.keys(overrides[prayerId]?.[type] ?? {}).length > 0
+  const isCustom = PRAYER_NOTIFICATION_TYPES.some((type) =>
+    differsFrom(overrides[prayerId]?.[type] ?? {}, defaults[type])
   );
 
   return {

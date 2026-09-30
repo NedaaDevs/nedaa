@@ -12,8 +12,12 @@ import { PrayerName } from "@/types/prayerTimes";
 import type { CustomSound } from "@/types/customSound";
 
 // Constants
-import { PRAYER_ID } from "@/constants/Prayer";
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  PRAYER_NOTIFICATION_TYPES,
+} from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Utils
@@ -88,17 +92,11 @@ const CHANNEL_VERSION = 3;
 type ChannelSettings = { sound: string; vibration: boolean };
 
 /** The notification types whose channels this module creates and deletes. */
-const MANAGED_TYPES = [
-  NOTIFICATION_TYPE.PRAYER,
-  NOTIFICATION_TYPE.IQAMA,
-  NOTIFICATION_TYPE.PRE_ATHAN,
-  NOTIFICATION_TYPE.ATHKAR,
-] as const;
-const MANAGED_IDS = ["reminder", "quran_reminder"] as const;
+const MANAGED_TYPES = [...PRAYER_NOTIFICATION_TYPES, NOTIFICATION_TYPE.ATHKAR];
+const MANAGED_IDS: readonly string[] = Object.values(NOTIFICATION_CHANNEL_ID);
 
 const isManagedChannel = (id: string) =>
-  MANAGED_TYPES.some((type) => id.startsWith(`${type}_`)) ||
-  MANAGED_IDS.some((managed) => id === managed);
+  MANAGED_TYPES.some((type) => id.startsWith(`${type}_`)) || MANAGED_IDS.includes(id);
 
 /**
  * One channel per prayer, type, sound, playback mode and vibration. Android restores
@@ -116,6 +114,9 @@ const generateChannelId = (
   const vibrationSuffix = vibration ? "vib" : "novib";
   return `${type}_${prayer}_${sanitizedSoundKey}_v${CHANNEL_VERSION}_${modeSuffix}_${vibrationSuffix}`;
 };
+
+// Splits a current-version generateChannelId id into type, prayer and sound.
+const PRAYER_CHANNEL_ID = new RegExp(`^([^_]+)_([^_]+)_(.+)_v${CHANNEL_VERSION}_[a-z]+_[a-z]+$`);
 
 /**
  * Get the display name for a channel
@@ -278,7 +279,7 @@ export const createNotificationChannels = async (
 
   // Create reminder channel
   channels.push({
-    id: "reminder",
+    id: NOTIFICATION_CHANNEL_ID.REMINDER,
     name: "Prayer Reminders",
     sound: null,
     importance: Notifications.AndroidImportance.HIGH,
@@ -290,7 +291,7 @@ export const createNotificationChannels = async (
   if (athkarSettings) {
     if (athkarSettings.morningNotification.enabled) {
       channels.push({
-        id: "athkar_morning",
+        id: NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING,
         name: "Morning Athkar",
         sound: null,
         importance: Notifications.AndroidImportance.HIGH,
@@ -301,7 +302,7 @@ export const createNotificationChannels = async (
 
     if (athkarSettings.eveningNotification.enabled) {
       channels.push({
-        id: "athkar_evening",
+        id: NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING,
         name: "Evening Athkar",
         sound: null,
         importance: Notifications.AndroidImportance.HIGH,
@@ -313,7 +314,7 @@ export const createNotificationChannels = async (
 
   if (quranReminderEnabled) {
     channels.push({
-      id: "quran_reminder",
+      id: NOTIFICATION_CHANNEL_ID.QURAN_REMINDER,
       name: "Quran Reminders",
       sound: null,
       importance: Notifications.AndroidImportance.HIGH,
@@ -496,16 +497,20 @@ export const shouldUpdateChannels = async (
     // Check Athkar channels if settings provided
     if (athkarSettings) {
       if (athkarSettings.morningNotification.enabled) {
-        requiredChannels.add("athkar_morning");
-        const existingChannel = existingChannels.find((ch) => ch.id === "athkar_morning");
+        requiredChannels.add(NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING);
+        const existingChannel = existingChannels.find(
+          (ch) => ch.id === NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING
+        );
         if (!existingChannel || existingChannel.sound !== "default") {
           return true;
         }
       }
 
       if (athkarSettings.eveningNotification.enabled) {
-        requiredChannels.add("athkar_evening");
-        const existingChannel = existingChannels.find((ch) => ch.id === "athkar_evening");
+        requiredChannels.add(NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING);
+        const existingChannel = existingChannels.find(
+          (ch) => ch.id === NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING
+        );
         if (!existingChannel || existingChannel.sound !== "default") {
           return true;
         }
@@ -513,7 +518,7 @@ export const shouldUpdateChannels = async (
     }
 
     // Reminder channel is always required
-    requiredChannels.add("reminder");
+    requiredChannels.add(NOTIFICATION_CHANNEL_ID.REMINDER);
 
     // Check if there are old channels that need cleanup
     const managedChannels = existingChannels.filter((ch) => isManagedChannel(ch.id));
@@ -542,16 +547,11 @@ export const getActiveChannelMappings = async (): Promise<ChannelMapping[]> => {
     const mappings: ChannelMapping[] = [];
 
     for (const channel of channels) {
-      // Parse our managed channels
-      const match = channel.id.match(/^(prayer|iqama|preathan)_([^_]+)_(.+)$/);
-      if (match) {
-        const [, type, prayer, soundKey] = match;
-        mappings.push({
-          channelId: channel.id,
-          prayerName: prayer as PrayerName,
-          notificationType: type as NotificationType,
-          soundKey: soundKey.replace(/_/g, " "), // Convert back from sanitized form
-        });
+      const [, typePart, prayerPart, soundKey] = channel.id.match(PRAYER_CHANNEL_ID) ?? [];
+      const notificationType = PRAYER_NOTIFICATION_TYPES.find((type) => type === typePart);
+      const prayerName = PRAYER_IDS.find((prayer) => prayer === prayerPart);
+      if (notificationType && prayerName && soundKey) {
+        mappings.push({ channelId: channel.id, prayerName, notificationType, soundKey });
       }
     }
 
