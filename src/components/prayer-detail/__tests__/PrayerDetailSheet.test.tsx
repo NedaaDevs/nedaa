@@ -7,6 +7,7 @@ import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
+import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { BOTTOM_SHEET_PART } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -18,6 +19,19 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 const HEADER = "header";
 // The open sheet hides its siblings from a reader, so queries look past that.
 const hidden = { includeHiddenElements: true };
+
+type Node = ReturnType<typeof screen.toJSON>;
+/** Every visible string and spoken label or hint on screen. */
+const wordsIn = (node: Node | string, out: string[] = []): string[] => {
+  if (!node) return out;
+  if (typeof node === "string") return [...out, node];
+  if (Array.isArray(node)) return node.reduce((acc: string[], each) => wordsIn(each, acc), out);
+  const { accessibilityLabel, accessibilityHint } = node.props;
+  for (const said of [accessibilityLabel, accessibilityHint]) if (said) out.push(String(said));
+  return (node.children ?? []).reduce((acc: string[], each) => wordsIn(each, acc), out);
+};
+// i18next shows a missing string as its own key.
+const RAW_KEY = /\b(prayerDetail|a11y\.prayerDetail)\./;
 
 /** A stored day in UTC; 25 September 2026 is a Friday. */
 const day = (date: string): DayPrayerTimes => ({
@@ -86,6 +100,24 @@ describe("PrayerDetailSheet", () => {
 
     await renderOn("2026-09-23", PRAYER_ID.ASR);
     expect(screen.queryByRole(HEADER, alarms)).toBeNull();
+  });
+
+  it.each(Object.values(AppLocale))("shows no raw string key in %s", async (locale) => {
+    const settings = useNotificationStore.getState().settings;
+    useNotificationStore.setState({
+      settings: {
+        ...settings,
+        overrides: { fajr: { iqama: { enabled: true }, preAthan: { enabled: true } } },
+      },
+    });
+    await act(() => i18n.changeLanguage(locale));
+    useAppStore.setState({ locale });
+
+    await renderOn("2026-09-25", PRAYER_ID.FAJR);
+
+    expect(wordsIn(screen.toJSON()).filter((word) => RAW_KEY.test(word))).toEqual([]);
+    await act(() => i18n.changeLanguage(AppLocale.EN));
+    useNotificationStore.setState({ settings });
   });
 
   it("reports a close from the sheet itself", async () => {
