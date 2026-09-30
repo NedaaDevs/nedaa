@@ -54,6 +54,7 @@ type ModalProps = PropsWithChildren<
     onDismiss?: () => void;
     overrideReduceMotion?: string;
     topInset?: number;
+    animationConfigs?: { duration?: number; easing?: unknown };
     backgroundStyle?: ViewStyle;
     handleIndicatorStyle?: ViewStyle;
     backdropComponent?: ComponentType<BackdropProps>;
@@ -137,6 +138,9 @@ export const BottomSheetBackdrop = ({
 );
 
 export const BottomSheetScrollView = ScrollView;
+
+/** gorhom builds its timing config from these; the mock hands them back. */
+export const useBottomSheetTimingConfigs = <T,>(configs: T) => configs;
 
 export const useBottomSheetModal = () => ({
   dismiss: () => presented.at(-1)?.(),

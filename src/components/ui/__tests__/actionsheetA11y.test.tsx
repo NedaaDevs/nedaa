@@ -1,7 +1,7 @@
 import { Component, createRef } from "react";
 import { AccessibilityInfo, Text, View } from "react-native";
 import { act, fireEvent, screen, within } from "@testing-library/react-native";
-import { ReduceMotion } from "react-native-reanimated";
+import { Easing, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTokenValue } from "tamagui";
 
@@ -13,6 +13,7 @@ import {
   ActionsheetTitle,
 } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
+import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
 import i18n from "@/localization/i18n";
 import { BOTTOM_SHEET_PART, modalProps } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -198,6 +199,16 @@ describe("Actionsheet accessibility", () => {
     await renderWithTheme(<Screen open />);
 
     expect(lastSheetProps()?.overrideReduceMotion).toBe(ReduceMotion.Never);
+  });
+
+  // The iOS sheet curve: fast off the mark, then a long gentle settle.
+  it("slides up on the system sheet curve", async () => {
+    await renderWithTheme(<Screen open />);
+
+    expect(lastSheetProps()?.animationConfigs).toEqual({
+      duration: DURATION_MS.GENTLE,
+      easing: Easing.bezier(...SHEET_CURVE),
+    });
   });
 
   it("appears at once under Reduce Motion", async () => {
