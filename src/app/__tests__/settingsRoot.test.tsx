@@ -8,7 +8,7 @@ import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 import { withTiming } from "react-native-reanimated";
 
-import { LIST_ROW_PART } from "@/components/ui/list-row";
+import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { SETTINGS_LAYOUT, SETTINGS_ROW } from "@/constants/SettingsRoot";
@@ -195,7 +195,7 @@ describe("Settings root", () => {
   it("sets every row's icon on a tinted tile", async () => {
     await renderSettings();
 
-    expect(screen.getAllByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toHaveLength(
+    expect(screen.getAllByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveLength(
       ROWS.length
     );
   });

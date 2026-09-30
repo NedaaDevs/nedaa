@@ -22,7 +22,7 @@ export const AboutBrand = () => {
   return (
     <VStack
       accessible
-      accessibilityLabel={`${name}, ${tagline}`}
+      accessibilityLabel={t("a11y.join", { first: name, second: tagline })}
       alignItems="center"
       gap="$2"
       paddingVertical="$5"

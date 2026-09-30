@@ -6,7 +6,7 @@ import { usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
-import { LIST_ROW_PART } from "@/components/ui/list-row";
+import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { DEBUG_COPY, DEBUG_SCREEN } from "@/constants/DebugScreens";
@@ -114,7 +114,7 @@ describe("About", () => {
   it("sets each row's icon on the tinted tile", async () => {
     await renderAbout();
 
-    expect(screen.getAllByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toHaveLength(
+    expect(screen.getAllByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveLength(
       ROWS.length
     );
   });
@@ -168,6 +168,16 @@ describe("About", () => {
     ).toBeTruthy();
   });
 
+  it("reads the brand with the Arabic comma in Arabic", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    await i18n.changeLanguage(AppLocale.AR);
+    await renderAbout();
+
+    expect(
+      screen.getByLabelText(`${i18n.t("brand.name")}، ${i18n.t("settings.about.tagline")}`)
+    ).toBeTruthy();
+  });
+
   it("hides the developer rows while debug mode is off", async () => {
     await renderAbout();
 
@@ -191,7 +201,7 @@ describe("About", () => {
     useDebugModeStore.setState({ isEnabled: true });
     await renderAbout();
 
-    expect(screen.getAllByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toHaveLength(
+    expect(screen.getAllByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveLength(
       ROWS.length
     );
   });
