@@ -12,7 +12,7 @@ const AcknowledgementsSettings = () => {
     <Background>
       <ScreenHeader
         title={t("settings.acknowledgements.title")}
-        back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
       />
       <Acknowledgements />
     </Background>
