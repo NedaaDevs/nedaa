@@ -18,6 +18,8 @@ import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { HijriDate } from "@/utils/date";
 
+// Renders the whole Today screen under a router; a full parallel run passes 5 s.
+jest.setTimeout(20_000);
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("@/utils/date", () => {
