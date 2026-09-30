@@ -61,6 +61,11 @@ describe("palette", () => {
     expect(contrast(tokens.accent.hex, tokens.tile.hex)).toBeGreaterThanOrEqual(3);
   });
 
+  // A filled number badge writes bg ink on an accent fill; text, so 4.5:1.
+  it.each(PALETTES)("$name bg ink clears 4.5:1 on an accent fill", ({ tokens }) => {
+    expect(contrast(tokens.bg.hex, tokens.accent.hex)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("keeps alpha tokens at 8 digits and the rest at 6", () => {
     for (const { tokens } of PALETTES) {
       for (const [token, entry] of Object.entries(tokens)) {

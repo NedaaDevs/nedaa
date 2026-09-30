@@ -1,8 +1,6 @@
-import type { ComponentType } from "react";
+import type { Href } from "expo-router";
 import { PixelRatio } from "react-native";
-import { ALargeSmall, BookOpen, CalendarDays, Headphones } from "lucide-react-native";
 
-import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { usePreferencesStore } from "@/stores/preferences";
 import { TextSize } from "@/enums/app";
 import { nearestTextSize, OS_FONT_SCALE_OFFER_THRESHOLD } from "@/constants/TextSize";
@@ -31,13 +29,20 @@ export type WhatsNewGateContext = {
   textSizeOfferHandled: boolean;
 };
 
+/** What an entry's action does: open a screen, or turn a feature on. */
+export const WHATS_NEW_ACTION = { NAVIGATE: "navigate", OPT_IN: "optIn" } as const;
+
 export type WhatsNewAction =
-  | { type: "navigate"; route: string; ctaKey: string }
-  | { type: "optIn"; ctaKey: string; isEnabled: () => boolean; enable: () => void };
+  | { type: typeof WHATS_NEW_ACTION.NAVIGATE; route: Href; ctaKey: string }
+  | {
+      type: typeof WHATS_NEW_ACTION.OPT_IN;
+      ctaKey: string;
+      isEnabled: () => boolean;
+      enable: () => void;
+    };
 
 export type WhatsNewEntry = {
   id: WhatsNewId;
-  icon: ComponentType<any>;
   titleKey: string;
   descriptionKey: string;
   applies?: (ctx: WhatsNewGateContext) => boolean;
@@ -49,13 +54,12 @@ export type WhatsNewEntry = {
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
     id: WhatsNewId.TEXT_SIZE,
-    icon: ALargeSmall,
     titleKey: "whatsNew.textSize.title",
     descriptionKey: "whatsNew.textSize.description",
     applies: (ctx) => ctx.fontScale >= OS_FONT_SCALE_OFFER_THRESHOLD,
     announceGate: (ctx) => !ctx.textSizeOfferHandled,
     action: {
-      type: "optIn",
+      type: WHATS_NEW_ACTION.OPT_IN,
       ctaKey: "whatsNew.enable",
       isEnabled: () => usePreferencesStore.getState().textSize !== TextSize.DEFAULT,
       enable: () =>
@@ -64,25 +68,30 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   },
   {
     id: WhatsNewId.QURAN_AUDIO,
-    icon: Headphones,
     titleKey: "quranAudio.featureCard.title",
     descriptionKey: "quranAudio.featureCard.description",
-    action: { type: "navigate", route: "/quran-listen", ctaKey: "quranAudio.featureCard.explore" },
+    action: {
+      type: WHATS_NEW_ACTION.NAVIGATE,
+      route: "/quran-listen",
+      ctaKey: "quranAudio.featureCard.explore",
+    },
   },
   {
     id: WhatsNewId.QURAN,
-    icon: BookOpen,
     titleKey: "quran.featureCard.title",
     descriptionKey: "quran.featureCard.description",
-    action: { type: "navigate", route: "/(tabs)/quran", ctaKey: "quran.featureCard.explore" },
+    action: {
+      type: WHATS_NEW_ACTION.NAVIGATE,
+      route: "/(tabs)/quran",
+      ctaKey: "quran.featureCard.explore",
+    },
   },
   {
     id: WhatsNewId.IMPORTANT_DAYS,
-    icon: CalendarDays,
     titleKey: "whatsNew.importantDays.title",
     descriptionKey: "whatsNew.importantDays.description",
     action: {
-      type: "optIn",
+      type: WHATS_NEW_ACTION.OPT_IN,
       ctaKey: "whatsNew.enable",
       isEnabled: () => usePreferencesStore.getState().showImportantDaysOnHome,
       enable: () => usePreferencesStore.getState().setShowImportantDaysOnHome(true),
@@ -90,11 +99,14 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   },
   {
     id: WhatsNewId.UMRAH,
-    icon: KaabaIcon,
     titleKey: "umrah.featureCard.title",
     descriptionKey: "umrah.featureCard.description",
     announceGate: (ctx) => !ctx.umrahInProgress,
-    action: { type: "navigate", route: "/umrah", ctaKey: "umrah.featureCard.explore" },
+    action: {
+      type: WHATS_NEW_ACTION.NAVIGATE,
+      route: "/umrah",
+      ctaKey: "umrah.featureCard.explore",
+    },
   },
 ];
 

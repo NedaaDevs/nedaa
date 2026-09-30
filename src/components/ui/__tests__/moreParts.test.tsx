@@ -2,12 +2,15 @@ import { Text } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 import { AlarmClock, Compass } from "lucide-react-native";
 
-import { LIST_ROW_PART, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ICON_TILE_ID } from "@/components/ui/icon-tile";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { METER_PART, Meter } from "@/components/ui/meter";
 import { Section } from "@/components/ui/section";
 import { Tile } from "@/components/ui/tile";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { SECTION_KIND } from "@/constants/Section";
+import { AppLocale } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import { fontSizeOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -97,7 +100,7 @@ describe("ListRow icon", () => {
   it("sets the icon on the tinted tile when asked", async () => {
     await renderWithTheme(<ListRow icon={AlarmClock} tile title="A" onPress={jest.fn()} />);
 
-    expect(screen.getByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toHaveStyle({
+    expect(screen.getByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveStyle({
       backgroundColor: NEDAA_LIGHT.tile.hex,
     });
   });
@@ -105,7 +108,7 @@ describe("ListRow icon", () => {
   it("leaves the icon bare by default", async () => {
     await renderWithTheme(<ListRow icon={AlarmClock} title="A" onPress={jest.fn()} />);
 
-    expect(screen.queryByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toBeNull();
+    expect(screen.queryByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toBeNull();
   });
 });
 
@@ -115,6 +118,17 @@ describe("ListRow label", () => {
     await renderWithTheme(<ListRow title="Diagnostics" onPress={jest.fn()} />);
 
     expect(screen.getByRole("button", { name: "Diagnostics" })).toBeTruthy();
+  });
+
+  it("joins name and status with the locale's comma", async () => {
+    await i18n.changeLanguage(AppLocale.AR);
+    try {
+      await renderWithTheme(<ListRow title="أ" status="ب" onPress={jest.fn()} />);
+
+      expect(screen.getByRole("button", { name: "أ، ب" })).toBeTruthy();
+    } finally {
+      await i18n.changeLanguage(AppLocale.EN);
+    }
   });
 });
 

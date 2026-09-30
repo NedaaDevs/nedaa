@@ -173,6 +173,36 @@ describe("Actionsheet accessibility", () => {
     );
   });
 
+  describe("content bottom padding", () => {
+    const BODY = "body";
+    /** The padding under the content's last child. */
+    const bottomPadding = () =>
+      screen.getByTestId(BODY, hidden).parent?.parent?.props.contentContainerStyle;
+    const renderContent = async () =>
+      renderWithTheme(
+        <Actionsheet isOpen fitContent>
+          <ActionsheetContent>
+            <View testID={BODY} />
+          </ActionsheetContent>
+        </Actionsheet>
+      );
+
+    it("clears the home indicator by a step", async () => {
+      await renderContent();
+
+      expect(bottomPadding()).toMatchObject({
+        paddingBottom: INSETS.bottom + getTokenValue("$2", "space"),
+      });
+    });
+
+    it("keeps its own padding where there is no home indicator", async () => {
+      jest.mocked(useSafeAreaInsets).mockReturnValue({ ...INSETS, bottom: 0 });
+      await renderContent();
+
+      expect(bottomPadding()).toMatchObject({ paddingBottom: getTokenValue("$6", "space") });
+    });
+  });
+
   // iOS hides every sibling of the modal layer, a toast at the root included.
   describe("overlay", () => {
     const OVERLAY = "overlay";
