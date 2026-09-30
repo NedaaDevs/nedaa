@@ -26,8 +26,8 @@ import { alarmTypeForPrayer } from "@/utils/alarmTypes";
 import { getAlarmSoundChoiceGroups } from "@/utils/sound";
 
 const TITLE = {
-  [ALARM_TYPE.FAJR]: "prayerDetail.alarm.title.fajr",
-  [ALARM_TYPE.FRIDAY]: "prayerDetail.alarm.title.friday",
+  [ALARM_TYPE.FAJR]: "alarm.settings.fajrAlarm",
+  [ALARM_TYPE.FRIDAY]: "alarm.settings.fridayAlarm",
 } as const satisfies Record<AlarmType, string>;
 
 const SETTINGS_TITLE = {
@@ -92,11 +92,7 @@ const AlarmPanel = ({ type }: { type: AlarmType }) => {
     : failed
       ? t("prayerDetail.alarm.summary.failed")
       : !settings.enabled
-        ? t(
-            type === ALARM_TYPE.FRIDAY
-              ? "alarm.settings.fridayEnableDescription"
-              : "prayerDetail.alarm.summary.off"
-          )
+        ? t(type === ALARM_TYPE.FRIDAY ? "alarm.settings.fridayEnableDescription" : "common.off")
         : timingSummary(type, timing, t);
 
   const settingsName = t(SETTINGS_TITLE[type]);
