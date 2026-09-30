@@ -2,7 +2,7 @@ import { Text } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 import { AlarmClock, Compass } from "lucide-react-native";
 
-import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { LIST_ROW_PART, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { METER_PART, Meter } from "@/components/ui/meter";
 import { Section } from "@/components/ui/section";
 import { Tile } from "@/components/ui/tile";
@@ -89,6 +89,116 @@ describe("ListRow", () => {
     const row = screen.getByRole("button", { name: "A, B" });
     expect(row).not.toHaveStyle({ borderTopWidth: 1 });
     expect(row).toHaveStyle({ backgroundColor: "transparent" });
+  });
+});
+
+describe("ListRow icon", () => {
+  // Settings rows mark their icon with a tinted tile; More keeps it bare.
+  it("sets the icon on the tinted tile when asked", async () => {
+    await renderWithTheme(<ListRow icon={AlarmClock} tile title="A" onPress={jest.fn()} />);
+
+    expect(screen.getByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.tile.hex,
+    });
+  });
+
+  it("leaves the icon bare by default", async () => {
+    await renderWithTheme(<ListRow icon={AlarmClock} title="A" onPress={jest.fn()} />);
+
+    expect(screen.queryByTestId(LIST_ROW_PART.TILE, { includeHiddenElements: true })).toBeNull();
+  });
+});
+
+describe("ListRow label", () => {
+  // A row with no live state reads as its name alone, with no stray comma.
+  it("reads the name alone when it has no status", async () => {
+    await renderWithTheme(<ListRow title="Diagnostics" onPress={jest.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Diagnostics" })).toBeTruthy();
+  });
+});
+
+describe("ListRow trailing chevron", () => {
+  const chevronPath = () =>
+    JSON.stringify(screen.toJSON()).match(/"d":"(m\d+ 18-6-6 6-6|m9 18 6-6-6-6)"/)?.[1];
+
+  // Onward points to the end edge: right in English, left in Arabic.
+  it("points right when read left to right", async () => {
+    await renderWithTheme(<ListRow title="A" onPress={jest.fn()} />);
+
+    expect(chevronPath()).toBe("m9 18 6-6-6-6");
+  });
+
+  it("points left when read right to left", async () => {
+    await renderWithTheme(<ListRow title="A" onPress={jest.fn()} />, { isRTL: true });
+
+    expect(chevronPath()).toBe("m15 18-6-6 6-6");
+  });
+});
+
+describe("ListRow grouped", () => {
+  // Inside a list group the group draws the edge and the rules between rows.
+  it("lies flat, with the name at the md size", async () => {
+    await renderWithTheme(
+      <ListRow variant={LIST_ROW_VARIANT.GROUPED} title="Privacy" status="B" onPress={jest.fn()} />
+    );
+
+    const row = screen.getByRole("button", { name: "Privacy, B" });
+    expect(row).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(row).toHaveStyle({ backgroundColor: "transparent" });
+    expect(screen.getByText("Privacy")).toHaveStyle({ fontSize: fontSizeOf("md") });
+    expect(screen.getByText("B")).toHaveStyle({ fontSize: fontSizeOf("sm") });
+  });
+});
+
+describe("ListRow static", () => {
+  const LONG = "A statement long enough to wrap onto a second and a third line on a phone.";
+
+  // A statement of fact: nothing to press, so no button and no chevron.
+  it("is no button and draws no chevron when it has no action", async () => {
+    await renderWithTheme(
+      <ListRow variant={LIST_ROW_VARIANT.GROUPED} icon={AlarmClock} tile title="A" status={LONG} />
+    );
+
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/m9 18 6-6-6-6/);
+  });
+
+  it("heads its text with the title, so a reader can jump to it", async () => {
+    await renderWithTheme(<ListRow variant={LIST_ROW_VARIANT.GROUPED} title="A" status={LONG} />);
+
+    expect(screen.getByRole("header", { name: "A" })).toBeTruthy();
+  });
+
+  it("shows the body in full", async () => {
+    await renderWithTheme(<ListRow variant={LIST_ROW_VARIANT.GROUPED} title="A" status={LONG} />);
+
+    expect(screen.getByText(LONG).props.numberOfLines).toBeUndefined();
+  });
+
+  it("keeps the grouped type sizes", async () => {
+    await renderWithTheme(<ListRow variant={LIST_ROW_VARIANT.GROUPED} title="A" status={LONG} />);
+
+    expect(screen.getByText("A")).toHaveStyle({ fontSize: fontSizeOf("md") });
+    expect(screen.getByText(LONG)).toHaveStyle({ fontSize: fontSizeOf("sm") });
+  });
+});
+
+describe("ListRow chevron weight", () => {
+  // The grouped chevron matches the tile glyph; More keeps the default.
+  it("draws the grouped chevron at 1.75", async () => {
+    await renderWithTheme(
+      <ListRow variant={LIST_ROW_VARIANT.GROUPED} title="A" onPress={jest.fn()} />
+    );
+
+    expect(screen.getByRole("button", { name: "A" })).toBeTruthy();
+    expect(JSON.stringify(screen.toJSON())).toMatch(/"strokeWidth":1\.75/);
+  });
+
+  it("leaves the card chevron at the default weight", async () => {
+    await renderWithTheme(<ListRow title="A" onPress={jest.fn()} />);
+
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/"strokeWidth":1\.75/);
   });
 });
 

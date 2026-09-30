@@ -97,7 +97,7 @@ export default function ToolsScreen() {
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
 
-  const opens = (name: string) => t("a11y.tools.opens", { name });
+  const opens = (name: string) => t("a11y.opens", { name });
 
   const open = async (route: Href) => {
     await selectionHaptic();

@@ -43,6 +43,8 @@ export const NEDAA_LIGHT = {
   thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
   /** A pressed row's wash: a faint tint of the ink. */
   pressed: { oklch: "oklch(23% 0.055 254 / .05)", hex: "#081D360D" },
+  /** The tinted square behind a row's accent glyph. */
+  tile: { oklch: "oklch(91% 0.042 223)", hex: "#C4E8F6" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
@@ -71,6 +73,7 @@ export const NEDAA_DARK = {
   handle: { oklch: "oklch(93% 0.018 230 / .28)", hex: "#DCEAF247" },
   thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
   pressed: { oklch: "oklch(93% 0.018 230 / .05)", hex: "#DCEAF20D" },
+  tile: { oklch: "oklch(33% 0.058 258)", hex: "#223653" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** Derived, so a token added to one palette must be added to the other. */

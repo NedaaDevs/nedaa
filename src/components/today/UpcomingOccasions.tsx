@@ -96,7 +96,7 @@ export const UpcomingOccasions = () => {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("importantDays.seeAll")}
-          accessibilityHint={t("a11y.tools.opens", { name: t("importantDays.title") })}
+          accessibilityHint={t("a11y.opens", { name: t("importantDays.title") })}
           onPress={() => router.push(BACK_DESTINATION.IMPORTANT_DAYS.href)}
           flexDirection="row"
           alignItems="center"
