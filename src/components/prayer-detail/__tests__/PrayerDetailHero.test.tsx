@@ -1,6 +1,7 @@
 import { screen, userEvent } from "@testing-library/react-native";
 
 import { PrayerDetailHero } from "@/components/prayer-detail/PrayerDetailHero";
+import { COUNTDOWN_PART } from "@/components/ui/countdown";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import * as countdown from "@/hooks/useCountdownTimer";
@@ -118,10 +119,13 @@ describe("PrayerDetailHero", () => {
     );
     expect(toggle().props.accessibilityState).toMatchObject({ checked: false });
     expect(toggle().props.accessibilityHint).toBe(name("a11y.today.showElapsed"));
-    expect(screen.getByText("1:18")).toBeOnTheScreen();
+    // The same reels and rolling caption as Today's figure.
+    expect(screen.getByTestId(COUNTDOWN_PART.ROW, { includeHiddenElements: true })).toBeTruthy();
     expect(
-      screen.getByText(i18n.t("today.focus.until", { prayer: name("prayerTimes.asr") }))
-    ).toBeOnTheScreen();
+      screen.getAllByText(i18n.t("today.focus.until", { prayer: name("prayerTimes.asr") }), {
+        includeHiddenElements: true,
+      }).length
+    ).toBeGreaterThan(0);
   });
 
   it("counts up from a prayer already in, and flips to its next time", async () => {
