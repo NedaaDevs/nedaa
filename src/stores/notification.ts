@@ -4,11 +4,8 @@ import Storage from "expo-sqlite/kv-store";
 import { openSettings } from "expo-linking";
 
 // Utils
-import {
-  cancelAllAlerts,
-  scheduleAllNotifications,
-  shouldReschedule,
-} from "@/utils/notificationScheduler";
+import { cancelAllScheduledNotifications } from "@/utils/notifications";
+import { scheduleAllNotifications, shouldReschedule } from "@/utils/notificationScheduler";
 import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 import { singleFlight } from "@/utils/singleFlight";
 
@@ -224,12 +221,8 @@ export const useNotificationStore = create<NotificationStore>()(
             settings: { ...state.settings, enabled },
           }));
 
-          // If disabling, cancel all notifications
-          if (!enabled) {
-            await cancelAllAlerts();
-          } else {
-            await get().requestReschedule();
-          }
+          // The scheduler's own run cancels, so it never races a run in progress.
+          await get().requestReschedule();
         },
 
         updateQuickSetup: async (sound, vibration) => {
@@ -364,6 +357,7 @@ export const useNotificationStore = create<NotificationStore>()(
             duhaTime,
           } = get();
           if (!settings.enabled) {
+            await cancelAllScheduledNotifications();
             return {
               success: true,
               scheduledCount: 0,
