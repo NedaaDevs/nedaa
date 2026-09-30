@@ -8,9 +8,9 @@ import { useNotificationEditSession } from "@/hooks/useNotificationEditSession";
 type PrayerDetail = {
   /** The prayer whose sheet is open; its card and rhythm mark stay chosen. */
   prayerId?: PrayerId;
-  open: (id: PrayerId) => void;
+  open: (id: PrayerId, opener: View | null) => void;
   close: () => void;
-  /** The chosen card, where reader focus returns once the sheet closes. */
+  /** The card last opened, where reader focus returns once the sheet closes. */
   openerRef: RefObject<View | null>;
 };
 
@@ -25,7 +25,10 @@ export const usePrayerDetail = (): PrayerDetail => {
 
   return {
     prayerId,
-    open: setPrayerId,
+    open: (id, opener) => {
+      openerRef.current = opener;
+      setPrayerId(id);
+    },
     close: () => setPrayerId(undefined),
     openerRef,
   };

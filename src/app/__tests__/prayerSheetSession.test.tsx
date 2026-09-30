@@ -1,9 +1,10 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads,
 // and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
+import { Component } from "react";
 import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
-import { AppState, Text } from "react-native";
+import { AccessibilityInfo, AppState, Text } from "react-native";
 
 import { APP_STATE } from "@/constants/AppState";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -160,5 +161,46 @@ describe("The prayer sheet's edit session", () => {
 
     expect(screen.getByText(PROVIDER_SCREEN)).toBeOnTheScreen();
     expect(scheduler).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("The prayer sheet's reader focus", () => {
+  const focusEvent = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+
+  beforeEach(async () => {
+    jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
+    await act(() => i18n.changeLanguage(AppLocale.EN));
+    useAppStore.setState({ locale: AppLocale.EN });
+    usePrayerTimesStore.setState({
+      yesterdayTimings: null,
+      todayTimings: DAY,
+      tomorrowTimings: null,
+      hasError: false,
+      isLoading: false,
+    });
+    focusEvent.mockClear();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it("returns to the card that opened the sheet once it closes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderToday();
+    const card = screen.getByRole("button", {
+      name: new RegExp(`^${i18n.t("prayerTimes.maghrib")},`),
+    });
+    await user.press(card);
+
+    const [close] = screen
+      .getAllByRole("button", { name: i18n.t("common.close"), ...hidden })
+      .filter((each) => each.props.testID === undefined);
+    await user.press(close);
+    await settle();
+
+    // jest's View mock hands a ref its component, props included.
+    const [node, event] = focusEvent.mock.lastCall ?? [];
+    expect(event).toBe("focus");
+    expect(node instanceof Component && node.props.accessibilityLabel).toBe(
+      card.props.accessibilityLabel
+    );
   });
 });

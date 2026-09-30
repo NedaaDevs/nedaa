@@ -16,7 +16,7 @@ import type { PrayerId } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { usePrayerAlertSettings } from "@/hooks/usePrayerAlertSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
-import { getSoundChoiceGroups, isNotificationSound } from "@/utils/sound";
+import { chosenSoundLabel, getSoundChoiceGroups, isNotificationSound } from "@/utils/sound";
 
 /** The alerts set a number of minutes away from the Athan. */
 export type TimedAlertType = typeof NOTIFICATION_TYPE.IQAMA | typeof NOTIFICATION_TYPE.PRE_ATHAN;
@@ -28,16 +28,18 @@ const COPY = {
     title: "prayerDetail.iqama.title",
     summary: "prayerDetail.iqama.summary",
     timing: "prayerDetail.iqama.timing",
+    choice: "a11y.prayerDetail.iqama.choice",
   },
   [NOTIFICATION_TYPE.PRE_ATHAN]: {
     icon: BellMinus,
     title: "prayerDetail.preAthan.title",
     summary: "prayerDetail.preAthan.summary",
     timing: "prayerDetail.preAthan.timing",
+    choice: "a11y.prayerDetail.preAthan.choice",
   },
 } as const satisfies Record<
   TimedAlertType,
-  { icon: LucideIcon; title: string; summary: string; timing: string }
+  { icon: LucideIcon; title: string; summary: string; timing: string; choice: string }
 >;
 
 /** A prayer's timed alert; while on, its minutes, sound and vibration. */
@@ -55,9 +57,7 @@ export const TimedAlertGroup = ({
   const copy = COPY[type];
 
   const soundGroups = getSoundChoiceGroups(type, customSounds, t);
-  const soundLabel =
-    soundGroups.flatMap((group) => group.options).find((option) => option.value === config.sound)
-      ?.label ?? t("prayerDetail.soundPicker.unset");
+  const soundLabel = chosenSoundLabel(soundGroups, config.sound, t);
 
   const summary = config.enabled
     ? t(copy.summary, { count: config.timing, sound: soundLabel })
@@ -71,7 +71,7 @@ export const TimedAlertGroup = ({
       value={config.enabled}
       onValueChange={(enabled) => update(type, NOTIFICATION_FIELD.ENABLED, enabled)}>
       <VStack gap="$tight">
-        {/* The pill group carries this name, so a screen reader skips the caption. */}
+        {/* Each pill speaks its side of the Athan, so a screen reader skips this. */}
         <Text
           size="xs"
           color="$muted"
@@ -86,7 +86,7 @@ export const TimedAlertGroup = ({
           onChange={(minutes) => update(type, NOTIFICATION_FIELD.TIMING, minutes)}
           accessibilityLabel={t(copy.timing)}
           label={String}
-          spokenLabel={(minutes) => t("common.minute", { count: minutes })}
+          spokenLabel={(minutes) => t(copy.choice, { count: minutes })}
         />
       </VStack>
       <SoundPicker
