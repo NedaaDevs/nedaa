@@ -14,7 +14,8 @@ const sources = (dir: string): string[] =>
 // A value two screens show must look and move alike, so it has one renderer:
 // each row names what marks a file showing it, the renderer it must use, and
 // the renderer's own file, which defines it rather than draws with it.
-type Rule = { concept: string; shows: RegExp; drawsWith: RegExp; home?: string };
+// `within` limits a row to the files it matches, such as the .tsx that draw.
+type Rule = { concept: string; shows: RegExp; drawsWith: RegExp; home?: string; within?: RegExp };
 
 const ONE_RENDERER: readonly Rule[] = [
   { concept: "a prayer's count figure", shows: /\bformatCount\(/, drawsWith: /<Countdown\b/ },
@@ -32,6 +33,21 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\bhijriAdjustmentLabel\(/,
     home: "utils/hijriAdjustment.ts",
   },
+  // The launch announcement and the About list both draw What's New entries.
+  {
+    concept: "a What's New entry",
+    shows: /\buseWhatsNew\(\)|import[^;]*\bWhatsNewEntry\b[^;]*from/,
+    drawsWith: /<ReleaseNoteCard\b|<ReleaseNotesList\b/,
+    home: "components/whats-new/ReleaseNoteCard.tsx",
+  },
+  // The About card and the release notes both mark the installed version.
+  {
+    concept: "the installed version",
+    shows: /\bappVersion\(\)/,
+    within: /\.tsx$/,
+    drawsWith: /<VersionPill\b/,
+    home: "components/whats-new/VersionPill.tsx",
+  },
 ];
 
 const FILES = sources(SRC).map((path) => ({
@@ -39,8 +55,10 @@ const FILES = sources(SRC).map((path) => ({
   text: readFileSync(path, "utf8"),
 }));
 
-describe.each(ONE_RENDERER)("$concept", ({ shows, drawsWith, home }) => {
-  const showing = FILES.filter(({ path, text }) => path !== home && shows.test(text));
+describe.each(ONE_RENDERER)("$concept", ({ shows, drawsWith, home, within }) => {
+  const showing = FILES.filter(
+    ({ path, text }) => path !== home && (within?.test(path) ?? true) && shows.test(text)
+  );
 
   it("is shown somewhere, so this rule still guards something", () => {
     expect(showing.length).toBeGreaterThan(0);
