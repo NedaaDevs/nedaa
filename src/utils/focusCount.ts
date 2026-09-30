@@ -1,6 +1,6 @@
 import { parseISO } from "date-fns";
 
-import { COUNT_AXIS, PRAYER_FOCUS, type CountAxis } from "@/constants/Countdown";
+import { COUNT_AXIS, COUNT_WIDEST, PRAYER_FOCUS, type CountAxis } from "@/constants/Countdown";
 import { PRAYER_IDS, type PrayerId } from "@/constants/Prayer";
 import { storedDayList, type StoredDays } from "@/utils/phase";
 
@@ -89,6 +89,10 @@ export const focusCount = (
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** h:mm, or h:mm:ss with seconds (m:ss under an hour); minutes round to now. */
+/** The widest figure a count can show, held as its width so nothing moves. */
+export const countReserve = ({ precise, seconds }: FocusCount): string =>
+  precise && seconds >= 3600 ? COUNT_WIDEST.hours : COUNT_WIDEST.minutes;
+
 export const formatCount = (seconds: number, precise: boolean, axis: CountAxis): string => {
   if (precise) {
     const [hours, minutes] = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60];
