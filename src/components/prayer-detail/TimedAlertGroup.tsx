@@ -16,7 +16,7 @@ import type { PrayerId } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { usePrayerAlertSettings } from "@/hooks/usePrayerAlertSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
-import { chosenSoundLabel, getSoundChoiceGroups, isNotificationSound } from "@/utils/sound";
+import { chosenSoundLabel, getSoundChoices, isNotificationSound } from "@/utils/sound";
 
 /** The alerts set a number of minutes away from the Athan. */
 export type TimedAlertType = typeof NOTIFICATION_TYPE.IQAMA | typeof NOTIFICATION_TYPE.PRE_ATHAN;
@@ -56,8 +56,8 @@ export const TimedAlertGroup = ({
   const config = configs[type];
   const copy = COPY[type];
 
-  const soundGroups = getSoundChoiceGroups(type, customSounds, t);
-  const soundLabel = chosenSoundLabel(soundGroups, config.sound, t);
+  const sounds = getSoundChoices(type, customSounds, t);
+  const soundLabel = chosenSoundLabel(sounds, config.sound, t);
 
   const summary = config.enabled
     ? t(copy.summary, { count: config.timing, sound: soundLabel })
@@ -74,6 +74,7 @@ export const TimedAlertGroup = ({
         {/* Each pill speaks its side of the Athan, so a screen reader skips this. */}
         <Text
           size="xs"
+          fontWeight="600"
           color="$muted"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants">
@@ -91,7 +92,7 @@ export const TimedAlertGroup = ({
       </VStack>
       <SoundPicker
         label={t("notification.sound")}
-        groups={soundGroups}
+        options={sounds}
         value={config.sound}
         onChange={(sound) => {
           if (isNotificationSound(type, sound)) void update(type, NOTIFICATION_FIELD.SOUND, sound);

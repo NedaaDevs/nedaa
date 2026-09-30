@@ -350,6 +350,8 @@ const lightTheme = {
   bg: NEDAA_LIGHT.bg.hex,
   surface: NEDAA_LIGHT.surface.hex,
   surface2: NEDAA_LIGHT.surface2.hex,
+  surface2Soft: NEDAA_LIGHT.surface2Soft.hex,
+  panel: NEDAA_LIGHT.panel.hex,
   raised: NEDAA_LIGHT.raised.hex,
   shadow: NEDAA_LIGHT.shadow.hex,
   fg: NEDAA_LIGHT.fg.hex,
@@ -358,12 +360,16 @@ const lightTheme = {
   border: NEDAA_LIGHT.border.hex,
   accent: NEDAA_LIGHT.accent.hex,
   accentSoft: NEDAA_LIGHT.accentSoft.hex,
+  accentEdge: NEDAA_LIGHT.accentEdge.hex,
+  accentLine: NEDAA_LIGHT.accentLine.hex,
+  scrim: NEDAA_LIGHT.scrim.hex,
   warn: NEDAA_LIGHT.warn.hex,
   danger: NEDAA_LIGHT.danger.hex,
   bar: NEDAA_LIGHT.bar.hex,
   track: NEDAA_LIGHT.track.hex,
   handle: NEDAA_LIGHT.handle.hex,
   thumb: NEDAA_LIGHT.thumb.hex,
+  pressed: NEDAA_LIGHT.pressed.hex,
 };
 
 const darkTheme = {
@@ -428,6 +434,8 @@ const darkTheme = {
   bg: NEDAA_DARK.bg.hex,
   surface: NEDAA_DARK.surface.hex,
   surface2: NEDAA_DARK.surface2.hex,
+  surface2Soft: NEDAA_DARK.surface2Soft.hex,
+  panel: NEDAA_DARK.panel.hex,
   raised: NEDAA_DARK.raised.hex,
   shadow: NEDAA_DARK.shadow.hex,
   fg: NEDAA_DARK.fg.hex,
@@ -436,12 +444,16 @@ const darkTheme = {
   border: NEDAA_DARK.border.hex,
   accent: NEDAA_DARK.accent.hex,
   accentSoft: NEDAA_DARK.accentSoft.hex,
+  accentEdge: NEDAA_DARK.accentEdge.hex,
+  accentLine: NEDAA_DARK.accentLine.hex,
+  scrim: NEDAA_DARK.scrim.hex,
   warn: NEDAA_DARK.warn.hex,
   danger: NEDAA_DARK.danger.hex,
   bar: NEDAA_DARK.bar.hex,
   track: NEDAA_DARK.track.hex,
   handle: NEDAA_DARK.handle.hex,
   thumb: NEDAA_DARK.thumb.hex,
+  pressed: NEDAA_DARK.pressed.hex,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
