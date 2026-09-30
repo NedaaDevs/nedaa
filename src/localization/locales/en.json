@@ -1882,10 +1882,7 @@
   "prayerDetail.soundPicker.manageLibrary": "Manage your sounds",
   "prayerDetail.soundPicker.unset": "No sound chosen",
   "a11y.prayerDetail.athan.hint": "Turns the Athan alert on or off for this prayer",
-  "prayerDetail.athan.off": "Off",
-  "prayerDetail.athan.sound": "Sound",
   "prayerDetail.athan.title": "Athan",
-  "prayerDetail.athan.vibration": "Vibration",
   "a11y.prayerDetail.alertsHeader.resetDone": "This prayer follows your default alerts again",
   "a11y.prayerDetail.alertsHeader.resetHint": "Clears this prayer's own alert settings",
   "prayerDetail.alertsHeader.custom": "Custom for this prayer",
@@ -1911,11 +1908,8 @@
   "prayerDetail.alarm.summary.failed": "Couldn't set the alarm. Try again.",
   "prayerDetail.alarm.summary.fridayBefore_one": "Rings {{count}} minute before Dhuhr, on Fridays only",
   "prayerDetail.alarm.summary.fridayBefore_other": "Rings {{count}} minutes before Dhuhr, on Fridays only",
-  "prayerDetail.alarm.summary.off": "Off",
   "prayerDetail.alarm.summary.pending": "Updating the alarm…",
   "prayerDetail.alarm.timing": "When the alarm rings",
-  "prayerDetail.alarm.title.fajr": "Fajr alarm",
-  "prayerDetail.alarm.title.friday": "Jumu'ah alarm",
   "prayerDetail.sections.alerts": "Prayer alerts",
   "prayerDetail.sections.alarms": "Reliable alarms"
 }
