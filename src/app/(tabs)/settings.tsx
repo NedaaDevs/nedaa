@@ -22,30 +22,23 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import SettingsItem from "@/components/SettingsItem";
-import SettingsFooter from "@/components/SettingsFooter";
 
 // Icons
 import {
   Languages,
   Palette,
   Monitor,
-  CircleHelp,
   MapPin,
   Settings2Icon,
   BellRing,
   BookOpen,
-  BookText,
   AlarmClock,
   LayoutGrid,
   Star,
   Share2,
   Heart,
-  Activity,
-  Award,
-  Bug,
-  Layers,
-  Sparkles,
   Music,
+  Info,
 } from "lucide-react-native";
 
 import { isPinningSupported } from "expo-widgets";
@@ -58,13 +51,12 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { MessageToast } from "@/components/feedback/MessageToast";
-import { useDebugModeStore } from "@/stores/debugMode";
-import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 
 // Utils
 import { isAthkarSupported } from "@/utils/athkar";
 
 // Constants
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { STORE_LINKS } from "@/constants/StoreLinks";
 
 // Services
@@ -79,8 +71,6 @@ const SettingsScreen = () => {
   const theme = useTheme();
   const { locale, mode } = useAppStore();
   const { localizedLocation } = useLocationStore();
-  const isDebugMode = useDebugModeStore((s) => s.isEnabled);
-  const requestWhatsNew = useWhatsNewSheetStore((s) => s.requestOpen);
   const alarmSupported = useAlarmSupported();
   const hapticMedium = useHaptic("medium");
 
@@ -267,43 +257,11 @@ const SettingsScreen = () => {
           icon={Settings2Icon}
         />
 
-        {/* Debug (hidden behind 7-tap on version) */}
-        {isDebugMode && (
-          <>
-            <SettingsItem
-              name={t("settings.backgroundDebug.title")}
-              path={"/settings/background-debug" as any}
-              icon={Activity}
-            />
-            <SettingsItem
-              name="Quran Audio Debug"
-              path={"/settings/quran-audio-debug" as any}
-              icon={BookText}
-            />
-            <SettingsItem
-              name="Diagnostics Debug"
-              path={"/settings/diagnostics-debug" as any}
-              icon={Bug}
-            />
-            <SettingsItem
-              name="Widgets Debug"
-              path={"/settings/widgets-debug" as any}
-              icon={Layers}
-            />
-          </>
-        )}
-
-        {/* Help */}
-        <SettingsItem name={t("settings.help.title")} path="/settings/help" icon={CircleHelp} />
-
         <SettingsItem
-          name={t("settings.acknowledgements.title")}
-          path={"/settings/acknowledgements" as any}
-          icon={Award}
+          name={t(BACK_DESTINATION.SETTINGS_ABOUT.title)}
+          path={BACK_DESTINATION.SETTINGS_ABOUT.href}
+          icon={Info}
         />
-
-        {/* What's New */}
-        <SettingsItem name={t("whatsNew.title")} onPress={requestWhatsNew} icon={Sparkles} />
 
         {/* Rate & Share */}
         <HStack marginHorizontal="$2" marginTop="$2" gap="$2">
@@ -376,9 +334,6 @@ const SettingsScreen = () => {
             </Pressable>
           </Card>
         </HStack>
-
-        {/* Footer */}
-        <SettingsFooter />
       </ScrollView>
     </Background>
   );

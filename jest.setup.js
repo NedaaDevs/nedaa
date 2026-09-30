@@ -14,5 +14,9 @@ jest.mock("expo-sqlite/kv-store", () => ({
     getItem: jest.fn(() => Promise.resolve(null)),
     setItem: jest.fn(() => Promise.resolve()),
     removeItem: jest.fn(() => Promise.resolve()),
+    // The debug-mode store reads synchronously, so it hydrates before a log line.
+    getItemSync: jest.fn(() => null),
+    setItemSync: jest.fn(),
+    removeItemSync: jest.fn(),
   },
 }));

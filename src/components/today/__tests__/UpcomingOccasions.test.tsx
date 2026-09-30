@@ -207,7 +207,7 @@ describe("UpcomingOccasions", () => {
 
     const link = seeAll();
     expect(link.props.accessibilityHint).toBe(
-      i18n.t("a11y.tools.opens", { name: i18n.t("importantDays.title") })
+      i18n.t("a11y.opens", { name: i18n.t("importantDays.title") })
     );
 
     await userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(link);
