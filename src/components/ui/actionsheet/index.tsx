@@ -245,6 +245,12 @@ type ActionsheetContentProps = {
 };
 
 const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpadded }) => {
+  const insets = useSafeAreaInsets();
+  // The last control sits a step above the home indicator, never on it.
+  const paddingBottom = Math.max(
+    getTokenValue("$6", "space"),
+    insets.bottom + getTokenValue("$2", "space")
+  );
   // The scrollable must be the modal's content directly — gorhom doesn't scroll a
   // BottomSheetScrollView nested inside a BottomSheetView. So the content IS the
   // scroll view; ActionsheetScrollView below is a passthrough.
@@ -256,7 +262,7 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
           : {
               paddingHorizontal: getTokenValue("$group", "space"),
               paddingTop: getTokenValue("$2", "space"),
-              paddingBottom: getTokenValue("$6", "space"),
+              paddingBottom,
             }
       }>
       {children}
