@@ -2,11 +2,12 @@ import { useTranslation } from "react-i18next";
 import { parseISO } from "date-fns";
 
 import { ActionsheetTitle } from "@/components/ui/actionsheet";
+import { Box } from "@/components/ui/box";
 import { StatePanel } from "@/components/ui/state-panel";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
-import { STATE_PANEL_KIND, type StatePanelKind } from "@/constants/StatePanel";
+import { STATE_PANEL_KIND, STATE_PANEL_VARIANT, type StatePanelKind } from "@/constants/StatePanel";
 import { useShownDay } from "@/hooks/useShownDay";
 import { prayerNameKey } from "@/utils/prayerName";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
@@ -28,7 +29,7 @@ const COPY = {
 
 type StateProps = { prayerId: PrayerId; kind: StatePanelKind; onRetry?: () => void };
 
-/** The chosen prayer named above a state panel; reader focus lands on it. */
+/** A state panel under the chosen prayer's name; reader focus lands on it. */
 const SheetState = ({ prayerId, kind, onRetry }: StateProps) => {
   const { t } = useTranslation();
   const { day } = useShownDay();
@@ -38,13 +39,17 @@ const SheetState = ({ prayerId, kind, onRetry }: StateProps) => {
   const prayer = t(prayerNameKey(prayerId, friday));
 
   return (
-    <VStack gap="$3">
-      <ActionsheetTitle>
-        <Text size="xl" bold color="$fg">
-          {prayer}
-        </Text>
-      </ActionsheetTitle>
+    <VStack>
+      {/* Heard, not seen: the state's body already names the prayer. */}
+      <Box position="absolute" width="$0.5" height="$0.5" overflow="hidden">
+        <ActionsheetTitle>
+          <Text size="xl" bold color="$fg">
+            {prayer}
+          </Text>
+        </ActionsheetTitle>
+      </Box>
       <StatePanel
+        variant={STATE_PANEL_VARIANT.FLAT}
         kind={kind}
         title={t(COPY[kind].title)}
         body={t(COPY[kind].body, { prayer })}

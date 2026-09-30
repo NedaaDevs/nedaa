@@ -1,10 +1,12 @@
 import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
-import { Play } from "lucide-react-native";
 
-import { ListRow } from "@/components/ui/list-row";
+import { DetailPanel } from "@/components/prayer-detail/DetailPanel";
+import { HStack } from "@/components/ui/hstack";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { Section } from "@/components/ui/section";
+import { SECTION_KIND } from "@/constants/Section";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -28,20 +30,37 @@ export const PlaybackRow = () => {
   if (Platform.OS !== PlatformType.ANDROID) return null;
 
   const destination = BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK;
+  // The scope line says the same to readers, so the chip is drawn only.
+  const chip = (
+    <HStack
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      paddingHorizontal="$2"
+      paddingVertical="$0.5"
+      borderRadius="$pill"
+      backgroundColor="$accentSoft">
+      <Text size="2xs" bold color="$accent">
+        {t("prayerDetail.playback.global")}
+      </Text>
+    </HStack>
+  );
+
   return (
-    <Section title={t("prayerDetail.sections.playback")}>
-      <VStack gap="$1.5">
-        <ListRow
-          icon={Play}
-          title={t("prayerDetail.playback.title")}
-          status={t(summaryKey(athan, iqama))}
-          hint={t("a11y.prayerDetail.playback.hint", { name: t(destination.title) })}
-          onPress={() => router.push(destination.href)}
-        />
-        <Text size="xs" color="$muted" paddingHorizontal="$3">
-          {t("prayerDetail.playback.scope")}
-        </Text>
-      </VStack>
+    <Section kind={SECTION_KIND.LABEL} title={t("prayerDetail.sections.playback")} accessory={chip}>
+      <DetailPanel>
+        <VStack gap="$tight">
+          <ListRow
+            variant={LIST_ROW_VARIANT.PLAIN}
+            title={t("prayerDetail.playback.title")}
+            status={t(summaryKey(athan, iqama))}
+            hint={t("a11y.prayerDetail.playback.hint", { name: t(destination.title) })}
+            onPress={() => router.push(destination.href)}
+          />
+          <Text size="xs" color="$muted" paddingHorizontal="$1" paddingBottom="$1">
+            {t("prayerDetail.playback.scope")}
+          </Text>
+        </VStack>
+      </DetailPanel>
     </Section>
   );
 };

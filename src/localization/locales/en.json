@@ -1880,13 +1880,9 @@
   "prayerDetail.states.unavailable.body": "There's no time for {{prayer}} yet. Try again to load today's times.",
   "prayerDetail.states.unavailable.title": "Settings unavailable",
   "prayerDetail.sections.calculation": "Calculation",
-  "a11y.prayerDetail.soundPicker.manageLibraryHint": "Opens your custom sounds",
   "a11y.prayerDetail.soundPicker.preview": "Preview {{name}}",
   "a11y.prayerDetail.soundPicker.stop": "Stop previewing {{name}}",
   "a11y.prayerDetail.soundPicker.triggerHint": "Shows the sounds you can choose",
-  "prayerDetail.soundPicker.bundled": "Built-in sounds",
-  "prayerDetail.soundPicker.custom": "Your sounds",
-  "prayerDetail.soundPicker.manageLibrary": "Manage your sounds",
   "prayerDetail.soundPicker.unset": "No sound chosen",
   "a11y.prayerDetail.athan.hint": "Turns the Athan alert on or off for this prayer",
   "prayerDetail.athan.title": "Athan",
@@ -1924,5 +1920,6 @@
   "a11y.prayerDetail.iqama.choice_other": "{{count}} minutes after the Athan",
   "a11y.prayerDetail.preAthan.choice_one": "{{count}} minute before the Athan",
   "a11y.prayerDetail.preAthan.choice_other": "{{count}} minutes before the Athan",
-  "prayerDetail.sections.playback": "Athan playback"
+  "prayerDetail.sections.playback": "Athan playback",
+  "prayerDetail.playback.global": "Global setting"
 }

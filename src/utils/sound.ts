@@ -1,21 +1,10 @@
 // Constants
-import {
-  ALARM_SOUND_KEYS,
-  SOUND_ASSETS,
-  SOUND_PICKER_GROUP,
-  isSoundKeyValid,
-} from "@/constants/sounds";
+import { ALARM_SOUND_KEYS, SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
 
 // Types
 import type { ConfigForType, NotificationType, PrayerNotificationType } from "@/types/notification";
 import type { TFunction } from "i18next";
-import type {
-  PreviewSource,
-  SoundAsset,
-  SoundChoice,
-  SoundChoiceGroup,
-  SoundOption,
-} from "@/types/sound";
+import type { PreviewSource, SoundAsset, SoundChoice, SoundOption } from "@/types/sound";
 import type { CustomSound } from "@/types/customSound";
 
 // Stores
@@ -248,44 +237,37 @@ export const getAvailableSoundsWithCustom = <T extends NotificationType>(
   return [...bundledSounds, ...customSoundOptions];
 };
 
-/** The bundled then custom sounds a notification type can use, grouped for a picker. */
-export const getSoundChoiceGroups = (
+/** The bundled then custom sounds a notification type can use. */
+export const getSoundChoices = (
   type: NotificationType,
   customSounds: readonly CustomSound[],
   t: TFunction
-): SoundChoiceGroup<string>[] => [
-  {
-    id: SOUND_PICKER_GROUP.BUNDLED,
-    options: Object.entries(BUNDLED_ASSETS).flatMap(([key, asset]) =>
-      asset?.availableFor.includes(type)
-        ? [{ value: key, label: t(asset.label), previewSource: asset.previewSource }]
-        : []
-    ),
-  },
-  {
-    id: SOUND_PICKER_GROUP.CUSTOM,
-    options: customSounds
-      .filter((sound) => sound.availableFor.includes(type))
-      .map((sound) => ({ value: sound.id, label: sound.name, previewSource: sound.contentUri })),
-  },
+): SoundChoice<string>[] => [
+  ...Object.entries(BUNDLED_ASSETS).flatMap(([key, asset]) =>
+    asset?.availableFor.includes(type)
+      ? [{ value: key, label: t(asset.label), previewSource: asset.previewSource }]
+      : []
+  ),
+  ...customSounds
+    .filter((sound) => sound.availableFor.includes(type))
+    .map((sound) => ({ value: sound.id, label: sound.name, previewSource: sound.contentUri })),
 ];
 
-/** The chosen sound's name, or unset when no group offers it. */
+/** The chosen sound's name, or unset when no option offers it. */
 export const chosenSoundLabel = <K extends string>(
-  groups: readonly SoundChoiceGroup<K>[],
+  options: readonly SoundChoice<K>[],
   value: K,
   t: TFunction
 ): string =>
-  groups.flatMap((group) => group.options).find((option) => option.value === value)?.label ??
-  t("prayerDetail.soundPicker.unset");
+  options.find((option) => option.value === value)?.label ?? t("prayerDetail.soundPicker.unset");
 
 // An alarm stores a custom sound's URI: no JS runs when it fires.
 // A choice made outside the list stays listed, with nothing to preview.
-export const getAlarmSoundChoiceGroups = (
+export const getAlarmSoundChoices = (
   customSounds: readonly CustomSound[],
   t: TFunction,
   current: string
-): SoundChoiceGroup<string>[] => {
+): SoundChoice<string>[] => {
   const bundled: SoundChoice<string>[] = ALARM_SOUND_KEYS.map((key) => ({
     value: key,
     label: t(SOUND_ASSETS[key].label),
@@ -299,10 +281,7 @@ export const getAlarmSoundChoiceGroups = (
   if (![...bundled, ...custom].some((option) => option.value === current)) {
     bundled.push({ value: current, label: t("alarm.settings.systemSound"), previewSource: null });
   }
-  return [
-    { id: SOUND_PICKER_GROUP.BUNDLED, options: bundled },
-    { id: SOUND_PICKER_GROUP.CUSTOM, options: custom },
-  ];
+  return [...bundled, ...custom];
 };
 
 /**

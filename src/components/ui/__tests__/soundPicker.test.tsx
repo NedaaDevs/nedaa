@@ -1,14 +1,16 @@
-import { act, isHiddenFromAccessibility, screen, userEvent } from "@testing-library/react-native";
-import { Platform } from "react-native";
+import {
+  act,
+  isHiddenFromAccessibility,
+  screen,
+  userEvent,
+  within,
+} from "@testing-library/react-native";
 
 import { SoundPicker } from "@/components/ui/sound-picker";
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { SOUND_PICKER_GROUP } from "@/constants/sounds";
-import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
-import type { SoundChoiceGroup } from "@/types/sound";
+import type { SoundChoice } from "@/types/sound";
 import { soundPreviewManager } from "@/utils/sound";
 
 const mockPlay = jest.fn<Promise<void>, [string | number]>(() => Promise.resolve());
@@ -26,12 +28,6 @@ jest.mock("@/services/audio/previewPlayer", () => ({
   },
 }));
 
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  ...jest.requireActual("expo-router"),
-  useRouter: () => ({ push: mockPush }),
-}));
-
 const SOUND = { MAKKAH: "makkah", TAKBIR: "takbir", SILENT: "silent", MINE: "custom_1" } as const;
 type Sound = (typeof SOUND)[keyof typeof SOUND];
 
@@ -39,34 +35,23 @@ const LABEL = "Sound";
 const MAKKAH_SOURCE = 11;
 const MINE_URI = "content://media/1";
 
-const GROUPS: readonly SoundChoiceGroup<Sound>[] = [
-  {
-    id: SOUND_PICKER_GROUP.BUNDLED,
-    options: [
-      { value: SOUND.MAKKAH, label: "Makkah", previewSource: MAKKAH_SOURCE },
-      { value: SOUND.TAKBIR, label: "Takbir", previewSource: 12 },
-      { value: SOUND.SILENT, label: "Silent", previewSource: null },
-    ],
-  },
-  {
-    id: SOUND_PICKER_GROUP.CUSTOM,
-    options: [{ value: SOUND.MINE, label: "My athan", previewSource: MINE_URI }],
-  },
+const OPTIONS: readonly SoundChoice<Sound>[] = [
+  { value: SOUND.MAKKAH, label: "Makkah", previewSource: MAKKAH_SOURCE },
+  { value: SOUND.TAKBIR, label: "Takbir", previewSource: 12 },
+  { value: SOUND.SILENT, label: "Silent", previewSource: null },
+  { value: SOUND.MINE, label: "My athan", previewSource: MINE_URI },
 ];
 
-const renderPicker = ({
-  value = SOUND.MAKKAH as Sound,
-  onChange = jest.fn(),
-  groups = GROUPS,
-} = {}) =>
-  renderWithTheme(<SoundPicker label={LABEL} groups={groups} value={value} onChange={onChange} />);
+const renderPicker = ({ value = SOUND.MAKKAH as Sound, onChange = jest.fn() } = {}) =>
+  renderWithTheme(
+    <SoundPicker label={LABEL} options={OPTIONS} value={value} onChange={onChange} />
+  );
 
-const trigger = () => screen.getByRole("button", { name: `${LABEL}, Makkah` });
-const preview = (name: string) =>
+const trigger = (name = "Makkah") => screen.getByRole("button", { name: `${LABEL}, ${name}` });
+const preview = (name = "Makkah") =>
   screen.getByRole("button", { name: i18n.t("a11y.prayerDetail.soundPicker.preview", { name }) });
-const stop = (name: string) =>
+const stop = (name = "Makkah") =>
   screen.getByRole("button", { name: i18n.t("a11y.prayerDetail.soundPicker.stop", { name }) });
-const manage = () => i18n.t("prayerDetail.soundPicker.manageLibrary");
 
 const open = async () => {
   await renderPicker();
@@ -74,11 +59,9 @@ const open = async () => {
 };
 
 beforeEach(() => {
-  jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
   soundPreviewManager.forceReset();
   mockPlay.mockClear();
   mockStop.mockClear();
-  mockPush.mockClear();
 });
 
 describe("SoundPicker", () => {
@@ -101,33 +84,18 @@ describe("SoundPicker", () => {
     expect(trigger()).toBeOnTheScreen();
   });
 
-  it("opens one radio group with a titled section per source", async () => {
+  it("opens one flat radio group of every sound", async () => {
     await open();
 
     expect(trigger()).toHaveProp("accessibilityState", expect.objectContaining({ expanded: true }));
     expect(screen.getByLabelText(LABEL)).toHaveProp("accessibilityRole", "radiogroup");
-    expect(screen.getByText(i18n.t("prayerDetail.soundPicker.bundled"))).toBeOnTheScreen();
-    expect(screen.getByText(i18n.t("prayerDetail.soundPicker.custom"))).toBeOnTheScreen();
+    expect(screen.queryByRole("header")).not.toBeOnTheScreen();
     expect(screen.getAllByRole("radio").map((radio) => radio.props.accessibilityLabel)).toEqual([
       "Makkah",
       "Takbir",
       "Silent",
       "My athan",
     ]);
-  });
-
-  it("drops a source with nothing in it", async () => {
-    await renderWithTheme(
-      <SoundPicker
-        label={LABEL}
-        groups={[GROUPS[0]!, { id: SOUND_PICKER_GROUP.CUSTOM, options: [] }]}
-        value={SOUND.MAKKAH}
-        onChange={jest.fn()}
-      />
-    );
-    await userEvent.setup().press(trigger());
-
-    expect(screen.queryByText(i18n.t("prayerDetail.soundPicker.custom"))).not.toBeOnTheScreen();
   });
 
   it("reads only the chosen sound as selected", async () => {
@@ -168,71 +136,76 @@ describe("SoundPicker", () => {
     expect(controlProblems()).toEqual([]);
   });
 
-  it("offers no preview for a sound with nothing to play", async () => {
+  // One preview beside the trigger plays the chosen sound, open or closed.
+  it("offers one preview, for the chosen sound, outside the list", async () => {
     await open();
 
-    expect(
-      screen.queryByRole("button", {
-        name: i18n.t("a11y.prayerDetail.soundPicker.preview", { name: "Silent" }),
-      })
-    ).not.toBeOnTheScreen();
+    const prefix = i18n.t("a11y.prayerDetail.soundPicker.preview", { name: "" }).trim();
+    const previews = screen
+      .getAllByRole("button")
+      .filter((button) => String(button.props.accessibilityLabel).startsWith(prefix));
+
+    expect(previews).toEqual([preview()]);
+    expect(within(screen.getByLabelText(LABEL)).queryAllByRole("button")).toHaveLength(0);
   });
 
-  it("plays a preview through the shared player and offers to stop it", async () => {
-    await open();
+  it("disables the preview when the chosen sound has nothing to play", async () => {
+    await renderPicker({ value: SOUND.SILENT });
 
-    await userEvent.setup().press(preview("Makkah"));
+    await userEvent.setup().press(preview("Silent"));
+
+    expect(preview("Silent")).toHaveProp(
+      "accessibilityState",
+      expect.objectContaining({ disabled: true })
+    );
+    expect(mockPlay).not.toHaveBeenCalled();
+  });
+
+  it("plays the chosen sound through the shared player and offers to stop it", async () => {
+    await renderPicker();
+
+    await userEvent.setup().press(preview());
 
     expect(mockPlay).toHaveBeenCalledWith(MAKKAH_SOURCE);
-    expect(stop("Makkah")).toBeOnTheScreen();
+    expect(stop()).toBeOnTheScreen();
   });
 
   it("stops the preview when its stop is pressed", async () => {
-    await open();
+    await renderPicker();
     const user = userEvent.setup();
-    await user.press(preview("Makkah"));
+    await user.press(preview());
 
-    await user.press(stop("Makkah"));
+    await user.press(stop());
 
     expect(mockStop).toHaveBeenCalled();
-    expect(preview("Makkah")).toBeOnTheScreen();
-  });
-
-  it("plays one preview at a time", async () => {
-    await open();
-    const user = userEvent.setup();
-    await user.press(preview("Makkah"));
-
-    await user.press(preview("My athan"));
-
-    expect(mockPlay).toHaveBeenLastCalledWith(MINE_URI);
-    expect(stop("My athan")).toBeOnTheScreen();
-    expect(preview("Makkah")).toBeOnTheScreen();
+    expect(preview()).toBeOnTheScreen();
   });
 
   it("shows play again once a preview ends by itself", async () => {
-    await open();
-    await userEvent.setup().press(preview("Makkah"));
+    await renderPicker();
+    await userEvent.setup().press(preview());
 
     await act(() => mockFinish?.());
 
-    expect(preview("Makkah")).toBeOnTheScreen();
+    expect(preview()).toBeOnTheScreen();
   });
 
-  it("stops its preview when the list closes", async () => {
-    await open();
+  it("stops the preview when another sound is picked", async () => {
+    const onChange = jest.fn();
+    await renderPicker({ onChange });
     const user = userEvent.setup();
-    await user.press(preview("Makkah"));
-
+    await user.press(preview());
     await user.press(trigger());
+
+    await user.press(screen.getByRole("radio", { name: "Takbir" }));
 
     expect(mockStop).toHaveBeenCalled();
     expect(soundPreviewManager.isCurrentlyPlaying()).toBe(false);
   });
 
   it("stops its preview when it leaves the screen", async () => {
-    await open();
-    await userEvent.setup().press(preview("Makkah"));
+    await renderPicker();
+    await userEvent.setup().press(preview());
 
     await act(async () => screen.unmount());
 
@@ -248,21 +221,5 @@ describe("SoundPicker", () => {
     await act(async () => screen.unmount());
 
     expect(mockStop).not.toHaveBeenCalled();
-  });
-
-  it("links to the custom sound library", async () => {
-    await open();
-
-    await userEvent.setup().press(screen.getByRole("button", { name: manage() }));
-
-    expect(mockPush).toHaveBeenCalledWith(BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.href);
-  });
-
-  // Custom sounds exist only on Android.
-  it("offers no library link on iOS", async () => {
-    jest.replaceProperty(Platform, "OS", PlatformType.IOS);
-    await open();
-
-    expect(screen.queryByRole("button", { name: manage() })).not.toBeOnTheScreen();
   });
 });

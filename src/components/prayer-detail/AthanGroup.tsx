@@ -9,7 +9,7 @@ import type { PrayerId } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { usePrayerAlertSettings } from "@/hooks/usePrayerAlertSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
-import { chosenSoundLabel, getSoundChoiceGroups, isNotificationSound } from "@/utils/sound";
+import { chosenSoundLabel, getSoundChoices, isNotificationSound } from "@/utils/sound";
 
 const TYPE = NOTIFICATION_TYPE.PRAYER;
 
@@ -20,8 +20,8 @@ export const AthanGroup = ({ prayerId }: { prayerId: PrayerId }) => {
   const customSounds = useCustomSoundsStore((state) => state.customSounds);
   const config = configs[TYPE];
 
-  const groups = getSoundChoiceGroups(TYPE, customSounds, t);
-  const soundName = chosenSoundLabel(groups, config.sound, t);
+  const sounds = getSoundChoices(TYPE, customSounds, t);
+  const soundName = chosenSoundLabel(sounds, config.sound, t);
 
   return (
     <SwitchGroup
@@ -33,7 +33,7 @@ export const AthanGroup = ({ prayerId }: { prayerId: PrayerId }) => {
       onValueChange={(enabled) => void update(TYPE, NOTIFICATION_FIELD.ENABLED, enabled)}>
       <SoundPicker
         label={t("notification.sound")}
-        groups={groups}
+        options={sounds}
         value={config.sound}
         onChange={(sound) => {
           if (isNotificationSound(TYPE, sound)) void update(TYPE, NOTIFICATION_FIELD.SOUND, sound);

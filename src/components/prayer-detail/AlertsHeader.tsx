@@ -30,7 +30,7 @@ export const AlertsHeader = ({ prayerId }: { prayerId: PrayerId }) => {
         backgroundColor="$accentSoft"
         borderRadius="$pill"
         paddingHorizontal="$2"
-        paddingVertical="$1"
+        paddingVertical="$0.5"
         numberOfLines={1}
         flexShrink={1}>
         {t("prayerDetail.alertsHeader.custom")}

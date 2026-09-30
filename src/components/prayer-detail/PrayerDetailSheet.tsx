@@ -17,10 +17,10 @@ import {
   SheetUnavailableState,
 } from "@/components/prayer-detail/SheetStates";
 import { Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
-import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Section } from "@/components/ui/section";
+import { SECTION_KIND } from "@/constants/Section";
 import { VStack } from "@/components/ui/vstack";
 import { PRAYER_DETAIL_STATE } from "@/constants/PrayerDetail";
 import type { PrayerId } from "@/constants/Prayer";
@@ -62,34 +62,38 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
   const retry = useRetryPrayerTimes();
 
   return (
-    <VStack gap="$5" paddingBottom="$5">
-      <HStack justifyContent="flex-end">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("common.close")}
-          onPress={onClose}
-          alignItems="center"
-          justifyContent="center"
-          borderRadius="$pill">
-          <Icon as={X} size="md" color="$muted" />
-        </Pressable>
-      </HStack>
+    <VStack gap="$5">
+      {/* Over the hero's end, first in reading order; the hero leaves it room. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("common.close")}
+        onPress={onClose}
+        position="absolute"
+        top={0}
+        end={0}
+        zIndex={1}
+        alignItems="center"
+        justifyContent="center"
+        borderRadius="$pill"
+        pressStyle={{ opacity: 1, backgroundColor: "$pressed" }}>
+        <Icon as={X} size="md" strokeWidth={1.8} color="$muted" />
+      </Pressable>
       {state === PRAYER_DETAIL_STATE.READY ? (
         <>
           <PrayerDetailHero prayerId={prayerId} />
-          <Section title={t("prayerDetail.sections.alerts")}>
+          <Section kind={SECTION_KIND.LABEL} title={t("prayerDetail.sections.alerts")}>
             <AthanGroup prayerId={prayerId} />
             <IqamaGroup prayerId={prayerId} />
             <PreAthanGroup prayerId={prayerId} />
             <AlertsHeader prayerId={prayerId} />
           </Section>
           {alarmType ? (
-            <Section title={t("prayerDetail.sections.alarms")}>
+            <Section kind={SECTION_KIND.LABEL} title={t("prayerDetail.sections.alarms")}>
               <AlarmDisclosure type={alarmType} />
             </Section>
           ) : null}
           <PlaybackRow />
-          <Section title={t("prayerDetail.sections.calculation")}>
+          <Section kind={SECTION_KIND.LABEL} title={t("prayerDetail.sections.calculation")}>
             <AdjustmentRow prayerId={prayerId} />
           </Section>
         </>

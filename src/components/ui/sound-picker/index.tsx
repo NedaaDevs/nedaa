@@ -1,8 +1,5 @@
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
-import { useRouter } from "expo-router";
-import type { ParseKeys } from "i18next";
 import { Check, ChevronDown, ChevronUp, Play, Square } from "lucide-react-native";
 
 import { HStack } from "@/components/ui/hstack";
@@ -10,22 +7,17 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { SOUND_PICKER_GROUP, type SoundPickerGroupId } from "@/constants/sounds";
-import { PlatformType } from "@/enums/app";
-import type { SoundChoice, SoundChoiceGroup } from "@/types/sound";
+import type { SoundChoice } from "@/types/sound";
 import { chosenSoundLabel, soundPreviewManager } from "@/utils/sound";
 
-const GROUP_TITLE = {
-  [SOUND_PICKER_GROUP.BUNDLED]: "prayerDetail.soundPicker.bundled",
-  [SOUND_PICKER_GROUP.CUSTOM]: "prayerDetail.soundPicker.custom",
-} as const satisfies Record<SoundPickerGroupId, ParseKeys>;
+/** The design's hairline stroke; the Icon scale has no stroke tokens. */
+const STROKE = 1.7;
 
 export type SoundPickerProps<K extends string> = {
   /** Captions the trigger and names it and the list, e.g. "Sound". */
   label: string;
-  /** Sources in order; an empty one is not shown. */
-  groups: readonly SoundChoiceGroup<K>[];
+  /** Every sound in the order the list shows them. */
+  options: readonly SoundChoice<K>[];
   value: K;
   onChange: (value: K) => void;
 };
@@ -38,45 +30,39 @@ const stopOwnPreview = (owner: string) => {
   if (currentPreview()?.startsWith(owner)) void soundPreviewManager.stopPreview();
 };
 
-/** A trigger that opens every sound in place, grouped, each with a preview. */
+/** A trigger that opens every sound in place, beside a preview of the chosen one. */
 export const SoundPicker = <K extends string>({
   label,
-  groups,
+  options,
   value,
   onChange,
 }: SoundPickerProps<K>) => {
   const { t } = useTranslation();
-  const router = useRouter();
   const owner = useId();
   const [open, setOpen] = useState(false);
   const playing = useSyncExternalStore(subscribe, currentPreview);
 
   useEffect(() => () => stopOwnPreview(owner), [owner]);
 
-  const close = () => {
-    stopOwnPreview(owner);
-    setOpen(false);
-  };
-
-  const chosenLabel = chosenSoundLabel(groups, value, t);
+  const chosenLabel = chosenSoundLabel(options, value, t);
+  const previewSource = options.find((option) => option.value === value)?.previewSource ?? null;
+  const previewId = `${owner}${value}`;
+  const isPlaying = playing === previewId;
 
   const pick = (option: K) => {
-    close();
-    if (option !== value) onChange(option);
+    setOpen(false);
+    if (option === value) return;
+    stopOwnPreview(owner);
+    onChange(option);
   };
 
-  const togglePreview = (option: SoundChoice<K>, previewId: string) => {
-    if (playing === previewId) {
+  const togglePreview = () => {
+    if (isPlaying) {
       void soundPreviewManager.stopPreview();
-    } else if (option.previewSource !== null) {
-      // The manager logs a failed play and resets, so the row falls back to play.
-      soundPreviewManager.playSource(previewId, option.previewSource).catch(() => {});
+    } else if (previewSource !== null) {
+      // The manager logs a failed play and resets, so the button falls back to play.
+      soundPreviewManager.playSource(previewId, previewSource).catch(() => {});
     }
-  };
-
-  const manageLibrary = () => {
-    close();
-    router.push(BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.href);
   };
 
   return (
@@ -84,106 +70,82 @@ export const SoundPicker = <K extends string>({
       {/* The trigger speaks the label, so a screen reader skips the caption. */}
       <Text
         size="xs"
+        fontWeight="600"
         color="$muted"
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants">
         {label}
       </Text>
-      <Pressable
-        onPress={open ? close : () => setOpen(true)}
-        accessibilityLabel={`${label}, ${chosenLabel}`}
-        accessibilityHint={t("a11y.prayerDetail.soundPicker.triggerHint")}
-        accessibilityState={{ expanded: open }}
-        flexDirection="row"
-        alignItems="center"
-        gap="$inline"
-        paddingHorizontal="$3"
-        borderRadius="$control"
-        backgroundColor="$surface2">
-        <Text flex={1} size="sm" color="$fg" numberOfLines={1}>
-          {chosenLabel}
-        </Text>
-        <Icon as={open ? ChevronUp : ChevronDown} size="sm" color="$muted" />
-      </Pressable>
+      <HStack alignItems="center" gap="$inline">
+        <Pressable
+          onPress={() => setOpen(!open)}
+          accessibilityLabel={`${label}, ${chosenLabel}`}
+          accessibilityHint={t("a11y.prayerDetail.soundPicker.triggerHint")}
+          accessibilityState={{ expanded: open }}
+          flex={1}
+          flexDirection="row"
+          alignItems="center"
+          gap="$inline"
+          paddingHorizontal="$2.5"
+          borderWidth={1}
+          borderColor="$border"
+          borderRadius="$control"
+          backgroundColor="$surface2Soft">
+          <Text flex={1} size="sm" color="$fg" numberOfLines={1}>
+            {chosenLabel}
+          </Text>
+          <Icon as={open ? ChevronUp : ChevronDown} size="sm" color="$muted" strokeWidth={STROKE} />
+        </Pressable>
+        <Pressable
+          onPress={togglePreview}
+          disabled={previewSource === null}
+          accessibilityLabel={t(
+            isPlaying
+              ? "a11y.prayerDetail.soundPicker.stop"
+              : "a11y.prayerDetail.soundPicker.preview",
+            { name: chosenLabel }
+          )}
+          alignItems="center"
+          justifyContent="center"
+          borderWidth={1}
+          borderColor="$border"
+          borderRadius="$control">
+          <Icon as={isPlaying ? Square : Play} size="md" color="$muted" strokeWidth={STROKE} />
+        </Pressable>
+      </HStack>
       {open ? (
         <VStack
           accessibilityRole="radiogroup"
           accessibilityLabel={label}
+          marginTop="$0.5"
           gap="$tight"
           padding="$1.5"
-          borderRadius="$card"
-          backgroundColor="$surface2">
-          {groups
-            .filter((group) => group.options.length > 0)
-            .map((group) => (
-              <VStack key={group.id} gap="$tight">
-                <Text
-                  accessibilityRole="header"
-                  size="xs"
-                  color="$muted"
-                  paddingHorizontal="$3"
-                  paddingTop="$2">
-                  {t(GROUP_TITLE[group.id])}
+          borderWidth={1}
+          borderColor="$border"
+          borderRadius="$control"
+          backgroundColor="$surface2Soft">
+          {options.map((option) => {
+            const selected = option.value === value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => pick(option.value)}
+                accessibilityRole="radio"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected }}
+                flexDirection="row"
+                alignItems="center"
+                gap="$inline"
+                paddingHorizontal="$2"
+                borderRadius="$chip"
+                backgroundColor={selected ? "$accentSoft" : "transparent"}>
+                <Text flex={1} size="sm" color="$fg">
+                  {option.label}
                 </Text>
-                {group.options.map((option) => {
-                  const selected = option.value === value;
-                  const previewId = `${owner}${option.value}`;
-                  const isPlaying = playing === previewId;
-                  return (
-                    <HStack key={option.value} alignItems="center" gap="$tight">
-                      <Pressable
-                        onPress={() => pick(option.value)}
-                        accessibilityRole="radio"
-                        accessibilityLabel={option.label}
-                        accessibilityState={{ selected }}
-                        flex={1}
-                        flexDirection="row"
-                        alignItems="center"
-                        gap="$inline"
-                        paddingHorizontal="$3"
-                        borderRadius="$control"
-                        backgroundColor={selected ? "$accentSoft" : "transparent"}>
-                        <Text flex={1} size="sm" color="$fg" bold={selected}>
-                          {option.label}
-                        </Text>
-                        {selected ? <Icon as={Check} size="sm" color="$accent" /> : null}
-                      </Pressable>
-                      {option.previewSource !== null ? (
-                        <Pressable
-                          onPress={() => togglePreview(option, previewId)}
-                          accessibilityLabel={t(
-                            isPlaying
-                              ? "a11y.prayerDetail.soundPicker.stop"
-                              : "a11y.prayerDetail.soundPicker.preview",
-                            { name: option.label }
-                          )}
-                          alignItems="center"
-                          justifyContent="center"
-                          borderRadius="$control">
-                          <Icon as={isPlaying ? Square : Play} size="sm" color="$muted" />
-                        </Pressable>
-                      ) : null}
-                    </HStack>
-                  );
-                })}
-              </VStack>
-            ))}
-          {Platform.OS === PlatformType.ANDROID ? (
-            <Pressable
-              onPress={manageLibrary}
-              accessibilityLabel={t("prayerDetail.soundPicker.manageLibrary")}
-              accessibilityHint={t("a11y.prayerDetail.soundPicker.manageLibraryHint")}
-              alignItems="center"
-              justifyContent="center"
-              borderRadius="$control"
-              borderWidth={1}
-              borderStyle="dashed"
-              borderColor="$border">
-              <Text size="sm" color="$accent">
-                {t("prayerDetail.soundPicker.manageLibrary")}
-              </Text>
-            </Pressable>
-          ) : null}
+                {selected ? <Icon as={Check} size="sm" color="$fg" /> : null}
+              </Pressable>
+            );
+          })}
         </VStack>
       ) : null}
     </VStack>
