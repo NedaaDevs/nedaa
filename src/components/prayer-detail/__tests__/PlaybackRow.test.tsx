@@ -13,6 +13,7 @@ import { ThemeProvider } from "@/test-helpers/theme";
 
 const PLATFORM = Platform.OS;
 const TITLE = i18n.t("prayerDetail.playback.title");
+const SECTION = i18n.t("prayerDetail.sections.playback");
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
@@ -49,6 +50,7 @@ describe("PlaybackRow on iOS", () => {
 
     expect(screen.queryByRole("button", { name: new RegExp(TITLE) })).toBeNull();
     expect(screen.queryByText(i18n.t("prayerDetail.playback.scope"))).toBeNull();
+    expect(screen.queryByRole("header", { name: SECTION })).toBeNull();
   });
 });
 
@@ -75,6 +77,14 @@ describe("PlaybackRow on Android", () => {
     await renderRow();
 
     expect(screen.getByText(i18n.t("prayerDetail.playback.scope"))).toBeTruthy();
+  });
+
+  // Its own header keeps it from reading as part of the section above.
+  it("heads itself as a section of its own", async () => {
+    setPlayback(false, false);
+    await renderRow();
+
+    expect(screen.getByRole("header", { name: SECTION })).toBeTruthy();
   });
 
   it("holds no switches", async () => {

@@ -27,7 +27,8 @@ import { isDarkMode, nativeColorSchemeFor } from "@/utils/appearance";
 import { PhaseContext, usePrayerPhaseSource } from "@/contexts/PhaseContext";
 
 import { ToastHost } from "@/components/ToastHost";
-import { useAppCovered } from "@/components/ui/actionsheet/cover";
+import { ActionsheetOverlay } from "@/components/ui/actionsheet";
+import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
 import { LoadingOverlay } from "@/components/feedback";
 import CityChangeModal from "@/components/CityChangeModal";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
@@ -94,6 +95,7 @@ function AppShell() {
 
   const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
   const appCovered = useAppCovered();
+  const sheetLayerUp = useSheetLayerUp();
 
   useNotificationListeners();
   useNotificationResponses(!showOnboarding);
@@ -101,44 +103,46 @@ function AppShell() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        {/* TalkBack skips the app under an open sheet; iOS uses the sheet layer. */}
-        <SafeAreaView
-          edges={safeAreaEdges}
-          style={{ flex: 1, backgroundColor: safeAreaBg }}
-          importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
-          <StatusBar style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
-          <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
+      {/* An open sheet draws the toast in its own layer, so a reader reaches it. */}
+      <ActionsheetOverlay value={<ToastHost />}>
+        <BottomSheetModalProvider>
+          {/* TalkBack skips the app under an open sheet; iOS uses the sheet layer. */}
+          <SafeAreaView
+            edges={safeAreaEdges}
+            style={{ flex: 1, backgroundColor: safeAreaBg }}
+            importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
+            <StatusBar style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
+            <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
-          {pendingCityChange && (
-            <CityChangeModal
-              isOpen={showCityChangeModal}
-              onClose={dismissCityChangeModal}
-              onUpdate={handleCityChangeUpdate}
-              onRetry={retryUpdate}
-              currentCity={pendingCityChange.currentCity}
-              newCity={pendingCityChange.newCity}
-              updateState={updateState}
-            />
-          )}
+            {pendingCityChange && (
+              <CityChangeModal
+                isOpen={showCityChangeModal}
+                onClose={dismissCityChangeModal}
+                onUpdate={handleCityChangeUpdate}
+                onRetry={retryUpdate}
+                currentCity={pendingCityChange.currentCity}
+                newCity={pendingCityChange.newCity}
+                updateState={updateState}
+              />
+            )}
 
-          {showOnboarding ? (
-            <OnboardingScreen />
-          ) : (
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}>
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-          )}
-          <PlayerBottomSheet />
-          <CrashReportPrompt />
-          <WhatsNewSheet />
-        </SafeAreaView>
-      </BottomSheetModalProvider>
-      {/* After the sheets' portal host, so a toast shows above an open sheet. */}
-      <ToastHost />
+            {showOnboarding ? (
+              <OnboardingScreen />
+            ) : (
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}>
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+            )}
+            <PlayerBottomSheet />
+            <CrashReportPrompt />
+            <WhatsNewSheet />
+          </SafeAreaView>
+        </BottomSheetModalProvider>
+      </ActionsheetOverlay>
+      {sheetLayerUp ? null : <ToastHost />}
     </GestureHandlerRootView>
   );
 }

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react-native";
 
 import { AdjustmentRow } from "@/components/prayer-detail/AdjustmentRow";
-import { AlarmDisclosure, useAlarmTypeFor } from "@/components/prayer-detail/AlarmDisclosure";
+import { AlarmDisclosure } from "@/components/prayer-detail/AlarmDisclosure";
 import { AlertsHeader } from "@/components/prayer-detail/AlertsHeader";
 import { AthanGroup } from "@/components/prayer-detail/AthanGroup";
 import { IqamaGroup } from "@/components/prayer-detail/IqamaGroup";
@@ -24,7 +24,9 @@ import { Section } from "@/components/ui/section";
 import { VStack } from "@/components/ui/vstack";
 import { PRAYER_DETAIL_STATE } from "@/constants/PrayerDetail";
 import type { PrayerId } from "@/constants/Prayer";
+import { useAlarmTypeFor } from "@/hooks/useAlarmTypeFor";
 import { useNotificationSettingsHydrated } from "@/hooks/useNotificationSettingsHydrated";
+import { useRetryPrayerTimes } from "@/hooks/useRetryPrayerTimes";
 import { useShownDay } from "@/hooks/useShownDay";
 import { SimulatedClockContext, useClockOverride } from "@/hooks/useTodayClock";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -48,21 +50,16 @@ type Opening = {
 
 type BodyProps = { prayerId: PrayerId; onClose: () => void };
 
-/** The prayer's sections in the prototype's order, or the state in their place. */
+/** The prayer's sections, or the state that stands in for them. */
 const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
   const { t } = useTranslation();
   const { day } = useShownDay();
   const isLoading = usePrayerTimesStore((state) => state.isLoading);
   const hasError = usePrayerTimesStore((state) => state.hasError);
-  const clearError = usePrayerTimesStore((state) => state.clearError);
-  const loadPrayerTimes = usePrayerTimesStore((state) => state.loadPrayerTimes);
   const settingsHydrated = useNotificationSettingsHydrated();
   const alarmType = useAlarmTypeFor(prayerId);
   const state = prayerDetailState({ prayerId, day, isLoading, hasError, settingsHydrated });
-  const retry = () => {
-    clearError();
-    loadPrayerTimes(true).catch(() => {});
-  };
+  const retry = useRetryPrayerTimes();
 
   return (
     <VStack gap="$5" paddingBottom="$5">
@@ -88,7 +85,7 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
           </Section>
           {alarmType ? (
             <Section title={t("prayerDetail.sections.alarms")}>
-              <AlarmDisclosure prayerId={prayerId} />
+              <AlarmDisclosure type={alarmType} />
             </Section>
           ) : null}
           <PlaybackRow />

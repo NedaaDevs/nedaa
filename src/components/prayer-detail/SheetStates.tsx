@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { parseISO } from "date-fns";
 
+import { ActionsheetTitle } from "@/components/ui/actionsheet";
 import { StatePanel } from "@/components/ui/state-panel";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -27,7 +28,7 @@ const COPY = {
 
 type StateProps = { prayerId: PrayerId; kind: StatePanelKind; onRetry?: () => void };
 
-/** The chosen prayer named above a state panel, so the context stays. */
+/** The chosen prayer named above a state panel; reader focus lands on it. */
 const SheetState = ({ prayerId, kind, onRetry }: StateProps) => {
   const { t } = useTranslation();
   const { day } = useShownDay();
@@ -38,9 +39,11 @@ const SheetState = ({ prayerId, kind, onRetry }: StateProps) => {
 
   return (
     <VStack gap="$3">
-      <Text size="xl" bold color="$fg" accessibilityRole="header">
-        {prayer}
-      </Text>
+      <ActionsheetTitle>
+        <Text size="xl" bold color="$fg">
+          {prayer}
+        </Text>
+      </ActionsheetTitle>
       <StatePanel
         kind={kind}
         title={t(COPY[kind].title)}

@@ -1,4 +1,4 @@
-import { act, screen, userEvent } from "@testing-library/react-native";
+import { act, isHiddenFromAccessibility, screen, userEvent } from "@testing-library/react-native";
 import { Platform } from "react-native";
 
 import { SoundPicker } from "@/components/ui/sound-picker";
@@ -90,6 +90,15 @@ describe("SoundPicker", () => {
       expect.objectContaining({ expanded: false })
     );
     expect(screen.queryByRole("radio")).not.toBeOnTheScreen();
+  });
+
+  // The trigger speaks the label, so the reader hears it once.
+  it("captions the trigger with its label, hidden from a screen reader", async () => {
+    await renderPicker();
+
+    const caption = screen.getByText(LABEL, { includeHiddenElements: true });
+    expect(isHiddenFromAccessibility(caption)).toBe(true);
+    expect(trigger()).toBeOnTheScreen();
   });
 
   it("opens one radio group with a titled section per source", async () => {

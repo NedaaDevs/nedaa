@@ -1,7 +1,12 @@
 import { screen, userEvent } from "@testing-library/react-native";
 
 import TimingSettings from "@/components/alarm/TimingSettings";
-import { ALARM_TIMING_CHOICES, ALARM_TIMING_MODE, ALARM_TYPE } from "@/constants/Alarm";
+import {
+  ALARM_TIMING_CHOICES,
+  ALARM_TIMING_MODE,
+  ALARM_TYPE,
+  timingForMode,
+} from "@/constants/Alarm";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { AlarmType, TimingConfig } from "@/types/alarm";
@@ -34,6 +39,21 @@ describe("TimingSettings", () => {
     expect(screen.getByRole("radio", { name: BEFORE_PRAYER })).toBeOnTheScreen();
     expect(screen.getAllByRole("radio")).toHaveLength(
       ALARM_TIMING_CHOICES[ALARM_TYPE.FAJR].modes.length + offsets(ALARM_TYPE.FAJR).length
+    );
+  });
+
+  it("moves Fajr before prayer at its default offset", async () => {
+    const onChange = jest.fn();
+    await renderTiming(
+      ALARM_TYPE.FAJR,
+      { mode: ALARM_TIMING_MODE.AT_PRAYER_TIME, minutesBefore: 0 },
+      onChange
+    );
+
+    await userEvent.press(screen.getByRole("radio", { name: BEFORE_PRAYER }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      timingForMode(ALARM_TYPE.FAJR, ALARM_TIMING_MODE.BEFORE_PRAYER_TIME)
     );
   });
 
