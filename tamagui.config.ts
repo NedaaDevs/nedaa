@@ -361,9 +361,9 @@ const lightTheme = {
   warn: NEDAA_LIGHT.warn.hex,
   danger: NEDAA_LIGHT.danger.hex,
   bar: NEDAA_LIGHT.bar.hex,
-
-  /** Switch thumb while checked. */
-  switchThumbChecked: tokens.color.lightTypographyContrast,
+  track: NEDAA_LIGHT.track.hex,
+  handle: NEDAA_LIGHT.handle.hex,
+  thumb: NEDAA_LIGHT.thumb.hex,
 };
 
 const darkTheme = {
@@ -439,9 +439,9 @@ const darkTheme = {
   warn: NEDAA_DARK.warn.hex,
   danger: NEDAA_DARK.danger.hex,
   bar: NEDAA_DARK.bar.hex,
-
-  /** Switch thumb while checked. */
-  switchThumbChecked: tokens.color.darkBackground,
+  track: NEDAA_DARK.track.hex,
+  handle: NEDAA_DARK.handle.hex,
+  thumb: NEDAA_DARK.thumb.hex,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
