@@ -25,17 +25,19 @@ import {
   type FlatListProps,
   type HostInstance,
 } from "react-native";
-import { ReduceMotion } from "react-native-reanimated";
+import { Easing, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetBackdrop,
   useBottomSheetModal,
+  useBottomSheetTimingConfigs,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useAppCovered, useCoverApp, useSheetLayer } from "@/components/ui/actionsheet/cover";
 import { PlatformType } from "@/enums/app";
+import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** The $sheet radius, as a number: gorhom styles take no theme tokens. */
@@ -102,6 +104,10 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   const theme = useTheme();
   const { t } = useTranslation();
   const reduced = useReducedMotion();
+  const slide = useBottomSheetTimingConfigs({
+    duration: DURATION_MS.GENTLE,
+    easing: Easing.bezier(...SHEET_CURVE),
+  });
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<RNView>(null);
@@ -188,6 +194,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       enablePanDownToClose
       onChange={handleChange}
       onDismiss={handleDismiss}
+      animationConfigs={slide}
       overrideReduceMotion={reduced ? ReduceMotion.Always : ReduceMotion.Never}
       // gorhom's defaults make the content one "Bottom Sheet" element.
       accessible={false}
