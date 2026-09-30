@@ -25,3 +25,27 @@ describe("Icon colour", () => {
     );
   });
 });
+
+/** Shows the fill it was handed, or that it had none. */
+const FilledGlyph = ({ fill }: { fill?: string }) => (
+  <Text testID="glyph">{fill ?? "no fill"}</Text>
+);
+
+describe("Icon fill", () => {
+  it("resolves a token fill against the theme", async () => {
+    await renderWithTheme(<Icon as={FilledGlyph} fill="$danger" />);
+
+    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+      LIGHT.danger.val
+    );
+  });
+
+  // Lucide leaves an unfilled glyph hollow; a custom glyph keeps its own default.
+  it("hands no fill when none is asked for", async () => {
+    await renderWithTheme(<Icon as={FilledGlyph} />);
+
+    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+      "no fill"
+    );
+  });
+});
