@@ -12,7 +12,7 @@ const HelpSettings = () => {
     <Background>
       <ScreenHeader
         title={t("settings.help.title")}
-        back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
       />
       <ConcatUs />
     </Background>

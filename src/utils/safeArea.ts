@@ -8,9 +8,17 @@ export type SafeEdge = (typeof SAFE_EDGE)[keyof typeof SAFE_EDGE];
 
 const [TAB_GROUP] = BACK_DESTINATION.HOME.route.split("/");
 
-/** A tab drawn on the sky; the router may omit the name of Today, the index. */
+/** Stack screens drawn on the sky, by navigator route name. */
+const SKY_STACK_ROUTES: readonly string[] = [
+  BACK_DESTINATION.SETTINGS_ABOUT.route,
+  BACK_DESTINATION.SETTINGS_PRIVACY.route,
+];
+
+/** A sky tab or stack screen; the router may omit Today's name, the index. */
 export const isSkySegments = (segments: readonly string[]) =>
-  segments[0] === TAB_GROUP && isSkyTab(segments[1] ?? OpeningTab.HOME);
+  segments[0] === TAB_GROUP
+    ? isSkyTab(segments[1] ?? OpeningTab.HOME)
+    : SKY_STACK_ROUTES.includes(segments.join("/"));
 
 type Screen = { sky: boolean; immersiveReader: boolean; android: boolean };
 
