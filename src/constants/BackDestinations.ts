@@ -72,6 +72,26 @@ export const BACK_DESTINATION = {
     href: "/settings/acknowledgements",
     title: "settings.acknowledgements.title",
   },
+  SETTINGS_ABOUT: {
+    route: "settings/about",
+    href: "/settings/about",
+    title: "settings.about.title",
+  },
+  SETTINGS_PRIVACY: {
+    route: "settings/privacy",
+    href: "/settings/privacy",
+    title: "settings.privacy.title",
+  },
+  SETTINGS_HELP: {
+    route: "settings/help",
+    href: "/settings/help",
+    title: "settings.help.title",
+  },
+  SETTINGS_FEEDBACK: {
+    route: "settings/feedback",
+    href: "/settings/feedback",
+    title: "feedback.title",
+  },
   QURAN_LISTEN: {
     route: "quran-listen/index",
     href: "/quran-listen",

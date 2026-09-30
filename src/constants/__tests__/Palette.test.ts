@@ -56,6 +56,11 @@ describe("palette", () => {
     });
   });
 
+  // A row tile carries an accent glyph; an icon, so the graphical bar.
+  it.each(PALETTES)("$name accent glyph clears 3:1 on the row tile", ({ tokens }) => {
+    expect(contrast(tokens.accent.hex, tokens.tile.hex)).toBeGreaterThanOrEqual(3);
+  });
+
   it("keeps alpha tokens at 8 digits and the rest at 6", () => {
     for (const { tokens } of PALETTES) {
       for (const [token, entry] of Object.entries(tokens)) {

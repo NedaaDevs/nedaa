@@ -22,9 +22,6 @@ import {
 //
 // Re-check on a react-native-svg major bump: this also hides a genuine future
 // deprecation of Rect.x or Text.x, should upstream ever add one.
-//
-// Deliberately outside src/components/ui/index.ts: `Text` here would collide
-// with the typography primitive the barrel already exports.
 
 type GeometryRectProps = Omit<RectProps, "x" | "y"> & {
   x?: NumberProp;

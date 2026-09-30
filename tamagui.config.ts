@@ -11,16 +11,16 @@ import { defaultConfig } from "@tamagui/config/v5";
 const latinFont = createFont({
   family: "IBMPlexSans-Regular",
   size: {
-    1: 10, // 2xs
-    2: 12, // xs
-    3: 14, // sm
-    4: 16, // base
-    5: 18, // lg
-    6: 20, // xl
-    7: 24, // 2xl
-    8: 30, // 3xl
-    9: 36, // 4xl
-    10: 48, // 5xl
+    1: 10, // 2xs, xs
+    2: 12, // sm
+    3: 14, // md
+    4: 16, // lg
+    5: 18, // xl
+    6: 20, // 2xl
+    7: 24, // 3xl
+    8: 30, // 4xl
+    9: 36, // 5xl
+    10: 48,
     true: 16, // default
   },
   lineHeight: {
@@ -370,6 +370,7 @@ const lightTheme = {
   handle: NEDAA_LIGHT.handle.hex,
   thumb: NEDAA_LIGHT.thumb.hex,
   pressed: NEDAA_LIGHT.pressed.hex,
+  tile: NEDAA_LIGHT.tile.hex,
 };
 
 const darkTheme = {
@@ -454,6 +455,7 @@ const darkTheme = {
   handle: NEDAA_DARK.handle.hex,
   thumb: NEDAA_DARK.thumb.hex,
   pressed: NEDAA_DARK.pressed.hex,
+  tile: NEDAA_DARK.tile.hex,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
