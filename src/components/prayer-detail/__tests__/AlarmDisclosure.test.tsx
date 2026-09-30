@@ -1,11 +1,14 @@
+// First, before expo-router's testing library: that library re-mocks Reanimated
+// as it loads, and the group must bind to the mock below, not to its empty one.
+import { AlarmDisclosure } from "@/components/prayer-detail/AlarmDisclosure";
 import { AccessibilityInfo, Text } from "react-native";
 import { usePathname } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 import { act, screen, userEvent } from "@testing-library/react-native";
-import { renderRouter } from "expo-router/testing-library";
+import { renderRouter, within } from "expo-router/testing-library";
 
 import TimingSettings from "@/components/alarm/TimingSettings";
-import { AlarmDisclosure } from "@/components/prayer-detail/AlarmDisclosure";
+import { DETAIL_PANEL_ID } from "@/components/prayer-detail/DetailPanel";
 import {
   ALARM_TIMING_CHOICES,
   ALARM_TIMING_MODE,
@@ -25,6 +28,7 @@ import type { CustomSound } from "@/types/customSound";
 import { alarmPermissionsGranted } from "@/utils/alarmPermissions";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("expo-alarm", () => ({ setAlarmSettings: jest.fn() }));
 jest.mock("@/utils/alarmScheduler", () => ({
   scheduleFajrAlarm: jest.fn(),
@@ -402,6 +406,26 @@ describe("AlarmDisclosure", () => {
       pathname: "/settings/alarm/[type]",
       params: { type },
     });
+  });
+
+  // The link is one more row of the alarm, not a card nested in the body.
+  it("holds the body and a flat settings link in one panel", async () => {
+    setAlarm(ALARM_TYPE.FAJR, true, BEFORE_30);
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    const panel = screen.getByTestId(DETAIL_PANEL_ID);
+    expect(panel).toHaveStyle({ borderTopWidth: 1 });
+    expect(within(panel).getAllByRole("radio").length).toBeGreaterThan(0);
+    const link = within(panel).getByRole("button", {
+      name: new RegExp(i18n.t("prayerDetail.alarm.more.title")),
+    });
+    expect(link).not.toHaveStyle({ borderTopWidth: 1 });
+  });
+
+  it("draws no panel while the alarm is off", async () => {
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    expect(screen.queryByTestId(DETAIL_PANEL_ID)).toBeNull();
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

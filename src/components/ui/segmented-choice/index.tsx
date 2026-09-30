@@ -39,7 +39,7 @@ export const SegmentedChoice = <V extends string | number>({
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
       flexWrap="wrap"
-      spacing="inline"
+      spacing="tight"
       // Set here too, so a host outside the app's direction still mirrors the row.
       style={{ direction }}>
       {options.map((option) => {
@@ -59,10 +59,10 @@ export const SegmentedChoice = <V extends string | number>({
             paddingHorizontal="$3"
             borderRadius="$pill"
             borderWidth={1}
-            borderColor={selected ? "$accent" : "$border"}
+            borderColor={selected ? "$accentEdge" : "$border"}
             backgroundColor={selected ? "$accentSoft" : "transparent"}>
             <Text
-              size="md"
+              size="sm"
               typography="helper"
               fontWeight="600"
               color={selected ? "$fg" : "$muted"}>
