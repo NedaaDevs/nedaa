@@ -1,6 +1,6 @@
-import { createRef } from "react";
+import { Component, createRef } from "react";
 import { AccessibilityInfo, View } from "react-native";
-import { act, fireEvent, screen } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
@@ -15,6 +15,13 @@ import type { DayPrayerTimes } from "@/types/prayerTimes";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock(
+  "react-native-safe-area-context",
+  () => jest.requireActual("react-native-safe-area-context/jest/mock").default
+);
+
+let mockAlarmSupported = true;
+jest.mock("@/hooks/useAlarmSupported", () => ({ useAlarmSupported: () => mockAlarmSupported }));
 
 const HEADER = "header";
 // The open sheet hides its siblings from a reader, so queries look past that.
@@ -71,6 +78,7 @@ const focusEvent = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
 describe("PrayerDetailSheet", () => {
   beforeEach(() => {
     useAppStore.setState({ locale: AppLocale.EN });
+    mockAlarmSupported = true;
     focusEvent.mockClear();
   });
   afterEach(() => jest.useRealTimers());
@@ -100,6 +108,16 @@ describe("PrayerDetailSheet", () => {
 
     await renderOn("2026-09-23", PRAYER_ID.ASR);
     expect(screen.queryByRole(HEADER, alarms)).toBeNull();
+  });
+
+  it("offers no alarm on a device that cannot schedule one", async () => {
+    mockAlarmSupported = false;
+    await renderOn("2026-09-25", PRAYER_ID.FAJR);
+
+    expect(
+      screen.queryByRole(HEADER, { name: i18n.t("prayerDetail.sections.alarms"), ...hidden })
+    ).toBeNull();
+    expect(screen.queryByText(i18n.t("alarm.settings.fajrAlarm"), hidden)).toBeNull();
   });
 
   it.each(Object.values(AppLocale))("shows no raw string key in %s", async (locale) => {
@@ -137,7 +155,8 @@ describe("PrayerDetailSheet", () => {
     const [button] = screen
       .getAllByRole("button", { name: i18n.t("common.close") })
       .filter((each) => each.props.testID !== BOTTOM_SHEET_PART.BACKDROP);
-    await act(() => fireEvent.press(button));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.press(button);
 
     expect(onClose).toHaveBeenCalled();
   });
@@ -148,6 +167,36 @@ describe("PrayerDetailSheet", () => {
 
     expect(screen.getByRole(HEADER, { name: i18n.t("prayerTimes.asr") })).toBeOnTheScreen();
     expect(screen.getByText(i18n.t("prayerDetail.states.unavailable.title"))).toBeOnTheScreen();
+  });
+
+  it("moves reader focus to the prayer's name when its times cannot be shown", async () => {
+    usePrayerTimesStore.setState({ todayTimings: null, isLoading: false, hasError: false });
+    await renderWithTheme(<PrayerDetailSheet prayerId={PRAYER_ID.ASR} onClose={jest.fn()} />);
+
+    const [node, event] = focusEvent.mock.lastCall ?? [];
+    expect(event).toBe("focus");
+    expect(node instanceof Component && node.props.accessibilityRole).toBe(HEADER);
+  });
+
+  it("clears the error and reloads the times on a retry", async () => {
+    const clearError = jest.fn();
+    const loadPrayerTimes = jest.fn(() => Promise.resolve());
+    await renderOn("2026-09-23", PRAYER_ID.ASR);
+    await act(() =>
+      usePrayerTimesStore.setState({
+        todayTimings: null,
+        isLoading: false,
+        hasError: true,
+        clearError,
+        loadPrayerTimes,
+      })
+    );
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.press(screen.getByRole("button", { name: i18n.t("common.retry") }));
+
+    expect(clearError).toHaveBeenCalled();
+    expect(loadPrayerTimes).toHaveBeenCalledWith(true);
   });
 
   it("hands reader focus back to the opener once closed", async () => {

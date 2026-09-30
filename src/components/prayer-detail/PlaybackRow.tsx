@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Play } from "lucide-react-native";
 
 import { ListRow } from "@/components/ui/list-row";
+import { Section } from "@/components/ui/section";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -17,7 +18,7 @@ const summaryKey = (athan: boolean, iqama: boolean) => {
   return "prayerDetail.playback.summary.off";
 };
 
-/** Summarises the global full-playback setting and links to it. */
+/** The global full-playback setting under its own header, linked. */
 export const PlaybackRow = () => {
   const { t } = useTranslation();
   const athan = useNotificationStore((state) => state.fullAthanPlayback);
@@ -28,17 +29,19 @@ export const PlaybackRow = () => {
 
   const destination = BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK;
   return (
-    <VStack gap="$1.5">
-      <ListRow
-        icon={Play}
-        title={t("prayerDetail.playback.title")}
-        status={t(summaryKey(athan, iqama))}
-        hint={t("a11y.prayerDetail.playback.hint", { name: t(destination.title) })}
-        onPress={() => router.push(destination.href)}
-      />
-      <Text size="xs" color="$muted" paddingHorizontal="$3">
-        {t("prayerDetail.playback.scope")}
-      </Text>
-    </VStack>
+    <Section title={t("prayerDetail.sections.playback")}>
+      <VStack gap="$1.5">
+        <ListRow
+          icon={Play}
+          title={t("prayerDetail.playback.title")}
+          status={t(summaryKey(athan, iqama))}
+          hint={t("a11y.prayerDetail.playback.hint", { name: t(destination.title) })}
+          onPress={() => router.push(destination.href)}
+        />
+        <Text size="xs" color="$muted" paddingHorizontal="$3">
+          {t("prayerDetail.playback.scope")}
+        </Text>
+      </VStack>
+    </Section>
   );
 };

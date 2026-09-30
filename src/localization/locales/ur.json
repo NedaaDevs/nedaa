@@ -1865,5 +1865,11 @@
   "prayerDetail.alarm.summary.before_one": "فجر سے {{count}} منٹ پہلے بجتا ہے",
   "prayerDetail.alarm.summary.before_other": "فجر سے {{count}} منٹ پہلے بجتا ہے",
   "prayerDetail.alarm.summary.fridayBefore_one": "ظہر سے {{count}} منٹ پہلے بجتا ہے، صرف جمعہ کو",
-  "prayerDetail.alarm.summary.fridayBefore_other": "ظہر سے {{count}} منٹ پہلے بجتا ہے، صرف جمعہ کو"
+  "prayerDetail.alarm.summary.fridayBefore_other": "ظہر سے {{count}} منٹ پہلے بجتا ہے، صرف جمعہ کو",
+  "a11y.today.prayerCardHint": "اس نماز کی اطلاعات اور ترتیبات کھولتا ہے",
+  "a11y.prayerDetail.iqama.choice_one": "اذان کے {{count}} منٹ بعد",
+  "a11y.prayerDetail.iqama.choice_other": "اذان کے {{count}} منٹ بعد",
+  "a11y.prayerDetail.preAthan.choice_one": "اذان سے {{count}} منٹ پہلے",
+  "a11y.prayerDetail.preAthan.choice_other": "اذان سے {{count}} منٹ پہلے",
+  "prayerDetail.sections.playback": "اذان پلے بیک"
 }
