@@ -23,11 +23,11 @@ import { VStack } from "@/components/ui/vstack";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
 import { UmrahContinue } from "@/components/umrah/UmrahContinue";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { useAlarmStatus } from "@/hooks/useAlarmStatus";
 import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
+import { usePlaceName } from "@/hooks/usePlaceName";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
-import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { useLocationStore } from "@/stores/location";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
 import { localizedSurahName } from "@/utils/surahName";
@@ -92,8 +92,8 @@ export default function ToolsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
 
-  const { city, country } = useLocationStore((state) => state.localizedLocation);
-  const { fajr, friday } = useAlarmSettingsStore();
+  const place = usePlaceName();
+  const alarmStatus = useAlarmStatus();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
 
@@ -103,13 +103,6 @@ export default function ToolsScreen() {
     await selectionHaptic();
     router.push(route);
   };
-
-  // Only two alarm types exist, so naming them is more useful than a count.
-  const enabledAlarms = [
-    fajr.enabled ? t("prayerTimes.fajr") : null,
-    friday.enabled ? t("prayerTimes.jumuah") : null,
-  ].filter(Boolean);
-  const alarmStatus = enabledAlarms.length ? enabledAlarms.join(" · ") : t("tools.alarm.statusOff");
 
   const isListening = currentSurah != null && playerState !== QURAN_PLAYER_STATE.IDLE;
   const listenStatus = isListening
@@ -122,10 +115,7 @@ export default function ToolsScreen() {
       <SkyScrollView
         contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarInset }}>
         <SkyOccluder>
-          <ScreenHeader
-            title={t("tools.title")}
-            subtitle={city && country ? t("tools.place", { city, country }) : city}
-          />
+          <ScreenHeader title={t("tools.title")} subtitle={place} />
         </SkyOccluder>
 
         <SkyOccluder>
