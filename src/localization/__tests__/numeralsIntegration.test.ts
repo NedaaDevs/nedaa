@@ -27,7 +27,7 @@ describe("t() with the numeral post-processor registered", () => {
   });
 
   it("applies the preference to interpolated values too", () => {
-    expect(i18n.t("settings.hijri.date.adjustments.days", { count: 3 })).toContain("٣");
+    expect(i18n.t("settings.hijri.date.adjustments.plusDays", { count: 3 })).toContain("٣");
   });
 
   it("leaves Quran text in Arabic-Indic whatever the preference", () => {
