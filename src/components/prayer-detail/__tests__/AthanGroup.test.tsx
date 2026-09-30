@@ -65,8 +65,8 @@ const INITIAL_SETTINGS = useNotificationStore.getState().settings;
 const DEFAULTS = INITIAL_SETTINGS.defaults.prayer;
 
 const TITLE = i18n.t("prayerDetail.athan.title");
-const SOUND_LABEL = i18n.t("prayerDetail.athan.sound");
-const VIBRATION = i18n.t("prayerDetail.athan.vibration");
+const SOUND_LABEL = i18n.t("notification.sound");
+const VIBRATION = i18n.t("notification.vibration");
 
 const soundName = (key: string) =>
   getSoundChoiceGroups(NOTIFICATION_TYPE.PRAYER, [MY_ATHAN], i18n.t)
@@ -110,7 +110,7 @@ describe("AthanGroup", () => {
     setOverride({ enabled: false });
     await renderWithTheme(<AthanGroup prayerId={PRAYER} />);
 
-    expect(group()).toHaveAccessibleName(`${TITLE}, ${i18n.t("prayerDetail.athan.off")}`);
+    expect(group()).toHaveAccessibleName(`${TITLE}, ${i18n.t("common.off")}`);
     expect(group()).not.toBeChecked();
     expect(soundTrigger()).not.toBeOnTheScreen();
     expect(vibration()).not.toBeOnTheScreen();
