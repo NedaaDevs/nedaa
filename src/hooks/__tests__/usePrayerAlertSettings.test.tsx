@@ -142,6 +142,19 @@ describe("usePrayerAlertSettings", () => {
       expect(result.current.isCustom).toBe(false);
     });
 
+    it("clears the mark when the default moves to the prayer's value", async () => {
+      const { result } = await renderFor(PRAYER_ID.FAJR);
+      await act(() =>
+        result.current.update(NOTIFICATION_TYPE.PRAYER, NOTIFICATION_FIELD.SOUND, SOUND)
+      );
+
+      await act(() =>
+        store().updateDefault(NOTIFICATION_TYPE.PRAYER, NOTIFICATION_FIELD.SOUND, SOUND)
+      );
+
+      expect(result.current.isCustom).toBe(false);
+    });
+
     it("ignores another prayer's override", async () => {
       await store().updateOverride(
         PRAYER_ID.ASR,
