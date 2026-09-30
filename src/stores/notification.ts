@@ -221,12 +221,8 @@ export const useNotificationStore = create<NotificationStore>()(
             settings: { ...state.settings, enabled },
           }));
 
-          // If disabling, cancel all notifications
-          if (!enabled) {
-            await cancelAllScheduledNotifications();
-          } else {
-            await get().requestReschedule();
-          }
+          // The scheduler's own run cancels, so it never races a run in progress.
+          await get().requestReschedule();
         },
 
         updateQuickSetup: async (sound, vibration) => {
@@ -361,6 +357,7 @@ export const useNotificationStore = create<NotificationStore>()(
             duhaTime,
           } = get();
           if (!settings.enabled) {
+            await cancelAllScheduledNotifications();
             return {
               success: true,
               scheduledCount: 0,
