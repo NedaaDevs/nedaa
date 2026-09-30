@@ -1832,13 +1832,9 @@
   "prayerDetail.sections.calculation": "حساب",
   "prayerDetail.sections.alerts": "نماز کی اطلاعات",
   "prayerDetail.sections.alarms": "الارم",
-  "a11y.prayerDetail.soundPicker.manageLibraryHint": "آپ کی حسب ضرورت آوازیں کھولتا ہے",
   "a11y.prayerDetail.soundPicker.preview": "{{name}} سنیں",
   "a11y.prayerDetail.soundPicker.stop": "{{name}} روکیں",
   "a11y.prayerDetail.soundPicker.triggerHint": "منتخب کرنے کے لیے آوازیں دکھاتا ہے",
-  "prayerDetail.soundPicker.bundled": "بلٹ اِن آوازیں",
-  "prayerDetail.soundPicker.custom": "آپ کی آوازیں",
-  "prayerDetail.soundPicker.manageLibrary": "اپنی آوازیں منظم کریں",
   "prayerDetail.soundPicker.unset": "کوئی آواز منتخب نہیں",
   "a11y.prayerDetail.athan.hint": "اس نماز کے لیے اذان کی اطلاع آن یا آف کرتا ہے",
   "prayerDetail.athan.title": "اذان",
@@ -1878,5 +1874,6 @@
   "a11y.prayerDetail.iqama.choice_other": "اذان کے {{count}} منٹ بعد",
   "a11y.prayerDetail.preAthan.choice_one": "اذان سے {{count}} منٹ پہلے",
   "a11y.prayerDetail.preAthan.choice_other": "اذان سے {{count}} منٹ پہلے",
-  "prayerDetail.sections.playback": "اذان پلے بیک"
+  "prayerDetail.sections.playback": "اذان پلے بیک",
+  "prayerDetail.playback.global": "عمومی ترتیب"
 }

@@ -22,6 +22,6 @@ describe("actionsheet", () => {
   });
 
   it("lets content opt out of the fixed insets", () => {
-    expect(source()).toMatch(/unpadded \? undefined :/);
+    expect(source()).toMatch(/unpadded\s*\?\s*undefined\s*:/);
   });
 });
