@@ -109,6 +109,7 @@ export const useAppStore = create<AppState>()(
             mode: state.mode,
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
+            hijriDaysOffset: state.hijriDaysOffset,
             // Exclude loading state from persistence
           }),
           merge: (persisted, current) => {
