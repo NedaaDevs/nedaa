@@ -14,7 +14,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SOUND_PICKER_GROUP, type SoundPickerGroupId } from "@/constants/sounds";
 import { PlatformType } from "@/enums/app";
 import type { SoundChoice, SoundChoiceGroup } from "@/types/sound";
-import { soundPreviewManager } from "@/utils/sound";
+import { chosenSoundLabel, soundPreviewManager } from "@/utils/sound";
 
 const GROUP_TITLE = {
   [SOUND_PICKER_GROUP.BUNDLED]: "prayerDetail.soundPicker.bundled",
@@ -22,7 +22,7 @@ const GROUP_TITLE = {
 } as const satisfies Record<SoundPickerGroupId, ParseKeys>;
 
 export type SoundPickerProps<K extends string> = {
-  /** Names the trigger and the list, e.g. "Sound". */
+  /** Captions the trigger and names it and the list, e.g. "Sound". */
   label: string;
   /** Sources in order; an empty one is not shown. */
   groups: readonly SoundChoiceGroup<K>[];
@@ -58,8 +58,7 @@ export const SoundPicker = <K extends string>({
     setOpen(false);
   };
 
-  const chosen = groups.flatMap((group) => group.options).find((option) => option.value === value);
-  const chosenLabel = chosen?.label ?? t("prayerDetail.soundPicker.unset");
+  const chosenLabel = chosenSoundLabel(groups, value, t);
 
   const pick = (option: K) => {
     close();
@@ -82,6 +81,14 @@ export const SoundPicker = <K extends string>({
 
   return (
     <VStack gap="$tight">
+      {/* The trigger speaks the label, so a screen reader skips the caption. */}
+      <Text
+        size="xs"
+        color="$muted"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants">
+        {label}
+      </Text>
       <Pressable
         onPress={open ? close : () => setOpen(true)}
         accessibilityLabel={`${label}, ${chosenLabel}`}

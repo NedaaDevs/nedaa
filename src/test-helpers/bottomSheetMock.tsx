@@ -9,7 +9,14 @@ import {
   type ComponentType,
   type PropsWithChildren,
 } from "react";
-import { Pressable, ScrollView, View, type AccessibilityRole, type ViewProps } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  View,
+  type AccessibilityRole,
+  type ViewProps,
+  type ViewStyle,
+} from "react-native";
 
 /** Test ids for the parts gorhom draws around a sheet's content. */
 export const BOTTOM_SHEET_PART = {
@@ -46,6 +53,9 @@ type ModalProps = PropsWithChildren<
     onChange?: (index: number) => void;
     onDismiss?: () => void;
     overrideReduceMotion?: string;
+    topInset?: number;
+    backgroundStyle?: ViewStyle;
+    handleIndicatorStyle?: ViewStyle;
     backdropComponent?: ComponentType<BackdropProps>;
     containerComponent?: ComponentType<PropsWithChildren>;
   }

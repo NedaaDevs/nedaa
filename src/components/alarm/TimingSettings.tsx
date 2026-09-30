@@ -13,7 +13,7 @@ import { Minus, Plus } from "lucide-react-native";
 
 import { TimingConfig, TimingMode, AlarmType, DEFAULT_TIMING_CONFIG } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
-import { ALARM_TIMING_CHOICES, ALARM_TIMING_MODE } from "@/constants/Alarm";
+import { ALARM_TIMING_CHOICES, ALARM_TIMING_MODE, timingForMode } from "@/constants/Alarm";
 
 type Props = {
   value: TimingConfig;
@@ -38,10 +38,7 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
   const handleModeChange = (mode: TimingMode) => {
     hapticSelection();
-    onChange({
-      mode,
-      minutesBefore: mode === ALARM_TIMING_MODE.AT_PRAYER_TIME ? 0 : timing.minutesBefore || 15,
-    });
+    onChange(timingForMode(alarmType, mode));
   };
 
   const handleDecrease = () => {

@@ -116,6 +116,14 @@ describe("AthanGroup", () => {
     expect(vibration()).not.toBeOnTheScreen();
   });
 
+  // The trigger already speaks it, so a visible caption would be read twice.
+  it("reads the sound label once, on the trigger", async () => {
+    await renderWithTheme(<AthanGroup prayerId={PRAYER} />);
+
+    expect(soundTrigger()).toBeOnTheScreen();
+    expect(screen.queryByText(SOUND_LABEL)).not.toBeOnTheScreen();
+  });
+
   it("writes the switch to this prayer at once", async () => {
     await renderWithTheme(<AthanGroup prayerId={PRAYER} />);
 

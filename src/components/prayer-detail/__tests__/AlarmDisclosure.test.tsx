@@ -1,27 +1,28 @@
-import { Text } from "react-native";
+import { AccessibilityInfo, Text } from "react-native";
 import { usePathname } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
-import { act, renderHook, screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 import { renderRouter } from "expo-router/testing-library";
 
-import { AlarmDisclosure, useAlarmTypeFor } from "@/components/prayer-detail/AlarmDisclosure";
+import TimingSettings from "@/components/alarm/TimingSettings";
+import { AlarmDisclosure } from "@/components/prayer-detail/AlarmDisclosure";
 import {
   ALARM_TIMING_CHOICES,
   ALARM_TIMING_MODE,
   ALARM_TYPE,
   alarmSettingsHref,
+  timingForMode,
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { OTHER_TIMING, PRAYER_ID, PRAYER_IDS, type PrayerId } from "@/constants/Prayer";
 import { SOUND_ASSETS } from "@/constants/sounds";
 import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import { controlProblems } from "@/test-helpers/controls";
-import { ThemeProvider } from "@/test-helpers/theme";
+import { renderWithTheme, ThemeProvider } from "@/test-helpers/theme";
 import type { AlarmType, TimingConfig } from "@/types/alarm";
 import type { CustomSound } from "@/types/customSound";
-import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { alarmPermissionsGranted } from "@/utils/alarmPermissions";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 
 jest.mock("expo-alarm", () => ({ setAlarmSettings: jest.fn() }));
@@ -30,45 +31,18 @@ jest.mock("@/utils/alarmScheduler", () => ({
   scheduleFridayAlarm: jest.fn(),
 }));
 jest.mock("@/utils/alarmReport", () => ({ alarmLog: { e: jest.fn() } }));
+jest.mock("@/utils/alarmPermissions", () => ({ alarmPermissionsGranted: jest.fn() }));
+jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 
 const mockCancel = jest.fn();
 jest.mock("@/stores/alarm", () => ({
   useAlarmStore: { getState: () => ({ cancelAlarmsByType: mockCancel }) },
 }));
 
-let mockDay: DayPrayerTimes | null = null;
-jest.mock("@/hooks/useShownDay", () => ({
-  useShownDay: () => ({ now: new Date(0), day: mockDay, following: null }),
-}));
-
 const scheduleFajr = jest.mocked(scheduleFajrAlarm);
 const scheduleFriday = jest.mocked(scheduleFridayAlarm);
-
-/** A stored day whose every time is `at`; only Dhuhr's weekday matters here. */
-const dayAt = (timezone: string, at: string): DayPrayerTimes => ({
-  date: 0,
-  timezone,
-  timings: {
-    [PRAYER_ID.FAJR]: at,
-    [PRAYER_ID.DHUHR]: at,
-    [PRAYER_ID.ASR]: at,
-    [PRAYER_ID.MAGHRIB]: at,
-    [PRAYER_ID.ISHA]: at,
-  },
-  otherTimings: {
-    [OTHER_TIMING.SUNRISE]: at,
-    [OTHER_TIMING.SUNSET]: at,
-    [OTHER_TIMING.IMSAK]: at,
-    [OTHER_TIMING.MIDNIGHT]: at,
-    [OTHER_TIMING.FIRST_THIRD]: at,
-    [OTHER_TIMING.LAST_THIRD]: at,
-  },
-});
-
-// Friday noon at UTC+14 is still Thursday in UTC.
-const KIRITIMATI_FRIDAY_NOON = "2026-07-23T22:00:00.000Z";
-const RIYADH_FRIDAY_DHUHR = "2026-07-24T09:10:00.000Z";
-const RIYADH_SATURDAY_DHUHR = "2026-07-25T09:10:00.000Z";
+const permissionsGranted = jest.mocked(alarmPermissionsGranted);
+const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
 
 const ALARM_ID = "alarm-id";
 const INITIAL = useAlarmSettingsStore.getState();
@@ -82,15 +56,16 @@ const TITLE: Record<AlarmType, string> = {
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
-const renderDisclosure = (prayerId: PrayerId) =>
+const renderDisclosure = (type: AlarmType) =>
   renderRouter(
     {
       [BACK_DESTINATION.HOME.route]: () => (
         <>
-          <AlarmDisclosure prayerId={prayerId} />
+          <AlarmDisclosure type={type} />
           <Pathname />
         </>
       ),
+      [BACK_DESTINATION.SETTINGS_ALARM.route]: () => <Pathname />,
       "settings/alarm/[type]": () => <Pathname />,
     },
     {
@@ -128,55 +103,13 @@ beforeEach(() => {
   jest.mocked(ExpoAlarm.setAlarmSettings).mockResolvedValue(true);
   scheduleFajr.mockResolvedValue(ALARM_ID);
   scheduleFriday.mockResolvedValue(ALARM_ID);
+  permissionsGranted.mockResolvedValue(true);
   mockCancel.mockResolvedValue(undefined);
-  mockDay = dayAt("Asia/Riyadh", RIYADH_FRIDAY_DHUHR);
-});
-
-describe("useAlarmTypeFor", () => {
-  const typeFor = async (prayerId: PrayerId) =>
-    (await renderHook(() => useAlarmTypeFor(prayerId))).result.current;
-
-  it("offers the Fajr alarm for Fajr", async () => {
-    mockDay = dayAt("Asia/Riyadh", RIYADH_SATURDAY_DHUHR);
-    expect(await typeFor(PRAYER_ID.FAJR)).toBe(ALARM_TYPE.FAJR);
-  });
-
-  it("offers the Friday alarm for Dhuhr on a Friday only", async () => {
-    expect(await typeFor(PRAYER_ID.DHUHR)).toBe(ALARM_TYPE.FRIDAY);
-    mockDay = dayAt("Asia/Riyadh", RIYADH_SATURDAY_DHUHR);
-    expect(await typeFor(PRAYER_ID.DHUHR)).toBeNull();
-  });
-
-  it("reads Friday in the shown day's own zone", async () => {
-    mockDay = dayAt("Pacific/Kiritimati", KIRITIMATI_FRIDAY_NOON);
-    expect(await typeFor(PRAYER_ID.DHUHR)).toBe(ALARM_TYPE.FRIDAY);
-    mockDay = dayAt("UTC", KIRITIMATI_FRIDAY_NOON);
-    expect(await typeFor(PRAYER_ID.DHUHR)).toBeNull();
-  });
-
-  it("offers nothing for the other prayers or before the times load", async () => {
-    for (const id of PRAYER_IDS.filter((p) => p !== PRAYER_ID.FAJR && p !== PRAYER_ID.DHUHR)) {
-      expect(await typeFor(id)).toBeNull();
-    }
-    mockDay = null;
-    expect(await typeFor(PRAYER_ID.FAJR)).toBeNull();
-  });
 });
 
 describe("AlarmDisclosure", () => {
-  it("renders nothing for a prayer without an alarm", async () => {
-    await renderDisclosure(PRAYER_ID.ASR);
-    expect(screen.queryByRole("switch")).toBeNull();
-  });
-
-  it("renders nothing for Dhuhr on a day that is not Friday", async () => {
-    mockDay = dayAt("Asia/Riyadh", RIYADH_SATURDAY_DHUHR);
-    await renderDisclosure(PRAYER_ID.DHUHR);
-    expect(screen.queryByRole("switch")).toBeNull();
-  });
-
   it("shows the Fajr alarm off, with no body", async () => {
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     expect(alarmSwitch(ALARM_TYPE.FAJR).props.accessibilityState).toMatchObject({
       checked: false,
@@ -189,12 +122,10 @@ describe("AlarmDisclosure", () => {
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
   });
 
-  it("says the Friday alarm rings only on Fridays", async () => {
-    await renderDisclosure(PRAYER_ID.DHUHR);
+  it("says the Friday alarm is off while off, and on Fridays only once on", async () => {
+    await renderDisclosure(ALARM_TYPE.FRIDAY);
     expect(
-      screen.getByRole("switch", {
-        name: `${TITLE.friday}, ${i18n.t("alarm.settings.fridayEnableDescription")}`,
-      })
+      screen.getByRole("switch", { name: `${TITLE.friday}, ${i18n.t("common.off")}` })
     ).toBeTruthy();
 
     await act(async () => setAlarm(ALARM_TYPE.FRIDAY, true, BEFORE_30));
@@ -207,7 +138,7 @@ describe("AlarmDisclosure", () => {
 
   it("offers Fajr at prayer or before, with no minutes while at prayer", async () => {
     setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     const at = screen.getByRole("radio", { name: i18n.t("prayerDetail.alarm.mode.atPrayer") });
     expect(at.props.accessibilityState).toMatchObject({ selected: true });
@@ -222,22 +153,47 @@ describe("AlarmDisclosure", () => {
     ).toBeTruthy();
   });
 
-  it("switches Fajr to before at the smallest step, and back to zero minutes", async () => {
+  it("switches Fajr to before at its default offset, and back to zero minutes", async () => {
     const user = userEvent.setup();
     setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(screen.getByRole("radio", { name: i18n.t("prayerDetail.alarm.mode.before") }));
-    const smallest = ALARM_TIMING_CHOICES.fajr.minuteSteps.find((step) => step > 0);
-    expect(timingOf(ALARM_TYPE.FAJR)).toEqual({
-      mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME,
-      minutesBefore: smallest,
-    });
+    expect(timingOf(ALARM_TYPE.FAJR)).toEqual(
+      timingForMode(ALARM_TYPE.FAJR, ALARM_TIMING_MODE.BEFORE_PRAYER_TIME)
+    );
 
     await user.press(
       screen.getByRole("radio", { name: i18n.t("prayerDetail.alarm.mode.atPrayer") })
     );
     expect(timingOf(ALARM_TYPE.FAJR)).toEqual(AT_PRAYER);
+  });
+
+  it("moves Fajr before prayer at the offset the full timing settings choose", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    await renderWithTheme(
+      <TimingSettings value={AT_PRAYER} alarmType={ALARM_TYPE.FAJR} onChange={onChange} />
+    );
+    await user.press(
+      screen.getByRole("radio", { name: i18n.t("alarm.settings.beforePrayerTime") })
+    );
+    const chosenThere: TimingConfig = onChange.mock.calls[0][0];
+
+    setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
+    await renderDisclosure(ALARM_TYPE.FAJR);
+    await user.press(screen.getByRole("radio", { name: i18n.t("prayerDetail.alarm.mode.before") }));
+
+    expect(timingOf(ALARM_TYPE.FAJR)).toEqual(chosenThere);
+  });
+
+  it("keeps the minutes caption from being read before the pills that repeat it", async () => {
+    setAlarm(ALARM_TYPE.FAJR, true, BEFORE_30);
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    const caption = i18n.t("prayerDetail.alarm.minutesBefore");
+    expect(screen.queryByText(caption)).toBeNull();
+    expect(screen.getByText(caption, { includeHiddenElements: true })).toBeTruthy();
   });
 
   it("offers Fajr's steps above zero as pills, and a pill writes its minutes", async () => {
@@ -246,7 +202,7 @@ describe("AlarmDisclosure", () => {
       mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME,
       minutesBefore: 15,
     });
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     const pills = screen.getByLabelText(i18n.t("prayerDetail.alarm.minutesBefore"));
     expect(pills).toBeTruthy();
@@ -271,7 +227,7 @@ describe("AlarmDisclosure", () => {
   it("offers Friday only minutes before, from its own steps", async () => {
     const user = userEvent.setup();
     setAlarm(ALARM_TYPE.FRIDAY, true, BEFORE_30);
-    await renderDisclosure(PRAYER_ID.DHUHR);
+    await renderDisclosure(ALARM_TYPE.FRIDAY);
 
     expect(
       screen.queryByRole("radio", { name: i18n.t("prayerDetail.alarm.mode.atPrayer") })
@@ -291,19 +247,20 @@ describe("AlarmDisclosure", () => {
     const user = userEvent.setup();
     const schedule = deferred<string | null>();
     scheduleFajr.mockReturnValue(schedule.promise);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
-    expect(
-      screen.getByRole("switch", {
-        name: `${TITLE.fajr}, ${i18n.t("prayerDetail.alarm.summary.pending")}`,
-      })
-    ).toBeTruthy();
+    const busy = screen.getByRole("switch", {
+      name: `${TITLE.fajr}, ${i18n.t("prayerDetail.alarm.summary.pending")}`,
+    });
+    expect(busy.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
 
     await act(async () => schedule.resolve(ALARM_ID));
     expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(true);
     expect(alarmSwitch(ALARM_TYPE.FAJR).props.accessibilityState).toMatchObject({
       checked: true,
+      busy: false,
+      disabled: false,
     });
     expect(
       screen.getByRole("switch", {
@@ -316,7 +273,7 @@ describe("AlarmDisclosure", () => {
     const user = userEvent.setup();
     const schedule = deferred<string | null>();
     scheduleFajr.mockReturnValue(schedule.promise);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
@@ -329,7 +286,7 @@ describe("AlarmDisclosure", () => {
   it("follows the store back off when the schedule fails, and says so", async () => {
     const user = userEvent.setup();
     scheduleFajr.mockResolvedValue(null);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
 
@@ -342,12 +299,39 @@ describe("AlarmDisclosure", () => {
         name: `${TITLE.fajr}, ${i18n.t("prayerDetail.alarm.summary.failed")}`,
       })
     ).toBeTruthy();
+    expect(announce).toHaveBeenCalledWith(i18n.t("prayerDetail.alarm.summary.failed"));
+  });
+
+  it("opens the alarm permissions instead of turning on while one is missing", async () => {
+    const user = userEvent.setup();
+    permissionsGranted.mockResolvedValue(false);
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    await user.press(alarmSwitch(ALARM_TYPE.FAJR));
+
+    expect(scheduleFajr).not.toHaveBeenCalled();
+    expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(false);
+    expect(screen.getByTestId("pathname")).toHaveTextContent(
+      BACK_DESTINATION.SETTINGS_ALARM.href as string
+    );
+  });
+
+  it("turns off without asking for permissions", async () => {
+    const user = userEvent.setup();
+    permissionsGranted.mockResolvedValue(false);
+    setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    await user.press(alarmSwitch(ALARM_TYPE.FAJR));
+
+    expect(permissionsGranted).not.toHaveBeenCalled();
+    expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(false);
   });
 
   it("turns the alarm off and cancels it", async () => {
     const user = userEvent.setup();
     setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
 
@@ -370,7 +354,7 @@ describe("AlarmDisclosure", () => {
     };
     useCustomSoundsStore.setState({ customSounds: [sound] });
     setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(
       screen.getByLabelText(
@@ -395,7 +379,7 @@ describe("AlarmDisclosure", () => {
     useAlarmSettingsStore.setState({
       fajr: { ...useAlarmSettingsStore.getState().fajr, enabled: true, sound: "iOS-Radar" },
     });
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     expect(
       screen.getByLabelText(
@@ -404,13 +388,10 @@ describe("AlarmDisclosure", () => {
     ).toBeTruthy();
   });
 
-  it.each([
-    [PRAYER_ID.FAJR, ALARM_TYPE.FAJR],
-    [PRAYER_ID.DHUHR, ALARM_TYPE.FRIDAY],
-  ] as const)("links %s to its own alarm's full settings", async (prayerId, type) => {
+  it.each(Object.values(ALARM_TYPE))("links %s to its own alarm's full settings", async (type) => {
     const user = userEvent.setup();
     setAlarm(type, true, type === ALARM_TYPE.FAJR ? AT_PRAYER : BEFORE_30);
-    await renderDisclosure(prayerId);
+    await renderDisclosure(type);
 
     await user.press(
       screen.getByRole("button", { name: new RegExp(i18n.t("prayerDetail.alarm.more.title")) })
@@ -428,7 +409,7 @@ describe("AlarmDisclosure", () => {
       mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME,
       minutesBefore: 15,
     });
-    await renderDisclosure(PRAYER_ID.FAJR);
+    await renderDisclosure(ALARM_TYPE.FAJR);
 
     expect(controlProblems()).toEqual([]);
   });
