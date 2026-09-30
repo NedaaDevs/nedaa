@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 
@@ -36,6 +36,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 // Utils
 import { getDateLocale, HijriNative, timeZonedNow } from "@/utils/date";
 import { formatNumberToLocale } from "@/utils/number";
+import { HIJRI_OFFSETS, hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
 
 type AdjustmentOption = {
   value: number;
@@ -64,35 +65,10 @@ const HijriSettings = () => {
 
   const formattedDateDetails = `${formattedDay} ${hijriMonth} ${formattedYear}`;
 
-  const adjustmentOptions: AdjustmentOption[] = useMemo(() => {
-    const options: AdjustmentOption[] = [];
-
-    // Generate options from -5 to +5
-    for (let i = -5; i <= 5; i++) {
-      let label: string;
-
-      if (i === 0) {
-        label = t("settings.hijri.date.adjustments.noAdjustment");
-      } else {
-        const prefix =
-          i < 0
-            ? t("settings.hijri.date.adjustments.minus")
-            : t("settings.hijri.date.adjustments.plus");
-
-        const absCount = Math.abs(i);
-        const days = t("settings.hijri.date.adjustments.days", { count: absCount });
-        label = `${prefix} ${formatNumberToLocale(days)}`;
-      }
-
-      options.push({
-        value: i,
-        label,
-      });
-    }
-
-    return options;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale, t]);
+  const adjustmentOptions: AdjustmentOption[] = HIJRI_OFFSETS.map((value) => ({
+    value,
+    label: hijriAdjustmentLabel(value, t),
+  }));
 
   const handleSelectAdjustment = (value: number) => {
     hapticSelection();
@@ -107,7 +83,7 @@ const HijriSettings = () => {
     <Background>
       <ScreenHeader
         title={t("settings.hijri.date.title")}
-        back={{ fallback: BACK_DESTINATION.SETTINGS_ADVANCED }}
+        back={{ fallback: BACK_DESTINATION.SETTINGS }}
       />
 
       <Box flex={1} padding="$4">
