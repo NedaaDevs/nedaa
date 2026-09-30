@@ -1,7 +1,9 @@
 import { screen } from "@testing-library/react-native";
 
+import { getTokenValue } from "tamagui";
+
 import config from "../../../../tamagui.config";
-import { NumberBadge } from "@/components/ui/number-badge";
+import { NUMBER_BADGE_STYLE, NumberBadge } from "@/components/ui/number-badge";
 import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -59,5 +61,25 @@ describe("NumberBadge", () => {
     await renderWithTheme(<NumberBadge n={N} color={INK} bg={FILL} />);
 
     expect(badge()).toHaveStyle({ color: INK, borderColor: INK, backgroundColor: FILL });
+  });
+
+  it("rings a disc by default", async () => {
+    await renderWithTheme(<NumberBadge n={N} size="md" />);
+
+    expect(badge()).toHaveStyle({ borderRadius: 12, borderWidth: 1.5 });
+  });
+
+  it("fills a rounded square in the accent, inked in the page colour", async () => {
+    await renderWithTheme(<NumberBadge n={N} size="md" badgeStyle={NUMBER_BADGE_STYLE.FILLED} />);
+
+    expect(badge()).toHaveStyle({
+      width: 24,
+      height: 24,
+      borderRadius: getTokenValue("$chip", "radius"),
+      borderWidth: 0,
+      backgroundColor: LIGHT.accent.val,
+      color: LIGHT.bg.val,
+      fontWeight: "700",
+    });
   });
 });

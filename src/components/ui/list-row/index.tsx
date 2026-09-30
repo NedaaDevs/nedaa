@@ -1,8 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
-import { Box } from "@/components/ui/box";
 import { HStack, type HStackProps } from "@/components/ui/hstack";
 import { Icon, type IconProps, type IconSize } from "@/components/ui/icon";
+import { IconTile, TILE_STROKE } from "@/components/ui/icon-tile";
 import { Pressable } from "@/components/ui/pressable";
 import { Text, type TextProps } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -17,13 +18,6 @@ export const LIST_ROW_VARIANT = {
   GROUPED: "grouped",
 } as const;
 export type ListRowVariant = (typeof LIST_ROW_VARIANT)[keyof typeof LIST_ROW_VARIANT];
-
-/** Test ids for the row's parts. */
-export const LIST_ROW_PART = { TILE: "list-row-tile" } as const;
-
-/** The tinted tile's side, from the Settings design; no size token is 38. */
-const TILE_SIZE = 38;
-const TILE_STROKE = 1.75;
 
 type VariantStyle = {
   frame: Pick<
@@ -109,20 +103,12 @@ export const ListRow = ({
   variant = LIST_ROW_VARIANT.CARD,
   onPress,
 }: Props) => {
+  const { t } = useTranslation();
   const { isRTL } = useRTL();
   const style = VARIANT_STYLE[variant];
   const leading =
     icon && tile ? (
-      <Box
-        testID={LIST_ROW_PART.TILE}
-        width={TILE_SIZE}
-        height={TILE_SIZE}
-        borderRadius="$control"
-        backgroundColor="$tile"
-        alignItems="center"
-        justifyContent="center">
-        <Icon as={icon} size="lg" color="$accent" strokeWidth={TILE_STROKE} />
-      </Box>
+      <IconTile icon={icon} />
     ) : icon ? (
       <Icon as={icon} size={style.icon} color="$muted" />
     ) : null;
@@ -148,7 +134,7 @@ export const ListRow = ({
   return (
     <Pressable
       onPress={onPress}
-      accessibilityLabel={status ? `${title}, ${status}` : title}
+      accessibilityLabel={status ? t("a11y.join", { first: title, second: status }) : title}
       accessibilityHint={hint}
       flexDirection="row"
       alignItems="center"

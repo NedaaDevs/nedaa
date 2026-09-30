@@ -25,7 +25,7 @@ export const useWhatsNew = () => {
     [dismissedFeatureCards, ctx]
   );
 
-  // Opening from Settings shows every applicable entry, seen or not — the
+  // Opening from About shows every applicable entry, seen or not — the
   // unseen set is empty for anyone who already dismissed the sheet.
   const allEntries = useMemo(() => getApplicableEntries(ctx), [ctx]);
 
