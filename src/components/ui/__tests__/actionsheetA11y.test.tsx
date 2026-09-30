@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
 import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import i18n from "@/localization/i18n";
 import { BOTTOM_SHEET_PART, modalProps } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -138,6 +139,25 @@ describe("Actionsheet accessibility", () => {
 
     const backdrop = screen.getByTestId(BOTTOM_SHEET_PART.BACKDROP);
     expect(backdrop.props.accessibilityLabel).toBe(i18n.t("common.close"));
+  });
+
+  it("tints the scrim navy, at the strength its colour carries", async () => {
+    await renderWithTheme(<Screen open />);
+
+    expect(screen.getByTestId(BOTTOM_SHEET_PART.BACKDROP)).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.scrim.hex,
+      opacity: 1,
+    });
+  });
+
+  it("draws a 40 by 5 handle, round at the ends", async () => {
+    await renderWithTheme(<Screen open />);
+
+    expect(lastSheetProps()?.handleIndicatorStyle).toMatchObject({
+      width: getTokenValue("$10", "size"),
+      height: 5,
+      borderRadius: getTokenValue("$pill", "radius"),
+    });
   });
 
   // A sheet sized to its content stops short of the status bar.
