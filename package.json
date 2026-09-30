@@ -51,7 +51,7 @@
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"
     },
     "transformIgnorePatterns": [
-      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|standard-navigation|tamagui|@tamagui|react-native-svg|@gorhom|moti|react-native-reanimated|react-native-worklets))",
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|standard-navigation|tamagui|@tamagui|react-native-svg|@gorhom|moti|react-native-reanimated|react-native-worklets|yoga-layout))",
       "/node_modules/react-native-reanimated/plugin/",
       "/node_modules/@react-native/babel-preset/"
     ],
@@ -156,7 +156,8 @@
     "lint-staged": "^17.3.0",
     "metro-minify-terser": "^0.83.8",
     "prettier": "^3.9.6",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "yoga-layout": "^3.2.1"
   },
   "private": true,
   "patchedDependencies": {
