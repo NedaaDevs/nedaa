@@ -11,8 +11,13 @@ jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduc
 
 const hidden = { includeHiddenElements: true };
 const items = () => screen.getAllByTestId(GRID_PART.ITEM, hidden);
-const widthOf = (node: ReturnType<typeof items>[number]) =>
-  Object.assign({}, ...[node.props.style].flat(Infinity)).width;
+const styleOf = (node: ReturnType<typeof items>[number]) =>
+  Object.assign({}, ...[node.props.style].flat(Infinity));
+// A cell's widest extent: a wide item's width, a column's cap.
+const widthOf = (node: ReturnType<typeof items>[number]) => {
+  const style = styleOf(node);
+  return style.maxWidth ?? style.width;
+};
 
 const renderGrid = () =>
   renderWithTheme(
