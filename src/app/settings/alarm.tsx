@@ -15,6 +15,7 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
+import { ListRow } from "@/components/ui/list-row";
 import { Spinner } from "@/components/ui/spinner";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -37,6 +38,7 @@ import {
   ShieldAlert,
   CircleHelp,
   Layers,
+  Volume1,
 } from "lucide-react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
@@ -485,6 +487,20 @@ const AlarmSettings = () => {
               </Box>
             ))}
           </VStack>
+
+          {/* Only Android plays sounds the user adds. */}
+          {Platform.OS === PlatformType.ANDROID && (
+            <Box marginHorizontal="$4" marginTop="$4">
+              <ListRow
+                icon={Volume1}
+                title={t("notification.customSound.manage")}
+                hint={t("a11y.opens", {
+                  name: t(BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.title),
+                })}
+                onPress={() => router.push(BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.href)}
+              />
+            </Box>
+          )}
 
           <Pressable
             accessibilityRole="button"
