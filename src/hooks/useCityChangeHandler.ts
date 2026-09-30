@@ -5,15 +5,11 @@ import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 
 export const useCityChangeHandler = () => {
   const locationStore = useLocationStore();
-  const { updateState, executeUpdate, retry } = useLocationUpdate();
+  const { updateState, executeUpdate } = useLocationUpdate();
 
+  // A failed update resolves false; the modal stays open on its retry UI.
   const handleCityChangeUpdate = useCallback(async () => {
-    try {
-      await executeUpdate();
-      locationStore.dismissCityChangeModal();
-    } catch {
-      // Don't dismiss — let the user see the error/retry UI in the modal
-    }
+    if (await executeUpdate()) locationStore.dismissCityChangeModal();
   }, [executeUpdate, locationStore]);
 
   const checkForCityChange = useCallback(async () => {
@@ -27,7 +23,7 @@ export const useCityChangeHandler = () => {
     handleCityChangeUpdate,
     dismissCityChangeModal: locationStore.dismissCityChangeModal,
     checkForCityChange,
-    retryUpdate: retry,
+    retryUpdate: handleCityChangeUpdate,
   };
 };
 
