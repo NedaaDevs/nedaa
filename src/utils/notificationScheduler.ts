@@ -35,7 +35,7 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 import { calculateIshraq, calculateDuha } from "@/utils/otherTimingCalculations";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { NOTIFICATION_CHANNEL_ID, NOTIFICATION_TYPE } from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
@@ -122,7 +122,10 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_morning",
-          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_morning" : undefined,
+          channelId:
+            Platform.OS === PlatformType.ANDROID
+              ? NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING
+              : undefined,
           timezone,
         }
       );
@@ -157,7 +160,10 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_evening",
-          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_evening" : undefined,
+          channelId:
+            Platform.OS === PlatformType.ANDROID
+              ? NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING
+              : undefined,
           timezone,
         }
       );
@@ -274,7 +280,10 @@ const scheduleQuranReminderNotifications = async (
         {
           vibrate: true,
           categoryId: "quran_reminder",
-          channelId: Platform.OS === PlatformType.ANDROID ? "quran_reminder" : undefined,
+          channelId:
+            Platform.OS === PlatformType.ANDROID
+              ? NOTIFICATION_CHANNEL_ID.QURAN_REMINDER
+              : undefined,
           weekday,
         }
       );
