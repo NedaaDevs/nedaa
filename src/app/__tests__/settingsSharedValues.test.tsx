@@ -37,13 +37,14 @@ const renderSideBySide = (screens: ReactNode) =>
 
 /** A row's summary: its label less the title that leads it. */
 const statusOf = (title: string) => {
+  const lead = i18n.t("a11y.join", { first: title, second: "" });
   const label = String(
     screen
       .getAllByRole("button")
       .map((node) => node.props.accessibilityLabel)
-      .find((name) => String(name).startsWith(`${title}, `))
+      .find((name) => String(name).startsWith(lead))
   );
-  return label.slice(title.length + 2);
+  return label.slice(lead.length);
 };
 
 const initialAlarms = useAlarmSettingsStore.getState();
