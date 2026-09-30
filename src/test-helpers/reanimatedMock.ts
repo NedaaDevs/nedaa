@@ -31,6 +31,7 @@ export const Easing = {
   inOut: (easing: unknown) => easing,
   cubic: (t: number) => t,
   linear: (t: number) => t,
+  bezier: (...points: number[]) => ({ bezier: points }),
 };
 
 /** A layout transition's builder chain, kept as one object the tests can spot. */
