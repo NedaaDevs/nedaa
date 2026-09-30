@@ -7,9 +7,10 @@ import React, {
   useRef,
   useState,
   type PropsWithChildren,
+  type ReactNode,
   type RefObject,
 } from "react";
-import { styled, View, Text as TamaguiText } from "tamagui";
+import { getTokenValue, styled, View, Text as TamaguiText } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { useTheme, useThemeColor } from "@/components/ui/theme-color";
 import { useTextScale } from "@/hooks/useTextScale";
@@ -25,6 +26,7 @@ import {
   type HostInstance,
 } from "react-native";
 import { ReduceMotion } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
@@ -32,7 +34,7 @@ import {
   useBottomSheetModal,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { useAppCovered, useCoverApp } from "@/components/ui/actionsheet/cover";
+import { useAppCovered, useCoverApp, useSheetLayer } from "@/components/ui/actionsheet/cover";
 import { PlatformType } from "@/enums/app";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -47,6 +49,9 @@ const focusOn = (node: HostInstance | null | undefined) => {
   if (node) AccessibilityInfo.sendAccessibilityEvent(node, "focus");
 };
 
+/** Drawn in the top sheet's layer, where iOS lets a reader reach it. */
+const ActionsheetOverlay = createContext<ReactNode>(null);
+
 /** Where ActionsheetTitle registers its view for the sheet to focus. */
 const TitleContext = createContext<RefObject<RNView | null> | null>(null);
 
@@ -54,6 +59,8 @@ const TitleContext = createContext<RefObject<RNView | null> | null>(null);
 // and the escape gesture closes the top sheet.
 const ModalLayer = ({ children }: PropsWithChildren) => {
   const { dismiss } = useBottomSheetModal();
+  const top = useSheetLayer();
+  const overlay = use(ActionsheetOverlay);
   return (
     <RNView
       testID={ACTIONSHEET_PART.LAYER}
@@ -62,6 +69,7 @@ const ModalLayer = ({ children }: PropsWithChildren) => {
       accessibilityViewIsModal
       onAccessibilityEscape={() => dismiss()}>
       {children}
+      {top ? overlay : null}
     </RNView>
   );
 };
@@ -94,6 +102,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   const theme = useTheme();
   const { t } = useTranslation();
   const reduced = useReducedMotion();
+  const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<RNView>(null);
   const hasPresented = useRef(false);
@@ -174,6 +183,8 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       ref={ref}
       snapPoints={fitContent ? undefined : points}
       enableDynamicSizing={fitContent}
+      // A tall body stops below the status bar and scrolls.
+      topInset={fitContent ? insets.top + getTokenValue("$section", "space") : undefined}
       enablePanDownToClose
       onChange={handleChange}
       onDismiss={handleDismiss}
@@ -331,6 +342,7 @@ export {
   Actionsheet,
   ActionsheetBackdrop,
   ActionsheetContent,
+  ActionsheetOverlay,
   ActionsheetDragIndicatorWrapper,
   ActionsheetDragIndicator,
   ActionsheetItem,
