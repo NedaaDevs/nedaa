@@ -1,5 +1,11 @@
 import { createContext, use, useState, type ReactNode } from "react";
-import { View, type DimensionValue, type LayoutChangeEvent } from "react-native";
+import {
+  PixelRatio,
+  View,
+  type DimensionValue,
+  type LayoutChangeEvent,
+  type ViewStyle,
+} from "react-native";
 import Animated, { Easing, LinearTransition } from "react-native-reanimated";
 import { getTokenValue, type SpaceTokens } from "tamagui";
 
@@ -40,13 +46,23 @@ const GridRoot = ({ columns, gap, children }: GridProps) => {
   );
 };
 
-/** One cell; `wide` spans the row. Before measuring it takes a share. */
+type Cell = Omit<Columns, "animate"> & { wide?: boolean; hairline: number };
+
+// A measured width is pixel-rounded and Yoga wraps on any overflow, so a
+// column cell starts one hairline short and grows back to at most a column.
+export const gridCellStyle = ({ wide, column, full, share, hairline }: Cell): ViewStyle => {
+  if (wide) return { width: full ?? "100%" };
+  if (column === undefined) return { width: share };
+  return { flexBasis: column - hairline, flexGrow: 1, maxWidth: column };
+};
+
+/** One cell; `wide` spans the row. */
 const GridItem = ({ wide, children }: { wide?: boolean; children: ReactNode }) => {
-  const { column, full, share, animate } = use(GridContext);
-  const width = (wide ? full : column) ?? (wide ? "100%" : share);
+  const { animate, ...columns } = use(GridContext);
+  const style = gridCellStyle({ ...columns, wide, hairline: 1 / PixelRatio.get() });
 
   return (
-    <Animated.View testID={GRID_PART.ITEM} layout={animate ? GLIDE : undefined} style={{ width }}>
+    <Animated.View testID={GRID_PART.ITEM} layout={animate ? GLIDE : undefined} style={style}>
       {children}
     </Animated.View>
   );
