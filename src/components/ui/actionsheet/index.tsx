@@ -196,12 +196,12 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       containerComponent={ModalLayer}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
-        backgroundColor: theme.backgroundSecondary?.val,
+        backgroundColor: theme.raised.val,
         // $sheet. Set explicitly, or gorhom's own default applies.
         borderTopLeftRadius: SHEET_RADIUS,
         borderTopRightRadius: SHEET_RADIUS,
       }}
-      handleIndicatorStyle={{ backgroundColor: theme.backgroundMuted?.val }}>
+      handleIndicatorStyle={{ backgroundColor: theme.handle.val }}>
       <TitleContext value={title}>{children}</TitleContext>
     </BottomSheetModal>
   );
