@@ -16,13 +16,10 @@ import { useCountdownTimer } from "@/hooks/useCountdownTimer";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { localizeDigits } from "@/utils/digits";
-import { formatCount, type FocusPrayer } from "@/utils/focusCount";
+import { countReserve, formatCount, type FocusPrayer } from "@/utils/focusCount";
 import { prayerNameKey } from "@/utils/prayerName";
 import { spokenDuration } from "@/utils/spokenDuration";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
-
-/** The widest figures the block shows, with and without an hour of seconds. */
-const WIDEST = { minutes: "00:00", hours: "00:00:00" } as const;
 
 export const FOCUS_COUNTDOWN_PART = {
   ROW: "focus-countdown-row",
@@ -105,7 +102,7 @@ export const FocusCountdown = () => {
           alignItems="flex-start">
           <Countdown
             value={digits(formatCount(count.seconds, count.precise, count.axis))}
-            reserve={digits(count.precise && count.seconds >= 3600 ? WIDEST.hours : WIDEST.minutes)}
+            reserve={digits(countReserve(count))}
             counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
             openKey={opened}
             switchKey={count.axis}
