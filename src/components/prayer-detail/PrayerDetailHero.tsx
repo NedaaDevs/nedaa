@@ -7,6 +7,7 @@ import { PRAYER_ICONS } from "@/components/today/prayerIcons";
 import { ActionsheetTitle } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
+import { COUNT_DIRECTION, Countdown, Rolling } from "@/components/ui/countdown";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
@@ -19,7 +20,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatPrayerTime } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
-import { formatCount } from "@/utils/focusCount";
+import { countReserve, formatCount } from "@/utils/focusCount";
 import { prayerCards } from "@/utils/prayerCards";
 import { prayerNameKey } from "@/utils/prayerName";
 import { spokenDuration } from "@/utils/spokenDuration";
@@ -91,12 +92,23 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
           borderWidth={1}
           borderColor="$border"
           backgroundColor="$surface2Soft">
-          <Text size="2xl" bold numeric color="$fg">
-            {digits(formatCount(count.seconds, count.precise, count.axis))}
-          </Text>
-          <Text size="sm" color="$muted" flex={1}>
-            {t(until ? "today.focus.until" : "today.focus.since", { prayer: name })}
-          </Text>
+          <Countdown
+            value={digits(formatCount(count.seconds, count.precise, count.axis))}
+            reserve={digits(countReserve(count))}
+            counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
+            openKey={0}
+            switchKey={count.axis}
+            size="2xl"
+            bold
+            color="$fg"
+          />
+          <VStack flex={1}>
+            <Rolling
+              value={t(until ? "today.focus.until" : "today.focus.since", { prayer: name })}
+              size="sm"
+              color="$muted"
+            />
+          </VStack>
           <Icon as={ArrowDownUp} size="md" color="$muted" />
         </Pressable>
       )}
