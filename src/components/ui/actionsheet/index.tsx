@@ -176,12 +176,14 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
-        opacity={0.5}
+        // The scrim colour carries its own alpha.
+        opacity={1}
+        style={{ backgroundColor: theme.scrim.val }}
         pressBehavior="close"
         accessibilityLabel={t("common.close")}
       />
     ),
-    [t]
+    [t, theme.scrim.val]
   );
 
   return (
@@ -207,8 +209,20 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
         // $sheet. Set explicitly, or gorhom's own default applies.
         borderTopLeftRadius: SHEET_RADIUS,
         borderTopRightRadius: SHEET_RADIUS,
+        // No shadow token exists; offset and blur are the design's.
+        boxShadow: `0 -16px 44px ${theme.shadow.val}`,
       }}
-      handleIndicatorStyle={{ backgroundColor: theme.handle.val }}>
+      handleStyle={{
+        paddingTop: getTokenValue("$2.5", "space"),
+        paddingBottom: getTokenValue("$1", "space"),
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: theme.handle.val,
+        width: getTokenValue("$10", "size"),
+        // No size token sits at 5.
+        height: 5,
+        borderRadius: getTokenValue("$pill", "radius"),
+      }}>
       <TitleContext value={title}>{children}</TitleContext>
     </BottomSheetModal>
   );
@@ -237,7 +251,13 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
   return (
     <BottomSheetScrollView
       contentContainerStyle={
-        unpadded ? undefined : { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24 }
+        unpadded
+          ? undefined
+          : {
+              paddingHorizontal: getTokenValue("$group", "space"),
+              paddingTop: getTokenValue("$2", "space"),
+              paddingBottom: getTokenValue("$6", "space"),
+            }
       }>
       {children}
     </BottomSheetScrollView>
