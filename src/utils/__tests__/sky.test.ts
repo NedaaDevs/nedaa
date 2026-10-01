@@ -1,6 +1,15 @@
+import { NATIVE_SCHEME } from "@/constants/Appearance";
 import { BRIGHTNESS, NEDAA_DARK, NEDAA_LIGHT, PHASE_GRADIENTS } from "@/constants/Palette";
 import { PHASE } from "@/constants/Phase";
-import { CELESTIAL_BODY, DARK_SKY, LIGHT_SKY, SKY_ARC } from "@/constants/Sky";
+import {
+  ADAPTIVE_SWATCH_WEIGHT,
+  CELESTIAL_BODY,
+  DARK_SKY,
+  LIGHT_SKY,
+  SKY_ARC,
+} from "@/constants/Sky";
+import { AppMode } from "@/enums/app";
+import { isDarkMode } from "@/utils/appearance";
 import processBackgroundImage from "react-native/Libraries/StyleSheet/processBackgroundImage";
 
 import {
@@ -10,6 +19,8 @@ import {
   flattenOver,
   skyBackgroundImage,
   skyScene,
+  skySceneFor,
+  skySwatchFor,
 } from "@/utils/sky";
 
 describe("fadedDisc", () => {
@@ -249,5 +260,77 @@ describe("discOverlaps", () => {
 
   it("finds nothing with no boxes", () => {
     expect(discOverlaps(150, 120, 12, [])).toBe(false);
+  });
+});
+
+const MODES = Object.values(AppMode);
+const SCHEMES = [NATIVE_SCHEME.LIGHT, NATIVE_SCHEME.DARK, null] as const;
+const PHASES = [...Object.values(PHASE), undefined];
+const EVERY_CASE = MODES.flatMap((mode) =>
+  SCHEMES.flatMap((scheme) => PHASES.map((phase) => [mode, scheme, phase] as const))
+);
+
+describe("skySceneFor", () => {
+  // The sky's brightness is the app's: the same rule over every input.
+  it.each(EVERY_CASE)(
+    "%s on a %s phone at %s paints the app's brightness",
+    (mode, scheme, phase) => {
+      const dark = isDarkMode(mode, scheme, phase);
+
+      expect(skySceneFor(mode, scheme, phase).key.startsWith(dark ? "dark:" : "light:")).toBe(true);
+    }
+  );
+
+  it("tints by phase under Adaptive only", () => {
+    expect(skySceneFor(AppMode.ADAPTIVE, NATIVE_SCHEME.LIGHT, PHASE.ASR)).toEqual(
+      skyScene(BRIGHTNESS.LIGHT, PHASE.ASR)
+    );
+    expect(skySceneFor(AppMode.LIGHT, NATIVE_SCHEME.LIGHT, PHASE.ASR)).toEqual(
+      skyScene(BRIGHTNESS.LIGHT, undefined)
+    );
+    expect(skySceneFor(AppMode.SYSTEM, NATIVE_SCHEME.DARK, PHASE.MAGHRIB)).toEqual(
+      skyScene(BRIGHTNESS.DARK, undefined)
+    );
+  });
+});
+
+describe("skySwatchFor", () => {
+  const keys = (mode: AppMode) => skySwatchFor(mode).map((band) => band.scene.key);
+
+  it("paints a fixed mode as its own plain sky", () => {
+    expect(keys(AppMode.LIGHT)).toEqual([skyScene(BRIGHTNESS.LIGHT, undefined).key]);
+    expect(keys(AppMode.DARK)).toEqual([skyScene(BRIGHTNESS.DARK, undefined).key]);
+  });
+
+  it("splits System into the dark and the light sky", () => {
+    expect(keys(AppMode.SYSTEM)).toEqual([
+      skyScene(BRIGHTNESS.DARK, undefined).key,
+      skyScene(BRIGHTNESS.LIGHT, undefined).key,
+    ]);
+  });
+
+  // The day's phases in order, each as Adaptive paints it, whatever the hour.
+  it("bands Adaptive by every phase in the day's order", () => {
+    const bands = skySwatchFor(AppMode.ADAPTIVE);
+
+    expect(bands.map((band) => band.scene)).toEqual(
+      Object.values(PHASE).map((phase) => skySceneFor(AppMode.ADAPTIVE, null, phase))
+    );
+    expect(bands.map((band) => band.weight)).toEqual(
+      Object.values(PHASE).map((phase) => ADAPTIVE_SWATCH_WEIGHT[phase])
+    );
+  });
+
+  // One sun in the day band; a disc in every narrow band would crowd it.
+  it("draws Adaptive's sun on its day band alone", () => {
+    const bodies = skySwatchFor(AppMode.ADAPTIVE).map((band) => band.bodies);
+
+    expect(bodies).toEqual(Object.values(PHASE).map((phase) => phase === PHASE.DAY));
+  });
+
+  it("draws the sun or moon on every band of the other modes", () => {
+    for (const mode of [AppMode.LIGHT, AppMode.DARK, AppMode.SYSTEM]) {
+      expect(skySwatchFor(mode).every((band) => band.bodies)).toBe(true);
+    }
   });
 });

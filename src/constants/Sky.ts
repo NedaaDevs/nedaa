@@ -2,6 +2,7 @@
 // Positions and radii are fractions of the screen box; sizes are points.
 
 import type { PaletteEntry } from "@/constants/Palette";
+import { PHASE, type Phase } from "@/constants/Phase";
 
 export type SkyStop = { readonly offset: number; readonly color: PaletteEntry };
 
@@ -153,3 +154,12 @@ export const MOON_GLYPH = {
   /** How far a young moon tilts its lit limb toward the sun below the horizon. */
   tiltDegrees: 38,
 } as const;
+
+/** Each phase's share of the Adaptive swatch, from the Appearance design. */
+export const ADAPTIVE_SWATCH_WEIGHT: Record<Phase, number> = {
+  [PHASE.DAWN]: 20,
+  [PHASE.DAY]: 27,
+  [PHASE.ASR]: 20,
+  [PHASE.MAGHRIB]: 17,
+  [PHASE.NIGHT]: 16,
+};
