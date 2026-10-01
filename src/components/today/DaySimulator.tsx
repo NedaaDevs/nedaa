@@ -1,11 +1,11 @@
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
-import { useColorScheme } from "react-native";
 import { parseISO } from "date-fns";
 
 import { BrightnessTheme } from "@/components/ui/brightness-theme";
 import { Button } from "@/components/ui/button";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { PhaseContext } from "@/contexts/PhaseContext";
+import { useAppScheme } from "@/contexts/SchemeContext";
 import { SimulatedClockContext } from "@/hooks/useTodayClock";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
@@ -31,7 +31,7 @@ export const DaySimulator = ({ children }: { children: ReactNode }) => {
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
   const mode = useAppStore((state) => state.mode);
-  const systemScheme = useColorScheme();
+  const scheme = useAppScheme();
   const [simulated, setSimulated] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export const DaySimulator = ({ children }: { children: ReactNode }) => {
       {phase ? (
         // Adaptive draws by the phase, so a run brings its own phase and theme.
         <PhaseContext value={phase}>
-          <BrightnessTheme dark={isDarkMode(mode, systemScheme, phase)}>{content}</BrightnessTheme>
+          <BrightnessTheme dark={isDarkMode(mode, scheme, phase)}>{content}</BrightnessTheme>
         </PhaseContext>
       ) : (
         content
