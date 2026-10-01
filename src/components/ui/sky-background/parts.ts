@@ -1,6 +1,8 @@
 /** Test ids for the sky's views; the screen reader sees none of them. */
 export const SKY_PART = {
   CANVAS: "sky-canvas",
+  /** A small sky that shows a choice, beside the page's own. */
+  PREVIEW: "sky-preview",
   PAINT: "sky-paint",
   BODIES: "sky-bodies",
   SUN: "sky-sun",

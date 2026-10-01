@@ -36,7 +36,8 @@ type VariantStyle = {
   chevronStroke?: number;
 };
 
-const VARIANT_STYLE: Record<ListRowVariant, VariantStyle> = {
+/** Each variant's frame and type, shared with rows that pick one of several. */
+export const LIST_ROW_STYLE: Record<ListRowVariant, VariantStyle> = {
   [LIST_ROW_VARIANT.CARD]: {
     frame: {
       minHeight: "$16",
@@ -105,7 +106,7 @@ export const ListRow = ({
 }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
-  const style = VARIANT_STYLE[variant];
+  const style = LIST_ROW_STYLE[variant];
   const leading =
     icon && tile ? (
       <IconTile icon={icon} />
