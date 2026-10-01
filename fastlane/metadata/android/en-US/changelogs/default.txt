@@ -1,5 +1,4 @@
 What's new?
 
-• Fixed an issue that stopped alarms from turning on
-• Your vibration choice for each alert now takes effect
+• Your Hijri date adjustment stays after you close the app
 • Bug fixes and improvements
