@@ -48,6 +48,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<VersionPill\b/,
     home: "components/whats-new/VersionPill.tsx",
   },
+  // The page sky and the Appearance previews paint one scene the same way.
+  {
+    concept: "the app's sky",
+    shows: /\bsky(Scene|SceneFor|SwatchFor|BackgroundImage)\(/,
+    within: /\.tsx$/,
+    drawsWith: /<SkyPaint\b|<SkySwatch\b/,
+    home: "components/ui/sky-background/SkyPaint.tsx",
+  },
 ];
 
 const FILES = sources(SRC).map((path) => ({
