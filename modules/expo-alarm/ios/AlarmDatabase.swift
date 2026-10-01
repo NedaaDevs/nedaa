@@ -240,6 +240,9 @@ class AlarmDatabase {
     // MARK: - Pending Challenge
 
     func setPendingChallenge(alarmId: String, alarmType: String, title: String) {
+        // Fire time, so the JS stale check sees the alarm's real age.
+        let now = Date().timeIntervalSince1970
+        let firedAt = getAlarm(id: alarmId).map { min($0.triggerTime / 1000, now) } ?? now
         let sql = """
             INSERT OR REPLACE INTO pending_challenge (id, alarm_id, alarm_type, title, timestamp)
             VALUES (1, ?, ?, ?, ?)
@@ -248,7 +251,7 @@ class AlarmDatabase {
             sqlite3_bind_text(stmt, 1, alarmId, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(stmt, 2, alarmType, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(stmt, 3, title, -1, SQLITE_TRANSIENT)
-            sqlite3_bind_double(stmt, 4, Date().timeIntervalSince1970)
+            sqlite3_bind_double(stmt, 4, firedAt)
         }
         PersistentLog.shared.alarm("DB: Set pending challenge \(alarmId.prefix(8))")
     }

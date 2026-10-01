@@ -13,6 +13,9 @@ import AppIntents
     private static let stateLock = NSLock()
     static let bypassNotificationIds = (0..<5).map { "bypass-\($0)" }
     private static var isObserving = false
+    private static var hasObservedInProcess = false
+    // Matches ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS on the JS side.
+    private static let staleAlarmThresholdMs: Double = 2 * 60 * 60 * 1000
     private static var observerTask: Task<Void, Never>?
     private static var heartbeatTask: Task<Void, Never>?
     private static var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
@@ -27,6 +30,9 @@ import AppIntents
                 return
             }
             isObserving = true
+            // Dead-process bypass recovery runs once per process, never on a restart.
+            let isProcessStart = !hasObservedInProcess
+            hasObservedInProcess = true
             stateLock.unlock()
 
             startHeartbeat()
@@ -35,6 +41,7 @@ import AppIntents
             observerTask = Task {
                 let plog = PersistentLog.shared
                 var previousAlarms: [UUID: Alarm.State] = [:]
+                var silencedIds: Set<UUID> = []
                 var isFirstIteration = true
 
                 plog.observer("Observer started, keepAlive=\(AlarmAudioManager.shared.isKeepAliveRunning())")
@@ -49,12 +56,15 @@ import AppIntents
 
                     if isFirstIteration {
                         isFirstIteration = false
-                        await processFirstIteration(alarms: alarms)
+                        silencedIds = await processFirstIteration(
+                            alarms: alarms, isProcessStart: isProcessStart
+                        )
                     }
 
                     await processAlarmTransitions(alarms: alarms, previousAlarms: previousAlarms)
 
-                    previousAlarms = currentAlarms
+                    // Kept out of history so a silenced alarm never reads as dismissed.
+                    previousAlarms = currentAlarms.filter { !silencedIds.contains($0.key) }
                 }
 
                 plog.observer("Observer ended")
@@ -120,21 +130,37 @@ import AppIntents
     // MARK: - First Iteration Processing
 
     #if canImport(AlarmKit)
+    /// AlarmKit keeps an unanswered alarm alerting; a stale one stops silently.
+    /// Returns those ids. JS completes and reschedules them on its stale check.
     @available(iOS 26.1, *)
-    private static func processFirstIteration(alarms: [Alarm]) async {
+    private static func processFirstIteration(alarms: [Alarm], isProcessStart: Bool) async -> Set<UUID> {
         let plog = PersistentLog.shared
+        var silencedIds: Set<UUID> = []
 
         await detectMissedDismissals(alarms: alarms)
 
-        for alarm in alarms {
-            if alarm.state == .alerting {
-                plog.observer("Already alerting on startup: \(alarm.id.uuidString.prefix(8))")
-                if !AlarmAudioManager.shared.isKeepAliveRunning() {
-                    AlarmAudioManager.shared.startQuietKeepAlive()
+        let now = Date().timeIntervalSince1970 * 1000
+        for alarm in alarms where alarm.state == .alerting {
+            let alarmId = alarm.id.uuidString.lowercased()
+            if let stored = AlarmDatabase.shared.getAlarm(id: alarmId),
+               now - stored.triggerTime > staleAlarmThresholdMs {
+                plog.observer("Stale alerting on startup: \(alarmId.prefix(8)) (\(Int((now - stored.triggerTime) / 1000))s old), stopping silently")
+                silencedIds.insert(alarm.id)
+                do {
+                    try AlarmManager.shared.stop(id: alarm.id)
+                } catch {
+                    plog.observer("Stale alarm stop failed: \(error.localizedDescription)")
                 }
-                await handleAlarmAlerting(alarmId: alarm.id.uuidString.lowercased())
+                continue
             }
+            plog.observer("Already alerting on startup: \(alarmId.prefix(8))")
+            if !AlarmAudioManager.shared.isKeepAliveRunning() {
+                AlarmAudioManager.shared.startQuietKeepAlive()
+            }
+            await handleAlarmAlerting(alarmId: alarmId)
         }
+
+        guard isProcessStart else { return silencedIds }
 
         if let bypassState = AlarmDatabase.shared.getBypassState() {
             let elapsed = Date().timeIntervalSince1970 - bypassState.activatedAt
@@ -152,6 +178,7 @@ import AppIntents
                 AlarmDatabase.shared.clearBypassState()
             }
         }
+        return silencedIds
     }
 
     @available(iOS 26.1, *)
@@ -163,13 +190,12 @@ import AppIntents
 
         plog.observer("DB alarms: \(dbAlarmIds.count), AlarmKit: \(alarmKitIds.count)")
 
-        let staleThresholdMs: Double = 2 * 60 * 60 * 1000 // 2 hours
         for dbId in dbAlarmIds {
             if !alarmKitIds.contains(dbId.lowercased()) {
                 if let alarmInfo = AlarmDatabase.shared.getAlarm(id: dbId) {
                     if alarmInfo.triggerTime < now {
                         let age = now - alarmInfo.triggerTime
-                        if age > staleThresholdMs {
+                        if age > staleAlarmThresholdMs {
                             // Completed rows are collected here too. Nothing else deletes them,
                             // so every dismissed alarm would otherwise leave a row for good; the
                             // stale window still outlives the completed-alarm lookups that read them.
