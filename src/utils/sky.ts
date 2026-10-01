@@ -1,3 +1,5 @@
+import type { ColorSchemeName } from "react-native";
+
 import {
   BRIGHTNESS,
   NEDAA_DARK,
@@ -5,8 +7,9 @@ import {
   PHASE_GRADIENTS,
   type Brightness,
 } from "@/constants/Palette";
-import type { Phase } from "@/constants/Phase";
+import { PHASE, type Phase } from "@/constants/Phase";
 import {
+  ADAPTIVE_SWATCH_WEIGHT,
   CELESTIAL_BODY,
   DARK_SKY,
   LIGHT_SKY,
@@ -16,6 +19,8 @@ import {
   type SkyEllipse,
   type SkyStop,
 } from "@/constants/Sky";
+import { AppMode } from "@/enums/app";
+import { isDarkMode } from "@/utils/appearance";
 import type { CelestialPosition } from "@/utils/celestial";
 
 export type SceneStop = { offset: number; color: string };
@@ -82,6 +87,43 @@ export const skyScene = (brightness: Brightness, phase: Phase | undefined): SkyS
     moon: light ? null : DARK_SKY,
     edgeWash: light ? hexStops(LIGHT_SKY.edgeWash) : null,
   };
+};
+
+/** The sky a mode paints: its brightness, tinted by phase in Adaptive only. */
+export const skySceneFor = (
+  mode: AppMode,
+  systemScheme: ColorSchemeName | null | undefined,
+  phase: Phase | undefined
+): SkyScene =>
+  skyScene(
+    isDarkMode(mode, systemScheme, phase) ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT,
+    mode === AppMode.ADAPTIVE ? phase : undefined
+  );
+
+/** One strip of a mode's swatch, as wide as its share of the weights. */
+export type SwatchBand = { scene: SkyScene; weight: number; bodies: boolean };
+
+/**
+ * A mode drawn small: a fixed mode as its sky, System as dark beside light,
+ * Adaptive as every phase in the day's order, its sun in the day band alone.
+ */
+export const skySwatchFor = (mode: AppMode): readonly SwatchBand[] => {
+  switch (mode) {
+    case AppMode.SYSTEM:
+      return [AppMode.DARK, AppMode.LIGHT].map((fixed) => ({
+        scene: skySceneFor(fixed, null, undefined),
+        weight: 1,
+        bodies: true,
+      }));
+    case AppMode.ADAPTIVE:
+      return Object.values(PHASE).map((phase) => ({
+        scene: skySceneFor(mode, null, phase),
+        weight: ADAPTIVE_SWATCH_WEIGHT[phase],
+        bodies: phase === PHASE.DAY,
+      }));
+    default:
+      return [{ scene: skySceneFor(mode, null, undefined), weight: 1, bodies: true }];
+  }
 };
 
 const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
@@ -206,7 +248,12 @@ export const skyBackgroundImage = (
 export type WindowRect = { x: number; y: number; width: number; height: number };
 
 /** Whether a disc at (cx, cy) touches any of the boxes. */
-export const discOverlaps = (cx: number, cy: number, radius: number, boxes: WindowRect[]) =>
+export const discOverlaps = (
+  cx: number,
+  cy: number,
+  radius: number,
+  boxes: readonly WindowRect[]
+) =>
   boxes.some(({ x, y, width, height }) => {
     const nearestX = Math.min(Math.max(cx, x), x + width);
     const nearestY = Math.min(Math.max(cy, y), y + height);
