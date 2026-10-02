@@ -2,7 +2,11 @@ import { useRef, useState } from "react";
 import { View } from "react-native";
 
 /** Reanimated without the worklets runtime jest lacks; Views keep the props. */
-const Animated = { View };
+const Animated = {
+  View,
+  // Gesture Handler wraps its detector's child through this at import.
+  createAnimatedComponent: <T>(component: T) => component,
+};
 
 export default Animated;
 
@@ -20,6 +24,9 @@ export const useSharedValue = <T>(initial: T) => {
   return box;
 };
 export const useAnimatedStyle = <T>(style: () => T) => style();
+/** Gesture Handler's detector asks for these; jest-utils drives callbacks. */
+export const useEvent = () => () => undefined;
+export const useComposedEventHandler = () => () => undefined;
 export const withTiming = jest.fn((value: unknown) => value);
 export const withSpring = jest.fn((value: unknown) => value);
 export const withSequence = (...steps: unknown[]) => steps[steps.length - 1];
