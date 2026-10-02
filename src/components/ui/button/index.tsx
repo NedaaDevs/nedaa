@@ -164,14 +164,12 @@ const ButtonTextFrame = styled(TamaguiText, {
 
 // The public Button.Text: applies the app text-scale to the size variant's
 // label font and keeps OS font scaling off (the app owns text size).
-type ButtonTextProps = GetProps<typeof ButtonTextFrame> & { scaleOverride?: number };
+type ButtonTextProps = GetProps<typeof ButtonTextFrame>;
 
 const ButtonText = React.forwardRef<React.ComponentRef<typeof ButtonTextFrame>, ButtonTextProps>(
-  ({ fontSize, size, scaleOverride, ...props }, ref) => {
+  ({ fontSize, size, ...props }, ref) => {
     const ctx = ButtonContext.useStyledContext();
-    // The hook always runs (hooks-order safety); the override only replaces its value.
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     // The label's own size prop wins over the Button's size context.
     const sizeKey = typeof size === "string" ? size : ctx.size;
     return (

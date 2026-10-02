@@ -112,13 +112,12 @@ const FabLabelFrame = styled(TamaguiText, {
 // Label font size per Fab size variant; the app text-scale multiplies it.
 const FAB_FONT_SIZE: Record<string, number> = { sm: 10, md: 12, lg: 14 };
 
-type FabLabelWrapperProps = GetProps<typeof FabLabelFrame> & { scaleOverride?: number };
+type FabLabelWrapperProps = GetProps<typeof FabLabelFrame>;
 
 const FabLabel = React.forwardRef<React.ComponentRef<typeof FabLabelFrame>, FabLabelWrapperProps>(
-  ({ fontSize, scaleOverride, ...props }, ref) => {
+  ({ fontSize, ...props }, ref) => {
     const ctx = FabContext.useStyledContext();
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     const base = typeof fontSize === "number" ? fontSize : (FAB_FONT_SIZE[ctx.size ?? "md"] ?? 12);
     return <FabLabelFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
   }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { PixelRatio } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -7,16 +7,15 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
-import { TextSize, type TextSizeValue } from "@/enums/app";
+import { TextSize } from "@/enums/app";
 import { nearestTextSize, TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
+import { TextScaleContext } from "@/hooks/useTextScale";
 import { usePreferencesStore } from "@/stores/preferences";
 
-const OPTIONS: { value: TextSizeValue; labelKey: string }[] = [
-  { value: TextSize.DEFAULT, labelKey: "settings.textSize.options.default" },
-  { value: TextSize.LARGE, labelKey: "settings.textSize.options.large" },
-  { value: TextSize.XLARGE, labelKey: "settings.textSize.options.xlarge" },
-  { value: TextSize.MAX, labelKey: "settings.textSize.options.max" },
-];
+const OPTIONS = Object.values(TextSize).map((value) => ({
+  value,
+  labelKey: `settings.textSize.options.${value}` as const,
+}));
 
 type TextSizeStepProps = {
   onNext: () => void;
@@ -31,10 +30,10 @@ const TextSizeStep = ({ onNext }: TextSizeStepProps) => {
 
   // Seeded from the device font scale so the screen opens at the highlighted row's size.
   // The handled flag stops a remount from overwriting a choice already made.
-  useEffect(() => {
+  const seed = useEffectEvent(() => {
     if (!offerHandled) setTextSize(nearestTextSize(PixelRatio.getFontScale()));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  });
+  useEffect(() => seed(), []);
 
   // Rows apply their own size on press; Continue only settles the offer.
   const apply = () => {
@@ -69,9 +68,11 @@ const TextSizeStep = ({ onNext }: TextSizeStepProps) => {
             borderColor={textSize === value ? "$primary" : "$outline"}>
             <HStack alignItems="center" justifyContent="space-between">
               {/* Each label previews its own multiplier, not the active preset. */}
-              <Text size="md" fontWeight="600" scaleOverride={TEXT_SIZE_MULTIPLIERS[value]}>
-                {t(labelKey)}
-              </Text>
+              <TextScaleContext value={TEXT_SIZE_MULTIPLIERS[value]}>
+                <Text size="md" fontWeight="600">
+                  {t(labelKey)}
+                </Text>
+              </TextScaleContext>
             </HStack>
           </Pressable>
         ))}

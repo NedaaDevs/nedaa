@@ -90,10 +90,12 @@ type Props = {
   selected?: PrayerId;
   /** Gets the pressed card too, where reader focus returns after its sheet. */
   onSelect: (id: PrayerId, opener: View | null) => void;
+  /** Only the wide card for the next prayer, as a short preview. */
+  nextOnly?: boolean;
 };
 
 /** The day's five prayers: the next one wide on top, the others two by two. */
-export const PrayerGrid = ({ selected, onSelect }: Props) => {
+export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
   const { t } = useTranslation();
   const { now, day, following } = useShownDay();
   const locale = useAppStore((state) => state.locale);
@@ -122,7 +124,7 @@ export const PrayerGrid = ({ selected, onSelect }: Props) => {
   // Keyed by prayer, so when the next one changes its card glides to the top.
   return (
     <Grid columns={2} gap="$2">
-      {[wide, ...rest].map((card) => (
+      {(nextOnly ? [wide] : [wide, ...rest]).map((card) => (
         <Grid.Item key={card.id} wide={card === wide}>
           {view(card)}
         </Grid.Item>
