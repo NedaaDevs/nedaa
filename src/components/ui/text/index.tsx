@@ -48,8 +48,6 @@ type TextProps = TamaguiTextProps & {
   glyph?: boolean;
   /** Line box as a ratio of the font size. Not `role`, which is accessibility. */
   typography?: TextRole;
-  /** Fixed multiplier for this instance, replacing the app preset (previews, share captures). */
-  scaleOverride?: number;
 };
 
 const resolveFontWeight = (
@@ -80,7 +78,6 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       size = "md",
       numeric,
       glyph,
-      scaleOverride,
       style,
       ...props
     },
@@ -89,9 +86,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
     const theme = useTheme();
     // iOS aligns unmarked text by the phone's language, not the app's.
     const writingDirection = getDirection(useAppStore((state) => state.locale));
-    // The hook always runs (hooks-order safety); the override only replaces its value.
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     const resolvedWeight = resolveFontWeight(bold, fontWeight);
     const tokenKey = SIZE_MAP[size] ?? "$3";
     const sizeValues = FONT_SIZES[tokenKey] ?? FONT_SIZES["$3"];

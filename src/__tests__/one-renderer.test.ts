@@ -71,6 +71,13 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseFocusPrayer\(/,
     home: "hooks/useFocusPrayer.ts",
   },
+  // The Text size preview and onboarding set text at a preset not yet chosen.
+  {
+    concept: "text at a preset other than the app's",
+    shows: /\bTEXT_SIZE_MULTIPLIERS\[/,
+    within: /\.tsx$/,
+    drawsWith: /<TextScaleContext\b/,
+  },
   // A screen reader says «م» as morning, so a spoken time names its period.
   {
     concept: "a prayer time a screen reader speaks",
