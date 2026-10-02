@@ -26,7 +26,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { useAlarmStatus } from "@/hooks/useAlarmStatus";
 import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
-import { usePlaceName } from "@/hooks/usePlaceName";
+import { usePlace } from "@/hooks/usePlace";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
@@ -92,7 +92,7 @@ export default function ToolsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
 
-  const place = usePlaceName();
+  const place = usePlace().name;
   const alarmStatus = useAlarmStatus();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
