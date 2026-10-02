@@ -1,6 +1,6 @@
 import { Text } from "react-native";
 import { usePathname } from "expo-router";
-import { userEvent } from "@testing-library/react-native";
+import { userEvent, within } from "@testing-library/react-native";
 import { act, renderRouter, screen } from "expo-router/testing-library";
 
 import config from "../../../../tamagui.config";
@@ -149,6 +149,21 @@ describe("TodayHeader", () => {
       expect(screen.getByTestId(TODAY_HEADER_PART.PLACE)).toHaveStyle({ flexShrink: 0 });
     }
   );
+
+  // The store starts the localized name empty, not missing.
+  it("names the place from the device address until the localized name lands", async () => {
+    useLocationStore.setState({
+      localizedLocation: { city: "", country: "" },
+      locationDetails: {
+        ...useLocationStore.getState().locationDetails,
+        address: { city: CITY, country: COUNTRY },
+      },
+    });
+    await renderHeader();
+
+    expect(within(screen.getByTestId(TODAY_HEADER_PART.PLACE)).getByText(CITY)).toBeOnTheScreen();
+    expect(within(screen.getByTestId(TODAY_HEADER_PART.PLACE)).getByText(COUNTRY)).toBeTruthy();
+  });
 
   // Beside the dates or under them, the city and country share a start edge.
   it("starts the city and country at the place's start edge", async () => {

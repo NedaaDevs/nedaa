@@ -9,6 +9,7 @@ import {
   type LocationDetails,
   type ManualLocation,
 } from "@/types/location";
+import { PLACE_UNKNOWN } from "@/constants/Location";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
@@ -153,16 +154,17 @@ export const useLocationStore = create<LocationStore>()(
               locationDetails: {
                 coords: location.coords,
                 address: {
-                  country: geocodedAddress?.country ?? localizedGeocode?.countryName ?? "N/A",
-                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? "N/A",
+                  country:
+                    geocodedAddress?.country ?? localizedGeocode?.countryName ?? PLACE_UNKNOWN,
+                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? PLACE_UNKNOWN,
                 },
                 timezone,
                 error: null,
                 isLoading: false,
               },
               localizedLocation: {
-                country: localizedGeocode?.countryName || geocodedAddress?.country || "N/A",
-                city: localizedGeocode?.city || geocodedAddress?.city || "N/A",
+                country: localizedGeocode?.countryName || geocodedAddress?.country || PLACE_UNKNOWN,
+                city: localizedGeocode?.city || geocodedAddress?.city || PLACE_UNKNOWN,
               },
               lastKnownCoords: {
                 latitude: location.coords.latitude,
@@ -266,7 +268,7 @@ export const useLocationStore = create<LocationStore>()(
               });
 
               const currentCity = get().locationDetails.address?.city;
-              const newCity = geocodedAddress.city ?? "N/A";
+              const newCity = geocodedAddress.city ?? PLACE_UNKNOWN;
 
               if (currentCity !== newCity) {
                 log.i("CityChange", `city changed: ${currentCity} -> ${newCity}`);
@@ -291,16 +293,20 @@ export const useLocationStore = create<LocationStore>()(
         //  get localizedLocation (For display only)
         updateAddressTranslation: async () => {
           const location = get().locationDetails;
+          const asked = appStore.getState().locale;
 
           const geocodeAdd = await get()
             .reverseGeocode({
               lat: location.coords.latitude,
               lng: location.coords.longitude,
-              locale: appStore.getState().locale,
+              locale: asked,
             })
             .catch((e) => {
               log.w("Geocode", `address translation failed: ${(e as Error)?.message ?? e}`);
             });
+
+          // A later language switch owns the name; this answer is for the old one.
+          if (appStore.getState().locale !== asked) return false;
 
           if (geocodeAdd) {
             // Update localizedLocation with localized strings

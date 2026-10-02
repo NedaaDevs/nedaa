@@ -1,7 +1,12 @@
 import { StyleSheet, Text } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
+import { FontLanguage } from "tamagui";
 
 import { CHOICE_ROW_PART, ChoiceGroup, ChoiceRow } from "@/components/ui/choice-row";
+import { LIST_GROUP_PART } from "@/components/ui/list-group";
+import { LIST_ROW_VARIANT } from "@/components/ui/list-row";
+import { NEDAA_LIGHT } from "@/constants/Palette";
+import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -106,5 +111,104 @@ describe("ChoiceRow", () => {
 
     expect(styleOf(rows()[0])).toMatchObject({ opacity: 1 });
     expect(styleOf(rows()[0]).transform).toEqual(transform);
+  });
+
+  describe("grouped", () => {
+    const renderGrouped = (selected = "light") =>
+      renderWithTheme(
+        <ChoiceGroup label={GROUP} variant={LIST_ROW_VARIANT.GROUPED}>
+          {OPTIONS.map(({ id, title, subtitle }) => (
+            <ChoiceRow
+              key={id}
+              title={title}
+              subtitle={subtitle}
+              subtitleLocale={id === "dark" ? AppLocale.AR : undefined}
+              selected={selected === id}
+              onPress={jest.fn()}
+            />
+          ))}
+        </ChoiceGroup>
+      );
+
+    it("reads the rows as radios in a named group", async () => {
+      await renderGrouped();
+
+      expect(screen.getByLabelText(GROUP)).toHaveProp("accessibilityRole", "radiogroup");
+      expect(rows()).toHaveLength(OPTIONS.length);
+    });
+
+    // The group draws the edge and a rule between rows; a row draws neither.
+    it("sets the rows in one card, a rule between each", async () => {
+      await renderGrouped();
+
+      expect(
+        screen.getAllByTestId(LIST_GROUP_PART.DIVIDER, { includeHiddenElements: true })
+      ).toHaveLength(OPTIONS.length - 1);
+      expect(styleOf(rows()[0]).borderTopWidth).toBeUndefined();
+    });
+
+    it("tints the chosen row, which keeps its check", async () => {
+      await renderGrouped("dark");
+
+      expect(styleOf(rows()[1])).toMatchObject({ backgroundColor: NEDAA_LIGHT.accentSoft.hex });
+      expect(styleOf(rows()[0]).backgroundColor).not.toBe(NEDAA_LIGHT.accentSoft.hex);
+      expect(ticks()).toHaveLength(1);
+    });
+
+    it("washes a pressed row and keeps its full colour", async () => {
+      await renderGrouped();
+
+      await act(() => fireEvent(rows()[1], "responderGrant", { nativeEvent: {} }));
+
+      expect(styleOf(rows()[1])).toMatchObject({
+        opacity: 1,
+        backgroundColor: NEDAA_LIGHT.pressed.hex,
+      });
+    });
+
+    it("gives every row a role, a name and a 44pt target", async () => {
+      await renderGrouped();
+
+      expect(controlProblems()).toEqual([]);
+    });
+  });
+
+  // A native name keeps its own script's face, whatever the interface's.
+  describe("subtitle font", () => {
+    const familyOf = (text: string) =>
+      StyleSheet.flatten(screen.getByText(text, { includeHiddenElements: true }).props.style)
+        .fontFamily;
+
+    it("sets an Arabic name in the Arabic face under a Latin interface", async () => {
+      await renderWithTheme(
+        <ChoiceRow
+          title="Arabic"
+          subtitle="العربية"
+          subtitleLocale={AppLocale.AR}
+          selected={false}
+          onPress={jest.fn()}
+        />
+      );
+
+      expect(familyOf("العربية")).toMatch(/^IBMPlexSansArabic/);
+      expect(familyOf("Arabic")).toMatch(/^IBMPlexSans-/);
+    });
+
+    it("sets a Latin name in the Latin face under an Arabic interface", async () => {
+      await renderWithTheme(
+        <FontLanguage body="ar" heading="ar">
+          <ChoiceRow
+            title="الإنجليزية"
+            subtitle="English"
+            subtitleLocale={AppLocale.EN}
+            selected={false}
+            onPress={jest.fn()}
+          />
+        </FontLanguage>
+      );
+
+      expect(familyOf("English")).toMatch(/^IBMPlexSans-/);
+      expect(familyOf("الإنجليزية")).toMatch(/^IBMPlexSansArabic/);
+    });
   });
 });
