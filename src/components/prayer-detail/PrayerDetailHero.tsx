@@ -23,6 +23,7 @@ import { localizeDigits } from "@/utils/digits";
 import { countReserve, formatCount } from "@/utils/focusCount";
 import { prayerCards } from "@/utils/prayerCards";
 import { prayerNameKey } from "@/utils/prayerName";
+import { spokenClockTime } from "@/utils/spokenClockTime";
 import { spokenDuration } from "@/utils/spokenDuration";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
@@ -67,7 +68,16 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
               {name}
             </Text>
           </ActionsheetTitle>
-          <Text size="md" numeric color="$muted">
+          <Text
+            size="md"
+            numeric
+            color="$muted"
+            accessibilityLabel={spokenClockTime(
+              card.time,
+              day.timezone,
+              { locale, use24HourTime, western },
+              t
+            )}>
             {digits(formatPrayerTime(card.time, day.timezone, { locale, use24HourTime }))}
           </Text>
         </VStack>
