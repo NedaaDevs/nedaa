@@ -58,4 +58,18 @@ describe("SkyHero", () => {
     expect(screen.getByLabelText("Adaptive, Asr")).toHaveProp("accessible", true);
     expect(part(SKY_PART.PAINT)).toHaveLength(0);
   });
+
+  // A lone line at the foot of a tall empty frame reads as something missing.
+  it.each([
+    [false, 153],
+    [true, undefined],
+  ])("holds its full height unless compact (compact: %s)", async (compact, minHeight) => {
+    await renderWithTheme(
+      <SkyHero accessibilityLabel="Next, Asr" compact={compact}>
+        <Text>Asr</Text>
+      </SkyHero>
+    );
+
+    expect(flat(screen.getByLabelText("Next, Asr")).minHeight).toBe(minHeight);
+  });
 });
