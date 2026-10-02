@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
-import { Platform, type AccessibilityActionEvent } from "react-native";
+import { type AccessibilityActionEvent } from "react-native";
 import { Minus, Plus } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
@@ -7,7 +7,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { usePressRetention } from "@/components/ui/pressable/retention";
-import { PlatformType } from "@/enums/app";
+import { A11Y_ACTION, adjustActions, HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { useHaptic } from "@/hooks/useHaptic";
 
 /** Repeat delays while held: slow at first, faster once the hold is clearly deliberate. */
@@ -18,15 +18,6 @@ export const STEPPER_PART = {
   DECREMENT: "stepper-decrement",
   INCREMENT: "stepper-increment",
 } as const;
-
-const A11Y_ACTION = { INCREMENT: "increment", DECREMENT: "decrement" } as const;
-
-// TalkBack adjusts only through listed actions. VoiceOver adjusts without them, and
-// would list each one in its rotor under its raw English name.
-const adjustActions = () =>
-  Platform.OS === PlatformType.ANDROID
-    ? [{ name: A11Y_ACTION.INCREMENT }, { name: A11Y_ACTION.DECREMENT }]
-    : undefined;
 
 const DIRECTION = { DOWN: -1, UP: 1 } as const;
 type Direction = (typeof DIRECTION)[keyof typeof DIRECTION];
@@ -44,13 +35,6 @@ type Props = {
   /** The value as drawn between the buttons. */
   children: ReactNode;
 };
-
-// The buttons stay out of the accessibility tree; the frame is the one adjustable stop.
-const HIDDEN_FROM_READER = {
-  accessible: false,
-  accessibilityElementsHidden: true,
-  importantForAccessibility: "no-hide-descendants",
-} as const;
 
 export const Stepper = ({
   value,
