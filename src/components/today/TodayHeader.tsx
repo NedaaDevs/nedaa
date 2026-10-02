@@ -10,6 +10,7 @@ import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { usePlace } from "@/hooks/usePlace";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
@@ -29,13 +30,13 @@ export const TodayHeader = () => {
   const locale = useAppStore((state) => state.locale);
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const useWesternNumerals = usePreferencesStore((state) => state.useWesternNumerals);
-  const { localizedLocation, locationDetails } = useLocationStore();
+  const timezone = useLocationStore((state) => state.locationDetails.timezone);
+  const { city, country } = usePlace();
   // Re-renders on the minute so the dates turn over at midnight; a store
   // screenshot holds its seeded moment instead.
   const now = useTodayClock();
 
   const digits = (text: string) => localizeDigits(text, locale, useWesternNumerals);
-  const timezone = locationDetails.timezone;
   const zonedNow = toZonedTime(now, timezone);
   const dateLocale = getDateLocale(locale);
 
@@ -47,10 +48,6 @@ export const TodayHeader = () => {
     day: format(zonedNow, "EEEE", { locale: dateLocale }),
     date: digits(format(zonedNow, "d MMMM yyyy", { locale: dateLocale })),
   });
-
-  // The localized name follows the app language; the address is English-only.
-  const city = localizedLocation.city ?? locationDetails.address?.city;
-  const country = localizedLocation.country ?? locationDetails.address?.country;
 
   return (
     <VStack gap="$3.5">
