@@ -116,13 +116,12 @@ const BadgeTextFrame = styled(TamaguiText, {
 // Label font size per Badge size variant; the app text-scale multiplies it.
 const BADGE_FONT_SIZE: Record<string, number> = { sm: 10, md: 10, lg: 12 };
 
-type BadgeTextProps = GetProps<typeof BadgeTextFrame> & { scaleOverride?: number };
+type BadgeTextProps = GetProps<typeof BadgeTextFrame>;
 
 const BadgeText = React.forwardRef<React.ComponentRef<typeof BadgeTextFrame>, BadgeTextProps>(
-  ({ fontSize, scaleOverride, ...props }, ref) => {
+  ({ fontSize, ...props }, ref) => {
     const ctx = BadgeContext.useStyledContext();
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     const base =
       typeof fontSize === "number" ? fontSize : (BADGE_FONT_SIZE[ctx.size ?? "md"] ?? 10);
     return <BadgeTextFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;

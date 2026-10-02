@@ -320,16 +320,13 @@ const ActionsheetItemTextFrame = styled(TamaguiText, {
 // scale stays off (the app owns text size).
 const ITEM_FONT_SIZE = 14;
 
-type ActionsheetItemTextWrapperProps = GetProps<typeof ActionsheetItemTextFrame> & {
-  scaleOverride?: number;
-};
+type ActionsheetItemTextWrapperProps = GetProps<typeof ActionsheetItemTextFrame>;
 
 const ActionsheetItemText = React.forwardRef<
   React.ComponentRef<typeof ActionsheetItemTextFrame>,
   ActionsheetItemTextWrapperProps
->(({ fontSize, scaleOverride, ...props }, ref) => {
-  const appScale = useTextScale();
-  const m = scaleOverride ?? appScale;
+>(({ fontSize, ...props }, ref) => {
+  const m = useTextScale();
   const base = typeof fontSize === "number" ? fontSize : ITEM_FONT_SIZE;
   return (
     <ActionsheetItemTextFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />
