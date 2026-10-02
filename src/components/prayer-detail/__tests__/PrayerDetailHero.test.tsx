@@ -1,4 +1,4 @@
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { PrayerDetailHero } from "@/components/prayer-detail/PrayerDetailHero";
 import { COUNTDOWN_PART } from "@/components/ui/countdown";
@@ -109,6 +109,20 @@ describe("PrayerDetailHero", () => {
       use24HourTime: false,
     });
     expect(screen.getByText(localizeDigits(time, AppLocale.AR, false))).toBeOnTheScreen();
+  });
+
+  // Arabic speech rewrites clock digits, so labels speak the time in words.
+  it("speaks an evening prayer's time as evening in Arabic", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    usePreferencesStore.setState({ useWesternNumerals: false });
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+    try {
+      await renderAt("2026-09-23", "14:02", PRAYER_ID.MAGHRIB);
+
+      expect(screen.getByText("٦:٠٥ م")).toHaveAccessibleName("السادسة و٥ دقائق مساءً");
+    } finally {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    }
   });
 
   it("speaks the time until the prayer in whole minutes", async () => {
