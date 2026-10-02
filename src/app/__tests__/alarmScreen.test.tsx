@@ -1,4 +1,5 @@
 import { act, screen } from "@testing-library/react-native";
+import { AccessibilityInfo } from "react-native";
 
 import AlarmTriggeredScreen from "@/app/alarm";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
@@ -88,5 +89,16 @@ describe("AlarmTriggeredScreen", () => {
     expect(screen.getByText(`${prayer} · ١٢:١٠ م`)).toHaveAccessibleName(
       i18n.t("a11y.alarm.prayerAt", { prayer, time: "الثانية عشرة و١٠ دقائق ظهرًا" })
     );
+  });
+  // The ringing alarm is announced once per screen, not on every re-render.
+  it("announces the alarm once while it stays on screen", async () => {
+    // React Native's test setup already mocks it, so earlier tests' calls count.
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility").mockClear();
+    await renderWithTheme(<AlarmTriggeredScreen />);
+    await act(() => usePrayerTimesStore.setState({ tomorrowTimings: DAY }));
+    await act(() => usePreferencesStore.setState({ use24HourTime: true }));
+
+    expect(announce).toHaveBeenCalledTimes(1);
+    announce.mockRestore();
   });
 });

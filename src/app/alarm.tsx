@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo, ScrollView } from "react-native";
 import { useLocalSearchParams, Stack, Redirect } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
@@ -271,7 +271,11 @@ function ActiveAlarmView({
   const clock = localeTime(now, locale, use24HourTime);
   const spokenClock = spokenClockTime(now, deviceTimeZone(), { locale, use24HourTime, western }, t);
 
+  // Announced once per screen; a later re-render must not repeat it.
+  const announced = useRef(false);
   useEffect(() => {
+    if (announced.current) return;
+    announced.current = true;
     AccessibilityInfo.announceForAccessibility(
       t("a11y.alarm.ringingAnnouncement", { prayer: prayerName })
     );
