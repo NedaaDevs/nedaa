@@ -27,6 +27,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { isAthkarSupported } from "@/utils/athkar";
 
 // Enums
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { OpeningTab } from "@/enums/app";
 
 const PreferencesSettings = () => {
@@ -120,7 +121,7 @@ const PreferencesSettings = () => {
           />
 
           <Pressable
-            onPress={() => router.push("/settings/textSize")}
+            onPress={() => router.push(BACK_DESTINATION.SETTINGS_TEXT_SIZE.href)}
             accessibilityRole="button"
             accessibilityLabel={t("settings.textSize.title")}
             accessibilityHint={t("a11y.settingsItemNav", { name: t("settings.textSize.title") })}

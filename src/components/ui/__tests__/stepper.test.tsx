@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, userEvent } from "@testing-library/reac
 
 import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
 import { STEPPER_PART, Stepper } from "@/components/ui/stepper";
+import { A11Y_ACTION } from "@/constants/Accessibility";
 import { PlatformType } from "@/enums/app";
 import { ThemeProvider } from "@/test-helpers/theme";
 
@@ -59,8 +60,8 @@ describe("Stepper", () => {
     });
 
     it.each([
-      ["increment", 6],
-      ["decrement", 4],
+      [A11Y_ACTION.INCREMENT, 6],
+      [A11Y_ACTION.DECREMENT, 4],
     ])("steps once on %s", async (actionName, expected) => {
       await render(<Harness start={5} />);
 
@@ -75,7 +76,9 @@ describe("Stepper", () => {
       await render(<Harness start={MAX} />);
 
       await act(() =>
-        fireEvent(adjustable(), "accessibilityAction", { nativeEvent: { actionName: "increment" } })
+        fireEvent(adjustable(), "accessibilityAction", {
+          nativeEvent: { actionName: A11Y_ACTION.INCREMENT },
+        })
       );
 
       expect(shown()).toBe(MAX);
@@ -91,7 +94,9 @@ describe("Stepper", () => {
       await render(<Harness start={5} disabled />);
 
       await act(() =>
-        fireEvent(adjustable(), "accessibilityAction", { nativeEvent: { actionName: "increment" } })
+        fireEvent(adjustable(), "accessibilityAction", {
+          nativeEvent: { actionName: A11Y_ACTION.INCREMENT },
+        })
       );
 
       expect(shown()).toBe(5);
@@ -99,7 +104,7 @@ describe("Stepper", () => {
 
     // TalkBack needs the actions listed; VoiceOver would read them out in English.
     it.each([
-      [PlatformType.ANDROID, [{ name: "increment" }, { name: "decrement" }]],
+      [PlatformType.ANDROID, [{ name: A11Y_ACTION.INCREMENT }, { name: A11Y_ACTION.DECREMENT }]],
       [PlatformType.IOS, undefined],
     ])("lists its actions on %s as the reader needs", async (os, actions) => {
       jest.replaceProperty(Platform, "OS", os);
