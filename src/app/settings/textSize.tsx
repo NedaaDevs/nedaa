@@ -1,77 +1,100 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BookOpen } from "lucide-react-native";
 
-// Components
-import { Background } from "@/components/ui/background";
-import { ScreenHeader } from "@/components/ui/screen-header";
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { VStack } from "@/components/ui/vstack";
+import { TextSizePreview } from "@/components/settings/TextSizePreview";
 import { HStack } from "@/components/ui/hstack";
-import { Text } from "@/components/ui/text";
-import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-
-// Stores
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { SteppedSlider } from "@/components/ui/stepped-slider";
+import { Text, type TextSize as TextSizeName } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { TextSize, type TextSizeValue } from "@/enums/app";
 import { usePreferencesStore } from "@/stores/preferences";
 
-// Enums / constants
-import { TextSize, type TextSizeValue } from "@/enums/app";
-import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
+const PRESETS = Object.values(TextSize);
 
-const OPTIONS: { value: TextSizeValue; labelKey: string }[] = [
-  { value: TextSize.DEFAULT, labelKey: "settings.textSize.options.default" },
-  { value: TextSize.LARGE, labelKey: "settings.textSize.options.large" },
-  { value: TextSize.XLARGE, labelKey: "settings.textSize.options.xlarge" },
-  { value: TextSize.MAX, labelKey: "settings.textSize.options.max" },
-];
+export default function TextSizeScreen() {
+  return (
+    <SkyBackground>
+      <TextSizeContent />
+    </SkyBackground>
+  );
+}
 
-const TextSizeSettings = () => {
+/** The screen over its sky: the preview follows a drag, the store a release. */
+const TextSizeContent = () => {
   const { t } = useTranslation();
-  const textSize = usePreferencesStore((s) => s.textSize);
-  const setTextSize = usePreferencesStore((s) => s.setTextSize);
+  const insets = useSafeAreaInsets();
+  const textSize = usePreferencesStore((state) => state.textSize);
+  const setTextSize = usePreferencesStore((state) => state.setTextSize);
+  // The preset under a drag; null once the drag lands or comes back.
+  const [draft, setDraft] = useState<TextSizeValue | null>(null);
+
+  const presetName = (preset: TextSizeValue) => t(`settings.textSize.options.${preset}`);
+  const mark = (size: TextSizeName) => (
+    <Text size={size} bold glyph color="$fg">
+      {t("settings.textSize.glyph")}
+    </Text>
+  );
 
   return (
-    <Background>
-      <ScreenHeader
-        title={t("settings.textSize.title")}
-        back={{ fallback: BACK_DESTINATION.SETTINGS_PREFERENCES }}
-      />
-      <VStack padding="$4" gap="$2">
-        {OPTIONS.map(({ value, labelKey }) => {
-          const selected = textSize === value;
-          return (
-            <Pressable
-              key={value}
-              onPress={() => setTextSize(value)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              accessibilityLabel={t("a11y.textSize.option", { name: t(labelKey) })}
-              minHeight={44}
-              paddingHorizontal="$4"
-              paddingVertical="$3"
-              borderRadius="$4"
-              backgroundColor={selected ? "$backgroundInteractive" : "$backgroundSecondary"}>
-              <HStack alignItems="center" justifyContent="space-between" gap="$3">
-                <VStack flexShrink={1} gap="$0.5">
-                  <Text size="md" fontWeight="600">
-                    {t(labelKey)}
-                  </Text>
-                  {/* The preview renders at the row's own multiplier, not the active preset. */}
-                  <Text
-                    size="sm"
-                    color="$typographySecondary"
-                    scaleOverride={TEXT_SIZE_MULTIPLIERS[value]}>
-                    {t("settings.textSize.preview")}
-                  </Text>
-                </VStack>
-                {selected && <Icon as={Check} size="lg" color="$primary" />}
-              </HStack>
-            </Pressable>
-          );
-        })}
+    // The sky runs under the status bar; the content pads itself clear of it.
+    <SkyScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}>
+      <SkyOccluder>
+        <ScreenHeader
+          title={t("settings.textSize.title")}
+          subtitle={t("settings.textSize.intro")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS_PREFERENCES }}
+        />
+      </SkyOccluder>
+
+      <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+        <SkyOccluder>
+          <SteppedSlider
+            stops={PRESETS}
+            value={textSize}
+            onDraft={(preset) => setDraft(preset === textSize ? null : preset)}
+            onChange={(preset) => {
+              setDraft(null);
+              setTextSize(preset);
+            }}
+            formatValue={presetName}
+            stopLabel={presetName}
+            accessibilityLabel={t("settings.textSize.title")}
+            startMark={mark("xs")}
+            endMark={mark("xl")}
+          />
+        </SkyOccluder>
+
+        <TextSizePreview size={draft ?? textSize} />
+
+        {/* The reader sizes its own text; this preset does not reach it. */}
+        <SkyOccluder>
+          <HStack
+            accessible
+            alignItems="center"
+            gap="$3"
+            padding="$3"
+            borderWidth={1}
+            borderColor="$border"
+            borderRadius="$card"
+            backgroundColor="$surface2">
+            <Icon as={BookOpen} size="md" color="$accent" />
+            <Text flex={1} size="sm" fontWeight="600" typography="helper" color="$fg">
+              {t("settings.textSize.quranNote")}
+            </Text>
+          </HStack>
+        </SkyOccluder>
       </VStack>
-    </Background>
+    </SkyScrollView>
   );
 };
-
-export default TextSizeSettings;
