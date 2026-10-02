@@ -6,7 +6,7 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { SETTINGS_ROW, type SettingsRowId } from "@/constants/SettingsRoot";
 import { useAlarmStatus } from "@/hooks/useAlarmStatus";
-import { usePlaceName } from "@/hooks/usePlaceName";
+import { usePlace } from "@/hooks/usePlace";
 import { useAppStore } from "@/stores/app";
 import { useNotificationStore } from "@/stores/notification";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -38,7 +38,7 @@ export const useSettingsSummaries = (): Partial<Record<SettingsRowId, string>> =
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const use24Hour = usePreferencesStore((state) => state.use24HourTime);
   const textSize = usePreferencesStore((state) => state.textSize);
-  const place = usePlaceName();
+  const place = usePlace().name;
   const methodId = useProviderSettingsStore((state) =>
     state.currentProviderId === ALADHAN.id ? state.allSettings[ALADHAN.id]?.method : undefined
   );
