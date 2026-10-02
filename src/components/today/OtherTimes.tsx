@@ -10,6 +10,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatPrayerTime } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
+import { spokenClockTime } from "@/utils/spokenClockTime";
 
 /** Each other time's name; two of the keys spell their id in camel case. */
 export const OTHER_TIME_LABEL_KEY: Record<OtherTimingName, string> = {
@@ -38,12 +39,18 @@ export const OtherTimes = () => {
       locale,
       western
     );
+    const spoken = spokenClockTime(
+      day.otherTimings[name],
+      day.timezone,
+      { locale, use24HourTime, western },
+      t
+    );
     return (
       <HStack
         key={name}
         flex={1}
         accessible
-        accessibilityLabel={`${label}, ${time}`}
+        accessibilityLabel={`${label}, ${spoken}`}
         alignItems="center"
         justifyContent="space-between"
         gap="$1.5"

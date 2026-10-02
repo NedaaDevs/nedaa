@@ -1,5 +1,5 @@
 import { Component } from "react";
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import { PrayerGrid } from "@/components/today/PrayerGrid";
@@ -189,6 +189,24 @@ describe("PrayerGrid", () => {
         Number(time.lineHeight) +
         Number(card.paddingBottom)
     );
+  });
+
+  // Arabic speech rewrites clock digits, so labels speak the time in words.
+  it("speaks an evening prayer's time as evening in Arabic", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    usePreferencesStore.setState({ useWesternNumerals: false });
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+    try {
+      await renderAt("2026-09-23", "14:02").rendered;
+
+      const maghrib = cards().find((name: string) =>
+        name.startsWith(i18n.t("prayerTimes.maghrib"))
+      );
+      expect(maghrib).toContain("السادسة و٥ دقائق مساءً");
+      expect(screen.getByText("٦:٠٥ م")).toBeOnTheScreen();
+    } finally {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    }
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {
