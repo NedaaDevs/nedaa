@@ -1865,6 +1865,8 @@
   "prayerDetail.alarm.summary.fridayBefore_one": "ظہر سے {{count}} منٹ پہلے بجتا ہے، صرف جمعہ کو",
   "prayerDetail.alarm.summary.fridayBefore_other": "ظہر سے {{count}} منٹ پہلے بجتا ہے، صرف جمعہ کو",
   "a11y.today.prayerCardHint": "اس نماز کی اطلاعات اور ترتیبات کھولتا ہے",
+  "a11y.time.am": "{{time}} صبح",
+  "a11y.time.pm": "{{time}} شام",
   "a11y.prayerDetail.iqama.choice_one": "اذان کے {{count}} منٹ بعد",
   "a11y.prayerDetail.iqama.choice_other": "اذان کے {{count}} منٹ بعد",
   "a11y.prayerDetail.preAthan.choice_one": "اذان سے {{count}} منٹ پہلے",
