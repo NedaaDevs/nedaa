@@ -12,14 +12,12 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { APP_STATE } from "@/constants/AppState";
 import { COUNT_AXIS } from "@/constants/Countdown";
-import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { useFocusPrayer } from "@/hooks/useFocusPrayer";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { localizeDigits } from "@/utils/digits";
-import { countReserve, formatCount, type FocusPrayer } from "@/utils/focusCount";
-import { prayerNameKey } from "@/utils/prayerName";
+import { countReserve, formatCount } from "@/utils/focusCount";
 import { spokenDuration } from "@/utils/spokenDuration";
-import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 export const FOCUS_COUNTDOWN_PART = {
   ROW: "focus-countdown-row",
@@ -31,7 +29,7 @@ export const FOCUS_COUNTDOWN_PART = {
 export const FocusCountdown = () => {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
-  const count = useCountdownTimer(flipped);
+  const focus = useFocusPrayer(flipped);
   const locale = useAppStore((state) => state.locale);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
 
@@ -44,13 +42,11 @@ export const FocusCountdown = () => {
     return () => subscription.remove();
   }, []);
 
-  if (!count) return null;
+  if (!focus) return null;
 
-  const nameOf = ({ id, time, timezone }: FocusPrayer) =>
-    t(prayerNameKey(id, isFridayInTimeZone(time, timezone)));
+  const { count, label, name, counted } = focus;
   const digits = (text: string) => localizeDigits(text, locale, western);
   const until = count.axis === COUNT_AXIS.UNTIL;
-  const counted = nameOf(count.counted);
   const duration = spokenDuration(count, t);
 
   // Neither part shrinks: when both do not fit, the figure wraps under the name.
@@ -70,12 +66,12 @@ export const FocusCountdown = () => {
         flexShrink={0}
         alignItems="flex-start">
         <Text size="md" typography="helper" fontWeight="600" color="$accent">
-          {t(count.current ? "today.focus.current" : "today.focus.next")}
+          {label}
         </Text>
         <SkyOccluder>
           <Pressable
             accessibilityRole="togglebutton"
-            accessibilityLabel={nameOf(count.named)}
+            accessibilityLabel={name}
             accessibilityHint={t(until ? "a11y.today.showElapsed" : "a11y.today.showRemaining")}
             accessibilityState={{ checked: !until }}
             onPress={() => setFlipped((value) => !value)}
@@ -85,7 +81,7 @@ export const FocusCountdown = () => {
             paddingEnd="$2.5"
             borderRadius="$control">
             <Text size="5xl" bold typography="title" color="$fg" flexShrink={1}>
-              {nameOf(count.named)}
+              {name}
             </Text>
             <Icon as={ArrowDownUp} size="lg" color={until ? "$mutedSky" : "$accent"} />
           </Pressable>

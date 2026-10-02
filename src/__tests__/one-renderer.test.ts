@@ -56,6 +56,21 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<SkyPaint\b|<SkySwatch\b/,
     home: "components/ui/sky-background/SkyPaint.tsx",
   },
+  // Today, More, the Settings root and the Language hero all name the place.
+  {
+    concept: "the user's place",
+    shows: /\blocalizedLocation\b|\busePlace\(/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\busePlace\(/,
+    home: "hooks/usePlace.ts",
+  },
+  // Today's focus block and the Language hero name the same prayer.
+  {
+    concept: "the focus prayer's name",
+    shows: /\buseCountdownTimer\(|\buseFocusPrayer\(|today\.focus\.(next|current)/,
+    drawsWith: /\buseFocusPrayer\(/,
+    home: "hooks/useFocusPrayer.ts",
+  },
 ];
 
 const FILES = sources(SRC).map((path) => ({

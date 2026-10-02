@@ -14,15 +14,20 @@ export const SKY_HERO_ID = "sky-hero";
 const HERO = { minHeight: 153, edge: 1 } as const;
 const SWATCH = { width: 77, height: 58, scale: 0.3 } as const;
 
-type HeroProps = { accessibilityLabel: string; children?: ReactNode };
+type HeroProps = {
+  accessibilityLabel: string;
+  /** Drops the frame's height, for one short line with nothing above it. */
+  compact?: boolean;
+  children?: ReactNode;
+};
 
 /** A frame over the page sky, its copy at the foot; read as one element. */
-export const SkyHero = ({ accessibilityLabel, children }: HeroProps) => (
+export const SkyHero = ({ accessibilityLabel, compact = false, children }: HeroProps) => (
   <SkyOccluder testID={SKY_HERO_ID}>
     <VStack
       accessible
       accessibilityLabel={accessibilityLabel}
-      minHeight={HERO.minHeight}
+      minHeight={compact ? undefined : HERO.minHeight}
       padding="$4"
       justifyContent="flex-end"
       borderWidth={HERO.edge}
