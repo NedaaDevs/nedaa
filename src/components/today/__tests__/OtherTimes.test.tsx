@@ -1,4 +1,4 @@
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { OTHER_TIME_LABEL_KEY, OtherTimes } from "@/components/today/OtherTimes";
 import { OTHER_TIMING, OTHER_TIMING_NAMES, PRAYER_ID } from "@/constants/Prayer";
@@ -80,6 +80,25 @@ describe("OtherTimes", () => {
           fontSize: fontSizeOf("md"),
         });
       }
+    }
+  });
+
+  // Arabic speech rewrites clock digits, so labels speak the time in words.
+  it("speaks an evening time as evening in Arabic", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    usePreferencesStore.setState({ useWesternNumerals: false });
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+    try {
+      await renderWithTheme(<OtherTimes />);
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole("button", { name: i18n.t("otherTimings.title") }));
+
+      const sunset = i18n.t(OTHER_TIME_LABEL_KEY[OTHER_TIMING.SUNSET]);
+      expect(
+        screen.getByLabelText(`${sunset}, السادسة و٥ دقائق مساءً`, { includeHiddenElements: true })
+      ).toBeTruthy();
+    } finally {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
     }
   });
 

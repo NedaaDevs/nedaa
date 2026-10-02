@@ -19,18 +19,20 @@ import { formatPrayerTime } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
 import { prayerCards, type PrayerCard } from "@/utils/prayerCards";
 import { prayerNameKey } from "@/utils/prayerName";
+import { spokenClockTime } from "@/utils/spokenClockTime";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 type CardProps = {
   card: PrayerCard;
   name: string;
   time: string;
+  spoken: string;
   selected: boolean;
   onPress: (opener: View | null) => void;
 };
 
 /** One prayer: quiet once passed, accented when next, ringed when chosen. */
-const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
+const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardProps) => {
   const { t } = useTranslation();
   // Held from mount: a ref handed over later is never attached.
   const self = useRef<View>(null);
@@ -52,7 +54,7 @@ const PrayerCardView = ({ card, name, time, selected, onPress }: CardProps) => {
             : "a11y.today.prayerCard",
         {
           prayer: name,
-          time,
+          time: spoken,
         }
       )}
       accessibilityHint={t("a11y.today.prayerCardHint")}
@@ -111,6 +113,7 @@ export const PrayerGrid = ({ selected, onSelect }: Props) => {
         locale,
         western
       )}
+      spoken={spokenClockTime(card.time, day.timezone, { locale, use24HourTime, western }, t)}
       selected={card.id === selected}
       onPress={(opener) => onSelect(card.id, opener)}
     />
