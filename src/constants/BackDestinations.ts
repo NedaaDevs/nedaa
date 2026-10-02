@@ -82,6 +82,11 @@ export const BACK_DESTINATION = {
     href: "/settings/preferences",
     title: "settings.preferences.title",
   },
+  SETTINGS_TEXT_SIZE: {
+    route: "settings/textSize",
+    href: "/settings/textSize",
+    title: "settings.textSize.title",
+  },
   SETTINGS_ACKNOWLEDGEMENTS: {
     route: "settings/acknowledgements",
     href: "/settings/acknowledgements",
