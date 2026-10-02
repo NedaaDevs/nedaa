@@ -1870,6 +1870,8 @@
   "prayerDetail.alarm.summary.fridayBefore_one": "Berbunyi {{count}} minit sebelum Zohor, hari Jumaat sahaja",
   "prayerDetail.alarm.summary.fridayBefore_other": "Berbunyi {{count}} minit sebelum Zohor, hari Jumaat sahaja",
   "a11y.today.prayerCardHint": "Membuka pemberitahuan dan tetapan solat ini",
+  "a11y.time.am": "{{time}} AM",
+  "a11y.time.pm": "{{time}} PM",
   "a11y.prayerDetail.iqama.choice_one": "{{count}} minit selepas Azan",
   "a11y.prayerDetail.iqama.choice_other": "{{count}} minit selepas Azan",
   "a11y.prayerDetail.preAthan.choice_one": "{{count}} minit sebelum Azan",

@@ -71,6 +71,15 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseFocusPrayer\(/,
     home: "hooks/useFocusPrayer.ts",
   },
+  // A screen reader says «م» as morning, so a spoken time names its period.
+  {
+    concept: "a prayer time a screen reader speaks",
+    shows:
+      /\bformatPrayerTime\([\s\S]*\baccessibilityLabel\b|\baccessibilityLabel\b[\s\S]*\bformatPrayerTime\(/,
+    within: /\.tsx$/,
+    drawsWith: /\bspokenClockTime\(/,
+    home: "utils/spokenClockTime.ts",
+  },
 ];
 
 const FILES = sources(SRC).map((path) => ({
