@@ -1,4 +1,5 @@
 Apa yang baharu?
 
-• Pelarasan tarikh Hijri anda kekal selepas aplikasi ditutup
+• Membaiki widget yang masih meminta aplikasi dibuka untuk memuatkan data selepas aplikasi dibuka
+• Membaiki teks doa yang terpotong dalam panduan umrah pada peranti boleh lipat
 • Pembaikan pepijat dan penambahbaikan

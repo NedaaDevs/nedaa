@@ -1,4 +1,5 @@
 What's new?
 
-• Your Hijri date adjustment stays after you close the app
+• Fixed widgets staying on "Open app to load data" after opening the app
+• Fixed clipped dua text in the Umrah guide on foldable devices
 • Bug fixes and improvements
