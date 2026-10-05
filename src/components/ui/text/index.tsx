@@ -56,6 +56,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       bold,
       fontWeight,
       fontSize,
+      lineHeight,
       isTruncated,
       underline,
       strikeThrough,
@@ -77,7 +78,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
     const resolvedWeight = resolveFontWeight(bold, fontWeight);
     const tokenKey = SIZE_MAP[size] ?? "$3";
     const sizeValues = FONT_SIZES[tokenKey] ?? FONT_SIZES["$3"];
-    const sized = resolveTextSizing(m, fontSize, sizeValues);
+    const sized = resolveTextSizing(m, fontSize, sizeValues, lineHeight);
 
     return (
       <TamaguiText

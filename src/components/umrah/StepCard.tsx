@@ -17,11 +17,12 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
+import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
-import FlipHint from "./FlipHint";
-import HadithReference from "./HadithReference";
+import FlipHint from "@/components/umrah/FlipHint";
+import HadithReference from "@/components/umrah/HadithReference";
 
 import { ExternalLink } from "lucide-react-native";
 import type { SubStep } from "@/types/umrah";
@@ -30,7 +31,10 @@ type Props = {
   step: SubStep;
 };
 
-const StepCard = ({ step }: Props) => {
+// Each guide step starts with fresh flip state on the Arabic face.
+const StepCard = ({ step }: Props) => <StepCardContent key={step.id} step={step} />;
+
+const StepCardContent = ({ step }: Props) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { locale } = useAppStore();
@@ -40,16 +44,11 @@ const StepCard = ({ step }: Props) => {
   const [reduceMotion, setReduceMotion] = useState(false);
   const flipValue = useSharedValue(0);
 
-  const isArabic = locale === "ar";
+  const isArabic = locale === AppLocale.AR;
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
-
-  useEffect(() => {
-    setIsFlipped(false);
-    flipValue.value = withTiming(0, { duration: 0 });
-  }, [step.id, flipValue]);
 
   const handleFlip = async () => {
     if (!step.dua) return;
@@ -180,11 +179,22 @@ const StepCard = ({ step }: Props) => {
               accessibilityHint={t("a11y.umrah.flipCardHint")}
               accessibilityState={{ expanded: isFlipped }}>
               <Box minHeight={180} style={{ position: "relative" }}>
-                {/* Front — Arabic */}
+                {/* The visible face stays in flow so wrapped text determines the card height. */}
                 <Animated.View
-                  style={[{ position: "absolute", width: "100%", minHeight: 180 }, frontStyle]}>
-                  <Card flex={1} justifyContent="center" alignItems="center" minHeight={180}>
+                  style={[
+                    {
+                      position: isFlipped ? "absolute" : "relative",
+                      width: "100%",
+                      minHeight: 180,
+                    },
+                    frontStyle,
+                  ]}
+                  pointerEvents={isFlipped ? "none" : "auto"}
+                  accessibilityElementsHidden={isFlipped}
+                  importantForAccessibility={isFlipped ? "no-hide-descendants" : "auto"}>
+                  <Card justifyContent="center" alignItems="center" minHeight={180}>
                     <Text
+                      width="100%"
                       size="xl"
                       color="$typography"
                       textAlign="center"
@@ -197,9 +207,19 @@ const StepCard = ({ step }: Props) => {
 
                 {/* Back — locale-aware */}
                 <Animated.View
-                  style={[{ position: "absolute", width: "100%", minHeight: 180 }, backStyle]}>
-                  <Card flex={1} justifyContent="center" alignItems="center" minHeight={180}>
-                    <VStack gap="$2" alignItems="center">
+                  style={[
+                    {
+                      position: isFlipped ? "relative" : "absolute",
+                      width: "100%",
+                      minHeight: 180,
+                    },
+                    backStyle,
+                  ]}
+                  pointerEvents={isFlipped ? "auto" : "none"}
+                  accessibilityElementsHidden={!isFlipped}
+                  importantForAccessibility={isFlipped ? "auto" : "no-hide-descendants"}>
+                  <Card justifyContent="center" alignItems="center" minHeight={180}>
+                    <VStack width="100%" gap="$2" alignItems="center">
                       <FlipBackContent step={step} locale={locale} isArabic={isArabic} />
                     </VStack>
                   </Card>
@@ -222,7 +242,7 @@ const StepCard = ({ step }: Props) => {
               {t(step.dua.source)}
             </Text>
           )}
-          <Text size="xs" color="$typographyTertiary" textAlign="center">
+          <Text size="xs" color="$typographySecondary" textAlign="center">
             {t("umrah.duaNote")}
           </Text>
         </VStack>
@@ -265,16 +285,18 @@ const StepCard = ({ step }: Props) => {
             accessibilityHint={t("a11y.umrah.flipCardHint")}
             accessibilityState={{ expanded: isFlipped }}>
             <Box minHeight={240} style={{ position: "relative" }}>
-              {/* Front — Arabic */}
+              {/* The visible face stays in flow so wrapped text determines the card height. */}
               <Animated.View
-                style={[{ position: "absolute", width: "100%", minHeight: 240 }, frontStyle]}>
-                <Card
-                  flex={1}
-                  padding="$6"
-                  justifyContent="center"
-                  alignItems="center"
-                  minHeight={240}>
+                style={[
+                  { position: isFlipped ? "absolute" : "relative", width: "100%", minHeight: 240 },
+                  frontStyle,
+                ]}
+                pointerEvents={isFlipped ? "none" : "auto"}
+                accessibilityElementsHidden={isFlipped}
+                importantForAccessibility={isFlipped ? "no-hide-descendants" : "auto"}>
+                <Card padding="$6" justifyContent="center" alignItems="center" minHeight={240}>
                   <Text
+                    width="100%"
                     size="2xl"
                     color="$typography"
                     textAlign="center"
@@ -287,14 +309,15 @@ const StepCard = ({ step }: Props) => {
 
               {/* Back — locale-aware */}
               <Animated.View
-                style={[{ position: "absolute", width: "100%", minHeight: 240 }, backStyle]}>
-                <Card
-                  flex={1}
-                  padding="$6"
-                  justifyContent="center"
-                  alignItems="center"
-                  minHeight={240}>
-                  <VStack gap="$3" alignItems="center">
+                style={[
+                  { position: isFlipped ? "relative" : "absolute", width: "100%", minHeight: 240 },
+                  backStyle,
+                ]}
+                pointerEvents={isFlipped ? "auto" : "none"}
+                accessibilityElementsHidden={!isFlipped}
+                importantForAccessibility={isFlipped ? "auto" : "no-hide-descendants"}>
+                <Card padding="$6" justifyContent="center" alignItems="center" minHeight={240}>
+                  <VStack width="100%" gap="$3" alignItems="center">
                     <FlipBackContent step={step} locale={locale} isArabic={isArabic} />
                   </VStack>
                 </Card>
@@ -316,7 +339,7 @@ const StepCard = ({ step }: Props) => {
               {t(step.dua.source)}
             </Text>
           )}
-          <Text size="xs" color="$typographyTertiary" textAlign="center">
+          <Text size="xs" color="$typographySecondary" textAlign="center">
             {t("umrah.duaNote")}
           </Text>
         </VStack>
@@ -336,6 +359,7 @@ const FlipBackContent = ({
   locale: string;
   isArabic: boolean;
 }) => {
+  const { t } = useTranslation();
   if (!step.dua) return null;
 
   if (isArabic) {

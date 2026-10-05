@@ -43,17 +43,26 @@ export const resolveFontSize = (value: unknown): number | undefined => {
 /**
  * Final font geometry for a Text instance: the app text-scale multiplier `m`
  * applied to either the caller's explicit fontSize or the size-token table.
- * With an explicit fontSize the line box stays undefined so React Native
- * derives it from the scaled font.
+ * Explicit line heights scale with the font. With only an explicit fontSize,
+ * React Native derives the line box from the scaled font.
  */
 export const resolveTextSizing = (
   m: number,
   fontSize: unknown,
-  sizeValues: { fontSize: number; lineHeight: number }
+  sizeValues: { fontSize: number; lineHeight: number },
+  lineHeight?: unknown
 ): { fontSize: number | undefined; lineHeight: number | undefined } => {
   const base = fontSize != null ? resolveFontSize(fontSize) : sizeValues.fontSize;
+  const baseLineHeight =
+    lineHeight != null
+      ? typeof lineHeight === "string" && lineHeight.startsWith("$")
+        ? FONT_SIZES[lineHeight]?.lineHeight
+        : resolveFontSize(lineHeight)
+      : fontSize != null
+        ? undefined
+        : sizeValues.lineHeight;
   return {
     fontSize: base == null ? undefined : base * m,
-    lineHeight: fontSize != null ? undefined : sizeValues.lineHeight * m,
+    lineHeight: baseLineHeight == null ? undefined : baseLineHeight * m,
   };
 };
