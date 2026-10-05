@@ -20,6 +20,7 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.LocalState
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
@@ -57,6 +58,8 @@ class AllPrayersWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            // Observe update events here so the data reads rerun in a warm session.
+            LocalState.current
             // Loaded per composition: a warm session recomposes without re-entering
             // provideGlance, so values read out here would redraw stale.
             val prayerService = PrayerDataService(context)

@@ -117,6 +117,32 @@ describe("writeWidgetSnapshot", () => {
     expect(mockWriteSnapshotFile).not.toHaveBeenCalled();
   });
 
+  test("serializes overlapping writes so they cannot share the temp file", async () => {
+    let finishWrite!: () => void;
+    const blockedWrite = new Promise<void>((resolve) => {
+      finishWrite = resolve;
+    });
+    mockWriteSnapshotFile.mockReturnValueOnce(blockedWrite);
+
+    const first = writeWidgetSnapshot();
+    // Wait until the first write holds the file open.
+    while (mockWriteSnapshotFile.mock.calls.length === 0) await Promise.resolve();
+    const second = writeWidgetSnapshot();
+    await Promise.resolve();
+    expect(mockGetByRange).toHaveBeenCalledTimes(1);
+    expect(mockWriteSnapshotFile).toHaveBeenCalledTimes(1);
+
+    finishWrite();
+    await Promise.all([first, second]);
+    expect(mockWriteSnapshotFile).toHaveBeenCalledTimes(2);
+  });
+
+  test("a failed write does not block the next sync", async () => {
+    mockWriteSnapshotFile.mockRejectedValueOnce(new Error("disk full"));
+    await Promise.all([writeWidgetSnapshot(), writeWidgetSnapshot()]);
+    expect(mockWriteSnapshotFile).toHaveBeenCalledTimes(2);
+  });
+
   test("never throws: a failed write is logged and the previous file stays", async () => {
     mockWriteSnapshotFile.mockRejectedValueOnce(new Error("disk full"));
     await expect(writeWidgetSnapshot()).resolves.toBeUndefined();

@@ -1,18 +1,24 @@
 import { addDays, format, subDays } from "date-fns";
 
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 
 // Referenced lazily by the module factories below, so the `mock` prefix hoisting
 // rule is satisfied and the consts are initialised before any test calls them.
 const mockGetByRange = jest.fn();
 const mockGetByDate = jest.fn();
+const mockInsertPrayerTimes = jest.fn();
+const mockSetTimezone = jest.fn();
 
 let mockNow = new Date("2026-08-15T08:00:00Z");
 
+jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
 jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
     getPrayerTimesByDateRange: (...args: unknown[]) => mockGetByRange(...args),
     getPrayerTimesByDate: (...args: unknown[]) => mockGetByDate(...args),
+    insertPrayerTimes: (...args: unknown[]) => mockInsertPrayerTimes(...args),
+    cleanData: async () => true,
   },
 }));
 jest.mock("@/stores/location", () => ({
@@ -21,6 +27,7 @@ jest.mock("@/stores/location", () => ({
     getState: () => ({
       locationDetails: { timezone: "Asia/Riyadh" },
       lastKnownCoords: null,
+      setTimezone: mockSetTimezone,
     }),
   },
 }));
@@ -99,5 +106,54 @@ describe("refreshTimingsFromDb", () => {
 
     expect(returned).toEqual([]);
     expect(usePrayerTimesStore.getState().twoWeeksTimings).toBeNull();
+  });
+});
+
+describe("prayer widget recovery", () => {
+  const { getPrayerTimes, getAndStorePrayerTimes } = usePrayerTimesStore.getState();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockNow = new Date("2026-08-15T08:00:00Z");
+    usePrayerTimesStore.setState({ didGetCurrentLocation: true });
+  });
+  afterEach(() => {
+    // Zustand replaces its state object, so restoring a spy's original object
+    // alone does not restore the function in the current state.
+    usePrayerTimesStore.setState({ getPrayerTimes, getAndStorePrayerTimes });
+  });
+
+  it("republishes cached days when opening the app without a fetch", async () => {
+    mockGetByRange.mockResolvedValue(makeRows(14));
+    mockGetByDate.mockResolvedValue({ date: dateInt(subDays(mockNow, 1)) });
+    const fetch = jest.spyOn(usePrayerTimesStore.getState(), "getAndStorePrayerTimes");
+    await usePrayerTimesStore.getState().loadPrayerTimes();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
+    fetch.mockRestore();
+  });
+
+  it("publishes a snapshot after storing fresh prayer times", async () => {
+    const data = { timezone: "Asia/Riyadh", days: [] };
+    const fetch = jest
+      .spyOn(usePrayerTimesStore.getState(), "getPrayerTimes")
+      .mockResolvedValue(data as never);
+    mockInsertPrayerTimes.mockResolvedValue({ success: true });
+    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes()).resolves.toBe(true);
+    expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
+    expect(mockInsertPrayerTimes.mock.invocationCallOrder[0]).toBeLessThan(
+      (syncWidgetSnapshot as jest.Mock).mock.invocationCallOrder[0]
+    );
+    fetch.mockRestore();
+  });
+
+  it("republishes available days even when the launch fetch fails offline", async () => {
+    mockGetByRange.mockResolvedValue(makeRows(1));
+    mockGetByDate.mockResolvedValue(null);
+    const fetch = jest
+      .spyOn(usePrayerTimesStore.getState(), "getAndStorePrayerTimes")
+      .mockResolvedValue(false);
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
+    expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
+    fetch.mockRestore();
   });
 });

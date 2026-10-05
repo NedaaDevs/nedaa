@@ -2,6 +2,8 @@ import { AppState, AppStateStatus } from "react-native";
 
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
+import { AppLogger } from "@/utils/appLogger";
 
 let registered = false;
 
@@ -20,8 +22,11 @@ export const registerForegroundReschedule = (): void => {
         // from the database first; otherwise the top-up schedules the window of
         // the last cold start.
         await usePrayerTimesStore.getState().refreshTimingsFromDb();
+        await syncWidgetSnapshot();
         await useNotificationStore.getState().rescheduleIfNeeded(false);
-      })();
+      })().catch((error) => {
+        AppLogger.create("widgets").e("Foreground", "foreground refresh failed", error);
+      });
     }
   });
 };

@@ -119,7 +119,7 @@ export const syncWidgetPayloads = async (): Promise<void> => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const m = require("@/services/widgetSnapshot") as typeof import("@/services/widgetSnapshot");
       await m.writeWidgetSnapshot();
-      refreshAllWidgets();
+      await refreshAllWidgets();
     }
   } catch (e) {
     // Failed sync = stale/empty widgets until the next trigger.

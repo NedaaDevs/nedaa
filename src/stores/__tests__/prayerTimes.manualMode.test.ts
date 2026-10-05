@@ -10,6 +10,7 @@ const mockGetPrayerTimesByDate = jest.fn();
 const mockReverseGeocodeAsync = jest.fn();
 const mockReverseGeocodeApi = jest.fn();
 
+jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
 jest.mock("@/adapters/location", () => ({
   reverseGeocodeAsync: (...args: unknown[]) => mockReverseGeocodeAsync(...args),
 }));

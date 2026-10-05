@@ -14,7 +14,6 @@ import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/provider
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
-import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
 import { logLaunchWidgetAttachContext } from "@/services/widgetDiagnostics";
 
@@ -73,8 +72,7 @@ export const appSetup = async (
     // Ahead of the refresh, so the record of what could attach precedes the attaching.
     logLaunchWidgetAttachContext();
     reloadPrayerWidgets();
-    refreshAllWidgets();
-    void syncWidgetPayloads();
+    await syncWidgetPayloads();
   } catch (error) {
     console.error("App setup failed:", error);
     AppLogger.create("crash").e(

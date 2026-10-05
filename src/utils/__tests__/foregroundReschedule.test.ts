@@ -6,6 +6,14 @@ import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
 // rule is satisfied and the consts are initialised before any test calls them.
 const mockRescheduleIfNeeded = jest.fn();
 const mockRefreshTimings = jest.fn();
+const mockSyncWidgetSnapshot = jest.fn();
+
+jest.mock("@/services/widgetSnapshot", () => ({
+  syncWidgetSnapshot: () => mockSyncWidgetSnapshot(),
+}));
+jest.mock("@/utils/appLogger", () => ({
+  AppLogger: { create: () => ({ e: jest.fn() }) },
+}));
 
 jest.mock("@/stores/notification", () => ({
   useNotificationStore: {
@@ -34,6 +42,13 @@ describe("registerForegroundReschedule", () => {
 
     expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
     expect(mockRescheduleIfNeeded).toHaveBeenCalledWith(false);
+    expect(mockSyncWidgetSnapshot).toHaveBeenCalledTimes(1);
+    expect(mockRefreshTimings.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSyncWidgetSnapshot.mock.invocationCallOrder[0]
+    );
+    expect(mockSyncWidgetSnapshot.mock.invocationCallOrder[0]).toBeLessThan(
+      mockRescheduleIfNeeded.mock.invocationCallOrder[0]
+    );
     // The window refresh must precede the reschedule.
     expect(mockRefreshTimings.mock.invocationCallOrder[0]).toBeLessThan(
       mockRescheduleIfNeeded.mock.invocationCallOrder[0]
@@ -41,10 +56,12 @@ describe("registerForegroundReschedule", () => {
 
     mockRefreshTimings.mockClear();
     mockRescheduleIfNeeded.mockClear();
+    mockSyncWidgetSnapshot.mockClear();
     handler("background");
     await new Promise(process.nextTick);
 
     expect(mockRefreshTimings).not.toHaveBeenCalled();
     expect(mockRescheduleIfNeeded).not.toHaveBeenCalled();
+    expect(mockSyncWidgetSnapshot).not.toHaveBeenCalled();
   });
 });

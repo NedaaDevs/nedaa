@@ -1,5 +1,6 @@
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
+jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
   default: {

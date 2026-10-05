@@ -5,6 +5,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.LocalState
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.fillMaxSize
 import dev.nedaa.android.widgets.common.NedaaWidgetTheme
@@ -23,6 +24,8 @@ class QadaWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            // Observe update events here so the data reads rerun in a warm session.
+            LocalState.current
             val config = WidgetConfig.get(context)
             val qadaService = QadaDataService(context)
             val summary = qadaService.getQadaSummary()

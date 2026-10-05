@@ -24,6 +24,7 @@ import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 import type { WidgetSnapshotInputs } from "@/services/widgetSnapshotFile";
 
 const log = AppLogger.create("widgets");
+let pendingWrite: Promise<void> = Promise.resolve();
 
 // Each database read completes before the next begins: the two locks are non-reentrant
 // and nesting one run() inside another deadlocks.
@@ -63,11 +64,16 @@ const gatherSnapshotInputs = async (): Promise<WidgetSnapshotInputs> => {
 // failure here is logged and the previous snapshot stays on disk.
 export const writeWidgetSnapshot = async (): Promise<void> => {
   if (Platform.OS !== PlatformType.ANDROID) return;
-  try {
-    await writeSnapshotFile(buildWidgetSnapshot(await gatherSnapshotInputs()));
-  } catch (e) {
-    log.e("Snapshot", "widget snapshot write failed", e instanceof Error ? e : undefined);
-  }
+  // Store actions and app lifecycle events can overlap. Queue the full read/write
+  // so they cannot replace each other's temp file or publish an older read last.
+  pendingWrite = pendingWrite.then(async () => {
+    try {
+      await writeSnapshotFile(buildWidgetSnapshot(await gatherSnapshotInputs()));
+    } catch (e) {
+      log.e("Snapshot", "widget snapshot write failed", e instanceof Error ? e : undefined);
+    }
+  });
+  await pendingWrite;
 };
 
 // Write then repaint. Repaints Android only: iOS widgets read the database tables and

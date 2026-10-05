@@ -40,9 +40,16 @@ import { getAdapterByProviderId } from "@/adapters/providers";
 
 // Widget
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
-import { refreshAllWidgets } from "../../modules/expo-widgets/src";
 
 const log = AppLogger.create("prayertimes");
+
+// Snapshot inputs include qada, whose notification actions depend on this store.
+// Resolve the writer after initialization to keep that dependency out of startup.
+const syncWidgetSnapshot = async (): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const m = require("@/services/widgetSnapshot") as typeof import("@/services/widgetSnapshot");
+  await m.syncWidgetSnapshot();
+};
 
 export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
@@ -184,7 +191,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             }
 
             reloadPrayerWidgets();
-            refreshAllWidgets();
+            await syncWidgetSnapshot();
 
             log.i("Fetch", `stored prayer times (${yearOverride ?? "current"}/${month ?? "all"})`);
             return true;
@@ -312,6 +319,8 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             });
             throw error;
           } finally {
+            // Cached and offline launches still publish their stored days to widgets.
+            await syncWidgetSnapshot();
             useAppStore.getState().setLoadingState(false);
           }
         },

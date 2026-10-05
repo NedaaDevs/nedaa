@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 
 import { PlatformType } from "@/enums/app";
+import { writeWidgetSnapshot } from "@/services/widgetSnapshot";
 
 import {
   getPlacedWidgetCount as iosPlacedCount,
@@ -29,6 +30,7 @@ export const getWidgetLastRenderedAt = (): number =>
   isIOS ? iosLastRendered() : androidLastRendered();
 
 export const triggerWidgetReload = async (): Promise<void> => {
+  await writeWidgetSnapshot();
   reloadAllWidgets();
   await refreshAllWidgets();
 };
