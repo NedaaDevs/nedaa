@@ -1,4 +1,5 @@
 import { HStack } from "@/components/ui/hstack";
+import { Icon, type IconProps } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { useRTL } from "@/contexts/RTLContext";
@@ -18,9 +19,13 @@ export type SegmentedChoiceProps<V extends string | number> = {
   label: (option: V) => string;
   /** An option's spoken name, where its visible text is a bare number. */
   spokenLabel?: (option: V) => string;
+  /** Shows every option's digits as written, such as «123» beside «١٢٣». */
+  literalDigits?: boolean;
+  /** An icon over each option's text; the options then share the row equally. */
+  icon?: (option: V) => IconProps["as"];
 };
 
-/** A row of pills with one chosen, wrapping when they do not fit. */
+/** A row of pills with one chosen, or of equal icon tiles when given icons. */
 export const SegmentedChoice = <V extends string | number>({
   options,
   value,
@@ -28,23 +33,27 @@ export const SegmentedChoice = <V extends string | number>({
   accessibilityLabel,
   label,
   spokenLabel = label,
+  literalDigits = false,
+  icon,
 }: SegmentedChoiceProps<V>) => {
   const { isRTL, direction } = useRTL();
   const locale = useAppStore((state) => state.locale);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
-  const digits = (text: string) => localizeDigits(text, locale, western);
 
   return (
     <HStack
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      flexWrap="wrap"
+      flexWrap={icon ? "nowrap" : "wrap"}
       spacing="tight"
       // Set here too, so a host outside the app's direction still mirrors the row.
       style={{ direction }}>
       {options.map((option) => {
         const selected = option === value;
+        const digits = (text: string) =>
+          literalDigits ? text : localizeDigits(text, locale, western);
         const text = digits(label(option));
+        const colour = selected ? "$fg" : "$muted";
         return (
           <Pressable
             key={option}
@@ -56,16 +65,31 @@ export const SegmentedChoice = <V extends string | number>({
             }}
             alignItems="center"
             justifyContent="center"
-            paddingHorizontal="$3"
-            borderRadius="$pill"
             borderWidth={1}
             borderColor={selected ? "$accentEdge" : "$border"}
-            backgroundColor={selected ? "$accentSoft" : "transparent"}>
+            {...(icon
+              ? {
+                  flexGrow: 1,
+                  flexBasis: 0,
+                  gap: "$0.5",
+                  minHeight: "$12",
+                  paddingVertical: "$1",
+                  paddingHorizontal: "$0.5",
+                  borderRadius: "$control",
+                  backgroundColor: selected ? "$accentSoft" : "$surface2Soft",
+                }
+              : {
+                  paddingHorizontal: "$3",
+                  borderRadius: "$pill",
+                  backgroundColor: selected ? "$accentSoft" : "transparent",
+                })}>
+            {icon ? <Icon as={icon(option)} size="md" color={colour} /> : null}
             <Text
-              size="sm"
+              size={icon ? "xs" : "sm"}
               typography="helper"
               fontWeight="600"
-              color={selected ? "$fg" : "$muted"}>
+              color={colour}
+              numberOfLines={icon ? 1 : undefined}>
               {isRTL ? isolateLatinNumbers(text) : text}
             </Text>
           </Pressable>
