@@ -22,6 +22,7 @@ import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import QuickSettingsRow from "@/components/quran/settings/QuickSettingsRow";
 import MushafSection from "@/components/quran/settings/MushafSection";
 import ReaderOptionsSection from "@/components/quran/settings/ReaderOptionsSection";
+import ReaderControlsSection from "@/components/quran/settings/ReaderControlsSection";
 
 interface QuranSettingsSheetProps {
   onClose: () => void;
@@ -123,6 +124,7 @@ const QuranSettingsSheet = ({ onClose, onDownloadMore }: QuranSettingsSheetProps
           <YStack gap="$5">
             <MushafSection chrome={chrome} onDownloadMore={onDownloadMore} onClose={onClose} />
             <ReaderOptionsSection chrome={chrome} />
+            <ReaderControlsSection chrome={chrome} />
           </YStack>
         </ScrollView>
       </Animated.View>
