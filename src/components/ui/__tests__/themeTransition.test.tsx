@@ -148,7 +148,9 @@ describe("ThemeTransitionProvider", () => {
       "none"
     );
     expect(dissolving()).toBe("true");
-    expect(fn).not.toHaveBeenCalled();
+    // Order, not timing: the show limit may already have run the change.
+    const captured = jest.mocked(captureRef).mock.invocationCallOrder[0];
+    expect(fn.mock.invocationCallOrder[0] ?? Infinity).toBeGreaterThan(captured);
 
     await load();
     await finish(done);
