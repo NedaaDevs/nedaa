@@ -6,6 +6,8 @@ import { Bell } from "lucide-react-native";
 
 import { ICON_SIZES } from "@/components/ui/icon/sizing";
 import { DURATION_MS } from "@/constants/Motion";
+import { LIST_GROUP_PART, ListGroup } from "@/components/ui/list-group";
+import { LIST_ROW_VARIANT } from "@/components/ui/list-row";
 import { SWITCH_GROUP_PART, SwitchGroup } from "@/components/ui/switch-group";
 import { controlProblems } from "@/test-helpers/controls";
 import { fontSizeOf } from "@/test-helpers/text";
@@ -210,5 +212,35 @@ describe("SwitchGroup", () => {
       fontFamily: title.fontFamily,
       fontSize: title.fontSize,
     });
+  });
+
+  // In a list group the group draws the rules; a row drawing one doubles it.
+  it("draws a grouped row without its own divider, framed as a list row", async () => {
+    await renderWithTheme(
+      <ListGroup>
+        <SwitchGroup
+          variant={LIST_ROW_VARIANT.GROUPED}
+          label={LABEL}
+          value={false}
+          onValueChange={jest.fn()}
+        />
+        <SwitchGroup
+          variant={LIST_ROW_VARIANT.GROUPED}
+          label={NESTED}
+          value
+          onValueChange={jest.fn()}
+        />
+      </ListGroup>
+    );
+
+    expect(screen.getAllByTestId(LIST_GROUP_PART.DIVIDER, hidden)).toHaveLength(1);
+    const grouped = screen.getByRole("switch", { name: LABEL });
+    expect(styleOf(grouped.parent!).borderBottomWidth).toBeUndefined();
+    expect(styleOf(grouped)).toMatchObject({
+      minHeight: 64,
+      paddingLeft: 12,
+      paddingRight: 12,
+    });
+    expect(controlProblems()).toEqual([]);
   });
 });

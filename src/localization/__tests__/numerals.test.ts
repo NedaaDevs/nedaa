@@ -22,29 +22,20 @@ beforeEach(() => {
 
 describe("numeralPostProcessor", () => {
   it("applies the numeral preference to settings copy", () => {
-    expect(translate("settings.preferences.use24HourTime.description")).toBe(
-      "عرض المواقيت بصيغة ١٧:٣٠ بدلًا من ٥:٣٠ م"
-    );
-    expect(translate("settings.preferences.use24HourTime.title")).toBe("نظام ٢٤ ساعة");
+    expect(translate("settings.summary.clock24")).toBe("نظام ٢٤ ساعة");
   });
 
   it("passes copy through when Western numerals are chosen", () => {
     mockState.useWesternNumerals = true;
-    expect(translate("settings.preferences.use24HourTime.description")).toBe(
-      "عرض المواقيت بصيغة 17:30 بدلًا من 5:30 م"
-    );
+    expect(translate("settings.summary.clock24")).toBe("نظام 24 ساعة");
   });
 
   it("leaves other locales untouched", () => {
-    expect(run("settings.preferences.use24HourTime.description", "17:30 و 5:30", "en")).toBe(
-      "17:30 و 5:30"
-    );
+    expect(run("settings.summary.clock24", "17:30 و 5:30", "en")).toBe("17:30 و 5:30");
   });
 
-  it("leaves the numeral preference's own label showing both digit sets", () => {
-    expect(translate("settings.preferences.westernNumerals.description")).toBe(
-      ar["settings.preferences.westernNumerals.description"]
-    );
+  it("leaves the Western numeral option in Western digits under Arabic numerals", () => {
+    expect(translate("settings.preferences.numerals.options.western")).toBe("123");
   });
 
   it("leaves licence identifiers alone", () => {

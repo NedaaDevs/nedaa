@@ -26,7 +26,7 @@ export const Section = ({
         size={kind === SECTION_KIND.LABEL ? "sm" : "lg"}
         bold
         typography={kind === SECTION_KIND.LABEL ? "helper" : "display"}
-        color={kind === SECTION_KIND.LABEL ? "$muted" : "$fg"}
+        color={kind === SECTION_KIND.LABEL ? "$mutedSky" : "$fg"}
         accessibilityRole="header"
         flexShrink={1}>
         {title}
