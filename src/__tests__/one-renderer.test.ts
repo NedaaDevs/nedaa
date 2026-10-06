@@ -71,6 +71,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseFocusPrayer\(/,
     home: "hooks/useFocusPrayer.ts",
   },
+  // The tab bar and the opening-tab choice offer the same tabs, named alike.
+  {
+    concept: "the bar's tabs",
+    shows: /\bTabBarItem\b|\bsetOpeningTab\b/,
+    within: /\.tsx$/,
+    drawsWith: /\buseBarTabs\(/,
+    home: "components/ui/tab-bar-item/index.tsx",
+  },
   // The Text size preview and onboarding set text at a preset not yet chosen.
   {
     concept: "text at a preset other than the app's",
