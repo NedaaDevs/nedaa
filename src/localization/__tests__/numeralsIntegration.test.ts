@@ -10,7 +10,7 @@ jest.mock("@/stores/preferences", () => ({
   },
 }));
 
-const DESCRIPTION = "settings.preferences.use24HourTime.description";
+const CLOCK = "settings.preferences.clock.spoken.24h";
 
 beforeEach(() => {
   mockState.useWesternNumerals = false;
@@ -18,12 +18,12 @@ beforeEach(() => {
 
 describe("t() with the numeral post-processor registered", () => {
   it("renders Arabic-Indic digits when the reader keeps Arabic numerals", () => {
-    expect(i18n.t(DESCRIPTION)).toBe("عرض المواقيت بصيغة ١٧:٣٠ بدلًا من ٥:٣٠ م");
+    expect(i18n.t(CLOCK)).toBe("نظام ٢٤ ساعة");
   });
 
   it("renders Western digits when the reader asks for them", () => {
     mockState.useWesternNumerals = true;
-    expect(i18n.t(DESCRIPTION)).toBe("عرض المواقيت بصيغة 17:30 بدلًا من 5:30 م");
+    expect(i18n.t(CLOCK)).toBe("نظام 24 ساعة");
   });
 
   it("applies the preference to interpolated values too", () => {
@@ -35,8 +35,8 @@ describe("t() with the numeral post-processor registered", () => {
     expect(i18n.t("athkar.items.surahAlIkhlas")).toContain("﴿١﴾");
   });
 
-  it("leaves the numeral preference's own label showing both digit sets", () => {
-    expect(i18n.t("settings.preferences.westernNumerals.description")).toContain("(1، 2، 3)");
+  it("leaves the Western numeral option in Western digits", () => {
+    expect(i18n.t("settings.preferences.numerals.options.western")).toBe("123");
   });
 
   it("leaves licence identifiers alone", () => {
@@ -45,7 +45,7 @@ describe("t() with the numeral post-processor registered", () => {
 
   it("leaves other locales untouched", async () => {
     await i18n.changeLanguage("en");
-    expect(i18n.t(DESCRIPTION)).toBe("Show prayer times as 17:30 instead of 5:30 PM");
+    expect(i18n.t(CLOCK)).toBe("24-hour time");
     await i18n.changeLanguage("ar");
   });
 });
