@@ -1,7 +1,8 @@
 import { screen, userEvent } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppDirection, AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { getDirection, isRTL as isRTLDirection, useAppStore } from "@/stores/app";
@@ -158,5 +159,123 @@ describe("SegmentedChoice", () => {
     await renderChoice({ locale: AppLocale.AR, useWesternNumerals: false, withSpoken: false });
 
     expect(screen.getByRole("radio", { name: "١٥" })).toBeOnTheScreen();
+  });
+});
+
+const SCRIPTS = ["indic", "latin"] as const;
+type Script = (typeof SCRIPTS)[number];
+const SCRIPT_LABEL: Record<Script, string> = { indic: "١٢٣", latin: "123" };
+const SCRIPTS_GROUP = "Numerals";
+
+const renderScripts = (literalDigits?: boolean) => {
+  useAppStore.setState({ locale: AppLocale.AR });
+  usePreferencesStore.setState({ useWesternNumerals: false });
+  return renderWithTheme(
+    <SegmentedChoice
+      options={SCRIPTS}
+      value="indic"
+      onChange={jest.fn()}
+      accessibilityLabel={SCRIPTS_GROUP}
+      label={(option) => SCRIPT_LABEL[option]}
+      literalDigits={literalDigits}
+    />,
+    { isRTL: true }
+  );
+};
+
+describe("SegmentedChoice literal digits", () => {
+  // Options naming numeral styles show each style whatever the preference.
+  it("writes every option's digits as given, shown and spoken", async () => {
+    await renderScripts(true);
+
+    expect(screen.getByText(`${LTR_ISOLATE.OPEN}123${LTR_ISOLATE.CLOSE}`)).toBeOnTheScreen();
+    expect(screen.getAllByRole("radio").map((choice) => choice.props.accessibilityLabel)).toEqual([
+      "١٢٣",
+      "123",
+    ]);
+  });
+
+  it("localizes the digits otherwise", async () => {
+    await renderScripts();
+
+    expect(screen.getAllByRole("radio").map((choice) => choice.props.accessibilityLabel)).toEqual([
+      "١٢٣",
+      "١٢٣",
+    ]);
+  });
+});
+
+const PLACES = ["home", "away", "back"] as const;
+const GLYPH = "segmented-choice-test-glyph";
+const Glyph = () => <View testID={GLYPH} />;
+
+const renderPlaces = () => {
+  useAppStore.setState({ locale: AppLocale.EN });
+  return renderWithTheme(
+    <SegmentedChoice
+      options={PLACES}
+      value="home"
+      onChange={jest.fn()}
+      accessibilityLabel="Start on"
+      label={String}
+      icon={() => Glyph}
+    />
+  );
+};
+
+describe("SegmentedChoice with icons", () => {
+  it("draws each option's icon, hidden from the reader", async () => {
+    await renderPlaces();
+
+    expect(screen.queryAllByTestId(GLYPH)).toHaveLength(0);
+    expect(screen.getAllByTestId(GLYPH, { includeHiddenElements: true })).toHaveLength(
+      PLACES.length
+    );
+    expect(choices().map((choice) => choice.props.accessibilityLabel)).toEqual([...PLACES]);
+  });
+
+  // Tiles share the row in equal parts, so a long name cannot crowd the rest.
+  it("lays the options out as equal tiles on one line", async () => {
+    await renderPlaces();
+
+    expect(styleOf(screen.getByLabelText("Start on"))).toMatchObject({ flexWrap: "nowrap" });
+    for (const choice of choices()) {
+      expect(styleOf(choice)).toMatchObject({ flexGrow: 1, flexBasis: 0 });
+    }
+  });
+
+  // The chosen tile carries the strongest fill and edge in the row.
+  it("fills the chosen tile with the accent and edges the rest", async () => {
+    await renderPlaces();
+
+    expect(choices().map((choice) => styleOf(choice))).toEqual(
+      PLACES.map((place) =>
+        expect.objectContaining(
+          place === "home"
+            ? {
+                backgroundColor: NEDAA_LIGHT.accentSoft.hex,
+                borderTopColor: NEDAA_LIGHT.accentEdge.hex,
+              }
+            : {
+                backgroundColor: NEDAA_LIGHT.surface2Soft.hex,
+                borderTopColor: NEDAA_LIGHT.border.hex,
+              }
+        )
+      )
+    );
+  });
+
+  it("rounds a tile as a control, not a pill", async () => {
+    await renderPlaces();
+
+    for (const choice of choices()) {
+      expect(styleOf(choice).borderTopLeftRadius).toBe(12);
+    }
+  });
+
+  it("gives every tile a role, a name and a 44pt target", async () => {
+    await renderPlaces();
+
+    expect(controlProblems()).toEqual([]);
   });
 });
