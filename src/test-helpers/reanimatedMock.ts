@@ -28,6 +28,13 @@ export const useAnimatedStyle = <T>(style: () => T) => style();
 export const useEvent = () => () => undefined;
 export const useComposedEventHandler = () => () => undefined;
 export const withTiming = jest.fn((value: unknown) => value);
+// Linear between the first and last points, clamped to the output range.
+export const interpolate = (value: number, input: number[], output: number[]) => {
+  const [inFrom, inTo] = [input[0], input[input.length - 1]];
+  const [outFrom, outTo] = [output[0], output[output.length - 1]];
+  const t = inTo === inFrom ? 0 : Math.min(1, Math.max(0, (value - inFrom) / (inTo - inFrom)));
+  return outFrom + (outTo - outFrom) * t;
+};
 export const withSpring = jest.fn((value: unknown) => value);
 export const withSequence = (...steps: unknown[]) => steps[steps.length - 1];
 export const withRepeat = jest.fn((animation: unknown) => animation);
