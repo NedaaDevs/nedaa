@@ -45,7 +45,8 @@ describe("Section", () => {
     expect(header).toHaveStyle({ color: NEDAA_LIGHT.fg.hex, fontSize: fontSizeOf("lg") });
   });
 
-  it("labels a sheet's section in the muted ink at the sm size", async () => {
+  // A label also sits on the sky, where `muted` falls below 4.5:1.
+  it("labels a section in the sky's muted ink at the sm size", async () => {
     await renderWithTheme(
       <Section title="Alerts" kind={SECTION_KIND.LABEL}>
         {null}
@@ -53,7 +54,7 @@ describe("Section", () => {
     );
     const header = screen.getByRole("header", { name: "Alerts" });
 
-    expect(header).toHaveStyle({ color: NEDAA_LIGHT.muted.hex, fontSize: fontSizeOf("sm") });
+    expect(header).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex, fontSize: fontSizeOf("sm") });
   });
 });
 
