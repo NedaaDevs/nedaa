@@ -9,7 +9,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 // Stores
-import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useTabBarFrameStore } from "@/stores/tabBarFrame";
@@ -18,9 +17,10 @@ import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 import { HiddenTab, OpeningTab, type OpeningTabValue } from "@/enums/app";
 import { isSkyTab } from "@/constants/SkyTabs";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { TAB_ITEMS, type TabItem } from "@/constants/TabBar";
 
-// Icons
-import { AlarmClock, BookOpen, Ellipsis, House } from "lucide-react-native";
+// Hooks
+import { useBarTabs } from "@/hooks/useBarTabs";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -28,9 +28,6 @@ import { HStack } from "@/components/ui/hstack";
 import { TabBarItem } from "@/components/ui/tab-bar-item";
 import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
-
-// Utils
-import { isAthkarSupported } from "@/utils/athkar";
 
 /** Where each bar tab lives; the opening-tab preference lands there too. */
 const TAB_HREF = {
@@ -40,14 +37,6 @@ const TAB_HREF = {
   [OpeningTab.TOOLS]: BACK_DESTINATION.TOOLS.href,
 } as const satisfies Record<OpeningTabValue, Href>;
 
-/** The bar's tabs, in the order it shows them. */
-const TAB_ITEMS = [
-  { name: OpeningTab.HOME, title: "a11y.tab.home", icon: House },
-  { name: OpeningTab.QURAN, title: "a11y.tab.quran", icon: BookOpen },
-  { name: OpeningTab.ATHKAR, title: "a11y.tab.athkar", icon: AlarmClock },
-  { name: OpeningTab.TOOLS, title: "a11y.tab.tools", icon: Ellipsis },
-] as const;
-
 /** Every route the tabs declare: the bar's tabs, then the ones it hides. */
 export const TAB_ROUTES = [...TAB_ITEMS.map((tab) => tab.name), ...Object.values(HiddenTab)];
 
@@ -55,7 +44,7 @@ export const TAB_BAR_PART = { FRAME: "tab-bar-frame" } as const;
 
 // Reads only the tab state; a press switches tabs by href through the router.
 type AppTabBarProps = Pick<BottomTabBarProps, "state"> & {
-  tabs: readonly (typeof TAB_ITEMS)[number][];
+  tabs: readonly TabItem[];
   readerActive: boolean;
 };
 
@@ -116,19 +105,16 @@ const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
   );
 };
 
-// Honoured once per app launch: the effect below runs again on a locale change, and
+// Honoured once per app launch: the effect below runs again when the bar changes, and
 // re-navigating then would yank the user out of whatever tab they were on.
 let openingTabApplied = false;
 
 const TabsLayout = () => {
-  const locale = useAppStore((state) => state.locale);
   // The immersive reader owns the whole screen — the global Listen mini-player
   // would overlay the page and disrupt reading, so suppress it there.
   const readerActive = useQuranStore((s) => s.readerActive);
   const { t } = useTranslation();
-  const tabs = TAB_ITEMS.filter(
-    (tab) => tab.name !== OpeningTab.ATHKAR || isAthkarSupported(locale)
-  );
+  const tabs = useBarTabs();
 
   // Land on the user's chosen tab. The preference is persisted, so wait for
   // rehydration or the stored choice is missed on a cold start.
@@ -139,13 +125,12 @@ const TabsLayout = () => {
       if (openingTabApplied) return;
       openingTabApplied = true;
 
-      const tab = usePreferencesStore.getState().openingTab;
-      if (tab === OpeningTab.HOME) return;
-      // A tab can become unreachable after it was chosen — the locale no longer
-      // supports it. Fall back to home rather than a hidden route.
-      if (tab === OpeningTab.ATHKAR && !isAthkarSupported(locale)) return;
+      const stored = usePreferencesStore.getState().openingTab;
+      if (stored === OpeningTab.HOME) return;
+      // A tab chosen in another locale may be off the bar; home stands in for it.
+      if (!tabs.some((tab) => tab.name === stored)) return;
 
-      router.replace(TAB_HREF[tab]);
+      router.replace(TAB_HREF[stored]);
     };
 
     if (usePreferencesStore.persist.hasHydrated()) {
@@ -153,7 +138,7 @@ const TabsLayout = () => {
       return;
     }
     return usePreferencesStore.persist.onFinishHydration(apply);
-  }, [locale]);
+  }, [tabs]);
 
   const renderTabBar = ({ state }: BottomTabBarProps) => (
     <AppTabBar state={state} tabs={tabs} readerActive={readerActive} />
