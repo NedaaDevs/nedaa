@@ -15,18 +15,7 @@ jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => async () => {} }));
 jest.mock("@/utils/number", () => ({ formatNumberToLocale: (value: string) => value }));
 jest.mock("@/components/umrah/FlipHint", () => () => null);
 jest.mock("@/components/umrah/HadithReference", () => () => null);
-jest.mock("react-native-reanimated", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View } = require("react-native");
-  return {
-    __esModule: true,
-    default: { View },
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    useSharedValue: (value: number) => require("react").useRef({ value }).current,
-    useAnimatedStyle: () => ({}),
-    withTiming: (value: number) => value,
-  };
-});
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/components/ui/box", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return { Box: require("react-native").View };
