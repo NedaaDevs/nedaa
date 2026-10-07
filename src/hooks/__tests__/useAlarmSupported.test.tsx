@@ -2,6 +2,7 @@
 const mockIsAlarmKitAvailable = jest.fn();
 
 jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
   isAlarmKitAvailable: () => mockIsAlarmKitAvailable(),
 }));
 

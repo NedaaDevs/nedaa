@@ -54,6 +54,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
 
 import {
+  CHALLENGE_TYPE,
   requestAuthorization,
   requestExactAlarmPermission,
   requestFullScreenIntentPermission,
@@ -199,7 +200,8 @@ const formatConfigSummary = (
 ): string => {
   const { challenge, sound } = settings;
   const challengeLabel = t(`alarm.challenge.${challenge.type}`);
-  const countPart = challenge.type !== "none" && challenge.count > 1 ? ` ×${challenge.count}` : "";
+  const countPart =
+    challenge.type !== CHALLENGE_TYPE.NONE && challenge.count > 1 ? ` ×${challenge.count}` : "";
   const asset = SOUND_ASSETS[sound as keyof typeof SOUND_ASSETS];
   const soundName = asset ? t(asset.label) : t("alarm.settings.systemSound");
   return `${challengeLabel}${countPart} · ${soundName}`;

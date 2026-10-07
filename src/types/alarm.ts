@@ -1,12 +1,14 @@
+import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
+
 import { ALARM_TIMING_MODE, type ALARM_TYPE } from "@/constants/Alarm";
 
 export type AlarmType = (typeof ALARM_TYPE)[keyof typeof ALARM_TYPE];
 
 export type TimingMode = (typeof ALARM_TIMING_MODE)[keyof typeof ALARM_TIMING_MODE];
 
-export type ChallengeType = "tap" | "math" | "dhikr" | "none";
+export type ChallengeType = (typeof CHALLENGE_TYPE)[keyof typeof CHALLENGE_TYPE];
 
-export type ChallengeDifficulty = "easy" | "medium" | "hard";
+export type ChallengeDifficulty = (typeof CHALLENGE_DIFFICULTY)[keyof typeof CHALLENGE_DIFFICULTY];
 
 export type VibrationPattern = "default" | "gentle" | "aggressive";
 
@@ -71,8 +73,8 @@ export interface AlarmSettings {
 }
 
 export const DEFAULT_CHALLENGE_CONFIG: ChallengeConfig = {
-  type: "tap",
-  difficulty: "easy",
+  type: CHALLENGE_TYPE.TAP,
+  difficulty: CHALLENGE_DIFFICULTY.EASY,
   count: 1,
 };
 
@@ -142,12 +144,12 @@ export const SNOOZE_MAX_COUNTS: SnoozeMaxCount[] = [1, 2, 3];
 
 export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math", "dhikr"];
+export const CHALLENGE_TYPES: ChallengeType[] = Object.values(CHALLENGE_TYPE);
 
-export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "hard"];
+export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = Object.values(CHALLENGE_DIFFICULTY);
 
 export const GRACE_PERIOD_SECONDS: Record<
-  Exclude<ChallengeType, "none">,
+  Exclude<ChallengeType, typeof CHALLENGE_TYPE.NONE>,
   Record<ChallengeDifficulty, number>
 > = {
   tap: { easy: 10, medium: 15, hard: 20 },

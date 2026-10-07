@@ -2,8 +2,8 @@ import QuranLibraryScreen from "@/app/quran-library";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import i18n from "@/localization/i18n";
+import { QURAN_LIBRARY_TAB } from "@/constants/Quran";
 import { useQuranStore } from "@/stores/quran";
-import type { QuranLibraryTab } from "@/types/quran";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -18,8 +18,8 @@ jest.mock("@/components/quran/library/KhatmahTab", () => ({ KhatmahTab: () => nu
 jest.mock("@/components/quran/library/GuideTab", () => ({ GuideTab: () => null }));
 
 const ROUTE = "quran-library";
-const INDEX_TAB: QuranLibraryTab = "index";
-const DRAWER_ONLY_TAB: QuranLibraryTab = "reminders";
+const INDEX_TAB = QURAN_LIBRARY_TAB.INDEX;
+const DRAWER_ONLY_TAB = QURAN_LIBRARY_TAB.REMINDERS;
 
 const renderLibrary = () =>
   renderRouter(

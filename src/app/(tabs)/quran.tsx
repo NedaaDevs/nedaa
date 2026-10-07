@@ -25,7 +25,12 @@ import { QuranContentDB } from "@/services/quran-content-db";
 import { localizedSurahName } from "@/utils/surahName";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
-import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
+import {
+  QURAN_LIBRARY_TAB,
+  QURAN_THEME_COLORS,
+  isColoredVersion,
+  isDarkPaper,
+} from "@/constants/Quran";
 import { MushafVersion, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import { PlatformType } from "@/enums/app";
 import { QuranDownload } from "@/services/quran-download";
@@ -556,7 +561,7 @@ const QuranScreen = () => {
                   <Pressable
                     onPress={() => {
                       setShowOverlay(false);
-                      libraryRef.current?.open("bookmarks");
+                      libraryRef.current?.open(QURAN_LIBRARY_TAB.BOOKMARKS);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={t("quran.library.bookmarks")}
@@ -644,7 +649,7 @@ const QuranScreen = () => {
                   <Pressable
                     onPress={() => {
                       setShowOverlay(false);
-                      libraryRef.current?.open("index");
+                      libraryRef.current?.open(QURAN_LIBRARY_TAB.INDEX);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={t("quran.library.title")}

@@ -60,8 +60,12 @@ const AlarmDebugScreen = () => {
   const [hasAutoStart, setHasAutoStart] = useState<boolean | null>(null);
   const [deviceManufacturer, setDeviceManufacturer] = useState<string>("");
 
-  const [testChallengeType, setTestChallengeType] = useState<ChallengeType>("tap");
-  const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>("easy");
+  const [testChallengeType, setTestChallengeType] = useState<ChallengeType>(
+    ExpoAlarm.CHALLENGE_TYPE.TAP
+  );
+  const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>(
+    ExpoAlarm.CHALLENGE_DIFFICULTY.EASY
+  );
   const [testChallengeCount, setTestChallengeCount] = useState<number>(1);
   const [testVibrationEnabled, setTestVibrationEnabled] = useState<boolean>(true);
   const [testVibrationPattern, setTestVibrationPattern] = useState<VibrationPattern>("default");

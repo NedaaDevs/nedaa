@@ -14,7 +14,7 @@ import type { DayPrayerTimes } from "@/types/prayerTimes";
 const mockAlarmId = "alarm-1";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
-jest.mock("expo-alarm", () => ({}));
+jest.mock("expo-alarm", () => ({ ...jest.requireActual("expo-alarm") }));
 jest.mock("react-native-safe-area-context", () => ({
   ...jest.requireActual("react-native-safe-area-context"),
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),

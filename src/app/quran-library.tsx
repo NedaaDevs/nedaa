@@ -16,16 +16,23 @@ import { BookmarksTab } from "@/components/quran/library/BookmarksTab";
 import { HighlightsTab } from "@/components/quran/library/HighlightsTab";
 import { KhatmahTab } from "@/components/quran/library/KhatmahTab";
 import { GuideTab } from "@/components/quran/library/GuideTab";
+import { QURAN_LIBRARY_TAB } from "@/constants/Quran";
 
-type LibTab = "highlights" | "bookmarks" | "khatmah" | "index" | "guide";
+// Tabs this screen renders; reminders live only in the reader's drawer.
+type LibTab =
+  | typeof QURAN_LIBRARY_TAB.INDEX
+  | typeof QURAN_LIBRARY_TAB.BOOKMARKS
+  | typeof QURAN_LIBRARY_TAB.HIGHLIGHTS
+  | typeof QURAN_LIBRARY_TAB.KHATMAH
+  | typeof QURAN_LIBRARY_TAB.GUIDE;
 
 // Khatmah is intentionally kept in the union + render switch but omitted from the
 // visible tab bar until the feature ships.
 const TABS: { id: LibTab; icon: typeof List; labelKey: string }[] = [
-  { id: "index", icon: List, labelKey: "quran.library.index" },
-  { id: "bookmarks", icon: Bookmark, labelKey: "quran.library.bookmarks" },
-  { id: "highlights", icon: Highlighter, labelKey: "quran.library.highlights" },
-  { id: "guide", icon: BookOpen, labelKey: "quran.library.guide" },
+  { id: QURAN_LIBRARY_TAB.INDEX, icon: List, labelKey: "quran.library.index" },
+  { id: QURAN_LIBRARY_TAB.BOOKMARKS, icon: Bookmark, labelKey: "quran.library.bookmarks" },
+  { id: QURAN_LIBRARY_TAB.HIGHLIGHTS, icon: Highlighter, labelKey: "quran.library.highlights" },
+  { id: QURAN_LIBRARY_TAB.GUIDE, icon: BookOpen, labelKey: "quran.library.guide" },
 ];
 
 // The reader's Library hub — one screen hosting Highlights, Bookmarks, Khatmah,
@@ -88,11 +95,11 @@ const QuranLibraryScreen = () => {
 
       {/* Active tab content */}
       <YStack flex={1}>
-        {tab === "highlights" && <HighlightsTab onNavigate={navigate} />}
-        {tab === "bookmarks" && <BookmarksTab onNavigate={navigate} />}
-        {tab === "khatmah" && <KhatmahTab />}
-        {tab === "index" && <BrowseIndex onNavigate={navigate} />}
-        {tab === "guide" && <GuideTab />}
+        {tab === QURAN_LIBRARY_TAB.HIGHLIGHTS && <HighlightsTab onNavigate={navigate} />}
+        {tab === QURAN_LIBRARY_TAB.BOOKMARKS && <BookmarksTab onNavigate={navigate} />}
+        {tab === QURAN_LIBRARY_TAB.KHATMAH && <KhatmahTab />}
+        {tab === QURAN_LIBRARY_TAB.INDEX && <BrowseIndex onNavigate={navigate} />}
+        {tab === QURAN_LIBRARY_TAB.GUIDE && <GuideTab />}
       </YStack>
 
       {/* Bottom tab bar */}

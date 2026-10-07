@@ -11,7 +11,10 @@ jest.mock("expo-router", () => ({
 }));
 
 const mockStopAthan = jest.fn();
-jest.mock("expo-alarm", () => ({ stopAthan: () => mockStopAthan() }));
+jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
+  stopAthan: () => mockStopAthan(),
+}));
 
 const mockOpenSurah = jest.fn();
 jest.mock("@/utils/notificationDeepLink", () => ({
