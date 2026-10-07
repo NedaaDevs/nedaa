@@ -118,6 +118,8 @@ jobs:
             echo "📦 File: $BUILD_OUTPUT"
             echo "📏 Size: $BUILD_SIZE"
             echo "🔍 Type: $(file -b "$BUILD_OUTPUT")"
+            # A listing alone passes a damaged entry; -t checks every CRC.
+            unzip -tqq "$BUILD_OUTPUT"
             unzip -l "$BUILD_OUTPUT" | head -10
           else
             echo "❌ Build failed - no output file found"
