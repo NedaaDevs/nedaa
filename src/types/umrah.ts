@@ -55,12 +55,7 @@ export type ActiveProgress = {
 export type Gender = "male" | "female";
 
 export type MiqatId =
-  | "dhul-hulayfah"
-  | "juhfah"
-  | "yalamlam"
-  | "qarn-al-manazil"
-  | "dhat-irq"
-  | "tanim";
+  "dhul-hulayfah" | "juhfah" | "yalamlam" | "qarn-al-manazil" | "dhat-irq" | "tanim";
 
 export type MiqatPoint = {
   id: MiqatId;
