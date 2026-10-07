@@ -44,6 +44,9 @@ const makeTrackingDb = () => {
   return { db: db as any, stats };
 };
 
+// The fake driver ignores the statement; expo-sqlite's signatures require one.
+const SQL = "SELECT 1";
+
 describe("serialized athkar DB access", () => {
   it("a concurrent burst never interleaves on the connection", async () => {
     const { db, stats } = makeTrackingDb();
@@ -52,16 +55,16 @@ describe("serialized athkar DB access", () => {
     // Stand-ins for the store's debounced queues firing together:
     // updateAthkarCount (plain), checkAndMarkSessionComplete (read + write),
     // and a transaction-bearing op (daily-init).
-    const count = () => sdb.run((d) => d.runAsync());
+    const count = () => sdb.run((d) => d.runAsync(SQL));
     const check = () =>
       sdb.run(async (d) => {
-        await d.getAllAsync();
-        await d.runAsync();
+        await d.getAllAsync(SQL);
+        await d.runAsync(SQL);
       });
     const txn = () =>
       sdb.run((d) =>
         d.withTransactionAsync(async () => {
-          await d.runAsync();
+          await d.runAsync(SQL);
         })
       );
 

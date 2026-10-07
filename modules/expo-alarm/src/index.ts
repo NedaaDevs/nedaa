@@ -1,4 +1,8 @@
-import { requireOptionalNativeModule, EventEmitter, Subscription } from "expo-modules-core";
+import {
+  requireOptionalNativeModule,
+  EventEmitter,
+  type EventSubscription,
+} from "expo-modules-core";
 
 export type AuthorizationStatus = "notDetermined" | "authorized" | "denied";
 
@@ -19,10 +23,17 @@ export interface ScheduleAlarmParams {
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
 const isAvailable = NativeModule !== null;
-const emitter = NativeModule ? new EventEmitter(NativeModule) : null;
+// Events the native module declares with `Events(...)`.
+type ExpoAlarmEvents = {
+  onPlaybackFinished: () => void;
+};
 
-// Event listener for native events
-export function addListener(eventName: string, listener: () => void): Subscription {
+const emitter = NativeModule ? new EventEmitter<ExpoAlarmEvents>(NativeModule) : null;
+
+export function addListener<EventName extends keyof ExpoAlarmEvents>(
+  eventName: EventName,
+  listener: ExpoAlarmEvents[EventName]
+): EventSubscription {
   if (!emitter) {
     return { remove: () => {} };
   }
@@ -439,7 +450,7 @@ export interface NativeAlarmSettings {
   enabled: boolean;
   sound: string;
   volume: number;
-  challengeType: "tap" | "math";
+  challengeType: "tap" | "math" | "dhikr" | "none";
   challengeDifficulty: "easy" | "medium" | "hard";
   challengeCount: number;
   gentleWakeUpEnabled: boolean;
