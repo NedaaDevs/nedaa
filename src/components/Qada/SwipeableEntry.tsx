@@ -295,7 +295,7 @@ export const SwipeableEntry = ({ entry, onComplete, onCompleteAll, onDelete }: P
                 </Box>
                 <VStack flex={1}>
                   <Text size="md" fontWeight="600" color="$typography">
-                    {formatNumberToLocale(t("qada.daysCount", { count: entry.count }))}
+                    {formatNumberToLocale(t("qada.days", { count: entry.count }))}
                   </Text>
                   <Text size="xs" color="$typographySecondary">
                     {formatNumberToLocale(
