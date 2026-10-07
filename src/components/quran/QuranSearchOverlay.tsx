@@ -707,8 +707,7 @@ const SurahRow = ({
             {localizedSurahName(surah.number)}
           </Text>
           <Text fontSize={12} color={chrome.subtleText}>
-            {place} ·{" "}
-            {t("quran.surah.ayahCount", { n: formatNumberToLocale(String(surah.ayahCount)) })}
+            {place} · {t("quran.surah.ayahCount", { count: surah.ayahCount })}
           </Text>
         </YStack>
       </XStack>

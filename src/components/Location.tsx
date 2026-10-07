@@ -315,7 +315,7 @@ const KeepLocationUpdated = () => {
           <HStack alignItems="center" gap="$3" padding="$4">
             <Icon as={Info} color="$warning" size="md" />
             <Text size="sm" color="$typography" flex={1}>
-              {t("location.permission.deniedMessage")}
+              {t("today.defaultLocation.body")}
             </Text>
           </HStack>
         </Card>

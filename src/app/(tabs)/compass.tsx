@@ -415,7 +415,7 @@ const CompassScreen = () => {
                   reduceMotion={reduceMotion}
                   dimmed={showOverlay}
                   accessibilityLabel={t("a11y.compass.dial", {
-                    heading: `${headingRounded}`,
+                    count: headingRounded,
                     reference: northReferenceLabel,
                   })}
                   translateDirection={t}

@@ -1,13 +1,14 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import PrivacyScreen from "@/app/settings/privacy";
-import { Text } from "react-native";
+import { Linking, Text } from "react-native";
 import { usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -168,7 +169,32 @@ describe("Privacy", () => {
     await renderPrivacy();
 
     const provider = i18n.t("providers.aladhan.title");
-    expect(screen.getByText(new RegExp(provider))).toBeOnTheScreen();
+    expect(screen.getByText(i18n.t("settings.privacy.location.body"))).toBeOnTheScreen();
+    expect(i18n.t("settings.privacy.location.body")).toContain(provider);
     expect(screen.getByText(new RegExp(CITY_SERVICE))).toBeOnTheScreen();
+  });
+
+  // The provider that gets the coordinates is one press from its own site.
+  it("links the prayer-times provider's website", async () => {
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    await renderPrivacy();
+    const site = i18n.t("settings.privacy.providerSite");
+    const row = screen.getByRole("link", { name: site });
+
+    expect(row.props.accessibilityHint).toBe(i18n.t("a11y.opensInBrowser"));
+    // The spoken name is the visible text, so voice control finds the row by what it shows.
+    expect(screen.getByText(site)).toBeOnTheScreen();
+    expect(site).toContain(i18n.t("providers.aladhan.title"));
+    await userEvent.press(row);
+
+    expect(openURL).toHaveBeenCalledWith(PRAYER_TIME_PROVIDERS.ALADHAN.website);
+    openURL.mockRestore();
+  });
+
+  // The city-name service is named, not linked.
+  it("links no other service", async () => {
+    await renderPrivacy();
+
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 });

@@ -95,4 +95,10 @@ describe("Notification settings debug alert", () => {
     const [, , options] = scheduled.mock.calls[0];
     expect(madeIds).toContain(options.channelId);
   });
+
+  it("counts the custom settings as one phrase", async () => {
+    await renderScreen();
+
+    expect(await screen.findByText("1 custom setting")).toBeTruthy();
+  });
 });

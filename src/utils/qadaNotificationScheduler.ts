@@ -126,12 +126,12 @@ export const buildNotificationContent = (
     // Use generic app name for privacy
     if (type === "ramadan") {
       return {
-        title: t("common.nedaa"),
+        title: t("brand.name"),
         body: t("notification.qada.bodyPrivacyRamadan"),
       };
     }
     return {
-      title: t("common.nedaa"),
+      title: t("brand.name"),
       body: t("notification.qada.bodyPrivacy"),
     };
   }
@@ -139,10 +139,10 @@ export const buildNotificationContent = (
   if (type === "ramadan" && daysUntilRamadan) {
     return {
       title: t("notification.qada.titleRamadan"),
-      body: t("notification.qada.bodyRamadan", {
-        days: daysUntilRamadan,
-        count: remainingCount,
-      }),
+      body: `${t("notification.qada.ramadanIn", { count: daysUntilRamadan })} ${t(
+        "notification.qada.fastsOwed",
+        { count: remainingCount }
+      )}`,
     };
   }
 
