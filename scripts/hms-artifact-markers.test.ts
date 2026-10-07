@@ -105,6 +105,17 @@ describe("HMS artifact markers", () => {
       expect(() => findDexViolations(dex)).toThrow();
     });
 
+    test("with a string_ids table that starts inside the header", () => {
+      const dex = setUint32(buildDex(["a"]), STRING_IDS_OFF_OFFSET, 0x40);
+      expect(() => readDexStrings(dex)).toThrow();
+      expect(() => findDexViolations(dex)).toThrow();
+    });
+
+    test("with a file shorter than the DEX header", () => {
+      const dex = buildDex([]).subarray(0, HEADER_SIZE - 1);
+      expect(() => readDexStrings(dex)).toThrow();
+    });
+
     test("with a header shorter than the string_ids fields", () => {
       expect(() => readDexStrings(new TextEncoder().encode("dex\n035\0"))).toThrow();
     });
