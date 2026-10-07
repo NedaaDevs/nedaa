@@ -96,6 +96,9 @@ jobs:
           BUILD_TYPE: ${{ steps.config.outputs.build_type }}
         run: |
           OUTPUT="./build-output.$BUILD_TYPE"
+          # A kept, fixed working dir leaves R8's mapping.txt where the upload step can find it.
+          export EAS_LOCAL_BUILD_WORKINGDIR="$RUNNER_TEMP/eas-build"
+          export EAS_LOCAL_BUILD_SKIP_CLEANUP=1
           echo "Building locally with profile: $PROFILE ($BUILD_TYPE)"
 
           eas build \
@@ -140,6 +143,14 @@ jobs:
           retention-days: 7
           compression-level: 6
 
+      - name: 📤 Upload R8 mapping
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r8-mapping-${{ steps.config.outputs.profile }}-${{ github.sha }}
+          path: ${{ runner.temp }}/eas-build/build/android/app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+          if-no-files-found: warn
+
       - name: 📤 Upload build logs (on failure)
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -147,5 +158,6 @@ jobs:
           name: build-logs-${{ github.sha }}
           path: |
             ~/.expo/eas-build-local-nodejs/**/*.log
+            ${{ runner.temp }}/eas-build/logs
             android/app/build/outputs/logs
           retention-days: 3
