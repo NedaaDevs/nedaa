@@ -45,6 +45,10 @@ jobs:
       - name: Set up dependencies
         uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
 
+      # The screenshot tool is its own package with its own lockfile.
+      - name: Install screenshot tool dependencies
+        run: bun install --frozen-lockfile --cwd scripts/screenshots
+
       - name: Typecheck
         run: bun run typecheck
 
