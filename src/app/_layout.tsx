@@ -81,7 +81,7 @@ function AppShell() {
   } = useCityChangeHandler();
 
   const segments = useSegments();
-  const isQuranScreen = segments[0] === "(tabs)" && segments[1] === "quran";
+  const isQuranScreen = segments.at(0) === "(tabs)" && segments.at(1) === "quran";
   const quranTheme = useResolvedQuranTheme();
   const readerActive = useQuranStore((s) => s.readerActive);
   // The immersive reader is the visible Quran surface (vs. the version/download

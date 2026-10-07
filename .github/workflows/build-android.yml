@@ -2,7 +2,7 @@ name: Build Android
 
 on:
   push:
-    branches: [master, ci]
+    branches: [master]
   workflow_dispatch:
     inputs:
       profile:
@@ -15,8 +15,12 @@ on:
           - production
           - production-hms
 
-env:
-  JAVA_VERSION: "17"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.profile || 'preview' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   build-android:
@@ -26,69 +30,48 @@ jobs:
 
     steps:
       - name: 🏗 Setup repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: 🏗 Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
 
-      - name: 🏗 Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: ".bun-version"
+      - name: 📦 Setup Bun and dependencies
+        uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
 
       - name: 🏗 Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version: "17"
           distribution: "temurin"
           cache: "gradle"
 
       - name: 🏗 Setup EAS
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # 9.0.0
         with:
-          eas-version: latest
+          eas-version: 24.11.0
           packager: "bun"
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.bun/install/cache
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.android/build-cache
-          key: ${{ runner.os }}-deps-${{ hashFiles('bun.lock', 'package.json', 'android/**/*.gradle*', 'modules/**/android/**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-deps-
-
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
-
       - name: 🔧 Set Build Profile and Environment
         id: config
+        env:
+          PROFILE: ${{ inputs.profile || 'preview' }}
         run: |
-          PROFILE=${{ github.event.inputs.profile || 'preview' }}
-          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> "$GITHUB_OUTPUT"
 
-          # Set Android environment variables
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
-
-          # Determine build type from profile
+          # Store profiles ship an AAB; preview ships an APK.
           if [ "$PROFILE" == "production" ] || [ "$PROFILE" == "production-hms" ]; then
-            echo "build_type=aab" >> $GITHUB_OUTPUT
-            echo "artifact_pattern=*.aab" >> $GITHUB_OUTPUT
+            echo "build_type=aab" >> "$GITHUB_OUTPUT"
           else
-            echo "build_type=apk" >> $GITHUB_OUTPUT
-            echo "artifact_pattern=*.apk" >> $GITHUB_OUTPUT
+            echo "build_type=apk" >> "$GITHUB_OUTPUT"
           fi
 
           if [ "$PROFILE" == "production-hms" ]; then
-            echo "BUILD_VARIANT=hms" >> $GITHUB_ENV
+            echo "BUILD_VARIANT=hms" >> "$GITHUB_ENV"
           fi
 
       - name: 🔐 Prepare HMS AppGallery Connect config
@@ -107,49 +90,35 @@ jobs:
 
       - name: 🚀 Build Android Locally
         id: build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          PROFILE: ${{ steps.config.outputs.profile }}
+          BUILD_TYPE: ${{ steps.config.outputs.build_type }}
         run: |
-          PROFILE=${{ steps.config.outputs.profile }}
-          BUILD_TYPE=${{ steps.config.outputs.build_type }}
+          OUTPUT="./build-output.$BUILD_TYPE"
+          echo "Building locally with profile: $PROFILE ($BUILD_TYPE)"
 
-          echo "Building locally with profile: $PROFILE"
-          echo "Build type: $BUILD_TYPE"
-
-          # Run EAS build locally
           eas build \
             --local \
             --platform android \
-            --profile $PROFILE \
+            --profile "$PROFILE" \
             --non-interactive \
-            --output ./build-output.$BUILD_TYPE
+            --output "$OUTPUT"
 
-          # Get build details
-          echo "build_output=./build-output.$BUILD_TYPE" >> $GITHUB_OUTPUT
-          echo "build_size=$(du -h ./build-output.$BUILD_TYPE | cut -f1)" >> $GITHUB_OUTPUT
-
-          # Generate build ID for tracking
-          BUILD_ID="local-$(date +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)"
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          echo "build_output=$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "build_size=$(du -h "$OUTPUT" | cut -f1)" >> "$GITHUB_OUTPUT"
 
       - name: 📊 Verify Build Output
+        env:
+          BUILD_OUTPUT: ${{ steps.build.outputs.build_output }}
+          BUILD_SIZE: ${{ steps.build.outputs.build_size }}
         run: |
-          BUILD_OUTPUT="${{ steps.build.outputs.build_output }}"
-
           if [ -f "$BUILD_OUTPUT" ]; then
             echo "✅ Build successful!"
             echo "📦 File: $BUILD_OUTPUT"
-            echo "📏 Size: ${{ steps.build.outputs.build_size }}"
+            echo "📏 Size: $BUILD_SIZE"
             echo "🔍 Type: $(file -b "$BUILD_OUTPUT")"
-            
-            # Additional verification for APK/AAB
-            if [[ "$BUILD_OUTPUT" == *.apk ]]; then
-              # Basic APK verification
-              unzip -l "$BUILD_OUTPUT" | head -10
-            elif [[ "$BUILD_OUTPUT" == *.aab ]]; then
-              # Basic AAB verification
-              unzip -l "$BUILD_OUTPUT" | head -10
-            fi
+            unzip -l "$BUILD_OUTPUT" | head -10
           else
             echo "❌ Build failed - no output file found"
             exit 1
@@ -157,36 +126,21 @@ jobs:
 
       - name: 🛡 Verify HMS dependency graph and AAB
         if: steps.config.outputs.profile == 'production-hms'
-        run: bun scripts/verify-hms-build.ts "${{ steps.build.outputs.build_output }}"
+        env:
+          BUILD_OUTPUT: ${{ steps.build.outputs.build_output }}
+        run: bun scripts/verify-hms-build.ts "$BUILD_OUTPUT"
 
       - name: 📤 Upload Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android-${{ steps.config.outputs.build_type }}-${{ steps.config.outputs.profile }}-${{ github.sha }}
           path: ${{ steps.build.outputs.build_output }}
           retention-days: 7
           compression-level: 6
 
-      - name: 📋 Comment Build Status (PR)
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const profile = '${{ steps.config.outputs.profile }}';
-            const buildType = '${{ steps.config.outputs.build_type }}';
-            const buildSize = '${{ steps.build.outputs.build_size }}';
-            const sha = context.sha.substring(0, 7);
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🤖 Android build completed successfully!\n\n**Profile:** ${profile}\n**Type:** ${buildType.toUpperCase()}\n**Size:** ${buildSize}\n**Commit:** ${sha}\n\n📦 Build artifact has been uploaded and is available in the workflow run artifacts.`
-            })
-
       - name: 📤 Upload build logs (on failure)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-logs-${{ github.sha }}
           path: |
