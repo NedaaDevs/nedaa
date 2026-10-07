@@ -30,46 +30,46 @@ type ExpoAlarmEvents = {
 
 const emitter = NativeModule ? new EventEmitter<ExpoAlarmEvents>(NativeModule) : null;
 
-export function addListener<EventName extends keyof ExpoAlarmEvents>(
+export const addListener = <EventName extends keyof ExpoAlarmEvents>(
   eventName: EventName,
   listener: ExpoAlarmEvents[EventName]
-): EventSubscription {
+): EventSubscription => {
   if (!emitter) {
     return { remove: () => {} };
   }
   return emitter.addListener(eventName, listener);
-}
+};
 
-export function isNativeModuleAvailable(): boolean {
+export const isNativeModuleAvailable = (): boolean => {
   return isAvailable;
-}
+};
 
-export async function isAlarmKitAvailable(): Promise<boolean> {
+export const isAlarmKitAvailable = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.isAlarmKitAvailable();
-}
+};
 
 export type BackgroundRefreshStatus = "available" | "denied" | "restricted" | "unknown";
 
-export function getBackgroundRefreshStatus(): BackgroundRefreshStatus {
+export const getBackgroundRefreshStatus = (): BackgroundRefreshStatus => {
   if (!isAvailable) return "unknown";
   return NativeModule.getBackgroundRefreshStatus();
-}
+};
 
-export async function requestAuthorization(): Promise<AuthorizationStatus> {
+export const requestAuthorization = async (): Promise<AuthorizationStatus> => {
   if (!isAvailable) {
     console.warn("[expo-alarm] Native module not available");
     return "denied";
   }
   return NativeModule.requestAuthorization();
-}
+};
 
-export async function getAuthorizationStatus(): Promise<AuthorizationStatus> {
+export const getAuthorizationStatus = async (): Promise<AuthorizationStatus> => {
   if (!isAvailable) return "denied";
   return NativeModule.getAuthorizationStatus();
-}
+};
 
-export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolean> {
+export const scheduleAlarm = async (params: ScheduleAlarmParams): Promise<boolean> => {
   if (!isAvailable) {
     console.warn("[expo-alarm] Native module not available");
     return false;
@@ -85,32 +85,32 @@ export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolea
     openText: params.openText ?? "",
     countdown: params.countdown ?? false,
   });
-}
+};
 
-export async function cancelAlarm(id: string): Promise<boolean> {
+export const cancelAlarm = async (id: string): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.cancelAlarm(id);
-}
+};
 
-export async function cancelAllAlarms(): Promise<void> {
+export const cancelAllAlarms = async (): Promise<void> => {
   if (!isAvailable) return;
   return NativeModule.cancelAllAlarms();
-}
+};
 
-export async function getScheduledAlarmIds(): Promise<string[]> {
+export const getScheduledAlarmIds = async (): Promise<string[]> => {
   if (!isAvailable) return [];
   return NativeModule.getScheduledAlarmIds();
-}
+};
 
-export function markAlarmCompleted(id: string): boolean {
+export const markAlarmCompleted = (id: string): boolean => {
   if (!isAvailable) return false;
   return NativeModule.markAlarmCompleted(id);
-}
+};
 
-export function deleteAlarmFromDB(id: string): boolean {
+export const deleteAlarmFromDB = (id: string): boolean => {
   if (!isAvailable) return false;
   return NativeModule.deleteAlarmFromDB(id);
-}
+};
 
 export interface StartLiveActivityParams {
   alarmId: string;
@@ -120,7 +120,9 @@ export interface StartLiveActivityParams {
   state?: "countdown" | "snoozed";
 }
 
-export async function startLiveActivity(params: StartLiveActivityParams): Promise<string | null> {
+export const startLiveActivity = async (
+  params: StartLiveActivityParams
+): Promise<string | null> => {
   if (!isAvailable) return null;
   return NativeModule.startLiveActivity(
     params.alarmId,
@@ -129,25 +131,25 @@ export async function startLiveActivity(params: StartLiveActivityParams): Promis
     params.triggerDate.getTime(),
     params.state ?? "countdown"
   );
-}
+};
 
-export async function updateLiveActivity(
+export const updateLiveActivity = async (
   activityId: string,
   state: "countdown" | "firing" | "snoozed"
-): Promise<boolean> {
+): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.updateLiveActivity(activityId, state);
-}
+};
 
-export async function endLiveActivity(activityId: string): Promise<boolean> {
+export const endLiveActivity = async (activityId: string): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.endLiveActivity(activityId);
-}
+};
 
-export async function endAllLiveActivities(): Promise<boolean> {
+export const endAllLiveActivities = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.endAllLiveActivities();
-}
+};
 
 export interface PendingChallenge {
   alarmId: string;
@@ -156,7 +158,7 @@ export interface PendingChallenge {
   timestamp: number;
 }
 
-export async function getPendingChallenge(): Promise<PendingChallenge | null> {
+export const getPendingChallenge = async (): Promise<PendingChallenge | null> => {
   if (!isAvailable) return null;
   const result = await NativeModule.getPendingChallenge();
   if (!result) return null;
@@ -166,25 +168,25 @@ export async function getPendingChallenge(): Promise<PendingChallenge | null> {
     title: result.title,
     timestamp: result.timestamp,
   };
-}
+};
 
-export async function clearPendingChallenge(): Promise<boolean> {
+export const clearPendingChallenge = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.clearPendingChallenge();
-}
+};
 
-export async function clearCompletedChallenges(): Promise<boolean> {
+export const clearCompletedChallenges = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.clearCompletedChallenges();
-}
+};
 
 // Ids of alarms flagged completed — the cross-platform record that an alarm finished,
 // cleared when the id is scheduled again. The Android completed queue is narrower: the
 // work list of overlay completions still awaiting recurrence rescheduling.
-export async function getCompletedAlarmIds(): Promise<string[]> {
+export const getCompletedAlarmIds = async (): Promise<string[]> => {
   if (!isAvailable) return [];
   return NativeModule.getCompletedAlarmIds();
-}
+};
 
 // Completed queue (alarms completed via Android overlay, need JS processing)
 export interface CompletedAlarm {
@@ -195,15 +197,15 @@ export interface CompletedAlarm {
   completedAt: number;
 }
 
-export async function getCompletedQueue(): Promise<CompletedAlarm[]> {
+export const getCompletedQueue = async (): Promise<CompletedAlarm[]> => {
   if (!isAvailable) return [];
   return NativeModule.getCompletedQueue();
-}
+};
 
 // Clears the given queue row ids so concurrent overlay inserts survive to the
 // next drain. Falls back to clearing the whole table if the native module
 // predates the id-scoped variant, or when no ids are supplied.
-export async function clearCompletedQueue(ids?: number[]): Promise<boolean> {
+export const clearCompletedQueue = async (ids?: number[]): Promise<boolean> => {
   if (!isAvailable) return false;
   if (ids && ids.length > 0) {
     try {
@@ -213,7 +215,7 @@ export async function clearCompletedQueue(ids?: number[]): Promise<boolean> {
     }
   }
   return NativeModule.clearCompletedQueue();
-}
+};
 
 // Snooze queue (alarms snoozed via Android overlay, need JS processing)
 export interface SnoozedAlarm {
@@ -226,15 +228,15 @@ export interface SnoozedAlarm {
   snoozeEndTime: number;
 }
 
-export async function getSnoozeQueue(): Promise<SnoozedAlarm[]> {
+export const getSnoozeQueue = async (): Promise<SnoozedAlarm[]> => {
   if (!isAvailable) return [];
   return NativeModule.getSnoozeQueue();
-}
+};
 
 // Clears the given queue row ids so concurrent overlay inserts survive to the
 // next drain. Falls back to clearing the whole table if the native module
 // predates the id-scoped variant, or when no ids are supplied.
-export async function clearSnoozeQueue(ids?: number[]): Promise<boolean> {
+export const clearSnoozeQueue = async (ids?: number[]): Promise<boolean> => {
   if (!isAvailable) return false;
   if (ids && ids.length > 0) {
     try {
@@ -244,60 +246,60 @@ export async function clearSnoozeQueue(ids?: number[]): Promise<boolean> {
     }
   }
   return NativeModule.clearSnoozeQueue();
-}
+};
 
-export async function cancelAllBackups(): Promise<number> {
+export const cancelAllBackups = async (): Promise<number> => {
   if (!isAvailable) return 0;
   return NativeModule.cancelAllBackups();
-}
+};
 
-export async function startAlarmSound(soundName: string = "beep"): Promise<boolean> {
+export const startAlarmSound = async (soundName: string = "beep"): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.startAlarmSound(soundName);
-}
+};
 
-export async function stopAlarmSound(): Promise<boolean> {
+export const stopAlarmSound = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.stopAlarmSound();
-}
+};
 
-export function isAlarmSoundPlaying(): boolean {
+export const isAlarmSoundPlaying = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.isAlarmSoundPlaying();
-}
+};
 
-export function stopAllAlarmEffects(): boolean {
+export const stopAllAlarmEffects = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.stopAllAlarmEffects();
-}
+};
 
-export function setAlarmVolume(volume: number): boolean {
+export const setAlarmVolume = (volume: number): boolean => {
   if (!isAvailable) return false;
   return NativeModule.setAlarmVolume(Math.max(0, Math.min(1, volume)));
-}
+};
 
-export function getAlarmVolume(): number {
+export const getAlarmVolume = (): number => {
   if (!isAvailable) return 1.0;
   return NativeModule.getAlarmVolume();
-}
+};
 
-export function saveSystemVolume(): boolean {
+export const saveSystemVolume = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.saveSystemVolume();
   } catch {
     return false;
   }
-}
+};
 
-export function restoreSystemVolume(): boolean {
+export const restoreSystemVolume = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.restoreSystemVolume();
   } catch {
     return false;
   }
-}
+};
 
 export interface AlarmKitAlarm {
   id: string;
@@ -308,10 +310,10 @@ export interface AlarmKitAlarm {
   minute?: number;
 }
 
-export async function getAlarmKitAlarms(): Promise<AlarmKitAlarm[]> {
+export const getAlarmKitAlarms = async (): Promise<AlarmKitAlarm[]> => {
   if (!isAvailable) return [];
   return NativeModule.getAlarmKitAlarms();
-}
+};
 
 export interface NativeLogEntry {
   timestamp: string;
@@ -321,137 +323,155 @@ export interface NativeLogEntry {
   error?: string;
 }
 
-export async function getNativeLogs(): Promise<NativeLogEntry[]> {
+export const getNativeLogs = async (): Promise<NativeLogEntry[]> => {
   if (!isAvailable) return [];
   return NativeModule.getNativeLogs();
-}
+};
 
-export function getPersistentLog(): string {
+export const getPersistentLog = (): string => {
   if (!isAvailable) return "";
   return NativeModule.getPersistentLog();
-}
+};
 
-export function clearPersistentLog(): boolean {
+export const clearPersistentLog = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.clearPersistentLog();
-}
+};
 
-export function getNextAlarmTime(): number | null {
+export const getNextAlarmTime = (): number | null => {
   if (!isAvailable) return null;
   return NativeModule.getNextAlarmTime();
-}
+};
 
 // Android-specific: battery optimization exemption
-export function isBatteryOptimizationExempt(): boolean {
+export const isBatteryOptimizationExempt = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.isBatteryOptimizationExempt();
   } catch {
     return false;
   }
-}
+};
 
-export function requestBatteryOptimizationExemption(): boolean {
+export const requestBatteryOptimizationExemption = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestBatteryOptimizationExemption();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: exact alarm permission (API 31+)
-export function canScheduleExactAlarms(): boolean {
+export const canScheduleExactAlarms = (): boolean => {
   if (!isAvailable) return true;
   try {
     return NativeModule.canScheduleExactAlarms();
   } catch {
     return true;
   }
-}
+};
 
-export function requestExactAlarmPermission(): boolean {
+export const requestExactAlarmPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestExactAlarmPermission();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: full-screen intent permission (API 34+)
-export function canUseFullScreenIntent(): boolean {
+export const canUseFullScreenIntent = (): boolean => {
   if (!isAvailable) return true;
   try {
     return NativeModule.canUseFullScreenIntent();
   } catch {
     return true;
   }
-}
+};
 
-export function requestFullScreenIntentPermission(): boolean {
+export const requestFullScreenIntentPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestFullScreenIntentPermission();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: draw over apps (SYSTEM_ALERT_WINDOW)
-export function canDrawOverlays(): boolean {
+export const canDrawOverlays = (): boolean => {
   if (!isAvailable) return true;
   try {
     return NativeModule.canDrawOverlays();
   } catch {
     return true;
   }
-}
+};
 
-export function requestDrawOverlaysPermission(): boolean {
+export const requestDrawOverlaysPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestDrawOverlaysPermission();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: auto-start (OEM-specific)
-export function getDeviceManufacturer(): string {
+export const getDeviceManufacturer = (): string => {
   if (!isAvailable) return "unknown";
   try {
     return NativeModule.getDeviceManufacturer();
   } catch {
     return "unknown";
   }
-}
+};
 
-export function hasAutoStartSettings(): boolean {
+export const hasAutoStartSettings = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.hasAutoStartSettings();
   } catch {
     return false;
   }
-}
+};
 
-export function openAutoStartSettings(): boolean {
+export const openAutoStartSettings = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.openAutoStartSettings();
   } catch {
     return false;
   }
-}
+};
+
+// Challenge values the native overlay reads from stored alarm settings.
+export const CHALLENGE_TYPE = {
+  NONE: "none",
+  TAP: "tap",
+  MATH: "math",
+  DHIKR: "dhikr",
+} as const;
+
+export type ChallengeType = (typeof CHALLENGE_TYPE)[keyof typeof CHALLENGE_TYPE];
+
+export const CHALLENGE_DIFFICULTY = {
+  EASY: "easy",
+  MEDIUM: "medium",
+  HARD: "hard",
+} as const;
+
+export type ChallengeDifficulty = (typeof CHALLENGE_DIFFICULTY)[keyof typeof CHALLENGE_DIFFICULTY];
 
 // Native alarm settings (Android only)
 export interface NativeAlarmSettings {
   enabled: boolean;
   sound: string;
   volume: number;
-  challengeType: "tap" | "math" | "dhikr" | "none";
-  challengeDifficulty: "easy" | "medium" | "hard";
+  challengeType: ChallengeType;
+  challengeDifficulty: ChallengeDifficulty;
   challengeCount: number;
   gentleWakeUpEnabled: boolean;
   gentleWakeUpDuration: number;
@@ -462,46 +482,46 @@ export interface NativeAlarmSettings {
   snoozeDuration: number;
 }
 
-export function openNativeSettings(alarmType: "fajr" | "jummah"): boolean {
+export const openNativeSettings = (alarmType: "fajr" | "jummah"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.openNativeSettings(alarmType);
   } catch {
     return false;
   }
-}
+};
 
-export async function getAlarmSettings(
+export const getAlarmSettings = async (
   alarmType: "fajr" | "jummah"
-): Promise<NativeAlarmSettings | null> {
+): Promise<NativeAlarmSettings | null> => {
   if (!isAvailable) return null;
   try {
     return await NativeModule.getAlarmSettings(alarmType);
   } catch {
     return null;
   }
-}
+};
 
-export async function setAlarmSettings(
+export const setAlarmSettings = async (
   alarmType: "fajr" | "jummah",
   settings: Partial<NativeAlarmSettings>
-): Promise<boolean> {
+): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.setAlarmSettings(alarmType, settings);
   } catch {
     return false;
   }
-}
+};
 
-export function isAlarmTypeEnabled(alarmType: "fajr" | "jummah"): boolean {
+export const isAlarmTypeEnabled = (alarmType: "fajr" | "jummah"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.isAlarmTypeEnabled(alarmType);
   } catch {
     return false;
   }
-}
+};
 
 // System alarm sounds
 export interface SystemSound {
@@ -510,7 +530,7 @@ export interface SystemSound {
   isSystem: boolean;
 }
 
-export async function getSystemAlarmSounds(): Promise<SystemSound[]> {
+export const getSystemAlarmSounds = async (): Promise<SystemSound[]> => {
   if (!isAvailable) return [];
   try {
     const sounds = await NativeModule.getSystemAlarmSounds();
@@ -522,7 +542,7 @@ export async function getSystemAlarmSounds(): Promise<SystemSound[]> {
   } catch {
     return [];
   }
-}
+};
 
 // -- Athan Playback Service (Android) --
 
@@ -535,7 +555,7 @@ export interface ScheduleAthanParams {
   stopLabel: string;
 }
 
-export async function scheduleAthan(params: ScheduleAthanParams): Promise<boolean> {
+export const scheduleAthan = async (params: ScheduleAthanParams): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.scheduleAthan(
@@ -549,61 +569,61 @@ export async function scheduleAthan(params: ScheduleAthanParams): Promise<boolea
   } catch {
     return false;
   }
-}
+};
 
-export async function cancelAthan(id: string): Promise<boolean> {
+export const cancelAthan = async (id: string): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.cancelAthan(id);
   } catch {
     return false;
   }
-}
+};
 
-export async function cancelAllAthans(ids: string[]): Promise<boolean> {
+export const cancelAllAthans = async (ids: string[]): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.cancelAllAthans(ids);
   } catch {
     return false;
   }
-}
+};
 
-export function stopAthan(): boolean {
+export const stopAthan = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.stopAthan();
   } catch {
     return false;
   }
-}
+};
 
-export function isAthanPlaying(): boolean {
+export const isAthanPlaying = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.isAthanPlaying();
   } catch {
     return false;
   }
-}
+};
 
-export function setAthanAudioStream(stream: "media" | "ringer"): boolean {
+export const setAthanAudioStream = (stream: "media" | "ringer"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.setAthanAudioStream(stream);
   } catch {
     return false;
   }
-}
+};
 
-export function setIqamaAudioStream(stream: "media" | "ringer"): boolean {
+export const setIqamaAudioStream = (stream: "media" | "ringer"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.setIqamaAudioStream(stream);
   } catch {
     return false;
   }
-}
+};
 
 export default {
   isNativeModuleAvailable,
