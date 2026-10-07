@@ -39,7 +39,7 @@
     "release:android:production": "bun run build:android && bun run submit:android:production",
     "screenshots:verify": "cd scripts/screenshots && PATH=\"$HOME/.maestro/bin:$PATH\" bun run.ts verify",
     "eas-build-pre-install": "if [ \"$BUILD_VARIANT\" = \"hms\" ]; then : \"${AGCONNECT_SERVICES_JSON:?AGCONNECT_SERVICES_JSON is required for HMS builds}\"; cp \"$AGCONNECT_SERVICES_JSON\" android/app/agconnect-services.json; fi",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p scripts/screenshots/tsconfig.json",
     "format:check": "git ls-files -z '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.md' '*.yml' | xargs -0 prettier --check"
   },
   "jest": {
