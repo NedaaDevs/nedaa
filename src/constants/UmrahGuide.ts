@@ -235,8 +235,7 @@ export const UMRAH_STAGES: Stage[] = [
         titleKey: "umrah.steps.sai.lap.title",
         lapNumber: i + 1,
         lapDirection: (i % 2 === 0 ? "safaToMarwa" : "marwaToSafa") as
-          | "safaToMarwa"
-          | "marwaToSafa",
+          "safaToMarwa" | "marwaToSafa",
         dua: {
           id: "sai-general-dua",
           arabic:
