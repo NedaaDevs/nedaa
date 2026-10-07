@@ -14,7 +14,6 @@ import { HighlightColor } from "@/enums/quran";
 import { useHighlightStore } from "@/stores/quranHighlights";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useRTL } from "@/contexts/RTLContext";
-import { formatNumberToLocale } from "@/utils/number";
 
 // Colour-label manager — the 7 highlight colours with verse counts + inline
 // rename. Embeddable (no frame) so it serves as a standalone route and the
@@ -108,9 +107,7 @@ export const HighlightColors = () => {
                     <Text fontSize={12} color={chrome.subtleText}>
                       {count === 0
                         ? t("quran.highlight.noVerses")
-                        : t("quran.highlight.verseCount", {
-                            count: formatNumberToLocale(String(count)),
-                          })}
+                        : t("quran.highlight.verseCount", { count })}
                     </Text>
                   </YStack>
                   <Pencil color={chrome.subtleText} size={17} />
