@@ -29,7 +29,10 @@ export const STEPPED_SLIDER_PART = {
   TRACK: "stepped-slider-track",
   DOT: "stepped-slider-dot",
   FILL: "stepped-slider-fill",
+  TICK: "stepped-slider-tick",
   THUMB: "stepped-slider-thumb",
+  START_MARK: "stepped-slider-start-mark",
+  END_MARK: "stepped-slider-end-mark",
 } as const;
 
 /** Test ids for the two gestures, for Gesture Handler's jest utils. */
@@ -38,7 +41,7 @@ export const STEPPED_SLIDER_GESTURE = {
   TAP: "stepped-slider-tap",
 } as const;
 
-const GEOMETRY = { hit: 44, track: 4, dot: 8, thumb: 24 } as const;
+const GEOMETRY = { hit: 44, track: 4, dot: 8, thumb: 24, tick: { width: 2, height: 16 } } as const;
 // A drag starts sideways; a vertical move first hands the touch to the page.
 const PAN = { startAt: 8, failAt: 12 } as const;
 
@@ -73,6 +76,8 @@ export type SteppedSliderProps<V extends string | number> = {
   endMark?: ReactNode;
   /** The text under a stop; undefined leaves that stop bare. */
   stopLabel?: (value: V) => string | undefined;
+  /** The stop the fill grows from, marked with a tick; the first stop if unset. */
+  fillFrom?: V;
 };
 
 /** A track of discrete stops: drag, tap or step with a screen reader. */
@@ -86,6 +91,7 @@ export const SteppedSlider = <V extends string | number>({
   startMark,
   endMark,
   stopLabel,
+  fillFrom,
 }: SteppedSliderProps<V>) => {
   const { isRTL, direction } = useRTL();
   const reduced = useReducedMotion();
@@ -98,6 +104,12 @@ export const SteppedSlider = <V extends string | number>({
   const committed = Math.max(0, stops.indexOf(value));
   const shown = dragged ?? committed;
   const target = stopOffset(shown, width, count);
+  // A fillFrom outside the stops fills from the first stop and draws no tick.
+  const fromIndex = fillFrom === undefined ? -1 : stops.indexOf(fillFrom);
+  const origin = Math.max(0, fromIndex);
+  const originAt = stopOffset(origin, width, count);
+  const lit = (index: number) =>
+    index >= Math.min(origin, shown) && index <= Math.max(origin, shown);
 
   const thumb = useSharedValue(target);
   // The width the thumb was placed for; a new width places it, no glide.
@@ -112,7 +124,10 @@ export const SteppedSlider = <V extends string | number>({
   }, [target, width, reduced, thumb]);
 
   const thumbStyle = useAnimatedStyle(() => ({ start: thumb.get() - GEOMETRY.thumb / 2 }));
-  const fillStyle = useAnimatedStyle(() => ({ width: thumb.get() - GEOMETRY.thumb / 2 }));
+  const fillStyle = useAnimatedStyle(() => {
+    const at = thumb.get();
+    return { start: Math.min(at, originAt), width: Math.abs(at - originAt) };
+  });
 
   const indexAt = (x: number) => stopIndexAt(x, width, count, isRTL);
 
@@ -175,7 +190,9 @@ export const SteppedSlider = <V extends string | number>({
       // Set here too, so a host in another direction still mirrors the track.
       style={{ direction }}>
       <HStack {...HIDDEN_FROM_READER} alignItems="flex-start" gap="$2.5">
-        <View style={styles.mark}>{startMark}</View>
+        <View testID={STEPPED_SLIDER_PART.START_MARK} style={styles.mark}>
+          {startMark}
+        </View>
         {/* Labels take touches too; both rows share the track's x. */}
         <GestureDetector gesture={Gesture.Exclusive(pan, tap)}>
           <View testID={STEPPED_SLIDER_PART.TOUCH} style={styles.touch}>
@@ -195,10 +212,18 @@ export const SteppedSlider = <V extends string | number>({
                     styles.dot,
                     { start: stopOffset(index, width, count) - GEOMETRY.dot / 2 },
                   ]}
-                  backgroundColor={index <= shown ? "$accent" : "$mutedSky"}
+                  backgroundColor={lit(index) ? "$accent" : "$mutedSky"}
                   borderRadius="$pill"
                 />
               ))}
+              {fromIndex < 0 ? null : (
+                <Box
+                  testID={STEPPED_SLIDER_PART.TICK}
+                  style={[styles.tick, { start: originAt - GEOMETRY.tick.width / 2 }]}
+                  backgroundColor="$accent"
+                  borderRadius="$pill"
+                />
+              )}
               <Animated.View testID={STEPPED_SLIDER_PART.THUMB} style={[styles.thumb, thumbStyle]}>
                 <Box
                   flex={1}
@@ -227,7 +252,9 @@ export const SteppedSlider = <V extends string | number>({
             ) : null}
           </View>
         </GestureDetector>
-        <View style={styles.mark}>{endMark}</View>
+        <View testID={STEPPED_SLIDER_PART.END_MARK} style={styles.mark}>
+          {endMark}
+        </View>
       </HStack>
     </VStack>
   );
@@ -248,7 +275,8 @@ const styles = StyleSheet.create({
     start: GEOMETRY.thumb / 2,
     end: GEOMETRY.thumb / 2,
   },
-  fill: { ...centredOn(GEOMETRY.track), start: GEOMETRY.thumb / 2 },
+  fill: centredOn(GEOMETRY.track),
+  tick: { ...centredOn(GEOMETRY.tick.height), width: GEOMETRY.tick.width },
   dot: { ...centredOn(GEOMETRY.dot), width: GEOMETRY.dot },
   thumb: { ...centredOn(GEOMETRY.thumb), width: GEOMETRY.thumb },
 });
