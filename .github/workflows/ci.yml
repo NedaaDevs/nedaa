@@ -30,7 +30,7 @@ jobs:
         run: bun run lint -- --max-warnings 0
 
       - name: Check formatting
-        run: bunx prettier --check "**/*.{js,jsx,ts,tsx,json,md,yml}"
+        run: bun run format:check
 
   typecheck:
     name: Typecheck
@@ -45,11 +45,8 @@ jobs:
       - name: Set up dependencies
         uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
 
-      - name: Typecheck app
-        run: bunx tsc --noEmit
-
-      - name: Typecheck scripts
-        run: bunx tsc --noEmit -p scripts/tsconfig.json
+      - name: Typecheck
+        run: bun run typecheck
 
   test:
     name: Test (shard ${{ matrix.shard }}/3)
